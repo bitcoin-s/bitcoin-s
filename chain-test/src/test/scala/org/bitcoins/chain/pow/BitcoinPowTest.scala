@@ -1,25 +1,24 @@
 package org.bitcoins.chain.pow
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.db.ChainDbConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.util.{ChainFixture, ChainFixtureTag, ChainUnitTest}
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.db.NetworkDb
 import org.bitcoins.testkit.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.db.AppConfig
 
 class BitcoinPowTest extends ChainUnitTest {
 
   override type FixtureParam = ChainFixture
 
+  override lazy implicit val appConfig: AppConfig = mainnetAppConfig
+
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)
-
-  override val networkDb: NetworkDb = NetworkDb.MainNetDbConfig
 
   override implicit val system: ActorSystem = ActorSystem("BitcoinPowTest")
 
@@ -27,8 +26,6 @@ class BitcoinPowTest extends ChainUnitTest {
 
   it must "NOT calculate a POW change when one is not needed" inFixtured {
     case ChainFixture.Empty =>
-      val dbConfig = ChainDbConfig.UnitTestDbConfig(NetworkDb.MainNetDbConfig)
-      val appConfig = ChainAppConfig(dbConfig)
       val blockHeaderDAO = BlockHeaderDAO(appConfig)
       val header1 = ChainTestUtil.ValidPOWChange.blockHeaderDb566494
       val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495

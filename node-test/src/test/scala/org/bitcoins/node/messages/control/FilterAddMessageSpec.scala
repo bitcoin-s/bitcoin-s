@@ -1,16 +1,16 @@
 package org.bitcoins.node.messages.control
 
 import org.bitcoins.testkit.gen.ControlMessageGenerator
-import org.scalacheck.{Prop, Properties}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 8/26/16.
   */
-class FilterAddMessageSpec extends Properties("FilterAddMessageSpec") {
+class FilterAddMessageSpec extends BitcoinSUnitTest {
 
-  property("Serialization symmetry") =
-    Prop.forAll(ControlMessageGenerator.filterAddMessage) {
-      case filterAddMsg =>
-        FilterAddMessage(filterAddMsg.hex) == filterAddMsg
+  it must "have serialization symmetry" in {
+    forAll(ControlMessageGenerator.filterAddMessage) { filterAddMsg =>
+      assert(FilterAddMessage(filterAddMsg.hex) == filterAddMsg)
     }
+  }
 }

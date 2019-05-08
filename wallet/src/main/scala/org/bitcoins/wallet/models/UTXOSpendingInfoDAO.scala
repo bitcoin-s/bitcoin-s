@@ -1,14 +1,17 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.db.CRUDAutoInc
-import org.bitcoins.wallet.db.WalletDbConfig
+import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import org.bitcoins.db.AppConfig
 
-case class UTXOSpendingInfoDAO(dbConfig: WalletDbConfig)(
-    implicit val ec: ExecutionContext)
+case class UTXOSpendingInfoDAO()(implicit val ec: ExecutionContext)
     extends CRUDAutoInc[UTXOSpendingInfoDb] {
+
+  override def appConfig: AppConfig = WalletAppConfig
 
   /** The table inside our database we are inserting into */
   override val table = TableQuery[UTXOSpendingInfoTable]

@@ -2,15 +2,12 @@ package org.bitcoins.node.messages.control
 
 import java.net.InetAddress
 
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number.{Int32, UInt64}
 import org.joda.time.DateTime
-import org.scalatest.{FlatSpec, MustMatchers}
 
-/**
-  * Created by chris on 6/6/16.
-  */
-class VersionMessageTest extends FlatSpec with MustMatchers {
+class VersionMessageTest extends BitcoinSUnitTest {
 
   "VersionMessage" must "create a new version message to be sent to another node on the network" in {
     val versionMessage = VersionMessage(MainNet, InetAddress.getLocalHost)

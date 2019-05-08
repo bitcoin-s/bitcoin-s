@@ -1,7 +1,7 @@
 package org.bitcoins.chain.validation
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.db.{ChainDbConfig, ChainDbManagement}
+import org.bitcoins.chain.db.{ChainDbManagement}
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
   BlockHeaderDb,
@@ -9,15 +9,20 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.chain.util.ChainUnitTest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.db.NetworkDb
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
+import org.bitcoins.db.AppConfig
+import org.bitcoins.chain.config.ChainAppConfig
+import com.typesafe.config.ConfigFactory
 
 class TipValidationTest extends ChainUnitTest {
 
   override type FixtureParam = BlockHeaderDAO
+
+  // we're working with mainnet data
+  override lazy implicit val appConfig: AppConfig = mainnetAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
@@ -29,7 +34,6 @@ class TipValidationTest extends ChainUnitTest {
   //blocks 566,092 and 566,093
   val newValidTip = BlockHeaderHelper.header1
   val currentTipDb = BlockHeaderHelper.header2Db
-  override val networkDb = NetworkDb.MainNetDbConfig
 
   it must "connect two blocks with that are valid" in { bhDAO =>
     val newValidTipDb =

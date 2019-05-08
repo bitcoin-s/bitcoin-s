@@ -5,7 +5,6 @@ import org.bitcoins.chain.models.BlockHeaderDbHelper
 import org.bitcoins.chain.util.{ChainFixtureTag, ChainUnitTest}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FileUtil
-import org.bitcoins.db.NetworkDb
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
@@ -18,9 +17,10 @@ class ChainHandlerTest extends ChainUnitTest {
 
   override implicit val system = ActorSystem("ChainUnitTest")
 
-  override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
+  // we're working with mainnet data
+  override lazy implicit val appConfig = mainnetAppConfig
 
-  override lazy val networkDb: NetworkDb = NetworkDb.MainNetDbConfig
+  override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandler(test)
@@ -99,17 +99,17 @@ class ChainHandlerTest extends ChainUnitTest {
       val createdF = chainHandler.blockHeaderDAO.createAll(firstThreeBlocks)
 
       createdF.flatMap { _ =>
-          val processorF = Future.successful(chainHandler)
-          // Takes way too long to do all blocks
-          val blockHeadersToTest = blockHeaders.tail
-            .take(
-              (2 * chainHandler.chainParams.difficultyChangeInterval + 1).toInt)
-            .toList
+        val processorF = Future.successful(chainHandler)
+        // Takes way too long to do all blocks
+        val blockHeadersToTest = blockHeaders.tail
+          .take(
+            (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1).toInt)
+          .toList
 
-          processHeaders(processorF = processorF,
-            remainingHeaders = blockHeadersToTest,
-            height = FIRST_POW_CHANGE + 1)
-        }
+        processHeaders(processorF = processorF,
+                       remainingHeaders = blockHeadersToTest,
+                       height = FIRST_POW_CHANGE + 1)
+      }
   }
 
   final def processHeaders(

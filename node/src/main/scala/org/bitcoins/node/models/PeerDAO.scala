@@ -1,20 +1,13 @@
 package org.bitcoins.node.models
 
-import org.bitcoins.db.{CRUDAutoInc, DbConfig}
+import org.bitcoins.db.{CRUDAutoInc}
 import slick.jdbc.SQLiteProfile.api._
 
+import org.bitcoins.db.AppConfig
 import scala.concurrent.ExecutionContext
 
-abstract class PeerDAO extends CRUDAutoInc[Peer] {
+case class PeerDAO(appConfig: AppConfig)(
+    implicit override val ec: ExecutionContext)
+    extends CRUDAutoInc[Peer] {
   override val table = TableQuery[PeerTable]
-}
-
-object PeerDAO {
-  private case class PeerDAOImpl(dbConfig: DbConfig)(
-      override implicit val ec: ExecutionContext)
-      extends PeerDAO
-
-  def apply(dbConfig: DbConfig)(implicit ec: ExecutionContext): PeerDAO = {
-    PeerDAOImpl(dbConfig)
-  }
 }

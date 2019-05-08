@@ -15,15 +15,12 @@ import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.HeadersMessage
 import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.HeadersMessage
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 9/6/16.
   */
-class BitcoinSpvNodeUtilTest
-    extends FlatSpec
-    with MustMatchers
-    with BitcoinSLogger {
+class BitcoinSpvNodeUtilTest extends BitcoinSUnitTest {
 
   "BitcoinSpvNodeUtil" must "return the entire byte array if a message is not aligned to a byte frame" in {
     val versionMessage =
