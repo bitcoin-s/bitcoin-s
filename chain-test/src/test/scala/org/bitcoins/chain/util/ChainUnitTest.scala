@@ -55,6 +55,10 @@ trait ChainUnitTest
     ChainAppConfig.withOverrides(mainnetOverride)
   }
 
+  override def beforeAll(): Unit = {
+    AppConfig.throwIfDefaultDatadir(appConfig)
+  }
+
   def makeChainHandler(
       firstHeader: BlockHeaderDb = genesisHeaderDb): ChainHandler = {
     lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)

@@ -19,11 +19,30 @@ import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.core.protocol.blockchain.TestNetChainParams
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import java.nio.file.Files
+import scala.util.Properties
+import scala.util.matching.Regex
 
+/**
+  * Everything needed to configure functionality
+  * of bitcoin-s applications  is found in here.
+  */
 abstract class AppConfig extends BitcoinSLogger {
 
+  /** List of user-provided configs that should
+    * override defaults
+    */
   protected val configOverrides: List[Config] = List.empty
 
+  /**
+    * This method returns a new `AppConfig`, where every
+    * key under `bitcoin-s` overrides the configuration
+    * picked up by other means (the `reference.conf`
+    * provided by bitcoin-s and the `application.conf`
+    * provided by the user). If you pass in configs with
+    * overlapping keys (e.g. several configs with the key
+    * `bitcoin-s.network`), the latter config overrides the
+    * first.
+    */
   def withOverrides(config: Config, configs: Config*): AppConfig = {
     // the two val assignments below are workarounds
     // for awkward name resolution in the block below
@@ -66,9 +85,9 @@ abstract class AppConfig extends BitcoinSLogger {
     */
   protected def moduleConfigName: String
 
-  /** The configuration details for connecting/using the database for our projects
+  /**
+    * The configuration details for connecting/using the database for our projects
     * that require datbase connections
-    *
     */
   lazy val dbConfig: DatabaseConfig[SQLiteProfile] = {
     //if we don't pass specific class, non-deterministic
@@ -95,12 +114,14 @@ abstract class AppConfig extends BitcoinSLogger {
     dbConfig
   }
 
-  /** The database we are connecting to for our spv node */
+  /** The database we are connecting to */
   lazy val database: Database = {
     dbConfig.db
   }
 
   /** The path where our DB is located */
+  // todo: what happens when to this if we
+  // dont use SQLite?
   lazy val dbPath: Path = {
     val pathStr = config.getString("database.dbPath")
     val path = Paths.get(pathStr)
@@ -117,6 +138,7 @@ abstract class AppConfig extends BitcoinSLogger {
     }
   }
 
+  /** Chain parameters for the blockchain we're on */
   lazy val chain: ChainParams = {
     val networkStr = config.getString("network")
     networkStr match {
@@ -126,8 +148,13 @@ abstract class AppConfig extends BitcoinSLogger {
     }
   }
 
+  /** The blockchain network we're on */
   lazy val network: NetworkParameters = chain.network
 
+  /**
+    * The underlying config that we derive the
+    * rest of the fields in this class from
+    */
   lazy protected val config: Config = {
     val moduleConfig =
       ConfigFactory.load(moduleConfigName)
@@ -178,6 +205,7 @@ abstract class AppConfig extends BitcoinSLogger {
     config
   }
 
+  /** The data directory used by bitcoin-s apps */
   lazy val datadir: Path = {
     val basedir = Paths.get(config.getString("datadir"))
     val lastDirname = network match {
@@ -188,4 +216,36 @@ abstract class AppConfig extends BitcoinSLogger {
     basedir.resolve(lastDirname)
   }
 
+}
+
+object AppConfig {
+
+  /**
+    * Matches the default data directory location
+    * with a network appended,
+    * both with and without a trailing `/`
+    */
+  private val defaultDatadirRegex: Regex = {
+    (Properties.userHome + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
+  }
+
+  /**
+    * Throws if the encountered datadir is the default one. Useful
+    * in tests, to make sure you don't blow up important data.
+    */
+  private[bitcoins] def throwIfDefaultDatadir(config: AppConfig): Unit = {
+    val datadirStr = config.datadir.toString()
+    AppConfig.defaultDatadirRegex.findFirstMatchIn(datadirStr) match {
+      case None => () // pass
+      case Some(_) =>
+        val errMsg =
+          List(
+            "It looks like you haven't changed the data directory in your test configuration.",
+            s"Your data directory is $datadirStr. This would cause tests to potentially",
+            "overwrite your existing data, which you probably don't want."
+          ).mkString(" ")
+        throw new RuntimeException(errMsg)
+    }
+
+  }
 }

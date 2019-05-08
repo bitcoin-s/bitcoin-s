@@ -42,6 +42,10 @@ trait BitcoinSWalletTest
     TestKit.shutdownActorSystem(actorSystem)
   }
 
+  override def beforeAll(): Unit = {
+    AppConfig.throwIfDefaultDatadir(appConfig)
+  }
+
   def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] =
     WalletDbManagement.dropAll().map(_ => ())
 
