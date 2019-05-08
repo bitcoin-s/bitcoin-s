@@ -2,10 +2,10 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.db.ChainDbConfig
+import org.bitcoins.db._
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
+import org.bitcoins.core.protocol.blockchain.{BlockHeader}
 import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,13 +15,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * of [[ChainApi]], this is the entry point in to the
   * chain project.
   */
-case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainAppConfig: ChainAppConfig)
+case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainConfig: AppConfig)
     extends ChainApi
     with BitcoinSLogger {
-
-  def chainParams: ChainParams = chainAppConfig.chain
-
-  def dbConfig: ChainDbConfig = chainAppConfig.dbConfig
 
   override def getBlockCount: Future[Long] = {
     blockHeaderDAO.maxHeight
@@ -41,7 +37,7 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainAppConfig: ChainApp
         //now we have successfully connected the header, we need to insert
         //it into the database
         val createdF = blockHeaderDAO.create(updatedHeader)
-        createdF.map(_ => ChainHandler(blockHeaderDAO, chainAppConfig))
+        createdF.map(_ => ChainHandler(blockHeaderDAO, ChainAppConfig))
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
           s"Failed to add header to chain, header=${header.hashBE.hex} reason=${reason}"

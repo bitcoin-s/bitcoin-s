@@ -5,16 +5,15 @@ import java.net.InetSocketAddress
 import akka.actor.ActorRefFactory
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.db.NetworkDb
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.db.NodeDbConfig
 import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.db.AppConfig
 
 /**
   * Created by chris on 6/2/16.
@@ -72,9 +71,7 @@ abstract class NodeTestUtil {
     )
   }
 
-  def dbConfig: NodeDbConfig = NodeDbConfig.UnitTestDbConfig(NetworkDb.UnitTestDbConfig)
-
-  def nodeAppConfig: NodeAppConfig = NodeAppConfig(dbConfig)
+  def nodeAppConfig: AppConfig = NodeAppConfig
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {

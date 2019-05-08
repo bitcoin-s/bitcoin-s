@@ -20,8 +20,8 @@ trait AddressDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
 
   private def dropTables(daos: FixtureParam): Future[Unit] = {
     val (account, address) = daos
-    val dropAccountF = WalletDbManagement.dropTable(account.table, dbConfig)
-    val dropAddressF = WalletDbManagement.dropTable(address.table, dbConfig)
+    val dropAccountF = WalletDbManagement.dropTable(account.table)
+    val dropAddressF = WalletDbManagement.dropTable(address.table)
     for {
       _ <- dropAccountF
       _ <- dropAddressF
@@ -30,13 +30,13 @@ trait AddressDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
   }
 
   private def createTables(): Future[FixtureParam] = {
-    val accountDAO = AccountDAO(dbConfig)
-    val addressDAO = AddressDAO(dbConfig)
+    val accountDAO = AccountDAO()
+    val addressDAO = AddressDAO()
 
     val createAccountF =
-      WalletDbManagement.createTable(accountDAO.table, dbConfig)
+      WalletDbManagement.createTable(accountDAO.table)
     val createTableF =
-      WalletDbManagement.createTable(addressDAO.table, dbConfig)
+      WalletDbManagement.createTable(addressDAO.table)
     for {
       _ <- createAccountF
       _ <- createTableF

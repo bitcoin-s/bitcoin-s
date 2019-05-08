@@ -15,12 +15,12 @@ trait UtxoDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
     makeDependentFixture(createUtxoTable, dropUtxoTable)(test)
 
   private def dropUtxoTable(utxoDAO: FixtureParam): Future[Unit] = {
-    WalletDbManagement.dropTable(utxoDAO.table, dbConfig)
+    WalletDbManagement.dropTable(utxoDAO.table)
   }
 
   private def createUtxoTable(): Future[UTXOSpendingInfoDAO] = {
-    val dao = UTXOSpendingInfoDAO(dbConfig)
-    WalletDbManagement.createTable(dao.table, dbConfig).map(_ => dao)
+    val dao = UTXOSpendingInfoDAO()
+    WalletDbManagement.createTable(dao.table).map(_ => dao)
   }
 
 }

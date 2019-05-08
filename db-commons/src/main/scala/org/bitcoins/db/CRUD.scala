@@ -14,16 +14,15 @@ import scala.concurrent.{ExecutionContext, Future}
   * the table and the database you are connecting to.
   */
 abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
-  implicit def ec: ExecutionContext
+
+  def appConfig: AppConfig
+  implicit val ec: ExecutionContext
 
   /** The table inside our database we are inserting into */
   val table: TableQuery[_ <: Table[T]]
 
-  /** The [[DbConfig]] we used to setup our database connection */
-  def dbConfig: DbConfig
-
   /** Binding to the actual database itself, this is what is used to run querys */
-  def database: SafeDatabase[DbConfig] = SafeDatabase(dbConfig)
+  def database: SafeDatabase = SafeDatabase(appConfig)
 
   /**
     * create a record in the database
@@ -121,9 +120,9 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
 
 }
 
-class SafeDatabase[C <: DbConfig](dbConfig: C) extends BitcoinSLogger {
+case class SafeDatabase(config: AppConfig) extends BitcoinSLogger {
 
-  lazy val dbUrl: String = dbConfig.dbConfig.config.getString("db.url")
+  import config.database
 
   /**
     * SQLite does not enable foreign keys by default. This query is
@@ -133,24 +132,16 @@ class SafeDatabase[C <: DbConfig](dbConfig: C) extends BitcoinSLogger {
   private val foreignKeysPragma = sqlu"PRAGMA foreign_keys = TRUE;"
 
   def run[R](action: DBIOAction[R, NoStream, _]): Future[R] = {
-    val db = dbConfig.database
 
-    logger.trace(s"Running query against $dbUrl")
-
-    val result = db.run[R](foreignKeysPragma >> action)
+    val result = database.run[R](foreignKeysPragma >> action)
     result
   }
 
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(
       implicit ec: ExecutionContext): Future[Vector[R]] = {
-    val db = dbConfig.database
-    val result = db.run[Seq[R]](foreignKeysPragma >> action)
+    val result = database.run[Seq[R]](foreignKeysPragma >> action)
     result.map(_.toVector)
   }
-}
-
-object SafeDatabase {
-  def apply[C <: DbConfig](dbConfig: C): SafeDatabase[C] = new SafeDatabase(dbConfig)
 }
 
 case class UpdateFailedException(message: String)

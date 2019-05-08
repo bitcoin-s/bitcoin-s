@@ -1,15 +1,13 @@
 package org.bitcoins.node.messages.control
 
 import org.bitcoins.testkit.gen.ControlMessageGenerator
-import org.scalacheck.{Prop, Properties}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-/**
-  * Created by chris on 6/29/16.
-  */
-class PingMessageSpec extends Properties("PingMessageSpec") {
+class PingMessageSpec extends BitcoinSUnitTest {
 
-  property("Symmetry serialization") =
-    Prop.forAll(ControlMessageGenerator.pingMessage) { pingMessage =>
-      PingMessage(pingMessage.hex) == pingMessage
+  it must "have symmetry serialization" in {
+    forAll(ControlMessageGenerator.pingMessage) { pingMessage =>
+      assert(PingMessage(pingMessage.hex) == pingMessage)
     }
+  }
 }

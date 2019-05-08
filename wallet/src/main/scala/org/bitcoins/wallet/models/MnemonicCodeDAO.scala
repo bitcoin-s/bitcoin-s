@@ -1,14 +1,13 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.EncryptedMnemonic
-import org.bitcoins.wallet.db.WalletDbConfig
 import slick.dbio.DBIOAction
 import slick.dbio.Effect.Write
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.TableQuery
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.wallet.config.WalletAppConfig
 
 /**
   * @note This DAO does not extend [[org.bitcoins.db.CRUD CRUD]]
@@ -16,11 +15,11 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   */
 // todo: implement this as a flat file, not a table
-case class MnemonicCodeDAO(dbConfig: WalletDbConfig)(
-    implicit executionContext: ExecutionContext) {
+case class MnemonicCodeDAO()(implicit executionContext: ExecutionContext) {
   val ec: ExecutionContext = executionContext
 
-  val database = SafeDatabase(dbConfig)
+  val appConfig = WalletAppConfig
+  val database = appConfig.database
 
   /** The table inside our database we are inserting into */
   val table: TableQuery[MnemonicCodeTable] =

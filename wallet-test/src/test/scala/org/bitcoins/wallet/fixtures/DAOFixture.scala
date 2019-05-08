@@ -17,17 +17,19 @@ private[fixtures] trait DAOFixture
   private[fixtures] val daoAccumulator =
     Vector.newBuilder[HasTable]
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     val tables = daoAccumulator.result()
 
     val dropTablesF =
-      Future.sequence(tables.map((dao: HasTable) =>
-        WalletDbManagement.dropTable(dao.table, dbConfig)))
-    Await.result(dropTablesF, timeout)
+      Future.sequence(
+        tables.map((dao: HasTable) => WalletDbManagement.dropTable(dao.table)))
 
     val createTablesF =
-      Future.sequence(tables.map((dao: HasTable) =>
-        WalletDbManagement.createTable(dao.table, dbConfig)))
+      dropTablesF.flatMap { _ =>
+        Future.sequence(tables.map((dao: HasTable) =>
+          WalletDbManagement.createTable(dao.table)))
+      }
+
     Await.result(createTablesF, timeout)
 
     super.beforeAll()

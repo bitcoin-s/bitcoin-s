@@ -1,16 +1,16 @@
 package org.bitcoins.node.messages.data
 
 import org.bitcoins.testkit.gen.DataMessageGenerator
-import org.scalacheck.{Prop, Properties}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 7/8/16.
   */
-class InventorySpec extends Properties("InventorySpec") {
+class InventorySpec extends BitcoinSUnitTest {
 
-  property("Serialization symmetry") =
-    Prop.forAll(DataMessageGenerator.inventory) { inventory =>
-      Inventory(inventory.hex) == inventory
-
+  it must "have serialization symmetry" in {
+    forAll(DataMessageGenerator.inventory) { inventory =>
+      assert(Inventory(inventory.hex) == inventory)
     }
+  }
 }

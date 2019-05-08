@@ -3,13 +3,18 @@ package org.bitcoins.node.networking.peer
 import akka.actor.ActorRefFactory
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.messages._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{Disconnected, Initializing, Normal, Preconnection}
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
+  Disconnected,
+  Initializing,
+  Normal,
+  Preconnection
+}
 
 import scala.util.{Failure, Success, Try}
+import org.bitcoins.db.AppConfig
 
 /**
   * Responsible for receiving messages from a peer on the
@@ -18,7 +23,7 @@ import scala.util.{Failure, Success, Try}
   * operations. This is the entry point for handling all received
   * [[NetworkMessage]]
   */
-class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: NodeAppConfig)(
+class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)(
     implicit ref: ActorRefFactory)
     extends BitcoinSLogger {
 
@@ -102,7 +107,8 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: NodeAppCon
       networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Unit = {
 
     //create a way to send a response if we need too
-    val peerMsgSender = PeerMessageSender(networkMsgRecv.client,appConfig.network)
+    val peerMsgSender =
+      PeerMessageSender(networkMsgRecv.client, appConfig.network)
 
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
@@ -209,14 +215,14 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: Client)
       extends PeerMessageReceiverMsg
 
-  def apply(state: PeerMessageReceiverState, appConfig: NodeAppConfig)(
+  def apply(state: PeerMessageReceiverState, appConfig: AppConfig)(
       implicit ref: ActorRefFactory): PeerMessageReceiver = {
     new PeerMessageReceiver(state, appConfig)(ref)
   }
 
-  def newReceiver(appConfig: NodeAppConfig)(
+  def newReceiver(appConfig: AppConfig)(
       implicit ref: ActorRefFactory): PeerMessageReceiver = {
     new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-      appConfig)(ref)
+                            appConfig)(ref)
   }
 }

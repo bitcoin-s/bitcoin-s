@@ -9,7 +9,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.DbConfig
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages._
@@ -33,8 +32,6 @@ import org.bitcoins.node.util.BitcoinSpvNodeUtil
   * 7.) If it was, send the actor that that requested this [[PaymentActor.SuccessfulPayment]] message back
   */
 sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
-
-  def dbConfig: DbConfig
 
   def peerMsgHandler: ActorRef
 
@@ -153,17 +150,15 @@ sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
 }
 
 object PaymentActor {
-  private case class PaymentActorImpl(
-      peerMsgHandler: ActorRef,
-      dbConfig: DbConfig)
+  private case class PaymentActorImpl(peerMsgHandler: ActorRef)
       extends PaymentActor
 
-  def props(peerMsgHandler: ActorRef, dbConfig: DbConfig): Props =
-    Props(classOf[PaymentActorImpl], peerMsgHandler, dbConfig)
+  def props(peerMsgHandler: ActorRef): Props =
+    Props(classOf[PaymentActorImpl], peerMsgHandler)
 
-  def apply(peerMsgHandler: ActorRef, dbConfig: DbConfig)(
+  def apply(peerMsgHandler: ActorRef)(
       implicit context: ActorRefFactory): ActorRef =
-    context.actorOf(props(peerMsgHandler, dbConfig),
+    context.actorOf(props(peerMsgHandler),
                     BitcoinSpvNodeUtil.createActorName(this.getClass))
 
   sealed trait PaymentActorMessage
