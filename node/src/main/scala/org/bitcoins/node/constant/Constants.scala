@@ -40,5 +40,5 @@ case object Constants {
     * we are currently connected to inside of the [[networkParameters]] function
     * @return
     */
-  def database: Database = ??? // dbConfig.database
+  def database: Database = appConfig.database
 }
