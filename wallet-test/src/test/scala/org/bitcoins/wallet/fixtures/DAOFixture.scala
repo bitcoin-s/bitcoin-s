@@ -17,7 +17,7 @@ private[fixtures] trait DAOFixture
   private[fixtures] val daoAccumulator =
     Vector.newBuilder[HasTable]
 
-  override protected def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     val tables = daoAccumulator.result()
 
     val dropTablesF =
