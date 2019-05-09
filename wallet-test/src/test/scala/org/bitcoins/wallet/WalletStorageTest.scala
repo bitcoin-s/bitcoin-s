@@ -30,8 +30,10 @@ class WalletStorageTest
   override def beforeEach(): Unit = {
     Files
       .walk(datadir)
-      .filter(_ != datadir)
-      .forEach(Files.delete(_))
+      .iterator()
+      .asScala
+      .filter((p: Path) => p != datadir)
+      .foreach(Files.delete(_))
   }
 
   behavior of "WalletStorage"

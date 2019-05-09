@@ -7,6 +7,7 @@ import org.bitcoins.wallet.api.UnlockWalletError.BadPassword
 import org.bitcoins.wallet.api.UnlockWalletError.JsonParsingError
 import org.bitcoins.wallet.api.UnlockWalletSuccess
 import org.bitcoins.core.crypto.AesPassword
+import org.bitcoins.wallet.api.UnlockWalletError.MnemonicNotFound
 
 class WalletUnitTest extends BitcoinSWalletTest {
 
@@ -46,6 +47,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     val passphrase = wallet.passphrase
     val locked = wallet.lock()
     val unlocked = wallet.unlock(passphrase) match {
+      case MnemonicNotFound                       => fail(MnemonicNotFound)
       case BadPassword                            => fail(BadPassword)
       case JsonParsingError(message)              => fail(message)
       case UnlockWalletSuccess(unlockedWalletApi) => unlockedWalletApi
@@ -59,6 +61,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       val badpassphrase = AesPassword("bad")
       val locked = wallet.lock()
       wallet.unlock(badpassphrase) match {
+        case MnemonicNotFound          => fail(MnemonicNotFound)
         case BadPassword               => succeed
         case JsonParsingError(message) => fail(message)
         case UnlockWalletSuccess(_) =>

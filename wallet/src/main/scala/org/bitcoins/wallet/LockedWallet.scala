@@ -57,6 +57,9 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       case JsonParsingError(message) =>
         logger.error(s"JSON parsing error when unlocking wallet: $message")
         UnlockWalletError.JsonParsingError(message)
+      case ReadMnemonicError.NotFoundError =>
+        logger.error(s"Encrypted mnemonic not found when unlocking the wallet!")
+        UnlockWalletError.MnemonicNotFound
 
       case ReadMnemonicSuccess(mnemonic) =>
         logger.debug(s"Successfully uunlocked wallet")

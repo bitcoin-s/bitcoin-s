@@ -45,7 +45,7 @@ object WalletStorage extends BitcoinSLogger {
       Obj(
         IV -> encrypted.iv.toHex,
         CIPHER_TEXT -> encrypted.cipherText.toHex,
-        SALT -> encrypted.salt.value.toHex,
+        SALT -> encrypted.salt.value.toHex
       )
     }
 
@@ -108,22 +108,29 @@ object WalletStorage extends BitcoinSLogger {
       config.datadir.resolve(ENCRYPTED_SEED_FILE_NAME)
     }
 
-    val rawJson = Files.readAllLines(path).asScala.mkString("\n")
-    logger.debug(s"Read raw encrypted mnemonic from $path")
+    val jsonE: Either[ReadMnemonicError, Value] = {
+      if (Files.isRegularFile(path)) {
+        val rawJson = Files.readAllLines(path).asScala.mkString("\n")
+        logger.debug(s"Read raw encrypted mnemonic from $path")
 
-    val jsonE: Either[ReadMnemonicError, Value] = Try {
-      read(rawJson)
-    } match {
-      case Failure(ParseException(clue, _, _, _)) =>
-        Left(ReadMnemonicError.JsonParsingError(clue))
-      case Failure(exception) => throw exception
+        Try {
+          read(rawJson)
+        } match {
+          case Failure(ParseException(clue, _, _, _)) =>
+            Left(ReadMnemonicError.JsonParsingError(clue))
+          case Failure(exception) => throw exception
 
-      case Success(value) =>
-        logger.debug(s"Parsed $path into valid json")
-        Right(value)
+          case Success(value) =>
+            logger.debug(s"Parsed $path into valid json")
+            Right(value)
+        }
+      } else {
+        logger.error(s"Encrypted mnemonic not found at $path")
+        Left(ReadMnemonicError.NotFoundError)
+      }
     }
 
-    import org.bitcoins.core.util.EitherUtil.EitherOps
+    import org.bitcoins.core.util.EitherUtil.EitherOps._
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
@@ -173,6 +180,7 @@ object WalletStorage extends BitcoinSLogger {
       config: AppConfig): ReadMnemonicResult = {
     val encryptedEither = readEncryptedMnemonicFromDisk()
 
+    import org.bitcoins.core.util.EitherUtil.EitherOps._
     val decryptedEither: Either[ReadMnemonicError, MnemonicCode] =
       encryptedEither.flatMap { encrypted =>
         encrypted.toMnemonic(passphrase) match {
@@ -217,4 +225,7 @@ object ReadMnemonicError {
     * mnemonic into valid JSON
     */
   case class JsonParsingError(message: String) extends ReadMnemonicError
+
+  /** The encrypted mnemonic was not found on disk */
+  case object NotFoundError extends ReadMnemonicError
 }
