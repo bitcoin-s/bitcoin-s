@@ -1,10 +1,12 @@
 {
   "docs": {
-    "Docusaurus": ["doc1"],
-    "First Category": ["doc2"],
-    "Second Category": ["doc3"]
-  },
-  "docs-other": {
-    "First Category": ["doc4", "doc5"]
+    "Getting started": ["getting-started"],
+    "Core module": ["core/core-intro", "core/txbuilder"],
+    "RPC clients": [
+      "rpc/rpc-clients-intro",
+      "rpc/rpc-eclair",
+      "rpc/rpc-bitcoind"
+    ],
+    "Contributing": ["contributing", "contributing-website"]
   }
 }

@@ -13,12 +13,6 @@ addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "1.15")
 // sbt plugin to unify scaladoc/javadoc across multiple projects
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
 
-// make static site through sbt
-addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "1.3.2")
-
-// publish said site to GitHub pages
-addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.2")
-
 // ensure proper linkage across libraries in Scaladoc
 addSbtPlugin(
   "com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "latest.release")
@@ -29,3 +23,6 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.2.5")
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.2.6")
+
+// write markdown files with type-checked Scala
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "1.3.0" )

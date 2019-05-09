@@ -112,11 +112,9 @@ lazy val bitcoins = project
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
   .settings(libraryDependencies ++= Deps.root)
-  .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin, GitVersioning)
+  .enablePlugins(ScalaUnidocPlugin, GitVersioning)
   .settings(
     name := "bitcoin-s",
-    ScalaUnidoc / siteSubdirName := "latest/api",
-    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git"
   )
 
@@ -224,11 +222,14 @@ lazy val testkit = project
 
 
 lazy val doc = project
-  .in(file("doc"))
+  .in(file("myproject-docs")) // important: it must not be docs/
   .settings(commonTestSettings: _*)
   .settings(
     name := "bitcoin-s-doc",
     libraryDependencies ++= Deps.doc,
+    mdocVariables := Map(
+      "VERSION" -> version.value
+    )
   )
   .dependsOn(
     bitcoindRpc,
@@ -238,6 +239,7 @@ lazy val doc = project
     testkit,
     zmq
   )
+  .enablePlugins(MdocPlugin)
 // Ammonite is invoked through running
 // a main class it places in test sources
 // for us. This makes it a bit less awkward
@@ -253,5 +255,3 @@ addCommandAlias("amm", "test:run")
 
 publishArtifact in bitcoins := false
 
-previewSite / aggregate := false
-previewAuto / aggregate := false
