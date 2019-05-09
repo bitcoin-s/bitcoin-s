@@ -1,5 +1,3 @@
-import sbt.Credentials
-import sbt.Keys.publishTo
 import com.typesafe.sbt.SbtGit.GitKeys._
 
 import scala.util.Properties

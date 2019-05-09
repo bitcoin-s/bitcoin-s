@@ -43,9 +43,25 @@ install:
   - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar
   - export ECLAIR_PATH=$(pwd)
 
-script:
-  - sbt ++$TRAVIS_SCALA_VERSION coverage test &&
-    sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
-    sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+before_script:
+  - git fetch --tags
+
+stages:
+  - name: test
+  - name: release
+    if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
+
+
+jobs:
+  include:
+    - env: TEST="bitcoin-s test suite"
+      script:
+        sbt ++$TRAVIS_SCALA_VERSION coverage test &&
+        sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
+        sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+    # run ci-release only if previous stages passed
+    - stage: release
+      script: sbt ci-release
+
 after_success:
   - sbt ++$TRAVIS_SCALA_VERSION coveralls
