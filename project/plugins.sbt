@@ -10,10 +10,6 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
 
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "1.15")
 
-addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.4")
-
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
-
 // sbt plugin to unify scaladoc/javadoc across multiple projects
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
 
@@ -27,7 +23,9 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-ghpages" % "0.6.2")
 addSbtPlugin(
   "com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "latest.release")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
-
 // bloop is a build server, enabling faster builds and more rapid dev feedback
 addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.2.5")
+
+//tool to publish snapshots to sonatype after CI builds finish
+//https://github.com/olafurpg/sbt-ci-release
+addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.2.6")

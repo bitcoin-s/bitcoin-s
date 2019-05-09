@@ -1,5 +1,3 @@
-import sbt.Credentials
-import sbt.Keys.publishTo
 import com.typesafe.sbt.SbtGit.GitKeys._
 
 import scala.util.Properties
@@ -39,6 +37,19 @@ lazy val testCompilerOpts = commonCompilerOpts
 
 
 lazy val commonSettings = List(
+
+  organization := "org.bitcoin-s",
+  homepage := Some(url("https://bitcoin-s.org")),
+
+  developers := List(
+    Developer(
+      "christewart",
+      "Chris Stewart",
+      "stewart.chris1234@gmail.com",
+      url("https://twitter.com/Chris_Stewart_5")
+    )
+  ),
+
   scalacOptions in Compile := compilerOpts,
 
   scalacOptions in Test := testCompilerOpts,
@@ -52,46 +63,8 @@ lazy val commonSettings = List(
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
 
-  bintrayOrganization := Some("bitcoin-s"),
-
-  bintrayRepository := "bitcoin-s-core",
-
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
 
-  resolvers += Resolver.bintrayRepo("bitcoin-s", "bitcoin-s-core"),
-
-  resolvers += Resolver.jcenterRepo,
-
-  resolvers += "oss-jfrog-artifactory-snapshot" at "https://oss.jfrog.org/artifactory/oss-snapshot-local",
-
-  credentials ++= List(
-    //for snapshot publishing
-    //http://szimano.org/automatic-deployments-to-jfrog-oss-and-bintrayjcentermaven-central-via-travis-ci-from-sbt/
-    Credentials(Path.userHome / ".bintray" / ".artifactory"),
-
-    //sbt bintray plugin
-    //release publshing
-    Credentials(Path.userHome / ".bintray" / ".credentials")
-  ),
-
-
-  publishTo := {
-    //preserve the old bintray publishing stuff here
-    //we need to preserve it for the publishTo settings below
-    val bintrayPublish = publishTo.value
-    if (isSnapshot.value) {
-      Some("Artifactory Realm" at
-        "https://oss.jfrog.org/artifactory/oss-snapshot-local;build.timestamp=" + timestamp)
-    } else {
-      bintrayPublish
-    }
-  },
-  bintrayReleaseOnPublish := !isSnapshot.value,
-  //fix for https://github.com/sbt/sbt/issues/3519
-  updateOptions := updateOptions.value.withGigahorse(false),
-  git.formattedShaVersion := git.gitHeadCommit.value.map { sha =>
-    s"${sha.take(6)}-$timestamp-SNAPSHOT"
-  },
 
   /**
     * Adding Ammonite REPL to test scope, can access both test and compile
