@@ -1,3 +1,5 @@
+import sbt.Credentials
+import sbt.Keys.publishTo
 import com.typesafe.sbt.SbtGit.GitKeys._
 
 import scala.util.Properties
@@ -130,14 +132,14 @@ lazy val secp256k1jni = project
     //https://github.com/scoverage/sbt-scoverage/issues/275
     coverageEnabled := false
   )
-  .enablePlugins()
+  .enablePlugins(GitVersioning)
 
 lazy val core = project
   .in(file("core"))
   .settings(commonProdSettings: _*)
   .dependsOn(
     secp256k1jni
-  ).enablePlugins()
+  ).enablePlugins(GitVersioning)
 
 lazy val coreTest = project
   .in(file("core-test"))
@@ -157,7 +159,7 @@ lazy val zmq = project
     libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
     core
-  ).enablePlugins()
+  ).enablePlugins(GitVersioning)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -166,7 +168,7 @@ lazy val bitcoindRpc = project
     name := "bitcoin-s-bitcoind-rpc",
     libraryDependencies ++= Deps.bitcoindRpc)
   .dependsOn(core)
-  .enablePlugins()
+  .enablePlugins(GitVersioning)
 
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
@@ -189,7 +191,7 @@ lazy val bench = project
     skip in publish := true
   )
   .dependsOn(core)
-  .enablePlugins()
+  .enablePlugins(GitVersioning)
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
@@ -200,7 +202,7 @@ lazy val eclairRpc = project
   .dependsOn(
     core,
     bitcoindRpc
-  ).enablePlugins()
+  ).enablePlugins(GitVersioning)
 
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
@@ -218,7 +220,7 @@ lazy val testkit = project
     core,
     bitcoindRpc,
     eclairRpc
-  ).enablePlugins()
+  ).enablePlugins(GitVersioning)
 
 
 lazy val doc = project
