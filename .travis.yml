@@ -58,10 +58,8 @@ jobs:
       script:
         sbt ++$TRAVIS_SCALA_VERSION coverage test &&
         sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
-        sbt ++$TRAVIS_SCALA_VERSION coverageAggregate
+        sbt ++$TRAVIS_SCALA_VERSION coverageAggregate &&
+        sbt ++$TRAVIS_SCALA_VERSION coveralls
     # run ci-release only if previous stages passed
     - stage: release
       script: sbt ci-release
-
-after_success:
-  - sbt ++$TRAVIS_SCALA_VERSION coveralls
