@@ -33,29 +33,14 @@ Most data structures have companion objects that extends `Factory` to be able to
 
 Here is an example scala console session with bitcoins-core
 
-```scala
-$ sbt core/console
-[info] Loading global plugins from /home/chris/.sbt/0.13/plugins
-[info] Loading project definition from /home/chris/dev/bitcoin-s-core/project
-[info] Set current project to bitcoin-s-core (in build file:/home/chris/dev/bitcoin-s-core/)
-[info] Starting scala interpreter...
-[info]
-Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_151).
-Type in expressions to have them evaluated.
-Type :help for more information.
-
-scala> import org.bitcoins.core.protocol.transaction._
+```scala mdoc
 import org.bitcoins.core.protocol.transaction._
 
-scala> val hexTx = "0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f8$9c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1$a02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e$90c865c2f6f7a9710a474154ab1423abb5b9288ac00000000"
-hexTx: String = 0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1$52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02$45f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c$65c2f6f7a9710a474154ab1423abb5b9288ac00000000
+val hexTx = "0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f8$9c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1$a02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e$90c865c2f6f7a9710a474154ab1423abb5b9288ac00000000"
 
-scala> val tx = Transaction.fromHex(hexTx)
-tx: org.bitcoins.core.protocol.transaction.Transaction = BaseTransactionImpl(UInt32Impl(1),List(TransactionInputImpl(TransactionOutPointImpl$DoubleSha256DigestImpl(ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3),UInt32Impl(0)),P2PKHScriptSignatureImpl(6b483045022$008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf012102$1d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353),UInt32Impl(4294967295))),List(TransactionOutputImpl(SatoshisImpl(Int64Impl($9994000)),P2PKHScriptPubKeyImpl(1976a914b1d7591b69e9def0feb13254bace942923c7922d88ac)), TransactionOutputImpl(SatoshisImpl(Int64Impl(840)),P$PKHScriptPubKeyImpl(1976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac))),UInt32Impl(0))
+// val tx = Transaction.fromHex(hexTx)
 
-scala> val hexAgain = tx.hex
-hexAgain: String = 0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f88$c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1f$02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e6$0c865c2f6f7a9710a474154ab1423abb5b9288ac00000000
-
+// val hexAgain = tx.hex
 ```
 
 This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a [`Transaction`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/transaction/Transaction.scala#L14-L42). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/crypto/ECKey.scala#L23-L67), [`ScriptPubKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptPubKey.scala#L23), [`ScriptWitness`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptWitness.scala#L13), and [`Block`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/blockchain/Block.scala#L17).
@@ -70,9 +55,10 @@ can be used to generate what's called an extended private key
 
 Here's an example:
 
-```scala
+```scala mdoc:to-string
 import scodec.bits._
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.hd._
 
 // the length of the entropy bit vector determine
 // how long our phrase ends up being
@@ -109,7 +95,7 @@ SegWitHDPath(HDCoinType.Bitcoin,
              HDChainType.External,
              addressIndex = 0)
 
-segwitPath == otherSegwitPath // true
+segwitPath == otherSegwitPath
 
 // there's also paths available for legacy
 // addresses (LegacyHDPath) as well as nested
@@ -138,7 +124,10 @@ This is the API we define to sign things with. It takes in an arbitrary byte vec
 
 From [`core/src/main/scala/org/bitcoins/core/crypto/Sign.scala`](src/main/scala/org/bitcoins/core/crypto/Sign.scala):
 
-```scala
+```scala mdoc
+import scala.concurrent._
+import scala.concurrent.duration._
+
 trait Sign {
   def signFunction: ByteVector => Future[ECDigitalSignature]
 
@@ -175,36 +164,29 @@ Transactions are run through the interpreter to check their validity. These are 
 
 Here is an example of a transaction spending a `scriptPubKey` which is correctly evaluated with our interpreter implementation:
 
-```scala
-chris@chris:~/dev/bitcoins-core$ sbt core/console
+```scala mdoc:silent
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script._
+import org.bitcoins.core.script.interpreter._
+import org.bitcoins.core.policy._
+import org.bitcoins.core.number._
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency._
 
-scala> import org.bitcoins.core.protocol.script._
-scala> import org.bitcoins.core.protocol.transaction._
-scala> import org.bitcoins.core.script._
-scala> import org.bitcoins.core.script.interpreter._
-scala> import org.bitcoins.core.policy._
-scala> import org.bitcoins.core.number._
-scala> import org.bitcoins.core.crypto._
-scala> import org.bitcoins.core.currency._
+val spendingTx = Transaction.fromHex("0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac00000000")
 
-scala> val spendingTx = Transaction.fromHex("0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac00000000")
-spendingTx: org.bitcoins.core.protocol.transaction.Transaction = ... // omitted for brevity
+val scriptPubKey = ScriptPubKey.fromAsmHex("76a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac")
 
-scala> val scriptPubKey = ScriptPubKey.fromAsmHex("76a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac")
-scriptPubKey: org.bitcoins.core.protocol.script.ScriptPubKey = P2PKHScriptPubKeyImpl(1976a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac)
+val output = TransactionOutput(CurrencyUnits.zero, scriptPubKey)
 
-scala> val output = TransactionOutput(CurrencyUnits.zero, scriptPubKey)
-output: org.bitcoins.core.protocol.transaction.TransactionOutput = ... // omitted for brevity
+val inputIndex = UInt32.zero
 
-scala> val inputIndex = UInt32.zero
-inputIndex: org.bitcoins.core.number.UInt32 = UInt32Impl(0)
+val btxsc = BaseTxSigComponent(spendingTx,inputIndex,output,Policy.standardScriptVerifyFlags)
 
-scala> val btxsc = BaseTxSigComponent(spendingTx,inputIndex,output,Policy.standardScriptVerifyFlags)
-btxsc: org.bitcoins.core.crypto.BaseTxSigComponent = ... // omitted for brevity
+val preExecution = PreExecutionScriptProgram(btxsc)
+```
 
-scala> val preExecution = PreExecutionScriptProgram(btxsc)
-preExecution: org.bitcoins.core.script.PreExecutionScriptProgram = ... // omitted for brevity
-
-scala> val result = ScriptInterpreter.run(preExecution)
-result: org.bitcoins.core.script.result.ScriptResult = ScriptOk
+```scala mdoc
+val result = ScriptInterpreter.run(preExecution)
 ```

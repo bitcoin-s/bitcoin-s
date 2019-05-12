@@ -33,17 +33,17 @@ instructions for your build tool
 Add this to your `build.sbt`:
 
 ```scala
-libraryDependencies +="org.bitcoins" % "bitcoin-s-secp256k1jni" % "0.0.4"
+libraryDependencies +="org.bitcoins" % "bitcoin-s-secp256k1jni" % "@VERSION@"
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-core" % "0.0.4" withSources() withJavadoc()
+libraryDependencies += "org.bitcoins" %% "bitcoin-s-core" % "@VERSION@" withSources() withJavadoc()
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-bitcoind-rpc" % "0.0.4" withSources() withJavadoc()
+libraryDependencies += "org.bitcoins" %% "bitcoin-s-bitcoind-rpc" % "@VERSION@" withSources() withJavadoc()
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-eclair-rpc" % "0.0.4" withSources() withJavadoc()
+libraryDependencies += "org.bitcoins" %% "bitcoin-s-eclair-rpc" % "@VERSION@" withSources() withJavadoc()
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-testkit" % "0.0.4" withSources() withJavadoc()
+libraryDependencies += "org.bitcoins" %% "bitcoin-s-testkit" % "@VERSION@" withSources() withJavadoc()
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-zmq" % "0.0.4" withSources() withJavadoc()
+libraryDependencies += "org.bitcoins" %% "bitcoin-s-zmq" % "@VERSION@" withSources() withJavadoc()
 ```
 
 ### Mill

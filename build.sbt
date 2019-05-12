@@ -222,10 +222,12 @@ lazy val testkit = project
 
 
 lazy val doc = project
-  .in(file("myproject-docs")) // important: it must not be docs/
+  .in(file("bitcoin-s-docs")) // important: it must not be docs/
   .settings(commonTestSettings: _*)
   .settings(
-    name := "bitcoin-s-doc",
+    // come back to visit this setting later
+    mdocExtraArguments := List("--no-link-hygiene"),
+    name := "bitcoin-s-docs",
     libraryDependencies ++= Deps.doc,
     mdocVariables := Map(
       "VERSION" -> version.value
@@ -239,7 +241,7 @@ lazy val doc = project
     testkit,
     zmq
   )
-  .enablePlugins(MdocPlugin)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin)
 // Ammonite is invoked through running
 // a main class it places in test sources
 // for us. This makes it a bit less awkward

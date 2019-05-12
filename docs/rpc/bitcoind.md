@@ -10,12 +10,17 @@ version lines. It can be set up to work with both local and remote Bitcoin Core 
 
 ## Connecting to a local `bitcoind` instance
 
-```scala
+```scala mdoc:compile-only
+import scala.concurrent._
+import akka.actor.ActorSystem
+
 import org.bitcoins.{rpc, core}
-import core.currency._
+import core.currency.Bitcoins
 import rpc.client.common._
 import rpc.config.BitcoindInstance
-import akka.actor.ActorSystem
+
+implicit val actorSystem: ActorSystem = ActorSystem.create()
+implicit val ec: ExecutionContext = actorSystem.dispatcher
 
 // data directory defaults to ~/.bitcoin on Linux and
 // ~/Library/Application Support/Bitcoin on macOS
@@ -26,7 +31,6 @@ import java.io.File
 val dataDir = new File("/my/bitcoin/data/dir")
 val otherInstance = BitcoindInstance.fromDatadir(dataDir)
 
-implicit val actorSystem: ActorSystem = ActorSystem.create()
 
 val client = new BitcoindRpcClient(bitcoindInstance)
 
@@ -38,25 +42,28 @@ val balance: Future[Bitcoins] = for {
 
 ## Connecting to a remote `bitcoind`
 
-First, we create a secure connection to our `bitcoind` instance by setting 
+First, we create a secure connection to our `bitcoind` instance by setting
 up a SSH tunnel:
 
 ```bash
-$ ssh -L 8332:localhost:8332 my-cool-user@my-cool-website.com
+$ ssh -L 8332:localhost:8332  \
+         my-cool-user@my-cool-website.com
 ```
 
-> Note: the port number '8332' is the default for mainnet. If you want to 
+> Note: the port number '8332' is the default for mainnet. If you want to
 > connect to a testnet `bitcoind`, the default port is '18332'
 
-Now that we have a secure connection between our remote `bitcoind`, we're 
+Now that we have a secure connection between our remote `bitcoind`, we're
 ready to create the connection with our RPC client
 
-```scala
+```scala mdoc:compile-only
 import akka.actor.ActorSystem
+import java.net.URI
+import scala.concurrent._
+
 import org.bitcoins.core.config._
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.client.common._
-import java.net.URI
 
 val username = "FILL_ME_IN" //this username comes from 'rpcuser' in your bitcoin.conf file
 val password = "FILL_ME_IN" //this password comes from your 'rpcpassword' in your bitcoin.conf file
