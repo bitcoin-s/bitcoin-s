@@ -116,6 +116,7 @@ lazy val bitcoins = project
     // website directory afterwards
     Compile / unidoc := {
       import java.nio.file._
+      import scala.collection.JavaConverters._
       val logger = streams.value.log
 
       def cleanPath(path: Path, isRoot: Boolean = true): Unit = {
@@ -146,12 +147,24 @@ lazy val bitcoins = project
       val generatedDir = (Compile / unidoc).value.head
 
       logger.info(s"Moving files in $generatedDir to $websiteScaladocDir")
-      val listed = generatedDir.list()
-      for (file <- generatedDir.list()) {
-        val toMove = Paths.get(generatedDir.toString, file)
-        val destination = websiteScaladocDir.resolve(file)
-        val moved =
-          Files.copy(toMove, destination, StandardCopyOption.REPLACE_EXISTING)
+
+      try {
+        Files
+          .walk(generatedDir.toPath)
+          .iterator()
+          .asScala
+          .drop(1) // skip the root directory
+          .foreach { child =>
+            val pathDiff = generatedDir.toPath.relativize(child)
+            Files.copy(child,
+                       websiteScaladocDir.resolve(pathDiff),
+                       StandardCopyOption.REPLACE_EXISTING)
+          }
+      } catch {
+        case e: Throwable =>
+          logger.err(
+            "Error when copying Scaladocs to website folder: ${e.toString}")
+          throw e
       }
       Seq(generatedDir)
     }
