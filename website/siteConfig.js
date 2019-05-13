@@ -39,11 +39,12 @@ const users = [
   }
 ];
 
+const baseUrl = "/";
 const siteConfig = {
   title: "bitcoin-s", // Title for your website.
   tagline: "Bitcoin implementation in Scala",
   url: "https://bitcoin-s.org", // Your website URL
-  baseUrl: "/", // Base URL for your project */
+  baseUrl, // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
   //   url: 'https://facebook.github.io',
   //   baseUrl: '/test-site/',
@@ -62,8 +63,7 @@ const siteConfig = {
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     { doc: "core/core-intro", label: "Docs" },
-    // TODO: would be nice to have Scaladoc here
-    // { doc: "doc4", label: "API" },
+    { href: baseUrl + "api", label: "API" },
     { page: "help", label: "Help" },
     { blog: true, label: "Blog" }
   ],

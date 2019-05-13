@@ -15,6 +15,40 @@ objects and functions. Here are some useful resources on how to properly format 
 
 - [Scaladoc for library authors](https://docs.scala-lang.org/overviews/scaladoc/for-library-authors.html)
 - [Guidelines](https://docs.scala-lang.org/style/scaladoc.html) used by the official Scala language Scaladoc
+- [Alvin Alexander guide](https://alvinalexander.com/scala/how-to-generate-scala-documentation-scaladoc-command-examples) on writing Scaladoc
+
+To generate Scaladocs:
+
+````bash
+$ sbt
+> unidoc
+```
+
+This gets placed in `website/static/api`. When viewing the Docusaurus site the generated Scaladocs
+appear under the API tab in the header bar,
+or in the "API reference" link in the footer.
+
+## `mdoc`
+
+Compile Markdown files incrementally on save, view at `http://localhost:4000`:
+
+```bash
+$ sbt
+> doc/mdoc --watch
+````
+
+Build Docusaurus site, ends up in `website/build/bitcoin-s`:
+
+```bash
+$ sbt
+> doc/docusaurusCreateSite
+```
+
+Assuming you have installed [`serve`](https://www.npmjs.com/package/serve), this lets you see the complete site:
+
+```bash
+$ serve website/build/bitcoin-s
+```
 
 ## Running the site locally
 
