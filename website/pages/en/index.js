@@ -99,7 +99,7 @@ class Index extends React.Component {
     const Hero = ({ siteConfig }) => (
       <div className="hero">
         <div className="hero__container">
-          <Logo img_src={`${siteConfig.baseUrl}img/bitcoin-s-logo.png`} />
+          <Logo img_src={`${siteConfig.baseUrl}img/bitcoin-s-logo.svg`} />
           <h1>{siteConfig.tagline}</h1>
           <Button href={docUrl("getting-started")}>Get started</Button>
         </div>
