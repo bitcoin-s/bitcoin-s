@@ -19,26 +19,6 @@ const Logo = props => (
   </div>
 );
 
-// cribbed from Bloop site, https://github.com/scalacenter/bloop/blob/6b5384241d1bba4143315e66f668876d65a2e34f/website/pages/en/index.js#L92
-const Hero = ({ siteConfig }) => (
-  <div className="hero">
-    <div className="hero__container">
-      <Logo img_src={`${siteConfig.baseUrl}img/bitcoin-s-logo.png`} />
-      <h1>{siteConfig.tagline}</h1>
-      <p style={{ margin: "1rem 0 1.5rem 0" }}>lorem ipsum</p>
-      <a
-        className="github-button"
-        href={siteConfig.repoUrl}
-        data-size="large"
-        data-show-count="true"
-        aria-label="Star bitcoin-s/bitcoin-s on GitHub"
-      >
-        Star
-      </a>
-    </div>
-  </div>
-);
-
 class HomeSplash extends React.Component {
   render() {
     const { siteConfig, language = "" } = this.props;
@@ -69,14 +49,6 @@ class HomeSplash extends React.Component {
       </div>
     );
 
-    const Button = props => (
-      <div className="pluginWrapper buttonWrapper">
-        <a className="button" href={props.href} target={props.target}>
-          {props.children}
-        </a>
-      </div>
-    );
-
     return (
       <SplashContainer>
         <div className="inner">
@@ -96,7 +68,10 @@ class HomeSplash extends React.Component {
 class Index extends React.Component {
   render() {
     const { config: siteConfig, language = "" } = this.props;
-    const { baseUrl } = siteConfig;
+    const { baseUrl, docsUrl } = siteConfig;
+    const docsPart = `${docsUrl ? `${docsUrl}/` : ""}`;
+    const langPart = `${language ? `${language}/` : ""}`;
+    const docUrl = doc => `${baseUrl}${docsPart}${langPart}${doc}`;
 
     const Block = props => (
       <Container
@@ -110,6 +85,25 @@ class Index extends React.Component {
           layout={props.layout}
         />
       </Container>
+    );
+
+    const Button = props => (
+      <div style={props.style} className="pluginWrapper buttonWrapper">
+        <a className="dark-button" href={props.href} target={props.target}>
+          {props.children}
+        </a>
+      </div>
+    );
+
+    // cribbed from Bloop site, https://github.com/scalacenter/bloop/blob/6b5384241d1bba4143315e66f668876d65a2e34f/website/pages/en/index.js#L92
+    const Hero = ({ siteConfig }) => (
+      <div className="hero">
+        <div className="hero__container">
+          <Logo img_src={`${siteConfig.baseUrl}img/bitcoin-s-logo.png`} />
+          <h1>{siteConfig.tagline}</h1>
+          <Button href={docUrl("getting-started")}>Get started</Button>
+        </div>
+      </div>
     );
 
     const FeatureCallout = () => (

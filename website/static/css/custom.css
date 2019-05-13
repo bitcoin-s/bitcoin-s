@@ -20,6 +20,24 @@
   justify-content: space-between;
 }
 
+.dark-button {
+  border: 1px solid white;
+  border-radius: 3px;
+  color: white;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2em;
+  padding: 10px;
+  text-decoration: none !important;
+  text-transform: uppercase;
+  transition: background 0.3s, color 0.3s;
+}
+.dark-button:hover {
+  background-color: $secondaryColor;
+  color: white;
+}
+
 /* begin crib section from Bloop https://github.com/scalacenter/bloop/blob/d73e247b353a9a0df4a95528095811da391c4a12/website/static/css/index.css#L126 */
 .hero {
   background: $primaryColor;
