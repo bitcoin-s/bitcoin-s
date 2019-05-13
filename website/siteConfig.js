@@ -78,8 +78,8 @@ const siteConfig = {
 
   /* Colors for website */
   colors: {
-    primaryColor: "#86402d",
-    secondaryColor: "#725b75"
+    primaryColor: "#1f7a8c", // teal
+    secondaryColor: "#bfdbf7" // light-ish blue
   },
 
   /* Custom fonts for website */
@@ -122,8 +122,22 @@ const siteConfig = {
   // Show documentation's last update time.
   enableUpdateTime: true,
 
+  // don't use Docusarus CSS for Scaladocs,
+  // and don't let Scaladoc CSS influence
+  // Docusaurus
+  separateCss: ["api"],
+
+  // mdoc writes docs to this directory
+  customDocsPath: "bitcoin-s-docs/target/mdoc",
+
+  ////////////////////
+  // custom keys begin
   repoUrl: "https://github.com/bitcoin-s/bitcoin-s-core",
-  customDocsPath: "bitcoin-s-docs/target/mdoc"
+  suredbitsSlack:
+    "https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM",
+  gitterUrl: "https://gitter.im/bitcoin-s-core/"
+  // custom keys end
+  //////////////////
 };
 
 module.exports = siteConfig;

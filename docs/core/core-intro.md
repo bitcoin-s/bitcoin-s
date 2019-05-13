@@ -11,21 +11,21 @@ testing heavily in this library to ensure high quality of code.
 
 ## The basics
 
-Every bitcoin protocol data structure (and some other data structures) extends [`NetworkElement`](src/main/scala/org/bitcoins/core/protocol/NetworkElement.scala). `NetworkElement` provides methods to convert the data structure to hex or byte representation. When paired with [`Factory`](src/main/scala/org/bitcoins/core/util/Factory.scala) we can easily serialize and deserialize data structures.
+Every bitcoin protocol data structure (and some other data structures) extends [`NetworkElement`](/api/org/bitcoins/core/protocol/NetworkElement). `NetworkElement` provides methods to convert the data structure to hex or byte representation. When paired with [`Factory`](/api/org/bitcoins/core/util/Factory) we can easily serialize and deserialize data structures.
 
-Most data structures have companion objects that extends `Factory` to be able to easily create protocol data structures. An example of this is the [`ScriptPubKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/1c7a7b9f46679a753248d9f55246c272bb3d63b9/src/main/scala/org/bitcoins/core/protocol/script/ScriptPubKey.scala#L462) companion object. You can use this companion object to create a `ScriptPubKey` from a hex string or a byte array.
+Most data structures have companion objects that extends `Factory` to be able to easily create protocol data structures. An example of this is the [`ScriptPubKey`](/api/org/bitcoins/core/protocol/script/ScriptPubKey) companion object. You can use this companion object to create a `ScriptPubKey` from a hex string or a byte array.
 
 ## Main modules in `core`
 
-1. [`protocol`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/protocol) - basic protocol data structures. Useful for serializing/deserializing things
-1. [`crypto`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/crypto) - cryptograhic functionality used in Bitcoin and Lightning
-1. [`script`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/script) - an implementation of [Script](https://en.bitcoin.it/wiki/Script) - the programming language in Bitcoin
-1. [`wallet`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/wallet) - implements signing logic for Bitcoin transactions. This module is not named well as there is **NO** functionality to persist wallet state to disk as it stands. This will most likely be renamed in the future.
-1. [`config`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/config) - Contains information about a chain's genesis block and DNS seeds
-1. [`number`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/number) - Implements number types that are native in C, i.e. `UInt8`, `UInt32`, `UInt64`, etc.
-1. [`currency`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/currency) - Implements currency units in the Bitcoin protocol
-1. [`bloom`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/bloom) - Implements [Bloom filters](https://en.wikipedia.org/wiki/Bloom_filter) and [merkle blocks](https://bitcoin.org/en/glossary/merkle-block) needed for [BIP37](https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki)
-1. [`hd`](https://github.com/bitcoin-s/bitcoin-s-core/tree/master/core/src/main/scala/org/bitcoins/core/hd) - Contains implementations of hierarchical deterministic (HD) paths, that when combined with `ExtPrivKey` and `ExtPubKey` in `crypto` can implement BIP32, BIP44, BIP49 and BIP84.
+1. [`protocol`](/api/org/bitcoins/core/protocol) - basic protocol data structures. Useful for serializing/deserializing things
+1. [`crypto`](/api/org/bitcoins/core/crypto) - cryptograhic functionality used in Bitcoin and Lightning
+1. [`script`](/api/org/bitcoins/core/script) - an implementation of [Script](https://en.bitcoin.it/wiki/Script) - the programming language in Bitcoin
+1. [`wallet`](/api/org/bitcoins/core/wallet) - implements signing logic for Bitcoin transactions. This module is not named well as there is **NO** functionality to persist wallet state to disk as it stands. This will most likely be renamed in the future.
+1. [`config`](/api/org/bitcoins/core/config) - Contains information about a chain's genesis block and DNS seeds
+1. [`number`](/api/org/bitcoins/core/number) - Implements number types that are native in C, i.e. `UInt8`, `UInt32`, `UInt64`, etc.
+1. [`currency`](/api/org/bitcoins/core/currency) - Implements currency units in the Bitcoin protocol
+1. [`bloom`](/api/org/bitcoins/core/bloom) - Implements [Bloom filters](https://en.wikipedia.org/wiki/Bloom_filter) and [merkle blocks](https://bitcoin.org/en/glossary/merkle-block) needed for [BIP37](https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki)
+1. [`hd`](/api/org/bitcoins/core/hd) - Contains implementations of hierarchical deterministic (HD) paths, that when combined with `ExtPrivKey` and `ExtPubKey` in `crypto` can implement BIP32, BIP44, BIP49 and BIP84.
 
 ## Examples
 
@@ -43,7 +43,7 @@ val hexTx = "0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f924
 // val hexAgain = tx.hex
 ```
 
-This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a [`Transaction`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/transaction/Transaction.scala#L14-L42). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/crypto/ECKey.scala#L23-L67), [`ScriptPubKey`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptPubKey.scala#L23), [`ScriptWitness`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/script/ScriptWitness.scala#L13), and [`Block`](https://github.com/bitcoin-s/bitcoin-s-core/blob/6358eb83067909771f989d615b422759222d060a/src/main/scala/org/bitcoins/core/protocol/blockchain/Block.scala#L17).
+This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a [`Transaction`](/api/org/bitcoins/core/protocol/transaction/Transaction). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](/api/org/bitcoins/core/crypto/ECPrivateKey), [`ScriptPubKey`](/api/org/bitcoins/core/protocol/script/ScriptPubKey), [`ScriptWitness`](/api/org/bitcoins/core/protocol/script/ScriptWitness), and [`Block`](/api/org/bitcoins/core/protocol/blockchain/Block).
 
 #### Generating a BIP39 mnemonic phrase and an `xpriv`
 
@@ -51,7 +51,7 @@ BIP39 mnemonic phrases are the most common way of creating backups of wallets.
 They are between 12 and 24 words the user writes down, and can later be used to restore
 their bitcoins. From the mnemonic phrase we generate a wallet seed, and that seed
 can be used to generate what's called an extended private key
-([`ExtPrivateKey`](src/main/scala/org/bitcoins/core/crypto/ExtKey.scala) in Bitcoin-S).
+([`ExtPrivateKey`](/api/org/bitcoins/core/crypto/ExtPrivateKey) in Bitcoin-S).
 
 Here's an example:
 
@@ -104,25 +104,25 @@ segwitPath == otherSegwitPath
 
 ### Building a signed transaction
 
-Bitcoin Core supports building unsigned transactions and then signing them with a set of private keys. The first important thing to look at is [`UTXOSpendingInfo`](src/main/scala/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo.scala). This contains all of the information needed to create a validly signed [`ScriptSignature`](src/main/scala/org/bitcoins/core/protocol/script/ScriptSignature.scala) that spends this output.
+Bitcoin Core supports building unsigned transactions and then signing them with a set of private keys. The first important thing to look at is [`UTXOSpendingInfo`](/api/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo). This contains all of the information needed to create a validly signed [`ScriptSignature`](/api/org/bitcoins/core/protocol/script/ScriptSignature) that spends this output.
 
-Our [`TxBuilder`](src/main/scala/org/bitcoins/core/wallet/builder/TxBuilder.scala) class requires you to provide the following:
+Our [`TxBuilder`](/api/org/bitcoins/core/wallet/builder/TxBuilder) class requires you to provide the following:
 
-1. `destinations` - the places we are sending bitcoin to. These are [TransactionOutputs](src/main/scala/org/bitcoins/core/protocol/transaction/TransactionOutput.scala) you are sending coins too
-2. `utxos` - these are the [UTXOs](src/main/scala/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo.scala) used to fund your transaction. These must exist in your wallet, and you must know how to spend them (i.e. have the private key)
+1. `destinations` - the places we are sending bitcoin to. These are [TransactionOutputs](/api/org/bitcoins/core/protocol/transaction/TransactionOutput) you are sending coins too
+2. `utxos` - these are the [UTXOs](/api/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo) used to fund your transaction. These must exist in your wallet, and you must know how to spend them (i.e. have the private key)
 3. `feeRate` - the fee rate you want to pay for this transaction
 4. `changeSPK` - where the change (i.e. `creditingAmount - destinationAmount - fee`) from the transaction will be sent
-5. `network` - the [`Network`](src/main/scala/org/bitcoins/core/config/NetworkParameters.scala) we are transacting on
+5. `network` - the network(/api/org/bitcoins/core/config/NetworkParameters) we are transacting on
 
 After providing this information, you can generate a validly signed bitcoin transaction by calling the `sign` method.
 
 To see a complete example of this, see [our `TxBuilder` example](txbuilder.md)
 
-### The [`Sign` API](src/main/scala/org/bitcoins/core/crypto/Sign.scala)
+### The [`Sign` API](/api/org/bitcoins/core/crypto/Sign)
 
 This is the API we define to sign things with. It takes in an arbitrary byte vector and returns a `Future[ECDigitalSignature]`. The reason we incorporate `Future`s here is for extensibility of this API. We would like to provide implementations of this API for hardware devices, which need to be asynchrnous since they may require user input.
 
-From [`core/src/main/scala/org/bitcoins/core/crypto/Sign.scala`](src/main/scala/org/bitcoins/core/crypto/Sign.scala):
+From [`core/src/main/scala/org/bitcoins/core/crypto/Sign.scala`](/api/org/bitcoins/core/crypto/Sign):
 
 ```scala mdoc
 import scala.concurrent._
@@ -143,15 +143,11 @@ trait Sign {
 
 ```
 
-The `ByteVector` that is input to the `signFunction` should be the hash that is output from [`TransactionSignatureSerializer`](src/main/scala/org/bitcoins/core/crypto/TransactionSignatureSerializer.scala)'s `hashForSignature` method. Our in-memory [`ECKey`](src/main/scala/org/bitcoins/core/crypto/ECKey.scala) types implement the `Sign` API.
+The `ByteVector` that is input to the `signFunction` should be the hash that is output from [`TransactionSignatureSerializer`](/api/org/bitcoins/core/crypto/TransactionSignatureSerializer)'s `hashForSignature` method. Our in-memory [`ECKey`](/api/org/bitcoins/core/crypto/ECKey) types implement the `Sign` API.
 
 If you wanted to implement a new `Sign` api for a hardware wallet, you can easily pass it into the `TxBuilder`/`Signer` classes to allow for you to use those devices to sign with Bitcoin-S.
 
-This API is currently used to sign ordinary transactions with our [`Signer`](src/main/scala/org/bitcoins/core/wallet/signer/Signer.scala)s. The `Signer` subtypes (i.e. `P2PKHSigner`) implement the specific functionality needed to produce a valid digital signature for their corresponding script type.
-
-#### Complete `TxBuilder` example
-
-For an example of how to use the `TxBuilder` please see [`TxBuilderExample.scala`](../doc/src/test/scala/TxBuilderExample.scala).
+This API is currently used to sign ordinary transactions with our [`Signer`](/api/org/bitcoins/core/wallet/signer/Signer)s. The `Signer` subtypes (i.e. `P2PKHSigner`) implement the specific functionality needed to produce a valid digital signature for their corresponding script type.
 
 ### Verifying a transaction's script is valid (does not check if UTXO is valid)
 

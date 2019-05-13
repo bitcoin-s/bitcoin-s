@@ -21,18 +21,29 @@ function Help(props) {
 
   const supportLinks = [
     {
-      content: `Learn more using the [documentation on this site.](${docUrl(
+      content: `Read the [guides and docs on this site.](${docUrl(
         "core/core-intro"
       )})`,
       title: "Browse Docs"
     },
     {
-      content: "Ask questions about the documentation and project",
-      title: "Join the community"
+      content: `Explore the [Scaladocs](${siteConfig.baseUrl +
+        "api"}) for the complete guide to how Bitcoin-S work`,
+      title: "Browse API reference"
     },
     {
-      content: "Find out what's new with this project",
-      title: "Stay up to date"
+      content: [
+        "If you have any questions about either the documentation or",
+        "Bitcoin-S itself, the easiest way to get in touch with the",
+        `developers is the \`#bitcoin-s\` channel in the [Suredbits Slack](${
+          siteConfig.suredbitsSlack
+        }).`,
+        `There's also a [Gitter room](${
+          siteConfig.gitterUrl
+        }) you can join, although there's less`,
+        "activity there."
+      ].join(" "),
+      title: "Join the community"
     }
   ];
 
@@ -43,7 +54,14 @@ function Help(props) {
           <header className="postHeader">
             <h1>Need help?</h1>
           </header>
-          <p>This project is maintained by a dedicated group of people.</p>
+          <img
+            style={{
+              maxWidth: "50%",
+              // center the image
+              margin: "0 25%"
+            }}
+            src={baseUrl + "img/undraw_questions_75e0.svg"}
+          />
           <GridBlock contents={supportLinks} layout="threeColumn" />
         </div>
       </Container>

@@ -51,13 +51,13 @@ class Footer extends React.Component {
               User Showcase
             </a>
             <a
-              href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM"
+              href={this.props.config.suredbitsSlack}
               target="_blank"
               rel="noreferrer noopener"
             >
               Slack
             </a>
-            <a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a>
+            <a href={this.props.config.gitterUrl}>Gitter chat</a>
           </div>
           <div>
             <h5>More</h5>

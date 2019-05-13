@@ -73,7 +73,11 @@ Your editor should now be much faster and require less resources :tada:
 
 ### Property based testing
 
-This library aims to achieve high level of correctness via property based testing. At the simplest level, you can think of property based testing as specifying a invariant that must always hold true. [Here](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17) is an example of a property in the bitcoin-s-core test suite
+This library aims to achieve high level of correctness via property based
+testing. At the simplest level, you can think of property based testing as
+specifying a invariant that must always hold true.
+[Here](https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17)
+is an example of a property in the bitcoin-s-core test suite
 
 ```scala
   property("Serialization symmetry") =
@@ -82,9 +86,24 @@ This library aims to achieve high level of correctness via property based testin
   }
 ```
 
-What this property says is that for every transaction we can generate with [`TransactionGenerators.transactions`](testkit/src/main/scala/org/bitcoins/core/gen/TransactionGenerators.scala) we _must_ be able to serialize it to hex format, then deserialize it back to a transaction and get the original `tx` back.
+What this property says is that for every transaction we can generate with
+[`TransactionGenerators.transactions`](/api/org/bitcoins/core/gen/TransactionGenerators)
+we _must_ be able to serialize it to hex format, then deserialize it back
+to a transaction and get the original `tx` back.
 
-A more complex example of property based testing is checking that a multi signature transaction was signed correctly (see [`TransactionSignatureCreatorSpec`](core-test/src/test/scala/org/bitcoins/core/crypto/TransactionSignatureCreatorSpec.scala) line 29-34). First we generate a _supposedly_ validly signed multisig transaction with [`TransactionGenerators.signedMultiSigTransaction`](testkit/src/main/scala/org/bitcoins/core/gen/TransactionGenerators.scala) (line 102-108). These transactions have varying `m` of `n` requirements. An interesting corner case if when you have 0 of `n` signatures, which means no signature is required. Property based testing is really good at fleshing out these corner cases. We check to see if this transaction is valid by running it through our [`ScriptInterpreter`](core/src/main/scala/org/bitcoins/core/script/interpreter/ScriptInterpreter.scala). If we have built our functionality correctly the ScriptInterpreter should always return [`ScriptOk`](core/src/main/scala/org/bitcoins/core/script/result/ScriptResult.scala) indicating the script was valid.
+A more complex example of property based testing is checking that a
+multisignature transaction was signed correctly (see
+[`TransactionSignatureCreatorSpec`](core-test/src/test/scala/org/bitcoins/core/crypto/TransactionSignatureCreatorSpec.scala)
+line 29-34). First we generate a _supposedly_ validly signed multisig
+transaction with [`TransactionGenerators.signedMultiSigTransaction`](/api/org/bitcoins/testkit/core/gen/TransactionGenerators)
+(line 102-108). These transactions have varying `m` of `n` requirements.
+An interesting corner case if when you have 0 of `n` signatures, which
+means no signature is required. Property based testing is really good at
+fleshing out these corner cases. We check to see if this transaction is
+valid by running it through our [`ScriptInterpreter`](/api/org/bitcoins/core/script/interpreter/ScriptInterpreter).
+If we have built our functionality correctly the `ScriptInterpreter` should
+always return [`ScriptOk`](/api/org/bitcoins/core/script/result/ScriptResult)
+indicating the script was valid.
 
 ```scala
   property("generate valid signatures for a multisignature transaction") =
@@ -138,4 +157,5 @@ The command `sbt testQuick` can also be handy. It runs tests that either:
 2. Has not been run previously
 3. Either the test or one of its dependencies has been recompiled
 
-For more information on `testQuick`, see the offical [sbt docs](https://www.scala-sbt.org/1.x/docs/Testing.html#testQuick).
+For more information on `testQuick`, see the offical
+[sbt docs](https://www.scala-sbt.org/1.x/docs/Testing.html#testQuick).

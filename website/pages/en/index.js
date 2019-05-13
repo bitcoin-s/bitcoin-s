@@ -134,7 +134,7 @@ class Index extends React.Component {
               "With Bitcoin-S you get both confidence in your code _and_ powerful methods available",
               "on your data"
             ].join(" "),
-            image: `${baseUrl}img/undraw_code_review.svg`,
+            image: `${baseUrl}img/undraw_target_kriv.svg`,
             imageAlign: "left",
             title: "Super-powered RPC clients"
           }
@@ -146,11 +146,14 @@ class Index extends React.Component {
       <Block background="dark">
         {[
           {
-            content:
-              "This is another description of how this project is useful",
-            image: `${baseUrl}img/undraw_note_list.svg`,
+            content: [
+              "Bitcoin-S is used in production today, facilitating transactions and systems handling",
+              "millions of dollars each day. It has a very high degree of code coverage,",
+              "with unit tests, property based tests and integration tests."
+            ].join(" "),
+            image: `${baseUrl}img/undraw_Security_on_s9ym.svg`,
             imageAlign: "right",
-            title: "Description"
+            title: "Battle tested, high quality code"
           }
         ]}
       </Block>
@@ -165,7 +168,7 @@ class Index extends React.Component {
               "From small-scale 1-in 2-out transactions, to custom logic powering exchange withdrawals, we've got you covered.",
               "Check out our [`TxBuilder` example](docs/txbuilder) to see how."
             ].join(" "),
-            image: `${baseUrl}img/undraw_youtube_tutorial.svg`,
+            image: `${baseUrl}img/undraw_transfer_money_rywa.svg`,
             imageAlign: "right",
             title: "Construct and sign bitcoin transactions"
           }
@@ -179,7 +182,7 @@ class Index extends React.Component {
           {
             content:
               "Code with confidence, knowing your data won't change under you",
-            image: `${baseUrl}img/undraw_react.svg`,
+            image: `${baseUrl}img/undraw_code_review_l1q9.svg`,
             imageAlign: "top",
             title: "Immutable data structures"
           },
@@ -188,7 +191,7 @@ class Index extends React.Component {
               "Get the compiler to work for you, ensuring your logic covers all cases.",
               "Modelling your application with mathematically founded types enables greater confidence in the correctness of your code"
             ].join(" "),
-            image: `${baseUrl}img/undraw_operating_system.svg`,
+            image: `${baseUrl}img/undraw_mathematics_4otb.svg`,
             imageAlign: "top",
             title: "Algebraic data types"
           }

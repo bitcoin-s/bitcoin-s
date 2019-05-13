@@ -19,7 +19,7 @@ objects and functions. Here are some useful resources on how to properly format 
 
 To generate Scaladocs:
 
-````bash
+```bash
 $ sbt
 > unidoc
 ```
@@ -27,28 +27,6 @@ $ sbt
 This gets placed in `website/static/api`. When viewing the Docusaurus site the generated Scaladocs
 appear under the API tab in the header bar,
 or in the "API reference" link in the footer.
-
-## `mdoc`
-
-Compile Markdown files incrementally on save, view at `http://localhost:4000`:
-
-```bash
-$ sbt
-> doc/mdoc --watch
-````
-
-Build Docusaurus site, ends up in `website/build/bitcoin-s`:
-
-```bash
-$ sbt
-> doc/docusaurusCreateSite
-```
-
-Assuming you have installed [`serve`](https://www.npmjs.com/package/serve), this lets you see the complete site:
-
-```bash
-$ serve website/build/bitcoin-s
-```
 
 ## Running the site locally
 
@@ -70,6 +48,16 @@ cd website
 yarn install # only the first time, to install the dependencies
 yarn start
 ```
+
+In a separate shell:
+
+```bash
+$ sbt
+> doc/mdoc --watch
+```
+
+The above commands compiles our Mdoc Markdown files every time you change
+them, and puts them in the correct directory for Docusaurus to find them.
 
 Now visit http://localhost:3000/ and you should see a local version of
 the website.
