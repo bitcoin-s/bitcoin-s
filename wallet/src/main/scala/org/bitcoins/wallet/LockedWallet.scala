@@ -27,16 +27,16 @@ import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
 
 abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
-  val addressDAO: AddressDAO = AddressDAO()
-  val accountDAO: AccountDAO = AccountDAO()
-  val utxoDAO: UTXOSpendingInfoDAO = UTXOSpendingInfoDAO()
+  protected val addressDAO: AddressDAO = AddressDAO()
+  protected val accountDAO: AccountDAO = AccountDAO()
+  protected val utxoDAO: UTXOSpendingInfoDAO = UTXOSpendingInfoDAO()
 
   override def getBalance(): Future[CurrencyUnit] = listUtxos().map { utxos =>
     utxos.map(_.value).fold(0.bitcoin)(_ + _)
   }
 
   /** The default HD coin */
-  lazy private val DEFAULT_HD_COIN: HDCoin = {
+  private lazy val DEFAULT_HD_COIN: HDCoin = {
     val coinType = chainParams match {
       case MainNetChainParams                         => HDCoinType.Bitcoin
       case RegTestNetChainParams | TestNetChainParams => HDCoinType.Testnet
@@ -49,7 +49,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
     */
   override def unlock(passphrase: AesPassword): UnlockWalletResult = {
     logger.debug(s"Trying to unlock wallet")
-    val result = WalletStorage.readMnemonicFromDisk(passphrase)
+    val result = WalletStorage.decryptMnemonicFromDisk(passphrase)
     result match {
       case DecryptionError =>
         logger.error(s"Bad password for unlocking wallet!")
@@ -112,7 +112,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       logger.info(
         s"Successfully inserted UTXO ${writtenOut.txId.hex}:${writtenOut.vout.toInt} into DB")
       logger.info(s"UTXO details: ${written.output}")
-      utxo
+      written
     }
   }
 
@@ -138,35 +138,29 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       outOfBunds
     }
 
-    val outputE: Either[AddUtxoError, TransactionOutput] =
-      if (voutIndexOutOfBounds) Left(VoutIndexOutOfBounds)
-      else
-        Right(transaction.outputs(vout.toInt))
+    if (voutIndexOutOfBounds) {
+      Future.successful(VoutIndexOutOfBounds)
+    } else {
 
-    val outPointE: Either[AddUtxoError, TransactionOutPoint] =
-      if (voutIndexOutOfBounds) Left(VoutIndexOutOfBounds)
-      else Right(TransactionOutPoint(transaction.txId, vout))
+      val output = transaction.outputs(vout.toInt)
+      val outPoint = TransactionOutPoint(transaction.txId, vout)
 
-    // second check: do we have an address associated with the provided
-    // output in our DB?
-    val addressDbEitherF: Future[Either[AddUtxoError, AddressDb]] = {
-      val nested = outputE.map(out => findAddress(out.scriptPubKey))
-      EitherUtil.flattenFutureE(nested)
-    }
+      // second check: do we have an address associated with the provided
+      // output in our DB?
+      val addressDbEitherF: Future[Either[AddUtxoError, AddressDb]] =
+        findAddress(output.scriptPubKey)
 
-    // insert the UTXO into the DB
-    addressDbEitherF.flatMap { addressDbE =>
-      val biasedE: Either[AddUtxoError, Future[UTXOSpendingInfoDb]] = for {
-        output <- outputE
-        outPoint <- outPointE
-        addressDb <- addressDbE
-      } yield writeUtxo(output, outPoint, addressDb)
+      // insert the UTXO into the DB
+      addressDbEitherF.flatMap { addressDbE =>
+        val biasedE: Either[AddUtxoError, Future[UTXOSpendingInfoDb]] = for {
+          addressDb <- addressDbE
+        } yield writeUtxo(output, outPoint, addressDb)
 
-      EitherUtil.liftRightBiasedFutureE(biasedE)
-
-    } map {
-      case Right(_) => AddUtxoSuccess(this)
-      case Left(e)  => e
+        EitherUtil.liftRightBiasedFutureE(biasedE)
+      } map {
+        case Right(_) => AddUtxoSuccess(this)
+        case Left(e)  => e
+      }
     }
   }
 

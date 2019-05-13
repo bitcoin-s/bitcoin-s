@@ -1,7 +1,5 @@
 package org.bitcoins.wallet
 
-import ujson._
-
 import scala.collection.JavaConverters._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.crypto.AesPassword
@@ -42,7 +40,7 @@ object WalletStorage extends BitcoinSLogger {
 
     val jsObject = {
       import MnemonicJsonKeys._
-      Obj(
+      ujson.Obj(
         IV -> encrypted.iv.toHex,
         CIPHER_TEXT -> encrypted.cipherText.toHex,
         SALT -> encrypted.salt.value.toHex
@@ -53,10 +51,10 @@ object WalletStorage extends BitcoinSLogger {
 
     logger.debug(s"Writing mnemonic to $path")
 
-    val writtenJs = write(jsObject)
+    val writtenJs = ujson.write(jsObject)
 
     def writeJsToDisk() = {
-      val writtenPath = Files.write(path, writtenJs.getBytes)
+      val writtenPath = Files.write(path, writtenJs.getBytes())
       logger.trace(s"Wrote encrypted mnemonic to $path")
 
       writtenPath
@@ -108,15 +106,15 @@ object WalletStorage extends BitcoinSLogger {
       config.datadir.resolve(ENCRYPTED_SEED_FILE_NAME)
     }
 
-    val jsonE: Either[ReadMnemonicError, Value] = {
+    val jsonE: Either[ReadMnemonicError, ujson.Value] = {
       if (Files.isRegularFile(path)) {
         val rawJson = Files.readAllLines(path).asScala.mkString("\n")
         logger.debug(s"Read raw encrypted mnemonic from $path")
 
         Try {
-          read(rawJson)
+          ujson.read(rawJson)
         } match {
-          case Failure(ParseException(clue, _, _, _)) =>
+          case Failure(ujson.ParseException(clue, _, _, _)) =>
             Left(ReadMnemonicError.JsonParsingError(clue))
           case Failure(exception) => throw exception
 
@@ -144,7 +142,7 @@ object WalletStorage extends BitcoinSLogger {
         (ivString, cipherTextString, rawSaltString)
       } match {
         case Success(value) => Right(value)
-        case Failure(value: Value.InvalidData) =>
+        case Failure(value: ujson.Value.InvalidData) =>
           logger.error(s"Error when parsing JSON file $path: ${value.msg}")
           Left(JsonParsingError(value.msg))
         case Failure(exception) => throw exception
@@ -175,7 +173,7 @@ object WalletStorage extends BitcoinSLogger {
     * Reads the wallet mmemonic from disk and tries to parse and
     * decrypt it
     */
-  def readMnemonicFromDisk(passphrase: AesPassword)(
+  def decryptMnemonicFromDisk(passphrase: AesPassword)(
       implicit
       config: AppConfig): ReadMnemonicResult = {
     val encryptedEither = readEncryptedMnemonicFromDisk()

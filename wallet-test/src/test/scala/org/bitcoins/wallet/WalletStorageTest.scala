@@ -58,7 +58,7 @@ class WalletStorageTest
   it must "write and read a mnemonic to disk" in { _ =>
     val writtenMnemonic = getAndWriteMnemonic()
     val read =
-      WalletStorage.readMnemonicFromDisk(passphrase)
+      WalletStorage.decryptMnemonicFromDisk(passphrase)
 
     read match {
       case ReadMnemonicSuccess(readMnemonic) =>
@@ -69,7 +69,7 @@ class WalletStorageTest
 
   it must "fail to read a mnemonic with bad password" in { _ =>
     val writtenMnemonic = getAndWriteMnemonic()
-    val read = WalletStorage.readMnemonicFromDisk(badPassphrase)
+    val read = WalletStorage.decryptMnemonicFromDisk(badPassphrase)
 
     read match {
       case ReadMnemonicSuccess(mnemonic) =>
@@ -92,7 +92,7 @@ class WalletStorageTest
                 badJson.getBytes())
 
     val read =
-      WalletStorage.readMnemonicFromDisk(passphrase)
+      WalletStorage.decryptMnemonicFromDisk(passphrase)
 
     read match {
       case JsonParsingError(_)     => succeed
