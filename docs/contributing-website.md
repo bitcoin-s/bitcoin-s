@@ -69,3 +69,14 @@ manually include it in the side menu.
 
 You can do this by editing the `website/sidebars.json` file. The name to use is
 the `id` specified in the page metadata (see the existing pages for an example).
+
+## Publishing the site
+
+```bash
+$ sbt
+> docs/publishWebsite
+```
+
+This command first generates Scaladocs, then invokes
+`docs/docusaurusPublishGhPages`, which in turn compile our mdoc
+files, build the site and push them to GH pages.

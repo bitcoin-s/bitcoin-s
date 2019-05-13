@@ -96,7 +96,6 @@ lazy val bitcoins = project
     eclairRpc,
     eclairRpcTest,
     testkit,
-    docs,
     scripts
   )
   .settings(commonSettings: _*)
@@ -152,7 +151,7 @@ lazy val bitcoins = project
         val toMove = Paths.get(generatedDir.toString, file)
         val destination = websiteScaladocDir.resolve(file)
         val moved =
-          Files.move(toMove, destination, StandardCopyOption.REPLACE_EXISTING)
+          Files.copy(toMove, destination, StandardCopyOption.REPLACE_EXISTING)
       }
       Seq(generatedDir)
     }
@@ -262,6 +261,8 @@ lazy val testkit = project
   )
   .enablePlugins(GitVersioning)
 
+lazy val publishWebsite = taskKey[Unit]("Publish website")
+
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
   .settings(commonTestSettings: _*)
@@ -271,7 +272,13 @@ lazy val docs = project
     name := "bitcoin-s-docs",
     mdocVariables := Map(
       "VERSION" -> version.value
-    )
+    ),
+    publishWebsite := Def
+      .sequential(
+        bitcoins / Compile / unidoc,
+        Compile / docusaurusPublishGhpages
+      )
+      .value
   )
   .dependsOn(
     bitcoindRpc,

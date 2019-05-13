@@ -8,6 +8,8 @@
 // See https://docusaurus.io/docs/site-config for all the possible
 // site configuration options.
 
+const baseUrl = "/";
+
 // List of projects/orgs using your project for the users page.
 const users = [
   /*
@@ -22,14 +24,14 @@ const users = [
   */
   {
     caption: "Suredbits",
-    image: "/img/suredbits-logo.png",
+    image: `${baseUrl}img/suredbits-logo.png`,
     infoLink: "https://suredbits.com",
     description: "Suredbits uses Bitcoin-S to power their Lightning APIs.",
     pinned: true
   },
   {
     caption: "Gemini",
-    image: "/img/gemini-logo.png",
+    image: `${baseUrl}img/gemini-logo.png`,
     infoLink: "https://gemini.com",
     description: [
       "Gemini uses Bitcoin-S to foo bar baz.",
@@ -39,7 +41,6 @@ const users = [
   }
 ];
 
-const baseUrl = "/";
 const siteConfig = {
   title: "bitcoin-s", // Title for your website.
   tagline: "Bitcoin implementation in Scala",
