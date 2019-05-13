@@ -1,6 +1,17 @@
+---
+id: security
+title: Security
+---
+
+The Bitcoin-S developers take security very seriously. This library has
+very few dependencies (at least in the `core` module), which is for
+of security reasons.
+
 ## Disclosure
 
-Please send an email to stewart.chris1234@gmail.com encrypted with this gpg key 
+If you have any security disclosures related to Bitcoin-S, please send an
+email to [stewart.chris1234@gmail.com](mailto:stewart.chris1234@gmail.com?subject=Bitcoin-S%20Security%20Disclosure)
+encrypted with this GPG key:
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----

@@ -96,7 +96,8 @@ lazy val bitcoins = project
     eclairRpc,
     eclairRpcTest,
     testkit,
-    doc
+    docs,
+    scripts
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
@@ -261,14 +262,13 @@ lazy val testkit = project
   )
   .enablePlugins(GitVersioning)
 
-lazy val doc = project
+lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
   .settings(commonTestSettings: _*)
   .settings(
     // come back to visit this setting later
     mdocExtraArguments := List("--no-link-hygiene"),
     name := "bitcoin-s-docs",
-    libraryDependencies ++= Deps.doc,
     mdocVariables := Map(
       "VERSION" -> version.value
     )
@@ -282,6 +282,16 @@ lazy val doc = project
     zmq
   )
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
+
+lazy val scripts = project
+  .in(file("scripts"))
+  .dependsOn(core, bitcoindRpc, eclairRpc, zmq)
+  .settings(commonTestSettings: _*)
+  .settings(
+    name := "bitcoin-s-scripts",
+    libraryDependencies ++= Deps.scripts
+  )
+
 // Ammonite is invoked through running
 // a main class it places in test sources
 // for us. This makes it a bit less awkward
