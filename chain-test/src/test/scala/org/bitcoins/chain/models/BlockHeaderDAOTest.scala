@@ -1,8 +1,7 @@
 package org.bitcoins.chain.models
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.util.ChainUnitTest
-import org.bitcoins.testkit.chain.BlockHeaderHelper
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future

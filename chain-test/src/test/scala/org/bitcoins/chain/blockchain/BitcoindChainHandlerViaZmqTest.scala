@@ -1,8 +1,9 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.util.{BitcoindChainHandlerViaZmq, ChainUnitTest}
 import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.testkit.chain.ChainUnitTest
+import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaZmq
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future

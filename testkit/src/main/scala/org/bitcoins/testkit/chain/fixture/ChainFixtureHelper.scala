@@ -1,6 +1,7 @@
-package org.bitcoins.chain.util
+package org.bitcoins.testkit.chain.fixture
 
-import org.bitcoins.chain.util.ChainFixture.{
+import org.bitcoins.testkit.chain.ChainUnitTest
+import org.bitcoins.testkit.chain.fixture.ChainFixture.{
   BitcoindZmqChainHandlerWithBlock,
   Empty,
   GenisisBlockHeaderDAO,
