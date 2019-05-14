@@ -28,8 +28,9 @@ function Help(props) {
       title: "Browse Docs"
     },
     {
-      content: `Explore the [Scaladocs](${siteConfig.baseUrl +
-        "api"}) for the complete guide to how Bitcoin-S work`,
+      content: `Explore the [Scaladocs](${
+        siteConfig.scaladocUrl
+      }) for the complete guide to how Bitcoin-S work`,
       title: "Browse API reference"
     },
     {

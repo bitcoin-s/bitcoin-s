@@ -9,6 +9,7 @@
 // site configuration options.
 
 const baseUrl = "/";
+const scaladocUrl = baseUrl + "api/org/bitcoins";
 
 // List of projects/orgs using your project for the users page.
 const users = [
@@ -65,7 +66,7 @@ const siteConfig = {
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     { doc: "core/core-intro", label: "Docs" },
-    { href: baseUrl + "api", label: "API" },
+    { href: scaladocUrl, label: "API" },
     { page: "help", label: "Help" },
     { blog: true, label: "Blog" }
   ],
@@ -135,7 +136,10 @@ const siteConfig = {
   repoUrl: "https://github.com/bitcoin-s/bitcoin-s-core",
   suredbitsSlack:
     "https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM",
-  gitterUrl: "https://gitter.im/bitcoin-s-core/"
+  gitterUrl: "https://gitter.im/bitcoin-s-core/",
+  // avoid showing "root" as default Scaladoc page
+  scaladocUrl
+
   // custom keys end
   //////////////////
 };
