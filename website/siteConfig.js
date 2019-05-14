@@ -84,18 +84,9 @@ const siteConfig = {
   },
 
   /* Custom fonts for website */
-  /*
   fonts: {
-    myFont: [
-      "Times New Roman",
-      "Serif"
-    ],
-    myOtherFont: [
-      "-apple-system",
-      "system-ui"
-    ]
+    headerFont: ["Montserrat", "sans-serif"]
   },
-  */
 
   // This copyright info is used in /core/Footer.js and blog RSS/Atom feeds.
   copyright: `Copyright © ${new Date().getFullYear()} Suredbits & the bitcoin-s developers`,
@@ -109,6 +100,7 @@ const siteConfig = {
   scripts: [
     "https://buttons.github.io/buttons.js",
     "https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js",
+    "https://fonts.googleapis.com/css?family=Montserrat:500",
     `${baseUrl}js/code-block-buttons.js`
   ],
 

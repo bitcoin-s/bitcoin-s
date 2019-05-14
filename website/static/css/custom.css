@@ -48,6 +48,15 @@
   text-align: center;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 500;
+  font-family: $headerFont;
+}
 .hero .projectLogo {
   display: block;
 }
@@ -75,3 +84,19 @@
   z-index: 2;
 }
 /* end crib section from bloop */
+
+.showcaseSection h1 {
+  margin-top: 0;
+}
+
+.showcaseSection p {
+  text-align: justify;
+}
+
+.showcaseSection li {
+  text-align: left;
+}
+
+.showcase-user-container p {
+  text-align: center;
+}
