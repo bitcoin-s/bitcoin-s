@@ -1,0 +1,102 @@
+/* your custom css */
+
+@media only screen and (min-device-width: 360px) and (max-device-width: 736px) {
+}
+
+@media only screen and (min-width: 1024px) {
+}
+
+@media only screen and (max-width: 1023px) {
+}
+
+@media only screen and (min-width: 1400px) {
+}
+
+@media only screen and (min-width: 1500px) {
+}
+
+.showcase-user-container {
+  max-width: 15em;
+  justify-content: space-between;
+}
+
+.dark-button {
+  border: 1px solid white;
+  border-radius: 3px;
+  color: white;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2em;
+  padding: 10px;
+  text-decoration: none !important;
+  text-transform: uppercase;
+  transition: background 0.3s, color 0.3s;
+}
+.dark-button:hover {
+  background-color: $secondaryColor;
+  color: white;
+}
+
+/* begin crib section from Bloop https://github.com/scalacenter/bloop/blob/d73e247b353a9a0df4a95528095811da391c4a12/website/static/css/index.css#L126 */
+.hero {
+  background: $primaryColor;
+  color: #f9f9f9;
+  overflow: hidden;
+  padding: 2rem 1rem 2rem;
+  position: relative;
+  text-align: center;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 500;
+  font-family: $headerFont;
+}
+.hero .projectLogo {
+  display: block;
+}
+
+.hero h1 {
+  margin: 0;
+}
+
+.hero::before {
+  background: url(../img/babel-black.svg) no-repeat center center;
+  background-size: cover;
+  bottom: 0;
+  content: "";
+  display: block;
+  left: 0;
+  opacity: 0.3;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 1;
+}
+
+.hero__container {
+  position: relative;
+  z-index: 2;
+}
+/* end crib section from bloop */
+
+.showcaseSection h1 {
+  margin-top: 0;
+}
+
+.showcaseSection p {
+  text-align: justify;
+}
+
+.showcaseSection li {
+  text-align: left;
+}
+
+.showcase-user-container p {
+  text-align: center;
+}

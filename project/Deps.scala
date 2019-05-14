@@ -139,9 +139,9 @@ object Deps {
     Test.ammonite
   )
 
-  val doc = List(
+  val scripts = List(
     Compile.ammonite,
-    "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc (),
+    Compile.logback,
     Test.scalaTest,
     Test.logback
   )
