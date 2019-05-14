@@ -34,7 +34,8 @@ const users = [
     image: `${baseUrl}img/gemini-logo.png`,
     infoLink: "https://gemini.com",
     description: [
-      "Gemini uses Bitcoin-S to foo bar baz.",
+      "Gemini uses Bitcoin-S to batch transactions and facilitate deposits and",
+      "withdrawals with full SegWit support.",
       "Read more at [their blog](https://medium.com/gemini/gemini-upgrades-wallet-with-full-support-of-segwit-5bb8e4bc851b)"
     ].join(" "),
     pinned: true

@@ -8,6 +8,7 @@
 const React = require("react");
 
 const CompLibrary = require("../../core/CompLibrary.js");
+const Image = require(process.cwd() + "/core/Image.js");
 
 const Container = CompLibrary.Container;
 const GridBlock = CompLibrary.GridBlock;
@@ -54,14 +55,7 @@ function Help(props) {
           <header className="postHeader">
             <h1>Need help?</h1>
           </header>
-          <img
-            style={{
-              maxWidth: "50%",
-              // center the image
-              margin: "0 25%"
-            }}
-            src={baseUrl + "img/undraw_questions_75e0.svg"}
-          />
+          <Image src={baseUrl + "img/undraw_questions_75e0.svg"} />
           <GridBlock contents={supportLinks} layout="threeColumn" />
         </div>
       </Container>

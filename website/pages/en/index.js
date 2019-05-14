@@ -106,16 +106,6 @@ class Index extends React.Component {
       </div>
     );
 
-    const FeatureCallout = () => (
-      <div
-        className="productShowcaseSection paddingBottom"
-        style={{ textAlign: "center" }}
-      >
-        <h2>Feature Callout</h2>
-        <MarkdownBlock>These are features of this project</MarkdownBlock>
-      </div>
-    );
-
     const TryOut = () => (
       <Block id="try">
         {[
@@ -174,8 +164,23 @@ class Index extends React.Component {
       <Block layout="fourColumn">
         {[
           {
-            content:
-              "Code with confidence, knowing your data won't change under you",
+            content: [
+              "Bitcoin-S allows you to interact with data structures found in the",
+              "Bitcoin and Lightning protocols as first-class citizens of your app.",
+              "Go back and forth between hex, byte and JVM representation trivially,",
+              "letting our abstractions focus on what you want to build"
+            ].join(" "),
+            image: `${baseUrl}img/undraw_digital_currency_qpak.svg`,
+            imageAlign: "top",
+            title: "Deep protocol understanding"
+          },
+          {
+            content: [
+              "Code with confidence, knowing your data won't change under you. All",
+              "data structures in Bitcoin-S are immutable. This eliminates a big",
+              "range of bugs right away, and enable you to write concurrent code",
+              "much easier"
+            ].join(" "),
             image: `${baseUrl}img/undraw_code_review_l1q9.svg`,
             imageAlign: "top",
             title: "Immutable data structures"
@@ -230,7 +235,6 @@ class Index extends React.Component {
         <Hero siteConfig={siteConfig} />
         <div className="mainContainer">
           <Features />
-          <FeatureCallout />
           <LearnHow />
           <TryOut />
           <Description />
