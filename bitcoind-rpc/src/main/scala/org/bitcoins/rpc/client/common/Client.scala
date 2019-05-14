@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.client.common
 
-import java.io.File
 import java.util.UUID
 
 import akka.actor.ActorSystem
@@ -19,9 +18,12 @@ import play.api.libs.json._
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
-import scala.io.Source
 import scala.sys.process._
 import scala.util.{Failure, Success}
+import java.nio.file.Files
+import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
+import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
+import java.nio.file.Path
 
 /**
   * This is the base trait for Bitcoin Core
@@ -38,15 +40,19 @@ trait Client extends BitcoinSLogger {
   /**
     * The log file of the Bitcoin Core daemon
     */
-  def logFile: File = {
+  lazy val logFile: Path = {
+
     val prefix = instance.network match {
       case MainNet  => ""
-      case TestNet3 => "/testnet"
-      case RegTest  => "/regtest"
+      case TestNet3 => "testnet"
+      case RegTest  => "regtest"
     }
-    val datadir = instance.authCredentials.datadir
-    new File(datadir + prefix + "/debug.log")
+    instance.datadir.toPath.resolve(prefix).resolve("debug.log")
   }
+
+  /** The configuration file of the Bitcoin Core daemon */
+  lazy val confFile: Path =
+    instance.datadir.toPath.resolve("bitcoin.conf")
 
   protected implicit val system: ActorSystem
   protected implicit val materializer: ActorMaterializer =
@@ -88,10 +94,12 @@ trait Client extends BitcoinSLogger {
 
     val binaryPath = instance.binary.getAbsolutePath
     val cmd = List(binaryPath,
-                   "-datadir=" + instance.authCredentials.datadir,
+                   "-datadir=" + instance.datadir,
                    "-rpcport=" + instance.rpcUri.getPort,
                    "-port=" + instance.uri.getPort)
-    logger.debug(s"starting bitcoind")
+
+    logger.debug(
+      s"starting bitcoind with datadir ${instance.datadir} and binary path $binaryPath")
     val _ = Process(cmd).run()
 
     def isStartedF: Future[Boolean] = {
@@ -106,9 +114,28 @@ trait Client extends BitcoinSLogger {
       started.future
     }
 
-    val started = AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
-                                                 duration = 1.seconds,
-                                                 maxTries = 60)
+    val started = {
+      for {
+        _ <- instance.authCredentials match {
+          // if we're doing cookie based authentication, we might attempt
+          // to read the cookie file before it's written. this check is
+          // to avoid that
+          case cookie: CookieBased =>
+            val cookieExistsF =
+              AsyncUtil.retryUntilSatisfied(Files.exists(cookie.cookiePath))
+            cookieExistsF.onComplete {
+              case Failure(exception) =>
+                logger.error(s"Cookie filed was never created! $exception")
+              case _: Success[_] =>
+            }
+            cookieExistsF
+          case _: PasswordBased => Future.successful(())
+        }
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
+                                            duration = 1.seconds,
+                                            maxTries = 60)
+      } yield ()
+    }
 
     started.onComplete {
       case Success(_) => logger.debug(s"started bitcoind")
@@ -116,9 +143,17 @@ trait Client extends BitcoinSLogger {
         if (instance.network != MainNet) {
           logger.info(
             s"Could not start bitcoind instance! Message: ${exc.getMessage}")
-          logger.info(s"Log lines:")
-          val logLines = Source.fromFile(logFile).getLines()
-          logLines.foreach(logger.info)
+          if (network != MainNet) {
+            val tempfile = Files.createTempFile("bitcoind-log-", ".dump")
+            val logfile = Files.readAllBytes(logFile)
+            Files.write(tempfile, logfile)
+            logger.info(s"Dumped debug.log to $tempfile")
+
+            val otherTempfile = Files.createTempFile("bitcoin-conf-", ".dump")
+            val conffile = Files.readAllBytes(confFile)
+            Files.write(otherTempfile, conffile)
+            logger.info(s"Dumped bitcoin.conf to $otherTempfile")
+          }
         }
     }
 

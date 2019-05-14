@@ -6,15 +6,16 @@ import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.LoggerFactory
+import akka.stream.StreamTcpException
 
 class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   private implicit val actorSystem: ActorSystem =
-    ActorSystem.create("EclairRpcTestUtilTest")
+    ActorSystem("EclairRpcTestUtilTest", BitcoindRpcTestUtil.AKKA_CONFIG)
 
-  private val bitcoindRpcF = {
+  private lazy val bitcoindRpcF = {
     val cliF = EclairRpcTestUtil.startedBitcoindRpcClient()
     val blocksF = cliF.flatMap(_.generate(200))
     blocksF.flatMap(_ => cliF)
@@ -29,6 +30,17 @@ class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   behavior of "EclairRpcTestUtilTest"
+
+  it must "spawn a V16 bitcoind instance" in {
+    for {
+      bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()
+      _ <- bitcoind.getNetworkInfo
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
+      _ <- bitcoind.getNetworkInfo
+        .map(_ => fail("got info from stopped bitcoind!"))
+        .recover { case _: StreamTcpException => }
+    } yield succeed
+  }
 
   it must "spawn four nodes and create a channel link between them" in {
     val nodes4F = bitcoindRpcF.flatMap { bitcoindRpc =>

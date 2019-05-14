@@ -20,12 +20,22 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Properties
+import org.bitcoins.rpc.client.common.BitcoindVersion
 
 class BitcoindV16RpcClientTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
     BitcoindRpcTestUtil.createNodePairV16(clientAccum)
 
   behavior of "BitoindV16RpcClient"
+
+  it should "be able to start a V16 bitcoind" in {
+    for {
+      (client, otherClient) <- clientsF
+    } yield {
+      assert(client.version == BitcoindVersion.V16)
+      assert(otherClient.version == BitcoindVersion.V16)
+    }
+  }
 
   it should "be able to sign a raw transaction" in {
     for {

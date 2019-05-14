@@ -17,6 +17,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
+import java.nio.file.Path
 
 class MempoolRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
@@ -27,20 +28,15 @@ class MempoolRpcTest extends BitcoindRpcTest {
       case (client, otherClient) =>
         val defaultConfig = BitcoindRpcTestUtil.standardConfig
 
-        val datadirValue = {
+        val datadir: Path = {
           val tempDirPrefix = null // because java APIs are bad
-          val tempdirPath = Files.createTempDirectory(tempDirPrefix).toString
-          ConfigValueFactory.fromAnyRef(tempdirPath)
+          Files.createTempDirectory(tempDirPrefix)
         }
 
-        // walletbroadcast must be turned off for a transaction to be abondonable
-        val noBroadcastValue = ConfigValueFactory.fromAnyRef(0)
-
-        // connecting clients once they are started takes forever for some reason
         val configNoBroadcast =
           defaultConfig
-            .withValue("walletbroadcast", noBroadcastValue)
-            .withValue("datadir", datadirValue)
+            .withOption("datadir", datadir.toString())
+            .withOption("walletbroadcast", 0.toString)
 
         val _ = BitcoindRpcTestUtil.writeConfigToFile(configNoBroadcast)
 
@@ -193,7 +189,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       regTest = {
         val regTest =
-          new File(client.getDaemon.authCredentials.datadir + "/regtest")
+          new File(client.getDaemon.datadir + "/regtest")
         assert(regTest.isDirectory)
         assert(!regTest.list().contains("mempool.dat"))
         regTest

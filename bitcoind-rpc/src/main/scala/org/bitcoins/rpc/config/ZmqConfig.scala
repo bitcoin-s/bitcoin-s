@@ -1,9 +1,6 @@
 package org.bitcoins.rpc.config
+
 import java.net.URI
-
-import com.typesafe.config.Config
-
-import scala.util.Try
 
 sealed trait ZmqConfig {
   def hashBlock: Option[URI]
@@ -43,48 +40,10 @@ object ZmqConfig {
               rawTx = Some(uri))
   }
 
-  def fromConfig(config: Config): ZmqConfig =
-    ZmqConfig(hashBlock = hashBlockUri(config),
-              hashTx = hashTxUri(config),
-              rawBlock = rawBlockUri(config),
-              rawTx = rawTxUri(config))
-
-  private val RAW_BLOCK_KEY = "zmqpubrawblock"
-  private val RAW_TX_KEY = "zmqpubrawtx"
-  private val HASH_BLOCK_KEY = "zmqpubhashblock"
-  private val HASH_TX_KEY = "zmqpubhashtx"
-
-  private val ZMQ_CONFIG_KEYS =
-    List(RAW_TX_KEY, RAW_BLOCK_KEY, HASH_TX_KEY, HASH_BLOCK_KEY)
-
-  private def isValidZmqConfigKey(key: String): Boolean =
-    ZMQ_CONFIG_KEYS.contains(key)
-
-  private def getZmqUri(config: Config, path: String): Option[URI] = {
-    require(
-      isValidZmqConfigKey(path),
-      s"$path is not a valid ZMQ config key. Valid keys: ${ZMQ_CONFIG_KEYS.mkString(", ")}")
-
-    if (config.hasPath(path)) {
-      Try(config.getString(path))
-        .map(str => Some(new URI(str)))
-        .getOrElse(throw new IllegalArgumentException(
-          s"$path (${config.getString(path)}) in config is not a valid URI"))
-    } else {
-      None
-    }
-  }
-
-  private def rawBlockUri(config: Config): Option[URI] =
-    getZmqUri(config, RAW_BLOCK_KEY)
-
-  private def rawTxUri(config: Config): Option[URI] =
-    getZmqUri(config, RAW_TX_KEY)
-
-  private def hashBlockUri(config: Config): Option[URI] =
-    getZmqUri(config, HASH_BLOCK_KEY)
-
-  private def hashTxUri(config: Config): Option[URI] =
-    getZmqUri(config, HASH_TX_KEY)
+  def fromConfig(config: BitcoindConfig): ZmqConfig =
+    ZmqConfig(hashBlock = config.zmqpubhashblock,
+              hashTx = config.zmqpubhashtx,
+              rawBlock = config.zmqpubrawblock,
+              rawTx = config.zmqpubrawtx)
 
 }
