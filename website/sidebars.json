@@ -1,0 +1,13 @@
+{
+  "docs": {
+    "Getting started": ["getting-started"],
+    "Core module": ["core/core-intro", "core/txbuilder"],
+    "RPC clients": [
+      "rpc/rpc-clients-intro",
+      "rpc/rpc-eclair",
+      "rpc/rpc-bitcoind"
+    ],
+    "Contributing": ["contributing", "contributing-website"],
+    "Security": ["security"]
+  }
+}
