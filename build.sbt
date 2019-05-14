@@ -232,8 +232,7 @@ lazy val zmq = project
     name := "bitcoin-s-zmq",
     libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
-    core,
-    testkit % "test"
+    core
   ).enablePlugins()
 
 lazy val bitcoindRpc = project
@@ -333,7 +332,8 @@ lazy val testkit = project
     core,
     bitcoindRpc,
     eclairRpc,
-    node
+    node,
+    zmq
   ).enablePlugins()
 
 lazy val walletDbSettings = dbFlywaySettings("walletdb")

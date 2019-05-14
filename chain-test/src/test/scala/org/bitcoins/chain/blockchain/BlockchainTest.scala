@@ -2,8 +2,7 @@ package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.chain.util.ChainUnitTest
-import org.bitcoins.testkit.chain.BlockHeaderHelper
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
 
 class BlockchainTest extends ChainUnitTest {
@@ -25,7 +24,8 @@ class BlockchainTest extends ChainUnitTest {
 
       val newHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
 
-      val connectTipF = Blockchain.connectTip(header = newHeader.blockHeader,blockHeaderDAO = bhDAO)
+      val connectTipF = Blockchain.connectTip(header = newHeader.blockHeader,
+                                              blockHeaderDAO = bhDAO)
 
       connectTipF.map {
         case BlockchainUpdate.Successful(_, connectedHeader) =>

@@ -1,17 +1,23 @@
-package org.bitcoins.chain.util
+package org.bitcoins.testkit.chain
 
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
-import org.bitcoins.chain.models._
-import org.bitcoins.chain.util.ChainFixture.BitcoindZmqChainHandlerWithBlock
-import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.db._
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  BlockHeaderDb,
+  BlockHeaderDbHelper
+}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.chain.ChainTestUtil
+import org.bitcoins.testkit.chain
+import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
@@ -20,14 +26,11 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.db.ChainDbManagement
-import com.typesafe.config.ConfigFactory
 
 trait ChainUnitTest
-    extends fixture.AsyncFlatSpec
+    extends org.scalatest.fixture.AsyncFlatSpec
     with BitcoinSFixture
     with ChainFixtureHelper
     with MustMatchers
@@ -181,7 +184,7 @@ trait ChainUnitTest
     * genesis block
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(createBlockHeaderDAO, destroyHeaderTable)(test)
+    makeFixture(() => createBlockHeaderDAO, () => destroyHeaderTable)(test)
   }
 
   /** Height of the first block in populated fixtures */
@@ -246,8 +249,7 @@ trait ChainUnitTest
           batchedDbHeaders.foldLeft(
             Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
             case (fut, batch) =>
-              fut.flatMap(_ =>
-                chainHandler.blockHeaderDAO.createAll(batch))
+              fut.flatMap(_ => chainHandler.blockHeaderDAO.createAll(batch))
           }
         }
 
@@ -256,7 +258,8 @@ trait ChainUnitTest
   }
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(createPopulatedBlockHeaderDAO, destroyHeaderTable)(test)
+    makeFixture(() => createPopulatedBlockHeaderDAO, () => destroyHeaderTable)(
+      test)
   }
 
   def createChainHandler(): Future[ChainHandler] = {
@@ -265,7 +268,7 @@ trait ChainUnitTest
   }
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(createChainHandler, destroyHeaderTable)(test)
+    makeFixture(() => createChainHandler, () => destroyHeaderTable)(test)
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
@@ -276,7 +279,8 @@ trait ChainUnitTest
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(createPopulatedChainHandler, destroyHeaderTable)(test)
+    makeFixture(() => createPopulatedChainHandler, () => destroyHeaderTable)(
+      test)
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
@@ -296,7 +300,7 @@ trait ChainUnitTest
       chainHandler.blockHeaderDAO.create(genesisHeaderDb)
     }
 
-    (chainHandler,genesisHeaderF)
+    (chainHandler, genesisHeaderF)
   }
 
   def createChainHandlerWithBitcoindZmq(
@@ -326,17 +330,18 @@ trait ChainUnitTest
     genesisHeaderF.map(_ => (chainHandler, zmqSubscriber))
   }
 
-  def createChainApiWithBitcoindRpc(bitcoind: BitcoindRpcClient)(implicit system: ActorSystem): Future[BitcoindChainHandlerViaRpc] = {
+  def createChainApiWithBitcoindRpc(
+      bitcoind: BitcoindRpcClient): Future[BitcoindChainHandlerViaRpc] = {
     val (handler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
 
-    genesisHeaderF.map {_ =>
-      BitcoindChainHandlerViaRpc(bitcoind,handler)
+    genesisHeaderF.map { _ =>
+      chain.fixture.BitcoindChainHandlerViaRpc(bitcoind, handler)
     }
 
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
-    composeBuildersAndWrap(createBitcoind,
+    composeBuildersAndWrap(() => createBitcoind,
                            createChainHandlerWithBitcoindZmq,
                            BitcoindChainHandlerViaZmq.apply)()
   }
@@ -345,15 +350,17 @@ trait ChainUnitTest
       bitcoindChainHandler: BitcoindChainHandlerViaZmq): Future[Unit] = {
 
     //piggy back off of rpc destructor
-    val rpc = BitcoindChainHandlerViaRpc(bitcoindChainHandler.bitcoindRpc,bitcoindChainHandler.chainHandler)
+    val rpc = chain.fixture.BitcoindChainHandlerViaRpc(
+      bitcoindChainHandler.bitcoindRpc,
+      bitcoindChainHandler.chainHandler)
 
     destroyBitcoindChainApiViaRpc(rpc).map { _ =>
       bitcoindChainHandler.zmqSubscriber.stop
     }
   }
 
-
-  def destroyBitcoindChainApiViaRpc(bitcoindChainHandler: BitcoindChainHandlerViaRpc): Future[Unit] = {
+  def destroyBitcoindChainApiViaRpc(
+      bitcoindChainHandler: BitcoindChainHandlerViaRpc): Future[Unit] = {
     val stopBitcoindF =
       BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
     val dropTableF = destroyHeaderTable()
@@ -362,7 +369,7 @@ trait ChainUnitTest
 
   /**
     * Creates a [[BitcoindRpcClient bitcoind]] that is linked to our [[ChainHandler bitcoin-s chain handler]]
-    * via a [[ZMQSubscriber zmq]]. This means messages are passed between bitcoin and our chain handler
+    * via a [[org.bitcoins.zmq.ZMQSubscriber zmq]]. This means messages are passed between bitcoin and our chain handler
     * with a zmq pub/sub message passing
     * @param test the test to be executed with bitcoind and chain handler via zmq
     * @param system
@@ -371,7 +378,7 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
-      composeBuildersAndWrap(builder = createBitcoind,
+      composeBuildersAndWrap(builder = () => createBitcoind,
                              dependentBuilder =
                                createChainHandlerWithBitcoindZmq,
                              wrap = BitcoindChainHandlerViaZmq.apply)
@@ -379,17 +386,17 @@ trait ChainUnitTest
     makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
   }
 
-
   def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
-    implicit system: ActorSystem): FutureOutcome = {
-    val builder: () => Future[BitcoindChainHandlerViaRpc] = {
-      () => createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
+      implicit system: ActorSystem): FutureOutcome = {
+    val builder: () => Future[BitcoindChainHandlerViaRpc] = { () =>
+      createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
     }
 
-    makeDependentFixture(builder,destroyBitcoindChainApiViaRpc)(test)
+    makeDependentFixture(builder, destroyBitcoindChainApiViaRpc)(test)
   }
 
   override def afterAll(): Unit = {
     system.terminate()
+    ()
   }
 }
