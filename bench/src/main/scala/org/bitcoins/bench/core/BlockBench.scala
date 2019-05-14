@@ -1,3 +1,5 @@
+package org.bitcoins.bench.core
+
 import org.bitcoins.core.protocol.blockchain.Block
 import org.slf4j.LoggerFactory
 
