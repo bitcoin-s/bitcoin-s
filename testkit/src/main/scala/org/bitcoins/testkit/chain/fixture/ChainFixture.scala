@@ -1,4 +1,4 @@
-package org.bitcoins.chain.util
+package org.bitcoins.testkit.chain.fixture
 
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.models.BlockHeaderDAO

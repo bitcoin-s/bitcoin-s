@@ -263,15 +263,9 @@ lazy val zmq = project
   .settings(commonSettings: _*)
   .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
-<<<<<<< HEAD
-    core
-  )
-  .enablePlugins(GitVersioning)
-=======
     core,
     testkit % "test"
-  ).enablePlugins()
->>>>>>> Fix CI tests hanging (#438)
+  ).enablePlugins(GitVersioning)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -393,6 +387,7 @@ lazy val docs = project
     bitcoindRpc,
     core,
     eclairRpc,
+    node,
     secp256k1jni,
     testkit,
     zmq
@@ -431,8 +426,6 @@ lazy val scripts = project
     name := "bitcoin-s-scripts",
     libraryDependencies ++= Deps.scripts
   )
-<<<<<<< HEAD
-=======
   .dependsOn(
     bitcoindRpc,
     chain,
@@ -444,7 +437,6 @@ lazy val scripts = project
     wallet,
     zmq
   )
->>>>>>> 2019 05 01 wallet ammonite scripts pt2 (#452)
 
 // Ammonite is invoked through running
 // a main class it places in test sources

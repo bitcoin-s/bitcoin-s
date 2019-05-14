@@ -2,14 +2,13 @@ package org.bitcoins.chain.pow
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.chain.util.{ChainFixture, ChainFixtureTag, ChainUnitTest}
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.testkit.chain.ChainTestUtil
+import org.bitcoins.db.AppConfig
+import org.bitcoins.testkit.chain.fixture.{ChainFixture, ChainFixtureTag}
+import org.bitcoins.testkit.chain.{ChainTestUtil, ChainUnitTest}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.db.AppConfig
 
 class BitcoinPowTest extends ChainUnitTest {
 

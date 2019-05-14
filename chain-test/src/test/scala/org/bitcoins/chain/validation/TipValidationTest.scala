@@ -1,15 +1,18 @@
 package org.bitcoins.chain.validation
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.db.{ChainDbManagement}
+import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
   BlockHeaderDb,
   BlockHeaderDbHelper
 }
-import org.bitcoins.chain.util.ChainUnitTest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainTestUtil}
+import org.bitcoins.testkit.chain.{
+  BlockHeaderHelper,
+  ChainTestUtil,
+  ChainUnitTest
+}
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future

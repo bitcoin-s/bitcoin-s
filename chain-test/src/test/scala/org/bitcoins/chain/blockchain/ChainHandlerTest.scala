@@ -2,10 +2,14 @@ package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.models.BlockHeaderDbHelper
-import org.bitcoins.chain.util.{ChainFixtureTag, ChainUnitTest}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FileUtil
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainTestUtil}
+import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
+import org.bitcoins.testkit.chain.{
+  BlockHeaderHelper,
+  ChainTestUtil,
+  ChainUnitTest
+}
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
