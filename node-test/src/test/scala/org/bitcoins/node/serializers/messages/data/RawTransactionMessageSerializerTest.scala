@@ -1,7 +1,7 @@
 package org.bitcoins.node.serializers.messages.data
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.bitcoins.node.util.NodeTestUtil
+import org.bitcoins.testkit.node.NodeTestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

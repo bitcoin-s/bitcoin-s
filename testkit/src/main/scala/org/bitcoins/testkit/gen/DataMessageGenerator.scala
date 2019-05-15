@@ -39,7 +39,7 @@ trait DataMessageGenerator {
       blockHeaders <- Gen
         .listOfN(randomNum, BlockchainElementsGenerator.blockHeader)
         .suchThat(_.size <= 10)
-    } yield HeadersMessage(blockHeaders)
+    } yield HeadersMessage(blockHeaders.toVector)
 
   /**
     * Generates a random [[TypeIdentifier]]

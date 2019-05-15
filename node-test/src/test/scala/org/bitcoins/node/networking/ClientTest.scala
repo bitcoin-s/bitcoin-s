@@ -7,8 +7,8 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
-import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
 
@@ -71,7 +71,8 @@ class ClientTest
   def connectAndDisconnect(peer: Peer): Future[Assertion] = {
     val probe = TestProbe()
     val remote = peer.socket
-    val peerMessageReceiver = PeerMessageReceiver(Preconnection, appConfig = appConfig)
+    val peerMessageReceiver =
+      PeerMessageReceiver(Preconnection, appConfig = appConfig)
     val client =
       TestActorRef(Client.props(peer, peerMessageReceiver), probe.ref)
 

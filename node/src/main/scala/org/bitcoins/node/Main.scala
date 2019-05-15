@@ -1,9 +1,5 @@
 package org.bitcoins.node
 
-import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.networking.sync.BlockHeaderSyncActor
-import org.bitcoins.node.networking.sync.BlockHeaderSyncActor.StartAtLastSavedHeader
-
 /**
   * Created by chris on 8/29/16.
   */
@@ -20,7 +16,7 @@ object Main extends App {
     val startHeader = BlockHeaderSyncActor.StartHeaders(Seq(gensisBlockHash))
 
     Constants.database.executor*/
-/*    val blockHeaderSyncActor = BlockHeaderSyncActor(Constants.actorSystem,
+    /*    val blockHeaderSyncActor = BlockHeaderSyncActor(Constants.actorSystem,
                                                     Constants.dbConfig,
                                                     Constants.networkParameters)*/
     //blockHeaderSyncActor ! StartAtLastSavedHeader

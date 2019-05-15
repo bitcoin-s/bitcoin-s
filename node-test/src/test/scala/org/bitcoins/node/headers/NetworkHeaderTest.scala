@@ -4,9 +4,7 @@ import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import org.bitcoins.node.messages.VerAckMessage
-import org.bitcoins.node.util.NodeTestUtil
-import org.bitcoins.node.messages.VerAckMessage
-import org.bitcoins.node.util.NodeTestUtil
+import org.bitcoins.testkit.node.NodeTestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

@@ -15,16 +15,18 @@ import scodec.bits.ByteVector
 object HeadersMessage extends Factory[HeadersMessage] {
   private case class HeadersMessageImpl(
       count: CompactSizeUInt,
-      headers: List[BlockHeader])
+      headers: Vector[BlockHeader])
       extends HeadersMessage
 
   def fromBytes(bytes: ByteVector): HeadersMessage =
     RawHeadersMessageSerializer.read(bytes)
 
-  def apply(count: CompactSizeUInt, headers: List[BlockHeader]): HeadersMessage =
+  def apply(
+      count: CompactSizeUInt,
+      headers: Vector[BlockHeader]): HeadersMessage =
     HeadersMessageImpl(count, headers)
 
-  def apply(headers: List[BlockHeader]): HeadersMessage = {
+  def apply(headers: Vector[BlockHeader]): HeadersMessage = {
     val count = CompactSizeUInt(UInt64(headers.length))
     HeadersMessageImpl(count, headers)
   }

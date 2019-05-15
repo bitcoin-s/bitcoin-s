@@ -37,7 +37,7 @@ class BitcoinSpvNodeUtilTest extends BitcoinSUnitTest {
 
     val headersMsg = HeadersMessage(
       CompactSizeUInt(UInt64(2), 1),
-      List(
+      Vector(
         BlockHeader(
           Int32(315017594),
           DoubleSha256Digest(

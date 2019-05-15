@@ -1,9 +1,7 @@
 package org.bitcoins.node.messages
 
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.headers.NetworkHeader
-import org.bitcoins.node.util.NodeTestUtil
-import org.bitcoins.node.util.NodeTestUtil
+import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class NetworkPayloadTest extends BitcoinSUnitTest {

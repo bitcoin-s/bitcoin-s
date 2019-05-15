@@ -3,10 +3,12 @@ package org.bitcoins.node.networking.peer
 import akka.actor.ActorRef
 import akka.io.Tcp
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.messages._
 import org.bitcoins.node.messages.control.{PongMessage, VersionMessage}
+import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 
@@ -21,9 +23,7 @@ import org.bitcoins.node.networking.Client
 class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     extends BitcoinSLogger {
 
-  /** Initiates a connection with the given [[Peer]]
-    * @param socket
-    */
+  /** Initiates a connection with the given [[Peer]] */
   def connect(): Unit = {
     val socket = client.peer.socket
     (client.actor ! Tcp.Connect(socket))
@@ -36,19 +36,23 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
   /** Sends a [[org.bitcoins.node.messages.VersionMessage VersionMessage]] to our peer */
   def sendVersionMessage(): Unit = {
     val versionMsg = VersionMessage(client.peer.socket, np)
-    val networkMsg = NetworkMessage(np, versionMsg)
-    sendMsg(networkMsg)
+    sendMsg(versionMsg)
   }
 
   def sendVerackMessage(): Unit = {
     val verackMsg = VerAckMessage
-    val networkMsg = NetworkMessage(np, verackMsg)
-    sendMsg(networkMsg)
+    sendMsg(verackMsg)
   }
 
-  private def sendMsg(msg: NetworkMessage): Unit = {
+  def sendGetHeadersMessage(lastHash: DoubleSha256Digest): Unit = {
+    val headersMsg = GetHeadersMessage(lastHash)
+    sendMsg(headersMsg)
+  }
+
+  private def sendMsg(msg: NetworkPayload): Unit = {
     logger.debug(s"PeerMessageSender sending msg=${msg}")
-    client.actor ! msg
+    val newtworkMsg = NetworkMessage(np, msg)
+    client.actor ! newtworkMsg
   }
 }
 
