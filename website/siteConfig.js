@@ -8,8 +8,33 @@
 // See https://docusaurus.io/docs/site-config for all the possible
 // site configuration options.
 
+/**
+ * For github.io type URLs, you would set the url and baseUrl like:
+ *  const url = 'https://your-github-user-name.github.io'
+ *  const baseUrl = "/bitcoin-s-core/"
+ * 
+ * This would place the site under 
+ * https://your-user-name.github.io/bitcoin-s-core. 
+ * If publishing under a custom domain with no path
+ * after the domain, you'd set const baseUrl = "/"
+ * and const url = "https://your-domain.org".
+ */ 
+
+const url = "https://bitcoin-s.org"
 const baseUrl = "/";
 const scaladocUrl = baseUrl + "api/org/bitcoins";
+
+/**
+ * This should be the username/organization that owns the repo
+ * you're publishing the website for. 
+ */
+const organizationName = "bitcoin-s",
+
+/**
+ * This should be the name of the repo you're publishing the 
+ * website for
+ */
+const projectName  =  "bitcoin-s-core"
 
 // List of projects/orgs using your project for the users page.
 const users = [
@@ -46,22 +71,16 @@ const users = [
 const siteConfig = {
   title: "bitcoin-s", // Title for your website.
   tagline: "Bitcoin implementation in Scala",
-  url: "https://bitcoin-s.org", // Your website URL
-  baseUrl, // Base URL for your project */
-  // For github.io type URLs, you would set the url and baseUrl like:
-  //   url: 'https://facebook.github.io',
-  //   baseUrl: '/test-site/',
+  url,  
+  baseUrl,
 
   // URL for editing docs, has to be present for the
   // "Edit this Doc" button to appear
   editUrl: "https://github.com/bitcoin-s/bitcoin-s-core/docs",
 
   // Used for publishing and more
-  projectName: "bitcoin-s",
-  organizationName: "bitcoin-s",
-  // For top-level user or org sites, the organization is still the same.
-  // e.g., for the https://JoelMarcey.github.io site, it would be set like...
-  //   organizationName: 'JoelMarcey'
+  projectName,
+  organizationName,
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
@@ -71,7 +90,7 @@ const siteConfig = {
     { blog: true, label: "Blog" }
   ],
 
-  // If you have users set above, you add it here:
+  /** Makes the user showcase appear */
   users,
 
   /* path to images for header/footer */
