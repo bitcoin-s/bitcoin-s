@@ -108,7 +108,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
     }
 
     utxoDAO.create(utxo).map { written =>
-      import written.{outPoint => writtenOut}
+      val writtenOut = written.outPoint
       logger.info(
         s"Successfully inserted UTXO ${writtenOut.txId.hex}:${writtenOut.vout.toInt} into DB")
       logger.info(s"UTXO details: ${written.output}")
