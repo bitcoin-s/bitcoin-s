@@ -140,7 +140,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
     * Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
     *
     * @param payload  the payload we need to do something with
-    * @param requests the @payload may be a response to a request inside this sequence
+    * @param sender the [[PeerMessageSender]] we can use to initialize an subsequent messages that need to be sent
     * @return the requests with the request removed for which the @payload is responding too
     */
   private def handleControlPayload(
@@ -161,6 +161,13 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
 
           case good: Initializing =>
             internalState = good.withVersionMsg(versionMsg)
+
+            sender.sendVerackMessage()
+
+            //we want peers to just send us headers
+            //we don't want to have to request them manually
+            sender.sendHeadersMessage()
+
             Success(())
         }
 

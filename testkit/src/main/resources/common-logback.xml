@@ -14,7 +14,7 @@
 
 
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="FILE" />
         <appender-ref ref="STDOUT" />
     </root>
@@ -45,6 +45,8 @@
     <!-- see what's returned by Slick -->
     <logger name="slick.jdbc.StatementInvoker.result" level="INFO" />
 
+
+    <logger name="slick" level="INFO"/>
     <!-- Get rid of messages like this: 
     Connection attempt failed. Backing off new connection 
     attempts for at least 800 milliseconds. -->

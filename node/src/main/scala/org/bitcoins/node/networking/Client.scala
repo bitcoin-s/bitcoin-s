@@ -208,7 +208,7 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
       message: NetworkMessage,
       peer: ActorRef): Unit = {
     val byteMessage = BitcoinSpvNodeUtil.buildByteString(message.bytes)
-    logger.debug(s"Network message: ${message}")
+    logger.debug(s"Network message: ${message} bytes=${byteMessage}")
     peer ! Tcp.Write(byteMessage)
   }
 

@@ -17,21 +17,21 @@ sealed trait TypeIdentifier extends NetworkElement {
   override def bytes: ByteVector = RawTypeIdentifierSerializer.write(this)
 }
 
-case object MsgTx extends TypeIdentifier {
-  override val num = UInt32.one
-}
-
-case object MsgBlock extends TypeIdentifier {
-  override val num = UInt32(2)
-}
-
-case object MsgFilteredBlock extends TypeIdentifier {
-  override val num = UInt32(3)
-}
-
 sealed trait MsgUnassigned extends TypeIdentifier
 
 object TypeIdentifier extends Factory[TypeIdentifier] {
+
+  final case object MsgTx extends TypeIdentifier {
+    override val num = UInt32.one
+  }
+
+  final case object MsgBlock extends TypeIdentifier {
+    override val num = UInt32(2)
+  }
+
+  final case object MsgFilteredBlock extends TypeIdentifier {
+    override val num = UInt32(3)
+  }
 
   private case class MsgUnassignedImpl(num: UInt32) extends MsgUnassigned
 

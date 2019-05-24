@@ -300,7 +300,8 @@ lazy val node = {
     .dependsOn(
       core,
       chain,
-      dbCommons
+      dbCommons,
+      bitcoindRpc
     ).enablePlugins(FlywayPlugin)
 }
 

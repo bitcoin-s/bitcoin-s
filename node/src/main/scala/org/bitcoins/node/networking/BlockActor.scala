@@ -8,7 +8,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.data.{GetDataMessage, Inventory}
-import org.bitcoins.node.messages.{BlockMessage, MsgBlock}
+import org.bitcoins.node.messages.{BlockMessage, TypeIdentifier}
 
 /**
   * Created by chris on 7/10/16.
@@ -19,7 +19,7 @@ sealed abstract class BlockActor extends Actor with BitcoinSLogger {
 
   def receive: Receive = LoggingReceive {
     case hash: DoubleSha256Digest =>
-      val inv = Inventory(MsgBlock, hash)
+      val inv = Inventory(TypeIdentifier.MsgBlock, hash)
       val getDataMessage = GetDataMessage(inv)
       val networkMessage =
         NetworkMessage(Constants.networkParameters, getDataMessage)

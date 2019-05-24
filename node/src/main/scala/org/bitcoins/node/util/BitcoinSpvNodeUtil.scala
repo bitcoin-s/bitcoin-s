@@ -81,7 +81,8 @@ trait BitcoinSpvNodeUtil extends BitcoinSLogger {
       }
     }
     val (messages, remainingBytes) = loop(bytes, Nil)
-    logger.debug(s"Parsed messages: ${messages}")
+    logger.debug(
+      s"Parsed messages: ${messages} remainingBytes=${remainingBytes}")
     (messages, remainingBytes)
   }
 

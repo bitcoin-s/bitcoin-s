@@ -5,8 +5,8 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.db._
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.protocol.blockchain.{BlockHeader}
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.util.{BitcoinSLogger, NumberUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -28,7 +28,8 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainConfig: AppConfig)
     blockHeaderDAO.findByHash(hash)
   }
 
-  override def processHeader(header: BlockHeader)(implicit ec: ExecutionContext): Future[ChainHandler] = {
+  override def processHeader(header: BlockHeader)(
+      implicit ec: ExecutionContext): Future[ChainHandler] = {
 
     val blockchainUpdateF = Blockchain.connectTip(header, blockHeaderDAO)
 
@@ -46,5 +47,20 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO, chainConfig: AppConfig)
     }
 
     newHandlerF
+  }
+
+  /**
+    * @inheritdoc
+    */
+  override def getBestBlockHash(
+      implicit ec: ExecutionContext): Future[DoubleSha256DigestBE] = {
+    //naive implementation, this is looking for the tip with the _most_ proof of work
+    //this does _not_ mean that it is on the chain that has the most work
+    //TODO: Enhance this in the future to return the "heaviest" header
+    //https://bitcoin.org/en/glossary/block-chain
+    blockHeaderDAO.chainTips.map { tips =>
+      val sorted = tips.sortBy(header => header.blockHeader.difficulty)
+      sorted.head.hashBE
+    }
   }
 }

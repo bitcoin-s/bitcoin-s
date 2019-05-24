@@ -49,6 +49,11 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     sendMsg(headersMsg)
   }
 
+  def sendHeadersMessage(): Unit = {
+    val sendHeadersMsg = SendHeadersMessage
+    sendMsg(sendHeadersMsg)
+  }
+
   private def sendMsg(msg: NetworkPayload): Unit = {
     logger.debug(s"PeerMessageSender sending msg=${msg}")
     val newtworkMsg = NetworkMessage(np, msg)

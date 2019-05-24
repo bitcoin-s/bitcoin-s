@@ -1,7 +1,10 @@
 package org.bitcoins.node.serializers.messages
 
-import org.bitcoins.node.messages.{MsgBlock, MsgFilteredBlock, MsgTx}
-import org.bitcoins.node.messages.{MsgBlock, MsgFilteredBlock, MsgTx}
+import org.bitcoins.node.messages.TypeIdentifier.{
+  MsgBlock,
+  MsgFilteredBlock,
+  MsgTx
+}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**
