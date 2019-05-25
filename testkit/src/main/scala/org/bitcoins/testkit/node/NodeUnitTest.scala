@@ -4,7 +4,6 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node.SpvNode
@@ -15,6 +14,8 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageSender
 }
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSAppConfig._
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
@@ -28,9 +29,6 @@ import org.scalatest.{
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-
-import org.bitcoins.testkit.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSAppConfig._
 
 trait NodeUnitTest
     extends BitcoinSFixture
