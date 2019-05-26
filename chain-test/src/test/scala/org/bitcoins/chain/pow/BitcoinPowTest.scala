@@ -56,8 +56,8 @@ class BitcoinPowTest extends ChainUnitTest {
 
       // We must start after the first POW change to avoid looking for a block we don't have
       val assertionFs =
-        (FIRST_POW_CHANGE + 1 until FIRST_POW_CHANGE + 1 + iterations).map {
-          height =>
+        (ChainUnitTest.FIRST_POW_CHANGE + 1 until ChainUnitTest.FIRST_POW_CHANGE + 1 + iterations)
+          .map { height =>
             val blockF = blockHeaderDAO.getAtHeight(height).map(_.head)
             val nextBlockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)
 
@@ -68,7 +68,7 @@ class BitcoinPowTest extends ChainUnitTest {
                                                       nextTip.blockHeader,
                                                       blockHeaderDAO)
             } yield assert(nextNBits == nextTip.nBits)
-        }
+          }
 
       Future.sequence(assertionFs).map(_ => succeed)
   }

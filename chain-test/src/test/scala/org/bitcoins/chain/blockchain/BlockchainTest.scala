@@ -19,10 +19,11 @@ class BlockchainTest extends ChainUnitTest {
   it must "connect a new header to the current tip of a blockchain" in {
     bhDAO: BlockHeaderDAO =>
       val blockchain = Blockchain.fromHeaders(
-        headers = Vector(genesisHeaderDb)
+        headers = Vector(ChainUnitTest.genesisHeaderDb)
       )
 
-      val newHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val newHeader =
+        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
 
       val connectTipF = Blockchain.connectTip(header = newHeader.blockHeader,
                                               blockHeaderDAO = bhDAO)
