@@ -1,8 +1,9 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.db._
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.db._
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
 
@@ -14,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
   * our chain project
   */
-case class BlockHeaderDAO(appConfig: AppConfig)(
+case class BlockHeaderDAO(appConfig: ChainAppConfig)(
     implicit override val ec: ExecutionContext)
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE] {
 

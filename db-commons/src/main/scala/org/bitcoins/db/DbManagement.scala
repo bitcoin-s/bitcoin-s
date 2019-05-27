@@ -30,7 +30,7 @@ abstract class DbManagement extends BitcoinSLogger {
 
   def createTable(
       table: TableQuery[_ <: Table[_]],
-      createIfNotExists: Boolean = false)(
+      createIfNotExists: Boolean = true)(
       implicit config: AppConfig): Future[Unit] = {
     import config.database
     val result = if (createIfNotExists) {

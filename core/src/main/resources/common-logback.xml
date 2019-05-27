@@ -14,7 +14,7 @@
 
 
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="FILE" />
         <appender-ref ref="STDOUT" />
     </root>
@@ -23,7 +23,7 @@
     <logger name="akka.event.slf4j.Slf4jLogger" level="OFF" />
 
     <!-- get rid of annoying warning messages from tests -->
-    <logger name="org.bitcoins.chain.validation" level="OFF" />
+    <logger name="org.bitcoins.chain.validation" level="INFO" />
 
     <!-- inspect resolved config -->
     <logger name="org.bitcoins.chain.config" level="INFO" />

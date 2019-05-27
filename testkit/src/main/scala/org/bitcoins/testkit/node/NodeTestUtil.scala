@@ -5,7 +5,6 @@ import java.net.InetSocketAddress
 import akka.actor.ActorRefFactory
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.db.AppConfig
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.messages.control.VersionMessage
@@ -72,7 +71,7 @@ abstract class NodeTestUtil {
     )
   }
 
-  def nodeAppConfig: AppConfig = NodeAppConfig
+  def nodeAppConfig: NodeAppConfig = NodeAppConfig()
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {

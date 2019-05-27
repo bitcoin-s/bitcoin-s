@@ -22,14 +22,16 @@ import org.bitcoins.node.networking.Client
   */
 class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     extends BitcoinSLogger {
+  private val socket = client.peer.socket
 
   /** Initiates a connection with the given [[Peer]] */
   def connect(): Unit = {
-    val socket = client.peer.socket
+    logger.info(s"Attempting to connect to peer=$socket")
     (client.actor ! Tcp.Connect(socket))
   }
 
   def disconnect(): Unit = {
+    logger.info(s"Disconnecting peer at socket=${socket}")
     (client.actor ! Tcp.Close)
   }
 
@@ -55,7 +57,8 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
   }
 
   private def sendMsg(msg: NetworkPayload): Unit = {
-    logger.debug(s"PeerMessageSender sending msg=${msg}")
+    logger.debug(
+      s"PeerMessageSender sending to peer=${socket} msg=${msg.commandName}")
     val newtworkMsg = NetworkMessage(np, msg)
     client.actor ! newtworkMsg
   }

@@ -1,6 +1,7 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FileUtil
@@ -22,7 +23,7 @@ class ChainHandlerTest extends ChainUnitTest {
   override implicit val system = ActorSystem("ChainUnitTest")
 
   // we're working with mainnet data
-  override lazy implicit val appConfig = mainnetAppConfig
+  override lazy implicit val appConfig: ChainAppConfig = mainnetAppConfig
 
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 

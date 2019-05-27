@@ -4,6 +4,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import java.nio.file.Path
 import java.nio.file.Paths
+
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.config.RegTest
@@ -11,6 +12,7 @@ import com.typesafe.config._
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
+
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
@@ -19,6 +21,7 @@ import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.core.protocol.blockchain.TestNetChainParams
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import java.nio.file.Files
+
 import scala.util.Properties
 import scala.util.matching.Regex
 
@@ -46,7 +49,7 @@ abstract class AppConfig extends BitcoinSLogger {
     * `bitcoin-s.network`), the latter config overrides the
     * first.
     */
-  def withOverrides(config: Config, configs: Config*): AppConfig = {
+  /*  def withOverrides(config: Config, configs: Config*): AppConfig = {
     // the two val assignments below are workarounds
     // for awkward name resolution in the block below
     val firstOverride = config
@@ -79,7 +82,7 @@ abstract class AppConfig extends BitcoinSLogger {
     }
 
     newConf
-  }
+  }*/
 
   /**
     * Name of module specific
@@ -161,7 +164,55 @@ abstract class AppConfig extends BitcoinSLogger {
     * The underlying config that we derive the
     * rest of the fields in this class from
     */
-  lazy protected val config: Config = {
+  protected val config: Config
+
+  /** The data directory used by bitcoin-s apps */
+  lazy val datadir: Path = {
+    val basedir = Paths.get(config.getString("datadir"))
+    val lastDirname = network match {
+      case MainNet  => "mainnet"
+      case TestNet3 => "testnet3"
+      case RegTest  => "regtest"
+    }
+    basedir.resolve(lastDirname)
+  }
+
+}
+
+object AppConfig extends BitcoinSLogger {
+
+  /**
+    * Matches the default data directory location
+    * with a network appended,
+    * both with and without a trailing `/`
+    */
+  private val defaultDatadirRegex: Regex = {
+    (Properties.userHome + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
+  }
+
+  /**
+    * Throws if the encountered datadir is the default one. Useful
+    * in tests, to make sure you don't blow up important data.
+    */
+  private[bitcoins] def throwIfDefaultDatadir(config: AppConfig): Unit = {
+    val datadirStr = config.datadir.toString()
+    AppConfig.defaultDatadirRegex.findFirstMatchIn(datadirStr) match {
+      case None => () // pass
+      case Some(_) =>
+        val errMsg =
+          List(
+            "It looks like you haven't changed the data directory in your test configuration.",
+            s"Your data directory is $datadirStr. This would cause tests to potentially",
+            "overwrite your existing data, which you probably don't want."
+          ).mkString(" ")
+        throw new RuntimeException(errMsg)
+    }
+
+  }
+
+  private def defaultConfig(
+      moduleConfigName: String,
+      configOverrides: Seq[Config] = List.empty): Config = {
     val moduleConfig =
       ConfigFactory.load(moduleConfigName)
 
@@ -222,47 +273,10 @@ abstract class AppConfig extends BitcoinSLogger {
     config
   }
 
-  /** The data directory used by bitcoin-s apps */
-  lazy val datadir: Path = {
-    val basedir = Paths.get(config.getString("datadir"))
-    val lastDirname = network match {
-      case MainNet  => "mainnet"
-      case TestNet3 => "testnet3"
-      case RegTest  => "regtest"
-    }
-    basedir.resolve(lastDirname)
-  }
+  lazy val defaultChainConfig: Config = defaultConfig("chain.conf")
 
-}
+  lazy val defaultWalletConfig: Config = defaultConfig("wallet.conf")
 
-object AppConfig {
+  lazy val defaultNodeConfig: Config = defaultConfig("node.conf")
 
-  /**
-    * Matches the default data directory location
-    * with a network appended,
-    * both with and without a trailing `/`
-    */
-  private val defaultDatadirRegex: Regex = {
-    (Properties.userHome + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
-  }
-
-  /**
-    * Throws if the encountered datadir is the default one. Useful
-    * in tests, to make sure you don't blow up important data.
-    */
-  private[bitcoins] def throwIfDefaultDatadir(config: AppConfig): Unit = {
-    val datadirStr = config.datadir.toString()
-    AppConfig.defaultDatadirRegex.findFirstMatchIn(datadirStr) match {
-      case None => () // pass
-      case Some(_) =>
-        val errMsg =
-          List(
-            "It looks like you haven't changed the data directory in your test configuration.",
-            s"Your data directory is $datadirStr. This would cause tests to potentially",
-            "overwrite your existing data, which you probably don't want."
-          ).mkString(" ")
-        throw new RuntimeException(errMsg)
-    }
-
-  }
 }

@@ -11,7 +11,7 @@ import org.bitcoins.db.AppConfig
 case class UTXOSpendingInfoDAO()(implicit val ec: ExecutionContext)
     extends CRUDAutoInc[UTXOSpendingInfoDb] {
 
-  override def appConfig: AppConfig = WalletAppConfig
+  override def appConfig: WalletAppConfig = WalletAppConfig()
 
   /** The table inside our database we are inserting into */
   override val table = TableQuery[UTXOSpendingInfoTable]

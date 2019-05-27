@@ -3,7 +3,7 @@ package org.bitcoins.testkit.chain
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
@@ -44,16 +44,17 @@ trait ChainUnitTest
 
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
-  implicit lazy val appConfig: AppConfig = ChainAppConfig
+  implicit lazy val appConfig: ChainAppConfig = ChainAppConfig()
 
   /**
     * Behaves exactly like the default conf, execpt
     * network is set to mainnet
     */
-  lazy val mainnetAppConfig = {
-    val mainnetOverride =
-      ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    ChainAppConfig.withOverrides(mainnetOverride)
+  lazy val mainnetAppConfig: ChainAppConfig = {
+    val defaultConfig = ChainAppConfig()
+    val mainnet = ConfigValueFactory.fromAnyRef("mainnet")
+    val newConfig = defaultConfig.config.withValue("network", mainnet)
+    ChainAppConfig(newConfig)
   }
 
   override def beforeAll(): Unit = {
@@ -302,14 +303,14 @@ object ChainUnitTest extends BitcoinSLogger {
 
   def createChainHandler()(
       implicit ec: ExecutionContext,
-      appConfig: AppConfig): Future[ChainHandler] = {
+      appConfig: ChainAppConfig): Future[ChainHandler] = {
     val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
     genesisHeaderF.map(_ => chainHandler)
   }
 
   def createBlockHeaderDAO()(
       implicit ec: ExecutionContext,
-      appConfig: AppConfig): Future[BlockHeaderDAO] = {
+      appConfig: ChainAppConfig): Future[BlockHeaderDAO] = {
     val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
 
     genesisHeaderF.map(_ => chainHandler.blockHeaderDAO)
@@ -317,7 +318,7 @@ object ChainUnitTest extends BitcoinSLogger {
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
   def createPopulatedBlockHeaderDAO()(
-      implicit appConfig: AppConfig,
+      implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[BlockHeaderDAO] = {
     // The height of the first block in the json file
     val OFFSET: Int = FIRST_BLOCK_HEIGHT
@@ -400,7 +401,7 @@ object ChainUnitTest extends BitcoinSLogger {
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   def setupHeaderTableWithGenesisHeader()(
       implicit ec: ExecutionContext,
-      appConfig: AppConfig): (ChainHandler, Future[BlockHeaderDb]) = {
+      appConfig: ChainAppConfig): (ChainHandler, Future[BlockHeaderDb]) = {
     val tableSetupF = setupHeaderTable()
 
     val chainHandler = makeChainHandler()
@@ -413,7 +414,7 @@ object ChainUnitTest extends BitcoinSLogger {
   }
 
   def makeChainHandler(firstHeader: BlockHeaderDb = genesisHeaderDb)(
-      implicit appConfig: AppConfig,
+      implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): ChainHandler = {
     lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
 

@@ -1,31 +1,27 @@
 package org.bitcoins.node
 
-import slick.jdbc.SQLiteProfile.api._
-import org.bitcoins.chain.models.BlockHeaderTable
-import scala.concurrent.duration._
-import scala.concurrent._
-import org.bitcoins.node.constant.Constants
-import akka.actor.ActorSystem
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
+import java.net.{InetAddress, InetSocketAddress}
+
 import org.bitcoins.chain.blockchain.ChainHandler
-import java.net.InetSocketAddress
-import org.bitcoins.node.util.NetworkIpAddress
-import org.bitcoins.node.models.Peer
-import scala.util.Failure
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderTable}
 import org.bitcoins.core.util.BitcoinSLogger
-import scala.util.Success
-import java.io.PrintWriter
-import java.io.PrintStream
-import java.io.OutputStream
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.constant.Constants
+import org.bitcoins.node.models.Peer
+import org.bitcoins.node.util.NetworkIpAddress
+import slick.jdbc.SQLiteProfile.api._
+
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 object Main extends App with BitcoinSLogger {
   implicit val system = Constants.actorSystem
   import system.dispatcher
 
-  implicit val appconfig = NodeAppConfig
-  val chainAppConfig = ChainAppConfig
+  implicit val appconfig = NodeAppConfig()
+  implicit val chainAppConfig = ChainAppConfig()
   logger.info(s"Chain config: ${chainAppConfig.dbConfig.config}")
 
   val bhDAO = BlockHeaderDAO(chainAppConfig)
@@ -34,22 +30,26 @@ object Main extends App with BitcoinSLogger {
 
   logger.info(s"Creating block header table")
 
-  val createTablesF =
-    ChainAppConfig.database.run(table.schema.createIfNotExists)
-  Await.result(createTablesF, 3.seconds)
+  val chainInitF = chainAppConfig.initialize
+  Await.result(chainInitF, 3.seconds)
   logger.info(s"Creating block header table: done")
 
-  val socket = new InetSocketAddress("localhost", 18333)
+  val socket = new InetSocketAddress(InetAddress.getLoopbackAddress, 18333)
   val nip = NetworkIpAddress.fromInetSocketAddress(socket)
   val peer = Peer(nip)
-  val spvNode = SpvNode(peer, chainApi)
+
+  logger.info(s"Starting spv node")
+  val spvNodeF = SpvNode(peer, chainApi).start()
 
   logger.info(s"Starting SPV node sync")
-  spvNode.sync().onComplete {
-    case Failure(exception) =>
-      logger.error(s"Could not sync SPV node!")
-      exception.printStackTrace()
-      sys.exit(1)
-    case Success(_) => logger.info(s"Synced SPV node successfully")
+  spvNodeF.map { spvNode =>
+    spvNode.sync().onComplete {
+      case Failure(exception) =>
+        logger.error(s"Could not sync SPV node!")
+        exception.printStackTrace()
+        sys.exit(1)
+      case Success(_) =>
+        logger.info(s"Started syncing SPV node successfully")
+    }
   }
 }

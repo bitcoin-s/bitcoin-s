@@ -93,6 +93,11 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     case connected: Tcp.Connected =>
       val _ = handleEvent(connected, ByteVector.empty)
 
+    case msg: NetworkMessage =>
+      self.forward(msg.payload)
+    case payload: NetworkPayload =>
+      logger.error(
+        s"Cannot send a message to our peer when we are not connected! payload=${payload} peer=${peer}")
   }
 
   /**
@@ -208,7 +213,6 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
       message: NetworkMessage,
       peer: ActorRef): Unit = {
     val byteMessage = BitcoinSpvNodeUtil.buildByteString(message.bytes)
-    logger.debug(s"Network message: ${message} bytes=${byteMessage}")
     peer ! Tcp.Write(byteMessage)
   }
 

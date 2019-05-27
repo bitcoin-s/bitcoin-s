@@ -3,6 +3,7 @@ package org.bitcoins.testkit.node
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
@@ -38,7 +39,7 @@ trait NodeUnitTest
     with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(appConfig)
+    AppConfig.throwIfDefaultDatadir(nodeAppConfig)
   }
 
   override def afterAll(): Unit = {
@@ -53,16 +54,17 @@ trait NodeUnitTest
 
   val timeout: FiniteDuration = 10.seconds
 
-  implicit lazy val appConfig: AppConfig = NodeAppConfig
-
-  implicit val np: NetworkParameters = appConfig.network
+  implicit lazy val nodeAppConfig: NodeAppConfig = NodeAppConfig()
+  implicit lazy val chainAppConfig: ChainAppConfig = ChainAppConfig()
+  implicit val np: NetworkParameters = nodeAppConfig.network
 
   lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
   lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 
   def buildPeerMessageReceiver(): PeerMessageReceiver = {
-    val receiver = PeerMessageReceiver.newReceiver(appConfig)
+    val receiver =
+      PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
     receiver
   }
 
@@ -139,7 +141,7 @@ trait NodeUnitTest
 object NodeUnitTest {
 
   def destroySpvNode(spvNode: SpvNode)(
-      implicit appConfig: AppConfig,
+      implicit appConfig: NodeAppConfig,
       ec: ExecutionContext): Future[Unit] = {
     val stopF = spvNode.stop()
     stopF.flatMap(_ => ChainUnitTest.destroyHeaderTable())
@@ -148,7 +150,7 @@ object NodeUnitTest {
   def destorySpvNodeConnectedWithBitcoind(
       spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind)(
       implicit system: ActorSystem,
-      appConfig: AppConfig): Future[Unit] = {
+      appConfig: NodeAppConfig): Future[Unit] = {
     import system.dispatcher
     val spvNode = spvNodeConnectedWithBitcoind.spvNode
     val bitcoind = spvNodeConnectedWithBitcoind.bitcoind

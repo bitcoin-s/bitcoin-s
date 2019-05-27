@@ -2,8 +2,10 @@ package org.bitcoins.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.AppConfig
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.{
@@ -15,17 +17,20 @@ import org.bitcoins.rpc.util.AsyncUtil
 import scala.concurrent.Future
 
 case class SpvNode(peer: Peer, chainApi: ChainApi)(
-    implicit appConfig: AppConfig,
-    system: ActorSystem) {
+    implicit system: ActorSystem,
+    nodeAppConfig: NodeAppConfig,
+    chainAppConfig: ChainAppConfig)
+    extends BitcoinSLogger {
   import system.dispatcher
 
-  private val peerMsgRecv = PeerMessageReceiver.newReceiver(appConfig)
+  private val peerMsgRecv =
+    PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
 
   private val client: Client =
     Client(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)
 
   private val peerMsgSender: PeerMessageSender = {
-    PeerMessageSender(client, appConfig.network)
+    PeerMessageSender(client, nodeAppConfig.network)
   }
 
   /** Starts our spv node */
@@ -37,6 +42,15 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
     }
 
     val isInitializedF = AsyncUtil.retryUntilSatisfied(isInit)
+
+    isInitializedF.map { _ =>
+      logger.info(s"Our peer=${peer} has been initialized")
+    }
+
+    isInitializedF.failed.foreach { err =>
+      logger.error(s"Failed to conenct with peer=$peer with err=${err}")
+
+    }
 
     isInitializedF.map(_ => this)
   }
