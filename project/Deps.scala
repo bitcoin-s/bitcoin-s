@@ -47,15 +47,15 @@ object Deps {
     //node deps
     val joda = "joda-time" % "joda-time" % V.jodaV
 
-    val akkaSlf4j =
-      ("com.typesafe.akka" %% "akka-slf4j" % V.akkaStreamv withSources () withJavadoc ())
-        .exclude("org.slf4j", "slf4j-api")
     val slick = "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV cross CrossVersion.full
     val uJson = "com.lihaoyi" %% "ujson" % V.uJsonV
+
+    val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
+    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
   }
 
   object Test {
@@ -64,9 +64,9 @@ object Deps {
     val bitcoinj = ("org.bitcoinj" % "bitcoinj-core" % "0.14.4" % "test")
       .exclude("org.slf4j", "slf4j-api")
     val junitInterface = "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
-    val logback = "ch.qos.logback" % "logback-classic" % V.logback % "test" withSources () withJavadoc ()
-    val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck % "test" withSources () withJavadoc ()
-    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest % "test" withSources () withJavadoc ()
+    val logback = Compile.logback % "test"
+    val scalacheck = Compile.scalacheck % "test"
+    val scalaTest = Compile.scalaTest % "test"
     val spray = "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
@@ -172,7 +172,7 @@ object Deps {
 
   val node = List(
     Compile.akkaActor,
-    Compile.akkaSlf4j,
+    Compile.logback,
     Compile.joda,
     Compile.slick,
     Compile.slickHikari,
@@ -189,8 +189,8 @@ object Deps {
 
   val testkit = List(
     Compile.slf4j,
-    "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc (),
-    "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc (),
+    Compile.scalacheck,
+    Compile.scalaTest,
     Test.ammonite
   )
 
@@ -207,7 +207,7 @@ object Deps {
 
   val doc = List(
     Compile.ammonite,
-    "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc (),
+    Compile.logback,
     Test.scalaTest,
     Test.logback
   )

@@ -148,6 +148,9 @@ abstract class AppConfig extends BitcoinSLogger {
       case "mainnet"  => MainNetChainParams
       case "testnet3" => TestNetChainParams
       case "regtest"  => RegTestNetChainParams
+      case other: String =>
+        throw new IllegalArgumentException(
+          s"'$other' is not a recognized network! Available options: mainnet, testnet3, regtest")
     }
   }
 
@@ -162,18 +165,29 @@ abstract class AppConfig extends BitcoinSLogger {
     val moduleConfig =
       ConfigFactory.load(moduleConfigName)
 
+    logger.debug(
+      s"Module config: ${moduleConfig.getConfig("bitcoin-s").asReadableJson}")
+
     // `load` tries to resolve substitions,
     // `parseResources` does not
     val dbConfig = ConfigFactory
       .parseResources("db.conf")
 
-    // loads reference.conf as well as application.conf,
-    // if the user has made one
-    val unresolvedConfig =
+    logger.trace(
+      s"DB config: ${dbConfig.getConfig("bitcoin-s").asReadableJson}")
+
+    val classPathConfig =
       ConfigFactory
         .load()
-        .withFallback(moduleConfig)
-        .withFallback(dbConfig)
+
+    logger.trace(
+      s"Classpath config: ${classPathConfig.getConfig("bitcoin-s").asReadableJson}")
+
+    // loads reference.conf as well as application.conf,
+    // if the user has made one
+    val unresolvedConfig = classPathConfig
+      .withFallback(moduleConfig)
+      .withFallback(dbConfig)
 
     logger.trace(s"Unresolved bitcoin-s config:")
     logger.trace(unresolvedConfig.getConfig("bitcoin-s").asReadableJson)
@@ -182,13 +196,13 @@ abstract class AppConfig extends BitcoinSLogger {
       if (configOverrides.nonEmpty) {
         val overrides =
           configOverrides
-          // we reverse to make the configs specified last precedent
+          // we reverse to make the configs specified last take precedent
           .reverse
             .reduce(_.withFallback(_))
 
         val interestingOverrides = overrides.getConfig("bitcoin-s")
-        logger.debug(s"User-overrides for bitcoin-s config:")
-        logger.debug(interestingOverrides.asReadableJson)
+        logger.trace(s"User-overrides for bitcoin-s config:")
+        logger.trace(interestingOverrides.asReadableJson)
 
         // to make the overrides actually override
         // the default setings we have to do it
