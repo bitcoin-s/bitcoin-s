@@ -28,6 +28,7 @@ import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
+import org.bitcoins.rpc.config.BitcoindAuthCredentials
 
 /**
   * @define nodeLinkDoc
@@ -90,15 +91,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort): BitcoindInstance = {
-    val uri = new URI("http://localhost:" + port)
-    val rpcUri = new URI("http://localhost:" + rpcPort)
-    val auth = BitcoindRpcTestUtil.authCredentials(uri, rpcUri, zmqPort, false)
-
-    BitcoindInstance(network = network,
-                     uri = uri,
-                     rpcUri = rpcUri,
-                     authCredentials = auth,
-                     zmqConfig = ZmqConfig.fromPort(zmqPort))
+    BitcoindRpcTestUtil.instance(port = port,
+                                 rpcPort = rpcPort,
+                                 zmqPort = zmqPort)
   }
 
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
@@ -113,9 +108,13 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.server.public-ips.1" -> "127.0.0.1",
         "eclair.server.binding-ip" -> "0.0.0.0",
         "eclair.server.port" -> port,
-        "eclair.bitcoind.rpcuser" -> bitcoindInstance.authCredentials.username,
-        "eclair.bitcoind.rpcpassword" -> bitcoindInstance.authCredentials.password,
-        "eclair.bitcoind.rpcport" -> bitcoindInstance.authCredentials.rpcPort,
+        "eclair.bitcoind.rpcuser" -> bitcoindInstance.authCredentials
+          .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+          .username,
+        "eclair.bitcoind.rpcpassword" -> bitcoindInstance.authCredentials
+          .asInstanceOf[BitcoindAuthCredentials.PasswordBased]
+          .password,
+        "eclair.bitcoind.rpcport" -> bitcoindInstance.rpcUri.getPort,
         // newer versions of Eclair has removed this config setting, in favor of
         // the below it. All three are included here for good measure
         "eclair.bitcoind.zmq" -> bitcoindInstance.zmqConfig.rawTx.get.toString,
@@ -553,15 +552,13 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def getBitcoindRpc(eclairRpcClient: EclairRpcClient)(
       implicit system: ActorSystem): BitcoindRpcClient = {
     val bitcoindRpc = {
-      val eclairAuth = eclairRpcClient.instance.authCredentials
-      val bitcoindRpcPort = eclairAuth.bitcoinRpcPort.get
-
+      val instance = eclairRpcClient.instance
+      val auth = instance.authCredentials
       val bitcoindInstance = BitcoindInstance(
-        network = eclairRpcClient.instance.network,
+        network = instance.network,
         uri = new URI("http://localhost:18333"),
-        rpcUri = new URI(s"http://localhost:${bitcoindRpcPort}"),
-        authCredentials =
-          eclairRpcClient.instance.authCredentials.bitcoinAuthOpt.get
+        rpcUri = auth.bitcoindRpcUri,
+        authCredentials = auth.bitcoinAuthOpt.get
       )
       new BitcoindRpcClient(bitcoindInstance)(system)
     }
@@ -574,6 +571,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     import system.dispatcher
     val bitcoindRpc = getBitcoindRpc(eclairRpcClient)
 
+    logger.debug(s"shutting down eclair")
     eclairRpcClient.stop()
 
     bitcoindRpc.stop().map(_ => ())

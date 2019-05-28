@@ -4,20 +4,18 @@ import java.io.File
 import java.net.URI
 import java.nio.file.Paths
 
-import com.typesafe.config._
-import org.bitcoins.core.config.{NetworkParameters, _}
 import org.bitcoins.rpc.client.common.BitcoindVersion
 
 import scala.sys.process._
-import scala.util.{Failure, Properties, Success, Try}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.config.NetworkParameters
+import scala.util.Try
+import java.nio.file.Files
 
 /**
   * Created by chris on 4/29/17.
   */
-sealed trait BitcoindInstance {
-  require(
-    rpcUri.getPort == rpcPort,
-    s"RpcUri and the rpcPort in authCredentials are different $rpcUri authcred: $rpcPort")
+sealed trait BitcoindInstance extends BitcoinSLogger {
 
   require(binary.exists,
           s"bitcoind binary path (${binary.getAbsolutePath}) does not exist!")
@@ -29,13 +27,13 @@ sealed trait BitcoindInstance {
   /** The binary file that should get executed to start Bitcoin Core */
   def binary: File
 
+  def datadir: File
+
   def network: NetworkParameters
   def uri: URI
   def rpcUri: URI
   def authCredentials: BitcoindAuthCredentials
   def zmqConfig: ZmqConfig
-
-  def rpcPort: Int = authCredentials.rpcPort
 
   def getVersion: BitcoindVersion = {
 
@@ -61,7 +59,8 @@ object BitcoindInstance {
       rpcUri: URI,
       authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig,
-      binary: File
+      binary: File,
+      datadir: File
   ) extends BitcoindInstance
 
   def apply(
@@ -70,14 +69,16 @@ object BitcoindInstance {
       rpcUri: URI,
       authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig = ZmqConfig(),
-      binary: File = DEFAULT_BITCOIND_LOCATION
+      binary: File = DEFAULT_BITCOIND_LOCATION,
+      datadir: File = BitcoindConfig.DEFAULT_DATADIR
   ): BitcoindInstance = {
     BitcoindInstanceImpl(network,
                          uri,
                          rpcUri,
                          authCredentials,
                          zmqConfig = zmqConfig,
-                         binary = binary)
+                         binary = binary,
+                         datadir = datadir)
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
@@ -87,138 +88,70 @@ object BitcoindInstance {
     new File(path.trim)
   }
 
-  /**
-    * Taken from Bitcoin Wiki
-    * https://en.bitcoin.it/wiki/Data_directory
+  /** Constructs a `bitcoind` instance from the given datadir, using the
+    * `bitcoin.conf` found within (if any)
+    *
+    * @throws IllegalArgumentException if the given datadir does not exist
     */
-  private val DEFAULT_DATADIR =
-    if (Properties.isMac) {
-      Paths.get(Properties.userHome,
-                "Library",
-                "Application Support",
-                "Bitcoin")
-    } else {
-      Paths.get(Properties.userHome, ".bitcoin")
-    }
-
-  private val DEFAULT_CONF_FILE = DEFAULT_DATADIR.resolve("bitcoin.conf")
-
-  def fromDatadir(datadir: File = DEFAULT_DATADIR.toFile): BitcoindInstance = {
+  def fromDatadir(
+      datadir: File = BitcoindConfig.DEFAULT_DATADIR): BitcoindInstance = {
     require(datadir.exists, s"${datadir.getPath} does not exist!")
     require(datadir.isDirectory, s"${datadir.getPath} is not a directory!")
 
-    val file = Paths.get(datadir.getAbsolutePath, "bitcoin.conf").toFile
-    fromConfigFile(file)
+    val configPath = Paths.get(datadir.getAbsolutePath, "bitcoin.conf")
+    if (Files.exists(configPath)) {
+
+      val file = configPath.toFile()
+      fromConfigFile(file)
+    } else {
+      fromConfig(
+        BitcoindConfig.empty.withOption("datadir", configPath.toString))
+    }
   }
 
+  /**
+    * Construct a `bitcoind` from the given config file. If no `datadir` setting
+    * is found, the parent directory to the given file is used.
+    *
+    * @throws IllegalArgumentException if the given config file does not exist
+    */
   def fromConfigFile(
-      file: File = DEFAULT_CONF_FILE.toFile): BitcoindInstance = {
+      file: File = BitcoindConfig.DEFAULT_CONF_FILE): BitcoindInstance = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
-    val config = ConfigFactory.parseFile(
-      file,
-      ConfigParseOptions.defaults
-        .setSyntax(ConfigSyntax.PROPERTIES)) // bitcoin.conf is not a proper .conf file, uses Java properties=like syntax
+    val conf = BitcoindConfig(file)
 
-    val configWithDatadir =
-      if (config.hasPath("datadir")) {
-        config
-      } else {
-        config.withValue("datadir",
-                         ConfigValueFactory.fromAnyRef(file.getParent))
-      }
+    val confWithDatadir = if (conf.datadir.isEmpty) {
+      conf.withOption("datadir", file.getParent.toString)
+    } else {
+      conf
+    }
 
-    fromConfig(configWithDatadir)
+    fromConfig(confWithDatadir)
   }
 
-  def fromConfig(config: Config): BitcoindInstance = {
-    val datadirStr = Try(config.getString("datadir"))
-      .getOrElse(
-        throw new IllegalArgumentException(
-          "Provided config does not contain \"datadir\" setting!"))
-
-    val datadir = new File(datadirStr)
-    require(datadir.exists, s"Datadir $datadirStr does not exist!")
-    require(datadir.isDirectory, s"Datadir $datadirStr is not directory")
-    fromConfig(config, datadir)
-  }
-
+  /** Constructs a `bitcoind` instance from the given config */
   def fromConfig(
-      config: Config,
-      datadir: File
+      config: BitcoindConfig
   ): BitcoindInstance = {
-    val network = getNetwork(config)
 
-    val uri = getUri(config, network)
-    val rpcUri = getRpcUri(config, network)
+    val authCredentials = BitcoindAuthCredentials.fromConfig(config)
 
-    val username = config.getString("rpcuser")
-    val password = config.getString("rpcpassword")
-    val authCredentials =
-      BitcoindAuthCredentials(username = username,
-                              password = password,
-                              rpcPort = rpcUri.getPort,
-                              datadir = datadir)
-
-    BitcoindInstance(network,
-                     uri,
-                     rpcUri,
-                     authCredentials,
-                     zmqConfig = ZmqConfig.fromConfig(config))
-  }
-
-  private def isSet(config: Config, path: String): Boolean = {
-    Try(config.getInt(path))
-      .map(_ == 1)
-      .getOrElse(false)
-  }
-
-  private def getNetwork(config: Config): BitcoinNetwork = {
-    val isTestnet = isSet(config, path = "testnet")
-    val isRegTest = isSet(config, path = "regtest")
-
-    (isRegTest, isTestnet) match {
-      case (true, true) =>
-        throw new IllegalArgumentException(
-          """"Cannot set both "regtest" and "testnet" options""")
-      case (true, false)  => RegTest
-      case (false, true)  => TestNet3
-      case (false, false) => MainNet
+    config.datadir match {
+      case None =>
+        BitcoindInstance(config.network,
+                         config.uri,
+                         config.rpcUri,
+                         authCredentials,
+                         zmqConfig = ZmqConfig.fromConfig(config))
+      case Some(datadir) =>
+        BitcoindInstance(config.network,
+                         config.uri,
+                         config.rpcUri,
+                         authCredentials,
+                         zmqConfig = ZmqConfig.fromConfig(config),
+                         datadir = datadir)
     }
   }
-
-  private def getUri(config: Config, network: NetworkParameters): URI = {
-    val port = Try(config.getInt("port")).getOrElse(network.port)
-    val host = Try(config.getString("bind")).getOrElse("localhost")
-    val uriT = Try {
-      new URI(s"http://$host:$port")
-    }
-
-    uriT match {
-      case Success(uriSuccess) => uriSuccess
-      case Failure(exception) =>
-        throw new IllegalArgumentException(
-          s"Could not construct URI from host $host and port $port",
-          exception)
-    }
-
-  }
-
-  private def getRpcUri(config: Config, network: NetworkParameters): URI = {
-    val rpcPort = Try(config.getInt("rpcport")).getOrElse(network.rpcPort)
-    val rpcHost = Try(config.getString("rpcbind")).getOrElse("localhost")
-
-    val rpcUriT = Try {
-      new URI(s"http://$rpcHost:$rpcPort")
-    }
-    rpcUriT match {
-      case Success(uriSuccess) => uriSuccess
-      case Failure(exception) =>
-        throw new IllegalArgumentException(
-          s"Could not construct URI from host $rpcHost and port $rpcPort",
-          exception)
-    }
-  }
-
 }

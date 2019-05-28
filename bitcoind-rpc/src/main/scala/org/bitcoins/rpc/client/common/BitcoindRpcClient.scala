@@ -2,6 +2,9 @@ package org.bitcoins.rpc.client.common
 
 import akka.actor.ActorSystem
 import org.bitcoins.rpc.config.BitcoindInstance
+import scala.concurrent.Future
+import java.io.File
+import org.bitcoins.rpc.config.BitcoindConfig
 
 /**
   * This class is not guaranteed to be compatible with any particular
@@ -33,6 +36,20 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
   require(version == BitcoindVersion.Unknown || version == instance.getVersion,
           s"bitcoind version must be $version, got ${instance.getVersion}")
 
+}
+
+object BitcoindRpcClient {
+
+  /**
+    * Constructs a RPC client from the given datadir, or
+    * the default datadir if no directory is provided
+    */
+  def fromDatadir(datadir: File = BitcoindConfig.DEFAULT_DATADIR)(
+      implicit system: ActorSystem): BitcoindRpcClient = {
+    val instance = BitcoindInstance.fromDatadir(datadir)
+    val cli = new BitcoindRpcClient(instance)
+    cli
+  }
 }
 
 sealed trait BitcoindVersion

@@ -1,12 +1,10 @@
 package org.bitcoins.testkit.rpc
 
-import java.io.{File, PrintWriter}
 import java.net.URI
 import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -50,12 +48,16 @@ import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
+import org.bitcoins.rpc.config.BitcoindConfig
+import java.nio.file.Files
+import java.io.File
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import java.nio.file.Path
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
   import BitcoindRpcTestUtil.DEFAULT_LONG_DURATION
-
-  import scala.collection.JavaConverters._
 
   type RpcClientAccum =
     mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]]
@@ -76,7 +78,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   /**
     * Standard config used for testing purposes
     */
-  def standardConfig: Config = {
+  def standardConfig: BitcoindConfig = {
     def newUri: URI = new URI(s"http://localhost:${RpcUtil.randomPort}")
     config(uri = newUri,
            rpcUri = newUri,
@@ -88,88 +90,78 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       uri: URI,
       rpcUri: URI,
       zmqPort: Int,
-      pruneMode: Boolean): Config = {
+      pruneMode: Boolean): BitcoindConfig = {
     val pass = randomDirName
     val username = "random_user_name"
-    val values = Map[String, String](
-      "rpcuser" -> username,
-      "rpcpassword" -> pass,
-      "rpcport" -> rpcUri.getPort.toString,
-      "port" -> uri.getPort.toString,
-      "daemon" -> "1",
-      "server" -> "1",
-      "debug" -> "1",
-      "regtest" -> "1",
-      "walletbroadcast" -> "1",
-      "txindex" -> (if (pruneMode) "0" else "1"), // pruning and txindex are not compatible
-      "zmqpubhashtx" -> s"tcp://127.0.0.1:$zmqPort",
-      "zmqpubhashblock" -> s"tcp://127.0.0.1:$zmqPort",
-      "zmqpubrawtx" -> s"tcp://127.0.0.1:$zmqPort",
-      "zmqpubrawblock" -> s"tcp://127.0.0.1:$zmqPort",
-      "prune" -> (if (pruneMode) "1" else "0")
-    )
-
-    val javaMap = values.asJava
-    ConfigFactory.parseMap(javaMap)
+    val conf = s"""
+      |regtest=1
+      |daemon=1
+      |server=1
+      |
+      |rpcuser=$username
+      |rpcpassword=$pass
+      |rpcport=${rpcUri.getPort}
+      |port=${uri.getPort}
+      |debug=1
+      |walletbroadcast=1
+      |txindex=${if (pruneMode) 0 else 1 /* pruning and txindex are not compatible */}
+      |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
+      |zmqpubhashblock=tcp://127.0.0.1:$zmqPort
+      |zmqpubrawtx=tcp://127.0.0.1:$zmqPort
+      |zmqpubrawblock=tcp://127.0.0.1:$zmqPort
+      |prune=${if (pruneMode) 1 else 0}
+    """.stripMargin
+    BitcoindConfig(conf)
   }
 
   /**
-    * Assumes the `config` object has a `datadir` string. Returns the written
-    * file.
+    * Writes the config to the data directory within it, it it doesn't
+    * exist. Returns the written file. Assumes the config has a datadir.
     */
-  def writeConfigToFile(config: Config): File = {
+  def writeConfigToFile(config: BitcoindConfig): Path = {
 
-    val confSet = config.entrySet.asScala
-    val confStr =
-      confSet
-        .map(entry => {
-          val key = entry.getKey
-          val value = entry.getValue.unwrapped
-          s"$key=$value"
-        })
-        .mkString("\n")
+    val confStr = config.lines.mkString("\n")
 
-    val datadir = new File(config.getString("datadir"))
-    datadir.mkdir()
+    val datadir = config.datadir
+      .getOrElse(
+        throw new IllegalArgumentException(
+          "Provided bitcoind config does not have datadir field!"))
+      .toPath
 
-    val confFile = new java.io.File(datadir.getAbsolutePath + "/bitcoin.conf")
-    confFile.createNewFile()
+    val confFile = datadir.resolve("bitcoin.conf")
 
-    val pw = new PrintWriter(confFile)
-    pw.write(confStr)
-    pw.close()
+    Files.createDirectories(datadir)
+    if (!Files.exists(confFile)) {
+      Files.write(confFile, confStr.getBytes)
+    }
 
     confFile
   }
 
   /**
-    * Creates a datadir and places the username/password combo
-    * in the bitcoin.conf in the datadir
+    * Creates a `bitcoind` config within the system temp
+    * directory, writes the file and returns the written
+    * file
     */
-  def authCredentials(
+  def writtenConfig(
       uri: URI,
       rpcUri: URI,
       zmqPort: Int,
-      pruneMode: Boolean): BitcoindAuthCredentials = {
+      pruneMode: Boolean
+  ): Path = {
     val conf = config(uri, rpcUri, zmqPort, pruneMode)
 
     val configWithDatadir =
-      if (conf.hasPath("datadir")) {
+      if (conf.datadir.isDefined) {
         conf
       } else {
-        conf.withValue("datadir",
-                       ConfigValueFactory.fromAnyRef("/tmp/" + randomDirName))
+        val tempDir = Paths.get(Properties.tmpDir, randomDirName)
+        conf.withOption("datadir", tempDir.toString)
       }
 
-    val configFile = writeConfigToFile(configWithDatadir)
-
-    val username = configWithDatadir.getString("rpcuser")
-    val pass = configWithDatadir.getString("rpcpassword")
-
-    BitcoindAuthCredentials(username,
-                            pass,
-                            rpcUri.getPort,
-                            configFile.getParentFile)
+    val written = writeConfigToFile(configWithDatadir)
+    logger.debug(s"Wrote conf to ${written}")
+    written
   }
 
   lazy val network: RegTest.type = RegTest
@@ -202,6 +194,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       case BitcoindVersion.Unknown => BitcoindInstance.DEFAULT_BITCOIND_LOCATION
     }
 
+  /** Creates a `bitcoind` instance within the user temporary directory */
   def instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
@@ -210,7 +203,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       versionOpt: Option[BitcoindVersion] = None): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    val auth = authCredentials(uri, rpcUri, zmqPort, pruneMode)
+    val configFile = writtenConfig(uri, rpcUri, zmqPort, pruneMode)
+    val conf = BitcoindConfig(configFile)
+    val auth = BitcoindAuthCredentials.fromConfig(conf)
     val binary = versionOpt match {
       case Some(version) =>
         getBinary(version)
@@ -221,7 +216,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                                     rpcUri = rpcUri,
                                     authCredentials = auth,
                                     zmqConfig = ZmqConfig.fromPort(zmqPort),
-                                    binary = binary)
+                                    binary = binary,
+                                    datadir = configFile.getParent.toFile())
 
     instance
   }
@@ -266,8 +262,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val serverStops = servers.map { s =>
       val stopF = s.stop()
-      deleteTmpDir(s.getDaemon.authCredentials.datadir)
-      stopF
+      deleteTmpDir(s.getDaemon.datadir)
+      stopF.onComplete {
+        case Failure(exception) =>
+          logger.error(s"Could not shut down sever: $exception")
+        case Success(_) =>
+      }
+      for {
+        stop <- stopF
+        _ <- RpcUtil.awaitConditionF(() => s.isStoppedF)
+      } yield stop
     }
     Future.sequence(serverStops).map(_ => ())
   }
@@ -280,7 +284,19 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     stopServers(Vector(server))
   }
 
+  /**
+    * Deletes the given temporary directory
+    *
+    * @throws IllegalArgumentException if the
+    *         given directory isn't in the user
+    *         temp dir location
+    */
   def deleteTmpDir(dir: File): Boolean = {
+    val isTemp = dir.getPath startsWith Properties.tmpDir
+    if (!isTemp) {
+      throw new IllegalArgumentException(
+        s"Directory $dir is not in the system temp dir location! You most likely didn't mean to delete this directory.")
+    }
     if (!dir.isDirectory) {
       dir.delete()
     } else {
@@ -806,7 +822,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       implicit executionContext: ExecutionContext): Future[Unit] = {
     val stopsF = List(client1, client2).map { client =>
       client.stop().map { _ =>
-        deleteTmpDir(client.getDaemon.authCredentials.datadir)
+        deleteTmpDir(client.getDaemon.datadir)
       }
     }
     Future.sequence(stopsF).map(_ => ())
@@ -841,6 +857,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       clientAccum: RpcClientAccum = Vector.newBuilder)(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
+    assert(
+      instance.datadir.getPath().startsWith(Properties.tmpDir),
+      s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")
+
     //start the bitcoind instance so eclair can properly use it
     val rpc = new BitcoindRpcClient(instance)
     val startedF = rpc.start()
