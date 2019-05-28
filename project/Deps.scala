@@ -25,6 +25,7 @@ object Deps {
     val akkaActorV = akkaStreamv
     val slickV = "3.3.0"
     val sqliteV = "3.8.11.2"
+    val uJsonV = "0.7.1"
   }
 
   object Compile {
@@ -55,6 +56,7 @@ object Deps {
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV cross CrossVersion.full
+    val uJson = "com.lihaoyi" %% "ujson" % V.uJsonV
   }
 
   object Test {
@@ -199,7 +201,8 @@ object Deps {
   )
 
   val wallet = List(
-    Test.ammonite
+    Test.ammonite,
+    Compile.uJson
   )
 
   val walletTest = List(
