@@ -87,7 +87,8 @@ abstract class BitcoindConfig extends BitcoinSLogger {
     * Applies the given partial function to all key/value pairs
     * found in this config
     */
-  private val collectAllLines = collectFrom(lines)(_)
+  private val collectAllLines: PartialFunction[(String, String), String] => Seq[
+    String] = collectFrom(lines)(_)
 
   /** The blockchain network associated with this `bitcoind` config */
   lazy val network = {
@@ -227,7 +228,7 @@ abstract class BitcoindConfig extends BitcoinSLogger {
 
       def lines: Seq[String] = {
         val newLine = s"$key=$value"
-        Seq(newLine) ++ ourLines
+        newLine +: ourLines
       }
     }
   }

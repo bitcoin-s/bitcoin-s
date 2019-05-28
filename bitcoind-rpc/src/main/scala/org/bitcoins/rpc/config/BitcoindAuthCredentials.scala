@@ -42,9 +42,7 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
   case class PasswordBased(
       username: String,
       password: String
-  ) extends BitcoindAuthCredentials {
-    def config: BitcoindConfig = ???
-  }
+  ) extends BitcoindAuthCredentials
 
   /**
     * Authenticate by providing a cookie file

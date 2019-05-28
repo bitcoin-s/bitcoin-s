@@ -24,6 +24,7 @@ import java.nio.file.Files
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import java.nio.file.Path
+import org.bitcoins.rpc.config.BitcoindAuthCredentials
 
 /**
   * This is the base trait for Bitcoin Core
@@ -114,23 +115,26 @@ trait Client extends BitcoinSLogger {
       started.future
     }
 
+    // if we're doing cookie based authentication, we might attempt
+    // to read the cookie file before it's written. this ensures
+    // we avoid that
+    val awaitCookie: BitcoindAuthCredentials => Future[Unit] = {
+      case cookie: CookieBased =>
+        val cookieExistsF =
+          AsyncUtil.retryUntilSatisfied(Files.exists(cookie.cookiePath))
+        cookieExistsF.onComplete {
+          case Failure(exception) =>
+            logger.error(s"Cookie filed was never created! $exception")
+          case _: Success[_] =>
+        }
+        cookieExistsF
+      case _: PasswordBased => Future.successful(())
+
+    }
+
     val started = {
       for {
-        _ <- instance.authCredentials match {
-          // if we're doing cookie based authentication, we might attempt
-          // to read the cookie file before it's written. this check is
-          // to avoid that
-          case cookie: CookieBased =>
-            val cookieExistsF =
-              AsyncUtil.retryUntilSatisfied(Files.exists(cookie.cookiePath))
-            cookieExistsF.onComplete {
-              case Failure(exception) =>
-                logger.error(s"Cookie filed was never created! $exception")
-              case _: Success[_] =>
-            }
-            cookieExistsF
-          case _: PasswordBased => Future.successful(())
-        }
+        _ <- awaitCookie(instance.authCredentials)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
                                             duration = 1.seconds,
                                             maxTries = 60)
@@ -140,20 +144,26 @@ trait Client extends BitcoinSLogger {
     started.onComplete {
       case Success(_) => logger.debug(s"started bitcoind")
       case Failure(exc) =>
-        if (instance.network != MainNet) {
-          logger.info(
-            s"Could not start bitcoind instance! Message: ${exc.getMessage}")
-          if (network != MainNet) {
-            val tempfile = Files.createTempFile("bitcoind-log-", ".dump")
-            val logfile = Files.readAllBytes(logFile)
-            Files.write(tempfile, logfile)
-            logger.info(s"Dumped debug.log to $tempfile")
+        logger.info(
+          s"Could not start bitcoind instance! Message: ${exc.getMessage}")
+        // When we're unable to start bitcoind that's most likely
+        // either a configuration error or bug in Bitcoin-S. In either
+        // case it's much easier to debug this with conf and logs
+        // dumped somewhere. Especially in tests this is
+        // convenient, as our test framework deletes the data directories
+        // of our instances. We don't want to do this on mainnet,
+        // as both the logs and conf file most likely contain sensitive
+        // information
+        if (network != MainNet) {
+          val tempfile = Files.createTempFile("bitcoind-log-", ".dump")
+          val logfile = Files.readAllBytes(logFile)
+          Files.write(tempfile, logfile)
+          logger.info(s"Dumped debug.log to $tempfile")
 
-            val otherTempfile = Files.createTempFile("bitcoin-conf-", ".dump")
-            val conffile = Files.readAllBytes(confFile)
-            Files.write(otherTempfile, conffile)
-            logger.info(s"Dumped bitcoin.conf to $otherTempfile")
-          }
+          val otherTempfile = Files.createTempFile("bitcoin-conf-", ".dump")
+          val conffile = Files.readAllBytes(confFile)
+          Files.write(otherTempfile, conffile)
+          logger.info(s"Dumped bitcoin.conf to $otherTempfile")
         }
     }
 
