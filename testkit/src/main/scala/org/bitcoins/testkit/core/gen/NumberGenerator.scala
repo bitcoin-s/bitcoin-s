@@ -125,6 +125,16 @@ trait NumberGenerator {
       vector <- Gen.listOfN(n, bool)
     } yield BitVector.bits(vector)
 
+  /**
+    * Generates a random GCS P parameter.
+    *
+    * Bit parameter for GCS, cannot be more than 32 as we will have a number too large for a UInt64.
+    * @see [[https://github.com/Roasbeef/btcutil/blob/b5d74480bb5b02a15a9266cbeae37ecf9dd6ffca/gcs/gcs.go#L67]]
+    */
+  def genP: Gen[UInt8] = {
+    Gen.choose(0, 32).map(UInt8(_))
+  }
+
 }
 
 object NumberGenerator extends NumberGenerator

@@ -2,12 +2,14 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.protocol.script.{SigVersionBase, SigVersionWitnessV0}
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
+import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
 
@@ -30,6 +32,51 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
         Seq(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4) ++
           BytesToPushOntoStack.operations)
       .isEmpty must be(true)
+  }
+
+  // https://en.bitcoin.it/wiki/Genesis_block
+  it must "filter out non-data from the genesis coinbase transaction" in {
+    val genesisPK = ECPublicKey.fromHex(
+      "04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f")
+    val output = TransactionOutput.fromHex(
+      "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac")
+    val scriptPubKey = output.scriptPubKey
+    assert(
+      BitcoinScriptUtil
+        .getDataTokens(scriptPubKey.asm)
+        .map(_.bytes) == Vector(genesisPK.bytes))
+  }
+
+  it must "filter out all but the data tokens" in {
+    val (p2pkhScript, _) = ScriptGenerators.p2pkhScriptPubKey.sample.get
+    assert(
+      BitcoinScriptUtil
+        .getDataTokens(p2pkhScript.asm)
+        .map(_.bytes) == Vector(p2pkhScript.pubKeyHash.bytes))
+
+    val (p2shScript, _) = ScriptGenerators.p2shScriptPubKey.sample.get
+    assert(
+      BitcoinScriptUtil
+        .getDataTokens(p2shScript.asm)
+        .map(_.bytes) == Vector(p2shScript.scriptHash.bytes))
+
+    val (p2wshScript, _) = ScriptGenerators.p2wshSPKV0.sample.get
+    assert(
+      BitcoinScriptUtil
+        .getDataTokens(p2wshScript.asm)
+        .map(_.bytes) == Vector(p2wshScript.scriptHash.bytes))
+
+    val (p2wpkhScript, _) = ScriptGenerators.p2wpkhSPKV0.sample.get
+    assert(
+      BitcoinScriptUtil
+        .getDataTokens(p2wpkhScript.asm)
+        .map(_.bytes) == Vector(p2wpkhScript.pubKeyHash.bytes))
+
+    val (multiSigScript, _) = ScriptGenerators.multiSigScriptPubKey.sample.get
+    assert(
+      BitcoinScriptUtil
+        .getDataTokens(multiSigScript.asm)
+        .map(_.bytes) == multiSigScript.publicKeys.map(_.bytes))
   }
 
   it must "determine if a script op count towards the bitcoin script op code limit" in {

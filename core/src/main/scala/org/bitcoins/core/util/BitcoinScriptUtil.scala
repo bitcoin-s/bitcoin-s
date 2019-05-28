@@ -66,6 +66,23 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           || op == OP_PUSHDATA4)
   }
 
+  def getDataTokens(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    var prevWasPush: Boolean = false
+
+    asm.filter { token =>
+      val isData = prevWasPush
+
+      if (token
+            .isInstanceOf[BytesToPushOntoStack] || token == OP_PUSHDATA1 || token == OP_PUSHDATA2 || token == OP_PUSHDATA4) {
+        prevWasPush = true
+      } else {
+        prevWasPush = false
+      }
+
+      isData
+    }
+  }
+
   /**
     * Returns true if the given script token counts towards our max script operations in a script
     * See
