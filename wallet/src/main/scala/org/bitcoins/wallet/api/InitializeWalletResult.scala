@@ -17,4 +17,15 @@ object InitializeWalletError {
       extends Error(underlying)
       with InitializeWalletError
 
+  /**
+    * Wallet data was found in the
+    * specified data directory.
+    *
+    * @note `bitcoin-s` only supports one wallet
+    *   per network at the moment.
+    */
+  final case object WalletAlreadyExists
+      extends Error("Wallet already exists")
+      with InitializeWalletError
+
 }
