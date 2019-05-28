@@ -137,7 +137,6 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def connect(uri: NodeUri): Future[String] = {
-    logger.info(s"Connecting to $uri")
     eclairCall[String]("connect", List(JsString(uri.toString)))
   }
 
@@ -583,7 +582,7 @@ class EclairRpcClient(val instance: EclairInstance)(
         val p = Process(
           s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $pathToEclairJar &")
         val result = p.run()
-        logger.info(
+        logger.debug(
           s"Starting eclair with datadir ${instance.authCredentials.datadir.get}")
 
         process = Some(result)
@@ -605,8 +604,10 @@ class EclairRpcClient(val instance: EclairInstance)(
     val p = Promise[Boolean]()
 
     getInfo.onComplete {
-      case Success(_) => p.success(true)
-      case Failure(_) => p.success(false)
+      case Success(_) =>
+        p.success(true)
+      case Failure(exc) =>
+        p.success(false)
     }
 
     p.future

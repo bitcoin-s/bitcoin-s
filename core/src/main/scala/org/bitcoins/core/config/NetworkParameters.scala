@@ -156,6 +156,14 @@ object Networks {
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
 
+  /** Uses the notation used in `bitcoin.conf` */
+  def fromString(string: String): Option[NetworkParameters] = string match {
+    case "mainnet" => Some(MainNet)
+    case "testnet" => Some(TestNet3)
+    case "regtest" => Some(RegTest)
+    case _: String => None
+  }
+
   def bytesToNetwork: Map[ByteVector, NetworkParameters] = Map(
     MainNet.p2shNetworkByte -> MainNet,
     MainNet.p2pkhNetworkByte -> MainNet,

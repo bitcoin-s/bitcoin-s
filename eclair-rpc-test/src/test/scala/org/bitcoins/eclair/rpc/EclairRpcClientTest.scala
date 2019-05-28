@@ -26,17 +26,20 @@ import org.slf4j.Logger
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import akka.stream.StreamTcpException
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
-  implicit val system: ActorSystem = ActorSystem("EclairRpcClient")
+  implicit val system: ActorSystem =
+    ActorSystem("EclairRpcClient", BitcoindRpcTestUtil.AKKA_CONFIG)
   implicit val m: ActorMaterializer = ActorMaterializer.create(system)
   implicit val ec: ExecutionContext = m.executionContext
   implicit val bitcoinNp: RegTest.type = EclairRpcTestUtil.network
 
   val logger: Logger = BitcoinSLogger.logger
 
-  val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
+  lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
     val cliF = EclairRpcTestUtil.startedBitcoindRpcClient()
     // make sure we have enough money open channels
     //not async safe
@@ -45,7 +48,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     blocksF.flatMap(_ => cliF)
   }
 
-  val eclairNodesF: Future[EclairNodes4] = {
+  lazy val eclairNodesF: Future[EclairNodes4] = {
     bitcoindRpcClientF.flatMap { bitcoindRpcClient =>
       val nodesF = EclairRpcTestUtil.createNodeLink(bitcoindRpcClient)
 
@@ -109,6 +112,28 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   behavior of "RpcClient"
+
+  it should "be able to start and shutdown a node" in {
+    for {
+      bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()
+      eclair <- {
+        val server = EclairRpcTestUtil.eclairInstance(bitcoind)
+        val eclair = new EclairRpcClient(server)
+        eclair.start().map(_ => eclair)
+      }
+
+      _ <- eclair.getInfo
+
+      _ = EclairRpcTestUtil.shutdown(eclair)
+      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
+
+      _ <- eclair.getInfo
+        .map(_ => fail("Got info from a closed node!"))
+        .recover {
+          case _: StreamTcpException => ()
+        }
+    } yield succeed
+  }
 
   it should "be able to open and close a channel" in {
 
@@ -202,7 +227,10 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
 
     val badCredentialsF = goodCredentialsF.map { good =>
-      EclairAuthCredentials("bad_password", good.bitcoinAuthOpt, good.port)
+      EclairAuthCredentials("bad_password",
+                            good.bitcoinAuthOpt,
+                            rpcPort = good.rpcPort,
+                            bitcoindRpcUri = good.bitcoindRpcUri)
     }
 
     val badInstanceF = badCredentialsF.flatMap { badCredentials =>
@@ -714,7 +742,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   }
 
-  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" ignore  {
+  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" ignore {
     //make sure we see payments outside of our immediate peers
     //this is important because these gossip messages contain
     //information about channel fees, so we need to get updates

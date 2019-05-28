@@ -109,8 +109,9 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
     val instance =
       BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
-    val dir = instance.authCredentials.datadir
+    val dir = instance.datadir
     assert(dir.isDirectory)
+    assert(dir.getPath().startsWith(scala.util.Properties.tmpDir))
     assert(
       dir.listFiles.contains(new File(dir.getAbsolutePath + "/bitcoin.conf")))
     BitcoindRpcTestUtil.deleteTmpDir(dir)
@@ -131,8 +132,8 @@ class TestRpcUtilTest extends BitcoindRpcTest {
   it should "be able to create a connected node pair with more than 100 blocks and then delete them" in {
     for {
       (client1, client2) <- BitcoindRpcTestUtil.createNodePair()
-      _ = assert(client1.getDaemon.authCredentials.datadir.isDirectory)
-      _ = assert(client2.getDaemon.authCredentials.datadir.isDirectory)
+      _ = assert(client1.getDaemon.datadir.isDirectory)
+      _ = assert(client2.getDaemon.datadir.isDirectory)
 
       nodes <- client1.getAddedNodeInfo(client2.getDaemon.uri)
       _ = assert(nodes.nonEmpty)
@@ -143,8 +144,8 @@ class TestRpcUtilTest extends BitcoindRpcTest {
       _ = assert(count2 > 100)
       _ <- BitcoindRpcTestUtil.deleteNodePair(client1, client2)
     } yield {
-      assert(!client1.getDaemon.authCredentials.datadir.exists)
-      assert(!client2.getDaemon.authCredentials.datadir.exists)
+      assert(!client1.getDaemon.datadir.exists)
+      assert(!client2.getDaemon.datadir.exists)
     }
   }
 
