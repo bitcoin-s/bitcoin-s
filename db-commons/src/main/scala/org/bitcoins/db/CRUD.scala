@@ -118,6 +118,10 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
 
   protected def findAll(ts: Vector[T]): Query[Table[_], T, Seq]
 
+  /** Finds all elements in the table */
+  def findAll(): Future[Vector[T]] =
+    database.run(table.result).map(_.toVector)
+
 }
 
 case class SafeDatabase(config: AppConfig) extends BitcoinSLogger {
