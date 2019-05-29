@@ -1,4 +1,4 @@
-package org.bitcoins.wallet.util
+package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
@@ -10,7 +10,6 @@ import org.bitcoins.core.protocol.blockchain.{
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.wallet.models.AccountDb
-import org.bitcoins.wallet.HDUtil
 import scodec.bits.HexStringSyntax
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.ScriptWitness

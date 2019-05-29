@@ -1,9 +1,8 @@
-package org.bitcoins.wallet.util
+package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -27,8 +26,9 @@ trait BitcoinSWalletTest
     with BitcoinSFixture
     with BeforeAndAfterAll
     with BitcoinSLogger {
-  implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
-  implicit val ec: ExecutionContext = actorSystem.dispatcher
+  implicit lazy val actorSystem: ActorSystem = ActorSystem(
+    getClass.getSimpleName)
+  implicit lazy val ec: ExecutionContext = actorSystem.dispatcher
 
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
   protected implicit lazy val appConfig: WalletAppConfig = WalletAppConfig()
@@ -61,7 +61,8 @@ trait BitcoinSWalletTest
   }
 
   def withNewWallet(test: OneArgAsyncTest): FutureOutcome =
-    makeDependentFixture(build = createNewWallet, destroy = destroyWallet)(test)
+    makeDependentFixture(build = createNewWallet _, destroy = destroyWallet)(
+      test)
 
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,
@@ -86,7 +87,7 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      createNewWallet,
+      createNewWallet _,
       createWalletWithBitcoind,
       (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
         walletWithBitcoind
@@ -94,5 +95,6 @@ trait BitcoinSWalletTest
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
-
 }
+
+object BitcoinSWalletTest extends BitcoinSWalletTest

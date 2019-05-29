@@ -21,6 +21,8 @@ import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.api._
 import org.scalatest.{
   BeforeAndAfter,
   BeforeAndAfterAll,
@@ -102,6 +104,31 @@ trait NodeUnitTest
     for {
       chainApi <- chainApiF
     } yield SpvNode(peer = peer, chainApi = chainApi)
+  }
+
+  /**
+    * Gives a triple containing a SPV node, a `bitcoind` instance
+    * and a wallet. They are not connected in any way, but
+    * the `bitcoind` instance has some money in it
+    */
+  def withNodeAndBitcoindAndWallet(test: OneArgAsyncTest)(
+      implicit system: ActorSystem): FutureOutcome = {
+    type Triple = (SpvNode, BitcoindRpcClient, UnlockedWalletApi)
+    val create: () => Future[Triple] = () =>
+      for {
+        wallet <- BitcoinSWalletTest.createNewWallet()
+        bitcoind <- createBitcoindWithFunds()
+        spv <- createSpvNode(bitcoind)
+      } yield (spv, bitcoind, wallet)
+    val destroy: Triple => Future[Unit] = {
+      case (spv, bitcoind, wallet) =>
+        val spvWithBitcoind = SpvNodeConnectedWithBitcoind(spv, bitcoind)
+        NodeUnitTest
+          .destorySpvNodeConnectedWithBitcoind(spvWithBitcoind)
+          .flatMap(_ => BitcoinSWalletTest.destroyWallet(wallet))
+    }
+
+    makeDependentFixture(create, destroy)(test)
   }
 
   def withSpvNode(test: OneArgAsyncTest)(
