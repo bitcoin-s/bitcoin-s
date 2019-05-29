@@ -35,11 +35,6 @@ case class AddressDAO()(
     database.run(query).map(_.headOption)
   }
 
-  def findAll(): Future[Vector[AddressDb]] = {
-    val query = table.result
-    database.run(query).map(_.toVector)
-  }
-
   private def addressesForAccountQuery(
       accountIndex: Int): Query[AddressTable, AddressDb, Seq] =
     table.filter(_.accountIndex === accountIndex)
