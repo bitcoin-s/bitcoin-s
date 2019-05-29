@@ -10,4 +10,7 @@ case class NodeAppConfig(confs: Config*) extends AppConfig {
   override protected def newConfigOfType(configs: List[Config]): NodeAppConfig =
     NodeAppConfig(configs: _*)
 
+  val bloomFalsePositiveRate: Double =
+    config.getDouble("node.bloomFalsePositiveRate")
+
 }
