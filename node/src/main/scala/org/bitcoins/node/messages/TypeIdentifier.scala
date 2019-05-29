@@ -8,9 +8,9 @@ import org.bitcoins.node.serializers.messages.RawTypeIdentifierSerializer
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 5/31/16.
   * This indicates the type of the object that has been hashed for an inventory
-  * https://bitcoin.org/en/developer-reference#data-messages
+
+  * @see https://bitcoin.org/en/developer-reference#data-messages
   */
 sealed trait TypeIdentifier extends NetworkElement {
   def num: UInt32
@@ -21,14 +21,23 @@ sealed trait MsgUnassigned extends TypeIdentifier
 
 object TypeIdentifier extends Factory[TypeIdentifier] {
 
+  /** The corresponding hash is a TXID */
   final case object MsgTx extends TypeIdentifier {
     override val num = UInt32.one
   }
 
+  /** The corresponding hash is a block header */
   final case object MsgBlock extends TypeIdentifier {
     override val num = UInt32(2)
   }
 
+  /**
+    * The corresponding hash is a block header
+    * When used in a `getdata` message, this indicates
+    * the response should be a merkleblock message
+    * rather than a block message (but this only works
+    * if a bloom filter was previously configured).
+    */
   final case object MsgFilteredBlock extends TypeIdentifier {
     override val num = UInt32(3)
   }
@@ -41,9 +50,9 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
   def apply(num: Long): TypeIdentifier = TypeIdentifier(UInt32(num))
 
   def apply(uInt32: UInt32): TypeIdentifier = uInt32 match {
-    case UInt32.one                 => MsgTx
-    case _ if (uInt32 == UInt32(2)) => MsgBlock
-    case _ if (uInt32 == UInt32(3)) => MsgFilteredBlock
-    case x: UInt32                  => MsgUnassignedImpl(x)
+    case MsgTx.num            => MsgTx
+    case MsgBlock.num         => MsgBlock
+    case MsgFilteredBlock.num => MsgFilteredBlock
+    case x: UInt32            => MsgUnassignedImpl(x)
   }
 }

@@ -12,8 +12,7 @@ import org.bitcoins.node.serializers.RawNetworkMessageSerializer
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 6/10/16.
-  * Represents an entire p2p network message in bitcoins
+  * Represents an entire P2P network message in Bitcoin-S
   */
 sealed abstract class NetworkMessage extends NetworkElement {
   def header: NetworkHeader

@@ -20,6 +20,7 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
+import org.bitcoins.core.crypto.ECPublicKey
 
 /**
   * Created by chris on 8/2/16.
@@ -85,6 +86,9 @@ sealed abstract class BloomFilter extends NetworkElement {
   /** Inserts a [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] into `data` */
   def insert(outPoint: TransactionOutPoint): BloomFilter =
     insert(outPoint.bytes)
+
+  /** Inserts a public key into the bloom filter */
+  def insert(pubkey: ECPublicKey): BloomFilter = insert(pubkey.bytes)
 
   /** Checks if `data` contains the given sequence of bytes */
   def contains(bytes: ByteVector): Boolean = {
@@ -281,7 +285,10 @@ object BloomFilter extends Factory[BloomFilter] {
       flags: BloomFlag)
       extends BloomFilter
 
-  /** Max bloom filter size as per [[https://bitcoin.org/en/developer-reference#filterload]] */
+  /**
+    * Max bloom filter size
+    * @see [[https://bitcoin.org/en/developer-reference#filterload]]
+    */
   val maxSize = UInt32(36000)
 
   /** Max hashFunc size as per [[https://bitcoin.org/en/developer-reference#filterload]] */

@@ -99,6 +99,17 @@ object Sha256DigestBE extends Factory[Sha256DigestBE] {
   * Represents the result of SHA256(SHA256())
   */
 sealed abstract class DoubleSha256Digest extends HashDigest {
+
+  /**
+    * @note The string representation of this is given in
+    *       big endian style. This is in order to make it
+    *       easier to scan logs for mentions of the hash.
+    *       (Bitcoin Core exposes all human facing hashes
+    *       in big endian style).
+    */
+  override def toString(): String =
+    s"DoubleSha256Digest(${flip.hex})"
+
   def flip: DoubleSha256DigestBE = DoubleSha256DigestBE(bytes.reverse)
 }
 
@@ -108,7 +119,6 @@ object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
     require(bytes.length == 32,
             // $COVERAGE-OFF$
             "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
-    override def toString = s"DoubleSha256DigestImpl($hex)"
     // $COVERAGE-ON$
   }
   override def fromBytes(bytes: ByteVector): DoubleSha256Digest =
@@ -121,6 +131,8 @@ object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
 
 /** The big endian version of [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
 sealed abstract class DoubleSha256DigestBE extends HashDigest {
+
+  override def toString(): String = s"DoubleSha256DigestBE($hex)"
   def flip: DoubleSha256Digest = DoubleSha256Digest.fromBytes(bytes.reverse)
 }
 
@@ -130,7 +142,6 @@ object DoubleSha256DigestBE extends Factory[DoubleSha256DigestBE] {
     require(bytes.length == 32,
             // $COVERAGE-OFF$
             "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
-    override def toString = s"DoubleSha256BDigestBEImpl($hex)"
     // $COVERAGE-ON$
   }
   override def fromBytes(bytes: ByteVector): DoubleSha256DigestBE =

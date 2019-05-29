@@ -9,8 +9,7 @@ import org.bitcoins.node.serializers.messages.data.RawMerkleBlockMessageSerializ
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 6/2/16.
-  * https://bitcoin.org/en/developer-reference#merkleblock
+  * @see https://bitcoin.org/en/developer-reference#merkleblock
   */
 object MerkleBlockMessage extends Factory[MerkleBlockMessage] {
 
