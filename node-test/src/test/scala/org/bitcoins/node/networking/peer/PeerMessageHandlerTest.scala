@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.Timeout
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -19,9 +18,6 @@ class PeerMessageHandlerTest extends NodeUnitTest {
   }
 
   private implicit val akkaTimeout = Timeout(timeout)
-
-  implicit val system: ActorSystem = ActorSystem(
-    s"PeerMessageHandlerTest-${System.currentTimeMillis()}")
 
   behavior of "PeerHandler"
 

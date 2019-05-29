@@ -1,13 +1,9 @@
 package org.bitcoins.node
 
-import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.node.fixture.{
-  NodeFixture,
-  SpvNodeConnectedWithBitcoind
-}
+import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -20,9 +16,6 @@ class SpvNodeTest extends NodeUnitTest {
     withSpvNodeConnectedToBitcoind(test)
 
   behavior of "SpvNode"
-
-  override implicit val system: ActorSystem = ActorSystem(
-    s"SpvNodeTest-${System.currentTimeMillis}")
 
   it must "receive notification that a block occurred on the p2p network" in {
     spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind =>

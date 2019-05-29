@@ -46,16 +46,6 @@ class DataMessageHandler(appConfig: ChainAppConfig)(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[Unit] = {
     logger.info(s"Received inv=${invMsg}")
-    /*    val invs: Seq[Future[Unit]] = invMsg.inventories.map { inv =>
-      inv.typeIdentifier match {
-        case TypeIdentifier.MsgBlock =>
-          val hash = inv.hash
-          peerMsgSender.sendGetHeadersMessage(hash)
-          FutureUtil.unit
-      }
-    }
-
-    Future.sequence(invs).map(_ => ())*/
 
     FutureUtil.unit
 

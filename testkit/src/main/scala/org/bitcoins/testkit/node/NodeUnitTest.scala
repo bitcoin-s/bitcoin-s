@@ -47,7 +47,9 @@ trait NodeUnitTest
     ()
   }
 
-  implicit def system: ActorSystem
+  implicit lazy val system: ActorSystem = {
+    ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis}")
+  }
 
   implicit lazy val ec: ExecutionContext =
     system.dispatcher

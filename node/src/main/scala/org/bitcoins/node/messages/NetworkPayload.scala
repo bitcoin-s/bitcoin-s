@@ -135,7 +135,7 @@ trait GetDataMessage extends DataPayload {
   * from a particular point in the block chain.
   * It allows a peer which has been disconnected or started for the first time to get the
   * headers it hasn’t seen yet.
-  * [[https://bitcoin.org/en/developer-reference#getheaders]]
+  * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
   */
 trait GetHeadersMessage extends DataPayload {
   def version: ProtocolVersion

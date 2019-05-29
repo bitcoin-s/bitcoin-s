@@ -3,7 +3,7 @@ package org.bitcoins.testkit.chain
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+import com.typesafe.config.ConfigValueFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
@@ -365,11 +365,7 @@ object ChainUnitTest extends BitcoinSLogger {
                                                 dbHeaders = dbHeaders,
                                                 batchesSoFar = Vector.empty)
 
-        val firstHeader =
-          BlockHeaderDbHelper.fromBlockHeader(FIRST_BLOCK_HEIGHT,
-                                              ChainTestUtil.blockHeader562375)
-
-        val chainHandler = ChainUnitTest.makeChainHandler(firstHeader)
+        val chainHandler = ChainUnitTest.makeChainHandler()
 
         val insertedF = tableSetupF.flatMap { _ =>
           batchedDbHeaders.foldLeft(
@@ -413,7 +409,7 @@ object ChainUnitTest extends BitcoinSLogger {
     (chainHandler, genesisHeaderF)
   }
 
-  def makeChainHandler(firstHeader: BlockHeaderDb = genesisHeaderDb)(
+  def makeChainHandler()(
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): ChainHandler = {
     lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)

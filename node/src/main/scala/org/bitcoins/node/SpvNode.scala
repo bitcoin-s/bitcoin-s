@@ -37,11 +37,8 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
   def start(): Future[SpvNode] = {
     peerMsgSender.connect()
 
-    def isInit(): Boolean = {
-      peerMsgRecv.isInitialized
-    }
-
-    val isInitializedF = AsyncUtil.retryUntilSatisfied(isInit)
+    val isInitializedF =
+      AsyncUtil.retryUntilSatisfied(peerMsgRecv.isInitialized)
 
     isInitializedF.map { _ =>
       logger.info(s"Our peer=${peer} has been initialized")
@@ -59,11 +56,7 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
   def stop(): Future[SpvNode] = {
     peerMsgSender.disconnect()
 
-    def isStopped(): Boolean = {
-      peerMsgRecv.isDisconnected
-    }
-
-    val isStoppedF = AsyncUtil.retryUntilSatisfied(isStopped)
+    val isStoppedF = AsyncUtil.retryUntilSatisfied(peerMsgRecv.isDisconnected)
 
     isStoppedF.map(_ => this)
   }
