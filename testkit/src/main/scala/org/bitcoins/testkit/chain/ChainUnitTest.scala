@@ -3,7 +3,7 @@ package org.bitcoins.testkit.chain
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
@@ -52,9 +52,8 @@ trait ChainUnitTest
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
     val defaultConfig = ChainAppConfig()
-    val mainnet = ConfigValueFactory.fromAnyRef("mainnet")
-    val newConfig = defaultConfig.config.withValue("network", mainnet)
-    ChainAppConfig(newConfig)
+    val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
+    defaultConfig.withOverrides(mainnetConf)
   }
 
   override def beforeAll(): Unit = {

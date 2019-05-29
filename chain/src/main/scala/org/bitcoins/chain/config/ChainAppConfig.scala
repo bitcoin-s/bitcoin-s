@@ -12,10 +12,12 @@ import scala.concurrent.Promise
 import scala.util.Success
 import scala.util.Failure
 
-case class ChainAppConfig(
-    override val config: Config = AppConfig.defaultChainConfig)
-    extends AppConfig {
-  override val moduleConfigName: String = "chain.conf"
+case class ChainAppConfig(val confs: Config*) extends AppConfig {
+  override protected val configOverrides: List[Config] = confs.toList
+  override protected val moduleConfigName: String = "chain.conf"
+  override protected type ConfigType = ChainAppConfig
+  override protected def newConfigOfType(
+      configs: List[Config]): ChainAppConfig = ChainAppConfig(configs: _*)
 
   def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
     val bhDAO = BlockHeaderDAO(this)
