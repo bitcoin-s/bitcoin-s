@@ -5,13 +5,15 @@ title: Security
 
 The Bitcoin-S developers take security very seriously. This library has
 very few dependencies (at least in the `core` module), which is for
-of security reasons.
+security reasons.
 
 ## Disclosure
 
 If you have any security disclosures related to Bitcoin-S, please send an
-email to [stewart.chris1234@gmail.com](mailto:stewart.chris1234@gmail.com?subject=Bitcoin-S%20Security%20Disclosure)
-encrypted with this GPG key:
+email to either [stewart.chris1234@gmail.com](mailto:stewart.chris1234@gmail.com?subject=Bitcoin-S%20Security%20Disclosure)
+or [torkel@rogstad.io](mailto:torkel@rogstad.io?subject=Bitcoin-S%20Security%20Disclosure).
+
+If you want to encrypt said email (which you should), Torkel's key is available on [Keybase](https://keybase.io/torkelrogstad/pgp_keys.asc?fingerprint=c5dc349be6daa834ad9d59d712beee5312accec4), and Chris' is posted here:
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
