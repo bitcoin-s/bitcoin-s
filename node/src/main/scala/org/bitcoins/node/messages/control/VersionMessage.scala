@@ -14,9 +14,8 @@ import org.joda.time.DateTime
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 6/3/16.
   * Companion object responsible for creating VersionMessages on the p2p network
-  * https://bitcoin.org/en/developer-reference#version
+  * @see https://bitcoin.org/en/developer-reference#version
   */
 object VersionMessage extends Factory[VersionMessage] {
 
@@ -88,6 +87,9 @@ object VersionMessage extends Factory[VersionMessage] {
     val nonce = UInt64.zero
     val userAgent = Constants.userAgent
     val startHeight = Int32.zero
+
+    // we only want messages that match the bloom filters we provide
+    // otherwise we would get flooded by every message about every TX
     val relay = false
     VersionMessage(
       version = Constants.version,

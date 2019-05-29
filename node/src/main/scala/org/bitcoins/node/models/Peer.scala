@@ -15,6 +15,9 @@ case class Peer(networkIpAddress: NetworkIpAddress, id: Option[Long] = None)
     this.copy(id = Some(id))
   }
 
+  override def toString(): String =
+    s"Peer(${networkIpAddress.address}:${networkIpAddress.port})"
+
 }
 
 object Peer {

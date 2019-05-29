@@ -20,9 +20,8 @@ import org.bitcoins.node.versions.ProtocolVersion
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 5/31/16.
   * Trait that represents a payload for a message on the Bitcoin p2p network
-  * [[https://bitcoin.org/en/developer-reference#p2p-network]]
+  * @see [[https://bitcoin.org/en/developer-reference#p2p-network]]
   */
 sealed trait NetworkPayload extends NetworkElement {
 
@@ -44,7 +43,8 @@ sealed trait DataPayload extends NetworkPayload
 
 /**
   * The block message transmits a single serialized block
-  * [[https://bitcoin.org/en/developer-reference#block]]
+
+  * @see [[https://bitcoin.org/en/developer-reference#block]]
   */
 trait BlockMessage extends DataPayload {
 
@@ -54,17 +54,34 @@ trait BlockMessage extends DataPayload {
     */
   def block: Block
 
+  /**
+    * The string representation of a block message
+    * has the block header hash and the amount of
+    * transactions in the block
+    */
+  override def toString(): String = {
+    val txLengthStr = {
+      val length = block.transactions.length
+      if (length == 1)
+        s"1 TX"
+      else
+        s"$length TXs"
+    }
+    s"""BlockMessage(${block.blockHeader.hash}, $txLengthStr)"""
+  }
+
   override def commandName = NetworkPayload.blockCommandName
 
   override def bytes: ByteVector = RawBlockMessageSerializer.write(this)
 }
 
 /**
-  * The getblocks message requests an inv message that provides block header hashes
+  * The `getblocks` message requests an `inv` message that provides block header hashes
   * starting from a particular point in the block chain.
   * It allows a peer which has been disconnected or started for the first time to get the data
   * it needs to request the blocks it hasn’t seen.
-  * [[https://bitcoin.org/en/developer-reference#getblocks]]
+  *
+  * @see [[https://bitcoin.org/en/developer-reference#getblocks]]
   */
 trait GetBlocksMessage extends DataPayload {
 
@@ -196,6 +213,9 @@ trait InventoryMessage extends DataPayload {
     */
   def inventories: Seq[Inventory]
 
+  override def toString(): String =
+    s"InventoryMessage(${inventoryCount.toInt}, ${inventories.mkString(", ")})"
+
   override def commandName = NetworkPayload.invCommandName
 
   override def bytes: ByteVector = RawInventoryMessageSerializer.write(this)
@@ -214,11 +234,12 @@ case object MemPoolMessage extends DataPayload {
 }
 
 /**
-  * The merkleblock message is a reply to a getdata message which requested a
+  * The `merkleblock` message is a reply to a `getdata` message which requested a
   * block using the inventory type MSG_MERKLEBLOCK.
   * It is only part of the reply: if any matching transactions are found,
   * they will be sent separately as tx messages.
-  * [[https://bitcoin.org/en/developer-reference#merkleblock]]
+  *
+  * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
   */
 trait MerkleBlockMessage extends DataPayload {
 
@@ -226,6 +247,27 @@ trait MerkleBlockMessage extends DataPayload {
   def merkleBlock: MerkleBlock
 
   override def commandName = NetworkPayload.merkleBlockCommandName
+
+  /**
+    * The string representation of a merkle block message contains
+    * the block header hash, number of hashes in the merkle tree
+    * and the number of transactions in the block
+    */
+  override def toString(): String = {
+    val hashCountStr = {
+      val hashCount = merkleBlock.hashCount.toInt
+      if (hashCount == 1) s"1 hash"
+      else s"$hashCount hashes"
+    }
+
+    val txCountStr = {
+      val txCount = merkleBlock.transactionCount.toInt
+      if (txCount == 1) s"1 TX"
+      else s"$txCount TXs"
+    }
+
+    s"MerkleBlockMessage(${merkleBlock.blockHeader.hash}, $txCountStr, $hashCountStr)"
+  }
 
   def bytes: ByteVector = RawMerkleBlockMessageSerializer.write(this)
 
@@ -246,7 +288,8 @@ trait NotFoundMessage extends DataPayload with InventoryMessage {
 /**
   * The tx message transmits a single transaction in the raw transaction format.
   * It can be sent in a variety of situations;
-  * [[https://bitcoin.org/en/developer-reference#tx]]
+
+  * @see [[https://bitcoin.org/en/developer-reference#tx]]
   */
 trait TransactionMessage extends DataPayload {
 
@@ -257,11 +300,13 @@ trait TransactionMessage extends DataPayload {
   def transaction: Transaction
   override def commandName = NetworkPayload.transactionCommandName
   override def bytes: ByteVector = RawTransactionMessageSerializer.write(this)
+
+  override def toString(): String = s"TransactionMessage(${transaction.txId})"
 }
 
 /**
   * Represents a control message on this network
-  * [[https://bitcoin.org/en/developer-reference#control-messages]]
+  * @see [[https://bitcoin.org/en/developer-reference#control-messages]]
   */
 sealed trait ControlPayload extends NetworkPayload
 

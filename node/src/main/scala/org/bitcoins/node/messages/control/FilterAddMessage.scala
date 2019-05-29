@@ -2,28 +2,27 @@ package org.bitcoins.node.messages.control
 
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.Factory
-import org.bitcoins.node.messages.FilterAddMessage
 import org.bitcoins.node.serializers.messages.control.RawFilterAddMessageSerializer
-import org.bitcoins.node.messages.FilterAddMessage
+import org.bitcoins.node.messages
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 8/26/16.
   * Factory object for a [[FilterAddMessage]]
-  * [[https://bitcoin.org/en/developer-reference#filteradd]]
+  * @see [[https://bitcoin.org/en/developer-reference#filteradd]]
   */
-object FilterAddMessage extends Factory[FilterAddMessage] {
+object FilterAddMessage extends Factory[messages.FilterAddMessage] {
 
   private case class FilterAddMessageImpl(
       elementSize: CompactSizeUInt,
       element: ByteVector)
-      extends FilterAddMessage
-  override def fromBytes(bytes: ByteVector): FilterAddMessage =
+      extends messages.FilterAddMessage
+
+  override def fromBytes(bytes: ByteVector): messages.FilterAddMessage =
     RawFilterAddMessageSerializer.read(bytes)
 
   def apply(
       elementSize: CompactSizeUInt,
-      element: ByteVector): FilterAddMessage = {
+      element: ByteVector): messages.FilterAddMessage = {
     FilterAddMessageImpl(elementSize, element)
   }
 }

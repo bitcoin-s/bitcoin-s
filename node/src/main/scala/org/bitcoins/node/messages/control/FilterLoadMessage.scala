@@ -4,19 +4,17 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomFlag}
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.Factory
-import org.bitcoins.node.messages.FilterLoadMessage
 import org.bitcoins.node.serializers.messages.control.RawFilterLoadMessageSerializer
-import org.bitcoins.node.messages.FilterLoadMessage
+import org.bitcoins.node.messages
 import org.bitcoins.node.serializers.messages.control.RawFilterLoadMessageSerializer
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 7/19/16.
-  * [[https://bitcoin.org/en/developer-reference#filterload]]
+  * @see [[https://bitcoin.org/en/developer-reference#filterload]]
   */
-object FilterLoadMessage extends Factory[FilterLoadMessage] {
+object FilterLoadMessage extends Factory[messages.FilterLoadMessage] {
   private case class FilterLoadMessageImpl(bloomFilter: BloomFilter)
-      extends FilterLoadMessage {
+      extends messages.FilterLoadMessage {
     require(
       bloomFilter.filterSize.num.toLong <= BloomFilter.maxSize.toLong,
       "Can only have a maximum of 36,000 bytes in our filter, got: " + bloomFilter.data.size)
@@ -30,7 +28,7 @@ object FilterLoadMessage extends Factory[FilterLoadMessage] {
     )
   }
 
-  override def fromBytes(bytes: ByteVector): FilterLoadMessage =
+  override def fromBytes(bytes: ByteVector): messages.FilterLoadMessage =
     RawFilterLoadMessageSerializer.read(bytes)
 
   def apply(
@@ -38,7 +36,7 @@ object FilterLoadMessage extends Factory[FilterLoadMessage] {
       filter: ByteVector,
       hashFuncs: UInt32,
       tweak: UInt32,
-      flags: BloomFlag): FilterLoadMessage = {
+      flags: BloomFlag): messages.FilterLoadMessage = {
     val bloomFilter = BloomFilter(filterSize, filter, hashFuncs, tweak, flags)
     FilterLoadMessage(bloomFilter)
   }
@@ -47,12 +45,12 @@ object FilterLoadMessage extends Factory[FilterLoadMessage] {
       filter: ByteVector,
       hashFuncs: UInt32,
       tweak: UInt32,
-      flags: BloomFlag): FilterLoadMessage = {
+      flags: BloomFlag): messages.FilterLoadMessage = {
     val filterSize = CompactSizeUInt(UInt64(filter.length))
     FilterLoadMessage(filterSize, filter, hashFuncs, tweak, flags)
   }
 
-  def apply(bloomFilter: BloomFilter): FilterLoadMessage = {
+  def apply(bloomFilter: BloomFilter): messages.FilterLoadMessage = {
     FilterLoadMessageImpl(bloomFilter)
   }
 }
