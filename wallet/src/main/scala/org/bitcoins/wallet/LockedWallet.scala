@@ -20,10 +20,10 @@ import org.bitcoins.wallet.models._
 import scala.concurrent.Future
 import scala.util.Success
 import scala.util.Failure
-import org.bitcoins.db.AppConfig
 import scala.concurrent.ExecutionContext
 import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
 import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
+import org.bitcoins.wallet.config.WalletAppConfig
 
 abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
@@ -268,7 +268,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       account.getOrElse(
         throw new RuntimeException(
           s"Could not find account with ${DEFAULT_HD_COIN.purpose.constant} " +
-            s"purpose field and ${DEFAULT_HD_COIN.coinType.toInt} coin field"))
+            s"purpose field and coin=${DEFAULT_HD_COIN.coinType}"))
   }
 
 }
@@ -276,9 +276,15 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 object LockedWallet {
   private case class LockedWalletImpl()(
       implicit val ec: ExecutionContext,
-      val walletConfig: AppConfig)
+      val walletConfig: WalletAppConfig)
       extends LockedWallet
 
-  def apply()(implicit ec: ExecutionContext, config: AppConfig): LockedWallet =
-    LockedWalletImpl()
+  def apply()(
+      implicit ec: ExecutionContext,
+      config: WalletAppConfig): Future[LockedWallet] = {
+    for {
+      _ <- config.initialize()
+    } yield LockedWalletImpl()
+
+  }
 }

@@ -14,7 +14,7 @@ import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
-import org.bitcoins.db.AppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
 
 /**
   * API for the wallet project.
@@ -25,7 +25,7 @@ import org.bitcoins.db.AppConfig
   */
 sealed trait WalletApi {
 
-  implicit val walletConfig: AppConfig
+  implicit val walletConfig: WalletAppConfig
   implicit val ec: ExecutionContext
 
   def chainParams: ChainParams = walletConfig.chain
@@ -149,7 +149,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
     * all sensitive material in the wallet should be
     * encrypted and unaccessible
     */
-  def lock(): LockedWalletApi
+  def lock(): Future[LockedWalletApi]
 
   /**
     *

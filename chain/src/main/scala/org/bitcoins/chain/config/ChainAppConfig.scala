@@ -19,6 +19,11 @@ case class ChainAppConfig(val confs: Config*) extends AppConfig {
   override protected def newConfigOfType(
       configs: List[Config]): ChainAppConfig = ChainAppConfig(configs: _*)
 
+  /**
+    * Checks whether or not the chain project is initialized by
+    * trying to read the genesis block header from our block
+    * header table
+    */
   def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
     val bhDAO = BlockHeaderDAO(this)
     val p = Promise[Boolean]()
@@ -27,10 +32,10 @@ case class ChainAppConfig(val confs: Config*) extends AppConfig {
     }
     isDefinedOptF.onComplete {
       case Success(bool) =>
-        logger.info(s"Chain project is initialized")
+        logger.debug(s"Chain project is initialized")
         p.success(bool)
       case Failure(err) =>
-        logger.info(s"Failed to init chain app err=${err.getMessage}")
+        logger.info(s"Chain project is not initialized")
         p.success(false)
     }
 
@@ -41,8 +46,7 @@ case class ChainAppConfig(val confs: Config*) extends AppConfig {
     * This creates the necessary tables for the chain project
     * and inserts preliminary data like the genesis block header
     * */
-  def initialize(implicit ec: ExecutionContext): Future[Unit] = {
-    val blockHeaderDAO = BlockHeaderDAO(this)
+  override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     val isInitF = isInitialized()
     isInitF.flatMap { isInit =>
       if (isInit) {
@@ -53,9 +57,13 @@ case class ChainAppConfig(val confs: Config*) extends AppConfig {
           BlockHeaderDbHelper.fromBlockHeader(height = 0,
                                               bh =
                                                 chain.genesisBlock.blockHeader)
+        val blockHeaderDAO = BlockHeaderDAO(this)
         val bhCreatedF =
           createdF.flatMap(_ => blockHeaderDAO.create(genesisHeader))
-        bhCreatedF.flatMap(_ => FutureUtil.unit)
+        bhCreatedF.flatMap { _ =>
+          logger.info(s"Inserted genesis block header into DB")
+          FutureUtil.unit
+        }
       }
     }
   }

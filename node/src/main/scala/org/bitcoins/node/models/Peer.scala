@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 
 import org.bitcoins.db.DbRowAutoInc
 import org.bitcoins.node.util.NetworkIpAddress
+import org.bitcoins.rpc.config.BitcoindInstance
 
 case class Peer(networkIpAddress: NetworkIpAddress, id: Option[Long] = None)
     extends DbRowAutoInc[Peer] {
@@ -21,6 +22,14 @@ case class Peer(networkIpAddress: NetworkIpAddress, id: Option[Long] = None)
 }
 
 object Peer {
+
+  /**
+    * Constructs a peer from the given `bitcoind` instance
+    */
+  def fromBitcoind(bitcoind: BitcoindInstance): Peer = {
+    val socket = new InetSocketAddress(bitcoind.uri.getHost, bitcoind.p2pPort)
+    fromSocket(socket)
+  }
 
   def fromNetworkIpAddress(networkIpAddress: NetworkIpAddress): Peer = {
     Peer(networkIpAddress)

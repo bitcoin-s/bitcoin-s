@@ -23,6 +23,8 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.bloom.BloomUpdateNone
 import org.bitcoins.node.messages.control.FilterLoadMessage
 import org.bitcoins.node.messages.FilterLoadMessage
+import scala.util.Failure
+import scala.util.Success
 
 /**
   * An SPV node that can send and receive P2P messages, construct
@@ -89,23 +91,31 @@ case class SpvNode(
     } yield this
   }
 
-  /** Starts our SPV node */
+  /**
+    * Starts our SPV node,
+    * initializing it with the correct DB setup
+    * and then connect to our peer
+    */
   def start(): Future[SpvNode] = {
-    peerMsgSender.connect()
+    for {
+      _ <- nodeAppConfig.initialize()
+      _ <- {
+        peerMsgSender.connect()
 
-    val isInitializedF =
-      AsyncUtil.retryUntilSatisfied(peerMsgRecv.isInitialized)
+        val isInitializedF =
+          AsyncUtil.retryUntilSatisfied(peerMsgRecv.isInitialized)
 
-    isInitializedF.map { _ =>
-      logger.info(s"Our peer=${peer} has been initialized")
-    }
+        isInitializedF.onComplete {
+          case Failure(err) =>
+            logger.error(s"Failed to conenct with peer=$peer with err=${err}")
+          case Success(_) =>
+            logger.info(s"Our peer=${peer} has been initialized")
+        }
 
-    isInitializedF.failed.foreach { err =>
-      logger.error(s"Failed to conenct with peer=$peer with err=${err}")
-
-    }
-
-    isInitializedF.flatMap(_ => initBloomFilter())
+        isInitializedF
+      }
+      node <- initBloomFilter()
+    } yield node
   }
 
   /**
@@ -116,7 +126,7 @@ case class SpvNode(
     */
   private def initBloomFilter(): Future[SpvNode] = {
     logger.info(s"Initializing bloom filter")
-    for {
+    val nodeF = for {
       pubs <- pubkeyDAO.findAll()
     } yield {
       if (pubs.isEmpty) {
@@ -125,21 +135,31 @@ case class SpvNode(
         this
       } else {
         val baseBloom =
-          BloomFilter(numElements = pubs.length,
-                      falsePositiveRate = nodeAppConfig.bloomFalsePositiveRate,
-                      tweak = tweak,
-                      // what's the best bloom update flag?
-                      BloomUpdateNone)
+          BloomFilter(
+            // we insert both the public key and the public key hash, meaning every pub
+            // in our DB results in two elements being inserted
+            numElements = pubs.length * 2,
+            falsePositiveRate = nodeAppConfig.bloomFalsePositiveRate,
+            tweak = tweak,
+            // what's the best bloom update flag?
+            BloomUpdateNone
+          )
 
         val bloomWithPubs = pubs.foldLeft(baseBloom)(_.insert(_))
         val createFiltermsg = FilterLoadMessage(bloomWithPubs)
         logger.info(
-          s"Sending filterload with bloom filter for ${pubs.length} public key(s)")
+          s"Sending filterload with bloom filter=${bloomWithPubs.hex} for ${pubs.length} public key(s)")
         send(createFiltermsg)
 
         copy(bloomFilter = Some(bloomWithPubs))
       }
     }
+
+    nodeF.failed.foreach { err =>
+      logger.error(s"Error when initializing bloom filter: ${err.getMessage}")
+    }
+
+    nodeF
   }
 
   /** Stops our SPV node */

@@ -13,9 +13,11 @@ import org.bitcoins.node.versions.ProtocolVersion70013
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.duration.DurationInt
+import com.typesafe.config.ConfigFactory
 
 case object Constants {
-  lazy val actorSystem = ActorSystem("BitcoinSpvNode")
+  val emptyConfig = ConfigFactory.parseString("")
+  lazy val actorSystem = ActorSystem("BitcoinSpvNode", emptyConfig)
   def networkParameters: NetworkParameters = appConfig.network
   def version = ProtocolVersion70013
 

@@ -26,8 +26,13 @@ trait BitcoinSWalletTest
     with BitcoinSFixture
     with BeforeAndAfterAll
     with BitcoinSLogger {
-  implicit lazy val actorSystem: ActorSystem = ActorSystem(
-    getClass.getSimpleName)
+  implicit lazy val actorSystem: ActorSystem = ActorSystem({
+    // Akka doesn't like funky characters like '$' (which the
+    // compiler often generate)
+    val regex = "[a-zA-Z0-9]"
+    getClass.getSimpleName.filter(_.toString.matches(regex))
+  })
+
   implicit lazy val ec: ExecutionContext = actorSystem.dispatcher
 
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
@@ -97,4 +102,12 @@ trait BitcoinSWalletTest
   }
 }
 
-object BitcoinSWalletTest extends BitcoinSWalletTest
+object BitcoinSWalletTest extends BitcoinSWalletTest {
+
+  // This method has to be here to have this accessible as an object
+  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val msg =
+      s"Someone called BitcoinSWalletTest.withFixture. This is not what's supposed to happen!"
+    throw new RuntimeException(msg)
+  }
+}

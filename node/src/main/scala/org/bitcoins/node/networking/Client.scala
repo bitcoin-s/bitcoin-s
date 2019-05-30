@@ -96,8 +96,12 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     case msg: NetworkMessage =>
       self.forward(msg.payload)
     case payload: NetworkPayload =>
-      logger.error(
-        s"Cannot send a message to our peer when we are not connected! payload=${payload} peer=${peer}")
+      logger.error({
+        val first =
+          s"Cannot send a message to our peer when we are not connected!"
+        val second = s"payload=$payload peer=$peer"
+        s"$first $second"
+      })
   }
 
   /**

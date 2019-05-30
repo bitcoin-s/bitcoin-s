@@ -24,6 +24,8 @@ import java.nio.file.Files
 
 import scala.util.Properties
 import scala.util.matching.Regex
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 /**
   * Everything needed to configure functionality
@@ -33,6 +35,17 @@ import scala.util.matching.Regex
   *      for more information.
   */
 abstract class AppConfig extends BitcoinSLogger {
+
+  /**
+    * Initializes this project.
+    * After this future resolves, all operations should be
+    * able to be performed correctly.
+    *
+    * Initializing may include creating database tables,
+    * making directories or files needed latern or
+    * something else entirely.
+    */
+  def initialize()(implicit ec: ExecutionContext): Future[Unit]
 
   /** Sub members of AppConfig should override this type with
     * the type of themselves, ensuring `withOverrides` return
@@ -171,7 +184,7 @@ abstract class AppConfig extends BitcoinSLogger {
     * The underlying config that we derive the
     * rest of the fields in this class from
     */
-  protected lazy val config: Config = {
+  private[bitcoins] lazy val config: Config = {
     val moduleConfig =
       ConfigFactory.load(moduleConfigName)
 
@@ -186,9 +199,13 @@ abstract class AppConfig extends BitcoinSLogger {
     logger.trace(
       s"DB config: ${dbConfig.getConfig("bitcoin-s").asReadableJson}")
 
-    val classPathConfig =
-      ConfigFactory
-        .load()
+    val parseOptions = ConfigParseOptions.defaults()
+
+    val resolveOptions =
+      ConfigResolveOptions.defaults().setAllowUnresolved(true)
+
+    val classPathConfig = ConfigFactory
+      .load(parseOptions, resolveOptions)
 
     logger.trace(
       s"Classpath config: ${classPathConfig.getConfig("bitcoin-s").asReadableJson}")
