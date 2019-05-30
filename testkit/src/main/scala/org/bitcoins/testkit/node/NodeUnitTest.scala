@@ -30,6 +30,7 @@ import org.scalatest.{
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.wallet.api._
 
 trait NodeUnitTest
     extends BitcoinSFixture
@@ -66,7 +67,7 @@ trait NodeUnitTest
 
   def buildPeerMessageReceiver(): PeerMessageReceiver = {
     val receiver =
-      PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
+      PeerMessageReceiver.newReceiver()
     receiver
   }
 
@@ -102,6 +103,33 @@ trait NodeUnitTest
     for {
       chainApi <- chainApiF
     } yield SpvNode(peer = peer, chainApi = chainApi)
+  }
+
+  /**
+    * Gives a triple containing a SPV node, a `bitcoind` instance
+    * and a wallet. They are not connected in any way, but
+    * the `bitcoind` instance has some money in it
+    */
+  def withNodeAndBitcoindAndWallet(test: OneArgAsyncTest)(
+      implicit system: ActorSystem): FutureOutcome = {
+    type Triple = (SpvNode, BitcoindRpcClient, UnlockedWalletApi)
+
+    val create: () => Future[Triple] = () =>
+      for {
+        wallet <- BitcoinSWalletTest.createNewWallet()
+        bitcoind <- createBitcoindWithFunds()
+        spv <- createSpvNode(bitcoind)
+      } yield (spv, bitcoind, wallet)
+
+    val destroy: Triple => Future[Unit] = {
+      case (spv, bitcoind, wallet) =>
+        val spvWithBitcoind = SpvNodeConnectedWithBitcoind(spv, bitcoind)
+        NodeUnitTest
+          .destorySpvNodeConnectedWithBitcoind(spvWithBitcoind)
+          .flatMap(_ => BitcoinSWalletTest.destroyWallet(wallet))
+    }
+
+    makeDependentFixture(create, destroy)(test)
   }
 
   def withSpvNode(test: OneArgAsyncTest)(

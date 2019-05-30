@@ -1,6 +1,6 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -18,14 +18,14 @@ abstract class DbManagement extends BitcoinSLogger {
 
   def createAll()(
       implicit config: AppConfig,
-      ec: ExecutionContext): Future[List[Unit]] = {
-    Future.sequence(allTables.map(createTable(_)))
+      ec: ExecutionContext): Future[Unit] = {
+    Future.sequence(allTables.map(createTable(_))).map(_ => FutureUtil.unit)
   }
 
   def dropAll()(
       implicit config: AppConfig,
-      ec: ExecutionContext): Future[List[Unit]] = {
-    Future.sequence(allTables.reverse.map(dropTable(_)))
+      ec: ExecutionContext): Future[Unit] = {
+    Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => FutureUtil.unit)
   }
 
   def createTable(
