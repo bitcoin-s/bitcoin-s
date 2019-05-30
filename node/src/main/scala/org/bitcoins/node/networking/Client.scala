@@ -14,6 +14,10 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
+import java.nio.file.Files
+import org.bitcoins.node.config.NodeAppConfig
+import java.nio.file.StandardOpenOption
+import java.time.Instant
 
 /**
   * Created by chris on 6/6/16.
@@ -40,6 +44,8 @@ import scodec.bits.ByteVector
   * the bytes and wait for the rest of them to be sent.
   */
 sealed abstract class ClientActor extends Actor with BitcoinSLogger {
+
+  val config: NodeAppConfig
 
   def peer: Peer
 
@@ -167,15 +173,23 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
         context.stop(self)
         unalignedBytes
       case Tcp.Received(byteString: ByteString) =>
-        //logger.debug("Received byte string in peerMessageHandler " + BitcoinSUtil.encodeHex(byteString.toArray))
-        //logger.debug("Unaligned bytes: " + BitcoinSUtil.encodeHex(unalignedBytes))
+        val byteVector = ByteVector(byteString.toArray)
 
-        //we need to aggregate our previous 'unalignedBytes' with the new message
-        //we just received from our peer to hopefully be able to parse full messages
-        val bytes: ByteVector = unalignedBytes ++ ByteVector(byteString.toArray)
-        //logger.debug("Bytes for message parsing: " + BitcoinSUtil.encodeHex(bytes))
+        logger.trace(
+          s"Received byte string in peerMessageHandler: ${byteVector.toHex}")
+        logger.trace(s"Unaligned bytes: ${unalignedBytes.toHex}")
+
+        if (config.dumpP2PBytesToFile) {
+          dumpBytesToFile(byteVector)
+        }
+
+        // we need to aggregate our previous 'unalignedBytes' with the new message
+        // we just received from our peer to hopefully be able to parse full messages
+        val toParse: ByteVector = unalignedBytes ++ byteVector
+        logger.trace(s"Bytes for message parsing: ${toParse.toHex}")
+
         val (messages, newUnalignedBytes) =
-          BitcoinSpvNodeUtil.parseIndividualMessages(bytes)
+          BitcoinSpvNodeUtil.parseIndividualMessages(toParse)
 
         //for the messages we successfully parsed above
         //send them to 'context.parent' -- this is the
@@ -189,6 +203,21 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
 
         newUnalignedBytes
     }
+  }
+
+  /** Appends the given bytes to a log file for debugging/analysis purposes */
+  def dumpBytesToFile(bytes: ByteVector): Unit = {
+    val dumpFile = config.p2pDumpFile
+    if (Files.notExists(dumpFile)) {
+      logger.debug(s"P2P dump files does not exist, creating ${dumpFile}")
+      Files.createFile(dumpFile)
+    }
+
+    val timestamp = Instant.now()
+    val dumpStr = s"$timestamp: ${bytes.toHex}\n"
+
+    Files.write(dumpFile, dumpStr.getBytes, StandardOpenOption.APPEND)
+    logger.debug(s"Appended ${bytes.length} bytes to the P2P dump file")
   }
 
   /**
@@ -227,16 +256,19 @@ case class Client(actor: ActorRef, peer: Peer)
 object Client {
   private case class ClientActorImpl(
       peer: Peer,
-      peerMsgHandlerReceiver: PeerMessageReceiver)
+      peerMsgHandlerReceiver: PeerMessageReceiver)(
+      implicit override val config: NodeAppConfig)
       extends ClientActor
 
-  def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver): Props =
-    Props(classOf[ClientActorImpl], peer, peerMsgHandlerReceiver)
+  def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver)(
+      implicit config: NodeAppConfig): Props =
+    Props(classOf[ClientActorImpl], peer, peerMsgHandlerReceiver, config)
 
   def apply(
       context: ActorRefFactory,
       peer: Peer,
-      peerMessageReceiver: PeerMessageReceiver): Client = {
+      peerMessageReceiver: PeerMessageReceiver)(
+      implicit config: NodeAppConfig): Client = {
     val actorRef = context.actorOf(
       props(peer = peer, peerMsgHandlerReceiver = peerMessageReceiver),
       BitcoinSpvNodeUtil.createActorName(this.getClass))
