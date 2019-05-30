@@ -81,6 +81,14 @@ trait LockedWalletApi extends WalletApi {
     } yield address
   }
 
+  /**
+    * Mimics the `getaddressinfo` RPC call in Bitcoin Core
+    *
+    * @return If the address is found in our database `Some(address)`
+    *         is returned, otherwise `None`
+    */
+  def getAddressInfo(address: BitcoinAddress): Future[Option[AddressInfo]]
+
   /** Generates a new change address */
   protected[wallet] def getNewChangeAddress(
       account: AccountDb): Future[BitcoinAddress]
