@@ -1,10 +1,9 @@
 package org.bitcoins.rpc.client.common
 
-import akka.actor.ActorSystem
-import org.bitcoins.rpc.config.BitcoindInstance
-import scala.concurrent.Future
 import java.io.File
-import org.bitcoins.rpc.config.BitcoindConfig
+
+import akka.actor.ActorSystem
+import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 
 /**
   * This class is not guaranteed to be compatible with any particular
