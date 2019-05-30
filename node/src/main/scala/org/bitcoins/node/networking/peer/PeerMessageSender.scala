@@ -56,7 +56,7 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     sendMsg(sendHeadersMsg)
   }
 
-  private def sendMsg(msg: NetworkPayload): Unit = {
+  private[node] def sendMsg(msg: NetworkPayload): Unit = {
     logger.debug(
       s"PeerMessageSender sending to peer=${socket} msg=${msg.commandName}")
     val newtworkMsg = NetworkMessage(np, msg)
