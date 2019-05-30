@@ -3,7 +3,7 @@ package org.bitcoins.rpc.client.v17
 import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,

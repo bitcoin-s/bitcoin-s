@@ -606,7 +606,7 @@ class EclairRpcClient(val instance: EclairInstance)(
     getInfo.onComplete {
       case Success(_) =>
         p.success(true)
-      case Failure(exc) =>
+      case Failure(_) =>
         p.success(false)
     }
 

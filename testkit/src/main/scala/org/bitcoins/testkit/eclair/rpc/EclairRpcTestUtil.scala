@@ -20,7 +20,7 @@ import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.PaymentResult
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
-import org.bitcoins.rpc.config.{BitcoindInstance, ZmqConfig}
+import org.bitcoins.rpc.config.{BitcoindInstance}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
