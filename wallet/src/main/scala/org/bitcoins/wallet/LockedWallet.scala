@@ -224,7 +224,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
         }
       val writeF = addressDAO.create(addressDb)
       writeF.foreach { written =>
-        logger.info(
+        logger.debug(
           s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
       }
 
@@ -239,6 +239,19 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
     */
   override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
     getNewAddressHelper(account, HDChainType.External)
+  }
+
+  override def getAddressInfo(
+      address: BitcoinAddress): Future[Option[AddressInfo]] = {
+
+    val addressOptF = addressDAO.findAddress(address)
+    addressOptF.map { addressOpt =>
+      addressOpt.map { address =>
+        AddressInfo(pubkey = address.ecPublicKey,
+                    network = address.address.networkParameters,
+                    path = address.path)
+      }
+    }
   }
 
   /** Generates a new change address */
