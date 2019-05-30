@@ -1,5 +1,10 @@
 package org.bitcoins.node.messages
 
+import org.bitcoins.node.messages.TypeIdentifier.{
+  MsgBlock,
+  MsgFilteredBlock,
+  MsgTx
+}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class TypeIdentifierTest extends BitcoinSUnitTest {

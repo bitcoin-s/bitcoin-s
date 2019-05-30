@@ -2,8 +2,7 @@ package org.bitcoins.node.serializers.messages.data
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSUtil
-import org.bitcoins.node.messages.MsgTx
-import org.bitcoins.node.messages.MsgTx
+import org.bitcoins.node.messages.TypeIdentifier.MsgTx
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

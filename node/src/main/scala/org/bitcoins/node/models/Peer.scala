@@ -2,11 +2,10 @@ package org.bitcoins.node.models
 
 import java.net.InetSocketAddress
 
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.db.DbRowAutoInc
 import org.bitcoins.node.util.NetworkIpAddress
 
-case class Peer(id: Option[Long], networkIpAddress: NetworkIpAddress)
+case class Peer(networkIpAddress: NetworkIpAddress, id: Option[Long] = None)
     extends DbRowAutoInc[Peer] {
 
   def socket: InetSocketAddress =
@@ -21,7 +20,7 @@ case class Peer(id: Option[Long], networkIpAddress: NetworkIpAddress)
 object Peer {
 
   def fromNetworkIpAddress(networkIpAddress: NetworkIpAddress): Peer = {
-    Peer(None, networkIpAddress)
+    Peer(networkIpAddress)
   }
 
   def fromSocket(socket: InetSocketAddress): Peer = {

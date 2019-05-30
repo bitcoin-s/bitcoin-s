@@ -31,7 +31,7 @@ trait BitcoinSWalletTest
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
-  protected implicit lazy val appConfig: AppConfig = WalletAppConfig
+  protected implicit lazy val appConfig: WalletAppConfig = WalletAppConfig()
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds

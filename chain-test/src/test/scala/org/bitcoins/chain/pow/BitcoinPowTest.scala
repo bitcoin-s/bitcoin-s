@@ -1,6 +1,7 @@
 package org.bitcoins.chain.pow
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.db.AppConfig
@@ -14,7 +15,7 @@ class BitcoinPowTest extends ChainUnitTest {
 
   override type FixtureParam = ChainFixture
 
-  override lazy implicit val appConfig: AppConfig = mainnetAppConfig
+  override lazy implicit val appConfig: ChainAppConfig = mainnetAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)
@@ -56,8 +57,8 @@ class BitcoinPowTest extends ChainUnitTest {
 
       // We must start after the first POW change to avoid looking for a block we don't have
       val assertionFs =
-        (FIRST_POW_CHANGE + 1 until FIRST_POW_CHANGE + 1 + iterations).map {
-          height =>
+        (ChainUnitTest.FIRST_POW_CHANGE + 1 until ChainUnitTest.FIRST_POW_CHANGE + 1 + iterations)
+          .map { height =>
             val blockF = blockHeaderDAO.getAtHeight(height).map(_.head)
             val nextBlockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)
 
@@ -68,7 +69,7 @@ class BitcoinPowTest extends ChainUnitTest {
                                                       nextTip.blockHeader,
                                                       blockHeaderDAO)
             } yield assert(nextNBits == nextTip.nBits)
-        }
+          }
 
       Future.sequence(assertionFs).map(_ => succeed)
   }

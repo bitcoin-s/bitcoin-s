@@ -35,7 +35,7 @@ trait RawHeadersMessageSerializer extends RawBitcoinSerializer[HeadersMessage] {
 
   private def parseBlockHeaders(
       bytes: ByteVector,
-      compactSizeUInt: CompactSizeUInt): List[BlockHeader] = {
+      compactSizeUInt: CompactSizeUInt): Vector[BlockHeader] = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
@@ -53,7 +53,7 @@ trait RawHeadersMessageSerializer extends RawBitcoinSerializer[HeadersMessage] {
              accum = BlockHeader(remainingBytes.take(80)) :: accum)
       }
     }
-    loop(bytes, compactSizeUInt.num.toInt, List.empty).reverse
+    loop(bytes, compactSizeUInt.num.toInt, List.empty).reverse.toVector
   }
 }
 

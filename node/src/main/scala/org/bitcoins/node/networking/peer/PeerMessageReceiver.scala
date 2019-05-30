@@ -1,8 +1,10 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRefFactory
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.messages._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
@@ -14,7 +16,6 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
 }
 
 import scala.util.{Failure, Success, Try}
-import org.bitcoins.db.AppConfig
 
 /**
   * Responsible for receiving messages from a peer on the
@@ -23,8 +24,10 @@ import org.bitcoins.db.AppConfig
   * operations. This is the entry point for handling all received
   * [[NetworkMessage]]
   */
-class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)(
-    implicit ref: ActorRefFactory)
+class PeerMessageReceiver(
+    state: PeerMessageReceiverState,
+    nodeAppConfig: NodeAppConfig,
+    chainAppConfig: ChainAppConfig)(implicit ref: ActorRefFactory)
     extends BitcoinSLogger {
 
   import ref.dispatcher
@@ -52,7 +55,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
       case Preconnection =>
         peerOpt = Some(client.peer)
 
-        logger.debug(s"Connection established with peer=${peerOpt.get}")
+        logger.info(s"Connection established with peer=${peerOpt.get}")
 
         val newState = Preconnection.toInitializing(client)
 
@@ -60,7 +63,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
 
         logger.debug(s"new state ${internalState}")
         logger.debug(s"isConnected=${isConnected}")
-        val peerMsgSender = PeerMessageSender(client, appConfig.network)
+        val peerMsgSender = PeerMessageSender(client, chainAppConfig.network)
 
         peerMsgSender.sendVersionMessage()
 
@@ -108,8 +111,11 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
 
     //create a way to send a response if we need too
     val peerMsgSender =
-      PeerMessageSender(networkMsgRecv.client, appConfig.network)
+      PeerMessageSender(networkMsgRecv.client, chainAppConfig.network)
 
+    logger.info(
+      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${peerOpt
+        .map(_.socket)} ")
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload, sender = peerMsgSender)
@@ -130,7 +136,7 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
   private def handleDataPayload(
       payload: DataPayload,
       sender: PeerMessageSender): Unit = {
-    val dataMsgHandler = new DataMessageHandler(appConfig)
+    val dataMsgHandler = new DataMessageHandler(chainAppConfig)
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMsgHandler.handleDataPayload(payload, sender)
@@ -140,13 +146,12 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
     * Handles control payloads defined here https://bitcoin.org/en/developer-reference#control-messages
     *
     * @param payload  the payload we need to do something with
-    * @param requests the @payload may be a response to a request inside this sequence
+    * @param sender the [[PeerMessageSender]] we can use to initialize an subsequent messages that need to be sent
     * @return the requests with the request removed for which the @payload is responding too
     */
   private def handleControlPayload(
       payload: ControlPayload,
       sender: PeerMessageSender): Try[Unit] = {
-    logger.debug("Control payload before derive: " + payload)
     payload match {
 
       case versionMsg: VersionMessage =>
@@ -161,6 +166,13 @@ class PeerMessageReceiver(state: PeerMessageReceiverState, appConfig: AppConfig)
 
           case good: Initializing =>
             internalState = good.withVersionMsg(versionMsg)
+
+            sender.sendVerackMessage()
+
+            //we want peers to just send us headers
+            //we don't want to have to request them manually
+            sender.sendHeadersMessage()
+
             Success(())
         }
 
@@ -215,14 +227,18 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: Client)
       extends PeerMessageReceiverMsg
 
-  def apply(state: PeerMessageReceiverState, appConfig: AppConfig)(
+  def apply(
+      state: PeerMessageReceiverState,
+      nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig)(
       implicit ref: ActorRefFactory): PeerMessageReceiver = {
-    new PeerMessageReceiver(state, appConfig)(ref)
+    new PeerMessageReceiver(state, nodeAppConfig, chainAppConfig)(ref)
   }
 
-  def newReceiver(appConfig: AppConfig)(
+  def newReceiver(nodeAppConfig: NodeAppConfig, chainAppConfig: ChainAppConfig)(
       implicit ref: ActorRefFactory): PeerMessageReceiver = {
     new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                            appConfig)(ref)
+                            nodeAppConfig,
+                            chainAppConfig)(ref)
   }
 }

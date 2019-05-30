@@ -1,11 +1,9 @@
 package org.bitcoins.node.serializers.headers
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.node.messages.NetworkPayload
-import org.bitcoins.node.util.NodeTestUtil
-import org.bitcoins.node.messages.NetworkPayload
-import org.bitcoins.node.util.NodeTestUtil
+import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class RawNetworkHeaderSerializerTest extends BitcoinSUnitTest {

@@ -19,19 +19,15 @@ import scala.concurrent.{ExecutionContext, Future}
   * }}}
   *
   */
-case class Blockchain(
-    headers: Vector[BlockHeaderDb])
-    extends BitcoinSLogger {
+case class Blockchain(headers: Vector[BlockHeaderDb]) extends BitcoinSLogger {
   val tip: BlockHeaderDb = headers.head
 }
 
 object Blockchain extends BitcoinSLogger {
 
-  def fromHeaders(
-      headers: Vector[BlockHeaderDb]): Blockchain = {
+  def fromHeaders(headers: Vector[BlockHeaderDb]): Blockchain = {
     Blockchain(headers)
   }
-
 
   /**
     * Attempts to connect the given block header with the given blockchain
@@ -47,37 +43,40 @@ object Blockchain extends BitcoinSLogger {
     *         or [[BlockchainUpdate.Failed failed]] to connect to a tip
     */
   def connectTip(header: BlockHeader, blockHeaderDAO: BlockHeaderDAO)(
-    implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
+      implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
 
     //get all competing chains we have
-    val blockchainsF: Future[Vector[Blockchain]] = blockHeaderDAO.getBlockchains()
+    val blockchainsF: Future[Vector[Blockchain]] =
+      blockHeaderDAO.getBlockchains()
 
-    val tipResultF: Future[BlockchainUpdate] = blockchainsF.flatMap { blockchains =>
-      val nested: Vector[Future[BlockchainUpdate]] = blockchains.map { blockchain =>
-        val tip = blockchain.tip
-        logger.debug(
-          s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain with current tips=${tip.hashBE.hex}")
-        val tipResultF = TipValidation.checkNewTip(newPotentialTip = header,
-          currentTip = tip,
-          blockHeaderDAO = blockHeaderDAO)
+    val tipResultF: Future[BlockchainUpdate] = blockchainsF.flatMap {
+      blockchains =>
+        val nested: Vector[Future[BlockchainUpdate]] = blockchains.map {
+          blockchain =>
+            val tip = blockchain.tip
+            logger.info(
+              s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain with current tips=${tip.hashBE.hex}")
+            val tipResultF = TipValidation.checkNewTip(newPotentialTip = header,
+                                                       currentTip = tip,
+                                                       blockHeaderDAO =
+                                                         blockHeaderDAO)
 
-        tipResultF.map { tipResult =>
-          tipResult match {
-            case TipUpdateResult.Success(headerDb) =>
-              val newChain =
-                Blockchain.fromHeaders(headerDb +: blockchain.headers)
-              BlockchainUpdate.Successful(newChain, headerDb)
-            case fail: TipUpdateResult.Failure =>
-              BlockchainUpdate.Failed(blockchain, header, fail)
-          }
+            tipResultF.map { tipResult =>
+              tipResult match {
+                case TipUpdateResult.Success(headerDb) =>
+                  val newChain =
+                    Blockchain.fromHeaders(headerDb +: blockchain.headers)
+                  BlockchainUpdate.Successful(newChain, headerDb)
+                case fail: TipUpdateResult.Failure =>
+                  BlockchainUpdate.Failed(blockchain, header, fail)
+              }
+            }
         }
-      }
-      parseSuccessOrFailure(nested = nested)
+        parseSuccessOrFailure(nested = nested)
     }
 
     tipResultF
   }
-
 
   /** Takes in a vector of blockchain updates being executed asynchronously, we can only connect one [[BlockHeader header]]
     * to a tip successfully, which means _all_ other [[BlockchainUpdate updates]] must fail. This is a helper method
@@ -86,21 +85,25 @@ object Blockchain extends BitcoinSLogger {
     * @param ec
     * @return
     */
-  private def parseSuccessOrFailure(nested: Vector[Future[BlockchainUpdate]])(implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
+  private def parseSuccessOrFailure(nested: Vector[Future[BlockchainUpdate]])(
+      implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
     val successfulTipOptF: Future[Option[BlockchainUpdate]] = {
-      Future.find(nested) { case update: BlockchainUpdate =>
-        update.isInstanceOf[BlockchainUpdate.Successful]
+      Future.find(nested) {
+        case update: BlockchainUpdate =>
+          update.isInstanceOf[BlockchainUpdate.Successful]
       }
     }
 
-
     successfulTipOptF.flatMap {
       case Some(update) => Future.successful(update)
-      case None =>
+      case None         =>
         //if we didn't successfully connect a tip, just take the first failure we see
-        Future.find(nested) { case update: BlockchainUpdate =>
-          update.isInstanceOf[BlockchainUpdate.Failed]
-        }.map(_.get)
+        Future
+          .find(nested) {
+            case update: BlockchainUpdate =>
+              update.isInstanceOf[BlockchainUpdate.Failed]
+          }
+          .map(_.get)
     }
   }
 }

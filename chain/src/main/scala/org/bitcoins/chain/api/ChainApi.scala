@@ -19,7 +19,8 @@ trait ChainApi {
     * @param header
     * @return
     */
-  def processHeader(header: BlockHeader)(implicit ec: ExecutionContext): Future[ChainApi]
+  def processHeader(header: BlockHeader)(
+      implicit ec: ExecutionContext): Future[ChainApi]
 
   /** Process all of the given headers and returns a new [[ChainApi chain api]]
     * that contains these headers. This method processes headers in the order
@@ -27,9 +28,11 @@ trait ChainApi {
     * @param headers
     * @return
     */
-  def processHeaders(headers: Vector[BlockHeader])(implicit ec: ExecutionContext): Future[ChainApi] = {
-    headers.foldLeft(Future.successful(this)) { case (chainF,header) =>
-      chainF.flatMap(_.processHeader(header))
+  def processHeaders(headers: Vector[BlockHeader])(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
+    headers.foldLeft(Future.successful(this)) {
+      case (chainF, header) =>
+        chainF.flatMap(_.processHeader(header))
     }
   }
 
@@ -38,4 +41,8 @@ trait ChainApi {
 
   /** Gets the number of blocks in the database */
   def getBlockCount: Future[Long]
+
+  /** Gets the hash of the block that is what we consider "best" */
+  def getBestBlockHash(
+      implicit ec: ExecutionContext): Future[DoubleSha256DigestBE]
 }

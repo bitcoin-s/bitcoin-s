@@ -1,76 +1,27 @@
 package org.bitcoins.node.networking.peer
 
-import java.net.InetSocketAddress
-
-import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.Timeout
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.messages._
-import org.bitcoins.node.util.NodeTestUtil
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.scalatest._
+import org.bitcoins.testkit.node.NodeUnitTest
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Created by chris on 7/1/16.
   */
-class PeerMessageHandlerTest
-    extends AsyncFlatSpec
-    with MustMatchers
-    with BeforeAndAfter
-    with BeforeAndAfterAll
-    with BitcoinSLogger {
-  private val timeout = 15.seconds
+class PeerMessageHandlerTest extends NodeUnitTest {
+  override type FixtureParam = Unit
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    test(())
+  }
+
   private implicit val akkaTimeout = Timeout(timeout)
-
-  implicit val system: ActorSystem = ActorSystem(
-    s"PeerMessageHandlerTest-${System.currentTimeMillis()}")
-
-  implicit val ec: ExecutionContext = system.dispatcher
-
-  private val appConfig = NodeTestUtil.nodeAppConfig
-  implicit val np: NetworkParameters = appConfig.network
-
-  private def buildPeerMessageReceiver(): PeerMessageReceiver = {
-    val receiver = PeerMessageReceiver.newReceiver(appConfig)
-    receiver
-  }
-
-  def buildPeerHandler(): Future[PeerHandler] = {
-    bitcoindPeerF.map { peer =>
-      val peerMsgReceiver = buildPeerMessageReceiver()
-      //the problem here is the 'self', this needs to be an ordinary peer message handler
-      //that can handle the handshake
-      val peerMsgSender: PeerMessageSender = {
-        val client = NodeTestUtil.client(peer, peerMsgReceiver)
-        PeerMessageSender(client,np)
-      }
-
-      PeerHandler(peerMsgReceiver, peerMsgSender)
-    }
-
-  }
-
-  def peerSocketAddress(
-      bitcoindRpcClient: BitcoindRpcClient): InetSocketAddress = {
-    NodeTestUtil.getBitcoindSocketAddress(bitcoindRpcClient)
-  }
-
-  val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
-
-  val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 
   behavior of "PeerHandler"
 
-  it must "be able to fully initialize a PeerMessageReceiver" in {
+  it must "be able to fully initialize a PeerMessageReceiver" in { _ =>
     val peerHandlerF = buildPeerHandler()
     val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
     val peerMsgRecvF = peerHandlerF.map(_.peerMsgRecv)
@@ -248,9 +199,6 @@ class PeerMessageHandlerTest
           peerMsgHandler ! Tcp.Close
           probe.expectMsg(Tcp.Closed)
         }*/
-
-  private def buildPeerRequest(payload: NetworkPayload): NetworkMessage =
-    NetworkMessage(Constants.networkParameters, payload)
 
   override def afterAll = {
     startedBitcoindF.flatMap(_.stop())

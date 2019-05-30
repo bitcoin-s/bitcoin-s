@@ -1,12 +1,6 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.crypto
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{
@@ -14,11 +8,9 @@ import org.bitcoins.core.protocol.blockchain.{
   MainNetChainParams,
   RegTestNetChainParams
 }
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.db.AppConfig
 
 sealed abstract class ChainTestUtil {
   lazy val regTestChainParams: RegTestNetChainParams.type =
@@ -86,30 +78,6 @@ sealed abstract class ChainTestUtil {
       implicit ec: ExecutionContext): DoubleSha256DigestBE => Future[
     BlockHeader] = { hash: crypto.DoubleSha256DigestBE =>
     bitcoindF.flatMap(_.getBlockHeader(hash).map(_.blockHeader))
-  }
-
-  /** Initializes our chain project if it is needed
-    * This creates the necessary tables for the chain project
-    * and inserts preliminary data like the genesis block header
-    * */
-  def initializeIfNeeded(chainAppConfig: AppConfig)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    val chainDbConfig = chainAppConfig.dbConfig
-    val blockHeaderDAO = BlockHeaderDAO(chainAppConfig)
-    val isInitF = ChainAppConfig.isDbInitialized()
-    isInitF.flatMap { isInit =>
-      if (isInit) {
-        FutureUtil.unit
-      } else {
-        val createdF = ChainDbManagement.createAll()(chainAppConfig, ec)
-        val genesisHeader = BlockHeaderDbHelper.fromBlockHeader(
-          height = 0,
-          bh = chainAppConfig.chain.genesisBlock.blockHeader)
-        val bhCreatedF =
-          createdF.flatMap(_ => blockHeaderDAO.create(genesisHeader))
-        bhCreatedF.flatMap(_ => FutureUtil.unit)
-      }
-    }
   }
 }
 

@@ -1,6 +1,7 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FileUtil
@@ -22,7 +23,7 @@ class ChainHandlerTest extends ChainUnitTest {
   override implicit val system = ActorSystem("ChainUnitTest")
 
   // we're working with mainnet data
-  override lazy implicit val appConfig = mainnetAppConfig
+  override lazy implicit val appConfig: ChainAppConfig = mainnetAppConfig
 
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
@@ -33,7 +34,8 @@ class ChainHandlerTest extends ChainUnitTest {
 
   it must "process a new valid block header, and then be able to fetch that header" in {
     chainHandler: ChainHandler =>
-      val newValidHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val newValidHeader =
+        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
       val processedHeaderF =
         chainHandler.processHeader(newValidHeader.blockHeader)
 
@@ -78,18 +80,19 @@ class ChainHandlerTest extends ChainUnitTest {
       }
 
       val blockHeaders =
-        headersResult.get.drop(FIRST_POW_CHANGE - FIRST_BLOCK_HEIGHT)
+        headersResult.get.drop(
+          ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT)
 
       val firstBlockHeaderDb =
-        BlockHeaderDbHelper.fromBlockHeader(FIRST_POW_CHANGE - 2,
+        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 2,
                                             ChainTestUtil.blockHeader562462)
 
       val secondBlockHeaderDb =
-        BlockHeaderDbHelper.fromBlockHeader(FIRST_POW_CHANGE - 1,
+        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 1,
                                             ChainTestUtil.blockHeader562463)
 
       val thirdBlockHeaderDb =
-        BlockHeaderDbHelper.fromBlockHeader(FIRST_POW_CHANGE,
+        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE,
                                             ChainTestUtil.blockHeader562464)
 
       /*
@@ -112,7 +115,7 @@ class ChainHandlerTest extends ChainUnitTest {
 
         processHeaders(processorF = processorF,
                        remainingHeaders = blockHeadersToTest,
-                       height = FIRST_POW_CHANGE + 1)
+                       height = ChainUnitTest.FIRST_POW_CHANGE + 1)
       }
   }
 

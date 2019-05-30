@@ -17,13 +17,6 @@ import org.bitcoins.node.serializers.messages.control._
 import org.bitcoins.node.serializers.messages.data._
 import org.bitcoins.node.util.NetworkIpAddress
 import org.bitcoins.node.versions.ProtocolVersion
-import org.bitcoins.node.headers.NetworkHeader
-import org.bitcoins.node.messages.control.ServiceIdentifier
-import org.bitcoins.node.messages.data.Inventory
-import org.bitcoins.node.serializers.messages.control._
-import org.bitcoins.node.serializers.messages.data._
-import org.bitcoins.node.util.NetworkIpAddress
-import org.bitcoins.node.versions.ProtocolVersion
 import scodec.bits.ByteVector
 
 /**
@@ -37,7 +30,7 @@ sealed trait NetworkPayload extends NetworkElement {
     * ASCII string which identifies what message type is contained in the payload.
     * Followed by nulls (0x00) to pad out byte count; for example: version\0\0\0\0\0.
     * Command names need to be 12 bytes long
-    * This is generally used to build a [[org.bitcoins.node.headers.MessageHeader]]
+    * This is generally used to build a [[org.bitcoins.node.headers.NetworkHeader]]
     * @return
     */
   def commandName: String
@@ -48,7 +41,6 @@ sealed trait NetworkPayload extends NetworkElement {
   * [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
 sealed trait DataPayload extends NetworkPayload
-
 
 /**
   * The block message transmits a single serialized block
@@ -143,7 +135,7 @@ trait GetDataMessage extends DataPayload {
   * from a particular point in the block chain.
   * It allows a peer which has been disconnected or started for the first time to get the
   * headers it hasn’t seen yet.
-  * [[https://bitcoin.org/en/developer-reference#getheaders]]
+  * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
   */
 trait GetHeadersMessage extends DataPayload {
   def version: ProtocolVersion
@@ -177,7 +169,7 @@ trait HeadersMessage extends DataPayload {
     * doesn’t include any transactions, the transaction count is always zero.
     * @return
     */
-  def headers: List[BlockHeader]
+  def headers: Vector[BlockHeader]
 
   override def commandName = NetworkPayload.headersCommandName
 
@@ -289,7 +281,6 @@ trait AddrMessage extends ControlPayload {
   override def bytes: ByteVector = RawAddrMessageSerializer.write(this)
 }
 
-
 /**
   * The feefilter message is a request to the receiving peer to not relay any transaction inv messages
   * to the sending peer where the fee rate for the transaction is below the fee rate specified in the
@@ -306,7 +297,6 @@ trait FeeFilterMessage extends ControlPayload {
 
   /** The raw fee rate, in satoshis per kb. This is what is defined in the p2p message */
   def feeRate: SatoshisPerKiloByte
-
 
   def satPerByte: SatoshisPerByte = {
     feeRate.toSatPerByte
@@ -670,7 +660,6 @@ object NetworkPayload {
     notFoundCommandName -> { RawNotFoundMessageSerializer.read(_) },
     transactionCommandName -> { RawTransactionMessageSerializer.read(_) },
     addrCommandName -> { RawAddrMessageSerializer.read(_) },
-
     feeFilterCommandName -> { RawFeeFilterMessageSerializer.read(_) },
     filterAddCommandName -> { RawFilterAddMessageSerializer.read(_) },
     filterClearCommandName -> { _: ByteVector =>

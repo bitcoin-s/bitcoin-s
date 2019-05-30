@@ -17,7 +17,7 @@ case class AddressDAO()(
 ) extends CRUD[AddressDb, BitcoinAddress] {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override def appConfig: AppConfig = WalletAppConfig
+  override def appConfig: WalletAppConfig = WalletAppConfig()
 
   override val table: TableQuery[AddressTable] = TableQuery[AddressTable]
 

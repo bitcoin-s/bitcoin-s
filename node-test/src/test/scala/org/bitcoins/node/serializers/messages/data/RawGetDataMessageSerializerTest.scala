@@ -3,9 +3,7 @@ package org.bitcoins.node.serializers.messages.data
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.node.messages.MsgTx
-import org.bitcoins.node.messages.data.Inventory
-import org.bitcoins.node.messages.MsgTx
+import org.bitcoins.node.messages.TypeIdentifier.MsgTx
 import org.bitcoins.node.messages.data.Inventory
 import org.scalatest.{FlatSpec, MustMatchers}
 

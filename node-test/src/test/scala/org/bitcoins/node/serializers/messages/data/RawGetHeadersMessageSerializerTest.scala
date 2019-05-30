@@ -3,10 +3,8 @@ package org.bitcoins.node.serializers.messages.data
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.node.versions.ProtocolVersion70002
-import org.bitcoins.node.util.NodeTestUtil
-import org.bitcoins.node.versions.ProtocolVersion70002
+import org.bitcoins.testkit.node.NodeTestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

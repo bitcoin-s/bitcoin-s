@@ -15,7 +15,7 @@ case class AccountDAO()(implicit val ec: ExecutionContext)
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override def appConfig: AppConfig = WalletAppConfig
+  override def appConfig: WalletAppConfig = WalletAppConfig()
 
   override val table: TableQuery[AccountTable] = TableQuery[AccountTable]
 

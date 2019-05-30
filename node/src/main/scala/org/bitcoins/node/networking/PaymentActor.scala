@@ -29,7 +29,7 @@ import org.bitcoins.node.util.BitcoinSpvNodeUtil
   * 5.) We verify the transaction given to us has an output that matches the address we expected a payment to
   * 6.) When another block is announced on the network, we send a MsgMerkleBlock
   * to our peer on the network to see if the tx was included on that block
-  * 7.) If it was, send the actor that that requested this [[PaymentActor.SuccessfulPayment]] message back
+  * 7.) If it was, send the actor that that requested this message back
   */
 sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
 
@@ -76,7 +76,8 @@ sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
     case invMsg: InventoryMessage =>
       //txs are broadcast by nodes on the network when they are seen by a node
       //filter out the txs we do not care about
-      val txInventories = invMsg.inventories.filter(_.typeIdentifier == MsgTx)
+      val txInventories =
+        invMsg.inventories.filter(_.typeIdentifier == TypeIdentifier.MsgTx)
       handleTransactionInventoryMessages(txInventories, peerMessageHandler)
   }
 
@@ -101,10 +102,13 @@ sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
       peerMessageHandler: ActorRef): Receive = LoggingReceive {
     case invMsg: InventoryMessage =>
       val blockHashes =
-        invMsg.inventories.filter(_.typeIdentifier == MsgBlock).map(_.hash)
+        invMsg.inventories
+          .filter(_.typeIdentifier == TypeIdentifier.MsgBlock)
+          .map(_.hash)
       if (blockHashes.nonEmpty) {
         //construct a merkle block message to verify that the txIds was in the block
-        val merkleBlockInventory = Inventory(MsgFilteredBlock, blockHashes.head)
+        val merkleBlockInventory =
+          Inventory(TypeIdentifier.MsgFilteredBlock, blockHashes.head)
         val getDataMsg = GetDataMessage(merkleBlockInventory)
         val getDataNetworkMessage =
           NetworkMessage(Constants.networkParameters, getDataMsg)

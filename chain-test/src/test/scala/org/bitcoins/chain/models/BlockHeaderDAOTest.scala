@@ -20,6 +20,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
 
   behavior of "BlockHeaderDAO"
 
+  private val genesisHeaderDb = ChainUnitTest.genesisHeaderDb
   it should "insert and read the genesis block header back" in {
     blockHeaderDAO: BlockHeaderDAO =>
       val readF = blockHeaderDAO.read(genesisHeaderDb.hashBE)

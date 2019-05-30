@@ -1,8 +1,9 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.db._
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.db._
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
 
@@ -14,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
   * our chain project
   */
-case class BlockHeaderDAO(appConfig: AppConfig)(
+case class BlockHeaderDAO(appConfig: ChainAppConfig)(
     implicit override val ec: ExecutionContext)
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE] {
 
@@ -146,7 +147,7 @@ case class BlockHeaderDAO(appConfig: AppConfig)(
 
   private def maxHeightQuery: SQLiteProfile.ProfileAction[
     Long,
-    SQLiteProfile.api.NoStream,
+    NoStream,
     Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0L).result
     query
@@ -155,9 +156,15 @@ case class BlockHeaderDAO(appConfig: AppConfig)(
   /** Returns the chainTips in our database. This can be multiple headers if we have
     * competing blockchains (fork) */
   def chainTips: Future[Vector[BlockHeaderDb]] = {
+    logger.debug(s"Getting chaintips from: ${database.config.dbConfig.config}")
     val aggregate = {
       maxHeightQuery.flatMap { height =>
-        getAtHeightQuery(height)
+        logger.debug(s"Max block height: $height")
+        val atHeight = getAtHeightQuery(height)
+        atHeight.map { headers =>
+          logger.debug(s"Headers at $height: $headers")
+        }
+        atHeight
       }
     }
 
@@ -173,13 +180,13 @@ case class BlockHeaderDAO(appConfig: AppConfig)(
     * @param ec
     * @return
     */
-  def getBlockchains()(implicit ec: ExecutionContext): Future[Vector[Blockchain]] = {
+  def getBlockchains()(
+      implicit ec: ExecutionContext): Future[Vector[Blockchain]] = {
     val chainTipsF = chainTips
     val diffInterval = appConfig.chain.difficultyChangeInterval
     chainTipsF.flatMap { tips =>
       val nestedFuture: Vector[Future[Blockchain]] = tips.map { tip =>
-
-        val height = Math.max(0,tip.height - diffInterval)
+        val height = Math.max(0, tip.height - diffInterval)
         val headersF = getBetweenHeights(from = height, to = tip.height)
         headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
       }
@@ -187,4 +194,3 @@ case class BlockHeaderDAO(appConfig: AppConfig)(
     }
   }
 }
-

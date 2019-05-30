@@ -1,4 +1,4 @@
-package org.bitcoins.node.util
+package org.bitcoins.testkit.node
 
 import java.net.InetSocketAddress
 
@@ -12,8 +12,8 @@ import org.bitcoins.node.messages.data.GetHeadersMessage
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
+import org.bitcoins.node.util.NetworkIpAddress
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.db.AppConfig
 
 /**
   * Created by chris on 6/2/16.
@@ -71,7 +71,7 @@ abstract class NodeTestUtil {
     )
   }
 
-  def nodeAppConfig: AppConfig = NodeAppConfig
+  def nodeAppConfig: NodeAppConfig = NodeAppConfig()
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {

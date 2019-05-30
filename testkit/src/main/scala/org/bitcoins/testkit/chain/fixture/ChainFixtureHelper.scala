@@ -18,11 +18,13 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
     tag match {
       case ChainFixtureTag.Empty => Future.successful(ChainFixture.Empty)
       case ChainFixtureTag.GenisisBlockHeaderDAO =>
-        createBlockHeaderDAO().map(GenisisBlockHeaderDAO.apply)
+        ChainUnitTest.createBlockHeaderDAO().map(GenisisBlockHeaderDAO.apply)
       case ChainFixtureTag.PopulatedBlockHeaderDAO =>
-        createPopulatedBlockHeaderDAO().map(PopulatedBlockHeaderDAO.apply)
+        ChainUnitTest
+          .createPopulatedBlockHeaderDAO()
+          .map(PopulatedBlockHeaderDAO.apply)
       case ChainFixtureTag.GenisisChainHandler =>
-        createChainHandler().map(GenisisChainHandler.apply)
+        ChainUnitTest.createChainHandler().map(GenisisChainHandler.apply)
       case ChainFixtureTag.PopulatedChainHandler =>
         createPopulatedChainHandler().map(
           ChainFixture.PopulatedChainHandler.apply)
@@ -35,10 +37,10 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
   def destroyFixture(fixture: ChainFixture): Future[Any] = {
     fixture match {
       case Empty                      => Future.successful(())
-      case GenisisBlockHeaderDAO(_)   => destroyHeaderTable()
-      case PopulatedBlockHeaderDAO(_) => destroyHeaderTable()
-      case GenisisChainHandler(_)     => destroyHeaderTable()
-      case PopulatedChainHandler(_)   => destroyHeaderTable()
+      case GenisisBlockHeaderDAO(_)   => ChainUnitTest.destroyHeaderTable()
+      case PopulatedBlockHeaderDAO(_) => ChainUnitTest.destroyHeaderTable()
+      case GenisisChainHandler(_)     => ChainUnitTest.destroyHeaderTable()
+      case PopulatedChainHandler(_)   => ChainUnitTest.destroyHeaderTable()
       case BitcoindZmqChainHandlerWithBlock(bitcoindHandler) =>
         destroyBitcoindChainHandlerViaZmq(bitcoindHandler)
     }

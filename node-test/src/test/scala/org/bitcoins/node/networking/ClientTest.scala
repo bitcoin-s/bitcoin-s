@@ -3,12 +3,13 @@ package org.bitcoins.node.networking
 import akka.actor.ActorSystem
 import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestKit, TestProbe}
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
-import org.bitcoins.node.util.NodeTestUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
 
@@ -28,6 +29,8 @@ class ClientTest
     s"Client-Test-System-${System.currentTimeMillis()}")
 
   private val appConfig = NodeTestUtil.nodeAppConfig
+
+  private val chainAppConfig = ChainAppConfig()
 
   implicit val np = appConfig.network
 
@@ -71,7 +74,10 @@ class ClientTest
   def connectAndDisconnect(peer: Peer): Future[Assertion] = {
     val probe = TestProbe()
     val remote = peer.socket
-    val peerMessageReceiver = PeerMessageReceiver(Preconnection, appConfig = appConfig)
+    val peerMessageReceiver =
+      PeerMessageReceiver(state = Preconnection,
+                          nodeAppConfig = appConfig,
+                          chainAppConfig = chainAppConfig)
     val client =
       TestActorRef(Client.props(peer, peerMessageReceiver), probe.ref)
 

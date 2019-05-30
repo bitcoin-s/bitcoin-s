@@ -8,16 +8,15 @@ import org.bitcoins.core.protocol.blockchain.{
   RegTestNetChainParams,
   TestNetChainParams
 }
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.versions.ProtocolVersion70013
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.duration.DurationInt
-import org.bitcoins.db.AppConfig
-import org.bitcoins.node.config.NodeAppConfig
 
 case object Constants {
   lazy val actorSystem = ActorSystem("BitcoinSpvNode")
-  def networkParameters: NetworkParameters = TestNet3
+  def networkParameters: NetworkParameters = appConfig.network
   def version = ProtocolVersion70013
 
   def timeout = 5.seconds
@@ -26,7 +25,7 @@ case object Constants {
   /** This is the file where our block headers are stored */
   def blockHeaderFile = new java.io.File("src/main/resources/block_headers.dat")
 
-  lazy val appConfig: AppConfig = NodeAppConfig
+  lazy val appConfig: NodeAppConfig = NodeAppConfig()
 
   /** The [[ChainParams]] for the blockchain we are currently connected to */
   def chainParams: ChainParams = networkParameters match {
