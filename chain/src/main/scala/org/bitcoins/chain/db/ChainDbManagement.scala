@@ -3,7 +3,7 @@ package org.bitcoins.chain.db
 import org.bitcoins.db._
 import org.bitcoins.chain.models.BlockHeaderTable
 import org.bitcoins.db.{DbManagement}
-import slick.lifted.TableQuery
+import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.Future
 

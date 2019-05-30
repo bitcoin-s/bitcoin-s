@@ -12,13 +12,30 @@ import org.bitcoins.node.messages.{
 }
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.core.protocol.transaction.Transaction
+
+import org.bitcoins.node.messages.TypeIdentifier.MsgBlock
+import org.bitcoins.node.messages.TypeIdentifier.MsgFilteredBlock
+import org.bitcoins.node.messages.TypeIdentifier.MsgTx
+import org.bitcoins.node.messages.MsgUnassigned
+import org.bitcoins.node.messages.GetDataMessage
+import org.bitcoins.node.messages.data.GetDataMessage
+import org.bitcoins.node.messages.data.Inventory
+import org.bitcoins.node.messages.TransactionMessage
+import org.bitcoins.node.messages.MerkleBlockMessage
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.blockchain.MerkleBlock
+import org.bitcoins.node.messages.BlockMessage
+import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.node.messages.TypeIdentifier
 
 /** This actor is meant to handle a [[org.bitcoins.node.messages.DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[HeadersMessage]] we should store those headers in our database
   */
-class DataMessageHandler(appConfig: ChainAppConfig)(
-    implicit ec: ExecutionContext)
+class DataMessageHandler(callbacks: SpvNodeCallbacks)(
+    implicit ec: ExecutionContext,
+    appConfig: ChainAppConfig)
     extends BitcoinSLogger {
 
   private val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO(appConfig)
@@ -26,6 +43,8 @@ class DataMessageHandler(appConfig: ChainAppConfig)(
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender): Future[Unit] = {
+    logger.info(
+      s"Received data message with name=${payload.commandName} and content=$payload")
     payload match {
       case headersMsg: HeadersMessage =>
         val headers = headersMsg.headers
@@ -37,6 +56,15 @@ class DataMessageHandler(appConfig: ChainAppConfig)(
           val lastHash = headers.last.hash
           peerMsgSender.sendGetHeadersMessage(lastHash)
         }
+      case msg: BlockMessage =>
+        callbacks.onBlockReceived(msg.block)
+        FutureUtil.unit
+      case msg: TransactionMessage =>
+        callbacks.onTxReceived(msg.transaction)
+        FutureUtil.unit
+      case msg: MerkleBlockMessage =>
+        callbacks.onMerkleBlockReceived(msg.merkleBlock)
+        FutureUtil.unit
       case invMsg: InventoryMessage =>
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
@@ -50,4 +78,26 @@ class DataMessageHandler(appConfig: ChainAppConfig)(
     FutureUtil.unit
 
   }
+}
+
+object DataMessageHandler {
+
+  /** Callback for handling a received block */
+  type OnBlockReceived = Block => Unit
+
+  /** Does nothing with the received block */
+  val noopBlockReceived: OnBlockReceived = _ => ()
+
+  /** Callback for handling a received Merkle block */
+  type OnMerkleBlockReceived = MerkleBlock => Unit
+
+  /** Does nothing with the received Merkle block */
+  val noopMerkleBlockReceived: OnMerkleBlockReceived = _ => ()
+
+  /** Callback for handling a received transaction */
+  type OnTxReceived = Transaction => Unit
+
+  /** Does nothing with the received transaction */
+  val noopTxReceived: OnTxReceived = _ => ()
+
 }

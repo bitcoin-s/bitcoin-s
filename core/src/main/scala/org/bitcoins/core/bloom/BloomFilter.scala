@@ -119,6 +119,9 @@ sealed abstract class BloomFilter extends NetworkElement {
   /** Checks if `data` contains a [[org.bitcoins.core.crypto.DoubleSha256Digest Sha256Hash160Digest]] */
   def contains(hash: Sha256Hash160Digest): Boolean = contains(hash.bytes)
 
+  /** Checks if the filter contains the given public key */
+  def contains(pubkey: ECPublicKey): Boolean = contains(pubkey.bytes)
+
   /**
     * Checks if the transaction's txid, or any of the constants in it's scriptPubKeys/scriptSigs match our BloomFilter
     * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]

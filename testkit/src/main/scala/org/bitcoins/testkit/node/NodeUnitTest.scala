@@ -32,6 +32,7 @@ import org.scalatest.{
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.node.SpvNodeCallbacks
 
 trait NodeUnitTest
     extends BitcoinSFixture
@@ -68,7 +69,7 @@ trait NodeUnitTest
 
   def buildPeerMessageReceiver(): PeerMessageReceiver = {
     val receiver =
-      PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
+      PeerMessageReceiver.newReceiver()
     receiver
   }
 
@@ -114,12 +115,14 @@ trait NodeUnitTest
   def withNodeAndBitcoindAndWallet(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     type Triple = (SpvNode, BitcoindRpcClient, UnlockedWalletApi)
+
     val create: () => Future[Triple] = () =>
       for {
         wallet <- BitcoinSWalletTest.createNewWallet()
         bitcoind <- createBitcoindWithFunds()
         spv <- createSpvNode(bitcoind)
       } yield (spv, bitcoind, wallet)
+
     val destroy: Triple => Future[Unit] = {
       case (spv, bitcoind, wallet) =>
         val spvWithBitcoind = SpvNodeConnectedWithBitcoind(spv, bitcoind)

@@ -15,16 +15,48 @@ import org.bitcoins.node.networking.peer.{
 import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.Future
+import org.bitcoins.node.messages.NetworkPayload
+import org.bitcoins.node.models.InterestingPubKeyDAO
+import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.bloom.BloomUpdateNone
+import org.bitcoins.node.messages.control.FilterLoadMessage
+import org.bitcoins.node.messages.FilterLoadMessage
 
-case class SpvNode(peer: Peer, chainApi: ChainApi)(
+/**
+  * An SPV node that can send and receive P2P messages, construct
+  * bloom filters based on an internal DB of elements of interest
+  * and also provided callbacks for certain interesting events.
+  *
+  * @param bloomFilter The current bloom filter of the node, if any
+  * @param callbacks Set of optional callbacks that get's executed
+  *        at certain events in the node lifecycle.
+  */
+case class SpvNode(
+    peer: Peer,
+    chainApi: ChainApi,
+    bloomFilter: Option[BloomFilter] = None,
+    callbacks: SpvNodeCallbacks = SpvNodeCallbacks())(
     implicit system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig)
     extends BitcoinSLogger {
   import system.dispatcher
 
+  private val pubkeyDAO = InterestingPubKeyDAO()
+
+  /** Random UInt32 value used in constructing bloom filter */
+  private val tweak: UInt32 = {
+    val randomLong = math
+      .floor(UInt32.max.toLong * math.random())
+      // why does math.floor return a double???
+      .toLong
+    UInt32(randomLong)
+  }
+
   private val peerMsgRecv =
-    PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
+    PeerMessageReceiver.newReceiver(callbacks)
 
   private val client: Client =
     Client(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)
@@ -33,7 +65,31 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
     PeerMessageSender(client, nodeAppConfig.network)
   }
 
-  /** Starts our spv node */
+  /**
+    * Sends the given P2P to our peer.
+    * This method is useful for playing around
+    * with P2P messages, therefore marked as
+    * `private[node]`.
+    */
+  private[node] def send(msg: NetworkPayload): Unit = {
+    peerMsgSender.sendMsg(msg)
+  }
+
+  /**
+    * Adds the given public key to our table of
+    * interesting public keys. This table is used
+    * to construct a bloom filter we send to our
+    * peer, which then will send us information
+    * about transactions related to said keys.
+    */
+  def addPubKey(pub: ECPublicKey): Future[SpvNode] = {
+    logger.debug(s"Marking $pub as an a public key of interest")
+    for {
+      _ <- pubkeyDAO.create(pub)
+    } yield this
+  }
+
+  /** Starts our SPV node */
   def start(): Future[SpvNode] = {
     peerMsgSender.connect()
 
@@ -49,11 +105,46 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
 
     }
 
-    isInitializedF.map(_ => this)
+    isInitializedF.flatMap(_ => initBloomFilter())
   }
 
-  /** Stops our spv node */
+  /**
+    * Constructs and sends a bloom filter based on
+    * our table of pubkeys that's marked as interesting
+    *
+    * @return An SPV node with the newly set bloom filter
+    */
+  private def initBloomFilter(): Future[SpvNode] = {
+    logger.info(s"Initializing bloom filter")
+    for {
+      pubs <- pubkeyDAO.findAll()
+    } yield {
+      if (pubs.isEmpty) {
+        logger.info(
+          s"No public keys registered with node, not sending bloom filter")
+        this
+      } else {
+        val baseBloom =
+          BloomFilter(numElements = pubs.length,
+                      falsePositiveRate = nodeAppConfig.bloomFalsePositiveRate,
+                      tweak = tweak,
+                      // what's the best bloom update flag?
+                      BloomUpdateNone)
+
+        val bloomWithPubs = pubs.foldLeft(baseBloom)(_.insert(_))
+        val createFiltermsg = FilterLoadMessage(bloomWithPubs)
+        logger.info(
+          s"Sending filterload with bloom filter for ${pubs.length} public key(s)")
+        send(createFiltermsg)
+
+        copy(bloomFilter = Some(bloomWithPubs))
+      }
+    }
+  }
+
+  /** Stops our SPV node */
   def stop(): Future[SpvNode] = {
+    logger.info(s"Stopping SPV node")
     peerMsgSender.disconnect()
 
     val isStoppedF = AsyncUtil.retryUntilSatisfied(peerMsgRecv.isDisconnected)

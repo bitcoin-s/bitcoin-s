@@ -28,9 +28,9 @@ class ClientTest
   implicit val system = ActorSystem(
     s"Client-Test-System-${System.currentTimeMillis()}")
 
-  private val appConfig = NodeTestUtil.nodeAppConfig
+  private implicit val appConfig = NodeTestUtil.nodeAppConfig
 
-  private val chainAppConfig = ChainAppConfig()
+  private implicit val chainAppConfig = ChainAppConfig()
 
   implicit val np = appConfig.network
 
@@ -75,9 +75,7 @@ class ClientTest
     val probe = TestProbe()
     val remote = peer.socket
     val peerMessageReceiver =
-      PeerMessageReceiver(state = Preconnection,
-                          nodeAppConfig = appConfig,
-                          chainAppConfig = chainAppConfig)
+      PeerMessageReceiver(state = Preconnection)
     val client =
       TestActorRef(Client.props(peer, peerMessageReceiver), probe.ref)
 
