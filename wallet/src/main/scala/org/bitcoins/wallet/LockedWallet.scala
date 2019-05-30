@@ -314,6 +314,19 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
     }
   }
 
+  override def getAddressInfo(
+      address: BitcoinAddress): Future[Option[AddressInfo]] = {
+
+    val addressOptF = addressDAO.findAddress(address)
+    addressOptF.map { addressOpt =>
+      addressOpt.map { address =>
+        AddressInfo(pubkey = address.ecPublicKey,
+                    network = address.address.networkParameters,
+                    path = address.path)
+      }
+    }
+  }
+
   /** Generates a new change address */
   override protected[wallet] def getNewChangeAddress(
       account: AccountDb): Future[BitcoinAddress] = {
