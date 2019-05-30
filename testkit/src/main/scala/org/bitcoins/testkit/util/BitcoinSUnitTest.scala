@@ -1,5 +1,7 @@
 package org.bitcoins.testkit.util
 
+import java.math.BigInteger
+
 import org.scalactic.anyvals.PosInt
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
