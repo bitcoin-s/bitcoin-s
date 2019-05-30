@@ -70,10 +70,46 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks)(
     }
   }
 
+  /**
+    * We send `getdata` requests for all filtered blocks.
+    * That means we request a `merkleblock` message, given we
+    * have configured a bloom filter with this peer prior to this
+    */
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[Unit] = {
-    logger.info(s"Received inv=${invMsg}")
+    logger.info(
+      s"Received inv message. Inventory count: ${invMsg.inventoryCount.toInt}")
+    logger.info(
+      s"First 5 inventories: ${invMsg.inventories.take(5).mkString(", ")}")
+
+    val inventories: Seq[Inventory] = {
+      val listOfOpts = for {
+        inventory <- invMsg.inventories
+      } yield {
+        inventory.typeIdentifier match {
+          // changing the inventory type might be naughty,
+          // but we're not interested
+          // in the complete block
+          case MsgBlock =>
+            Some(
+              Inventory(TypeIdentifier.MsgFilteredBlock, hash = inventory.hash))
+          case MsgFilteredBlock => Some(inventory)
+          case MsgTx            => None
+          case _: MsgUnassigned => None
+        }
+      }
+      listOfOpts.flatten
+    }
+
+    if (inventories.isEmpty) {
+      logger.info(
+        s"Found no inventories of interest to us, not sending getdata message")
+    } else {
+      val getdata = GetDataMessage(inventories)
+      logger.info(s"Sending getdata message for ${inventories.mkString(", ")}")
+      peerMsgSender.sendMsg(getdata)
+    }
 
     FutureUtil.unit
 
