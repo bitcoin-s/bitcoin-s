@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.util
 
+import org.scalactic.anyvals.PosInt
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.{Logger, LoggerFactory}
@@ -10,20 +11,19 @@ abstract class BitcoinSUnitTest
     with MustMatchers
     with PropertyChecks {
 
-  lazy protected val logger: Logger = LoggerFactory.getLogger(getClass)
+  protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /** The configuration for property based tests in our testing suite
     * See: http://www.scalatest.org/user_guide/writing_scalacheck_style_properties
     */
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration = {
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration = {
     generatorDriveConfigOldCode
   }
 
   private def buildConfig(executions: Int): PropertyCheckConfiguration = {
-    PropertyCheckConfig(
-      minSuccessful = executions,
-      minSize = executions,
-      maxSize = executions,
+    PropertyCheckConfiguration(
+      minSuccessful = PosInt.from(executions).get,
+      minSize = PosInt.from(executions).get,
       workers = 2
     )
   }
