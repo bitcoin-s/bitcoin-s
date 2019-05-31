@@ -284,7 +284,8 @@ lazy val docs = project
     mdocExtraArguments := List("--no-link-hygiene"),
     name := "bitcoin-s-docs",
     mdocVariables := Map(
-      "VERSION" -> version.value
+      "STABLE_VERSION" -> previousStableVersion.value.get,
+      "UNSTABLE_VERSION" -> version.value
     ),
     publishWebsite := Def
       .sequential(
