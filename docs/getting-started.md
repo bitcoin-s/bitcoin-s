@@ -12,15 +12,18 @@ downloads and installs [Coursier](https://get-coursier.io/) and uses it to
 fetch the [Ammonite](https://ammonite.io) REPL and the latest version of
 Bitcoin-S. It then drops you into immediately into a REPL session.
 
-```
-% curl -s https://raw.githubusercontent.com/bitcoin-s/bitcoin-s-core/master/try-bitcoin-s.sh | bash
+```bash
+$ curl -s https://raw.githubusercontent.com/bitcoin-s/bitcoin-s/master/try-bitcoin-s.sh | bash
 Loading...
-Welcome to the Ammonite Repl 1.0.3
-(Scala 2.12.4 Java 1.8.0_152)
-If you like Ammonite, please support our development at www.patreon.com/lihaoyi
-@ 23 :: "foo" :: true :: HNil
-res0: Int :: String :: Boolean :: HNil = 23 :: "foo" :: true :: HNil
-%
+Welcome the Bitcoin-S REPL, powered by Ammonite
+Check out our documentation and examples at
+https://bitcoin-s.org/docs/getting-started
+@ val priv = ECPrivateKey()
+@ val pub = priv.publicKey
+@ val spk = P2WPKHWitnessSPKV0(pub)
+@ val address = Bech32Address(spk, MainNet)
+@ address.value # Tada! You've just made a Bech32 address
+res4: String = "bc1q7ynsz7tamtnvlmts4snrl7e98jc9d8gqwsjsr5"
 ```
 
 ## Build tools
@@ -33,17 +36,39 @@ instructions for your build tool
 Add this to your `build.sbt`:
 
 ```scala
-libraryDependencies +="org.bitcoins" % "bitcoin-s-secp256k1jni" % "@VERSION@"
+libraryDependencies +="org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "@STABLE_VERSION@"
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-core" % "@VERSION@" withSources() withJavadoc()
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "@STABLE_VERSION@"
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-bitcoind-rpc" % "@VERSION@" withSources() withJavadoc()
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-bitcoind-rpc" % "@STABLE_VERSION@"
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-eclair-rpc" % "@VERSION@" withSources() withJavadoc()
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-eclair-rpc" % "@STABLE_VERSION@"
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-testkit" % "@VERSION@" withSources() withJavadoc()
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-testkit" % "@STABLE_VERSION@"
 
-libraryDependencies += "org.bitcoins" %% "bitcoin-s-zmq" % "@VERSION@" withSources() withJavadoc()
+libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-zmq" % "@STABLE_VERSION@"
+```
+
+```scala mdoc:passthrough
+val isUnstable = "@UNSTABLE_VERSION" != "@STABLE_VERSION@"
+if (isUnstable) {
+    println(s"""
+### Nightly builds
+
+You can also run on the bleeding edge of Bitcoin-S, by
+adding a snapshot build to your `build.sbt`. The most
+recent snapshot published is `@UNSTABLE_VERSION@`.
+
+To fetch snapshot, you will need to add the correct
+resolver in your `build.sbt`:
+
+```sbt
+resolvers += Resolver.sonatypeRepo("snapshots")
+${List.fill(3)("`").mkString /* Hacky solution to get around nesting backticks */ }
+
+""")
+}
+
 ```
 
 ### Mill
