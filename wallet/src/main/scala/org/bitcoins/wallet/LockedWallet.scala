@@ -41,7 +41,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       case MainNetChainParams                         => HDCoinType.Bitcoin
       case RegTestNetChainParams | TestNetChainParams => HDCoinType.Testnet
     }
-    HDCoin(Wallet.DEFAULT_HD_PURPOSE, coinType)
+    HDCoin(walletConfig.defaultAccountKind, coinType)
   }
 
   /**

@@ -6,6 +6,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.wallet.db.WalletDbManagement
 import scala.util.Failure
 import scala.util.Success
+import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.hd.HDPurposes
 
 case class WalletAppConfig(conf: Config*) extends AppConfig {
   override val configOverrides: List[Config] = conf.toList
@@ -13,6 +15,16 @@ case class WalletAppConfig(conf: Config*) extends AppConfig {
   override type ConfigType = WalletAppConfig
   override def newConfigOfType(configs: List[Config]): WalletAppConfig =
     WalletAppConfig(configs: _*)
+
+  lazy val defaultAccountKind: HDPurpose =
+    config.getString("wallet.defaultAccountType") match {
+      case "legacy"        => HDPurposes.Legacy
+      case "segwit"        => HDPurposes.SegWit
+      case "nested-segwit" => HDPurposes.NestedSegWit
+      // todo: validate this pre-app startup
+      case other: String =>
+        throw new RuntimeException(s"$other is not a valid account type!")
+    }
 
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     logger.info(s"Initializing wallet setup")
