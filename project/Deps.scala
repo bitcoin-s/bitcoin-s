@@ -26,6 +26,7 @@ object Deps {
     val slickV = "3.3.1"
     val sqliteV = "3.27.2.1"
     val uJsonV = "0.7.1"
+    val scalameterV = "0.17"
   }
 
   object Compile {
@@ -73,6 +74,7 @@ object Deps {
     val ammonite = Compile.ammonite % "test"
     val playJson = Compile.playJson % "test"
     val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
+    val scalameter = "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
   }
 
   val root = List(
