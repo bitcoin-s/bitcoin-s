@@ -48,6 +48,12 @@ object WalletTestUtil {
                  HDChainType.External,
                  addressIndex = 0)
 
+  /** Sample legacy HD path */
+  lazy val sampleLegacyPath = LegacyHDPath(hdCoinType,
+                                           accountIndex = 0,
+                                           HDChainType.Change,
+                                           addressIndex = 0)
+
   def freshXpub: ExtPublicKey =
     CryptoGenerators.extPublicKey.sample.getOrElse(freshXpub)
 
