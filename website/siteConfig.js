@@ -11,30 +11,30 @@
 /**
  * For github.io type URLs, you would set the url and baseUrl like:
  *  const url = 'https://your-github-user-name.github.io'
- *  const baseUrl = "/bitcoin-s-core/"
- * 
- * This would place the site under 
- * https://your-user-name.github.io/bitcoin-s-core. 
+ *  const baseUrl = "/bitcoin-s/"
+ *
+ * This would place the site under
+ * https://your-user-name.github.io/bitcoin-s.
  * If publishing under a custom domain with no path
  * after the domain, you'd set const baseUrl = "/"
  * and const url = "https://your-domain.org".
- */ 
+ */
 
-const url = "https://bitcoin-s.org"
+const url = "https://bitcoin-s.org";
 const baseUrl = "/";
 const scaladocUrl = baseUrl + "api/org/bitcoins";
 
 /**
  * This should be the username/organization that owns the repo
- * you're publishing the website for. 
+ * you're publishing the website for.
  */
-const organizationName = "bitcoin-s",
+const organizationName = "bitcoin-s";
 
 /**
- * This should be the name of the repo you're publishing the 
+ * This should be the name of the repo you're publishing the
  * website for
  */
-const projectName  =  "bitcoin-s-core"
+const projectName = "bitcoin-s";
 
 // List of projects/orgs using your project for the users page.
 const users = [
@@ -71,12 +71,12 @@ const users = [
 const siteConfig = {
   title: "bitcoin-s", // Title for your website.
   tagline: "Bitcoin implementation in Scala",
-  url,  
+  url,
   baseUrl,
 
   // URL for editing docs, has to be present for the
   // "Edit this Doc" button to appear
-  editUrl: "https://github.com/bitcoin-s/bitcoin-s-core/docs",
+  editUrl: "https://github.com/bitcoin-s/bitcoin-s/docs",
 
   // Used for publishing and more
   projectName,
@@ -152,7 +152,7 @@ const siteConfig = {
 
   ////////////////////
   // custom keys begin
-  repoUrl: "https://github.com/bitcoin-s/bitcoin-s-core",
+  repoUrl: "https://github.com/bitcoin-s/bitcoin-s",
   suredbitsSlack:
     "https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM",
   gitterUrl: "https://gitter.im/bitcoin-s-core/",
