@@ -94,13 +94,13 @@ can be used to generate what's called an extended private key
 <span class="hljs-comment">// how long our phrase ends up being</span>
 <span class="hljs-comment">// 256 bits of entropy results in 24 words</span>
 <span class="hljs-keyword">val</span> entropy: <span class="hljs-type">BitVector</span> = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
-<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x1f668454e9e3731182cbf5e95ff58f466ab5438ace47b984310d8f74b639d501)</span>
+<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0xdda11bb4552646f1f00f378bf057078b46562419e66a3850c9134205b535e751)</span>
 
 <span class="hljs-keyword">val</span> mnemonicCode = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
-<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(buyer, crouch, benefit, stable, damp, match, arctic, leaf, true, zero, glow, mimic, prize, peace, clinic, similar, ridge, canoe, drop, bus, enter, brother, favorite, client))</span>
+<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(tank, angle, unfair, prevent, good, jump, scan, tragic, message, live, sea, bird, grace, bamboo, guide, snap, debate, main, dynamic, lottery, forget, online, outer, combine))</span>
 
 mnemonicCode.words <span class="hljs-comment">// the phrase the user should write down</span>
-<span class="hljs-comment">// res0: Vector[String] = Vector(buyer, crouch, benefit, stable, damp, match, arctic, leaf, true, zero, glow, mimic, prize, peace, clinic, similar, ridge, canoe, drop, bus, enter, brother, favorite, client) // the phrase the user should write down</span>
+<span class="hljs-comment">// res0: Vector[String] = Vector(tank, angle, unfair, prevent, good, jump, scan, tragic, message, live, sea, bird, grace, bamboo, guide, snap, debate, main, dynamic, lottery, forget, online, outer, combine) // the phrase the user should write down</span>
 
 <span class="hljs-comment">// the password argument is an optional, extra security</span>
 <span class="hljs-comment">// measure. all MnemonicCode instances will give you a</span>
@@ -110,13 +110,13 @@ mnemonicCode.words <span class="hljs-comment">// the phrase the user should writ
 <span class="hljs-comment">// different passwords.</span>
 <span class="hljs-keyword">val</span> bip39Seed = <span class="hljs-type">BIP39Seed</span>.fromMnemonic(mnemonicCode,
                                        password = <span class="hljs-string">"secret password"</span>)
-<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0x007d635dad6a88b8ab3d5b005777d40c56a9ead74884a1582c2b144d98e9a8b7cbdf8478312ec7bf6a3115a820794a70211c48d7f826fa49784ba3a2f37aff92))</span>
+<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0x63d6a5006b744be0e064faef251fad8df4758c1812fa64cd548385224b3d6dde3877d288430c838876e3565168d4ba69d2d943701a36ffa3146948838078db4d))</span>
 
 <span class="hljs-keyword">val</span> xpriv = <span class="hljs-type">ExtPrivateKey</span>.fromBIP39Seed(<span class="hljs-type">ExtKeyVersion</span>.<span class="hljs-type">SegWitMainNetPriv</span>,
                                         bip39Seed)
-<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GkBcKEgWj3TV9qEAc3V6Fg8CgsEC9PdspQNq1UL5xBEfjSWz54HAxjp3iDQUaxXsP3Bbs31dYJVYGLxnkvTJJes7jTDbQDXC</span>
+<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GjL1KfF14H8GA2PFgWNofHdmUWtepUNKnDeabNsnv4r4cuVpQXRFkoUzMnFUjghHAqjPm2CaoWD5yXtvknKzTC9UuNJQGwWX</span>
 <span class="hljs-keyword">val</span> xpub = xpriv.extPublicKey
-<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZxfgnLi3jQbRtPG16Swp73M8HfcbkwyQoHBAA1sQCj2zDHnVEWZXtQsG59HvdXKqsT7utUkofiwx74iSg8Ayq1EqvsSUDrje</span>
+<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZwp5nmGY4eGCtaR6AuqXWerh5KH4S2hrm6SujvR7AceP6kkizR9PCGqzU2KLQGDQDE6j71ajYd758Yu9eNktgcvHRE7EVUtP</span>
 
 <span class="hljs-comment">// you can now use the generated xpriv to derive further</span>
 <span class="hljs-comment">// private or public keys</span>
