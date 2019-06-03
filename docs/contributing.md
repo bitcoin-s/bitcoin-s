@@ -159,3 +159,9 @@ The command `sbt testQuick` can also be handy. It runs tests that either:
 
 For more information on `testQuick`, see the offical
 [sbt docs](https://www.scala-sbt.org/1.x/docs/Testing.html#testQuick).
+
+### CI
+
+Bitcoin-S uses Travis to run tests and deploy library and website builds. Generally
+speaking CI has to pass for a PR to get merged. If you make documentation/website only
+changes, you can start your PR title with `Docs:`. This skips running tests on CI.
