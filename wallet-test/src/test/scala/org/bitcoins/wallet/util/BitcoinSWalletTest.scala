@@ -23,6 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.testkit.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSAppConfig._
+import com.typesafe.config.Config
 
 trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
@@ -57,21 +58,44 @@ trait BitcoinSWalletTest
       .map(_ => ())
   }
 
-  def createNewWallet(): Future[UnlockedWalletApi] = {
+  private val createNewWallet: Option[Config] => () => Future[
+    UnlockedWalletApi] =
+    extraConfig =>
+      () => {
+        val defaultConf = implicitly[WalletAppConfig]
+        val walletConfig = extraConfig match {
+          case None    => defaultConf
+          case Some(c) => defaultConf.withOverrides(c)
+        }
 
-    for {
-      _ <- config.initialize()
-      wallet <- Wallet.initialize().map {
-        case InitializeWalletSuccess(wallet) => wallet
-        case err: InitializeWalletError =>
-          logger.error(s"Could not initialize wallet: $err")
-          fail(err)
-      }
-    } yield wallet
-  }
+        AppConfig.throwIfDefaultDatadir(walletConfig)
+
+        for {
+          _ <- walletConfig.initialize()
+          wallet <- Wallet
+            .initialize()(implicitly[ExecutionContext], walletConfig)
+            .map {
+              case InitializeWalletSuccess(wallet) => wallet
+              case err: InitializeWalletError =>
+                logger.error(s"Could not initialize wallet: $err")
+                fail(err)
+            }
+        } yield wallet
+    }
+
+  /** Creates a wallet with the default configuration  */
+  def withDefaultWallet(): Future[UnlockedWalletApi] =
+    createNewWallet(None)() // get the standard config
+
+  /** Lets you customize the parameters for the created wallet */
+  val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome =
+    walletConfig =>
+      makeDependentFixture(build = createNewWallet(Some(walletConfig)),
+                           destroy = destroyWallet)
 
   def withNewWallet(test: OneArgAsyncTest): FutureOutcome =
-    makeDependentFixture(build = createNewWallet, destroy = destroyWallet)(test)
+    makeDependentFixture(build = withDefaultWallet, destroy = destroyWallet)(
+      test)
 
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,
@@ -96,7 +120,7 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      createNewWallet,
+      withDefaultWallet,
       createWalletWithBitcoind,
       (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
         walletWithBitcoind

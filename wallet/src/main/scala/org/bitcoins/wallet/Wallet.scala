@@ -62,12 +62,15 @@ sealed abstract class Wallet
               .get
               .toUTXOSpendingInfo(fromAccount, seed))
 
-        logger.info(s"Spending UTXOs: ${utxos
-          .map { utxo =>
-            import utxo.outPoint
-            s"${outPoint.txId.hex}:${outPoint.vout.toInt}"
-          }
-          .mkString(", ")}")
+        logger.info({
+          val utxosStr = utxos
+            .map { utxo =>
+              import utxo.outPoint
+              s"${outPoint.txId.hex}:${outPoint.vout.toInt}"
+            }
+            .mkString(", ")
+          s"Spending UTXOs: $utxosStr"
+        })
 
         utxos.zipWithIndex.foreach {
           case (utxo, index) =>
@@ -99,11 +102,6 @@ sealed abstract class Wallet
 
 // todo: create multiple wallets, need to maintain multiple databases
 object Wallet extends CreateWalletApi with BitcoinSLogger {
-
-  // The default HD purpose of the bitcoin-s wallet. Can be
-  // one of segwit, nested segwit or legacy. Hard coded for
-  // now, could be make configurable in the future
-  private[wallet] val DEFAULT_HD_PURPOSE: HDPurpose = HDPurposes.SegWit
 
   private case class WalletImpl(
       mnemonicCode: MnemonicCode
@@ -169,9 +167,9 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
       } yield {
         val wallet = WalletImpl(mnemonic)
         val coin =
-          HDCoin(DEFAULT_HD_PURPOSE, HDUtil.getCoinType(config.network))
+          HDCoin(config.defaultAccountKind, HDUtil.getCoinType(config.network))
         val account = HDAccount(coin, 0)
-        val xpriv = wallet.xprivForPurpose(DEFAULT_HD_PURPOSE)
+        val xpriv = wallet.xprivForPurpose(config.defaultAccountKind)
 
         // safe since we're deriving from a priv
         val xpub = xpriv.deriveChildPubKey(account).get
