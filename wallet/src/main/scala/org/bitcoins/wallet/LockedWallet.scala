@@ -200,8 +200,8 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
         case Some(addr) =>
           addr.path.next
         case None =>
-          val account = HDAccount(DEFAULT_HD_COIN, accountIndex)
-          val chain = account.toChain(chainType)
+          val hdAccount = HDAccount(DEFAULT_HD_COIN, accountIndex)
+          val chain = hdAccount.toChain(chainType)
           val address = HDAddress(chain, 0)
           address.toPath
       }
