@@ -10,6 +10,8 @@ version lines. It can be set up to work with both local and remote Bitcoin Core 
 
 ## Connecting to a local `bitcoind` instance
 
+### Getting started quickly, with default options:
+
 ```scala mdoc:compile-only
 import scala.concurrent._
 import akka.actor.ActorSystem
@@ -17,22 +19,14 @@ import akka.actor.ActorSystem
 import org.bitcoins.{rpc, core}
 import core.currency.Bitcoins
 import rpc.client.common._
-import rpc.config.BitcoindInstance
 
-implicit val actorSystem: ActorSystem = ActorSystem.create()
-implicit val ec: ExecutionContext = actorSystem.dispatcher
+implicit val system = ActorSystem.create()
+implicit val ec: ExecutionContext = system.dispatcher
 
-// data directory defaults to ~/.bitcoin on Linux and
-// ~/Library/Application Support/Bitcoin on macOS
-val bitcoindInstance = BitcoindInstance.fromDatadir()
-
-// alternative:
-import java.io.File
-val dataDir = new File("/my/bitcoin/data/dir")
-val otherInstance = BitcoindInstance.fromDatadir(dataDir)
-
-
-val client = new BitcoindRpcClient(bitcoindInstance)
+// this reads authentication credentials and
+// connection details from the default data
+// directory on your platform
+val client = BitcoindRpcClient.fromDatadir()
 
 val balance: Future[Bitcoins] = for {
   _ <- client.start()
@@ -67,20 +61,17 @@ import org.bitcoins.rpc.client.common._
 
 val username = "FILL_ME_IN" //this username comes from 'rpcuser' in your bitcoin.conf file
 val password = "FILL_ME_IN" //this password comes from your 'rpcpassword' in your bitcoin.conf file
-val rpcPort = 8332 //this is default port for mainnet, 18332 for testnet/regtest
 
-
-val authCredentials = BitcoindAuthCredentials(
+val authCredentials = BitcoindAuthCredentials.PasswordBased(
   username = username,
-  password = password,
-  rpcPort = rpcPort
+  password = password
 )
 
 val bitcoindInstance = {
   BitcoindInstance (
     network = MainNet,
-    uri = new URI(s"http://localhost:${authCredentials.rpcPort + 1}"),
-    rpcUri = new URI(s"http://localhost:${authCredentials.rpcPort}"),
+    uri = new URI(s"http://localhost:${MainNet.port}"),
+    rpcUri = new URI(s"http://localhost:${MainNet.rpcPort}"),
     authCredentials = authCredentials
   )
 }

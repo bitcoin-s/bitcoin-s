@@ -53,7 +53,7 @@ In a separate shell:
 
 ```bash
 $ sbt
-> doc/mdoc --watch
+> docs/mdoc --watch
 ```
 
 The above commands compiles our Mdoc Markdown files every time you change
