@@ -30,7 +30,10 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
     * @param t - the record to be inserted
     * @return the inserted record
     */
-  def create(t: T): Future[T] = createAll(Vector(t)).map(_.head)
+  def create(t: T): Future[T] = {
+    logger.trace(s"Writing $t to DB with config: ${appConfig.config}")
+    createAll(Vector(t)).map(_.head)
+  }
 
   def createAll(ts: Vector[T]): Future[Vector[T]]
 
@@ -41,6 +44,7 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
     * @return Option[T] - the record if found, else none
     */
   def read(id: PrimaryKeyType): Future[Option[T]] = {
+    logger.trace(s"Reading from DB with config: ${appConfig.config}")
     val query = findByPrimaryKey(id)
     val rows: Future[Seq[T]] = database.run(query.result)
     rows.map(_.headOption)
