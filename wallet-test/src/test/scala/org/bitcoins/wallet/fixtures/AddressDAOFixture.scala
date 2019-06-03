@@ -4,7 +4,7 @@ import scala.concurrent.Future
 
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.{AccountDAO, AddressDAO}
-import org.bitcoins.wallet.util.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest._
 
 /**

@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.wallet.fixtures.UtxoDAOFixture
-import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
 class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest with UtxoDAOFixture {
   behavior of "UTXOSpendingInfoDAO"
