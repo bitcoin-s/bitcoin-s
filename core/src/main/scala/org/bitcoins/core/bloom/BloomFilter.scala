@@ -21,6 +21,7 @@ import scodec.bits.{BitVector, ByteVector}
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
 import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.util.CryptoUtil
 
 /**
   * Created by chris on 8/2/16.
@@ -87,8 +88,14 @@ sealed abstract class BloomFilter extends NetworkElement {
   def insert(outPoint: TransactionOutPoint): BloomFilter =
     insert(outPoint.bytes)
 
-  /** Inserts a public key into the bloom filter */
-  def insert(pubkey: ECPublicKey): BloomFilter = insert(pubkey.bytes)
+  /**
+    * Inserts a public key and it's corresponding hash into the bloom filter
+    */
+  def insert(pubkey: ECPublicKey): BloomFilter = {
+    val pubkeyBytes = pubkey.bytes
+    val hash = CryptoUtil.sha256Hash160(pubkeyBytes)
+    insert(pubkeyBytes).insert(hash)
+  }
 
   /** Checks if `data` contains the given sequence of bytes */
   def contains(bytes: ByteVector): Boolean = {

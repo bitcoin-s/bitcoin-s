@@ -87,6 +87,26 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     filter2.hex must be("038fc16b080000000000000001")
   }
 
+  it must "insert a public key" in {
+    // each key inserted inserts both the pubkey and
+    // the hashed pubkey, therefore we need 4 elements
+    // for 2 keys
+    val numElements = 4
+    val bloom = BloomFilter(numElements = numElements,
+                            falsePositiveRate = 0.001,
+                            tweak = UInt32(100),
+                            BloomUpdateNone)
+
+    val firstKey = ECPrivateKey().publicKey
+    val secondKey = ECPrivateKey().publicKey
+    val withKeys = bloom.insert(firstKey).insert(secondKey)
+    assert(withKeys.contains(firstKey))
+    assert(withKeys.contains(secondKey))
+
+    val thirdKey = ECPrivateKey().publicKey
+    assert(!withKeys.contains(thirdKey))
+  }
+
   it must "test the isRelevant part of isRelevantAndUpdate inside of core" in {
     //mimics this test case in core
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L114
