@@ -4,17 +4,16 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
-import scodec.bits.ByteVector
+import scodec.bits._
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Try
+import org.scalatest.enablers.Containing
+import org.bitcoins.testkit.core.gen.BloomFilterGenerator
 
-/**
-  * Created by chris on 8/3/16.
-  */
-class BloomFilterTest extends FlatSpec with MustMatchers {
-  private val logger = BitcoinSLogger.logger
+class BloomFilterTest extends BitcoinSUnitTest {
   "BloomFilter" must "create a bloom filter, insert a few elements, then serialize and deserialize it" in {
     //test case in bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L28
@@ -43,7 +42,7 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     filter3.hex must be("03614e9b050000000000000001")
 
     val filter4 = BloomFilter.fromBytes(filter3.bytes)
-    (filter4 == filter3) must be(true)
+    filter4 must be(filter3)
   }
 
   it must "create a bloom filter with a tweak then insert elements and serialize it" in {
@@ -73,11 +72,9 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     val filter = BloomFilter(2, 0.001, UInt32.zero, BloomUpdateAll)
     val privKey = ECPrivateKey.fromWIFToPrivateKey(
       "5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C")
-    logger.debug("PrivKey: " + privKey.hex)
-    require(
+    assert(
       privKey.hex == "f49addfd726a59abde172c86452f5f73038a02f4415878dc14934175e8418aff")
     val pubKey = privKey.publicKey
-    logger.debug("PubKey being inserted into filter: " + pubKey.hex)
     val filter1 = filter.insert(pubKey.bytes)
     //hex is from bitcoin core
     filter1.hex must be("0302c12b080000000000000001")
@@ -85,6 +82,26 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     val filter2 = filter1.insert(keyId.bytes)
 
     filter2.hex must be("038fc16b080000000000000001")
+  }
+
+  it must "insert a public key" in {
+    // each key inserted inserts both the pubkey and
+    // the hashed pubkey, therefore we need 4 elements
+    // for 2 keys
+    val numElements = 4
+    val bloom = BloomFilter(numElements = numElements,
+                            falsePositiveRate = 0.001,
+                            tweak = UInt32(100),
+                            BloomUpdateNone)
+
+    val firstKey = ECPrivateKey().publicKey
+    val secondKey = ECPrivateKey().publicKey
+    val withKeys = bloom.insert(firstKey).insert(secondKey)
+    assert(withKeys.contains(firstKey))
+    assert(withKeys.contains(secondKey))
+
+    val thirdKey = ECPrivateKey().publicKey
+    assert(!withKeys.contains(thirdKey))
   }
 
   it must "test the isRelevant part of isRelevantAndUpdate inside of core" in {
@@ -112,8 +129,8 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
 
     val filter4 = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateAll)
     //insert a digital signature in our bloom filter for the spendingTx
-    val filter5 = filter4.insert(BitcoinSUtil.decodeHex(
-      "30450220070aca44506c5cef3a16ed519d7c3c39f8aab192c4e1c90d065f37b8a4af6141022100a8e160b856c2d43d27d8fba71e5aef6405b8643ac4cb7cb3c462aced7f14711a01"))
+    val filter5 = filter4.insert(
+      hex"30450220070aca44506c5cef3a16ed519d7c3c39f8aab192c4e1c90d065f37b8a4af6141022100a8e160b856c2d43d27d8fba71e5aef6405b8643ac4cb7cb3c462aced7f14711a01")
     filter5.isRelevant(creditingTx) must be(true)
 
     val filter6 = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateAll)
@@ -144,11 +161,12 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     filter14.contains(hash) must be(true)
 
     val filter15 = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateAll)
-    val outPoint = TransactionOutPoint(
-      DoubleSha256Digest(
-        BitcoinSUtil.flipEndianness(
-          "90c122d70786e899529d71dbeba91ba216982fb6ba58f3bdaab65e73b7e9260b")),
-      UInt32.zero)
+    val outPoint = {
+      val bytes =
+        hex"90c122d70786e899529d71dbeba91ba216982fb6ba58f3bdaab65e73b7e9260b"
+      TransactionOutPoint(DoubleSha256Digest(bytes.reverse), UInt32.zero)
+    }
+
     val filter16 = filter15.insert(outPoint)
     filter16.hex must be(
       "230008000000000100000000200040304001000020000000100800050801000400800024130000000000000001")
@@ -171,11 +189,11 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     filter20.isRelevant(creditingTx) must be(false)
 
     val filter21 = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateAll)
-    val secondRandomOutPoint = TransactionOutPoint(
-      DoubleSha256Digest(
-        BitcoinSUtil.flipEndianness(
-          "000000d70786e899529d71dbeba91ba216982fb6ba58f3bdaab65e73b7e9260b")),
-      UInt32.zero)
+    val secondRandomOutPoint = {
+      val bytes =
+        hex"000000d70786e899529d71dbeba91ba216982fb6ba58f3bdaab65e73b7e9260b"
+      TransactionOutPoint(DoubleSha256Digest(bytes.reverse), UInt32.zero)
+    }
     val filter22 = filter21.insert(secondRandomOutPoint)
     filter22.hex must be(
       "230090f00000004000000005040000000004000400000000100101000000008002040000130000000000000001")
@@ -207,12 +225,14 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L423
     val block = Block(
       "0100000082bb869cf3a793432a66e826e05a6fc37469f8efb7421dc880670100000000007f16c5962e8bd963659c793ce370d95f093bc7e367117b3c30c1f8fdd0d9728776381b4d4c86041b554b85290701000000010000000000000000000000000000000000000000000000000000000000000000ffffffff07044c86041b0136ffffffff0100f2052a01000000434104eaafc2314def4ca98ac970241bcab022b9c1e1f4ea423a20f134c876f2c01ec0f0dd5b2e86e7168cefe0d81113c3807420ce13ad1357231a2252247d97a46a91ac000000000100000001bcad20a6a29827d1424f08989255120bf7f3e9e3cdaaa6bb31b0737fe048724300000000494830450220356e834b046cadc0f8ebb5a8a017b02de59c86305403dad52cd77b55af062ea10221009253cd6c119d4729b77c978e1e2aa19f5ea6e0e52b3f16e32fa608cd5bab753901ffffffff02008d380c010000001976a9142b4b8072ecbba129b6453c63e129e643207249ca88ac0065cd1d000000001976a9141b8dd13b994bcfc787b32aeadf58ccb3615cbd5488ac000000000100000003fdacf9b3eb077412e7a968d2e4f11b9a9dee312d666187ed77ee7d26af16cb0b000000008c493046022100ea1608e70911ca0de5af51ba57ad23b9a51db8d28f82c53563c56a05c20f5a87022100a8bdc8b4a8acc8634c6b420410150775eb7f2474f5615f7fccd65af30f310fbf01410465fdf49e29b06b9a1582287b6279014f834edc317695d125ef623c1cc3aaece245bd69fcad7508666e9c74a49dc9056d5fc14338ef38118dc4afae5fe2c585caffffffff309e1913634ecb50f3c4f83e96e70b2df071b497b8973a3e75429df397b5af83000000004948304502202bdb79c596a9ffc24e96f4386199aba386e9bc7b6071516e2b51dda942b3a1ed022100c53a857e76b724fc14d45311eac5019650d415c3abb5428f3aae16d8e69bec2301ffffffff2089e33491695080c9edc18a428f7d834db5b6d372df13ce2b1b0e0cbcb1e6c10000000049483045022100d4ce67c5896ee251c810ac1ff9ceccd328b497c8f553ab6e08431e7d40bad6b5022033119c0c2b7d792d31f1187779c7bd95aefd93d90a715586d73801d9b47471c601ffffffff0100714460030000001976a914c7b55141d097ea5df7a0ed330cf794376e53ec8d88ac0000000001000000045bf0e214aa4069a3e792ecee1e1bf0c1d397cde8dd08138f4b72a00681743447000000008b48304502200c45de8c4f3e2c1821f2fc878cba97b1e6f8807d94930713aa1c86a67b9bf1e40221008581abfef2e30f957815fc89978423746b2086375ca8ecf359c85c2a5b7c88ad01410462bb73f76ca0994fcb8b4271e6fb7561f5c0f9ca0cf6485261c4a0dc894f4ab844c6cdfb97cd0b60ffb5018ffd6238f4d87270efb1d3ae37079b794a92d7ec95ffffffffd669f7d7958d40fc59d2253d88e0f248e29b599c80bbcec344a83dda5f9aa72c000000008a473044022078124c8beeaa825f9e0b30bff96e564dd859432f2d0cb3b72d3d5d93d38d7e930220691d233b6c0f995be5acb03d70a7f7a65b6bc9bdd426260f38a1346669507a3601410462bb73f76ca0994fcb8b4271e6fb7561f5c0f9ca0cf6485261c4a0dc894f4ab844c6cdfb97cd0b60ffb5018ffd6238f4d87270efb1d3ae37079b794a92d7ec95fffffffff878af0d93f5229a68166cf051fd372bb7a537232946e0a46f53636b4dafdaa4000000008c493046022100c717d1714551663f69c3c5759bdbb3a0fcd3fab023abc0e522fe6440de35d8290221008d9cbe25bffc44af2b18e81c58eb37293fd7fe1c2e7b46fc37ee8c96c50ab1e201410462bb73f76ca0994fcb8b4271e6fb7561f5c0f9ca0cf6485261c4a0dc894f4ab844c6cdfb97cd0b60ffb5018ffd6238f4d87270efb1d3ae37079b794a92d7ec95ffffffff27f2b668859cd7f2f894aa0fd2d9e60963bcd07c88973f425f999b8cbfd7a1e2000000008c493046022100e00847147cbf517bcc2f502f3ddc6d284358d102ed20d47a8aa788a62f0db780022100d17b2d6fa84dcaf1c95d88d7e7c30385aecf415588d749afd3ec81f6022cecd701410462bb73f76ca0994fcb8b4271e6fb7561f5c0f9ca0cf6485261c4a0dc894f4ab844c6cdfb97cd0b60ffb5018ffd6238f4d87270efb1d3ae37079b794a92d7ec95ffffffff0100c817a8040000001976a914b6efd80d99179f4f4ff6f4dd0a007d018c385d2188ac000000000100000001834537b2f1ce8ef9373a258e10545ce5a50b758df616cd4356e0032554ebd3c4000000008b483045022100e68f422dd7c34fdce11eeb4509ddae38201773dd62f284e8aa9d96f85099d0b002202243bd399ff96b649a0fad05fa759d6a882f0af8c90cf7632c2840c29070aec20141045e58067e815c2f464c6a2a15f987758374203895710c2d452442e28496ff38ba8f5fd901dc20e29e88477167fe4fc299bf818fd0d9e1632d467b2a3d9503b1aaffffffff0280d7e636030000001976a914f34c3e10eb387efe872acb614c89e78bfca7815d88ac404b4c00000000001976a914a84e272933aaf87e1715d7786c51dfaeb5b65a6f88ac00000000010000000143ac81c8e6f6ef307dfe17f3d906d999e23e0189fda838c5510d850927e03ae7000000008c4930460221009c87c344760a64cb8ae6685a3eec2c1ac1bed5b88c87de51acd0e124f266c16602210082d07c037359c3a257b5c63ebd90f5a5edf97b2ac1c434b08ca998839f346dd40141040ba7e521fa7946d12edbb1d1e95a15c34bd4398195e86433c92b431cd315f455fe30032ede69cad9d1e1ed6c3c4ec0dbfced53438c625462afb792dcb098544bffffffff0240420f00000000001976a9144676d1b820d63ec272f1900d59d43bc6463d96f888ac40420f00000000001976a914648d04341d00d7968b3405c034adc38d4d8fb9bd88ac00000000010000000248cc917501ea5c55f4a8d2009c0567c40cfe037c2e71af017d0a452ff705e3f1000000008b483045022100bf5fdc86dc5f08a5d5c8e43a8c9d5b1ed8c65562e280007b52b133021acd9acc02205e325d613e555f772802bf413d36ba807892ed1a690a77811d3033b3de226e0a01410429fa713b124484cb2bd7b5557b2c0b9df7b2b1fee61825eadc5ae6c37a9920d38bfccdc7dc3cb0c47d7b173dbc9db8d37db0a33ae487982c59c6f8606e9d1791ffffffff41ed70551dd7e841883ab8f0b16bf04176b7d1480e4f0af9f3d4c3595768d068000000008b4830450221008513ad65187b903aed1102d1d0c47688127658c51106753fed0151ce9c16b80902201432b9ebcb87bd04ceb2de66035fbbaf4bf8b00d1cfe41f1a1f7338f9ad79d210141049d4cf80125bf50be1709f718c07ad15d0fc612b7da1f5570dddc35f2a352f0f27c978b06820edca9ef982c35fda2d255afba340068c5035552368bc7200c1488ffffffff0100093d00000000001976a9148edb68822f1ad580b043c7b3df2e400f8699eb4888ac00000000")
+
     // the output for the first transaction in this block is a pay-to-pubkey tx to this pubkey
-    val pubKey = BitcoinSUtil.decodeHex(
-      "04eaafc2314def4ca98ac970241bcab022b9c1e1f4ea423a20f134c876f2c01ec0f0dd5b2e86e7168cefe0d81113c3807420ce13ad1357231a2252247d97a46a91")
+    val pubKey =
+      hex"04eaafc2314def4ca98ac970241bcab022b9c1e1f4ea423a20f134c876f2c01ec0f0dd5b2e86e7168cefe0d81113c3807420ce13ad1357231a2252247d97a46a91"
+
     // ...and the output address of the 4th transaction
-    val output =
-      BitcoinSUtil.decodeHex("b6efd80d99179f4f4ff6f4dd0a007d018c385d21")
+    val output = hex"b6efd80d99179f4f4ff6f4dd0a007d018c385d21"
+
     val filter = BloomFilter(10, 0.000001, UInt32.zero, BloomUpdateP2PKOnly)
       .insert(pubKey)
       .insert(output)
@@ -233,11 +253,28 @@ class BloomFilterTest extends FlatSpec with MustMatchers {
   }
 
   it must "successfully create or fail to create a bloom flag" in {
-    (BloomFlag(0.toByte) == BloomUpdateNone) must be(true)
-    (BloomFlag(1.toByte) == BloomUpdateAll) must be(true)
-    (BloomFlag(2.toByte) == BloomUpdateP2PKOnly) must be(true)
-    (BloomFlag.fromBytes(ByteVector(BloomUpdateNone.byte)) == BloomUpdateNone) must be(
-      true)
+    BloomFlag(0.toByte) must be(BloomUpdateNone)
+    BloomFlag(1.toByte) must be(BloomUpdateAll)
+    BloomFlag(2.toByte) must be(BloomUpdateP2PKOnly)
+    BloomFlag.fromBytes(ByteVector(BloomUpdateNone.byte)) must be(
+      BloomUpdateNone)
+
     Try(BloomFlag(Int.MaxValue.toByte)).isFailure must be(true)
+  }
+
+  it must "never report false negatives" in {
+    forAll(BloomFilterGenerator.loadedBloomFilter) {
+      case (loadedBloomFilter: BloomFilter, byteVectors: Seq[ByteVector]) =>
+        assert(byteVectors.forall(loadedBloomFilter.contains))
+    }
+  }
+
+  it must "have serialization symmetry" in {
+    forAll(BloomFilterGenerator.loadedBloomFilter) {
+      case (loadedBloomFilter: BloomFilter, _) =>
+        val fromHex = BloomFilter(loadedBloomFilter.hex)
+        assert(fromHex == loadedBloomFilter)
+
+    }
   }
 }
