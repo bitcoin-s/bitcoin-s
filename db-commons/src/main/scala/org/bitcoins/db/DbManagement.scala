@@ -19,13 +19,15 @@ abstract class DbManagement extends BitcoinSLogger {
   def createAll()(
       implicit config: AppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    Future.sequence(allTables.map(createTable(_))).map(_ => FutureUtil.unit)
+    Future.sequence(allTables.map(createTable(_))).flatMap(_ => FutureUtil.unit)
   }
 
   def dropAll()(
       implicit config: AppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => FutureUtil.unit)
+    Future
+      .sequence(allTables.reverse.map(dropTable(_)))
+      .flatMap(_ => FutureUtil.unit)
   }
 
   def createTable(

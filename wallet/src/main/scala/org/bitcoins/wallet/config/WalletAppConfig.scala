@@ -27,8 +27,7 @@ case class WalletAppConfig(conf: Config*) extends AppConfig {
     }
 
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
-    logger.info(s"Initializing wallet setup")
-    logger.info(s"DB: ${dbConfig.config}")
+    logger.debug(s"Initializing wallet setup")
     val initF = WalletDbManagement.createAll()(this, ec)
     initF.onComplete {
       case Failure(exception) =>

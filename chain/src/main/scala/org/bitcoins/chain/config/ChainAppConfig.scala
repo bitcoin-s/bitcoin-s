@@ -34,7 +34,7 @@ case class ChainAppConfig(val confs: Config*) extends AppConfig {
       case Success(bool) =>
         logger.debug(s"Chain project is initialized")
         p.success(bool)
-      case Failure(err) =>
+      case Failure(_) =>
         logger.info(s"Chain project is not initialized")
         p.success(false)
     }
