@@ -64,5 +64,7 @@ jobs:
       name: Publish library
       script: sbt ci-release
     # run website push only if previous stages passed
-    - script: sbt docs/docusaurusPublishGhpages
+    # we use custom sbt task that first compiles Scaladocs
+    # and then calls the docusaurusPublishGhpages task
+    - script: sbt docs/publishWebsite
       name: Publish website
