@@ -83,3 +83,9 @@ files, build the site and push them to GH pages.
 
 Before running those commands, you might have to change a few constants in
 `siteConfig.js`. These are specifed in the comments of that file.
+
+### CI
+
+Bitcoin-S uses Travis to run tests and deploy library and website builds. Generally
+speaking CI has to pass for a PR to get merged. If you make documentation/website only
+changes, you can start your PR title with `Docs:`. This skips running tests on CI.
