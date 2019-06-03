@@ -46,5 +46,5 @@ class AccountTable(tag: Tag) extends Table[AccountDb](tag, "wallet_accounts") {
     (purpose, xpub, coinType, index) <> (fromTuple, toTuple)
 
   def primaryKey: PrimaryKey =
-    primaryKey("pk_account", (coinType, index))
+    primaryKey("pk_account", sourceColumns = (purpose, coinType, index))
 }

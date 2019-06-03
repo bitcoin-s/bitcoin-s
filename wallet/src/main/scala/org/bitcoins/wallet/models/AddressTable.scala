@@ -15,6 +15,7 @@ import slick.lifted.ProvenShape
 import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
+import org.slf4j.LoggerFactory
 
 sealed trait AddressDb {
   protected type PathType <: HDPath
@@ -244,6 +245,9 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
 
   // for some reason adding a type annotation here causes compile error
   def fk =
-    foreignKey("fk_account", (accountCoin, accountIndex), accounts)(
-      accountTable => (accountTable.coinType, accountTable.index))
+    foreignKey("fk_account",
+               sourceColumns = (purpose, accountCoin, accountIndex),
+               targetTableQuery = accounts) { accountTable =>
+      (accountTable.purpose, accountTable.coinType, accountTable.index)
+    }
 }

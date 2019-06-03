@@ -111,6 +111,7 @@ case class UTXOSpendingInfoTable(tag: Tag)
   def redeemScriptOpt: Rep[Option[ScriptPubKey]] =
     column[Option[ScriptPubKey]]("nullable_redeem_script")
 
+  // TODO foreign key to address?
   def scriptWitnessOpt: Rep[Option[ScriptWitness]] =
     column[Option[ScriptWitness]]("script_witness")
 
