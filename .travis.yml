@@ -48,6 +48,7 @@ before_script:
 
 stages:
   - name: test
+    if: commit_message !~ /^Docs:/
   - name: release
     if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
 
@@ -60,6 +61,8 @@ jobs:
   include:
     # run ci-release only if previous stages passed
     - stage: release
+      name: Publish library
       script: sbt ci-release
     # run website push only if previous stages passed
     - script: sbt docs/docusaurusPublishGhpages
+      name: Publish website
