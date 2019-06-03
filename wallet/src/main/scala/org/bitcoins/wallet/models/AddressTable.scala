@@ -14,6 +14,7 @@ import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.ProvenShape
 import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.protocol.P2PKHAddress
+import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 
 sealed trait AddressDb {
   protected type PathType <: HDPath
@@ -71,7 +72,7 @@ case class LegacyAddressDb(
 object AddressDbHelper {
 
   /** Get a Segwit pay-to-pubkeyhash address */
-  def getP2WPKHAddress(
+  def getSegwitAddress(
       pub: ECPublicKey,
       path: SegWitHDPath,
       np: NetworkParameters): SegWitAddressDb = {
@@ -86,6 +87,27 @@ object AddressDbHelper {
       address = addr,
       witnessScript = scriptWitness
     )
+  }
+
+  /** Get a legacy pay-to-pubkeyhash address */
+  def getLegacyAddress(
+      pub: ECPublicKey,
+      path: LegacyHDPath,
+      np: NetworkParameters): LegacyAddressDb = {
+    val spk = P2PKHScriptPubKey(pub)
+    val addr = P2PKHAddress(spk, np)
+    LegacyAddressDb(path = path,
+                    ecPublicKey = pub,
+                    hashedPubKey = spk.pubKeyHash,
+                    address = addr)
+  }
+
+  /** Get a nested Segwit pay-to-pubkeyhash address */
+  def getNestedSegwitAddress(
+      pub: ECPublicKey,
+      path: NestedSegWitHDPath,
+      np: NetworkParameters): NestedSegWitAddressDb = {
+    ???
   }
 }
 
@@ -160,6 +182,14 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
                           hashedPubKey = hashedPubKey,
                           address = bechAddr,
                           witnessScript = scriptWitness)
+
+        case (HDPurposes.Legacy, legacyAddr: P2PKHAddress, None) =>
+          val path = LegacyHDPath(coinType = accountCoin,
+                                  accountIndex = accountIndex,
+                                  chainType = accountChain,
+                                  addressIndex = addressIndex)
+          LegacyAddressDb(path, pubKey, hashedPubKey, legacyAddr)
+
         case (purpose: HDPurpose, address: BitcoinAddress, scriptWitnessOpt) =>
           throw new IllegalArgumentException(
             s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt" +
@@ -180,7 +210,21 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
          pubKey,
          hashedPubKey,
          ScriptType.WITNESS_V0_KEYHASH))
-    case other => throw new RuntimeException(s"$other is not implemented yet")
+    case LegacyAddressDb(path, pubkey, hashedPub, address) =>
+      Some(
+        path.purpose,
+        path.account.index,
+        path.coin.coinType,
+        path.chain.chainType,
+        address,
+        None, // scriptwitness
+        path.address.index,
+        pubkey,
+        hashedPub,
+        ScriptType.PUBKEYHASH
+      )
+    case _: NestedSegWitAddressDb =>
+      throw new RuntimeException(s"Nested segwit is not implemented yet!")
 
   }
 
