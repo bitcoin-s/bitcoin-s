@@ -95,7 +95,7 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks)(
             Some(
               Inventory(TypeIdentifier.MsgFilteredBlock, hash = inventory.hash))
           case MsgFilteredBlock => Some(inventory)
-          case MsgTx            => None
+          case MsgTx            => Some(inventory)
           case _: MsgUnassigned => None
         }
       }
@@ -116,24 +116,33 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks)(
   }
 }
 
-object DataMessageHandler {
+object DataMessageHandler extends BitcoinSLogger {
 
   /** Callback for handling a received block */
   type OnBlockReceived = Block => Unit
 
-  /** Does nothing with the received block */
-  val noopBlockReceived: OnBlockReceived = _ => ()
+  /** Does nothing with the received block except log it at debug level  */
+  val noopBlockReceived: OnBlockReceived = { block =>
+    logger.debug(s"Received block ${block.blockHeader.hash}")
+    ()
+  }
 
   /** Callback for handling a received Merkle block */
   type OnMerkleBlockReceived = MerkleBlock => Unit
 
-  /** Does nothing with the received Merkle block */
-  val noopMerkleBlockReceived: OnMerkleBlockReceived = _ => ()
+  /** Does nothing with the received Merkle block except log it at debug level */
+  val noopMerkleBlockReceived: OnMerkleBlockReceived = { merkleBlock =>
+    logger.debug(s"Received merkle block ${merkleBlock.blockHeader.hash}")
+    ()
+  }
 
   /** Callback for handling a received transaction */
   type OnTxReceived = Transaction => Unit
 
-  /** Does nothing with the received transaction */
-  val noopTxReceived: OnTxReceived = _ => ()
+  /** Does nothing with the received transaction except log it at debug level */
+  val noopTxReceived: OnTxReceived = { tx =>
+    logger.debug(s"Received TX ${tx.txId}")
+    ()
+  }
 
 }
