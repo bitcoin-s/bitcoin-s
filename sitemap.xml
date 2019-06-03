@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url> <loc>https://bitcoin-s.org/help</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/en/help" /> </url>
+<url> <loc>https://bitcoin-s.org/index</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/en/index" /> </url>
+<url> <loc>https://bitcoin-s.org/users</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/en/users" /> </url>
+<url> <loc>https://bitcoin-s.org/blog/2019/05/9/bitcoin-s-website-release</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
+<url> <loc>https://bitcoin-s.org/docs/contributing-website</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing-website" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/contributing</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/core/core-intro</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/core-intro" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/core/txbuilder</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/txbuilder" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/getting-started</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/getting-started" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/rpc/rpc-bitcoind</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/rpc/rpc-bitcoind" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/rpc/rpc-eclair</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/rpc/rpc-eclair" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/rpc/rpc-clients-intro</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/rpc/rpc-clients-intro" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/security</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/security" /> </url>
+</urlset>

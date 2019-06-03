@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+    <channel>
+        <title>bitcoin-s Blog</title>
+        <link>https://bitcoin-s.org/blog</link>
+        <description>The best place to stay up-to-date with the latest bitcoin-s news and events.</description>
+        <lastBuildDate>Thu, 01 Jan 1970 00:00:00 GMT</lastBuildDate>
+        <docs>http://blogs.law.harvard.edu/tech/rss</docs>
+        <generator>Feed for Node.js</generator>
+        <image>
+            <title>bitcoin-s Blog</title>
+            <url>https://bitcoin-s.org/img/favicon.ico</url>
+            <link>https://bitcoin-s.org/blog</link>
+        </image>
+        <copyright>Copyright © 2019 Suredbits &amp; the bitcoin-s developers</copyright>
+        <item>
+            <title><![CDATA[Bitcoin-S website release!]]></title>
+            <link>https://bitcoin-s.org/blog/2019/05/9/bitcoin-s-website-release.html</link>
+            <guid>https://bitcoin-s.org/blog/2019/05/9/bitcoin-s-website-release.html</guid>
+            <pubDate>Thu, 01 Jan 1970 00:00:00 GMT</pubDate>
+            <description><![CDATA[<p>Today we've released the first version of the brand new Bitcoin-S website. It's
+a bit sparse at the moment, but we hope to improve that over the coming weeks.
+Hope you like it, we're eager for your feedback!</p>
+]]></description>
+        </item>
+    </channel>
+</rss>
