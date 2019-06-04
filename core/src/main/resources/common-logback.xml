@@ -1,0 +1,54 @@
+<included>
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>logs/application.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{5}.%M\(%line\) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{5}.%M\(%line\) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+
+
+    <root level="OFF">
+        <appender-ref ref="FILE" />
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <!-- get rid of "Slf4jLogger started" messages -->
+    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF" />
+
+    <!-- get rid of annoying warning messages from tests -->
+    <logger name="org.bitcoins.chain.validation" level="OFF" />
+
+    <!-- inspect resolved config -->
+    <logger name="org.bitcoins.chain.config" level="INFO" />
+    <logger name="org.bitcoins.node.config" level="INFO" />
+    <logger name="org.bitcoins.wallet.config" level="INFO" />
+
+    <!-- inspect resolved db connection -->
+    <logger name="org.bitcoins.db.SafeDatabase" level="INFO" />
+
+    <!-- see how long statements took to execute by setting to DEBUG -->
+    <logger name="slick.jdbc.JdbcBackend.benchmark" level="INFO"/>
+
+    <!-- see what statements are executed by setting to DEBUG -->
+    <logger name="slick.jdbc.JdbcBackend.statement" level="INFO"/>
+
+    <!-- see what slick is compiling to in sql -->
+    <logger name="slick.compiler" level="INFO"/>
+
+    <!-- see what's returned by Slick -->
+    <logger name="slick.jdbc.StatementInvoker.result" level="INFO" />
+
+
+    <logger name="slick" level="INFO"/>
+    <!-- Get rid of messages like this: 
+    Connection attempt failed. Backing off new connection 
+    attempts for at least 800 milliseconds. -->
+    <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
+</included>

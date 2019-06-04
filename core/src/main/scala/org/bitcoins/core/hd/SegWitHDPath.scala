@@ -1,6 +1,8 @@
 package org.bitcoins.core.hd
 
-sealed abstract class SegWitHDPath extends HDPath[SegWitHDPath]
+sealed abstract class SegWitHDPath extends HDPath {
+  override protected type NextPath = SegWitHDPath
+}
 
 object SegWitHDPath extends HDPathFactory[SegWitHDPath] {
 

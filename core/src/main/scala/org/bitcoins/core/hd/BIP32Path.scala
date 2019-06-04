@@ -6,6 +6,78 @@ import org.bitcoins.core.number.UInt32
 abstract class BIP32Path {
   def path: Vector[BIP32Node]
 
+  /**
+    * BIP32 paths can be subsets/superset of each other.
+    * If all elements in a path `p` is included in a path
+    * `P`, (i.e. `p` is a subset of `P`), `p.diff(P)`
+    * is the elements from `P` that is not in `p`.
+    *
+    * @example
+    * {{{
+    *  // equal paths
+    * m/44'/1' diff m/44'/1' == Some(BIP32Path.empty)
+    *
+    * // diffable path
+    * m/44'/0'/0' diff m/44'/0'/0'/0/2 = Some(m/0/2)
+    * m/44'/0'/0'/1 diff m/44'/0'/0'/1/2 = Some(m/2)
+    *
+    * // this is longer than other
+    * m/44'/1' diff m/44' == None
+    *
+    * // any fields are unequal along the way
+    * m/44'/1' diff m/43'/2' == None
+    * m/44'/1'/0 diff m/44'/2'/1 == None
+    * }}}
+    */
+  def diff(that: BIP32Path): Option[BIP32Path] = {
+    import that.{path => otherPath}
+
+    if (path.length > otherPath.length) {
+      None
+    } else if (path == otherPath) {
+      Some(BIP32Path.empty)
+    } else {
+      val lengthDiff = otherPath.length - path.length
+
+      val extendedPath: Vector[Option[BIP32Node]] = path.map(Some(_)) ++
+        Vector.fill[Option[BIP32Node]](lengthDiff)(None)
+
+      val pathsWithIndices = extendedPath
+        .zip(otherPath)
+        .zipWithIndex
+
+      val calculatedDiff: Option[BIP32Path] = pathsWithIndices
+        .foldLeft(Option(BIP32Path.empty)) {
+          // we encountered an error along the way, return
+          // none
+          case (None, _) => None
+
+          // we've reached the end of our path, append
+          // the element from their path but don't
+          // include the previous one (as
+          // that's shared)
+          case (Some(_), ((None, their), index)) if index == path.length =>
+            Some(BIP32Path(their))
+
+          // append the next divergent element to
+          // the acummed value
+          case (Some(accum), ((None, their), _)) =>
+            Some(BIP32Path(accum.path :+ their))
+
+          // we've not yet reached the start of diverging
+          // paths
+          case (Some(_), ((Some(our), their), _)) if our == their =>
+            Some(BIP32Path(our))
+
+          // paths are divergent, fail the computation
+          case (Some(_), ((Some(_), _), _)) =>
+            None
+        }
+
+      calculatedDiff
+    }
+  }
+
   override def toString: String =
     path
       .map {

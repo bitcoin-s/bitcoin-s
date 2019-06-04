@@ -12,6 +12,7 @@ import org.scalacheck.{Gen, Shrink}
 import org.scalatest.path
 
 import scala.util.{Success, Try}
+import org.bitcoins.core.crypto.ExtPrivateKey
 
 class BIP32PathTest extends BitcoinSUnitTest {
 
@@ -125,6 +126,69 @@ class BIP32PathTest extends BitcoinSUnitTest {
     forAll(HDGenerators.bip32Path) { path =>
       val toString = path.toString
       assert(path == BIP32Path.fromString(toString))
+    }
+  }
+
+  it must "do path diffing" in {
+    {
+      val first = BIP32Path.fromString("m/44'/1'")
+      assert(first.diff(first).contains(BIP32Path.empty))
+    }
+
+    {
+      val first = BIP32Path.fromString("m/44'/0'/0'")
+      val second = BIP32Path.fromString("m/44'/0'/0'/0/2")
+      val expected = BIP32Path.fromString("m/0/2")
+      assert(first.diff(second).contains(expected))
+    }
+
+    {
+      val first = BIP32Path.fromString("m/44'/0'/0'/1")
+      val second = BIP32Path.fromString("m/44'/0'/0'/1/2")
+      val expected = BIP32Path.fromString("m/2")
+      assert(first.diff(second).contains(expected))
+    }
+
+    {
+      val first = BIP32Path.fromString("m/44'/1'")
+      val second = BIP32Path.fromString("m/44'")
+      assert(first.diff(second).isEmpty)
+    }
+
+    {
+      val first = BIP32Path.fromString("m/44'")
+      val second = BIP32Path.fromString("m/44'/1'")
+      val expected = BIP32Path.fromString("m/1'")
+      assert(first.diff(second).contains(expected))
+    }
+
+    {
+      val first = BIP32Path.fromString("m/44'/1'")
+      val second = BIP32Path.fromString("m/43'/2'")
+      assert(first.diff(second).isEmpty)
+    }
+
+    {
+      val first = BIP32Path.fromString("m/44'/1/0")
+      val second = BIP32Path.fromString("m/44'/2/0")
+      assert(first.diff(second).isEmpty)
+    }
+
+  }
+
+  it must "do path diffing without altering the result" in {
+    forAll(HDGenerators.diffableHDPaths, CryptoGenerators.extPrivateKey) {
+      case ((short, long), xpriv) =>
+        val diffed = short.diff(long) match {
+          case None        => fail(s"$short and $long was not diffable!")
+          case Some(value) => value
+        }
+
+        val longDerived = xpriv.deriveChildPrivKey(long)
+        val diffDerived =
+          xpriv.deriveChildPrivKey(short).deriveChildPrivKey(diffed)
+        assert(longDerived == diffDerived)
+
     }
   }
 }

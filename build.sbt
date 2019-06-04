@@ -6,7 +6,10 @@ import scala.util.Properties
 
 cancelable in Global := true
 
-fork in Test := true
+//don't allow us to wipe all of our prod databases
+flywayClean / aggregate := false
+//allow us to wipe our test databases
+Test / flywayClean / aggregate := true
 
 lazy val timestamp = new java.util.Date().getTime
 
@@ -57,6 +60,7 @@ lazy val commonSettings = List(
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+  
   /**
     * Adding Ammonite REPL to test scope, can access both test and compile
     * sources. Docs: http://ammonite.io/#Ammonite-REPL
@@ -76,8 +80,15 @@ lazy val commonSettings = List(
 )
 
 lazy val commonTestSettings = Seq(
-  publish / skip := true
+  publish / skip := true,
 ) ++ commonSettings
+
+lazy val commonTestWithDbSettings = Seq(
+  // To make in-memory DBs work properly
+  Test / fork := true,
+  // To avoid deadlock issues with SQLite
+  Test / parallelExecution := false
+) ++ commonTestSettings
 
 lazy val commonProdSettings = Seq(
   Test / bloopGenerate := None
@@ -87,16 +98,22 @@ lazy val bitcoins = project
   .in(file("."))
   .aggregate(
     secp256k1jni,
+    chain,
+    chainTest,
     core,
     coreTest,
-    zmq,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
     eclairRpc,
     eclairRpcTest,
+    node,
+    nodeTest,
+    wallet,
+    walletTest,
     testkit,
-    scripts
+    scripts,
+    zmq
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
@@ -207,14 +224,45 @@ lazy val coreTest = project
   )
   .enablePlugins()
 
+lazy val chainDbSettings = dbFlywaySettings("chaindb")
+lazy val chain = project
+  .in(file("chain"))
+  .settings(commonProdSettings: _*)
+  .settings(chainDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-chain",
+    libraryDependencies ++= Deps.chain
+  ).dependsOn(core, dbCommons)
+  .enablePlugins(FlywayPlugin)
+
+lazy val chainTest = project
+  .in(file("chain-test"))
+  .settings(commonTestWithDbSettings: _*)
+  .settings(chainDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-chain-test",
+    libraryDependencies ++= Deps.chainTest,
+  ).dependsOn(chain, core, testkit, zmq)
+  .enablePlugins(FlywayPlugin)
+
+
+lazy val dbCommons = project
+  .in(file("db-commons"))
+  .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-db-commons",
+    libraryDependencies ++= Deps.dbCommons
+  ).dependsOn(core)
+  .enablePlugins()
+
+
 lazy val zmq = project
   .in(file("zmq"))
   .settings(commonSettings: _*)
   .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
     core
-  )
-  .enablePlugins(GitVersioning)
+  ).enablePlugins(GitVersioning)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -264,13 +312,56 @@ lazy val eclairRpcTest = project
   .dependsOn(testkit)
   .enablePlugins()
 
+lazy val nodeDbSettings = dbFlywaySettings("nodedb")
+lazy val node = {
+  project
+    .in(file("node"))
+    .settings(commonSettings: _*)
+    .settings(nodeDbSettings: _*)
+    .settings(
+      name := "bitcoin-s-node",
+      libraryDependencies ++= Deps.node
+    )
+    .dependsOn(
+      core,
+      chain,
+      dbCommons,
+      bitcoindRpc
+    ).enablePlugins(FlywayPlugin)
+}
+
+lazy val nodeTest = {
+  project
+    .in(file("node-test"))
+    .settings(commonTestWithDbSettings: _*)
+    .settings(nodeDbSettings: _*)
+    .settings(
+      name := "bitcoin-s-node-test",
+      // There's a weird issue with forking 
+      // in node tests, for example this CI
+      // error: https://travis-ci.org/bitcoin-s/bitcoin-s-core/jobs/525018199#L1252
+      // It seems to be related to this
+      // Scalatest issue: 
+      // https://github.com/scalatest/scalatest/issues/556
+      Test / fork := false,
+      libraryDependencies ++= Deps.nodeTest
+    ).dependsOn(
+    node,
+    testkit
+  ).enablePlugins(FlywayPlugin)
+}
+
 lazy val testkit = project
   .in(file("testkit"))
   .settings(commonProdSettings: _*)
   .dependsOn(
     core,
+    chain,
     bitcoindRpc,
-    eclairRpc
+    eclairRpc,
+    node,
+    wallet,
+    zmq
   )
   .enablePlugins(GitVersioning)
 
@@ -304,6 +395,30 @@ lazy val docs = project
   )
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
 
+lazy val walletDbSettings = dbFlywaySettings("walletdb")
+lazy val wallet = project
+  .in(file("wallet"))
+  .settings(commonProdSettings: _*)
+  .settings(walletDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-wallet",
+    libraryDependencies ++= Deps.wallet
+  )
+  .dependsOn(core, dbCommons)
+  .enablePlugins(FlywayPlugin)
+
+lazy val walletTest = project
+  .in(file("wallet-test"))
+  .settings(commonTestWithDbSettings: _*)
+  .settings(walletDbSettings: _*)
+  .settings(
+    name := "bitcoin-s-wallet-test",
+    libraryDependencies ++= Deps.walletTest,
+  )
+  .dependsOn(core, testkit, wallet)
+  .enablePlugins(FlywayPlugin)
+
+
 lazy val scripts = project
   .in(file("scripts"))
   .dependsOn(core, bitcoindRpc, eclairRpc, zmq)
@@ -311,6 +426,17 @@ lazy val scripts = project
   .settings(
     name := "bitcoin-s-scripts",
     libraryDependencies ++= Deps.scripts
+  )
+  .dependsOn(
+    bitcoindRpc,
+    chain,
+    core,
+    eclairRpc,
+    node,
+    secp256k1jni,
+    testkit,
+    wallet,
+    zmq
   )
 
 // Ammonite is invoked through running
@@ -325,5 +451,54 @@ lazy val scripts = project
 // project coreTest
 // amm
 addCommandAlias("amm", "test:run")
+
+publishArtifact in bitcoins := false
+
+def dbFlywaySettings(dbName: String): List[Setting[_]] = {
+  lazy val DB_HOST = "localhost"
+  lazy val DB_NAME = s"${dbName}.sqlite"
+  lazy val network = "unittest" //mainnet, testnet3, regtest, unittest
+
+  lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
+  lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet3/"
+  lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
+  lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
+
+  lazy val dirs = List(mainnetDir,testnetDir,regtestDir,unittestDir)
+
+  //create directies if they DNE
+  dirs.foreach { d =>
+    val file = new File(d)
+    file.mkdirs()
+    val db = new File(d + DB_NAME)
+    db.createNewFile()
+  }
+
+  def makeNetworkSettings(directoryPath: String): List[Setting[_]] = List(
+    Test / flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+    Test / flywayLocations := List("nodedb/migration"),
+    Test / flywayUser := "nodedb",
+    Test / flywayPassword := "",
+    flywayUrl := s"jdbc:sqlite:$directoryPath$DB_NAME",
+    flywayUser := "nodedb",
+    flywayPassword := ""
+  )
+
+  lazy val mainnet = makeNetworkSettings(mainnetDir)
+
+  lazy val testnet3 = makeNetworkSettings(testnetDir)
+
+  lazy val regtest = makeNetworkSettings(regtestDir)
+
+  lazy val unittest = makeNetworkSettings(unittestDir)
+
+  network match {
+    case "mainnet" => mainnet
+    case "testnet3" => testnet3
+    case "regtest" => regtest
+    case "unittest" => unittest
+    case unknown: String => throw new IllegalArgumentException(s"Unknown network=${unknown}")
+  }
+}
 
 publishArtifact in bitcoins := false

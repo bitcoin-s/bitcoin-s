@@ -21,8 +21,26 @@ sealed abstract class FeeUnit {
   */
 sealed abstract class BitcoinFeeUnit extends FeeUnit
 
-case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit
+case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
+  def toSatPerKb: SatoshisPerKiloByte = {
+    SatoshisPerKiloByte(currencyUnit.satoshis * Satoshis(Int64(1000)))
+  }
+}
 
+case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
+  def toSatPerByte: SatoshisPerByte = {
+    val conversionOpt = (currencyUnit.toBigDecimal * 0.001).toBigIntExact()
+    conversionOpt match {
+      case Some(conversion) =>
+        val sat = Satoshis(Int64(conversion))
+        SatoshisPerByte(sat)
+
+      case None =>
+        throw new RuntimeException(s"Failed to convert sat/kb -> sat/byte for ${currencyUnit}")
+    }
+
+  }
+}
 /**
   * A 'virtual byte' (also known as virtual size) is a new weight measurement that
   * was created with segregated witness (BIP141). Now 1 'virtual byte'

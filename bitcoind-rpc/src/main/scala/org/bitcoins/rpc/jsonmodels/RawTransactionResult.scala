@@ -6,6 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.script.ScriptType
 
 sealed abstract class RawTransactionResult
 
@@ -27,35 +28,17 @@ case class RpcTransactionOutput(
     scriptPubKey: RpcScriptPubKey)
     extends RawTransactionResult
 
-/**
-  * @see [[https://github.com/bitcoin/bitcoin/blob/fa6180188b8ab89af97860e6497716405a48bab6/src/script/standard.cpp#L27 standard.cpp]]
-  *     from Bitcoin Core
-  */
-sealed abstract class RpcScriptType extends RawTransactionResult
-
-object RpcScriptType {
-  final case object NONSTANDARD extends RpcScriptType
-  final case object PUBKEY extends RpcScriptType
-  final case object PUBKEYHASH extends RpcScriptType
-  final case object SCRIPTHASH extends RpcScriptType
-  final case object MULTISIG extends RpcScriptType
-  final case object NULLDATA extends RpcScriptType
-  final case object WITNESS_V0_KEYHASH extends RpcScriptType
-  final case object WITNESS_V0_SCRIPTHASH extends RpcScriptType
-  final case object WITNESS_UNKNOWN extends RpcScriptType
-}
-
 case class RpcScriptPubKey(
     asm: String,
     hex: String,
     reqSigs: Option[Int],
-    scriptType: RpcScriptType,
+    scriptType: ScriptType,
     addresses: Option[Vector[BitcoinAddress]])
     extends RawTransactionResult
 
 case class DecodeScriptResult(
     asm: String,
-    typeOfScript: Option[RpcScriptType],
+    typeOfScript: Option[ScriptType],
     reqSigs: Option[Int],
     addresses: Option[Vector[P2PKHAddress]],
     p2sh: P2SHAddress)
