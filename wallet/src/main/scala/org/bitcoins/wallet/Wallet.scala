@@ -165,14 +165,16 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
       } yield {
-        val mnemonicPath =
-          WalletStorage.writeMnemonicToDisk(encrypted)
-        logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
 
         val wallet = WalletImpl(mnemonic)
 
         for {
           _ <- config.initialize()
+          _ = {
+            val mnemonicPath =
+              WalletStorage.writeMnemonicToDisk(encrypted)
+            logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
+          }
           _ <- {
             // We want to make sure all level 0 accounts are created,
             // so the user can change the default account kind later
@@ -180,7 +182,9 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
             val createAccountFutures =
               HDPurposes.all.map(createRootAccount(wallet, _))
 
-            Future.sequence(createAccountFutures)
+            Future
+              .sequence(createAccountFutures)
+              .map(_ => logger.debug(s"Created root level accounts for wallet"))
           }
         } yield wallet
       }
@@ -208,6 +212,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
     val xpub = xpriv.deriveChildPubKey(account).get
     val accountDb = AccountDb(xpub, account)
 
+    logger.debug(s"Creating account with constant prefix $purpose")
     wallet.accountDAO
       .create(accountDb)
       .map { written =>

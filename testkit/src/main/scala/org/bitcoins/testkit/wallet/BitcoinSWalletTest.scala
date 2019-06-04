@@ -69,10 +69,12 @@ trait BitcoinSWalletTest
     implicit val walletConf: WalletAppConfig = config.walletConf
 
     for {
-      _ <- WalletDbManagement.createAll()
+      _ <- walletConf.initialize()
       wallet <- Wallet.initialize().map {
         case InitializeWalletSuccess(wallet) => wallet
-        case err: InitializeWalletError      => fail(err)
+        case err: InitializeWalletError =>
+          logger.error(s"Could not initialize wallet: $err")
+          fail(err)
       }
     } yield wallet
   }

@@ -8,6 +8,7 @@ import scala.util.Failure
 import scala.util.Success
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
+import java.nio.file.Files
 
 case class WalletAppConfig(conf: Config*) extends AppConfig {
   override val configOverrides: List[Config] = conf.toList
@@ -28,6 +29,11 @@ case class WalletAppConfig(conf: Config*) extends AppConfig {
 
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
+
+    if (Files.notExists(datadir)) {
+      Files.createDirectories(datadir)
+    }
+
     val initF = {
       WalletDbManagement.createAll()(this, ec)
     }

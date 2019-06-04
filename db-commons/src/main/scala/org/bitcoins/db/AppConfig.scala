@@ -199,13 +199,14 @@ abstract class AppConfig extends BitcoinSLogger {
     logger.trace(
       s"DB config: ${dbConfig.getConfig("bitcoin-s").asReadableJson}")
 
-    val parseOptions = ConfigParseOptions.defaults()
-
-    val resolveOptions =
-      ConfigResolveOptions.defaults().setAllowUnresolved(true)
-
-    val classPathConfig = ConfigFactory
-      .load(parseOptions, resolveOptions)
+    // we want to NOT resolve substitutions in the configuraton until the user
+    // provided configs also has been loaded. .parseResources() does not do that
+    // whereas .load() does
+    val classPathConfig = {
+      val applicationConf = ConfigFactory.parseResources("application.conf")
+      val referenceConf = ConfigFactory.parseResources("reference.conf")
+      applicationConf.withFallback(referenceConf)
+    }
 
     logger.trace(
       s"Classpath config: ${classPathConfig.getConfig("bitcoin-s").asReadableJson}")
@@ -236,6 +237,7 @@ abstract class AppConfig extends BitcoinSLogger {
         // in this order
         overrides.withFallback(unresolvedConfig)
       } else {
+        logger.trace(s"No user-provided overrides")
         unresolvedConfig
       }
 
