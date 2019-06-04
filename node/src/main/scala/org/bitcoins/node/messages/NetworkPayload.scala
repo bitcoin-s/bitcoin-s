@@ -167,9 +167,11 @@ trait GetHeadersMessage extends DataPayload {
 /**
   * The headers message sends one or more block headers to a node
   * which previously requested certain headers with a getheaders message.
-  * [[https://bitcoin.org/en/developer-reference#headers]]
+  * @see [[https://bitcoin.org/en/developer-reference#headers]]
   */
 trait HeadersMessage extends DataPayload {
+
+  override def toString(): String = s"HeadersMessage(${count.toInt} headers)"
 
   /**
     * Number of block headers up to a maximum of 2,000.
