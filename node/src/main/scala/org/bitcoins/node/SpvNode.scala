@@ -97,6 +97,7 @@ case class SpvNode(
     * and then connect to our peer
     */
   def start(): Future[SpvNode] = {
+    logger.info(s"Starting SPV node with datadir ${nodeAppConfig.datadir}")
     for {
       _ <- nodeAppConfig.initialize()
       _ <- {
