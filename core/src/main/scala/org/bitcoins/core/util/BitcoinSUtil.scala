@@ -1,5 +1,8 @@
 package org.bitcoins.core.util
 
+import java.net.InetSocketAddress
+
+import com.sun.jndi.toolkit.url.Uri
 import org.bitcoins.core.protocol.NetworkElement
 import scodec.bits.{BitVector, ByteVector}
 
@@ -101,6 +104,10 @@ trait BitcoinSUtil {
     h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
 
+  def toInetSocketAddress(string: String): InetSocketAddress = {
+    val uri = new Uri(string)
+    new InetSocketAddress(uri.getHost, uri.getPort)
+  }
 }
 
 object BitcoinSUtil extends BitcoinSUtil

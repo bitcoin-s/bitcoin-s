@@ -1,7 +1,6 @@
 package org.bitcoins.rpc.config
 
 import java.net.InetSocketAddress
-import java.net.URI
 
 import org.bitcoins.core.util.BitcoinSLogger
 

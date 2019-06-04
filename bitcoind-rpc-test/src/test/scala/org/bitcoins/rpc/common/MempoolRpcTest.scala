@@ -28,18 +28,12 @@ class MempoolRpcTest extends BitcoindRpcTest {
       case (client, otherClient) =>
         val defaultConfig = BitcoindRpcTestUtil.standardConfig
 
-        val datadir: Path = {
-          val tempDirPrefix = null // because java APIs are bad
-          Files.createTempDirectory(tempDirPrefix)
-        }
-
         val configNoBroadcast =
           defaultConfig
-            .withOption("datadir", datadir.toString())
             .withOption("walletbroadcast", 0.toString)
 
         val instanceWithoutBroadcast =
-          BitcoindInstance.fromConfig(configNoBroadcast, tempdirPath.toFile)
+          BitcoindInstance.fromConfig(configNoBroadcast)
 
         val clientWithoutBroadcast =
           new BitcoindRpcClient(instanceWithoutBroadcast)

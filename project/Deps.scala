@@ -52,7 +52,6 @@ object Deps {
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
-    val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV cross CrossVersion.full
     val uJson = "com.lihaoyi" %% "ujson" % V.uJsonV
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()

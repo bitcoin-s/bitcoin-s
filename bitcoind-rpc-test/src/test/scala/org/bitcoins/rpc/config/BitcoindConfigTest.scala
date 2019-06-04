@@ -9,10 +9,11 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 
 class BitcoindConfigTest extends BitcoinSUnitTest {
 
+  def tmpDir = BitcoindRpcTestUtil.tmpDir()
   it must "have to/fromString symmetry" in {
     val conf = BitcoindRpcTestUtil.standardConfig
     val confStr = conf.toWriteableString
-    val otherConf = BitcoindConfig(confStr)
+    val otherConf = BitcoindConfig(confStr, tmpDir)
     val otherConfStr = otherConf.toWriteableString
     assert(confStr == otherConfStr)
   }
@@ -20,7 +21,8 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
   it must "parse networks" in {
     val conf = BitcoindConfig("""
         |regtest=1
-        """.stripMargin)
+        """.stripMargin,
+                              tmpDir)
     assert(conf.network == RegTest)
   }
 
@@ -35,7 +37,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
     |rpcport=4000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr)
+    val conf = BitcoindConfig(confStr, tmpDir)
     assert(conf.rpcport == 3000)
     assert(conf.network == RegTest)
   }
@@ -52,7 +54,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
     |regtest.rpcport=3000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr)
+    val conf = BitcoindConfig(confStr, tmpDir)
     assert(conf.rpcport == 4000)
     assert(conf.network == RegTest)
   }
@@ -67,7 +69,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
     |regtest.rpcport=3000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr)
+    val conf = BitcoindConfig(confStr, tmpDir)
     assert(conf.rpcport == TestNet3.rpcPort)
     assert(conf.network == TestNet3)
   }
@@ -87,7 +89,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
     |rpcport=1000
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr)
+    val conf = BitcoindConfig(confStr, tmpDir)
     assert(conf.rpcport == 3000)
     assert(conf.network == TestNet3)
     assert(conf.username.contains("username"))
@@ -116,7 +118,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
     |rpcuser=username
     """.stripMargin.split("\n")
 
-    val conf = BitcoindConfig(confStr)
+    val conf = BitcoindConfig(confStr, tmpDir)
     assert(conf.rpcport == 4000)
     assert(conf.network == RegTest)
     assert(conf.username.contains("username"))

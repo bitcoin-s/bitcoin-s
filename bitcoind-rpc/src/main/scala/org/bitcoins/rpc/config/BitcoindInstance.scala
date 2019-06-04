@@ -50,6 +50,8 @@ sealed trait BitcoindInstance extends BitcoinSLogger {
       case _: String => BitcoindVersion.Unknown
     }
   }
+
+  def p2pPort: Int = uri.getPort
 }
 
 object BitcoindInstance {
@@ -104,8 +106,7 @@ object BitcoindInstance {
       val file = configPath.toFile()
       fromConfigFile(file)
     } else {
-      fromConfig(
-        BitcoindConfig.empty.withOption("datadir", configPath.toString))
+      fromConfig(BitcoindConfig.empty)
     }
   }
 
@@ -120,15 +121,9 @@ object BitcoindInstance {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
-    val conf = BitcoindConfig(file)
+    val conf = BitcoindConfig(file, file.getParentFile)
 
-    val confWithDatadir = if (conf.datadir.isEmpty) {
-      conf.withOption("datadir", file.getParent.toString)
-    } else {
-      conf
-    }
-
-    fromConfig(confWithDatadir)
+    fromConfig(conf)
   }
 
   /** Constructs a `bitcoind` instance from the given config */
@@ -137,21 +132,11 @@ object BitcoindInstance {
   ): BitcoindInstance = {
 
     val authCredentials = BitcoindAuthCredentials.fromConfig(config)
-
-    config.datadir match {
-      case None =>
-        BitcoindInstance(config.network,
-                         config.uri,
-                         config.rpcUri,
-                         authCredentials,
-                         zmqConfig = ZmqConfig.fromConfig(config))
-      case Some(datadir) =>
-        BitcoindInstance(config.network,
-                         config.uri,
-                         config.rpcUri,
-                         authCredentials,
-                         zmqConfig = ZmqConfig.fromConfig(config),
-                         datadir = datadir)
-    }
+    BitcoindInstance(config.network,
+                     config.uri,
+                     config.rpcUri,
+                     authCredentials,
+                     zmqConfig = ZmqConfig.fromConfig(config),
+                     datadir = config.datadir)
   }
 }

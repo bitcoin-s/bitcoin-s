@@ -113,9 +113,7 @@ lazy val bitcoins = project
     walletTest,
     testkit,
     scripts,
-    zmq,
-    doc
-
+    zmq
   )
   .settings(commonSettings: _*)
   .settings(crossScalaVersions := Nil)
@@ -263,8 +261,7 @@ lazy val zmq = project
   .settings(commonSettings: _*)
   .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
-    core,
-    testkit % "test"
+    core
   ).enablePlugins(GitVersioning)
 
 lazy val bitcoindRpc = project
@@ -359,8 +356,12 @@ lazy val testkit = project
   .settings(commonProdSettings: _*)
   .dependsOn(
     core,
+    chain,
     bitcoindRpc,
-    eclairRpc
+    eclairRpc,
+    node,
+    wallet,
+    zmq
   )
   .enablePlugins(GitVersioning)
 
@@ -388,7 +389,6 @@ lazy val docs = project
     bitcoindRpc,
     core,
     eclairRpc,
-    node,
     secp256k1jni,
     testkit,
     zmq
@@ -502,6 +502,3 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
 }
 
 publishArtifact in bitcoins := false
-
-previewSite / aggregate := false
-previewAuto / aggregate := false
