@@ -3,7 +3,6 @@ package org.bitcoins.testkit.node
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
@@ -32,7 +31,8 @@ import org.scalatest.{
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSAppConfig._
 
 trait NodeUnitTest
     extends BitcoinSFixture
@@ -42,7 +42,7 @@ trait NodeUnitTest
     with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(nodeAppConfig)
+    AppConfig.throwIfDefaultDatadir(config.nodeConf)
   }
 
   override def afterAll(): Unit = {
@@ -59,9 +59,11 @@ trait NodeUnitTest
 
   val timeout: FiniteDuration = 10.seconds
 
-  implicit lazy val nodeAppConfig: NodeAppConfig = NodeAppConfig()
-  implicit lazy val chainAppConfig: ChainAppConfig = ChainAppConfig()
-  implicit val np: NetworkParameters = nodeAppConfig.network
+  /** Wallet config with data directory set to user temp directory */
+  implicit protected lazy val config: BitcoinSAppConfig =
+    BitcoinSAppConfig.configWithTmpDatadir
+
+  implicit lazy val np: NetworkParameters = config.nodeConf.network
 
   lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 

@@ -71,8 +71,7 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
       val spv =
         SpvNode(peer, chainHandler, callbacks = callbacks)
 
-      logger.info(
-        s"Bitcoind instance has datadir: ${rpc.instance.authCredentials.datadir}")
+      logger.info(s"Bitcoind instance has datadir: ${rpc.instance.datadir}")
 
       for {
         _ <- config.initialize()

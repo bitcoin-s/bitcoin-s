@@ -41,11 +41,8 @@ trait BitcoinSWalletTest
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
 
   /** Wallet config with data directory set to user temp directory */
-  protected implicit lazy val config: BitcoinSAppConfig = {
-    val tmpDir = Files.createTempDirectory("bitcoin-s-")
-    val conf = ConfigFactory.parseString(s"bitcoin-s.datadir = $tmpDir")
-    BitcoinSAppConfig(conf)
-  }
+  implicit protected lazy val config: BitcoinSAppConfig =
+    BitcoinSAppConfig.configWithTmpDatadir
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds

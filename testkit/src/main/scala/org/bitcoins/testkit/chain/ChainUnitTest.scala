@@ -21,6 +21,7 @@ import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
+import org.bitcoins.testkit.BitcoinSAppConfig
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import scodec.bits.ByteVector
@@ -44,7 +45,8 @@ trait ChainUnitTest
 
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
-  implicit lazy val appConfig: ChainAppConfig = ChainAppConfig()
+  implicit lazy val appConfig: ChainAppConfig =
+    BitcoinSAppConfig.configWithTmpDatadir
 
   /**
     * Behaves exactly like the default conf, execpt

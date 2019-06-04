@@ -6,6 +6,8 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.chain.config.ChainAppConfig
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import java.nio.file.Files
+import com.typesafe.config.ConfigFactory
 
 /**
   * A unified config class for all submodules of Bitcoin-S
@@ -62,4 +64,12 @@ object BitcoinSAppConfig {
   /** Converts the given config to a node config */
   implicit def toNodeConf(conf: BitcoinSAppConfig): NodeAppConfig =
     conf.nodeConf
+
+  /** App configuration with data directory to user temp directory */
+  lazy val configWithTmpDatadir = {
+    val tmpDir = Files.createTempDirectory("bitcoin-s-")
+    val conf = ConfigFactory.parseString(s"bitcoin-s.datadir = $tmpDir")
+    BitcoinSAppConfig(conf)
+  }
+
 }

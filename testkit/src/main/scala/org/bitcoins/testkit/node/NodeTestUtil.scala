@@ -14,6 +14,7 @@ import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.util.NetworkIpAddress
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.testkit.BitcoinSAppConfig
 
 /**
   * Created by chris on 6/2/16.
@@ -71,7 +72,8 @@ abstract class NodeTestUtil {
     )
   }
 
-  implicit val nodeAppConfig: NodeAppConfig = NodeAppConfig()
+  implicit val nodeAppConfig: NodeAppConfig =
+    BitcoinSAppConfig.configWithTmpDatadir
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {

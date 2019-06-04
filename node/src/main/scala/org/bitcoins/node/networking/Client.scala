@@ -67,7 +67,7 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     * i.e. [[org.bitcoins.core.config.MainNet]] or [[org.bitcoins.core.config.TestNet3]]
     * @return
     */
-  def network: NetworkParameters = Constants.networkParameters
+  def network: NetworkParameters = config.network
 
   /**
     * This actor signifies the node we are connected to on the p2p network
