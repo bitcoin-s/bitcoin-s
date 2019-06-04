@@ -24,7 +24,9 @@ import java.nio.file.Path
   *
   * @see https://github.com/bitcoin/bitcoin/blob/master/doc/bitcoin-conf.md
   */
-case class BitcoindConfig(lines: Seq[String], datadir: File)
+case class BitcoindConfig(
+    private[bitcoins] val lines: Seq[String],
+    datadir: File)
     extends BitcoinSLogger {
 
   //create datadir and config if it DNE on disk
@@ -279,7 +281,7 @@ case class BitcoindConfig(lines: Seq[String], datadir: File)
 
 }
 
-object BitcoindConfig {
+object BitcoindConfig extends BitcoinSLogger {
 
   /** The empty `bitcoind` config */
   lazy val empty: BitcoindConfig = BitcoindConfig("", DEFAULT_DATADIR)
@@ -342,7 +344,7 @@ object BitcoindConfig {
     .toFile
 
   /**
-    * Writes the config to the data directory within it, it it doesn't
+    * Writes the config to the data directory within it, if it doesn't
     * exist. Returns the written file.
     */
   def writeConfigToFile(config: BitcoindConfig, datadir: File): Path = {
@@ -352,7 +354,10 @@ object BitcoindConfig {
     Files.createDirectories(datadir.toPath)
     val confFile = datadir.toPath.resolve("bitcoin.conf")
 
-    if (!Files.exists(confFile)) {
+    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE) {
+      logger.warn(
+        s"We will not overrwrite the existing bitcoin.conf in default datadir")
+    } else {
       Files.write(confFile, confStr.getBytes)
     }
 
