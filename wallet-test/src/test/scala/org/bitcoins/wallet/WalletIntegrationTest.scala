@@ -52,6 +52,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         case AddUtxoSuccess(w: WalletApi) => () // continue test
       }
     }
+
     for {
       _ <- addUtxoF
 
@@ -69,7 +70,6 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       txid <- bitcoind.sendRawTransaction(signedTx)
       _ <- bitcoind.generate(1)
       tx <- bitcoind.getRawTransaction(txid)
-      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
     } yield {
       assert(tx.confirmations.exists(_ > 0))
     }
