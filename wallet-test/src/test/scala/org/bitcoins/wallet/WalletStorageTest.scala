@@ -19,15 +19,21 @@ import java.nio.file.Paths
 import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
 import java.{util => ju}
 import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
+import org.bitcoins.testkit.BitcoinSAppConfig._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class WalletStorageTest
     extends BitcoinSWalletTest
     with BeforeAndAfterEach
     with EmptyFixture {
 
-  val datadir = appConfig.datadir
+  val datadir = config.walletConf.datadir
 
   override def beforeEach(): Unit = {
+    // make sure datadir is created for reading/writing mnemonics
+    Await.result(config.walletConf.initialize(), 5.seconds)
+
     Files
       .walk(datadir)
       .iterator()
