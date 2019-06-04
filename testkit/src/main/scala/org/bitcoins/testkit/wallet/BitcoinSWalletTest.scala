@@ -20,6 +20,9 @@ import org.scalatest._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.AppConfig
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.testkit.BitcoinSAppConfig
+import java.nio.file.Files
 
 trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
@@ -36,7 +39,13 @@ trait BitcoinSWalletTest
   implicit lazy val ec: ExecutionContext = actorSystem.dispatcher
 
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
-  protected implicit lazy val appConfig: WalletAppConfig = WalletAppConfig()
+
+  /** Wallet config with data directory set to user temp directory */
+  protected implicit lazy val config: BitcoinSAppConfig = {
+    val tmpDir = Files.createTempDirectory("bitcoin-s-")
+    val conf = ConfigFactory.parseString(s"bitcoin-s.datadir = $tmpDir")
+    BitcoinSAppConfig(conf)
+  }
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds
@@ -48,13 +57,16 @@ trait BitcoinSWalletTest
   }
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(appConfig)
+    AppConfig.throwIfDefaultDatadir(config.walletConf)
   }
 
-  def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] =
+  def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] = {
+    implicit val appConfig: WalletAppConfig = wallet.walletConfig
     WalletDbManagement.dropAll().map(_ => ())
+  }
 
   def createNewWallet(): Future[UnlockedWalletApi] = {
+    implicit val walletConf: WalletAppConfig = config.walletConf
 
     for {
       _ <- WalletDbManagement.createAll()

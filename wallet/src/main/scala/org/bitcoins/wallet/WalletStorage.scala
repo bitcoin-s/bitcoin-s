@@ -14,6 +14,7 @@ import java.nio.file.Paths
 import java.nio.file.Path
 import scala.util.Try
 import org.bitcoins.db.AppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
 
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage extends BitcoinSLogger {
@@ -35,7 +36,7 @@ object WalletStorage extends BitcoinSLogger {
     * the file name.
     */
   def writeMnemonicToDisk(mnemonic: EncryptedMnemonic)(
-      implicit config: AppConfig): Path = {
+      implicit config: WalletAppConfig): Path = {
     import mnemonic.{value => encrypted}
 
     val jsObject = {
@@ -175,7 +176,7 @@ object WalletStorage extends BitcoinSLogger {
     */
   def decryptMnemonicFromDisk(passphrase: AesPassword)(
       implicit
-      config: AppConfig): ReadMnemonicResult = {
+      config: WalletAppConfig): ReadMnemonicResult = {
     val encryptedEither = readEncryptedMnemonicFromDisk()
 
     import org.bitcoins.core.util.EitherUtil.EitherOps._
