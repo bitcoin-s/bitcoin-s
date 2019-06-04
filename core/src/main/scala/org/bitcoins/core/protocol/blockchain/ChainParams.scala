@@ -3,6 +3,7 @@ package org.bitcoins.core.protocol.blockchain
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
 
+import org.bitcoins.core.config.{BitcoinNetwork, MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -178,6 +179,25 @@ sealed abstract class ChainParams {
   def difficultyChangeInterval: Long = {
     powTargetTimeSpan.toSeconds / powTargetSpacing.toSeconds
   }
+
+  /**
+    * Whether we should allow minimum difficulty blocks or not
+    * As an example you can trivially mine blocks on [[RegTestNetChainParams]] and [[TestNetChainParams]]
+    * but not the [[MainNetChainParams]]
+    * @return
+    */
+  def allowMinDifficultyBlocks: Boolean
+
+  /**
+    * Whether this chain supports
+    * proof of work retargeting or not
+    * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
+    * @return
+    */
+  def noRetargeting: Boolean
+
+  /** The [[org.bitcoins.core.config.BitcoinNetwork network]] that corresponds to this chain param */
+  def network: NetworkParameters
 }
 
 sealed abstract class BitcoinChainParams extends ChainParams {
@@ -200,21 +220,11 @@ sealed abstract class BitcoinChainParams extends ChainParams {
   /** The best chain should have this amount of work */
   def minimumChainWork: BigInteger
 
-  /**
-    * Whether we should allow minimum difficulty blocks or not
-    * As an example you can trivially mine blocks on [[RegTestNetChainParams]] and [[TestNetChainParams]]
-    * but not the [[MainNetChainParams]]
-    * @return
-    */
-  def allowMinDifficultyBlocks: Boolean
 
   /**
-    * Whether this chain supports
-    * proof of work retargeting or not
-    * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
-    * @return
+    * @inheritdoc
     */
-  def noRetargeting: Boolean
+  def network: BitcoinNetwork
 }
 
 /** The Main Network parameters. */
@@ -272,6 +282,11 @@ object MainNetChainParams extends BitcoinChainParams {
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L76 mainnet pow retargetting]]
     */
   override lazy val noRetargeting: Boolean = false
+
+  /**
+    * @inheritdoc
+    */
+  override lazy val network: BitcoinNetwork = MainNet
 }
 
 object TestNetChainParams extends BitcoinChainParams {
@@ -320,6 +335,11 @@ object TestNetChainParams extends BitcoinChainParams {
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L193 testnet pow retargetting]]
     */
   override lazy val noRetargeting: Boolean = false
+
+  /**
+    * @inheritdoc
+    */
+  override lazy val network: BitcoinNetwork = TestNet3
 }
 
 object RegTestNetChainParams extends BitcoinChainParams {
@@ -362,6 +382,11 @@ object RegTestNetChainParams extends BitcoinChainParams {
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L288 regtest pow retargetting]]
     */
   override lazy val noRetargeting: Boolean = true
+
+  /**
+    * @inheritdoc
+    */
+  override lazy val network: BitcoinNetwork = RegTest
 }
 
 sealed abstract class Base58Type

@@ -3,7 +3,7 @@ package org.bitcoins.zmq
 import java.net.InetSocketAddress
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.zeromq.{ZMQ, ZMsg}
+import org.zeromq.{SocketType, ZMQ, ZMQException, ZMsg}
 import scodec.bits.ByteVector
 
 /**
@@ -19,22 +19,26 @@ import scodec.bits.ByteVector
   * @param rawBlockListener
   */
 class ZMQSubscriber(
-    socket: InetSocketAddress,
-    hashTxListener: Option[ByteVector => Unit],
-    hashBlockListener: Option[ByteVector => Unit],
-    rawTxListener: Option[ByteVector => Unit],
-    rawBlockListener: Option[ByteVector => Unit]) {
-  private val logger = BitcoinSLogger.logger
+                     socket: InetSocketAddress,
+                     hashTxListener: Option[ByteVector => Unit],
+                     hashBlockListener: Option[ByteVector => Unit],
+                     rawTxListener: Option[ByteVector => Unit],
+                     rawBlockListener: Option[ByteVector => Unit])
+  extends BitcoinSLogger {
 
   private var running = true
   private val context = ZMQ.context(1)
 
-  private val subscriber = context.socket(ZMQ.SUB)
+  private val subscriber: ZMQ.Socket = context.socket(SocketType.SUB)
+
+
+
   private val uri = socket.getHostString + ":" + socket.getPort
 
   private case object SubscriberRunnable extends Runnable {
     override def run(): Unit = {
-
+      logger.info(s"ZmqSubscriber connecting to uri=${uri}")
+      subscriber.setLinger(2000)
       val isConnected = subscriber.connect(uri)
 
       if (isConnected) {
@@ -58,16 +62,26 @@ class ZMQSubscriber(
           logger.debug("subscribed to raw block stream from zmq")
         }
 
-        while (running) {
-          val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
-          if (zmsg != null) {
-            val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
-            val body = zmsg.pop().getData
-            processMsg(notificationTypeStr, body)
-          } else {
-            Thread.sleep(1)
+        while (running && !subscriberThread.isInterrupted) {
+          try {
+            val zmsg = ZMsg.recvMsg(subscriber, ZMQ.NOBLOCK)
+            if (zmsg != null) {
+              val notificationTypeStr = zmsg.pop().getString(ZMQ.CHARSET)
+              val body = zmsg.pop().getData
+              processMsg(notificationTypeStr, body)
+            } else {
+              Thread.sleep(100)
+            }
+          } catch {
+            case e: ZMQException if e.getErrorCode == ZMQ.Error.ETERM.getCode =>
+              context.term()
+              logger.info(s"Done terminating zmq context msg=${e.getMessage}")
+            case e: Exception =>
+              context.term()
+              logger.info(s"Done terminating zmq context msg=${e.getMessage}")
           }
         }
+        logger.info(s"Terminated")
       } else {
         logger.error(s"Failed to connect to zmq socket ${uri}")
         throw new RuntimeException(s"Failed to connect to zmq socket ${uri}")
@@ -77,7 +91,7 @@ class ZMQSubscriber(
   }
 
   private val subscriberThread = new Thread(SubscriberRunnable)
-  subscriberThread.setName("ZMQSubscriber-thread")
+  subscriberThread.setName(s"ZMQSubscriber-thread-${System.currentTimeMillis()}")
   subscriberThread.setDaemon(true)
 
   def start(): Unit = {
@@ -89,13 +103,17 @@ class ZMQSubscriber(
     * Stops running the zmq subscriber and cleans up after zmq
     * http://zguide.zeromq.org/java:psenvsub
     */
-  def stop: Unit = {
+  def stop(): Unit = {
+    logger.info(s"Stopping zmq")
     //i think this could technically not work, because currently we are blocking
     //on Zmsg.recvMsg in our while loop. If we don't get another message we won't
     //be able toe evaluate the while loop again. Moving forward with this for now.
     running = false
     subscriber.close()
+    logger.info("Attempting to terminate context")
     context.term()
+    logger.info(s"Done with closing zmq")
+    ()
   }
 
   /**

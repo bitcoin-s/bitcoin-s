@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.{
   P2PKHAddress,
   P2SHAddress
 }
+import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
@@ -448,7 +449,7 @@ object JsonReaders {
       for {
         asm <- (json \ "asm").validate[String]
         hex <- (json \ "hex").validate[ScriptPubKey]
-        scriptType <- (json \ "type").validateOpt[RpcScriptType]
+        scriptType <- (json \ "type").validateOpt[ScriptType]
         address <- (json \ "address").validateOpt[BitcoinAddress]
       } yield
         RpcPsbtScript(asm = asm,
@@ -498,20 +499,11 @@ object JsonReaders {
 
   }
 
-  implicit object RpcScriptTypeReads extends Reads[RpcScriptType] {
-    import RpcScriptType._
-    override def reads(json: JsValue): JsResult[RpcScriptType] =
-      json.validate[String].flatMap {
-        case "nonstandard"           => JsSuccess(NONSTANDARD)
-        case "pubkey"                => JsSuccess(PUBKEY)
-        case "pubkeyhash"            => JsSuccess(PUBKEYHASH)
-        case "scripthash"            => JsSuccess(SCRIPTHASH)
-        case "multisig"              => JsSuccess(MULTISIG)
-        case "nulldata"              => JsSuccess(NULLDATA)
-        case "witness_v0_keyhash"    => JsSuccess(WITNESS_V0_KEYHASH)
-        case "witness_v0_scripthash" => JsSuccess(WITNESS_V0_SCRIPTHASH)
-        case "witness_unknown"       => JsSuccess(WITNESS_UNKNOWN)
-      }
+  implicit object ScriptTypeReads extends Reads[ScriptType] {
+    override def reads(json: JsValue): JsResult[ScriptType] =
+      json
+        .validate[String]
+        .map(ScriptType.fromStringExn)
   }
 
   implicit object TestMempoolAcceptResultReads

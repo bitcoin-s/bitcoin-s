@@ -1,27 +1,29 @@
 package org.bitcoins.rpc.config
 
-import java.net.URI
+import java.net.InetSocketAddress
+
+import org.bitcoins.core.util.BitcoinSLogger
 
 sealed trait ZmqConfig {
-  def hashBlock: Option[URI]
-  def rawBlock: Option[URI]
-  def hashTx: Option[URI]
-  def rawTx: Option[URI]
+  def hashBlock: Option[InetSocketAddress]
+  def rawBlock: Option[InetSocketAddress]
+  def hashTx: Option[InetSocketAddress]
+  def rawTx: Option[InetSocketAddress]
 }
 
-object ZmqConfig {
+object ZmqConfig extends BitcoinSLogger {
   private case class ZmqConfigImpl(
-      hashBlock: Option[URI],
-      rawBlock: Option[URI],
-      hashTx: Option[URI],
-      rawTx: Option[URI]
+      hashBlock: Option[InetSocketAddress],
+      rawBlock: Option[InetSocketAddress],
+      hashTx: Option[InetSocketAddress],
+      rawTx: Option[InetSocketAddress]
   ) extends ZmqConfig
 
   def apply(
-      hashBlock: Option[URI] = None,
-      rawBlock: Option[URI] = None,
-      hashTx: Option[URI] = None,
-      rawTx: Option[URI] = None
+      hashBlock: Option[InetSocketAddress] = None,
+      rawBlock: Option[InetSocketAddress] = None,
+      hashTx: Option[InetSocketAddress] = None,
+      rawTx: Option[InetSocketAddress] = None
   ): ZmqConfig =
     ZmqConfigImpl(hashBlock = hashBlock,
                   rawBlock = rawBlock,
@@ -33,7 +35,7 @@ object ZmqConfig {
     * `localhost` and the same port
     */
   def fromPort(port: Int): ZmqConfig = {
-    val uri = new URI(s"tcp://localhost:$port")
+    val uri = new InetSocketAddress("tcp://127.0.0.1", port)
     ZmqConfig(hashBlock = Some(uri),
               rawBlock = Some(uri),
               hashTx = Some(uri),

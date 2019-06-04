@@ -1,12 +1,13 @@
 package org.bitcoins.rpc.config
 
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.core.config._
 import java.io.File
 import java.nio.file.Files
+
 import scala.util.Properties
 import java.nio.file.Paths
-import java.net.URI
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
 
 /**
@@ -23,8 +24,27 @@ import java.nio.file.Path
   *
   * @see https://github.com/bitcoin/bitcoin/blob/master/doc/bitcoin-conf.md
   */
-abstract class BitcoindConfig extends BitcoinSLogger {
-  private[bitcoins] def lines: Seq[String]
+case class BitcoindConfig(
+    private[bitcoins] val lines: Seq[String],
+    datadir: File)
+    extends BitcoinSLogger {
+
+  //create datadir and config if it DNE on disk
+  if (!datadir.exists()) {
+    logger.info(
+      s"datadir=${datadir.getAbsolutePath} does not exist, creating now")
+    datadir.mkdirs()
+    BitcoindConfig.writeConfigToFile(this, datadir)
+  }
+
+  private val confFile = datadir.toPath.resolve("bitcoin.conf")
+
+  //create bitcoin.conf file in datadir if it does not exist
+  if (!Files.exists(confFile)) {
+    logger.info(
+      s"bitcoin.conf in datadir=${datadir.getAbsolutePath} does not exist, creating now")
+    BitcoindConfig.writeConfigToFile(this, datadir)
+  }
 
   /**
     * Converts the config back to a string that can be written
@@ -187,16 +207,16 @@ abstract class BitcoindConfig extends BitcoinSLogger {
     }.headOption
   }
 
-  lazy val datadir: Option[File] = getValue("datadir").map(new File(_))
-
   lazy val username: Option[String] = getValue("rpcuser")
   lazy val password: Option[String] = getValue("rpcpassword")
-  lazy val zmqpubrawblock: Option[URI] =
-    getValue("zmqpubrawblock").map(new URI(_))
-  lazy val zmqpubrawtx: Option[URI] = getValue("zmqpubrawtx").map(new URI(_))
-  lazy val zmqpubhashblock: Option[URI] =
-    getValue("zmqpubhashblock").map(new URI(_))
-  lazy val zmqpubhashtx: Option[URI] = getValue("zmqpubhashtx").map(new URI(_))
+  lazy val zmqpubrawblock: Option[InetSocketAddress] =
+    getValue("zmqpubrawblock").map(BitcoinSUtil.toInetSocketAddress)
+  lazy val zmqpubrawtx: Option[InetSocketAddress] =
+    getValue("zmqpubrawtx").map(BitcoinSUtil.toInetSocketAddress)
+  lazy val zmqpubhashblock: Option[InetSocketAddress] =
+    getValue("zmqpubhashblock").map(BitcoinSUtil.toInetSocketAddress)
+  lazy val zmqpubhashtx: Option[InetSocketAddress] =
+    getValue("zmqpubhashtx").map(BitcoinSUtil.toInetSocketAddress)
 
   lazy val port: Int = getValue("port").map(_.toInt).getOrElse(network.port)
 
@@ -224,13 +244,14 @@ abstract class BitcoindConfig extends BitcoinSLogger {
   /** Creates a new config with the given keys and values appended */
   def withOption(key: String, value: String): BitcoindConfig = {
     val ourLines = this.lines
-    new BitcoindConfig {
+    val newLine = s"$key=$value"
+    val lines = newLine +: ourLines
+    val newConfig = BitcoindConfig(lines, datadir)
+    logger.debug(
+      s"Appending new config with $key=$value to datadir=${datadir.getAbsolutePath}")
+    BitcoindConfig.writeConfigToFile(newConfig, datadir)
 
-      def lines: Seq[String] = {
-        val newLine = s"$key=$value"
-        newLine +: ourLines
-      }
-    }
+    newConfig
   }
 
   /** Creates a new config with the given key and values,
@@ -254,30 +275,30 @@ abstract class BitcoindConfig extends BitcoinSLogger {
       network: NetworkParameters): BitcoindConfig =
     withOption(key = s"${networkString(network)}.$key", value = value)
 
+  def withDatadir(newDatadir: File): BitcoindConfig = {
+    BitcoindConfig(lines, newDatadir)
+  }
+
 }
 
-object BitcoindConfig {
+object BitcoindConfig extends BitcoinSLogger {
 
   /** The empty `bitcoind` config */
-  lazy val empty: BitcoindConfig = BitcoindConfig("")
-
-  /** Constructs a `bitcoind` config from the given lines */
-  def apply(config: Seq[String]): BitcoindConfig = new BitcoindConfig {
-    val lines: Seq[String] = config
-  }
+  lazy val empty: BitcoindConfig = BitcoindConfig("", DEFAULT_DATADIR)
 
   /**
     * Constructs a `bitcoind` config from the given string,
     * by splitting it on newlines
     */
-  def apply(config: String): BitcoindConfig =
-    apply(config.split("\n"))
+  def apply(config: String, datadir: File): BitcoindConfig =
+    apply(config.split("\n"), datadir)
 
   /** Reads the given path and construct a `bitcoind` config from it */
-  def apply(config: Path): BitcoindConfig = apply(config.toFile)
+  def apply(config: Path): BitcoindConfig =
+    apply(config.toFile, config.getParent.toFile)
 
   /** Reads the given file and construct a `bitcoind` config from it */
-  def apply(config: File): BitcoindConfig = {
+  def apply(config: File, datadir: File = DEFAULT_DATADIR): BitcoindConfig = {
     import scala.collection.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
@@ -285,7 +306,7 @@ object BitcoindConfig {
       .asScala
       .toList
 
-    apply(lines)
+    apply(lines, datadir)
   }
 
   /**
@@ -321,4 +342,25 @@ object BitcoindConfig {
     .toPath()
     .resolve("bitcoin.conf")
     .toFile
+
+  /**
+    * Writes the config to the data directory within it, if it doesn't
+    * exist. Returns the written file.
+    */
+  def writeConfigToFile(config: BitcoindConfig, datadir: File): Path = {
+
+    val confStr = config.lines.mkString("\n")
+
+    Files.createDirectories(datadir.toPath)
+    val confFile = datadir.toPath.resolve("bitcoin.conf")
+
+    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE) {
+      logger.warn(
+        s"We will not overrwrite the existing bitcoin.conf in default datadir")
+    } else {
+      Files.write(confFile, confStr.getBytes)
+    }
+
+    confFile
+  }
 }

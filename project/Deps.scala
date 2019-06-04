@@ -9,7 +9,7 @@ object Deps {
     val scalaTest = "3.0.5"
     val slf4j = "1.7.5"
     val spray = "1.3.2"
-    val zeromq = "0.4.3"
+    val zeromq = "0.5.1"
     val akkav = "10.1.7"
     val akkaStreamv = "2.5.21"
     val playv = "2.7.0"
@@ -18,7 +18,14 @@ object Deps {
     val nativeLoaderV = "2.3.2"
     val typesafeConfigV = "1.3.3"
     val ammoniteV = "1.6.2"
+
     val asyncV = "0.9.7"
+    val jodaV = "2.9.4"
+    val postgresV = "9.4.1210"
+    val akkaActorV = akkaStreamv
+    val slickV = "3.3.0"
+    val sqliteV = "3.8.11.2"
+    val uJsonV = "0.7.1"
   }
 
   object Compile {
@@ -28,6 +35,7 @@ object Deps {
     val zeromq = "org.zeromq" % "jeromq" % V.zeromq withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
+    val akkaActor = "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
 
@@ -36,6 +44,18 @@ object Deps {
     //for loading secp256k1 natively
     val nativeLoader = "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
     val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV cross CrossVersion.full
+
+    //node deps
+    val joda = "joda-time" % "joda-time" % V.jodaV
+
+    val slick = "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
+    val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
+    val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
+    val postgres = "org.postgresql" % "postgresql" % V.postgresV
+    val uJson = "com.lihaoyi" %% "ujson" % V.uJsonV
+
+    val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
+    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
   }
 
   object Test {
@@ -44,18 +64,29 @@ object Deps {
     val bitcoinj = ("org.bitcoinj" % "bitcoinj-core" % "0.14.4" % "test")
       .exclude("org.slf4j", "slf4j-api")
     val junitInterface = "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
-    val logback = "ch.qos.logback" % "logback-classic" % V.logback % "test" withSources () withJavadoc ()
-    val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck % "test" withSources () withJavadoc ()
-    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest % "test" withSources () withJavadoc ()
+    val logback = Compile.logback % "test"
+    val scalacheck = Compile.scalacheck % "test"
+    val scalaTest = Compile.scalaTest % "test"
     val spray = "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
     val ammonite = Compile.ammonite % "test"
     val playJson = Compile.playJson % "test"
+    val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
   }
 
   val root = List(
     Test.ammonite
+  )
+
+  val chain = List(
+    Compile.slf4j,
+    Test.ammonite
+  )
+
+  val chainTest = List(
+    Test.ammonite,
+    Test.logback
   )
 
   val core = List(
@@ -115,6 +146,13 @@ object Deps {
     Test.ammonite
   )
 
+  val dbCommons = List(
+    Compile.slick,
+    Compile.sqlite,
+    Compile.slickHikari,
+    Test.ammonite
+  )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
@@ -132,14 +170,47 @@ object Deps {
     Test.ammonite
   )
 
+  val node = List(
+    Compile.akkaActor,
+    Compile.logback,
+    Compile.joda,
+    Compile.slick,
+    Compile.slickHikari,
+    Compile.sqlite,
+    Test.ammonite
+  )
+
+  val nodeTest = List(
+    Test.akkaTestkit,
+    Test.logback,
+    Test.scalaTest,
+    Test.ammonite
+  )
+
   val testkit = List(
     Compile.slf4j,
-    "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc (),
-    "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc (),
+    Compile.scalacheck,
+    Compile.scalaTest,
     Test.ammonite
   )
 
   val scripts = List(
+    Compile.ammonite,
+    Compile.logback
+  )
+
+  val wallet = List(
+    Test.ammonite,
+    Compile.uJson
+  )
+
+  val walletTest = List(
+    Test.logback,
+    Test.akkaTestkit,
+    Test.ammonite
+  )
+
+  val doc = List(
     Compile.ammonite,
     Compile.logback,
     Test.scalaTest,

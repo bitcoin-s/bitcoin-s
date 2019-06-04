@@ -58,7 +58,7 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
       datadir: File = BitcoindConfig.DEFAULT_DATADIR)
       extends BitcoindAuthCredentials {
 
-    lazy private[bitcoins] val cookiePath = {
+    private[bitcoins] lazy val cookiePath = {
       val middleSegment = network match {
         case TestNet3 => "testnet3"
         case MainNet  => ""
@@ -87,7 +87,7 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
   }
 
   def fromConfig(config: BitcoindConfig): BitcoindAuthCredentials = {
-    val datadir = config.datadir.getOrElse(BitcoindConfig.DEFAULT_DATADIR)
+    val datadir = config.datadir
     val username = config.username
     val password = config.password
     (username, password) match {

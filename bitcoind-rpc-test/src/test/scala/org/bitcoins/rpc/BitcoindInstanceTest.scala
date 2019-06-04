@@ -34,20 +34,6 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     pw.close()
   }
 
-  override def afterAll(): Unit = {}
-
-  def addDatadirAndWrite(conf: BitcoindConfig): BitcoindConfig = {
-    val tempDir = Files.createTempDirectory("")
-    val confWithDatadir = conf.datadir match {
-      case None =>
-        conf.withOption("datadir", tempDir.toString)
-      case Some(value) => conf
-    }
-    val tempfile = Paths.get(Properties.tmpDir, "bitcoin.conf")
-    BitcoindRpcTestUtil.writeConfigToFile(confWithDatadir)
-    confWithDatadir
-  }
-
   behavior of "BitcoindInstance"
 
   it should "start a bitcoind with cookie based authentication" in {
@@ -58,7 +44,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     |rpcport=${RpcUtil.randomPort}
     """.stripMargin
 
-    val conf = addDatadirAndWrite(BitcoindConfig(confStr))
+    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
     val instance = BitcoindInstance.fromConfig(conf)
     assert(
       instance.authCredentials
@@ -73,15 +59,15 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
   it should "start a bitcoind with user and password based authentication" in {
     val confStr = s"""
-    |daemon=1
-    |regtest=1
-    |rpcuser=foobar
-    |rpcpassword=barfoo
-    |port=${RpcUtil.randomPort}
-    |rpcport=${RpcUtil.randomPort}
-    """.stripMargin
+      |daemon=1
+      |regtest=1
+      |rpcuser=foobar
+      |rpcpassword=barfoo
+      |port=${RpcUtil.randomPort}
+      |rpcport=${RpcUtil.randomPort}
+      """.stripMargin
 
-    val conf = addDatadirAndWrite(BitcoindConfig(confStr))
+    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
     val instance = BitcoindInstance.fromConfig(conf)
     assert(
       instance.authCredentials
@@ -106,14 +92,14 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val port = RpcUtil.randomPort
     val rpcPort = RpcUtil.randomPort
     val confStr = s"""
-    |daemon=1
-    |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
-    |regtest=1
-    |port=${RpcUtil.randomPort}
-    |rpcport=${RpcUtil.randomPort}
-    """.stripMargin
+       |daemon=1
+       |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
+       |regtest=1
+       |port=${RpcUtil.randomPort}
+       |rpcport=${RpcUtil.randomPort}
+       """.stripMargin
 
-    val conf = addDatadirAndWrite(BitcoindConfig(confStr))
+    val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
     val authCredentials =
       BitcoindAuthCredentials.PasswordBased(username = "bitcoin-s",
                                             password = "strong_password")
@@ -123,7 +109,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         uri = new URI(s"http://localhost:$port"),
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         authCredentials = authCredentials,
-        datadir = conf.datadir.get
+        datadir = conf.datadir
       )
 
     for {

@@ -17,6 +17,9 @@ import play.api.libs.json._
 
 import scala.collection.mutable
 
+// for mapWrites below
+import scala.language.implicitConversions
+
 object JsonWriters {
   implicit object HashTypeWrites extends Writes[HashType] {
     override def writes(hash: HashType): JsValue = hash match {

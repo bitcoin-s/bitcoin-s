@@ -1,8 +1,9 @@
 package org.bitcoins.rpc.jsonmodels
 
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE}
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 
 sealed abstract class BlockchainResult
@@ -104,7 +105,26 @@ case class GetBlockHeaderResult(
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
     nextblockhash: Option[DoubleSha256DigestBE])
-    extends BlockchainResult
+    extends BlockchainResult {
+  def blockHeader: BlockHeader = {
+
+    //prevblockhash is only empty if we have the genesis block
+    //we assume the prevhash of the gensis block is the empty hash
+    val prevHash = {
+      if (height == 0 && previousblockhash.isEmpty) {
+        DoubleSha256DigestBE.empty
+      } else {
+        previousblockhash.get
+      }
+    }
+    BlockHeader(version = Int32(version),
+      previousBlockHash = prevHash.flip,
+      merkleRootHash = merkleroot.flip,
+      time = time,
+      nBits = bits,
+      nonce = nonce)
+  }
+}
 
 case class ChainTip(
     height: Int,

@@ -5,6 +5,7 @@ import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -75,6 +76,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     }
   }
 
+  def tmpDir(): File = {
+    val f = Paths.get(Properties.tmpDir, randomDirName).toFile
+    f.mkdirs()
+    f
+  }
+
   /**
     * Standard config used for testing purposes
     */
@@ -94,48 +101,24 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val pass = randomDirName
     val username = "random_user_name"
     val conf = s"""
-      |regtest=1
-      |daemon=1
-      |server=1
-      |
-      |rpcuser=$username
-      |rpcpassword=$pass
-      |rpcport=${rpcUri.getPort}
-      |port=${uri.getPort}
-      |debug=1
-      |walletbroadcast=1
-      |txindex=${if (pruneMode) 0 else 1 /* pruning and txindex are not compatible */}
-      |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
-      |zmqpubhashblock=tcp://127.0.0.1:$zmqPort
-      |zmqpubrawtx=tcp://127.0.0.1:$zmqPort
-      |zmqpubrawblock=tcp://127.0.0.1:$zmqPort
-      |prune=${if (pruneMode) 1 else 0}
+                  |regtest=1
+                  |daemon=1
+                  |server=1
+                  |
+                  |rpcuser=$username
+                  |rpcpassword=$pass
+                  |rpcport=${rpcUri.getPort}
+                  |port=${uri.getPort}
+                  |debug=1
+                  |walletbroadcast=1
+                  |txindex=${if (pruneMode) 0 else 1 /* pruning and txindex are not compatible */}
+                  |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
+                  |zmqpubhashblock=tcp://127.0.0.1:$zmqPort
+                  |zmqpubrawtx=tcp://127.0.0.1:$zmqPort
+                  |zmqpubrawblock=tcp://127.0.0.1:$zmqPort
+                  |prune=${if (pruneMode) 1 else 0}
     """.stripMargin
-    BitcoindConfig(conf)
-  }
-
-  /**
-    * Writes the config to the data directory within it, it it doesn't
-    * exist. Returns the written file. Assumes the config has a datadir.
-    */
-  def writeConfigToFile(config: BitcoindConfig): Path = {
-
-    val confStr = config.lines.mkString("\n")
-
-    val datadir = config.datadir
-      .getOrElse(
-        throw new IllegalArgumentException(
-          "Provided bitcoind config does not have datadir field!"))
-      .toPath
-
-    val confFile = datadir.resolve("bitcoin.conf")
-
-    Files.createDirectories(datadir)
-    if (!Files.exists(confFile)) {
-      Files.write(confFile, confStr.getBytes)
-    }
-
-    confFile
+    BitcoindConfig(config = conf, datadir = BitcoindRpcTestUtil.tmpDir())
   }
 
   /**
@@ -151,15 +134,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   ): Path = {
     val conf = config(uri, rpcUri, zmqPort, pruneMode)
 
-    val configWithDatadir =
-      if (conf.datadir.isDefined) {
-        conf
-      } else {
-        val tempDir = Paths.get(Properties.tmpDir, randomDirName)
-        conf.withOption("datadir", tempDir.toString)
-      }
-
-    val written = writeConfigToFile(configWithDatadir)
+    val datadir = conf.datadir
+    val written = BitcoindConfig.writeConfigToFile(conf, datadir)
     logger.debug(s"Wrote conf to ${written}")
     written
   }
