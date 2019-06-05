@@ -5,15 +5,15 @@ import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.messages.NetworkPayload
+import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
+import org.bitcoins.node.config.NodeAppConfig
 
 /**
   * Created by chris on 6/6/16.

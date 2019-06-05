@@ -4,9 +4,9 @@ import akka.actor.ActorRef
 import akka.io.Tcp
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.messages._
+import org.bitcoins.core.p2p._
 import org.bitcoins.node.networking.Client
 
 /**

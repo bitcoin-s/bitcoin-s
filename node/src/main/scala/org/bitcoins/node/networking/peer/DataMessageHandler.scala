@@ -5,7 +5,7 @@ import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
-import org.bitcoins.node.messages.{
+import org.bitcoins.core.p2p.{
   DataPayload,
   HeadersMessage,
   InventoryMessage

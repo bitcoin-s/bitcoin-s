@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.gen
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.node.messages._
+import org.bitcoins.core.p2p._
 import org.bitcoins.testkit.core.gen.{
   BlockchainElementsGenerator,
   CryptoGenerators,
