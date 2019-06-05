@@ -71,10 +71,9 @@ abstract class NodeTestUtil {
     )
   }
 
-  def nodeAppConfig: NodeAppConfig = NodeAppConfig()
-
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
-      implicit ref: ActorRefFactory): Client = {
+      implicit ref: ActorRefFactory,
+      conf: NodeAppConfig): Client = {
     Client.apply(ref, peer, peerMsgReceiver)
   }
 

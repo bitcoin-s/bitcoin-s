@@ -20,10 +20,10 @@ import org.bitcoins.wallet.models._
 import scala.concurrent.Future
 import scala.util.Success
 import scala.util.Failure
-import org.bitcoins.db.AppConfig
 import scala.concurrent.ExecutionContext
 import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
 import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
+import org.bitcoins.wallet.config.WalletAppConfig
 
 abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
@@ -263,9 +263,11 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 object LockedWallet {
   private case class LockedWalletImpl()(
       implicit val ec: ExecutionContext,
-      val walletConfig: AppConfig)
+      val walletConfig: WalletAppConfig)
       extends LockedWallet
 
-  def apply()(implicit ec: ExecutionContext, config: AppConfig): LockedWallet =
-    LockedWalletImpl()
+  def apply()(
+      implicit ec: ExecutionContext,
+      config: WalletAppConfig): LockedWallet = LockedWalletImpl()
+
 }

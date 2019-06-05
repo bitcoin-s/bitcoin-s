@@ -7,7 +7,7 @@ import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.constant.Constants
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.messages.NetworkPayload
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
@@ -41,6 +41,8 @@ import scodec.bits.ByteVector
   */
 sealed abstract class ClientActor extends Actor with BitcoinSLogger {
 
+  val config: NodeAppConfig
+
   def peer: Peer
 
   /** The place we send messages that we successfully parsed from our
@@ -61,7 +63,7 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     * i.e. [[org.bitcoins.core.config.MainNet]] or [[org.bitcoins.core.config.TestNet3]]
     * @return
     */
-  def network: NetworkParameters = Constants.networkParameters
+  def network: NetworkParameters = config.network
 
   /**
     * This actor signifies the node we are connected to on the p2p network
@@ -223,16 +225,20 @@ case class Client(actor: ActorRef, peer: Peer)
 object Client {
   private case class ClientActorImpl(
       peer: Peer,
-      peerMsgHandlerReceiver: PeerMessageReceiver)
-      extends ClientActor
+      peerMsgHandlerReceiver: PeerMessageReceiver)(
+      implicit override val config: NodeAppConfig
+  ) extends ClientActor
 
-  def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver): Props =
-    Props(classOf[ClientActorImpl], peer, peerMsgHandlerReceiver)
+  def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver)(
+      implicit config: NodeAppConfig
+  ): Props =
+    Props(classOf[ClientActorImpl], peer, peerMsgHandlerReceiver, config)
 
   def apply(
       context: ActorRefFactory,
       peer: Peer,
-      peerMessageReceiver: PeerMessageReceiver): Client = {
+      peerMessageReceiver: PeerMessageReceiver)(
+      implicit config: NodeAppConfig): Client = {
     val actorRef = context.actorOf(
       props(peer = peer, peerMsgHandlerReceiver = peerMessageReceiver),
       BitcoinSpvNodeUtil.createActorName(this.getClass))

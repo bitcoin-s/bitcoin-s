@@ -7,15 +7,14 @@ import slick.jdbc.SQLiteProfile.api._
 import scala.concurrent.{Future}
 import org.bitcoins.db.CRUD
 import org.bitcoins.db.SlickUtil
-import org.bitcoins.db.AppConfig
 import scala.concurrent.ExecutionContext
 
-case class AccountDAO()(implicit val ec: ExecutionContext)
+case class AccountDAO()(
+    implicit val ec: ExecutionContext,
+    val appConfig: WalletAppConfig)
     extends CRUD[AccountDb, (HDCoin, Int)] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
-
-  override def appConfig: WalletAppConfig = WalletAppConfig()
 
   override val table: TableQuery[AccountTable] = TableQuery[AccountTable]
 

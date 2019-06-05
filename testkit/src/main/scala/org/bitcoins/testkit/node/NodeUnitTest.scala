@@ -66,7 +66,7 @@ trait NodeUnitTest
 
   def buildPeerMessageReceiver(): PeerMessageReceiver = {
     val receiver =
-      PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
+      PeerMessageReceiver.newReceiver
     receiver
   }
 

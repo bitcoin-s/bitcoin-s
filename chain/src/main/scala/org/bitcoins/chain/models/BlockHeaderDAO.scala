@@ -15,8 +15,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * to [[org.bitcoins.core.protocol.blockchain.BlockHeader]]s in
   * our chain project
   */
-case class BlockHeaderDAO(appConfig: ChainAppConfig)(
-    implicit override val ec: ExecutionContext)
+case class BlockHeaderDAO()(
+    implicit override val ec: ExecutionContext,
+    override val appConfig: ChainAppConfig)
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._

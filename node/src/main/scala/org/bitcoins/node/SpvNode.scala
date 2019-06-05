@@ -24,7 +24,7 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
   import system.dispatcher
 
   private val peerMsgRecv =
-    PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
+    PeerMessageReceiver.newReceiver
 
   private val client: Client =
     Client(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)

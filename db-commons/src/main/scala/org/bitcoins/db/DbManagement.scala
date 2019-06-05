@@ -16,29 +16,38 @@ abstract class DbManagement extends BitcoinSLogger {
     db.run(query)
   }
 
+  /** Lists all tables in the given database */
+  def listTables(db: SafeDatabase): Future[Vector[SQLiteTableInfo]] =
+    listTables(db.config.database)
+
   def createAll()(
       implicit config: AppConfig,
-      ec: ExecutionContext): Future[List[Unit]] = {
-    Future.sequence(allTables.map(createTable(_)))
+      ec: ExecutionContext): Future[Unit] = {
+    Future.sequence(allTables.map(createTable(_))).map(_ => ())
   }
 
   def dropAll()(
       implicit config: AppConfig,
-      ec: ExecutionContext): Future[List[Unit]] = {
-    Future.sequence(allTables.reverse.map(dropTable(_)))
+      ec: ExecutionContext): Future[Unit] = {
+    Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => ())
   }
 
   def createTable(
       table: TableQuery[_ <: Table[_]],
       createIfNotExists: Boolean = true)(
-      implicit config: AppConfig): Future[Unit] = {
+      implicit config: AppConfig,
+      ec: ExecutionContext): Future[Unit] = {
+    val tableName = table.baseTableRow.tableName
+    logger.debug(
+      s"Creating table $tableName with DB config: ${config.dbConfig.config} ")
+
     import config.database
-    val result = if (createIfNotExists) {
-      database.run(table.schema.createIfNotExists)
+    val query = if (createIfNotExists) {
+      table.schema.createIfNotExists
     } else {
-      database.run(table.schema.create)
+      table.schema.create
     }
-    result
+    database.run(query).map(_ => logger.debug(s"Created table $tableName"))
   }
 
   def dropTable(
