@@ -30,6 +30,9 @@ class PeerMessageReceiver(
     chainAppConfig: ChainAppConfig)(implicit ref: ActorRefFactory)
     extends BitcoinSLogger {
 
+  implicit private val nodeConfig = nodeAppConfig
+  implicit private val chainConfig = chainAppConfig
+
   import ref.dispatcher
 
   //TODO: Really bad to just modify this internal state
@@ -136,7 +139,7 @@ class PeerMessageReceiver(
   private def handleDataPayload(
       payload: DataPayload,
       sender: PeerMessageSender): Unit = {
-    val dataMsgHandler = new DataMessageHandler(chainAppConfig)
+    val dataMsgHandler = new DataMessageHandler()
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMsgHandler.handleDataPayload(payload, sender)
@@ -227,16 +230,18 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: Client)
       extends PeerMessageReceiverMsg
 
-  def apply(
-      state: PeerMessageReceiverState,
+  def apply(state: PeerMessageReceiverState)(
+      implicit ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig)(
-      implicit ref: ActorRefFactory): PeerMessageReceiver = {
+      chainAppConfig: ChainAppConfig
+  ): PeerMessageReceiver = {
     new PeerMessageReceiver(state, nodeAppConfig, chainAppConfig)(ref)
   }
 
-  def newReceiver(nodeAppConfig: NodeAppConfig, chainAppConfig: ChainAppConfig)(
-      implicit ref: ActorRefFactory): PeerMessageReceiver = {
+  def newReceiver(
+      implicit nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig,
+      ref: ActorRefFactory): PeerMessageReceiver = {
     new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
                             nodeAppConfig,
                             chainAppConfig)(ref)

@@ -6,6 +6,7 @@ import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.{AccountDAO, AddressDAO}
 import org.bitcoins.wallet.util.BitcoinSWalletTest
 import org.scalatest._
+import org.bitcoins.wallet.config.WalletAppConfig
 
 /**
   * This fixture has a tuple of DAOs, because
@@ -17,6 +18,10 @@ trait AddressDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
 
   override final def withFixture(test: OneArgAsyncTest): FutureOutcome =
     makeDependentFixture(createTables, dropTables)(test)
+
+  // to get around the config in `BitcoinSWalletTest` not resolving
+  // as an AppConfig
+  private implicit val walletConfig: WalletAppConfig = config.walletConf
 
   private def dropTables(daos: FixtureParam): Future[Unit] = {
     val (account, address) = daos

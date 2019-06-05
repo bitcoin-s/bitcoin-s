@@ -9,15 +9,13 @@ import slick.sql.SqlAction
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.db.AppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 
 case class AddressDAO()(
-    implicit val ec: ExecutionContext
+    implicit val ec: ExecutionContext,
+    val appConfig: WalletAppConfig
 ) extends CRUD[AddressDb, BitcoinAddress] {
   import org.bitcoins.db.DbCommonsColumnMappers._
-
-  override def appConfig: WalletAppConfig = WalletAppConfig()
 
   override val table: TableQuery[AddressTable] = TableQuery[AddressTable]
 

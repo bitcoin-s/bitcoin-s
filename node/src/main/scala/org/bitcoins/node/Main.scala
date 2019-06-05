@@ -24,7 +24,7 @@ object Main extends App with BitcoinSLogger {
   implicit val chainAppConfig = ChainAppConfig()
   logger.info(s"Chain config: ${chainAppConfig.dbConfig.config}")
 
-  val bhDAO = BlockHeaderDAO(chainAppConfig)
+  val bhDAO = BlockHeaderDAO()
   val chainApi = ChainHandler(bhDAO, chainAppConfig)
   val table = TableQuery[BlockHeaderTable]
 

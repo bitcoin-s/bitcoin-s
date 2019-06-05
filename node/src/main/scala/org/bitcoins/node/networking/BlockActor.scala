@@ -22,7 +22,7 @@ sealed abstract class BlockActor extends Actor with BitcoinSLogger {
       val inv = Inventory(TypeIdentifier.MsgBlock, hash)
       val getDataMessage = GetDataMessage(inv)
       val networkMessage =
-        NetworkMessage(Constants.networkParameters, getDataMessage)
+        NetworkMessage(network = ???, getDataMessage)
       peerMsgHandler ! networkMessage
       context.become(awaitBlockMsg)
     case blockHeader: BlockHeader =>

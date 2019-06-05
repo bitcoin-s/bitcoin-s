@@ -24,6 +24,8 @@ import java.nio.file.Files
 
 import scala.util.Properties
 import scala.util.matching.Regex
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 /**
   * Everything needed to configure functionality
@@ -33,6 +35,17 @@ import scala.util.matching.Regex
   *      for more information.
   */
 abstract class AppConfig extends BitcoinSLogger {
+
+  /**
+    * Initializes this project.
+    * After this future resolves, all operations should be
+    * able to be performed correctly.
+    *
+    * Initializing may include creating database tables,
+    * making directories or files needed latern or
+    * something else entirely.
+    */
+  def initialize()(implicit ec: ExecutionContext): Future[Unit]
 
   /** Sub members of AppConfig should override this type with
     * the type of themselves, ensuring `withOverrides` return
@@ -92,24 +105,18 @@ abstract class AppConfig extends BitcoinSLogger {
   }
 
   /**
-    * Name of module specific
-    * config file. `wallet.conf`, `node.conf`,
-    * etc.
+    * Name of the module. `chain`, `wallet`, `node` etc.
     */
-  protected def moduleConfigName: String
+  protected def moduleName: String
 
   /**
     * The configuration details for connecting/using the database for our projects
     * that require datbase connections
     */
   lazy val dbConfig: DatabaseConfig[SQLiteProfile] = {
-    //if we don't pass specific class, non-deterministic
-    //errors around the loaded configuration depending
-    //on the state of the default classLoader
-    //https://github.com/lightbend/config#debugging-your-configuration
     val dbConfig = {
       Try {
-        DatabaseConfig.forConfig[SQLiteProfile](path = "database", config)
+        DatabaseConfig.forConfig[SQLiteProfile](path = moduleName, config)
       } match {
         case Success(value) =>
           value
@@ -120,7 +127,7 @@ abstract class AppConfig extends BitcoinSLogger {
       }
     }
 
-    logger.trace(s"Resolved DB config: ${dbConfig.config}")
+    logger.debug(s"Resolved DB config: ${dbConfig.config}")
 
     val _ = createDbFileIfDNE()
 
@@ -133,20 +140,33 @@ abstract class AppConfig extends BitcoinSLogger {
   }
 
   /** The path where our DB is located */
-  // todo: what happens when to this if we
+  // todo: what happens to this if we
   // dont use SQLite?
   lazy val dbPath: Path = {
-    val pathStr = config.getString("database.dbPath")
+    val pathStr = config.getString(s"$moduleName.db.path")
     val path = Paths.get(pathStr)
     logger.debug(s"DB path: $path")
     path
   }
 
+  /** The name of our database */
+  // todo: what happens to this if we
+  // dont use SQLite?
+  lazy val dbName: String = {
+    config.getString(s"$moduleName.db.name")
+  }
+
   private def createDbFileIfDNE(): Unit = {
     //should add a check in here that we are using sqlite
     if (!Files.exists(dbPath)) {
-      logger.debug(s"Creating database directory=$dbPath")
-      val _ = Files.createDirectories(dbPath)
+      val _ = {
+        logger.debug(s"Creating database directory=$dbPath")
+        Files.createDirectories(dbPath)
+        val dbFilePath = dbPath.resolve(dbName)
+        logger.debug(s"Creating database file=$dbFilePath")
+        Files.createFile(dbFilePath)
+      }
+
       ()
     }
   }
@@ -171,13 +191,7 @@ abstract class AppConfig extends BitcoinSLogger {
     * The underlying config that we derive the
     * rest of the fields in this class from
     */
-  protected lazy val config: Config = {
-    val moduleConfig =
-      ConfigFactory.load(moduleConfigName)
-
-    logger.debug(
-      s"Module config: ${moduleConfig.getConfig("bitcoin-s").asReadableJson}")
-
+  private[bitcoins] lazy val config: Config = {
     // `load` tries to resolve substitions,
     // `parseResources` does not
     val dbConfig = ConfigFactory
@@ -186,9 +200,14 @@ abstract class AppConfig extends BitcoinSLogger {
     logger.trace(
       s"DB config: ${dbConfig.getConfig("bitcoin-s").asReadableJson}")
 
-    val classPathConfig =
-      ConfigFactory
-        .load()
+    // we want to NOT resolve substitutions in the configuraton until the user
+    // provided configs also has been loaded. .parseResources() does not do that
+    // whereas .load() does
+    val classPathConfig = {
+      val applicationConf = ConfigFactory.parseResources("application.conf")
+      val referenceConf = ConfigFactory.parseResources("reference.conf")
+      applicationConf.withFallback(referenceConf)
+    }
 
     logger.trace(
       s"Classpath config: ${classPathConfig.getConfig("bitcoin-s").asReadableJson}")
@@ -196,7 +215,6 @@ abstract class AppConfig extends BitcoinSLogger {
     // loads reference.conf as well as application.conf,
     // if the user has made one
     val unresolvedConfig = classPathConfig
-      .withFallback(moduleConfig)
       .withFallback(dbConfig)
 
     logger.trace(s"Unresolved bitcoin-s config:")
@@ -219,6 +237,7 @@ abstract class AppConfig extends BitcoinSLogger {
         // in this order
         overrides.withFallback(unresolvedConfig)
       } else {
+        logger.trace(s"No user-provided overrides")
         unresolvedConfig
       }
 
