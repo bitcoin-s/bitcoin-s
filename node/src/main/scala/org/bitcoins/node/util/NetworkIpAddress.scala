@@ -5,15 +5,13 @@ import java.net.{InetAddress, InetSocketAddress}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Factory
-import org.bitcoins.node.messages.control.{NodeNetwork, ServiceIdentifier}
-import org.bitcoins.node.messages.control.ServiceIdentifier
-import org.bitcoins.node.serializers.messages.control.RawNetworkIpAddressSerializer
+import org.bitcoins.node.messages.{NodeNetwork, ServiceIdentifier}
+import org.bitcoins.node.serializers.messages.RawNetworkIpAddressSerializer
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 5/31/16.
   * Encapsulated network IP address currently uses the following structure
-  * https://bitcoin.org/en/developer-reference#addr
+  * @see https://bitcoin.org/en/developer-reference#addr
   */
 sealed abstract class NetworkIpAddress extends NetworkElement {
 
@@ -24,23 +22,17 @@ sealed abstract class NetworkIpAddress extends NetworkElement {
     * Other nodes just relaying the IP address should not change the time.
     * Nodes can use the time field to avoid relaying old addr messages.
     * Malicious nodes may change times or even set them in the future.
-    *
-    * @return
     */
   def time: UInt32
 
   /**
     * The services the node advertised in its version message.
-    *
-    * @return
     */
   def services: ServiceIdentifier
 
   /**
     * IPv6 address in big endian byte order.
     * IPv4 addresses can be provided as IPv4-mapped IPv6 addresses
-    *
-    * @return
     */
   def address: InetAddress
 
@@ -49,8 +41,6 @@ sealed abstract class NetworkIpAddress extends NetworkElement {
     * Note that Bitcoin Core will only connect to nodes with non-standard port numbers as
     * a last resort for finding peers. This is to prevent anyone from trying to use the
     * network to disrupt non-Bitcoin services that run on other ports.
-    *
-    * @return
     */
   def port: Int
 

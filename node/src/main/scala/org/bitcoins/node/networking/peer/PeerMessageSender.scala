@@ -7,9 +7,6 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.messages._
-import org.bitcoins.node.messages.control.{PongMessage, VersionMessage}
-import org.bitcoins.node.messages.data.GetHeadersMessage
-import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 
 /**

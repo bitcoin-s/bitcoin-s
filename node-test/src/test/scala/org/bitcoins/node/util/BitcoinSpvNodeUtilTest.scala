@@ -7,14 +7,10 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages.HeadersMessage
-import org.bitcoins.node.messages.data.HeadersMessage
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.messages.HeadersMessage
-import org.bitcoins.node.messages.control.VersionMessage
-import org.bitcoins.node.messages.data.HeadersMessage
+import org.bitcoins.node.messages.VersionMessage
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.BitcoinSAppConfig
 import org.bitcoins.node.config.NodeAppConfig

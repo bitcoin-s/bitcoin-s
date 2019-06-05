@@ -12,8 +12,6 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.messages._
-import org.bitcoins.node.messages.control.FilterLoadMessage
-import org.bitcoins.node.messages.data.{GetDataMessage, Inventory}
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 /**

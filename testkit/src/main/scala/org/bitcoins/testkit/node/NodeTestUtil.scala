@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.messages.control.VersionMessage
-import org.bitcoins.node.messages.data.GetHeadersMessage
+import org.bitcoins.node.messages.VersionMessage
+import org.bitcoins.node.messages.GetHeadersMessage
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver

@@ -8,9 +8,6 @@ import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.headers.NetworkHeader
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 6/11/16.
-  */
 trait RawNetworkMessageSerializer extends RawBitcoinSerializer[NetworkMessage] {
 
   def read(bytes: ByteVector): NetworkMessage = {

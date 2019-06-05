@@ -7,8 +7,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.messages.data.{GetDataMessage, Inventory}
-import org.bitcoins.node.messages.{BlockMessage, TypeIdentifier}
+import org.bitcoins.node.messages._
 
 /**
   * Created by chris on 7/10/16.
