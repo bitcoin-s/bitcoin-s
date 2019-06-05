@@ -383,7 +383,8 @@ lazy val docs = project
         bitcoins / Compile / unidoc,
         Compile / docusaurusPublishGhpages
       )
-      .value
+      .value,
+    libraryDependencies ++= Deps.docs
   )
   .dependsOn(
     bitcoindRpc,
