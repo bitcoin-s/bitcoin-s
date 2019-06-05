@@ -166,24 +166,26 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         encrypted <- encryptedMnemonicE
       } yield {
         val wallet = WalletImpl(mnemonic)
-        val coin =
-          HDCoin(config.defaultAccountKind, HDUtil.getCoinType(config.network))
-        val account = HDAccount(coin, 0)
-        val xpriv = wallet.xprivForPurpose(config.defaultAccountKind)
-
-        // safe since we're deriving from a priv
-        val xpub = xpriv.deriveChildPubKey(account).get
-        val accountDb = AccountDb(xpub, account)
-
-        val mnemonicPath =
-          WalletStorage.writeMnemonicToDisk(encrypted)
-        logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
 
         for {
           _ <- config.initialize()
-          _ <- wallet.accountDAO
-            .create(accountDb)
-            .map(_ => logger.trace(s"Saved account to DB"))
+          _ = {
+            val mnemonicPath =
+              WalletStorage.writeMnemonicToDisk(encrypted)
+            logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
+          }
+          _ <- {
+            // We want to make sure all level 0 accounts are created,
+            // so the user can change the default account kind later
+            // and still have their wallet work
+            val createAccountFutures =
+              HDPurposes.all.map(createRootAccount(wallet, _))
+
+            Future
+              .sequence(createAccountFutures)
+              .map(_ => logger.debug(s"Created root level accounts for wallet"))
+          }
+
         } yield wallet
       }
 
@@ -196,5 +198,27 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         InitializeWalletSuccess(wallet)
       case Left(err) => err
     }
+  }
+
+  /** Creates the level 0 account for the given HD purpose */
+  private def createRootAccount(wallet: Wallet, purpose: HDPurpose)(
+      implicit config: WalletAppConfig,
+      ec: ExecutionContext): Future[AccountDb] = {
+    val coin =
+      HDCoin(purpose, HDUtil.getCoinType(config.network))
+    val account = HDAccount(coin, 0)
+    val xpriv = wallet.xprivForPurpose(purpose)
+    // safe since we're deriving from a priv
+    val xpub = xpriv.deriveChildPubKey(account).get
+    val accountDb = AccountDb(xpub, account)
+
+    logger.debug(s"Creating account with constant prefix $purpose")
+    wallet.accountDAO
+      .create(accountDb)
+      .map { written =>
+        logger.debug(s"Saved account with constant prefix $purpose to DB")
+        written
+      }
+
   }
 }

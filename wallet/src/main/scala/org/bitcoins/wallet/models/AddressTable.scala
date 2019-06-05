@@ -244,6 +244,9 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
 
   // for some reason adding a type annotation here causes compile error
   def fk =
-    foreignKey("fk_account", (accountCoin, accountIndex), accounts)(
-      accountTable => (accountTable.coinType, accountTable.index))
+    foreignKey("fk_account",
+               sourceColumns = (purpose, accountCoin, accountIndex),
+               targetTableQuery = accounts) { accountTable =>
+      (accountTable.purpose, accountTable.coinType, accountTable.index)
+    }
 }
