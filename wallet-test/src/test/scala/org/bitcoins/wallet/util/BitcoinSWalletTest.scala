@@ -21,6 +21,8 @@ import org.scalatest._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.AppConfig
+import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSAppConfig._
 
 trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
@@ -31,7 +33,10 @@ trait BitcoinSWalletTest
   implicit val ec: ExecutionContext = actorSystem.dispatcher
 
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
-  protected implicit lazy val appConfig: WalletAppConfig = WalletAppConfig()
+
+  /** Wallet config with data directory set to user temp directory */
+  implicit protected lazy val config: BitcoinSAppConfig =
+    BitcoinSAppConfig.getTestConfig()
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds
@@ -43,19 +48,24 @@ trait BitcoinSWalletTest
   }
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(appConfig)
+    AppConfig.throwIfDefaultDatadir(config.walletConf)
   }
 
-  def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] =
-    WalletDbManagement.dropAll().map(_ => ())
+  def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] = {
+    WalletDbManagement
+      .dropAll()(config = config.walletConf, ec = implicitly[ExecutionContext])
+      .map(_ => ())
+  }
 
   def createNewWallet(): Future[UnlockedWalletApi] = {
 
     for {
-      _ <- WalletDbManagement.createAll()
+      _ <- config.initialize()
       wallet <- Wallet.initialize().map {
         case InitializeWalletSuccess(wallet) => wallet
-        case err: InitializeWalletError      => fail(err)
+        case err: InitializeWalletError =>
+          logger.error(s"Could not initialize wallet: $err")
+          fail(err)
       }
     } yield wallet
   }

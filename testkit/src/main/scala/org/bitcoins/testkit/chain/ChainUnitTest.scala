@@ -14,13 +14,13 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
+import org.bitcoins.testkit.BitcoinSAppConfig
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import scodec.bits.ByteVector
@@ -28,6 +28,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.db.AppConfig
 
 trait ChainUnitTest
     extends org.scalatest.fixture.AsyncFlatSpec
@@ -44,16 +45,16 @@ trait ChainUnitTest
 
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
-  implicit lazy val appConfig: ChainAppConfig = ChainAppConfig()
+  implicit lazy val appConfig: ChainAppConfig =
+    BitcoinSAppConfig.getTestConfig()
 
   /**
     * Behaves exactly like the default conf, execpt
     * network is set to mainnet
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
-    val defaultConfig = ChainAppConfig()
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    defaultConfig.withOverrides(mainnetConf)
+    BitcoinSAppConfig.getTestConfig(mainnetConf)
   }
 
   override def beforeAll(): Unit = {
@@ -378,7 +379,7 @@ object ChainUnitTest extends BitcoinSLogger {
     }
   }
 
-  def destroyHeaderTable()(implicit appConfig: AppConfig): Future[Unit] = {
+  def destroyHeaderTable()(implicit appConfig: ChainAppConfig): Future[Unit] = {
     ChainDbManagement.dropHeaderTable()
   }
 
@@ -389,7 +390,8 @@ object ChainUnitTest extends BitcoinSLogger {
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
   private def setupHeaderTable()(
-      implicit appConfig: AppConfig): Future[Unit] = {
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
     ChainDbManagement.createHeaderTable(createIfNotExists = true)
   }
 
@@ -411,7 +413,7 @@ object ChainUnitTest extends BitcoinSLogger {
   def makeChainHandler()(
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): ChainHandler = {
-    lazy val blockHeaderDAO = BlockHeaderDAO(appConfig)
+    lazy val blockHeaderDAO = BlockHeaderDAO()
 
     ChainHandler(blockHeaderDAO = blockHeaderDAO, appConfig)
   }

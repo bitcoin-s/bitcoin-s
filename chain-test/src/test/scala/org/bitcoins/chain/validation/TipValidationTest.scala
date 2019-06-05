@@ -16,7 +16,6 @@ import org.bitcoins.testkit.chain.{
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
-import org.bitcoins.db.AppConfig
 import org.bitcoins.chain.config.ChainAppConfig
 import com.typesafe.config.ConfigFactory
 
@@ -25,12 +24,12 @@ class TipValidationTest extends ChainUnitTest {
   override type FixtureParam = BlockHeaderDAO
 
   // we're working with mainnet data
-  override lazy implicit val appConfig: ChainAppConfig = mainnetAppConfig
+  implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
 
-  override implicit val system: ActorSystem = ActorSystem("TipValidationTest")
+  implicit override val system: ActorSystem = ActorSystem("TipValidationTest")
 
   behavior of "TipValidation"
 

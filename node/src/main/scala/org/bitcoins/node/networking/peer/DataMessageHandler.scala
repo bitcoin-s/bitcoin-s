@@ -17,11 +17,12 @@ import scala.concurrent.{ExecutionContext, Future}
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[HeadersMessage]] we should store those headers in our database
   */
-class DataMessageHandler(appConfig: ChainAppConfig)(
-    implicit ec: ExecutionContext)
+class DataMessageHandler()(
+    implicit ec: ExecutionContext,
+    appConfig: ChainAppConfig)
     extends BitcoinSLogger {
 
-  private val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO(appConfig)
+  private val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO()
 
   def handleDataPayload(
       payload: DataPayload,

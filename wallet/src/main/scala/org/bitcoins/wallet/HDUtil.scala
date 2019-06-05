@@ -3,13 +3,13 @@ package org.bitcoins.wallet
 import org.bitcoins.core.hd._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.config._
-import org.bitcoins.db.AppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
 
 private[wallet] object HDUtil {
 
   /** Gets the xpriv version required for the given HD purpose */
   def getXprivVersion(hdPurpose: HDPurpose)(
-      implicit config: AppConfig): ExtKeyPrivVersion = {
+      implicit config: WalletAppConfig): ExtKeyPrivVersion = {
     import config.network
     import org.bitcoins.core.hd.HDPurposes._
     import ExtKeyVersion._
@@ -28,7 +28,7 @@ private[wallet] object HDUtil {
 
   /** Gets the xpub version required for the given HD purpose */
   def getXpubVersion(hdPurpose: HDPurpose)(
-      implicit config: AppConfig): ExtKeyPubVersion = {
+      implicit config: WalletAppConfig): ExtKeyPubVersion = {
     import config.network
     import org.bitcoins.core.hd.HDPurposes._
     import ExtKeyVersion._

@@ -24,7 +24,7 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
   import system.dispatcher
 
   private val peerMsgRecv =
-    PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
+    PeerMessageReceiver.newReceiver
 
   private val client: Client =
     Client(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)
@@ -35,21 +35,24 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
 
   /** Starts our spv node */
   def start(): Future[SpvNode] = {
-    peerMsgSender.connect()
+    for {
+      _ <- nodeAppConfig.initialize()
+      node <- {
+        peerMsgSender.connect()
 
-    val isInitializedF =
-      AsyncUtil.retryUntilSatisfied(peerMsgRecv.isInitialized)
+        val isInitializedF =
+          AsyncUtil.retryUntilSatisfied(peerMsgRecv.isInitialized)
 
-    isInitializedF.map { _ =>
-      logger.info(s"Our peer=${peer} has been initialized")
-    }
+        isInitializedF.failed.foreach(err =>
+          logger.error(s"Failed to conenct with peer=$peer with err=${err}"))
 
-    isInitializedF.failed.foreach { err =>
-      logger.error(s"Failed to conenct with peer=$peer with err=${err}")
+        isInitializedF.map { _ =>
+          logger.info(s"Our peer=${peer} has been initialized")
+          this
+        }
+      }
 
-    }
-
-    isInitializedF.map(_ => this)
+    } yield node
   }
 
   /** Stops our spv node */

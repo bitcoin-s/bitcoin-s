@@ -353,7 +353,7 @@ lazy val nodeTest = {
 
 lazy val testkit = project
   .in(file("testkit"))
-  .settings(commonProdSettings: _*)
+  .settings(commonSettings: _*)
   .dependsOn(
     core,
     chain,
@@ -383,7 +383,8 @@ lazy val docs = project
         bitcoins / Compile / unidoc,
         Compile / docusaurusPublishGhpages
       )
-      .value
+      .value,
+    libraryDependencies ++= Deps.docs
   )
   .dependsOn(
     bitcoindRpc,

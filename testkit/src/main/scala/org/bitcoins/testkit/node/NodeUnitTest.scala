@@ -3,12 +3,10 @@ package org.bitcoins.testkit.node
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node.SpvNode
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.{
   PeerHandler,
@@ -31,6 +29,9 @@ import org.scalatest.{
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
+import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSAppConfig._
+
 trait NodeUnitTest
     extends BitcoinSFixture
     with MustMatchers
@@ -39,7 +40,7 @@ trait NodeUnitTest
     with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(nodeAppConfig)
+    AppConfig.throwIfDefaultDatadir(config.nodeConf)
   }
 
   override def afterAll(): Unit = {
@@ -56,9 +57,11 @@ trait NodeUnitTest
 
   val timeout: FiniteDuration = 10.seconds
 
-  implicit lazy val nodeAppConfig: NodeAppConfig = NodeAppConfig()
-  implicit lazy val chainAppConfig: ChainAppConfig = ChainAppConfig()
-  implicit val np: NetworkParameters = nodeAppConfig.network
+  /** Wallet config with data directory set to user temp directory */
+  implicit protected lazy val config: BitcoinSAppConfig =
+    BitcoinSAppConfig.getTestConfig()
+
+  implicit lazy val np: NetworkParameters = config.nodeConf.network
 
   lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
@@ -66,7 +69,7 @@ trait NodeUnitTest
 
   def buildPeerMessageReceiver(): PeerMessageReceiver = {
     val receiver =
-      PeerMessageReceiver.newReceiver(nodeAppConfig, chainAppConfig)
+      PeerMessageReceiver.newReceiver
     receiver
   }
 
@@ -143,7 +146,7 @@ trait NodeUnitTest
 object NodeUnitTest {
 
   def destroySpvNode(spvNode: SpvNode)(
-      implicit appConfig: NodeAppConfig,
+      implicit config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Unit] = {
     val stopF = spvNode.stop()
     stopF.flatMap(_ => ChainUnitTest.destroyHeaderTable())
@@ -152,7 +155,7 @@ object NodeUnitTest {
   def destorySpvNodeConnectedWithBitcoind(
       spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind)(
       implicit system: ActorSystem,
-      appConfig: NodeAppConfig): Future[Unit] = {
+      appConfig: BitcoinSAppConfig): Future[Unit] = {
     import system.dispatcher
     val spvNode = spvNodeConnectedWithBitcoind.spvNode
     val bitcoind = spvNodeConnectedWithBitcoind.bitcoind

@@ -210,7 +210,7 @@ object Deps {
     Test.ammonite
   )
 
-  val doc = List(
+  val docs = List(
     Compile.ammonite,
     Compile.logback,
     Test.scalaTest,

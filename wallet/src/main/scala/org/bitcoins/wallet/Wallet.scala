@@ -16,7 +16,7 @@ import scodec.bits.BitVector
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import org.bitcoins.core.hd._
-import org.bitcoins.db.AppConfig
+import org.bitcoins.wallet.config.WalletAppConfig
 
 sealed abstract class Wallet
     extends LockedWallet
@@ -108,7 +108,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
   private case class WalletImpl(
       mnemonicCode: MnemonicCode
   )(
-      implicit override val walletConfig: AppConfig,
+      implicit override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext)
       extends Wallet {
 
@@ -117,7 +117,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
   }
 
   def apply(mnemonicCode: MnemonicCode)(
-      implicit config: AppConfig,
+      implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet =
     WalletImpl(mnemonicCode)
 
@@ -126,7 +126,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
 
   // todo fix signature
   override def initializeWithEntropy(entropy: BitVector)(
-      implicit config: AppConfig,
+      implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
     import org.bitcoins.core.util.EitherUtil.EitherOps._
 
@@ -182,6 +182,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
 
         for {
+          _ <- config.initialize()
           _ <- wallet.accountDAO
             .create(accountDb)
             .map(_ => logger.trace(s"Saved account to DB"))

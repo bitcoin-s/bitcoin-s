@@ -54,7 +54,7 @@ object Blockchain extends BitcoinSLogger {
         val nested: Vector[Future[BlockchainUpdate]] = blockchains.map {
           blockchain =>
             val tip = blockchain.tip
-            logger.info(
+            logger.debug(
               s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain with current tips=${tip.hashBE.hex}")
             val tipResultF = TipValidation.checkNewTip(newPotentialTip = header,
                                                        currentTip = tip,

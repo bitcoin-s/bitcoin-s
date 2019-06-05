@@ -15,6 +15,7 @@ import org.scalatest._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import org.bitcoins.testkit.BitcoinSAppConfig
 
 /**
   * Created by chris on 6/7/16.
@@ -28,21 +29,22 @@ class ClientTest
   implicit val system = ActorSystem(
     s"Client-Test-System-${System.currentTimeMillis()}")
 
-  private val appConfig = NodeTestUtil.nodeAppConfig
+  implicit private val config: BitcoinSAppConfig =
+    BitcoinSAppConfig.getTestConfig()
+  implicit private val chainConf = config.chainConf
+  implicit private val nodeConf = config.nodeConf
 
-  private val chainAppConfig = ChainAppConfig()
+  implicit val np = config.chainConf.network
 
-  implicit val np = appConfig.network
+  lazy val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-  val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
-
-  val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
+  lazy val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
-  val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient()
+  lazy val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 
-  val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
+  lazy val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
@@ -75,9 +77,7 @@ class ClientTest
     val probe = TestProbe()
     val remote = peer.socket
     val peerMessageReceiver =
-      PeerMessageReceiver(state = Preconnection,
-                          nodeAppConfig = appConfig,
-                          chainAppConfig = chainAppConfig)
+      PeerMessageReceiver(state = Preconnection)
     val client =
       TestActorRef(Client.props(peer, peerMessageReceiver), probe.ref)
 
