@@ -13,3 +13,9 @@ case class SpvNodeCallbacks(
     onBlockReceived: OnBlockReceived = noopBlockReceived,
     onMerkleBlockReceived: OnMerkleBlockReceived = noopMerkleBlockReceived
 )
+
+object SpvNodeCallbacks {
+
+  /** No-op callbacks */
+  val empty: Vector[SpvNodeCallbacks] = Vector.empty
+}

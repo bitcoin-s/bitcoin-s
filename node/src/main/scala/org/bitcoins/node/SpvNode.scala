@@ -39,7 +39,7 @@ case class SpvNode(
     peer: Peer,
     chainApi: ChainApi,
     bloomFilter: Option[BloomFilter] = None,
-    callbacks: SpvNodeCallbacks = SpvNodeCallbacks())(
+    callbacks: Vector[SpvNodeCallbacks] = SpvNodeCallbacks.empty)(
     implicit system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig)

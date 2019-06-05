@@ -33,7 +33,7 @@ import org.bitcoins.node.messages.TypeIdentifier
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[HeadersMessage]] we should store those headers in our database
   */
-class DataMessageHandler(callbacks: SpvNodeCallbacks)(
+class DataMessageHandler(callbacks: Vector[SpvNodeCallbacks])(
     implicit ec: ExecutionContext,
     appConfig: ChainAppConfig)
     extends BitcoinSLogger {
@@ -57,13 +57,13 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks)(
           peerMsgSender.sendGetHeadersMessage(lastHash)
         }
       case msg: BlockMessage =>
-        callbacks.onBlockReceived(msg.block)
+        callbacks.foreach(_.onBlockReceived(msg.block))
         FutureUtil.unit
       case msg: TransactionMessage =>
-        callbacks.onTxReceived(msg.transaction)
+        callbacks.foreach(_.onTxReceived(msg.transaction))
         FutureUtil.unit
       case msg: MerkleBlockMessage =>
-        callbacks.onMerkleBlockReceived(msg.merkleBlock)
+        callbacks.foreach(_.onMerkleBlockReceived(msg.merkleBlock))
         FutureUtil.unit
       case invMsg: InventoryMessage =>
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
