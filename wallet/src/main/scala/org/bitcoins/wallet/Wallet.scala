@@ -182,6 +182,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
 
         for {
+          _ <- config.initialize()
           _ <- wallet.accountDAO
             .create(accountDb)
             .map(_ => logger.trace(s"Saved account to DB"))

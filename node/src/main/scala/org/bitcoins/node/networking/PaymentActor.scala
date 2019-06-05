@@ -49,7 +49,7 @@ sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
       BloomFilter(10, 0.0001, UInt32.zero, BloomUpdateNone).insert(hash)
     val filterLoadMsg = FilterLoadMessage(bloomFilter)
     val bloomFilterNetworkMsg =
-      NetworkMessage(Constants.networkParameters, filterLoadMsg)
+      NetworkMessage(network = ???, filterLoadMsg)
     peerMsgHandler ! bloomFilterNetworkMsg
   }
 
@@ -111,7 +111,7 @@ sealed abstract class PaymentActor extends Actor with BitcoinSLogger {
           Inventory(TypeIdentifier.MsgFilteredBlock, blockHashes.head)
         val getDataMsg = GetDataMessage(merkleBlockInventory)
         val getDataNetworkMessage =
-          NetworkMessage(Constants.networkParameters, getDataMsg)
+          NetworkMessage(network = ???, getDataMsg)
         peerMessageHandler ! getDataNetworkMessage
         logger.debug("Switching to awaitMerkleBlockMessage")
         context.become(

@@ -16,16 +16,17 @@ import org.bitcoins.node.messages.HeadersMessage
 import org.bitcoins.node.messages.control.VersionMessage
 import org.bitcoins.node.messages.data.HeadersMessage
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.node.config.NodeAppConfig
 
-/**
-  * Created by chris on 9/6/16.
-  */
 class BitcoinSpvNodeUtilTest extends BitcoinSUnitTest {
+
+  lazy val config: NodeAppConfig = BitcoinSAppConfig.getTestConfig()
 
   "BitcoinSpvNodeUtil" must "return the entire byte array if a message is not aligned to a byte frame" in {
     val versionMessage =
-      VersionMessage(TestNet3.dnsSeeds(0), Constants.networkParameters)
-    val networkMsg = NetworkMessage(Constants.networkParameters, versionMessage)
+      VersionMessage(TestNet3.dnsSeeds(0), config.network)
+    val networkMsg = NetworkMessage(config.network, versionMessage)
     //remove last byte so the message is not aligned
     val bytes = networkMsg.bytes.slice(0, networkMsg.bytes.size - 1)
     val (_, unAlignedBytes) = BitcoinSpvNodeUtil.parseIndividualMessages(bytes)
@@ -60,7 +61,7 @@ class BitcoinSpvNodeUtilTest extends BitcoinSUnitTest {
         )
       )
     )
-    val networkMsg = NetworkMessage(Constants.networkParameters, headersMsg)
+    val networkMsg = NetworkMessage(config.network, headersMsg)
     //split the network msg at a random index to simulate a tcp frame not being aligned
     val randomIndex = scala.util.Random.nextInt().abs % networkMsg.bytes.size
     val (firstHalf, secondHalf) = networkMsg.bytes.splitAt(randomIndex)

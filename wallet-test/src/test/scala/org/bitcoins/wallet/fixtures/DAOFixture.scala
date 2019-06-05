@@ -7,6 +7,7 @@ import slick.jdbc.SQLiteProfile.api._
 
 import scala.language.reflectiveCalls
 import scala.concurrent.{Await, Future}
+import org.bitcoins.wallet.config.WalletAppConfig
 
 private[fixtures] trait DAOFixture
     extends fixture.AsyncFlatSpec
@@ -16,6 +17,10 @@ private[fixtures] trait DAOFixture
 
   private[fixtures] val daoAccumulator =
     Vector.newBuilder[HasTable]
+
+  // to get around the config in `BitcoinSWalletTest` not resolving
+  // as an AppConfig
+  private implicit val walletConfig: WalletAppConfig = config.walletConf
 
   override def beforeAll(): Unit = {
     val tables = daoAccumulator.result()
