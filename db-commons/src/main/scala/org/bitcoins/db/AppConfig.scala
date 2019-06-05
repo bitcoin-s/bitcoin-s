@@ -133,7 +133,7 @@ abstract class AppConfig extends BitcoinSLogger {
       }
     }
 
-    logger.trace(s"Resolved DB config: ${dbConfig.config}")
+    logger.debug(s"Resolved DB config: ${dbConfig.config}")
 
     val _ = createDbFileIfDNE()
 
@@ -146,7 +146,7 @@ abstract class AppConfig extends BitcoinSLogger {
   }
 
   /** The path where our DB is located */
-  // todo: what happens when to this if we
+  // todo: what happens to this if we
   // dont use SQLite?
   lazy val dbPath: Path = {
     val pathStr = config.getString("database.dbPath")
@@ -155,11 +155,24 @@ abstract class AppConfig extends BitcoinSLogger {
     path
   }
 
+  /** The name of our database */
+  // todo: what happens to this if we
+  // dont use SQLite?
+  lazy val dbName: String = {
+    config.getString("database.name")
+  }
+
   private def createDbFileIfDNE(): Unit = {
     //should add a check in here that we are using sqlite
     if (!Files.exists(dbPath)) {
-      logger.debug(s"Creating database directory=$dbPath")
-      val _ = Files.createDirectories(dbPath)
+      val _ = {
+        logger.debug(s"Creating database directory=$dbPath")
+        Files.createDirectories(dbPath)
+        val dbFilePath = dbPath.resolve(dbName)
+        logger.debug(s"Creating database file=$dbFilePath")
+        Files.createFile(dbFilePath)
+      }
+
       ()
     }
   }

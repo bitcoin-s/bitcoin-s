@@ -66,7 +66,7 @@ object BitcoinSAppConfig {
     conf.nodeConf
 
   /** App configuration with data directory to user temp directory */
-  lazy val configWithTmpDatadir = {
+  def getConfigWithTmpDatadir() = {
     val tmpDir = Files.createTempDirectory("bitcoin-s-")
     val conf = ConfigFactory.parseString(s"bitcoin-s.datadir = $tmpDir")
     BitcoinSAppConfig(conf)

@@ -61,7 +61,7 @@ trait NodeUnitTest
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected lazy val config: BitcoinSAppConfig =
-    BitcoinSAppConfig.configWithTmpDatadir
+    BitcoinSAppConfig.getConfigWithTmpDatadir()
 
   implicit lazy val np: NetworkParameters = config.nodeConf.network
 

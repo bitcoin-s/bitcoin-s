@@ -46,7 +46,7 @@ trait ChainUnitTest
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
   implicit lazy val appConfig: ChainAppConfig =
-    BitcoinSAppConfig.configWithTmpDatadir
+    BitcoinSAppConfig.getConfigWithTmpDatadir()
 
   /**
     * Behaves exactly like the default conf, execpt
@@ -391,7 +391,8 @@ object ChainUnitTest extends BitcoinSLogger {
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
   private def setupHeaderTable()(
-      implicit appConfig: AppConfig): Future[Unit] = {
+      implicit appConfig: AppConfig,
+      ec: ExecutionContext): Future[Unit] = {
     ChainDbManagement.createHeaderTable(createIfNotExists = true)
   }
 

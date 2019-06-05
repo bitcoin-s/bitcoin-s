@@ -6,6 +6,7 @@ import org.bitcoins.db.{DbManagement}
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 /**
   * Responsible for creating and destroying database
@@ -19,7 +20,8 @@ sealed abstract class ChainDbManagement extends DbManagement {
   override val allTables = List(chainTable)
 
   def createHeaderTable(createIfNotExists: Boolean = true)(
-      implicit config: AppConfig): Future[Unit] = {
+      implicit config: AppConfig,
+      ec: ExecutionContext): Future[Unit] = {
     createTable(chainTable, createIfNotExists)
   }
 

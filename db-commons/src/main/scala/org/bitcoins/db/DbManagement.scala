@@ -33,14 +33,19 @@ abstract class DbManagement extends BitcoinSLogger {
   def createTable(
       table: TableQuery[_ <: Table[_]],
       createIfNotExists: Boolean = true)(
-      implicit config: AppConfig): Future[Unit] = {
+      implicit config: AppConfig,
+      ec: ExecutionContext): Future[Unit] = {
+    val tableName = table.baseTableRow.tableName
+    logger.debug(
+      s"Creating table $tableName with DB config: ${config.dbConfig.config} ")
+
     import config.database
-    val result = if (createIfNotExists) {
-      database.run(table.schema.createIfNotExists)
+    val query = if (createIfNotExists) {
+      table.schema.createIfNotExists
     } else {
-      database.run(table.schema.create)
+      table.schema.create
     }
-    result
+    database.run(query).map(_ => logger.debug(s"Created table $tableName"))
   }
 
   def dropTable(

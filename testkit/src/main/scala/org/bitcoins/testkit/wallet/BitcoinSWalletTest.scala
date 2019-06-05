@@ -42,7 +42,7 @@ trait BitcoinSWalletTest
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected lazy val config: BitcoinSAppConfig =
-    BitcoinSAppConfig.configWithTmpDatadir
+    BitcoinSAppConfig.getConfigWithTmpDatadir()
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds

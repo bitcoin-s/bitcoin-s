@@ -73,7 +73,7 @@ abstract class NodeTestUtil {
   }
 
   implicit val nodeAppConfig: NodeAppConfig =
-    BitcoinSAppConfig.configWithTmpDatadir
+    BitcoinSAppConfig.getConfigWithTmpDatadir()
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory): Client = {
