@@ -1,4 +1,4 @@
-package org.bitcoins.node
+package org.bitcoins.kit
 
 import org.bitcoins.core.currency._
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -19,6 +19,8 @@ import org.scalatest.compatible.Assertion
 import org.scalatest.exceptions.TestFailedException
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.util.AsyncUtil
+import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.node.SpvNode
 
 class NodeWithWalletTest extends BitcoinSWalletTest {
 
@@ -69,7 +71,7 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
       implicit val nodeConfig: NodeAppConfig = config
       implicit val chainConfig: ChainAppConfig = config
       val spv =
-        SpvNode(peer, chainHandler, callbacks = callbacks)
+        SpvNode(peer, chainHandler, callbacks = Vector(callbacks))
 
       logger.info(s"Bitcoind instance has datadir: ${rpc.instance.datadir}")
 
@@ -102,7 +104,7 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
 
         txid <- rpc.sendToAddress(address, 1.bitcoin).map { tx =>
           txidFromBitcoind = Some(tx.flip)
-          val delay = 30.seconds
+          val delay = 3.seconds
           val runnable: Runnable = new Runnable {
             override def run = {
               val msg =

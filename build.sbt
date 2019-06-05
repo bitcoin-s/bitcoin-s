@@ -351,6 +351,16 @@ lazy val nodeTest = {
   ).enablePlugins(FlywayPlugin)
 }
 
+lazy val spvWalletKit =
+  project
+    .in(file("spv-wallet-kit"))
+    .settings(commonTestWithDbSettings: _*)
+    .settings(
+      name := "bitcoin-s-spv-wallet-kit",
+      libraryDependencies ++= Deps.spvWalletKit
+    )
+    .dependsOn(node, wallet, testkit % "test")
+
 lazy val testkit = project
   .in(file("testkit"))
   .settings(commonProdSettings: _*)

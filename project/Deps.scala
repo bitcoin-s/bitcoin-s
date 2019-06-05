@@ -195,6 +195,8 @@ object Deps {
     Test.ammonite
   )
 
+  val spvWalletKit = List(Test.ammonite)
+
   val scripts = List(
     Compile.ammonite,
     Compile.logback
