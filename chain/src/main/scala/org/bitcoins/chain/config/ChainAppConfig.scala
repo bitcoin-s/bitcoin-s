@@ -12,12 +12,12 @@ import scala.concurrent.Promise
 import scala.util.Success
 import scala.util.Failure
 
-case class ChainAppConfig(val confs: Config*) extends AppConfig {
+case class ChainAppConfig(private val confs: Config*) extends AppConfig {
   override protected val configOverrides: List[Config] = confs.toList
   override protected val moduleName: String = "chain"
   override protected type ConfigType = ChainAppConfig
-  override protected def newConfigOfType(
-      configs: List[Config]): ChainAppConfig = ChainAppConfig(configs: _*)
+  override protected def newConfigOfType(configs: Seq[Config]): ChainAppConfig =
+    ChainAppConfig(configs: _*)
 
   /**
     * Checks whether or not the chain project is initialized by

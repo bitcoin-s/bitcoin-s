@@ -54,7 +54,7 @@ abstract class AppConfig extends BitcoinSLogger {
   protected type ConfigType <: AppConfig
 
   /** Constructor to make a new instance of this config type */
-  protected def newConfigOfType(configOverrides: List[Config]): ConfigType
+  protected def newConfigOfType(configOverrides: Seq[Config]): ConfigType
 
   /** List of user-provided configs that should
     * override defaults
@@ -88,9 +88,23 @@ abstract class AppConfig extends BitcoinSLogger {
       logger.debug(oldConfStr)
     }
 
-    val newConf = newConfigOfType(
-      configOverrides = List(firstOverride) ++ configs
-    )
+    val configOverrides = firstOverride +: configs
+    if (logger.isTraceEnabled()) {
+      configOverrides.zipWithIndex.foreach {
+        case (c, idx) => logger.trace(s"Override no. $idx: ${c.asReadableJson}")
+      }
+    }
+    val newConf = {
+      // the idea here is that after resolving the configuration,
+      // we extract the value under the 'bitcoin-s' key and use
+      // that as our config. here we have to do the reverse, to
+      // get the keys to resolve correctly
+      val reconstructedStr = s"""
+      bitcoin-s: ${this.config.asReadableJson}
+      """
+      val reconstructed = ConfigFactory.parseString(reconstructedStr)
+      newConfigOfType(reconstructed +: configOverrides)
+    }
 
     // to avoid non-necessary lazy load
     if (logger.isDebugEnabled()) {
@@ -229,7 +243,8 @@ abstract class AppConfig extends BitcoinSLogger {
             .reduce(_.withFallback(_))
 
         val interestingOverrides = overrides.getConfig("bitcoin-s")
-        logger.trace(s"User-overrides for bitcoin-s config:")
+        logger.trace(
+          s"${configOverrides.length} user-overrides for bitcoin-s config:")
         logger.trace(interestingOverrides.asReadableJson)
 
         // to make the overrides actually override
@@ -282,7 +297,7 @@ object AppConfig extends BitcoinSLogger {
     */
   private[bitcoins] def throwIfDefaultDatadir(config: AppConfig): Unit = {
     val datadirStr = config.datadir.toString()
-    AppConfig.defaultDatadirRegex.findFirstMatchIn(datadirStr) match {
+    defaultDatadirRegex.findFirstMatchIn(datadirStr) match {
       case None => () // pass
       case Some(_) =>
         val errMsg =
@@ -291,6 +306,8 @@ object AppConfig extends BitcoinSLogger {
             s"Your data directory is $datadirStr. This would cause tests to potentially",
             "overwrite your existing data, which you probably don't want."
           ).mkString(" ")
+        logger.error(errMsg)
+        logger.error(s"Configuration: ${config.config.asReadableJson}")
         throw new RuntimeException(errMsg)
     }
   }
