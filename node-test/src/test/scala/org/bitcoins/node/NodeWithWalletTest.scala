@@ -59,7 +59,7 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
           if (txidFromBitcoind.contains(tx.txId)) {
             completionP.success(succeed)
           }
-        },
+        }
       )
 
       /**
@@ -103,11 +103,13 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
         txid <- rpc.sendToAddress(address, 1.bitcoin).map { tx =>
           txidFromBitcoind = Some(tx.flip)
           val delay = 30.seconds
-          val runnable: Runnable = { () =>
-            val msg =
-              s"Did not receive sent transaction within $delay"
-            logger.error(msg)
-            completionP.failure(new TestFailedException(msg, 0))
+          val runnable: Runnable = new Runnable {
+            override def run = {
+              val msg =
+                s"Did not receive sent transaction within $delay"
+              logger.error(msg)
+              completionP.failure(new TestFailedException(msg, 0))
+            }
           }
 
           actorSystem.scheduler.scheduleOnce(delay, runnable)

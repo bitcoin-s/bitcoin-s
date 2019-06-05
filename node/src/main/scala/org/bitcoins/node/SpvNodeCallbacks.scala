@@ -11,5 +11,5 @@ import org.bitcoins.node.networking.peer.DataMessageHandler._
 case class SpvNodeCallbacks(
     onTxReceived: OnTxReceived = noopTxReceived,
     onBlockReceived: OnBlockReceived = noopBlockReceived,
-    onMerkleBlockReceived: OnMerkleBlockReceived = noopMerkleBlockReceived,
+    onMerkleBlockReceived: OnMerkleBlockReceived = noopMerkleBlockReceived
 )

@@ -50,8 +50,8 @@ case class SpvNode(
 
   /** Random UInt32 value used in constructing bloom filter */
   private val tweak: UInt32 = {
-    val randomLong = math
-      .floor(UInt32.max.toLong * math.random())
+    val randomLong = Math
+      .floor(UInt32.max.toLong * Math.random())
       // why does math.floor return a double???
       .toLong
     UInt32(randomLong)
