@@ -62,12 +62,15 @@ sealed abstract class Wallet
               .get
               .toUTXOSpendingInfo(fromAccount, seed))
 
-        logger.info(s"Spending UTXOs: ${utxos
-          .map { utxo =>
-            import utxo.outPoint
-            s"${outPoint.txId.hex}:${outPoint.vout.toInt}"
-          }
-          .mkString(", ")}")
+        logger.info({
+          val utxosStr = utxos
+            .map { utxo =>
+              import utxo.outPoint
+              s"${outPoint.txId.hex}:${outPoint.vout.toInt}"
+            }
+            .mkString(", ")
+          s"Spending UTXOs: $utxosStr"
+        })
 
         utxos.zipWithIndex.foreach {
           case (utxo, index) =>
@@ -99,11 +102,6 @@ sealed abstract class Wallet
 
 // todo: create multiple wallets, need to maintain multiple databases
 object Wallet extends CreateWalletApi with BitcoinSLogger {
-
-  // The default HD purpose of the bitcoin-s wallet. Can be
-  // one of segwit, nested segwit or legacy. Hard coded for
-  // now, could be make configurable in the future
-  private[wallet] val DEFAULT_HD_PURPOSE: HDPurpose = HDPurposes.SegWit
 
   private case class WalletImpl(
       mnemonicCode: MnemonicCode
@@ -168,24 +166,33 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         encrypted <- encryptedMnemonicE
       } yield {
         val wallet = WalletImpl(mnemonic)
-        val coin =
-          HDCoin(DEFAULT_HD_PURPOSE, HDUtil.getCoinType(config.network))
-        val account = HDAccount(coin, 0)
-        val xpriv = wallet.xprivForPurpose(DEFAULT_HD_PURPOSE)
-
-        // safe since we're deriving from a priv
-        val xpub = xpriv.deriveChildPubKey(account).get
-        val accountDb = AccountDb(xpub, account)
-
-        val mnemonicPath =
-          WalletStorage.writeMnemonicToDisk(encrypted)
-        logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
 
         for {
           _ <- config.initialize()
-          _ <- wallet.accountDAO
-            .create(accountDb)
-            .map(_ => logger.trace(s"Saved account to DB"))
+          _ = {
+            val mnemonicPath =
+              WalletStorage.writeMnemonicToDisk(encrypted)
+            logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
+          }
+          _ <- {
+            // We want to make sure all level 0 accounts are created,
+            // so the user can change the default account kind later
+            // and still have their wallet work
+            val createAccountFutures =
+              HDPurposes.all.map(createRootAccount(wallet, _))
+
+            val accountCreationF = Future.sequence(createAccountFutures)
+
+            accountCreationF.foreach(_ =>
+              logger.debug(s"Created root level accounts for wallet"))
+
+            accountCreationF.failed.foreach { err =>
+              logger.error(s"Failed to create root level accounts: $err")
+            }
+
+            accountCreationF
+          }
+
         } yield wallet
       }
 
@@ -198,5 +205,27 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
         InitializeWalletSuccess(wallet)
       case Left(err) => err
     }
+  }
+
+  /** Creates the level 0 account for the given HD purpose */
+  private def createRootAccount(wallet: Wallet, purpose: HDPurpose)(
+      implicit config: WalletAppConfig,
+      ec: ExecutionContext): Future[AccountDb] = {
+    val coin =
+      HDCoin(purpose, HDUtil.getCoinType(config.network))
+    val account = HDAccount(coin, 0)
+    val xpriv = wallet.xprivForPurpose(purpose)
+    // safe since we're deriving from a priv
+    val xpub = xpriv.deriveChildPubKey(account).get
+    val accountDb = AccountDb(xpub, account)
+
+    logger.debug(s"Creating account with constant prefix $purpose")
+    wallet.accountDAO
+      .create(accountDb)
+      .map { written =>
+        logger.debug(s"Saved account with constant prefix $purpose to DB")
+        written
+      }
+
   }
 }

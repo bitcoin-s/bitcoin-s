@@ -18,26 +18,51 @@ import org.bitcoins.core.hd.SegWitHDPath
 import org.bitcoins.core.crypto.BIP39Seed
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.hd.LegacyHDPath
-import org.bitcoins.core.hd.NestedSegWitHDPath
 
-case class SegWitUTOXSpendingInfodb(
+/**
+  * DB representation of a native V0
+  * SegWit UTXO
+  */
+case class NativeV0UTXOSpendingInfoDb(
     id: Option[Long],
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: SegWitHDPath,
     scriptWitness: ScriptWitness
 ) extends UTXOSpendingInfoDb {
-  override def redeemScriptOpt: Option[ScriptPubKey] = None
-  override def scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
+  override val redeemScriptOpt: Option[ScriptPubKey] = None
+  override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 
   override type PathType = SegWitHDPath
 
-  override def copyWithId(id: Long): SegWitUTOXSpendingInfodb =
+  override def copyWithId(id: Long): NativeV0UTXOSpendingInfoDb =
+    copy(id = Some(id))
+}
+
+case class LegacyUTXOSpendingInfoDb(
+    id: Option[Long],
+    outPoint: TransactionOutPoint,
+    output: TransactionOutput,
+    privKeyPath: LegacyHDPath
+) extends UTXOSpendingInfoDb {
+  override val redeemScriptOpt: Option[ScriptPubKey] = None
+  override def scriptWitnessOpt: Option[ScriptWitness] = None
+
+  override type PathType = LegacyHDPath
+
+  override def copyWithId(id: Long): LegacyUTXOSpendingInfoDb =
     copy(id = Some(id))
 }
 
 // TODO add case for nested segwit
-// and legacy
+/**
+  * The database level representation of a UTXO.
+  * When storing a UTXO we don't want to store
+  * sensitive material such as private keys.
+  * We instead store the necessary information
+  * we need to derive the private keys, given
+  * the root wallet seed.
+  */
 sealed trait UTXOSpendingInfoDb
     extends DbRowAutoInc[UTXOSpendingInfoDb]
     with BitcoinSLogger {
@@ -55,6 +80,9 @@ sealed trait UTXOSpendingInfoDb
 
   def value: CurrencyUnit = output.value
 
+  /** Converts a non-sensitive DB representation of a UTXO into
+    * a signable (and sensitive) real-world UTXO
+    */
   def toUTXOSpendingInfo(
       account: AccountDb,
       walletSeed: BIP39Seed): BitcoinUTXOSpendingInfo = {
@@ -114,20 +142,22 @@ case class UTXOSpendingInfoTable(tag: Tag)
           outpoint,
           output,
           path: SegWitHDPath,
-          None,
+          None, // ReedemScript
           Some(scriptWitness)) =>
-      SegWitUTOXSpendingInfodb(id, outpoint, output, path, scriptWitness)
-        .asInstanceOf[UTXOSpendingInfoDb]
+      NativeV0UTXOSpendingInfoDb(id, outpoint, output, path, scriptWitness)
 
     case (id,
           outpoint,
           output,
-          path @ (_: LegacyHDPath | _: NestedSegWitHDPath),
-          spkOpt,
-          swOpt) =>
+          path: LegacyHDPath,
+          None, // RedeemScript
+          None // ScriptWitness
+        ) =>
+      LegacyUTXOSpendingInfoDb(id, outpoint, output, path)
+    case (id, outpoint, output, path, spkOpt, swOpt) =>
       throw new IllegalArgumentException(
         "Could not construct UtxoSpendingInfoDb from bad tuple:"
-          + s" ($id, $outpoint, $output, $path, $spkOpt, $swOpt) . Note: Only Segwit is implemented")
+          + s" ($id, $outpoint, $output, $path, $spkOpt, $swOpt) . Note: Nested Segwit is not implemented")
 
   }
 

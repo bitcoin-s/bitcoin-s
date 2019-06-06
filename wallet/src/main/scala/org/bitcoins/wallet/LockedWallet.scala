@@ -41,7 +41,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       case MainNetChainParams                         => HDCoinType.Bitcoin
       case RegTestNetChainParams | TestNetChainParams => HDCoinType.Testnet
     }
-    HDCoin(Wallet.DEFAULT_HD_PURPOSE, coinType)
+    HDCoin(walletConfig.defaultAccountKind, coinType)
   }
 
   /**
@@ -88,6 +88,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       case Failure(_) => Future.successful(Left(BadSPK))
     }
 
+  /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
@@ -95,16 +96,21 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
     val utxo: UTXOSpendingInfoDb = addressDb match {
       case segwitAddr: SegWitAddressDb =>
-        SegWitUTOXSpendingInfodb(
+        NativeV0UTXOSpendingInfoDb(
           id = None,
           outPoint = outPoint,
           output = output,
           privKeyPath = segwitAddr.path,
           scriptWitness = segwitAddr.witnessScript
         )
-      case otherAddr @ (_: LegacyAddressDb | _: NestedSegWitAddressDb) =>
+      case LegacyAddressDb(path, _, _, _) =>
+        LegacyUTXOSpendingInfoDb(id = None,
+                                 outPoint = outPoint,
+                                 output = output,
+                                 privKeyPath = path)
+      case nested: NestedSegWitAddressDb =>
         throw new IllegalArgumentException(
-          s"Bad utxo $otherAddr. Note: Only Segwit is implemented")
+          s"Bad utxo $nested. Note: nested segwit is not implemented")
     }
 
     utxoDAO.create(utxo).map { written =>
@@ -201,27 +207,34 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
           address.toPath
       }
 
-      val addressDb =
+      val addressDb = {
+        val pathDiff =
+          account.hdAccount.diff(addrPath) match {
+            case Some(value) => value
+            case None =>
+              throw new RuntimeException(
+                s"Could not diff ${account.hdAccount} and $addrPath")
+          }
+
+        val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+          case Failure(exception) => throw exception
+          case Success(value)     => value.key
+        }
+
         addrPath match {
           case segwitPath: SegWitHDPath =>
-            val pathDiff = account.hdAccount.diff(segwitPath) match {
-              case Some(value) => value
-              case None =>
-                throw new RuntimeException(
-                  s"Could not diff ${account.hdAccount} and $segwitPath")
-            }
-
-            val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
-              case Failure(exception) => throw exception
-              case Success(value)     => value.key
-            }
-
             AddressDbHelper
-              .getP2WPKHAddress(pubkey, segwitPath, networkParameters)
-          case _: HDPath =>
-            throw new IllegalArgumentException(
-              "P2PKH and nested segwit P2PKH not yet implemented")
+              .getSegwitAddress(pubkey, segwitPath, networkParameters)
+          case legacyPath: LegacyHDPath =>
+            AddressDbHelper.getLegacyAddress(pubkey,
+                                             legacyPath,
+                                             networkParameters)
+          case nestedPath: NestedSegWitHDPath =>
+            AddressDbHelper.getNestedSegwitAddress(pubkey,
+                                                   nestedPath,
+                                                   networkParameters)
         }
+      }
       val writeF = addressDAO.create(addressDb)
       writeF.foreach { written =>
         logger.info(

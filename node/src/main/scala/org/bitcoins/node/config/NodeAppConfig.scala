@@ -8,11 +8,11 @@ import org.bitcoins.node.db.NodeDbManagement
 import scala.util.Failure
 import scala.util.Success
 
-case class NodeAppConfig(confs: Config*) extends AppConfig {
+case class NodeAppConfig(private val confs: Config*) extends AppConfig {
   override val configOverrides: List[Config] = confs.toList
   override protected def moduleName: String = "node"
   override protected type ConfigType = NodeAppConfig
-  override protected def newConfigOfType(configs: List[Config]): NodeAppConfig =
+  override protected def newConfigOfType(configs: Seq[Config]): NodeAppConfig =
     NodeAppConfig(configs: _*)
 
   /**
