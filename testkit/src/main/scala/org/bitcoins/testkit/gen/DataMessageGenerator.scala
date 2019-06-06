@@ -1,8 +1,7 @@
 package org.bitcoins.testkit.gen
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.node.messages._
-import org.bitcoins.node.messages.data._
+import org.bitcoins.core.p2p._
 import org.bitcoins.testkit.core.gen.{
   BlockchainElementsGenerator,
   CryptoGenerators,
@@ -12,17 +11,14 @@ import org.bitcoins.testkit.core.gen.{
 import org.scalacheck.Gen
 
 /**
-  * Created by chris on 6/29/16.
   * Responsible for generating random [[DataMessage]]
-  * [[https://bitcoin.org/en/developer-reference#data-messages]]
+  * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
 trait DataMessageGenerator {
 
   /**
     * Generates a random [[GetHeadersMessage]]
-    * [[https://bitcoin.org/en/developer-reference#getheaders]]
-    *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
     */
   def getHeaderMessages: Gen[GetHeadersMessage] =
     for {
@@ -44,8 +40,6 @@ trait DataMessageGenerator {
   /**
     * Generates a random [[TypeIdentifier]]
     * [[https://bitcoin.org/en/developer-reference#data-messages]]
-    *
-    * @return
     */
   def typeIdentifier: Gen[TypeIdentifier] =
     for {
@@ -54,9 +48,7 @@ trait DataMessageGenerator {
 
   /**
     * Generates a random [[Inventory]]
-    * [[https://bitcoin.org/en/developer-reference#term-inventory]]
-    *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#term-inventory]]
     */
   def inventory: Gen[Inventory] =
     for {
@@ -66,8 +58,7 @@ trait DataMessageGenerator {
 
   /**
     * Generates a random [[InventoryMessage]]
-    * [[https://bitcoin.org/en/developer-reference#inv]]
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#inv]]
     */
   def inventoryMessages: Gen[InventoryMessage] =
     for {
@@ -77,8 +68,7 @@ trait DataMessageGenerator {
 
   /**
     * Generate a random [[GetDataMessage]]
-    * [[https://bitcoin.org/en/developer-reference#getdata]]
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#getdata]]
     */
   def getDataMessages: Gen[GetDataMessage] =
     for {
@@ -87,8 +77,7 @@ trait DataMessageGenerator {
 
   /**
     * Generates a random [[MerkleBlockMessage]]
-    * [[https://bitcoin.org/en/developer-reference#merkleblock]]
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
     */
   def merkleBlockMessage: Gen[MerkleBlockMessage] =
     for {
@@ -96,7 +85,7 @@ trait DataMessageGenerator {
     } yield MerkleBlockMessage(merkleBlock)
 
   /** Generates a [[TransactionMessage]]
-    * [[https://bitcoin.org/en/developer-reference#tx]]
+    * @see [[https://bitcoin.org/en/developer-reference#tx]]
     * */
   def transactionMessage: Gen[TransactionMessage] =
     for {

@@ -1,8 +1,8 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.messages.{VerAckMessage, VersionMessage}
+import org.bitcoins.core.p2p.{VerAckMessage, VersionMessage}
 import org.bitcoins.node.networking.Client
 
 import scala.concurrent.{Future, Promise}

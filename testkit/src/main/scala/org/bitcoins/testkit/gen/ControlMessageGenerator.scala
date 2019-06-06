@@ -3,22 +3,14 @@ package org.bitcoins.testkit.gen
 import java.net.{InetAddress, InetSocketAddress}
 
 import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.p2p.ProtocolVersion
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.node.messages._
-import org.bitcoins.node.messages.control._
-import org.bitcoins.node.versions.ProtocolVersion
-import org.bitcoins.testkit.core.gen.{
-  BloomFilterGenerator,
-  CryptoGenerators,
-  NumberGenerator,
-  StringGenerators
-}
+import org.bitcoins.core.p2p._
+import org.bitcoins.core.p2p._
+import org.bitcoins.testkit.core.gen.{BloomFilterGenerator, CryptoGenerators, NumberGenerator, StringGenerators}
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 6/27/16.
-  */
 trait ControlMessageGenerator {
 
   /**
