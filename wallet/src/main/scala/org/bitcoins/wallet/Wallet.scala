@@ -181,9 +181,16 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
             val createAccountFutures =
               HDPurposes.all.map(createRootAccount(wallet, _))
 
-            Future
-              .sequence(createAccountFutures)
-              .map(_ => logger.debug(s"Created root level accounts for wallet"))
+            val accountCreationF = Future.sequence(createAccountFutures)
+
+            accountCreationF.foreach(_ =>
+              logger.debug(s"Created root level accounts for wallet"))
+
+            accountCreationF.failed.foreach { err =>
+              logger.error(s"Failed to create root level accounts: $err")
+            }
+
+            accountCreationF
           }
 
         } yield wallet

@@ -28,9 +28,6 @@ class WalletUnitTest extends BitcoinSWalletTest {
     }
   }
 
-  // eventually this test should NOT succeed, as BIP44
-  // requires a limit to addresses being generated when
-  // they haven't received any funds
   it should "generate addresses" in { wallet: UnlockedWalletApi =>
     for {
       addr <- wallet.getNewAddress()

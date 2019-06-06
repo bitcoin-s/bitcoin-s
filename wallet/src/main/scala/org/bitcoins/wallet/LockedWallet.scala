@@ -88,6 +88,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       case Failure(_) => Future.successful(Left(BadSPK))
     }
 
+  /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
@@ -95,7 +96,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
     val utxo: UTXOSpendingInfoDb = addressDb match {
       case segwitAddr: SegWitAddressDb =>
-        SegWitUTOXSpendingInfoDb(
+        NativeV0UTXOSpendingInfoDb(
           id = None,
           outPoint = outPoint,
           output = output,

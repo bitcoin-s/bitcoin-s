@@ -20,7 +20,7 @@ class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest with UtxoDAOFixture {
     val scriptWitness = WalletTestUtil.sampleScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
     val utxo =
-      SegWitUTOXSpendingInfoDb(
+      NativeV0UTXOSpendingInfoDb(
         id = None,
         outPoint = outpoint,
         output = output,
