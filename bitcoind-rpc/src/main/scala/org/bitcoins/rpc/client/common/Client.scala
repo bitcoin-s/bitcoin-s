@@ -25,6 +25,7 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import java.nio.file.Path
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
+import com.fasterxml.jackson.core.JsonParseException
 
 /**
   * This is the base trait for Bitcoin Core
@@ -55,11 +56,11 @@ trait Client extends BitcoinSLogger {
   lazy val confFile: Path =
     instance.datadir.toPath.resolve("bitcoin.conf")
 
-  protected implicit val system: ActorSystem
-  protected implicit val materializer: ActorMaterializer =
+  implicit protected val system: ActorSystem
+  implicit protected val materializer: ActorMaterializer =
     ActorMaterializer.create(system)
-  protected implicit val executor: ExecutionContext = system.getDispatcher
-  protected implicit val network: NetworkParameters = instance.network
+  implicit protected val executor: ExecutionContext = system.getDispatcher
+  implicit protected val network: NetworkParameters = instance.network
 
   /**
     * This is here (and not in JsonWrriters)
@@ -219,26 +220,37 @@ trait Client extends BitcoinSLogger {
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
 
-    payloadF.map { payload =>
-      {
+    payloadF
+      .map { payload =>
+        {
 
-        /**
-          * These lines are handy if you want to inspect what's being sent to and
-          * returned from bitcoind before it's parsed into a Scala type. However,
-          * there will sensitive material in some of those calls (private keys,
-          * XPUBs, balances, etc). It's therefore not a good idea to enable
-          * this logging in production.
-          */
-        // logger.info(
-        // s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
-        // logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
-        parseResult(result = (payload \ resultKey).validate[T],
-                    json = payload,
-                    printError = printError,
-                    command = command)
+          /**
+            * These lines are handy if you want to inspect what's being sent to and
+            * returned from bitcoind before it's parsed into a Scala type. However,
+            * there will sensitive material in some of those calls (private keys,
+            * XPUBs, balances, etc). It's therefore not a good idea to enable
+            * this logging in production.
+            */
+          // logger.info(
+          // s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+          // logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
+          parseResult(result = (payload \ resultKey).validate[T],
+                      json = payload,
+                      printError = printError,
+                      command = command)
 
+        }
       }
-    }
+      .recover {
+        // this can contain sensitive information, so only log this
+        // if not on mainnet
+        case err: JsonParseException if network != MainNet =>
+          logger.error(s"Error when parsing result of command: $command")
+          logger.error(s"Parameters: ${Json.stringify(JsArray(parameters))}")
+          logger.error(s"Sent HTTP request: $request")
+          logger.error(s"Error: $err")
+          throw err
+      }
   }
 
   protected def buildRequest(
