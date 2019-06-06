@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.blockchain.{
 }
 import org.bitcoins.node.constant.{Constants, TestConstants}
 import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.node.messages.data.HeadersMessage
+import org.bitcoins.core.p2p.data.HeadersMessage
 import org.bitcoins.node.models.BlockHeaderTable
 import org.bitcoins.node.util.TestUtil
 import org.scalatest.{

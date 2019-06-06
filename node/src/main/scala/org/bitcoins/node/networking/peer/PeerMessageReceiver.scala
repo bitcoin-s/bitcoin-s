@@ -2,18 +2,13 @@ package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRefFactory
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.messages._
+import org.bitcoins.core.p2p._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
-  Disconnected,
-  Initializing,
-  Normal,
-  Preconnection
-}
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{Disconnected, Initializing, Normal, Preconnection}
 
 import scala.util.{Failure, Success, Try}
 

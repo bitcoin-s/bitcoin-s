@@ -9,12 +9,12 @@ import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, MerkleBlock, PartialMerkleTree}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.messages.data.{Inventory, InventoryMessage, MerkleBlockMessage, TransactionMessage}
-import org.bitcoins.node.messages.{MsgBlock, MsgTx}
+import org.bitcoins.core.p2p.data.{Inventory, InventoryMessage, MerkleBlockMessage, TransactionMessage}
+import org.bitcoins.core.p2p.{MsgBlock, MsgTx}
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.db.UnitTestDbConfig
-import org.bitcoins.node.messages.data.{Inventory, InventoryMessage, MerkleBlockMessage, TransactionMessage}
-import org.bitcoins.node.messages.{MsgBlock, MsgTx}
+import org.bitcoins.core.p2p.data.{Inventory, InventoryMessage, MerkleBlockMessage, TransactionMessage}
+import org.bitcoins.core.p2p.{MsgBlock, MsgTx}
 import org.bitcoins.node.util.TestUtil
 import org.scalatest._
 import scodec.bits.BitVector

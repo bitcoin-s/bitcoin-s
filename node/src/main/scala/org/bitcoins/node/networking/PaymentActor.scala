@@ -6,14 +6,12 @@ import akka.io.Tcp
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateNone}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.constant.Constants
-import org.bitcoins.node.messages._
-import org.bitcoins.node.messages.control.FilterLoadMessage
-import org.bitcoins.node.messages.data.{GetDataMessage, Inventory}
+import org.bitcoins.core.p2p._
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 
 /**

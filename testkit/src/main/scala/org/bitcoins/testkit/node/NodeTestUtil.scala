@@ -3,16 +3,15 @@ package org.bitcoins.testkit.node
 import java.net.InetSocketAddress
 
 import akka.actor.ActorRefFactory
+import org.bitcoins.core.p2p.{NetworkIpAddress, NetworkMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.node.NetworkMessage
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.messages.control.VersionMessage
-import org.bitcoins.node.messages.data.GetHeadersMessage
+import org.bitcoins.core.p2p.VersionMessage
+import org.bitcoins.core.p2p.GetHeadersMessage
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
-import org.bitcoins.node.util.NetworkIpAddress
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 /**

@@ -5,11 +5,11 @@ import java.net.{InetAddress, InetSocketAddress}
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderTable}
+import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.util.NetworkIpAddress
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent._

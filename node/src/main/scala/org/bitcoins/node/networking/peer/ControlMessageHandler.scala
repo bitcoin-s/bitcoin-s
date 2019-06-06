@@ -1,7 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.messages._
+import org.bitcoins.core.p2p._
 
 import scala.concurrent.ExecutionContext
 

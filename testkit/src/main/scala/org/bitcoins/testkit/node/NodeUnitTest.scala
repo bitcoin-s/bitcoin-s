@@ -4,27 +4,18 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node.SpvNode
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{
-  PeerHandler,
-  PeerMessageReceiver,
-  PeerMessageSender
-}
-import org.bitcoins.node.util.NetworkIpAddress
+import org.bitcoins.node.networking.peer.{PeerHandler, PeerMessageReceiver, PeerMessageSender}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.scalatest.{
-  BeforeAndAfter,
-  BeforeAndAfterAll,
-  FutureOutcome,
-  MustMatchers
-}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FutureOutcome, MustMatchers}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}

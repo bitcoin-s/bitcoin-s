@@ -1,45 +1,14 @@
 package org.bitcoins.node.util
 
-import java.net.InetAddress
-
 import akka.util.{ByteString, CompactByteString}
+import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.NetworkMessage
-import org.bitcoins.node.NetworkMessage
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
-/**
-  * Created by chris on 6/3/16.
-  */
 trait BitcoinSpvNodeUtil extends BitcoinSLogger {
-
-  /**
-    * Writes an ip address to the representation that the p2p network requires
-    * An IPv6 address is in big endian byte order
-    * An IPv4 address has to be mapped to an IPv6 address
-    * https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses
-    *
-    * @param iNetAddress
-    * @return
-    */
-  def writeAddress(iNetAddress: InetAddress): ByteVector = {
-    if (iNetAddress.getAddress.size == 4) {
-      //this means we need to convert the IPv4 address to an IPv6 address
-      //first we have an 80 bit prefix of zeros
-      val zeroBytes = Array.fill(10)(0.toByte)
-      //the next 16 bits are ones
-      val oneBytes = List(0xff.toByte, 0xff.toByte)
-
-      val prefix: ByteVector = ByteVector(zeroBytes) ++ ByteVector(oneBytes)
-      val addr = prefix ++ ByteVector(iNetAddress.getAddress)
-      addr
-    } else {
-      ByteVector(iNetAddress.getAddress)
-    }
-  }
 
   /**
     * Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and

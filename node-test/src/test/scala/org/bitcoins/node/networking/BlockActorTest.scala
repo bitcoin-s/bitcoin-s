@@ -7,8 +7,8 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.node.db.UnitTestDbConfig
-import org.bitcoins.node.messages.BlockMessage
-import org.bitcoins.node.messages.BlockMessage
+import org.bitcoins.core.p2p.BlockMessage
+import org.bitcoins.core.p2p.BlockMessage
 import org.bitcoins.node.util.TestUtil
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatchers}
 

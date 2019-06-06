@@ -2,8 +2,8 @@ package org.bitcoins.node.models
 
 import java.net.InetSocketAddress
 
+import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.db.DbRowAutoInc
-import org.bitcoins.node.util.NetworkIpAddress
 
 case class Peer(networkIpAddress: NetworkIpAddress, id: Option[Long] = None)
     extends DbRowAutoInc[Peer] {
