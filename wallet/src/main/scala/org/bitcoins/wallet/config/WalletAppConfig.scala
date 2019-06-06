@@ -27,6 +27,9 @@ case class WalletAppConfig(private val conf: Config*) extends AppConfig {
         throw new RuntimeException(s"$other is not a valid account type!")
     }
 
+  lazy val bloomFalsePositiveRate: Double =
+    config.getDouble("wallet.bloomFalsePositiveRate")
+
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
 
