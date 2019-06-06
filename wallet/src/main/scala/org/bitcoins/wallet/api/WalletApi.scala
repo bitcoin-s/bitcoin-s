@@ -15,6 +15,7 @@ import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.core.bloom.BloomFilter
 
 /**
   * API for the wallet project.
@@ -37,6 +38,12 @@ sealed trait WalletApi {
   * API for a locked wallet
   */
 trait LockedWalletApi extends WalletApi {
+
+  /**
+    * Retrieves a bloom filter that that can be sent to a P2P network node
+    * to get information about our transactions, pubkeys and scripts.
+    */
+  def getBloomFilter(): Future[BloomFilter]
 
   /**
     * Adds the provided UTXO to the wallet, making it

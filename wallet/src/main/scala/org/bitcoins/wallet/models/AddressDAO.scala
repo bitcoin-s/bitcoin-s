@@ -10,6 +10,7 @@ import slick.sql.SqlAction
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.core.crypto.ECPublicKey
 
 case class AddressDAO()(
     implicit val ec: ExecutionContext,
@@ -39,10 +40,19 @@ case class AddressDAO()(
       accountIndex: Int): Query[AddressTable, AddressDb, Seq] =
     table.filter(_.accountIndex === accountIndex)
 
+  /**
+    * Finds the most recent change address in the wallet, if any
+    */
   def findMostRecentChange(accountIndex: Int): Future[Option[AddressDb]] = {
     val query = findMostRecentForChain(accountIndex, HDChainType.Change)
 
     database.run(query)
+  }
+
+  /** Finds all public keys in the wallet */
+  def findAllPubkeys(): Future[Seq[ECPublicKey]] = {
+    val query = table.map(_.ecPublicKey).distinct
+    database.run(query.result)
   }
 
   private def findMostRecentForChain(
@@ -56,6 +66,9 @@ case class AddressDAO()(
       .headOption
   }
 
+  /**
+    * Finds the most recent external address in the wallet, if any
+    */
   def findMostRecentExternal(accountIndex: Int): Future[Option[AddressDb]] = {
     val query = findMostRecentForChain(accountIndex, HDChainType.External)
     database.run(query)
