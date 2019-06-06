@@ -23,6 +23,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.testkit.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSAppConfig._
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
@@ -57,21 +59,64 @@ trait BitcoinSWalletTest
       .map(_ => ())
   }
 
-  def createNewWallet(): Future[UnlockedWalletApi] = {
-
-    for {
-      _ <- config.initialize()
-      wallet <- Wallet.initialize().map {
-        case InitializeWalletSuccess(wallet) => wallet
-        case err: InitializeWalletError =>
-          logger.error(s"Could not initialize wallet: $err")
-          fail(err)
+  /** Returns a function that can be used to create a wallet fixture.
+    * If you pass in a configuration to this method that configuration
+    * is given to the wallet as user-provided overrides. You could for
+    * example use this to override the default data directory, network
+    * or account type.
+    */
+  private def createNewWallet(
+      extraConfig: Option[Config]): () => Future[UnlockedWalletApi] =
+    () => {
+      val defaultConf = config.walletConf
+      val walletConfig = extraConfig match {
+        case None    => defaultConf
+        case Some(c) => defaultConf.withOverrides(c)
       }
-    } yield wallet
+
+      // we want to check we're not overwriting
+      // any user data
+      AppConfig.throwIfDefaultDatadir(walletConfig)
+
+      walletConfig.initialize().flatMap { _ =>
+        Wallet
+          .initialize()(implicitly[ExecutionContext], walletConfig)
+          .map {
+            case InitializeWalletSuccess(wallet) => wallet
+            case err: InitializeWalletError =>
+              logger.error(s"Could not initialize wallet: $err")
+              fail(err)
+          }
+      }
+    }
+
+  /** Creates a wallet with the default configuration  */
+  private def createDefaultWallet(): Future[UnlockedWalletApi] =
+    createNewWallet(None)() // get the standard config
+
+  /** Lets you customize the parameters for the created wallet */
+  val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome =
+    walletConfig =>
+      makeDependentFixture(build = createNewWallet(Some(walletConfig)),
+                           destroy = destroyWallet)
+
+  /** Fixture for an initialized wallet which produce legacy addresses */
+  def withLegacyWallet(test: OneArgAsyncTest): FutureOutcome = {
+    val confOverride =
+      ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")
+    withNewConfiguredWallet(confOverride)(test)
+  }
+
+  /** Fixture for an initialized wallet which produce segwit addresses */
+  def withSegwitWallet(test: OneArgAsyncTest): FutureOutcome = {
+    val confOverride =
+      ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
+    withNewConfiguredWallet(confOverride)(test)
   }
 
   def withNewWallet(test: OneArgAsyncTest): FutureOutcome =
-    makeDependentFixture(build = createNewWallet, destroy = destroyWallet)(test)
+    makeDependentFixture(build = createDefaultWallet, destroy = destroyWallet)(
+      test)
 
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,
@@ -96,7 +141,7 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      createNewWallet,
+      createDefaultWallet,
       createWalletWithBitcoind,
       (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
         walletWithBitcoind
