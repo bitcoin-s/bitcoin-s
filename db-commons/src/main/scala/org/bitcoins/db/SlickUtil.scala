@@ -2,6 +2,7 @@ package org.bitcoins.db
 
 import scala.concurrent.Future
 import slick.jdbc.SQLiteProfile.api._
+import scala.concurrent.ExecutionContext
 
 sealed abstract class SlickUtil {
 
@@ -9,7 +10,8 @@ sealed abstract class SlickUtil {
   def createAllNoAutoInc[T, U <: Table[T]](
       ts: Vector[T],
       database: SafeDatabase,
-      table: TableQuery[U]): Future[Vector[T]] = {
+      table: TableQuery[U])(
+      implicit ec: ExecutionContext): Future[Vector[T]] = {
     val actions = ts.map(t => (table += t).andThen(DBIO.successful(t)))
     val result = database.run(DBIO.sequence(actions))
     result
