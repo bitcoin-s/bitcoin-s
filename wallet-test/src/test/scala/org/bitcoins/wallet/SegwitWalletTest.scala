@@ -11,27 +11,24 @@ import org.bitcoins.wallet.api.UnlockWalletError.MnemonicNotFound
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.hd.HDPurposes
 
 class SegwitWalletTest extends BitcoinSWalletTest {
 
   override type FixtureParam = UnlockedWalletApi
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val confOverride =
-      ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
-    val conf = config.walletConf.withOverrides(confOverride)
-    withNewConfiguredWallet(confOverride)(test)
+    withSegwitWallet(test)
   }
 
-  // eventually this test should NOT succeed, as BIP44
-  // requires a limit to addresses being generated when
-  // they haven't received any funds
   it should "generate segwit addresses" in { wallet: UnlockedWalletApi =>
     for {
       addr <- wallet.getNewAddress()
+      account <- wallet.getDefaultAccount()
       otherAddr <- wallet.getNewAddress()
       allAddrs <- wallet.listAddresses()
     } yield {
+      assert(account.hdAccount.purpose == HDPurposes.SegWit)
       assert(allAddrs.forall(_.address.isInstanceOf[Bech32Address]))
       assert(allAddrs.length == 2)
       assert(allAddrs.exists(_.address == addr))
