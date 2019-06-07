@@ -75,8 +75,13 @@ lazy val commonSettings = List(
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
+  /**
+    * We want to exclude loback config from our published library, so that users don't
+    * get our config forced on them
+    */
+  Compile / unmanagedResources := (Compile / unmanagedResources).value
+    .filterNot { _.getName.endsWith(".xml") },
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-  
   /**
     * Adding Ammonite REPL to test scope, can access both test and compile
     * sources. Docs: http://ammonite.io/#Ammonite-REPL
@@ -96,7 +101,7 @@ lazy val commonSettings = List(
 )
 
 lazy val commonTestSettings = Seq(
-  publish / skip := true,
+  publish / skip := true
 ) ++ commonSettings
 
 lazy val commonTestWithDbSettings = Seq(
