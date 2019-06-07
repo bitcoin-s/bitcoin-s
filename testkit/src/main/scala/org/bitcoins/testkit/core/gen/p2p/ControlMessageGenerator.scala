@@ -15,12 +15,41 @@ import org.bitcoins.testkit.core.gen.{
 }
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
+import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 
 object ControlMessageGenerator {
 
+  /** Generates a valid P2P control message */
+  def controlMessage: Gen[ControlPayload] = Gen.oneOf(
+    addrMessage,
+    filterAddMessage,
+    filterLoadMessage,
+    feeFilterMessage,
+    pingMessage,
+    pongMessage,
+    rejectMessage,
+    versionMessage
+  )
+
+  def feeFilterMessage: Gen[FeeFilterMessage] = {
+    for {
+      fee <- CurrencyUnitGenerator.feeUnit.suchThat(
+        !_.isInstanceOf[SatoshisPerVirtualByte])
+    } yield
+      fee match {
+        case fee: SatoshisPerByte     => FeeFilterMessage(fee)
+        case fee: SatoshisPerKiloByte => FeeFilterMessage(fee)
+        case SatoshisPerVirtualByte(_) =>
+          throw new RuntimeException(s"We cannot end up here")
+      }
+  }
+
   /**
     * Generates a random [[VersionMessage]]
-
+    *
     * @see [[https://bitcoin.org/en/developer-reference#version]]
     */
   def versionMessage: Gen[VersionMessage] =
@@ -74,6 +103,12 @@ object ControlMessageGenerator {
     for {
       uInt64 <- NumberGenerator.uInt64s
     } yield PongMessage(uInt64)
+
+  def addrMessage: Gen[AddrMessage] = {
+    for {
+      addresses <- Gen.listOf(P2PGenerator.networkIpAddress)
+    } yield AddrMessage(addresses)
+  }
 
   /**
     * Generates a random [[ProtocolVersion]]

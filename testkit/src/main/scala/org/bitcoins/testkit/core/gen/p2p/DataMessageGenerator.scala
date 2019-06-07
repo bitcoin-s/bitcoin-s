@@ -11,14 +11,44 @@ import org.bitcoins.testkit.core.gen.{
 import org.scalacheck.Gen
 
 /**
-  * Responsible for generating random [[DataMessage]]
+  * Responsible for generating random data message
 
   * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
 trait DataMessageGenerator {
 
+  /** Generates a valid P2P data message */
+  def dataMessage: Gen[DataPayload] = Gen.oneOf(
+    blockMessage,
+    getBlocksMessage,
+    getDataMessages,
+    getHeaderMessages,
+    headersMessage,
+    inventoryMessages,
+    merkleBlockMessage,
+    notFoundMessage,
+    transactionMessage
+  )
+
+  def blockMessage: Gen[BlockMessage] = {
+    for {
+      block <- BlockchainElementsGenerator.block
+    } yield BlockMessage(block)
+  }
+
+  def getBlocksMessage: Gen[GetBlocksMessage] = {
+    for {
+      protocol <- ControlMessageGenerator.protocolVersion
+      hashes <- Gen
+        .nonEmptyListOf(CryptoGenerators.doubleSha256Digest)
+        .suchThat(_.length <= 500)
+      stopHash <- CryptoGenerators.doubleSha256Digest
+    } yield GetBlocksMessage(protocol, hashes, stopHash)
+  }
+
   /**
     * Generates a random [[GetHeadersMessage]]
+    *
     * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
     */
   def getHeaderMessages: Gen[GetHeadersMessage] =
@@ -28,6 +58,15 @@ trait DataMessageGenerator {
       hashes <- CryptoGenerators.doubleSha256DigestSeq(numHashes)
       hashStop <- CryptoGenerators.doubleSha256Digest
     } yield GetHeadersMessage(version, hashes, hashStop)
+
+  /** Generates a `getheaders` message with the default protocol version */
+  def getHeaderDefaultProtocolMessage: Gen[GetHeadersMessage] = {
+    for {
+      numHashes <- Gen.choose(0, 2000)
+      hashes <- CryptoGenerators.doubleSha256DigestSeq(numHashes)
+      hashStop <- CryptoGenerators.doubleSha256Digest
+    } yield GetHeadersMessage(hashes, hashStop)
+  }
 
   def headersMessage: Gen[HeadersMessage] =
     for {
@@ -40,7 +79,8 @@ trait DataMessageGenerator {
 
   /**
     * Generates a random [[TypeIdentifier]]
-    * [[https://bitcoin.org/en/developer-reference#data-messages]]
+    *
+    * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
     */
   def typeIdentifier: Gen[TypeIdentifier] =
     for {
@@ -66,6 +106,12 @@ trait DataMessageGenerator {
       numInventories <- Gen.choose(0, 500)
       inventories <- Gen.listOfN(numInventories, inventory)
     } yield InventoryMessage(inventories)
+
+  def notFoundMessage: Gen[NotFoundMessage] = {
+    for {
+      inventories <- Gen.nonEmptyListOf(inventory)
+    } yield NotFoundMessage(inventories)
+  }
 
   /**
     * Generate a random [[GetDataMessage]]
