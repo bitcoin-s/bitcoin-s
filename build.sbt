@@ -51,6 +51,22 @@ lazy val commonSettings = List(
       url("https://twitter.com/Chris_Stewart_5")
     )
   ),
+  ////
+  // scaladoc settings
+      Compile / doc / scalacOptions := List(
+        "-doc-title",
+        "Bitcoin-S",
+        "-doc-version",
+        version.value,
+      ),
+  // Set apiURL to define the base URL for the Scaladocs for our library. 
+  // This will enable clients of our library to automatically link against 
+  // the API documentation using autoAPIMappings. 
+  apiURL := homepage.value.map(_.toString + "/api").map(url(_)), 
+
+  // scaladoc settings end
+  ////
+
   scalacOptions in Compile := compilerOpts,
   scalacOptions in Test := testCompilerOpts,
   //show full stack trace of failed tests
@@ -120,15 +136,6 @@ lazy val bitcoins = project
   .settings(libraryDependencies ++= Deps.root)
   .enablePlugins(ScalaUnidocPlugin, GitVersioning)
   .settings(
-    // scaladoc settings
-    // TODO this is not working properly
-    inTask(unidoc)(
-      scalacOptions in Compile ++= List(
-        "-doc-title",
-        "Bitcoin-S",
-        "-doc-version",
-        version.value
-      )),
     // we modify the unidoc task to move the generated Scaladocs into the
     // website directory afterwards
     Compile / unidoc := {
