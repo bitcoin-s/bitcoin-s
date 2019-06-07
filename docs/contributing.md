@@ -160,6 +160,22 @@ The command `sbt testQuick` can also be handy. It runs tests that either:
 For more information on `testQuick`, see the offical
 [sbt docs](https://www.scala-sbt.org/1.x/docs/Testing.html#testQuick).
 
+### Coverage
+
+To produce a report that quantifies how much of our code is covered by tests:
+
+```bash
+sbt
+> coverage
+> coreTest/test
+> core/coverageReport
+```
+
+This generates three different reports: Cobertura, XML and HTML formats.
+See the output of your sbt shell to find the location of them.
+Open up the HTML file in your browser. You'll now see code coverage
+of all files in `core` project.
+
 ### CI
 
 Bitcoin-S uses Travis to run tests and deploy library and website builds. Generally
