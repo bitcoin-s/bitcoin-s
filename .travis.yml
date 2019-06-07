@@ -60,6 +60,9 @@ script: sbt ++$TRAVIS_SCALA_VERSION coverage test &&
 
 jobs:
   include:
+    - stage: test
+      name: Compile website
+      script: sbt docs/mdoc
     # run ci-release only if previous stages passed
     - stage: release
       name: Publish library
