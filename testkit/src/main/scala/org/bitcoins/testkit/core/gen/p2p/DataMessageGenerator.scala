@@ -1,4 +1,4 @@
-package org.bitcoins.testkit.gen
+package org.bitcoins.testkit.core.gen.p2p
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p._
@@ -12,6 +12,7 @@ import org.scalacheck.Gen
 
 /**
   * Responsible for generating random [[DataMessage]]
+
   * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
 trait DataMessageGenerator {

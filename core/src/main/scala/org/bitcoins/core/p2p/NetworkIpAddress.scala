@@ -4,7 +4,7 @@ import java.net.{InetAddress, InetSocketAddress}
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.serializers.p2p.messages.RawNetworkIpAddressSerializer
+import org.bitcoins.core.serializers.p2p._
 import org.bitcoins.core.util.Factory
 import scodec.bits._
 

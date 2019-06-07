@@ -1,4 +1,4 @@
-package org.bitcoins.testkit.gen
+package org.bitcoins.testkit.core.gen.p2p
 
 import java.net.{InetAddress, InetSocketAddress}
 
@@ -7,17 +7,21 @@ import org.bitcoins.core.p2p.ProtocolVersion
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.p2p._
-import org.bitcoins.testkit.core.gen.{BloomFilterGenerator, CryptoGenerators, NumberGenerator, StringGenerators}
+import org.bitcoins.testkit.core.gen.{
+  BloomFilterGenerator,
+  CryptoGenerators,
+  NumberGenerator,
+  StringGenerators
+}
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
-trait ControlMessageGenerator {
+object ControlMessageGenerator {
 
   /**
     * Generates a random [[VersionMessage]]
-    * [[https://bitcoin.org/en/developer-reference#version]]
-    *
-    * @return
+
+    * @see [[https://bitcoin.org/en/developer-reference#version]]
     */
   def versionMessage: Gen[VersionMessage] =
     for {
@@ -53,9 +57,8 @@ trait ControlMessageGenerator {
 
   /**
     * Generates a [[PingMessage]]
-    * [[https://bitcoin.org/en/developer-reference#ping]]
     *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#ping]]
     */
   def pingMessage: Gen[PingMessage] =
     for {
@@ -64,9 +67,8 @@ trait ControlMessageGenerator {
 
   /**
     * Generates a [[PongMessage]]
-    * [[https://bitcoin.org/en/developer-reference#pong]]
     *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#pong]]
     */
   def pongMessage: Gen[PongMessage] =
     for {
@@ -75,9 +77,8 @@ trait ControlMessageGenerator {
 
   /**
     * Generates a random [[ProtocolVersion]]
-    * [[https://bitcoin.org/en/developer-reference#protocol-versions]]
     *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#protocol-versions]]
     */
   def protocolVersion: Gen[ProtocolVersion] =
     for {
@@ -86,9 +87,8 @@ trait ControlMessageGenerator {
 
   /**
     * Generates a [[ServiceIdentifier]]
-    * [[https://bitcoin.org/en/developer-reference#version]]
     *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#version]]
     */
   def serviceIdentifier: Gen[ServiceIdentifier] =
     for {
@@ -110,9 +110,8 @@ trait ControlMessageGenerator {
 
   /**
     * Creates a [[FilterLoadMessage]]
-    * [[https://bitcoin.org/en/developer-reference#filterload]]
     *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#filterload]]
     */
   def filterLoadMessage: Gen[FilterLoadMessage] =
     for {
@@ -125,9 +124,8 @@ trait ControlMessageGenerator {
 
   /**
     * Creates a [[FilterAddMessage]]
-    * [[https://bitcoin.org/en/developer-reference#filteradd]]
     *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#filteradd]]
     */
   def filterAddMessage: Gen[FilterAddMessage] =
     for {
@@ -137,9 +135,8 @@ trait ControlMessageGenerator {
 
   /**
     * Creates a [[RejectMessage]]
-    * [[https://bitcoin.org/en/developer-reference#reject]]
     *
-    * @return
+    * @see [[https://bitcoin.org/en/developer-reference#reject]]
     */
   def rejectMessage: Gen[RejectMessage] =
     for {
@@ -149,5 +146,3 @@ trait ControlMessageGenerator {
       extra <- CryptoGenerators.doubleSha256Digest
     } yield RejectMessage(message, code, reason, extra.bytes)
 }
-
-object ControlMessageGenerator extends ControlMessageGenerator
