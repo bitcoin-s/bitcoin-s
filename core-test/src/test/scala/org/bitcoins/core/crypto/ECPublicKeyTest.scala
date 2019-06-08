@@ -2,14 +2,12 @@ package org.bitcoins.core.crypto
 
 import org.bitcoinj.core.Sha256Hash
 import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
-import scodec.bits.ByteVector
+import scodec.bits._
 
-/**
-  * Created by chris on 2/29/16.
-  */
-class ECPublicKeyTest extends FlatSpec with MustMatchers {
+class ECPublicKeyTest extends BitcoinSUnitTest {
 
   "ECPublicKey" must "verify that a arbitrary piece of data was signed by the private key corresponding to a public key" in {
 
@@ -56,6 +54,28 @@ class ECPublicKeyTest extends FlatSpec with MustMatchers {
       .fromPublicOnly(bitcoinsPrivKey.publicKey.bytes.toArray)
     bitcoinjPublicKey.verify(Sha256Hash.ZERO_HASH.getBytes,
                              bitcoinsSignature.bytes.toArray) must be(true)
+  }
+
+  it must "be able to decompress keys" in {
+    val uncompressed =
+      ECPublicKey(
+        hex"044f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa385b6b1b8ead809ca67454d9683fcf2ba03456d6fe2c4abe2b07f0fbdbb2f1c1")
+    val compressed =
+      ECPublicKey(
+        hex"034f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa")
+
+    assert(uncompressed.isFullyValid)
+    assert(compressed.isFullyValid)
+
+    assert(compressed.isCompressed)
+    assert(!uncompressed.isCompressed)
+
+    assert(compressed.decompressed == uncompressed)
+    assert(uncompressed.decompressed == uncompressed)
+  }
+
+  it must "generate unique keys" in {
+    assert(ECPublicKey() != ECPublicKey())
   }
 
   it must "have serialization symmetry from ECPublicKey -> ECPoint -> ECPublicKey" in {
