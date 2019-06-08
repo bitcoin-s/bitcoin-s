@@ -14,13 +14,14 @@ abstract class BitcoinSUnitTest
   protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /** The configuration for property based tests in our testing suite
-    * See: http://www.scalatest.org/user_guide/writing_scalacheck_style_properties
+    * @see http://www.scalatest.org/user_guide/writing_scalacheck_style_properties
     */
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration = {
     generatorDriveConfigOldCode
   }
 
-  private def buildConfig(executions: Int): PropertyCheckConfiguration = {
+  /** Sets the generator driven tests to perform the given amount of execs */
+  def customGenDrivenConfig(executions: Int): PropertyCheckConfiguration = {
     PropertyCheckConfiguration(
       minSuccessful = PosInt.from(executions).get,
       minSize = PosInt.from(executions).get,
@@ -33,7 +34,7 @@ abstract class BitcoinSUnitTest
     * @return
     */
   def generatorDriveConfigOldCode: PropertyCheckConfiguration = {
-    buildConfig(BitcoinSUnitTest.OLD_CODE_EXECUTIONS)
+    customGenDrivenConfig(BitcoinSUnitTest.OLD_CODE_EXECUTIONS)
   }
 
   /** Property based tests that are new have a higher chance of failing
@@ -41,7 +42,7 @@ abstract class BitcoinSUnitTest
     * @return
     */
   def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {
-    buildConfig(BitcoinSUnitTest.NEW_CODE_EXECUTIONS)
+    customGenDrivenConfig(BitcoinSUnitTest.NEW_CODE_EXECUTIONS)
   }
 
 }

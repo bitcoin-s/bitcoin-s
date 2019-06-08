@@ -254,8 +254,8 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
     GetHeadersMessage(hashes, hashStop)
   }
 
-  def apply(hashes: DoubleSha256Digest): GetHeadersMessage = {
-    GetHeadersMessage(Vector(hashes))
+  def apply(hash: DoubleSha256Digest): GetHeadersMessage = {
+    GetHeadersMessage(Vector(hash))
   }
 }
 

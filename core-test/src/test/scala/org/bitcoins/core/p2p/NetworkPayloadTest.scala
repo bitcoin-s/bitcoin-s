@@ -16,6 +16,8 @@ class NetworkPayloadTest extends BitcoinSUnitTest {
     payload.commandName must be(NetworkPayload.versionCommandName)
   }
 
+  // this tests has a bunch of messages to choose between, so we set a high config value
+  implicit override val generatorDrivenConfig = customGenDrivenConfig(200)
   it must "parse messages based on its command name" in {
     forAll(P2PGenerator.message) { p2p =>
       val bytes = p2p.bytes
