@@ -5,15 +5,15 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.core.config.MainNet
+import scala.util.Random
+import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 6/10/16.
-  */
 class NetworkHeaderTest extends FlatSpec with MustMatchers {
 
   "MessageHeader" must "must create a message header for a message" in {
     val messageHeader = NetworkHeader(TestNet3, NodeTestUtil.versionMessage)
-    messageHeader.network must be(TestNet3.magicBytes)
+    messageHeader.network must be(TestNet3)
     messageHeader.commandName must be(NodeTestUtil.versionMessage.commandName)
     messageHeader.payloadSize must be(
       UInt32(NodeTestUtil.versionMessage.bytes.size))
@@ -23,10 +23,20 @@ class NetworkHeaderTest extends FlatSpec with MustMatchers {
 
   it must "build the correct message header for a verack message" in {
     val messageHeader = NetworkHeader(TestNet3, VerAckMessage)
-    messageHeader.network must be(TestNet3.magicBytes)
+    messageHeader.network must be(TestNet3)
     messageHeader.commandName must be(VerAckMessage.commandName)
     messageHeader.payloadSize must be(UInt32.zero)
     BitcoinSUtil.encodeHex(messageHeader.checksum) must be("5df6e0e2")
+  }
+
+  it must "throw on messages of bad length" in {
+    intercept[IllegalArgumentException] {
+      val commandName = Random.shuffle(NetworkPayload.commandNames).head
+      NetworkHeader(MainNet,
+                    commandName,
+                    payloadSize = UInt32.one,
+                    checksum = ByteVector.empty)
+    }
   }
 
 }

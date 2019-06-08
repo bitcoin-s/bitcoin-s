@@ -162,6 +162,13 @@ object Networks {
     case _: String => None
   }
 
+  /** Map of magic network bytes to the corresponding network */
+  def magicToNetwork: Map[ByteVector, NetworkParameters] = Map(
+    MainNet.magicBytes -> MainNet,
+    TestNet3.magicBytes -> TestNet3,
+    RegTest.magicBytes -> RegTest
+  )
+
   def bytesToNetwork: Map[ByteVector, NetworkParameters] = Map(
     MainNet.p2shNetworkByte -> MainNet,
     MainNet.p2pkhNetworkByte -> MainNet,

@@ -19,7 +19,7 @@ class NetworkPayloadTest extends BitcoinSUnitTest {
   it must "parse messages based on its command name" in {
     forAll(P2PGenerator.message) { p2p =>
       val bytes = p2p.bytes
-      val parser = NetworkPayload.commandNames(p2p.commandName)
+      val parser = NetworkPayload.readers(p2p.commandName)
       assert(parser(bytes) == p2p)
     }
   }

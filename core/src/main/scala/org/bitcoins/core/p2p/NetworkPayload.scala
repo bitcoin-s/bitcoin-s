@@ -1108,7 +1108,7 @@ object NetworkPayload {
     * @see [[https://bitcoin.org/en/developer-reference#message-headers]]
     *
     */
-  val commandNames: Map[String, ByteVector => NetworkPayload] = Map(
+  val readers: Map[String, ByteVector => NetworkPayload] = Map(
     blockCommandName -> { RawBlockMessageSerializer.read(_) },
     getBlocksCommandName -> { RawGetBlocksMessageSerializer.read(_) },
     getHeadersCommandName -> { RawGetHeadersMessageSerializer.read(_) },
@@ -1143,6 +1143,9 @@ object NetworkPayload {
     versionCommandName -> { RawVersionMessageSerializer.read(_) }
   )
 
+  /** All command names for P2P messages */
+  val commandNames: Vector[String] = readers.keys.toVector
+
   /**
     * Parses a [[NetworkPayload]] from the given bytes using the [[NetworkHeader]]
     * to determine what type of [[NetworkPayload]] this is
@@ -1153,7 +1156,7 @@ object NetworkPayload {
       networkHeader: NetworkHeader,
       payloadBytes: ByteVector): NetworkPayload = {
     //the commandName in the network header tells us what payload type this is
-    val deserializer: ByteVector => NetworkPayload = commandNames(
+    val deserializer: ByteVector => NetworkPayload = readers(
       networkHeader.commandName)
     deserializer(payloadBytes)
   }
