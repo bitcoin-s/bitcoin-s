@@ -79,15 +79,32 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
   private[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
     addressDAO.findAllPubkeys().map(_.toVector)
 
+  /** Gets the size of the bloom filter for this wallet  */
+  private def getBloomFilterSize(): Future[Int] = {
+    for {
+      pubkeys <- listPubkeys()
+    } yield {
+      // when a public key is inserted into a filter
+      // both the pubkey and the hash of the pubkey
+      // gets inserted
+      pubkeys.length * 2
+    }
+
+  }
+
   // todo: insert TXIDs? need to track which txids we should
   // ask for, somehow
   override def getBloomFilter(): Future[BloomFilter] = {
-    listPubkeys().map { pubkeys =>
+    for {
+      pubkeys <- listPubkeys()
+      filterSize <- getBloomFilterSize()
+    } yield {
+
       // todo: Is this the best flag to use?
       val bloomFlag = BloomUpdateAll
 
       val baseBloom =
-        BloomFilter(numElements = pubkeys.length * 2,
+        BloomFilter(numElements = filterSize,
                     falsePositiveRate = walletConfig.bloomFalsePositiveRate,
                     flags = bloomFlag)
 
