@@ -50,9 +50,9 @@ case class AddressDAO()(
   }
 
   /** Finds all public keys in the wallet */
-  def findAllPubkeys(): Future[Seq[ECPublicKey]] = {
+  def findAllPubkeys(): Future[Vector[ECPublicKey]] = {
     val query = table.map(_.ecPublicKey).distinct
-    database.run(query.result)
+    database.run(query.result).map(_.toVector)
   }
 
   private def findMostRecentForChain(
