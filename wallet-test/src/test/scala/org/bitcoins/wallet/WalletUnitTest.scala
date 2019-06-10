@@ -55,14 +55,17 @@ class WalletUnitTest extends BitcoinSWalletTest {
     def getMostRecent(
         chain: HDChainType,
         acctIndex: Int
-    ): Future[AddressDb] =
-      (chain match {
+    ): Future[AddressDb] = {
+      val recentOptFut: Future[Option[AddressDb]] = chain match {
         case Change   => wallet.addressDAO.findMostRecentChange(acctIndex)
         case External => wallet.addressDAO.findMostRecentExternal(acctIndex)
-      }) map {
+      }
+
+      recentOptFut.map {
         case Some(addr) => addr
         case None       => fail(s"Did not find $chain address!")
       }
+    }
 
     def assertIndexIs(
         chain: HDChainType,
