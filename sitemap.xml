@@ -5,7 +5,9 @@
 <url> <loc>https://bitcoin-s.org/users</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/en/users" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/contributing-website</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing-website" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/contributing</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/core/addresses</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/addresses" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/core/core-intro</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/core-intro" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/core/hd-keys</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/hd-keys" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/core/txbuilder</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/txbuilder" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/getting-started</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/getting-started" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/rpc/rpc-bitcoind</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/rpc/rpc-bitcoind" /> </url>
