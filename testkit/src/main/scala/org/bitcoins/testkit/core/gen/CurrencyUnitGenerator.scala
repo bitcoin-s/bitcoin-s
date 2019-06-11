@@ -9,11 +9,33 @@ import org.bitcoins.core.currency.{
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
+import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 
-/**
-  * Created by chris on 6/23/16.
-  */
 trait CurrencyUnitGenerator {
+
+  def satsPerByte: Gen[SatoshisPerByte] = {
+    for {
+      curr <- positiveRealistic
+    } yield SatoshisPerByte(curr)
+  }
+
+  def satsPerKiloByte: Gen[SatoshisPerKiloByte] = {
+    for {
+      curr <- positiveRealistic
+    } yield SatoshisPerKiloByte(curr)
+  }
+
+  def satsPerVirtualByte: Gen[SatoshisPerVirtualByte] = {
+    for {
+      curr <- positiveRealistic
+    } yield SatoshisPerVirtualByte(curr)
+  }
+
+  def feeUnit: Gen[FeeUnit] =
+    Gen.oneOf(satsPerByte, satsPerKiloByte, satsPerVirtualByte)
 
   def satoshis: Gen[Satoshis] =
     for {

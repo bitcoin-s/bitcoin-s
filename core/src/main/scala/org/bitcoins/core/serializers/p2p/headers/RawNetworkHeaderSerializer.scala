@@ -1,6 +1,7 @@
 package org.bitcoins.core.serializers.p2p.headers
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.config._
 import org.bitcoins.core.p2p.NetworkHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
 import org.bitcoins.core.util.BitcoinSLogger
@@ -20,7 +21,7 @@ trait RawNetworkHeaderSerializer
     * @return the native object for the MessageHeader
     */
   def read(bytes: ByteVector): NetworkHeader = {
-    val network = bytes.take(4)
+    val network = Networks.magicToNetwork(bytes.take(4))
     //.trim removes the null characters appended to the command name
     val commandName = bytes.slice(4, 16).toArray.map(_.toChar).mkString.trim
     val payloadSize = UInt32(bytes.slice(16, 20).reverse)
@@ -39,7 +40,7 @@ trait RawNetworkHeaderSerializer
     //command name needs to be 12 bytes in size, or 24 chars in hex
     val commandName = ByteVector(commandNameNoPadding).padRight(12)
     val checksum = messageHeader.checksum
-    network ++
+    network.magicBytes ++
       commandName ++
       messageHeader.payloadSize.bytes.reverse ++
       checksum

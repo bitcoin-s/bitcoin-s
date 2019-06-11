@@ -1,4 +1,4 @@
-package org.bitcoins.core.serializers.p2p.messages
+package org.bitcoins.core.serializers.p2p
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.NodeNetwork

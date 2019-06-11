@@ -35,13 +35,15 @@ sealed trait NetworkPayload extends NetworkElement {
 
 /**
   * Represents a data message inside of bitcoin core
-  * [[https://bitcoin.org/en/developer-reference#data-messages]]
+  *
+  * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
   */
 sealed trait DataPayload extends NetworkPayload
 
 /**
   * The block message transmits a single serialized block
-  * [[https://bitcoin.org/en/developer-reference#block]]
+  *
+  * @see [[https://bitcoin.org/en/developer-reference#block]]
   */
 trait BlockMessage extends DataPayload {
 
@@ -252,8 +254,8 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
     GetHeadersMessage(hashes, hashStop)
   }
 
-  def apply(hashes: DoubleSha256Digest): GetHeadersMessage = {
-    GetHeadersMessage(Vector(hashes))
+  def apply(hash: DoubleSha256Digest): GetHeadersMessage = {
+    GetHeadersMessage(Vector(hash))
   }
 }
 
@@ -357,7 +359,8 @@ object InventoryMessage extends Factory[InventoryMessage] {
   * as valid but which have not yet appeared in a block.
   * That is, transactions which are in the receiving node’s memory pool.
   * The response to the mempool message is one or more inv messages containing the TXIDs in the usual inventory format.
-  * [[https://bitcoin.org/en/developer-reference#mempool]]
+  *
+  * @see [[https://bitcoin.org/en/developer-reference#mempool]]
   */
 case object MemPoolMessage extends DataPayload {
   override val commandName = NetworkPayload.memPoolCommandName
@@ -404,6 +407,7 @@ object MerkleBlockMessage extends Factory[MerkleBlockMessage] {
   * node does not have available for relay. (Nodes are not expected to relay historic transactions
   * which are no longer in the memory pool or relay set.
   * Nodes may also have pruned spent transactions from older blocks, making them unable to send those blocks.)
+  *
   * @see [[https://bitcoin.org/en/developer-reference#notfound]]
   */
 trait NotFoundMessage extends DataPayload with InventoryMessage {
@@ -413,6 +417,7 @@ trait NotFoundMessage extends DataPayload with InventoryMessage {
 
 /**
   * The companion object factory used to create NotFoundMessages on the p2p network
+  *
   * @see https://bitcoin.org/en/developer-reference#notfound
   */
 object NotFoundMessage extends Factory[NotFoundMessage] {
@@ -424,6 +429,11 @@ object NotFoundMessage extends Factory[NotFoundMessage] {
 
   def fromBytes(bytes: ByteVector): NotFoundMessage =
     RawNotFoundMessageSerializer.read(bytes)
+
+  def apply(inventories: Seq[Inventory]): NotFoundMessage = {
+    val count = CompactSizeUInt(UInt64(inventories.length))
+    apply(count, inventories)
+  }
 
   def apply(
       inventoryCount: CompactSizeUInt,
@@ -498,6 +508,11 @@ object AddrMessage extends Factory[AddrMessage] {
 
   def fromBytes(bytes: ByteVector): AddrMessage =
     RawAddrMessageSerializer.read(bytes)
+
+  def apply(addresses: Seq[NetworkIpAddress]): AddrMessage = {
+    val count = CompactSizeUInt(UInt64(addresses.length))
+    apply(count, addresses)
+  }
 
   def apply(
       ipCount: CompactSizeUInt,
@@ -1086,13 +1101,14 @@ object NetworkPayload {
   val versionCommandName = "version"
 
   /**
-    * Contains all the valid command names with their deserializer on the p2p protocol
+    * Contains all the valid command names with their deserializer on the p2p protocol.
     * These commands all have the null bytes appended to the end of the string as
-    * required in [[NetworkHeader]]
-    * [[https://bitcoin.org/en/developer-reference#message-headers]]
+    * required by the network header specification.
+    *
+    * @see [[https://bitcoin.org/en/developer-reference#message-headers]]
     *
     */
-  val commandNames: Map[String, ByteVector => NetworkPayload] = Map(
+  val readers: Map[String, ByteVector => NetworkPayload] = Map(
     blockCommandName -> { RawBlockMessageSerializer.read(_) },
     getBlocksCommandName -> { RawGetBlocksMessageSerializer.read(_) },
     getHeadersCommandName -> { RawGetHeadersMessageSerializer.read(_) },
@@ -1117,9 +1133,7 @@ object NetworkPayload {
     },
     pingCommandName -> { RawPingMessageSerializer.read(_) },
     pongCommandName -> { RawPongMessageSerializer.read(_) },
-    rejectCommandName -> { _: ByteVector =>
-      ???
-    },
+    rejectCommandName -> { RawRejectMessageSerializer.read(_) },
     sendHeadersCommandName -> { _: ByteVector =>
       SendHeadersMessage
     },
@@ -1128,6 +1142,9 @@ object NetworkPayload {
     },
     versionCommandName -> { RawVersionMessageSerializer.read(_) }
   )
+
+  /** All command names for P2P messages */
+  val commandNames: Vector[String] = readers.keys.toVector
 
   /**
     * Parses a [[NetworkPayload]] from the given bytes using the [[NetworkHeader]]
@@ -1139,7 +1156,7 @@ object NetworkPayload {
       networkHeader: NetworkHeader,
       payloadBytes: ByteVector): NetworkPayload = {
     //the commandName in the network header tells us what payload type this is
-    val deserializer: ByteVector => NetworkPayload = commandNames(
+    val deserializer: ByteVector => NetworkPayload = readers(
       networkHeader.commandName)
     deserializer(payloadBytes)
   }
