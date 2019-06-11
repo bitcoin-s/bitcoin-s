@@ -28,18 +28,22 @@
       },
       "rpc/rpc-clients-intro": {
         "title": "Introduction"
+      },
+      "security": {
+        "title": "Security"
       }
     },
     "links": {
       "Docs": "Docs",
-      "Help": "Help",
-      "Blog": "Blog"
+      "API": "API",
+      "Help": "Help"
     },
     "categories": {
       "Getting started": "Getting started",
       "Core module": "Core module",
       "RPC clients": "RPC clients",
-      "Contributing": "Contributing"
+      "Contributing": "Contributing",
+      "Security": "Security"
     }
   },
   "pages-strings": {

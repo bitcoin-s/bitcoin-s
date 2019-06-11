@@ -86,8 +86,7 @@ const siteConfig = {
   headerLinks: [
     { doc: "core/core-intro", label: "Docs" },
     { href: scaladocUrl, label: "API" },
-    { page: "help", label: "Help" },
-    { blog: true, label: "Blog" }
+    { page: "help", label: "Help" }
   ],
 
   /** Makes the user showcase appear */
