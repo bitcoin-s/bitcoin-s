@@ -75,12 +75,6 @@ lazy val commonSettings = List(
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
-  /**
-    * We want to exclude loback config from our published library, so that users don't
-    * get our config forced on them
-    */
-  Compile / unmanagedResources := (Compile / unmanagedResources).value
-    .filterNot { _.getName.endsWith(".xml") },
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   /**
     * Adding Ammonite REPL to test scope, can access both test and compile
@@ -216,6 +210,47 @@ lazy val secp256k1jni = project
   )
   .enablePlugins(GitVersioning)
 
+/**
+  * If you want sbt projects to depend on each other in
+  * slighly nonstandard ways, the way to do it is through
+  * stringly typed syntax.
+  *
+  * Suppose you have a module A and a module B:
+  * {{{
+  * lazy val A = project.in(file("A"))
+  * lazy val B = project.in(file("B"))
+  *    .dependsOn(A)
+  * // .dependsOn(A % "compile->compile")
+  * // the line above is equivalent to the one
+  * // above it
+  * }}}
+  *
+  * With this setup, main sources in B can access
+  * main sources in A
+  *
+  * To make test sources in A available to test
+  * sources in B, you'd write this:
+  * {{{
+  * lazy val A = project.in(file("A"))
+  * lazy val B = project.in(file("B"))
+  *    .dependsOn(A % "test->test")
+  * }}}
+  *
+  * And finally, to make main sources able to access
+  * main sources as well as test sources able to
+  * access test sources:
+  * {{{
+  * lazy val A = project.in(file("A"))
+  * lazy val B = project.in(file("B"))
+  *    .dependsOn(A % "compile->compile;test->test")
+  * }}}
+  *
+  * We use this to make logging configuration in core
+  * propagate to tests in the other modules, without
+  * being published in the generated JARs.
+  */
+val testAndCompile = "compile->compile;test->test"
+
 lazy val core = project
   .in(file("core"))
   .settings(commonProdSettings: _*)
@@ -231,7 +266,7 @@ lazy val coreTest = project
     name := "bitcoin-s-core-test"
   )
   .dependsOn(
-    core,
+    core % testAndCompile,
     testkit
   )
   .enablePlugins()
@@ -253,10 +288,10 @@ lazy val chainTest = project
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
-    libraryDependencies ++= Deps.chainTest,
-  ).dependsOn(chain, core, testkit, zmq)
+    libraryDependencies ++= Deps.chainTest
+  )
+  .dependsOn(chain, core % testAndCompile, testkit, zmq)
   .enablePlugins(FlywayPlugin)
-
 
 lazy val dbCommons = project
   .in(file("db-commons"))
@@ -273,8 +308,9 @@ lazy val zmq = project
   .settings(commonSettings: _*)
   .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
-    core
-  ).enablePlugins(GitVersioning)
+    core % testAndCompile
+  )
+  .enablePlugins(GitVersioning)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -289,7 +325,7 @@ lazy val bitcoindRpcTest = project
   .settings(commonTestSettings: _*)
   .settings(libraryDependencies ++= Deps.bitcoindRpcTest,
             name := "bitcoin-s-bitcoind-rpc-test")
-  .dependsOn(testkit)
+  .dependsOn(core % testAndCompile, testkit)
   .enablePlugins()
 
 lazy val bench = project
@@ -302,7 +338,7 @@ lazy val bench = project
     name := "bitcoin-s-bench",
     skip in publish := true
   )
-  .dependsOn(core)
+  .dependsOn(core % testAndCompile)
   .enablePlugins(GitVersioning)
 
 lazy val eclairRpc = project
@@ -321,7 +357,7 @@ lazy val eclairRpcTest = project
   .settings(commonTestSettings: _*)
   .settings(libraryDependencies ++= Deps.eclairRpcTest,
             name := "bitcoin-s-eclair-rpc-test")
-  .dependsOn(testkit)
+  .dependsOn(core % testAndCompile, testkit)
   .enablePlugins()
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
@@ -357,17 +393,20 @@ lazy val nodeTest = {
       // https://github.com/scalatest/scalatest/issues/556
       Test / fork := false,
       libraryDependencies ++= Deps.nodeTest
-    ).dependsOn(
-    node,
-    testkit
-  ).enablePlugins(FlywayPlugin)
+    )
+    .dependsOn(
+      core % testAndCompile,
+      node,
+      testkit
+    )
+    .enablePlugins(FlywayPlugin)
 }
 
 lazy val testkit = project
   .in(file("testkit"))
   .settings(commonSettings: _*)
   .dependsOn(
-    core,
+    core % testAndCompile,
     chain,
     bitcoindRpc,
     eclairRpc,
@@ -426,15 +465,13 @@ lazy val walletTest = project
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",
-    libraryDependencies ++= Deps.walletTest,
+    libraryDependencies ++= Deps.walletTest
   )
-  .dependsOn(core, testkit, wallet)
+  .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
-
 
 lazy val scripts = project
   .in(file("scripts"))
-  .dependsOn(core, bitcoindRpc, eclairRpc, zmq)
   .settings(commonTestSettings: _*)
   .settings(
     name := "bitcoin-s-scripts",
@@ -443,7 +480,7 @@ lazy val scripts = project
   .dependsOn(
     bitcoindRpc,
     chain,
-    core,
+    core % testAndCompile,
     eclairRpc,
     node,
     secp256k1jni,
