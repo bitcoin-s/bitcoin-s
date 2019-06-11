@@ -3,7 +3,6 @@
 <url> <loc>https://bitcoin-s.org/help</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/en/help" /> </url>
 <url> <loc>https://bitcoin-s.org/index</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/en/index" /> </url>
 <url> <loc>https://bitcoin-s.org/users</loc> <changefreq>weekly</changefreq> <priority>0.5</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/en/users" /> </url>
-<url> <loc>https://bitcoin-s.org/blog/2019/05/9/bitcoin-s-website-release</loc> <changefreq>weekly</changefreq> <priority>0.3</priority> </url>
 <url> <loc>https://bitcoin-s.org/docs/contributing-website</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing-website" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/contributing</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/core/core-intro</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/core-intro" /> </url>
