@@ -191,6 +191,7 @@ object Deps {
     Compile.slf4j,
     Compile.scalacheck,
     Compile.scalaTest,
+    Test.akkaTestkit,
     Test.ammonite
   )
 

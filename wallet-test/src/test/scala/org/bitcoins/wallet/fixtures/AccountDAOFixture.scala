@@ -2,20 +2,20 @@ package org.bitcoins.wallet.fixtures
 
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.models.AccountDAO
-import org.bitcoins.wallet.util.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest._
 
 import scala.concurrent.Future
 import org.bitcoins.wallet.config.WalletAppConfig
 
 trait AccountDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
-  override final type FixtureParam = AccountDAO
+  final override type FixtureParam = AccountDAO
 
   // to get around the config in `BitcoinSWalletTest` not resolving
   // as an AppConfig
-  private implicit val walletConfig: WalletAppConfig = config.walletConf
+  implicit private val walletConfig: WalletAppConfig = config.walletConf
 
-  override final def withFixture(test: OneArgAsyncTest): FutureOutcome =
+  final override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     makeDependentFixture(createAccountTable, dropAccountTable)(test)
 
   private def dropAccountTable(accountDAO: AccountDAO): Future[Unit] = {

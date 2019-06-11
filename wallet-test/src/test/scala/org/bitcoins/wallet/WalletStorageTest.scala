@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.wallet.util.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.core.gen.CryptoGenerators
