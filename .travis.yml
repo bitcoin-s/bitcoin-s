@@ -48,7 +48,11 @@ before_script:
 
 stages:
   - name: test
-    if: commit_message !~ /^Docs:/
+    if:
+      commit_message !~ /^Docs:/ AND NOT
+      ((branch = master AND type = push) OR (tag IS present))
+      # don't run tests on merge builds, just publish library
+      # and website
   - name: release
     if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
 
