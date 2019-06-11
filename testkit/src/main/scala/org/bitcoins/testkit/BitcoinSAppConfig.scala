@@ -16,7 +16,7 @@ import com.typesafe.config.ConfigFactory
   * of this class can be passed in anywhere a wallet,
   * chain or node config is required.
   */
-case class BitcoinSAppConfig(confs: Config*) {
+case class BitcoinSAppConfig(private val confs: Config*) {
   val walletConf = WalletAppConfig(confs: _*)
   val nodeConf = NodeAppConfig(confs: _*)
   val chainConf = ChainAppConfig(confs: _*)
@@ -28,6 +28,16 @@ case class BitcoinSAppConfig(confs: Config*) {
                        chainConf.initialize())
 
     Future.sequence(futures).map(_ => ())
+  }
+
+  /** The underlying config the result of our fields derive from */
+  lazy val config = {
+    assert(chainConf.config == nodeConf.config)
+    assert(nodeConf.config == walletConf.config)
+
+    // there's nothing special about nodeConf, they should all
+    // be equal
+    nodeConf.config
   }
 }
 

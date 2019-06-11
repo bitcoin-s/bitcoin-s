@@ -9,24 +9,17 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.networking.Client
 
-/**
-  * Created by chris on 6/7/16.
-  * This actor is the middle man between our [[Client]] and higher level actors such as
-  * [[org.bitcoins.node.networking.BlockActor]]. When it receives a message, it tells [[Client]] to create connection to a peer,
-  * then it exchanges [[VersionMessage]], [[VerAckMessage]] and [[org.bitcoins.node.messages.PingMessage]]/[[PongMessage]] message
-  * with our peer on the network. When the Client finally responds to the [[NetworkMessage]] we originally
-  * sent it sends that [[NetworkMessage]] back to the actor that requested it.
-  */
 class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     extends BitcoinSLogger {
   private val socket = client.peer.socket
 
-  /** Initiates a connection with the given [[Peer]] */
+  /** Initiates a connection with the given peer */
   def connect(): Unit = {
     logger.info(s"Attempting to connect to peer=$socket")
     (client.actor ! Tcp.Connect(socket))
   }
 
+  /** Disconnects the given peer */
   def disconnect(): Unit = {
     logger.info(s"Disconnecting peer at socket=${socket}")
     (client.actor ! Tcp.Close)
@@ -53,7 +46,7 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     sendMsg(sendHeadersMsg)
   }
 
-  private def sendMsg(msg: NetworkPayload): Unit = {
+  private[node] def sendMsg(msg: NetworkPayload): Unit = {
     logger.debug(
       s"PeerMessageSender sending to peer=${socket} msg=${msg.commandName}")
     val newtworkMsg = NetworkMessage(np, msg)
@@ -80,9 +73,6 @@ object PeerMessageSender {
   /** Accumulators network messages while we are doing a handshake with our peer
     * and caches a peer handler actor so we can send a [[HandshakeFinished]]
     * message back to the actor when we are fully connected
-    *
-    * @param networkMsgs
-    * @param peerHandler
     */
   case class MessageAccumulator(
       networkMsgs: Vector[(ActorRef, NetworkMessage)],
