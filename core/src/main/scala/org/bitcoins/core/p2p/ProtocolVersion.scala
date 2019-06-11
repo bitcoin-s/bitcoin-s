@@ -30,7 +30,8 @@ object ProtocolVersion extends Factory[ProtocolVersion] {
     ProtocolVersion60002,
     ProtocolVersion70001,
     ProtocolVersion70002,
-    ProtocolVersion70012
+    ProtocolVersion70012,
+    ProtocolVersion70013
   )
 
   def fromBytes(bytes: ByteVector): ProtocolVersion = {

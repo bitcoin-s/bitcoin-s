@@ -16,10 +16,10 @@ sealed trait NetworkHeader extends NetworkElement {
   override def bytes: ByteVector = RawNetworkHeaderSerializer.write(this)
 
   /**
-    * Magic bytes indicating the originating network;
+    * Each network has magic bytes indicating the originating network;
     * used to seek to next message when stream state is unknown.
     */
-  def network: ByteVector
+  def network: NetworkParameters
 
   /**
     * ASCII string which identifies what message type is contained in the payload.
@@ -46,7 +46,7 @@ sealed trait NetworkHeader extends NetworkElement {
 object NetworkHeader extends Factory[NetworkHeader] {
 
   private case class NetworkHeaderImpl(
-      network: ByteVector,
+      network: NetworkParameters,
       commandName: String,
       payloadSize: UInt32,
       checksum: ByteVector)
@@ -65,7 +65,7 @@ object NetworkHeader extends Factory[NetworkHeader] {
     * @param checksum the checksum of the payload to ensure that the entire payload was sent
     */
   def apply(
-      network: ByteVector,
+      network: NetworkParameters,
       commandName: String,
       payloadSize: UInt32,
       checksum: ByteVector): NetworkHeader = {
@@ -81,7 +81,7 @@ object NetworkHeader extends Factory[NetworkHeader] {
       network: NetworkParameters,
       payload: NetworkPayload): NetworkHeader = {
     val checksum = CryptoUtil.doubleSHA256(payload.bytes)
-    NetworkHeader(network.magicBytes,
+    NetworkHeader(network,
                   payload.commandName,
                   UInt32(payload.bytes.size),
                   checksum.bytes.take(4))

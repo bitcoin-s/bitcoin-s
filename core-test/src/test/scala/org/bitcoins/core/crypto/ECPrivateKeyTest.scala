@@ -1,16 +1,18 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.TestNet3
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoTestUtil}
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
+import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.ChainParamsGenerator
+import org.bitcoins.core.config.MainNet
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.testkit.core.gen.NumberGenerator
+import org.bitcoins.core.config.Networks
 
-/**
-  * Created by chris on 3/7/16.
-  */
-class ECPrivateKeyTest extends FlatSpec with MustMatchers {
-  private def logger = BitcoinSLogger.logger
-
+class ECPrivateKeyTest extends BitcoinSUnitTest {
   "ECPrivateKey" must "have the same byte representation as a bitcoinj private key" in {
     val bitcoinjPrivateKey =
       CryptoTestUtil.bitcoinjPrivateKey.getPrivateKeyAsHex
@@ -106,6 +108,43 @@ class ECPrivateKeyTest extends FlatSpec with MustMatchers {
     val privKey = ECPrivateKey.fromWIFToPrivateKey(wif)
     privKey.publicKey.hex must be(
       "045b81f0017e2091e2edcd5eecf10d5bdd120a5514cb3ee65b8447ec18bfc4575c6d5bf415e54e03b1067934a0f0ba76b01c6b9ab227142ee1d543764b69d901e0")
+  }
+
+  it must "have serialization symmetri for WIF format" in {
+    forAll(CryptoGenerators.privateKey, ChainParamsGenerator.networkParams) {
+      (privKey, network) =>
+        val wif = privKey.toWIF(network)
+        network match {
+          case MainNet =>
+            assert(ECPrivateKey.parseNetworkFromWIF(wif).get == network)
+          case TestNet3 | RegTest =>
+            assert(ECPrivateKey.parseNetworkFromWIF(wif).get == TestNet3)
+        }
+        assert(ECPrivateKey.fromWIFToPrivateKey(wif) == privKey)
+    }
+  }
+
+  it must "have serialization symmetry" in {
+    forAll(CryptoGenerators.privateKey) { privKey =>
+      assert(ECPrivateKey(privKey.hex) == privKey)
+    }
+  }
+
+  it must "generate unique keys" in {
+    forAll(CryptoGenerators.privateKey, CryptoGenerators.privateKey) {
+      (privKey1, privKey2) =>
+        assert(privKey1 != privKey2)
+    }
+  }
+
+  it must "fail to parse unknown WIF networks" in {
+    // Litecoin privkey
+    val wif = "6uSDaezGtedUbYk4F9CNVXbDWw9DuEuw7czU596t1CzmeAJ77P8"
+    assert(ECPrivateKey.parseNetworkFromWIF(wif).isFailure)
+  }
+
+  it must "fail to parse non-WIF strings" in {
+    assert(ECPrivateKey.parseNetworkFromWIF("hello there").isFailure)
   }
 
 }

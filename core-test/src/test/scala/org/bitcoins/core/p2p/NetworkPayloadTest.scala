@@ -2,6 +2,7 @@ package org.bitcoins.core.p2p
 
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.core.gen.p2p.P2PGenerator
 
 class NetworkPayloadTest extends BitcoinSUnitTest {
 
@@ -13,5 +14,15 @@ class NetworkPayloadTest extends BitcoinSUnitTest {
     val payload = NetworkPayload(header, payloadHex)
     payload.isInstanceOf[VersionMessage] must be(true)
     payload.commandName must be(NetworkPayload.versionCommandName)
+  }
+
+  // this tests has a bunch of messages to choose between, so we set a high config value
+  implicit override val generatorDrivenConfig = customGenDrivenConfig(200)
+  it must "parse messages based on its command name" in {
+    forAll(P2PGenerator.message) { p2p =>
+      val bytes = p2p.bytes
+      val parser = NetworkPayload.readers(p2p.commandName)
+      assert(parser(bytes) == p2p)
+    }
   }
 }
