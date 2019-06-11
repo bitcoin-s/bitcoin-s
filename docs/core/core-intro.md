@@ -33,74 +33,21 @@ Most data structures have companion objects that extends `Factory` to be able to
 
 Here is an example scala console session with bitcoins-core
 
-```scala mdoc
+```scala mdoc:to-string
 import org.bitcoins.core.protocol.transaction._
 
-val hexTx = "0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f8$9c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1$a02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e$90c865c2f6f7a9710a474154ab1423abb5b9288ac00000000"
+val hexTx = "0100000002d8c8df6a6fdd2addaf589a83d860f18b44872d13ee6ec3526b2b470d42a96d4d000000008b483045022100b31557e47191936cb14e013fb421b1860b5e4fd5d2bc5ec1938f4ffb1651dc8902202661c2920771fd29dd91cd4100cefb971269836da4914d970d333861819265ba014104c54f8ea9507f31a05ae325616e3024bd9878cb0a5dff780444002d731577be4e2e69c663ff2da922902a4454841aa1754c1b6292ad7d317150308d8cce0ad7abffffffff2ab3fa4f68a512266134085d3260b94d3b6cfd351450cff021c045a69ba120b2000000008b4830450220230110bc99ef311f1f8bda9d0d968bfe5dfa4af171adbef9ef71678d658823bf022100f956d4fcfa0995a578d84e7e913f9bb1cf5b5be1440bcede07bce9cd5b38115d014104c6ec27cffce0823c3fecb162dbd576c88dd7cda0b7b32b0961188a392b488c94ca174d833ee6a9b71c0996620ae71e799fc7c77901db147fa7d97732e49c8226ffffffff02c0175302000000001976a914a3d89c53bb956f08917b44d113c6b2bcbe0c29b788acc01c3d09000000001976a91408338e1d5e26db3fce21b011795b1c3c8a5a5d0788ac00000000"
 
-// val tx = Transaction.fromHex(hexTx)
+val tx = Transaction.fromHex(hexTx)
 
-// val hexAgain = tx.hex
+tx.hex == hexTx
 ```
 
 This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a [`Transaction`](/api/org/bitcoins/core/protocol/transaction/Transaction). You could also serialize the transaction to bytes using `tx.bytes` instead of `tx.hex`. These methods are available on every data structure that extends NetworkElement, like [`ECPrivateKey`](/api/org/bitcoins/core/crypto/ECPrivateKey), [`ScriptPubKey`](/api/org/bitcoins/core/protocol/script/ScriptPubKey), [`ScriptWitness`](/api/org/bitcoins/core/protocol/script/ScriptWitness), and [`Block`](/api/org/bitcoins/core/protocol/blockchain/Block).
 
 #### Generating a BIP39 mnemonic phrase and an `xpriv`
 
-BIP39 mnemonic phrases are the most common way of creating backups of wallets.
-They are between 12 and 24 words the user writes down, and can later be used to restore
-their bitcoins. From the mnemonic phrase we generate a wallet seed, and that seed
-can be used to generate what's called an extended private key
-([`ExtPrivateKey`](/api/org/bitcoins/core/crypto/ExtPrivateKey) in Bitcoin-S).
-
-Here's an example:
-
-```scala mdoc:to-string
-import scodec.bits._
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.hd._
-
-// the length of the entropy bit vector determine
-// how long our phrase ends up being
-// 256 bits of entropy results in 24 words
-val entropy: BitVector = MnemonicCode.getEntropy256Bits
-
-val mnemonicCode = MnemonicCode.fromEntropy(entropy)
-
-mnemonicCode.words // the phrase the user should write down
-
-// the password argument is an optional, extra security
-// measure. all MnemonicCode instances will give you a
-// valid BIP39 seed, but different passwords will give
-// you different seeds. So you could have as many wallets
-// from the same seed as you'd like, by simply giving them
-// different passwords.
-val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode,
-                                       password = "secret password")
-
-val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
-                                        bip39Seed)
-val xpub = xpriv.extPublicKey
-
-// you can now use the generated xpriv to derive further
-// private or public keys
-
-// this can be done with BIP89 paths (called SegWitHDPath in bitcoin-s)
-val segwitPath = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
-
-// alternatively:
-val otherSegwitPath =
-SegWitHDPath(HDCoinType.Bitcoin,
-             accountIndex = 0,
-             HDChainType.External,
-             addressIndex = 0)
-
-segwitPath == otherSegwitPath
-
-// there's also paths available for legacy
-// addresses (LegacyHDPath) as well as nested
-// segwit paths (NestedSegWitPath)
-```
+See our [HD example](hd-keys)
 
 ### Building a signed transaction
 
@@ -125,6 +72,8 @@ This is the API we define to sign things with. It takes in an arbitrary byte vec
 From [`core/src/main/scala/org/bitcoins/core/crypto/Sign.scala`](/api/org/bitcoins/core/crypto/Sign):
 
 ```scala mdoc
+import scodec.bits._
+import org.bitcoins.core.crypto._
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -160,7 +109,7 @@ Transactions are run through the interpreter to check their validity. These are 
 
 Here is an example of a transaction spending a `scriptPubKey` which is correctly evaluated with our interpreter implementation:
 
-```scala mdoc:silent
+```scala mdoc:silent:reset
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
