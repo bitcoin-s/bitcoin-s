@@ -13,11 +13,15 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.node.SpvNode
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+import org.bitcoins.rpc.util.RpcUtil
+import akka.actor.ActorSystem
+import org.bitcoins.core.util.BitcoinSLogger
 
-/**
-  * Created by chris on 6/2/16.
-  */
-abstract class NodeTestUtil {
+abstract class NodeTestUtil extends BitcoinSLogger {
 
   //txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
   //this tx has multiple inputs and outputs
@@ -93,6 +97,27 @@ abstract class NodeTestUtil {
     val socket = getBitcoindSocketAddress(bitcoindRpcClient)
     val networkIpAddress = NetworkIpAddress.fromInetSocketAddress(socket)
     Peer.fromNetworkIpAddress(networkIpAddress)
+  }
+
+  /** Checks if the given SPV node and bitcoind is synced */
+  def isSameBestHash(node: SpvNode, rpc: BitcoindRpcClient)(
+      implicit ec: ExecutionContext): Future[Boolean] = {
+    val hashF = rpc.getBestBlockHash
+    val spvHashF = node.chainApi.getBestBlockHash
+    for {
+      spvBestHash <- spvHashF
+      hash <- hashF
+    } yield {
+      spvBestHash == hash
+    }
+  }
+
+  /** Awaits sync between the given SPV node and bitcoind client */
+  def awaitSync(node: SpvNode, rpc: BitcoindRpcClient)(
+      implicit sys: ActorSystem): Future[Unit] = {
+    import sys.dispatcher
+    RpcUtil
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 500.milliseconds)
   }
 
 }
