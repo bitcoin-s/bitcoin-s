@@ -12,7 +12,7 @@ object Deps {
     val zeromq = "0.5.1"
     val akkav = "10.1.8"
     val akkaStreamv = "2.5.23"
-    val playv = "2.7.0"
+    val playv = "2.7.2"
     val scodecV = "1.1.6"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
