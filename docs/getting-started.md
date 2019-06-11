@@ -59,7 +59,7 @@ You can also run on the bleeding edge of Bitcoin-S, by
 adding a snapshot build to your `build.sbt`. The most
 recent snapshot published is `@UNSTABLE_VERSION@`.
 
-To fetch snapshot, you will need to add the correct
+To fetch snapshots, you will need to add the correct
 resolver in your `build.sbt`:
 
 ```sbt

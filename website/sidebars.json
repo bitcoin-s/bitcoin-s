@@ -1,7 +1,12 @@
 {
   "docs": {
     "Getting started": ["getting-started"],
-    "Core module": ["core/core-intro", "core/txbuilder"],
+    "Core module": [
+      "core/core-intro",
+      "core/addresses",
+      "core/hd-keys",
+      "core/txbuilder"
+    ],
     "RPC clients": [
       "rpc/rpc-clients-intro",
       "rpc/rpc-eclair",
