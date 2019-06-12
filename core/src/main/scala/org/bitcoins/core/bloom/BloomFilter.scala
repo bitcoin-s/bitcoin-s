@@ -20,12 +20,14 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
+import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.util.CryptoUtil
 
 /**
-  * Created by chris on 8/2/16.
-  * Implements a bloom fitler that abides by the semantics of
-  * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
-  * [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h]]
+  * Implements a bloom filter that abides by the semantics of BIP37
+
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
+  * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h Bitcoin Core bloom.h]]
   */
 sealed abstract class BloomFilter extends NetworkElement {
 
@@ -44,7 +46,7 @@ sealed abstract class BloomFilter extends NetworkElement {
   /**
     * A set of flags that control how outpoints corresponding to a matched pubkey script are added to the filter.
     * See the 'Comparing Transaction Elements to a Bloom Filter' section in this
-    * [[https://bitcoin.org/en/developer-reference#filterload link]]
+    * @see [[https://bitcoin.org/en/developer-reference#filterload link]]
     */
   def flags: BloomFlag
 
@@ -73,20 +75,43 @@ sealed abstract class BloomFilter extends NetworkElement {
     BloomFilter(filterSize, newData, hashFuncs, tweak, flags)
   }
 
-  /** Inserts a [[org.bitcoins.core.crypto.HashDigest HashDigest]] into `data` */
+  /** Inserts a hash into the filter */
   def insert(hash: HashDigest): BloomFilter = insert(hash.bytes)
 
-  /** Inserts a sequence of [[org.bitcoins.core.crypto.HashDigest HashDigest]]'s into our BloomFilter */
+  /** Inserts a sequence of hashes into the filter */
   def insertHashes(hashes: Seq[HashDigest]): BloomFilter = {
     val byteVectors = hashes.map(_.bytes)
     insertByteVectors(byteVectors)
   }
 
-  /** Inserts a [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] into `data` */
+  /** Inserts a transaction outpoint into the filter */
   def insert(outPoint: TransactionOutPoint): BloomFilter =
     insert(outPoint.bytes)
 
-  /** Checks if `data` contains the given sequence of bytes */
+  /**
+    * Inserts a public key and it's corresponding hash into the bloom filter
+    *
+    * @note The rationale for inserting both the pubkey and its hash is that
+    *       in most cases where you have an "interesting pubkey" that you
+    *       want to track on the P2P network what you really need to do is
+    *       insert the hash of the public key, as that is what appears on
+    *       the blockchain and that nodes you query with bloom filters will
+    *       see.
+    *
+    * @see  The
+    *       [[https://github.com/bitcoinj/bitcoinj/blob/806afa04419ebdc3c15d5adf065979aa7303e7f6/core/src/main/java/org/bitcoinj/core/BloomFilter.java#L244 BitcoinJ]]
+    *       implementation of this function
+    */
+  def insert(pubkey: ECPublicKey): BloomFilter = {
+    val pubkeyBytes = pubkey.bytes
+    val hash = CryptoUtil.sha256Hash160(pubkeyBytes)
+    insert(pubkeyBytes).insert(hash)
+  }
+
+  /** Checks if the filter contains the given public key */
+  def contains(pubkey: ECPublicKey): Boolean = contains(pubkey.bytes)
+
+  /** Checks if the filter contains the given bytes */
   def contains(bytes: ByteVector): Boolean = {
     val bitIndexes = (0 until hashFuncs.toInt).map(i => murmurHash(i, bytes))
     @tailrec
@@ -290,7 +315,29 @@ object BloomFilter extends Factory[BloomFilter] {
   /**
     * Creates a bloom filter based on the number of elements to be inserted into the filter
     * and the desired false positive rate.
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
+    */
+  // todo provide default flag?
+  def apply(
+      numElements: Int,
+      falsePositiveRate: Double,
+      flags: BloomFlag): BloomFilter = {
+    val random = Math.floor(Math.random() * UInt32.max.toLong).toLong
+    val tweak = UInt32(random)
+    apply(numElements, falsePositiveRate, tweak, flags)
+  }
+
+  // todo: provide a apply method where you can pass in bloom-able filters
+  // through a type class
+
+  /**
+    * Creates a bloom filter based on the number of elements to be inserted into the filter
+    * and the desired false positive rate.
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format BIP37]]
+    *
+    * @param tweak A random value that only acts to randomize the filter and increase privacy
     */
   def apply(
       numElements: Int,

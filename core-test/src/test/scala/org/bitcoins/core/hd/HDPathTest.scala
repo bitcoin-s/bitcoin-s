@@ -13,9 +13,6 @@ import org.bitcoins.core.protocol.script.WitnessScriptPubKey
 
 class HDPathTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
-
   behavior of "HDAccount"
 
   it must "fail to make accounts with negative indices" in {
@@ -78,6 +75,16 @@ class HDPathTest extends BitcoinSUnitTest {
   }
 
   behavior of "HDPath"
+
+  it must "generate the next path" in {
+    forAll(HDGenerators.hdPath) { path =>
+      val next = path.next
+      assert(next != path)
+      // all elements except the last one should be the same
+      assert(next.path.init == path.path.init)
+      assert(next.address.index == path.address.index + 1)
+    }
+  }
 
   it must "have toString/fromString symmetry" in {
     forAll(HDGenerators.hdPath) { path =>
