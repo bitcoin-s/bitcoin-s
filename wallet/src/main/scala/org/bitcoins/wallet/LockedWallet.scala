@@ -24,12 +24,14 @@ import scala.concurrent.ExecutionContext
 import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
 import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.bloom.BloomUpdateAll
 
 abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
-  protected val addressDAO: AddressDAO = AddressDAO()
-  protected val accountDAO: AccountDAO = AccountDAO()
-  protected val utxoDAO: UTXOSpendingInfoDAO = UTXOSpendingInfoDAO()
+  private[wallet] val addressDAO: AddressDAO = AddressDAO()
+  private[wallet] val accountDAO: AccountDAO = AccountDAO()
+  private[wallet] val utxoDAO: UTXOSpendingInfoDAO = UTXOSpendingInfoDAO()
 
   override def getBalance(): Future[CurrencyUnit] = listUtxos().map { utxos =>
     utxos.map(_.value).fold(0.bitcoin)(_ + _)
@@ -72,6 +74,43 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
   override def listAddresses(): Future[Vector[AddressDb]] =
     addressDAO.findAll()
+
+  /** Enumerates the public keys in this wallet */
+  private[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
+    addressDAO.findAllPubkeys().map(_.toVector)
+
+  /** Gets the size of the bloom filter for this wallet  */
+  private def getBloomFilterSize(): Future[Int] = {
+    for {
+      pubkeys <- listPubkeys()
+    } yield {
+      // when a public key is inserted into a filter
+      // both the pubkey and the hash of the pubkey
+      // gets inserted
+      pubkeys.length * 2
+    }
+
+  }
+
+  // todo: insert TXIDs? need to track which txids we should
+  // ask for, somehow
+  override def getBloomFilter(): Future[BloomFilter] = {
+    for {
+      pubkeys <- listPubkeys()
+      filterSize <- getBloomFilterSize()
+    } yield {
+
+      // todo: Is this the best flag to use?
+      val bloomFlag = BloomUpdateAll
+
+      val baseBloom =
+        BloomFilter(numElements = filterSize,
+                    falsePositiveRate = walletConfig.bloomFalsePositiveRate,
+                    flags = bloomFlag)
+
+      pubkeys.foldLeft(baseBloom) { _.insert(_) }
+    }
+  }
 
   /**
     * Tries to convert the provided spk to an address, and then checks if we have
@@ -186,6 +225,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       account: AccountDb,
       chainType: HDChainType
   ): Future[BitcoinAddress] = {
+    logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
 
     val accountIndex = account.hdAccount.index
 
@@ -199,12 +239,17 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
     lastAddrOptF.flatMap { lastAddrOpt =>
       val addrPath: HDPath = lastAddrOpt match {
         case Some(addr) =>
-          addr.path.next
+          val next = addr.path.next
+          logger.debug(
+            s"Found previous address at path=${addr.path}, next=$next")
+          next
         case None =>
           val account = HDAccount(DEFAULT_HD_COIN, accountIndex)
           val chain = account.toChain(chainType)
           val address = HDAddress(chain, 0)
-          address.toPath
+          val path = address.toPath
+          logger.debug(s"Did not find previous address, next=$path")
+          path
       }
 
       val addressDb = {
@@ -235,9 +280,10 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
                                                    networkParameters)
         }
       }
+      logger.debug(s"Writing $addressDb to DB")
       val writeF = addressDAO.create(addressDb)
       writeF.foreach { written =>
-        logger.info(
+        logger.debug(
           s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
       }
 
@@ -251,7 +297,21 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
     * @inheritdoc
     */
   override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
-    getNewAddressHelper(account, HDChainType.External)
+    val addrF = getNewAddressHelper(account, HDChainType.External)
+    addrF
+  }
+
+  override def getAddressInfo(
+      address: BitcoinAddress): Future[Option[AddressInfo]] = {
+
+    val addressOptF = addressDAO.findAddress(address)
+    addressOptF.map { addressOpt =>
+      addressOpt.map { address =>
+        AddressInfo(pubkey = address.ecPublicKey,
+                    network = address.address.networkParameters,
+                    path = address.path)
+      }
+    }
   }
 
   /** Generates a new change address */

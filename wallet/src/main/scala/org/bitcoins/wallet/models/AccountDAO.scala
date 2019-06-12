@@ -38,8 +38,4 @@ case class AccountDAO()(
     findByPrimaryKeys(
       accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index)))
 
-  def findAll(): Future[Vector[AccountDb]] = {
-    val query = table.result
-    database.run(query).map(_.toVector)
-  }
 }

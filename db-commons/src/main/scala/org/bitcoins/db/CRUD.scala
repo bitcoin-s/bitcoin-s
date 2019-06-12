@@ -4,6 +4,8 @@ import org.bitcoins.core.util.BitcoinSLogger
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
+import java.sql.SQLException
+import org.bitcoins.core.config.MainNet
 
 /**
   * Created by chris on 9/8/16.
@@ -122,6 +124,10 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
 
   protected def findAll(ts: Vector[T]): Query[Table[_], T, Seq]
 
+  /** Finds all elements in the table */
+  def findAll(): Future[Vector[T]] =
+    database.run(table.result).map(_.toVector)
+
 }
 
 case class SafeDatabase(config: AppConfig) extends BitcoinSLogger {
@@ -135,16 +141,28 @@ case class SafeDatabase(config: AppConfig) extends BitcoinSLogger {
     */
   private val foreignKeysPragma = sqlu"PRAGMA foreign_keys = TRUE;"
 
-  def run[R](action: DBIOAction[R, NoStream, _]): Future[R] = {
+  /** Logs the given action and error, if we are not on mainnet */
+  private def logAndThrowError(
+      action: DBIOAction[_, NoStream, _]): PartialFunction[Throwable, Nothing] = {
+    case err: SQLException =>
+      if (config.network != MainNet) {
+        logger.error(
+          s"Error when executing query ${action.getDumpInfo.getNamePlusMainInfo}")
+        logger.error(s"$err")
+      }
+      throw err
+  }
 
+  def run[R](action: DBIOAction[R, NoStream, _])(
+      implicit ec: ExecutionContext): Future[R] = {
     val result = database.run[R](foreignKeysPragma >> action)
-    result
+    result.recoverWith { logAndThrowError(action) }
   }
 
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(
       implicit ec: ExecutionContext): Future[Vector[R]] = {
     val result = database.run[Seq[R]](foreignKeysPragma >> action)
-    result.map(_.toVector)
+    result.map(_.toVector).recoverWith { logAndThrowError(action) }
   }
 }
 
