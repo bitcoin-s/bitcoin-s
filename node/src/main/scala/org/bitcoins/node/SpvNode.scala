@@ -32,7 +32,7 @@ case class SpvNode(
   import system.dispatcher
 
   private val peerMsgRecv =
-    PeerMessageReceiver.newReceiver()
+    PeerMessageReceiver.newReceiver(callbacks)
 
   private val client: Client =
     Client(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)
