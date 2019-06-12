@@ -15,6 +15,7 @@ import org.bitcoins.core.p2p.BlockMessage
 import org.bitcoins.core.p2p.TransactionMessage
 import org.bitcoins.core.p2p.MerkleBlockMessage
 import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.core.p2p.GetDataMessage
 
 /** This actor is meant to handle a [[org.bitcoins.node.messages.DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -25,11 +26,19 @@ class DataMessageHandler(callbacks: Vector[SpvNodeCallbacks])(
     appConfig: ChainAppConfig)
     extends BitcoinSLogger {
 
+  callbacks match {
+    case SpvNodeCallbacks.empty =>
+      logger.debug(s"No callbacks given")
+    case _: Vector[SpvNodeCallbacks] =>
+      logger.debug(s"Given ${callbacks.length} set(s) of callbacks")
+  }
+
   private val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO()
 
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender): Future[Unit] = {
+
     payload match {
       case headersMsg: HeadersMessage =>
         val headers = headersMsg.headers
@@ -59,7 +68,8 @@ class DataMessageHandler(callbacks: Vector[SpvNodeCallbacks])(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[Unit] = {
     logger.info(s"Received inv=${invMsg}")
-
+    val getData = GetDataMessage(invMsg.inventories)
+    peerMsgSender.sendMsg(getData)
     FutureUtil.unit
 
   }

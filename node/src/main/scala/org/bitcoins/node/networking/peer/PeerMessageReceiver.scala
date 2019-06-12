@@ -113,13 +113,13 @@ class PeerMessageReceiver(
   def handleNetworkMessageReceived(
       networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Unit = {
 
-    //create a way to send a response if we need too
-    val peerMsgSender =
-      PeerMessageSender(networkMsgRecv.client, chainAppConfig.network)
+    val client = networkMsgRecv.client
 
-    logger.info(
-      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${peerOpt
-        .map(_.socket)} ")
+    //create a way to send a response if we need too
+    val peerMsgSender = PeerMessageSender(client, chainAppConfig.network)
+
+    logger.debug(
+      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} ")
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload, sender = peerMsgSender)
