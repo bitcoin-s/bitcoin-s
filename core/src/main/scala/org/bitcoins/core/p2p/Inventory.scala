@@ -25,6 +25,8 @@ trait Inventory extends NetworkElement {
   def hash: DoubleSha256Digest
 
   override def bytes: ByteVector = RawInventorySerializer.write(this)
+
+  override def toString(): String = s"Inventory($typeIdentifier, $hash)"
 }
 
 object Inventory extends Factory[Inventory] {
@@ -43,6 +45,3 @@ object Inventory extends Factory[Inventory] {
     InventoryImpl(typeIdentifier, hash)
   }
 }
-
-
-
