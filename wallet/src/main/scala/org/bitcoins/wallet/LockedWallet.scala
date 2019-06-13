@@ -38,7 +38,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
   }
 
   /** The default HD coin */
-  private lazy val DEFAULT_HD_COIN: HDCoin = {
+  private[wallet] lazy val DEFAULT_HD_COIN: HDCoin = {
     val coinType = chainParams match {
       case MainNetChainParams                         => HDCoinType.Bitcoin
       case RegTestNetChainParams | TestNetChainParams => HDCoinType.Testnet
