@@ -10,13 +10,17 @@ import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.testkit.core.gen.ScriptGenerators
+import org.scalatest.prop.PropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 3/2/16.
   */
-class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
+class BitcoinScriptUtilTest
+    extends FlatSpec
+    with MustMatchers
+    with PropertyChecks {
 
   //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
   val asm = TestUtil.p2pkhScriptPubKey.asm
@@ -48,35 +52,45 @@ class BitcoinScriptUtilTest extends FlatSpec with MustMatchers {
   }
 
   it must "filter out all but the data tokens" in {
-    val (p2pkhScript, _) = ScriptGenerators.p2pkhScriptPubKey.sample.get
-    assert(
-      BitcoinScriptUtil
-        .getDataTokens(p2pkhScript.asm)
-        .map(_.bytes) == Vector(p2pkhScript.pubKeyHash.bytes))
+    forAll(ScriptGenerators.p2pkhScriptPubKey) {
+      case (p2pkhScript, _) =>
+        assert(
+          BitcoinScriptUtil
+            .getDataTokens(p2pkhScript.asm)
+            .map(_.bytes) == Vector(p2pkhScript.pubKeyHash.bytes))
+    }
 
-    val (p2shScript, _) = ScriptGenerators.p2shScriptPubKey.sample.get
-    assert(
-      BitcoinScriptUtil
-        .getDataTokens(p2shScript.asm)
-        .map(_.bytes) == Vector(p2shScript.scriptHash.bytes))
+    forAll(ScriptGenerators.p2shScriptPubKey) {
+      case (p2shScript, _) =>
+        assert(
+          BitcoinScriptUtil
+            .getDataTokens(p2shScript.asm)
+            .map(_.bytes) == Vector(p2shScript.scriptHash.bytes))
+    }
 
-    val (p2wshScript, _) = ScriptGenerators.p2wshSPKV0.sample.get
-    assert(
-      BitcoinScriptUtil
-        .getDataTokens(p2wshScript.asm)
-        .map(_.bytes) == Vector(p2wshScript.scriptHash.bytes))
+    forAll(ScriptGenerators.p2wshSPKV0) {
+      case (p2wshScript, _) =>
+        assert(
+          BitcoinScriptUtil
+            .getDataTokens(p2wshScript.asm)
+            .map(_.bytes) == Vector(p2wshScript.scriptHash.bytes))
+    }
 
-    val (p2wpkhScript, _) = ScriptGenerators.p2wpkhSPKV0.sample.get
-    assert(
-      BitcoinScriptUtil
-        .getDataTokens(p2wpkhScript.asm)
-        .map(_.bytes) == Vector(p2wpkhScript.pubKeyHash.bytes))
+    forAll(ScriptGenerators.p2wpkhSPKV0) {
+      case (p2wpkhScript, _) =>
+        assert(
+          BitcoinScriptUtil
+            .getDataTokens(p2wpkhScript.asm)
+            .map(_.bytes) == Vector(p2wpkhScript.pubKeyHash.bytes))
+    }
 
-    val (multiSigScript, _) = ScriptGenerators.multiSigScriptPubKey.sample.get
-    assert(
-      BitcoinScriptUtil
-        .getDataTokens(multiSigScript.asm)
-        .map(_.bytes) == multiSigScript.publicKeys.map(_.bytes))
+    forAll(ScriptGenerators.multiSigScriptPubKey) {
+      case (multiSigScript, _) =>
+        assert(
+          BitcoinScriptUtil
+            .getDataTokens(multiSigScript.asm)
+            .map(_.bytes) == multiSigScript.publicKeys.map(_.bytes))
+    }
   }
 
   it must "determine if a script op count towards the bitcoin script op code limit" in {

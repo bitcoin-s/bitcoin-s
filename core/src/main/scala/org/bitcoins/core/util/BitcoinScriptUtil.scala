@@ -67,20 +67,23 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   def getDataTokens(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
-    var prevWasPush: Boolean = false
+    val builder = Vector.newBuilder[ScriptToken]
 
-    asm.filter { token =>
-      val isData = prevWasPush
-
-      if (token
-            .isInstanceOf[BytesToPushOntoStack] || token == OP_PUSHDATA1 || token == OP_PUSHDATA2 || token == OP_PUSHDATA4) {
-        prevWasPush = true
-      } else {
-        prevWasPush = false
-      }
-
-      isData
+    asm.zipWithIndex.foreach {
+      case (token, index) =>
+        token match {
+          case OP_PUSHDATA1 | OP_PUSHDATA2 | OP_PUSHDATA4 =>
+            /* OP_PUSH_DATA[1|2|4] says that the next value is [1|2|4] bytes and indicates
+             * how many bytes should be pushed onto the stack (meaning the data is 2 values away)
+             */
+            builder.+=(asm(index + 2))
+          case _: BytesToPushOntoStack =>
+            builder.+=(asm(index + 1))
+          case _ => ()
+        }
     }
+
+    builder.result()
   }
 
   /**
