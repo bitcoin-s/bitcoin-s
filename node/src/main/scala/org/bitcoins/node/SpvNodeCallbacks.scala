@@ -9,18 +9,18 @@ import org.bitcoins.node.networking.peer.DataMessageHandler._
   *
   */
 case class SpvNodeCallbacks(
-    onTxReceived: OnTxReceived,
-    onBlockReceived: OnBlockReceived,
-    onMerkleBlockReceived: OnMerkleBlockReceived
+    onTxReceived: Seq[OnTxReceived] = Seq.empty,
+    onBlockReceived: Seq[OnBlockReceived] = Seq.empty,
+    onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty
 )
 
 object SpvNodeCallbacks {
 
   /** Empty callbacks that does nothing with the received data */
-  val empty: Vector[SpvNodeCallbacks] = Vector(
+  val empty: SpvNodeCallbacks =
     SpvNodeCallbacks(
-      onTxReceived = noop,
-      onBlockReceived = noop,
-      onMerkleBlockReceived = noop
-    ))
+      onTxReceived = Seq.empty,
+      onBlockReceived = Seq.empty,
+      onMerkleBlockReceived = Seq.empty
+    )
 }

@@ -21,17 +21,13 @@ import org.bitcoins.core.p2p.GetDataMessage
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[HeadersMessage]] we should store those headers in our database
   */
-class DataMessageHandler(callbacks: Vector[SpvNodeCallbacks])(
+class DataMessageHandler(callbacks: SpvNodeCallbacks)(
     implicit ec: ExecutionContext,
     appConfig: ChainAppConfig)
     extends BitcoinSLogger {
 
-  callbacks match {
-    case SpvNodeCallbacks.empty =>
-      logger.debug(s"No callbacks given")
-    case _: Vector[SpvNodeCallbacks] =>
-      logger.debug(s"Given ${callbacks.length} set(s) of callbacks")
-  }
+  val callbackNum = callbacks.onBlockReceived.length + callbacks.onMerkleBlockReceived.length + callbacks.onTxReceived.length
+  logger.debug(s"Given $callbackNum of callback(s)")
 
   private val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO()
 
@@ -51,11 +47,13 @@ class DataMessageHandler(callbacks: Vector[SpvNodeCallbacks])(
           peerMsgSender.sendGetHeadersMessage(lastHash)
         }
       case msg: BlockMessage =>
-        Future { callbacks.foreach(_.onBlockReceived(msg.block)) }
+        Future { callbacks.onBlockReceived.foreach(_.apply(msg.block)) }
       case msg: TransactionMessage =>
-        Future { callbacks.foreach(_.onTxReceived(msg.transaction)) }
+        Future { callbacks.onTxReceived.foreach(_.apply(msg.transaction)) }
       case msg: MerkleBlockMessage =>
-        Future { callbacks.foreach(_.onMerkleBlockReceived(msg.merkleBlock)) }
+        Future {
+          callbacks.onMerkleBlockReceived.foreach(_.apply(msg.merkleBlock))
+        }
       case invMsg: InventoryMessage =>
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }

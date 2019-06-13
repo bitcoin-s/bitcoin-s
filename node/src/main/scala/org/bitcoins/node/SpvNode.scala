@@ -22,7 +22,7 @@ import org.bitcoins.core.p2p.NetworkPayload
 case class SpvNode(
     peer: Peer,
     chainApi: ChainApi,
-    callbacks: Vector[SpvNodeCallbacks] = SpvNodeCallbacks.empty,
+    callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty,
     bloomFilter: Option[BloomFilter] = None
 )(
     implicit system: ActorSystem,

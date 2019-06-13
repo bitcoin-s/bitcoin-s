@@ -27,7 +27,7 @@ import org.bitcoins.node.SpvNodeCallbacks
   */
 class PeerMessageReceiver(
     state: PeerMessageReceiverState,
-    callbacks: Vector[SpvNodeCallbacks]
+    callbacks: SpvNodeCallbacks
 )(
     implicit ref: ActorRefFactory,
     nodeAppConfig: NodeAppConfig,
@@ -233,7 +233,7 @@ object PeerMessageReceiver {
 
   def apply(
       state: PeerMessageReceiverState,
-      callbacks: Vector[SpvNodeCallbacks] = SpvNodeCallbacks.empty)(
+      callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
       implicit ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
@@ -241,7 +241,7 @@ object PeerMessageReceiver {
     new PeerMessageReceiver(state, callbacks)
   }
 
-  def newReceiver(callbacks: Vector[SpvNodeCallbacks] = SpvNodeCallbacks.empty)(
+  def newReceiver(callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
       implicit nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {

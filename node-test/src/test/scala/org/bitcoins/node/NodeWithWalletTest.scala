@@ -21,6 +21,8 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.node.NodeTestUtil
 import akka.actor.Cancellable
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 
 class NodeWithWalletTest extends BitcoinSWalletTest {
 
@@ -46,16 +48,15 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
 
       val completionP = Promise[Assertion]
 
-      val callbacks = SpvNodeCallbacks(
-        onBlockReceived = { block =>
+      val callbacks = {
+        val onBlock: DataMessageHandler.OnBlockReceived = { block =>
           completionP.failure(
             new TestFailedException(
               s"Received a block! We are only expecting merkle blocks",
               failedCodeStackDepth = 0))
+        }
 
-        },
-        onMerkleBlockReceived = block => (),
-        onTxReceived = { tx =>
+        val onTx: DataMessageHandler.OnTxReceived = { tx =>
           if (expectedTxId.contains(tx.txId)) {
             cancellable.map(_.cancel())
             completionP.success(succeed)
@@ -68,7 +69,29 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
             logger.info(s"Didn't match expected TX or unexpected TX")
           }
         }
-      )
+
+        SpvNodeCallbacks(
+          onBlockReceived = Seq(onBlock),
+          onTxReceived = Seq(onTx)
+        )
+      }
+
+      def processWalletTx(tx: DoubleSha256DigestBE) = {
+        expectedTxId = Some(tx.flip)
+        // how long we're waiting for a tx notify before failing the test
+        val delay = 15.seconds
+        val runnable: Runnable = new Runnable {
+          override def run = {
+            val msg =
+              s"Did not receive sent transaction within $delay"
+            logger.error(msg)
+            completionP.failure(new TestFailedException(msg, 0))
+          }
+        }
+
+        cancellable = Some(actorSystem.scheduler.scheduleOnce(delay, runnable))
+        tx
+      }
 
       for {
         _ <- config.initialize()
@@ -87,29 +110,13 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
             SpvNode(peer,
                     chainHandler,
                     bloomFilter = Some(bloom),
-                    callbacks = Vector(callbacks))
+                    callbacks = callbacks)
           spv.start()
         }
         _ <- spv.sync()
         _ <- NodeTestUtil.awaitSync(spv, rpc)
 
-        ourTxid <- rpc.sendToAddress(address, 1.bitcoin).map { tx =>
-          expectedTxId = Some(tx.flip)
-          // how long we're waiting for a tx notify before failing the test
-          val delay = 15.seconds
-          val runnable: Runnable = new Runnable {
-            override def run = {
-              val msg =
-                s"Did not receive sent transaction within $delay"
-              logger.error(msg)
-              completionP.failure(new TestFailedException(msg, 0))
-            }
-          }
-
-          cancellable =
-            Some(actorSystem.scheduler.scheduleOnce(delay, runnable))
-          tx
-        }
+        ourTxid <- rpc.sendToAddress(address, 1.bitcoin).map(processWalletTx)
 
         notOurTxid <- rpc.getNewAddress
           .flatMap(rpc.sendToAddress(_, 1.bitcoin))
