@@ -15,15 +15,20 @@ import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
+import org.bitcoins.testkit.BitcoinSAppConfig
 
 class ChainHandlerTest extends ChainUnitTest {
 
   override type FixtureParam = ChainHandler
 
-  override implicit val system = ActorSystem("ChainUnitTest")
+  implicit override val system = ActorSystem("ChainUnitTest")
 
   // we're working with mainnet data
-  override lazy implicit val appConfig: ChainAppConfig = mainnetAppConfig
+  implicit override lazy val appConfig: ChainAppConfig = {
+    val memoryDb = BitcoinSAppConfig.configWithMemoryDb(
+      Some(BitcoinSAppConfig.ProjectType.Chain))
+    mainnetAppConfig.withOverrides(memoryDb)
+  }
 
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
