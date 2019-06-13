@@ -4,27 +4,27 @@ object Deps {
 
   object V {
     val bouncyCastle = "1.55"
-    val logback = "1.0.13"
+    val logback = "1.2.3"
     val scalacheck = "1.14.0"
     val scalaTest = "3.0.5"
-    val slf4j = "1.7.5"
-    val spray = "1.3.2"
+    val slf4j = "1.7.26"
+    val spray = "1.3.4"
     val zeromq = "0.5.1"
-    val akkav = "10.1.7"
-    val akkaStreamv = "2.5.21"
-    val playv = "2.7.0"
+    val akkav = "10.1.8"
+    val akkaStreamv = "2.5.23"
+    val playv = "2.7.2"
     val scodecV = "1.1.6"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.2"
-    val typesafeConfigV = "1.3.3"
-    val ammoniteV = "1.6.2"
+    val typesafeConfigV = "1.3.4"
+    val ammoniteV = "1.6.7"
 
     val asyncV = "0.9.7"
-    val jodaV = "2.9.4"
+    val jodaV = "2.10.2"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
-    val slickV = "3.3.0"
-    val sqliteV = "3.8.11.2"
+    val slickV = "3.3.1"
+    val sqliteV = "3.27.2.1"
     val uJsonV = "0.7.1"
   }
 
