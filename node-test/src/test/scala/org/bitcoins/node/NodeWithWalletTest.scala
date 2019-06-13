@@ -109,7 +109,7 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
           val spv =
             SpvNode(peer,
                     chainHandler,
-                    bloomFilter = Some(bloom),
+                    bloomFilter = bloom,
                     callbacks = callbacks)
           spv.start()
         }

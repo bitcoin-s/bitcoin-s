@@ -39,7 +39,7 @@ object Main extends App with BitcoinSLogger {
   val peer = Peer(nip)
 
   logger.info(s"Starting spv node")
-  val spvNodeF = SpvNode(peer, chainApi).start()
+  val spvNodeF = SpvNode(peer, chainApi, bloomFilter = ???).start()
 
   logger.info(s"Starting SPV node sync")
   spvNodeF.map { spvNode =>

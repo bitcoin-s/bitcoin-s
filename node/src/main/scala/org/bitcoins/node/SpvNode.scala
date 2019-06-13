@@ -22,8 +22,8 @@ import org.bitcoins.core.p2p.NetworkPayload
 case class SpvNode(
     peer: Peer,
     chainApi: ChainApi,
-    callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty,
-    bloomFilter: Option[BloomFilter] = None
+    bloomFilter: BloomFilter,
+    callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty
 )(
     implicit system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
@@ -70,13 +70,9 @@ case class SpvNode(
         }
       }
     } yield {
-      val _ = bloomFilter match {
-        case None => logger.debug(s"No bloom filter provided")
-        case Some(filter) =>
-          logger.info(s"Sending bloomfilter=${filter.hex} to $peer")
-          val filterMsg = FilterLoadMessage(filter)
-          val _ = send(filterMsg)
-      }
+      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+      val filterMsg = FilterLoadMessage(bloomFilter)
+      val _ = send(filterMsg)
       node
     }
   }

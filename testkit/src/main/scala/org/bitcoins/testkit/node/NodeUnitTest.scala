@@ -104,7 +104,10 @@ trait NodeUnitTest
     val peer = createPeer(bitcoind)
     for {
       chainApi <- chainApiF
-    } yield SpvNode(peer = peer, chainApi = chainApi)
+    } yield
+      SpvNode(peer = peer,
+              chainApi = chainApi,
+              bloomFilter = NodeTestUtil.emptyBloomFilter)
   }
 
   def withSpvNode(test: OneArgAsyncTest)(
