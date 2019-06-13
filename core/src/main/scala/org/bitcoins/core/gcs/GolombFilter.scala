@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionInput,
@@ -78,7 +78,7 @@ object BlockFilter {
     val noCoinbase: Vector[Transaction] = transactions.tail
     val newOutputs: Vector[TransactionOutput] = transactions.flatMap(_.outputs)
     val newScriptPubKeys: Vector[ByteVector] = newOutputs.flatMap { output =>
-      if (output.scriptPubKey.asm.contains(OP_RETURN)) {
+      if (output.scriptPubKey.asm.contains(OP_RETURN) && output.scriptPubKey == EmptyScriptPubKey) {
         None
       } else {
         Some(output.scriptPubKey.asmBytes)
@@ -92,9 +92,13 @@ object BlockFilter {
     val prevOutputs: Vector[TransactionOutput] =
       outpointsSpent.flatMap(utxoProvider.getUtxo)
     val prevOutputScripts: Vector[ByteVector] =
-      prevOutputs.map(_.scriptPubKey.asmBytes)
+      prevOutputs
+        .filterNot(_.scriptPubKey == EmptyScriptPubKey)
+        .map(_.scriptPubKey.asmBytes)
 
-    GCS.buildBasicBlockFilter(prevOutputScripts ++ newScriptPubKeys, key)
+    val allOutputs = (prevOutputScripts ++ newScriptPubKeys).distinct
+
+    GCS.buildBasicBlockFilter(allOutputs, key)
   }
 
   /**
@@ -111,12 +115,17 @@ object BlockFilter {
     val newOutputs: Vector[TransactionOutput] = transactions.flatMap(_.outputs)
     val newScriptPubKeys: Vector[ByteVector] = newOutputs
       .filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
+      .filterNot(_.scriptPubKey == EmptyScriptPubKey)
       .map(_.scriptPubKey.asmBytes)
 
     val prevOutputScriptBytes: Vector[ByteVector] =
-      prevOutputScripts.map(_.asmBytes)
+      prevOutputScripts
+        .filterNot(_ == EmptyScriptPubKey)
+        .map(_.asmBytes)
 
-    GCS.buildBasicBlockFilter(prevOutputScriptBytes ++ newScriptPubKeys, key)
+    val allOutputs = (prevOutputScriptBytes ++ newScriptPubKeys).distinct
+
+    GCS.buildBasicBlockFilter(allOutputs, key)
   }
 
   def fromBytes(
