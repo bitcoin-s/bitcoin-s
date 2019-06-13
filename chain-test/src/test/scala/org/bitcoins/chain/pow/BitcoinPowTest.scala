@@ -9,12 +9,17 @@ import org.bitcoins.testkit.chain.{ChainTestUtil, ChainUnitTest}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
+import org.bitcoins.testkit.BitcoinSAppConfig
 
 class BitcoinPowTest extends ChainUnitTest {
 
   override type FixtureParam = ChainFixture
 
-  implicit override lazy val appConfig: ChainAppConfig = mainnetAppConfig
+  implicit override lazy val appConfig: ChainAppConfig = {
+    val memoryDb = BitcoinSAppConfig.configWithMemoryDb(
+      Some(BitcoinSAppConfig.ProjectType.Chain))
+    mainnetAppConfig.withOverrides(memoryDb)
+  }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)
