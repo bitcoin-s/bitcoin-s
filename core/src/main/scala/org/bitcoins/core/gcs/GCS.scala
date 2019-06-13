@@ -65,11 +65,9 @@ object GCS {
 
     sh.update(item.toArray, 0, item.length.toInt)
 
-    val digest = new Array[Byte](8)
+    val digest = sh.doFinal()
 
-    sh.doFinal(digest, 0)
-
-    UInt64.fromBytes(ByteVector(digest))
+    UInt64.fromHex(digest.toHexString)
   }
 
   /**

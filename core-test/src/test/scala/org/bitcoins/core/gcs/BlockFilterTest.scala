@@ -26,13 +26,6 @@ class BlockFilterTest extends BitcoinSUnitTest {
     def runTest(): org.scalatest.Assertion = {
       val constructedFilter = BlockFilter(block, prevOutputScripts)
 
-      val script = block.transactions.head.outputs.head.scriptPubKey
-
-      assert(constructedFilter.matches(script.asm.tail.head.bytes))
-
-      println(filter.encodedData.toByteVector.toHex)
-      println(constructedFilter.encodedData.toByteVector.toHex)
-
       assert(constructedFilter.decodedHashes == filter.decodedHashes,
              s"Test Notes: $notes")
     }

@@ -109,19 +109,12 @@ object BlockFilter {
     val transactions: Vector[Transaction] = block.transactions.toVector
 
     val newOutputs: Vector[TransactionOutput] = transactions.flatMap(_.outputs)
-    val newScriptPubKeys: Vector[ByteVector] = newOutputs.flatMap { output =>
-      if (output.scriptPubKey.asm.contains(OP_RETURN)) {
-        Vector.empty
-      } else {
-        BitcoinScriptUtil
-          .getDataTokens(output.scriptPubKey.asm)
-          .toVector
-          .map(_.bytes)
-      }
-    }
+    val newScriptPubKeys: Vector[ByteVector] = newOutputs
+      .filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
+      .map(_.scriptPubKey.asmBytes)
 
     val prevOutputScriptBytes: Vector[ByteVector] =
-      prevOutputScripts.map(_.bytes)
+      prevOutputScripts.map(_.asmBytes)
 
     GCS.buildBasicBlockFilter(prevOutputScriptBytes ++ newScriptPubKeys, key)
   }
