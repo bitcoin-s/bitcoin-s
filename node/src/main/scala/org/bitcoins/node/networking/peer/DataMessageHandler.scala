@@ -51,14 +51,11 @@ class DataMessageHandler(callbacks: Vector[SpvNodeCallbacks])(
           peerMsgSender.sendGetHeadersMessage(lastHash)
         }
       case msg: BlockMessage =>
-        callbacks.foreach(_.onBlockReceived(msg.block))
-        FutureUtil.unit
+        Future { callbacks.foreach(_.onBlockReceived(msg.block)) }
       case msg: TransactionMessage =>
-        callbacks.foreach(_.onTxReceived(msg.transaction))
-        FutureUtil.unit
+        Future { callbacks.foreach(_.onTxReceived(msg.transaction)) }
       case msg: MerkleBlockMessage =>
-        callbacks.foreach(_.onMerkleBlockReceived(msg.merkleBlock))
-        FutureUtil.unit
+        Future { callbacks.foreach(_.onMerkleBlockReceived(msg.merkleBlock)) }
       case invMsg: InventoryMessage =>
         handleInventoryMsg(invMsg = invMsg, peerMsgSender = peerMsgSender)
     }
@@ -80,19 +77,13 @@ object DataMessageHandler {
   /** Callback for handling a received block */
   type OnBlockReceived = Block => Unit
 
-  /** Does nothing with the received block */
-  val noopBlockReceived: OnBlockReceived = _ => ()
-
   /** Callback for handling a received Merkle block */
   type OnMerkleBlockReceived = MerkleBlock => Unit
-
-  /** Does nothing with the received Merkle block */
-  val noopMerkleBlockReceived: OnMerkleBlockReceived = _ => ()
 
   /** Callback for handling a received transaction */
   type OnTxReceived = Transaction => Unit
 
-  /** Does nothing with the received transaction */
-  val noopTxReceived: OnTxReceived = _ => ()
+  /** Does nothing */
+  def noop[T]: T => Unit = _ => ()
 
 }

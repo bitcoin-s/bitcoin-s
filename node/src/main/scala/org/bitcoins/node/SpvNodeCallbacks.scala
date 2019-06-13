@@ -19,8 +19,8 @@ object SpvNodeCallbacks {
   /** Empty callbacks that does nothing with the received data */
   val empty: Vector[SpvNodeCallbacks] = Vector(
     SpvNodeCallbacks(
-      onTxReceived = noopTxReceived,
-      onBlockReceived = noopBlockReceived,
-      onMerkleBlockReceived = noopMerkleBlockReceived
+      onTxReceived = noop,
+      onBlockReceived = noop,
+      onMerkleBlockReceived = noop
     ))
 }

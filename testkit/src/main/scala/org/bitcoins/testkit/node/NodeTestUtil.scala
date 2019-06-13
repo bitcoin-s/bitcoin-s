@@ -17,9 +17,9 @@ import org.bitcoins.node.SpvNode
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import org.bitcoins.rpc.util.RpcUtil
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.util.AsyncUtil
 
 abstract class NodeTestUtil extends BitcoinSLogger {
 
@@ -116,7 +116,7 @@ abstract class NodeTestUtil extends BitcoinSLogger {
   def awaitSync(node: SpvNode, rpc: BitcoindRpcClient)(
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
-    RpcUtil
+    AsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 500.milliseconds)
   }
 
