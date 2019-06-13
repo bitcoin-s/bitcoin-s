@@ -122,14 +122,9 @@ trait LockedWalletApi extends WalletApi {
 
   def listAccounts(): Future[Vector[AccountDb]]
 
-  /**
-    * Tries to create a new accoun in this wallet. Fails if the
-    * most recent account has no transaction history, as per
-    * BIP44
-    *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
-    */
-  // def createNewAccount: Future[Try[WalletApi]]
+  /** Lists all wallet accounts with the given type */
+  def listAccounts(purpose: HDPurpose): Future[Vector[AccountDb]] =
+    listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
 
 }
 
@@ -185,5 +180,24 @@ trait UnlockedWalletApi extends LockedWalletApi {
       tx <- sendToAddress(address, amount, feeRate, account)
     } yield tx
   }
+
+  /**
+    * Tries to create a new account in this wallet. Fails if the
+    * most recent account has no transaction history, as per
+    * BIP44
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
+    */
+  def createNewAccount(purpose: HDPurpose): Future[WalletApi]
+
+  /**
+    * Tries to create a new account in this wallet for the default
+    * account type. Fails if the
+    * most recent account has no transaction history, as per
+    * BIP44
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
+    */
+  def createNewAccount(): Future[WalletApi]
 
 }
