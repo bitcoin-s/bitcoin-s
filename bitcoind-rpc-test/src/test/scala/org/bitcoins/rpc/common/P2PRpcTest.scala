@@ -170,7 +170,7 @@ class P2PRpcTest extends BitcoindRpcTest {
   it should "be able to get the connection count" in {
     for {
       (freshClient, otherFreshClient) <- BitcoindRpcTestUtil
-        .createUnconnectedNodePair()
+        .createUnconnectedNodePair(clientAccum = clientAccum)
       connectionPre <- freshClient.getConnectionCount
       _ <- freshClient.addNode(otherFreshClient.getDaemon.uri,
                                AddNodeArgument.Add)

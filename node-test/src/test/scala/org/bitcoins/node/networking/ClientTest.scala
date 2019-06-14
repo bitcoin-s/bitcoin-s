@@ -13,9 +13,10 @@ import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
 
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.{Duration, DurationInt}
 import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.testkit.chain.ChainUnitTest
 
 /**
   * Created by chris on 6/7/16.
@@ -100,8 +101,9 @@ class ClientTest
   }
 
   override def afterAll: Unit = {
-    bitcoindRpcF.flatMap(_.stop())
-    bitcoindRpc2F.flatMap(_.stop())
+    implicit val ec = system.dispatcher
+    Await.ready(bitcoindRpcF.flatMap(ChainUnitTest.destroyBitcoind(_)(system)), 10.seconds)
+    Await.ready(bitcoindRpc2F.flatMap(ChainUnitTest.destroyBitcoind(_)(system)), 10.seconds)
     TestKit.shutdownActorSystem(system)
   }
 
