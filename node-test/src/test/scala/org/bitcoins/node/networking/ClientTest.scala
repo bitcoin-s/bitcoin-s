@@ -1,34 +1,28 @@
 package org.bitcoins.node.networking
 
-import akka.actor.ActorSystem
 import akka.io.Tcp
-import akka.testkit.{TestActorRef, TestKit, TestProbe}
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.util.BitcoinSLogger
+import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
+import org.bitcoins.testkit.BitcoinSAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest._
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.{Duration, DurationInt}
-import org.bitcoins.testkit.BitcoinSAppConfig
-import org.bitcoins.testkit.chain.ChainUnitTest
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 /**
   * Created by chris on 6/7/16.
   */
 class ClientTest
-    extends AsyncFlatSpec
+    extends BitcoindRpcTest
     with MustMatchers
     with BeforeAndAfter
-    with BeforeAndAfterAll
-    with BitcoinSLogger {
-  implicit val system = ActorSystem(
-    s"Client-Test-System-${System.currentTimeMillis()}")
+    with BeforeAndAfterAll {
 
   implicit private val config: BitcoinSAppConfig =
     BitcoinSAppConfig.getTestConfig()
@@ -37,13 +31,13 @@ class ClientTest
 
   implicit val np = config.chainConf.network
 
-  lazy val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
+  lazy val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
-  lazy val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient()
+  lazy val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
@@ -98,13 +92,6 @@ class ClientTest
         succeed
       }
     }
-  }
-
-  override def afterAll: Unit = {
-    implicit val ec = system.dispatcher
-    Await.ready(bitcoindRpcF.flatMap(ChainUnitTest.destroyBitcoind(_)(system)), 10.seconds)
-    Await.ready(bitcoindRpc2F.flatMap(ChainUnitTest.destroyBitcoind(_)(system)), 10.seconds)
-    TestKit.shutdownActorSystem(system)
   }
 
 }
