@@ -159,8 +159,8 @@ class PeerMessageReceiver(
     payload match {
 
       case versionMsg: VersionMessage =>
-        logger.debug(
-          s"Received version message from peer=${peerOpt.get} msg=${versionMsg}")
+        logger.trace(
+          s"Received versionMsg=${versionMsg}from peer=${peerOpt.get}")
 
         internalState match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
@@ -181,8 +181,6 @@ class PeerMessageReceiver(
         }
 
       case VerAckMessage =>
-        logger.debug(s"Received verack message from peer=${peerOpt.get}")
-
         internalState match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
             Failure(

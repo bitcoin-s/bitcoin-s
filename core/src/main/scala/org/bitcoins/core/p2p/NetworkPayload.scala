@@ -206,6 +206,11 @@ trait GetHeadersMessage extends DataPayload {
 
   override def commandName = NetworkPayload.getHeadersCommandName
   override def bytes: ByteVector = RawGetHeadersMessageSerializer.write(this)
+
+  override def toString(): String = {
+    s"GetHeadersMessage($version, hashCount=${hashCount.toInt}, stop=$hashStop)"
+  }
+
 }
 
 object GetHeadersMessage extends Factory[GetHeadersMessage] {

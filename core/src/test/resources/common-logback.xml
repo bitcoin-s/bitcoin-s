@@ -37,6 +37,9 @@
     <!-- See incoming message names and the peer it's sent from -->
     <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO" />
 
+    <!-- See outgoing message names and the peer it's sent to -->
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO" />
+
     <!-- inspect resolved db connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="INFO" />
 
