@@ -5,7 +5,6 @@ import java.net.{InetAddress, InetSocketAddress}
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderTable}
-import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.constant.Constants
@@ -35,8 +34,8 @@ object Main extends App with BitcoinSLogger {
   logger.info(s"Creating block header table: done")
 
   val socket = new InetSocketAddress(InetAddress.getLoopbackAddress, 18333)
-  val nip = NetworkIpAddress.fromInetSocketAddress(socket)
-  val peer = Peer(nip)
+
+  val peer = Peer(socket)
 
   logger.info(s"Starting spv node")
   val spvNodeF = SpvNode(peer, chainApi, bloomFilter = ???).start()
