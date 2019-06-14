@@ -37,6 +37,13 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     sendMsg(verackMsg)
   }
 
+  /** Responds to a ping message */
+  def sendPong(ping: PingMessage): Unit = {
+    val pong = PongMessage(ping.nonce)
+    logger.trace(s"Sending pong=$pong to peer=${client.peer}")
+    sendMsg(pong)
+  }
+
   def sendGetHeadersMessage(lastHash: DoubleSha256Digest): Unit = {
     val headersMsg = GetHeadersMessage(lastHash)
     logger.trace(s"Sending getheaders=$headersMsg to peer=${client.peer}")

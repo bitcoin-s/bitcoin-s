@@ -192,7 +192,8 @@ class PeerMessageReceiver(
             Success(())
         }
 
-      case _: PingMessage =>
+      case ping: PingMessage =>
+        sender.sendPong(ping)
         Success(())
       case SendHeadersMessage =>
         //not implemented as of now

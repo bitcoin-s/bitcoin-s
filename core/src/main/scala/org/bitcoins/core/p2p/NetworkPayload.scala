@@ -768,6 +768,8 @@ trait PongMessage extends ControlPayload {
 
   override def bytes: ByteVector = RawPongMessageSerializer.write(this)
 
+  override def toString(): String = s"PongMessage(${nonce.toBigInt})"
+
 }
 
 object PongMessage extends Factory[PongMessage] {
