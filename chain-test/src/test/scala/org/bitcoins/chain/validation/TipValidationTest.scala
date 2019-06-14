@@ -18,6 +18,7 @@ import org.scalatest.{Assertion, FutureOutcome}
 import scala.concurrent.Future
 import org.bitcoins.chain.config.ChainAppConfig
 import com.typesafe.config.ConfigFactory
+import org.bitcoins.testkit.BitcoinSAppConfig
 
 class TipValidationTest extends ChainUnitTest {
 
