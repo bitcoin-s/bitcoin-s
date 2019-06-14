@@ -991,6 +991,10 @@ trait VersionMessage extends ControlPayload {
   override def commandName = NetworkPayload.versionCommandName
 
   override def bytes: ByteVector = RawVersionMessageSerializer.write(this)
+
+  // addressTransServices? addressTransIpAddress? addressTransPort?
+  override def toString(): String =
+    s"VersionMessage($version, $services, epoch=${timestamp.toLong}, receiverServices=$addressReceiveIpAddress, receiverAddress=$addressReceiveIpAddress, receiverPort=$addressReceivePort), userAgent=$userAgent, startHeight=${startHeight.toInt}, relay=$relay)"
 }
 
 /**
@@ -1069,12 +1073,12 @@ object VersionMessage extends Factory[VersionMessage] {
     val relay = false
     VersionMessage(
       version = ProtocolVersion.default,
-      services = UnnamedService,
+      services = ServiceIdentifier.NODE_NONE,
       timestamp = Int64(java.time.Instant.now.toEpochMilli),
-      addressReceiveServices = UnnamedService,
+      addressReceiveServices = ServiceIdentifier.NODE_NONE,
       addressReceiveIpAddress = receivingIpAddress,
       addressReceivePort = network.port,
-      addressTransServices = NodeNetwork,
+      addressTransServices = ServiceIdentifier.NODE_NETWORK,
       addressTransIpAddress = transmittingIpAddress,
       addressTransPort = network.port,
       nonce = nonce,

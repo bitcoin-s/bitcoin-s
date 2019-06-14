@@ -39,16 +39,16 @@ class RawVersionMessageSerializerTest extends FlatSpec with MustMatchers {
   "RawVersionMessageSerializer" must "read a raw version message from the p2p network" in {
     val versionMessage = RawVersionMessageSerializer.read(hex)
     versionMessage.version must be(ProtocolVersion(protocolVersion))
-    versionMessage.services must be(NodeNetwork)
+    assert(versionMessage.services.nodeNetwork, versionMessage.services)
     versionMessage.timestamp must be(Int64(1415483324))
 
-    versionMessage.addressReceiveServices must be(NodeNetwork)
+    assert(versionMessage.addressReceiveServices.nodeNetwork)
     NetworkIpAddress
       .writeAddress(versionMessage.addressReceiveIpAddress)
       .toHex must be(receivingNodeIpAddress)
     versionMessage.addressReceivePort must be(8333)
 
-    versionMessage.addressTransServices must be(NodeNetwork)
+    assert(versionMessage.addressTransServices.nodeNetwork)
     NetworkIpAddress
       .writeAddress(versionMessage.addressTransIpAddress)
       .toHex must be(transNodeIpAddress)
@@ -99,13 +99,13 @@ class RawVersionMessageSerializerTest extends FlatSpec with MustMatchers {
       "7211010001000000000000003248e7fc9a64a6c2000000000000000000000000000000000000ffff0000000042a1000000000000000000000000000000000000ffff00000000a3eb8000000000000001564e635148775a38376252653979346d365041376c5832695641354966316a576a557963796b464f516571423052456a39326177614b79307a4d5264636b76454b71316a393769334d616c33456f37517867646a637056fe5b2bc900"
     val versionMessage = RawVersionMessageSerializer.read(hex)
     versionMessage.version must be(ProtocolVersion70002)
-    versionMessage.services must be(NodeNetwork)
+    assert(versionMessage.services.nodeNetwork)
     versionMessage.timestamp must be(Int64(-4420735367386806222L))
     versionMessage.addressReceiveIpAddress must be(
       new InetSocketAddress(17057).getAddress)
-    versionMessage.addressReceiveServices must be(UnnamedService)
+    assert(versionMessage.addressReceiveServices.nodeNone)
     versionMessage.addressReceivePort must be(17057)
-    versionMessage.addressTransServices must be(UnnamedService)
+    assert(versionMessage.addressTransServices.nodeNone)
     versionMessage.addressTransIpAddress must be(
       new InetSocketAddress(41963).getAddress)
     versionMessage.addressTransPort must be(41963)

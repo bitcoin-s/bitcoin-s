@@ -3,8 +3,6 @@ import org.scalacheck.Gen
 import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.p2p.ServiceIdentifier
-import org.bitcoins.core.p2p.NodeNetwork
-import org.bitcoins.core.p2p.UnnamedService
 import java.net.InetAddress
 import org.bitcoins.core.p2p.NetworkPayload
 
@@ -41,11 +39,7 @@ object P2PGenerator {
 
   def serviceIdentifier: Gen[ServiceIdentifier] = {
     for {
-      unknown <- NumberGenerator.uInt64.suchThat(u64 =>
-        u64 != NodeNetwork.num || u64 != UnnamedService.num)
-      service <- Gen.oneOf(NodeNetwork,
-                           UnnamedService,
-                           ServiceIdentifier(unknown))
-    } yield service
+      num <- NumberGenerator.uInt64
+    } yield ServiceIdentifier(num)
   }
 }
