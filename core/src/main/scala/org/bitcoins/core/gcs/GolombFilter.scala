@@ -17,7 +17,12 @@ import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 
-// TODO: Replace ByteVector with a type for keys
+/**
+  * Represents a GCS encoded set with all parameters specified
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-sets]]
+  *
+  * TODO: Replace ByteVector with a type for keys
+  */
 case class GolombFilter(
     key: ByteVector,
     m: UInt64,
@@ -67,31 +72,55 @@ object BlockFilter {
   val P: UInt8 = UInt8(19)
 
   /**
+    * Returns all ScriptPubKeys from a Block's outputs that are relevant
+    * to BIP 158 Basic Block Filters
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#contents]]
+    */
+  def getOutputScriptPubKeysFromBlock(block: Block): Vector[ScriptPubKey] = {
+    val transactions: Vector[Transaction] = block.transactions.toVector
+
+    val newOutputs: Vector[TransactionOutput] = transactions.flatMap(_.outputs)
+
+    newOutputs
+      .filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
+      .filterNot(_.scriptPubKey == EmptyScriptPubKey)
+      .map(_.scriptPubKey)
+  }
+
+  /**
+    * Returns all ScriptPubKeys from a Block's inputs that are relevant
+    * to BIP 158 Basic Block Filters
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#contents]]
+    */
+  def getInputScriptPubKeysFromBlock(
+      block: Block,
+      utxoProvider: TempUtxoProvider): Vector[ScriptPubKey] = {
+    val transactions: Vector[Transaction] = block.transactions.toVector
+    val noCoinbase: Vector[Transaction] = transactions.tail
+
+    val inputs: Vector[TransactionInput] = noCoinbase.flatMap(_.inputs)
+    val outpointsSpent: Vector[TransactionOutPoint] =
+      inputs.map(_.previousOutput)
+    val prevOutputs: Vector[TransactionOutput] =
+      outpointsSpent.flatMap(utxoProvider.getUtxo)
+
+    prevOutputs
+      .filterNot(_.scriptPubKey == EmptyScriptPubKey)
+      .map(_.scriptPubKey)
+  }
+
+  /**
     * Given a Block and access to the UTXO set, constructs a Block Filter for that block
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]]
     */
   def apply(block: Block, utxoProvider: TempUtxoProvider): GolombFilter = {
     val key = block.blockHeader.hash.bytes.take(16)
 
-    val transactions: Vector[Transaction] = block.transactions.toVector
+    val newScriptPubKeys =
+      getOutputScriptPubKeysFromBlock(block).map(_.asmBytes)
 
-    val noCoinbase: Vector[Transaction] = transactions.tail
-    val newOutputs: Vector[TransactionOutput] = transactions.flatMap(_.outputs)
-    val newScriptPubKeys: Vector[ByteVector] = newOutputs
-      .filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
-      .filterNot(_.scriptPubKey == EmptyScriptPubKey)
-      .map(_.scriptPubKey.asmBytes)
-
-    val inputs: Vector[TransactionInput] = noCoinbase.flatMap(tx => tx.inputs)
-    val outpointsSpent: Vector[TransactionOutPoint] = inputs.map { input =>
-      input.previousOutput
-    }
-    val prevOutputs: Vector[TransactionOutput] =
-      outpointsSpent.flatMap(utxoProvider.getUtxo)
     val prevOutputScripts: Vector[ByteVector] =
-      prevOutputs
-        .filterNot(_.scriptPubKey == EmptyScriptPubKey)
-        .map(_.scriptPubKey.asmBytes)
+      getInputScriptPubKeysFromBlock(block, utxoProvider).map(_.asmBytes)
 
     val allOutputs = (prevOutputScripts ++ newScriptPubKeys).distinct
 
@@ -107,13 +136,8 @@ object BlockFilter {
       prevOutputScripts: Vector[ScriptPubKey]): GolombFilter = {
     val key = block.blockHeader.hash.bytes.take(16)
 
-    val transactions: Vector[Transaction] = block.transactions.toVector
-
-    val newOutputs: Vector[TransactionOutput] = transactions.flatMap(_.outputs)
-    val newScriptPubKeys: Vector[ByteVector] = newOutputs
-      .filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
-      .filterNot(_.scriptPubKey == EmptyScriptPubKey)
-      .map(_.scriptPubKey.asmBytes)
+    val newScriptPubKeys: Vector[ByteVector] =
+      getOutputScriptPubKeysFromBlock(block).map(_.asmBytes)
 
     val prevOutputScriptBytes: Vector[ByteVector] =
       prevOutputScripts
