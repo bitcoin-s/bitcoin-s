@@ -991,6 +991,11 @@ trait VersionMessage extends ControlPayload {
   override def commandName = NetworkPayload.versionCommandName
 
   override def bytes: ByteVector = RawVersionMessageSerializer.write(this)
+
+  // TODO addressTransServices,  addressTransIpAddress and addressTransPort
+  // what do these fields mean?
+  override def toString(): String =
+    s"VersionMessage($version, $services, epoch=${timestamp.toLong}, receiverServices=$addressReceiveIpAddress, receiverAddress=$addressReceiveIpAddress, receiverPort=$addressReceivePort), userAgent=$userAgent, startHeight=${startHeight.toInt}, relay=$relay)"
 }
 
 /**

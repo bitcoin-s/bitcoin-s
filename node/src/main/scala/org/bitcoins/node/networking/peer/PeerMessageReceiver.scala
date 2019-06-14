@@ -65,8 +65,6 @@ class PeerMessageReceiver(
 
         val _ = toState(newState)
 
-        logger.debug(s"new state ${internalState}")
-        logger.debug(s"isConnected=${isConnected}")
         val peerMsgSender = PeerMessageSender(client, chainAppConfig.network)
 
         peerMsgSender.sendVersionMessage()
@@ -213,6 +211,8 @@ class PeerMessageReceiver(
   }
 
   private def toState(state: PeerMessageReceiverState): Unit = {
+    logger.debug(
+      s"PeerMessageReceiver changing state, oldState=$internalState, newState=$state")
     internalState = state
   }
 }
