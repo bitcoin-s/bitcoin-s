@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil}
+import org.bitcoins.core.util.BitcoinSUtil
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -77,13 +77,10 @@ object BlockFilter {
 
     val noCoinbase: Vector[Transaction] = transactions.tail
     val newOutputs: Vector[TransactionOutput] = transactions.flatMap(_.outputs)
-    val newScriptPubKeys: Vector[ByteVector] = newOutputs.flatMap { output =>
-      if (output.scriptPubKey.asm.contains(OP_RETURN) && output.scriptPubKey == EmptyScriptPubKey) {
-        None
-      } else {
-        Some(output.scriptPubKey.asmBytes)
-      }
-    }
+    val newScriptPubKeys: Vector[ByteVector] = newOutputs
+      .filterNot(_.scriptPubKey.asm.contains(OP_RETURN))
+      .filterNot(_.scriptPubKey == EmptyScriptPubKey)
+      .map(_.scriptPubKey.asmBytes)
 
     val inputs: Vector[TransactionInput] = noCoinbase.flatMap(tx => tx.inputs)
     val outpointsSpent: Vector[TransactionOutPoint] = inputs.map { input =>

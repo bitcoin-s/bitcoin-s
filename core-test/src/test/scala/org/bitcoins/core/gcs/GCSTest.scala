@@ -5,7 +5,7 @@ import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
+import scodec.bits.{BinStringSyntax, ByteVector}
 
 class GCSTest extends BitcoinSUnitTest {
   behavior of "GCS"
@@ -170,14 +170,13 @@ class GCSTest extends BitcoinSUnitTest {
 
     val codedSet = GCS.encodeSortedSet(sortedItems, p)
 
-    val coded0 = Vector(false, false, false)
-    val coded1 = Vector(false, false, true)
-    val coded2 = Vector(false, true, false)
-    val coded3 = Vector(false, true, true)
-    val coded4 = Vector(true, false, false, false)
-    val coded5 = Vector(true, false, false, true)
-    val expectedCodedSet =
-      BitVector.bits(coded0 ++ coded1 ++ coded2 ++ coded3 ++ coded4 ++ coded5)
+    val coded0 = bin"000"
+    val coded1 = bin"001"
+    val coded2 = bin"010"
+    val coded3 = bin"011"
+    val coded4 = bin"1000"
+    val coded5 = bin"1001"
+    val expectedCodedSet = coded0 ++ coded1 ++ coded2 ++ coded3 ++ coded4 ++ coded5
 
     assert(codedSet == expectedCodedSet)
 
@@ -196,7 +195,7 @@ class GCSTest extends BitcoinSUnitTest {
 
           val hashGen = Gen
             .chooseNum(0L, upperBound)
-            .map(num => UInt64(BigInt(num)))
+            .map(UInt64(_))
 
           Gen.listOfN(size, hashGen).map(_.toVector).map { vec =>
             (vec, p)
@@ -229,7 +228,7 @@ class GCSTest extends BitcoinSUnitTest {
 
       val mGen = Gen
         .chooseNum(0L, upperBound)
-        .map(num => UInt64(BigInt(num)))
+        .map(UInt64(_))
 
       mGen.map(m => (p, m))
     }

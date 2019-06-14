@@ -4,7 +4,7 @@ import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bouncycastle.crypto.macs.SipHash
 import org.bouncycastle.crypto.params.KeyParameter
-import scodec.bits.{BitVector, ByteVector}
+import scodec.bits.{BitVector, BinStringSyntax, ByteVector}
 
 import scala.annotation.tailrec
 
@@ -63,7 +63,9 @@ object GCS {
 
     sh.init(keyParam)
 
-    sh.update(item.toArray, 0, item.length.toInt)
+    val offset = 0
+
+    sh.update(item.toArray, offset, item.length.toInt)
 
     val digest = sh.doFinal()
 
@@ -111,7 +113,7 @@ object GCS {
     */
   def toUnary(num: UInt64): BitVector = {
     if (num == UInt64.zero) {
-      BitVector.bits(Vector(false))
+      bin"0"
     } else {
       /*
        * We use the fact that 2^n - 1 = 111...1 (in binary) where there are n 1 digits
@@ -174,6 +176,7 @@ object GCS {
     }
   }
 
+  /** Returns the first hash gcs-encoded at the front of a BitVector, as well as the remaining BitVector */
   private def golombDecodeItemFromSet(
       encodedData: BitVector,
       p: UInt8): (UInt64, BitVector) = {

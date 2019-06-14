@@ -66,6 +66,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           || op == OP_PUSHDATA4)
   }
 
+  /** Returns only the data ScriptTokens in a script that are pushed onto the stack */
   def getDataTokens(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
     val builder = Vector.newBuilder[ScriptToken]
 
