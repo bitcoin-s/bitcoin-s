@@ -105,9 +105,7 @@ lazy val commonTestWithDbSettings = Seq(
   Test / parallelExecution := false
 ) ++ commonTestSettings
 
-lazy val commonProdSettings = Seq(
-  Test / bloopGenerate := None
-) ++ commonSettings
+lazy val commonProdSettings = commonSettings
 
 lazy val bitcoins = project
   .in(file("."))
