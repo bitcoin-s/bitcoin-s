@@ -8,9 +8,15 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{Disconnected, Initializing, Normal, Preconnection}
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
+  Disconnected,
+  Initializing,
+  Normal,
+  Preconnection
+}
 
 import scala.util.{Failure, Success, Try}
+import org.bitcoins.node.SpvNodeCallbacks
 
 /**
   * Responsible for receiving messages from a peer on the
@@ -21,12 +27,12 @@ import scala.util.{Failure, Success, Try}
   */
 class PeerMessageReceiver(
     state: PeerMessageReceiverState,
+    callbacks: SpvNodeCallbacks
+)(
+    implicit ref: ActorRefFactory,
     nodeAppConfig: NodeAppConfig,
-    chainAppConfig: ChainAppConfig)(implicit ref: ActorRefFactory)
+    chainAppConfig: ChainAppConfig)
     extends BitcoinSLogger {
-
-  implicit private val nodeConfig = nodeAppConfig
-  implicit private val chainConfig = chainAppConfig
 
   import ref.dispatcher
 
@@ -107,13 +113,13 @@ class PeerMessageReceiver(
   def handleNetworkMessageReceived(
       networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Unit = {
 
-    //create a way to send a response if we need too
-    val peerMsgSender =
-      PeerMessageSender(networkMsgRecv.client, chainAppConfig.network)
+    val client = networkMsgRecv.client
 
-    logger.info(
-      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${peerOpt
-        .map(_.socket)} ")
+    //create a way to send a response if we need too
+    val peerMsgSender = PeerMessageSender(client, chainAppConfig.network)
+
+    logger.debug(
+      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} ")
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
         handleControlPayload(payload = controlPayload, sender = peerMsgSender)
@@ -134,7 +140,7 @@ class PeerMessageReceiver(
   private def handleDataPayload(
       payload: DataPayload,
       sender: PeerMessageSender): Unit = {
-    val dataMsgHandler = new DataMessageHandler()
+    val dataMsgHandler = new DataMessageHandler(callbacks)
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMsgHandler.handleDataPayload(payload, sender)
@@ -225,20 +231,20 @@ object PeerMessageReceiver {
   case class NetworkMessageReceived(msg: NetworkMessage, client: Client)
       extends PeerMessageReceiverMsg
 
-  def apply(state: PeerMessageReceiverState)(
+  def apply(
+      state: PeerMessageReceiverState,
+      callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
       implicit ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
   ): PeerMessageReceiver = {
-    new PeerMessageReceiver(state, nodeAppConfig, chainAppConfig)(ref)
+    new PeerMessageReceiver(state, callbacks)
   }
 
-  def newReceiver(
+  def newReceiver(callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
       implicit nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {
-    new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                            nodeAppConfig,
-                            chainAppConfig)(ref)
+    new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(), callbacks)
   }
 }

@@ -327,6 +327,18 @@ trait InventoryMessage extends DataPayload {
   override def commandName = NetworkPayload.invCommandName
 
   override def bytes: ByteVector = RawInventoryMessageSerializer.write(this)
+
+  override def toString(): String = {
+    val invCount = inventoryCount.toInt
+    val limit = 5
+    val invList = if (invCount > limit) {
+      inventories.take(limit).mkString + "..."
+    } else {
+      inventories.mkString
+    }
+    s"InventoryMessage($invCount inv(s)${if (invList.nonEmpty) ", " + invList
+    else ""})"
+  }
 }
 
 /**
@@ -453,8 +465,11 @@ trait TransactionMessage extends DataPayload {
     * The transaction being sent over the wire
     */
   def transaction: Transaction
+
   override def commandName = NetworkPayload.transactionCommandName
   override def bytes: ByteVector = RawTransactionMessageSerializer.write(this)
+
+  override def toString(): String = s"TransactionMessage(${transaction.txIdBE})"
 }
 
 /**

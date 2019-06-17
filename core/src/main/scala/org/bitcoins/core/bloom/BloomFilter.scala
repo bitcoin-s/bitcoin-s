@@ -142,7 +142,8 @@ sealed abstract class BloomFilter extends NetworkElement {
 
   /**
     * Checks if the transaction's txid, or any of the constants in it's scriptPubKeys/scriptSigs match our BloomFilter
-    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
     * for exact details on what is relevant to a bloom filter and what is not relevant
     */
   def isRelevant(transaction: Transaction): Boolean = {
@@ -150,8 +151,9 @@ sealed abstract class BloomFilter extends NetworkElement {
     //pull out all of the constants in the scriptPubKey's
     val constantsWithOutputIndex = scriptPubKeys.zipWithIndex.flatMap {
       case (scriptPubKey, index) =>
-        val constants = scriptPubKey.asm.filter(_.isInstanceOf[ScriptConstant])
-        constants.map(c => (c, index))
+        scriptPubKey.asm.collect {
+          case c: ScriptConstant => (c, index)
+        }
     }
 
     //check if the bloom filter contains any of the script constants in our outputs
@@ -162,8 +164,9 @@ sealed abstract class BloomFilter extends NetworkElement {
     val scriptSigs = transaction.inputs.map(_.scriptSignature)
     val constantsWithInputIndex = scriptSigs.zipWithIndex.flatMap {
       case (scriptSig, index) =>
-        val constants = scriptSig.asm.filter(_.isInstanceOf[ScriptConstant])
-        constants.map(c => (c, index))
+        scriptSig.asm.collect {
+          case c: ScriptConstant => (c, index)
+        }
     }
     //check if the filter contains any of the prevouts in this tx
     val containsOutPoint =
@@ -180,7 +183,8 @@ sealed abstract class BloomFilter extends NetworkElement {
 
   /**
     * Updates this bloom filter to contain the relevant information for the given Transaction
-    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
+    *
+    * @see  [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
     * for the exact details on what parts of a transaction is added to the bloom filter
     */
   def update(transaction: Transaction): BloomFilter = flags match {
@@ -190,12 +194,11 @@ sealed abstract class BloomFilter extends NetworkElement {
       val outPoints: Seq[TransactionOutPoint] =
         scriptPubKeys.zipWithIndex.flatMap {
           case (scriptPubKey, index) =>
-            //constants that matched inside of our current filter
-            val constants = scriptPubKey.asm.filter(c =>
-              c.isInstanceOf[ScriptConstant] && contains(c.bytes))
-            //we need to create a new outpoint in the filter if a constant in the scriptPubKey matched
-            constants.map(_ =>
-              TransactionOutPoint(transaction.txId, UInt32(index)))
+            // we filter all constants, and create an outpoint if the constant matches our filter
+            scriptPubKey.asm.collect {
+              case c: ScriptConstant if contains(c.bytes) =>
+                TransactionOutPoint(transaction.txId, UInt32(index))
+            }
         }
 
       logger.debug("Inserting outPoints: " + outPoints)
@@ -221,7 +224,8 @@ sealed abstract class BloomFilter extends NetworkElement {
   /**
     * Updates a bloom filter according to the rules specified by the
     * [[org.bitcoins.core.bloom.BloomUpdateP2PKOnly BloomUpdateP2PKOnly]] flag
-    * See [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#filter-matching-algorithm BIP37]]
     * for the exact rules on updating a bloom filter with this flag set
     */
   def updateP2PKOnly(

@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.bitcoins.wallet.util.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 import org.bitcoins.wallet.api.UnlockWalletError.BadPassword
 import org.bitcoins.wallet.api.UnlockWalletError.JsonParsingError
