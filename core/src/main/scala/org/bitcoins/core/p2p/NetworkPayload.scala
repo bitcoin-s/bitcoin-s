@@ -206,6 +206,17 @@ trait GetHeadersMessage extends DataPayload {
 
   override def commandName = NetworkPayload.getHeadersCommandName
   override def bytes: ByteVector = RawGetHeadersMessageSerializer.write(this)
+
+  override def toString(): String = {
+    val count = hashCount.toInt
+    val hashesStr = if (count > 5) {
+      hashes.take(5).mkString + "..."
+    } else {
+      hashes.mkString
+    }
+    s"GetHeadersMessage($version, hashCount=$count, hashes=$hashesStr, stop=$hashStop)"
+  }
+
 }
 
 object GetHeadersMessage extends Factory[GetHeadersMessage] {
@@ -763,6 +774,8 @@ trait PongMessage extends ControlPayload {
 
   override def bytes: ByteVector = RawPongMessageSerializer.write(this)
 
+  override def toString(): String = s"PongMessage(${nonce.toBigInt})"
+
 }
 
 object PongMessage extends Factory[PongMessage] {
@@ -864,7 +877,7 @@ object RejectMessage extends Factory[RejectMessage] {
   * using a headers message rather than an inv message.
   * There is no payload in a sendheaders message. See the message header section for an example
   * of a message without a payload.
-  * [[https://bitcoin.org/en/developer-reference#sendheaders]]
+  * @see [[https://bitcoin.org/en/developer-reference#sendheaders]]
   */
 case object SendHeadersMessage extends ControlPayload {
   override def commandName = NetworkPayload.sendHeadersCommandName
@@ -876,7 +889,7 @@ case object SendHeadersMessage extends ControlPayload {
   * informing the connecting node that it can begin to send other messages.
   * The verack message has no payload; for an example of a message with no payload,
   * see the message headers section.
-  * [[https://bitcoin.org/en/developer-reference#verack]]
+  * @see [[https://bitcoin.org/en/developer-reference#verack]]
   */
 case object VerAckMessage extends ControlPayload {
   override val commandName = NetworkPayload.verAckCommandName
@@ -984,6 +997,11 @@ trait VersionMessage extends ControlPayload {
   override def commandName = NetworkPayload.versionCommandName
 
   override def bytes: ByteVector = RawVersionMessageSerializer.write(this)
+
+  // TODO addressTransServices,  addressTransIpAddress and addressTransPort
+  // what do these fields mean?
+  override def toString(): String =
+    s"VersionMessage($version, $services, epoch=${timestamp.toLong}, receiverServices=$addressReceiveIpAddress, receiverAddress=$addressReceiveIpAddress, receiverPort=$addressReceivePort), userAgent=$userAgent, startHeight=${startHeight.toInt}, relay=$relay)"
 }
 
 /**
@@ -1062,12 +1080,12 @@ object VersionMessage extends Factory[VersionMessage] {
     val relay = false
     VersionMessage(
       version = ProtocolVersion.default,
-      services = UnnamedService,
+      services = ServiceIdentifier.NODE_NONE,
       timestamp = Int64(java.time.Instant.now.toEpochMilli),
-      addressReceiveServices = UnnamedService,
+      addressReceiveServices = ServiceIdentifier.NODE_NONE,
       addressReceiveIpAddress = receivingIpAddress,
       addressReceivePort = network.port,
-      addressTransServices = NodeNetwork,
+      addressTransServices = ServiceIdentifier.NODE_NETWORK,
       addressTransIpAddress = transmittingIpAddress,
       addressTransPort = network.port,
       nonce = nonce,

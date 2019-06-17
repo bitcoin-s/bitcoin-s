@@ -37,10 +37,11 @@ trait ChainApi {
   }
 
   /** Get's a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
-  def getHeader(hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]]
+  def getHeader(hash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
 
   /** Gets the number of blocks in the database */
-  def getBlockCount: Future[Long]
+  def getBlockCount(implicit ec: ExecutionContext): Future[Long]
 
   /** Gets the hash of the block that is what we consider "best" */
   def getBestBlockHash(

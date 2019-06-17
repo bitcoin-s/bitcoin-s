@@ -8,16 +8,16 @@ import org.bitcoins.core.util.{CryptoUtil, Factory, NumberUtil}
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 5/19/16.
   * Nodes collect new transactions into a block, hash them into a hash tree,
   * and scan through nonce values to make the block's hash satisfy proof-of-work
   * requirements.  When they solve the proof-of-work, they broadcast the block
   * to everyone and the block is added to the block chain.  The first transaction
   * in the block is a special one that creates a new coin owned by the creator
   * of the block.
-  * Bitcoin Developer reference link
+  * @see Bitcoin Developer reference:
   * https://bitcoin.org/en/developer-reference#block-headers
-  * Bitcoin Core implementation:
+  *
+  * @see Bitcoin Core implementation:
   * https://github.com/bitcoin/bitcoin/blob/master/src/primitives/block.h#L20
   */
 sealed trait BlockHeader extends NetworkElement {
@@ -25,7 +25,8 @@ sealed trait BlockHeader extends NetworkElement {
   /**
     * The block version number indicates which set of block validation rules to follow.
     * See the list of block versions below.
-    * See BIP9 for more information on what version number signify
+    *
+    * @see BIP9 for more information on what version number signify
     * https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
     *
     * @return the version number for this block
@@ -43,17 +44,18 @@ sealed trait BlockHeader extends NetworkElement {
   /**
     * Returns the big endian encoding of the previous block hash
     * This is useful for using rpc and block exporers, but is NOT used in the protocol itself
-    * See this link for more info
+    *
+    * @see see this Stack Exchange question for more:
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
-    * @return
     */
   def previousBlockHashBE: DoubleSha256DigestBE = previousBlockHash.flip
 
   /**
-    * A SHA256(SHA256()) hash in internal byte order.
+    * A `SHA256(SHA256())` hash in internal byte order.
     * The merkle root is derived from the hashes of all transactions included in this block,
     * ensuring that none of those transactions can be modified without modifying the header.
-    * https://bitcoin.org/en/developer-reference#merkle-trees
+    *
+    * @see https://bitcoin.org/en/developer-reference#merkle-trees
     *
     * @return the merkle root of the merkle tree
     */
@@ -62,9 +64,9 @@ sealed trait BlockHeader extends NetworkElement {
   /**
     * Returns the merkle root hash in BIG ENDIAN format. This is not compatible with the bitcoin
     * protocol but it is useful for rpc clients and block explorers
-    * See this link for more info
+    *
+    * @see this link for more info
     * [[https://bitcoin.stackexchange.com/questions/2063/why-does-the-bitcoin-protocol-use-the-little-endian-notation]]
-    * @return
     */
   def merkleRootHashBE: DoubleSha256DigestBE = merkleRootHash.flip
 
@@ -79,10 +81,10 @@ sealed trait BlockHeader extends NetworkElement {
 
   /**
     * An encoded version of the target threshold this block’s header hash must be less than or equal to.
-    * See the nBits format described below.
+    *
+    * @see See the nBits format described below.
     * https://bitcoin.org/en/developer-reference#target-nbits
     *
-    * @return
     */
   def nBits: UInt32
 
@@ -130,7 +132,7 @@ sealed trait BlockHeader extends NetworkElement {
   */
 object BlockHeader extends Factory[BlockHeader] {
 
-  private sealed case class BlockHeaderImpl(
+  sealed private case class BlockHeaderImpl(
       version: Int32,
       previousBlockHash: DoubleSha256Digest,
       merkleRootHash: DoubleSha256Digest,

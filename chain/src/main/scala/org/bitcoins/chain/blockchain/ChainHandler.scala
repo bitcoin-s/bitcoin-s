@@ -20,13 +20,24 @@ case class ChainHandler(
     extends ChainApi
     with BitcoinSLogger {
 
-  override def getBlockCount: Future[Long] = {
-    blockHeaderDAO.maxHeight
+  override def getBlockCount(implicit ec: ExecutionContext): Future[Long] = {
+    logger.debug(s"Querying for block count")
+    blockHeaderDAO.maxHeight.map { height =>
+      logger.debug(s"getBlockCount result: count=$height")
+      height
+    }
   }
 
-  override def getHeader(
-      hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] = {
-    blockHeaderDAO.findByHash(hash)
+  override def getHeader(hash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
+    blockHeaderDAO.findByHash(hash).map { header =>
+      logger.debug(s"Looking for header by hash=$hash")
+      val resultStr = header
+        .map(h => s"height=${h.height}, hash=${h.hashBE}")
+        .getOrElse("None")
+      logger.debug(s"getHeader result: $resultStr")
+      header
+    }
   }
 
   override def processHeader(header: BlockHeader)(
@@ -39,7 +50,11 @@ case class ChainHandler(
         //now we have successfully connected the header, we need to insert
         //it into the database
         val createdF = blockHeaderDAO.create(updatedHeader)
-        createdF.map(_ => ChainHandler(blockHeaderDAO, chainConfig))
+        createdF.map { header =>
+          logger.debug(
+            s"Connected new header to blockchain, heigh=${header.height} hash=${header.hashBE}")
+          ChainHandler(blockHeaderDAO, chainConfig)
+        }
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
           s"Failed to add header to chain, header=${header.hashBE.hex} reason=${reason}"
@@ -61,13 +76,16 @@ case class ChainHandler(
     */
   override def getBestBlockHash(
       implicit ec: ExecutionContext): Future[DoubleSha256DigestBE] = {
+    logger.debug(s"Querying for best block hash")
     //naive implementation, this is looking for the tip with the _most_ proof of work
     //this does _not_ mean that it is on the chain that has the most work
     //TODO: Enhance this in the future to return the "heaviest" header
     //https://bitcoin.org/en/glossary/block-chain
     blockHeaderDAO.chainTips.map { tips =>
       val sorted = tips.sortBy(header => header.blockHeader.difficulty)
-      sorted.head.hashBE
+      val hash = sorted.head.hashBE
+      logger.debug(s"getBestBlockHash result: hash=$hash")
+      hash
     }
   }
 }
