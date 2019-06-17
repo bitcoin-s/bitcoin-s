@@ -66,6 +66,27 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
           || op == OP_PUSHDATA4)
   }
 
+  /** Returns only the data ScriptTokens in a script that are pushed onto the stack */
+  def getDataTokens(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
+    val builder = Vector.newBuilder[ScriptToken]
+
+    asm.zipWithIndex.foreach {
+      case (token, index) =>
+        token match {
+          case OP_PUSHDATA1 | OP_PUSHDATA2 | OP_PUSHDATA4 =>
+            /* OP_PUSH_DATA[1|2|4] says that the next value is [1|2|4] bytes and indicates
+             * how many bytes should be pushed onto the stack (meaning the data is 2 values away)
+             */
+            builder.+=(asm(index + 2))
+          case _: BytesToPushOntoStack =>
+            builder.+=(asm(index + 1))
+          case _ => ()
+        }
+    }
+
+    builder.result()
+  }
+
   /**
     * Returns true if the given script token counts towards our max script operations in a script
     * See
