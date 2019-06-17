@@ -62,7 +62,7 @@ case class SpvNode(
           AsyncUtil.retryUntilSatisfied(peerMsgRecv.isInitialized)
 
         isInitializedF.failed.foreach(err =>
-          logger.error(s"Failed to conenct with peer=$peer with err=${err}"))
+          logger.error(s"Failed to connect with peer=$peer with err=${err}"))
 
         isInitializedF.map { _ =>
           logger.info(s"Our peer=${peer} has been initialized")
