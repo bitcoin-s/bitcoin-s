@@ -102,8 +102,14 @@ case class SpvNode(
     * @return
     */
   def sync(): Future[Unit] = {
-    chainApi.getBestBlockHash.map { hashBE: DoubleSha256DigestBE =>
-      peerMsgSender.sendGetHeadersMessage(hashBE.flip)
+    for {
+      hash <- chainApi.getBestBlockHash
+      header <- chainApi
+        .getHeader(hash)
+        .map(_.get) // .get is safe since this is an internal call
+    } yield {
+      peerMsgSender.sendGetHeadersMessage(hash.flip)
+      logger.info(s"Starting sync node, height=${header.height} hash=$hash")
     }
   }
 }

@@ -37,13 +37,20 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks)(
 
     payload match {
       case headersMsg: HeadersMessage =>
+        logger.trace(
+          s"Received headers message with ${headersMsg.count.toInt} headers")
         val headers = headersMsg.headers
         val chainApi: ChainApi =
           ChainHandler(blockHeaderDAO, chainConfig = appConfig)
         val chainApiF = chainApi.processHeaders(headers)
 
-        chainApiF.map { _ =>
-          val lastHash = headers.last.hash
+        chainApiF.map { newApi =>
+          val lastHeader = headers.last
+          val lastHash = lastHeader.hash
+          newApi.getBlockCount.map { count =>
+            logger.trace(
+              s"Processed headers, most recent has height=$count and hash=$lastHash.")
+          }
           peerMsgSender.sendGetHeadersMessage(lastHash)
         }
       case msg: BlockMessage =>

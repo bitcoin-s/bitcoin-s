@@ -1,6 +1,10 @@
 package org.bitcoins.chain.validation
 
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  BlockHeaderDb,
+  BlockHeaderDbHelper
+}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -28,7 +32,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
       blockHeaderDAO: BlockHeaderDAO)(
       implicit ec: ExecutionContext): Future[TipUpdateResult] = {
     val header = newPotentialTip
-    logger.info(
+    logger.trace(
       s"Checking header=${header.hashBE.hex} to try to connect to currentTip=${currentTip.hashBE.hex} with height=${currentTip.height}")
 
     val powCheckF = isBadPow(newPotentialTip = newPotentialTip,
@@ -66,7 +70,7 @@ sealed abstract class TipValidation extends BitcoinSLogger {
       currentTip: BlockHeaderDb)(implicit ec: ExecutionContext): Unit = {
     connectTipResultF.map {
       case TipUpdateResult.Success(tipDb) =>
-        logger.info(
+        logger.trace(
           s"Successfully connected ${tipDb.hashBE.hex} with height=${tipDb.height} to block=${currentTip.hashBE.hex} with height=${currentTip.height}")
 
       case bad: TipUpdateResult.Failure =>
@@ -78,9 +82,11 @@ sealed abstract class TipValidation extends BitcoinSLogger {
     ()
   }
 
-  /** Checks if [[header]] hashes to meet the POW requirements for this block (nBits)
-    * Mimics this
-    * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74]]
+  /** Checks if the given header hashes to meet the POW requirements for
+    * this block (determined by lookinng at the `nBits` field).
+    *
+    * @see [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L74 pow.cpp]]
+    *      in Bitcoin Core
     * */
   def isBadNonce(header: BlockHeader): Boolean = {
     //convert hash into a big integer
