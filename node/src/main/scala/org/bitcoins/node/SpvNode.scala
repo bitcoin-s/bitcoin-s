@@ -15,8 +15,16 @@ import org.bitcoins.node.networking.peer.{
 import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.Future
+import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.p2p.FilterLoadMessage
+import org.bitcoins.core.p2p.NetworkPayload
 
-case class SpvNode(peer: Peer, chainApi: ChainApi)(
+case class SpvNode(
+    peer: Peer,
+    chainApi: ChainApi,
+    bloomFilter: BloomFilter,
+    callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty
+)(
     implicit system: ActorSystem,
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig)
@@ -24,13 +32,23 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
   import system.dispatcher
 
   private val peerMsgRecv =
-    PeerMessageReceiver.newReceiver
+    PeerMessageReceiver.newReceiver(callbacks)
 
   private val client: Client =
     Client(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)
 
   private val peerMsgSender: PeerMessageSender = {
     PeerMessageSender(client, nodeAppConfig.network)
+  }
+
+  /**
+    * Sends the given P2P to our peer.
+    * This method is useful for playing around
+    * with P2P messages, therefore marked as
+    * `private[node]`.
+    */
+  private[node] def send(msg: NetworkPayload): Unit = {
+    peerMsgSender.sendMsg(msg)
   }
 
   /** Starts our spv node */
@@ -51,8 +69,12 @@ case class SpvNode(peer: Peer, chainApi: ChainApi)(
           this
         }
       }
-
-    } yield node
+    } yield {
+      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+      val filterMsg = FilterLoadMessage(bloomFilter)
+      val _ = send(filterMsg)
+      node
+    }
   }
 
   /** Stops our spv node */

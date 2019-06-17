@@ -9,13 +9,22 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node.SpvNode
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{PeerHandler, PeerMessageReceiver, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  PeerHandler,
+  PeerMessageReceiver,
+  PeerMessageSender
+}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FutureOutcome, MustMatchers}
+import org.scalatest.{
+  BeforeAndAfter,
+  BeforeAndAfterAll,
+  FutureOutcome,
+  MustMatchers
+}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -60,7 +69,7 @@ trait NodeUnitTest
 
   def buildPeerMessageReceiver(): PeerMessageReceiver = {
     val receiver =
-      PeerMessageReceiver.newReceiver
+      PeerMessageReceiver.newReceiver()
     receiver
   }
 
@@ -95,7 +104,10 @@ trait NodeUnitTest
     val peer = createPeer(bitcoind)
     for {
       chainApi <- chainApiF
-    } yield SpvNode(peer = peer, chainApi = chainApi)
+    } yield
+      SpvNode(peer = peer,
+              chainApi = chainApi,
+              bloomFilter = NodeTestUtil.emptyBloomFilter)
   }
 
   def withSpvNode(test: OneArgAsyncTest)(

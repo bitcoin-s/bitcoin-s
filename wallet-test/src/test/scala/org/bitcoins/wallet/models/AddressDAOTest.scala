@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.wallet.fixtures.AddressDAOFixture
-import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.SegWitHDPath
 import org.bitcoins.wallet.Wallet

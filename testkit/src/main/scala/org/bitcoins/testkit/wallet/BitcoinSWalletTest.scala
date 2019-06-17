@@ -1,9 +1,8 @@
-package org.bitcoins.wallet.util
+package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -14,7 +13,6 @@ import org.bitcoins.wallet.api.{
   InitializeWalletSuccess,
   UnlockedWalletApi
 }
-import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.{WalletDbManagement}
 import org.scalatest._
 
@@ -22,7 +20,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.testkit.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSAppConfig._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 

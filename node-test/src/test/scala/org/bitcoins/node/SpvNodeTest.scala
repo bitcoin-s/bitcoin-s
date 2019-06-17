@@ -7,6 +7,7 @@ import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
+import org.bitcoins.testkit.node.NodeTestUtil
 
 class SpvNodeTest extends NodeUnitTest {
 
@@ -36,16 +37,9 @@ class SpvNodeTest extends NodeUnitTest {
         sync <- spvNode.sync()
       } yield sync
 
-      def isSameBestHash(): Future[Boolean] = {
-        for {
-          spvBestHash <- spvNode.chainApi.getBestBlockHash
-          hash <- hashF
-        } yield spvBestHash == hash
-      }
-
       spvSyncF.flatMap { _ =>
-        RpcUtil
-          .retryUntilSatisfiedF(isSameBestHash)
+        NodeTestUtil
+          .awaitSync(spvNode, bitcoind)
           .map(_ => succeed)
       }
 

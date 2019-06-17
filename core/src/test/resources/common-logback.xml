@@ -34,6 +34,9 @@
     <logger name="org.bitcoins.node.config" level="INFO" />
     <logger name="org.bitcoins.wallet.config" level="INFO" />
 
+    <!-- See incoming message names and the peer it's sent from -->
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO" />
+
     <!-- inspect resolved db connection -->
     <logger name="org.bitcoins.db.SafeDatabase" level="INFO" />
 
