@@ -276,7 +276,9 @@ lazy val chain = project
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain",
-    libraryDependencies ++= Deps.chain
+    libraryDependencies ++= Deps.chain,
+    // don't publish while such a heavy WIP
+    publish / skip := true
   ).dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
 
@@ -366,7 +368,9 @@ lazy val node = {
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node",
-      libraryDependencies ++= Deps.node
+      libraryDependencies ++= Deps.node,
+      // don't publish while such a heavy WIP
+      publish / skip := true
     )
     .dependsOn(
       core,
@@ -452,7 +456,9 @@ lazy val wallet = project
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
-    libraryDependencies ++= Deps.wallet
+    libraryDependencies ++= Deps.wallet,
+    // don't publish while such a heavy WIP
+    publish / skip := true
   )
   .dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
