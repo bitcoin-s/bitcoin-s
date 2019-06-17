@@ -13,6 +13,8 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindInstance
 import java.net.InetSocketAddress
+import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.bloom.BloomUpdateAll
 
 object SpvNodeMain extends App with BitcoinSLogger {
   implicit val system = Constants.actorSystem
@@ -50,12 +52,18 @@ object SpvNodeMain extends App with BitcoinSLogger {
   }
 
   logger.info(s"Starting SPV node")
-  val spvNodeF = SpvNode(peer, chainApi).start()
 
-  val getHeight: Runnable = () =>
-    spvNodeF
-      .flatMap(_.chainApi.getBlockCount)
-      .foreach(count => logger.debug(s"SPV block height: $count"))
+  val emptyBloom =
+    BloomFilter(numElements = 1, falsePositiveRate = 1, flags = BloomUpdateAll)
+  val spvNodeF = SpvNode(peer, chainApi, emptyBloom).start()
+
+  val getHeight: Runnable = new Runnable {
+
+    def run: Unit =
+      spvNodeF
+        .flatMap(_.chainApi.getBlockCount)
+        .foreach(count => logger.debug(s"SPV block height: $count"))
+  }
 
   val interval = 30.seconds
   system.scheduler.schedule(interval, interval, getHeight)
