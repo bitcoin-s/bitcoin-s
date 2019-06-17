@@ -95,8 +95,7 @@ trait NodeUnitTest
 
   def createPeer(bitcoind: BitcoindRpcClient): Peer = {
     val socket = peerSocketAddress(bitcoind)
-    val nip = NetworkIpAddress.fromInetSocketAddress(socket)
-    Peer(id = None, networkIpAddress = nip)
+    Peer(id = None, socket = socket)
   }
 
   def createSpvNode(bitcoind: BitcoindRpcClient): Future[SpvNode] = {

@@ -65,8 +65,6 @@ class PeerMessageReceiver(
 
         val _ = toState(newState)
 
-        logger.debug(s"new state ${internalState}")
-        logger.debug(s"isConnected=${isConnected}")
         val peerMsgSender = PeerMessageSender(client, chainAppConfig.network)
 
         peerMsgSender.sendVersionMessage()
@@ -159,8 +157,8 @@ class PeerMessageReceiver(
     payload match {
 
       case versionMsg: VersionMessage =>
-        logger.debug(
-          s"Received version message from peer=${peerOpt.get} msg=${versionMsg}")
+        logger.trace(
+          s"Received versionMsg=${versionMsg}from peer=${peerOpt.get}")
 
         internalState match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
@@ -181,8 +179,6 @@ class PeerMessageReceiver(
         }
 
       case VerAckMessage =>
-        logger.debug(s"Received verack message from peer=${peerOpt.get}")
-
         internalState match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
             Failure(
@@ -194,7 +190,8 @@ class PeerMessageReceiver(
             Success(())
         }
 
-      case _: PingMessage =>
+      case ping: PingMessage =>
+        sender.sendPong(ping)
         Success(())
       case SendHeadersMessage =>
         //not implemented as of now
@@ -214,6 +211,8 @@ class PeerMessageReceiver(
   }
 
   private def toState(state: PeerMessageReceiverState): Unit = {
+    logger.debug(
+      s"PeerMessageReceiver changing state, oldState=$internalState, newState=$state")
     internalState = state
   }
 }

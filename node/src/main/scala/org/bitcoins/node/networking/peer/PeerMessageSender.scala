@@ -28,6 +28,7 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
   /** Sends a [[org.bitcoins.node.messages.VersionMessage VersionMessage]] to our peer */
   def sendVersionMessage(): Unit = {
     val versionMsg = VersionMessage(client.peer.socket, np)
+    logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
     sendMsg(versionMsg)
   }
 
@@ -36,8 +37,16 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
     sendMsg(verackMsg)
   }
 
+  /** Responds to a ping message */
+  def sendPong(ping: PingMessage): Unit = {
+    val pong = PongMessage(ping.nonce)
+    logger.trace(s"Sending pong=$pong to peer=${client.peer}")
+    sendMsg(pong)
+  }
+
   def sendGetHeadersMessage(lastHash: DoubleSha256Digest): Unit = {
     val headersMsg = GetHeadersMessage(lastHash)
+    logger.trace(s"Sending getheaders=$headersMsg to peer=${client.peer}")
     sendMsg(headersMsg)
   }
 
@@ -47,8 +56,7 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
   }
 
   private[node] def sendMsg(msg: NetworkPayload): Unit = {
-    logger.debug(
-      s"PeerMessageSender sending to peer=${socket} msg=${msg.commandName}")
+    logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
     val newtworkMsg = NetworkMessage(np, msg)
     client.actor ! newtworkMsg
   }

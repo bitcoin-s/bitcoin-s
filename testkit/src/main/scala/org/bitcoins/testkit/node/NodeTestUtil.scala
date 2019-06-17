@@ -100,8 +100,7 @@ abstract class NodeTestUtil extends BitcoinSLogger {
     * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]] */
   def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient): Peer = {
     val socket = getBitcoindSocketAddress(bitcoindRpcClient)
-    val networkIpAddress = NetworkIpAddress.fromInetSocketAddress(socket)
-    Peer.fromNetworkIpAddress(networkIpAddress)
+    Peer(socket)
   }
 
   /** Checks if the given SPV node and bitcoind is synced */

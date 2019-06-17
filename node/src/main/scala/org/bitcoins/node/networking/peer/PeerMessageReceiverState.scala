@@ -1,6 +1,5 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p.{VerAckMessage, VersionMessage}
 import org.bitcoins.node.networking.Client
@@ -141,6 +140,8 @@ object PeerMessageReceiverState {
         verackMsgP = verackMsgP.success(verAckMessage)
       )
     }
+
+    override def toString: String = "Initializing"
   }
 
   /** This represents a [[org.bitcoins.node.networking.peer.PeerMessageReceiverState]]
@@ -159,6 +160,8 @@ object PeerMessageReceiverState {
     require(
       isInitialized,
       s"We cannot have a PeerMessageReceiverState.Normal if the Peer is not initialized")
+
+    override def toString: String = "Normal"
   }
 
   case class Disconnected(
@@ -170,6 +173,9 @@ object PeerMessageReceiverState {
     require(
       isDisconnected,
       "We cannot be in the disconnected state if a peer is not disconnected")
+
+    override def toString: String = "Disconnected"
+
   }
 
   def fresh(): PeerMessageReceiverState.Preconnection.type = {

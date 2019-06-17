@@ -89,13 +89,15 @@ object NetworkIpAddress extends Factory[NetworkIpAddress] {
   def fromBytes(bytes: ByteVector): NetworkIpAddress =
     RawNetworkIpAddressSerializer.read(bytes)
 
-  def fromInetSocketAddress(socket: InetSocketAddress): NetworkIpAddress = {
+  def fromInetSocketAddress(
+      socket: InetSocketAddress,
+      services: ServiceIdentifier): NetworkIpAddress = {
     //TODO: this might be wrong, read this time documentation above
     val timestamp = UInt32(System.currentTimeMillis() / 1000)
 
     NetworkIpAddress(
       time = timestamp,
-      services = NodeNetwork,
+      services = services,
       address = socket.getAddress,
       port = socket.getPort
     )

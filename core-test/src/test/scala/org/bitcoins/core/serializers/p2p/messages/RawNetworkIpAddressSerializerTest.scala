@@ -1,7 +1,6 @@
 package org.bitcoins.core.serializers.p2p
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.p2p.NodeNetwork
 import org.scalatest.{FlatSpec, MustMatchers}
 
 class RawNetworkIpAddressSerializerTest extends FlatSpec with MustMatchers {
@@ -16,7 +15,7 @@ class RawNetworkIpAddressSerializerTest extends FlatSpec with MustMatchers {
   "RawNetworkIpAddressSerializer" must "read a network ip address from a hex string" in {
     val ipAddress = RawNetworkIpAddressSerializer.read(hex)
     ipAddress.time must be(UInt32(1414012889))
-    ipAddress.services must be(NodeNetwork)
+    assert(ipAddress.services.nodeNetwork)
     ipAddress.address.toString must be("/192.0.2.51")
     ipAddress.port must be(8333)
   }
