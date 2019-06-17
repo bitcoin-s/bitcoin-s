@@ -744,7 +744,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh BIP141]]
   */
 sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
-  def scriptHash: Sha256Digest = Sha256Digest(asm(3).bytes)
+  def scriptHash: Sha256Digest = Sha256Digest(asm(2).bytes)
   override def toString = s"P2WSHWitnessSPKV0($hex)"
 }
 
