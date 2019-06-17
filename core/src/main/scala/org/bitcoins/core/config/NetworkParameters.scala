@@ -3,9 +3,6 @@ package org.bitcoins.core.config
 import org.bitcoins.core.protocol.blockchain._
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 7/27/15.
-  */
 sealed abstract class NetworkParameters {
 
   /** The parameters of the blockchain we are connecting to */
@@ -90,7 +87,7 @@ sealed abstract class MainNet extends BitcoinNetwork {
 
 }
 
-object MainNet extends MainNet
+final case object MainNet extends MainNet
 
 sealed abstract class TestNet3 extends BitcoinNetwork {
   override def chainParams: TestNetChainParams.type = TestNetChainParams
@@ -119,7 +116,7 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
 
 }
 
-object TestNet3 extends TestNet3
+final case object TestNet3 extends TestNet3
 
 sealed abstract class RegTest extends BitcoinNetwork {
   override def chainParams: RegTestNetChainParams.type = RegTestNetChainParams
@@ -145,7 +142,7 @@ sealed abstract class RegTest extends BitcoinNetwork {
   override def magicBytes = ByteVector(0xfa, 0xbf, 0xb5, 0xda)
 }
 
-object RegTest extends RegTest
+final case object RegTest extends RegTest
 // $COVERAGE-ON$
 
 object Networks {
