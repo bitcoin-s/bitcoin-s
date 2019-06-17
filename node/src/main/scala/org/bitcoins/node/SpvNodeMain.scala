@@ -26,7 +26,7 @@ object SpvNodeMain extends App with BitcoinSLogger {
   val bhDAO = BlockHeaderDAO()
   val chainApi = ChainHandler(bhDAO, chainConf)
 
-  {
+  val _ = {
     logger.info(s"Initializing chain and node")
 
     val initF =
@@ -52,7 +52,14 @@ object SpvNodeMain extends App with BitcoinSLogger {
   logger.info(s"Starting SPV node")
   val spvNodeF = SpvNode(peer, chainApi).start()
 
-  logger.info(s"Starting SPV node sync")
+  val getHeight: Runnable = () =>
+    spvNodeF
+      .flatMap(_.chainApi.getBlockCount)
+      .foreach(count => logger.debug(s"SPV block height: $count"))
+
+  val interval = 30.seconds
+  system.scheduler.schedule(interval, interval, getHeight)
+
   spvNodeF.map { spvNode =>
     spvNode.sync().onComplete {
       case Failure(exception) =>
