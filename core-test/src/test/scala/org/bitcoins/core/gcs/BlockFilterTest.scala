@@ -1,6 +1,6 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.testkit.util.BitcoinSUnitTest
@@ -14,20 +14,28 @@ class BlockFilterTest extends BitcoinSUnitTest {
   // https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#appendix-c-test-vectors
   case class Bip158TestCase(
       blockHeight: Int,
-      blockHash: DoubleSha256Digest,
+      blockHash: DoubleSha256DigestBE,
       block: Block,
       prevOutputScripts: Vector[ScriptPubKey],
-      // TODO prevHeader: BlockFilterHeader,
+      prevHeader: DoubleSha256DigestBE,
       filter: GolombFilter,
-      // TODO header: BlockFilterHeader,
+      header: DoubleSha256DigestBE,
       notes: String
   ) {
+
+    val clue: String = s"Test Notes: $notes"
 
     def runTest(): org.scalatest.Assertion = {
       val constructedFilter = BlockFilter(block, prevOutputScripts)
 
-      assert(constructedFilter.decodedHashes == filter.decodedHashes,
-             s"Test Notes: $notes")
+      assert(constructedFilter.decodedHashes == filter.decodedHashes, clue)
+
+      assert(constructedFilter.encodedData.bytes == filter.encodedData.bytes,
+             clue)
+
+      val constructedHeader = constructedFilter.getHeader(prevHeader.flip)
+
+      assert(constructedHeader.hash == header.flip, clue)
     }
   }
 
@@ -37,23 +45,33 @@ class BlockFilterTest extends BitcoinSUnitTest {
     def fromJsArray(array: JsArray): Bip158TestCase = {
       val parseResult = for {
         height <- array(0).validate[Int]
-        blockHash <- array(1).validate[String].map(DoubleSha256Digest.fromHex)
+        blockHash <- array(1).validate[String].map(DoubleSha256DigestBE.fromHex)
 
         block <- array(2).validate[String].map(Block.fromHex)
 
         scriptArray <- array(3).validate[JsArray]
         scripts = parseScripts(scriptArray)
 
-        //prevHeader <- array(4).validate[String].map(BlockFilterHeader.fromHex)
+        prevHeader <- array(4)
+          .validate[String]
+          .map(DoubleSha256DigestBE.fromHex)
 
         filter <- array(5)
           .validate[String]
-          .map(BlockFilter.fromHex(_, blockHash))
+          .map(BlockFilter.fromHex(_, blockHash.flip))
 
-        //header <- array(6).validate[String].map(BlockFilterHeader.fromHex)
+        header <- array(6).validate[String].map(DoubleSha256DigestBE.fromHex)
 
         notes <- array(7).validate[String]
-      } yield Bip158TestCase(height, blockHash, block, scripts, filter, notes)
+      } yield
+        Bip158TestCase(height,
+                       blockHash,
+                       block,
+                       scripts,
+                       prevHeader,
+                       filter,
+                       header,
+                       notes)
 
       parseResult.get
     }

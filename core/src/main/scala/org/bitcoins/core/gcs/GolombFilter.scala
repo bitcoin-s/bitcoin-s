@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -30,6 +30,27 @@ case class GolombFilter(
     n: CompactSizeUInt,
     encodedData: BitVector) {
   lazy val decodedHashes: Vector[UInt64] = GCS.golombDecodeSet(encodedData, p)
+
+  /** The hash of this serialized filter */
+  lazy val hash: DoubleSha256Digest = {
+    CryptoUtil.doubleSHA256(this.bytes)
+  }
+
+  /** Given the previous FilterHeader, constructs the header corresponding to this */
+  def getHeader(prevHeader: FilterHeader): FilterHeader = {
+    FilterHeader(filterHash = this.hash, prevHeaderHash = prevHeader.hash)
+  }
+
+  /** Given the previous FilterHeader hash, constructs the header corresponding to this */
+  def getHeader(prevHeaderHash: DoubleSha256Digest): FilterHeader = {
+    FilterHeader(filterHash = this.hash, prevHeaderHash = prevHeaderHash)
+  }
+
+  def bytes: ByteVector = {
+    n.bytes ++ encodedData.bytes
+  }
+
+  def hex: String = bytes.toHex
 
   // TODO: Offer alternative that stops decoding when it finds out if data is there
   def matchesHash(hash: UInt64): Boolean = {
