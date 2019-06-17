@@ -68,6 +68,7 @@ case class GolombFilter(
 
 object BlockFilter {
 
+  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]] */
   val M: UInt64 = UInt64(784931)
   val P: UInt8 = UInt8(19)
 
@@ -114,17 +115,10 @@ object BlockFilter {
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]]
     */
   def apply(block: Block, utxoProvider: TempUtxoProvider): GolombFilter = {
-    val key = block.blockHeader.hash.bytes.take(16)
+    val prevOutputScripts: Vector[ScriptPubKey] =
+      getInputScriptPubKeysFromBlock(block, utxoProvider)
 
-    val newScriptPubKeys =
-      getOutputScriptPubKeysFromBlock(block).map(_.asmBytes)
-
-    val prevOutputScripts: Vector[ByteVector] =
-      getInputScriptPubKeysFromBlock(block, utxoProvider).map(_.asmBytes)
-
-    val allOutputs = (prevOutputScripts ++ newScriptPubKeys).distinct
-
-    GCS.buildBasicBlockFilter(allOutputs, key)
+    BlockFilter(block, prevOutputScripts)
   }
 
   /**

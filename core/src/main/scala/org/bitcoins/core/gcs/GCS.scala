@@ -196,7 +196,7 @@ object GCS {
     def loop(
         encoded: BitVector,
         decoded: Vector[UInt64],
-        lastHash: UInt64 = UInt64.zero): Vector[UInt64] = {
+        lastHash: UInt64): Vector[UInt64] = {
       if (encoded.length < p.toInt + 1) { // Only padding left
         decoded
       } else {
@@ -207,7 +207,7 @@ object GCS {
       }
     }
 
-    loop(encodedData, Vector.empty)
+    loop(encoded = encodedData, decoded = Vector.empty, lastHash = UInt64.zero)
   }
 
   /**
