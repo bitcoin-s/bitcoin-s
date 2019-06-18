@@ -14,7 +14,7 @@ import org.bitcoins.core.hd.LegacyHDPath
 
 class IncomingTransactionDAOTest
     extends BitcoinSWalletTest
-    with IncomingTransactionDAOFixture {
+    with WalletDAOFixture {
   private def getTx: Transaction =
     TransactionGenerators.transaction
       .suchThat(_.outputs.nonEmpty)
@@ -23,7 +23,8 @@ class IncomingTransactionDAOTest
 
   it must "insert a incoming transaction and read it back with its address" in {
     daos =>
-      val (txDao, addrDao) = daos
+      val txDao = daos.incomingTxDAO
+      val addrDao = daos.addressDAO
       implicit val walletconf: WalletAppConfig = config
       val accountDAO = AccountDAO()
 
