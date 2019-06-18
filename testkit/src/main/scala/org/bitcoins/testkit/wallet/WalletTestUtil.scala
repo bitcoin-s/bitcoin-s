@@ -79,7 +79,6 @@ object WalletTestUtil {
     NativeV0UTXOSpendingInfoDb(id = None,
                                outPoint = outpoint,
                                output = output,
-                               spent = false,
                                privKeyPath = privkeyPath,
                                scriptWitness = scriptWitness)
   }
@@ -92,7 +91,6 @@ object WalletTestUtil {
     LegacyUTXOSpendingInfoDb(id = None,
                              outPoint = outpoint,
                              output = output,
-                             spent = false,
                              privKeyPath = privKeyPath)
   }
   lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub.key)
