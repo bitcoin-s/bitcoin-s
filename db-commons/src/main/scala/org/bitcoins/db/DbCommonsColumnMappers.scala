@@ -19,6 +19,8 @@ import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.SegWitHDPath
 import slick.jdbc.GetResult
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.currency.Satoshis
 
 abstract class DbCommonsColumnMappers {
 
@@ -158,6 +160,9 @@ abstract class DbCommonsColumnMappers {
   implicit val scriptTypeMapper: BaseColumnType[ScriptType] =
     MappedColumnType
       .base[ScriptType, String](_.toString, ScriptType.fromStringExn)
+
+  implicit val txMapper: BaseColumnType[Transaction] =
+    MappedColumnType.base[Transaction, String](_.hex, Transaction.fromHex)
 
 }
 
