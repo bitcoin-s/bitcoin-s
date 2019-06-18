@@ -80,7 +80,8 @@ object WalletTestUtil {
                                outPoint = outpoint,
                                output = output,
                                privKeyPath = privkeyPath,
-                               scriptWitness = scriptWitness)
+                               scriptWitness = scriptWitness,
+                               incomingTxId = None)
   }
 
   lazy val sampleLegacyUtxo = {
@@ -91,7 +92,8 @@ object WalletTestUtil {
     LegacyUTXOSpendingInfoDb(id = None,
                              outPoint = outpoint,
                              output = output,
-                             privKeyPath = privKeyPath)
+                             privKeyPath = privKeyPath,
+                             incomingTxId = None)
   }
   lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub.key)
 }

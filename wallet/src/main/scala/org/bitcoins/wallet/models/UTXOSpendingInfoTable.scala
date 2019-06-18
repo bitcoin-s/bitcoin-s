@@ -28,7 +28,8 @@ case class NativeV0UTXOSpendingInfoDb(
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: SegWitHDPath,
-    scriptWitness: ScriptWitness
+    scriptWitness: ScriptWitness,
+    incomingTxId: Option[Long]
 ) extends UTXOSpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
@@ -43,7 +44,8 @@ case class LegacyUTXOSpendingInfoDb(
     id: Option[Long],
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
-    privKeyPath: LegacyHDPath
+    privKeyPath: LegacyHDPath,
+    incomingTxId: Option[Long]
 ) extends UTXOSpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override def scriptWitnessOpt: Option[ScriptWitness] = None
@@ -79,6 +81,9 @@ sealed trait UTXOSpendingInfoDb
   val hashType: HashType = HashType.sigHashAll
 
   def value: CurrencyUnit = output.value
+
+  /** The ID of the transaction this UTXO was received in */
+  def incomingTxId: Option[Long]
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
@@ -129,13 +134,25 @@ case class UTXOSpendingInfoTable(tag: Tag)
   def scriptWitnessOpt: Rep[Option[ScriptWitness]] =
     column[Option[ScriptWitness]]("script_witness")
 
+  /** The ID of the incoming transaction corresponding to this UTXO */
+  def incomingTxId: Rep[Long] = column("incoming_tx_id")
+
+  def fk_incomingTx =
+    foreignKey("fk_incoming_tx",
+               sourceColumns = incomingTxId,
+               targetTableQuery = TableQuery[IncomingTransactionTable]) {
+      _.id
+    }
+
   private type UTXOTuple = (
       Option[Long],
       TransactionOutPoint,
       TransactionOutput,
       HDPath,
       Option[ScriptPubKey],
-      Option[ScriptWitness])
+      Option[ScriptWitness],
+      Option[Long] // incoming TX ID
+  )
 
   private val fromTuple: UTXOTuple => UTXOSpendingInfoDb = {
     case (id,
@@ -143,21 +160,27 @@ case class UTXOSpendingInfoTable(tag: Tag)
           output,
           path: SegWitHDPath,
           None, // ReedemScript
-          Some(scriptWitness)) =>
-      NativeV0UTXOSpendingInfoDb(id, outpoint, output, path, scriptWitness)
+          Some(scriptWitness),
+          txId) =>
+      NativeV0UTXOSpendingInfoDb(id,
+                                 outpoint,
+                                 output,
+                                 path,
+                                 scriptWitness,
+                                 txId)
 
     case (id,
           outpoint,
           output,
           path: LegacyHDPath,
           None, // RedeemScript
-          None // ScriptWitness
-        ) =>
-      LegacyUTXOSpendingInfoDb(id, outpoint, output, path)
-    case (id, outpoint, output, path, spkOpt, swOpt) =>
+          None, // ScriptWitness
+          txId) =>
+      LegacyUTXOSpendingInfoDb(id, outpoint, output, path, txId)
+    case (id, outpoint, output, path, spkOpt, swOpt, txId) =>
       throw new IllegalArgumentException(
         "Could not construct UtxoSpendingInfoDb from bad tuple:"
-          + s" ($id, $outpoint, $output, $path, $spkOpt, $swOpt) . Note: Nested Segwit is not implemented")
+          + s" ($id, $outpoint, $output, $path, $spkOpt, $swOpt, $txId) . Note: Nested Segwit is not implemented")
 
   }
 
@@ -169,8 +192,15 @@ case class UTXOSpendingInfoTable(tag: Tag)
          utxo.output,
          utxo.privKeyPath,
          utxo.redeemScriptOpt,
-         utxo.scriptWitnessOpt))
+         utxo.scriptWitnessOpt,
+         utxo.incomingTxId))
 
   def * : ProvenShape[UTXOSpendingInfoDb] =
-    (id.?, outPoint, output, privKeyPath, redeemScriptOpt, scriptWitnessOpt) <> (fromTuple, toTuple)
+    (id.?,
+     outPoint,
+     output,
+     privKeyPath,
+     redeemScriptOpt,
+     scriptWitnessOpt,
+     incomingTxId.?) <> (fromTuple, toTuple)
 }
