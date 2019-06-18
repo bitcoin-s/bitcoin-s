@@ -20,10 +20,22 @@ abstract class DbManagement extends BitcoinSLogger {
   def listTables(db: SafeDatabase): Future[Vector[SQLiteTableInfo]] =
     listTables(db.config.database)
 
+  /** Creates all tables in our table list, in one SQL transaction */
   def createAll()(
       implicit config: AppConfig,
-      ec: ExecutionContext): Future[Unit] = {
-    Future.sequence(allTables.map(createTable(_))).map(_ => ())
+      ec: ExecutionContext
+  ): Future[Unit] = {
+    val tables = allTables.map(_.baseTableRow.tableName).mkString(", ")
+    logger.debug(s"Creating tables: $tables")
+
+    val query = {
+      val querySeq =
+        allTables.map(createTableQuery(_, createIfNotExists = true))
+      DBIO.seq(querySeq: _*).transactionally
+    }
+
+    import config.database
+    database.run(query).map(_ => logger.debug(s"Created tables: $tables"))
   }
 
   def dropAll()(
@@ -32,6 +44,18 @@ abstract class DbManagement extends BitcoinSLogger {
     Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => ())
   }
 
+  /** The query needed to create the given table */
+  private def createTableQuery(
+      table: TableQuery[_ <: Table[_]],
+      createIfNotExists: Boolean) = {
+    if (createIfNotExists) {
+      table.schema.createIfNotExists
+    } else {
+      table.schema.create
+    }
+  }
+
+  /** Creates the given table */
   def createTable(
       table: TableQuery[_ <: Table[_]],
       createIfNotExists: Boolean = true)(
@@ -42,11 +66,7 @@ abstract class DbManagement extends BitcoinSLogger {
       s"Creating table $tableName with DB config: ${config.dbConfig.config} ")
 
     import config.database
-    val query = if (createIfNotExists) {
-      table.schema.createIfNotExists
-    } else {
-      table.schema.create
-    }
+    val query = createTableQuery(table, createIfNotExists)
     database.run(query).map(_ => logger.debug(s"Created table $tableName"))
   }
 
