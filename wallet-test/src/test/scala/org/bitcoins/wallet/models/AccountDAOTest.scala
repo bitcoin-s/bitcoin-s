@@ -1,12 +1,13 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.wallet.fixtures.AccountDAOFixture
+import org.bitcoins.wallet.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
-class AccountDAOTest extends BitcoinSWalletTest with AccountDAOFixture {
+class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
-  it should "insert and read an account into the database" in { accountDAO =>
+  it should "insert and read an account into the database" in { daos =>
+    val accountDAO = daos.accountDAO
     for {
       created <- {
         val account = WalletTestUtil.firstAccount
