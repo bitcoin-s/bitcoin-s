@@ -14,6 +14,11 @@ import scodec.bits.HexStringSyntax
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
+import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.wallet.models.NativeV0UTXOSpendingInfoDb
+import org.bitcoins.core.currency._
+import org.bitcoins.wallet.models.LegacyUTXOSpendingInfoDb
 
 object WalletTestUtil {
 
@@ -64,5 +69,31 @@ object WalletTestUtil {
   lazy val sampleVout: UInt32 = UInt32.zero
   lazy val sampleSPK: ScriptPubKey =
     ScriptPubKey.fromAsmBytes(hex"001401b2ac67587e4b603bb3ad709a8102c30113892d")
+
+  lazy val sampleSegwitUtxo: NativeV0UTXOSpendingInfoDb = {
+    val outpoint =
+      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
+    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
+    val scriptWitness = WalletTestUtil.sampleScriptWitness
+    val privkeyPath = WalletTestUtil.sampleSegwitPath
+    NativeV0UTXOSpendingInfoDb(id = None,
+                               outPoint = outpoint,
+                               output = output,
+                               spent = false,
+                               privKeyPath = privkeyPath,
+                               scriptWitness = scriptWitness)
+  }
+
+  lazy val sampleLegacyUtxo = {
+    val outpoint =
+      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
+    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
+    val privKeyPath = WalletTestUtil.sampleLegacyPath
+    LegacyUTXOSpendingInfoDb(id = None,
+                             outPoint = outpoint,
+                             output = output,
+                             spent = false,
+                             privKeyPath = privKeyPath)
+  }
   lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub.key)
 }
