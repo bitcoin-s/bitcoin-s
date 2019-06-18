@@ -73,7 +73,8 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[AuditResult]("audit", List(JsNumber(from), JsNumber(to)))
 
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
-    eclairCall[ChannelResult]("channel", List(JsString(channelId.hex)))
+//    eclairCall[ChannelResult]("channel", List(JsString(channelId.hex)))
+    eclairCallNew[ChannelResult]("channel", "channelId" -> channelId.hex)
   }
 
   private def channels(nodeId: Option[NodeId]): Future[Vector[ChannelInfo]] = {
@@ -111,15 +112,16 @@ class EclairRpcClient(val instance: EclairInstance)(
       scriptPubKey: Option[ScriptPubKey]): Future[String] = {
     val params =
       if (scriptPubKey.isEmpty) {
-        List(JsString(channelId.hex))
+        Seq("channelId" -> channelId.hex)
       } else {
 
         val asmHex = BitcoinSUtil.encodeHex(scriptPubKey.get.asmBytes)
 
         List(JsString(channelId.hex), JsString(asmHex))
+        Seq("channelId" -> channelId.hex, "scriptPubKey" -> asmHex)
       }
 
-    eclairCall[String]("close", params)
+    eclairCallNew[String]("close", params: _*)
   }
 
   def close(channelId: ChannelId): Future[String] =
@@ -137,7 +139,7 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def connect(uri: NodeUri): Future[String] = {
-    eclairCall[String]("connect", List(JsString(uri.toString)))
+    eclairCallNew[String]("connect", "uri" -> uri.toString)
   }
 
   override def findRoute(nodeId: NodeId): Future[Vector[NodeId]] = {
@@ -153,7 +155,7 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def getInfo: Future[GetInfoResult] = {
-    val result = eclairCall[GetInfoResult]("getinfo")
+    val result = eclairCallNew[GetInfoResult]("getinfo")
     result
   }
 
@@ -185,30 +187,31 @@ class EclairRpcClient(val instance: EclairInstance)(
       pushMsat: Option[MilliSatoshis],
       feerateSatPerByte: Option[SatoshisPerByte],
       channelFlags: Option[Byte]): Future[FundedChannelId] = {
-    val num = pushMsat.getOrElse(MilliSatoshis.zero).toBigDecimal
-    val pushMsatJson = JsNumber(num)
-    val sat = fundingSatoshis.satoshis.toBigDecimal
+    val _pushMsat = pushMsat.getOrElse(MilliSatoshis.zero).toBigDecimal.toString
+    val _fundingSatoshis = fundingSatoshis.satoshis.toBigDecimal.toString
 
-    val params = {
+    val params: Seq[(String, String)] = {
       if (feerateSatPerByte.isEmpty) {
-        List(JsString(nodeId.toString), JsNumber(sat), pushMsatJson)
+        Seq("nodeId" -> nodeId.toString,
+            "fundingSatoshis" -> _fundingSatoshis,
+            "_pushMsat" -> _pushMsat)
       } else if (channelFlags.isEmpty) {
-        List(JsString(nodeId.toString),
-             JsNumber(sat),
-             pushMsatJson,
-             JsNumber(feerateSatPerByte.get.toLong))
+        Seq("nodeId" -> nodeId.toString,
+            "fundingSatoshis" -> _fundingSatoshis,
+            "_pushMsat" -> _pushMsat,
+            "fundingFeerateSatByte" -> feerateSatPerByte.get.toLong.toString)
       } else {
-        List(JsString(nodeId.toString),
-             JsNumber(sat),
-             pushMsatJson,
-             JsNumber(feerateSatPerByte.get.toLong),
-             JsString(channelFlags.toString))
+        Seq("nodeId" -> nodeId.toString,
+          "fundingSatoshis" -> _fundingSatoshis,
+          "_pushMsat" -> _pushMsat,
+          "fundingFeerateSatByte" -> feerateSatPerByte.get.toLong.toString,
+          "channelFlags" -> channelFlags.get.toString)
       }
     }
 
     //this is unfortunately returned in this format
     //created channel 30bdf849eb9f72c9b41a09e38a6d83138c2edf332cb116dd7cf0f0dfb66be395
-    val call = eclairCall[String]("open", params)
+    val call = eclairCallNew[String]("open", params: _*)
 
     //let's just return the chanId
     val chanIdF = call.map(_.split(" ").last)
@@ -275,11 +278,12 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def getPeers: Future[Vector[PeerInfo]] = {
-    eclairCall[Vector[PeerInfo]]("peers")
+    eclairCallNew[Vector[PeerInfo]]("peers")
   }
 
   /** A way to generate a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
     * with eclair.
+    *
     * @param amountMsat the amount to be encoded in the invoice
     * @param description meta information about the invoice
     * @param expirySeconds when the invoice expires
@@ -461,6 +465,22 @@ class EclairRpcClient(val instance: EclairInstance)(
   // TODO: channelstats, audit, networkfees?
   // TODO: Add types
 
+  private def eclairCallNew[T](command: String, parameters: (String, String)*)(
+      implicit
+      reader: Reads[T]): Future[T] = {
+    val request = buildRequestNew(getDaemon, command, parameters: _*)
+
+    logger.trace(s"eclair rpc call ${request}")
+    val responseF = sendRequest(request)
+
+    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+    payloadF.map { payload =>
+      val validated: JsResult[T] = payload.validate[T]
+      val parsed: T = parseResult(validated, payload, command)
+      parsed
+    }
+  }
+
   private def eclairCall[T](
       command: String,
       parameters: List[JsValue] = List.empty)(
@@ -502,7 +522,7 @@ class EclairRpcClient(val instance: EclairInstance)(
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
-              s"Could not parse JsResult! JSON: ${(json \ resultKey).get}")
+              s"Could not parse JsResult! JSON: ${json}")
         }
     }
   }
@@ -519,6 +539,22 @@ class EclairRpcClient(val instance: EclairInstance)(
   private def sendRequest(req: HttpRequest): Future[HttpResponse] = {
     val respF = Http(m.system).singleRequest(req)
     respF
+  }
+
+  private def buildRequestNew(
+      instance: EclairInstance,
+      methodName: String,
+      params: (String, String)*): HttpRequest = {
+
+    val uri = instance.rpcUri.resolve("/" + methodName).toString
+    // Eclair doesn't use a username
+    val username = ""
+    val password = instance.authCredentials.password
+    HttpRequest(method = HttpMethods.POST,
+                uri,
+                entity = FormData(params: _*).toEntity)
+      .addCredentials(
+        HttpCredentials.createBasicHttpCredentials(username, password))
   }
 
   private def buildRequest(
@@ -552,7 +588,8 @@ class EclairRpcClient(val instance: EclairInstance)(
              "This needs to be set to the directory containing the Eclair Jar")
           .mkString(" ")))
 
-    val eclairV = "/eclair-node-0.2-beta8-52821b8.jar"
+    //val eclairV = "/eclair-node-0.2-beta8-52821b8.jar"
+    val eclairV = "/eclair-node-0.3-a5debcd.jar"
     val fullPath = path + eclairV
 
     val jar = new File(fullPath)

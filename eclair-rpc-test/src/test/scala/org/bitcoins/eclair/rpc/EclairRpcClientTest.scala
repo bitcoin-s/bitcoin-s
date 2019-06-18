@@ -140,9 +140,9 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val changeAddrF = bitcoindRpcClientF.flatMap(_.getNewAddress)
     val result: Future[Assertion] = {
       val isOpenedF: Future[(ChannelId, Assertion)] = {
-        val getChannelId =
-          (client: EclairRpcClient, otherClient: EclairRpcClient) => {
+        val getChannelId = (client: EclairRpcClient, otherClient: EclairRpcClient) => {
             otherClient.getInfo.flatMap { info =>
+            println(info)
               val amt = Satoshis(Int64(100000))
               val openedChanF = clientF.flatMap(_.open(info.nodeId, amt))
 
@@ -216,7 +216,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     result
   }
-
+/*
   it should "fail to authenticate on bad password" in {
     val goodCredentialsF = {
       val getAuthCredentials = {
@@ -793,7 +793,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     clientF.map(c => assert(c.network == LnBitcoinRegTest))
   }
-
+*/
   private def hasConnection(
       client: Future[EclairRpcClient],
       nodeId: NodeId): Future[Assertion] = {

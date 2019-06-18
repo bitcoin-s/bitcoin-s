@@ -64,25 +64,25 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       // make sure we have enough money open channels
       //not async safe
       versionedCli: BitcoindRpcClient <- {
-        if (cli.instance.getVersion == BitcoindVersion.V17) {
-          val v16Cli = new BitcoindV16RpcClient(
-            BitcoindRpcTestUtil.v16Instance())
-          val startF =
-            Future.sequence(List(cli.stop(), v16Cli.start())).map(_ => v16Cli)
-
-          startF.recover {
-            case exception: Exception =>
-              logger.error(
-                List(
-                  "Eclair requires Bitcoin Core 0.16.",
-                  "You can set the environment variable BITCOIND_V16_PATH to override",
-                  "the default bitcoind executable on your PATH."
-                ).mkString(" "))
-              throw exception
-          }
-        } else {
+//        if (cli.instance.getVersion == BitcoindVersion.V17) {
+//          val v16Cli = new BitcoindV16RpcClient(
+//            BitcoindRpcTestUtil.v16Instance())
+//          val startF =
+//            Future.sequence(List(cli.stop(), v16Cli.start())).map(_ => v16Cli)
+//
+//          startF.recover {
+//            case exception: Exception =>
+//              logger.error(
+//                List(
+//                  "Eclair requires Bitcoin Core 0.16.",
+//                  "You can set the environment variable BITCOIND_V16_PATH to override",
+//                  "the default bitcoind executable on your PATH."
+//                ).mkString(" "))
+//              throw exception
+//          }
+//        } else {
           Future.successful(cli)
-        }
+//        }
       }
     } yield versionedCli
   }
@@ -91,9 +91,12 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort): BitcoindInstance = {
-    BitcoindRpcTestUtil.instance(port = port,
-                                 rpcPort = rpcPort,
-                                 zmqPort = zmqPort)
+//    BitcoindRpcTestUtil.instance(port = port,
+//                                 rpcPort = rpcPort,
+//                                 zmqPort = zmqPort)
+    BitcoindRpcTestUtil.v17Instance(port = port,
+      rpcPort = rpcPort,
+      zmqPort = zmqPort)
   }
 
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
