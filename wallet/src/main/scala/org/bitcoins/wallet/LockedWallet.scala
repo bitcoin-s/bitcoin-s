@@ -142,7 +142,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
           privKeyPath = segwitAddr.path,
           scriptWitness = segwitAddr.witnessScript
         )
-      case LegacyAddressDb(path, _, _, _) =>
+      case LegacyAddressDb(path, _, _, _, _) =>
         LegacyUTXOSpendingInfoDb(id = None,
                                  outPoint = outPoint,
                                  output = output,

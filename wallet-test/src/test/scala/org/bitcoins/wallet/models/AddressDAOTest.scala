@@ -37,7 +37,8 @@ class AddressDAOTest extends BitcoinSWalletTest with AddressDAOFixture {
                     ecPublicKey = pubkey,
                     hashedPubkey,
                     address,
-                    scriptWitness)
+                    scriptWitness,
+                    scriptPubKey = wspk)
   }
 
   behavior of "AddressDAO"

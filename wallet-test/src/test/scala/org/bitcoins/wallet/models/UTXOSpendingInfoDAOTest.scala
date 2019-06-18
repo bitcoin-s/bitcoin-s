@@ -31,27 +31,6 @@ class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest with UtxoDAOFixture {
       } yield assert(read.contains(created))
   }
 
-  it should "insert both spent and unspent TXOs" in {
-    dao: UTXOSpendingInfoDAO =>
-      val spentTXO: UTXOSpendingInfoDb = {
-        ???
-      }
-
-      val unspentTXO: UTXOSpendingInfoDb = {
-        ???
-      }
-      for {
-        _ <- dao.create(spentTXO)
-        _ <- dao.create(unspentTXO)
-        spent <- dao.findAllSpentTXOs()
-        unspent <- dao.findAllUnspentTXOs()
-      } yield {
-        assert(spent.length == 1)
-        assert(unspent.length == 1)
-      }
-
-  }
-
   it should "insert a nested segwit UTXO and read it" ignore { _ =>
     ???
   }
