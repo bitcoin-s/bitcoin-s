@@ -20,6 +20,9 @@ sealed abstract class HDChain extends BIP32Path {
 
   def toInt: Int = chainType.index
 
+  /** Given a index, creates a HD address */
+  def toAddress(index: Int): HDAddress = HDAddress(this, index = index)
+
 }
 
 object HDChain {
