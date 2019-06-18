@@ -59,6 +59,7 @@ final case class IncomingTransactionTable(tag: Tag)
   // TODO: What happens if we get paid to multiple SPKs in the same
   // transaction? Need to make a table of SPKs, and map IDs in that
   // table to TXs in this table...
+  /** The SPK that's relevant to us in this transaction. Foreign key into address table */
   def scriptPubKey: Rep[ScriptPubKey] = column("our_script_pubkey")
 
   def fk_scriptPubKey =
