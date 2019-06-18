@@ -14,18 +14,7 @@ class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest with UtxoDAOFixture {
   behavior of "UTXOSpendingInfoDAO"
 
   it should "insert a segwit UTXO and read it" in { utxoDAO =>
-    val outpoint =
-      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
-    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
-    val scriptWitness = WalletTestUtil.sampleScriptWitness
-    val privkeyPath = WalletTestUtil.sampleSegwitPath
-    val utxo =
-      NativeV0UTXOSpendingInfoDb(
-        id = None,
-        outPoint = outpoint,
-        output = output,
-        privKeyPath = privkeyPath,
-        scriptWitness = scriptWitness) // todo test this properly
+    val utxo = WalletTestUtil.sampleSegwitUtxo
 
     for {
       created <- utxoDAO.create(utxo)
@@ -33,19 +22,34 @@ class UTXOSpendingInfoDAOTest extends BitcoinSWalletTest with UtxoDAOFixture {
     } yield assert(read.contains(created))
   }
 
-  it should "insert a legacy UTXO and read it" in { utxoDAO =>
-    val outpoint =
-      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
-    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
-    val privKeyPath = WalletTestUtil.sampleLegacyPath
-    val utxo = LegacyUTXOSpendingInfoDb(id = None,
-                                        outPoint = outpoint,
-                                        output = output,
-                                        privKeyPath = privKeyPath)
-    for {
-      created <- utxoDAO.create(utxo)
-      read <- utxoDAO.read(created.id.get)
-    } yield assert(read.contains(created))
+  it should "insert a legacy UTXO and read it" in {
+    utxoDAO: UTXOSpendingInfoDAO =>
+      val utxo = WalletTestUtil.sampleLegacyUtxo
+      for {
+        created <- utxoDAO.create(utxo)
+        read <- utxoDAO.read(created.id.get)
+      } yield assert(read.contains(created))
+  }
+
+  it should "insert both spent and unspent TXOs" in {
+    dao: UTXOSpendingInfoDAO =>
+      val spentTXO: UTXOSpendingInfoDb = {
+        ???
+      }
+
+      val unspentTXO: UTXOSpendingInfoDb = {
+        ???
+      }
+      for {
+        _ <- dao.create(spentTXO)
+        _ <- dao.create(unspentTXO)
+        spent <- dao.findAllSpentTXOs()
+        unspent <- dao.findAllUnspentTXOs()
+      } yield {
+        assert(spent.length == 1)
+        assert(unspent.length == 1)
+      }
+
   }
 
   it should "insert a nested segwit UTXO and read it" ignore { _ =>
