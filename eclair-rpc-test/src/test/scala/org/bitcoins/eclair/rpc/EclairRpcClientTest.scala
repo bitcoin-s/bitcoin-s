@@ -216,7 +216,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     result
   }
-/*
+
   it should "fail to authenticate on bad password" in {
     val goodCredentialsF = {
       val getAuthCredentials = {
@@ -267,7 +267,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     otherClientNodeIdF.flatMap(nid => hasConnection(clientF, nid))
   }
 
-  it should "ble able to pay to a hash" in {
+  /*
+  it should "be able to pay to a hash" in {
     val amt = MilliSatoshis(50)
     val getPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
@@ -546,7 +547,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       isPaid2F.map(isPaid => assert(isPaid))
     }
   }
-
+*/
   it should "update the relay fee of a channel" in {
     val channelAndFeeF = for {
       channel <- openAndConfirmChannel(clientF, otherClientF)
@@ -578,6 +579,20 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     })
   }
 
+  it should "get updates for a single node" in {
+    for {
+      client <- clientF
+      nodeInfo <- client.getInfo
+      _ <- client.allUpdates(nodeInfo.nodeId)
+    } yield {
+      succeed
+    }
+  }
+
+  it should "get all nodes" in {
+    clientF.flatMap(_.allNodes().flatMap(_ => succeed))
+  }
+
   it should "get a route to a node ID" in {
     val hasRoute = () => {
       fourthClientF
@@ -594,7 +609,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     // Eclair is a bit slow in propagating channel changes
     AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
 
-    succeed
+//    succeed
+    fail
   }
 
   it should "get a route to an invoice" in {
@@ -618,7 +634,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     // Eclair is a bit slow in propagating channel changes
     AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
 
-    succeed
+//    succeed
+    fail
   }
 
   it should "send some payments and get the audit info" in {
@@ -793,7 +810,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     clientF.map(c => assert(c.network == LnBitcoinRegTest))
   }
-*/
+
   private def hasConnection(
       client: Future[EclairRpcClient],
       nodeId: NodeId): Future[Assertion] = {

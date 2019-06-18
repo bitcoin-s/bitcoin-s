@@ -46,19 +46,18 @@ class EclairRpcClient(val instance: EclairInstance)(
   def getDaemon: EclairInstance = instance
 
   override def allChannels(): Future[Vector[ChannelDesc]] = {
-    eclairCall[Vector[ChannelDesc]]("allchannels")
+    eclairCallNew[Vector[ChannelDesc]]("allchannels")
   }
 
   override def allNodes(): Future[Vector[NodeInfo]] = {
-    eclairCall[Vector[NodeInfo]]("allnodes")
+    eclairCallNew[Vector[NodeInfo]]("allnodes")
   }
 
   override def allUpdates(): Future[Vector[ChannelUpdate]] =
-    eclairCall[Vector[ChannelUpdate]]("allupdates", List.empty)
+    eclairCallNew[Vector[ChannelUpdate]]("allupdates")
 
   override def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
-    eclairCall[Vector[ChannelUpdate]]("allupdates",
-                                      List(JsString(nodeId.toString)))
+    eclairCallNew[Vector[ChannelUpdate]]("allupdates", "nodeId" -> nodeId.toString)
 
   /**
     * @inheritdoc

@@ -12,15 +12,35 @@ case class ShortChannelId(u64: UInt64) extends NetworkElement {
     * Output example:
     * {{{
     * > ShortChannelId.fromHex("db0000010000")
-    * ShortChannelId(db0000010000)
+    * 219x1x0
     * }}}
     */
-  override def toString: String = s"ShortChannelId(${hex.drop(4)})"
+  override def toString: String = toHumanReadableString
+
+  /**
+    * Output example:
+    * {{{
+    * > ShortChannelId.fromHex("db0000010000")
+    * 219x1x0
+    * }}}
+    */
+  def toHumanReadableString: String = {
+    val (blockHeight, txIndex, outputIndex) =  ((u64 >> 40) & UInt64(0xFFFFFF), (u64 >> 16) & UInt64(0xFFFFFF), u64 & UInt64(0xFFFF))
+    s"${blockHeight.toInt}x${txIndex.toInt}x${outputIndex.toInt}"
+  }
+
 }
 
 object ShortChannelId extends Factory[ShortChannelId] {
 
   override def fromBytes(byteVector: ByteVector): ShortChannelId = {
     new ShortChannelId(UInt64.fromBytes(byteVector))
+  }
+
+  def fromHumanReadableString(str: String): ShortChannelId = str.split("x") match {
+    case Array(blockHeight, txIndex, outputIndex) =>
+      val u64 = UInt64(((BigInt(blockHeight) & 0xFFFFFFL) << 40) | ((txIndex.toInt & 0xFFFFFFL) << 16) | (outputIndex.toInt & 0xFFFFL))
+      ShortChannelId(u64)
+    case _ => fromHex(str)
   }
 }

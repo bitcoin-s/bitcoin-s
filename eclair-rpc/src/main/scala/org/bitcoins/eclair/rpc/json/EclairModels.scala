@@ -81,7 +81,6 @@ case class NodeInfo(
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
-    shortChannelId: ShortChannelId,
     addresses: Vector[String])
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)

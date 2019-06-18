@@ -84,7 +84,7 @@ object JsonReaders {
 
   implicit val shortChannelIdReads: Reads[ShortChannelId] = {
     Reads { jsValue =>
-      SerializerUtil.processJsString(ShortChannelId.fromHex)(jsValue)
+      SerializerUtil.processJsString(ShortChannelId.fromHumanReadableString)(jsValue)
     }
   }
 
