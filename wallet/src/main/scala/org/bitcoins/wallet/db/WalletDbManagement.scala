@@ -1,20 +1,22 @@
 package org.bitcoins.wallet.db
 
 import org.bitcoins.db.DbManagement
-import org.bitcoins.wallet.models.{
-  AccountTable,
-  AddressTable,
-  UTXOSpendingInfoTable
-}
 import slick.jdbc.SQLiteProfile.api._
+import org.bitcoins.wallet.models._
 
 sealed abstract class WalletDbManagement extends DbManagement {
   private val accountTable = TableQuery[AccountTable]
   private val addressTable = TableQuery[AddressTable]
-  private val utxoDAO = TableQuery[UTXOSpendingInfoTable]
+  private val utxoTable = TableQuery[UTXOSpendingInfoTable]
+  private val incomingTxTable = TableQuery[IncomingTransactionTable]
+  private val outgoingTxTable = TableQuery[OutgoingTransactionTable]
 
   override val allTables: List[TableQuery[_ <: Table[_]]] =
-    List(accountTable, addressTable, utxoDAO)
+    List(accountTable,
+         addressTable,
+         utxoTable,
+         incomingTxTable,
+         outgoingTxTable)
 
 }
 
