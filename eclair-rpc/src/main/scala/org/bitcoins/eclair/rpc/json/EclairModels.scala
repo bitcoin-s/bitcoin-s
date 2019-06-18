@@ -22,9 +22,9 @@ sealed abstract class EclairModels
 case class GetInfoResult(
     nodeId: NodeId,
     alias: String,
-    port: Int,
     chainHash: DoubleSha256Digest,
-    blockHeight: Long)
+    blockHeight: Long,
+    publicAddresses: Seq[String])
 
 case class PeerInfo(
     nodeId: NodeId,
