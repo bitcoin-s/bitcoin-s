@@ -292,6 +292,14 @@ lazy val coreTest = project
   )
   .enablePlugins()
 
+lazy val cli = project
+    .in(file("cli"))
+    .settings(commonProdSettings: _*)
+    .dependsOn(
+      core % testAndCompile,
+      testkit
+    )
+
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
 lazy val chain = project
   .in(file("chain"))
