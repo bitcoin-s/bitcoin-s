@@ -48,6 +48,8 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
 
       val completionP = Promise[Assertion]
 
+      val amountFromBitcoind = 1.bitcoin
+
       val callbacks = {
         val onBlock: DataMessageHandler.OnBlockReceived = { block =>
           completionP.failure(
@@ -58,8 +60,16 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
 
         val onTx: DataMessageHandler.OnTxReceived = { tx =>
           if (expectedTxId.contains(tx.txId)) {
+            logger.debug(s"Cancelling timeout we set earlier")
             cancellable.map(_.cancel())
-            completionP.success(succeed)
+
+            for {
+              prevBalance <- wallet.getUnconfirmedBalance()
+              _ <- wallet.processTransaction(tx, confirmations = 0)
+              balance <- wallet.getUnconfirmedBalance()
+            } completionP.success(
+              assert(balance == prevBalance + amountFromBitcoind))
+
           } else if (unexpectedTxId.contains(tx.txId)) {
             completionP.failure(
               new TestFailedException(
@@ -89,6 +99,7 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
           }
         }
 
+        logger.debug(s"Setting timeout for receiving TX in thru node")
         cancellable = Some(actorSystem.scheduler.scheduleOnce(delay, runnable))
         tx
       }
@@ -116,7 +127,9 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
         _ <- spv.sync()
         _ <- NodeTestUtil.awaitSync(spv, rpc)
 
-        ourTxid <- rpc.sendToAddress(address, 1.bitcoin).map(processWalletTx)
+        ourTxid <- rpc
+          .sendToAddress(address, amountFromBitcoind)
+          .map(processWalletTx)
 
         notOurTxid <- rpc.getNewAddress
           .flatMap(rpc.sendToAddress(_, 1.bitcoin))

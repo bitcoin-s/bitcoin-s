@@ -27,40 +27,45 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
     val WalletWithBitcoind(wallet, bitcoind) = walletWithBitcoind
     val valueFromBitcoind = Bitcoins.one
 
-    val addUtxoF: Future[Unit] = for {
+    for {
       addr <- wallet.getNewAddress()
 
-      txid <- bitcoind.sendToAddress(addr, valueFromBitcoind)
-      _ <- bitcoind.generate(6)
-      tx <- bitcoind.getRawTransaction(txid)
+      tx <- bitcoind
+        .sendToAddress(addr, valueFromBitcoind)
+        .flatMap(bitcoind.getRawTransactionRaw(_))
 
-      addUtxoRes <- {
-        val voutOpt = tx.vout.find { rpcOut =>
-          val addressesOpt = rpcOut.scriptPubKey.addresses
-          addressesOpt.exists(_.contains(addr))
+      _ <- wallet.listUtxos().map(utxos => assert(utxos.isEmpty))
+      _ <- wallet.getBalance().map(confirmed => assert(confirmed == 0.bitcoin))
+      _ <- wallet
+        .getUnconfirmedBalance()
+        .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
+
+      // after this, tx is unconfirmed in wallet
+      _ <- wallet.processTransaction(tx, confirmations = 0)
+
+      utxosPostAdd <- wallet.listUtxos()
+      _ = assert(utxosPostAdd.nonEmpty)
+      _ <- wallet.getBalance().map(confirmed => assert(confirmed == 0.bitcoin))
+      _ <- wallet
+        .getUnconfirmedBalance()
+        .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
+
+      // after this, tx should be confirmed
+      _ <- wallet.processTransaction(tx, confirmations = 6)
+      _ <- wallet
+        .listUtxos()
+        .map { utxos =>
+          // we want to make sure no new utxos were added,
+          // i.e. that we only modified an existing one
+          assert(utxos.length == utxosPostAdd.length)
         }
 
-        val vout = voutOpt.getOrElse(
-          throw new IllegalArgumentException(
-            "Could not find ouput that spent to our address!"))
-
-        wallet.addUtxo(tx.hex, UInt32(vout.n))
-      }
-    } yield {
-      addUtxoRes match {
-        case err: AddUtxoError            => fail(err)
-        case AddUtxoSuccess(w: WalletApi) => () // continue test
-      }
-    }
-
-    for {
-      _ <- addUtxoF
-
-      utxos <- wallet.listUtxos()
-      _ = assert(utxos.nonEmpty)
-
-      balance <- wallet.getBalance()
-      _ = assert(balance > Bitcoins.zero)
+      _ <- wallet
+        .getBalance()
+        .map(confirmed => assert(confirmed == valueFromBitcoind))
+      _ <- wallet
+        .getUnconfirmedBalance()
+        .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
 
       addressFromBitcoind <- bitcoind.getNewAddress
       signedTx <- wallet.sendToAddress(addressFromBitcoind,
