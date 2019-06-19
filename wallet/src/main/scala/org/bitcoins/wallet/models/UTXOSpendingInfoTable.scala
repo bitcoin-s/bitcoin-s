@@ -24,12 +24,12 @@ import org.bitcoins.core.hd.LegacyHDPath
   * SegWit UTXO
   */
 case class NativeV0UTXOSpendingInfoDb(
-    id: Option[Long] = None,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: SegWitHDPath,
     scriptWitness: ScriptWitness,
-    incomingTxId: Long
+    incomingTxId: Long,
+    id: Option[Long] = None
 ) extends UTXOSpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
@@ -41,11 +41,11 @@ case class NativeV0UTXOSpendingInfoDb(
 }
 
 case class LegacyUTXOSpendingInfoDb(
-    id: Option[Long] = None,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: LegacyHDPath,
-    incomingTxId: Long
+    incomingTxId: Long,
+    id: Option[Long] = None
 ) extends UTXOSpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override def scriptWitnessOpt: Option[ScriptWitness] = None
@@ -162,12 +162,12 @@ case class UTXOSpendingInfoTable(tag: Tag)
           None, // ReedemScript
           Some(scriptWitness),
           txId) =>
-      NativeV0UTXOSpendingInfoDb(id,
-                                 outpoint,
+      NativeV0UTXOSpendingInfoDb(outpoint,
                                  output,
                                  path,
                                  scriptWitness,
-                                 txId)
+                                 txId,
+                                 id)
 
     case (id,
           outpoint,
@@ -176,11 +176,11 @@ case class UTXOSpendingInfoTable(tag: Tag)
           None, // RedeemScript
           None, // ScriptWitness
           txId) =>
-      LegacyUTXOSpendingInfoDb(id, outpoint, output, path, txId)
+      LegacyUTXOSpendingInfoDb(outpoint, output, path, txId, id)
     case (id, outpoint, output, path, spkOpt, swOpt, txId) =>
       throw new IllegalArgumentException(
         "Could not construct UtxoSpendingInfoDb from bad tuple:"
-          + s" ($id, $outpoint, $output, $path, $spkOpt, $swOpt, $txId) . Note: Nested Segwit is not implemented")
+          + s" ($outpoint, $output, $path, $spkOpt, $swOpt, $txId, $id) . Note: Nested Segwit is not implemented")
 
   }
 
