@@ -244,6 +244,15 @@ case class ChannelResult(
 
 // ChannelResult ends here
 
+case class CreateInvoiceResult(
+  prefix: String,
+  timestamp: Long,
+  nodeId: NodeId,
+  serialized: String,
+  description: String,
+  paymentHash: Sha256Digest,
+  expiry: Long)
+
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
     amount: Option[MilliSatoshis],

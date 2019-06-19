@@ -2,6 +2,7 @@ package org.bitcoins.eclair.rpc.api
 
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
@@ -101,6 +102,8 @@ trait EclairApi {
   def nodeId()(implicit ec: ExecutionContext): Future[NodeId] = {
     getNodeURI.map(_.nodeId)
   }
+
+  def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[Long], fallbackAddress: Option[Address], paymentPreimage: Option[String]): Future[LnInvoice]
 
   def receive(
       amountMsat: LnCurrencyUnit,

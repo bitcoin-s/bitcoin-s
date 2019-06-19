@@ -11,6 +11,7 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -135,6 +136,18 @@ class EclairRpcClient(val instance: EclairInstance)(
 
   override def connect(uri: NodeUri): Future[String] = {
     eclairCallNew[String]("connect", "uri" -> uri.toString)
+  }
+
+  def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[Long], fallbackAddress: Option[Address], paymentPreimage: Option[String]): Future[LnInvoice] = {
+    val params = Seq(
+      Some("description" -> description),
+      amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString),
+      expireIn.map(x => "expireIn" -> x.toString),
+      fallbackAddress.map(x => "fallbackAddress" -> x.toString),
+      paymentPreimage.map(x => "paymentPreimage" -> x)
+    ).flatten
+    eclairCallNew[CreateInvoiceResult]("createinvoice", params: _*)
+      .map(res => LnInvoice.fromString(res.serialized).get)
   }
 
   override def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]] = {

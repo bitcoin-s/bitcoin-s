@@ -114,6 +114,16 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   behavior of "RpcClient"
 
+  it should "be able to create an invoice" in {
+    for {
+      c <- clientF
+      invoice <- c.createInvoice("test", None, None, None, None)
+    } yield {
+      println(invoice)
+      succeed
+    }
+  }
+
   it should "be able to start and shutdown a node" in {
     for {
       bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()

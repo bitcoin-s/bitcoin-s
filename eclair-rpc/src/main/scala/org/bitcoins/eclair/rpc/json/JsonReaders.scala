@@ -102,6 +102,10 @@ object JsonReaders {
     Json.reads[ChannelDesc]
   }
 
+  implicit val createInvoiceResultReads: Reads[CreateInvoiceResult] = {
+    Json.reads[CreateInvoiceResult]
+  }
+
   implicit val openChannelInfoReads: Reads[OpenChannelInfo] = Reads { jsValue =>
     for {
       nodeId <- (jsValue \ "nodeId").validate[NodeId]
