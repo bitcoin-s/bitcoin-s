@@ -53,10 +53,11 @@ trait LockedWalletApi extends WalletApi {
       transaction: Transaction,
       confirmations: Int): Future[LockedWalletApi]
 
-  /** Sums up the value of all UTXOs in the wallet */
-  // noinspection AccessorLikeMethodIsEmptyParen
-  // async calls have side effects :-)
+  /** Gets the sum of all confirmed UTXOs in this wallet */
   def getBalance(): Future[CurrencyUnit]
+
+  /** Gets the sum of all unconfirmed UTXOs in this wallet */
+  def getUnconfirmedBalance(): Future[CurrencyUnit]
 
   /**
     * If a UTXO is spent outside of the wallet, we
