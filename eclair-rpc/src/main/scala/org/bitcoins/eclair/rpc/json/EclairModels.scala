@@ -1,15 +1,7 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  ECDigitalSignature,
-  Sha256Digest
-}
-import org.bitcoins.core.protocol.ln.{
-  LnHumanReadablePart,
-  LnInvoiceSignature,
-  ShortChannelId
-}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, Sha256Digest}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoiceSignature, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
@@ -245,7 +237,10 @@ case class ChannelResult(
     state: ChannelState,
     feeBaseMsat: Option[MilliSatoshis],
     feeProportionalMillionths: Option[FeeProportionalMillionths],
-    data: JsObject)
+    data: JsObject) {
+  import JsonReaders._
+  def shortChannelId: ShortChannelId = (data \ "shortChannelId").validate[ShortChannelId].get
+}
 
 // ChannelResult ends here
 

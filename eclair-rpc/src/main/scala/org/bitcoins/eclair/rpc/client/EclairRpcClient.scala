@@ -63,30 +63,27 @@ class EclairRpcClient(val instance: EclairInstance)(
     * @inheritdoc
     */
   override def audit(): Future[AuditResult] =
-    eclairCall[AuditResult]("audit", List.empty)
+    eclairCallNew[AuditResult]("audit")
 
   /**
     * @inheritdoc
     */
   override def audit(from: Long, to: Long): Future[AuditResult] =
-    eclairCall[AuditResult]("audit", List(JsNumber(from), JsNumber(to)))
+    eclairCallNew[AuditResult]("audit", "from" -> from.toString, "to" -> to.toString)
 
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
-//    eclairCall[ChannelResult]("channel", List(JsString(channelId.hex)))
     eclairCallNew[ChannelResult]("channel", "channelId" -> channelId.hex)
   }
 
   private def channels(nodeId: Option[NodeId]): Future[Vector[ChannelInfo]] = {
-    val params =
-      if (nodeId.isEmpty) List.empty else List(JsString(nodeId.get.toString))
-
-    eclairCall[Vector[ChannelInfo]]("channels", params)
+    val params = Seq().flatMap(_ => nodeId.map(id => "nodeId" -> id.toString))
+    eclairCallNew[Vector[ChannelInfo]]("channels", params: _*)
   }
 
   def channels(): Future[Vector[ChannelInfo]] = channels(nodeId = None)
 
   override def channels(nodeId: NodeId): Future[Vector[ChannelInfo]] =
-    channels(Some(nodeId))
+    channels(Option(nodeId))
 
   override def checkInvoice(invoice: LnInvoice): Future[PaymentRequest] = {
     eclairCall[PaymentRequest]("checkinvoice", List(JsString(invoice.toString)))
@@ -116,7 +113,6 @@ class EclairRpcClient(val instance: EclairInstance)(
 
         val asmHex = BitcoinSUtil.encodeHex(scriptPubKey.get.asmBytes)
 
-        List(JsString(channelId.hex), JsString(asmHex))
         Seq("channelId" -> channelId.hex, "scriptPubKey" -> asmHex)
       }
 
@@ -132,7 +128,7 @@ class EclairRpcClient(val instance: EclairInstance)(
     close(channelId, Some(scriptPubKey))
   }
 
-  def connect(nodeId: NodeId, host: String, port: Int): Future[String] = {
+  override def connect(nodeId: NodeId, host: String, port: Int): Future[String] = {
     val uri = NodeUri(nodeId, host, port)
     connect(uri)
   }
@@ -141,16 +137,20 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCallNew[String]("connect", "uri" -> uri.toString)
   }
 
-  override def findRoute(nodeId: NodeId): Future[Vector[NodeId]] = {
-    eclairCall[Vector[NodeId]]("findroute", List(JsString(nodeId.hex)))
+  override def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]] = {
+    eclairCallNew[Vector[NodeId]]("findroutetonode", "nodeId" -> nodeId.toString, "amountMsat" -> amountMsat.toBigDecimal.toString)
   }
 
-  override def findRoute(invoice: LnInvoice): Future[Vector[NodeId]] = {
+  override def findRoute(invoice: LnInvoice, amountMsat: Option[MilliSatoshis]): Future[Vector[NodeId]] = {
     eclairCall[Vector[NodeId]]("findroute", List(JsString(invoice.toString)))
   }
 
   override def forceClose(channelId: ChannelId): Future[String] = {
-    eclairCall[String]("forceclose", List(JsString(channelId.hex)))
+    eclairCallNew[String]("forceclose", "channelId" -> channelId.hex)
+  }
+
+  override def forceClose(shortChannelId: ShortChannelId): Future[String] = {
+    eclairCallNew[String]("forceclose", "shortChannelId" -> shortChannelId.toString)
   }
 
   override def getInfo: Future[GetInfoResult] = {
@@ -168,7 +168,7 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   def help: Future[Vector[String]] = {
-    eclairCall[Vector[String]]("help")
+    eclairCallNew[Vector[String]]("help")
   }
 
   override def isConnected(nodeId: NodeId): Future[Boolean] = {
@@ -445,20 +445,20 @@ class EclairRpcClient(val instance: EclairInstance)(
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
       feeProportionalMillionths: Long): Future[Unit] = {
-    eclairCall[Unit]("updaterelayfee",
-                     List(JsString(channelId.hex),
-                          JsNumber(feeBaseMsat.toLong),
-                          JsNumber(feeProportionalMillionths)))
+    eclairCallNew[Unit]("updaterelayfee",
+      "channelId" -> channelId.hex,
+      "feeBaseMsat" -> feeBaseMsat.toLong.toString,
+      "feeProportionalMillionths" -> feeProportionalMillionths.toString)
   }
 
   override def updateRelayFee(
       shortChannelId: ShortChannelId,
       feeBaseMsat: MilliSatoshis,
-      feePropertionalMillionths: Long): Future[Unit] = {
-    eclairCall[Unit]("updaterelayfee",
-                     List(JsString(shortChannelId.hex),
-                          JsNumber(feeBaseMsat.toLong),
-                          JsNumber(feePropertionalMillionths)))
+      feeProportionalMillionths: Long): Future[Unit] = {
+    eclairCallNew[Unit]("updaterelayfee",
+      "shortChannelId" -> shortChannelId.toHumanReadableString,
+      "feeBaseMsat" -> feeBaseMsat.toLong.toString,
+      "feeProportionalMillionths" -> feeProportionalMillionths.toString)
   }
 
   // TODO: channelstats, audit, networkfees?
@@ -474,9 +474,17 @@ class EclairRpcClient(val instance: EclairInstance)(
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
     payloadF.map { payload =>
-      val validated: JsResult[T] = payload.validate[T]
-      val parsed: T = parseResult(validated, payload, command)
-      parsed
+//      try {
+        val validated: JsResult[T] = payload.validate[T]
+        val parsed: T = parseResult(validated, payload, command)
+        parsed
+//      } catch {
+//        case e: Throwable =>
+//          println(command)
+//          println(payload)
+//          e.printStackTrace()
+//          throw e
+//      }
     }
   }
 
@@ -498,7 +506,7 @@ class EclairRpcClient(val instance: EclairInstance)(
     }
   }
 
-  case class RpcError(code: Int, message: String)
+  case class RpcError(error: String)
   implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
   private def parseResult[T](
@@ -509,13 +517,13 @@ class EclairRpcClient(val instance: EclairInstance)(
       case res: JsSuccess[T] =>
         res.value
       case res: JsError =>
-        (json \ errorKey).validate[RpcError] match {
+        json.validate[RpcError] match {
           case err: JsSuccess[RpcError] =>
             val datadirMsg = instance.authCredentials.datadir
               .map(d => s"datadir=${d}")
               .getOrElse("")
             val errMsg =
-              s"Error for command=${commandName} ${datadirMsg}, ${err.value.code}=${err.value.message}"
+              s"Error for command=${commandName} ${datadirMsg}, ${err.value.error}"
             logger.error(errMsg)
             throw new RuntimeException(errMsg)
           case _: JsError =>

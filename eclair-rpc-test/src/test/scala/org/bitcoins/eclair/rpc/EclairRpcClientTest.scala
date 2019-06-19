@@ -87,6 +87,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   /** Executes a test with the default clients defined at the
     * top of this file
+    *
     * @param test
     * @tparam T
     * @return
@@ -142,7 +143,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       val isOpenedF: Future[(ChannelId, Assertion)] = {
         val getChannelId = (client: EclairRpcClient, otherClient: EclairRpcClient) => {
             otherClient.getInfo.flatMap { info =>
-            println(info)
               val amt = Satoshis(Int64(100000))
               val openedChanF = clientF.flatMap(_.open(info.nodeId, amt))
 
@@ -547,98 +547,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       isPaid2F.map(isPaid => assert(isPaid))
     }
   }
-*/
-  it should "update the relay fee of a channel" in {
-    val channelAndFeeF = for {
-      channel <- openAndConfirmChannel(clientF, otherClientF)
-      feeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
-    } yield {
-      assert(feeOpt.isDefined)
-      assert(feeOpt.get > MilliSatoshis.zero)
-      (channel, feeOpt.get)
-    }
 
-    for {
-      (channel, oldFee) <- channelAndFeeF
-      _ <- clientF.flatMap(
-        _.updateRelayFee(channel, MilliSatoshis(oldFee.toLong * 2), 1))
-      newFeeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
-    } yield {
-      assert(newFeeOpt.isDefined)
-      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 2))
-    }
-  }
-
-  it should "get all channels" in {
-    clientF.flatMap(_.allChannels().flatMap(_ => succeed))
-  }
-
-  it should "get all channel updates" in {
-    clientF.flatMap(_.allUpdates().flatMap { _ =>
-      succeed
-    })
-  }
-
-  it should "get updates for a single node" in {
-    for {
-      client <- clientF
-      nodeInfo <- client.getInfo
-      _ <- client.allUpdates(nodeInfo.nodeId)
-    } yield {
-      succeed
-    }
-  }
-
-  it should "get all nodes" in {
-    clientF.flatMap(_.allNodes().flatMap(_ => succeed))
-  }
-
-  it should "get a route to a node ID" in {
-    val hasRoute = () => {
-      fourthClientF
-        .flatMap(_.getInfo)
-        .flatMap(info => firstClientF.flatMap(_.findRoute(info.nodeId)))
-        .map(route => route.length == 4)
-        .recover {
-          case err: RuntimeException
-              if err.getMessage.contains("route not found") =>
-            false
-        }
-    }
-
-    // Eclair is a bit slow in propagating channel changes
-    AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
-
-//    succeed
-    fail
-  }
-
-  it should "get a route to an invoice" in {
-    val hasRoute = () => {
-      fourthClientF.flatMap { fourthClient =>
-        fourthClient
-          .receive("foo")
-          .flatMap { invoice =>
-            firstClientF.flatMap(_.findRoute(invoice))
-          }
-          .map(route => route.length == 4)
-          .recover {
-            case err: RuntimeException
-                if err.getMessage.contains("route not found") =>
-              false
-          }
-      }
-
-    }
-
-    // Eclair is a bit slow in propagating channel changes
-    AsyncUtil.awaitConditionF(hasRoute, duration = 1000.millis, maxTries = 10)
-
-//    succeed
-    fail
-  }
-
-  it should "send some payments and get the audit info" in {
+    it should "send some payments and get the audit info" in {
     for {
       invoice <- fourthClientF.flatMap(
         _.receive(MilliSatoshis(50000).toLnCurrencyUnit))
@@ -759,6 +669,120 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   }
 
+  it should "get a route to an invoice" in {
+    val hasRoute = () => {
+      fourthClientF.flatMap { fourthClient =>
+        fourthClient
+          .receive("foo")
+          .flatMap { invoice =>
+            firstClientF.flatMap(_.findRoute(invoice, None))
+          }
+          .map(route => route.length == 4)
+          .recover {
+            case err: RuntimeException
+                if err.getMessage.contains("route not found") =>
+              false
+          }
+      }
+
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 10000.millis, maxTries = 20).map(_ => succeed)
+  }
+
+
+*/
+
+  it should "update the relay fee of a channel" in {
+    val channelAndFeeF = for {
+      channel <- openAndConfirmChannel(clientF, otherClientF)
+      feeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
+    } yield {
+      assert(feeOpt.isDefined)
+      assert(feeOpt.get > MilliSatoshis.zero)
+      (channel, feeOpt.get)
+    }
+
+    for {
+      (channel, oldFee) <- channelAndFeeF
+      _ <- clientF.flatMap(
+        _.updateRelayFee(channel, MilliSatoshis(oldFee.toLong * 2), 1))
+      newFeeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
+    } yield {
+      assert(newFeeOpt.isDefined)
+      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 2))
+    }
+  }
+
+  it should "update the relay fee of a channel with short channel id" in {
+    val channelAndFeeF = for {
+      channelId <- openAndConfirmChannel(clientF, otherClientF)
+      client <- clientF
+      channel <- client.channel(channelId)
+    } yield {
+      assert(channel.feeBaseMsat.isDefined)
+      assert(channel.feeBaseMsat.get > MilliSatoshis.zero)
+      (channel.channelId, channel.shortChannelId, channel.feeBaseMsat.get)
+    }
+
+    for {
+      (channelId, shortChannelId, oldFee) <- channelAndFeeF
+      _ <- clientF.flatMap(
+        _.updateRelayFee(shortChannelId, MilliSatoshis(oldFee.toLong * 4), 1))
+      newFeeOpt <- clientF.flatMap(_.channel(channelId).map(_.feeBaseMsat))
+    } yield {
+      assert(newFeeOpt.isDefined)
+      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 4))
+    }
+  }
+
+  it should "get channels" in {
+    clientF.flatMap(_.channels().flatMap(_ =>  succeed))
+  }
+
+  it should "get all channels" in {
+    clientF.flatMap(_.allChannels().flatMap(_ => succeed))
+  }
+
+  it should "get all channel updates" in {
+    clientF.flatMap(_.allUpdates().flatMap { _ =>
+      succeed
+    })
+  }
+
+  it should "get updates for a single node" in {
+    for {
+      client <- clientF
+      nodeInfo <- client.getInfo
+      _ <- client.allUpdates(nodeInfo.nodeId)
+    } yield {
+      succeed
+    }
+  }
+
+  it should "get all nodes" in {
+    clientF.flatMap(_.allNodes().flatMap(_ => succeed))
+  }
+
+  it should "get a route to a node ID" in {
+    val hasRoute = () => {
+      fourthClientF
+        .flatMap(_.getInfo)
+        .flatMap(info => firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
+        .map(route => route.length == 4)
+        .recover {
+          case err: RuntimeException
+              if err.getMessage.contains("route not found") =>
+            println(err)
+            false
+        }
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 10000.millis, maxTries = 20).map(_ => succeed)
+  }
+
   it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" ignore {
     //make sure we see payments outside of our immediate peers
     //this is important because these gossip messages contain
@@ -809,6 +833,14 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "detect what network we are on" in {
 
     clientF.map(c => assert(c.network == LnBitcoinRegTest))
+  }
+
+  it should "force close a channel" in {
+    for {
+      c <- clientF
+      channels <- c.channels()
+      _ <- c.forceClose(channels.head.channelId)
+    } yield succeed
   }
 
   private def hasConnection(
@@ -877,7 +909,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   private def updateIsInChannels(channels: Seq[OpenChannelInfo])(
-      update: ChannelUpdate): Boolean = {
+    update: ChannelUpdate): Boolean = {
     channels.exists(_.shortChannelId == update.shortChannelId)
   }
 
