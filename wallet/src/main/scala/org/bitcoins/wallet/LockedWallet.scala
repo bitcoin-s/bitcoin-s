@@ -37,9 +37,23 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
   private[wallet] val incomingTxDAO = IncomingTransactionDAO(SQLiteProfile)
   private[wallet] val outgoingTxDAO = OutgoingTransactionDAO(SQLiteProfile)
 
-  override def getBalance(): Future[CurrencyUnit] = listUtxos().map { utxos =>
-    utxos.map(_.value).fold(0.bitcoin)(_ + _)
-  }
+  /** Sums up the value of all incoming
+    * TXs in the wallet, filtered by the given predicate */
+  // TODO account for outgoing TXs
+  private def sumOfIncomingGiven(
+      pred: IncomingTransaction => Boolean): Future[CurrencyUnit] =
+    incomingTxDAO.findAll().map { txs =>
+      val values = txs.filter(pred).map(_.output.value)
+      values.fold(0.bitcoin)(_ + _)
+    }
+
+  // TODO account for outgoing TXs
+  override def getBalance(): Future[CurrencyUnit] =
+    sumOfIncomingGiven(_.confirmations > 0)
+
+  // TODO account for outgoing TXs
+  override def getUnconfirmedBalance(): Future[CurrencyUnit] =
+    sumOfIncomingGiven(_.confirmations == 0)
 
   /** The default HD coin */
   private[wallet] lazy val DEFAULT_HD_COIN: HDCoin = {
