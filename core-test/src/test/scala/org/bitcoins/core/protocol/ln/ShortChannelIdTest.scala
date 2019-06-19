@@ -16,9 +16,17 @@ class ShortChannelIdTest extends FlatSpec with MustMatchers {
     // max value
     ShortChannelId.fromHumanReadableString("16777215x16777215x65535") must be (ShortChannelId.fromHex("ffffffffffffffff"))
     ShortChannelId.fromHex("ffffffffffffffff").toHumanReadableString must be ("16777215x16777215x65535")
+  }
 
-    // overflow value
-    ShortChannelId.fromHumanReadableString("16777216x16777216x65536") must be (ShortChannelId.fromHex("0"))
+  it must "validate short channel id components" in {
+    an [IllegalArgumentException] must be thrownBy ShortChannelId.fromHumanReadableString("16777216x0x0")
+    an [IllegalArgumentException] must be thrownBy ShortChannelId.fromHumanReadableString("-1x0x0")
+    an [IllegalArgumentException] must be thrownBy ShortChannelId.fromHumanReadableString("0x16777216x0")
+    an [IllegalArgumentException] must be thrownBy ShortChannelId.fromHumanReadableString("0x-1x0")
+    an [IllegalArgumentException] must be thrownBy ShortChannelId.fromHumanReadableString("0x0x65536")
+    an [IllegalArgumentException] must be thrownBy ShortChannelId.fromHumanReadableString("0x0x-1")
+    an [NoSuchElementException]  must be thrownBy ShortChannelId.fromHumanReadableString("1x1x1x1")
+    ShortChannelId.fromHumanReadableString("cafebabe") must be (ShortChannelId.fromHex("cafebabe"))
   }
 
 }
