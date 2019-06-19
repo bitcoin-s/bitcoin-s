@@ -5,7 +5,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.wallet.fixtures.WalletDAOFixture
+import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.testkit.wallet.WalletTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest

@@ -7,7 +7,7 @@ import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.util.CryptoUtil
-import org.bitcoins.wallet.fixtures.WalletDAOFixture
+import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.SegWitHDPath
