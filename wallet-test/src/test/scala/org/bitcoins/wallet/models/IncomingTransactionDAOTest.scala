@@ -19,6 +19,12 @@ class IncomingTransactionDAOTest
 
   it must "insert a incoming transaction and read it back with its address" in {
     daos =>
-      WalletTestUtil.insertIncomingTx(daos).map(_ => succeed)
+      val txDAO = daos.incomingTxDAO
+      WalletTestUtil.insertIncomingTx(daos).flatMap {
+        case (tx, _) =>
+          txDAO.findTx(tx.transaction).map { txOpt =>
+            assert(txOpt.contains(tx))
+          }
+      }
   }
 }
