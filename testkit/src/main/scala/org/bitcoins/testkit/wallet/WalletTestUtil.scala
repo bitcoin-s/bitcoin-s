@@ -108,7 +108,8 @@ object WalletTestUtil {
     val tx = getTx
     val txDb = IncomingTransaction(tx,
                                    confirmations = 3,
-                                   scriptPubKey = address.scriptPubKey)
+                                   scriptPubKey = address.scriptPubKey,
+                                   voutIndex = 0)
     for {
       _ <- accountDAO.create(account)
       _ <- addressDAO.create(address)
