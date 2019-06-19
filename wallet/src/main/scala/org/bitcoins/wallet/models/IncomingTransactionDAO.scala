@@ -43,4 +43,9 @@ final case class IncomingTransactionDAO(profile: JdbcProfile)(
     database.run(query.result.headOption)
   }
 
+  def findTx(tx: Transaction): Future[Option[IncomingTransaction]] = {
+    val filtered = table.filter(_.transaction === tx)
+    database.run(filtered.result.headOption)
+  }
+
 }
