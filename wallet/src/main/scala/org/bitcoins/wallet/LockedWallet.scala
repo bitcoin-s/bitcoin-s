@@ -141,14 +141,14 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
           output = output,
           privKeyPath = segwitAddr.path,
           scriptWitness = segwitAddr.witnessScript,
-          incomingTxId = None
+          incomingTxId = ???
         )
       case LegacyAddressDb(path, _, _, _, _) =>
         LegacyUTXOSpendingInfoDb(id = None,
                                  outPoint = outPoint,
                                  output = output,
                                  privKeyPath = path,
-                                 incomingTxId = None)
+                                 incomingTxId = ???)
       case nested: NestedSegWitAddressDb =>
         throw new IllegalArgumentException(
           s"Bad utxo $nested. Note: nested segwit is not implemented")

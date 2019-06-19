@@ -24,12 +24,12 @@ import org.bitcoins.core.hd.LegacyHDPath
   * SegWit UTXO
   */
 case class NativeV0UTXOSpendingInfoDb(
-    id: Option[Long],
+    id: Option[Long] = None,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: SegWitHDPath,
     scriptWitness: ScriptWitness,
-    incomingTxId: Option[Long]
+    incomingTxId: Long
 ) extends UTXOSpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
@@ -41,11 +41,11 @@ case class NativeV0UTXOSpendingInfoDb(
 }
 
 case class LegacyUTXOSpendingInfoDb(
-    id: Option[Long],
+    id: Option[Long] = None,
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: LegacyHDPath,
-    incomingTxId: Option[Long]
+    incomingTxId: Long
 ) extends UTXOSpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override def scriptWitnessOpt: Option[ScriptWitness] = None
@@ -83,7 +83,7 @@ sealed trait UTXOSpendingInfoDb
   def value: CurrencyUnit = output.value
 
   /** The ID of the transaction this UTXO was received in */
-  def incomingTxId: Option[Long]
+  def incomingTxId: Long
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
@@ -151,7 +151,7 @@ case class UTXOSpendingInfoTable(tag: Tag)
       HDPath,
       Option[ScriptPubKey],
       Option[ScriptWitness],
-      Option[Long] // incoming TX ID
+      Long // incoming TX ID
   )
 
   private val fromTuple: UTXOTuple => UTXOSpendingInfoDb = {
@@ -202,5 +202,5 @@ case class UTXOSpendingInfoTable(tag: Tag)
      privKeyPath,
      redeemScriptOpt,
      scriptWitnessOpt,
-     incomingTxId.?) <> (fromTuple, toTuple)
+     incomingTxId) <> (fromTuple, toTuple)
 }
