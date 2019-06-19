@@ -7,6 +7,7 @@ import org.bitcoins.db.TableAutoInc
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.DbRowAutoInc
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 
 /**
   * Database representation of transactions
@@ -23,10 +24,18 @@ sealed trait TransactionDb[T <: TransactionDb[_]] extends DbRowAutoInc[T] {
 final case class IncomingTransaction(
     transaction: Transaction,
     scriptPubKey: ScriptPubKey,
+    voutIndex: Int,
     confirmations: Int,
     id: Option[Long] = None
 ) extends TransactionDb[IncomingTransaction] {
+  require(voutIndex >= 0, s"voutIndex cannot be negative, got $voutIndex")
   override def copyWithId(id: Long): IncomingTransaction = copy(id = Some(id))
+
+  /** The output we're interested in
+    *
+    * TODO: Concerns about TXs paying to multiple SPKs in our wallet, see note below
+    */
+  lazy val output: TransactionOutput = transaction.outputs(voutIndex)
 }
 
 /** Transactions our wallet has sent */
@@ -62,6 +71,10 @@ final case class IncomingTransactionTable(tag: Tag)
   /** The SPK that's relevant to us in this transaction. Foreign key into address table */
   def scriptPubKey: Rep[ScriptPubKey] = column("our_script_pubkey")
 
+  // TODO: The same concerns as above
+  /** The output of this TX that's ours */
+  def voutIndex: Rep[Int] = column("vout_index")
+
   def fk_scriptPubKey =
     foreignKey("fk_script_pubkey",
                sourceColumns = scriptPubKey,
@@ -70,7 +83,7 @@ final case class IncomingTransactionTable(tag: Tag)
     }
 
   override def * : ProvenShape[IncomingTransaction] =
-    (transaction, scriptPubKey, confirmations, id.?) <> (IncomingTransaction.tupled, IncomingTransaction.unapply)
+    (transaction, scriptPubKey, confirmations, voutIndex, id.?) <> (IncomingTransaction.tupled, IncomingTransaction.unapply)
 
 }
 

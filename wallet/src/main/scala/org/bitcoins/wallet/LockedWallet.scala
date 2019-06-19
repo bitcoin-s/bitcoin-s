@@ -26,12 +26,16 @@ import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
+import slick.jdbc.SQLiteProfile
+import org.bitcoins.core.util.FutureUtil
 
 abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val utxoDAO: UTXOSpendingInfoDAO = UTXOSpendingInfoDAO()
+  private[wallet] val incomingTxDAO = IncomingTransactionDAO(SQLiteProfile)
+  private[wallet] val outgoingTxDAO = OutgoingTransactionDAO(SQLiteProfile)
 
   override def getBalance(): Future[CurrencyUnit] = listUtxos().map { utxos =>
     utxos.map(_.value).fold(0.bitcoin)(_ + _)
@@ -131,6 +135,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
   private def writeUtxo(
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
+      incomingTxId: Long,
       addressDb: AddressDb): Future[UTXOSpendingInfoDb] = {
 
     val utxo: UTXOSpendingInfoDb = addressDb match {
@@ -141,14 +146,14 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
           output = output,
           privKeyPath = segwitAddr.path,
           scriptWitness = segwitAddr.witnessScript,
-          incomingTxId = ???
+          incomingTxId = incomingTxId
         )
       case LegacyAddressDb(path, _, _, _, _) =>
         LegacyUTXOSpendingInfoDb(id = None,
                                  outPoint = outPoint,
                                  output = output,
                                  privKeyPath = path,
-                                 incomingTxId = ???)
+                                 incomingTxId = incomingTxId)
       case nested: NestedSegWitAddressDb =>
         throw new IllegalArgumentException(
           s"Bad utxo $nested. Note: nested segwit is not implemented")
@@ -163,11 +168,151 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
     }
   }
 
-  /**
-    * @inheritdoc
-    */
-  override def addUtxo(
+  private case class OutputWithIndex(output: TransactionOutput, index: Int)
+
+  // TODO Scaladoc Option/Some
+  private def processNewIncomingTx(
       transaction: Transaction,
+      confirmations: Int): Future[Option[IncomingTransaction]] = {
+    addressDAO.findAll().flatMap { addrs =>
+      val relevantStuff: Seq[OutputWithIndex] = {
+        val withIndex =
+          transaction.outputs.zipWithIndex
+        withIndex.collect {
+          case (out, idx)
+              if addrs.map(_.scriptPubKey).contains(out.scriptPubKey) =>
+            OutputWithIndex(out, idx)
+        }
+      }
+
+      relevantStuff match {
+        case Nil =>
+          logger.info(
+            s"Found no outputs relevant to us in transaction${transaction.txIdBE}")
+          Future.successful(None)
+
+        case xs =>
+          val count = xs.length
+          val outputStr = {
+            xs.map { elem =>
+                s"${transaction.txIdBE.hex}:${elem.index}"
+              }
+              .mkString(", ")
+          }
+          logger.info(
+            s"Found $count relevant output(s) in transaction=${transaction.txIdBE}: $outputStr")
+          if (xs.length > 1) {
+            logger.warn(
+              s"${xs.length} SPKs were relevant to transaction=${transaction.txIdBE}, but we aren't able to handle more than 1 for the time being")
+          }
+          val OutputWithIndex(out, index) = xs.head
+          val dbTx = {
+            IncomingTransaction(transaction,
+                                scriptPubKey = out.scriptPubKey,
+                                confirmations = confirmations,
+                                voutIndex = index)
+          }
+
+          incomingTxDAO.create(dbTx).flatMap { created =>
+            addUtxo(transaction, created.id.get, UInt32(created.voutIndex))
+              .map {
+                case AddUtxoSuccess(_) => Some(created)
+                case err: AddUtxoError =>
+                  logger.error(s"Could not add UTXO", err)
+                  ???
+              }
+          }
+      }
+    }
+  }
+
+  // TODO: Scaladoc
+  private def processExistingIncomingTx(
+      transaction: Transaction,
+      confirmations: Int,
+      foundTx: IncomingTransaction): Future[IncomingTransaction] = {
+    if (foundTx.confirmations < confirmations) {
+      logger.debug(
+        s"Increasing confirmation count of transaction=${transaction.txIdBE}, old=${foundTx.confirmations} new=${confirmations}")
+      val updateF =
+        incomingTxDAO.update(foundTx.copy(confirmations = confirmations))
+
+      updateF.foreach(tx =>
+        logger.debug(
+          s"Updated confirmation count=${tx.confirmations} of transaction=${tx.txid}"))
+      updateF.failed.foreach(err =>
+        logger.error(
+          s"Failed to update confirmation count of transaction=${transaction.txIdBE}",
+          err))
+
+      updateF
+    } else if (foundTx.confirmations > foundTx.confirmations) {
+      val msg =
+        List(
+          s"Incoming transaction=${transaction.txIdBE} has fewer confirmations=$confirmations",
+          s"than what we already have reigstered=${foundTx.confirmations}! I don't know how",
+          s"to handle this."
+        ).mkString(" ")
+      logger.warn(msg)
+      Future.successful(foundTx)
+    } else {
+      logger.info(
+        s"Skipping further processing of transaction=${transaction.txIdBE}, already processed.")
+      Future.successful(foundTx)
+    }
+  }
+
+  override def processTransaction(
+      transaction: Transaction,
+      confirmations: Int): Future[LockedWallet] = {
+    logger.info(
+      s"Processing transaction=${transaction.txIdBE} with confirmations=$confirmations")
+
+    val incomingTxFut: Future[Option[IncomingTransaction]] =
+      incomingTxDAO
+        .findTx(transaction)
+        .flatMap { foundIncomingOpt =>
+          foundIncomingOpt match {
+            case None =>
+              processNewIncomingTx(transaction, confirmations)
+            case Some(found) =>
+              processExistingIncomingTx(transaction, confirmations, found).map(
+                Some(_))
+          }
+        }
+
+    val outgoingTxFut: Future[Unit] = {
+      logger.warn(s"Skipping processing of outgoing TX state!")
+      FutureUtil.unit
+    }
+
+    val aggregateFut =
+      for {
+        incoming <- incomingTxFut
+        _ <- outgoingTxFut
+      } yield {
+        logger.info(
+          s"Finished processing of transaction=${transaction.txIdBE}. Inserted incoming TX=${incoming.isDefined}")
+        this
+      }
+
+    aggregateFut.failed.foreach { err =>
+      val msg = s"Error when processing transaction=${transaction.txIdBE}"
+      logger.error(msg, err)
+    }
+
+    aggregateFut
+
+  }
+
+  /**
+    * Adds the provided UTXO to the wallet, making it
+    * available for spending.
+    * @param transactionId ID of the TX in the database, not the TXID
+    */
+  private def addUtxo(
+      transaction: Transaction,
+      transactionId: Long,
       vout: UInt32): Future[AddUtxoResult] = {
     import AddUtxoError._
     import org.bitcoins.core.util.EitherUtil.EitherOps._
@@ -201,7 +346,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       addressDbEitherF.flatMap { addressDbE =>
         val biasedE: Either[AddUtxoError, Future[UTXOSpendingInfoDb]] = for {
           addressDb <- addressDbE
-        } yield writeUtxo(output, outPoint, addressDb)
+        } yield writeUtxo(output, outPoint, transactionId, addressDb)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {
