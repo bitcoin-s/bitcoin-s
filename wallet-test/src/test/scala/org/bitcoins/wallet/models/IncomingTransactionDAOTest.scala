@@ -3,7 +3,7 @@ package org.bitcoins.wallet.models
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.wallet.fixtures._
+import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.WalletTestUtil
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ECPublicKey
