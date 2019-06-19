@@ -69,24 +69,31 @@ class SpvNodeTest extends NodeUnitTest {
       val startGenF = initSyncF.map { _ =>
         //generate a block every 5 seconds
         //until we have generated 5 total blocks
-        genBlock5seconds(bitcoind)
+        genBlockInterval(bitcoind)
       }
 
       startGenF.flatMap { _ =>
-        Thread.sleep(30000)
-
         //we should expect 5 headers have been announced to us via
         //the send headers message.
-        spvNode.chainApi.getBlockCount.map(count => assert(count == 6))
+        val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
+          conditionF = () => spvNode.chainApi.getBlockCount.map(_ == 6),
+          duration = 1.seconds)
+
+        has6BlocksF.map(_ => succeed)
       }
   }
 
-  private var counter = 0
-  private def genBlock5seconds(bitcoind: BitcoindRpcClient)(
+  /** Helper method to generate blocks every interval */
+  private def genBlockInterval(bitcoind: BitcoindRpcClient)(
       implicit system: ActorSystem): Unit = {
+
+    var counter = 0
+    val desiredBlocks = 5
+    val interval = 500.millis
+
     val genBlock = new Runnable {
       override def run(): Unit = {
-        if (counter < 5) {
+        if (counter < desiredBlocks) {
           bitcoind.generate(1)
           counter = counter + 1
         } else {
@@ -94,6 +101,7 @@ class SpvNodeTest extends NodeUnitTest {
         }
       }
     }
-    system.scheduler.schedule(5.seconds, 5.seconds, genBlock)
+
+    system.scheduler.schedule(interval, interval, genBlock)
   }
 }
