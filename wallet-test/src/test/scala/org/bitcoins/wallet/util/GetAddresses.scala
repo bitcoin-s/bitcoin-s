@@ -45,7 +45,7 @@ object GetAddresses extends App {
         case HDPurposes.Legacy       => "legacy"
         case HDPurposes.NestedSegWit => "p2sh-segwit"
         case HDPurposes.SegWit       => "segwit"
-        case _                       => ???
+        case other                   => throw new RuntimeException(s"Unexpected purpose $other")
       }
 
     val trezorPathType =
@@ -53,7 +53,7 @@ object GetAddresses extends App {
         case HDPurposes.Legacy       => "address"
         case HDPurposes.NestedSegWit => "p2shsegwit"
         case HDPurposes.SegWit       => "segwit"
-        case _                       => ???
+        case other                   => throw new RuntimeException(s"Unexpected purpose $other")
       }
 
     val xpubCmd =
