@@ -1,0 +1,23 @@
+{
+  "version-0.1.0-docs": {
+    "Getting started": [
+      "version-0.1.0-getting-started"
+    ],
+    "Core module": [
+      "version-0.1.0-core/core-intro",
+      "version-0.1.0-core/txbuilder"
+    ],
+    "RPC clients": [
+      "version-0.1.0-rpc/rpc-clients-intro",
+      "version-0.1.0-rpc/rpc-eclair",
+      "version-0.1.0-rpc/rpc-bitcoind"
+    ],
+    "Contributing": [
+      "version-0.1.0-contributing",
+      "version-0.1.0-contributing-website"
+    ],
+    "Security": [
+      "version-0.1.0-security"
+    ]
+  }
+}
