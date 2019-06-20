@@ -20,7 +20,8 @@
  * and const url = "https://your-domain.org".
  */
 
-const url = "https://bitcoin-s.org";
+const cname = "bitcoin-s.org";
+const url = `https://${cname}`;
 const baseUrl = "/";
 const scaladocUrl = baseUrl + "api/org/bitcoins";
 
@@ -73,6 +74,8 @@ const siteConfig = {
   tagline: "Bitcoin implementation in Scala",
   url,
   baseUrl,
+  /** Docusaurus creates a CNAME file with contents of this key */
+  cname,
 
   // URL for editing docs, has to be present for the
   // "Edit this Doc" button to appear
