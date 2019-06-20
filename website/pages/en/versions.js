@@ -33,6 +33,10 @@ function Versions(props) {
           </header>
           <p>New versions of this project are released every so often.</p>
           <h3 id="latest">Current version (Stable)</h3>
+          <CompLibrary.MarkdownBlock>
+            > Note that until Bitcoin-S reaches version 1.0.0 it does **_not_**
+            follow [semantic versioning](https://semver.org/)
+          </CompLibrary.MarkdownBlock>
           <table className="versions">
             <tbody>
               <tr>
@@ -60,8 +64,8 @@ function Versions(props) {
             </tbody>
           </table>
           <p>
-            This is the version that is configured automatically when you first
-            install this project.
+            This is the version that is downloaded automatically if you don't
+            specify a version number.
           </p>
           <h3 id="rc">Pre-release versions</h3>
           <table className="versions">
@@ -83,7 +87,14 @@ function Versions(props) {
               </tr>
             </tbody>
           </table>
-          <p>Other text describing this section.</p>
+          <p>
+            If you want to live dangerously, all merges into master are
+            published as snapshots on{" "}
+            <a href="https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/">
+              Sonatype
+            </a>
+            .
+          </p>
           <h3 id="archive">Past Versions</h3>
           <p>Here you can find previous versions of the documentation.</p>
           <table className="versions">
@@ -118,10 +129,6 @@ function Versions(props) {
               )}
             </tbody>
           </table>
-          <p>
-            You can find past versions of this project on{" "}
-            <a href={repoUrl}>GitHub</a>.
-          </p>
         </div>
       </Container>
     </div>
