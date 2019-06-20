@@ -109,13 +109,16 @@ sealed abstract class Wallet
       .findAll()
       .map(_.filter(_.hdAccount.purpose == purpose))
       .map(_.sortBy(_.hdAccount.index))
+      // we want to the most recently created account,
+      // to know what the index of our new account
+      // should be.
       .map(_.lastOption)
       .flatMap { mostRecentOpt =>
         val accountIndex = mostRecentOpt match {
           case None          => 0 // no accounts present in wallet
           case Some(account) => account.hdAccount.index + 1
         }
-        logger.debug(
+        logger.info(
           s"Creating new account at index $accountIndex for purpose $purpose")
         val newAccount = HDAccount(DEFAULT_HD_COIN, accountIndex)
         val xpub = {
