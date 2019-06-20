@@ -9,6 +9,8 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.eclair.rpc.network.PeerState
 import play.api.libs.json.{JsArray, JsObject}
 
+import scala.concurrent.duration.FiniteDuration
+
 sealed abstract class EclairModels
 
 case class GetInfoResult(
@@ -239,19 +241,19 @@ case class ChannelResult(
     feeProportionalMillionths: Option[FeeProportionalMillionths],
     data: JsObject) {
   import JsonReaders._
-  def shortChannelId: ShortChannelId = (data \ "shortChannelId").validate[ShortChannelId].get
+  lazy val shortChannelId: Option[ShortChannelId] = (data \ "shortChannelId").validate[ShortChannelId].asOpt
 }
 
 // ChannelResult ends here
 
 case class CreateInvoiceResult(
-  prefix: String,
-  timestamp: Long,
+  prefix: LnHumanReadablePart,
+  timestamp: FiniteDuration,
   nodeId: NodeId,
   serialized: String,
   description: String,
   paymentHash: Sha256Digest,
-  expiry: Long)
+  expiry: FiniteDuration)
 
 case class PaymentRequest(
     prefix: LnHumanReadablePart,

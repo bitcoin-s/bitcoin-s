@@ -1,11 +1,9 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.protocol.ln.{
-  LnHumanReadablePart,
-  LnInvoice,
-  LnInvoiceSignature,
-  ShortChannelId
-}
+import java.util.concurrent.TimeUnit
+
+import org.bitcoins.core.crypto.Sha256Digest
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnInvoiceSignature, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
@@ -14,6 +12,7 @@ import org.bitcoins.eclair.rpc.network.PeerState
 import org.bitcoins.rpc.serializers.SerializerUtil
 import play.api.libs.json._
 
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
 object JsonReaders {
@@ -103,7 +102,25 @@ object JsonReaders {
   }
 
   implicit val createInvoiceResultReads: Reads[CreateInvoiceResult] = {
-    Json.reads[CreateInvoiceResult]
+    Reads { jsValue =>
+      for {
+        prefix <- (jsValue \ "prefix").validate[LnHumanReadablePart]
+        timestamp <- (jsValue \ "timestamp").validate[Long]
+        nodeId <- (jsValue \ "nodeId").validate[NodeId]
+        serialized <- (jsValue \ "serialized").validate[String]
+        description <- (jsValue \ "description").validate[String]
+        paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
+        expiry <- (jsValue \ "expiry").validate[Long]
+      } yield
+        CreateInvoiceResult(
+          prefix,
+          FiniteDuration(timestamp, TimeUnit.SECONDS),
+          nodeId,
+          serialized,
+          description,
+          paymentHash: Sha256Digest,
+          FiniteDuration(expiry, TimeUnit.SECONDS))
+    }
   }
 
   implicit val openChannelInfoReads: Reads[OpenChannelInfo] = Reads { jsValue =>

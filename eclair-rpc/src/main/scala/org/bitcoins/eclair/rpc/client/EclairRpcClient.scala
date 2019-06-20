@@ -11,11 +11,11 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.{Address, NetworkElement}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -138,16 +138,23 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCallNew[String]("connect", "uri" -> uri.toString)
   }
 
-  def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[Long], fallbackAddress: Option[Address], paymentPreimage: Option[String]): Future[LnInvoice] = {
+  override def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[Long], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice] = {
     val params = Seq(
       Some("description" -> description),
       amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString),
       expireIn.map(x => "expireIn" -> x.toString),
       fallbackAddress.map(x => "fallbackAddress" -> x.toString),
-      paymentPreimage.map(x => "paymentPreimage" -> x)
+      paymentPreimage.map(x => "paymentPreimage" -> x.hex)
     ).flatten
-    eclairCallNew[CreateInvoiceResult]("createinvoice", params: _*)
-      .map(res => LnInvoice.fromString(res.serialized).get)
+
+    val responseF = eclairCallNew[CreateInvoiceResult]("createinvoice", params: _*)
+
+    responseF.flatMap {
+      res =>
+        println(res)
+        println(LnInvoice.fromString(res.serialized))
+        Future.fromTry(LnInvoice.fromString(res.serialized))
+    }
   }
 
   override def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]] = {
