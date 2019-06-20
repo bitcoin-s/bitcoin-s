@@ -184,12 +184,17 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
   private case class OutputWithIndex(output: TransactionOutput, index: Int)
 
-  // TODO Scaladoc Option/Some
+  /**
+    * Processes an incoming transaction that's new to us
+    * @return `Some(tx)` if we found anything relevant to us
+    *         in the given transaction, `None` if nothing was
+    *         of relevance
+    */
   private def processNewIncomingTx(
       transaction: Transaction,
       confirmations: Int): Future[Option[IncomingTransaction]] = {
     addressDAO.findAll().flatMap { addrs =>
-      val relevantStuff: Seq[OutputWithIndex] = {
+      val relevantOutsWithIdx: Seq[OutputWithIndex] = {
         val withIndex =
           transaction.outputs.zipWithIndex
         withIndex.collect {
@@ -199,9 +204,9 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
         }
       }
 
-      relevantStuff match {
+      relevantOutsWithIdx match {
         case Nil =>
-          logger.info(
+          logger.debug(
             s"Found no outputs relevant to us in transaction${transaction.txIdBE}")
           Future.successful(None)
 
@@ -213,7 +218,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
               }
               .mkString(", ")
           }
-          logger.info(
+          logger.trace(
             s"Found $count relevant output(s) in transaction=${transaction.txIdBE}: $outputStr")
           if (xs.length > 1) {
             logger.warn(
@@ -229,18 +234,22 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
           incomingTxDAO.create(dbTx).flatMap { created =>
             addUtxo(transaction, created.id.get, UInt32(created.voutIndex))
-              .map {
-                case AddUtxoSuccess(_) => Some(created)
+              .flatMap {
+                case AddUtxoSuccess(_) => Future.successful(Some(created))
                 case err: AddUtxoError =>
                   logger.error(s"Could not add UTXO", err)
-                  ???
+                  Future.failed(err)
               }
           }
       }
     }
   }
 
-  // TODO: Scaladoc
+  /**
+    * Processes an incoming transaction that already exists in our wallet.
+    * If the incoming transaction has more confirmations than what we
+    * have in the DB, we update the TX
+    */
   private def processExistingIncomingTx(
       transaction: Transaction,
       confirmations: Int,
@@ -268,9 +277,9 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
           s"to handle this."
         ).mkString(" ")
       logger.warn(msg)
-      Future.successful(foundTx)
+      Future.failed(new RuntimeException(msg))
     } else {
-      logger.info(
+      logger.debug(
         s"Skipping further processing of transaction=${transaction.txIdBE}, already processed.")
       Future.successful(foundTx)
     }
@@ -306,7 +315,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
         _ <- outgoingTxFut
       } yield {
         logger.info(
-          s"Finished processing of transaction=${transaction.txIdBE}. Inserted incoming TX=${incoming.isDefined}")
+          s"Finished processing of transaction=${transaction.txIdBE}. Resulted in relevant incoming TX=${incoming.isDefined}")
         this
       }
 
