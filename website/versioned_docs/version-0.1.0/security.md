@@ -1,0 +1,73 @@
+---
+id: version-0.1.0-security
+title: Security
+original_id: security
+---
+
+The Bitcoin-S developers take security very seriously. This library has
+very few dependencies (at least in the `core` module), which is for
+security reasons.
+
+## Disclosure
+
+If you have any security disclosures related to Bitcoin-S, please send an
+email to either [stewart.chris1234@gmail.com](mailto:stewart.chris1234@gmail.com?subject=Bitcoin-S%20Security%20Disclosure)
+or [torkel@rogstad.io](mailto:torkel@rogstad.io?subject=Bitcoin-S%20Security%20Disclosure).
+
+If you want to encrypt said email (which you should), Torkel's key is available on [Keybase](https://keybase.io/torkelrogstad/pgp_keys.asc?fingerprint=c5dc349be6daa834ad9d59d712beee5312accec4), and Chris' is posted here:
+
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+mQINBFku8rYBEACub6cz6nAy/MHK2TlTztkSJbNpc2B3tZoVCKRz987yLX578JiO
+EDYosAsD4b4nIjY1O6kD5FUjoJttQO+7IR8RwkmBFRsPqXaryrGr69FqaPlGSMLi
+uNVlawe0qMY79DPNw03Pu2tdgiq94sWplmOnuyQqcg2lkoK1+8/DXX3801s164wq
+4ZCCmkAAxJDhoLTyXB6LNI586vJhQ5+SVh8z/kAtp6NVXU5v2LcnkrqlX4oaakbt
+nY2FYpAZgEI8T+Fg+btGbt3muajhM9ooq0LBtaIMwgcTC4JPyFg6acWaluMGCOtW
+k1j8eu2/J4ly27YGCtWoDwrDen5qzHF6mm1HI4ko9fG2L4SxxXkl7DpGgtR71D1R
+mSA9yot8oPwWW1NRncIct188uRuhy4CJIylNU88iqgpUZfYRqwaDl2KCrEbetGMT
+yZSBVyilXdNjzFUJFtOPAxKmYPztUcEL1hEyGOu03YFt3FQr7QHhNR8+v688DdH4
+QHpwcrXkB0x/wq18tCO6gNTbnt94VR4PJUvz3BjP7XrHGn3ljKt5PPHO7cmPkDH5
+/iP928VC1U5FjAJh6dpsGgFb7k51CKx9bUJRDmL3GUMxFvmo+4YZpTKS5G+Ighs3
+vLIzO1X0aV5b4mltn4Fz4o/Cp+CSVqK//YnetezkmrvwQ2u/iOGeqRKhXwARAQAB
+tCtDaHJpcyBTdGV3YXJ0IDxzdGV3YXJ0LmNocmlzMTIzNEBnbWFpbC5jb20+iQI+
+BBMBAgAoAhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAUCWxW1AAUJBakpQwAK
+CRCYRuzvvweIvijkD/0RQzQAWcJY5XJ503vj0CidzKym4ueykxhgISiZ+hmjr+u5
+/Poceo5z3nXj1zI8/yMIb//7WRiX61+JGFKwN/OsM07KHa/J8Rf3NCASO2hYCGjq
+ev0UOWUeSqHwN8zr4kAY9hKZJVR7byKmYV/iqmuAFTB4Nrs8567CzqKaPezB1mKv
+JMTxx4XiL4M6cFiBSbCBi0qGYS6M0zBETJvFAmSh3H3PtUUdGz0kAyE2Ju11qhPh
+yZVCjILnzHbsguqPSPsj3Cba6+WcbGzm7HIBPdZDjIvcnuw3Mq8kjtcpOWTMoGP1
+q9xHioP97Gh+E+z7iFo8g2NszZ1wEzL4k3TnO0keknOmfOVn5zSINp6M8CHCTbzr
+ls+qqHjcbAfs5BbNRMXxapO78kvSQSDenRjpC7JCl3FIwWqoMMi7T3PIYVFQfMG+
+EyC3UMVOGmIDavw6yDCCdILcGeMdafEuzZmmV3Qvtt3LsqQjjm+TyBhWazRR+9sJ
+kRgSdvBkF8XgqyOpaLffWPoKxnaQtJwylQnYuUM8kLP52aH2C9ctKxLChu1BDmZm
+aWZNpm8h9jySeybQSBlMeDd8TrscuGJ8qBEOfREuv7fqYxsIi+G74+9h5kjiOe+y
+hkIkSI440mAHRIoCyAkBx4EFZN5lRdYShRGRQrCWD/RrFssABmXhBik707V0nLkC
+DQRZLvK2ARAA1gn4P9fm9KJpYuwYfxwrl0VfDPMNct5dDY6zbdQGV3djBTcuyeVU
+EL6w4rRfF1aPFFEXGhT2zn2tPY410fswTNANLKuP/sFEiGEfaMjmYu0DucCMyznK
+KMbE5FGD/ue0SHAN2K+A13OkPVv6kabu7XiK2QzYBrw1Lk7kGhSqMb8t3hVs0A9B
+iAqWFhSIBfmnd5SKyJKNksv7DuBcgK9Xjszlbr2gV0v1kc0aMHGdZH4omB5qmq8I
+aFkgZcY3MbA1zmetd1YauwzhZCFyTFcebm9trTn4D5htHGgXSehP3DMc4y9HVaLL
+rANAi0Ykk7Bi+BmYHkjsvt7FZj2/V/KWkwgiPjEBvnKX3iWpbJdqU2os9VZM3ctB
+WaE4pwsXt1kpiEgc/qUJ2xQL3po0dTO8q5heE6iZUNlD+xBLwpUxGjS8rN+V0LCt
+muqtZ8N8lSZD5U1XVVEpEdfe8lPKQ0wvjZZUTjix1j18mhiwE+cC66JNyM3mlMUx
+GKHg6M8nnXxTSbv2ogj7wXmqPF5dq5uGzCeDhdnR5tRmNQCpW/QUq8AJzV7VXRJl
++qZXar7DgbGUeRBY4M3LJptYUYqJ3LdxYPAO0AeKdlO0e843BaeG1ASGlhCZRGOn
+Z0xYL7wBiVgwtx57y7D1zpQE1a9Mh7+jnUnH4tplYv70TsQ9wF5yuRsAEQEAAYkC
+JQQYAQIADwIbDAUCWxW0LAUJBakobgAKCRCYRuzvvweIvhSvD/0RlNWzls+OlLqc
+6NT/ZGGpECntrfTpQqA0MakuuIkf6/RgBU4OfHqqcBrG8onV1vuu0hH0KnYvv658
+01PHRthIZN1K/+jcaIdNkOLbl9k9rWaDxKkHzH+IcIF61b6oCW86ffZ1yzZE2nxY
+zjO0MVM4IlUxtHbrItVj5Itfj7QxPf1YdmLxO/xH2NRbmVwwTSKe4/xK3v1LSxlH
+R5vknUWIT69VJoINB7jye/aSpBYpJgxXXiGbdYyt6fLyLxds7HXLJ6v6SfBKLuvm
+qXsDWX5Jyv7EWzzHgl7iCIkCe9tr8ic9IyyWiRn5bjoo5vVFVMYWU/ZtGpYerAh/
+sp8M09q7OeJbtbYkh9Nqz78ALt7ldT+PeAmqBVqb188F3tG8yG9lQNy43bk90Q8N
+o7ZpjxlpKFYoSq/Ow7TZgMCdMPkGbcCaSkGDv/McGsaOa7IYf+7n/yE0xMSb0x5A
+wyaXSLZjScTPiKGAP4fAf6hb0H1Je/69DOJynaODONAYfmlM+9WQjuVlQ3J0rlcK
+Cgvon6XyxrZ4q1tKheAxOmyM0OSuPYyeXSqCYu5bt7MzNEDUChydZM3v1QvEB9iG
+6eLX7fq2ipGGDoVl8y1yVRe4BWa3cJfCPC7jT+9VtD/qdlpHSwotYTWj5metYgqB
+LTIbdd7r9XCGoKIxMJRqNFXc8kylUg==
+=J0NH
+-----END PGP PUBLIC KEY BLOCK-----
+```
+
