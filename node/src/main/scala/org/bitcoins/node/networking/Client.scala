@@ -1,7 +1,6 @@
 package org.bitcoins.node.networking
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
-import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
@@ -71,7 +70,7 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
     */
   private def awaitNetworkRequest(
       peer: ActorRef,
-      unalignedBytes: ByteVector): Receive = LoggingReceive {
+      unalignedBytes: ByteVector): Receive = {
     case message: NetworkMessage => sendNetworkMessage(message, peer)
     case payload: NetworkPayload =>
       val networkMsg = NetworkMessage(network, payload)
@@ -83,7 +82,7 @@ sealed abstract class ClientActor extends Actor with BitcoinSLogger {
   }
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
-  def receive = LoggingReceive {
+  def receive: Receive = {
     case cmd: Tcp.Command =>
       //we only accept a Tcp.Connect/Tcp.Connected
       //message to the default receive on this actor
