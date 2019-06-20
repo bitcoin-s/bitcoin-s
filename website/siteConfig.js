@@ -92,6 +92,12 @@ const siteConfig = {
   /** Makes the user showcase appear */
   users,
 
+  /** Enables doc search */
+  algolia: {
+    apiKey: "0a510688bf8448e19aeb380377d328d3",
+    indexName: "bitcoin-s"
+  },
+
   /* path to images for header/footer */
   headerIcon: "img/favicon.ico",
   footerIcon: "img/favicon.ico",
