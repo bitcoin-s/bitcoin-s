@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>HD key generation · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;In modern Bitcoin wallets, users only need to write down&lt;/p&gt;
+"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="HD key generation · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="&lt;p&gt;In modern Bitcoin wallets, users only need to write down&lt;/p&gt;
+"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/next/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Core module</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-started">Add Bitcoin-S to your project</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/core/core-intro">Core module</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/addresses">Generating addresses</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/next/core/hd-keys">HD key generation</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/txbuilder">TxBuilder example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/next/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/docscore/hd-keys.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">HD key generation</h1></header><article><div><span><p>In modern Bitcoin wallets, users only need to write down
+a sequence of words, and that sequence is a complete backup
+of their wallet. This is thanks to what's called Hierarchical
+Deterministic key generation. In short, every wallet using HD
+key generation has a root seed for each wallet, and this
+seed can be used to generate an arbitrary amount of later
+private and public keys. This is done in a standardized manner,
+so different wallets can operate with the same standard.</p>
+<blockquote>
+<p>If you want to jump into the details of how this work,
+you should check out
+<a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">BIP 32</a>.</p>
+</blockquote>
+<p>Bitcoin-S supports generating keys in this fashion. Here's a
+full example of how to obtain a wallet seed, and then
+use that to generate further private and public keys:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> scodec.bits._
+<span class="hljs-keyword">import</span> org.bitcoins.core.crypto._
+<span class="hljs-keyword">import</span> org.bitcoins.core.hd._
+
+<span class="hljs-comment">// the length of the entropy bit vector determine</span>
+<span class="hljs-comment">// how long our phrase ends up being</span>
+<span class="hljs-comment">// 256 bits of entropy results in 24 words</span>
+<span class="hljs-keyword">val</span> entropy: <span class="hljs-type">BitVector</span> = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
+<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0xb4a90c6de139e3379ac1779f2f50f6c2ef16604808464d09a454b8a08a0da1dd)</span>
+
+<span class="hljs-keyword">val</span> mnemonicCode = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
+<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(regret, embody, bread, second, owner, orange, help, confirm, palace, kind, diet, magic, vapor, coral, cage, angle, escape, essay, benefit, image, anger, almost, manual, result))</span>
+
+mnemonicCode.words <span class="hljs-comment">// the phrase the user should write down</span>
+<span class="hljs-comment">// res0: Vector[String] = Vector(regret, embody, bread, second, owner, orange, help, confirm, palace, kind, diet, magic, vapor, coral, cage, angle, escape, essay, benefit, image, anger, almost, manual, result) // the phrase the user should write down</span>
+
+<span class="hljs-comment">// the password argument is an optional, extra security</span>
+<span class="hljs-comment">// measure. all MnemonicCode instances will give you a</span>
+<span class="hljs-comment">// valid BIP39 seed, but different passwords will give</span>
+<span class="hljs-comment">// you different seeds. So you could have as many wallets</span>
+<span class="hljs-comment">// from the same seed as you'd like, by simply giving them</span>
+<span class="hljs-comment">// different passwords.</span>
+<span class="hljs-keyword">val</span> bip39Seed = <span class="hljs-type">BIP39Seed</span>.fromMnemonic(mnemonicCode,
+                                       password = <span class="hljs-string">"secret password"</span>)
+<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xd964817ac7cd19d795c9a4db69511c152f0461da13b6e8b061d6960ccae78e84d71fc4069366707bb0265d66f9ee6fa9e6a9981df362ba0c3736b61e8d5c5e92))</span>
+
+<span class="hljs-keyword">val</span> xpriv = <span class="hljs-type">ExtPrivateKey</span>.fromBIP39Seed(<span class="hljs-type">ExtKeyVersion</span>.<span class="hljs-type">SegWitMainNetPriv</span>,
+                                        bip39Seed)
+<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GmAZANSpGRewsm6wZAwqRK61mN4MD6WJYcvW7X7gcB728HDNMdztNAnhuf1xRMet7FKat4vrhYyEKUZQpHD1RgSiXmM2qyt2</span>
+<span class="hljs-keyword">val</span> xpub = xpriv.extPublicKey
+<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZyeddUUMGnntcK8n3aQZGgJwNASkpeqqXViqG4ezriuLc8UqfPvpaEjZfJudVnRWNuzGDpVk3smshS9V3Niw7ZELs1LdW6B9</span>
+
+<span class="hljs-comment">// you can now use the generated xpriv to derive further</span>
+<span class="hljs-comment">// private or public keys</span>
+
+<span class="hljs-comment">// this can be done with BIP89 paths (called SegWitHDPath in bitcoin-s)</span>
+<span class="hljs-keyword">val</span> segwitPath = <span class="hljs-type">SegWitHDPath</span>.fromString(<span class="hljs-string">"m/84'/0'/0'/0/0"</span>)
+<span class="hljs-comment">// segwitPath: SegWitHDPath = m/84'/0'/0'/0/0</span>
+
+<span class="hljs-comment">// alternatively:</span>
+<span class="hljs-keyword">val</span> otherSegwitPath =
+<span class="hljs-type">SegWitHDPath</span>(<span class="hljs-type">HDCoinType</span>.<span class="hljs-type">Bitcoin</span>,
+             accountIndex = <span class="hljs-number">0</span>,
+             <span class="hljs-type">HDChainType</span>.<span class="hljs-type">External</span>,
+             addressIndex = <span class="hljs-number">0</span>)
+<span class="hljs-comment">// otherSegwitPath: SegWitHDPath = m/84'/0'/0'/0/0</span>
+
+segwitPath == otherSegwitPath
+<span class="hljs-comment">// res1: Boolean = true</span>
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="generating-new-addresses-without-having-access-to-the-private-key"></a><a href="#generating-new-addresses-without-having-access-to-the-private-key" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Generating new addresses without having access to the private key</h2>
+<p>One the coolest features of HD wallets is that it's possible
+to generate addresses offline, without having access to the
+private keys. This feature is commonly called watch-only
+wallets, where a wallet can import information about all
+your past and future transactions, without being able to
+spend or steal any of your money.</p>
+<p>Let's see an example of this:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> scala.util.<span class="hljs-type">Success</span>
+<span class="hljs-keyword">import</span> org.bitcoins.core.protocol.script._
+<span class="hljs-keyword">import</span> org.bitcoins.core.protocol.<span class="hljs-type">Bech32Address</span>
+<span class="hljs-keyword">import</span> org.bitcoins.core.config.<span class="hljs-type">TestNet3</span>
+
+<span class="hljs-comment">//                          first account -------┐</span>
+<span class="hljs-comment">//                          bitcoin ----------┐  |</span>
+<span class="hljs-comment">//                          segwit --------┐  |  |</span>
+<span class="hljs-keyword">val</span> accountPath = <span class="hljs-type">BIP32Path</span>.fromString(<span class="hljs-string">"m/84'/0'/0'"</span>)
+<span class="hljs-comment">// accountPath: BIP32Path = m/84'/0'/0'</span>
+<span class="hljs-keyword">val</span> accountXpub = {
+    <span class="hljs-comment">// this key is sensitive, keep away from prying eyes!</span>
+    <span class="hljs-keyword">val</span> accountXpriv = xpriv.deriveChildPrivKey(accountPath)
+
+    <span class="hljs-comment">// this key is not sufficient to spend from, but we</span>
+    <span class="hljs-comment">// can generate addresses with it!</span>
+    accountXpriv.extPublicKey
+}
+<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6qr9et9woyMRmURchXYrq3yM3w6s4WBr5KSS7iVwmwf3hFRFXBQwL8mAamwHQXz4LncVkCrxLERCni86NLfaZt4XdSs6i4iyzcmYcdGART8</span>
+
+                              <span class="hljs-comment">// address no. 0 ---------------┐</span>
+                              <span class="hljs-comment">// external address ----------┐ |</span>
+<span class="hljs-keyword">val</span> firstAddressPath = <span class="hljs-type">SegWitHDPath</span>.fromString(<span class="hljs-string">"m/84'/0'/0'/0/0"</span>)
+<span class="hljs-comment">// firstAddressPath: SegWitHDPath = m/84'/0'/0'/0/0</span>
+<span class="hljs-keyword">val</span> firstAccountAddress = {
+    <span class="hljs-comment">// this is a bit quirky, but we're not interesting in</span>
+    <span class="hljs-comment">// deriving the complete path from our account xpub</span>
+    <span class="hljs-comment">// instead, we're only interested in the part after</span>
+    <span class="hljs-comment">// the account level (3rd level). the .diff() method</span>
+    <span class="hljs-comment">// achieves that</span>
+    <span class="hljs-keyword">val</span> <span class="hljs-type">Some</span>(pathDiff) = accountPath.diff(firstAddressPath)
+
+    <span class="hljs-comment">// deriving public keys from hardened extended keys</span>
+    <span class="hljs-comment">// is not possible, that's why .deriveChildPubKey()</span>
+    <span class="hljs-comment">// returns a Try[ExtPublicKey]. A hardened key is marked</span>
+    <span class="hljs-comment">// by a ' after the number in the notation we use above.</span>
+    <span class="hljs-keyword">val</span> <span class="hljs-type">Success</span>(extPubKey) = accountXpub.deriveChildPubKey(pathDiff)
+    <span class="hljs-keyword">val</span> pubkey = extPubKey.key
+    <span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">P2WPKHWitnessSPKV0</span>(pubkey)
+    <span class="hljs-type">Bech32Address</span>(scriptPubKey, <span class="hljs-type">TestNet3</span>)
+}
+<span class="hljs-comment">// firstAccountAddress: Bech32Address = Bech32Address(tb1qn6d5ftnftlg7ugjdv3ccyhthdan8llddlx7es9)</span>
+
+<span class="hljs-comment">// tada! We just generated an address you can send money to,</span>
+<span class="hljs-comment">// without having access to the private key!</span>
+firstAccountAddress.value
+<span class="hljs-comment">// res2: String = tb1qn6d5ftnftlg7ugjdv3ccyhthdan8llddlx7es9</span>
+
+<span class="hljs-comment">// you can now continue deriving addresses from the same public</span>
+<span class="hljs-comment">// key, by imitating what we did above. To get the next</span>
+<span class="hljs-comment">// HD path to generate an address at:</span>
+<span class="hljs-keyword">val</span> nextAddressPath: <span class="hljs-type">SegWitHDPath</span> = firstAddressPath.next
+<span class="hljs-comment">// nextAddressPath: SegWitHDPath = m/84'/0'/0'/0/1</span>
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/core/addresses"><span class="arrow-prev">← </span><span>Generating addresses</span></a><a class="docs-next button" href="/docs/next/core/txbuilder"><span class="function-name-prevnext">TxBuilder example</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#generating-new-addresses-without-having-access-to-the-private-key">Generating new addresses without having access to the private key</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Core module · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;The &lt;code&gt;core&lt;/code&gt; module is the core (duh!) functionality of Bitcoin-S. The goal is to provide basic&lt;/p&gt;
+"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Core module · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="&lt;p&gt;The &lt;code&gt;core&lt;/code&gt; module is the core (duh!) functionality of Bitcoin-S. The goal is to provide basic&lt;/p&gt;
+"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive siteNavItemActive"><a href="/docs/next/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Core module</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-started">Add Bitcoin-S to your project</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core module</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/next/core/core-intro">Core module</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/addresses">Generating addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/hd-keys">HD key generation</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/txbuilder">TxBuilder example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/next/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/docscore/core-intro.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">Core module</h1></header><article><div><span><p>The <code>core</code> module is the core (duh!) functionality of Bitcoin-S. The goal is to provide basic
+data structures that are found in the Bitcoin and Lightning protocols while
+minimizing external depedencies for security purposes. We aim to have an extremely
+high level of test coverage in this module to flesh out bugs. We use property based
+testing heavily in this library to ensure high quality of code.</p>
+<h2><a class="anchor" aria-hidden="true" id="the-basics"></a><a href="#the-basics" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>The basics</h2>
+<p>Every bitcoin protocol data structure (and some other data structures) extends <a href="/api/org/bitcoins/core/protocol/NetworkElement"><code>NetworkElement</code></a>. <code>NetworkElement</code> provides methods to convert the data structure to hex or byte representation. When paired with <a href="/api/org/bitcoins/core/util/Factory"><code>Factory</code></a> we can easily serialize and deserialize data structures.</p>
+<p>Most data structures have companion objects that extends <code>Factory</code> to be able to easily create protocol data structures. An example of this is the <a href="/api/org/bitcoins/core/protocol/script/ScriptPubKey"><code>ScriptPubKey</code></a> companion object. You can use this companion object to create a <code>ScriptPubKey</code> from a hex string or a byte array.</p>
+<h2><a class="anchor" aria-hidden="true" id="main-modules-in-core"></a><a href="#main-modules-in-core" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Main modules in <code>core</code></h2>
+<ol>
+<li><a href="/api/org/bitcoins/core/protocol"><code>protocol</code></a> - basic protocol data structures. Useful for serializing/deserializing things</li>
+<li><a href="/api/org/bitcoins/core/crypto"><code>crypto</code></a> - cryptograhic functionality used in Bitcoin and Lightning</li>
+<li><a href="/api/org/bitcoins/core/script"><code>script</code></a> - an implementation of <a href="https://en.bitcoin.it/wiki/Script">Script</a> - the programming language in Bitcoin</li>
+<li><a href="/api/org/bitcoins/core/wallet"><code>wallet</code></a> - implements signing logic for Bitcoin transactions. This module is not named well as there is <strong>NO</strong> functionality to persist wallet state to disk as it stands. This will most likely be renamed in the future.</li>
+<li><a href="/api/org/bitcoins/core/config"><code>config</code></a> - Contains information about a chain's genesis block and DNS seeds</li>
+<li><a href="/api/org/bitcoins/core/number"><code>number</code></a> - Implements number types that are native in C, i.e. <code>UInt8</code>, <code>UInt32</code>, <code>UInt64</code>, etc.</li>
+<li><a href="/api/org/bitcoins/core/currency"><code>currency</code></a> - Implements currency units in the Bitcoin protocol</li>
+<li><a href="/api/org/bitcoins/core/bloom"><code>bloom</code></a> - Implements <a href="https://en.wikipedia.org/wiki/Bloom_filter">Bloom filters</a> and <a href="https://bitcoin.org/en/glossary/merkle-block">merkle blocks</a> needed for <a href="https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki">BIP37</a></li>
+<li><a href="/api/org/bitcoins/core/hd"><code>hd</code></a> - Contains implementations of hierarchical deterministic (HD) paths, that when combined with <code>ExtPrivKey</code> and <code>ExtPubKey</code> in <code>crypto</code> can implement BIP32, BIP44, BIP49 and BIP84.</li>
+</ol>
+<h2><a class="anchor" aria-hidden="true" id="examples"></a><a href="#examples" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Examples</h2>
+<h3><a class="anchor" aria-hidden="true" id="serializing-and-deserializing-a-transaction"></a><a href="#serializing-and-deserializing-a-transaction" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Serializing and deserializing a <code>Transaction</code></h3>
+<p>Here is an example scala console session with bitcoins-core</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> org.bitcoins.core.protocol.transaction._
+
+<span class="hljs-keyword">val</span> hexTx = <span class="hljs-string">"0100000002d8c8df6a6fdd2addaf589a83d860f18b44872d13ee6ec3526b2b470d42a96d4d000000008b483045022100b31557e47191936cb14e013fb421b1860b5e4fd5d2bc5ec1938f4ffb1651dc8902202661c2920771fd29dd91cd4100cefb971269836da4914d970d333861819265ba014104c54f8ea9507f31a05ae325616e3024bd9878cb0a5dff780444002d731577be4e2e69c663ff2da922902a4454841aa1754c1b6292ad7d317150308d8cce0ad7abffffffff2ab3fa4f68a512266134085d3260b94d3b6cfd351450cff021c045a69ba120b2000000008b4830450220230110bc99ef311f1f8bda9d0d968bfe5dfa4af171adbef9ef71678d658823bf022100f956d4fcfa0995a578d84e7e913f9bb1cf5b5be1440bcede07bce9cd5b38115d014104c6ec27cffce0823c3fecb162dbd576c88dd7cda0b7b32b0961188a392b488c94ca174d833ee6a9b71c0996620ae71e799fc7c77901db147fa7d97732e49c8226ffffffff02c0175302000000001976a914a3d89c53bb956f08917b44d113c6b2bcbe0c29b788acc01c3d09000000001976a91408338e1d5e26db3fce21b011795b1c3c8a5a5d0788ac00000000"</span>
+<span class="hljs-comment">// hexTx: String = 0100000002d8c8df6a6fdd2addaf589a83d860f18b44872d13ee6ec3526b2b470d42a96d4d000000008b483045022100b31557e47191936cb14e013fb421b1860b5e4fd5d2bc5ec1938f4ffb1651dc8902202661c2920771fd29dd91cd4100cefb971269836da4914d970d333861819265ba014104c54f8ea9507f31a05ae325616e3024bd9878cb0a5dff780444002d731577be4e2e69c663ff2da922902a4454841aa1754c1b6292ad7d317150308d8cce0ad7abffffffff2ab3fa4f68a512266134085d3260b94d3b6cfd351450cff021c045a69ba120b2000000008b4830450220230110bc99ef311f1f8bda9d0d968bfe5dfa4af171adbef9ef71678d658823bf022100f956d4fcfa0995a578d84e7e913f9bb1cf5b5be1440bcede07bce9cd5b38115d014104c6ec27cffce0823c3fecb162dbd576c88dd7cda0b7b32b0961188a392b488c94ca174d833ee6a9b71c0996620ae71e799fc7c77901db147fa7d97732e49c8226ffffffff02c0175302000000001976a914a3d89c53bb956f08917b44d113c6b2bcbe0c29b788acc01c3d09000000001976a91408338e1d5e26db3fce21b011795b1c3c8a5a5d0788ac00000000</span>
+
+<span class="hljs-keyword">val</span> tx = <span class="hljs-type">Transaction</span>.fromHex(hexTx)
+<span class="hljs-comment">// tx: Transaction = BaseTransactionImpl(Int32Impl(1),Vector(TransactionInputImpl(TransactionOutPointImpl(DoubleSha256DigestImpl(d8c8df6a6fdd2addaf589a83d860f18b44872d13ee6ec3526b2b470d42a96d4d),UInt32Impl(0)),P2PKHScriptSignature(8b483045022100b31557e47191936cb14e013fb421b1860b5e4fd5d2bc5ec1938f4ffb1651dc8902202661c2920771fd29dd91cd4100cefb971269836da4914d970d333861819265ba014104c54f8ea9507f31a05ae325616e3024bd9878cb0a5dff780444002d731577be4e2e69c663ff2da922902a4454841aa1754c1b6292ad7d317150308d8cce0ad7ab),UInt32Impl(4294967295)), TransactionInputImpl(TransactionOutPointImpl(DoubleSha256DigestImpl(2ab3fa4f68a512266134085d3260b94d3b6cfd351450cff021c045a69ba120b2),UInt32Impl(0)),P2PKHScriptSignature(8b4830450220230110bc99ef311f1f8bda9d0d968bfe5dfa4af171adbef9ef71678d658823bf022100f956d4fcfa0995a578d84e7e913f9bb1cf5b5be1440bcede07bce9cd5b38115d014104c6ec27cffce0823c3fecb162dbd576c88dd7cda0b7b32b0961188a392b488c94ca174d833ee6a9b71c0996620ae71e799fc7c77901db147fa7d97732e49c8226),UInt32Impl(4294967295))),Vector(TransactionOutputImpl(39000000 sats,P2PKHScriptPubKeyImpl(1976a914a3d89c53bb956f08917b44d113c6b2bcbe0c29b788ac)), TransactionOutputImpl(155000000 sats,P2PKHScriptPubKeyImpl(1976a91408338e1d5e26db3fce21b011795b1c3c8a5a5d0788ac))),UInt32Impl(0))</span>
+
+tx.hex == hexTx
+<span class="hljs-comment">// res0: Boolean = true</span>
+</code></pre>
+<p>This gives us an example of a hex encoded Bitcoin transaction that is deserialized to a native Scala object called a <a href="/api/org/bitcoins/core/protocol/transaction/Transaction"><code>Transaction</code></a>. You could also serialize the transaction to bytes using <code>tx.bytes</code> instead of <code>tx.hex</code>. These methods are available on every data structure that extends NetworkElement, like <a href="/api/org/bitcoins/core/crypto/ECPrivateKey"><code>ECPrivateKey</code></a>, <a href="/api/org/bitcoins/core/protocol/script/ScriptPubKey"><code>ScriptPubKey</code></a>, <a href="/api/org/bitcoins/core/protocol/script/ScriptWitness"><code>ScriptWitness</code></a>, and <a href="/api/org/bitcoins/core/protocol/blockchain/Block"><code>Block</code></a>.</p>
+<h4><a class="anchor" aria-hidden="true" id="generating-a-bip39-mnemonic-phrase-and-an-xpriv"></a><a href="#generating-a-bip39-mnemonic-phrase-and-an-xpriv" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Generating a BIP39 mnemonic phrase and an <code>xpriv</code></h4>
+<p>See our <a href="hd-keys">HD example</a></p>
+<h3><a class="anchor" aria-hidden="true" id="building-a-signed-transaction"></a><a href="#building-a-signed-transaction" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Building a signed transaction</h3>
+<p>Bitcoin Core supports building unsigned transactions and then signing them with a set of private keys. The first important thing to look at is <a href="/api/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo"><code>UTXOSpendingInfo</code></a>. This contains all of the information needed to create a validly signed <a href="/api/org/bitcoins/core/protocol/script/ScriptSignature"><code>ScriptSignature</code></a> that spends this output.</p>
+<p>Our <a href="/api/org/bitcoins/core/wallet/builder/TxBuilder"><code>TxBuilder</code></a> class requires you to provide the following:</p>
+<ol>
+<li><code>destinations</code> - the places we are sending bitcoin to. These are <a href="/api/org/bitcoins/core/protocol/transaction/TransactionOutput">TransactionOutputs</a> you are sending coins too</li>
+<li><code>utxos</code> - these are the <a href="/api/org/bitcoins/core/wallet/utxo/UTXOSpendingInfo">UTXOs</a> used to fund your transaction. These must exist in your wallet, and you must know how to spend them (i.e. have the private key)</li>
+<li><code>feeRate</code> - the fee rate you want to pay for this transaction</li>
+<li><code>changeSPK</code> - where the change (i.e. <code>creditingAmount - destinationAmount - fee</code>) from the transaction will be sent</li>
+<li><code>network</code> - the network(/api/org/bitcoins/core/config/NetworkParameters) we are transacting on</li>
+</ol>
+<p>After providing this information, you can generate a validly signed bitcoin transaction by calling the <code>sign</code> method.</p>
+<p>To see a complete example of this, see <a href="/docs/next/core/txbuilder">our <code>TxBuilder</code> example</a></p>
+<h3><a class="anchor" aria-hidden="true" id="the-sign-api-api-org-bitcoins-core-crypto-sign"></a><a href="#the-sign-api-api-org-bitcoins-core-crypto-sign" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>The <a href="/api/org/bitcoins/core/crypto/Sign"><code>Sign</code> API</a></h3>
+<p>This is the API we define to sign things with. It takes in an arbitrary byte vector and returns a <code>Future[ECDigitalSignature]</code>. The reason we incorporate <code>Future</code>s here is for extensibility of this API. We would like to provide implementations of this API for hardware devices, which need to be asynchrnous since they may require user input.</p>
+<p>From <a href="/api/org/bitcoins/core/crypto/Sign"><code>core/src/main/scala/org/bitcoins/core/crypto/Sign.scala</code></a>:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> scodec.bits._
+<span class="hljs-keyword">import</span> org.bitcoins.core.crypto._
+<span class="hljs-keyword">import</span> scala.concurrent._
+<span class="hljs-keyword">import</span> scala.concurrent.duration._
+
+<span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">Sign</span> </span>{
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">signFunction</span></span>: <span class="hljs-type">ByteVector</span> =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">ECDigitalSignature</span>]
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">signFuture</span></span>(bytes: <span class="hljs-type">ByteVector</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">ECDigitalSignature</span>] =
+    signFunction(bytes)
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sign</span></span>(bytes: <span class="hljs-type">ByteVector</span>): <span class="hljs-type">ECDigitalSignature</span> = {
+    <span class="hljs-type">Await</span>.result(signFuture(bytes), <span class="hljs-number">30.</span>seconds)
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">publicKey</span></span>: <span class="hljs-type">ECPublicKey</span>
+}
+</code></pre>
+<p>The <code>ByteVector</code> that is input to the <code>signFunction</code> should be the hash that is output from <a href="/api/org/bitcoins/core/crypto/TransactionSignatureSerializer"><code>TransactionSignatureSerializer</code></a>'s <code>hashForSignature</code> method. Our in-memory <a href="/api/org/bitcoins/core/crypto/ECKey"><code>ECKey</code></a> types implement the <code>Sign</code> API.</p>
+<p>If you wanted to implement a new <code>Sign</code> api for a hardware wallet, you can easily pass it into the <code>TxBuilder</code>/<code>Signer</code> classes to allow for you to use those devices to sign with Bitcoin-S.</p>
+<p>This API is currently used to sign ordinary transactions with our <a href="/api/org/bitcoins/core/wallet/signer/Signer"><code>Signer</code></a>s. The <code>Signer</code> subtypes (i.e. <code>P2PKHSigner</code>) implement the specific functionality needed to produce a valid digital signature for their corresponding script type.</p>
+<h3><a class="anchor" aria-hidden="true" id="verifying-a-transaction-s-script-is-valid-does-not-check-if-utxo-is-valid"></a><a href="#verifying-a-transaction-s-script-is-valid-does-not-check-if-utxo-is-valid" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Verifying a transaction's script is valid (does not check if UTXO is valid)</h3>
+<p>Transactions are run through the interpreter to check their validity. These are packaged up into an object called <code>ScriptProgram</code>, which contains the following:</p>
+<ul>
+<li>The transaction that is being checked</li>
+<li>The specific input index that it is checking</li>
+<li>The <code>scriptPubKey</code> for the crediting transaction</li>
+<li>The flags used to verify the script</li>
+</ul>
+<p>Here is an example of a transaction spending a <code>scriptPubKey</code> which is correctly evaluated with our interpreter implementation:</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> org.bitcoins.core.protocol.script._
+<span class="hljs-keyword">import</span> org.bitcoins.core.protocol.transaction._
+<span class="hljs-keyword">import</span> org.bitcoins.core.script._
+<span class="hljs-keyword">import</span> org.bitcoins.core.script.interpreter._
+<span class="hljs-keyword">import</span> org.bitcoins.core.policy._
+<span class="hljs-keyword">import</span> org.bitcoins.core.number._
+<span class="hljs-keyword">import</span> org.bitcoins.core.crypto._
+<span class="hljs-keyword">import</span> org.bitcoins.core.currency._
+
+<span class="hljs-keyword">val</span> spendingTx = <span class="hljs-type">Transaction</span>.fromHex(<span class="hljs-string">"0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac00000000"</span>)
+
+<span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">ScriptPubKey</span>.fromAsmHex(<span class="hljs-string">"76a91431a420903c05a0a7de2de40c9f02ebedbacdc17288ac"</span>)
+
+<span class="hljs-keyword">val</span> output = <span class="hljs-type">TransactionOutput</span>(<span class="hljs-type">CurrencyUnits</span>.zero, scriptPubKey)
+
+<span class="hljs-keyword">val</span> inputIndex = <span class="hljs-type">UInt32</span>.zero
+
+<span class="hljs-keyword">val</span> btxsc = <span class="hljs-type">BaseTxSigComponent</span>(spendingTx,inputIndex,output,<span class="hljs-type">Policy</span>.standardScriptVerifyFlags)
+
+<span class="hljs-keyword">val</span> preExecution = <span class="hljs-type">PreExecutionScriptProgram</span>(btxsc)
+</code></pre>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> result = <span class="hljs-type">ScriptInterpreter</span>.run(preExecution)
+<span class="hljs-comment">// result: org.bitcoins.core.script.result.ScriptResult = ScriptOk</span>
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/getting-started"><span class="arrow-prev">← </span><span>Add Bitcoin-S to your project</span></a><a class="docs-next button" href="/docs/next/core/addresses"><span>Generating addresses</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#the-basics">The basics</a></li><li><a href="#main-modules-in-core">Main modules in <code>core</code></a></li><li><a href="#examples">Examples</a><ul class="toc-headings"><li><a href="#serializing-and-deserializing-a-transaction">Serializing and deserializing a <code>Transaction</code></a></li><li><a href="#building-a-signed-transaction">Building a signed transaction</a></li><li><a href="#the-sign-api-api-org-bitcoins-core-crypto-sign">The <a href="/api/org/bitcoins/core/crypto/Sign"><code>Sign</code> API</a></a></li><li><a href="#verifying-a-transaction-s-script-is-valid-does-not-check-if-utxo-is-valid">Verifying a transaction's script is valid (does not check if UTXO is valid)</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>

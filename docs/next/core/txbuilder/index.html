@@ -1,0 +1,197 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>TxBuilder example · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="&lt;p&gt;Bitcoin-S features a transaction buidlder that constructs and signs Bitcoin&lt;/p&gt;
+"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="TxBuilder example · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="&lt;p&gt;Bitcoin-S features a transaction buidlder that constructs and signs Bitcoin&lt;/p&gt;
+"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/next/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="container docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Core module</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-started">Add Bitcoin-S to your project</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/core/core-intro">Core module</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/addresses">Generating addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/hd-keys">HD key generation</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/next/core/txbuilder">TxBuilder example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/next/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/security">Security</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              const headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                  document.body.classList.remove('tocActive');
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/docscore/txbuilder.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 class="postHeaderTitle">TxBuilder example</h1></header><article><div><span><p>Bitcoin-S features a transaction buidlder that constructs and signs Bitcoin
+transactions. Here's an example of how to use it</p>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> scala.concurrent._
+<span class="hljs-keyword">import</span> scala.concurrent.duration._
+
+<span class="hljs-keyword">import</span> org.bitcoins.core._
+<span class="hljs-keyword">import</span> number._
+<span class="hljs-keyword">import</span> config._
+<span class="hljs-keyword">import</span> currency._
+<span class="hljs-keyword">import</span> crypto._
+<span class="hljs-keyword">import</span> script.crypto._
+<span class="hljs-keyword">import</span> protocol.transaction._
+<span class="hljs-keyword">import</span> protocol.script._
+
+<span class="hljs-keyword">import</span> wallet.builder._
+<span class="hljs-keyword">import</span> wallet.fee._
+<span class="hljs-keyword">import</span> wallet.utxo._
+
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.<span class="hljs-type">Implicits</span>.global
+
+<span class="hljs-comment">// generate a fresh private key that we are going to use in the scriptpubkey</span>
+<span class="hljs-keyword">val</span> privKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+<span class="hljs-keyword">val</span> pubKey = privKey.publicKey
+
+<span class="hljs-comment">// this is the script that the TxBuilder is going to create a</span>
+<span class="hljs-comment">// script signature that validly spends this scriptPubKey</span>
+<span class="hljs-keyword">val</span> creditingSpk = <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = privKey.publicKey)
+<span class="hljs-keyword">val</span> amount = <span class="hljs-number">10000.</span>satoshis
+
+<span class="hljs-comment">// this is the UTXO we are going to be spending</span>
+<span class="hljs-keyword">val</span> utxo =
+  <span class="hljs-type">TransactionOutput</span>(currencyUnit = amount, scriptPubKey = creditingSpk)
+
+<span class="hljs-comment">// the private key that locks the funds for the script we are spending too</span>
+<span class="hljs-keyword">val</span> destinationPrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+
+<span class="hljs-comment">// the amount we are sending -- 5000 satoshis -- to the destinationSPK</span>
+<span class="hljs-keyword">val</span> destinationAmount = <span class="hljs-number">5000.</span>satoshis
+
+<span class="hljs-comment">// the script that corresponds to destination private key, this is what is protecting the money</span>
+<span class="hljs-keyword">val</span> destinationSPK =
+  <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = destinationPrivKey.publicKey)
+
+<span class="hljs-comment">// this is where we are sending money too</span>
+<span class="hljs-comment">// we could add more destinations here if we</span>
+<span class="hljs-comment">// wanted to batch transactions</span>
+<span class="hljs-keyword">val</span> destinations = {
+    <span class="hljs-keyword">val</span> destination1 = <span class="hljs-type">TransactionOutput</span>(currencyUnit = destinationAmount,
+                                         scriptPubKey = destinationSPK)
+
+    <span class="hljs-type">List</span>(destination1)
+}
+
+<span class="hljs-comment">// we have to fabricate a transaction that contains the</span>
+<span class="hljs-comment">// UTXO we are trying to spend. If this were a real blockchain</span>
+<span class="hljs-comment">// we would need to reference the UTXO set</span>
+<span class="hljs-keyword">val</span> creditingTx = <span class="hljs-type">BaseTransaction</span>(version = <span class="hljs-type">Int32</span>.one,
+                                  inputs = <span class="hljs-type">List</span>.empty,
+                                  outputs = <span class="hljs-type">List</span>(utxo),
+                                  lockTime = <span class="hljs-type">UInt32</span>.zero)
+
+<span class="hljs-comment">// this is the information we need from the crediting TX</span>
+<span class="hljs-comment">// to properly "link" it in the transaction we are creating</span>
+<span class="hljs-keyword">val</span> outPoint = <span class="hljs-type">TransactionOutPoint</span>(creditingTx.txId, <span class="hljs-type">UInt32</span>.zero)
+
+<span class="hljs-comment">// this contains all the information we need to</span>
+<span class="hljs-comment">// validly sign the UTXO above</span>
+<span class="hljs-keyword">val</span> utxoSpendingInfo = <span class="hljs-type">BitcoinUTXOSpendingInfo</span>(outPoint = outPoint,
+                                               output = utxo,
+                                               signers = <span class="hljs-type">List</span>(privKey),
+                                               redeemScriptOpt = <span class="hljs-type">None</span>,
+                                               scriptWitnessOpt = <span class="hljs-type">None</span>,
+                                               hashType =
+                                                <span class="hljs-type">HashType</span>.sigHashAll)
+
+<span class="hljs-comment">// all of the UTXO spending information, since we are only</span>
+<span class="hljs-comment">//spending one UTXO, this is just one element</span>
+<span class="hljs-keyword">val</span> utxos: <span class="hljs-type">List</span>[<span class="hljs-type">BitcoinUTXOSpendingInfo</span>] = <span class="hljs-type">List</span>(utxoSpendingInfo)
+
+<span class="hljs-comment">// this is how much we are going to pay as a fee to the network</span>
+<span class="hljs-comment">// for this example, we are going to pay 1 satoshi per byte</span>
+<span class="hljs-keyword">val</span> feeRate = <span class="hljs-type">SatoshisPerByte</span>(<span class="hljs-number">1.</span>satoshi)
+
+<span class="hljs-keyword">val</span> changePrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+<span class="hljs-keyword">val</span> changeSPK = <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = changePrivKey.publicKey)
+
+<span class="hljs-comment">// the network we are on, for this example we are using</span>
+<span class="hljs-comment">// the regression test network. This is a network you control</span>
+<span class="hljs-comment">// on your own machine</span>
+<span class="hljs-keyword">val</span> networkParams = <span class="hljs-type">RegTest</span>
+
+<span class="hljs-comment">// Yay! Now we have a TxBuilder object that we can use</span>
+<span class="hljs-comment">// to sign the TX.</span>
+<span class="hljs-keyword">val</span> txBuilder: <span class="hljs-type">BitcoinTxBuilder</span> = {
+  <span class="hljs-keyword">val</span> builderF = <span class="hljs-type">BitcoinTxBuilder</span>(
+    destinations = destinations,
+    utxos = utxos,
+    feeRate = feeRate,
+    changeSPK = changeSPK,
+    network = networkParams)
+  <span class="hljs-type">Await</span>.result(builderF, <span class="hljs-number">30.</span>seconds)
+}
+
+<span class="hljs-comment">// Let's finally produce a validly signed tx!</span>
+<span class="hljs-comment">// The 'sign' method is going produce a validly signed transaction</span>
+<span class="hljs-comment">// This is going to iterate through each of the UTXOs and use</span>
+<span class="hljs-comment">// the corresponding UTXOSpendingInfo to produce a validly</span>
+<span class="hljs-comment">// signed input. This UTXO has:</span>
+<span class="hljs-comment">//   1: one input</span>
+<span class="hljs-comment">//   2: outputs (destination and change outputs)</span>
+<span class="hljs-comment">//   3: a fee rate of 1 satoshi/byte</span>
+<span class="hljs-keyword">val</span> signedTx: <span class="hljs-type">Transaction</span> = {
+  <span class="hljs-keyword">val</span> signF = txBuilder.sign
+  <span class="hljs-type">Await</span>.result(signF, <span class="hljs-number">30.</span>seconds)
+}
+</code></pre>
+<pre><code class="hljs css language-scala">signedTx.inputs.length
+<span class="hljs-comment">// res0: Int = 1</span>
+
+signedTx.outputs.length
+<span class="hljs-comment">// res1: Int = 2</span>
+
+<span class="hljs-comment">//remember, you can call .hex on any bitcoin-s data structure to get the hex representation!</span>
+signedTx.hex
+<span class="hljs-comment">// res2: String = "020000000144acc1c4b1713a0b7ecc4895661971d3afa36ddc02aad0df7729e9feb55f6dc8000000006b483045022100aa6c5af11587c5b892966da4428a24f231b22281cd9bc89881c40196d513e33802205702b9429439a8488683ad906abf46669e7ba588c11eb636386844b8a991a2c80121033076ae07bb934c39cccb3ec113d95fed1281149d00e7aed8f21b7c84ae4ef753000000000288130000000000001976a914036d256ad94c210c3a2d19d812588e7643e1739388aca6120000000000001976a9142dfa44946cd5a5712f425cdccd245ba4c3e598fd88ac00000000"</span>
+</code></pre>
+</span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/core/hd-keys"><span class="arrow-prev">← </span><span>HD key generation</span></a><a class="docs-next button" href="/docs/next/rpc/rpc-clients-intro"><span>Introduction</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+                document.addEventListener('keyup', function(e) {
+                  if (e.target !== document.body) {
+                    return;
+                  }
+                  // keyCode for '/' (slash)
+                  if (e.keyCode === 191) {
+                    const search = document.getElementById('search_input_react');
+                    search && search.focus();
+                  }
+                });
+              </script><script>
+              var search = docsearch({
+                
+                apiKey: '0a510688bf8448e19aeb380377d328d3',
+                indexName: 'bitcoin-s',
+                inputSelector: '#search_input_react'
+              });
+            </script></body></html>
