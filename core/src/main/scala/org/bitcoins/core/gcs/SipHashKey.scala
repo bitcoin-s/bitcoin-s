@@ -1,4 +1,4 @@
-
+import scodec.bits.ByteVector
 case class SipHashKey(bytes: ByteVector) {
   require(
     bytes.size == 16,
