@@ -52,6 +52,9 @@ object GCS {
     buildGolombFilter(data, key, BlockFilter.P, BlockFilter.M)
   }
 
+  //item remains bytevector key to be changed create new file in GCS folder that redefines sipkeyhash
+  //will probably have a require statement bytevector length of 16 bytes or 128 bits. Add a couple methods
+  //to turn the key into an array of bytes (look to toArray method on line 65)
   private def sipHash(item: ByteVector, key: ByteVector): UInt64 = {
     // https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects
     val sipHashCParam = 2
