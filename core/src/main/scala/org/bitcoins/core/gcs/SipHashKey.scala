@@ -1,3 +1,4 @@
+package org.bitcoins.core.gcs
 import scodec.bits.ByteVector
 case class SipHashKey(bytes: ByteVector) {
   require(

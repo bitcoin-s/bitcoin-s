@@ -24,7 +24,7 @@ import scala.annotation.tailrec
   * TODO: Replace ByteVector with a type for keys
   */
 case class GolombFilter(
-    key: ByteVector,
+    key: SipHashKey,
     m: UInt64,
     p: UInt8,
     n: CompactSizeUInt,
@@ -149,7 +149,7 @@ object BlockFilter {
   def apply(
       block: Block,
       prevOutputScripts: Vector[ScriptPubKey]): GolombFilter = {
-    val key = block.blockHeader.hash.bytes.take(16)
+    val key: SipHashKey = block.blockHeader.hash.bytes.take(16)
 
     val newScriptPubKeys: Vector[ByteVector] =
       getOutputScriptPubKeysFromBlock(block).map(_.asmBytes)
