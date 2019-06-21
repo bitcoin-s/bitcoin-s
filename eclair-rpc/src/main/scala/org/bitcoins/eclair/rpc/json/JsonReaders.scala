@@ -3,7 +3,7 @@ package org.bitcoins.eclair.rpc.json
 import java.util.concurrent.TimeUnit
 
 import org.bitcoins.core.crypto.Sha256Digest
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnInvoiceSignature, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnInvoiceSignature, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
@@ -89,6 +89,12 @@ object JsonReaders {
 
   implicit val nodeInfoReads: Reads[NodeInfo] = {
     Json.reads[NodeInfo]
+  }
+
+  implicit val paymentPreimageReads: Reads[PaymentPreimage] = {
+    Reads { jsValue: JsValue =>
+      SerializerUtil.processJsString(PaymentPreimage.fromHex)(jsValue)
+    }
   }
 
   implicit val fundedChannelIdReads: Reads[FundedChannelId] = {
@@ -181,29 +187,66 @@ object JsonReaders {
     Json.reads[PaymentRequest]
   }
 
-  implicit val paymentSucceededReads: Reads[PaymentSucceeded] = {
-    Json.reads[PaymentSucceeded]
+  implicit val PaymentStatusReads: Reads[PaymentStatus] = Reads { jsValue =>
+    SerializerUtil.processJsString(PaymentStatus.apply)(jsValue)
   }
 
-  implicit val paymentFailedReads: Reads[PaymentFailed] = {
-    Json.reads[PaymentFailed]
+  implicit val paymentSucceededReads: Reads[PaymentResult] = Reads { jsValue =>
+    for {
+      id <- (jsValue \ "id").validate[String]
+      paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
+      preimage <- (jsValue \ "preimage").validateOpt[PaymentPreimage]
+      amountMsat <- (jsValue \ "amountMsat").validate[MilliSatoshis]
+      createdAt <- (jsValue \ "createdAt").validate[Long]
+      completedAt <- (jsValue \ "completedAt").validateOpt[Long]
+      status <- (jsValue \ "status").validate[PaymentStatus]
+    } yield
+      PaymentResult(
+        id = id,
+        paymentHash = paymentHash,
+        preimage = preimage,
+        amountMsat = amountMsat,
+        createdAt = FiniteDuration(createdAt, TimeUnit.MILLISECONDS),
+        completedAt = completedAt.map(FiniteDuration(_, TimeUnit.MILLISECONDS)),
+        status = status)
+
   }
 
-  implicit val paymentResultReads: Reads[PaymentResult] = {
-    Reads[PaymentResult] { jsValue =>
-      val sendResult = jsValue.validate[PaymentSucceeded]
-      sendResult match {
-        case p: JsSuccess[PaymentSucceeded] => p
-        case err1: JsError =>
-          val pFailedResult = jsValue.validate[PaymentFailed]
-          pFailedResult match {
-            case s: JsSuccess[PaymentFailed] => s
-            case err2: JsError =>
-              JsError.merge(err1, err2)
-          }
-      }
-    }
+  implicit val receivedPaymentResultReads: Reads[ReceivedPaymentResult] = Reads { jsValue =>
+    for {
+      paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
+      amountMsat <- (jsValue \ "amountMsat").validate[MilliSatoshis]
+      receivedAt <- (jsValue \ "receivedAt").validate[Long]
+    } yield
+      ReceivedPaymentResult(
+        paymentHash = paymentHash,
+        amountMsat = amountMsat,
+        receivedAt = FiniteDuration(receivedAt, TimeUnit.MILLISECONDS))
   }
+
+//  implicit val paymentSucceededReads: Reads[PaymentSucceeded] = {
+//    Json.reads[PaymentSucceeded]
+//  }
+//
+//  implicit val paymentFailedReads: Reads[PaymentFailed] = {
+//    Json.reads[PaymentFailed]
+//  }
+//
+//  implicit val paymentResultReads: Reads[PaymentResult] = {
+//    Reads[PaymentResult] { jsValue =>
+//      val sendResult = jsValue.validate[PaymentSucceeded]
+//      sendResult match {
+//        case p: JsSuccess[PaymentSucceeded] => p
+//        case err1: JsError =>
+//          val pFailedResult = jsValue.validate[PaymentFailed]
+//          pFailedResult match {
+//            case s: JsSuccess[PaymentFailed] => s
+//            case err2: JsError =>
+//              JsError.merge(err1, err2)
+//          }
+//      }
+//    }
+//  }
 
   implicit val feeProportionalMillionthsReads: Reads[
     FeeProportionalMillionths] = Reads { js =>

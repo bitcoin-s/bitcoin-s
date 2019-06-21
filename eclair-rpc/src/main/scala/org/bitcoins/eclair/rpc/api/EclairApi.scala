@@ -1,7 +1,7 @@
 package org.bitcoins.eclair.rpc.api
 
 import org.bitcoins.core.crypto.Sha256Digest
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.{Address, NetworkElement}
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
@@ -103,7 +103,23 @@ trait EclairApi {
     getNodeURI.map(_.nodeId)
   }
 
-  def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[Long], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
+  def createInvoice(description: String, amountMsat: Option[LnCurrencyUnit], expireIn: Option[Long], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
+
+  def parseInvoice(nvoice: LnInvoice): Future[Unit]
+
+  def payInvoice(invoice: LnInvoice, amountMsat: Option[LnCurrencyUnit], maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[String]
+
+  def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]]
+
+  def getSentInfo(id: String): Future[Vector[PaymentResult]]
+
+  def getReceivedInfo(paymentHash: Sha256Digest): Future[ReceivedPaymentResult]
+
+  def getReceivedInfo(invoice: LnInvoice): Future[ReceivedPaymentResult]
+
+  def sendToNode(nodeId: NodeId, amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[String]
+
+  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[String]
 
   def receive(
       amountMsat: LnCurrencyUnit,

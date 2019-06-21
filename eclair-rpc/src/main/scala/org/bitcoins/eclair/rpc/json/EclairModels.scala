@@ -1,7 +1,7 @@
 package org.bitcoins.eclair.rpc.json
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, Sha256Digest}
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoiceSignature, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoiceSignature, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
@@ -263,16 +263,48 @@ case class PaymentRequest(
     tags: Vector[JsObject],
     signature: LnInvoiceSignature)
 
-sealed abstract class PaymentResult
-case class PaymentSucceeded(
-    amountMsat: MilliSatoshis,
-    paymentHash: Sha256Digest,
-    paymentPreimage: String,
-    route: JsArray)
-    extends PaymentResult
+case class PaymentResult(
+  id: String,
+  paymentHash: Sha256Digest,
+  preimage: Option[PaymentPreimage],
+  amountMsat: MilliSatoshis,
+  createdAt: FiniteDuration,
+  completedAt: Option[FiniteDuration],
+  status: PaymentStatus)
 
-case class PaymentFailed(paymentHash: Sha256Digest, failures: Vector[JsObject])
-    extends PaymentResult
+case class ReceivedPaymentResult(
+  paymentHash: Sha256Digest,
+  amountMsat: MilliSatoshis,
+  receivedAt: FiniteDuration)
+
+//object PaymentStatus extends Enumeration {
+//  val PENDING = Value(1, "PENDING")
+//  val SUCCEEDED = Value(2, "SUCCEEDED")
+//  val FAILED = Value(3, "FAILED")
+//}
+
+sealed trait PaymentStatus
+object PaymentStatus {
+  case object PENDING extends PaymentStatus
+  case object SUCCEEDED extends PaymentStatus
+  case object FAILED extends PaymentStatus
+
+  def apply(s: String): PaymentStatus = s match {
+    case "PENDING" => PENDING
+    case "SUCCEEDED" => SUCCEEDED
+    case "FAILED" => FAILED
+  }
+}
+
+//case class PaymentSucceeded(
+//    amountMsat: MilliSatoshis,
+//    paymentHash: Sha256Digest,
+//    paymentPreimage: String,
+//    route: JsArray)
+//    extends PaymentResult
+//
+//case class PaymentFailed(paymentHash: Sha256Digest, failures: Vector[JsObject])
+//    extends PaymentResult
 /*
 case class PaymentFailure(???) extends SendResult
 implicit val paymentFailureReads: Reads[PaymentFailure] = Json.reads[PaymentFailure]
