@@ -130,6 +130,8 @@ const siteConfig = {
     "https://buttons.github.io/buttons.js",
     "https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js",
     "https://fonts.googleapis.com/css?family=Montserrat:500",
+    // Google Analytics
+    "https://www.googletagmanager.com/gtag/js?id=UA-61958686-2",
     `${baseUrl}js/code-block-buttons.js`
   ],
 
