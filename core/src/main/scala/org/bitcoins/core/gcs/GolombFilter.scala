@@ -149,7 +149,9 @@ object BlockFilter {
   def apply(
       block: Block,
       prevOutputScripts: Vector[ScriptPubKey]): GolombFilter = {
-    val key: SipHashKey = block.blockHeader.hash.bytes.take(16)
+    val keyBytes: ByteVector = block.blockHeader.hash.bytes.take(16)
+
+    val key: SipHashKey = SipHashKey(keyBytes)
 
     val newScriptPubKeys: Vector[ByteVector] =
       getOutputScriptPubKeysFromBlock(block).map(_.asmBytes)
@@ -170,7 +172,7 @@ object BlockFilter {
     val (size, filterBytes) = bytes.splitAt(1)
     val n = CompactSizeUInt.fromBytes(size)
 
-    GolombFilter(blockHash.bytes.take(16),
+    GolombFilter(SipHashKey(blockHash.bytes.take(16)),
                  BlockFilter.M,
                  BlockFilter.P,
                  n,
