@@ -239,7 +239,7 @@ class GCSTest extends BitcoinSUnitTest {
       }
     }
 
-    def genKey: Gen[ByteVector] =
+    def genKey: Gen[SipHashKey] =
       Gen.listOfN(16, NumberGenerator.byte).map(ByteVector(_))
 
     forAll(genPM, genItems, genKey) {
