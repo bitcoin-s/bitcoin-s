@@ -124,42 +124,77 @@ class ChainHandlerTest extends ChainUnitTest {
       }
   }
 
-  it must "handle a very basic reorg" in { chainHandler: ChainHandler =>
-    val blockchain = Blockchain.fromHeaders(
-      headers = Vector(ChainUnitTest.genesisHeaderDb)
-    )
+  it must "handle a very basic reorg where one chain is one block behind the best chain" in {
+    chainHandler: ChainHandler =>
+      val newHeaderB =
+        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
 
-    val newHeaderB =
-      BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+      //this builds a blockchain that is A -> B
+      val chainHandlerB =
+        chainHandler.processHeader(header = newHeaderB.blockHeader)
 
-    //this builds a blockchain that is A -> B
-    val chainHandlerB =
-      chainHandler.processHeader(header = newHeaderB.blockHeader)
+      //we have connected one header off of the genesis block
+      //now we are going to build two headers off of the genesis block
+      //that should for a reorg
+      val bestHashB = chainHandlerB.flatMap(_.getBestBlockHash)
 
-    //we have connected one header off of the genesis block
-    //now we are going to build two headers off of the genesis block
-    //that should for a reorg
-    val bestHashB = chainHandlerB.flatMap(_.getBestBlockHash)
+      val bIsBestHashF =
+        bestHashB.map(hash => assert(hash == newHeaderB.hashBE))
 
-    val bIsBestHashF = bestHashB.map(hash => assert(hash == newHeaderB.hashBE))
+      val newHeaderC =
+        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
 
-    val newHeaderC =
-      BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+      val newHeaderD = BlockHeaderHelper.buildNextHeader(newHeaderC)
 
-    val newHeaderD = BlockHeaderHelper.buildNextHeader(newHeaderC)
+      val reorgHeaders = Vector(newHeaderC, newHeaderD).map(_.blockHeader)
 
-    val reorgHeaders = Vector(newHeaderC, newHeaderD).map(_.blockHeader)
+      val chainHandlerCD = bIsBestHashF.flatMap { _ =>
+        chainHandlerB.flatMap(_.processHeaders(reorgHeaders))
+      }
 
-    val chainHandlerCD = bIsBestHashF.flatMap { _ =>
-      chainHandlerB.flatMap(_.processHeaders(reorgHeaders))
-    }
+      for {
+        chainHandler <- chainHandlerCD
+        hash <- chainHandler.getBestBlockHash
+      } yield {
+        assert(hash == newHeaderD.hashBE)
+      }
+  }
 
-    for {
-      chainHandler <- chainHandlerCD
-      hash <- chainHandler.getBestBlockHash
-    } yield {
-      assert(hash == newHeaderD.hashBE)
-    }
+  it must "handle a reorg where both chains are at the exact same height when a new block comes in" in {
+    chainHandler: ChainHandler =>
+      val newHeaderB =
+        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+
+      val newHeaderC =
+        BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+
+      //this builds a blockchain that is A -> B
+      val chainHandlerB =
+        chainHandler.processHeader(header = newHeaderB.blockHeader)
+
+      //this means we now have a chain where both B and C are built on top of A
+      //and they are competing with each other. Since we saw B first
+      //our implementation currently favors that as the best hash
+      val chainHandlerC =
+        chainHandlerB.flatMap(_.processHeader(newHeaderC.blockHeader))
+
+      val bestHashB = for {
+        chainHandler <- chainHandlerC
+        bestHash <- chainHandler.getBestBlockHash
+      } yield assert(bestHash == newHeaderB.hashBE)
+
+      //let's generate block D that is built ontop of C
+      val newHeaderD = BlockHeaderHelper.buildNextHeader(newHeaderC)
+
+      val chainHandlerD =
+        chainHandlerC.flatMap(_.processHeader(newHeaderD.blockHeader))
+
+      //now our best hash should be D
+      for {
+        chainHandler <- chainHandlerD
+        bestHashD <- chainHandler.getBestBlockHash
+        _ <- bestHashB
+      } yield assert(bestHashD == newHeaderD.hashBE)
   }
 
   final def processHeaders(
