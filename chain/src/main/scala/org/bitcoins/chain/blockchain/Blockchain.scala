@@ -5,6 +5,7 @@ import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
 
+import scala.collection.{IndexedSeqLike, IterableLike, SeqLike, mutable}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -19,8 +20,25 @@ import scala.concurrent.{ExecutionContext, Future}
   * }}}
   *
   */
-case class Blockchain(headers: Vector[BlockHeaderDb]) extends BitcoinSLogger {
+case class Blockchain(headers: Vector[BlockHeaderDb])
+    extends IndexedSeqLike[BlockHeaderDb, Vector[BlockHeaderDb]]
+    with BitcoinSLogger {
   val tip: BlockHeaderDb = headers.head
+
+  /** @inheritdoc */
+  override def newBuilder: mutable.Builder[
+    BlockHeaderDb,
+    Vector[BlockHeaderDb]] = Vector.newBuilder[BlockHeaderDb]
+
+  /** @inheritdoc */
+  override def seq: IndexedSeq[BlockHeaderDb] = headers
+
+  /** @inheritdoc */
+  override def length: Int = headers.length
+
+  /** @inheritdoc */
+  override def apply(idx: Int): BlockHeaderDb = headers(idx)
+
 }
 
 object Blockchain extends BitcoinSLogger {
