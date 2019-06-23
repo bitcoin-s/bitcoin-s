@@ -52,7 +52,7 @@ case class ChainHandler(
         val createdF = blockHeaderDAO.create(updatedHeader)
         createdF.map { header =>
           logger.debug(
-            s"Connected new header to blockchain, heigh=${header.height} hash=${header.hashBE}")
+            s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE}")
           ChainHandler(blockHeaderDAO, chainConfig)
         }
       case BlockchainUpdate.Failed(_, _, reason) =>

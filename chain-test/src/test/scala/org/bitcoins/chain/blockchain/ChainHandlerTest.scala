@@ -2,7 +2,7 @@ package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDbHelper
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FileUtil
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
@@ -122,6 +122,44 @@ class ChainHandlerTest extends ChainUnitTest {
                        remainingHeaders = blockHeadersToTest,
                        height = ChainUnitTest.FIRST_POW_CHANGE + 1)
       }
+  }
+
+  it must "handle a very basic reorg" in { chainHandler: ChainHandler =>
+    val blockchain = Blockchain.fromHeaders(
+      headers = Vector(ChainUnitTest.genesisHeaderDb)
+    )
+
+    val newHeaderB =
+      BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+
+    //this builds a blockchain that is A -> B
+    val chainHandlerB =
+      chainHandler.processHeader(header = newHeaderB.blockHeader)
+
+    //we have connected one header off of the genesis block
+    //now we are going to build two headers off of the genesis block
+    //that should for a reorg
+    val bestHashB = chainHandlerB.flatMap(_.getBestBlockHash)
+
+    val bIsBestHashF = bestHashB.map(hash => assert(hash == newHeaderB.hashBE))
+
+    val newHeaderC =
+      BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
+
+    val newHeaderD = BlockHeaderHelper.buildNextHeader(newHeaderC)
+
+    val reorgHeaders = Vector(newHeaderC, newHeaderD).map(_.blockHeader)
+
+    val chainHandlerCD = bIsBestHashF.flatMap { _ =>
+      chainHandlerB.flatMap(_.processHeaders(reorgHeaders))
+    }
+
+    for {
+      chainHandler <- chainHandlerCD
+      hash <- chainHandler.getBestBlockHash
+    } yield {
+      assert(hash == newHeaderD.hashBE)
+    }
   }
 
   final def processHeaders(
