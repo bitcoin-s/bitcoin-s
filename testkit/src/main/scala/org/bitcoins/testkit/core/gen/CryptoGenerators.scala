@@ -221,8 +221,15 @@ sealed abstract class CryptoGenerators {
 
   def extKey: Gen[ExtKey] = Gen.oneOf(extPrivateKey, extPublicKey)
 
+  def aesKey128Bit: Gen[AesKey] = Gen.delay(AesKey.get128Bit())
+  def aesKey192Bit: Gen[AesKey] = Gen.delay(AesKey.get192Bit())
+  def aesKey256Bit: Gen[AesKey] = Gen.delay(AesKey.get256Bit())
+
+  def aesKey: Gen[AesKey] =
+    Gen.oneOf(aesKey128Bit, aesKey192Bit, aesKey256Bit)
+
   def aesPassword: Gen[AesPassword] =
-    Gen.alphaStr.suchThat(_.nonEmpty).map(AesPassword(_))
+    Gen.alphaStr.suchThat(_.nonEmpty).map(AesPassword.fromNonEmptyString(_))
 }
 
 object CryptoGenerators extends CryptoGenerators
