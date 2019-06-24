@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
@@ -10,7 +10,7 @@ import org.bitcoins.wallet.models.{
   NativeV0UTXOSpendingInfoDb,
   UTXOSpendingInfoDb
 }
-import org.bitcoins.wallet.util.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 
 class CoinSelectorTest extends BitcoinSWalletTest {
@@ -26,27 +26,27 @@ class CoinSelectorTest extends BitcoinSWalletTest {
   override type FixtureParam = CoinSelectionFixture
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val output = TransactionOutput(Satoshis(Int64(99L)), ScriptPubKey.empty)
+    val output = TransactionOutput(99.sats, ScriptPubKey.empty)
     val feeRate = SatoshisPerByte(CurrencyUnits.zero)
 
     val utxo1 = NativeV0UTXOSpendingInfoDb(
       id = Some(1),
       outPoint = TransactionGenerators.outPoint.sample.get,
-      output = TransactionOutput(Satoshis(Int64(10)), ScriptPubKey.empty),
+      output = TransactionOutput(10.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sample.get
     )
     val utxo2 = NativeV0UTXOSpendingInfoDb(
       id = Some(2),
       outPoint = TransactionGenerators.outPoint.sample.get,
-      output = TransactionOutput(Satoshis(Int64(90)), ScriptPubKey.empty),
+      output = TransactionOutput(90.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sample.get
     )
     val utxo3 = NativeV0UTXOSpendingInfoDb(
       id = Some(3),
       outPoint = TransactionGenerators.outPoint.sample.get,
-      output = TransactionOutput(Satoshis(Int64(20)), ScriptPubKey.empty),
+      output = TransactionOutput(20.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
       scriptWitness = WitnessGenerators.scriptWitness.sample.get
     )
