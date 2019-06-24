@@ -3,7 +3,7 @@ package org.bitcoins.eclair.rpc.json
 import java.util.concurrent.TimeUnit
 
 import org.bitcoins.core.crypto.Sha256Digest
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnInvoiceSignature, PaymentPreimage, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnInvoiceSignature, PaymentId, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
@@ -107,7 +107,7 @@ object JsonReaders {
     Json.reads[ChannelDesc]
   }
 
-  implicit val createInvoiceResultReads: Reads[CreateInvoiceResult] = {
+  implicit val createInvoiceResultReads: Reads[InvoiceResult] = {
     Reads { jsValue =>
       for {
         prefix <- (jsValue \ "prefix").validate[LnHumanReadablePart]
@@ -118,7 +118,7 @@ object JsonReaders {
         paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
         expiry <- (jsValue \ "expiry").validate[Long]
       } yield
-        CreateInvoiceResult(
+        InvoiceResult(
           prefix,
           FiniteDuration(timestamp, TimeUnit.SECONDS),
           nodeId,
@@ -187,7 +187,11 @@ object JsonReaders {
     Json.reads[PaymentRequest]
   }
 
-  implicit val PaymentStatusReads: Reads[PaymentStatus] = Reads { jsValue =>
+  implicit val paymentIdReads: Reads[PaymentId] = Reads { jsValue =>
+    SerializerUtil.processJsString(PaymentId.apply)(jsValue)
+  }
+
+  implicit val paymentStatusReads: Reads[PaymentStatus] = Reads { jsValue =>
     SerializerUtil.processJsString(PaymentStatus.apply)(jsValue)
   }
 

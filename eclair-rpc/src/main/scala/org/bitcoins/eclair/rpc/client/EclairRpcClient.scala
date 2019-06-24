@@ -15,7 +15,7 @@ import org.bitcoins.core.protocol.{Address, NetworkElement}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentId, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -28,7 +28,7 @@ import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
@@ -47,62 +47,44 @@ class EclairRpcClient(val instance: EclairInstance)(
   def getDaemon: EclairInstance = instance
 
   override def allChannels(): Future[Vector[ChannelDesc]] = {
-    eclairCallNew[Vector[ChannelDesc]]("allchannels")
+    eclairCall[Vector[ChannelDesc]]("allchannels")
   }
 
   override def allNodes(): Future[Vector[NodeInfo]] = {
-    eclairCallNew[Vector[NodeInfo]]("allnodes")
+    eclairCall[Vector[NodeInfo]]("allnodes")
   }
 
   override def allUpdates(): Future[Vector[ChannelUpdate]] =
-    eclairCallNew[Vector[ChannelUpdate]]("allupdates")
+    eclairCall[Vector[ChannelUpdate]]("allupdates")
 
   override def allUpdates(nodeId: NodeId): Future[Vector[ChannelUpdate]] =
-    eclairCallNew[Vector[ChannelUpdate]]("allupdates", "nodeId" -> nodeId.toString)
+    eclairCall[Vector[ChannelUpdate]]("allupdates", "nodeId" -> nodeId.toString)
 
   /**
     * @inheritdoc
     */
   override def audit(): Future[AuditResult] =
-    eclairCallNew[AuditResult]("audit")
+    eclairCall[AuditResult]("audit")
 
   /**
     * @inheritdoc
     */
   override def audit(from: Long, to: Long): Future[AuditResult] =
-    eclairCallNew[AuditResult]("audit", "from" -> from.toString, "to" -> to.toString)
+    eclairCall[AuditResult]("audit", "from" -> from.toString, "to" -> to.toString)
 
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
-    eclairCallNew[ChannelResult]("channel", "channelId" -> channelId.hex)
+    eclairCall[ChannelResult]("channel", "channelId" -> channelId.hex)
   }
 
   private def channels(nodeId: Option[NodeId]): Future[Vector[ChannelInfo]] = {
     val params = Seq().flatMap(_ => nodeId.map(id => "nodeId" -> id.toString))
-    eclairCallNew[Vector[ChannelInfo]]("channels", params: _*)
+    eclairCall[Vector[ChannelInfo]]("channels", params: _*)
   }
 
   def channels(): Future[Vector[ChannelInfo]] = channels(nodeId = None)
 
   override def channels(nodeId: NodeId): Future[Vector[ChannelInfo]] =
     channels(Option(nodeId))
-
-  override def checkInvoice(invoice: LnInvoice): Future[PaymentRequest] = {
-    eclairCall[PaymentRequest]("checkinvoice", List(JsString(invoice.toString)))
-  }
-
-  override def checkPayment(
-      invoiceOrHash: Either[LnInvoice, Sha256Digest]): Future[Boolean] = {
-
-    val string = {
-      if (invoiceOrHash.isLeft) {
-        invoiceOrHash.left.get.toString
-      } else {
-        invoiceOrHash.right.get.hex
-      }
-    }
-
-    eclairCall[Boolean]("checkpayment", List(JsString(string)))
-  }
 
   private def close(
       channelId: ChannelId,
@@ -117,7 +99,7 @@ class EclairRpcClient(val instance: EclairInstance)(
         Seq("channelId" -> channelId.hex, "scriptPubKey" -> asmHex)
       }
 
-    eclairCallNew[String]("close", params: _*)
+    eclairCall[String]("close", params: _*)
   }
 
   def close(channelId: ChannelId): Future[String] =
@@ -135,28 +117,28 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def connect(uri: NodeUri): Future[String] = {
-    eclairCallNew[String]("connect", "uri" -> uri.toString)
+    eclairCall[String]("connect", "uri" -> uri.toString)
   }
 
   override def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]] = {
-    eclairCallNew[Vector[NodeId]]("findroutetonode", "nodeId" -> nodeId.toString, "amountMsat" -> amountMsat.toBigDecimal.toString)
+    eclairCall[Vector[NodeId]]("findroutetonode", "nodeId" -> nodeId.toString, "amountMsat" -> amountMsat.toBigDecimal.toString)
   }
 
   override def findRoute(invoice: LnInvoice, amountMsat: Option[MilliSatoshis]): Future[Vector[NodeId]] = {
     val params = Seq(Some("invoice" -> invoice.toString), amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString)).flatten
-    eclairCallNew[Vector[NodeId]]("findroute", params: _*)
+    eclairCall[Vector[NodeId]]("findroute", params: _*)
   }
 
   override def forceClose(channelId: ChannelId): Future[String] = {
-    eclairCallNew[String]("forceclose", "channelId" -> channelId.hex)
+    eclairCall[String]("forceclose", "channelId" -> channelId.hex)
   }
 
   override def forceClose(shortChannelId: ShortChannelId): Future[String] = {
-    eclairCallNew[String]("forceclose", "shortChannelId" -> shortChannelId.toString)
+    eclairCall[String]("forceclose", "shortChannelId" -> shortChannelId.toString)
   }
 
   override def getInfo: Future[GetInfoResult] = {
-    val result = eclairCallNew[GetInfoResult]("getinfo")
+    val result = eclairCall[GetInfoResult]("getinfo")
     result
   }
 
@@ -170,7 +152,7 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   def help: Future[Vector[String]] = {
-    eclairCallNew[Vector[String]]("help")
+    eclairCall[Vector[String]]("help")
   }
 
   override def isConnected(nodeId: NodeId): Future[Boolean] = {
@@ -212,7 +194,7 @@ class EclairRpcClient(val instance: EclairInstance)(
 
     //this is unfortunately returned in this format
     //created channel 30bdf849eb9f72c9b41a09e38a6d83138c2edf332cb116dd7cf0f0dfb66be395
-    val call = eclairCallNew[String]("open", params: _*)
+    val call = eclairCall[String]("open", params: _*)
 
     //let's just return the chanId
     val chanIdF = call.map(_.split(" ").last)
@@ -279,20 +261,40 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def getPeers: Future[Vector[PeerInfo]] = {
-    eclairCallNew[Vector[PeerInfo]]("peers")
+    eclairCall[Vector[PeerInfo]]("peers")
   }
 
 
-  override def createInvoice(description: String, amountMsat: Option[LnCurrencyUnit], expireIn: Option[Long], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice] = {
+  def createInvoice(description: String): Future[LnInvoice] = {
+    createInvoice(description, None, None, None, None)
+  }
+
+  def createInvoice(description: String, amount: LnCurrencyUnit): Future[LnInvoice] = {
+    createInvoice(description, Some(amount), None, None, None)
+  }
+
+  def createInvoice(description: String, amount: LnCurrencyUnit, expireIn: FiniteDuration): Future[LnInvoice] = {
+    createInvoice(description, Some(amount), Some(expireIn), None, None)
+  }
+
+  def createInvoice(description: String, amount: LnCurrencyUnit, paymentPreimage: PaymentPreimage): Future[LnInvoice] = {
+    createInvoice(description, Some(amount), None, None, Some(paymentPreimage))
+  }
+
+  def createInvoice(description: String, amount: LnCurrencyUnit, expireIn: FiniteDuration, paymentPreimage: PaymentPreimage): Future[LnInvoice] = {
+    createInvoice(description, Some(amount), Some(expireIn), None, Some(paymentPreimage))
+  }
+
+  override def createInvoice(description: String, amountMsat: Option[LnCurrencyUnit], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice] = {
     val params = Seq(
       Some("description" -> description),
       amountMsat.map(x => "amountMsat" -> x.toMSat.toBigDecimal.toString),
-      expireIn.map(x => "expireIn" -> x.toString),
+      expireIn.map(x => "expireIn" -> x.toSeconds.toString),
       fallbackAddress.map(x => "fallbackAddress" -> x.toString),
       paymentPreimage.map(x => "paymentPreimage" -> x.hex)
     ).flatten
 
-    val responseF = eclairCallNew[CreateInvoiceResult]("createinvoice", params: _*)
+    val responseF = eclairCall[InvoiceResult]("createinvoice", params: _*)
 
     responseF.flatMap {
       res =>
@@ -300,11 +302,19 @@ class EclairRpcClient(val instance: EclairInstance)(
     }
   }
 
-  override def parseInvoice(invoice: LnInvoice): Future[Unit] = {
-    eclairCallNew[CreateInvoiceResult]("parseinvoice", "invoice" -> invoice.toString).map(_ => ())
+  override def parseInvoice(invoice: LnInvoice): Future[InvoiceResult] = {
+    eclairCall[InvoiceResult]("parseinvoice", "invoice" -> invoice.toString)
   }
 
-  override def payInvoice(invoice: LnInvoice, amountMsat: Option[LnCurrencyUnit], maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[String] = {
+  def payInvoice(invoice: LnInvoice): Future[PaymentId] = {
+    payInvoice(invoice, None, None, None, None)
+  }
+
+  def payInvoice(invoice: LnInvoice, amount: LnCurrencyUnit): Future[PaymentId] = {
+    payInvoice(invoice, Some(amount), None, None, None)
+  }
+
+  override def payInvoice(invoice: LnInvoice, amountMsat: Option[LnCurrencyUnit], maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[PaymentId] = {
     val params = Seq(
       Some("invoice" -> invoice.toString),
       amountMsat.map(x => "amountMsat" -> x.toMSat.toBigDecimal.toString),
@@ -313,156 +323,26 @@ class EclairRpcClient(val instance: EclairInstance)(
       maxFeePct.map(x => "maxFeePct" -> x.toString)
     ).flatten
 
-    eclairCallNew[String]("payinvoice", params: _*)
+    eclairCall[PaymentId]("payinvoice", params: _*)
   }
 
   override def getReceivedInfo(paymentHash: Sha256Digest): Future[ReceivedPaymentResult] = {
-    eclairCallNew[ReceivedPaymentResult]("getreceivedinfo", "paymentHash" -> paymentHash.hex)
+    eclairCall[ReceivedPaymentResult]("getreceivedinfo", "paymentHash" -> paymentHash.hex)
   }
 
   override def getReceivedInfo(invoice: LnInvoice): Future[ReceivedPaymentResult] = {
-    eclairCallNew[ReceivedPaymentResult]("getreceivedinfo", "invoice" -> invoice.toString)
+    eclairCall[ReceivedPaymentResult]("getreceivedinfo", "invoice" -> invoice.toString)
   }
 
   override def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]] = {
-    eclairCallNew[Vector[PaymentResult]]("getsentinfo", "paymentHash" -> paymentHash.hex)
+    eclairCall[Vector[PaymentResult]]("getsentinfo", "paymentHash" -> paymentHash.hex)
   }
 
-  override def getSentInfo(id: String): Future[Vector[PaymentResult]] = {
-    eclairCallNew[Vector[PaymentResult]]("getsentinfo", "id" -> id)
+  override def getSentInfo(id: PaymentId): Future[Vector[PaymentResult]] = {
+    eclairCall[Vector[PaymentResult]]("getsentinfo", "id" -> id.toString)
   }
 
-
-  /** A way to generate a [[org.bitcoins.core.protocol.ln.LnInvoice LnInvoice]]
-    * with eclair.
-    *
-    * @param amountMsat the amount to be encoded in the invoice
-    * @param description meta information about the invoice
-    * @param expirySeconds when the invoice expires
-    * @return
-    */
-  override def receive(
-      amountMsat: Option[LnCurrencyUnit],
-      description: Option[String],
-      expirySeconds: Option[Long]): Future[LnInvoice] = {
-    val msat = amountMsat.map(_.toMSat)
-
-    val params = {
-      if (amountMsat.isEmpty) {
-        List(JsString(description.getOrElse("")))
-      } else {
-        val amt = JsNumber(msat.get.toBigDecimal)
-        if (expirySeconds.isEmpty) {
-          List(amt, JsString(description.getOrElse("")))
-        } else {
-          List(amt,
-               JsString(description.getOrElse("")),
-               JsNumber(expirySeconds.get))
-        }
-      }
-    }
-
-    val serializedF = eclairCall[String]("receive", params)
-
-    serializedF.flatMap { str =>
-      val invoiceTry = LnInvoice.fromString(str)
-      invoiceTry match {
-        case Success(i) =>
-          //register a monitor for when the payment is received
-          registerPaymentMonitor(i)
-
-          Future.successful(i)
-        case Failure(err) =>
-          Future.failed(err)
-      }
-    }
-  }
-
-  /**
-    * Pings eclair every second to see if a invoice has been paid
-    * If the invoice has bene paid, we publish a
-    * [[org.bitcoins.eclair.rpc.json.PaymentSucceeded PaymentSucceeded]]
-    * event to the [[akka.actor.ActorSystem ActorSystem]]'s
-    * [[akka.event.EventStream ActorSystem.eventStream]]
-    *
-    * If your application is interested in listening for payments,
-    * you need to subscribe to the even stream and listen for a
-    * [[org.bitcoins.eclair.rpc.json.PaymentSucceeded PaymentSucceeded]]
-    * case class. You also need to check the
-    * payment hash is the hash you expected
-    */
-  private def registerPaymentMonitor(invoice: LnInvoice)(
-      implicit system: ActorSystem): Unit = {
-
-    val p: Promise[Unit] = Promise[Unit]()
-
-    val runnable = new Runnable() {
-
-      override def run(): Unit = {
-        val isPaidF = checkPayment(Left(invoice))
-
-        //register callback that publishes a payment to our actor system's
-        //event stream,
-        isPaidF.map { isPaid: Boolean =>
-          if (!isPaid) {
-            //do nothing since the invoice has not been paid yet
-            ()
-          } else {
-            //invoice has been paid, let's publish to event stream
-            //so subscribers so the even stream can see that a payment
-            //was received
-            //we need to create a `PaymentSucceeded`
-//            val ps = PaymentSucceeded(amountMsat = invoice.amount.get.toMSat,
-//                                      paymentHash =
-//                                        invoice.lnTags.paymentHash.hash,
-//                                      paymentPreimage = "",
-//                                      route = JsArray.empty)
-//            system.eventStream.publish(ps)
-
-            //complete the promise so the runnable will be canceled
-            p.success(())
-
-            ()
-          }
-        }
-
-        ()
-      }
-    }
-
-    val cancellable = system.scheduler.schedule(1.seconds, 1.seconds, runnable)
-
-    p.future.map(_ => cancellable.cancel())
-
-    ()
-  }
-
-  def receive(): Future[LnInvoice] =
-    receive(amountMsat = None, description = None, expirySeconds = None)
-
-  def receive(description: String): Future[LnInvoice] =
-    receive(amountMsat = None, Some(description), expirySeconds = None)
-
-  override def receive(
-      amountMsat: LnCurrencyUnit,
-      description: String): Future[LnInvoice] =
-    receive(Some(amountMsat), Some(description), expirySeconds = None)
-
-  def receive(
-      amountMsat: LnCurrencyUnit,
-      description: String,
-      expirySeconds: Long): Future[LnInvoice] =
-    receive(Some(amountMsat), Some(description), Some(expirySeconds))
-
-  def receive(amountMsat: LnCurrencyUnit): Future[LnInvoice] =
-    receive(Some(amountMsat), description = None, expirySeconds = None)
-
-  def receive(
-      amountMsat: LnCurrencyUnit,
-      expirySeconds: Long): Future[LnInvoice] =
-    receive(Some(amountMsat), description = None, Some(expirySeconds))
-
-  override def sendToNode(nodeId: NodeId, amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[String] = {
+  override def sendToNode(nodeId: NodeId, amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[PaymentId] = {
     val params = Seq(
       "nodeId" -> nodeId.toString,
       "amountMsat" -> amountMsat.toMSat.toBigDecimal.toString,
@@ -472,44 +352,22 @@ class EclairRpcClient(val instance: EclairInstance)(
       maxFeePct.map(x => "maxFeePct" -> x.toString)
     ).flatten
 
-    eclairCallNew[String]("sendtonode", params: _*)
+    eclairCall[PaymentId]("sendtonode", params: _*)
   }
 
-  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[String] = {
-    eclairCallNew[String]("sendtoroute",
+  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId] = {
+    eclairCall[PaymentId]("sendtoroute",
       "route" -> route.mkString(","),
       "amountMsat" -> amountMsat.toMSat.toBigDecimal.toString,
       "paymentHash" -> paymentHash.hex,
       "finalCltvExpiry" -> finalCltvExpiry.toString)
   }
 
-  private def send(
-      invoice: LnInvoice,
-      amountMsat: Option[LnCurrencyUnit]): Future[PaymentResult] = {
-
-    val params = {
-      if (amountMsat.isEmpty) {
-        List(JsString(invoice.toString))
-      } else {
-        List(JsString(invoice.toString), JsNumber(amountMsat.get.toMSat.toLong))
-      }
-    }
-
-    eclairCall[PaymentResult]("send", params)
-  }
-
-  def send(invoice: LnInvoice): Future[PaymentResult] = send(invoice, None)
-
-  def send(
-      invoice: LnInvoice,
-      amountMsat: LnCurrencyUnit): Future[PaymentResult] =
-    send(invoice, Some(amountMsat))
-
   override def updateRelayFee(
       channelId: ChannelId,
       feeBaseMsat: MilliSatoshis,
       feeProportionalMillionths: Long): Future[Unit] = {
-    eclairCallNew[Unit]("updaterelayfee",
+    eclairCall[Unit]("updaterelayfee",
       "channelId" -> channelId.hex,
       "feeBaseMsat" -> feeBaseMsat.toLong.toString,
       "feeProportionalMillionths" -> feeProportionalMillionths.toString)
@@ -519,54 +377,25 @@ class EclairRpcClient(val instance: EclairInstance)(
       shortChannelId: ShortChannelId,
       feeBaseMsat: MilliSatoshis,
       feeProportionalMillionths: Long): Future[Unit] = {
-    eclairCallNew[Unit]("updaterelayfee",
+    eclairCall[Unit]("updaterelayfee",
       "shortChannelId" -> shortChannelId.toHumanReadableString,
       "feeBaseMsat" -> feeBaseMsat.toLong.toString,
       "feeProportionalMillionths" -> feeProportionalMillionths.toString)
   }
 
-  // TODO: channelstats, audit, networkfees?
-  // TODO: Add types
-
-  private def eclairCallNew[T](command: String, parameters: (String, String)*)(
+  private def eclairCall[T](command: String, parameters: (String, String)*)(
       implicit
       reader: Reads[T]): Future[T] = {
-    val request = buildRequestNew(getDaemon, command, parameters: _*)
+    val request = buildRequest(getDaemon, command, parameters: _*)
 
     logger.trace(s"eclair rpc call ${request}")
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
     payloadF.map { payload =>
-//      try {
         val validated: JsResult[T] = payload.validate[T]
         val parsed: T = parseResult(validated, payload, command)
         parsed
-//      } catch {
-//        case e: Throwable =>
-//          println(command)
-//          println(payload)
-//          e.printStackTrace()
-//          throw e
-//      }
-    }
-  }
-
-  private def eclairCall[T](
-      command: String,
-      parameters: List[JsValue] = List.empty)(
-      implicit
-      reader: Reads[T]): Future[T] = {
-    val request = buildRequest(getDaemon, command, JsArray(parameters))
-
-    logger.trace(s"eclair rpc call ${request}")
-    val responseF = sendRequest(request)
-
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-    payloadF.map { payload =>
-      val validated: JsResult[T] = (payload \ resultKey).validate[T]
-      val parsed: T = parseResult(validated, payload, command)
-      parsed
     }
   }
 
@@ -612,7 +441,7 @@ class EclairRpcClient(val instance: EclairInstance)(
     respF
   }
 
-  private def buildRequestNew(
+  private def buildRequest(
       instance: EclairInstance,
       methodName: String,
       params: (String, String)*): HttpRequest = {
@@ -624,29 +453,6 @@ class EclairRpcClient(val instance: EclairInstance)(
     HttpRequest(method = HttpMethods.POST,
                 uri,
                 entity = FormData(params: _*).toEntity)
-      .addCredentials(
-        HttpCredentials.createBasicHttpCredentials(username, password))
-  }
-
-  private def buildRequest(
-      instance: EclairInstance,
-      methodName: String,
-      params: JsArray): HttpRequest = {
-    val uuid = UUID.randomUUID().toString
-
-    val obj: JsObject = JsObject(
-      Map("method" -> JsString(methodName),
-          "params" -> params,
-          "id" -> JsString(uuid)))
-
-    val uri = instance.rpcUri.toString
-    // Eclair doesn't use a username
-    val username = ""
-    val password = instance.authCredentials.password
-    HttpRequest(method = HttpMethods.POST,
-                uri,
-                entity =
-                  HttpEntity(ContentTypes.`application/json`, obj.toString))
       .addCredentials(
         HttpCredentials.createBasicHttpCredentials(username, password))
   }

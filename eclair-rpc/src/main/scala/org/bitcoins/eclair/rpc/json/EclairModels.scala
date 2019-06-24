@@ -246,7 +246,7 @@ case class ChannelResult(
 
 // ChannelResult ends here
 
-case class CreateInvoiceResult(
+case class InvoiceResult(
   prefix: LnHumanReadablePart,
   timestamp: FiniteDuration,
   nodeId: NodeId,

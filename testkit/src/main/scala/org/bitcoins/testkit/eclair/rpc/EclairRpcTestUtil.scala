@@ -7,20 +7,17 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.channel.{
-  ChannelId,
-  ChannelState,
-  FundedChannelId
-}
+import org.bitcoins.core.protocol.ln.PaymentId
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.json.PaymentResult
+import org.bitcoins.eclair.rpc.json.{PaymentResult, PaymentStatus}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
-import org.bitcoins.rpc.config.{BitcoindInstance}
+import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
@@ -257,6 +254,49 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
                                        duration = 1.seconds)
   }
 
+  def awaitUntilPaymentSucceeded(
+                                            client: EclairRpcClient,
+                                            paymentId: PaymentId,
+                                            )(implicit system: ActorSystem): Future[Unit] = {
+    awaitUntilPaymentStatus(client, paymentId, PaymentStatus.SUCCEEDED)
+  }
+
+  def awaitUntilPaymentFailed(
+                                            client: EclairRpcClient,
+                                            paymentId: PaymentId,
+                                          )(implicit system: ActorSystem): Future[Unit] = {
+    awaitUntilPaymentStatus(client, paymentId, PaymentStatus.FAILED)
+  }
+
+  def awaitUntilPaymentPending(
+                                            client: EclairRpcClient,
+                                            paymentId: PaymentId,
+                                          )(implicit system: ActorSystem): Future[Unit] = {
+    awaitUntilPaymentStatus(client, paymentId, PaymentStatus.PENDING)
+  }
+
+  private def awaitUntilPaymentStatus(
+                                      client: EclairRpcClient,
+                                      paymentId: PaymentId,
+                                      state: PaymentStatus)(implicit system: ActorSystem): Future[Unit] = {
+    logger.debug(s"Awaiting payment ${paymentId} to enter ${state} state")
+    def isState(): Future[Boolean] = {
+
+      val sentInfoF = client.getSentInfo(paymentId)
+      sentInfoF.map { chan =>
+        if (!chan.exists(_.status == state)) {
+          logger.trace(
+            s"Payment ${paymentId} has not entered ${state} yet. Currently in ${chan.map(_.status).mkString(",")}")
+          false
+        } else {
+          true
+        }
+      }(system.dispatcher)
+    }
+
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(), duration = 1.seconds)
+  }
+
   private def createNodeLink(
       bitcoindRpcClient: Option[BitcoindRpcClient],
       channelAmount: MilliSatoshis)(
@@ -464,13 +504,13 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       c1: EclairRpcClient,
       c2: EclairRpcClient,
       numPayments: Int = 5)(
-      implicit ec: ExecutionContext): Future[Vector[PaymentResult]] = {
+      implicit ec: ExecutionContext): Future[Vector[PaymentId]] = {
     val payments = (1 to numPayments)
       .map(MilliSatoshis(_))
       .map(
         sats =>
-          c1.receive(s"this is a note for $sats")
-            .flatMap(invoice => c2.send(invoice, sats.toLnCurrencyUnit))
+          c1.createInvoice(s"this is a note for $sats")
+            .flatMap(invoice => c2.payInvoice(invoice, sats.toLnCurrencyUnit))
       )
 
     val resultF = Future.sequence(payments).map(_.toVector)
