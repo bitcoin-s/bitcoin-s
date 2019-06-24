@@ -174,11 +174,7 @@ object BlockFilter {
     val keyBytes: ByteVector = blockHash.bytes.take(16)
     val key: SipHashKey = SipHashKey(keyBytes)
 
-    GolombFilter(key,
-                 BlockFilter.M,
-                 BlockFilter.P,
-                 n,
-                 filterBytes.toBitVector)
+    GolombFilter(key, BlockFilter.M, BlockFilter.P, n, filterBytes.toBitVector)
   }
 
   def fromHex(hex: String, blockHash: DoubleSha256Digest): GolombFilter = {
