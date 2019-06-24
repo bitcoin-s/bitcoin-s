@@ -132,17 +132,14 @@ class AesCryptTest extends BitcoinSUnitTest {
     assert(decryptedText == plainText)
   }
 
-  /** To replicate:
+  /** REPL.it: https://repl.it/@torkelrogstad/aes-test
+    * To replicate:
     * const CryptoJS = require("crypto-js")
     * const text = "The quick brown fox jumps over the lazy dog. 👻 👻";
     *
-    * const keyBuffer = new Buffer("12345678123456781234567812345678", "hex");
-    * const keyBase64 = keyBuffer.toString("base64")
-    * const key = CryptJS.enc.Base64.parse(keyBase64)
+    * const key = CryptoJS.enc.Hex.parse("12345678123456781234567812345678")
     *
-    * const ivBuffer = new Buffer("87654321876543218765432187654321", "hex");
-    * const ivBase64 = ivBuffer.toString("base64")
-    * const iv = CryptoJS.enc.Base64.parse(ivBase64)
+    * const iv = CryptoJS.enc.Hex.parse("87654321876543218765432187654321")
     *
     * const encrypted = CryptoJS.AES.encrypt(text, key, {
     *   mode: CryptoJS.mode.CFB,
