@@ -201,7 +201,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     scriptConstants.toList
   }
 
-  private sealed case class ParsingHelper(
+  sealed private case class ParsingHelper(
       tail: ByteVector,
       accum: List[ScriptToken])
 

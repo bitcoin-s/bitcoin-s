@@ -51,7 +51,7 @@ object GCS {
       key: SipHashKey): GolombFilter = {
     buildGolombFilter(data, key, BlockFilter.P, BlockFilter.M)
   }
-  
+
   private def sipHash(item: ByteVector, key: SipHashKey): UInt64 = {
     // https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects
     val sipHashCParam = 2
