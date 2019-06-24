@@ -2,7 +2,7 @@ package org.bitcoins.core.gcs
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{
@@ -28,7 +28,8 @@ case class GolombFilter(
     m: UInt64,
     p: UInt8,
     n: CompactSizeUInt,
-    encodedData: BitVector) {
+    encodedData: BitVector)
+    extends NetworkElement {
   lazy val decodedHashes: Vector[UInt64] = GCS.golombDecodeSet(encodedData, p)
 
   /** The hash of this serialized filter */
@@ -46,11 +47,9 @@ case class GolombFilter(
     FilterHeader(filterHash = this.hash, prevHeaderHash = prevHeaderHash)
   }
 
-  def bytes: ByteVector = {
+  override def bytes: ByteVector = {
     n.bytes ++ encodedData.bytes
   }
-
-  def hex: String = bytes.toHex
 
   // TODO: Offer alternative that stops decoding when it finds out if data is there
   def matchesHash(hash: UInt64): Boolean = {
