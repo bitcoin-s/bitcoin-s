@@ -159,11 +159,6 @@ abstract class DbCommonsColumnMappers {
     MappedColumnType
       .base[ScriptType, String](_.toString, ScriptType.fromStringExn)
 
-  implicit val aesSaltMapper: BaseColumnType[AesSalt] =
-    MappedColumnType.base[AesSalt, String](
-      _.value.toHex,
-      hex => AesSalt(ByteVector.fromValidHex(hex)))
-
 }
 
 object DbCommonsColumnMappers extends DbCommonsColumnMappers

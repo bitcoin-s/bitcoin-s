@@ -18,8 +18,10 @@ import scala.io.Source
   */
 sealed abstract class MnemonicCode {
   require(
-    MnemonicCode.VALID_LENGTHS.contains(words.length),
-    s"Number of words must be one of the following: ${MnemonicCode.VALID_LENGTHS.mkString(", ")} "
+    MnemonicCode.VALID_LENGTHS.contains(words.length), {
+      val validLengths = MnemonicCode.VALID_LENGTHS.mkString(", ")
+      s"Number of words must be one of the following: $validLengths, got: ${words.length} "
+    }
   )
 
   require({

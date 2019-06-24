@@ -28,12 +28,7 @@ sealed abstract class Wallet
     */
   override def lock(): LockedWalletApi = {
     logger.debug(s"Locking wallet")
-    val encryptedT = EncryptedMnemonicHelper.encrypt(mnemonicCode, passphrase)
-    val encrypted = encryptedT match {
-      case Failure(exception) =>
-        throw new RuntimeException(s"Could not encrypt mnemonic: $exception")
-      case Success(value) => value
-    }
+    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonicCode, passphrase)
 
     WalletStorage.writeMnemonicToDisk(encrypted)
     logger.debug("Locked wallet")
@@ -120,7 +115,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
     WalletImpl(mnemonicCode)
 
   // todo figure out how to handle password part of wallet
-  val badPassphrase = AesPassword("changeMe")
+  val badPassphrase = AesPassword.fromNonEmptyString("changeMe")
 
   // todo fix signature
   override def initializeWithEntropy(entropy: BitVector)(
@@ -143,22 +138,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
       }
 
     val encryptedMnemonicE: Either[InitializeWalletError, EncryptedMnemonic] =
-      mnemonicE.flatMap { mnemonic =>
-        val encryptedT = EncryptedMnemonicHelper
-          .encrypt(mnemonic, badPassphrase)
-
-        val encryptedE: Either[Throwable, EncryptedMnemonic] =
-          encryptedT match {
-            case Failure(exception) => Left(exception)
-            case Success(value)     => Right(value)
-          }
-
-        encryptedE.left
-          .map { err =>
-            logger.error(s"Encryption error when encrypting mnemonic: $err")
-            InitializeWalletError.EncryptionError(err)
-          }
-      }
+      mnemonicE.map { EncryptedMnemonicHelper.encrypt(_, badPassphrase) }
 
     val biasedFinalEither: Either[InitializeWalletError, Future[WalletImpl]] =
       for {
