@@ -8,6 +8,7 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.util.Factory
 
 /**
   * Represents a encrypted cipher text with it's accompanying
@@ -69,11 +70,11 @@ object AesEncryptedData {
 /** Represents a salt used to derive a AES key from
   * a human-readable passphrase.
   */
-final case class AesSalt private (
+final case class AesSalt(
     bytes: ByteVector
 ) extends AnyVal
 
-object AesSalt {
+object AesSalt extends Factory[AesSalt] {
 
   def fromBytes(bytes: ByteVector): AesSalt = AesSalt(bytes)
 
