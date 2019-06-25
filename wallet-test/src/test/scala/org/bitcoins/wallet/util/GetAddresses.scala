@@ -37,7 +37,7 @@ object GetAddresses extends App {
     val accountPath = BIP32Path(
       BIP32Node(constant.constant, hardened = true),
       BIP32Node(coin.toInt, hardened = true),
-      BIP32Node(accountIndex, hardened = true),
+      BIP32Node(accountIndex, hardened = true)
     )
 
     val pathType =
@@ -83,7 +83,8 @@ object GetAddresses extends App {
           "chain" -> chainType.toString,
           "addressIndex" -> addressIndex,
           "address" -> address
-        ))
+        )
+      )
       json
     }
 
@@ -94,7 +95,8 @@ object GetAddresses extends App {
         "account" -> accountIndex,
         "xpub" -> xpub,
         "addresses" -> addresses
-      ))
+      )
+    )
     json
   }
 
