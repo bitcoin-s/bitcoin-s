@@ -98,6 +98,48 @@ sealed abstract class Wallet
     }
   }
 
+  override def createNewAccount(): Future[WalletApi] =
+    createNewAccount(DEFAULT_HD_COIN.purpose)
+
+  // todo: check if there's addresses in the most recent
+  // account before creating new
+  override def createNewAccount(purpose: HDPurpose): Future[Wallet] = {
+
+    accountDAO
+      .findAll()
+      .map(_.filter(_.hdAccount.purpose == purpose))
+      .map(_.sortBy(_.hdAccount.index))
+      // we want to the most recently created account,
+      // to know what the index of our new account
+      // should be.
+      .map(_.lastOption)
+      .flatMap { mostRecentOpt =>
+        val accountIndex = mostRecentOpt match {
+          case None          => 0 // no accounts present in wallet
+          case Some(account) => account.hdAccount.index + 1
+        }
+        logger.info(
+          s"Creating new account at index $accountIndex for purpose $purpose")
+        val newAccount = HDAccount(DEFAULT_HD_COIN, accountIndex)
+        val xpub = {
+          val xpriv = xprivForPurpose(newAccount.purpose)
+          xpriv.deriveChildPubKey(newAccount) match {
+            case Failure(exception) =>
+              // this won't happen, because we're deriving from a privkey
+              // this should really be changed in the method signature
+              logger.error(s"Unexpected error when deriving xpub: $exception")
+              throw exception
+            case Success(xpub) => xpub
+          }
+        }
+        val newAccountDb = AccountDb(xpub, newAccount)
+        val accountCreationF = accountDAO.create(newAccountDb)
+        accountCreationF.map(created =>
+          logger.debug(s"Created new account ${created.hdAccount}"))
+        accountCreationF
+      }
+      .map(_ => this)
+  }
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
