@@ -59,13 +59,14 @@ class AesCryptTest extends BitcoinSUnitTest {
     case class TestVector(
         plainText: ByteVector,
         key: AesKey,
-        cipherText: AesEncryptedData)
+        cipherText: AesEncryptedData
+    )
 
     def runTest(testVector: TestVector): Assertion = {
       val TestVector(plainText, key, cipherText) =
         testVector
 
-      val Right(encrypted) =
+      val encrypted =
         AesCrypt.encryptWithIV(plainText, cipherText.iv, key)
       assert(encrypted == cipherText)
 
@@ -88,9 +89,10 @@ class AesCryptTest extends BitcoinSUnitTest {
     val second = TestVector(
       plainText = hex"3a4f73044d035017d91883ebfc113da7",
       key = getKey(hex"5ce91f97ed28fd5d1172e23eb17b1baa"),
-      cipherText =
-        AesEncryptedData(cipherText = hex"f0ff04edc644388edb872237ac558367",
-                         iv = getIV(hex"3f91d29f81d48174b25a3d0143eb833c"))
+      cipherText = AesEncryptedData(
+        cipherText = hex"f0ff04edc644388edb872237ac558367",
+        iv = getIV(hex"3f91d29f81d48174b25a3d0143eb833c")
+      )
     )
 
     runTest(second)
@@ -118,7 +120,7 @@ class AesCryptTest extends BitcoinSUnitTest {
     val iv = getIV(hex"455014871CD34F8DCFD7C1E387987BFF")
     val expectedCipher = ByteVector.fromValidBase64("oE8HErg1lg==")
 
-    val Right(encrypted) = AesCrypt.encryptWithIV(plainbytes, iv, key)
+    val encrypted = AesCrypt.encryptWithIV(plainbytes, iv, key)
 
     // for some reason we end up with different cipher texts
     // decrypting works though...
@@ -154,14 +156,15 @@ class AesCryptTest extends BitcoinSUnitTest {
     val key = getKey(hex"12345678123456781234567812345678")
     val iv = getIV(hex"87654321876543218765432187654321")
     val expectedCipher = ByteVector.fromValidBase64(
-      "KKbLXDQUy7ajmuIJm7ZR7ugaRubqGl1JwG+x5C451JXIFofnselHVTy/u8u0Or9nV2d7Kjy0")
+      "KKbLXDQUy7ajmuIJm7ZR7ugaRubqGl1JwG+x5C451JXIFofnselHVTy/u8u0Or9nV2d7Kjy0"
+    )
 
     val plaintext = "The quick brown fox jumps over the lazy dog. 👻 👻"
     val Right(plainbytes) = ByteVector.encodeUtf8(plaintext)
 
     // decrypt our own encrypted data
     {
-      val Right(encrypted) = AesCrypt.encryptWithIV(plainbytes, iv, key)
+      val encrypted = AesCrypt.encryptWithIV(plainbytes, iv, key)
 
       assert(encrypted.iv == iv)
       assert(encrypted.cipherText == expectedCipher)
@@ -274,7 +277,7 @@ class AesCryptTest extends BitcoinSUnitTest {
 
     // test encrypting and decrypting ourselves
     {
-      val Right(encrypted) = AesCrypt.encryptWithIV(plainbytes, iv, key)
+      val encrypted = AesCrypt.encryptWithIV(plainbytes, iv, key)
       // assert(encrypted.cipherText == expectedCipher)
       assert(encrypted.iv == iv)
 
@@ -301,7 +304,7 @@ class AesCryptTest extends BitcoinSUnitTest {
   it must "have encryption and decryption symmetry" in {
     forAll(NumberGenerator.bytevector, CryptoGenerators.aesKey) {
       (bytes, key) =>
-        val Right(encrypted) = AesCrypt.encrypt(bytes, key)
+        val encrypted = AesCrypt.encrypt(bytes, key)
         AesCrypt.decrypt(encrypted, key) match {
           case Right(decrypted) => assert(decrypted == bytes)
           case Left(exc)        => fail(exc)
@@ -309,9 +312,16 @@ class AesCryptTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "have toBase64/fromBase64 symmetry" in {
+    forAll(CryptoGenerators.aesEncryptedData) { enc =>
+      val base64 = enc.toBase64
+      assert(AesEncryptedData.fromValidBase64(base64) == enc)
+    }
+  }
+
   it must "fail to decrypt with the wrong key" in {
     forAll(NumberGenerator.bytevector.suchThat(_.nonEmpty)) { bytes =>
-      val encrypted = AesCrypt.encryptExc(bytes, aesKey)
+      val encrypted = AesCrypt.encrypt(bytes, aesKey)
       val decryptedE = AesCrypt.decrypt(encrypted, badAesKey)
       decryptedE match {
         case Right(decrypted) =>

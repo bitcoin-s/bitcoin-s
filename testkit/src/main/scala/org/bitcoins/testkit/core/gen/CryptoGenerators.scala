@@ -230,6 +230,14 @@ sealed abstract class CryptoGenerators {
 
   def aesPassword: Gen[AesPassword] =
     Gen.alphaStr.suchThat(_.nonEmpty).map(AesPassword.fromNonEmptyString(_))
+
+  def aesIV: Gen[AesIV] = Gen.delay(AesIV.random)
+
+  def aesEncryptedData: Gen[AesEncryptedData] =
+    for {
+      cipher <- NumberGenerator.bytevector.suchThat(_.nonEmpty)
+      iv <- aesIV
+    } yield AesEncryptedData(cipherText = cipher, iv)
 }
 
 object CryptoGenerators extends CryptoGenerators

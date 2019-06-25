@@ -14,7 +14,57 @@ import org.bitcoins.core.protocol.NetworkElement
   * initialization vector (IV). Both the cipher text and the IV
   * is needed to decrypt the cipher text.
   */
-final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV)
+final case class AesEncryptedData(cipherText: ByteVector, iv: AesIV) {
+
+  /**
+    * We serialize IV and ciphertext by prepending the IV
+    * to the ciphertext, and converting it to base64.
+    * Since the IV is of static length, deserializing is a matter
+    * of taking the first bytes as IV, and the rest as
+    * ciphertext.
+    */
+  lazy val toBase64: String = {
+    val bytes = iv.bytes ++ cipherText
+    bytes.toBase64
+  }
+}
+
+object AesEncryptedData {
+
+  /**
+    * We serialize IV and ciphertext by prepending the IV
+    * to the ciphertext, and converting it to base64.
+    * Since the IV is of static length, deserializing is a matter
+    * of taking the first bytes as IV, and the rest as
+    * ciphertext.
+    */
+  def fromBase64(base64: String): Option[AesEncryptedData] = {
+    ByteVector.fromBase64(base64) match {
+      case None                                        => None
+      case Some(bytes) if bytes.length <= AesIV.length => None
+      case Some(bytes) =>
+        val (ivBytes, cipherText) = bytes.splitAt(AesIV.length)
+        val iv = AesIV.fromValidBytes(ivBytes)
+        Some(AesEncryptedData(cipherText, iv))
+    }
+  }
+
+  /**
+    * We serialize IV and ciphertext by prepending the IV
+    * to the ciphertext, and converting it to base64.
+    * Since the IV is of static length, deserializing is a matter
+    * of taking the first bytes as IV, and the rest as
+    * ciphertext.
+    */
+  def fromValidBase64(base64: String): AesEncryptedData =
+    fromBase64(base64) match {
+      case None =>
+        throw new IllegalArgumentException(
+          s"$base64 was not valid as AesEncryptedData!"
+        )
+      case Some(enc) => enc
+    }
+}
 
 /** Represents a salt used to derive a AES key from
   * a human-readable passphrase.
@@ -185,13 +235,18 @@ object AesKey {
   */
 final case class AesIV private (private val underlying: ByteVector)
     extends NetworkElement {
-  require(underlying.length == 16,
-          s"AES salt must be 16 bytes long! Got: ${underlying.length}")
+  require(
+    underlying.length == 16,
+    s"AES salt must be 16 bytes long! Got: ${underlying.length}"
+  )
 
   val bytes: ByteVector = underlying
 }
 
 object AesIV {
+
+  /** Length of IV in bytes (for CFB mode, other modes have different lengths) */
+  private[crypto] val length = 16
 
   // this is here to remove apply constructor
   private[AesIV] def apply(bytes: ByteVector): AesIV = new AesIV(bytes)
@@ -201,7 +256,7 @@ object AesIV {
     * (in CFB mode, which is what we use here).
     */
   def fromBytes(bytes: ByteVector): Option[AesIV] =
-    if (bytes.length == 16) Some(AesIV(bytes)) else None
+    if (bytes.length == AesIV.length) Some(AesIV(bytes)) else None
 
   /** Constructs an AES IV from the given bytes. Throws if the given bytes are invalid */
   def fromValidBytes(bytes: ByteVector): AesIV =
@@ -212,7 +267,7 @@ object AesIV {
   /** Generates a random IV */
   def random: AesIV = {
     val random = new SecureRandom()
-    val bytes = new Array[Byte](16)
+    val bytes = new Array[Byte](AesIV.length)
     random.nextBytes(bytes)
     AesIV(ByteVector(bytes))
   }
