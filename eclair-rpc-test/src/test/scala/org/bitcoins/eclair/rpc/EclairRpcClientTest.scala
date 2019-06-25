@@ -197,7 +197,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       info2 <- c2.getInfo
       info3 <- c3.getInfo
       info4 <- c4.getInfo
-      invoice <- c.createInvoice("test", None, None, None, None)
+      invoice <- c.createInvoice("test")
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt.toString)
@@ -213,7 +213,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       info <- c.getInfo
-      invoice <- c.createInvoice("test", Some(12345.msats.toLnCurrencyUnit), None, None, None)
+      invoice <- c.createInvoice(description = "test", amount = 12345.msats.toLnCurrencyUnit)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
@@ -229,7 +229,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       info <- c.getInfo
-      invoice <- c.createInvoice("test", Some(12345.msats.toLnCurrencyUnit), Some(FiniteDuration(67890, TimeUnit.SECONDS)), None, None)
+      invoice <- c.createInvoice(description = "test", amount = 12345.msats.toLnCurrencyUnit, expireIn = FiniteDuration(67890, TimeUnit.SECONDS))
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
@@ -247,7 +247,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       info <- c.getInfo
-      invoice <- c.createInvoice("test", Some(12345.msats.toLnCurrencyUnit), Some(FiniteDuration(67890, TimeUnit.SECONDS)), Some(testBitcoinAddress), None)
+      invoice <- c.createInvoice(
+        description = "test",
+        amountMsat = Some(12345.msats.toLnCurrencyUnit),
+        expireIn = Some(FiniteDuration(67890, TimeUnit.SECONDS)),
+        fallbackAddress = Some(testBitcoinAddress),
+        paymentPreimage = None)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
@@ -265,7 +270,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       info <- c.getInfo
-      invoice <- c.createInvoice("test", Some(12345.msats.toLnCurrencyUnit), Some(FiniteDuration(67890, TimeUnit.SECONDS)), Some(testBitcoinAddress), Some(testPaymentPreimage))
+      invoice <- c.createInvoice(
+        description = "test",
+        amountMsat = Some(12345.msats.toLnCurrencyUnit),
+        expireIn = Some(FiniteDuration(67890, TimeUnit.SECONDS)),
+        fallbackAddress = Some(testBitcoinAddress),
+        paymentPreimage = Some(testPaymentPreimage))
     } yield {
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
       assert(invoice.network == LnBitcoinRegTest)
@@ -529,7 +539,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
             assert(succeededPayment.amountMsat == amt)
             assert(succeededPayment.preimage.nonEmpty)
 
-            println(channel)
             assert(channel.state == ChannelState.CLOSING)
           }
         }
@@ -823,16 +832,16 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "get channels" in {
-    clientF.flatMap(_.channels().flatMap(_ => succeed))
+    clientF.flatMap(_.channels().flatMap(channels => assert(channels.nonEmpty)))
   }
 
   it should "get all channels" in {
-    clientF.flatMap(_.allChannels().flatMap(_ => succeed))
+    clientF.flatMap(_.allChannels().flatMap(channels => assert(channels.nonEmpty)))
   }
 
   it should "get all channel updates" in {
-    clientF.flatMap(_.allUpdates().flatMap { _ =>
-      succeed
+    clientF.flatMap(_.allUpdates().flatMap { updates =>
+      assert(updates.nonEmpty)
     })
   }
 
@@ -840,14 +849,14 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       client <- clientF
       nodeInfo <- client.getInfo
-      _ <- client.allUpdates(nodeInfo.nodeId)
+      updates <- client.allUpdates(nodeInfo.nodeId)
     } yield {
-      succeed
+      assert(updates.nonEmpty)
     }
   }
 
   it should "get all nodes" in {
-    clientF.flatMap(_.allNodes().flatMap(_ => succeed))
+    clientF.flatMap(_.allNodes().flatMap(nodes => assert(nodes.nonEmpty)))
   }
 
   it should "get a route to a node ID" in {
@@ -859,7 +868,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         .recover {
           case err: RuntimeException
             if err.getMessage.contains("route not found") =>
-            println(err)
             false
         }
     }
@@ -928,7 +936,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       c <- clientF
       channels <- c.channels()
       res <- c.forceClose(channels.head.channelId)
-    } yield assert(res == "ok")
+    } yield succeed
   }
 
   private def hasConnection(

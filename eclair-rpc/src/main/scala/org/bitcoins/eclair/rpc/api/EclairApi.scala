@@ -56,11 +56,13 @@ trait EclairApi {
 
   def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]]
 
-  def findRoute(invoice: LnInvoice, amountMsat: Option[MilliSatoshis]): Future[Vector[NodeId]]
+  def findRoute(invoice: LnInvoice): Future[Vector[NodeId]]
 
-  def forceClose(channelId: ChannelId): Future[String]
+  def findRoute(invoice: LnInvoice, amountMsat: MilliSatoshis): Future[Vector[NodeId]]
 
-  def forceClose(shortChannelId: ShortChannelId): Future[String]
+  def forceClose(channelId: ChannelId): Future[Unit]
+
+  def forceClose(shortChannelId: ShortChannelId): Future[Unit]
 
   def getInfo: Future[GetInfoResult]
 

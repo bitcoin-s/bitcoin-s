@@ -124,17 +124,25 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[Vector[NodeId]]("findroutetonode", "nodeId" -> nodeId.toString, "amountMsat" -> amountMsat.toBigDecimal.toString)
   }
 
-  override def findRoute(invoice: LnInvoice, amountMsat: Option[MilliSatoshis]): Future[Vector[NodeId]] = {
+  override def findRoute(invoice: LnInvoice): Future[Vector[NodeId]] = {
+    findRoute(invoice, None)
+  }
+
+  override def findRoute(invoice: LnInvoice, amount: MilliSatoshis): Future[Vector[NodeId]] = {
+    findRoute(invoice, Some(amount))
+  }
+
+  def findRoute(invoice: LnInvoice, amountMsat: Option[MilliSatoshis]): Future[Vector[NodeId]] = {
     val params = Seq(Some("invoice" -> invoice.toString), amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString)).flatten
     eclairCall[Vector[NodeId]]("findroute", params: _*)
   }
 
-  override def forceClose(channelId: ChannelId): Future[String] = {
-    eclairCall[String]("forceclose", "channelId" -> channelId.hex)
+  override def forceClose(channelId: ChannelId): Future[Unit] = {
+    eclairCall[String]("forceclose", "channelId" -> channelId.hex).map(_ => ())
   }
 
-  override def forceClose(shortChannelId: ShortChannelId): Future[String] = {
-    eclairCall[String]("forceclose", "shortChannelId" -> shortChannelId.toString)
+  override def forceClose(shortChannelId: ShortChannelId): Future[Unit] = {
+    eclairCall[String]("forceclose", "shortChannelId" -> shortChannelId.toString).map(_ => ())
   }
 
   override def getInfo: Future[GetInfoResult] = {

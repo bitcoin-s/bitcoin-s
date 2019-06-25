@@ -124,7 +124,7 @@ object JsonReaders {
           nodeId,
           serialized,
           description,
-          paymentHash: Sha256Digest,
+          paymentHash,
           FiniteDuration(expiry, TimeUnit.SECONDS))
     }
   }
@@ -227,30 +227,6 @@ object JsonReaders {
         amountMsat = amountMsat,
         receivedAt = FiniteDuration(receivedAt, TimeUnit.MILLISECONDS))
   }
-
-//  implicit val paymentSucceededReads: Reads[PaymentSucceeded] = {
-//    Json.reads[PaymentSucceeded]
-//  }
-//
-//  implicit val paymentFailedReads: Reads[PaymentFailed] = {
-//    Json.reads[PaymentFailed]
-//  }
-//
-//  implicit val paymentResultReads: Reads[PaymentResult] = {
-//    Reads[PaymentResult] { jsValue =>
-//      val sendResult = jsValue.validate[PaymentSucceeded]
-//      sendResult match {
-//        case p: JsSuccess[PaymentSucceeded] => p
-//        case err1: JsError =>
-//          val pFailedResult = jsValue.validate[PaymentFailed]
-//          pFailedResult match {
-//            case s: JsSuccess[PaymentFailed] => s
-//            case err2: JsError =>
-//              JsError.merge(err1, err2)
-//          }
-//      }
-//    }
-//  }
 
   implicit val feeProportionalMillionthsReads: Reads[
     FeeProportionalMillionths] = Reads { js =>
