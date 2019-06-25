@@ -1,0 +1,399 @@
+// the content here was generated from this mnemonic: stage boring net gather radar radio arrest eye ask risk girl country
+[
+  {
+    "xpub": "xpub6D36zpm3tLPy3dBCpiScEpmmgsivFBcHxX5oXmPBW982BmLiEkjBEDdswxFUoeXpp272QuSpNKZ3f2TdEMkAHyCz1M7P3gFkYJJVEsM66SE",
+    "coin": "Bitcoin",
+    "account": 0,
+    "pathType": "legacy",
+    "addresses": [
+      {
+        "path": "m/44'/0'/0'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "1G1amKQmmsYT7GjRZS8ATBoYFuYQr3f3Kh"
+      },
+      {
+        "path": "m/44'/0'/0'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "1CDaNirLJWHxxT2NT2JDhwYQHVMhQ8gSht"
+      },
+      {
+        "path": "m/44'/0'/0'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "1E33jxV1xT5AQf19kQJJtFGb6roJyqBpgB"
+      },
+      {
+        "path": "m/44'/0'/0'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "1ifTATKPcALmrpkFnJYDMBB7ebmqKNFU3"
+      },
+      {
+        "path": "m/44'/0'/0'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "1A6Dd4XR39r2xcoGahrmGz5uMCQ17QzRCc"
+      },
+      {
+        "path": "m/44'/0'/0'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "1GdP2HfBsrgYv9vrQyjZdvSPSpAxevVc9L"
+      }
+    ]
+  },
+  {
+    "xpub": "xpub6D36zpm3tLPy6iLv781yHuCGs26Lqkf6pUfK9HZbJXZ8y3iGNodq1ULjdR6qxgsbooxmogteLntjx4AFZPogLwJ7bv3yYAebdx599CByRCz",
+    "coin": "Bitcoin",
+    "account": 1,
+    "pathType": "legacy",
+    "addresses": [
+      {
+        "path": "m/44'/0'/1'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "1GJU8neesqmnqVmeumD437V6mA5UCwQnDi"
+      },
+      {
+        "path": "m/44'/0'/1'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "1G571d8djxUU1pV1zDJVwZX346GsQxrWvY"
+      },
+      {
+        "path": "m/44'/0'/1'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "1LMcqjZMaVUDgYfssKTt1S3bECw8sUiyUH"
+      },
+      {
+        "path": "m/44'/0'/1'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "1HxSpE3SqafLJJyFB287dQZeggPnyS4qZn"
+      },
+      {
+        "path": "m/44'/0'/1'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "18WepEHrUPXBJcqppM4xcX3yv67BJBV34W"
+      },
+      {
+        "path": "m/44'/0'/1'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "1As8dgw5BuNMUuSXEgQDx3CdGv45mKX3fB"
+      }
+    ]
+  },
+  {
+    "xpub": "xpub6D36zpm3tLPy88RHj2VLg13qTejH9QAMcsRNuJBXx5fsvAVWJFma6HVT4QR8QCUH6TKqa45KwqRRRR7aSCwWd7t53nPz1GNqBg4KxKTM5po",
+    "coin": "Bitcoin",
+    "account": 2,
+    "pathType": "legacy",
+    "addresses": [
+      {
+        "path": "m/44'/0'/2'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "1Di2FwGqvR4hi4RaonDNLLokDV32LZn7QE"
+      },
+      {
+        "path": "m/44'/0'/2'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "18FWkjsm1FDwFJFtJCLiM7c6fioTPL1DhP"
+      },
+      {
+        "path": "m/44'/0'/2'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "1DhbEDmu61Noa7k2nNVudDAM2JLtbXthc7"
+      },
+      {
+        "path": "m/44'/0'/2'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "1FJvUondBDde5r5Dr9E6aMUPNHFhrETBGs"
+      },
+      {
+        "path": "m/44'/0'/2'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "1Ew26qaDcoBbsFTYnZghB44B4LydmM6EAs"
+      },
+      {
+        "path": "m/44'/0'/2'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "16dRQGjd8bBVrXDYUyKFYWv6j1hSRK3jw"
+      }
+    ]
+  },
+  {
+    "xpub": "zpub6qXZXyMKeDrNXGGaMFqy6VJghvXY4MVyxdoAxja7MBywVLwcvMJa5EUN28sXDn8RmshqMT7DQhzZZ2ituUnPz2bi1ZL2BFb7LzgQPqaHhSP",
+    "coin": "Bitcoin",
+    "account": 0,
+    "pathType": "segwit",
+    "addresses": [
+      {
+        "path": "m/84'/0'/0'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "bc1q2fy4xu2sthp0rn05ru72suwypjeus6ckqha5nn"
+      },
+      {
+        "path": "m/84'/0'/0'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "bc1qckswz80t5y46eduanr3t3t75k7fxg73vj4u44u"
+      },
+      {
+        "path": "m/84'/0'/0'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "bc1qr2v342xx7nfuqkux68z8w38cwhp0dz6kdz6707"
+      },
+      {
+        "path": "m/84'/0'/0'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "bc1qeh4w6gcalmkhr6kwukl204dge9y6rx7eescnym"
+      },
+      {
+        "path": "m/84'/0'/0'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "bc1qz4hc79d2nmhs7evmuxg7lagt4qndpxkg4zhfn5"
+      },
+      {
+        "path": "m/84'/0'/0'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "bc1qwnnplpjgec7yjjh4ckfpm37y29n93edkzumh3x"
+      }
+    ]
+  },
+  {
+    "xpub": "zpub6qXZXyMKeDrNYd8T9kN7tx27MD5LjLWf8jz9cpAYDuNY84KriyeyKF42nMsFxmPz5VwxZZks8nKNyTsLYtPJWEqYvRpskbCQgS2NSxhzQas",
+    "coin": "Bitcoin",
+    "account": 1,
+    "pathType": "segwit",
+    "addresses": [
+      {
+        "path": "m/84'/0'/1'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "bc1qglsnna835p65y0rw77nytgjeq60lfp8tpq87ax"
+      },
+      {
+        "path": "m/84'/0'/1'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "bc1qe4mln2pde6afge9ku3t4rehqd6aa3sasrmmumx"
+      },
+      {
+        "path": "m/84'/0'/1'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "bc1q30k83vrg6v2kkkywa7h5ug5d8lyuh6ps2hmkvd"
+      },
+      {
+        "path": "m/84'/0'/1'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "bc1qp4s3wefys5gv9zfk3kqyc2cln8wdw493g54mds"
+      },
+      {
+        "path": "m/84'/0'/1'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "bc1qdjjfpe2x3d396tdyhuktkjmnd08fznfzswy6vj"
+      },
+      {
+        "path": "m/84'/0'/1'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "bc1qsd2uwgfkf3sa00mz4s9ye8lenc0d3wr6sy334j"
+      }
+    ]
+  },
+  {
+    "xpub": "zpub6qXZXyMKeDrNbhzS9E7rFzgACFHYbrCRt4H7nQfHVxYcPY7Ycpv7aAqAMchJC9B2BU6MJoo24t5j5tE9pC36YyVXX9Yab997P7LqnMyouHz",
+    "coin": "Bitcoin",
+    "account": 2,
+    "pathType": "segwit",
+    "addresses": [
+      {
+        "path": "m/84'/0'/2'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "bc1qa924lwqvd8grfskq50m0pz8n38e8a6j396ju79"
+      },
+      {
+        "path": "m/84'/0'/2'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "bc1qkfh4s4la84j37kwrzfhzzk7ssmhmrvu4m8jz0y"
+      },
+      {
+        "path": "m/84'/0'/2'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "bc1qhs2r9n5x0007ja9zy26rer6dx23uypp6gfzzgk"
+      },
+      {
+        "path": "m/84'/0'/2'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "bc1q667d6n68q865afg7xa7arft4fn8arnp05wdhq5"
+      },
+      {
+        "path": "m/84'/0'/2'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "bc1q6ml85j0cfmzdt75h9fevjdj0afuu8398cmm0de"
+      },
+      {
+        "path": "m/84'/0'/2'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "bc1qa9vytfte4wqj924p3rv8tnxa3mpzxftdftcasw"
+      }
+    ]
+  },
+  {
+    "xpub": "ypub6XXo8YrYWEi6GvfDaXzjzooA7mGdpjAd4bFXrGoixH42GBkCNQUspsRzbL7EfrBokgp76ixB8zv61rd1S9XwU1AtSyy6Nsfo2VS1KLPHgHy",
+    "coin": "Bitcoin",
+    "account": 0,
+    "pathType": "p2sh-segwit",
+    "addresses": [
+      {
+        "path": "m/49'/0'/0'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "3D5QZsM6ChmANAZiqhYDinMd15eSBcHdUy"
+      },
+      {
+        "path": "m/49'/0'/0'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "3FPUdLjhSiPQ6cvsBasmXPppYkp7mMJCKj"
+      },
+      {
+        "path": "m/49'/0'/0'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "3HisVck33jvwdidJRwictPWFmpQxYtXCEW"
+      },
+      {
+        "path": "m/49'/0'/0'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "3DRtzN2DG7NQVd16XHeiAtdwxissYnZoiM"
+      },
+      {
+        "path": "m/49'/0'/0'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "33wUvLyenVSj3G1chYj7SQ29YgUaTTXGXv"
+      },
+      {
+        "path": "m/49'/0'/0'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "3DDrvx2FGrnJo4AfTmjWp69bLYs8b42Geq"
+      }
+    ]
+  },
+  {
+    "xpub": "ypub6XXo8YrYWEi6LJHpM8SvfQ5JPXum2grFp9WNTZP6isDihG9apqXE3TtrFKv29D8WzzuMcyRFSizRRKGPrDRJtrVDq9Qjxz5RhGnqsjJrSv6",
+    "coin": "Bitcoin",
+    "account": 1,
+    "pathType": "p2sh-segwit",
+    "addresses": [
+      {
+        "path": "m/49'/0'/1'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "3NBCdmG7M9ygPjMVu4SEVvjS84mkXVJrB1"
+      },
+      {
+        "path": "m/49'/0'/1'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "34igwpwzCGioP5w3XpbQu371Pcnn1buyMy"
+      },
+      {
+        "path": "m/49'/0'/1'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "332sSJULbyUxS3iAP8T3HaD4weBvvcBdqX"
+      },
+      {
+        "path": "m/49'/0'/1'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "39nAgGFEkrmjfZvXePTj2DPtvd72d29oXz"
+      },
+      {
+        "path": "m/49'/0'/1'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "3JwL1TpeukwGFTtxYGhzwhRsARdCoV8mVm"
+      },
+      {
+        "path": "m/49'/0'/1'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "32CUGYBfMZ9fmsHzpTADQUuU6mJeKzrezm"
+      }
+    ]
+  },
+  {
+    "xpub": "ypub6XXo8YrYWEi6P35ZKSLvfrfPRq9J7QC77TTJWZA2JdgPen9Srt9gAzWRtWGzLTPrKy1fd9fDKref5dorMUiXzaJCrwCVBDYkjRMLevE8ym6",
+    "coin": "Bitcoin",
+    "account": 2,
+    "pathType": "p2sh-segwit",
+    "addresses": [
+      {
+        "path": "m/49'/0'/2'/1/0",
+        "chain": "Change",
+        "addressIndex": 0,
+        "address": "3233QX7LkdHwVcAbL9DtcLX6aWUoBF6ucw"
+      },
+      {
+        "path": "m/49'/0'/2'/1/1",
+        "chain": "Change",
+        "addressIndex": 1,
+        "address": "3BgoEtBf2j7QtiHsRYwfHVxEHE85f2Gjw5"
+      },
+      {
+        "path": "m/49'/0'/2'/1/2",
+        "chain": "Change",
+        "addressIndex": 2,
+        "address": "3HgnuyHiqjLsBtwTpFXX7rgZRHDuE7qmS1"
+      },
+      {
+        "path": "m/49'/0'/2'/0/0",
+        "chain": "External",
+        "addressIndex": 0,
+        "address": "3HBcdc89nCTJiqbj48nY8eGmNqbjc6GJbT"
+      },
+      {
+        "path": "m/49'/0'/2'/0/1",
+        "chain": "External",
+        "addressIndex": 1,
+        "address": "3JbAdrcBjxPmzevSVCHJpx9Joaqr1t2KAn"
+      },
+      {
+        "path": "m/49'/0'/2'/0/2",
+        "chain": "External",
+        "addressIndex": 2,
+        "address": "32jnXCPvXXMfmKtruBBD48CnQLQfVbfK6U"
+      }
+    ]
+  }
+]
