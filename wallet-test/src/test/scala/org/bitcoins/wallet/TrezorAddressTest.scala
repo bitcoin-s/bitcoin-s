@@ -43,22 +43,29 @@ import scala.concurrent.ExecutionContext
 class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
   val mnemonic = MnemonicCode.fromWords(
-    Vector("stage",
-           "boring",
-           "net",
-           "gather",
-           "radar",
-           "radio",
-           "arrest",
-           "eye",
-           "ask",
-           "risk",
-           "girl",
-           "country"))
+    Vector(
+      "stage",
+      "boring",
+      "net",
+      "gather",
+      "radar",
+      "radio",
+      "arrest",
+      "eye",
+      "ask",
+      "risk",
+      "girl",
+      "country"
+    )
+  )
 
   lazy val json: JsValue = {
+    val stream = {
+      val classLoader = getClass().getClassLoader()
+      classLoader.getResourceAsStream("trezor-addresses.json")
+    }
     val rawText = Source
-      .fromResource("trezor-addresses.json")
+      .fromInputStream(stream)
       .getLines
       .drop(1) // first line is a comment
       .mkString
@@ -279,7 +286,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         nestedAssertions.flatten
       }
 
-      assert(assertions.forall(_.isInstanceOf[succeed.type]))
+      assert(assertions.forall(_.isCompleted))
     }
   }
 
