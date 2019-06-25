@@ -11,8 +11,8 @@ class GolombFilterTest extends BitcoinSUnitTest {
   behavior of "GolombFilter"
 
   it must "match encoded data for arbitrary GCS parameters" in {
-    def genKey: Gen[ByteVector] =
-      Gen.listOfN(16, NumberGenerator.byte).map(ByteVector(_))
+    def genKey: Gen[SipHashKey] =
+      Gen.listOfN(16, NumberGenerator.byte).map(ByteVector(_)).map(SipHashKey(_))
 
     def genPMRand: Gen[(UInt8, UInt64, UInt64)] = NumberGenerator.genP.flatMap {
       p =>
@@ -48,8 +48,8 @@ class GolombFilterTest extends BitcoinSUnitTest {
   }
 
   it must "match arbitrary encoded data for bip 158 GCS parameters" in {
-    val genKey: Gen[ByteVector] =
-      Gen.listOfN(16, NumberGenerator.byte).map(ByteVector(_))
+    val genKey: Gen[SipHashKey] =
+      Gen.listOfN(16, NumberGenerator.byte).map(ByteVector(_)).map(SipHashKey(_))
 
     val genData: Gen[Vector[ByteVector]] = Gen.chooseNum(1, 10000).flatMap {
       size =>

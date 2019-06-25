@@ -21,7 +21,7 @@ object GCS {
     */
   def buildGCS(
       data: Vector[ByteVector],
-      key: ByteVector,
+      key: SipHashKey,
       p: UInt8,
       m: UInt64): BitVector = {
     val hashedValues = hashedSetConstruct(data, key, m)
@@ -34,7 +34,7 @@ object GCS {
     */
   def buildGolombFilter(
       data: Vector[ByteVector],
-      key: ByteVector,
+      key: SipHashKey,
       p: UInt8,
       m: UInt64): GolombFilter = {
     val encodedData = buildGCS(data, key, p, m)
@@ -48,18 +48,18 @@ object GCS {
     */
   def buildBasicBlockFilter(
       data: Vector[ByteVector],
-      key: ByteVector): GolombFilter = {
+      key: SipHashKey): GolombFilter = {
     buildGolombFilter(data, key, BlockFilter.P, BlockFilter.M)
   }
 
-  private def sipHash(item: ByteVector, key: ByteVector): UInt64 = {
+  private def sipHash(item: ByteVector, key: SipHashKey): UInt64 = {
     // https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects
     val sipHashCParam = 2
     val sipHashDParam = 4
 
     val sh = new SipHash(sipHashCParam, sipHashDParam)
 
-    val keyParam = new KeyParameter(key.toArray)
+    val keyParam = new KeyParameter(key.bytes.toArray)
 
     sh.init(keyParam)
 
@@ -76,7 +76,7 @@ object GCS {
     * Hashes the item to the range [0, f)
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#hashing-data-objects]]
     */
-  def hashToRange(item: ByteVector, f: UInt64, key: ByteVector): UInt64 = {
+  def hashToRange(item: ByteVector, f: UInt64, key: SipHashKey): UInt64 = {
     val hash = sipHash(item, key)
 
     val bigInt = (hash.toBigInt * f.toBigInt) >> 64
@@ -90,7 +90,7 @@ object GCS {
     */
   def hashedSetConstruct(
       rawItems: Vector[ByteVector],
-      key: ByteVector,
+      key: SipHashKey,
       m: UInt64): Vector[UInt64] = {
     val n = rawItems.length
     val f = m * n
