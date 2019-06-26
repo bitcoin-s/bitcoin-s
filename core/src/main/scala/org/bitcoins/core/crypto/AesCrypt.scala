@@ -76,7 +76,7 @@ final case class AesSalt(
 
 object AesSalt extends Factory[AesSalt] {
 
-  def fromBytes(bytes: ByteVector): AesSalt = AesSalt(bytes)
+  override def fromBytes(bytes: ByteVector): AesSalt = new AesSalt(bytes)
 
   /**
     * Generates a random AES salt
