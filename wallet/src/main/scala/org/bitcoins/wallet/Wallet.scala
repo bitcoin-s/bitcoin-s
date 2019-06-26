@@ -50,17 +50,14 @@ sealed abstract class Wallet
       change <- getNewChangeAddress(fromAccount)
       walletUtxos <- listUtxos()
       txBuilder <- {
-        val destinations: Seq[TransactionOutput] = List(
+        val destinations = Vector(
           TransactionOutput(amount, address.scriptPubKey))
 
-        // currencly just grabs one utxos, throws if can't find big enough
-        // todo: implement coin selection
-        val utxos: List[BitcoinUTXOSpendingInfo] =
-          List(
-            walletUtxos
-              .find(_.value >= amount)
-              .get
-              .toUTXOSpendingInfo(fromAccount, seed))
+        // currencly just grabs the biggest utxos until it finds enough
+        val utxos: Vector[BitcoinUTXOSpendingInfo] =
+          CoinSelector
+            .accumulateLargest(walletUtxos, destinations, feeRate)
+            .map(_.toUTXOSpendingInfo(fromAccount, seed))
 
         logger.info({
           val utxosStr = utxos
