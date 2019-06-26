@@ -40,7 +40,7 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
   /** Sums up the value of all incoming
     * TXs in the wallet, filtered by the given predicate */
   // TODO account for outgoing TXs
-  private def sumOfIncomingGiven(
+  private def filterThenSum(
       predicate: IncomingWalletTXO => Boolean): Future[CurrencyUnit] = {
     for (utxos <- incomingTxoDAO.findAllWithSpendingInfo())
       yield
@@ -53,11 +53,11 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
   // TODO account for outgoing TXs
   override def getBalance(): Future[CurrencyUnit] =
-    sumOfIncomingGiven(_.confirmations > 0)
+    filterThenSum(_.confirmations > 0)
 
   // TODO account for outgoing TXs
   override def getUnconfirmedBalance(): Future[CurrencyUnit] =
-    sumOfIncomingGiven(_.confirmations == 0)
+    filterThenSum(_.confirmations == 0)
 
   /** The default HD coin */
   private[wallet] lazy val DEFAULT_HD_COIN: HDCoin = {
