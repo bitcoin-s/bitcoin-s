@@ -934,7 +934,7 @@ object BitcoinTxBuilder {
     def loop(utxos: Seq[UTXOSpendingInfo], accum: UTXOMap): UTXOMap =
       utxos match {
         case Nil => accum
-        case h :: t =>
+        case h +: t =>
           val u = BitcoinUTXOSpendingInfo(outPoint = h.outPoint,
                                           output = h.output,
                                           signers = h.signers,
