@@ -7,20 +7,23 @@ import scala.concurrent.Future
 import org.scalatest.compatible.Assertion
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import scala.annotation.tailrec
 
 class ProcessTransactionTest extends BitcoinSWalletTest {
-  override type FixtureParam = WalletWithBitcoind
+  override type FixtureParam = UnlockedWalletApi
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNewWalletAndBitcoind(test)
+    withNewWallet(test)
   }
 
   behavior of "Wallet.processTransaction"
 
   /** Verifies that executing the given action doesn't change wallet state */
-  private def checkUtxosAndBalance(
-      wallet: UnlockedWalletApi,
-      bitcoind: BitcoindRpcClient)(action: => Future[_]): Future[Assertion] =
+  private def checkUtxosAndBalance(wallet: UnlockedWalletApi)(
+      action: => Future[_]): Future[Assertion] =
     for {
       oldUtxos <- wallet.listUtxos()
       oldUnconfirmed <- wallet.getUnconfirmedBalance()
@@ -36,49 +39,56 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       assert(oldUtxos == newUtxos)
     }
 
-  it must "not change state when processing the same transaction twice" in {
-    walletAndBitcoind =>
-      val WalletWithBitcoind(wallet, bitcoind) = walletAndBitcoind
+  /** Gets a TX which pays to the given SPK */
+  private def getTxFor(spk: ScriptPubKey): Transaction =
+    TransactionGenerators
+      .transactionTo(spk)
+      .sample
+      .getOrElse(getTxFor(spk))
 
+  private def getUnrelatedTx(): Transaction =
+    TransactionGenerators.transaction.sample.getOrElse(getUnrelatedTx())
+
+  it must "not change state when processing the same transaction twice" in {
+    wallet =>
       for {
         address <- wallet.getNewAddress()
-        tx <- bitcoind
-          .sendToAddress(address, 1.bitcoin)
-          .flatMap(bitcoind.getRawTransactionRaw(_))
+        tx = getTxFor(address.scriptPubKey)
+        _ = logger.info(s"tx: $tx")
 
         _ <- wallet.processTransaction(tx, confirmations = 0)
         oldBalance <- wallet.getBalance()
         oldUnconfirmed <- wallet.getUnconfirmedBalance()
 
         // repeating the action should not make a difference
-        _ <- checkUtxosAndBalance(wallet, bitcoind) {
+        _ <- checkUtxosAndBalance(wallet) {
           wallet.processTransaction(tx, confirmations = 0)
         }
 
         _ <- wallet.processTransaction(tx, confirmations = 3)
         newBalance <- wallet.getBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
+        utxosPostAdd <- wallet.listUtxos()
 
         // repeating the action should not make a difference
-        _ <- checkUtxosAndBalance(wallet, bitcoind) {
+        _ <- checkUtxosAndBalance(wallet) {
           wallet.processTransaction(tx, confirmations = 3)
         }
       } yield {
+        val ourOutputs =
+          tx.outputs.filter(_.scriptPubKey == address.scriptPubKey)
+
+        assert(utxosPostAdd.length == ourOutputs.length)
         assert(newBalance != oldBalance)
         assert(newUnconfirmed != oldUnconfirmed)
       }
   }
 
   it must "not change state when processing an unrelated transaction" in {
-    walletAndBitcoind =>
-      val WalletWithBitcoind(wallet, bitcoind) = walletAndBitcoind
-
+    wallet =>
+      val unrelated = getUnrelatedTx()
       for {
-        unrelated <- bitcoind.getNewAddress
-          .flatMap(bitcoind.sendToAddress(_, 1.bitcoin))
-          .flatMap(bitcoind.getRawTransactionRaw(_))
-
-        _ <- checkUtxosAndBalance(wallet, bitcoind) {
+        _ <- checkUtxosAndBalance(wallet) {
           wallet.processTransaction(unrelated, confirmations = 4)
         }
 

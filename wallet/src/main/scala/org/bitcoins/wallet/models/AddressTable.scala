@@ -16,7 +16,6 @@ import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0.P2WPKHWitnessSPKV0Impl
 
 sealed trait AddressDb {
   protected type PathType <: HDPath

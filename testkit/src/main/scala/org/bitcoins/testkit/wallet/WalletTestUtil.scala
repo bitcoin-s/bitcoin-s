@@ -2,6 +2,7 @@ package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
@@ -17,11 +18,16 @@ import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import scala.concurrent.Future
-import org.bitcoins.wallet.models.IncomingTransaction
 import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.wallet.models.AddressDbHelper
 import org.bitcoins.testkit.fixtures.WalletDAOs
 import scala.concurrent.ExecutionContext
+import org.bitcoins.wallet.models.IncomingWalletTXO
+import org.bitcoins.wallet.models.LegacySpendingInfo
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.wallet.models.SegwitV0SpendingInfo
+import org.bitcoins.wallet.models.SpendingInfoDb
 
 object WalletTestUtil {
 
@@ -75,15 +81,40 @@ object WalletTestUtil {
 
   lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub.key)
 
+  lazy val sampleSegwitUTXO: SegwitV0SpendingInfo = {
+    val outpoint =
+      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
+    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
+    val scriptWitness = WalletTestUtil.sampleScriptWitness
+    val privkeyPath = WalletTestUtil.sampleSegwitPath
+    SegwitV0SpendingInfo(outPoint = outpoint,
+                         output = output,
+                         privKeyPath = privkeyPath,
+                         scriptWitness = scriptWitness)
+  }
+
+  lazy val sampleLegacyUTXO: LegacySpendingInfo = {
+    val outpoint =
+      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
+    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
+    val privKeyPath = WalletTestUtil.sampleLegacyPath
+    LegacySpendingInfo(outPoint = outpoint,
+                       output = output,
+                       privKeyPath = privKeyPath)
+  }
+
   /**
-    * Inserts a incoming TX, and returns it with the address it was sent to
+    * Inserts a incoming TXO, and returns it with the address it was sent to
     *
     * This method also does some asserts on the result, to make sure what
     * we're writing and reading matches up
     */
-  def insertIncomingTx(daos: WalletDAOs)(implicit ec: ExecutionContext): Future[
-    (IncomingTransaction, AddressDb)] = {
-    val WalletDAOs(accountDAO, addressDAO, txDAO, _, _) = daos
+  def insertIncomingTxo(daos: WalletDAOs, utxo: SpendingInfoDb)(
+      implicit ec: ExecutionContext): Future[(IncomingWalletTXO, AddressDb)] = {
+
+    require(utxo.id.isDefined)
+
+    val WalletDAOs(accountDAO, addressDAO, txoDAO, _, utxoDAO) = daos
 
     /** Get a TX with outputs */
     def getTx: Transaction =
@@ -106,30 +137,31 @@ object WalletTestUtil {
     }
 
     val tx = getTx
-    val txDb = IncomingTransaction(tx,
-                                   confirmations = 3,
-                                   scriptPubKey = address.scriptPubKey,
-                                   voutIndex = 0)
+    val txoDb = IncomingWalletTXO(confirmations = 3,
+                                  txid = tx.txIdBE,
+                                  spent = false,
+                                  scriptPubKey = address.scriptPubKey,
+                                  spendingInfoID = utxo.id.get)
     for {
       _ <- accountDAO.create(account)
       _ <- addressDAO.create(address)
-      createdTx <- txDAO.create(txDb)
-      txAndAddr <- txDAO.withAddress(createdTx.transaction)
+      _ <- utxoDAO.create(utxo)
+      createdTxo <- txoDAO.create(txoDb)
+      txAndAddrs <- txoDAO.withAddress(createdTxo.txid)
     } yield
-      txAndAddr match {
-        case None =>
+      txAndAddrs match {
+        case Vector() =>
           throw new org.scalatest.exceptions.TestFailedException(
             s"Couldn't read back TX with address from DB!",
             0)
-        case Some((foundTx, foundAddr)) =>
-          assert(foundTx.confirmations == txDb.confirmations)
-          assert(foundTx.scriptPubKey == txDb.scriptPubKey)
-          assert(foundTx.transaction == txDb.transaction)
+        case ((foundTxo, foundAddr)) +: _ =>
+          assert(foundTxo.confirmations == txoDb.confirmations)
+          assert(foundTxo.scriptPubKey == txoDb.scriptPubKey)
+          assert(foundTxo.txid == txoDb.txid)
 
           assert(foundAddr == address)
 
-          (foundTx, foundAddr)
+          (foundTxo, foundAddr)
       }
-
   }
 }
