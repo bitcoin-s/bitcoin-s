@@ -41,7 +41,9 @@ object AesEncryptedData {
     */
   def fromBase64(base64: String): Option[AesEncryptedData] = {
     ByteVector.fromBase64(base64) match {
-      case None                                        => None
+      case None => None
+      // we got passed valid base64, but it was too short
+      // to be a proper encoding of AesEncryptedDatt
       case Some(bytes) if bytes.length <= AesIV.length => None
       case Some(bytes) =>
         val (ivBytes, cipherText) = bytes.splitAt(AesIV.length)
@@ -241,7 +243,7 @@ final case class AesIV private (private val underlying: ByteVector)
     s"AES salt must be 16 bytes long! Got: ${underlying.length}"
   )
 
-  val bytes: ByteVector = underlying
+  override val bytes: ByteVector = underlying
 }
 
 object AesIV {

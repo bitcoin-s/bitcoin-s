@@ -254,11 +254,12 @@ class AesCryptTest extends BitcoinSUnitTest {
     // test encrypting and decrypting ourselves
     {
       val encrypted = AesCrypt.encryptWithIV(plainbytes, iv, key)
+      // see comment below on pycrypto padding
       // assert(encrypted.cipherText == expectedCipher)
       assert(encrypted.iv == iv)
 
       val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
-      assertPaddedEqual(decrypted, plainbytes)
+      assert(decrypted == plainbytes)
 
       val Right(decryptedText) = decrypted.decodeUtf8
       assert(decryptedText == plainText)
@@ -269,6 +270,14 @@ class AesCryptTest extends BitcoinSUnitTest {
       val encrypted = AesEncryptedData(expectedCipher, iv)
 
       val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
+
+      /** The AES implementation in pycrypto refuses to work with
+        * data that's not padded to the block size (although this
+        * should be possible with AES CFB encryption...). On
+        * the pycrypto side we therefore have to add some
+        * padding, which leads to trailing zero bytes in the
+        * plaintext
+        */
       assertPaddedEqual(decrypted, plainbytes)
 
       val Right(decryptedText) = decrypted.decodeUtf8
