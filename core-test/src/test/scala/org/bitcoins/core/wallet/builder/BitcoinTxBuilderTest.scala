@@ -2,7 +2,7 @@ package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency._
 import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script._
@@ -12,12 +12,56 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.scalatest.{AsyncFlatSpec, MustMatchers}
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.config.RegTest
 
 class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
   val tc = TransactionConstants
   val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sample.get
-  "TxBuilder" must "failed to build a transaction that mints money out of thin air" in {
+
+  behavior of "BitcoinTxBuilder"
+
+  // We had a matcherror when passing in a vector of UTXOs, 
+  // because a match statement on a Seq relied on the :: 
+  // deconstructor. You would assume the compiler could
+  // warn you about that...
+  it must "work with a list and a vector of UTXOs" in {
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
+    val creditingTx = BaseTransaction(version = tc.validLockVersion,
+                                      inputs = Nil,
+                                      outputs = Seq(creditingOutput),
+                                      lockTime = tc.lockTime)
+    val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
+                                       output = creditingOutput,
+                                       signers = Seq(privKey),
+                                       redeemScriptOpt = None,
+                                       scriptWitnessOpt = None,
+                                       hashType = HashType.sigHashAll)
+
+    val listF =
+      BitcoinTxBuilder(destinations = Seq.empty,
+                       utxos = List(utxo),
+                       feeRate = SatoshisPerByte(1.sat),
+                       changeSPK = EmptyScriptPubKey,
+                       network = RegTest)
+
+    val vecF =
+      BitcoinTxBuilder(destinations = Seq.empty,
+                       utxos = List(utxo),
+                       feeRate = SatoshisPerByte(1.sat),
+                       changeSPK = EmptyScriptPubKey,
+                       network = RegTest)
+
+    for {
+      _ <- listF
+      _ <- vecF
+    } yield succeed
+
+  }
+
+  it must "failed to build a transaction that mints money out of thin air" in {
 
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
     val destinations =
