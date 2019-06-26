@@ -35,7 +35,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
 
     } yield {
       assert(oldConfirmed == newConfirmed)
-      assert(oldUnconfirmed == oldUnconfirmed)
+      assert(oldUnconfirmed == newUnconfirmed)
       assert(oldUtxos == newUtxos)
     }
 
