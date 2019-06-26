@@ -12,19 +12,18 @@ import org.bouncycastle.crypto.tls.CertChainType
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.LegacyHDPath
 import scala.concurrent.Future
+import org.bitcoins.testkit.fixtures.WalletDAOs
 
-class IncomingTransactionDAOTest
-    extends BitcoinSWalletTest
-    with WalletDAOFixture {
+class IncomingTxoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   it must "insert a incoming transaction and read it back with its address" in {
     daos =>
-      val txDAO = daos.incomingTxDAO
-      WalletTestUtil.insertIncomingTx(daos).flatMap {
-        case (tx, _) =>
-          txDAO.findTx(tx.transaction).map { txOpt =>
-            assert(txOpt.contains(tx))
-          }
-      }
+      val WalletDAOs(_, _, txoDAO, _, utxoDAO) = daos
+
+      for {
+        utxo <- utxoDAO.create(WalletTestUtil.sampleLegacyUTXO)
+        (txo, _) <- WalletTestUtil.insertIncomingTxo(daos, utxo)
+        foundTxos <- txoDAO.findTx(txo.txid)
+      } yield assert(foundTxos.contains(txo))
   }
 }

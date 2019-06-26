@@ -6,11 +6,11 @@ import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.ExecutionContext
 
-case class UTXOSpendingInfoDAO()(
+case class SpendingInfoDAO()(
     implicit val ec: ExecutionContext,
     val appConfig: WalletAppConfig)
-    extends CRUDAutoInc[UTXOSpendingInfoDb] {
+    extends CRUDAutoInc[SpendingInfoDb] {
 
   /** The table inside our database we are inserting into */
-  override val table = TableQuery[UTXOSpendingInfoTable]
+  override val table = TableQuery[SpendingInfoTable]
 }

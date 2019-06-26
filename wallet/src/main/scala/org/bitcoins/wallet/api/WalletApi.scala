@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.HDUtil
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
+import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -66,7 +66,7 @@ trait LockedWalletApi extends WalletApi {
     */
   // def updateUtxo: Future[WalletApi]
 
-  def listUtxos(): Future[Vector[UTXOSpendingInfoDb]]
+  def listUtxos(): Future[Vector[SpendingInfoDb]]
 
   def listAddresses(): Future[Vector[AddressDb]]
 

@@ -10,19 +10,19 @@ import slick.jdbc.SQLiteProfile
 case class WalletDAOs(
     accountDAO: AccountDAO,
     addressDAO: AddressDAO,
-    incomingTxDAO: IncomingTransactionDAO,
-    outgoingTxDAO: OutgoingTransactionDAO,
-    utxoDAO: UTXOSpendingInfoDAO)
+    incomingTxoDAO: IncomingTxoDAO,
+    outgoingTxoDAO: OutgoingTxoDAO,
+    utxoDAO: SpendingInfoDAO)
 
 trait WalletDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
 
   private lazy val daos: WalletDAOs = {
     val account = AccountDAO()
     val address = AddressDAO()
-    val inTx = IncomingTransactionDAO(SQLiteProfile)
-    val outTx = OutgoingTransactionDAO(SQLiteProfile)
-    val utxo = UTXOSpendingInfoDAO()
-    WalletDAOs(account, address, inTx, outTx, utxo)
+    val inTxo = IncomingTxoDAO(SQLiteProfile)
+    val outTxo = OutgoingTxoDAO(SQLiteProfile)
+    val utxo = SpendingInfoDAO()
+    WalletDAOs(account, address, inTxo, outTxo, utxo)
   }
 
   final override type FixtureParam = WalletDAOs
