@@ -23,6 +23,9 @@ import org.bitcoins.testkit.node.NodeTestUtil
 import akka.actor.Cancellable
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
 
 class NodeWithWalletTest extends BitcoinSWalletTest {
 
@@ -67,8 +70,13 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
               prevBalance <- wallet.getUnconfirmedBalance()
               _ <- wallet.processTransaction(tx, confirmations = 0)
               balance <- wallet.getUnconfirmedBalance()
-            } completionP.success(
-              assert(balance == prevBalance + amountFromBitcoind))
+            } {
+              completionP.complete {
+                Try {
+                  assert(balance == prevBalance + amountFromBitcoind)
+                }
+              }
+            }
 
           } else if (unexpectedTxId.contains(tx.txId)) {
             completionP.failure(
