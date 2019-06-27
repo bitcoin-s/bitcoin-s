@@ -19,7 +19,7 @@ trait CoinSelector {
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit): Vector[SpendingInfoDb] = {
     val sortedUtxos =
-      walletUtxos.sortBy(_.value.satoshis.toLong).reverse
+      walletUtxos.sortBy(_.output.value).reverse
 
     accumulate(sortedUtxos, outputs, feeRate)
   }
@@ -34,7 +34,7 @@ trait CoinSelector {
       walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit): Vector[SpendingInfoDb] = {
-    val sortedUtxos = walletUtxos.sortBy(_.value.satoshis.toLong)
+    val sortedUtxos = walletUtxos.sortBy(_.output.value)
 
     accumulate(sortedUtxos, outputs, feeRate)
   }
@@ -64,11 +64,11 @@ trait CoinSelector {
         val nextUtxo = utxosLeft.head
         val approxUtxoSize = CoinSelector.approximateUtxoSize(nextUtxo)
         val nextUtxoFee = feeRate.currencyUnit * approxUtxoSize
-        if (nextUtxo.value < nextUtxoFee) {
+        if (nextUtxo.output.value < nextUtxoFee) {
           addUtxos(alreadyAdded, valueSoFar, bytesSoFar, utxosLeft.tail)
         } else {
           val newAdded = alreadyAdded.:+(nextUtxo)
-          val newValue = valueSoFar + nextUtxo.value
+          val newValue = valueSoFar + nextUtxo.output.value
 
           addUtxos(newAdded,
                    newValue,

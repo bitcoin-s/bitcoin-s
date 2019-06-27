@@ -21,6 +21,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.BitcoinAddress
 import scala.util.Success
 import scala.util.Failure
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 
 /**
   * Provides functionality related to handling UTXOs in our wallet.
@@ -30,8 +31,9 @@ import scala.util.Failure
   */
 private[wallet] trait UtxoHandling { self: LockedWallet =>
 
+  /** $inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] =
-    utxoDAO.findAll()
+    spendingInfoDAO.findAllUnspent()
 
   /**
     * Tries to convert the provided spk to an address, and then checks if we have
@@ -50,6 +52,9 @@ private[wallet] trait UtxoHandling { self: LockedWallet =>
 
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
+      txid: DoubleSha256DigestBE,
+      confirmations: Int,
+      spent: Boolean,
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
       addressDb: AddressDb): Future[SpendingInfoDb] = {
@@ -57,14 +62,19 @@ private[wallet] trait UtxoHandling { self: LockedWallet =>
     val utxo: SpendingInfoDb = addressDb match {
       case segwitAddr: SegWitAddressDb =>
         SegwitV0SpendingInfo(
-          id = None,
+          confirmations = confirmations,
+          spent = spent,
+          txid = txid,
           outPoint = outPoint,
           output = output,
           privKeyPath = segwitAddr.path,
           scriptWitness = segwitAddr.witnessScript
         )
       case LegacyAddressDb(path, _, _, _, _) =>
-        LegacySpendingInfo(outPoint = outPoint,
+        LegacySpendingInfo(confirmations = confirmations,
+                           spent = spent,
+                           txid = txid,
+                           outPoint = outPoint,
                            output = output,
                            privKeyPath = path)
       case nested: NestedSegWitAddressDb =>
@@ -72,11 +82,11 @@ private[wallet] trait UtxoHandling { self: LockedWallet =>
           s"Bad utxo $nested. Note: nested segwit is not implemented")
     }
 
-    utxoDAO.create(utxo).map { written =>
+    spendingInfoDAO.create(utxo).map { written =>
       val writtenOut = written.outPoint
       logger.info(
         s"Successfully inserted UTXO ${writtenOut.txId.hex}:${writtenOut.vout.toInt} into DB")
-      logger.info(s"UTXO details: ${written.output}")
+      logger.debug(s"UTXO details: ${written.output}")
       written
     }
   }
@@ -87,7 +97,9 @@ private[wallet] trait UtxoHandling { self: LockedWallet =>
     */
   protected def addUtxo(
       transaction: Transaction,
-      vout: UInt32): Future[AddUtxoResult] = {
+      vout: UInt32,
+      confirmations: Int,
+      spent: Boolean): Future[AddUtxoResult] = {
     import AddUtxoError._
     import org.bitcoins.core.util.EitherUtil.EitherOps._
 
@@ -120,7 +132,13 @@ private[wallet] trait UtxoHandling { self: LockedWallet =>
       addressDbEitherF.flatMap { addressDbE =>
         val biasedE: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
           addressDb <- addressDbE
-        } yield writeUtxo(output, outPoint, addressDb)
+        } yield
+          writeUtxo(txid = transaction.txIdBE,
+                    confirmations = confirmations,
+                    spent = spent,
+                    output,
+                    outPoint,
+                    addressDb)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {

@@ -4,30 +4,30 @@ import org.bitcoins.testkit.Implicits._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
   RegTestNetChainParams
 }
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.wallet.models.AccountDb
-import scodec.bits.HexStringSyntax
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
-import org.bitcoins.testkit.core.gen.TransactionGenerators
-import scala.concurrent.Future
-import org.bitcoins.wallet.models.AddressDb
-import org.bitcoins.wallet.models.AddressDbHelper
-import org.bitcoins.testkit.fixtures.WalletDAOs
-import scala.concurrent.ExecutionContext
-import org.bitcoins.wallet.models.IncomingWalletTXO
 import org.bitcoins.wallet.models.LegacySpendingInfo
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.wallet.models.SegwitV0SpendingInfo
-import org.bitcoins.wallet.models.SpendingInfoDb
+import org.bitcoins.testkit.core.gen.NumberGenerator
+import org.scalacheck.Gen
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.testkit.fixtures.WalletDAOs
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import org.bitcoins.wallet.models.SegWitAddressDb
+import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.wallet.models.AddressDb
 
 object WalletTestUtil {
 
@@ -67,94 +67,89 @@ object WalletTestUtil {
                                            HDChainType.Change,
                                            addressIndex = 0)
 
-  def freshXpub(): ExtPublicKey =
+  private def freshXpub(): ExtPublicKey =
     CryptoGenerators.extPublicKey.sampleSome
 
   val firstAccount = HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
   def firstAccountDb = AccountDb(freshXpub(), firstAccount)
 
-  lazy val sampleTxid: DoubleSha256Digest = DoubleSha256Digest(
-    hex"a910523c0b6752fbcb9c24303b4e068c505825d074a45d1c787122efb4649215")
-  lazy val sampleVout: UInt32 = UInt32.zero
-  lazy val sampleSPK: ScriptPubKey =
-    ScriptPubKey.fromAsmBytes(hex"001401b2ac67587e4b603bb3ad709a8102c30113892d")
+  private def randomScriptWitness: ScriptWitness =
+    P2WPKHWitnessV0(freshXpub().key)
 
-  lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub().key)
+  private def randomTXID = CryptoGenerators.doubleSha256Digest.sampleSome.flip
+  private def randomVout = NumberGenerator.uInt32s.sampleSome
 
-  lazy val sampleSegwitUTXO: SegwitV0SpendingInfo = {
-    val outpoint =
-      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
-    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
-    val scriptWitness = WalletTestUtil.sampleScriptWitness
+  /** Between 0 and 10 confirmations */
+  private def randomConfs: Int = Gen.choose(0, 10).sampleSome
+
+  private def randomSpent: Boolean = math.random > 0.5
+
+  def sampleSegwitUTXO(spk: ScriptPubKey): SegwitV0SpendingInfo = {
+    val outpoint = TransactionOutPoint(randomTXID, randomVout)
+    val output =
+      TransactionOutput(1.bitcoin, spk)
+    val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
-    SegwitV0SpendingInfo(outPoint = outpoint,
+    SegwitV0SpendingInfo(confirmations = randomConfs,
+                         spent = randomSpent,
+                         txid = randomTXID,
+                         outPoint = outpoint,
                          output = output,
                          privKeyPath = privkeyPath,
                          scriptWitness = scriptWitness)
   }
 
-  lazy val sampleLegacyUTXO: LegacySpendingInfo = {
+  def sampleLegacyUTXO(spk: ScriptPubKey): LegacySpendingInfo = {
     val outpoint =
-      TransactionOutPoint(WalletTestUtil.sampleTxid, WalletTestUtil.sampleVout)
-    val output = TransactionOutput(1.bitcoin, WalletTestUtil.sampleSPK)
+      TransactionOutPoint(randomTXID, randomVout)
+    val output =
+      TransactionOutput(1.bitcoin, spk)
     val privKeyPath = WalletTestUtil.sampleLegacyPath
-    LegacySpendingInfo(outPoint = outpoint,
+    LegacySpendingInfo(confirmations = randomConfs,
+                       spent = randomSpent,
+                       txid = randomTXID,
+                       outPoint = outpoint,
                        output = output,
                        privKeyPath = privKeyPath)
   }
 
-  /**
-    * Inserts a incoming TXO, and returns it with the address it was sent to
-    *
-    * This method also does some asserts on the result, to make sure what
-    * we're writing and reading matches up
-    */
-  def insertIncomingTxo(daos: WalletDAOs, utxo: SpendingInfoDb)(
-      implicit ec: ExecutionContext): Future[(IncomingWalletTXO, AddressDb)] = {
+  /** Given an account returns a sample address */
+  def getAddressDb(account: AccountDb): AddressDb = {
+    val path = SegWitHDPath(WalletTestUtil.hdCoinType,
+                            chainType = HDChainType.External,
+                            accountIndex = account.hdAccount.index,
+                            addressIndex = 0)
+    val pubkey: ECPublicKey = ECPublicKey.freshPublicKey
+    val hashedPubkey = CryptoUtil.sha256Hash160(pubkey.bytes)
+    val wspk = P2WPKHWitnessSPKV0(pubkey)
+    val scriptWitness = P2WPKHWitnessV0(pubkey)
+    val address = Bech32Address.apply(wspk, WalletTestUtil.networkParam)
 
-    require(utxo.id.isDefined)
+    SegWitAddressDb(path = path,
+                    ecPublicKey = pubkey,
+                    hashedPubkey,
+                    address,
+                    scriptWitness,
+                    scriptPubKey = wspk)
+  }
 
-    val WalletDAOs(accountDAO, addressDAO, txoDAO, _, utxoDAO) = daos
-
-    val account = WalletTestUtil.firstAccountDb
-
-    val address = {
-      val pub = ECPublicKey()
-      val path =
-        account.hdAccount
-          .toChain(HDChainType.External)
-          .toHDAddress(0)
-          .toPath
-
-      AddressDbHelper.getAddress(pub, path, RegTest)
-    }
-
-    val tx = TransactionGenerators.nonEmptyOutputTransaction.sampleSome
-    val txoDb = IncomingWalletTXO(confirmations = 3,
-                                  txid = tx.txIdBE,
-                                  spent = false,
-                                  scriptPubKey = address.scriptPubKey,
-                                  spendingInfoID = utxo.id.get)
+  /** Inserts an account, address and finally a UTXO */
+  def insertLegacyUTXO(daos: WalletDAOs)(
+      implicit ec: ExecutionContext): Future[LegacySpendingInfo] = {
     for {
-      _ <- accountDAO.create(account)
-      _ <- addressDAO.create(address)
-      _ <- utxoDAO.create(utxo)
-      createdTxo <- txoDAO.create(txoDb)
-      txAndAddrs <- txoDAO.withAddress(createdTxo.txid)
-    } yield
-      txAndAddrs match {
-        case Vector() =>
-          throw new org.scalatest.exceptions.TestFailedException(
-            s"Couldn't read back TX with address from DB!",
-            0)
-        case ((foundTxo, foundAddr)) +: _ =>
-          assert(foundTxo.confirmations == txoDb.confirmations)
-          assert(foundTxo.scriptPubKey == txoDb.scriptPubKey)
-          assert(foundTxo.txid == txoDb.txid)
+      account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
+      addr <- daos.addressDAO.create(getAddressDb(account))
+      utxo <- daos.utxoDAO.create(sampleLegacyUTXO(addr.scriptPubKey))
+    } yield utxo.asInstanceOf[LegacySpendingInfo]
+  }
 
-          assert(foundAddr == address)
-
-          (foundTxo, foundAddr)
-      }
+  /** Inserts an account, address and finally a UTXO */
+  def insertSegWitUTXO(daos: WalletDAOs)(
+      implicit ec: ExecutionContext): Future[SegwitV0SpendingInfo] = {
+    for {
+      account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
+      addr <- daos.addressDAO.create(getAddressDb(account))
+      utxo <- daos.utxoDAO.create(sampleSegwitUTXO(addr.scriptPubKey))
+    } yield utxo.asInstanceOf[SegwitV0SpendingInfo]
   }
 }

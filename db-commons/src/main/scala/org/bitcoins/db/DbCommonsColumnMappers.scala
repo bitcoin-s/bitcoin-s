@@ -21,6 +21,8 @@ import org.bitcoins.core.hd.SegWitHDPath
 import slick.jdbc.GetResult
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.Int64
 
 abstract class DbCommonsColumnMappers {
 
@@ -163,6 +165,10 @@ abstract class DbCommonsColumnMappers {
 
   implicit val txMapper: BaseColumnType[Transaction] =
     MappedColumnType.base[Transaction, String](_.hex, Transaction.fromHex)
+
+  implicit val currencyUnitMapper: BaseColumnType[CurrencyUnit] =
+    MappedColumnType
+      .base[CurrencyUnit, Long](_.satoshis.toLong, l => Satoshis(Int64(l)))
 
 }
 

@@ -34,11 +34,10 @@ This is meant to be a stand alone project that can be used as a cold storage wal
 
 We store information in the following tables:
 
-- UTXOs - must reference the incoming transaction it was received in
+- TXOs - Contains both the information needed to spent it as well as information related
+  to wallet state (confirmations, spent/unspent etc)
 - Addresses - must reference the account it belongs to
 - Accounts
-- Incoming transactions - must reference the SPK (in our address table) that a TX spends to
-- Outgoing transactions - must reference the UTXO(s) it spends
 
 #### Mnemonic encryption
 

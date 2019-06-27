@@ -20,34 +20,14 @@ import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
 
 class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
-  // todo: do this with an actual working address
-  // todo: with script witness + redeem script
-  private def getAddressDb(account: AccountDb): AddressDb = {
-    val path = SegWitHDPath(WalletTestUtil.hdCoinType,
-                            chainType = HDChainType.External,
-                            accountIndex = account.hdAccount.index,
-                            addressIndex = 0)
-    val pubkey: ECPublicKey = ECPublicKey.freshPublicKey
-    val hashedPubkey = CryptoUtil.sha256Hash160(pubkey.bytes)
-    val wspk = P2WPKHWitnessSPKV0(pubkey)
-    val scriptWitness = P2WPKHWitnessV0(pubkey)
-    val address = Bech32Address.apply(wspk, WalletTestUtil.networkParam)
-
-    SegWitAddressDb(path = path,
-                    ecPublicKey = pubkey,
-                    hashedPubkey,
-                    address,
-                    scriptWitness,
-                    scriptPubKey = wspk)
-  }
-
   behavior of "AddressDAO"
 
   it should "fail to insert and read an address into the database without a corresponding account" in {
     daos =>
       val addressDAO = daos.addressDAO
       val readF = {
-        val addressDb = getAddressDb(WalletTestUtil.firstAccountDb)
+        val addressDb =
+          WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
         addressDAO.create(addressDb)
       }
 
@@ -64,7 +44,7 @@ class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           accountDAO.create(account)
         }
         createdAddress <- {
-          val addressDb = getAddressDb(createdAccount)
+          val addressDb = WalletTestUtil.getAddressDb(createdAccount)
           addressDAO.create(addressDb)
         }
         readAddress <- addressDAO.read(createdAddress.address)
