@@ -15,6 +15,7 @@ import scala.math.BigDecimal.RoundingMode
   */
 sealed abstract class MilliSatoshis
     extends NetworkElement
+    with Ordered[MilliSatoshis]
     with BasicArithmetic[MilliSatoshis] {
   require(toBigInt >= 0, s"Millisatoshis cannot be negative, got $toBigInt")
 
@@ -75,21 +76,7 @@ sealed abstract class MilliSatoshis
     toBigInt != ms.toBigInt
   }
 
-  def >=(ms: MilliSatoshis): Boolean = {
-    toBigInt >= ms.toBigInt
-  }
-
-  def >(ms: MilliSatoshis): Boolean = {
-    toBigInt > ms.toBigInt
-  }
-
-  def <(ms: MilliSatoshis): Boolean = {
-    toBigInt < ms.toBigInt
-  }
-
-  def <=(ms: MilliSatoshis): Boolean = {
-    toBigInt <= ms.toBigInt
-  }
+  override def compare(ms: MilliSatoshis): Int = toBigInt compare ms.toBigInt
 
   override def +(ms: MilliSatoshis): MilliSatoshis = {
     MilliSatoshis(toBigInt + ms.toBigInt)

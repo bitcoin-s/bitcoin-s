@@ -16,6 +16,7 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class Number[T <: Number[T]]
     extends NetworkElement
+    with Ordered[T]
     with BasicArithmetic[T] {
   type A = BigInt
 
@@ -41,10 +42,7 @@ sealed abstract class Number[T <: Number[T]]
   override def *(factor: BigInt): T = apply(checkResult(underlying * factor))
   override def *(num: T): T = apply(checkResult(underlying * num.underlying))
 
-  def >(num: T): Boolean = underlying > num.underlying
-  def >=(num: T): Boolean = underlying >= num.underlying
-  def <(num: T): Boolean = underlying < num.underlying
-  def <=(num: T): Boolean = underlying <= num.underlying
+  override def compare(num: T): Int = underlying compare num.underlying
 
   def <<(num: Int): T = this.<<(apply(num))
   def >>(num: Int): T = this.>>(apply(num))
