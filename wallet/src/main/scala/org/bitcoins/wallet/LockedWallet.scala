@@ -1,25 +1,12 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.hd._
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
-import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
-import org.bitcoins.wallet.api.AddUtxoError.{AddressNotFound, BadSPK}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.models._
 
 import scala.concurrent.Future
-import scala.util.Success
-import scala.util.Failure
 import scala.concurrent.ExecutionContext
 import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
 import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
@@ -28,8 +15,18 @@ import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 import slick.jdbc.SQLiteProfile
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.wallet.internal.UtxoHandling
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.wallet.internal.AddressAndAccountHandling
+import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.transaction.Transaction
 
-abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
+abstract class LockedWallet
+    extends LockedWalletApi
+    with UtxoHandling
+    with AddressHandling
+    with AccountHandling
+    with BitcoinSLogger {
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
@@ -59,15 +56,6 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
   override def getUnconfirmedBalance(): Future[CurrencyUnit] =
     filterThenSum(_.confirmations == 0)
 
-  /** The default HD coin */
-  private[wallet] lazy val DEFAULT_HD_COIN: HDCoin = {
-    val coinType = chainParams match {
-      case MainNetChainParams                         => HDCoinType.Bitcoin
-      case RegTestNetChainParams | TestNetChainParams => HDCoinType.Testnet
-    }
-    HDCoin(walletConfig.defaultAccountKind, coinType)
-  }
-
   /**
     * @inheritdoc
     */
@@ -90,16 +78,6 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
         UnlockWalletSuccess(Wallet(mnemonic))
     }
   }
-
-  override def listAccounts(): Future[Vector[AccountDb]] =
-    accountDAO.findAll()
-
-  override def listAddresses(): Future[Vector[AddressDb]] =
-    addressDAO.findAll()
-
-  /** Enumerates the public keys in this wallet */
-  private[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
-    addressDAO.findAllPubkeys().map(_.toVector)
 
   /** Gets the size of the bloom filter for this wallet  */
   private def getBloomFilterSize(): Future[Int] = {
@@ -131,54 +109,6 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
                     flags = bloomFlag)
 
       pubkeys.foldLeft(baseBloom) { _.insert(_) }
-    }
-  }
-
-  /**
-    * Tries to convert the provided spk to an address, and then checks if we have
-    * it in our address table
-    */
-  private def findAddress(
-      spk: ScriptPubKey): Future[Either[AddUtxoError, AddressDb]] =
-    BitcoinAddress.fromScriptPubKey(spk, networkParameters) match {
-      case Success(address) =>
-        addressDAO.findAddress(address).map {
-          case Some(addrDb) => Right(addrDb)
-          case None         => Left(AddressNotFound)
-        }
-      case Failure(_) => Future.successful(Left(BadSPK))
-    }
-
-  /** Constructs a DB level representation of the given UTXO, and persist it to disk */
-  private def writeUtxo(
-      output: TransactionOutput,
-      outPoint: TransactionOutPoint,
-      addressDb: AddressDb): Future[SpendingInfoDb] = {
-
-    val utxo: SpendingInfoDb = addressDb match {
-      case segwitAddr: SegWitAddressDb =>
-        SegwitV0SpendingInfo(
-          id = None,
-          outPoint = outPoint,
-          output = output,
-          privKeyPath = segwitAddr.path,
-          scriptWitness = segwitAddr.witnessScript
-        )
-      case LegacyAddressDb(path, _, _, _, _) =>
-        LegacySpendingInfo(outPoint = outPoint,
-                           output = output,
-                           privKeyPath = path)
-      case nested: NestedSegWitAddressDb =>
-        throw new IllegalArgumentException(
-          s"Bad utxo $nested. Note: nested segwit is not implemented")
-    }
-
-    utxoDAO.create(utxo).map { written =>
-      val writtenOut = written.outPoint
-      logger.info(
-        s"Successfully inserted UTXO ${writtenOut.txId.hex}:${writtenOut.vout.toInt} into DB")
-      logger.info(s"UTXO details: ${written.output}")
-      written
     }
   }
 
@@ -374,177 +304,6 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
     aggregateFut
 
-  }
-
-  /**
-    * Adds the provided UTXO to the wallet, making it
-    * available for spending.
-    */
-  private def addUtxo(
-      transaction: Transaction,
-      vout: UInt32): Future[AddUtxoResult] = {
-    import AddUtxoError._
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
-
-    logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
-
-    // first check: does the provided vout exist in the tx?
-    val voutIndexOutOfBounds: Boolean = {
-      val voutLength = transaction.outputs.length
-      val outOfBunds = voutLength <= vout.toInt
-
-      if (outOfBunds)
-        logger.error(
-          s"TX with TXID ${transaction.txId.hex} only has $voutLength, got request to add vout ${vout.toInt}!")
-      outOfBunds
-    }
-
-    if (voutIndexOutOfBounds) {
-      Future.successful(VoutIndexOutOfBounds)
-    } else {
-
-      val output = transaction.outputs(vout.toInt)
-      val outPoint = TransactionOutPoint(transaction.txId, vout)
-
-      // second check: do we have an address associated with the provided
-      // output in our DB?
-      val addressDbEitherF: Future[Either[AddUtxoError, AddressDb]] =
-        findAddress(output.scriptPubKey)
-
-      // insert the UTXO into the DB
-      addressDbEitherF.flatMap { addressDbE =>
-        val biasedE: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
-          addressDb <- addressDbE
-        } yield writeUtxo(output, outPoint, addressDb)
-
-        EitherUtil.liftRightBiasedFutureE(biasedE)
-      } map {
-        case Right(utxo) => AddUtxoSuccess(utxo)
-        case Left(e)     => e
-      }
-    }
-  }
-
-  /**
-    * @inheritdoc
-    */
-  // override def updateUtxo: Future[WalletApi] = ???
-
-  override def listUtxos(): Future[Vector[SpendingInfoDb]] =
-    utxoDAO.findAll()
-
-  /**
-    * @param account Account to generate address from
-    * @param chainType What chain do we generate from? Internal change vs. external
-    */
-  private def getNewAddressHelper(
-      account: AccountDb,
-      chainType: HDChainType
-  ): Future[BitcoinAddress] = {
-    logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
-
-    val accountIndex = account.hdAccount.index
-
-    val lastAddrOptF = chainType match {
-      case HDChainType.External =>
-        addressDAO.findMostRecentExternal(accountIndex)
-      case HDChainType.Change =>
-        addressDAO.findMostRecentChange(accountIndex)
-    }
-
-    lastAddrOptF.flatMap { lastAddrOpt =>
-      val addrPath: HDPath = lastAddrOpt match {
-        case Some(addr) =>
-          val next = addr.path.next
-          logger.debug(
-            s"Found previous address at path=${addr.path}, next=$next")
-          next
-        case None =>
-          val account = HDAccount(DEFAULT_HD_COIN, accountIndex)
-          val chain = account.toChain(chainType)
-          val address = HDAddress(chain, 0)
-          val path = address.toPath
-          logger.debug(s"Did not find previous address, next=$path")
-          path
-      }
-
-      val addressDb = {
-        val pathDiff =
-          account.hdAccount.diff(addrPath) match {
-            case Some(value) => value
-            case None =>
-              throw new RuntimeException(
-                s"Could not diff ${account.hdAccount} and $addrPath")
-          }
-
-        val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
-          case Failure(exception) => throw exception
-          case Success(value)     => value.key
-        }
-
-        addrPath match {
-          case segwitPath: SegWitHDPath =>
-            AddressDbHelper
-              .getSegwitAddress(pubkey, segwitPath, networkParameters)
-          case legacyPath: LegacyHDPath =>
-            AddressDbHelper.getLegacyAddress(pubkey,
-                                             legacyPath,
-                                             networkParameters)
-          case nestedPath: NestedSegWitHDPath =>
-            AddressDbHelper.getNestedSegwitAddress(pubkey,
-                                                   nestedPath,
-                                                   networkParameters)
-        }
-      }
-      logger.debug(s"Writing $addressDb to DB")
-      val writeF = addressDAO.create(addressDb)
-      writeF.foreach { written =>
-        logger.debug(
-          s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
-      }
-
-      writeF.map(_.address)
-    }
-  }
-
-  /**
-    * right now only generates P2WPKH addresses
-    *
-    * @inheritdoc
-    */
-  override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
-    val addrF = getNewAddressHelper(account, HDChainType.External)
-    addrF
-  }
-
-  override def getAddressInfo(
-      address: BitcoinAddress): Future[Option[AddressInfo]] = {
-
-    val addressOptF = addressDAO.findAddress(address)
-    addressOptF.map { addressOpt =>
-      addressOpt.map { address =>
-        AddressInfo(pubkey = address.ecPublicKey,
-                    network = address.address.networkParameters,
-                    path = address.path)
-      }
-    }
-  }
-
-  /** Generates a new change address */
-  override protected[wallet] def getNewChangeAddress(
-      account: AccountDb): Future[BitcoinAddress] = {
-    getNewAddressHelper(account, HDChainType.Change)
-  }
-
-  /** @inheritdoc */
-  override protected[wallet] def getDefaultAccount(): Future[AccountDb] = {
-    for {
-      account <- accountDAO.read((DEFAULT_HD_COIN, 0))
-    } yield
-      account.getOrElse(
-        throw new RuntimeException(
-          s"Could not find account with ${DEFAULT_HD_COIN.purpose.constant} " +
-            s"purpose field and ${DEFAULT_HD_COIN.coinType.toInt} coin field"))
   }
 
 }
