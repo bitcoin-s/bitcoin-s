@@ -9,26 +9,13 @@ import scodec.bits.ByteVector
 
 sealed abstract class CurrencyUnit
     extends NetworkElement
+    with Ordered[CurrencyUnit]
     with BasicArithmetic[CurrencyUnit] {
   type A
 
   def satoshis: Satoshis
 
-  def >=(c: CurrencyUnit): Boolean = {
-    satoshis.underlying >= c.satoshis.underlying
-  }
-
-  def >(c: CurrencyUnit): Boolean = {
-    satoshis.underlying > c.satoshis.underlying
-  }
-
-  def <(c: CurrencyUnit): Boolean = {
-    satoshis.underlying < c.satoshis.underlying
-  }
-
-  def <=(c: CurrencyUnit): Boolean = {
-    satoshis.underlying <= c.satoshis.underlying
-  }
+  override def compare(c: CurrencyUnit): Int = satoshis.underlying compare c.satoshis.underlying
 
   def !=(c: CurrencyUnit): Boolean = !(this == c)
 
