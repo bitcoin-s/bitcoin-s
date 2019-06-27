@@ -15,7 +15,6 @@ sealed abstract class CurrencyUnit
 
   def satoshis: Satoshis
 
-
   override def compare(c: CurrencyUnit): Int = satoshis.underlying compare c.satoshis.underlying
 
   def !=(c: CurrencyUnit): Boolean = !(this == c)

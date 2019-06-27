@@ -42,7 +42,6 @@ sealed abstract class Number[T <: Number[T]]
   override def *(factor: BigInt): T = apply(checkResult(underlying * factor))
   override def *(num: T): T = apply(checkResult(underlying * num.underlying))
 
-
   override def compare(num: T): Int = underlying compare num.underlying
 
   def <<(num: Int): T = this.<<(apply(num))
