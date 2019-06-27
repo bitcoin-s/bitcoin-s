@@ -3,7 +3,7 @@ package org.bitcoins.wallet.api
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.wallet.models.UTXOSpendingInfoDb
+import org.bitcoins.wallet.models.SpendingInfoDb
 
 import scala.annotation.tailrec
 
@@ -15,9 +15,9 @@ trait CoinSelector {
     * below their fees. Better for high fee environments than accumulateSmallestViable.
     */
   def accumulateLargest(
-      walletUtxos: Vector[UTXOSpendingInfoDb],
+      walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[UTXOSpendingInfoDb] = {
+      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
     val sortedUtxos =
       walletUtxos.sortBy(_.value.satoshis.toLong).reverse
 
@@ -31,9 +31,9 @@ trait CoinSelector {
     * Has the potential privacy breach of connecting a ton of UTXOs to one address.
     */
   def accumulateSmallestViable(
-      walletUtxos: Vector[UTXOSpendingInfoDb],
+      walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[UTXOSpendingInfoDb] = {
+      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
     val sortedUtxos = walletUtxos.sortBy(_.value.satoshis.toLong)
 
     accumulate(sortedUtxos, outputs, feeRate)
@@ -41,19 +41,19 @@ trait CoinSelector {
 
   /** Greedily selects from walletUtxos in order, skipping outputs with values below their fees */
   def accumulate(
-      walletUtxos: Vector[UTXOSpendingInfoDb],
+      walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[UTXOSpendingInfoDb] = {
+      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
     val totalValue = outputs.foldLeft(CurrencyUnits.zero) {
       case (totVal, output) => totVal + output.value
     }
 
     @tailrec
     def addUtxos(
-        alreadyAdded: Vector[UTXOSpendingInfoDb],
+        alreadyAdded: Vector[SpendingInfoDb],
         valueSoFar: CurrencyUnit,
         bytesSoFar: Long,
-        utxosLeft: Vector[UTXOSpendingInfoDb]): Vector[UTXOSpendingInfoDb] = {
+        utxosLeft: Vector[SpendingInfoDb]): Vector[SpendingInfoDb] = {
       val fee = feeRate.currencyUnit * bytesSoFar
       if (valueSoFar > totalValue + fee) {
         alreadyAdded
@@ -85,7 +85,7 @@ trait CoinSelector {
 object CoinSelector extends CoinSelector {
 
   /** Cribbed from [[https://github.com/bitcoinjs/coinselect/blob/master/utils.js]] */
-  def approximateUtxoSize(utxo: UTXOSpendingInfoDb): Long = {
+  def approximateUtxoSize(utxo: SpendingInfoDb): Long = {
     val inputBase = 32 + 4 + 1 + 4
     val scriptSize = utxo.redeemScriptOpt match {
       case Some(script) => script.bytes.length

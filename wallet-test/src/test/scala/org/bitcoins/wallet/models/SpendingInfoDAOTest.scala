@@ -10,7 +10,7 @@ import org.bitcoins.wallet.Wallet
 import org.bitcoins.testkit.wallet.WalletTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 
-class SpendingInfoDbDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
+class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "SpendingInfoDAO"
 
   it should "insert a segwit UTXO and read it" in { daos =>

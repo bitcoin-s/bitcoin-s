@@ -15,10 +15,7 @@ class EncryptedMnemonicTest extends BitcoinSUnitTest {
     val badPassword = AesPassword.fromNonEmptyString("bad")
 
     val mnemonic = CryptoGenerators.mnemonicCode.sampleSome
-    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, password) match {
-      case Success(value)     => value
-      case Failure(exception) => fail(exception)
-    }
+    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, password)
 
     val decrypted = encrypted.toMnemonic(badPassword)
 
