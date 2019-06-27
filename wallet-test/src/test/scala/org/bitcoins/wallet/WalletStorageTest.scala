@@ -50,8 +50,7 @@ class WalletStorageTest
 
   def getAndWriteMnemonic(): MnemonicCode = {
     val mnemonic = CryptoGenerators.mnemonicCode.sampleSome
-    val Success(encrypted) =
-      EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
+    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
 
     val _ =
       WalletStorage.writeMnemonicToDisk(encrypted)
