@@ -53,8 +53,19 @@ trait LockedWalletApi extends WalletApi {
       transaction: Transaction,
       confirmations: Int): Future[LockedWalletApi]
 
+  /** Gets the sum of all UTXOs in this wallet */
+  def getBalance(): Future[CurrencyUnit] = {
+    val confirmedF = getConfirmedBalance()
+    val unconfirmedF = getUnconfirmedBalance()
+
+    for {
+      confirmed <- confirmedF
+      unconfirmed <- unconfirmedF
+    } yield confirmed + unconfirmed
+  }
+
   /** Gets the sum of all confirmed UTXOs in this wallet */
-  def getBalance(): Future[CurrencyUnit]
+  def getConfirmedBalance(): Future[CurrencyUnit]
 
   /** Gets the sum of all unconfirmed UTXOs in this wallet */
   def getUnconfirmedBalance(): Future[CurrencyUnit]
@@ -66,6 +77,7 @@ trait LockedWalletApi extends WalletApi {
     */
   // def updateUtxo: Future[WalletApi]
 
+  /** Lists unspent transaction outputs in the wallet */
   def listUtxos(): Future[Vector[SpendingInfoDb]]
 
   def listAddresses(): Future[Vector[AddressDb]]
