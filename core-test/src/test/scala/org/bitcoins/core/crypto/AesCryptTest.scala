@@ -164,17 +164,6 @@ class AesCryptTest extends BitcoinSUnitTest {
     }
   }
 
-  /** Asserts that the two bytevectors are equal expect for trailing padding */
-  def assertPaddedEqual(first: ByteVector, second: ByteVector): Assertion = {
-    if (first.length == second.length) {
-      assert(first == second)
-    } else if (first.length > second.length) {
-      assert(first == second.padRight(first.length))
-    } else {
-      assert(first.padRight(second.length) == second)
-    }
-  }
-
   /** To replicate:
     *
     * from Crypto import Random
@@ -244,6 +233,21 @@ class AesCryptTest extends BitcoinSUnitTest {
     * print(f"encrypted: {encrypted.hex()}")
     */
   it must "pass a hard coded test vector from pycrypto" in {
+
+    /** Asserts that the two bytevectors are equal expect for trailing padding.
+      * Pycrypto has issues with encrypting plaintexts that don't line up
+      * with block size, so this is only used here.
+      */
+    def assertPaddedEqual(first: ByteVector, second: ByteVector): Assertion = {
+      if (first.length == second.length) {
+        assert(first == second)
+      } else if (first.length > second.length) {
+        assert(first == second.padRight(first.length))
+      } else {
+        assert(first.padRight(second.length) == second)
+      }
+    }
+
     val key = getKey(hex"e67a00b510bcff7f4a0101ff5f7fb690")
     val iv = getIV(hex"f43b7f80624e7f01123ac272beb1ff7f")
     val plainText = "The quick brown fox jumps over the lazy dog."
