@@ -44,16 +44,15 @@ class WalletStorageTest
 
   behavior of "WalletStorage"
 
-  val passphrase = AesPassword("this_is_secret")
-  val badPassphrase = AesPassword("this_is_also_secret")
+  val passphrase = AesPassword.fromNonEmptyString("this_is_secret")
+  val badPassphrase = AesPassword.fromNonEmptyString("this_is_also_secret")
 
   def getMnemonic: MnemonicCode =
     CryptoGenerators.mnemonicCode.sample.getOrElse(getMnemonic)
 
   def getAndWriteMnemonic(): MnemonicCode = {
     val mnemonic = getMnemonic
-    val Success(encrypted) =
-      EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
+    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
 
     val _ =
       WalletStorage.writeMnemonicToDisk(encrypted)

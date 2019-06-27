@@ -14,6 +14,7 @@ import java.nio.file.Paths
 import java.nio.file.Path
 import scala.util.Try
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.core.crypto.AesIV
 
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage extends BitcoinSLogger {
@@ -41,9 +42,9 @@ object WalletStorage extends BitcoinSLogger {
     val jsObject = {
       import MnemonicJsonKeys._
       ujson.Obj(
-        IV -> encrypted.iv.toHex,
+        IV -> encrypted.iv.hex,
         CIPHER_TEXT -> encrypted.cipherText.toHex,
-        SALT -> encrypted.salt.value.toHex
+        SALT -> mnemonic.salt.bytes.toHex
       )
     }
 
@@ -135,6 +136,7 @@ object WalletStorage extends BitcoinSLogger {
     val readJsonTupleEither: Either[
       ReadMnemonicError,
       (String, String, String)] = jsonE.flatMap { json =>
+      logger.trace(s"Read encrypted mnemonic JSON: $json")
       Try {
         val ivString = json(IV).str
         val cipherTextString = json(CIPHER_TEXT).str
@@ -153,13 +155,12 @@ object WalletStorage extends BitcoinSLogger {
       readJsonTupleEither.flatMap {
         case (rawIv, rawCipherText, rawSalt) =>
           val encryptedOpt = for {
-            iv <- ByteVector.fromHex(rawIv)
+            iv <- ByteVector.fromHex(rawIv).map(AesIV.fromValidBytes(_))
             cipherText <- ByteVector.fromHex(rawCipherText)
-            rawSalt <- ByteVector.fromHex(rawSalt)
-            salt = AesSalt(rawSalt)
+            salt <- ByteVector.fromHex(rawSalt).map(AesSalt(_))
           } yield {
             logger.debug(s"Parsed contents of $path into an EncryptedMnemonic")
-            EncryptedMnemonic(AesEncryptedData(cipherText, iv, salt))
+            EncryptedMnemonic(AesEncryptedData(cipherText, iv), salt)
           }
           encryptedOpt
             .map(Right(_))
@@ -208,7 +209,8 @@ sealed trait ReadMnemonicResult
 case class ReadMnemonicSuccess(mnemonic: MnemonicCode)
     extends ReadMnemonicResult
 
-sealed trait ReadMnemonicError extends ReadMnemonicResult
+sealed trait ReadMnemonicError extends ReadMnemonicResult { self: Error =>
+}
 
 object ReadMnemonicError {
 
@@ -216,14 +218,20 @@ object ReadMnemonicError {
     * Something went wrong while decrypting the mnemonic.
     * Most likely the passphrase was bad
     */
-  case object DecryptionError extends ReadMnemonicError
+  case object DecryptionError
+      extends Error(s"Could not decrypt mnemonic!")
+      with ReadMnemonicError
 
   /**
     * Something went wrong while parsing the encrypted
     * mnemonic into valid JSON
     */
-  case class JsonParsingError(message: String) extends ReadMnemonicError
+  case class JsonParsingError(message: String)
+      extends Error(s"Error when parsing JSON: $message")
+      with ReadMnemonicError
 
   /** The encrypted mnemonic was not found on disk */
-  case object NotFoundError extends ReadMnemonicError
+  case object NotFoundError
+      extends Error("Could not find mnemonic!")
+      with ReadMnemonicError
 }
