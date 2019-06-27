@@ -11,24 +11,11 @@ import scala.util.{Failure, Try}
 
 sealed abstract class LnCurrencyUnit
     extends NetworkElement
+    with Ordered[LnCurrencyUnit]
     with BasicArithmetic[LnCurrencyUnit] {
   def character: Char
 
-  def >=(ln: LnCurrencyUnit): Boolean = {
-    toPicoBitcoinValue >= ln.toPicoBitcoinValue
-  }
-
-  def >(ln: LnCurrencyUnit): Boolean = {
-    toPicoBitcoinValue > ln.toPicoBitcoinValue
-  }
-
-  def <(ln: LnCurrencyUnit): Boolean = {
-    toPicoBitcoinValue < ln.toPicoBitcoinValue
-  }
-
-  def <=(ln: LnCurrencyUnit): Boolean = {
-    toPicoBitcoinValue <= ln.toPicoBitcoinValue
-  }
+  override def compare(ln: LnCurrencyUnit): Int = toPicoBitcoinValue compare ln.toPicoBitcoinValue
 
   def !=(ln: LnCurrencyUnit): Boolean = !(this == ln)
 
