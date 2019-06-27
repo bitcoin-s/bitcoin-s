@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.wallet
 
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -67,11 +68,11 @@ object WalletTestUtil {
                                            HDChainType.Change,
                                            addressIndex = 0)
 
-  def freshXpub: ExtPublicKey =
-    CryptoGenerators.extPublicKey.sample.getOrElse(freshXpub)
+  def freshXpub(): ExtPublicKey =
+    CryptoGenerators.extPublicKey.sampleSome
 
   val firstAccount = HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
-  def firstAccountDb = AccountDb(freshXpub, firstAccount)
+  def firstAccountDb = AccountDb(freshXpub(), firstAccount)
 
   lazy val sampleTxid: DoubleSha256Digest = DoubleSha256Digest(
     hex"a910523c0b6752fbcb9c24303b4e068c505825d074a45d1c787122efb4649215")
@@ -79,7 +80,7 @@ object WalletTestUtil {
   lazy val sampleSPK: ScriptPubKey =
     ScriptPubKey.fromAsmBytes(hex"001401b2ac67587e4b603bb3ad709a8102c30113892d")
 
-  lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub.key)
+  lazy val sampleScriptWitness: ScriptWitness = P2WPKHWitnessV0(freshXpub().key)
 
   lazy val sampleSegwitUTXO: SegwitV0SpendingInfo = {
     val outpoint =
