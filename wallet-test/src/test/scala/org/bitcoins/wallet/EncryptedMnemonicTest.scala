@@ -3,6 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.crypto.{AesPassword, MnemonicCode}
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.Implicits._
 
 import scala.util.{Failure, Success}
 
@@ -13,11 +14,11 @@ class EncryptedMnemonicTest extends BitcoinSUnitTest {
     val password = AesPassword.fromNonEmptyString("good")
     val badPassword = AesPassword.fromNonEmptyString("bad")
 
-    def getMnemonic(): MnemonicCode =
-      CryptoGenerators.mnemonicCode.sample.getOrElse(getMnemonic())
-
-    val mnemonic = getMnemonic()
-    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, password)
+    val mnemonic = CryptoGenerators.mnemonicCode.sampleSome
+    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, password) match {
+      case Success(value)     => value
+      case Failure(exception) => fail(exception)
+    }
 
     val decrypted = encrypted.toMnemonic(badPassword)
 

@@ -14,11 +14,12 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.testkit.Implicits._
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
 
-trait TransactionGenerators extends BitcoinSLogger {
+object TransactionGenerators extends BitcoinSLogger {
 
   /** Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] */
   def outPoint: Gen[TransactionOutPoint] =
@@ -64,7 +65,7 @@ trait TransactionGenerators extends BitcoinSLogger {
 
   /** Creates a small sequence of outputs whose total sum is <= totalAmount */
   def smallOutputs(totalAmount: CurrencyUnit): Gen[Seq[TransactionOutput]] = {
-    val numOutputs = Gen.choose(0, 5).sample.get
+    val numOutputs = Gen.choose(0, 5).sampleSome
     @tailrec
     def loop(
         remaining: Int,
@@ -76,8 +77,7 @@ trait TransactionGenerators extends BitcoinSLogger {
         val amt = Gen
           .choose(100, remainingAmount.toBigDecimal.toLongExact)
           .map(n => Satoshis(Int64(n)))
-          .sample
-          .get
+          .sampleSome
         loop(remaining - 1, remainingAmount - amt, amt +: accum)
       }
     }
@@ -805,5 +805,3 @@ trait TransactionGenerators extends BitcoinSLogger {
     }
   }
 }
-
-object TransactionGenerators extends TransactionGenerators

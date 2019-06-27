@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.Implicits._
 import org.scalatest.FutureOutcome
 import org.bitcoins.core.currency._
 import scala.concurrent.Future
@@ -39,21 +40,13 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       assert(oldUtxos == newUtxos)
     }
 
-  /** Gets a TX which pays to the given SPK */
-  private def getTxFor(spk: ScriptPubKey): Transaction =
-    TransactionGenerators
-      .transactionTo(spk)
-      .sample
-      .getOrElse(getTxFor(spk))
-
-  private def getUnrelatedTx(): Transaction =
-    TransactionGenerators.transaction.sample.getOrElse(getUnrelatedTx())
-
   it must "not change state when processing the same transaction twice" in {
     wallet =>
       for {
         address <- wallet.getNewAddress()
-        tx = getTxFor(address.scriptPubKey)
+        tx = TransactionGenerators
+          .transactionTo(address.scriptPubKey)
+          .sampleSome
         _ = logger.info(s"tx: $tx")
 
         _ <- wallet.processTransaction(tx, confirmations = 0)
@@ -86,7 +79,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
 
   it must "not change state when processing an unrelated transaction" in {
     wallet =>
-      val unrelated = getUnrelatedTx()
+      val unrelated = TransactionGenerators.transaction.sampleSome
       for {
         _ <- checkUtxosAndBalance(wallet) {
           wallet.processTransaction(unrelated, confirmations = 4)

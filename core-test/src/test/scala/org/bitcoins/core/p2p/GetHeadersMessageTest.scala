@@ -4,6 +4,7 @@ import org.bitcoins.testkit.core.gen.p2p.DataMessageGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.Implicits._
 
 class GetHeadersMessageTest extends BitcoinSUnitTest {
 
@@ -21,12 +22,13 @@ class GetHeadersMessageTest extends BitcoinSUnitTest {
   }
 
   it must "be constructable without a stop" in {
-    def getHash: DoubleSha256Digest =
-      CryptoGenerators.doubleSha256Digest.sample.getOrElse(getHash)
-    val msg = GetHeadersMessage(List.fill(10)(getHash))
+    def getHash(): DoubleSha256Digest =
+      CryptoGenerators.doubleSha256Digest.sampleSome
+
+    val msg = GetHeadersMessage(List.fill(10)(getHash()))
     assert(msg.hashStop == DoubleSha256Digest.empty)
 
-    val hash = getHash
+    val hash = getHash()
     val otherMsg = GetHeadersMessage(hash)
     assert(otherMsg == GetHeadersMessage(Vector(hash)))
   }

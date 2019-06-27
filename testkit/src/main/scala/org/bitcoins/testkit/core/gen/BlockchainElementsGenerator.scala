@@ -1,5 +1,6 @@
 package org.bitcoins.testkit.core.gen
 
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
@@ -119,7 +120,7 @@ sealed abstract class BlockchainElementsGenerator {
       prevBlockHash: DoubleSha256Digest,
       nBits: UInt32): BlockHeader = {
     //nonce for the unique hash
-    val nonce = NumberGenerator.uInt32s.sample.get
+    val nonce = NumberGenerator.uInt32s.sampleSome
     BlockHeader(Int32.one,
                 prevBlockHash,
                 EmptyTransaction.txId,
