@@ -16,7 +16,6 @@ import scodec.bits.HexStringSyntax
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import scala.concurrent.Future
 import org.bitcoins.wallet.models.AddressDb
@@ -117,13 +116,6 @@ object WalletTestUtil {
 
     val WalletDAOs(accountDAO, addressDAO, txoDAO, _, utxoDAO) = daos
 
-    /** Get a TX with outputs */
-    def getTx: Transaction =
-      TransactionGenerators.transaction
-        .suchThat(_.outputs.nonEmpty)
-        .sample
-        .getOrElse(getTx)
-
     val account = WalletTestUtil.firstAccountDb
 
     val address = {
@@ -137,7 +129,7 @@ object WalletTestUtil {
       AddressDbHelper.getAddress(pub, path, RegTest)
     }
 
-    val tx = getTx
+    val tx = TransactionGenerators.nonEmptyOutputTransaction.sampleSome
     val txoDb = IncomingWalletTXO(confirmations = 3,
                                   txid = tx.txIdBE,
                                   spent = false,

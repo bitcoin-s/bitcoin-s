@@ -135,6 +135,10 @@ object TransactionGenerators extends BitcoinSLogger {
   def transactionTo(spk: ScriptPubKey) =
     Gen.oneOf(baseTransactionTo(spk), witnessTransactionTo(spk))
 
+  /** Generates a transaction with at least one output */
+  def nonEmptyOutputTransaction: Gen[Transaction] =
+    TransactionGenerators.transaction.suchThat(_.outputs.nonEmpty)
+
   def baseTransaction: Gen[BaseTransaction] =
     for {
       version <- NumberGenerator.int32s
