@@ -36,7 +36,7 @@ val amount = 10000.satoshis
 
 // this is the UTXO we are going to be spending
 val utxo =
-  TransactionOutput(currencyUnit = amount, scriptPubKey = creditingSpk)
+  TransactionOutput(value = amount, scriptPubKey = creditingSpk)
 
 // the private key that locks the funds for the script we are spending too
 val destinationPrivKey = ECPrivateKey.freshPrivateKey
@@ -52,7 +52,7 @@ val destinationSPK =
 // we could add more destinations here if we
 // wanted to batch transactions
 val destinations = {
-    val destination1 = TransactionOutput(currencyUnit = destinationAmount,
+    val destination1 = TransactionOutput(value = destinationAmount,
                                          scriptPubKey = destinationSPK)
 
     List(destination1)
