@@ -130,7 +130,7 @@ object WalletTestUtil {
       val path =
         account.hdAccount
           .toChain(HDChainType.External)
-          .toAddress(0)
+          .toHDAddress(0)
           .toPath
 
       AddressDbHelper.getAddress(pub, path, RegTest)

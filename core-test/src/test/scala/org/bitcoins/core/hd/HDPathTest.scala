@@ -33,7 +33,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
   it must "be convertable to an address" in {
     forAll(HDGenerators.hdChain, NumberGenerator.positiveInts) { (chain, i) =>
-      val addr = chain.toAddress(i)
+      val addr = chain.toHDAddress(i)
       assert(addr.chain == chain)
     }
   }
