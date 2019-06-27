@@ -35,7 +35,8 @@ lazy val compilerOpts = Seq(
   "-Ywarn-unused",
   "-unchecked",
   "-deprecation",
-  "-feature"
+  "-feature",
+  "-Xsource:2.12"
 ) ++ commonCompilerOpts
 
 lazy val testCompilerOpts = commonCompilerOpts
