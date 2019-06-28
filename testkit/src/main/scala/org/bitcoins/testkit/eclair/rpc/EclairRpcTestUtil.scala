@@ -468,7 +468,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     implicit val dispatcher = system.dispatcher
     val infoF = otherClient.getInfo
     val nodeIdF = infoF.map(_.nodeId)
-    val connection: Future[String] = infoF.flatMap { info =>
+    val connection: Future[Unit] = infoF.flatMap { info =>
       val Array(host, port) = info.publicAddresses.head.split(":")
       client.connect(info.nodeId, host, port.toInt)
     }

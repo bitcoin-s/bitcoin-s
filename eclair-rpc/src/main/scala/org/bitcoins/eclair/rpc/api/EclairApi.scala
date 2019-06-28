@@ -48,11 +48,15 @@ trait EclairApi {
 
   def channel(id: ChannelId): Future[ChannelResult]
 
-  def connect(nodeURI: NodeUri): Future[String]
+  def channelStats(): Future[Vector[ChannelStats]]
 
-  def connect(nodeId: NodeId, host: String, port: Int): Future[String]
+  def connect(nodeURI: NodeUri): Future[Unit]
 
-  def close(id: ChannelId, spk: ScriptPubKey): Future[String]
+  def connect(nodeId: NodeId, host: String, port: Int): Future[Unit]
+
+  def disconnect(nodeId: NodeId): Future[Unit]
+
+  def close(id: ChannelId, spk: ScriptPubKey): Future[Unit]
 
   def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]]
 
@@ -97,13 +101,19 @@ trait EclairApi {
     */
   def network: LnParams
 
+  def networkFees(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[NetworkFeesResult]]
+
   def nodeId()(implicit ec: ExecutionContext): Future[NodeId] = {
     getNodeURI.map(_.nodeId)
   }
 
   def createInvoice(description: String, amountMsat: Option[LnCurrencyUnit], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
 
-  def parseInvoice(nvoice: LnInvoice): Future[InvoiceResult]
+  def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]
+
+  def listInvoices(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[LnInvoice]]
+
+  def parseInvoice(invoice: LnInvoice): Future[InvoiceResult]
 
   def payInvoice(invoice: LnInvoice, amountMsat: Option[LnCurrencyUnit], maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[PaymentId]
 
@@ -122,4 +132,5 @@ trait EclairApi {
     */
   def sendToRoute(route: TraversableOnce[NodeId], amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId]
 
+  def usableBalances(): Future[Vector[UsableBalancesResult]]
 }

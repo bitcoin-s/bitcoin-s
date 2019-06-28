@@ -88,7 +88,7 @@ class EclairRpcClient(val instance: EclairInstance)(
 
   private def close(
       channelId: ChannelId,
-      scriptPubKey: Option[ScriptPubKey]): Future[String] = {
+      scriptPubKey: Option[ScriptPubKey]): Future[Unit] = {
     val params =
       if (scriptPubKey.isEmpty) {
         Seq("channelId" -> channelId.hex)
@@ -99,25 +99,25 @@ class EclairRpcClient(val instance: EclairInstance)(
         Seq("channelId" -> channelId.hex, "scriptPubKey" -> asmHex)
       }
 
-    eclairCall[String]("close", params: _*)
+    eclairCall[String]("close", params: _*).map(_ => ())
   }
 
-  def close(channelId: ChannelId): Future[String] =
+  def close(channelId: ChannelId): Future[Unit] =
     close(channelId, scriptPubKey = None)
 
   override def close(
       channelId: ChannelId,
-      scriptPubKey: ScriptPubKey): Future[String] = {
+      scriptPubKey: ScriptPubKey): Future[Unit] = {
     close(channelId, Some(scriptPubKey))
   }
 
-  override def connect(nodeId: NodeId, host: String, port: Int): Future[String] = {
+  override def connect(nodeId: NodeId, host: String, port: Int): Future[Unit] = {
     val uri = NodeUri(nodeId, host, port)
     connect(uri)
   }
 
-  override def connect(uri: NodeUri): Future[String] = {
-    eclairCall[String]("connect", "uri" -> uri.toString)
+  override def connect(uri: NodeUri): Future[Unit] = {
+    eclairCall[String]("connect", "uri" -> uri.toString).map(_ => ())
   }
 
   override def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]] = {
@@ -391,6 +391,39 @@ class EclairRpcClient(val instance: EclairInstance)(
       "feeProportionalMillionths" -> feeProportionalMillionths.toString)
   }
 
+  override def channelStats(): Future[Vector[ChannelStats]] = {
+    eclairCall[Vector[ChannelStats]]("channelstats")
+  }
+
+  override def networkFees(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[NetworkFeesResult]] = {
+    eclairCall[Vector[NetworkFeesResult]]("networkfees", Seq(
+      from.map(x => "from" -> x.toSeconds.toString),
+      to.map(x => "to" -> x.toSeconds.toString)).flatten: _*)
+  }
+
+  override def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice] = {
+    val resF = eclairCall[InvoiceResult]("getinvoice", "paymentHash" -> paymentHash.hex)
+    resF.flatMap {
+      res =>
+        Future.fromTry(LnInvoice.fromString(res.serialized))
+    }
+  }
+
+  override def listInvoices(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[LnInvoice]] = {
+    val resF = eclairCall[Vector[InvoiceResult]]("listinvoices", Seq(
+      from.map(x => "from" -> x.toSeconds.toString),
+      to.map(x => "to" -> x.toSeconds.toString)).flatten: _*)
+    resF.flatMap(xs => Future.sequence(xs.map(x => Future.fromTry(LnInvoice.fromString(x.serialized)))))
+  }
+
+  override def usableBalances(): Future[Vector[UsableBalancesResult]] = {
+    eclairCall[Vector[UsableBalancesResult]]("usablebalances")
+  }
+
+  override def disconnect(nodeId: NodeId): Future[Unit] = {
+    eclairCall[String]("disconnect", "nodeId" -> nodeId.hex).map(_ => ())
+  }
+
   private def eclairCall[T](command: String, parameters: (String, String)*)(
       implicit
       reader: Reads[T]): Future[T] = {
@@ -473,7 +506,6 @@ class EclairRpcClient(val instance: EclairInstance)(
              "This needs to be set to the directory containing the Eclair Jar")
           .mkString(" ")))
 
-    //val eclairV = "/eclair-node-0.2-beta8-52821b8.jar"
     val eclairV = "/eclair-node-0.3-a5debcd.jar"
     val fullPath = path + eclairV
 

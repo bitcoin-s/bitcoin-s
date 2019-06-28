@@ -23,12 +23,13 @@ import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.Logger
 
 import scala.concurrent._
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnTaggedFields, PaymentId, PaymentPreimage}
 import play.api.libs.json.Json
+import scala.concurrent.duration._
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
@@ -134,7 +135,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to send payments in both directions" ignore {
-    val paymentAmount = MilliSatoshis(50)
+    val paymentAmount = MilliSatoshis(100000000)
+    val paymentAmount2 = MilliSatoshis(100000000)
     //    val paymentAmount = NanoBitcoins(100000000)
 
     val sendInBothDiercions = {
@@ -147,13 +149,13 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
           _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
           sentInfo <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
 
-          invoice2 <- client.createInvoice("test", paymentAmount.toLnCurrencyUnit)
+          invoice2 <- client.createInvoice("test", paymentAmount2.toLnCurrencyUnit)
           paymentId2 <- otherClient.payInvoice(invoice2)
           _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(otherClient, paymentId2)
           sentInfo2 <- otherClient.getSentInfo(invoice2.lnTags.paymentHash.hash)
         } yield {
           assert(sentInfo.head.amountMsat == paymentAmount)
-          assert(sentInfo2.head.amountMsat == paymentAmount)
+          assert(sentInfo2.head.amountMsat == paymentAmount2)
           succeed
         }
     }
@@ -229,7 +231,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       info <- c.getInfo
-      invoice <- c.createInvoice(description = "test", amount = 12345.msats.toLnCurrencyUnit, expireIn = FiniteDuration(67890, TimeUnit.SECONDS))
+      invoice <- c.createInvoice(description = "test", amount = 12345.msats.toLnCurrencyUnit, expireIn = 67890.seconds)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
@@ -250,7 +252,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       invoice <- c.createInvoice(
         description = "test",
         amountMsat = Some(12345.msats.toLnCurrencyUnit),
-        expireIn = Some(FiniteDuration(67890, TimeUnit.SECONDS)),
+        expireIn = Some(67890.seconds),
         fallbackAddress = Some(testBitcoinAddress),
         paymentPreimage = None)
     } yield {
@@ -273,7 +275,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       invoice <- c.createInvoice(
         description = "test",
         amountMsat = Some(12345.msats.toLnCurrencyUnit),
-        expireIn = Some(FiniteDuration(67890, TimeUnit.SECONDS)),
+        expireIn = Some(67890.seconds),
         fallbackAddress = Some(testBitcoinAddress),
         paymentPreimage = Some(testPaymentPreimage))
     } yield {
@@ -441,6 +443,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     otherClientNodeIdF.flatMap(nid => hasConnection(clientF, nid))
   }
 
+  // not implemented in Eclair 0.3
   it should "be able to pay to a route" ignore {
     val amt = MilliSatoshis(50)
     val getPayment = {
@@ -579,7 +582,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to generate an invoice and get the same amount back" in {
     val amt = PicoBitcoins(10) //this is the smallest unit we can use, 1 msat
     val description = "bitcoin-s test case"
-    val expiry = FiniteDuration(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+    val expiry = System.currentTimeMillis().millis
 
     val invoiceF = clientF.flatMap(
       _.createInvoice(description = description,
@@ -649,7 +652,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val amt = MilliSatoshis(1000)
 //    val amt = PicoBitcoins(1000) //1 satoshi
     val description = "bitcoin-s test case"
-    val expiry = FiniteDuration(System.currentTimeMillis() / 1000, TimeUnit.SECONDS)
+    val expiry = (System.currentTimeMillis() / 1000).seconds
 
     val invoiceF = clientF.flatMap(
       _.createInvoice(description = description,
@@ -800,11 +803,11 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       (channel, oldFee) <- channelAndFeeF
       _ <- clientF.flatMap(
-        _.updateRelayFee(channel, MilliSatoshis(oldFee.toLong * 2), 1))
+        _.updateRelayFee(channel, oldFee * 2, 1))
       newFeeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
     } yield {
       assert(newFeeOpt.isDefined)
-      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 2))
+      assert(newFeeOpt.get == oldFee * 2)
     }
   }
 
@@ -823,11 +826,11 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       (channelId, shortChannelId, oldFee) <- channelAndFeeF
       _ <- clientF.flatMap(
-        _.updateRelayFee(shortChannelId, MilliSatoshis(oldFee.toLong * 4), 1))
+        _.updateRelayFee(shortChannelId, oldFee * 4, 1))
       newFeeOpt <- clientF.flatMap(_.channel(channelId).map(_.feeBaseMsat))
     } yield {
       assert(newFeeOpt.isDefined)
-      assert(newFeeOpt.get == MilliSatoshis(oldFee.toLong * 4))
+      assert(newFeeOpt.get == oldFee * 4)
     }
   }
 
@@ -935,8 +938,68 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       channels <- c.channels()
-      res <- c.forceClose(channels.head.channelId)
+      _ <- c.forceClose(channels.head.channelId)
     } yield succeed
+  }
+
+  it should "get channel stats" in {
+    for {
+      c <- clientF
+      res <- c.channelStats()
+    } yield {
+      assert(res.nonEmpty)
+    }
+  }
+
+  it should "get network fees" in {
+    for {
+      c <- clientF
+      res <- c.networkFees(from = None, to = None)
+    } yield {
+      assert(res.nonEmpty)
+    }
+  }
+
+  it should "get invoice" in {
+    for {
+      c <- clientF
+      i <- c.createInvoice("test", MilliSatoshis(123457890).toLnCurrencyUnit)
+      res <- c.getInvoice(i.lnTags.paymentHash.hash)
+    } yield {
+      assert(res.amount == i.amount)
+    }
+  }
+
+  it should "list invoice" in {
+    for {
+      c <- clientF
+      res <- c.listInvoices(from = None, to = None)
+    } yield {
+      assert(res.nonEmpty)
+    }
+  }
+
+  // not implemented in Eclair 0.3
+  // in Eclair 0.3.1-SNAPSHOT it can return negative balances
+  it should "get usable balances" ignore {
+    for {
+      c <- clientF
+      res <- c.usableBalances()
+    } yield {
+      assert(res.nonEmpty)
+    }
+  }
+
+  // not implemented in Eclair 0.3
+  it should "disconnect node" ignore {
+    for {
+      c1 <- clientF
+      c2 <- otherClientF
+      nodeInfo2 <- c2.getInfo
+      _ <- c1.disconnect(nodeInfo2.nodeId)
+    } yield {
+      succeed
+    }
   }
 
   private def hasConnection(
