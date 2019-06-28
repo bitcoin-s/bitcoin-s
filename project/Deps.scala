@@ -29,7 +29,9 @@ object Deps {
     val scalameterV = "0.17"
     val uPickleV = "0.7.5"
 
+    // CLI deps
     val scoptV = "4.0.0-RC2"
+    val sttpV = "1.1.13"
   }
 
   object Compile {
@@ -63,6 +65,9 @@ object Deps {
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
+
+    // HTTP client lib
+    val sttp = "com.softwaremill.sttp" %% "core" % V.sttpV
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
@@ -150,6 +155,7 @@ object Deps {
   )
 
   val cli = List(
+    Compile.sttp,
     Compile.scopt
   )
 
