@@ -77,18 +77,6 @@ lazy val commonSettings = List(
   assemblyOption in assembly := (assemblyOption in assembly).value
     .copy(includeScala = false),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-  /**
-    * Adding Ammonite REPL to test scope, can access both test and compile
-    * sources. Docs: http://ammonite.io/#Ammonite-REPL
-    * Creates an ad-hoc main file that can be run by doing
-    * test:run (or test:runMain amm if there's multiple main files
-    * in scope)
-    */
-  Test / sourceGenerators += Def.task {
-    val file = (Test / sourceManaged).value / "amm.scala"
-    IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
-    Seq(file)
-  }.taskValue,
   // Travis has performance issues on macOS
   Test / parallelExecution := !(Properties.isMac && sys.props
     .get("CI")
@@ -152,7 +140,6 @@ lazy val bitcoins = project
   .settings(commonSettings: _*)
   // crossScalaVersions must be set to Nil on the aggregating project
   .settings(crossScalaVersions := Nil)
-  .settings(libraryDependencies ++= Deps.root)
   .enablePlugins(ScalaUnidocPlugin, GitVersioning)
   .settings(
     // we modify the unidoc task to move the generated Scaladocs into the
@@ -292,13 +279,41 @@ lazy val coreTest = project
   )
   .enablePlugins()
 
-lazy val cli = project
-    .in(file("cli"))
-    .settings(commonProdSettings: _*)
+lazy val walletServer = project
+    .in(file("app/server"))
+    .settings(commonSettings: _*)
     .dependsOn(
       core % testAndCompile,
+      node,
+      chain, 
+      wallet,
+      bitcoindRpc
+    )
+
+lazy val walletServerTest = project
+    .in(file("app/server-test"))
+    .settings(commonTestSettings)
+    .dependsOn(
+      walletServer,
       testkit
     )
+
+
+lazy val cli = project
+    .in(file("app/cli"))
+    .settings(commonSettings: _*)
+    .dependsOn(
+      core % testAndCompile
+    )
+
+lazy val cliTest = project
+    .in(file("app/cli-test"))
+    .settings(commonTestSettings: _*)
+    .dependsOn(
+      cli, 
+      testkit
+    )
+
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
 lazy val chain = project
@@ -436,6 +451,8 @@ lazy val testkit = project
   .settings(commonSettings: _*)
   .dependsOn(
     core % testAndCompile,
+    walletServer,
+    cli,
     chain,
     bitcoindRpc,
     eclairRpc,
@@ -499,19 +516,6 @@ lazy val scripts = project
     wallet,
     zmq
   )
-
-// Ammonite is invoked through running
-// a main class it places in test sources
-// for us. This makes it a bit less awkward
-// to start the Ammonite shell. Sadly,
-// prepending the project and then doing
-// `amm` (e.g. sbt coreTest/amm`) does not
-// work. For that you either have to do
-// `sbt coreTest/test:run` or:
-// sbt
-// project coreTest
-// amm
-addCommandAlias("amm", "test:run")
 
 publishArtifact in bitcoins := false
 

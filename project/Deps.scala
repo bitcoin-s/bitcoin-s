@@ -27,6 +27,8 @@ object Deps {
     val sqliteV = "3.27.2.1"
     val uJsonV = "0.7.1"
     val scalameterV = "0.17"
+
+    val scoptV = "4.0.0-RC2"
   }
 
   object Compile {
@@ -74,37 +76,28 @@ object Deps {
     val spray = "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
-    val ammonite = Compile.ammonite % "test"
     val playJson = Compile.playJson % "test"
     val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
     val scalameter = "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
   }
 
-  val root = List(
-    Test.ammonite
-  )
-
   val chain = List(
-    Compile.slf4j,
-    Test.ammonite
+    Compile.slf4j
   )
 
   val chainTest = List(
-    Test.ammonite,
     Test.logback
   )
 
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
-    Compile.slf4j,
-    Test.ammonite
+    Compile.slf4j
   )
 
   val secp256k1jni = List(
     Compile.nativeLoader,
-    Test.junitInterface,
-    Test.ammonite
+    Test.junitInterface
   )
 
   val coreTest = List(
@@ -113,7 +106,6 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.spray,
-    Test.ammonite,
     Test.playJson
   )
 
@@ -122,8 +114,7 @@ object Deps {
     Compile.slf4j,
     Test.logback,
     Test.scalacheck,
-    Test.scalaTest,
-    Test.ammonite
+    Test.scalaTest
   )
 
   val bitcoindRpc = List(
@@ -131,8 +122,7 @@ object Deps {
     Compile.akkaStream,
     Compile.playJson,
     Compile.slf4j,
-    Compile.typesafeConfig,
-    Test.ammonite
+    Compile.typesafeConfig
   )
 
   val bitcoindRpcTest = List(
@@ -141,34 +131,33 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
-    Test.async,
-    Test.ammonite
+    Test.async
   )
 
   val bench = List(
     "org.slf4j" % "slf4j-api" % V.slf4j withSources () withJavadoc (),
-    Compile.logback,
-    Test.ammonite
+    Compile.logback
   )
 
   val dbCommons = List(
     Compile.slick,
     Compile.sqlite,
-    Compile.slickHikari,
-    Test.ammonite
+    Compile.slickHikari
   )
 
   val cli = List(
-    Test.ammonite,
     Compile.scopt
+  )
+
+  val server = List(
+    Compile.akkaHttp
   )
 
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
     Compile.playJson,
-    Compile.slf4j,
-    Test.ammonite
+    Compile.slf4j
   )
 
   val eclairRpcTest = List(
@@ -176,8 +165,7 @@ object Deps {
     Test.akkaStream,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck,
-    Test.ammonite
+    Test.scalacheck
   )
 
   val node = List(
@@ -186,23 +174,20 @@ object Deps {
     Compile.joda,
     Compile.slick,
     Compile.slickHikari,
-    Compile.sqlite,
-    Test.ammonite
+    Compile.sqlite
   )
 
   val nodeTest = List(
     Test.akkaTestkit,
     Test.logback,
-    Test.scalaTest,
-    Test.ammonite
+    Test.scalaTest
   )
 
   val testkit = List(
     Compile.slf4j,
     Compile.scalacheck,
     Compile.scalaTest,
-    Test.akkaTestkit,
-    Test.ammonite
+    Test.akkaTestkit
   )
 
   val scripts = List(
@@ -211,18 +196,15 @@ object Deps {
   )
 
   val wallet = List(
-    Test.ammonite,
     Compile.uJson
   )
 
   val walletTest = List(
     Test.logback,
-    Test.akkaTestkit,
-    Test.ammonite
+    Test.akkaTestkit
   )
 
   val docs = List(
-    Compile.ammonite,
     Compile.logback,
     Test.scalaTest,
     Test.logback
