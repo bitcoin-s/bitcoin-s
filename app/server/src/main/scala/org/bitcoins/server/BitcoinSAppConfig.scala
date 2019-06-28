@@ -29,7 +29,7 @@ case class BitcoinSAppConfig(private val confs: Config*) {
   }
 
   /** The underlying config the result of our fields derive from */
-  lazy val config = {
+  lazy val config: Config = {
     assert(chainConf.config == nodeConf.config)
     assert(nodeConf.config == walletConf.config)
 

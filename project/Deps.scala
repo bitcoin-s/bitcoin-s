@@ -27,6 +27,7 @@ object Deps {
     val sqliteV = "3.27.2.1"
     val uJsonV = "0.7.1"
     val scalameterV = "0.17"
+    val uPickleV = "0.7.5"
 
     val scoptV = "4.0.0-RC2"
   }
@@ -56,6 +57,9 @@ object Deps {
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val uJson = "com.lihaoyi" %% "ujson" % V.uJsonV
+
+    // serializing to and from JSON
+    val uPickle = "com.lihaoyi" %% "upickle" % V.uPickleV
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -150,6 +154,7 @@ object Deps {
   )
 
   val server = List(
+    Compile.uPickle,
     Compile.akkaHttp
   )
 
