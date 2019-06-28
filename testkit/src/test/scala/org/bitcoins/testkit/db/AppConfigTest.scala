@@ -2,8 +2,8 @@ package org.bitcoins.testkit.db
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSAppConfig._
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig._
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.chain.models.BlockHeaderDAO
@@ -19,7 +19,6 @@ import org.bitcoins.core.hd.HDCoin
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.HDCoinType
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import os.write
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.db.DbManagement
 import org.bitcoins.wallet.db.WalletDbManagement
@@ -27,6 +26,7 @@ import org.bitcoins.db.SQLiteTableInfo
 import slick.jdbc.SQLiteProfile.api._
 import org.bitcoins.db.CRUD
 import java.nio.file.Files
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 class AppConfigTest extends BitcoinSUnitTest {
 
@@ -39,7 +39,7 @@ class AppConfigTest extends BitcoinSUnitTest {
     val networkOverride =
       ConfigFactory.parseString("bitcoin-s.network = testnet3")
 
-    val config = BitcoinSAppConfig.getTestConfig(networkOverride)
+    val config = BitcoinSTestAppConfig.getTestConfig(networkOverride)
     val chainConf = config.chainConf
     val walletConf = config.walletConf
     val nodeConf = config.nodeConf
@@ -53,7 +53,7 @@ class AppConfigTest extends BitcoinSUnitTest {
   }
 
   it must "have the same DB path" in {
-    val conf = BitcoinSAppConfig.getTestConfig()
+    val conf = BitcoinSTestAppConfig.getTestConfig()
     val chainConf = conf.chainConf
     val walletConf = conf.walletConf
     val nodeConf = conf.nodeConf
@@ -62,7 +62,7 @@ class AppConfigTest extends BitcoinSUnitTest {
   }
 
   it must "have distinct databases" in {
-    val conf = BitcoinSAppConfig.getTestConfig()
+    val conf = BitcoinSTestAppConfig.getTestConfig()
     val chainConf = conf.chainConf
     val walletConf = conf.walletConf
     val nodeConf = conf.nodeConf
@@ -71,7 +71,7 @@ class AppConfigTest extends BitcoinSUnitTest {
   }
 
   it must "be able to write to distinct databases" in {
-    implicit val config = BitcoinSAppConfig.getTestConfig()
+    implicit val config = BitcoinSTestAppConfig.getTestConfig()
     val chainConf = config.chainConf
     val walletConf = config.walletConf
     val nodeConf = config.nodeConf

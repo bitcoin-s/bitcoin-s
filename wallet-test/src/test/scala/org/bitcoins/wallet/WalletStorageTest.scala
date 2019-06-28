@@ -19,7 +19,7 @@ import java.nio.file.Paths
 import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
 import java.{util => ju}
 import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
-import org.bitcoins.testkit.BitcoinSAppConfig._
+import org.bitcoins.server.BitcoinSAppConfig._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

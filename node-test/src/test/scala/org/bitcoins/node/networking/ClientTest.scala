@@ -5,7 +5,8 @@ import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
-import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -25,19 +26,21 @@ class ClientTest
     with BeforeAndAfterAll {
 
   implicit private val config: BitcoinSAppConfig =
-    BitcoinSAppConfig.getTestConfig()
+    BitcoinSTestAppConfig.getTestConfig()
   implicit private val chainConf = config.chainConf
   implicit private val nodeConf = config.nodeConf
 
   implicit val np = config.chainConf.network
 
-  lazy val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+  lazy val bitcoindRpcF =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
-  lazy val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+  lazy val bitcoindRpc2F =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
