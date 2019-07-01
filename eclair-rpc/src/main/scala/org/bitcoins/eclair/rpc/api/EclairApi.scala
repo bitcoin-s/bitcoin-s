@@ -5,7 +5,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.{Address, NetworkElement}
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentId, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
-import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -31,7 +31,7 @@ trait EclairApi {
     * @param from start timestamp
     * @param to end timestamp
     */
-  def audit(from: Long, to: Long): Future[AuditResult]
+  def audit(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[AuditResult]
 
   def allUpdates(): Future[Vector[ChannelUpdate]]
 
@@ -107,7 +107,17 @@ trait EclairApi {
     getNodeURI.map(_.nodeId)
   }
 
-  def createInvoice(description: String, amountMsat: Option[LnCurrencyUnit], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
+  def createInvoice(description: String): Future[LnInvoice]
+
+  def createInvoice(description: String, amountMsat: MilliSatoshis): Future[LnInvoice]
+
+  def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration): Future[LnInvoice]
+
+  def createInvoice(description: String, amountMsat: MilliSatoshis, paymentPreimage: PaymentPreimage): Future[LnInvoice]
+
+  def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration, paymentPreimage: PaymentPreimage): Future[LnInvoice]
+
+  def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
 
   def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]
 
@@ -115,7 +125,11 @@ trait EclairApi {
 
   def parseInvoice(invoice: LnInvoice): Future[InvoiceResult]
 
-  def payInvoice(invoice: LnInvoice, amountMsat: Option[LnCurrencyUnit], maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[PaymentId]
+  def payInvoice(invoice: LnInvoice): Future[PaymentId]
+
+  def payInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentId]
+
+  def payInvoice(invoice: LnInvoice, amountMsat: Option[MilliSatoshis], maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
 
   def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]]
 
@@ -125,12 +139,12 @@ trait EclairApi {
 
   def getReceivedInfo(invoice: LnInvoice): Future[ReceivedPaymentResult]
 
-  def sendToNode(nodeId: NodeId, amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[PaymentId]
+  def sendToNode(nodeId: NodeId, amountMsat: MilliSatoshis, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
 
   /**
     * Documented by not implemented in Eclair
     */
-  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId]
+  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: MilliSatoshis, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId]
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
 }

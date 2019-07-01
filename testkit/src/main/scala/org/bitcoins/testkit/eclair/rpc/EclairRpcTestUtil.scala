@@ -510,7 +510,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       .map(
         sats =>
           c1.createInvoice(s"this is a note for $sats")
-            .flatMap(invoice => c2.payInvoice(invoice, sats.toLnCurrencyUnit))
+            .flatMap(invoice => c2.payInvoice(invoice, sats))
       )
 
     val resultF = Future.sequence(payments).map(_.toVector)

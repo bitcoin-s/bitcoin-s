@@ -13,7 +13,7 @@ import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.{Address, NetworkElement}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
-import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentId, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -69,8 +69,10 @@ class EclairRpcClient(val instance: EclairInstance)(
   /**
     * @inheritdoc
     */
-  override def audit(from: Long, to: Long): Future[AuditResult] =
-    eclairCall[AuditResult]("audit", "from" -> from.toString, "to" -> to.toString)
+  override def audit(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[AuditResult] =
+    eclairCall[AuditResult]("audit", Seq(
+      from.map(x => "from" -> x.toSeconds.toString),
+      to.map(x => "to" -> x.toSeconds.toString)).flatten: _*)
 
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
     eclairCall[ChannelResult]("channel", "channelId" -> channelId.hex)
@@ -272,31 +274,30 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[Vector[PeerInfo]]("peers")
   }
 
-
-  def createInvoice(description: String): Future[LnInvoice] = {
+  override def createInvoice(description: String): Future[LnInvoice] = {
     createInvoice(description, None, None, None, None)
   }
 
-  def createInvoice(description: String, amount: LnCurrencyUnit): Future[LnInvoice] = {
-    createInvoice(description, Some(amount), None, None, None)
+  override def createInvoice(description: String, amountMsat: MilliSatoshis): Future[LnInvoice] = {
+    createInvoice(description, Some(amountMsat), None, None, None)
   }
 
-  def createInvoice(description: String, amount: LnCurrencyUnit, expireIn: FiniteDuration): Future[LnInvoice] = {
-    createInvoice(description, Some(amount), Some(expireIn), None, None)
+  override def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration): Future[LnInvoice] = {
+    createInvoice(description, Some(amountMsat), Some(expireIn), None, None)
   }
 
-  def createInvoice(description: String, amount: LnCurrencyUnit, paymentPreimage: PaymentPreimage): Future[LnInvoice] = {
-    createInvoice(description, Some(amount), None, None, Some(paymentPreimage))
+  override def createInvoice(description: String, amountMsat: MilliSatoshis, paymentPreimage: PaymentPreimage): Future[LnInvoice] = {
+    createInvoice(description, Some(amountMsat), None, None, Some(paymentPreimage))
   }
 
-  def createInvoice(description: String, amount: LnCurrencyUnit, expireIn: FiniteDuration, paymentPreimage: PaymentPreimage): Future[LnInvoice] = {
-    createInvoice(description, Some(amount), Some(expireIn), None, Some(paymentPreimage))
+  override def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration, paymentPreimage: PaymentPreimage): Future[LnInvoice] = {
+    createInvoice(description, Some(amountMsat), Some(expireIn), None, Some(paymentPreimage))
   }
 
-  override def createInvoice(description: String, amountMsat: Option[LnCurrencyUnit], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice] = {
+  override def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice] = {
     val params = Seq(
       Some("description" -> description),
-      amountMsat.map(x => "amountMsat" -> x.toMSat.toBigDecimal.toString),
+      amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString),
       expireIn.map(x => "expireIn" -> x.toSeconds.toString),
       fallbackAddress.map(x => "fallbackAddress" -> x.toString),
       paymentPreimage.map(x => "paymentPreimage" -> x.hex)
@@ -314,20 +315,20 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[InvoiceResult]("parseinvoice", "invoice" -> invoice.toString)
   }
 
-  def payInvoice(invoice: LnInvoice): Future[PaymentId] = {
+  override def payInvoice(invoice: LnInvoice): Future[PaymentId] = {
     payInvoice(invoice, None, None, None, None)
   }
 
-  def payInvoice(invoice: LnInvoice, amount: LnCurrencyUnit): Future[PaymentId] = {
+  override def payInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentId] = {
     payInvoice(invoice, Some(amount), None, None, None)
   }
 
-  override def payInvoice(invoice: LnInvoice, amountMsat: Option[LnCurrencyUnit], maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[PaymentId] = {
+  override def payInvoice(invoice: LnInvoice, amountMsat: Option[MilliSatoshis], maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId] = {
     val params = Seq(
       Some("invoice" -> invoice.toString),
-      amountMsat.map(x => "amountMsat" -> x.toMSat.toBigDecimal.toString),
+      amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString),
       maxAttempts.map(x => "maxAttempts" -> x.toString),
-      feeThresholdSat.map(x => "feeThresholdSat" -> x.toSatoshis.toBigDecimal.toString),
+      feeThresholdSat.map(x => "feeThresholdSat" -> x.toBigDecimal.toString),
       maxFeePct.map(x => "maxFeePct" -> x.toString)
     ).flatten
 
@@ -350,23 +351,23 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[Vector[PaymentResult]]("getsentinfo", "id" -> id.toString)
   }
 
-  override def sendToNode(nodeId: NodeId, amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[LnCurrencyUnit], maxFeePct: Option[Int]): Future[PaymentId] = {
+  override def sendToNode(nodeId: NodeId, amountMsat: MilliSatoshis, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId] = {
     val params = Seq(
       "nodeId" -> nodeId.toString,
-      "amountMsat" -> amountMsat.toMSat.toBigDecimal.toString,
+      "amountMsat" -> amountMsat.toBigDecimal.toString,
       "paymentHash" -> paymentHash.hex) ++ Seq(
       maxAttempts.map(x => "maxAttempts" -> x.toString),
-      feeThresholdSat.map(x => "feeThresholdSat" -> x.toSatoshis.toBigDecimal.toString),
+      feeThresholdSat.map(x => "feeThresholdSat" -> x.toBigDecimal.toString),
       maxFeePct.map(x => "maxFeePct" -> x.toString)
     ).flatten
 
     eclairCall[PaymentId]("sendtonode", params: _*)
   }
 
-  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: LnCurrencyUnit, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId] = {
+  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: MilliSatoshis, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId] = {
     eclairCall[PaymentId]("sendtoroute",
       "route" -> route.mkString(","),
-      "amountMsat" -> amountMsat.toMSat.toBigDecimal.toString,
+      "amountMsat" -> amountMsat.toBigDecimal.toString,
       "paymentHash" -> paymentHash.hex,
       "finalCltvExpiry" -> finalCltvExpiry.toString)
   }
