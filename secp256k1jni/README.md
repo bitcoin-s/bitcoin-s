@@ -103,3 +103,22 @@ TODO
 ### Linux 64 bit
 
 TODO
+
+
+### Windows 64 bit
+
+To build binaries for windows, you need to cross compile them from a linux machine. This can be done with the following commands. The origin of these commands [comes from ACINQ](https://github.com/ACINQ/bitcoin-lib/blob/bf115a442e17e1522eba98a362473fddd9b1ffe6/BUILDING.md#for-windows-64-bits)
+
+
+```
+$ sudo apt install g++-mingw-w64-x86-64
+$ sudo update-alternatives --config x86_64-w64-mingw32-g++ # Set the default mingw32 g++ compiler option to posix.
+```
+
+```
+# this is needed to compile shared libraries, otherwise you'll get:
+# libtool: warning: undefined symbols not allowed in x86_64-w64-mingw32 shared libraries; building static only
+$ echo "LDFLAGS = -no-undefined" >> Makefile.am
+$ ./configure --host=x86_64-w64-mingw32 --enable-experimental --enable-module_ecdh --enable-jni && make clean && make CFLAGS="-std=c99"
+cp ./.libs/libsecp256k1-0.dll ../src/main/resources/fr/acinq/native/Windows/x86_64/secp256k1.dll
+```
