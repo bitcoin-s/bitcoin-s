@@ -9,7 +9,6 @@ language: scala
 os:
   - linux
   - osx
-  - windows
 
 scala:
   - 2.11.12
