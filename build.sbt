@@ -108,6 +108,25 @@ lazy val commonTestWithDbSettings = Seq(
 
 lazy val commonProdSettings = commonSettings
 
+lazy val Benchmark = config("bench") extend Test
+lazy val benchSettings: Seq[Def.SettingsDefinition] = {
+  //for scalameter
+  //https://scalameter.github.io/home/download/
+  //you can add benchmarking to a project by adding these to lines
+  //to the projects build definition
+  //  .settings(benchSettings: _*)
+  //  .configs(Benchmark)
+  List(
+    unmanagedSourceDirectories in Test += baseDirectory.value / "src" / "bench" / "scala",
+    testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+    parallelExecution in Benchmark := false,
+    outputStrategy in Benchmark := Some(StdoutOutput),
+    fork in Benchmark := true,
+    connectInput in Benchmark := true,
+    inConfig(Benchmark)(Defaults.testSettings)
+  )
+}
+
 lazy val bitcoins = project
   .in(file("."))
   .aggregate(
@@ -130,6 +149,7 @@ lazy val bitcoins = project
     zmq
   )
   .settings(commonSettings: _*)
+  // crossScalaVersions must be set to Nil on the aggregating project
   .settings(crossScalaVersions := Nil)
   .settings(libraryDependencies ++= Deps.root)
   .enablePlugins(ScalaUnidocPlugin, GitVersioning)
