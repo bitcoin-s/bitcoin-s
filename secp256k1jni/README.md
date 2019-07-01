@@ -12,7 +12,7 @@ Currently we have support for natives on
 3. [mac osx 64 bit](natives/osx_64)
 
 
-This uses a zero depdency library called `native-lib-loader`. The does the appropriate loading of the library onto your classpath to be accessed. To tell if you have access to libsecp256k1 you can do the following
+This uses a zero depdency library called [`native-lib-loader`](https://github.com/scijava/native-lib-loader). The does the appropriate loading of the library onto your classpath to be accessed. To tell if you have access to libsecp256k1 you can do the following
 
 ```scala
 sbt:root> project secp256k1jni
