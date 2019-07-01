@@ -40,7 +40,7 @@ install:
   - if [ $(($RANDOM%2)) == 1 ]; then BITCOIND_PATH=$BITCOIND_V16_PATH; else BITCOIND_PATH=$BITCOIND_V17_PATH; fi;
   - export PATH=$BITCOIND_PATH:$PATH
   # # # Eclair
-  - wget https://github.com/ACINQ/eclair/releases/download/v0.2-beta8/eclair-node-0.2-beta8-52821b8.jar
+  - wget https://github.com/ACINQ/eclair/releases/download/v0.3/eclair-node-0.3-a5debcd.jar
   - export ECLAIR_PATH=$(pwd)
 
 before_script:
