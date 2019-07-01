@@ -223,38 +223,15 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
               s"${xs.length} SPKs were relevant to transaction=${transaction.txIdBE}, but we aren't able to handle more than 1 for the time being")
           }
 
-          def processUtxo(index: Int): Future[SpendingInfoDb] =
-            addUtxo(transaction, UInt32(index))
-              .flatMap {
-                case AddUtxoSuccess(utxo) => Future.successful(utxo)
-                case err: AddUtxoError =>
-                  logger.error(s"Could not add UTXO", err)
-                  Future.failed(err)
-              }
-
           val addUTXOsFut: Future[Seq[(SpendingInfoDb, OutputWithIndex)]] =
             Future
               .sequence {
-                xs.map(out => processUtxo(out.index).map(_ -> out))
+                xs.map(out => processUtxo(transaction, out.index).map(_ -> out))
               }
 
-          val createIncomingTxo: Seq[(SpendingInfoDb, OutputWithIndex)] => Vector[
-            IncomingWalletTXO] =
-            _.map {
-              case (utxo, OutputWithIndex(out, index)) =>
-                IncomingWalletTXO(
-                  confirmations = confirmations,
-                  // is this always the case?
-                  spent = false,
-                  scriptPubKey = out.scriptPubKey,
-                  txid = transaction.txIdBE,
-                  // always defined, as its freshly
-                  // written to the DB
-                  spendingInfoID = utxo.id.get
-                )
-            }.toVector
+          val incomingTXOsFut =
+            addUTXOsFut.map(createIncomingTxos(transaction, confirmations, _))
 
-          val incomingTXOsFut = addUTXOsFut.map(createIncomingTxo)
           val writeIncomingTXOsFut =
             incomingTXOsFut.flatMap(incomingTxoDAO.createAll)
 
@@ -262,6 +239,48 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
       }
     }
+  }
+
+  /**
+    * Inserts the UTXO at the given index into our DB, swallowing the
+    * error if any (this is because we're operating on data we've
+    * already verified). This method is only meant as a helper method in
+    * processing transactions.
+    */
+  // TODO move this into a TX processing trait
+  def processUtxo(
+      transaction: Transaction,
+      index: Int): Future[SpendingInfoDb] =
+    addUtxo(transaction, UInt32(index))
+      .flatMap {
+        case AddUtxoSuccess(utxo) => Future.successful(utxo)
+        case err: AddUtxoError =>
+          logger.error(s"Could not add UTXO", err)
+          Future.failed(err)
+      }
+
+  /**
+    * @param xs UTXO sequence we want to create
+    *           incoming wallet TXOs for
+    */
+  // TODO move this into a TX processing trait
+  private def createIncomingTxos(
+      transaction: Transaction,
+      confirmations: Int,
+      xs: Seq[(SpendingInfoDb, OutputWithIndex)]): Vector[IncomingWalletTXO] = {
+    xs.map {
+      case (utxo, OutputWithIndex(out, _)) =>
+        IncomingWalletTXO(
+          confirmations = confirmations,
+          // is this always the case?
+          spent = false,
+          scriptPubKey = out.scriptPubKey,
+          txid = transaction.txIdBE,
+          // always defined, as its freshly
+          // written to the DB
+          spendingInfoID = utxo.id.get
+        )
+    }.toVector
   }
 
   /**
@@ -274,6 +293,8 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       confirmations: Int,
       foundTxo: IncomingWalletTXO): Future[Option[IncomingWalletTXO]] = {
     if (foundTxo.confirmations < confirmations) {
+      // TODO The assumption here is that double-spends never occur. That's not
+      // the case. This must be fixed when double-spend logic is implemented.
       logger.debug(
         s"Increasing confirmation count of txo=${transaction.txIdBE}, old=${foundTxo.confirmations} new=${confirmations}")
       val updateF =
@@ -298,6 +319,8 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       logger.warn(msg)
       Future.failed(new RuntimeException(msg))
     } else {
+      // TODO: This is bad in the case of double-spends and re-orgs. Come back
+      // and look at this when implementing logic for those scenarios.
       logger.debug(
         s"Skipping further processing of transaction=${transaction.txIdBE}, already processed.")
       Future.successful(None)
