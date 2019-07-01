@@ -30,7 +30,12 @@ public class Secp256k1Context {
       boolean isEnabled = true;
       long contextRef = -1;
       try {
-          NativeLoader.loadLibrary("secp256k1");
+          if (System.getProperty("os.name").startsWith("Windows")) {
+              //our binary for windows has a different name than the linux/mac binary
+              NativeLoader.loadLibrary("libsecp256k1-0");
+          } else {
+              NativeLoader.loadLibrary("secp256k1");
+          }
           contextRef = secp256k1_init_context();
       } catch (java.io.IOException | UnsatisfiedLinkError e) {
           System.out.println("UnsatisfiedLinkError: " + e.toString());
