@@ -319,16 +319,12 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
             processNewIncomingTx(transaction, confirmations)
 
           case txos: Vector[IncomingWalletTXO] =>
-            Future
-              .sequence {
-                txos
-                  .map(
-                    output =>
-                      processExistingIncomingTxo(transaction,
-                                                 confirmations,
-                                                 output))
+            val txoProcessingFutures: Vector[
+              Future[Option[IncomingWalletTXO]]] = txos
+              .map(processExistingIncomingTxo(transaction, confirmations, _))
 
-              }
+            Future
+              .sequence(txoProcessingFutures)
               .map(_.flatten)
 
         }
