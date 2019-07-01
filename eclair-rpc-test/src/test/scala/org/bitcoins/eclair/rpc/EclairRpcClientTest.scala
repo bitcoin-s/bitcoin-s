@@ -121,7 +121,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       firstClient <- firstClientF
       secondClient <- secondClientF
       fourthClient <- fourthClientF
-      invoice <- fourthClient.createInvoice("test", MilliSatoshis(50000).toLnCurrencyUnit)
+      invoice <- fourthClient.createInvoice("test", 50000.pBTC)
       paymentId <- firstClient.payInvoice(invoice)
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(firstClient, paymentId)
       received <- fourthClient.audit()
@@ -137,7 +137,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to send payments in both directions" ignore {
     val paymentAmount = MilliSatoshis(100000000)
     val paymentAmount2 = MilliSatoshis(100000000)
-    //    val paymentAmount = NanoBitcoins(100000000)
 
     val sendInBothDiercions = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
@@ -164,8 +163,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "check a payment" in {
-    val paymentAmount = MilliSatoshis(50)
-    //    val paymentAmount = NanoBitcoins(100000)
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
 
@@ -173,7 +170,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
           channleId <- openAndConfirmChannel(clientF, otherClientF)
           client <- clientF
           otherClient <- otherClientF
-          invoice <- otherClient.createInvoice("abc", paymentAmount.toLnCurrencyUnit)
+          invoice <- otherClient.createInvoice("abc", 500.pBTC)
           infos <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
           _ = assert(infos.isEmpty)
           paymentId <- client.payInvoice(invoice)
@@ -215,12 +212,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       info <- c.getInfo
-      invoice <- c.createInvoice(description = "test", amount = 12345.msats.toLnCurrencyUnit)
+      invoice <- c.createInvoice(description = "test", amount = 123450.pBTC)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
-      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
+      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(123450.pBTC)).toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(12345.msats.toLnCurrencyUnit))
+      assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
@@ -231,12 +228,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     for {
       c <- clientF
       info <- c.getInfo
-      invoice <- c.createInvoice(description = "test", amount = 12345.msats.toLnCurrencyUnit, expireIn = 67890.seconds)
+      invoice <- c.createInvoice(description = "test", amount = 123450.pBTC, expireIn = 67890.seconds)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
-      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
+      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(123450.pBTC)).toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(12345.msats.toLnCurrencyUnit))
+      assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
@@ -251,15 +248,15 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       info <- c.getInfo
       invoice <- c.createInvoice(
         description = "test",
-        amountMsat = Some(12345.msats.toLnCurrencyUnit),
+        amountMsat = Some(123450.pBTC),
         expireIn = Some(67890.seconds),
         fallbackAddress = Some(testBitcoinAddress),
         paymentPreimage = None)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
-      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
+      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(123450.pBTC)).toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(12345.msats.toLnCurrencyUnit))
+      assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
@@ -274,14 +271,14 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       info <- c.getInfo
       invoice <- c.createInvoice(
         description = "test",
-        amountMsat = Some(12345.msats.toLnCurrencyUnit),
+        amountMsat = Some(123450.pBTC),
         expireIn = Some(67890.seconds),
         fallbackAddress = Some(testBitcoinAddress),
         paymentPreimage = Some(testPaymentPreimage))
     } yield {
-      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
+      assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(123450.pBTC)).toString)
       assert(invoice.network == LnBitcoinRegTest)
-      assert(invoice.amount == Some(12345.msats.toLnCurrencyUnit))
+      assert(invoice.amount == Some(123450.pBTC))
       assert(invoice.isValidSignature)
       assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
@@ -772,7 +769,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val hasRoute = () => {
       fourthClientF.flatMap { fourthClient =>
         fourthClient
-          .createInvoice("foo", Some(100.msats.toLnCurrencyUnit), None, None, None)
+          .createInvoice("foo", Some(1000.pBTC), None, None, None)
           .flatMap { invoice =>
             firstClientF.flatMap(_.findRoute(invoice, None))
           }
@@ -963,7 +960,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "get invoice" in {
     for {
       c <- clientF
-      i <- c.createInvoice("test", MilliSatoshis(123457890).toLnCurrencyUnit)
+      i <- c.createInvoice("test", 123457890.pBTC)
       res <- c.getInvoice(i.lnTags.paymentHash.hash)
     } yield {
       assert(res.amount == i.amount)

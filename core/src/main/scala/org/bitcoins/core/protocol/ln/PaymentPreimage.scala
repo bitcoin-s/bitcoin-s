@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto.Sha256Digest
+import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Digest}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{CryptoUtil, Factory}
 import scodec.bits.ByteVector
@@ -19,5 +19,7 @@ object PaymentPreimage extends Factory[PaymentPreimage] {
   override def fromBytes(bytes: ByteVector): PaymentPreimage = {
     new PaymentPreimage(bytes)
   }
+
+  def random: PaymentPreimage = fromBytes(ECPrivateKey.freshPrivateKey.bytes)
 
 }

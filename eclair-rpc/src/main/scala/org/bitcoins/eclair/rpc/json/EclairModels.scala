@@ -1,6 +1,6 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ECDigitalSignature, Sha256Digest}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE, ECDigitalSignature, Sha256Digest}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
@@ -89,7 +89,7 @@ case class AuditResult(
 case class NetworkFeesResult(
     remoteNodeId: NodeId,
     channelId: FundedChannelId,
-    txId: String,
+    txId: DoubleSha256DigestBE,
     feeSat: Satoshis,
     txType: String,
     timestamp: FiniteDuration
@@ -301,12 +301,6 @@ case class ReceivedPaymentResult(
   amountMsat: MilliSatoshis,
   receivedAt: FiniteDuration)
 
-//object PaymentStatus extends Enumeration {
-//  val PENDING = Value(1, "PENDING")
-//  val SUCCEEDED = Value(2, "SUCCEEDED")
-//  val FAILED = Value(3, "FAILED")
-//}
-
 sealed trait PaymentStatus
 object PaymentStatus {
   case object PENDING extends PaymentStatus
@@ -317,34 +311,14 @@ object PaymentStatus {
     case "PENDING" => PENDING
     case "SUCCEEDED" => SUCCEEDED
     case "FAILED" => FAILED
+    case _ => throw new IllegalArgumentException("Invalid payment status code")
   }
 }
 
-//case class PaymentSucceeded(
-//    amountMsat: MilliSatoshis,
-//    paymentHash: Sha256Digest,
-//    paymentPreimage: String,
-//    route: JsArray)
-//    extends PaymentResult
-//
-//case class PaymentFailed(paymentHash: Sha256Digest, failures: Vector[JsObject])
-//    extends PaymentResult
-/*
-case class PaymentFailure(???) extends SendResult
-implicit val paymentFailureReads: Reads[PaymentFailure] = Json.reads[PaymentFailure]
-implicit val sendResultReads: Reads[SendResult] = Reads[SendResult] { json =>
-  json.validate[PaymentSucceeded] match {
-    case success: JsSuccess[PaymentSucceeded] => success
-    case err1: JsError => json.validate[PaymentFailure] match {
-      case failure: JsSuccess[PaymentFailure] => failure
-      case err2: JsError => JsError.merge(err1, err2)
-    }
-  }
-}*/
+sealed trait WebSocketEvent
 
-object WebSocketEvents {
+object WebSocketEvent {
 
-  sealed trait Event
 
   case class PaymentRelayed(
       amountIn: MilliSatoshis,
@@ -352,17 +326,17 @@ object WebSocketEvents {
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration) extends Event
+      timestamp: FiniteDuration) extends WebSocketEvent
 
   case class PaymentReceived(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
-      timestamp: FiniteDuration) extends Event
+      timestamp: FiniteDuration) extends WebSocketEvent
 
   case class PaymentFailed(
       paymentHash: Sha256Digest,
-      failures: Vector[String]) extends Event
+      failures: Vector[String]) extends WebSocketEvent
 
   case class PaymentSent(
       amount: MilliSatoshis,
@@ -370,11 +344,11 @@ object WebSocketEvents {
       paymentHash: Sha256Digest,
       paymentPreimage: PaymentPreimage,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration) extends Event
+      timestamp: FiniteDuration) extends WebSocketEvent
 
   case class PaymentSettlingOnchain(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
-      timestamp: FiniteDuration) extends Event
+      timestamp: FiniteDuration) extends WebSocketEvent
 
 }

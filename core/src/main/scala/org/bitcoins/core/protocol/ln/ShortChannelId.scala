@@ -18,7 +18,8 @@ case class ShortChannelId(u64: UInt64) extends NetworkElement {
   override def toString: String = toHumanReadableString
 
   /**
-    * Converts the short channel id into the human readable form defined in https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md
+    * Converts the short channel id into the human readable form defined in BOLT.
+    * @see [[https://github.com/lightningnetwork/lightning-rfc/blob/master/07-routing-gossip.md  BOLT7]]
     *
     * Output example:
     * {{{

@@ -259,7 +259,7 @@ object JsonReaders {
   implicit val usableBalancesResultReads: Reads[UsableBalancesResult] =
     Json.reads[UsableBalancesResult]
 
-  import WebSocketEvents._
+  import WebSocketEvent._
 
   implicit val paymentRelayedEventReads: Reads[PaymentRelayed] =
     Json.reads[PaymentRelayed]
