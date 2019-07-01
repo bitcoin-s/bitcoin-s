@@ -148,7 +148,7 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield BaseTransaction(version, is, os, lockTime)
 
   /** Generates a legacy transaction with at least one output paying to the given SPK */
-  def baseTransactionTo(spk: ScriptPubKey) =
+  def baseTransactionTo(spk: ScriptPubKey): Gen[BaseTransaction] =
     for {
       version <- NumberGenerator.int32s
       is <- smallInputs
