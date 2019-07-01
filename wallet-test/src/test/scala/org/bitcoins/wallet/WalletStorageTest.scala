@@ -5,7 +5,6 @@ import org.bitcoins.testkit.Implicits._
 import org.scalatest.FutureOutcome
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import javassist.bytecode.Mnemonic
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.crypto.AesPassword
 import scala.util.Success
