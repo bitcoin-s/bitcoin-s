@@ -5,6 +5,8 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.config.Networks
+import scala.util.Failure
+import scala.util.Success
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {
@@ -30,7 +32,8 @@ object CliReaders {
   implicit val bitcoinAddressReads: Read[BitcoinAddress] =
     new Read[BitcoinAddress] {
       val arity: Int = 1
-      val reads: String => BitcoinAddress = BitcoinAddress.fromStringExn _
+
+      val reads: String => BitcoinAddress = BitcoinAddress.fromStringExn
     }
 
   implicit val bitcoinsReads: Read[Bitcoins] =

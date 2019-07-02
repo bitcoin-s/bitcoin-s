@@ -25,9 +25,12 @@ object Deps {
     val akkaActorV = akkaStreamv
     val slickV = "3.3.1"
     val sqliteV = "3.27.2.1"
-    val uJsonV = "0.7.1"
     val scalameterV = "0.17"
+
+    // Wallet/node/chain server deps
     val uPickleV = "0.7.5"
+    val akkaHttpUpickleV = "1.27.0"
+    val uJsonV = "0.7.1"
 
     // CLI deps
     val scoptV = "4.0.0-RC2"
@@ -62,6 +65,9 @@ object Deps {
 
     // serializing to and from JSON
     val uPickle = "com.lihaoyi" %% "upickle" % V.uPickleV
+
+    // make akka-http play nice with upickle
+    val akkaHttpUpickle = "de.heikoseeberger" %% "akka-http-upickle" % V.akkaHttpUpickleV
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -156,10 +162,16 @@ object Deps {
 
   val cli = List(
     Compile.sttp,
+    Compile.uPickle,
     Compile.scopt
   )
 
+  val picklers = List(
+    Compile.uPickle
+  )
+
   val server = List(
+    Compile.akkaHttpUpickle,
     Compile.uPickle,
     Compile.akkaHttp
   )

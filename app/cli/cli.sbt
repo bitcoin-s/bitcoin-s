@@ -1,8 +1,8 @@
-import Deps._
-
 name := "bitcoin-s-cli"
 
 libraryDependencies ++= Deps.cli
+
+publish / skip := true
 
 graalVMNativeImageOptions += "-H:EnableURLProtocols=http"
 

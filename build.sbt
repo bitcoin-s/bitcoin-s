@@ -283,7 +283,7 @@ lazy val walletServer = project
     .in(file("app/server"))
     .settings(commonSettings: _*)
     .dependsOn(
-      core % testAndCompile,
+      picklers,
       node,
       chain, 
       wallet,
@@ -298,12 +298,18 @@ lazy val walletServerTest = project
       testkit
     )
 
+// internal picklers used by server
+// and CLI
+lazy val picklers = project
+    .in(file("app/picklers"))
+    .dependsOn(core % testAndCompile)
+
 
 lazy val cli = project
     .in(file("app/cli"))
     .settings(commonSettings: _*)
     .dependsOn(
-      core % testAndCompile
+      picklers
     )
 
 lazy val cliTest = project

@@ -43,6 +43,11 @@ object Main
   implicit val system = ActorSystem("bitcoin-s")
   import system.dispatcher
 
+  sys.addShutdownHook {
+    logger.error(s"Exiting process")
+    system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
+  }
+
   /** Log the given message, shut down the actor system and quit. */
   def error(message: Any): Nothing = {
     logger.error(s"FATAL: $message")
@@ -118,8 +123,7 @@ object Main
       val walletRoutes = WalletRoutes(wallet)
       val nodeRoutes = NodeRoutes(node)
       val chainRoutes = ChainRoutes(node.chainApi)
-      val routes = walletRoutes.routes ~ nodeRoutes.routes ~ chainRoutes.routes
-      val server = Server(routes)
+      val server = Server(Seq(walletRoutes, nodeRoutes, chainRoutes))
       server.start()
     }
   } yield ()
