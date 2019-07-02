@@ -84,7 +84,7 @@ object BitcoindInstance {
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
-    val path = Try("which bitcoind".!!)
+    val path = Try("which bitcoind.exe".!!)
       .getOrElse(
         throw new RuntimeException("Could not locate bitcoind on user PATH"))
     new File(path.trim)
