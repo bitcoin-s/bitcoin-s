@@ -19,12 +19,12 @@ import org.bitcoins.node.SpvNode
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.config.ChainAppConfig
-import akka.http.scaladsl.server.Directives._
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.api.UnlockWalletSuccess
 import org.bitcoins.wallet.api.UnlockWalletError
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.wallet.WalletStorage
 
 object Main
     extends App
@@ -61,7 +61,7 @@ object Main
   /** Checks if the user already has a wallet */
   def hasWallet(): Boolean = {
     val walletDB = walletConf.dbPath resolve walletConf.dbName
-    Files.exists(walletDB)
+    Files.exists(walletDB) && WalletStorage.seedExists()
   }
 
   val walletInitF: Future[UnlockedWalletApi] = if (hasWallet()) {
