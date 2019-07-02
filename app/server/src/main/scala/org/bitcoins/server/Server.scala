@@ -10,41 +10,72 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
+import akka.http.scaladsl.server.directives.DebuggingDirectives
+import akka.event.Logging
 
 case class Server(handlers: Seq[ServerRoute])(implicit system: ActorSystem)
     extends BitcoinSLogger {
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
-  private val exceptionHandler = ExceptionHandler {
-    case HttpError.MethodNotFound(method) =>
-      complete(
-        HttpResponse(StatusCodes.NotFound,
-                     entity =
-                       Server.httpError(s"'$method' is not a valid method")))
-  }
-
   /** Handles all server commands by throwing a MethodNotFound */
   private val catchAllHandler: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand(name, _) => throw HttpError.MethodNotFound(name)
   }
 
-  val route = handleExceptions(exceptionHandler) {
-    pathSingleSlash {
-      post {
-        entity(as[ServerCommand]) { cmd =>
-          val init = PartialFunction.empty[ServerCommand, StandardRoute]
-          val handler = handlers.foldLeft(init) {
-            case (accum, curr) => accum.orElse(curr.handleCommand)
+  /** HTTP directive that handles both exceptions and rejections */
+  private def withErrorHandling(route: Route): Route = {
+
+    val rejectionHandler =
+      RejectionHandler
+        .newBuilder()
+        .handleNotFound {
+          complete {
+            Server.httpError(
+              """Resource not found. Hint: all RPC calls are made against root ('/')""",
+              StatusCodes.BadRequest)
           }
-          handler.orElse(catchAllHandler).apply(cmd)
         }
+        .result()
+
+    val exceptionHandler = ExceptionHandler {
+      case HttpError.MethodNotFound(method) =>
+        complete(
+          Server.httpError(s"'$method' is not a valid method",
+                           StatusCodes.BadRequest))
+      case err: Throwable =>
+        logger.info(s"Unhandled error in server:", err)
+        complete(Server.httpError("There was an error"))
+    }
+
+    handleRejections(rejectionHandler) {
+      handleExceptions(exceptionHandler) {
+        route
       }
     }
   }
 
+  val route =
+    // TODO implement better logging
+    DebuggingDirectives.logRequestResult("http-rpc-server", Logging.InfoLevel) {
+      withErrorHandling {
+        pathSingleSlash {
+          post {
+            entity(as[ServerCommand]) { cmd =>
+              val init = PartialFunction.empty[ServerCommand, StandardRoute]
+              val handler = handlers.foldLeft(init) {
+                case (accum, curr) => accum.orElse(curr.handleCommand)
+              }
+              handler.orElse(catchAllHandler).apply(cmd)
+            }
+          }
+        }
+      }
+    }
+
   def start() = {
-    val httpFut = Http().bindAndHandle(route, "localhost", 9999)
+    val httpFut =
+      Http().bindAndHandle(route, "localhost", 9999)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }
@@ -52,7 +83,7 @@ case class Server(handlers: Seq[ServerRoute])(implicit system: ActorSystem)
   }
 }
 
-object Server {
+object Server extends BitcoinSLogger {
 
   // TODO id parameter
   case class Response(
@@ -62,12 +93,12 @@ object Server {
     def toJsonMap: Map[String, ujson.Value] = {
       Map(
         "result" -> (result match {
-          case Some(res) => res
           case None      => ujson.Null
+          case Some(res) => res
         }),
         "error" -> (error match {
-          case Some(err) => err
           case None      => ujson.Null
+          case Some(err) => err
         })
       )
     }
@@ -76,18 +107,25 @@ object Server {
   /** Creates a HTTP response with the given body as a JSON response */
   def httpSuccess[T](body: T)(
       implicit writer: up.Writer[T]): HttpEntity.Strict = {
-    val response = Response(result = Some(up.write(body)))
+    val response = Response(result = Some(up.writeJs(body)))
     HttpEntity(
       ContentTypes.`application/json`,
       up.write(response.toJsonMap)
     )
   }
 
-  def httpError(msg: String): HttpEntity.Strict = {
-    val response = Response(error = Some(msg))
-    HttpEntity(
-      ContentTypes.`application/json`,
-      up.write(response.toJsonMap)
-    )
+  def httpError(
+      msg: String,
+      status: StatusCode = StatusCodes.InternalServerError): HttpResponse = {
+
+    val entity = {
+      val response = Response(error = Some(msg))
+      HttpEntity(
+        ContentTypes.`application/json`,
+        up.write(response.toJsonMap)
+      )
+    }
+
+    HttpResponse(status = status, entity = entity)
   }
 }

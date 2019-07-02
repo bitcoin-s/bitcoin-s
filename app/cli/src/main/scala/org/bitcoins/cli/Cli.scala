@@ -19,6 +19,8 @@ import org.bitcoins.cli.CliCommand.GetPeers
 import org.bitcoins.cli.CliCommand.NoCommand
 import java.net.ConnectException
 import java.{util => ju}
+import ujson.Num
+import ujson.Str
 
 case class Config(
     command: CliCommand = CliCommand.NoCommand,
@@ -128,14 +130,23 @@ object Cli extends App {
 
   import System.err.{println => printerr}
 
-  /** Prints the given message to stderr */
+  /** Prints the given message to stderr if debug is set */
   def debug(message: Any): Unit = {
     if (config.debug) {
       printerr(s"DEBUG: $message")
     }
   }
 
-  case class RequestParam(method: String, params: Seq[ujson.Value] = Nil) {
+  /** Prints the given message to stderr and exist */
+  def error(message: String): Nothing = {
+    printerr(message)
+    // TODO error codes?
+    sys.exit(1)
+  }
+
+  case class RequestParam(
+      method: String,
+      params: Seq[ujson.Value.Value] = Nil) {
 
     lazy val toJsonMap: Map[String, ujson.Value] = {
       Map("method" -> method, "params" -> params)
@@ -149,7 +160,8 @@ object Cli extends App {
       RequestParam("getnewaddress")
 
     case SendToAddress(address, bitcoins) =>
-      RequestParam("sendtoaddress", Seq(up.write(address), up.write(bitcoins)))
+      RequestParam("sendtoaddress",
+                   Seq(up.writeJs(address), up.writeJs(bitcoins)))
     // height
     case GetBlockCount => RequestParam("getblockcount")
     // besthash
@@ -163,7 +175,6 @@ object Cli extends App {
 
     import com.softwaremill.sttp._
     implicit val backend = HttpURLConnectionBackend()
-    // TODO sttp URI provides a bunch of handy features, use these properly
     val request =
       sttp
         .post(uri"http://$host:$port/")
@@ -171,25 +182,57 @@ object Cli extends App {
         .body({
           val uuid = ju.UUID.randomUUID.toString
           val paramsWithID: Map[String, ujson.Value] = requestParam.toJsonMap + ("id" -> up
-            .write(uuid))
+            .writeJs(uuid))
           up.write(paramsWithID)
         })
     debug(s"HTTP request: $request")
     val response = request.send()
-    // TODO check status code, handle errors, etc
+
     debug(s"HTTP response:")
     debug(response)
-    response.body match {
-      case Left(err) =>
-        printerr("Error in response body:")
-        printerr(err)
-      case Right(response) => println(response)
+
+    // in order to mimic Bitcoin Core we always send
+    // an object looking like {"result": ..., "error": ...}
+    val rawBody = response.body match {
+      case Left(err)       => err
+      case Right(response) => response
+    }
+
+    val js = ujson.read(rawBody)
+    val jsObj = try { js.obj } catch {
+      case _: Throwable =>
+        error(s"Response was not a JSON object! Got: $rawBody")
+    }
+
+    /** Gets the given key from jsObj if it exists
+      * and is not null */
+    def getKey(key: String): Option[ujson.Value] =
+      jsObj
+        .get(key)
+        .flatMap(result => if (result.isNull) None else Some(result))
+
+    /** Converts a `ujson.Value` to String, making an
+      * effort to avoid preceding and trailing `"`s */
+    def jsValueToString(value: ujson.Value) = value match {
+      case Str(string)             => string
+      case Num(num) if num.isWhole => num.toLong.toString()
+      case Num(num)                => num.toString()
+      case rest: ujson.Value       => rest.toString()
+    }
+
+    (getKey("result"), getKey("error")) match {
+      case (Some(result), None) =>
+        val msg = jsValueToString(result)
+        println(msg)
+      case (None, Some(err)) =>
+        val msg = jsValueToString(err)
+        error(msg)
+      case (None, None) | (Some(_), Some(_)) =>
+        error(s"Got unexpected response: $rawBody")
     }
   } catch {
     case _: ConnectException =>
-      print(
+      error(
         "Connection refused! Check that the server is running and configured correctly.")
-      // TODO defined error codes?
-      sys.exit(1)
   }
 }

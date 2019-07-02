@@ -85,7 +85,7 @@ object Main
   val bitcoindCli = new BitcoindRpcClient(bitcoind)
   val peer = Peer.fromBitcoind(bitcoind)
 
-  for {
+  val startFut = for {
     _ <- bitcoindCli.isStartedF.map { started =>
       if (!started) error("Local bitcoind is not started!")
     }
@@ -119,13 +119,16 @@ object Main
     _ = logger.info(s"Starting SPV node sync")
     _ <- node.sync()
 
-    _ <- {
+    start <- {
       val walletRoutes = WalletRoutes(wallet)
       val nodeRoutes = NodeRoutes(node)
       val chainRoutes = ChainRoutes(node.chainApi)
       val server = Server(Seq(walletRoutes, nodeRoutes, chainRoutes))
       server.start()
     }
-  } yield ()
+  } yield start
 
+  startFut.failed.foreach { err =>
+    logger.info(s"Error on server startup!", err)
+  }
 }

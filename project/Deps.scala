@@ -45,6 +45,8 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
     val akkaActor = "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
+    val akkaLog = "com.typesafe.akka" %% "akka-slf4j" % V.akkaStreamv
+
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
 
@@ -173,6 +175,8 @@ object Deps {
   val server = List(
     Compile.akkaHttpUpickle,
     Compile.uPickle,
+    Compile.logback,
+    Compile.akkaLog,
     Compile.akkaHttp
   )
 
