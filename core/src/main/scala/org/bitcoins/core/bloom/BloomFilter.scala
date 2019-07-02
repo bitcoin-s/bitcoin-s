@@ -316,6 +316,12 @@ object BloomFilter extends Factory[BloomFilter] {
   /** Max hashFunc size as per [[https://bitcoin.org/en/developer-reference#filterload]] */
   val maxHashFuncs = UInt32(50)
 
+  val empty: BloomFilter = BloomFilterImpl(CompactSizeUInt.zero,
+                                           ByteVector.empty,
+                                           UInt32.zero,
+                                           UInt32.zero,
+                                           BloomUpdateAll)
+
   /**
     * Creates a bloom filter based on the number of elements to be inserted into the filter
     * and the desired false positive rate.
@@ -348,28 +354,34 @@ object BloomFilter extends Factory[BloomFilter] {
       falsePositiveRate: Double,
       tweak: UInt32,
       flags: BloomFlag): BloomFilter = {
-    import scala.math._
-    //m = number of bits in the array
-    //n = number of elements in the array
-    //from https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format
-    val optimalFilterSize: Double = (-1 / pow(log(2), 2) * numElements * log(
-      falsePositiveRate)) / 8
-    logger.debug("optimalFilterSize " + optimalFilterSize)
-    //BIP37 places limitations on the filter size, namely it cannot be > 36,000 bytes
-    val actualFilterSize: Int =
-      max(1, min(optimalFilterSize, maxSize.toInt * 8)).toInt
-    logger.debug("actualFilterSize: " + actualFilterSize)
-    val optimalHashFuncs: Double = (actualFilterSize * 8 / numElements * log(2))
-    //BIP37 places a limit on the amount of hashFuncs we can use, which is 50
-    val actualHashFuncs: Int =
-      max(1, min(optimalHashFuncs, maxHashFuncs.toInt)).toInt
+    if (numElements == 0) {
+      BloomFilter.empty
+    } else {
+      import scala.math._
+      //m = number of bits in the array
+      //n = number of elements in the array
+      //from https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format
+      val optimalFilterSize: Double = (-1 / pow(log(2), 2) * numElements * log(
+        falsePositiveRate)) / 8
+      logger.debug("optimalFilterSize " + optimalFilterSize)
+      //BIP37 places limitations on the filter size, namely it cannot be > 36,000 bytes
+      val actualFilterSize: Int =
+        max(1, min(optimalFilterSize, maxSize.toInt * 8)).toInt
+      logger.debug("actualFilterSize: " + actualFilterSize)
+      val optimalHashFuncs: Double = (actualFilterSize * 8 / numElements * log(
+        2))
+      //BIP37 places a limit on the amount of hashFuncs we can use, which is 50
+      val actualHashFuncs: Int =
+        max(1, min(optimalHashFuncs, maxHashFuncs.toInt)).toInt
 
-    val emptyByteArray = ByteVector(Array.fill(actualFilterSize)(0.toByte))
-    BloomFilter(CompactSizeUInt(UInt64(actualFilterSize)),
-                emptyByteArray,
-                UInt32(actualHashFuncs),
-                tweak,
-                flags)
+      val emptyByteArray = ByteVector(Array.fill(actualFilterSize)(0.toByte))
+      BloomFilter(filterSize = CompactSizeUInt(UInt64(actualFilterSize)),
+                  data = emptyByteArray,
+                  hashFuncs = UInt32(actualHashFuncs),
+                  tweak = tweak,
+                  flags = flags)
+    }
+
   }
 
   def apply(

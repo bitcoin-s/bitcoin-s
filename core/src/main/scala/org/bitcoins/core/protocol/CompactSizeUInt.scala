@@ -40,6 +40,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   private case class CompactSizeUIntImpl(num: UInt64, override val size: Long)
       extends CompactSizeUInt
 
+  val zero: CompactSizeUInt = CompactSizeUInt(UInt64.zero)
   override def fromBytes(bytes: ByteVector): CompactSizeUInt = {
     parseCompactSizeUInt(bytes)
   }

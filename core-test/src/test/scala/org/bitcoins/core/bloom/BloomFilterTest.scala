@@ -277,4 +277,11 @@ class BloomFilterTest extends BitcoinSUnitTest {
 
     }
   }
+
+  it must "be able to instantiate a empty bloom filter" in {
+    val empty = BloomFilter.empty
+
+    empty.data must be(ByteVector.empty)
+    BloomFilter.fromBytes(empty.bytes) must be(empty)
+  }
 }
