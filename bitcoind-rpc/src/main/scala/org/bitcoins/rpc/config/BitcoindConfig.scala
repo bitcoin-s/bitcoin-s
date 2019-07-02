@@ -31,7 +31,7 @@ case class BitcoindConfig(
 
   //create datadir and config if it DNE on disk
   if (!datadir.exists()) {
-    logger.info(
+    logger.debug(
       s"datadir=${datadir.getAbsolutePath} does not exist, creating now")
     datadir.mkdirs()
     BitcoindConfig.writeConfigToFile(this, datadir)
@@ -41,7 +41,7 @@ case class BitcoindConfig(
 
   //create bitcoin.conf file in datadir if it does not exist
   if (!Files.exists(confFile)) {
-    logger.info(
+    logger.debug(
       s"bitcoin.conf in datadir=${datadir.getAbsolutePath} does not exist, creating now")
     BitcoindConfig.writeConfigToFile(this, datadir)
   }
