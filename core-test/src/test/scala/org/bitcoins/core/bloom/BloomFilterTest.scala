@@ -4,14 +4,12 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
-import scodec.bits._
+import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.testkit.core.gen.BloomFilterGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import scodec.bits._
 
 import scala.util.Try
-import org.scalatest.enablers.Containing
-import org.bitcoins.testkit.core.gen.BloomFilterGenerator
 
 class BloomFilterTest extends BitcoinSUnitTest {
   "BloomFilter" must "create a bloom filter, insert a few elements, then serialize and deserialize it" in {

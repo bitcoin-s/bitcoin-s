@@ -1,24 +1,13 @@
 package org.bitcoins.chain.validation
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.chain.{
-  BlockHeaderHelper,
-  ChainTestUtil,
-  ChainUnitTest
-}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
-import org.bitcoins.chain.config.ChainAppConfig
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.testkit.BitcoinSAppConfig
 
 class TipValidationTest extends ChainUnitTest {
 

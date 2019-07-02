@@ -1,12 +1,9 @@
 package org.bitcoins.node
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.core.config.TestNet3
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.config.MainNet
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class NodeAppConfigTest extends BitcoinSUnitTest {
   val config = NodeAppConfig()

@@ -1,31 +1,23 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.hd._
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.blockchain._
+import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
+import org.bitcoins.wallet.ReadMnemonicError.{DecryptionError, JsonParsingError}
 import org.bitcoins.wallet.api.AddUtxoError.{AddressNotFound, BadSPK}
 import org.bitcoins.wallet.api._
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 
-import scala.concurrent.Future
-import scala.util.Success
-import scala.util.Failure
-import scala.concurrent.ExecutionContext
-import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
-import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.bloom.BloomUpdateAll
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
 
@@ -168,7 +160,6 @@ abstract class LockedWallet extends LockedWalletApi with BitcoinSLogger {
       transaction: Transaction,
       vout: UInt32): Future[AddUtxoResult] = {
     import AddUtxoError._
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
 
     logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
 

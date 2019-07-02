@@ -1,8 +1,8 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.wallet.fixtures.AccountDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.wallet.fixtures.AccountDAOFixture
 
 class AccountDAOTest extends BitcoinSWalletTest with AccountDAOFixture {
 

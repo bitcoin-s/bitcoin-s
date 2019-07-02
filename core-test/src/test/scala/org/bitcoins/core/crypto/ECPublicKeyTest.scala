@@ -4,7 +4,6 @@ import org.bitcoinj.core.Sha256Hash
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits._
 
 class ECPublicKeyTest extends BitcoinSUnitTest {

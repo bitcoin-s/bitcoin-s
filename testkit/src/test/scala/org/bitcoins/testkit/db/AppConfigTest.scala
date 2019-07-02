@@ -1,31 +1,23 @@
 package org.bitcoins.testkit.db
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import java.nio.file.Files
+
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.hd.{HDAccount, HDCoin, HDCoinType, HDPurposes}
+import org.bitcoins.db.{CRUD, SQLiteTableInfo}
+import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSAppConfig._
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.chain.models.BlockHeaderDAO
-import akka.actor.ActorSystem
-import scala.concurrent.ExecutionContext
-import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.testkit.chain.ChainTestUtil
-import org.bitcoins.chain.models.BlockHeaderDb
-import org.bitcoins.chain.models.BlockHeaderDbHelper
-import org.bitcoins.wallet.models.AccountDb
-import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.core.hd.HDCoin
-import org.bitcoins.core.hd.HDPurposes
-import org.bitcoins.core.hd.HDCoinType
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import os.write
-import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.db.DbManagement
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.wallet.db.WalletDbManagement
-import org.bitcoins.db.SQLiteTableInfo
-import slick.jdbc.SQLiteProfile.api._
-import org.bitcoins.db.CRUD
-import java.nio.file.Files
+import org.bitcoins.wallet.models.{AccountDAO, AccountDb}
+
+import scala.concurrent.ExecutionContext
 
 class AppConfigTest extends BitcoinSUnitTest {
 

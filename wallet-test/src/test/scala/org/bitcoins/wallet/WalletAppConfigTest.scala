@@ -1,15 +1,12 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.core.config.TestNet3
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.wallet.config.WalletAppConfig
 import java.nio.file.Paths
+
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.wallet.config.WalletAppConfig
 
 class WalletAppConfigTest extends BitcoinSUnitTest {
   val config = WalletAppConfig()

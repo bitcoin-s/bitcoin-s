@@ -4,13 +4,11 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.testkit.node.NodeUnitTest
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
-import org.bitcoins.testkit.node.NodeTestUtil
-
 import scala.concurrent.duration.DurationInt
 
 class SpvNodeTest extends NodeUnitTest {

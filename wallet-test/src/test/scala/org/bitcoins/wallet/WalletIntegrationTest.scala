@@ -3,9 +3,8 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess, WalletApi}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess, WalletApi}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future

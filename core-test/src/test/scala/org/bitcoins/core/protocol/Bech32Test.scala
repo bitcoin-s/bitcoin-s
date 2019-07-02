@@ -10,7 +10,7 @@ import org.bitcoins.core.util.Bech32
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 class Bech32Test extends BitcoinSUnitTest {
   override implicit val generatorDrivenConfig: PropertyCheckConfiguration =

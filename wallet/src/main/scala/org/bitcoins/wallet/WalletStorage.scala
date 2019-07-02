@@ -1,19 +1,14 @@
 package org.bitcoins.wallet
 
-import scala.collection.JavaConverters._
+import java.nio.file.{Files, Path, Paths}
+
+import org.bitcoins.core.crypto.{AesEncryptedData, AesPassword, AesSalt, MnemonicCode}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.crypto.AesPassword
-import java.nio.file.Files
-import org.bitcoins.core.crypto.MnemonicCode
-import scodec.bits.ByteVector
-import org.bitcoins.core.crypto.AesEncryptedData
-import org.bitcoins.core.crypto.AesSalt
-import scala.util.Failure
-import scala.util.Success
-import java.nio.file.Paths
-import java.nio.file.Path
-import scala.util.Try
 import org.bitcoins.wallet.config.WalletAppConfig
+import scodec.bits.ByteVector
+
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage extends BitcoinSLogger {
@@ -128,7 +123,6 @@ object WalletStorage extends BitcoinSLogger {
       }
     }
 
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
@@ -177,8 +171,6 @@ object WalletStorage extends BitcoinSLogger {
       implicit
       config: WalletAppConfig): ReadMnemonicResult = {
     val encryptedEither = readEncryptedMnemonicFromDisk()
-
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
     val decryptedEither: Either[ReadMnemonicError, MnemonicCode] =
       encryptedEither.flatMap { encrypted =>
         encrypted.toMnemonic(passphrase) match {

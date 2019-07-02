@@ -1,22 +1,18 @@
 package org.bitcoins.rpc
 import java.io.{File, PrintWriter}
+import java.net.URI
 import java.nio.file.{Files, Path}
 
+import akka.stream.StreamTcpException
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindConfig, BitcoindInstance}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.io.Source
-import akka.stream.StreamTcpException
-import java.nio.file.Paths
-import scala.util.Properties
-import org.bitcoins.rpc.config.BitcoindConfig
-import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.core.config.RegTest
-import java.net.URI
 
 class BitcoindInstanceTest extends BitcoindRpcTest {
 

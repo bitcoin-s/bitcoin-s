@@ -2,26 +2,22 @@ package org.bitcoins.testkit.node
 
 import java.net.InetSocketAddress
 
-import akka.actor.ActorRefFactory
-import org.bitcoins.core.p2p.{NetworkIpAddress, NetworkMessage}
+import akka.actor.{ActorRefFactory, ActorSystem}
+import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
+import org.bitcoins.core.p2p.{GetHeadersMessage, NetworkMessage, VersionMessage}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.node.SpvNode
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.core.p2p.VersionMessage
-import org.bitcoins.core.p2p.GetHeadersMessage
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.node.SpvNode
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-import akka.actor.ActorSystem
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.bloom.BloomUpdateAll
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
 
 abstract class NodeTestUtil extends BitcoinSLogger {
 

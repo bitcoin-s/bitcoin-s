@@ -3,21 +3,16 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.p2p.{FilterLoadMessage, NetworkPayload}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.{
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
 import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.Future
-import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.p2p.FilterLoadMessage
-import org.bitcoins.core.p2p.NetworkPayload
 
 case class SpvNode(
     peer: Peer,

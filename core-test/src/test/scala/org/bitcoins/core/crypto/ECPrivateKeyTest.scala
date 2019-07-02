@@ -1,16 +1,10 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoTestUtil}
+import org.bitcoins.testkit.core.gen.{ChainParamsGenerator, CryptoGenerators}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoTestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.core.gen.ChainParamsGenerator
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.core.config.Networks
 
 class ECPrivateKeyTest extends BitcoinSUnitTest {
   "ECPrivateKey" must "have the same byte representation as a bitcoinj private key" in {

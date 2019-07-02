@@ -1,22 +1,18 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
-import org.bitcoins.wallet.api.UnlockWalletError.BadPassword
-import org.bitcoins.wallet.api.UnlockWalletError.JsonParsingError
-import org.bitcoins.wallet.api.UnlockWalletSuccess
 import org.bitcoins.core.crypto.AesPassword
-import org.bitcoins.wallet.api.UnlockWalletError.MnemonicNotFound
-import scala.concurrent.Future
-import org.bitcoins.core.util.FutureUtil
-import org.scalatest.compatible.Assertion
 import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.hd.HDChainType.Change
-import org.bitcoins.core.hd.HDChainType.External
+import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.api.UnlockWalletError.{BadPassword, JsonParsingError, MnemonicNotFound}
+import org.bitcoins.wallet.api.{UnlockWalletSuccess, UnlockedWalletApi}
 import org.bitcoins.wallet.models.AddressDb
-import org.bitcoins.core.hd.HDChain
+import org.scalatest.FutureOutcome
+import org.scalatest.compatible.Assertion
+
+import scala.concurrent.Future
 
 class WalletUnitTest extends BitcoinSWalletTest {
 

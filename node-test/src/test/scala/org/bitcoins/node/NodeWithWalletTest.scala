@@ -1,28 +1,22 @@
 package org.bitcoins.node
 
-import org.bitcoins.core.currency._
+import akka.actor.Cancellable
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.currency._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.scalatest.FutureOutcome
-import org.bitcoins.testkit.BitcoinSAppConfig
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-
-import scala.concurrent.Future
 import org.bitcoins.node.networking.peer.DataMessageHandler
-import scala.concurrent.Promise
-import scala.concurrent.duration._
+import org.bitcoins.testkit.node.NodeTestUtil
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 import org.scalatest.exceptions.TestFailedException
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.testkit.node.NodeTestUtil
-import akka.actor.Cancellable
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+
+import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 class NodeWithWalletTest extends BitcoinSWalletTest {
 

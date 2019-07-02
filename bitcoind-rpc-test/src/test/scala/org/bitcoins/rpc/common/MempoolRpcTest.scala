@@ -1,23 +1,17 @@
 package org.bitcoins.rpc.common
 
 import java.io.File
-import java.nio.file.Files
 
-import com.typesafe.config.ConfigValueFactory
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
-import java.nio.file.Path
 
 class MempoolRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =

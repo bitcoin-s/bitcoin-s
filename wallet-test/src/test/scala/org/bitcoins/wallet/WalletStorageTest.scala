@@ -1,27 +1,19 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
-import org.bitcoins.testkit.fixtures.EmptyFixture
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import javassist.bytecode.Mnemonic
-import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.crypto.AesPassword
-import scala.util.Success
-import java.nio.file.Files
-import akka.compat.Future
-import akka.compat.Future
-import scala.concurrent.Future
-import scala.collection.JavaConverters._
-import java.nio.file.Path
-import org.scalatest.BeforeAndAfterEach
-import java.nio.file.Paths
-import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
-import java.{util => ju}
-import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
+import java.nio.file.{Files, Path}
+
+import org.bitcoins.core.crypto.{AesPassword, MnemonicCode}
 import org.bitcoins.testkit.BitcoinSAppConfig._
+import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.fixtures.EmptyFixture
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.ReadMnemonicError.{DecryptionError, JsonParsingError}
+import org.scalatest.BeforeAndAfterEach
+
+import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.Success
 
 class WalletStorageTest
     extends BitcoinSWalletTest

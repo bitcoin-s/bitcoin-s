@@ -38,7 +38,7 @@ lazy val compilerOpts = Seq(
   "-feature"
 ) ++ commonCompilerOpts
 
-lazy val testCompilerOpts = commonCompilerOpts
+lazy val testCompilerOpts = compilerOpts
 
 lazy val commonSettings = List(
   organization := "org.bitcoin-s",

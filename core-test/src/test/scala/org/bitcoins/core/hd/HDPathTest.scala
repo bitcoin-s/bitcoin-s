@@ -9,7 +9,6 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
 
 import scala.util.{Failure, Success}
-import org.bitcoins.core.protocol.script.WitnessScriptPubKey
 
 class HDPathTest extends BitcoinSUnitTest {
 

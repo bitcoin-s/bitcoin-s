@@ -3,11 +3,9 @@ package org.bitcoins.node.networking
 import akka.actor.{Actor, ActorContext, ActorRef, Props}
 import akka.event.LoggingReceive
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.p2p.NetworkMessage
+import org.bitcoins.core.p2p.{NetworkMessage, _}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.constant.Constants
-import org.bitcoins.core.p2p._
 
 /**
   * Created by chris on 7/10/16.

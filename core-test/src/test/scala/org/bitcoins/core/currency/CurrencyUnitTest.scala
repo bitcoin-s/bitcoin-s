@@ -1,15 +1,11 @@
 package org.bitcoins.core.currency
 
-import org.bitcoins.core.currency._
-
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
-import scala.util.Try
 import org.bitcoins.core.number.Int64
-import scala.util.Success
-import scala.util.Failure
+import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import org.scalacheck.Shrink
+
+import scala.util.Try
 
 class CurrencyUnitTest extends BitcoinSUnitTest {
 
