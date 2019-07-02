@@ -12,7 +12,7 @@ Currently we have support for natives on
 3. [mac osx 64 bit](natives/osx_64)
 
 
-This uses a zero depdency library called `native-lib-loader`. The does the appropriate loading of the library onto your classpath to be accessed. To tell if you have access to libsecp256k1 you can do the following
+This uses a zero depdency library called [`native-lib-loader`](https://github.com/scijava/native-lib-loader). The does the appropriate loading of the library onto your classpath to be accessed. To tell if you have access to libsecp256k1 you can do the following
 
 ```scala
 sbt:root> project secp256k1jni
@@ -103,3 +103,48 @@ TODO
 ### Linux 64 bit
 
 TODO
+
+
+### Windows 64 bit
+
+To build binaries for windows, you need to cross compile them from a linux machine. This can be done with the following commands. The origin of these commands [comes from ACINQ](https://github.com/ACINQ/bitcoin-lib/blob/bf115a442e17e1522eba98a362473fddd9b1ffe6/BUILDING.md#for-windows-64-bits)
+
+
+```
+$ sudo apt install g++-mingw-w64-x86-64
+$ sudo update-alternatives --config x86_64-w64-mingw32-g++ # Set the default mingw32 g++ compiler option to posix.
+```
+
+```
+# this is needed to compile shared libraries, otherwise you'll get:
+# libtool: warning: undefined symbols not allowed in x86_64-w64-mingw32 shared libraries; building static only
+$ echo "LDFLAGS = -no-undefined" >> Makefile.am
+$ ./configure --host=x86_64-w64-mingw32 --enable-experimental --enable-module_ecdh --enable-jni && make clean && make CFLAGS="-std=c99"
+cp ./.libs/libsecp256k1-0.dll ../src/main/resources/fr/acinq/native/Windows/x86_64/secp256k1.dll
+```
+
+
+#### Windows 64 bit signature
+
+```
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+510f864a2d5d5ec238aa8e3653d01e3c027caef810797c494fc22e8f6fd8fe84  libsecp256k1-0.dll
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEf7s2jgtmCoShWAhamEbs778HiL4FAl0afpAACgkQmEbs778H
+iL5Ojw/+Krr+rtUPfW4DIYgOSD9G9QUUEop6LbEEcFZew1kn8VhKy/2fgJzHiktv
+fQy0efyo5dxh36qj+L5MjIMPVYxtxaORTEelDRBixmNGXpI9OrOlV0miaPjTDT2B
+suBoqy0kM5/aRWtqU9Pdvd0LBoLYhC6dlqmUerDZ3XccYiXGNTyj881HwBZMn2QS
+l+OhKyEGOgD+80px2z8Ix/yO+65ldL1ejbajSrBuJyjqaOLlliF6GrIFqxwT11WF
+unOLMloNRvdkIQcoGChfRUarM+ntkyHn4jwI76d1PAjZ2baSEhSqtfCgBZBQWy5R
+TwceBHvfxoIoffKehgHY3stszjGOIChY5GS5eGskc3EcDXvdZQQP/lJq91AKuzqb
+Lj7lf7MPMyqxQqRkcXv8k08d7yBu3+QOxdduRPD4V8dYLqG53982yWGQEA3Eedsu
+70feaOkvslSbXBUR3YZMemI6GBuQTDzkK54L4TID7/QSkraYrp/6k45OGyujrjnB
+L7wMjO/+v4zK5zq3kxDlboRbvpwrxwxlpGq+UFIoFBggJbQV5qN1gcodCoePZ54O
+7eVKD+AIWk7CNg70qe1/EVGrQ0SnPnXKiI+j5SmMvhJADuuRv58+KT7Y3eJ2kP4t
+jZzBmirG1m8UPYnHA50SvrQAScDqZaTDoNwD2vLnIymtr3rJMIw=
+=2mZ8
+-----END PGP SIGNATURE-----
+```
