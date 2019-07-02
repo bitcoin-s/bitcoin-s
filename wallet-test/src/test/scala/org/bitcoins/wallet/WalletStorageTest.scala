@@ -58,7 +58,14 @@ class WalletStorageTest
   }
 
   it must "write and read a mnemonic to disk" in { _ =>
+    // no seed  should be in place at start of test
+    assert(!WalletStorage.seedExists())
+
     val writtenMnemonic = getAndWriteMnemonic()
+
+    // should have been written by now
+    assert(WalletStorage.seedExists())
+
     val read =
       WalletStorage.decryptMnemonicFromDisk(passphrase)
 
