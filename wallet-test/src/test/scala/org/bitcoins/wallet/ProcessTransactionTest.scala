@@ -47,7 +47,6 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         tx = TransactionGenerators
           .transactionTo(address.scriptPubKey)
           .sampleSome
-        _ = logger.info(s"tx: $tx")
 
         _ <- wallet.processTransaction(tx, confirmations = 0)
         oldBalance <- wallet.getBalance()
