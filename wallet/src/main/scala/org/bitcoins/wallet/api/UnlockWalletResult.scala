@@ -11,7 +11,7 @@ object UnlockWalletError {
 
   final case object MnemonicNotFound
       extends Error("Mnemonic nout found")
-      with UnlockWalletResult
+      with UnlockWalletError
 
   final case object BadPassword
       extends Error("Bad password for unlocking wallet!")
