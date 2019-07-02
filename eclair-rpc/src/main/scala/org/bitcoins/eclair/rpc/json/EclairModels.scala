@@ -113,7 +113,7 @@ case class ReceivedPayment(
     amount: MilliSatoshis,
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
-    timestamp: Long
+    timestamp: FiniteDuration
 )
 
 case class RelayedPayment(
@@ -122,7 +122,7 @@ case class RelayedPayment(
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
     toChannelId: FundedChannelId,
-    timestamp: Long
+    timestamp: FiniteDuration
 )
 
 case class SentPayment(
@@ -131,7 +131,7 @@ case class SentPayment(
     paymentHash: Sha256Digest,
     paymentPreimage: String,
     toChannelId: FundedChannelId,
-    timestamp: Long
+    timestamp: FiniteDuration
 )
 
 case class ChannelUpdate(
@@ -143,9 +143,9 @@ case class ChannelUpdate(
     channelFlags: Int,
     cltvExpiryDelta: Int,
     htlcMinimumMsat: MilliSatoshis,
+    feeProportionalMillionths: FeeProportionalMillionths,
     htlcMaximumMsat: Option[MilliSatoshis],
-    feeBaseMsat: MilliSatoshis,
-    feeProportionalMillionths: Long)
+    feeBaseMsat: MilliSatoshis)
 
 /* ChannelResult starts here, some of this may be useful but it seems that data is different at different times
 
@@ -311,9 +311,14 @@ object PaymentStatus {
     case "PENDING" => PENDING
     case "SUCCEEDED" => SUCCEEDED
     case "FAILED" => FAILED
-    case _ => throw new IllegalArgumentException("Invalid payment status code")
+    case err => throw new IllegalArgumentException(s"Unknown payment status code `${err}`")
   }
 }
+
+case class PaymentId(value: String) {
+  override def toString: String = value
+}
+
 
 sealed trait WebSocketEvent
 

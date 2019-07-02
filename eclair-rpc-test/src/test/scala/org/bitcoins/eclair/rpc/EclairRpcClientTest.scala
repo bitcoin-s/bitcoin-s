@@ -27,7 +27,7 @@ import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnTaggedFields, PaymentId, PaymentPreimage}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnTaggedFields, PaymentPreimage}
 import play.api.libs.json.Json
 import scala.concurrent.duration._
 
@@ -115,52 +115,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   behavior of "RpcClient"
-
-  it should "send some payments and get the audit info" ignore {
-    for {
-      firstClient <- firstClientF
-      secondClient <- secondClientF
-      fourthClient <- fourthClientF
-      invoice <- fourthClient.createInvoice("test", 5000.msats)
-      paymentId <- firstClient.payInvoice(invoice)
-      _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(firstClient, paymentId)
-      received <- fourthClient.audit()
-      relayed <- secondClient.audit()
-      sent <- firstClient.audit()
-    } yield {
-      assert(sent.sent.nonEmpty)
-      assert(received.received.nonEmpty)
-      assert(relayed.relayed.nonEmpty)
-    }
-  }
-
-  it should "be able to send payments in both directions" ignore {
-    val paymentAmount = MilliSatoshis(100000000)
-    val paymentAmount2 = MilliSatoshis(100000000)
-
-    val sendInBothDiercions = {
-      (client: EclairRpcClient, otherClient: EclairRpcClient) =>
-        for {
-          channelId <- openAndConfirmChannel(clientF, otherClientF)
-
-          invoice <- otherClient.createInvoice("test", paymentAmount)
-          paymentId <- client.payInvoice(invoice)
-          _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
-          sentInfo <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
-
-          invoice2 <- client.createInvoice("test", paymentAmount2)
-          paymentId2 <- otherClient.payInvoice(invoice2)
-          _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(otherClient, paymentId2)
-          sentInfo2 <- otherClient.getSentInfo(invoice2.lnTags.paymentHash.hash)
-        } yield {
-          assert(sentInfo.head.amountMsat == paymentAmount)
-          assert(sentInfo2.head.amountMsat == paymentAmount2)
-          succeed
-        }
-    }
-
-    executeWithClientOtherClient(sendInBothDiercions)
-  }
 
   it should "check a payment" in {
     val checkPayment = {
@@ -765,13 +719,10 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "get a route to an invoice" in {
+    val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
     val hasRoute = () => {
-      fourthClientF.flatMap { fourthClient =>
-        fourthClient
-          .createInvoice("foo", 1000.msats)
-          .flatMap { invoice =>
-            firstClientF.flatMap(_.findRoute(invoice, None))
-          }
+      invoiceF.flatMap { invoice =>
+        firstClientF.flatMap(_.findRoute(invoice, None))
           .map(route => route.length == 4)
           .recover {
             case err: RuntimeException
@@ -784,6 +735,51 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
     // Eclair is a bit slow in propagating channel changes
     AsyncUtil.awaitConditionF(hasRoute, duration = 10000.millis, maxTries = 20).map(_ => succeed)
+  }
+
+  it should "send some payments and get the audit info" in {
+    for {
+      client1 <- firstClientF
+      client2 <- secondClientF
+      client4 <- fourthClientF
+      invoice <- client4.createInvoice("test", 1000.msats)
+      paymentId <- client1.payInvoice(invoice)
+      _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1, paymentId, duration = 5.seconds)
+      received <- client4.audit()
+      relayed <- client2.audit()
+      sent <- client1.audit()
+    } yield {
+      assert(sent.sent.nonEmpty)
+      assert(received.received.nonEmpty)
+      assert(relayed.relayed.nonEmpty)
+    }
+  }
+
+  it should "be able to send payments in both directions" in {
+    val paymentAmount = MilliSatoshis(5000)
+    val paymentAmount2 = MilliSatoshis(500)
+
+    val sendInBothDiercions = {
+      (client: EclairRpcClient, otherClient: EclairRpcClient) =>
+        for {
+          channelId <- openAndConfirmChannel(clientF, otherClientF)
+
+          invoice <- otherClient.createInvoice("test", paymentAmount)
+          paymentId <- client.payInvoice(invoice)
+          _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
+          sentInfo <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
+
+          invoice2 <- client.createInvoice("test", paymentAmount2)
+          paymentId2 <- otherClient.payInvoice(invoice2)
+          _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(otherClient, paymentId2)
+          sentInfo2 <- otherClient.getSentInfo(invoice2.lnTags.paymentHash.hash)
+        } yield {
+          assert(sentInfo.head.amountMsat == paymentAmount)
+          assert(sentInfo2.head.amountMsat == paymentAmount2)
+        }
+    }
+
+    executeWithClientOtherClient(sendInBothDiercions)
   }
 
   it should "update the relay fee of a channel" in {
@@ -935,7 +931,10 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       c <- clientF
       channels <- c.channels()
       _ <- c.forceClose(channels.head.channelId)
-    } yield succeed
+      channel <- c.channel(channels.head.channelId)
+    } yield {
+      assert(channel.state == ChannelState.CLOSING)
+    }
   }
 
   it should "get channel stats" in {

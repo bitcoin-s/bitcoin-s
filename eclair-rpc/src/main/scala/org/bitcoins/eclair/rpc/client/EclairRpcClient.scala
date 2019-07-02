@@ -15,7 +15,7 @@ import org.bitcoins.core.protocol.{Address, NetworkElement}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentId, PaymentPreimage, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -187,16 +187,16 @@ class EclairRpcClient(val instance: EclairInstance)(
       if (feerateSatPerByte.isEmpty) {
         Seq("nodeId" -> nodeId.toString,
             "fundingSatoshis" -> _fundingSatoshis,
-            "_pushMsat" -> _pushMsat)
+            "pushMsat" -> _pushMsat)
       } else if (channelFlags.isEmpty) {
         Seq("nodeId" -> nodeId.toString,
             "fundingSatoshis" -> _fundingSatoshis,
-            "_pushMsat" -> _pushMsat,
+            "pushMsat" -> _pushMsat,
             "fundingFeerateSatByte" -> feerateSatPerByte.get.toLong.toString)
       } else {
         Seq("nodeId" -> nodeId.toString,
           "fundingSatoshis" -> _fundingSatoshis,
-          "_pushMsat" -> _pushMsat,
+          "pushMsat" -> _pushMsat,
           "fundingFeerateSatByte" -> feerateSatPerByte.get.toLong.toString,
           "channelFlags" -> channelFlags.get.toString)
       }
