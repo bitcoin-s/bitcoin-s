@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
@@ -30,7 +31,7 @@ class ScriptPubKeyTest extends FlatSpec with MustMatchers {
 
   it must "determine if we have a witness program inside of the scriptPubKey" in {
     val pubKeyHash =
-      CryptoUtil.sha256Hash160(CryptoGenerators.publicKey.sample.get.bytes)
+      CryptoUtil.sha256Hash160(CryptoGenerators.publicKey.sampleSome.bytes)
     val witnessProgram = Seq(ScriptConstant(pubKeyHash.bytes))
     val asm = OP_0 +: BytesToPushOntoStack(20) +: witnessProgram
     val witnessScriptPubKey = WitnessScriptPubKey(asm)

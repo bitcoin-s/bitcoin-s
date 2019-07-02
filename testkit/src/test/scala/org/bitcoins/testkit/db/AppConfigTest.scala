@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.db
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSAppConfig._
 import com.typesafe.config.ConfigFactory
@@ -99,7 +100,7 @@ class AppConfigTest extends BitcoinSUnitTest {
         _ <- {
           val hdAccount =
             HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Bitcoin), 0)
-          val xpub = CryptoGenerators.extPublicKey.sample.get
+          val xpub = CryptoGenerators.extPublicKey.sampleSome
           val account = AccountDb(xpub, hdAccount)
           accountDAO.create(account)
         }

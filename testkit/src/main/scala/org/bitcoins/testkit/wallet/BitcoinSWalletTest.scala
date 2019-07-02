@@ -52,7 +52,8 @@ trait BitcoinSWalletTest
 
   def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] = {
     WalletDbManagement
-      .dropAll()(config = config.walletConf, ec = implicitly[ExecutionContext])
+      .dropAll()(config = wallet.walletConfig,
+                 ec = implicitly[ExecutionContext])
       .map(_ => ())
   }
 
@@ -112,8 +113,8 @@ trait BitcoinSWalletTest
   }
 
   def withNewWallet(test: OneArgAsyncTest): FutureOutcome =
-    makeDependentFixture(build = createDefaultWallet, destroy = destroyWallet)(
-      test)
+    makeDependentFixture(build = createDefaultWallet _,
+                         destroy = destroyWallet)(test)
 
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,
@@ -138,7 +139,7 @@ trait BitcoinSWalletTest
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      createDefaultWallet,
+      createDefaultWallet _,
       createWalletWithBitcoind,
       (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
         walletWithBitcoind

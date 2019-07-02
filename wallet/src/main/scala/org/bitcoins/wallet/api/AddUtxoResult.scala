@@ -1,11 +1,11 @@
 package org.bitcoins.wallet.api
 
-sealed trait AddUtxoResult {
-  def flatMap(f: AddUtxoResult => AddUtxoResult) = ???
-  def map(success: AddUtxoSuccess => AddUtxoResult) = ???
-}
+import org.bitcoins.wallet.models._
 
-case class AddUtxoSuccess(walletApi: WalletApi) extends AddUtxoResult
+sealed trait AddUtxoResult
+
+/** Contains the freshly added UTXO */
+case class AddUtxoSuccess(spendingInfo: SpendingInfoDb) extends AddUtxoResult
 
 /** Represents an error that might occur when adding an UTXO to the wallet */
 sealed trait AddUtxoError extends Error with AddUtxoResult
