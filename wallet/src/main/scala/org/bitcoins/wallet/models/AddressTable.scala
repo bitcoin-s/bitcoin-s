@@ -15,6 +15,7 @@ import slick.lifted.ProvenShape
 import org.bitcoins.core.protocol.P2SHAddress
 import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
+import org.bitcoins.core.protocol.script.ScriptPubKey
 
 sealed trait AddressDb {
   protected type PathType <: HDPath
@@ -25,6 +26,7 @@ sealed trait AddressDb {
   def address: BitcoinAddress
   def scriptType: ScriptType
   def witnessScriptOpt: Option[ScriptWitness]
+  def scriptPubKey: ScriptPubKey
 }
 
 /** Segwit P2PKH */
@@ -33,7 +35,8 @@ case class SegWitAddressDb(
     ecPublicKey: ECPublicKey,
     hashedPubKey: Sha256Hash160Digest,
     address: Bech32Address,
-    witnessScript: ScriptWitness
+    witnessScript: ScriptWitness,
+    scriptPubKey: ScriptPubKey
 ) extends AddressDb {
   override type PathType = SegWitHDPath
 
@@ -46,7 +49,8 @@ case class NestedSegWitAddressDb(
     path: NestedSegWitHDPath,
     ecPublicKey: ECPublicKey,
     hashedPubKey: Sha256Hash160Digest,
-    address: P2SHAddress
+    address: P2SHAddress,
+    scriptPubKey: ScriptPubKey
 ) extends AddressDb {
   override type PathType = NestedSegWitHDPath
 
@@ -59,7 +63,8 @@ case class LegacyAddressDb(
     path: LegacyHDPath,
     ecPublicKey: ECPublicKey,
     hashedPubKey: Sha256Hash160Digest,
-    address: P2PKHAddress
+    address: P2PKHAddress,
+    scriptPubKey: ScriptPubKey
 ) extends AddressDb {
   override type PathType = LegacyHDPath
 
@@ -85,7 +90,8 @@ object AddressDbHelper {
       ecPublicKey = pub,
       hashedPubKey = witnessSpk.pubKeyHash,
       address = addr,
-      witnessScript = scriptWitness
+      witnessScript = scriptWitness,
+      scriptPubKey = witnessSpk
     )
   }
 
@@ -99,7 +105,8 @@ object AddressDbHelper {
     LegacyAddressDb(path = path,
                     ecPublicKey = pub,
                     hashedPubKey = spk.pubKeyHash,
-                    address = addr)
+                    address = addr,
+                    scriptPubKey = spk)
   }
 
   /** Get a nested Segwit pay-to-pubkeyhash address */
@@ -108,6 +115,16 @@ object AddressDbHelper {
       path: NestedSegWitHDPath,
       np: NetworkParameters): NestedSegWitAddressDb = {
     ???
+  }
+
+  /** Gets an address. Derives the correct type by looking at the kind of path passed in */
+  def getAddress(
+      pub: ECPublicKey,
+      path: HDPath,
+      np: NetworkParameters): AddressDb = path match {
+    case legacy: LegacyHDPath       => getLegacyAddress(pub, legacy, np)
+    case nested: NestedSegWitHDPath => getNestedSegwitAddress(pub, nested, np)
+    case segwit: SegWitHDPath       => getSegwitAddress(pub, segwit, np)
   }
 }
 
@@ -118,29 +135,27 @@ object AddressDbHelper {
 class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  def purpose: Rep[HDPurpose] = column[HDPurpose]("hd_purpose")
+  def purpose: Rep[HDPurpose] = column("hd_purpose")
 
-  def accountIndex: Rep[Int] = column[Int]("account_index")
+  def accountIndex: Rep[Int] = column("account_index")
 
-  def accountCoin: Rep[HDCoinType] = column[HDCoinType]("hd_coin")
+  def accountCoin: Rep[HDCoinType] = column("hd_coin")
 
-  def accountChainType: Rep[HDChainType] =
-    column[HDChainType]("hd_chain_type")
+  def accountChainType: Rep[HDChainType] = column("hd_chain_type")
 
-  def addressIndex: Rep[Int] = column[Int]("address_index")
+  def addressIndex: Rep[Int] = column("address_index")
 
-  def address: Rep[BitcoinAddress] =
-    column[BitcoinAddress]("address", O.PrimaryKey)
+  def address: Rep[BitcoinAddress] = column("address", O.PrimaryKey)
 
-  def ecPublicKey: Rep[ECPublicKey] = column[ECPublicKey]("pubkey")
+  def ecPublicKey: Rep[ECPublicKey] = column("pubkey")
 
-  def hashedPubKey: Rep[Sha256Hash160Digest] =
-    column[Sha256Hash160Digest]("hashed_pubkey")
+  def hashedPubKey: Rep[Sha256Hash160Digest] = column("hashed_pubkey")
 
-  def scriptType: Rep[ScriptType] = column[ScriptType]("script_type")
+  def scriptType: Rep[ScriptType] = column("script_type")
 
-  def scriptWitness: Rep[Option[ScriptWitness]] =
-    column[Option[ScriptWitness]]("script_witness")
+  def scriptPubKey: Rep[ScriptPubKey] = column("script_pub_key", O.Unique)
+
+  def scriptWitness: Rep[Option[ScriptWitness]] = column("script_witness")
 
   private type AddressTuple = (
       HDPurpose,
@@ -149,6 +164,7 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
       HDChainType,
       BitcoinAddress,
       Option[ScriptWitness],
+      ScriptPubKey,
       Int,
       ECPublicKey,
       Sha256Hash160Digest,
@@ -162,6 +178,7 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
         accountChain,
         address,
         scriptWitnessOpt,
+        scriptPubKey,
         addressIndex,
         pubKey,
         hashedPubKey,
@@ -181,14 +198,19 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
                           ecPublicKey = pubKey,
                           hashedPubKey = hashedPubKey,
                           address = bechAddr,
-                          witnessScript = scriptWitness)
+                          witnessScript = scriptWitness,
+                          scriptPubKey = scriptPubKey)
 
         case (HDPurposes.Legacy, legacyAddr: P2PKHAddress, None) =>
           val path = LegacyHDPath(coinType = accountCoin,
                                   accountIndex = accountIndex,
                                   chainType = accountChain,
                                   addressIndex = addressIndex)
-          LegacyAddressDb(path, pubKey, hashedPubKey, legacyAddr)
+          LegacyAddressDb(path,
+                          pubKey,
+                          hashedPubKey,
+                          legacyAddr,
+                          scriptPubKey = scriptPubKey)
 
         case (purpose: HDPurpose, address: BitcoinAddress, scriptWitnessOpt) =>
           throw new IllegalArgumentException(
@@ -198,7 +220,12 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
   }
 
   private val toTuple: AddressDb => Option[AddressTuple] = {
-    case SegWitAddressDb(path, pubKey, hashedPubKey, address, scriptWitness) =>
+    case SegWitAddressDb(path,
+                         pubKey,
+                         hashedPubKey,
+                         address,
+                         scriptWitness,
+                         scriptPubKey) =>
       Some(
         (path.purpose,
          path.account.index,
@@ -206,11 +233,12 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
          path.chain.chainType,
          address,
          Some(scriptWitness),
+         scriptPubKey,
          path.address.index,
          pubKey,
          hashedPubKey,
          ScriptType.WITNESS_V0_KEYHASH))
-    case LegacyAddressDb(path, pubkey, hashedPub, address) =>
+    case LegacyAddressDb(path, pubkey, hashedPub, address, scriptPubKey) =>
       Some(
         path.purpose,
         path.account.index,
@@ -218,6 +246,7 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
         path.chain.chainType,
         address,
         None, // scriptwitness
+        scriptPubKey,
         path.address.index,
         pubkey,
         hashedPub,
@@ -235,6 +264,7 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
      accountChainType,
      address,
      scriptWitness,
+     scriptPubKey,
      addressIndex,
      ecPublicKey,
      hashedPubKey,

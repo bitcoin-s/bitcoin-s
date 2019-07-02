@@ -14,16 +14,17 @@ import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.scalatest.{AsyncFlatSpec, MustMatchers}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.testkit.Implicits._
 
 class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
   private val logger = BitcoinSLogger.logger
   val tc = TransactionConstants
-  val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sample.get
+  val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
 
   behavior of "BitcoinTxBuilder"
 
-  // We had a matcherror when passing in a vector of UTXOs, 
-  // because a match statement on a Seq relied on the :: 
+  // We had a matcherror when passing in a vector of UTXOs,
+  // because a match statement on a Seq relied on the ::
   // deconstructor. You would assume the compiler could
   // warn you about that...
   it must "work with a list and a vector of UTXOs" in {

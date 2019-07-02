@@ -38,6 +38,11 @@
     <logger name="org.bitcoins.node.config" level="INFO"/>
     <logger name="org.bitcoins.wallet.config" level="INFO"/>
 
+    <!-- inspect table creation, etc -->
+    <logger name="org.bitcoins.chain.db" level="INFO" />
+    <logger name="org.bitcoins.node.db" level="INFO" />
+    <logger name="org.bitcoins.wallet.db" level="INFO" />
+
     <!-- ╔═════════════════╗ -->
     <!-- ║   Node module   ║ -->
     <!-- ╚═════════════════╝ -->

@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{Int32, Int64, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
@@ -14,14 +14,12 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.testkit.Implicits._
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec
 
-/**
-  * Created by chris on 6/21/16.
-  */
-trait TransactionGenerators extends BitcoinSLogger {
+object TransactionGenerators extends BitcoinSLogger {
 
   /** Responsible for generating [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] */
   def outPoint: Gen[TransactionOutPoint] =
@@ -29,6 +27,12 @@ trait TransactionGenerators extends BitcoinSLogger {
       txId <- CryptoGenerators.doubleSha256Digest
       vout <- NumberGenerator.uInt32s
     } yield TransactionOutPoint(txId, vout)
+
+  /** Generates a random TX output paying to the given SPK */
+  def outputTo(spk: ScriptPubKey): Gen[TransactionOutput] =
+    for {
+      satoshis <- CurrencyUnitGenerator.positiveRealistic
+    } yield TransactionOutput(satoshis, spk)
 
   /** Generates a random [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] */
   def output: Gen[TransactionOutput] =
@@ -51,13 +55,17 @@ trait TransactionGenerators extends BitcoinSLogger {
   def realisticOutputs: Gen[Seq[TransactionOutput]] =
     Gen.choose(0, 5).flatMap(n => Gen.listOfN(n, realisticOutput))
 
+  /** Generates a small list of TX outputs paying to the given SPK */
+  def smallOutputsTo(spk: ScriptPubKey): Gen[Seq[TransactionOutput]] =
+    Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, outputTo(spk)))
+
   /** Generates a small list of [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] */
   def smallOutputs: Gen[Seq[TransactionOutput]] =
     Gen.choose(0, 5).flatMap(i => Gen.listOfN(i, output))
 
   /** Creates a small sequence of outputs whose total sum is <= totalAmount */
   def smallOutputs(totalAmount: CurrencyUnit): Gen[Seq[TransactionOutput]] = {
-    val numOutputs = Gen.choose(0, 5).sample.get
+    val numOutputs = Gen.choose(0, 5).sampleSome
     @tailrec
     def loop(
         remaining: Int,
@@ -69,8 +77,7 @@ trait TransactionGenerators extends BitcoinSLogger {
         val amt = Gen
           .choose(100, remainingAmount.toBigDecimal.toLongExact)
           .map(n => Satoshis(Int64(n)))
-          .sample
-          .get
+          .sampleSome
         loop(remaining - 1, remainingAmount - amt, amt +: accum)
       }
     }
@@ -124,6 +131,14 @@ trait TransactionGenerators extends BitcoinSLogger {
   def transaction: Gen[Transaction] =
     Gen.oneOf(baseTransaction, witnessTransaction)
 
+  /** Generates a transaction where at least one output pays to the given SPK */
+  def transactionTo(spk: ScriptPubKey) =
+    Gen.oneOf(baseTransactionTo(spk), witnessTransactionTo(spk))
+
+  /** Generates a transaction with at least one output */
+  def nonEmptyOutputTransaction: Gen[Transaction] =
+    TransactionGenerators.transaction.suchThat(_.outputs.nonEmpty)
+
   def baseTransaction: Gen[BaseTransaction] =
     for {
       version <- NumberGenerator.int32s
@@ -132,14 +147,23 @@ trait TransactionGenerators extends BitcoinSLogger {
       lockTime <- NumberGenerator.uInt32s
     } yield BaseTransaction(version, is, os, lockTime)
 
-  /** Generates a random [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] */
-  def witnessTransaction: Gen[WitnessTransaction] =
+  /** Generates a legacy transaction with at least one output paying to the given SPK */
+  def baseTransactionTo(spk: ScriptPubKey): Gen[BaseTransaction] =
+    for {
+      version <- NumberGenerator.int32s
+      is <- smallInputs
+      os <- smallOutputsTo(spk)
+      lockTime <- NumberGenerator.uInt32s
+    } yield BaseTransaction(version, is, os, lockTime)
+
+  /** To avoid duplicating logic */
+  private def witnessTxHelper(
+      outputs: Seq[TransactionOutput]): Gen[WitnessTransaction] = {
     for {
       version <- NumberGenerator.int32s
       //we cannot have zero witnesses on a WitnessTx
       //https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
       is <- smallInputsNonEmpty
-      os <- smallOutputs
       lockTime <- NumberGenerator.uInt32s
       //we have to have atleast one NON `EmptyScriptWitness` for a tx to be a valid WitnessTransaction, otherwise we
       //revert to using the `BaseTransaction` serialization format
@@ -148,7 +172,23 @@ trait TransactionGenerators extends BitcoinSLogger {
       witness <- WitnessGenerators
         .transactionWitness(is.size)
         .suchThat(_.witnesses.exists(_ != EmptyScriptWitness))
-    } yield WitnessTransaction(version, is, os, lockTime, witness)
+    } yield WitnessTransaction(version, is, outputs, lockTime, witness)
+  }
+
+  /** Generates a random [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] */
+  def witnessTransaction: Gen[WitnessTransaction] =
+    for {
+      os <- smallOutputs
+      tx <- witnessTxHelper(os)
+    } yield tx
+
+  /** Generates a SegWit TX where at least one output pays to the given SPK */
+  def witnessTransactionTo(spk: ScriptPubKey): Gen[WitnessTransaction] = {
+    for {
+      os <- smallOutputsTo(spk)
+      tx <- witnessTxHelper(os)
+    } yield tx
+  }
 
   /**
     * Creates a [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]], then creates a
@@ -769,5 +809,3 @@ trait TransactionGenerators extends BitcoinSLogger {
     }
   }
 }
-
-object TransactionGenerators extends TransactionGenerators

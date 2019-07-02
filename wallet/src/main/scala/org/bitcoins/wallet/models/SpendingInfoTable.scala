@@ -23,34 +23,37 @@ import org.bitcoins.core.hd.LegacyHDPath
   * DB representation of a native V0
   * SegWit UTXO
   */
-case class NativeV0UTXOSpendingInfoDb(
-    id: Option[Long],
+case class SegwitV0SpendingInfo(
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: SegWitHDPath,
-    scriptWitness: ScriptWitness
-) extends UTXOSpendingInfoDb {
+    scriptWitness: ScriptWitness,
+    id: Option[Long] = None
+) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 
   override type PathType = SegWitHDPath
 
-  override def copyWithId(id: Long): NativeV0UTXOSpendingInfoDb =
+  override def copyWithId(id: Long): SegwitV0SpendingInfo =
     copy(id = Some(id))
 }
 
-case class LegacyUTXOSpendingInfoDb(
-    id: Option[Long],
+/**
+  * DB representation of a legacy UTXO
+  */
+case class LegacySpendingInfo(
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
-    privKeyPath: LegacyHDPath
-) extends UTXOSpendingInfoDb {
+    privKeyPath: LegacyHDPath,
+    id: Option[Long] = None
+) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override def scriptWitnessOpt: Option[ScriptWitness] = None
 
   override type PathType = LegacyHDPath
 
-  override def copyWithId(id: Long): LegacyUTXOSpendingInfoDb =
+  override def copyWithId(id: Long): LegacySpendingInfo =
     copy(id = Some(id))
 }
 
@@ -63,8 +66,8 @@ case class LegacyUTXOSpendingInfoDb(
   * we need to derive the private keys, given
   * the root wallet seed.
   */
-sealed trait UTXOSpendingInfoDb
-    extends DbRowAutoInc[UTXOSpendingInfoDb]
+sealed trait SpendingInfoDb
+    extends DbRowAutoInc[SpendingInfoDb]
     with BitcoinSLogger {
 
   protected type PathType <: HDPath
@@ -111,8 +114,19 @@ sealed trait UTXOSpendingInfoDb
 
 }
 
-case class UTXOSpendingInfoTable(tag: Tag)
-    extends TableAutoInc[UTXOSpendingInfoDb](tag, "utxos") {
+/**
+  * This table stores the necessary information to spend
+  * a TXO at a later point in time.
+  *
+  * It does not contain informations about whether or not
+  * it is spent, how many (if any) confirmations it has
+  * or which block/transaction it was included in.
+  *
+  * That is rather handled by
+  * [[org.bitcoins.wallet.models.WalletTXOTable WalletTXOTable]].
+  */
+case class SpendingInfoTable(tag: Tag)
+    extends TableAutoInc[SpendingInfoDb](tag, "txo_spending_info") {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
   def outPoint: Rep[TransactionOutPoint] =
@@ -135,16 +149,17 @@ case class UTXOSpendingInfoTable(tag: Tag)
       TransactionOutput,
       HDPath,
       Option[ScriptPubKey],
-      Option[ScriptWitness])
+      Option[ScriptWitness]
+  )
 
-  private val fromTuple: UTXOTuple => UTXOSpendingInfoDb = {
+  private val fromTuple: UTXOTuple => SpendingInfoDb = {
     case (id,
           outpoint,
           output,
           path: SegWitHDPath,
           None, // ReedemScript
           Some(scriptWitness)) =>
-      NativeV0UTXOSpendingInfoDb(id, outpoint, output, path, scriptWitness)
+      SegwitV0SpendingInfo(outpoint, output, path, scriptWitness, id)
 
     case (id,
           outpoint,
@@ -153,15 +168,15 @@ case class UTXOSpendingInfoTable(tag: Tag)
           None, // RedeemScript
           None // ScriptWitness
         ) =>
-      LegacyUTXOSpendingInfoDb(id, outpoint, output, path)
+      LegacySpendingInfo(outpoint, output, path, id)
     case (id, outpoint, output, path, spkOpt, swOpt) =>
       throw new IllegalArgumentException(
         "Could not construct UtxoSpendingInfoDb from bad tuple:"
-          + s" ($id, $outpoint, $output, $path, $spkOpt, $swOpt) . Note: Nested Segwit is not implemented")
+          + s" ($outpoint, $output, $path, $spkOpt, $swOpt, $id) . Note: Nested Segwit is not implemented")
 
   }
 
-  private val toTuple: UTXOSpendingInfoDb => Option[UTXOTuple] =
+  private val toTuple: SpendingInfoDb => Option[UTXOTuple] =
     utxo =>
       Some(
         (utxo.id,
@@ -171,6 +186,6 @@ case class UTXOSpendingInfoTable(tag: Tag)
          utxo.redeemScriptOpt,
          utxo.scriptWitnessOpt))
 
-  def * : ProvenShape[UTXOSpendingInfoDb] =
+  def * : ProvenShape[SpendingInfoDb] =
     (id.?, outPoint, output, privKeyPath, redeemScriptOpt, scriptWitnessOpt) <> (fromTuple, toTuple)
 }
