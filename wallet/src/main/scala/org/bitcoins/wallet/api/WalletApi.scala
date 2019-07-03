@@ -4,13 +4,12 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDPurpose
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.HDUtil
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, UTXOSpendingInfoDb}
+import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -46,15 +45,19 @@ trait LockedWalletApi extends WalletApi {
   def getBloomFilter(): Future[BloomFilter]
 
   /**
-    * Adds the provided UTXO to the wallet, making it
-    * available for spending.
+    * Processes the given transaction, updating our DB state if it's relevant to us.
+    * @param transaction The transacton we're processing
+    * @param confirmation How many confirmations the TX has
     */
-  def addUtxo(transaction: Transaction, vout: UInt32): Future[AddUtxoResult]
+  def processTransaction(
+      transaction: Transaction,
+      confirmations: Int): Future[LockedWalletApi]
 
-  /** Sums up the value of all UTXOs in the wallet */
-  // noinspection AccessorLikeMethodIsEmptyParen
-  // async calls have side effects :-)
+  /** Gets the sum of all confirmed UTXOs in this wallet */
   def getBalance(): Future[CurrencyUnit]
+
+  /** Gets the sum of all unconfirmed UTXOs in this wallet */
+  def getUnconfirmedBalance(): Future[CurrencyUnit]
 
   /**
     * If a UTXO is spent outside of the wallet, we
@@ -63,7 +66,7 @@ trait LockedWalletApi extends WalletApi {
     */
   // def updateUtxo: Future[WalletApi]
 
-  def listUtxos(): Future[Vector[UTXOSpendingInfoDb]]
+  def listUtxos(): Future[Vector[SpendingInfoDb]]
 
   def listAddresses(): Future[Vector[AddressDb]]
 
@@ -122,14 +125,9 @@ trait LockedWalletApi extends WalletApi {
 
   def listAccounts(): Future[Vector[AccountDb]]
 
-  /**
-    * Tries to create a new accoun in this wallet. Fails if the
-    * most recent account has no transaction history, as per
-    * BIP44
-    *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
-    */
-  // def createNewAccount: Future[Try[WalletApi]]
+  /** Lists all wallet accounts with the given type */
+  def listAccounts(purpose: HDPurpose): Future[Vector[AccountDb]] =
+    listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
 
 }
 
@@ -185,5 +183,24 @@ trait UnlockedWalletApi extends LockedWalletApi {
       tx <- sendToAddress(address, amount, feeRate, account)
     } yield tx
   }
+
+  /**
+    * Tries to create a new account in this wallet. Fails if the
+    * most recent account has no transaction history, as per
+    * BIP44
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
+    */
+  def createNewAccount(purpose: HDPurpose): Future[WalletApi]
+
+  /**
+    * Tries to create a new account in this wallet for the default
+    * account type. Fails if the
+    * most recent account has no transaction history, as per
+    * BIP44
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
+    */
+  def createNewAccount(): Future[WalletApi]
 
 }

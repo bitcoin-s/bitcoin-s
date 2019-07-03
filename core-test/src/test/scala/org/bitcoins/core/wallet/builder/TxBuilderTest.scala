@@ -1,16 +1,16 @@
 package org.bitcoins.core.wallet.builder
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency._
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class TxBuilderTest extends FlatSpec with MustMatchers {
+class TxBuilderTest extends BitcoinSUnitTest {
 
   "TxBuilder" must "detect a bad fee on the tx" in {
-    val estimatedFee = Satoshis(Int64(1000))
-    val actualFee = Satoshis.one
-    val feeRate = SatoshisPerVirtualByte(Satoshis.one)
+    val estimatedFee = 1000.sats
+    val actualFee = 1.sat
+    val feeRate = SatoshisPerVirtualByte(1.sat)
     TxBuilder
       .isValidFeeRange(estimatedFee, actualFee, feeRate)
       .isFailure must be(true)

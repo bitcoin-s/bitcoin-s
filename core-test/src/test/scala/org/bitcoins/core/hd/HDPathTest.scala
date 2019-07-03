@@ -29,6 +29,15 @@ class HDPathTest extends BitcoinSUnitTest {
     }
   }
 
+  behavior of "HDChain"
+
+  it must "be convertable to an address" in {
+    forAll(HDGenerators.hdChain, NumberGenerator.positiveInts) { (chain, i) =>
+      val addr = chain.toHDAddress(i)
+      assert(addr.chain == chain)
+    }
+  }
+
   behavior of "HDAddress"
 
   it must "fail to make addresses with neagtives indices" in {

@@ -1,10 +1,10 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.Implicits._
 import org.scalatest.FutureOutcome
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import javassist.bytecode.Mnemonic
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.crypto.AesPassword
 import scala.util.Success
@@ -44,16 +44,12 @@ class WalletStorageTest
 
   behavior of "WalletStorage"
 
-  val passphrase = AesPassword("this_is_secret")
-  val badPassphrase = AesPassword("this_is_also_secret")
-
-  def getMnemonic: MnemonicCode =
-    CryptoGenerators.mnemonicCode.sample.getOrElse(getMnemonic)
+  val passphrase = AesPassword.fromNonEmptyString("this_is_secret")
+  val badPassphrase = AesPassword.fromNonEmptyString("this_is_also_secret")
 
   def getAndWriteMnemonic(): MnemonicCode = {
-    val mnemonic = getMnemonic
-    val Success(encrypted) =
-      EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
+    val mnemonic = CryptoGenerators.mnemonicCode.sampleSome
+    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
 
     val _ =
       WalletStorage.writeMnemonicToDisk(encrypted)

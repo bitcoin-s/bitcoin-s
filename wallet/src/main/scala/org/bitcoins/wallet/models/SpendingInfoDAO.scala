@@ -4,17 +4,13 @@ import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
-case class UTXOSpendingInfoDAO()(
+case class SpendingInfoDAO()(
     implicit val ec: ExecutionContext,
     val appConfig: WalletAppConfig)
-    extends CRUDAutoInc[UTXOSpendingInfoDb] {
+    extends CRUDAutoInc[SpendingInfoDb] {
 
   /** The table inside our database we are inserting into */
-  override val table = TableQuery[UTXOSpendingInfoTable]
-
-  def findAllUTXOs(): Future[Vector[UTXOSpendingInfoDb]] =
-    database.run(table.result).map(_.toVector)
+  override val table = TableQuery[SpendingInfoTable]
 }

@@ -82,6 +82,20 @@ object JsonSerializers {
     TransactionInputWrites
   implicit val uInt32Writes: Writes[UInt32] = UInt32Writes
   implicit val transactionWrites: Writes[Transaction] = TransactionWrites
+  implicit val xpubFormat: Format[ExtPublicKey] = new Format[ExtPublicKey] {
+    override def reads(json: JsValue): JsResult[ExtPublicKey] =
+      SerializerUtil.processJsStringOpt(ExtPublicKey.fromString(_).toOption)(
+        json)
+
+    override def writes(key: ExtPublicKey): JsValue = JsString(key.toString)
+  }
+
+  implicit val xprivForamt: Format[ExtPrivateKey] = new Format[ExtPrivateKey] {
+    override def reads(json: JsValue): JsResult[ExtPrivateKey] =
+      SerializerUtil.processJsStringOpt(ExtPrivateKey.fromString(_).toOption)(
+        json)
+    override def writes(key: ExtPrivateKey): JsValue = JsString(key.toString)
+  }
 
   // Transaction Models
   implicit val rpcScriptPubKeyReads: Reads[RpcScriptPubKey] =

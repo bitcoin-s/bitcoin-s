@@ -2,7 +2,7 @@ package org.bitcoins.core.gcs
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{
@@ -24,11 +24,12 @@ import scala.annotation.tailrec
   * TODO: Replace ByteVector with a type for keys
   */
 case class GolombFilter(
-    key: ByteVector,
+    key: SipHashKey,
     m: UInt64,
     p: UInt8,
     n: CompactSizeUInt,
-    encodedData: BitVector) {
+    encodedData: BitVector)
+    extends NetworkElement {
   lazy val decodedHashes: Vector[UInt64] = GCS.golombDecodeSet(encodedData, p)
 
   /** The hash of this serialized filter */
@@ -46,11 +47,9 @@ case class GolombFilter(
     FilterHeader(filterHash = this.hash, prevHeaderHash = prevHeaderHash)
   }
 
-  def bytes: ByteVector = {
+  override def bytes: ByteVector = {
     n.bytes ++ encodedData.bytes
   }
-
-  def hex: String = bytes.toHex
 
   // TODO: Offer alternative that stops decoding when it finds out if data is there
   def matchesHash(hash: UInt64): Boolean = {
@@ -149,7 +148,9 @@ object BlockFilter {
   def apply(
       block: Block,
       prevOutputScripts: Vector[ScriptPubKey]): GolombFilter = {
-    val key = block.blockHeader.hash.bytes.take(16)
+    val keyBytes: ByteVector = block.blockHeader.hash.bytes.take(16)
+
+    val key: SipHashKey = SipHashKey(keyBytes)
 
     val newScriptPubKeys: Vector[ByteVector] =
       getOutputScriptPubKeysFromBlock(block).map(_.asmBytes)
@@ -169,12 +170,10 @@ object BlockFilter {
       blockHash: DoubleSha256Digest): GolombFilter = {
     val (size, filterBytes) = bytes.splitAt(1)
     val n = CompactSizeUInt.fromBytes(size)
+    val keyBytes: ByteVector = blockHash.bytes.take(16)
+    val key: SipHashKey = SipHashKey(keyBytes)
 
-    GolombFilter(blockHash.bytes.take(16),
-                 BlockFilter.M,
-                 BlockFilter.P,
-                 n,
-                 filterBytes.toBitVector)
+    GolombFilter(key, BlockFilter.M, BlockFilter.P, n, filterBytes.toBitVector)
   }
 
   def fromHex(hex: String, blockHash: DoubleSha256Digest): GolombFilter = {

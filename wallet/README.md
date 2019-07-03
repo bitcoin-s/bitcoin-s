@@ -19,6 +19,26 @@ This is meant to be a stand alone project that can be used as a cold storage wal
   [BIP44/BIP49/BIP84 paths](../core/src/main/scala/org/bitcoins/core/hd/HDPath.scala)
   and script types, so that everything we need for spending the money sent to an address
   is derivable.
+- **The wallet is a "dumb" wallet that acts mostly as a database of UTXOs, transactions and
+  addresses, with associated operations on these.**
+  The wallet module does very little verification of incoming data about transactions,
+  UTXOs and reorgs. We're aiming to write small, self contained modules, that can be
+  composed together into more fully fledged systems. That means the `chain` and `node`
+  modules does the actual verification of data we receive, and `wallet` just blindly
+  acts on this. This results in a design where you can swap out `node` for a Bitcoin Core
+  full node, use it with hardware wallets, or something else entirely. However, that also
+  means that users of `wallet` that doesn't want to use the other modules we provide have
+  to make sure that the data they are feeding the wallet is correct.
+
+#### Database structure
+
+We store information in the following tables:
+
+- UTXOs - must reference the incoming transaction it was received in
+- Addresses - must reference the account it belongs to
+- Accounts
+- Incoming transactions - must reference the SPK (in our address table) that a TX spends to
+- Outgoing transactions - must reference the UTXO(s) it spends
 
 #### Mnemonic encryption
 

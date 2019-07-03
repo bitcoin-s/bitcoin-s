@@ -20,7 +20,8 @@
  * and const url = "https://your-domain.org".
  */
 
-const url = "https://bitcoin-s.org";
+const cname = "bitcoin-s.org";
+const url = `https://${cname}`;
 const baseUrl = "/";
 const scaladocUrl = baseUrl + "api/org/bitcoins";
 
@@ -73,6 +74,8 @@ const siteConfig = {
   tagline: "Bitcoin implementation in Scala",
   url,
   baseUrl,
+  /** Docusaurus creates a CNAME file with contents of this key */
+  cname,
 
   // URL for editing docs, has to be present for the
   // "Edit this Doc" button to appear
@@ -91,6 +94,12 @@ const siteConfig = {
 
   /** Makes the user showcase appear */
   users,
+
+  /** Enables doc search */
+  algolia: {
+    apiKey: "0a510688bf8448e19aeb380377d328d3",
+    indexName: "bitcoin-s"
+  },
 
   /* path to images for header/footer */
   headerIcon: "img/favicon.ico",
@@ -121,6 +130,8 @@ const siteConfig = {
     "https://buttons.github.io/buttons.js",
     "https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js",
     "https://fonts.googleapis.com/css?family=Montserrat:500",
+    // Google Analytics
+    "https://www.googletagmanager.com/gtag/js?id=UA-61958686-2",
     `${baseUrl}js/code-block-buttons.js`
   ],
 

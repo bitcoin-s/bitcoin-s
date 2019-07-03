@@ -44,7 +44,9 @@ sealed abstract class ScriptConstant extends ScriptToken {
 }
 
 /** Represents a [[ScriptNumber]] in the Script language. */
-sealed abstract class ScriptNumber extends ScriptConstant {
+sealed abstract class ScriptNumber
+    extends ScriptConstant
+    with Ordered[ScriptNumber] {
 
   def +(that: ScriptNumber): ScriptNumber =
     ScriptNumber(underlying + that.underlying)
@@ -57,13 +59,7 @@ sealed abstract class ScriptNumber extends ScriptConstant {
   def *(that: ScriptNumber): ScriptNumber =
     ScriptNumber(underlying * that.underlying)
 
-  def <(that: ScriptNumber): Boolean = underlying < that.underlying
-
-  def <=(that: ScriptNumber): Boolean = underlying <= that.underlying
-
-  def >(that: ScriptNumber): Boolean = underlying > that.underlying
-
-  def >=(that: ScriptNumber): Boolean = underlying >= that.underlying
+  override def compare(that: ScriptNumber): Int = underlying compare that.underlying
 
   def <(that: Int64): Boolean = underlying < that.toLong
 
