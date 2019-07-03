@@ -28,13 +28,13 @@ object Deps {
     val scalameterV = "0.17"
 
     // Wallet/node/chain server deps
-    val uPickleV = "0.7.5"
+    val uPickleV = "0.7.4"
     val akkaHttpUpickleV = "1.27.0"
-    val uJsonV = "0.7.1"
+    val uJsonV = uPickleV // Li Haoyi ecosystem does common versioning
 
     // CLI deps
     val scoptV = "4.0.0-RC2"
-    val sttpV = "1.1.13"
+    val sttpV = "1.6.0"
   }
 
   object Compile {
