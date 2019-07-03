@@ -16,7 +16,8 @@ lazy val timestamp = new java.util.Date().getTime
 lazy val commonCompilerOpts = {
   List(
     "-Xmax-classfile-name",
-    "128"
+    "128",
+    "-Xsource:2.12"
   )
 }
 
@@ -35,8 +36,7 @@ lazy val compilerOpts = Seq(
   "-Ywarn-unused",
   "-unchecked",
   "-deprecation",
-  "-feature",
-  "-Xsource:2.12"
+  "-feature"
 ) ++ commonCompilerOpts
 
 lazy val testCompilerOpts = commonCompilerOpts
@@ -54,7 +54,7 @@ lazy val commonSettings = List(
   ),
   ////
   // scaladoc settings
-      Compile / doc / scalacOptions := List(
+      Compile / doc / scalacOptions ++= List(
         "-doc-title",
         "Bitcoin-S",
         "-doc-version",
