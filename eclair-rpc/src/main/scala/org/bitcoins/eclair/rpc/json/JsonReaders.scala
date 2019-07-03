@@ -1,23 +1,24 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.protocol.ln.{
-  LnHumanReadablePart,
-  LnInvoice,
-  LnInvoiceSignature,
-  ShortChannelId
-}
+import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln._
 import org.bitcoins.eclair.rpc.network.PeerState
 import org.bitcoins.rpc.serializers.SerializerUtil
 import play.api.libs.json._
 
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 object JsonReaders {
   import org.bitcoins.rpc.serializers.JsonReaders._
+
+  implicit val feeProportionalMillionthsReads: Reads[FeeProportionalMillionths] = Reads { js =>
+    SerializerUtil.processJsNumberBigInt(FeeProportionalMillionths.fromBigInt)(js)
+  }
 
   implicit val channelStateReads: Reads[ChannelState] = {
     Reads { jsValue: JsValue =>
@@ -84,12 +85,18 @@ object JsonReaders {
 
   implicit val shortChannelIdReads: Reads[ShortChannelId] = {
     Reads { jsValue =>
-      SerializerUtil.processJsString(ShortChannelId.fromHex)(jsValue)
+      SerializerUtil.processJsString(ShortChannelId.fromHumanReadableString)(jsValue)
     }
   }
 
   implicit val nodeInfoReads: Reads[NodeInfo] = {
     Json.reads[NodeInfo]
+  }
+
+  implicit val paymentPreimageReads: Reads[PaymentPreimage] = {
+    Reads { jsValue: JsValue =>
+      SerializerUtil.processJsString(PaymentPreimage.fromHex)(jsValue)
+    }
   }
 
   implicit val fundedChannelIdReads: Reads[FundedChannelId] = {
@@ -100,6 +107,28 @@ object JsonReaders {
 
   implicit val channelDescReads: Reads[ChannelDesc] = {
     Json.reads[ChannelDesc]
+  }
+
+  implicit val createInvoiceResultReads: Reads[InvoiceResult] = {
+    Reads { jsValue =>
+      for {
+        prefix <- (jsValue \ "prefix").validate[LnHumanReadablePart]
+        timestamp <- (jsValue \ "timestamp").validate[Long]
+        nodeId <- (jsValue \ "nodeId").validate[NodeId]
+        serialized <- (jsValue \ "serialized").validate[String]
+        description <- (jsValue \ "description").validate[String]
+        paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
+        expiry <- (jsValue \ "expiry").validate[Long]
+      } yield
+        InvoiceResult(
+          prefix,
+          timestamp.seconds,
+          nodeId,
+          serialized,
+          description,
+          paymentHash,
+          expiry.seconds)
+    }
   }
 
   implicit val openChannelInfoReads: Reads[OpenChannelInfo] = Reads { jsValue =>
@@ -160,36 +189,24 @@ object JsonReaders {
     Json.reads[PaymentRequest]
   }
 
-  implicit val paymentSucceededReads: Reads[PaymentSucceeded] = {
-    Json.reads[PaymentSucceeded]
+  implicit val paymentIdReads: Reads[PaymentId] = Reads { jsValue =>
+    SerializerUtil.processJsString(PaymentId.apply)(jsValue)
   }
 
-  implicit val paymentFailedReads: Reads[PaymentFailed] = {
-    Json.reads[PaymentFailed]
+  implicit val paymentStatusReads: Reads[PaymentStatus] = Reads { jsValue =>
+    SerializerUtil.processJsString(PaymentStatus.apply)(jsValue)
   }
 
-  implicit val paymentResultReads: Reads[PaymentResult] = {
-    Reads[PaymentResult] { jsValue =>
-      val sendResult = jsValue.validate[PaymentSucceeded]
-      sendResult match {
-        case p: JsSuccess[PaymentSucceeded] => p
-        case err1: JsError =>
-          val pFailedResult = jsValue.validate[PaymentFailed]
-          pFailedResult match {
-            case s: JsSuccess[PaymentFailed] => s
-            case err2: JsError =>
-              JsError.merge(err1, err2)
-          }
-      }
+  implicit val finiteDurationReads: Reads[FiniteDuration] =
+    Reads { js =>
+      SerializerUtil.processJsNumberBigInt(_.longValue.millis)(js)
     }
-  }
 
-  implicit val feeProportionalMillionthsReads: Reads[
-    FeeProportionalMillionths] = Reads { js =>
-    SerializerUtil.processJsNumberBigInt(
-      FeeProportionalMillionths.fromBigInt
-    )(js)
-  }
+  implicit val paymentSucceededReads: Reads[PaymentResult] =
+    Json.reads[PaymentResult]
+
+  implicit val receivedPaymentResultReads: Reads[ReceivedPaymentResult] =
+    Json.reads[ReceivedPaymentResult]
 
   implicit val channelResultReads: Reads[ChannelResult] = Reads { js =>
     for {
@@ -229,4 +246,31 @@ object JsonReaders {
   implicit val relayedPaymentReads: Reads[RelayedPayment] =
     Json.reads[RelayedPayment]
   implicit val auditResultReads: Reads[AuditResult] = Json.reads[AuditResult]
+
+  implicit val networkFeesResultReads: Reads[NetworkFeesResult] =
+    Json.reads[NetworkFeesResult]
+
+  implicit val channelStatsReads: Reads[ChannelStats] =
+    Json.reads[ChannelStats]
+
+  implicit val usableBalancesResultReads: Reads[UsableBalancesResult] =
+    Json.reads[UsableBalancesResult]
+
+  import WebSocketEvent._
+
+  implicit val paymentRelayedEventReads: Reads[PaymentRelayed] =
+    Json.reads[PaymentRelayed]
+
+  implicit val paymentReceivedEventReads: Reads[PaymentReceived] =
+    Json.reads[PaymentReceived]
+
+  implicit val paymentFailedEventReads: Reads[PaymentFailed] =
+    Json.reads[PaymentFailed]
+
+  implicit val paymentSentEventReads: Reads[PaymentSent] =
+    Json.reads[PaymentSent]
+
+  implicit val paymentSettlingOnchainEventReads: Reads[PaymentSettlingOnchain] =
+    Json.reads[PaymentSettlingOnchain]
+
 }

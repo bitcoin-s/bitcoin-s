@@ -5,12 +5,9 @@ import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
-import org.slf4j.LoggerFactory
 import akka.stream.StreamTcpException
 
 class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
-
-  private val logger = LoggerFactory.getLogger(getClass)
 
   implicit private val actorSystem: ActorSystem =
     ActorSystem("EclairRpcTestUtilTest", BitcoindRpcTestUtil.AKKA_CONFIG)

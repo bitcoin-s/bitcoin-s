@@ -113,7 +113,7 @@ trait ChainUnitTest
         fixture: FixtureParam =>
           partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](fixture, {
             _: FixtureParam =>
-              Future.successful(fail("Incorrect tag/fixture for this test"))
+              Future(fail("Incorrect tag/fixture for this test"))
           })
       }
 
@@ -142,7 +142,7 @@ trait ChainUnitTest
         fixture: FixtureParam =>
           partialTestFun.applyOrElse[FixtureParam, Future[Assertion]](fixture, {
             _: FixtureParam =>
-              Future.successful(fail("Incorrect tag/fixture for this test"))
+              Future(fail("Incorrect tag/fixture for this test"))
           })
       }
 

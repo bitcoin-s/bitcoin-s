@@ -1,18 +1,25 @@
 package org.bitcoins.eclair.rpc.api
 
 import org.bitcoins.core.crypto.Sha256Digest
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, ShortChannelId}
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
-import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.NodeUri
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * This trait defines methods to interact with the Eclair lightning node via its API.
+  *
+  * @see [[https://acinq.github.io/eclair/]]
+  */
 trait EclairApi {
 
   def allChannels(): Future[Vector[ChannelDesc]]
@@ -29,7 +36,7 @@ trait EclairApi {
     * @param from start timestamp
     * @param to end timestamp
     */
-  def audit(from: Long, to: Long): Future[AuditResult]
+  def audit(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[AuditResult]
 
   def allUpdates(): Future[Vector[ChannelUpdate]]
 
@@ -46,20 +53,25 @@ trait EclairApi {
 
   def channel(id: ChannelId): Future[ChannelResult]
 
-  def checkInvoice(invoice: LnInvoice): Future[PaymentRequest]
+  def channelStats(): Future[Vector[ChannelStats]]
 
-  def checkPayment(
-      invoiceOrHash: Either[LnInvoice, Sha256Digest]): Future[Boolean]
+  def connect(nodeURI: NodeUri): Future[Unit]
 
-  def connect(nodeURI: NodeUri): Future[String]
+  def connect(nodeId: NodeId, host: String, port: Int): Future[Unit]
 
-  def close(id: ChannelId, spk: ScriptPubKey): Future[String]
+  def disconnect(nodeId: NodeId): Future[Unit]
 
-  def findRoute(nodeId: NodeId): Future[Vector[NodeId]]
+  def close(id: ChannelId, spk: ScriptPubKey): Future[Unit]
+
+  def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]]
 
   def findRoute(invoice: LnInvoice): Future[Vector[NodeId]]
 
-  def forceClose(id: ChannelId): Future[String]
+  def findRoute(invoice: LnInvoice, amountMsat: MilliSatoshis): Future[Vector[NodeId]]
+
+  def forceClose(channelId: ChannelId): Future[Unit]
+
+  def forceClose(shortChannelId: ShortChannelId): Future[Unit]
 
   def getInfo: Future[GetInfoResult]
 
@@ -94,21 +106,50 @@ trait EclairApi {
     */
   def network: LnParams
 
+  def networkFees(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[NetworkFeesResult]]
+
   def nodeId()(implicit ec: ExecutionContext): Future[NodeId] = {
     getNodeURI.map(_.nodeId)
   }
 
-  def receive(
-      amountMsat: LnCurrencyUnit,
-      description: String): Future[LnInvoice]
+  def createInvoice(description: String): Future[LnInvoice]
 
-  def receive(
-      amountMsat: Option[LnCurrencyUnit],
-      description: Option[String],
-      expirySeconds: Option[Long]): Future[LnInvoice]
+  def createInvoice(description: String, amountMsat: MilliSatoshis): Future[LnInvoice]
 
-  def send(paymentRequest: LnInvoice): Future[PaymentResult]
+  def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration): Future[LnInvoice]
 
-  def send(invoice: LnInvoice, amount: LnCurrencyUnit): Future[PaymentResult]
+  def createInvoice(description: String, amountMsat: MilliSatoshis, paymentPreimage: PaymentPreimage): Future[LnInvoice]
 
+  def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration, paymentPreimage: PaymentPreimage): Future[LnInvoice]
+
+  def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
+
+  def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]
+
+  def listInvoices(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[LnInvoice]]
+
+  def parseInvoice(invoice: LnInvoice): Future[InvoiceResult]
+
+  def payInvoice(invoice: LnInvoice): Future[PaymentId]
+
+  def payInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentId]
+
+  def payInvoice(invoice: LnInvoice, amountMsat: Option[MilliSatoshis], maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
+
+  def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]]
+
+  def getSentInfo(id: PaymentId): Future[Vector[PaymentResult]]
+
+  def getReceivedInfo(paymentHash: Sha256Digest): Future[ReceivedPaymentResult]
+
+  def getReceivedInfo(invoice: LnInvoice): Future[ReceivedPaymentResult]
+
+  def sendToNode(nodeId: NodeId, amountMsat: MilliSatoshis, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
+
+  /**
+    * Documented by not implemented in Eclair
+    */
+  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: MilliSatoshis, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId]
+
+  def usableBalances(): Future[Vector[UsableBalancesResult]]
 }
