@@ -3,7 +3,7 @@ package org.bitcoins.testkit.node
 import java.net.InetSocketAddress
 
 import akka.actor.ActorRefFactory
-import org.bitcoins.core.p2p.{NetworkIpAddress, NetworkMessage}
+import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
