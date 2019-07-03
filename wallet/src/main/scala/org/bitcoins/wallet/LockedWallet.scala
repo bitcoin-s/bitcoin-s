@@ -40,21 +40,30 @@ abstract class LockedWallet
   private def filterThenSum(
       predicate: IncomingWalletTXO => Boolean): Future[CurrencyUnit] = {
     for (utxos <- incomingTxoDAO.findAllWithSpendingInfo())
-      yield
-        utxos
+      yield {
+        val filtered = utxos
           .collect {
             case (txo, spendInfo) if predicate(txo) => spendInfo.value
           }
-          .fold(0.sats)(_ + _)
+
+        filtered.fold(0.sats)(_ + _)
+      }
   }
 
-  // TODO account for outgoing TXs
-  override def getConfirmedBalance(): Future[CurrencyUnit] =
-    filterThenSum(_.confirmations > 0)
+  override def getConfirmedBalance(): Future[CurrencyUnit] = {
+    val confirmed = filterThenSum(_.confirmations > 0)
+    confirmed.foreach(balance =>
+      logger.trace(s"Confirmed balance=${balance.satoshis}"))
+    confirmed
+  }
 
-  // TODO account for outgoing TXs
-  override def getUnconfirmedBalance(): Future[CurrencyUnit] =
-    filterThenSum(_.confirmations == 0)
+  override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
+    val unconfirmed = filterThenSum(_.confirmations == 0)
+    unconfirmed.foreach(balance =>
+      logger.trace(s"Unconfirmed balance=${balance.satoshis}"))
+    unconfirmed
+
+  }
 
   /**
     * @inheritdoc
