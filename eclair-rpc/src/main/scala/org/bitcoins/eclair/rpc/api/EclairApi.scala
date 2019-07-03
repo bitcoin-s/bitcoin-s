@@ -15,6 +15,11 @@ import org.bitcoins.eclair.rpc.network.NodeUri
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * This trait defines methods to interact with the Eclair lightning node via its API.
+  *
+  * @see [[https://acinq.github.io/eclair/]]
+  */
 trait EclairApi {
 
   def allChannels(): Future[Vector[ChannelDesc]]
