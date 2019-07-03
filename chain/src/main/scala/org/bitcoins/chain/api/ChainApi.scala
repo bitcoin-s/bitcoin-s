@@ -46,4 +46,10 @@ trait ChainApi {
   /** Gets the hash of the block that is what we consider "best" */
   def getBestBlockHash(
       implicit ec: ExecutionContext): Future[DoubleSha256DigestBE]
+
+  /** Gets the best block header we have */
+  def getBestBlockHeader(
+      implicit ec: ExecutionContext): Future[BlockHeaderDb] = {
+    getBestBlockHash.flatMap(getHeader).map(_.get)
+  }
 }
