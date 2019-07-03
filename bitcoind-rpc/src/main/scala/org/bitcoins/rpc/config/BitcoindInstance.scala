@@ -88,15 +88,15 @@ object BitcoindInstance {
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
 
-    val cmd = Try(
+    val cmd =
       if (Properties.isWin) {
         "bitcoind.exe".!!
       } else {
         "bitcoind".!!
       }
-    ).getOrElse(
+
+    val path = Try(cmd).getOrElse(
       throw new RuntimeException("Could not locate bitcoind on user PATH"))
-    val path = cmd
     new File(path.trim)
   }
 
