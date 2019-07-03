@@ -439,27 +439,10 @@ lazy val testkit = project
   )
   .enablePlugins(GitVersioning)
 
-lazy val publishWebsite = taskKey[Unit]("Publish website")
 
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
   .settings(commonTestSettings: _*)
-  .settings(
-    // come back to visit this setting later
-    mdocExtraArguments := List("--no-link-hygiene"),
-    name := "bitcoin-s-docs",
-    mdocVariables := Map(
-      "STABLE_VERSION" -> previousStableVersion.value.get,
-      "UNSTABLE_VERSION" -> version.value
-    ),
-    publishWebsite := Def
-      .sequential(
-        bitcoins / Compile / unidoc,
-        Compile / docusaurusPublishGhpages
-      )
-      .value,
-    libraryDependencies ++= Deps.docs
-  )
   .dependsOn(
     bitcoindRpc,
     core,
@@ -468,7 +451,6 @@ lazy val docs = project
     testkit,
     zmq
   )
-  .enablePlugins(MdocPlugin, DocusaurusPlugin)
 
 lazy val walletDbSettings = dbFlywaySettings("walletdb")
 lazy val wallet = project
