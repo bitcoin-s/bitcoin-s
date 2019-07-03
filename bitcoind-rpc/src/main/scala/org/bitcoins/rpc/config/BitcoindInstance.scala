@@ -39,13 +39,11 @@ sealed trait BitcoindInstance extends BitcoinSLogger {
   def getVersion: BitcoindVersion = {
 
     val binaryPath = binary.getAbsolutePath
-    val foundVersion = if(Properties.isWin)
-      {Seq(binaryPath, "--version").!!.split("\r\n").head.split(" ").last}
-    else{
-        Seq(binaryPath, "--version").!!.split("\n").head
-          .split(" ")
-          .last
-      }
+
+    val foundVersion =
+      Seq(binaryPath, "--version").!!.split(Properties.lineSeparator).head
+        .split(" ")
+        .last
 
     foundVersion match {
       case _: String if foundVersion.startsWith(BitcoindVersion.V16.toString) =>
@@ -90,15 +88,15 @@ object BitcoindInstance {
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
 
-
-    val path = if (Properties.isWin) {
-      "which bitcoind.exe".!!
-    }
-    else {
-      Try("which bitcoind".!!)
-        .getOrElse(
-          throw new RuntimeException("Could not locate bitcoind on user PATH"))
-    }
+    val cmd = Try(
+      if (Properties.isWin) {
+        "bitcoind.exe".!!
+      } else {
+        "bitcoind".!!
+      }
+    ).getOrElse(
+      throw new RuntimeException("Could not locate bitcoind on user PATH"))
+    val path = cmd
     new File(path.trim)
   }
 
