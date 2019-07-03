@@ -37,10 +37,10 @@ sealed abstract class Number[T <: Number[T]]
   /** Factory function to create the underlying T, for instance a UInt32 */
   def apply: A => T
 
-  override def +(num: T): T = apply(checkResult(underlying + num.underlying))
-  override def -(num: T): T = apply(checkResult(underlying - num.underlying))
-  override def *(factor: BigInt): T = apply(checkResult(underlying * factor))
-  override def *(num: T): T = apply(checkResult(underlying * num.underlying))
+  override def +(num: T): T = apply(underlying + num.underlying)
+  override def -(num: T): T = apply(underlying - num.underlying)
+  override def *(factor: BigInt): T = apply(underlying * factor)
+  override def *(num: T): T = apply(underlying * num.underlying)
 
   override def compare(num: T): Int = underlying compare num.underlying
 
@@ -64,19 +64,9 @@ sealed abstract class Number[T <: Number[T]]
     }
   }
 
-  def |(num: T): T = apply(checkResult(underlying | num.underlying))
-  def &(num: T): T = apply(checkResult(underlying & num.underlying))
+  def |(num: T): T = apply(underlying | num.underlying)
+  def &(num: T): T = apply(underlying & num.underlying)
   def unary_- : T = apply(-underlying)
-
-  /**
-    * Checks if the given result is within the range
-    * of this number type
-    */
-  private def checkResult(result: BigInt): A = {
-    require((result & andMask) == result,
-            "Result was out of bounds, got: " + result)
-    result
-  }
 
   /** Checks if the given nubmer is within range of a Int */
   private def checkIfInt(num: T): Try[Unit] = {
