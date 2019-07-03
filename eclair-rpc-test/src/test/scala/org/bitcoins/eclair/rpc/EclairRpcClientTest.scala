@@ -175,10 +175,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an empty invoice" in {
     for {
       c <- clientF
-//      info <- c.getInfo
       invoice <- c.createInvoice("test")
     } yield {
-//      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt.toString)
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount.isEmpty)
@@ -191,10 +189,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an invoice with amount" in {
     for {
       c <- clientF
-//      info <- c.getInfo
       invoice <- c.createInvoice(description = "test", amountMsat = 12345.msats)
     } yield {
-//      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount == Some(123450.pBTC))
@@ -207,10 +203,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an invoice with amount and expiry time" in {
     for {
       c <- clientF
-//      info <- c.getInfo
       invoice <- c.createInvoice(description = "test", amountMsat = 12345.msats, expireIn = 67890.seconds)
     } yield {
-//      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(12345.msats.toLnCurrencyUnit)).toString)
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount == Some(123450.pBTC))
@@ -225,7 +219,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an invoice with amount, expiry time, and fallbackAddress" in {
     for {
       c <- clientF
-//      info <- c.getInfo
       invoice <- c.createInvoice(
         description = "test",
         amountMsat = Some(12345.msats),
@@ -233,7 +226,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         fallbackAddress = Some(testBitcoinAddress),
         paymentPreimage = None)
     } yield {
-//      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt(Some(123450.pBTC)).toString)
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount == Some(123450.pBTC))
@@ -261,8 +253,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       assert(invoice.isValidSignature)
       assert(invoice.timestamp > UInt64(1561063731)) // this is when I wrote this code
       assert(invoice.timestamp <= UInt64(System.currentTimeMillis() / 1000))
-      //      assert(invoice.nodeId == info.nodeId)
-      succeed
     }
   }
 
