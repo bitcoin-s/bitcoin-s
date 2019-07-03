@@ -90,9 +90,9 @@ object BitcoindInstance {
 
     val cmd =
       if (Properties.isWin) {
-        "bitcoind.exe".!!
+        "which bitcoind.exe".!!
       } else {
-        "bitcoind".!!
+        "which bitcoind".!!
       }
 
     val path = cmd
