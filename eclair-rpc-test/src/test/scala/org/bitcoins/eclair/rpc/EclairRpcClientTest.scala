@@ -113,7 +113,10 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   behavior of "RpcClient"
 
-  it should "get a route to an invoice" in {
+  /**
+    * Please keep this test the very first. All other tests rely on the propagated gossip messages.
+    */
+  it should "wait for all gossip messages get propagated throughout the network and get a route to an invoice" in {
     val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
     val hasRoute = () => {
       invoiceF.flatMap { invoice =>
@@ -416,27 +419,18 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     otherClientNodeIdF.flatMap(nid => hasConnection(clientF, nid))
   }
 
-  // not implemented in Eclair 0.3
-  it should "be able to pay to a route" ignore {
-    val amt = MilliSatoshis(50)
+  it should "be able to pay to a route" in {
+    val amt = 50.msats
     val getPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
       {
         for {
-          channelId <- openAndConfirmChannel(clientF, otherClientF)
           otherClientNodeId <- otherClient.getInfo.map(_.nodeId)
-          channels <- client.channels(otherClientNodeId)
-          // without this we've been getting "route not found"
-          // probably an async issue, this is more elegant than Thread.sleep
-          _ = assert(channels.exists(_.state == ChannelState.NORMAL),
-            "Nodes did not have open channel!")
           invoice <- otherClient.createInvoice("foo", amt)
           route <- client.findRoute(otherClientNodeId, amt)
-          paymentId <- client.sendToRoute(route, amt, invoice.lnTags.paymentHash.hash, 10000)
+          paymentId <- client.sendToRoute(route, amt, invoice.lnTags.paymentHash.hash, 144)
           _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
           succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
-          _ <- client.close(channelId)
-          _ <- bitcoindRpcClientF.flatMap(_.generate(6))
         } yield {
           assert(succeeded.nonEmpty)
 
@@ -452,9 +446,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   }
 
-
   it should "be able to pay to a hash" in {
-    val amt = MilliSatoshis(50)
+    val amt = 50.msats
     val getPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
@@ -488,7 +481,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to generate an invoice with amount and pay it and close the channel" in {
-    val amt = MilliSatoshis(50)
+    val amt = 50.msats
 
     val getPaymentWithAmount = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
@@ -525,7 +518,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
 
   it should "be able to generate an invoice without amount and pay it" in {
-    val amt = MilliSatoshis(50)
+    val amt = 50.msats
     val getPaymentNoAmount = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
@@ -622,7 +615,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   it should "be able to generate a payment invoice and then check that invoice" in {
-    val amt = MilliSatoshis(1000)
+    val amt = 1000.msats
     val description = "bitcoin-s test case"
     val expiry = (System.currentTimeMillis() / 1000).seconds
 
@@ -960,9 +953,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  // not implemented in Eclair 0.3
-  // in Eclair 0.3.1-SNAPSHOT it can return negative balances
-  it should "get usable balances" ignore {
+  it should "get usable balances" in {
     for {
       c <- clientF
       res <- c.usableBalances()
@@ -971,8 +962,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  // not implemented in Eclair 0.3
-  it should "disconnect node" ignore {
+  it should "disconnect node" in {
     for {
       c1 <- clientF
       c2 <- otherClientF

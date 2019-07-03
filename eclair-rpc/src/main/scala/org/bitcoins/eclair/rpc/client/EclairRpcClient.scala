@@ -504,7 +504,7 @@ class EclairRpcClient(val instance: EclairInstance)(
              "This needs to be set to the directory containing the Eclair Jar")
           .mkString(" ")))
 
-    val eclairV = "/eclair-node-0.3-a5debcd.jar"
+    val eclairV = "/eclair-node-0.3.1-6906ecb.jar"
     val fullPath = path + eclairV
 
     val jar = new File(fullPath)
