@@ -28,17 +28,6 @@ class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   behavior of "EclairRpcTestUtilTest"
 
-  it must "spawn a V16 bitcoind instance" in {
-    for {
-      bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()
-      _ <- bitcoind.getNetworkInfo
-      _ <- BitcoindRpcTestUtil.stopServer(bitcoind)
-      _ <- bitcoind.getNetworkInfo
-        .map(_ => fail("got info from stopped bitcoind!"))
-        .recover { case _: StreamTcpException => }
-    } yield succeed
-  }
-
   it must "spawn four nodes and create a channel link between them" in {
     val nodes4F = bitcoindRpcF.flatMap { bitcoindRpc =>
       val nodes = EclairRpcTestUtil.createNodeLink(bitcoindRpc)
