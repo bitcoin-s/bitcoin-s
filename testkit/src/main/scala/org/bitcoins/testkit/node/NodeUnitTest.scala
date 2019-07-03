@@ -4,7 +4,6 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.p2p.NetworkIpAddress
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node.SpvNode

@@ -1,7 +1,5 @@
 package org.bitcoins.eclair.rpc
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
@@ -27,8 +25,7 @@ import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, LnTaggedFields, PaymentPreimage}
-import play.api.libs.json.Json
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, PaymentPreimage}
 import scala.concurrent.duration._
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
@@ -116,14 +113,48 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   behavior of "RpcClient"
 
+  it should "get a route to an invoice" in {
+    val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
+    val hasRoute = () => {
+      invoiceF.flatMap { invoice =>
+        firstClientF.flatMap(_.findRoute(invoice, None))
+          .map(route => route.length == 4)
+          .recover {
+            case err: RuntimeException
+              if err.getMessage.contains("route not found") =>
+              false
+          }
+      }
+
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20).map(_ => succeed)
+  }
+
+  it should "get a route to a node ID" in {
+    val hasRoute = () => {
+      fourthClientF
+        .flatMap(_.getInfo)
+        .flatMap(info => firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
+        .map(route => route.length == 4)
+        .recover {
+          case err: RuntimeException
+            if err.getMessage.contains("route not found") =>
+            false
+        }
+    }
+
+    // Eclair is a bit slow in propagating channel changes
+    AsyncUtil.awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20).map(_ => succeed)
+  }
+
   it should "check a payment" in {
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
 
         for {
-          channleId <- openAndConfirmChannel(clientF, otherClientF)
-          client <- clientF
-          otherClient <- otherClientF
+          _ <- openAndConfirmChannel(clientF, otherClientF)
           invoice <- otherClient.createInvoice("abc", 50.msats)
           infos <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
           _ = assert(infos.isEmpty)
@@ -131,7 +162,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
           _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
           sentInfo <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
         } yield {
-          succeed
+          assert(sentInfo.head.amountMsat == 50.msats)
         }
     }
 
@@ -141,15 +172,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an empty invoice" in {
     for {
       c <- clientF
-      c1 <- firstClientF
-      c2 <- secondClientF
-      c3 <- thirdClientF
-      c4 <- fourthClientF
-      info <- c.getInfo
-      info1 <- c1.getInfo
-      info2 <- c2.getInfo
-      info3 <- c3.getInfo
-      info4 <- c4.getInfo
+//      info <- c.getInfo
       invoice <- c.createInvoice("test")
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
@@ -165,7 +188,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an invoice with amount" in {
     for {
       c <- clientF
-      info <- c.getInfo
+//      info <- c.getInfo
       invoice <- c.createInvoice(description = "test", amountMsat = 12345.msats)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
@@ -181,7 +204,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an invoice with amount and expiry time" in {
     for {
       c <- clientF
-      info <- c.getInfo
+//      info <- c.getInfo
       invoice <- c.createInvoice(description = "test", amountMsat = 12345.msats, expireIn = 67890.seconds)
     } yield {
 //      assert(invoice.nodeId == info.nodeId)
@@ -199,7 +222,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an invoice with amount, expiry time, and fallbackAddress" in {
     for {
       c <- clientF
-      info <- c.getInfo
+//      info <- c.getInfo
       invoice <- c.createInvoice(
         description = "test",
         amountMsat = Some(12345.msats),
@@ -222,7 +245,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   it should "be able to create an invoice with amount, expiry time, fallbackAddress, and preimage" in {
     for {
       c <- clientF
-      info <- c.getInfo
       invoice <- c.createInvoice(
         description = "test",
         amountMsat = Some(12345.msats),
@@ -304,7 +326,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       val isClosedF = {
         val getIsClosed = { (client: EclairRpcClient, _: EclairRpcClient) =>
           isConfirmedF.flatMap {
-            case (chanId, assertion) =>
+            case (chanId, _) =>
               val closedF = changeAddrF.flatMap { addr =>
                 val closedF = client.close(chanId, addr.scriptPubKey)
 
@@ -718,25 +740,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   }
 
-  it should "get a route to an invoice" in {
-    val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
-    val hasRoute = () => {
-      invoiceF.flatMap { invoice =>
-        firstClientF.flatMap(_.findRoute(invoice, None))
-          .map(route => route.length == 4)
-          .recover {
-            case err: RuntimeException
-                if err.getMessage.contains("route not found") =>
-              false
-          }
-      }
-
-    }
-
-    // Eclair is a bit slow in propagating channel changes
-    AsyncUtil.awaitConditionF(hasRoute, duration = 10000.millis, maxTries = 20).map(_ => succeed)
-  }
-
   it should "send some payments and get the audit info" in {
     for {
       client1 <- firstClientF
@@ -762,7 +765,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val sendInBothDiercions = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
-          channelId <- openAndConfirmChannel(clientF, otherClientF)
+          _ <- openAndConfirmChannel(clientF, otherClientF)
 
           invoice <- otherClient.createInvoice("test", paymentAmount)
           paymentId <- client.payInvoice(invoice)
@@ -854,24 +857,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     clientF.flatMap(_.allNodes().flatMap(nodes => assert(nodes.nonEmpty)))
   }
 
-  it should "get a route to a node ID" in {
-    val hasRoute = () => {
-      fourthClientF
-        .flatMap(_.getInfo)
-        .flatMap(info => firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
-        .map(route => route.length == 4)
-        .recover {
-          case err: RuntimeException
-            if err.getMessage.contains("route not found") =>
-            false
-        }
-    }
-
-    // Eclair is a bit slow in propagating channel changes
-    AsyncUtil.awaitConditionF(hasRoute, duration = 10000.millis, maxTries = 20).map(_ => succeed)
-  }
-
-  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" ignore {
+  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" in {
     //make sure we see payments outside of our immediate peers
     //this is important because these gossip messages contain
     //information about channel fees, so we need to get updates
@@ -887,7 +873,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         sentPaymentF.flatMap { _ =>
           val nodeIdF = client.getNodeURI.map(_.nodeId)
 
-          def ourUpdates = nodeIdF.flatMap(nonPeer.allUpdates(_))
+          def ourUpdates = nodeIdF.flatMap(nonPeer.allUpdates)
 
           def allUpdates = nonPeer.allUpdates()
 
@@ -899,7 +885,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
           }
 
           val checkedUpatesF: Future[Unit] =
-            AsyncUtil.retryUntilSatisfiedF(checkUpdates,
+            AsyncUtil.retryUntilSatisfiedF((() => checkUpdates()),
               duration = 5.seconds,
               maxTries = 15)
 
@@ -1001,16 +987,16 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
                              client: Future[EclairRpcClient],
                              nodeId: NodeId): Future[Assertion] = {
 
-    val hasPeersF = clientF.flatMap(_.getPeers.map(_.nonEmpty))
+    val hasPeersF = client.flatMap(_.getPeers.map(_.nonEmpty))
 
     val hasPeersAssertF = hasPeersF.map(h => assert(h))
 
-    val isConnectedF = clientF.flatMap(_.isConnected(nodeId))
+    val isConnectedF = client.flatMap(_.isConnected(nodeId))
 
     val isConnectedAssertF =
       isConnectedF.map(isConnected => assert(isConnected))
 
-    hasPeersAssertF.flatMap(hasPeers =>
+    hasPeersAssertF.flatMap(_ =>
       isConnectedAssertF.map(isConn => isConn))
   }
 

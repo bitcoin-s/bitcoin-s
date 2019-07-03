@@ -50,7 +50,6 @@ import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
 import org.bitcoins.rpc.config.BitcoindConfig
-import java.nio.file.Files
 import java.io.File
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

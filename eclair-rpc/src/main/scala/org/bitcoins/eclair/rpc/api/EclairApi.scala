@@ -2,7 +2,7 @@ package org.bitcoins.eclair.rpc.api
 
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.{Address, NetworkElement}
+import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis

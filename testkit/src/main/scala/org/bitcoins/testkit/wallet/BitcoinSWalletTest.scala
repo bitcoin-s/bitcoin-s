@@ -112,7 +112,7 @@ trait BitcoinSWalletTest
   }
 
   def withNewWallet(test: OneArgAsyncTest): FutureOutcome =
-    makeDependentFixture(build = createDefaultWallet, destroy = destroyWallet)(
+    makeDependentFixture(build = (() => createDefaultWallet), destroy = destroyWallet)(
       test)
 
   case class WalletWithBitcoind(

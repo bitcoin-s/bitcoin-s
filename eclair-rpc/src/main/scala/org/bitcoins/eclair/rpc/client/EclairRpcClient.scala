@@ -1,7 +1,6 @@
 package org.bitcoins.eclair.rpc.client
 
 import java.io.File
-import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
@@ -11,7 +10,7 @@ import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.{Address, NetworkElement}
+import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -38,8 +37,6 @@ class EclairRpcClient(val instance: EclairInstance)(
     extends EclairApi {
   import JsonReaders._
 
-  private val resultKey = "result"
-  private val errorKey = "error"
   implicit val m = ActorMaterializer.create(system)
   implicit val ec: ExecutionContext = m.executionContext
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -79,7 +76,7 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   private def channels(nodeId: Option[NodeId]): Future[Vector[ChannelInfo]] = {
-    val params = Seq().flatMap(_ => nodeId.map(id => "nodeId" -> id.toString))
+    val params = Seq(nodeId.map(id => "nodeId" -> id.toString)).flatten
     eclairCall[Vector[ChannelInfo]]("channels", params: _*)
   }
 

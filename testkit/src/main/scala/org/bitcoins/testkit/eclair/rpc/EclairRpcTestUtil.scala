@@ -13,9 +13,8 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.json.{PaymentId, PaymentResult, PaymentStatus}
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
+import org.bitcoins.eclair.rpc.json.{PaymentId, PaymentStatus}
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -25,7 +24,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import org.bitcoins.rpc.util.AsyncUtil.{DEFAULT_INTERNVAL, DEFAULT_MAX_TRIES}
 
 /**
   * @define nodeLinkDoc
@@ -55,7 +53,6 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     */
   def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
       implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
-    import actorSystem.dispatcher
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
   }
 
