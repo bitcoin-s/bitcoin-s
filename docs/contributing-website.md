@@ -52,8 +52,7 @@ yarn start
 In a separate shell:
 
 ```bash
-$ sbt
-> docs/mdoc --watch
+$ bloop run docs -- --watch
 ```
 
 The above commands compiles our Mdoc Markdown files every time you change
