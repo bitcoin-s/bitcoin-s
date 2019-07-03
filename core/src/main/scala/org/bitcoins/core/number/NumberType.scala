@@ -34,7 +34,10 @@ sealed abstract class Number[T <: Number[T]]
     */
   def andMask: BigInt
 
-  /** Factory function to create the underlying T, for instance a UInt32 */
+  /**
+    * Factory function to create the underlying T, for instance a UInt32.
+    * This method must check if the parameter is in the required range.
+    */
   def apply: A => T
 
   override def +(num: T): T = apply(underlying + num.underlying)
