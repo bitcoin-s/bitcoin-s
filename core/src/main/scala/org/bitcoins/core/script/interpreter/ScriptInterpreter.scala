@@ -790,7 +790,7 @@ sealed abstract class ScriptInterpreter {
         //since this is not a coinbase tx we cannot have any empty previous outs inside of inputs
         !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
     }
-    inputOutputsNotZero && txNotLargerThanBlock && outputsSpendValidAmountsOfMoney && noDuplicateInputs &&
+    inputOutputsNotZero && txNotLargerThanBlock && outputsSpendValidAmountsOfMoney && 
     allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
   }
 
