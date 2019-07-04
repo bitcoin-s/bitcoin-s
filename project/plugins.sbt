@@ -13,6 +13,8 @@ addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "1.15")
 // sbt plugin to unify scaladoc/javadoc across multiple projects
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
 
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
+
 // ensure proper linkage across libraries in Scaladoc
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.1.0")
 
