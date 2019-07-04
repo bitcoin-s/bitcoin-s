@@ -9,7 +9,8 @@ import org.bitcoins.rpc.client.common.BitcoindVersion
 import scala.sys.process._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.config.NetworkParameters
-import scala.util.Try
+
+import scala.util.{Properties, Try}
 import java.nio.file.Files
 
 /**
@@ -38,9 +39,11 @@ sealed trait BitcoindInstance extends BitcoinSLogger {
   def getVersion: BitcoindVersion = {
 
     val binaryPath = binary.getAbsolutePath
-    val foundVersion = Seq(binaryPath, "--version").!!.split("\n").head
-      .split(" ")
-      .last
+
+    val foundVersion =
+      Seq(binaryPath, "--version").!!.split(Properties.lineSeparator).head
+        .split(" ")
+        .last
 
     foundVersion match {
       case _: String if foundVersion.startsWith(BitcoindVersion.V16.toString) =>
@@ -84,9 +87,15 @@ object BitcoindInstance {
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: File = {
-    val path = Try("which bitcoind".!!)
-      .getOrElse(
-        throw new RuntimeException("Could not locate bitcoind on user PATH"))
+
+    val cmd =
+      if (Properties.isWin) {
+        "which bitcoind.exe".!!
+      } else {
+        "which bitcoind".!!
+      }
+
+    val path = cmd
     new File(path.trim)
   }
 
