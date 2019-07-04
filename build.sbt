@@ -135,7 +135,6 @@ lazy val `bitcoin-s` = project
     dbCommons,
     bitcoindRpc,
     bitcoindRpcTest,
-    bench,
     eclairRpc,
     eclairRpcTest,
     node,
@@ -282,6 +281,8 @@ lazy val core = project
 lazy val coreTest = project
   .in(file("core-test"))
   .settings(commonTestSettings: _*)
+  .settings(benchSettings: _*)
+  .configs(Benchmark)
   .settings(
     name := "bitcoin-s-core-test"
   )
@@ -384,16 +385,6 @@ lazy val bitcoindRpcTest = project
   .settings(libraryDependencies ++= Deps.bitcoindRpcTest,
             name := "bitcoin-s-bitcoind-rpc-test")
   .dependsOn(core % testAndCompile, testkit)
-
-lazy val bench = project
-  .in(file("bench"))
-  .settings(commonSettings: _*)
-  .settings(
-    libraryDependencies ++= Deps.bench,
-    name := "bitcoin-s-bench",
-    skip in publish := true
-  )
-  .dependsOn(core % testAndCompile)
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))

@@ -113,6 +113,7 @@ object Deps {
   )
 
   val coreTest = List(
+    Test.scalameter,
     Test.junitInterface,
     Test.logback,
     Test.scalaTest,
