@@ -87,8 +87,7 @@ yarn install <span class="hljs-comment"># only the first time, to install the de
 yarn start
 </code></pre>
 <p>In a separate shell:</p>
-<pre><code class="hljs css language-bash">$ sbt
-&gt; docs/mdoc --watch
+<pre><code class="hljs css language-bash">$ bloop run docs -- --watch
 </code></pre>
 <p>The above commands compiles our Mdoc Markdown files every time you change
 them, and puts them in the correct directory for Docusaurus to find them.</p>
