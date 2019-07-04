@@ -26,6 +26,9 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
+import scala.concurrent.Await
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.bloom.BloomFilter
 
 class NodeWithWalletTest extends BitcoinSWalletTest {
 
@@ -47,6 +50,8 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
 
       var expectedTxId: Option[DoubleSha256Digest] = None
       var unexpectedTxId: Option[DoubleSha256Digest] = None
+      var addressFromWallet: Option[BitcoinAddress] = None
+      var bloomFromWallet: Option[BloomFilter] = None
       var cancellable: Option[Cancellable] = None
 
       val completionP = Promise[Assertion]
@@ -79,10 +84,14 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
             }
 
           } else if (unexpectedTxId.contains(tx.txId)) {
+            val errMsg =
+              s"Got ${tx.txId}, which is a TX we expect to NOT get notified about!"
+            logger.error(errMsg)
+            logger.error(s"Bloom filter hex: ${bloomFromWallet.get.hex}")
+            logger.error(s"Address from wallet: ${addressFromWallet.get}")
+            logger.error(s"Unexpected TX hex: ${tx.hex}")
             completionP.failure(
-              new TestFailedException(
-                s"Got ${tx.txId}, which is a TX we expect to NOT get notified about!",
-                failedCodeStackDepth = 0))
+              new TestFailedException(errMsg, failedCodeStackDepth = 0))
           } else {
             logger.info(s"Didn't match expected TX or unexpected TX")
           }
@@ -117,6 +126,10 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
 
         address <- wallet.getNewAddress()
         bloom <- wallet.getBloomFilter()
+        _ = {
+          bloomFromWallet = Some(bloom)
+          addressFromWallet = Some(address)
+        }
 
         spv <- {
           val peer = Peer.fromBitcoind(rpc.instance)
