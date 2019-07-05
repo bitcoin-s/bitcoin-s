@@ -21,7 +21,7 @@ created, 1 which is contained in the location on the wiki and that contains data
 That file is what is necessary to start up a bitcoind node. 
 
 ## Running Linux on a Windows Machine
-If you are looking to develop in a Linux environment on a Windows Machine I have had success with `Windows Subsystem for Linux (WSL)`. https://docs.microsoft.com/en-us/windows/wsl/install-win10   
+If you are looking to develop in a Linux environment on a Windows Machine I have had success with [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 If you are interested in working on both Linux and Windows for development reasons I would also recommend [Windows Terminal](https://github.com/microsoft/terminal) as a way to hold many different terminals all in one window including your 
 
 Linux distro if you set up a WSL. With that being said the most important thing to consider when running Linux on a Windows Machine while also developing on Windows, there will be differences in setting up directories and pathing especially for `bloop`. I will update if I find a functional workaround.
