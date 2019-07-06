@@ -11,7 +11,7 @@ location of the `.ivy2` folder is likely in `C:\users\{your_username}\.ivy2\`. O
 we will want to direct `bloop` on how to find the files in the new location. I found it was quite simple to use Windows 
 symbolic link (Note: if you are a running a Linux Subsystem this will also influence where your Linux bloop looks for this directory and thus will break as subsystems will have to use the `mnt` folder to access `C` drive). 
 To create the symbolic link we run  
-```mklink /D C:\root\.ivy2\ C:\users\{your_username}\.ivy2\```    
+```mklink /D C:\root\.ivy2\ C:\users\{your_username}\.ivy2\```
 the `/D` option specifies that it is a directory. You will need to run this command in `cmd.exe` instead of `Windows Powershell` as it is not a standalone executable.
 
 ## Running a Bitcoind node
