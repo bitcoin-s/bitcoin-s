@@ -135,6 +135,24 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     AsyncUtil.awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20).map(_ => succeed)
   }
 
+  it should "send some payments and get the audit info" in {
+    for {
+      client1 <- firstClientF
+      client2 <- secondClientF
+      client4 <- fourthClientF
+      invoice <- client4.createInvoice("test", 1000.msats)
+      paymentId <- client1.payInvoice(invoice)
+      _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1, paymentId, duration = 5.seconds)
+      received <- client4.audit()
+      relayed <- client2.audit()
+      sent <- client1.audit()
+    } yield {
+      assert(sent.sent.nonEmpty)
+      assert(received.received.nonEmpty)
+      assert(relayed.relayed.nonEmpty)
+    }
+  }
+
   it should "get a route to a node ID" in {
     val hasRoute = () => {
       fourthClientF
@@ -721,24 +739,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
                              test = getChannelUpdates)
     }
 
-  }
-
-  it should "send some payments and get the audit info" in {
-    for {
-      client1 <- firstClientF
-      client2 <- secondClientF
-      client4 <- fourthClientF
-      invoice <- client4.createInvoice("test", 1000.msats)
-      paymentId <- client1.payInvoice(invoice)
-      _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1, paymentId, duration = 5.seconds)
-      received <- client4.audit()
-      relayed <- client2.audit()
-      sent <- client1.audit()
-    } yield {
-      assert(sent.sent.nonEmpty)
-      assert(received.received.nonEmpty)
-      assert(relayed.relayed.nonEmpty)
-    }
   }
 
   it should "be able to send payments in both directions" in {
