@@ -1,8 +1,13 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDbHelper
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  BlockHeaderDb,
+  BlockHeaderDbHelper
+}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FileUtil
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
@@ -35,6 +40,7 @@ class ChainHandlerTest extends ChainUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandler(test)
 
+  val genesis = ChainUnitTest.genesisHeaderDb
   behavior of "ChainHandler"
 
   it must "process a new valid block header, and then be able to fetch that header" in {
@@ -124,6 +130,84 @@ class ChainHandlerTest extends ChainUnitTest {
       }
   }
 
+  it must "handle a very basic reorg where one chain is one block behind the best chain" in {
+    chainHandler: ChainHandler =>
+      val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
+      val chainHandlerCF = reorgFixtureF.map(_.chainApi)
+      // header B, best hash ATM
+      val newHeaderBF = reorgFixtureF.map(_.headerDb1)
+      // header C, same height as B but was seen later
+      val newHeaderCF = reorgFixtureF.map(_.headerDb2)
+
+      // check that header B is the leader
+      val assertBBestHashF = for {
+        chainHandler <- chainHandlerCF
+        headerB <- newHeaderBF
+        bestHash <- chainHandler.getBestBlockHash
+      } yield {
+        assert(bestHash == headerB.hashBE)
+      }
+
+      // build a new header D off of C which was seen later
+      // but has the same height as B
+      val newHeaderDF =
+        newHeaderCF.map(h => BlockHeaderHelper.buildNextHeader(h))
+
+      val chainHandlerDF = for {
+        _ <- assertBBestHashF
+        newHeaderD <- newHeaderDF
+        chainHandler <- chainHandlerCF
+        chainHandlerD <- chainHandler.processHeader(newHeaderD.blockHeader)
+      } yield chainHandlerD
+
+      for {
+        chainHandler <- chainHandlerDF
+        newHeaderD <- newHeaderDF
+        hash <- chainHandler.getBestBlockHash
+      } yield {
+        // assert that header D overtook header B
+        assert(hash == newHeaderD.hashBE)
+      }
+  }
+
+  it must "NOT reorg to a shorter chain that just received a new block" in {
+    chainHandler: ChainHandler =>
+      val reorgFixtureF = buildChainHandlerCompetingHeaders(chainHandler)
+      val chainHandlerCF = reorgFixtureF.map(_.chainApi)
+      val newHeaderBF = reorgFixtureF.map(_.headerDb1)
+      val newHeaderCF = reorgFixtureF.map(_.headerDb2)
+
+      //we are going to generate two new blocks on chain C
+      val chainHandlerEWithHeaderF: Future[(ChainApi, BlockHeaderDb)] = for {
+        newHeaderC <- newHeaderCF
+        chainHandler <- chainHandlerCF
+        headerD = BlockHeaderHelper.buildNextHeader(newHeaderC)
+        headerE = BlockHeaderHelper.buildNextHeader(headerD)
+        chainHandlerE <- chainHandler.processHeaders(
+          Vector(headerD.blockHeader, headerE.blockHeader))
+      } yield (chainHandlerE, headerE)
+
+      val chainHandlerEF = chainHandlerEWithHeaderF.map(_._1)
+
+      val headerEF = chainHandlerEWithHeaderF.map(_._2)
+      //now we are going to attempt to generate a block on top of B
+      //we should _not_ reorg to a new best tip after adding block F ontop of B
+      //the best hash should still be header E's best hash.
+
+      val chainHandlerFF = for {
+        chainHandler <- chainHandlerEF
+        headerB <- newHeaderBF
+        headerF = BlockHeaderHelper.buildNextHeader(headerB)
+        chainHandlerF <- chainHandler.processHeader(headerF.blockHeader)
+      } yield chainHandlerF
+
+      for {
+        chainHandlerF <- chainHandlerFF
+        headerE <- headerEF
+        bestHash <- chainHandlerF.getBestBlockHash
+      } yield assert(bestHash == headerE.hashBE)
+  }
+
   final def processHeaders(
       processorF: Future[ChainHandler],
       remainingHeaders: List[BlockHeader],
@@ -139,6 +223,41 @@ class ChainHandlerTest extends ChainUnitTest {
         assertionF.flatMap(_ =>
           processHeaders(newProcessorF, headersTail, height = height + 1))
       case Nil => succeed
+    }
+  }
+
+  /** Builds two competing headers that are built from the same parent */
+  private def buildCompetingHeaders(
+      parent: BlockHeaderDb): (BlockHeader, BlockHeader) = {
+    val newHeaderB =
+      BlockHeaderHelper.buildNextHeader(parent)
+
+    val newHeaderC =
+      BlockHeaderHelper.buildNextHeader(parent)
+
+    (newHeaderB.blockHeader, newHeaderC.blockHeader)
+  }
+
+  case class ReorgFixture(
+      chainApi: ChainApi,
+      headerDb1: BlockHeaderDb,
+      headerDb2: BlockHeaderDb,
+      oldBestBlockHeader: BlockHeaderDb) {
+    lazy val header1: BlockHeader = headerDb1.blockHeader
+    lazy val header2: BlockHeader = headerDb2.blockHeader
+  }
+
+  /** Builds two competing headers off of the [[ChainHandler.getBestBlockHash best chain tip]] */
+  private def buildChainHandlerCompetingHeaders(
+      chainHandler: ChainHandler): Future[ReorgFixture] = {
+    for {
+      oldBestTip <- chainHandler.getBestBlockHeader
+      (newHeaderB, newHeaderC) = buildCompetingHeaders(oldBestTip)
+      newChainApi <- chainHandler.processHeaders(Vector(newHeaderB, newHeaderC))
+      newHeaderDbB <- newChainApi.getHeader(newHeaderB.hashBE)
+      newHeaderDbC <- newChainApi.getHeader(newHeaderC.hashBE)
+    } yield {
+      ReorgFixture(newChainApi, newHeaderDbB.get, newHeaderDbC.get, oldBestTip)
     }
   }
 }
