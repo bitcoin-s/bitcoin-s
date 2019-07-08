@@ -46,4 +46,19 @@ trait ChainApi {
   /** Gets the hash of the block that is what we consider "best" */
   def getBestBlockHash(
       implicit ec: ExecutionContext): Future[DoubleSha256DigestBE]
+
+  /** Gets the best block header we have */
+  def getBestBlockHeader(
+      implicit ec: ExecutionContext): Future[BlockHeaderDb] = {
+    for {
+      hash <- getBestBlockHash
+      headerOpt <- getHeader(hash)
+    } yield
+      headerOpt match {
+        case None =>
+          throw new RuntimeException(
+            s"We found best hash=${hash.hex} but could not retrieve the full header!!!")
+        case Some(header) => header
+      }
+  }
 }
