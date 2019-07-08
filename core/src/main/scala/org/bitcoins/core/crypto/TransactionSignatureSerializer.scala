@@ -16,12 +16,12 @@ import org.bitcoins.core.util.{
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 2/16/16.
   * Wrapper that serializes like Transaction, but with the modifications
-  * required for the signature hash done
-  * [[https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105]]
-  * bitcoinj version of this
-  * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008]]
+  * required for the signature hash done in
+  * [[https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105 interpreter.cpp]]
+  *
+  * @see
+  * [[https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/Transaction.java#L924-L1008 bitcoinj version of this]]
   */
 sealed abstract class TransactionSignatureSerializer {
 

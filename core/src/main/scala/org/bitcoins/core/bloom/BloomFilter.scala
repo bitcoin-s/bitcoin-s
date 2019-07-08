@@ -363,11 +363,9 @@ object BloomFilter extends Factory[BloomFilter] {
       //from https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#bloom-filter-format
       val optimalFilterSize: Double = (-1 / pow(log(2), 2) * numElements * log(
         falsePositiveRate)) / 8
-      logger.debug("optimalFilterSize " + optimalFilterSize)
       //BIP37 places limitations on the filter size, namely it cannot be > 36,000 bytes
       val actualFilterSize: Int =
         max(1, min(optimalFilterSize, maxSize.toInt * 8)).toInt
-      logger.debug("actualFilterSize: " + actualFilterSize)
       val optimalHashFuncs: Double = (actualFilterSize * 8 / numElements * log(
         2))
       //BIP37 places a limit on the amount of hashFuncs we can use, which is 50

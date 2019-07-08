@@ -43,13 +43,13 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val flags = elements(2).convertTo[String]
         val expectedResult = ScriptResult(elements(3).convertTo[String])
         Some(
-          CoreTestCaseImpl(scriptSignature,
-                           scriptPubKey,
-                           flags,
-                           expectedResult,
-                           "",
-                           elements.toString,
-                           None))
+          CoreTestCase(scriptSignature,
+                       scriptPubKey,
+                       flags,
+                       expectedResult,
+                       "",
+                       elements.toString,
+                       None))
       } else if (elements.size == 5 && elements.head.isInstanceOf[JsArray]) {
         //means we have a witness as the first item in our array
         val witnessArray = elements.head.asInstanceOf[JsArray]
@@ -68,13 +68,13 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val flags = elements(3).convertTo[String]
         val expectedResult = ScriptResult(elements(4).convertTo[String])
         Some(
-          CoreTestCaseImpl(scriptSignature,
-                           scriptPubKey,
-                           flags,
-                           expectedResult,
-                           "",
-                           elements.toString,
-                           Some(witness, amount)))
+          CoreTestCase(scriptSignature,
+                       scriptPubKey,
+                       flags,
+                       expectedResult,
+                       "",
+                       elements.toString,
+                       Some(witness, amount)))
       } else if (elements.size == 5) {
         val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(1))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
@@ -86,13 +86,13 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val expectedResult = ScriptResult(elements(3).convertTo[String])
         val comments = elements(4).convertTo[String]
         Some(
-          CoreTestCaseImpl(scriptSignature,
-                           scriptPubKey,
-                           flags,
-                           expectedResult,
-                           comments,
-                           elements.toString,
-                           None))
+          CoreTestCase(scriptSignature,
+                       scriptPubKey,
+                       flags,
+                       expectedResult,
+                       comments,
+                       elements.toString,
+                       None))
       } else if (elements.size == 6 && elements.head.isInstanceOf[JsArray]) {
         val witnessArray = elements.head.asInstanceOf[JsArray]
         val amount = Satoshis(
@@ -111,13 +111,13 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         val expectedResult = ScriptResult(elements(4).convertTo[String])
         val comments = elements(5).convertTo[String]
         Some(
-          CoreTestCaseImpl(scriptSignature,
-                           scriptPubKey,
-                           flags,
-                           expectedResult,
-                           comments,
-                           elements.toString,
-                           Some(witness, amount)))
+          CoreTestCase(scriptSignature,
+                       scriptPubKey,
+                       flags,
+                       expectedResult,
+                       comments,
+                       elements.toString,
+                       Some(witness, amount)))
       } else None
     }
 

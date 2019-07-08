@@ -9,22 +9,11 @@ import org.bitcoins.core.protocol.script.{
 import org.bitcoins.core.script.result.ScriptResult
 
 /**
-  * Created by chris on 1/18/16.
-  * This represents a core test case for valid and invalid scripts
-  * the scripts can be seen in the script_tests.json file
-  * files.
+  * This represents a test case for valid and invalid scripts.
+  * The scripts can be seen in the `script_tests.json` file
+  * found in the resource directory..
   */
-trait CoreTestCase {
-  def scriptSig: ScriptSignature
-  def scriptPubKey: ScriptPubKey
-  def flags: String
-  def expectedResult: ScriptResult
-  def comments: String
-  def raw: String
-  def witness: Option[(ScriptWitness, CurrencyUnit)]
-}
-
-case class CoreTestCaseImpl(
+case class CoreTestCase(
     scriptSig: ScriptSignature,
     scriptPubKey: ScriptPubKey,
     flags: String,
@@ -32,4 +21,3 @@ case class CoreTestCaseImpl(
     comments: String,
     raw: String,
     witness: Option[(ScriptWitness, CurrencyUnit)])
-    extends CoreTestCase
