@@ -15,6 +15,7 @@
 <url> <loc>https://bitcoin-s.org/docs/next/rpc/rpc-eclair</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/next/rpc/rpc-eclair" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/next/rpc/rpc-clients-intro</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/next/rpc/rpc-clients-intro" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/next/security</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/next/security" /> </url>
+<url> <loc>https://bitcoin-s.org/docs/next/windows-users</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/next/windows-users" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/contributing-website</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing-website" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/contributing</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/contributing" /> </url>
 <url> <loc>https://bitcoin-s.org/docs/core/addresses</loc> <changefreq>hourly</changefreq> <priority>1.0</priority> <xhtml:link rel="alternate" hreflang="en" href="https://bitcoin-s.org/docs/core/addresses" /> </url>
