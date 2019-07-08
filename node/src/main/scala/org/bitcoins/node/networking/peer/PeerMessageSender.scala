@@ -8,6 +8,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.core.protocol.transaction.Transaction
 
 case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     extends BitcoinSLogger {
@@ -53,6 +54,24 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   def sendHeadersMessage(): Unit = {
     val sendHeadersMsg = SendHeadersMessage
     sendMsg(sendHeadersMsg)
+  }
+
+  /**
+    * Sends a inventory message with the given inventory elements.
+    * Both blocks and transactions have default implementations for
+    * the `InventoryEsque` type class.
+    */
+  def sendInventoryMessage[T: InventoryEsque](invs: T*): Unit = {
+    val inventories = invs.map(implicitly[InventoryEsque[T]].toInv)
+    val message = InventoryMessage(inventories)
+    logger.trace(s"Sending inv=$message to peer=${client.peer}")
+    sendMsg(message)
+  }
+
+  def sendTransactionMessage(transaction: Transaction): Unit = {
+    val message = TransactionMessage(transaction)
+    logger.trace(s"Sending txmessage=$message to peer=${client.peer}")
+    sendMsg(message)
   }
 
   private[node] def sendMsg(msg: NetworkPayload): Unit = {

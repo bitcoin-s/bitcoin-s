@@ -111,6 +111,25 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
     }
   }
 
+  /**
+    *
+    * Given two fixture building methods (one dependent on the other) and
+    * a function that processes the result of the builders returning a Future,
+    * returns a single fixture building method where the fixture is wrapper.
+    *
+    * This method is identical to `composeBuildersAndWrap`, except that
+    * the wrapping function returns a `Future[C]` instead of a `C`
+    */
+  def composeBuildersAndWrapFuture[T, U, C](
+      builder: () => Future[T],
+      dependentBuilder: T => Future[U],
+      processResult: (T, U) => Future[C]
+  ): () => Future[C] = () => {
+    composeBuilders(builder, dependentBuilder)().flatMap {
+      case (first, second) => processResult(first, second)
+    }
+  }
+
   def createBitcoindWithFunds()(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     for {
