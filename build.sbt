@@ -214,7 +214,8 @@ lazy val bitcoins = project
   )
   .settings(
     name := "bitcoin-s",
-    gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git"
+    gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git",
+    publish / skip := true
   )
 
 lazy val secp256k1jni = project
