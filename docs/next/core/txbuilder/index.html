@@ -81,7 +81,7 @@ transactions. Here's an example of how to use it</p>
 
 <span class="hljs-comment">// this is the UTXO we are going to be spending</span>
 <span class="hljs-keyword">val</span> utxo =
-  <span class="hljs-type">TransactionOutput</span>(currencyUnit = amount, scriptPubKey = creditingSpk)
+  <span class="hljs-type">TransactionOutput</span>(value = amount, scriptPubKey = creditingSpk)
 
 <span class="hljs-comment">// the private key that locks the funds for the script we are spending too</span>
 <span class="hljs-keyword">val</span> destinationPrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
@@ -97,7 +97,7 @@ transactions. Here's an example of how to use it</p>
 <span class="hljs-comment">// we could add more destinations here if we</span>
 <span class="hljs-comment">// wanted to batch transactions</span>
 <span class="hljs-keyword">val</span> destinations = {
-    <span class="hljs-keyword">val</span> destination1 = <span class="hljs-type">TransactionOutput</span>(currencyUnit = destinationAmount,
+    <span class="hljs-keyword">val</span> destination1 = <span class="hljs-type">TransactionOutput</span>(value = destinationAmount,
                                          scriptPubKey = destinationSPK)
 
     <span class="hljs-type">List</span>(destination1)
@@ -174,7 +174,7 @@ signedTx.outputs.length
 
 <span class="hljs-comment">//remember, you can call .hex on any bitcoin-s data structure to get the hex representation!</span>
 signedTx.hex
-<span class="hljs-comment">// res2: String = "0200000001d8ef9354a7eafa8c04878b0f6b5920d3449ef5a9b1fba640ac3d5c5736d1e7b4000000006a473044022004d8fbe5bb015f9746b97988ca7ade194e3c71f61a988c0275bbf7b7b22eed0f02205e5a8a0c2018f7ab95e185bfed5ec3720bd2451b8c618293dab5163f6c4191c10121022f1ceae01ca1b816948f91004c06502afb261faf9f56a683bcde2dab94545064000000000288130000000000001976a914e84cb8414d350a88e56d556ae136f964fa5b571188aca6120000000000001976a914fe3cd302704a680413804bea8930d5d30eeb415b88ac00000000"</span>
+<span class="hljs-comment">// res2: String = "02000000018b564ff9081e9a4218881a7f3492ce34c77d598451183bdcd7d9801e5690fee4000000006a4730440220700c1d964afc098001e6a2ddc15155be373aaf2f8f1ff13690d40154ba1ad57302207568b816c038736293a62c8f516daf3d3de5387047096aa04b5b50e412811d270121030cc85dceafb1e1e81ce5c35c48f553cd736bed246c4a6cfb0afd84f9b9d4fd8d000000000288130000000000001976a9149e5a1aa07f3403185d659fbf669298a0285fedaf88aca6120000000000001976a914e2646ee340c8dc1a78396303c5726c6539a158bd88ac00000000"</span>
 </code></pre>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/core/hd-keys"><span class="arrow-prev">← </span><span>HD key generation</span></a><a class="docs-next button" href="/docs/next/rpc/rpc-clients-intro"><span>Introduction</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
