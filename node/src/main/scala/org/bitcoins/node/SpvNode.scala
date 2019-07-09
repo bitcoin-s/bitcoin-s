@@ -12,7 +12,6 @@ import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.Future
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.p2p.FilterLoadMessage
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.models.BroadcastAbleTransaction
@@ -22,6 +21,7 @@ import scala.util.Failure
 import scala.util.Success
 import org.bitcoins.db.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.core.protocol.BitcoinAddress
 
 case class SpvNode(
     peer: Peer,
@@ -42,6 +42,36 @@ case class SpvNode(
 
   private val peerMsgSender: PeerMessageSender = {
     PeerMessageSender(client)
+  }
+
+  /** Updates our bloom filter to match the given TX
+    *
+    * @return SPV node with the updated bloom filter
+    */
+  def updateBloomFilter(transaction: Transaction): SpvNode = {
+    logger.info(s"Updating bloom filter with transaction=${transaction.txIdBE}")
+    val newBloom = bloomFilter.update(transaction)
+
+    // we could send filteradd messages, but we would
+    // then need to calculate all the new elements in
+    // the filter. this is easier:-)
+    peerMsgSender.sendFilterClearMessage()
+    peerMsgSender.sendFilterLoadMessage(newBloom)
+
+    copy(bloomFilter = newBloom)
+  }
+
+  /** Updates our bloom filter to match the given address
+    *
+    * @return SPV node with the updated bloom filter
+    */
+  def updateBloomFilter(address: BitcoinAddress): SpvNode = {
+    logger.info(s"Updating bloom filter with address=$address")
+    val hash = address.hash
+    val newBloom = bloomFilter.insert(hash)
+    peerMsgSender.sendFilterAddMessage(hash)
+
+    copy(bloomFilter = newBloom)
   }
 
   /**
@@ -74,8 +104,7 @@ case class SpvNode(
       }
     } yield {
       logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
-      val filterMsg = FilterLoadMessage(bloomFilter)
-      val _ = send(filterMsg)
+      val _ = peerMsgSender.sendFilterLoadMessage(bloomFilter)
       node
     }
   }

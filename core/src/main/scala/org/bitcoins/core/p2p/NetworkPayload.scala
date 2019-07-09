@@ -17,6 +17,7 @@ import org.bitcoins.core.config.NetworkParameters
 import java.net.InetSocketAddress
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.bloom.BloomFlag
+import org.bitcoins.core.crypto.HashDigest
 
 /**
   * Trait that represents a payload for a message on the Bitcoin p2p network
@@ -617,6 +618,12 @@ object FilterAddMessage extends Factory[FilterAddMessage] {
       element: ByteVector): FilterAddMessage = {
     FilterAddMessageImpl(elementSize, element)
   }
+
+  /** Constructs a `FilterAddMessage` from the given hash digest */
+  def fromHash(hash: HashDigest): FilterAddMessage = {
+    FilterAddMessageImpl(CompactSizeUInt(UInt64(hash.bytes.length)), hash.bytes)
+  }
+
 }
 
 /**

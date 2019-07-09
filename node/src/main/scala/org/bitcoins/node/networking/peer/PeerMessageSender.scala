@@ -9,6 +9,8 @@ import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.db.P2PLogger
+import org.bitcoins.core.crypto.HashDigest
+import org.bitcoins.core.bloom.BloomFilter
 
 case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     extends P2PLogger {
@@ -64,6 +66,22 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       transactions.map(tx => Inventory(TypeIdentifier.MsgTx, tx.txId))
     val message = InventoryMessage(inventories)
     logger.trace(s"Sending inv=$message to peer=${client.peer}")
+    sendMsg(message)
+  }
+
+  def sendFilterClearMessage(): Unit = {
+    sendMsg(FilterClearMessage)
+  }
+
+  def sendFilterAddMessage(hash: HashDigest): Unit = {
+    val message = FilterAddMessage.fromHash(hash)
+    logger.trace(s"Sending filteradd=$message to peer=${client.peer}")
+    sendMsg(message)
+  }
+
+  def sendFilterLoadMessage(bloom: BloomFilter): Unit = {
+    val message = FilterLoadMessage(bloom)
+    logger.trace(s"Sending filterload=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
