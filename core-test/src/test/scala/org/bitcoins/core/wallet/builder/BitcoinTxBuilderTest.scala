@@ -150,10 +150,10 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
 
   it must "be able to create a BitcoinTxBuilder from UTXOTuple and UTXOMap" in {
     val creditingOutput =
-      TransactionOutput(currencyUnit = CurrencyUnits.zero, scriptPubKey = spk)
+      TransactionOutput(value = CurrencyUnits.zero, scriptPubKey = spk)
     val destinations = {
       Seq(
-        TransactionOutput(currencyUnit = Satoshis.one,
+        TransactionOutput(value = Satoshis.one,
                           scriptPubKey = EmptyScriptPubKey))
     }
     val creditingTx = BaseTransaction(version = tc.validLockVersion,
@@ -297,7 +297,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint =
-      TransactionOutPoint(txId = creditingTx.txId, index = UInt32.zero)
+      TransactionOutPoint(txId = creditingTx.txId, vout = UInt32.zero)
     val utxo = BitcoinUTXOSpendingInfo(
       outPoint = outPoint,
       output = creditingOutput,
@@ -322,18 +322,18 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
 
   it must "fail to sign a p2wpkh if we don't pass in the public key" in {
     val p2wpkh = P2WPKHWitnessSPKV0(pubKey = privKey.publicKey)
-    val creditingOutput = TransactionOutput(currencyUnit = CurrencyUnits.zero,
-                                            scriptPubKey = p2wpkh)
+    val creditingOutput =
+      TransactionOutput(value = CurrencyUnits.zero, scriptPubKey = p2wpkh)
     val destinations =
       Seq(
-        TransactionOutput(currencyUnit = Satoshis.one,
+        TransactionOutput(value = Satoshis.one,
                           scriptPubKey = EmptyScriptPubKey))
     val creditingTx = BaseTransaction(version = tc.validLockVersion,
                                       inputs = Nil,
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint =
-      TransactionOutPoint(txId = creditingTx.txId, index = UInt32.zero)
+      TransactionOutPoint(txId = creditingTx.txId, vout = UInt32.zero)
     val utxo = BitcoinUTXOSpendingInfo(
       outPoint = outPoint,
       output = creditingOutput,

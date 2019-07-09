@@ -49,7 +49,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           .sampleSome
 
         _ <- wallet.processTransaction(tx, confirmations = 0)
-        oldBalance <- wallet.getBalance()
+        oldConfirmed <- wallet.getConfirmedBalance()
         oldUnconfirmed <- wallet.getUnconfirmedBalance()
 
         // repeating the action should not make a difference
@@ -58,7 +58,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         }
 
         _ <- wallet.processTransaction(tx, confirmations = 3)
-        newBalance <- wallet.getBalance()
+        newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.listUtxos()
 
@@ -71,7 +71,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           tx.outputs.filter(_.scriptPubKey == address.scriptPubKey)
 
         assert(utxosPostAdd.length == ourOutputs.length)
-        assert(newBalance != oldBalance)
+        assert(newConfirmed != oldConfirmed)
         assert(newUnconfirmed != oldUnconfirmed)
       }
   }

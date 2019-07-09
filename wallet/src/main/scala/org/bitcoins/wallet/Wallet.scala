@@ -80,12 +80,17 @@ sealed abstract class Wallet
 
       }
       signed <- txBuilder.sign
-      /* todo: add change output to UTXO DB
-       _ <- {
-        val changeVout = ???
-        addUtxo(signed, changeVout)
-      } */
+      ourOuts <- findOurOuts(signed)
+      // TODO internal
+      _ <- processOurTransaction(signed, confirmations = 0)
     } yield {
+      logger.debug(
+        s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")
+
+      logger.trace(s"Change output(s) for transaction=${signed.txIdBE.hex}")
+      ourOuts.foreach { out =>
+        logger.trace(s"    $out")
+      }
       signed
     }
   }
