@@ -2,6 +2,8 @@ package org.bitcoins.testkit
 
 import org.scalacheck.Gen
 import scala.annotation.tailrec
+import org.scalatest.compatible.Assertion
+import org.scalatest.exceptions.TestFailedException
 
 /**
   * Provides extension methods, syntax
@@ -10,7 +12,7 @@ import scala.annotation.tailrec
   */
 object Implicits {
 
-  /** Extension methods for Scalacheck generatos */
+  /** Extension methods for Scalacheck generators */
   implicit class GeneratorOps[T](private val gen: Gen[T]) extends AnyVal {
 
     /** Gets a sample from this generator that's not `None` */
@@ -29,6 +31,24 @@ object Implicits {
         }
 
       loop(0)
+    }
+  }
+
+  /** Extension methods for sequences of assertions */
+  implicit class AssertionSeqOps(private val assertions: Seq[Assertion]) {
+
+    /** Flattens a sequence of assertions into only one */
+    def toAssertion: Assertion = assertions match {
+      case Seq() =>
+        throw new TestFailedException(
+          message = "Cannot turn an empty list into an assertion!",
+          failedCodeStackDepth = 0)
+      // this should force all collection kinds to
+      // evaluate all their members, throwing when
+      // evaluating a bad one
+      case nonEmpty =>
+        nonEmpty.foreach(_ => ())
+        nonEmpty.last
     }
   }
 }

@@ -9,6 +9,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
+import org.bitcoins.core.hd.HDChainType
 
 class WalletIntegrationTest extends BitcoinSWalletTest {
 
@@ -21,11 +22,30 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
   val feeRate = SatoshisPerByte(Satoshis.one)
 
+  /** Checks that the given vaues are the same-ish, save for fee-level deviations */
+  private def isCloseEnough(
+      first: CurrencyUnit,
+      second: CurrencyUnit,
+      delta: CurrencyUnit = 1000.sats): Boolean = {
+    val diff =
+      if (first > second) {
+        first - second
+      } else if (first < second) {
+        second - first
+      } else 0.sats
+
+    diff < delta
+  }
+
   it should ("create an address, receive funds to it from bitcoind, import the"
     + " UTXO and construct a valid, signed transaction that's"
     + " broadcast and confirmed by bitcoind") in { walletWithBitcoind =>
     val WalletWithBitcoind(wallet, bitcoind) = walletWithBitcoind
+    // the amount we're receiving from bitcoind
     val valueFromBitcoind = Bitcoins.one
+
+    // the amount we're sending to bitcoind
+    val valueToBitcoind = Bitcoins(0.5)
 
     for {
       addr <- wallet.getNewAddress()
@@ -34,6 +54,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .sendToAddress(addr, valueFromBitcoind)
         .flatMap(bitcoind.getRawTransactionRaw(_))
 
+      // before processing TX, wallet should be completely empty
       _ <- wallet.listUtxos().map(utxos => assert(utxos.isEmpty))
       _ <- wallet.getBalance().map(confirmed => assert(confirmed == 0.bitcoin))
       _ <- wallet
@@ -43,9 +64,13 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       // after this, tx is unconfirmed in wallet
       _ <- wallet.processTransaction(tx, confirmations = 0)
 
+      // we should now have one UTXO in the wallet
+      // it should not be confirmed
       utxosPostAdd <- wallet.listUtxos()
-      _ = assert(utxosPostAdd.nonEmpty)
-      _ <- wallet.getBalance().map(confirmed => assert(confirmed == 0.bitcoin))
+      _ = assert(utxosPostAdd.length == 1)
+      _ <- wallet
+        .getConfirmedBalance()
+        .map(confirmed => assert(confirmed == 0.bitcoin))
       _ <- wallet
         .getUnconfirmedBalance()
         .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
@@ -67,14 +92,30 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .getUnconfirmedBalance()
         .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
 
-      addressFromBitcoind <- bitcoind.getNewAddress
-      signedTx <- wallet.sendToAddress(addressFromBitcoind,
-                                       Bitcoins(0.5),
-                                       feeRate)
+      signedTx <- bitcoind.getNewAddress.flatMap {
+        wallet.sendToAddress(_, valueToBitcoind, feeRate)
+      }
 
       txid <- bitcoind.sendRawTransaction(signedTx)
       _ <- bitcoind.generate(1)
       tx <- bitcoind.getRawTransaction(txid)
+
+      _ <- wallet.listUtxos().map {
+        case utxo +: Vector() =>
+          assert(utxo.privKeyPath.chain.chainType == HDChainType.Change)
+        case other => fail(s"Found ${other.length} utxos!")
+      }
+
+      balancePostSend <- wallet.getBalance()
+      _ = {
+        // change UTXO should be smaller than what we had, but still have money in it
+        assert(balancePostSend > 0.sats)
+        assert(balancePostSend < valueFromBitcoind)
+
+        assert(
+          isCloseEnough(balancePostSend, valueFromBitcoind - valueToBitcoind))
+      }
+
     } yield {
       assert(tx.confirmations.exists(_ > 0))
     }

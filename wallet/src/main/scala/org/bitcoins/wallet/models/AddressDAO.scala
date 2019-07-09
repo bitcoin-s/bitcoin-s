@@ -11,6 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.protocol.script.ScriptPubKey
 
 case class AddressDAO()(
     implicit val ec: ExecutionContext,
@@ -52,6 +53,12 @@ case class AddressDAO()(
   /** Finds all public keys in the wallet */
   def findAllPubkeys(): Future[Vector[ECPublicKey]] = {
     val query = table.map(_.ecPublicKey).distinct
+    database.run(query.result).map(_.toVector)
+  }
+
+  /** Finds all SPKs in the wallet */
+  def findAllSPKs(): Future[Vector[ScriptPubKey]] = {
+    val query = table.map(_.scriptPubKey).distinct
     database.run(query.result).map(_.toVector)
   }
 

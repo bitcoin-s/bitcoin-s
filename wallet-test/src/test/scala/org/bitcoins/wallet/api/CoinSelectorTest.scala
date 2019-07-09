@@ -10,6 +10,8 @@ import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 import org.bitcoins.wallet.models.SpendingInfoDb
 import org.bitcoins.wallet.models.SegwitV0SpendingInfo
+import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkit.core.gen.CryptoGenerators
 
 class CoinSelectorTest extends BitcoinSWalletTest {
   case class CoinSelectionFixture(
@@ -28,25 +30,34 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     val feeRate = SatoshisPerByte(CurrencyUnits.zero)
 
     val utxo1 = SegwitV0SpendingInfo(
+      confirmations = 0,
+      txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
+      spent = false,
       id = Some(1),
-      outPoint = TransactionGenerators.outPoint.sample.get,
+      outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(10.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sample.get
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
     )
     val utxo2 = SegwitV0SpendingInfo(
+      confirmations = 0,
+      txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
+      spent = false,
       id = Some(2),
-      outPoint = TransactionGenerators.outPoint.sample.get,
+      outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(90.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sample.get
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
     )
     val utxo3 = SegwitV0SpendingInfo(
+      confirmations = 0,
+      txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
+      spent = false,
       id = Some(3),
-      outPoint = TransactionGenerators.outPoint.sample.get,
+      outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(20.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sample.get
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
     )
 
     test(CoinSelectionFixture(output, feeRate, utxo1, utxo2, utxo3))
