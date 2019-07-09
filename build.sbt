@@ -135,6 +135,7 @@ lazy val bitcoins = project
     chainTest,
     core,
     coreTest,
+    dbCommons,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -213,7 +214,8 @@ lazy val bitcoins = project
   )
   .settings(
     name := "bitcoin-s",
-    gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git"
+    gitRemoteRepo := "git@github.com:bitcoin-s/bitcoin-s-core.git",
+    publish / skip := true
   )
 
 lazy val secp256k1jni = project
@@ -297,9 +299,7 @@ lazy val chain = project
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain",
-    libraryDependencies ++= Deps.chain,
-    // don't publish while such a heavy WIP
-    publish / skip := true
+    libraryDependencies ++= Deps.chain
   ).dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
 
@@ -389,9 +389,7 @@ lazy val node = {
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node",
-      libraryDependencies ++= Deps.node,
-      // don't publish while such a heavy WIP
-      publish / skip := true
+      libraryDependencies ++= Deps.node
     )
     .dependsOn(
       core,
@@ -459,9 +457,7 @@ lazy val wallet = project
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
-    libraryDependencies ++= Deps.wallet,
-    // don't publish while such a heavy WIP
-    publish / skip := true
+    libraryDependencies ++= Deps.wallet
   )
   .dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
