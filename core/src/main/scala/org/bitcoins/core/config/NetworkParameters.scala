@@ -100,7 +100,7 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
   /**
     * @inheritdoc
     */
-  override def rpcPort = 18332
+  override def rpcPort = 18443
 
   /**
     * @inheritdoc
