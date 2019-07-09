@@ -74,15 +74,18 @@ class BroadcastTransactionTest extends BitcoinSWalletTest {
       tx <- wallet
         .sendToAddress(address, 1.bitcoin, SatoshisPerByte(10.sats))
 
+      bitcoindBalancePreBroadcast <- rpc.getBalance
       _ = spv.broadcastTransaction(tx)
       _ <- Future { Thread.sleep(5.seconds.toMillis) }
       _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
                                          duration = 500.millis)
       fromBitcoind <- rpc.getRawTransaction(tx.txIdBE)
+      _ = assert(fromBitcoind.vout.exists(_.value == 1.bitcoin))
 
-    } yield {
-      assert(fromBitcoind.vout.exists(_.value == 1.bitcoin))
-    }
+      _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(1, _))
+      bitcoindBalancePostBroadcast <- rpc.getBalance
+
+    } yield assert(bitcoindBalancePreBroadcast < bitcoindBalancePostBroadcast)
 
   }
 }
