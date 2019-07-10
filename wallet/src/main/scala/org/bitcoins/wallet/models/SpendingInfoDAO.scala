@@ -9,6 +9,7 @@ import scala.concurrent.Future
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 
 case class SpendingInfoDAO()(
     implicit val ec: ExecutionContext,
@@ -95,5 +96,11 @@ case class SpendingInfoDAO()(
     val query = table.filter(!_.spent)
 
     database.run(query.result).map(_.toVector)
+  }
+
+  /** Enumerates all TX outpoints in the wallet */
+  def findAllOutpoints(): Future[Vector[TransactionOutPoint]] = {
+    val query = table.map(_.outPoint)
+    database.runVec(query.result).map(_.toVector)
   }
 }

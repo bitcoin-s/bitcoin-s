@@ -121,33 +121,6 @@ class WalletUnitTest extends BitcoinSWalletTest {
     } yield res
   }
 
-  it should "generate a bloom filter" in { walletApi: UnlockedWalletApi =>
-    val wallet = walletApi.asInstanceOf[Wallet]
-    for {
-      _ <- FutureUtil.sequentially(0 until 10)(_ => wallet.getNewAddress())
-      bloom <- wallet.getBloomFilter()
-      pubkeys <- wallet.listPubkeys()
-    } yield {
-      pubkeys.foldLeft(succeed) { (_, pub) =>
-        assert(bloom.contains(pub))
-      }
-    }
-
-  }
-
-  it should "lock and unlock the wallet" in { wallet: UnlockedWalletApi =>
-    val passphrase = wallet.passphrase
-    val locked = wallet.lock()
-    val unlocked = wallet.unlock(passphrase) match {
-      case MnemonicNotFound                       => fail(MnemonicNotFound)
-      case BadPassword                            => fail(BadPassword)
-      case JsonParsingError(message)              => fail(message)
-      case UnlockWalletSuccess(unlockedWalletApi) => unlockedWalletApi
-    }
-
-    assert(wallet.mnemonicCode == unlocked.mnemonicCode)
-  }
-
   it should "fail to unlock the wallet with a bad password" in {
     wallet: UnlockedWalletApi =>
       val badpassphrase = AesPassword.fromNonEmptyString("bad")
