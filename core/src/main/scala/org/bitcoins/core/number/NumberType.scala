@@ -182,6 +182,10 @@ sealed abstract class Int64 extends SignedNumber[Int64] {
   override def hex: String = BitcoinSUtil.encodeHex(toLong)
 }
 
+/**
+  * Represents number types that are bounded by minimum and maximum values
+  * @tparam T Type of the numbers
+  */
 trait Bounded[T] {
   def min: T
   def max: T
@@ -279,9 +283,6 @@ object UInt8
 
   def apply(bigint: BigInt): UInt8 = UInt8Impl(bigint)
 
-  @deprecated("Use isInBound(...) instead.", "") def isValid(
-      bigInt: BigInt): Boolean = bigInt >= 0 && bigInt < 256
-
   override def fromBytes(bytes: ByteVector): UInt8 = {
     require(
       bytes.size == 1,
@@ -301,14 +302,6 @@ object UInt8
 
   def toUInt8s(bytes: ByteVector): Vector[UInt8] = {
     bytes.toArray.map(toUInt8).toVector
-  }
-
-  @deprecated("Use require(isInBound(...)) instead.", "") def checkBounds(
-      res: BigInt): UInt8 = {
-    if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException(
-        "Out of bounds for a UInt8, got: " + res)
-    } else UInt8(res.toShort)
   }
 }
 
@@ -343,14 +336,6 @@ object UInt32
   def apply(long: Long): UInt32 = UInt32(BigInt(long))
 
   def apply(bigInt: BigInt): UInt32 = UInt32Impl(bigInt)
-
-  @deprecated("Use require(isInBound(...)) instead.", "") def checkBounds(
-      res: BigInt): UInt32 = {
-    if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException(
-        "Out of bounds for a UInt8, got: " + res)
-    } else UInt32(res)
-  }
 }
 
 object UInt64
