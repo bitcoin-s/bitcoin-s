@@ -15,7 +15,8 @@ sealed abstract class CurrencyUnit
 
   def satoshis: Satoshis
 
-  override def compare(c: CurrencyUnit): Int = satoshis.underlying compare c.satoshis.underlying
+  override def compare(c: CurrencyUnit): Int =
+    satoshis.underlying compare c.satoshis.underlying
 
   def !=(c: CurrencyUnit): Boolean = !(this == c)
 
@@ -70,7 +71,10 @@ sealed abstract class Satoshis extends CurrencyUnit {
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 
-object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] with Bounded[Satoshis] {
+object Satoshis
+    extends Factory[Satoshis]
+    with BaseNumbers[Satoshis]
+    with Bounded[Satoshis] {
 
   val min = Satoshis(Int64.min)
   val max = Satoshis(Int64.max)
