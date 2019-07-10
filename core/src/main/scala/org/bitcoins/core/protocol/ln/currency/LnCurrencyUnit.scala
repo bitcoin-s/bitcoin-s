@@ -1,7 +1,13 @@
 package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Bounded, Int64, UInt5}
+import org.bitcoins.core.number.{
+  BaseNumbers,
+  BasicArithmetic,
+  Bounded,
+  Int64,
+  UInt5
+}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
@@ -15,7 +21,8 @@ sealed abstract class LnCurrencyUnit
     with BasicArithmetic[LnCurrencyUnit] {
   def character: Char
 
-  override def compare(ln: LnCurrencyUnit): Int = toPicoBitcoinValue compare ln.toPicoBitcoinValue
+  override def compare(ln: LnCurrencyUnit): Int =
+    toPicoBitcoinValue compare ln.toPicoBitcoinValue
 
   def !=(ln: LnCurrencyUnit): Boolean = !(this == ln)
 
@@ -99,7 +106,9 @@ sealed abstract class MilliBitcoins extends LnCurrencyUnit {
 
 }
 
-object MilliBitcoins extends BaseNumbers[MilliBitcoins] with Bounded[MilliBitcoins] {
+object MilliBitcoins
+    extends BaseNumbers[MilliBitcoins]
+    with Bounded[MilliBitcoins] {
   val min = MilliBitcoins(LnPolicy.minMilliBitcoins)
   val max = MilliBitcoins(LnPolicy.maxMilliBitcoins)
   val zero = MilliBitcoins(0)
@@ -129,7 +138,9 @@ sealed abstract class MicroBitcoins extends LnCurrencyUnit {
 
 }
 
-object MicroBitcoins extends BaseNumbers[MicroBitcoins]with Bounded[MicroBitcoins] {
+object MicroBitcoins
+    extends BaseNumbers[MicroBitcoins]
+    with Bounded[MicroBitcoins] {
   val min = MicroBitcoins(LnPolicy.minMicroBitcoins)
   val max = MicroBitcoins(LnPolicy.maxMicroBitcoins)
   val zero = MicroBitcoins(0)
@@ -159,7 +170,9 @@ sealed abstract class NanoBitcoins extends LnCurrencyUnit {
 
 }
 
-object NanoBitcoins extends BaseNumbers[NanoBitcoins] with Bounded[NanoBitcoins] {
+object NanoBitcoins
+    extends BaseNumbers[NanoBitcoins]
+    with Bounded[NanoBitcoins] {
   val min = NanoBitcoins(LnPolicy.minNanoBitcoins)
   val max = NanoBitcoins(LnPolicy.maxNanoBitcoins)
   val zero = NanoBitcoins(0)
@@ -187,7 +200,9 @@ sealed abstract class PicoBitcoins extends LnCurrencyUnit {
   override def toBigInt: BigInt = underlying
 }
 
-object PicoBitcoins extends BaseNumbers[PicoBitcoins] with Bounded[PicoBitcoins] {
+object PicoBitcoins
+    extends BaseNumbers[PicoBitcoins]
+    with Bounded[PicoBitcoins] {
   val min = PicoBitcoins(LnPolicy.minPicoBitcoins)
   val max = PicoBitcoins(LnPolicy.maxPicoBitcoins)
   val zero = PicoBitcoins(0)

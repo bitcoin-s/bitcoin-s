@@ -184,6 +184,7 @@ sealed abstract class Int64 extends SignedNumber[Int64] {
 
 /**
   * Represents number types that are bounded by minimum and maximum values
+  *
   * @tparam T Type of the numbers
   */
 trait Bounded[T] {
