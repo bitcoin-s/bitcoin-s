@@ -6,11 +6,9 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 7/14/15.
-  */
-/**
-  * Compact sized unsigned integer as described in:
-  * https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
+  * Compact sized unsigned integer, a Bitcoin-native data structure
+  *
+  * @see https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers
   */
 sealed abstract class CompactSizeUInt extends NetworkElement {
 
@@ -34,6 +32,8 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
             "Cannot convert CompactSizeUInt toInt, got: " + this)
     l.toInt
   }
+
+  override def toString(): String = s"CompactSizeUInt(${num.toLong})"
 }
 
 object CompactSizeUInt extends Factory[CompactSizeUInt] {
