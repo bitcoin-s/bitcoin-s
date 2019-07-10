@@ -57,12 +57,11 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   }
 
   /**
-    * Sends a inventory message with the given inventory elements.
-    * Both blocks and transactions have default implementations for
-    * the `InventoryEsque` type class.
+    * Sends a inventory message with the given transactions
     */
-  def sendInventoryMessage[T: InventoryEsque](invs: T*): Unit = {
-    val inventories = invs.map(implicitly[InventoryEsque[T]].toInv)
+  def sendInventoryMessage(transactions: Transaction*): Unit = {
+    val inventories =
+      transactions.map(tx => Inventory(TypeIdentifier.MsgTx, tx.txId))
     val message = InventoryMessage(inventories)
     logger.trace(s"Sending inv=$message to peer=${client.peer}")
     sendMsg(message)

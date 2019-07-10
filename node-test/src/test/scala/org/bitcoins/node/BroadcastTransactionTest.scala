@@ -76,9 +76,8 @@ class BroadcastTransactionTest extends BitcoinSWalletTest {
 
       bitcoindBalancePreBroadcast <- rpc.getBalance
       _ = spv.broadcastTransaction(tx)
-      _ <- Future { Thread.sleep(5.seconds.toMillis) }
       _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
-                                         duration = 500.millis)
+                                         duration = 1.second)
       fromBitcoind <- rpc.getRawTransaction(tx.txIdBE)
       _ = assert(fromBitcoind.vout.exists(_.value == 1.bitcoin))
 
