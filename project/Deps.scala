@@ -25,8 +25,16 @@ object Deps {
     val akkaActorV = akkaStreamv
     val slickV = "3.3.1"
     val sqliteV = "3.27.2.1"
-    val uJsonV = "0.7.1"
     val scalameterV = "0.17"
+
+    // Wallet/node/chain server deps
+    val uPickleV = "0.7.4"
+    val akkaHttpUpickleV = "1.27.0"
+    val uJsonV = uPickleV // Li Haoyi ecosystem does common versioning
+
+    // CLI deps
+    val scoptV = "4.0.0-RC2"
+    val sttpV = "1.6.0"
   }
 
   object Compile {
@@ -37,6 +45,8 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
     val akkaActor = "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
+    val akkaLog = "com.typesafe.akka" %% "akka-slf4j" % V.akkaStreamv
+
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
 
@@ -55,6 +65,18 @@ object Deps {
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val uJson = "com.lihaoyi" %% "ujson" % V.uJsonV
 
+    // serializing to and from JSON
+    val uPickle = "com.lihaoyi" %% "upickle" % V.uPickleV
+
+    // make akka-http play nice with upickle
+    val akkaHttpUpickle = "de.heikoseeberger" %% "akka-http-upickle" % V.akkaHttpUpickleV
+
+    // parsing of CLI opts and args
+    val scopt = "com.github.scopt" %% "scopt" % V.scoptV
+
+    // HTTP client lib
+    val sttp = "com.softwaremill.sttp" %% "core" % V.sttpV
+
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
   }
@@ -71,37 +93,28 @@ object Deps {
     val spray = "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
-    val ammonite = Compile.ammonite % "test"
     val playJson = Compile.playJson % "test"
     val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
     val scalameter = "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
   }
 
-  val root = List(
-    Test.ammonite
-  )
-
   val chain = List(
-    Compile.slf4j,
-    Test.ammonite
+    Compile.slf4j
   )
 
   val chainTest = List(
-    Test.ammonite,
     Test.logback
   )
 
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
-    Compile.slf4j,
-    Test.ammonite
+    Compile.slf4j
   )
 
   val secp256k1jni = List(
     Compile.nativeLoader,
-    Test.junitInterface,
-    Test.ammonite
+    Test.junitInterface
   )
 
   val coreTest = List(
@@ -110,7 +123,6 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.spray,
-    Test.ammonite,
     Test.playJson
   )
 
@@ -119,8 +131,7 @@ object Deps {
     Compile.slf4j,
     Test.logback,
     Test.scalacheck,
-    Test.scalaTest,
-    Test.ammonite
+    Test.scalaTest
   )
 
   val bitcoindRpc = List(
@@ -128,8 +139,7 @@ object Deps {
     Compile.akkaStream,
     Compile.playJson,
     Compile.slf4j,
-    Compile.typesafeConfig,
-    Test.ammonite
+    Compile.typesafeConfig
   )
 
   val bitcoindRpcTest = List(
@@ -138,29 +148,43 @@ object Deps {
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
-    Test.async,
-    Test.ammonite
+    Test.async
   )
 
   val bench = List(
     "org.slf4j" % "slf4j-api" % V.slf4j withSources () withJavadoc (),
-    Compile.logback,
-    Test.ammonite
+    Compile.logback
   )
 
   val dbCommons = List(
     Compile.slick,
     Compile.sqlite,
-    Compile.slickHikari,
-    Test.ammonite
+    Compile.slickHikari
+  )
+
+  val cli = List(
+    Compile.sttp,
+    Compile.uPickle,
+    Compile.scopt
+  )
+
+  val picklers = List(
+    Compile.uPickle
+  )
+
+  val server = List(
+    Compile.akkaHttpUpickle,
+    Compile.uPickle,
+    Compile.logback,
+    Compile.akkaLog,
+    Compile.akkaHttp
   )
 
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
     Compile.playJson,
-    Compile.slf4j,
-    Test.ammonite
+    Compile.slf4j
   )
 
   val eclairRpcTest = List(
@@ -168,8 +192,7 @@ object Deps {
     Test.akkaStream,
     Test.logback,
     Test.scalaTest,
-    Test.scalacheck,
-    Test.ammonite
+    Test.scalacheck
   )
 
   val node = List(
@@ -178,23 +201,20 @@ object Deps {
     Compile.joda,
     Compile.slick,
     Compile.slickHikari,
-    Compile.sqlite,
-    Test.ammonite
+    Compile.sqlite
   )
 
   val nodeTest = List(
     Test.akkaTestkit,
     Test.logback,
-    Test.scalaTest,
-    Test.ammonite
+    Test.scalaTest
   )
 
   val testkit = List(
     Compile.slf4j,
     Compile.scalacheck,
     Compile.scalaTest,
-    Test.akkaTestkit,
-    Test.ammonite
+    Test.akkaTestkit
   )
 
   val scripts = List(
@@ -203,18 +223,15 @@ object Deps {
   )
 
   val wallet = List(
-    Test.ammonite,
     Compile.uJson
   )
 
   val walletTest = List(
     Test.logback,
-    Test.akkaTestkit,
-    Test.ammonite
+    Test.akkaTestkit
   )
 
   val docs = List(
-    Compile.ammonite,
     Compile.logback,
     Test.scalaTest,
     Test.logback

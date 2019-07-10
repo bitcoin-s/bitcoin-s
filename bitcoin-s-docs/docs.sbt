@@ -34,4 +34,7 @@ buildInfoPackage := "org.bitcoins.docs"
 // Mdoc end
 ///////
 
+Test / bloopGenerate := None
+Compile / bloopGenerate := None
+
 libraryDependencies ++= Deps.docs

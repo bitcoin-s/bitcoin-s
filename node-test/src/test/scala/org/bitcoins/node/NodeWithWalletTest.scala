@@ -7,7 +7,7 @@ import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.scalatest.FutureOutcome
-import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 

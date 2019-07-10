@@ -10,12 +10,13 @@ import org.bitcoins.core.p2p.HeadersMessage
 import org.bitcoins.node.constant.Constants
 import org.bitcoins.core.p2p.VersionMessage
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 class BitcoinSpvNodeUtilTest extends BitcoinSUnitTest {
 
-  lazy val config: NodeAppConfig = BitcoinSAppConfig.getTestConfig()
+  lazy val config: NodeAppConfig = BitcoinSTestAppConfig.getTestConfig()
 
   "BitcoinSpvNodeUtil" must "return the entire byte array if a message is not aligned to a byte frame" in {
     val versionMessage =

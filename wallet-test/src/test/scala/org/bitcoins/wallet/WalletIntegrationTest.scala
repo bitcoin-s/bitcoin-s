@@ -72,6 +72,9 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .getConfirmedBalance()
         .map(confirmed => assert(confirmed == 0.bitcoin))
       _ <- wallet
+        .getConfirmedBalance()
+        .map(confirmed => assert(confirmed == 0.bitcoin))
+      _ <- wallet
         .getUnconfirmedBalance()
         .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 

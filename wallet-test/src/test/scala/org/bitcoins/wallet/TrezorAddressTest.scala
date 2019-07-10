@@ -21,7 +21,7 @@ import org.bitcoins.core.hd.HDCoin
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
@@ -39,6 +39,7 @@ import org.bitcoins.wallet.models.AccountDb
 import _root_.akka.actor.Address
 import org.scalatest.compatible.Assertion
 import scala.concurrent.ExecutionContext
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
@@ -189,7 +190,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   private def testAccountType(purpose: HDPurpose): Future[Assertion] = {
     val confOverride = configForPurpose(purpose)
     implicit val conf: WalletAppConfig =
-      BitcoinSAppConfig.getTestConfig(confOverride)
+      BitcoinSTestAppConfig.getTestConfig(confOverride)
 
     val vectors = purpose match {
       case HDPurposes.Legacy       => legacyVectors

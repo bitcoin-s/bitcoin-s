@@ -20,7 +20,8 @@ import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
-import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 class ChainHandlerTest extends ChainUnitTest {
 
@@ -30,8 +31,10 @@ class ChainHandlerTest extends ChainUnitTest {
 
   // we're working with mainnet data
   implicit override lazy val appConfig: ChainAppConfig = {
-    val memoryDb = BitcoinSAppConfig.configWithMemoryDb(
-      Some(BitcoinSAppConfig.ProjectType.Chain))
+    import BitcoinSTestAppConfig.ProjectType
+
+    val memoryDb =
+      BitcoinSTestAppConfig.configWithMemoryDb(Some(ProjectType.Chain))
     mainnetAppConfig.withOverrides(memoryDb)
   }
 

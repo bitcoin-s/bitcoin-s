@@ -30,6 +30,7 @@ import org.joda.time.DateTime
 import play.api.libs.json._
 
 import scala.util.{Failure, Success}
+import org.bitcoins.core.config._
 
 object JsonReaders {
 
@@ -531,5 +532,15 @@ object JsonReaders {
   implicit object URIReads extends Reads[URI] {
     override def reads(json: JsValue): JsResult[URI] =
       SerializerUtil.processJsString[URI](str => new URI("http://" + str))(json)
+  }
+
+  implicit object NetworkParamsReads extends Reads[NetworkParameters] {
+
+    def reads(json: JsValue): JsResult[NetworkParameters] =
+      json.validate[String].map(_.toLowerCase()).map {
+        case "regtest" => RegTest
+        case "main"    => MainNet
+        case "test"    => TestNet3
+      }
   }
 }

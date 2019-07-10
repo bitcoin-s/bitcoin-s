@@ -20,7 +20,6 @@ import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
-import org.bitcoins.testkit.BitcoinSAppConfig
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import scodec.bits.ByteVector
@@ -29,6 +28,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.AppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 trait ChainUnitTest
     extends org.scalatest.fixture.AsyncFlatSpec
@@ -46,7 +46,7 @@ trait ChainUnitTest
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
   implicit lazy val appConfig: ChainAppConfig =
-    BitcoinSAppConfig.getTestConfig()
+    BitcoinSTestAppConfig.getTestConfig()
 
   /**
     * Behaves exactly like the default conf, execpt
@@ -54,7 +54,7 @@ trait ChainUnitTest
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    BitcoinSAppConfig.getTestConfig(mainnetConf)
+    BitcoinSTestAppConfig.getTestConfig(mainnetConf)
   }
 
   override def beforeAll(): Unit = {

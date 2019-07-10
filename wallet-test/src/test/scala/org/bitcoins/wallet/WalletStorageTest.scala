@@ -19,7 +19,7 @@ import java.nio.file.Paths
 import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
 import java.{util => ju}
 import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
-import org.bitcoins.testkit.BitcoinSAppConfig._
+import org.bitcoins.server.BitcoinSAppConfig._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -58,7 +58,14 @@ class WalletStorageTest
   }
 
   it must "write and read a mnemonic to disk" in { _ =>
+    // no seed  should be in place at start of test
+    assert(!WalletStorage.seedExists())
+
     val writtenMnemonic = getAndWriteMnemonic()
+
+    // should have been written by now
+    assert(WalletStorage.seedExists())
+
     val read =
       WalletStorage.decryptMnemonicFromDisk(passphrase)
 
