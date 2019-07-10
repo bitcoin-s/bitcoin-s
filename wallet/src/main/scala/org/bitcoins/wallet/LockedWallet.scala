@@ -14,6 +14,7 @@ import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.wallet.internal._
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 
 abstract class LockedWallet
     extends LockedWalletApi
@@ -81,26 +82,35 @@ abstract class LockedWallet
     }
   }
 
-  /** Gets the size of the bloom filter for this wallet  */
-  private def getBloomFilterSize(): Future[Int] = {
-    for {
-      pubkeys <- listPubkeys()
-    } yield {
-      // when a public key is inserted into a filter
-      // both the pubkey and the hash of the pubkey
-      // gets inserted
-      pubkeys.length * 2
-    }
+  /** Enumerates all the TX outpoints in the wallet  */
+  protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
+    spendingInfoDAO.findAllOutpoints()
 
-  }
+  /** Gets the size of the bloom filter for this wallet  */
+  private def getBloomFilterSize(
+      pubkeys: Seq[ECPublicKey],
+      outpoints: Seq[TransactionOutPoint]): Int = {
+    // when a public key is inserted into a filter
+    // both the pubkey and the hash of the pubkey
+    // gets inserted
+    pubkeys.length * 2
+  } + outpoints.length
 
   // todo: insert TXIDs? need to track which txids we should
   // ask for, somehow
+  // We add all outpoints to the bloom filter as a way
+  // of working around the fact that bloom filters
+  // was never updated to incorporate SegWit changes.
+  // see this mailing list thread for context:
+  //   https://www.mail-archive.com/bitcoin-dev@lists.linuxfoundation.org/msg06950.html
+  // especially this email from Jim Posen:
+  //   https://www.mail-archive.com/bitcoin-dev@lists.linuxfoundation.org/msg06952.html
   override def getBloomFilter(): Future[BloomFilter] = {
     for {
       pubkeys <- listPubkeys()
-      filterSize <- getBloomFilterSize()
+      outpoints <- listOutpoints()
     } yield {
+      val filterSize = getBloomFilterSize(pubkeys, outpoints)
 
       // todo: Is this the best flag to use?
       val bloomFlag = BloomUpdateAll
@@ -110,7 +120,8 @@ abstract class LockedWallet
                     falsePositiveRate = walletConfig.bloomFalsePositiveRate,
                     flags = bloomFlag)
 
-      pubkeys.foldLeft(baseBloom) { _.insert(_) }
+      val withPubs = pubkeys.foldLeft(baseBloom) { _.insert(_) }
+      outpoints.foldLeft(withPubs) { _.insert(_) }
     }
   }
 }

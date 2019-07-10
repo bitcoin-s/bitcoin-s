@@ -153,12 +153,17 @@ case class SafeDatabase(config: AppConfig) extends BitcoinSLogger {
       throw err
   }
 
+  /** Runs the given DB action */
   def run[R](action: DBIOAction[R, NoStream, _])(
       implicit ec: ExecutionContext): Future[R] = {
     val result = database.run[R](foreignKeysPragma >> action)
     result.recoverWith { logAndThrowError(action) }
   }
 
+  /**
+    * Runs the given DB sequence-returning DB action
+    * and converts the result to a vector
+    */
   def runVec[R](action: DBIOAction[Seq[R], NoStream, _])(
       implicit ec: ExecutionContext): Future[Vector[R]] = {
     val result = database.run[Seq[R]](foreignKeysPragma >> action)
