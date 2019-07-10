@@ -2,14 +2,14 @@ package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRef
 import akka.io.Tcp
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p._
-import org.bitcoins.node.networking.Client
+import org.bitcoins.node.networking.P2PClient
+import org.bitcoins.node.config.NodeAppConfig
 
-class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
+case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     extends BitcoinSLogger {
   private val socket = client.peer.socket
 
@@ -27,7 +27,7 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
 
   /** Sends a [[org.bitcoins.node.messages.VersionMessage VersionMessage]] to our peer */
   def sendVersionMessage(): Unit = {
-    val versionMsg = VersionMessage(client.peer.socket, np)
+    val versionMsg = VersionMessage(client.peer.socket, conf.network)
     logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
     sendMsg(versionMsg)
   }
@@ -57,16 +57,12 @@ class PeerMessageSender(client: Client)(implicit np: NetworkParameters)
 
   private[node] def sendMsg(msg: NetworkPayload): Unit = {
     logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
-    val newtworkMsg = NetworkMessage(np, msg)
+    val newtworkMsg = NetworkMessage(conf.network, msg)
     client.actor ! newtworkMsg
   }
 }
 
 object PeerMessageSender {
-
-  private case class PeerMessageSenderImpl(client: Client)(
-      implicit np: NetworkParameters)
-      extends PeerMessageSender(client)(np)
 
   sealed abstract class PeerMessageHandlerMsg
 
@@ -86,7 +82,4 @@ object PeerMessageSender {
       networkMsgs: Vector[(ActorRef, NetworkMessage)],
       peerHandler: ActorRef)
 
-  def apply(client: Client, np: NetworkParameters): PeerMessageSender = {
-    PeerMessageSenderImpl(client)(np)
-  }
 }

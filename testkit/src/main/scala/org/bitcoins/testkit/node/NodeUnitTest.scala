@@ -79,7 +79,7 @@ trait NodeUnitTest
       //that can handle the handshake
       val peerMsgSender: PeerMessageSender = {
         val client = NodeTestUtil.client(peer, peerMsgReceiver)
-        PeerMessageSender(client, np)
+        PeerMessageSender(client)
       }
 
       PeerHandler(peerMsgReceiver, peerMsgSender)

@@ -10,7 +10,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.p2p.VersionMessage
 import org.bitcoins.core.p2p.GetHeadersMessage
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.Client
+import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.node.SpvNode
@@ -81,8 +81,8 @@ abstract class NodeTestUtil extends BitcoinSLogger {
 
   def client(peer: Peer, peerMsgReceiver: PeerMessageReceiver)(
       implicit ref: ActorRefFactory,
-      conf: NodeAppConfig): Client = {
-    Client.apply(ref, peer, peerMsgReceiver)
+      conf: NodeAppConfig): P2PClient = {
+    P2PClient.apply(ref, peer, peerMsgReceiver)
   }
 
   /** Helper method to get the [[java.net.InetSocketAddress]]

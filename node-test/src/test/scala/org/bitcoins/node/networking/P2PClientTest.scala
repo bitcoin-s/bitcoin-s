@@ -77,7 +77,7 @@ class ClientTest
     val peerMessageReceiver =
       PeerMessageReceiver(state = Preconnection)
     val client =
-      TestActorRef(Client.props(peer, peerMessageReceiver), probe.ref)
+      TestActorRef(P2PClient.props(peer, peerMessageReceiver), probe.ref)
 
     client ! Tcp.Connect(remote)
 

@@ -2,7 +2,7 @@ package org.bitcoins.node.networking.peer
 
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p.{VerAckMessage, VersionMessage}
-import org.bitcoins.node.networking.Client
+import org.bitcoins.node.networking.P2PClient
 
 import scala.concurrent.{Future, Promise}
 
@@ -11,13 +11,13 @@ sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
   /** This promise gets completed when we receive a
     * [[akka.io.Tcp.Connected]] message from [[Client]]
     */
-  def clientConnectP: Promise[Client]
+  def clientConnectP: Promise[P2PClient]
 
   /** The [[org.bitcoins.node.networking.Client]] we are
     * connected to. This isn't initiated until the client
     * has called [[PeerMessageReceiver.connect()]]
     */
-  private val clientConnectF: Future[Client] = clientConnectP.future
+  private val clientConnectF: Future[P2PClient] = clientConnectP.future
 
   /** This promise is completed in the [[PeerMessageReceiver.disconnect()]]
     * when a [[Client]] initiates a disconnections from
@@ -81,7 +81,7 @@ object PeerMessageReceiverState {
     * where the peer is not connected to the p2p network
     */
   final case object Preconnection extends PeerMessageReceiverState {
-    def clientConnectP: Promise[Client] = Promise[Client]()
+    def clientConnectP: Promise[P2PClient] = Promise[P2PClient]()
 
     //should this be completed since the client is disconnected???
     def clientDisconnectP: Promise[Unit] = Promise[Unit]()
@@ -89,7 +89,7 @@ object PeerMessageReceiverState {
     def verackMsgP: Promise[VerAckMessage.type] = Promise[VerAckMessage.type]()
 
     /** Converts [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection]] to [[Initializing]] */
-    def toInitializing(client: Client): Initializing = {
+    def toInitializing(client: P2PClient): Initializing = {
       val p = clientConnectP
       p.success(client)
       Initializing(
@@ -107,7 +107,7 @@ object PeerMessageReceiverState {
     * from our peer on the p2p network
     */
   case class Initializing(
-      clientConnectP: Promise[Client],
+      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type]
@@ -149,7 +149,7 @@ object PeerMessageReceiverState {
     * the peer on the network
     */
   case class Normal(
-      clientConnectP: Promise[Client],
+      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type]
@@ -165,7 +165,7 @@ object PeerMessageReceiverState {
   }
 
   case class Disconnected(
-      clientConnectP: Promise[Client],
+      clientConnectP: Promise[P2PClient],
       clientDisconnectP: Promise[Unit],
       versionMsgP: Promise[VersionMessage],
       verackMsgP: Promise[VerAckMessage.type])
@@ -183,5 +183,3 @@ object PeerMessageReceiverState {
   }
 
 }
-
-object Initializing {}

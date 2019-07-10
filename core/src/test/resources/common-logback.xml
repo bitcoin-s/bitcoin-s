@@ -57,7 +57,7 @@
     <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.Client" level="INFO"/>
+    <logger name="org.bitcoins.node.networking.P2PClientActor" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
