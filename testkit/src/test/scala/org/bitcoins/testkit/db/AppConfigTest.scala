@@ -19,7 +19,6 @@ import org.bitcoins.core.hd.HDCoin
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.HDCoinType
 import org.bitcoins.testkit.core.gen.CryptoGenerators
-import os.write
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.db.DbManagement
 import org.bitcoins.wallet.db.WalletDbManagement
