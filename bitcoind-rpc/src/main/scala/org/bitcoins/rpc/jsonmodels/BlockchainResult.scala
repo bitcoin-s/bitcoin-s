@@ -60,7 +60,7 @@ case class GetBlockChainInfoResult(
     verificationprogress: BigDecimal,
     initialblockdownload: Boolean,
     chainwork: String, // How should this be handled?
-    size_on_disk: Int,
+    size_on_disk: Long,
     pruned: Boolean,
     pruneheight: Option[Int],
     softforks: Vector[Softfork],
