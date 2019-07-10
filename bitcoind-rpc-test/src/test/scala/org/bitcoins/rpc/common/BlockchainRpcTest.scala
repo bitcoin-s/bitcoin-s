@@ -9,6 +9,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
+import org.bitcoins.core.config.RegTest
 
 class BlockchainRpcTest extends BitcoindRpcTest {
 
@@ -75,7 +76,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       info <- client.getBlockChainInfo
       bestHash <- client.getBestBlockHash
     } yield {
-      assert(info.chain == "regtest")
+      assert(info.chain == RegTest)
       assert(info.softforks.length >= 3)
       assert(info.bip9_softforks.keySet.size >= 2)
       assert(info.bestblockhash == bestHash)

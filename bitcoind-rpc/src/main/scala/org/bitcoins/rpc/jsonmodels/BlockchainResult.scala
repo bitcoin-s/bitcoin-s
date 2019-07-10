@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.core.config.NetworkParameters
 
 sealed abstract class BlockchainResult
 
@@ -51,7 +52,7 @@ case class GetBlockWithTransactionsResult(
     extends BlockchainResult
 
 case class GetBlockChainInfoResult(
-    chain: String,
+    chain: NetworkParameters,
     blocks: Int,
     headers: Int,
     bestblockhash: DoubleSha256DigestBE,
@@ -106,6 +107,7 @@ case class GetBlockHeaderResult(
     previousblockhash: Option[DoubleSha256DigestBE],
     nextblockhash: Option[DoubleSha256DigestBE])
     extends BlockchainResult {
+
   def blockHeader: BlockHeader = {
 
     //prevblockhash is only empty if we have the genesis block
@@ -118,11 +120,11 @@ case class GetBlockHeaderResult(
       }
     }
     BlockHeader(version = Int32(version),
-      previousBlockHash = prevHash.flip,
-      merkleRootHash = merkleroot.flip,
-      time = time,
-      nBits = bits,
-      nonce = nonce)
+                previousBlockHash = prevHash.flip,
+                merkleRootHash = merkleroot.flip,
+                time = time,
+                nBits = bits,
+                nonce = nonce)
   }
 }
 

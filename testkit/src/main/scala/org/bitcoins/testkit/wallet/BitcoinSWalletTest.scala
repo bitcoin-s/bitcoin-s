@@ -19,9 +19,10 @@ import org.scalatest._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.AppConfig
-import org.bitcoins.testkit.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
@@ -35,7 +36,7 @@ trait BitcoinSWalletTest
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected lazy val config: BitcoinSAppConfig =
-    BitcoinSAppConfig.getTestConfig()
+    BitcoinSTestAppConfig.getTestConfig()
 
   /** Timeout for async operations */
   protected val timeout: FiniteDuration = 10.seconds

@@ -19,6 +19,12 @@ import org.bitcoins.core.crypto.AesIV
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage extends BitcoinSLogger {
 
+  /** Checks if a wallet seed exists in datadir */
+  def seedExists()(implicit config: WalletAppConfig): Boolean = {
+    val seedPath = config.datadir.resolve(ENCRYPTED_SEED_FILE_NAME)
+    Files.exists(seedPath)
+  }
+
   private[wallet] val ENCRYPTED_SEED_FILE_NAME: String =
     "encrypted_bitcoin-s_seed.json"
 
