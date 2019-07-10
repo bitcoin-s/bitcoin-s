@@ -3,7 +3,6 @@ package org.bitcoins.testkit
 import util.BitcoinSUnitTest
 import Implicits._
 import org.scalatest.exceptions.TestFailedException
-import ammonite.terminal.LazyList
 
 class ImplicitsTest extends BitcoinSUnitTest {
 
@@ -42,7 +41,7 @@ class ImplicitsTest extends BitcoinSUnitTest {
   }
 
   it should "fail to flatten an empty list" in {
-    intercept[IllegalArgumentException] {
+    intercept[TestFailedException] {
       val xs = List.empty[org.scalatest.Assertion]
       xs.toAssertion
     }
