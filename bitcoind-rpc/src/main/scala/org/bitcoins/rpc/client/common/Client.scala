@@ -26,6 +26,7 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import java.nio.file.Path
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 import com.fasterxml.jackson.core.JsonParseException
+import org.bitcoins.rpc.BitcoindException
 
 /**
   * This is the base trait for Bitcoin Core
@@ -183,9 +184,9 @@ trait Client extends BitcoinSLogger {
 
       // Ping successful if no error can be parsed from the payload
       val parsedF = payloadF.map { payload =>
-        (payload \ errorKey).validate[RpcError] match {
-          case _: JsSuccess[RpcError] => false
-          case _: JsError             => true
+        (payload \ errorKey).validate[BitcoindException] match {
+          case _: JsSuccess[BitcoindException] => false
+          case _: JsError                      => true
         }
       }
 
@@ -195,6 +196,7 @@ trait Client extends BitcoinSLogger {
           false
       }
     }
+
     instance.authCredentials match {
       case cookie: CookieBased if Files.notExists(cookie.cookiePath) =>
         // if the cookie file doesn't exist we're not started
@@ -308,13 +310,12 @@ trait Client extends BitcoinSLogger {
     result match {
       case JsSuccess(value, _) => value
       case res: JsError =>
-        (json \ errorKey).validate[RpcError] match {
-          case err: JsSuccess[RpcError] =>
+        (json \ errorKey).validate[BitcoindException] match {
+          case JsSuccess(err, _) =>
             if (printError) {
-              logger.error(s"Error ${err.value.code}: ${err.value.message}")
+              logger.error(s"$err")
             }
-            throw new RuntimeException(
-              s"Error $command ${err.value.code}: ${err.value.message}")
+            throw err
           case _: JsError =>
             val jsonResult = (json \ resultKey).get
             val errString =
@@ -332,20 +333,15 @@ trait Client extends BitcoinSLogger {
       json: JsValue,
       printError: Boolean): Unit = {
     if (result == JsSuccess(())) {
-      (json \ errorKey).validate[RpcError] match {
-        case err: JsSuccess[RpcError] =>
+      (json \ errorKey).validate[BitcoindException] match {
+        case JsSuccess(err, _) =>
           if (printError) {
-            logger.error(s"Error ${err.value.code}: ${err.value.message}")
+            logger.error(s"$err")
           }
-          throw new RuntimeException(
-            s"Error ${err.value.code}: ${err.value.message}")
+          throw err
         case _: JsError =>
       }
     }
   }
-
-  case class RpcError(code: Int, message: String)
-
-  implicit val rpcErrorReads: Reads[RpcError] = Json.reads[RpcError]
 
 }

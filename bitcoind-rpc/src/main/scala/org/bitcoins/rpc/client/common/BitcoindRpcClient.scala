@@ -13,6 +13,11 @@ import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
   * [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
   * or
   * [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]].
+  *
+  * If a RPC call fails for any reason, a
+  * [[org.bitcoins.rpc.BitcoindException BitcoindException]] is thrown.
+  * This is a sealed abstract class, so you can pattern match easily
+  * on the errors, and handle them as you see fit.
   */
 class BitcoindRpcClient(val instance: BitcoindInstance)(
     implicit
