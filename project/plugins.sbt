@@ -1,18 +1,17 @@
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.8")
-
+// bundle up Scala applications into packaging formats such as Docker,
+// GraalVM native-image, executable JARs etc
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.14")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0-M5")
+// collect code coverage when executing tests
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
 
+// report code coverage to Coveralls
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
-
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
-
-addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % "1.15")
 
 // sbt plugin to unify scaladoc/javadoc across multiple projects
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
 
+// export typed values from sbt configuration into Scala sources
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
 
 // ensure proper linkage across libraries in Scaladoc
@@ -28,4 +27,5 @@ addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.2.6")
 // write markdown files with type-checked Scala
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "1.3.0")
 
+// SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "5.2.0")
