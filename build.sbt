@@ -287,6 +287,7 @@ lazy val coreTest = project
 lazy val walletServer = project
     .in(file("app/server"))
     .settings(commonSettings: _*)
+    .settings(name := "bitcoin-s-server")
     .dependsOn(
       picklers,
       node,
@@ -294,6 +295,7 @@ lazy val walletServer = project
       wallet,
       bitcoindRpc
     )
+  .enablePlugins(GitVersioning)
 
 lazy val walletServerTest = project
     .in(file("app/server-test"))
@@ -307,15 +309,20 @@ lazy val walletServerTest = project
 // and CLI
 lazy val picklers = project
     .in(file("app/picklers"))
+    .settings(name := "bitcoin-s-picklers")
+    .settings(commonSettings: _*)
     .dependsOn(core % testAndCompile)
+  .enablePlugins(GitVersioning)
 
 
 lazy val cli = project
     .in(file("app/cli"))
+    .settings(name := "bitcoin-s-cli")
     .settings(commonSettings: _*)
     .dependsOn(
       picklers
     )
+  .enablePlugins(GitVersioning)
 
 lazy val cliTest = project
     .in(file("app/cli-test"))

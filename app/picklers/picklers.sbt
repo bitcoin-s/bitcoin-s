@@ -1,5 +1,5 @@
-name := "bitcoin-s-app-picklers"
+name := "bitcoin-s-picklers"
 
-publish / skip := true
+publish / skip := false
 
 libraryDependencies := Deps.picklers

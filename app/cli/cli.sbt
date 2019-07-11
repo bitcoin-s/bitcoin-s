@@ -2,7 +2,7 @@ name := "bitcoin-s-cli"
 
 libraryDependencies ++= Deps.cli
 
-publish / skip := true
+publish / skip := false
 
 graalVMNativeImageOptions += "-H:EnableURLProtocols=http"
 

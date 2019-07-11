@@ -4,6 +4,6 @@ name := "bitcoin-s-server"
 // when server is quit
 Compile / fork := true
 
-publish / skip := true
+publish / skip := false
 
 libraryDependencies ++= Deps.server
