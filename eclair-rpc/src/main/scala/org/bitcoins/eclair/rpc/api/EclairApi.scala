@@ -134,9 +134,13 @@ trait EclairApi {
 
   def payInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentId]
 
-  def payInvoice(invoice: LnInvoice, amountMsat: Option[MilliSatoshis], maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int], paymentMonitor: Option[PaymentId => Future[PaymentResult]]): Future[PaymentId]
+  def payInvoice(invoice: LnInvoice, amountMsat: Option[MilliSatoshis], maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
 
-  def sentPaymentMonitor(paymentId: PaymentId): Future[PaymentResult]
+  def monitorSentPayment(paymentId: PaymentId, notifyPayment: PaymentResult => Future[Unit]): Future[PaymentResult]
+
+  def payAndMonitorInvoice(invoice: LnInvoice): Future[PaymentResult]
+
+  def payAndMonitorInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentResult]
 
   def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]]
 

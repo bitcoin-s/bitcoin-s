@@ -362,13 +362,13 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def payInvoice(invoice: LnInvoice): Future[PaymentId] = {
-    payInvoice(invoice, None, None, None, None, Some(sentPaymentMonitor))
+    payInvoice(invoice, None, None, None, None)
   }
 
   override def payInvoice(
       invoice: LnInvoice,
       amount: MilliSatoshis): Future[PaymentId] = {
-    payInvoice(invoice, Some(amount), None, None, None, Some(sentPaymentMonitor))
+    payInvoice(invoice, Some(amount), None, None, None)
   }
 
   override def payInvoice(
@@ -376,8 +376,7 @@ class EclairRpcClient(val instance: EclairInstance)(
       amountMsat: Option[MilliSatoshis],
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
-      maxFeePct: Option[Int],
-      paymentMonitor: Option[PaymentId => Future[PaymentResult]]): Future[PaymentId] = {
+      maxFeePct: Option[Int]): Future[PaymentId] = {
     val params = Seq(
       Some("invoice" -> invoice.toString),
       amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString),
@@ -386,13 +385,21 @@ class EclairRpcClient(val instance: EclairInstance)(
       maxFeePct.map(x => "maxFeePct" -> x.toString)
     ).flatten
 
-    for {
-      paymentId <- eclairCall[PaymentId]("payinvoice", params: _*)
-    } yield {
-      paymentMonitor.foreach(_(paymentId))
-      paymentId
-    }
+    eclairCall[PaymentId]("payinvoice", params: _*)
   }
+
+  def payAndMonitorInvoice(invoice: LnInvoice): Future[PaymentResult] =
+    for {
+      paymentId <- payInvoice(invoice)
+      paymentResult <- monitorSentPayment(paymentId)
+    } yield paymentResult
+
+
+  def payAndMonitorInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentResult] =
+    for {
+      paymentId <- payInvoice(invoice, amount)
+      paymentResult <- monitorSentPayment(paymentId)
+    } yield paymentResult
 
   override def getReceivedInfo(
       paymentHash: Sha256Digest): Future[ReceivedPaymentResult] = {
@@ -660,8 +667,15 @@ class EclairRpcClient(val instance: EclairInstance)(
     process.map(_.destroy())
   }
 
-  override def sentPaymentMonitor(
-      paymentId: PaymentId): Future[PaymentResult] = {
+  /**
+    * Pings eclair every second to see if a invoice has been paid
+    * If the invoice has been paid or the payment has failed, we publish a
+    * [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
+    * event to the [[akka.actor.ActorSystem ActorSystem]]'s
+    * [[akka.event.EventStream ActorSystem.eventStream]]
+    */
+  override def monitorSentPayment(
+      paymentId: PaymentId, notifyPayment: PaymentResult => Future[Unit] = notifySentPayment): Future[PaymentResult] = {
     val p: Promise[PaymentResult] = Promise[PaymentResult]()
 
     val runnable = new Runnable() {
@@ -674,8 +688,7 @@ class EclairRpcClient(val instance: EclairInstance)(
         } yield {
           results.find(_.status != PaymentStatus.PENDING) match {
             case Some(result) =>
-              system.eventStream.publish(result)
-              p.success(result)
+              notifyPayment(result).foreach(_ => p.success(result))
             case None =>
               if (attempt.incrementAndGet() > 60) {
                 p.failure(new RuntimeException(
@@ -694,4 +707,6 @@ class EclairRpcClient(val instance: EclairInstance)(
 
     f
   }
+
+  def notifySentPayment(paymentResult: PaymentResult): Future[Unit] = Future(system.eventStream.publish(paymentResult))
 }
