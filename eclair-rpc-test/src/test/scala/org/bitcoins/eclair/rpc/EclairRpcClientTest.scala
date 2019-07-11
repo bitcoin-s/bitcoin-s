@@ -532,8 +532,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         {
           for {
             channelId <- openAndConfirmChannel(clientF, otherClientF)
-            invoice <- otherClient.createInvoice("no amount", None, None, None, None)
-            paymentId <- client.payInvoice(invoice, Some(amt), None, None, None)
+            invoice <- otherClient.createInvoice("no amount")
+            paymentId <- client.payInvoice(invoice, amt)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             _ <- client.close(channelId)
