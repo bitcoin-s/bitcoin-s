@@ -1,7 +1,7 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Int64}
+import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Bounded, Int64}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.core.util.Factory
@@ -15,7 +15,8 @@ sealed abstract class CurrencyUnit
 
   def satoshis: Satoshis
 
-  override def compare(c: CurrencyUnit): Int = satoshis.underlying compare c.satoshis.underlying
+  override def compare(c: CurrencyUnit): Int =
+    satoshis.underlying compare c.satoshis.underlying
 
   def !=(c: CurrencyUnit): Boolean = !(this == c)
 
@@ -70,7 +71,10 @@ sealed abstract class Satoshis extends CurrencyUnit {
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 
-object Satoshis extends Factory[Satoshis] with BaseNumbers[Satoshis] {
+object Satoshis
+    extends Factory[Satoshis]
+    with BaseNumbers[Satoshis]
+    with Bounded[Satoshis] {
 
   val min = Satoshis(Int64.min)
   val max = Satoshis(Int64.max)
@@ -99,7 +103,7 @@ sealed abstract class Bitcoins extends CurrencyUnit {
   }
 }
 
-object Bitcoins extends BaseNumbers[Bitcoins] {
+object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
   val min = Bitcoins((-Consensus.maxMoney).satoshis)
   val max = Bitcoins(Consensus.maxMoney.satoshis)
   val zero = Bitcoins(Satoshis.zero)

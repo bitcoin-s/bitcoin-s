@@ -34,13 +34,16 @@ sealed abstract class Number[T <: Number[T]]
     */
   def andMask: BigInt
 
-  /** Factory function to create the underlying T, for instance a UInt32 */
+  /**
+    * Factory function to create the underlying T, for instance a UInt32.
+    * This method must check if the parameter is in the required range.
+    */
   def apply: A => T
 
-  override def +(num: T): T = apply(checkResult(underlying + num.underlying))
-  override def -(num: T): T = apply(checkResult(underlying - num.underlying))
-  override def *(factor: BigInt): T = apply(checkResult(underlying * factor))
-  override def *(num: T): T = apply(checkResult(underlying * num.underlying))
+  override def +(num: T): T = apply(underlying + num.underlying)
+  override def -(num: T): T = apply(underlying - num.underlying)
+  override def *(factor: BigInt): T = apply(underlying * factor)
+  override def *(num: T): T = apply(underlying * num.underlying)
 
   override def compare(num: T): Int = underlying compare num.underlying
 
@@ -64,19 +67,9 @@ sealed abstract class Number[T <: Number[T]]
     }
   }
 
-  def |(num: T): T = apply(checkResult(underlying | num.underlying))
-  def &(num: T): T = apply(checkResult(underlying & num.underlying))
+  def |(num: T): T = apply(underlying | num.underlying)
+  def &(num: T): T = apply(underlying & num.underlying)
   def unary_- : T = apply(-underlying)
-
-  /**
-    * Checks if the given result is within the range
-    * of this number type
-    */
-  private def checkResult(result: BigInt): A = {
-    require((result & andMask) == result,
-            "Result was out of bounds, got: " + result)
-    result
-  }
 
   /** Checks if the given nubmer is within range of a Int */
   private def checkIfInt(num: T): Try[Unit] = {
@@ -155,6 +148,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
     * Converts a [[BigInt]] to a 8 byte hex representation.
     * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
     * this function pads the hex chars to be 0000000000000001
+    *
     * @param bigInt The number to encode
     * @return The hex encoded number
     */
@@ -189,32 +183,54 @@ sealed abstract class Int64 extends SignedNumber[Int64] {
 }
 
 /**
-  * Represents various numbers that should be implemented
-  * inside of any companion object for a number
+  * Represents number types that are bounded by minimum and maximum values
+  *
+  * @tparam T Type of the numbers
   */
-trait BaseNumbers[T] {
-  def zero: T
-  def one: T
+trait Bounded[T] {
   def min: T
   def max: T
 }
 
-object UInt5 extends Factory[UInt5] with BaseNumbers[UInt5] {
+trait BaseNumbers[T] {
+  def zero: T
+  def one: T
+}
+
+/**
+  * Should be implemented inside of any companion
+  * object for a number
+  */
+trait NumberObject[T <: Number[T]] extends BaseNumbers[T] {
+  type A = BigInt
+
+  def isInBound(num: A): Boolean
+}
+
+object UInt5
+    extends Factory[UInt5]
+    with NumberObject[UInt5]
+    with Bounded[UInt5] {
   private case class UInt5Impl(underlying: BigInt) extends UInt5 {
-    require(underlying.toInt >= 0, s"Cannot create UInt5 from $underlying")
-    require(underlying <= 31, s"Cannot create UInt5 from $underlying")
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = UInt5(0.toByte)
   lazy val one = UInt5(1.toByte)
 
-  lazy val min: UInt5 = zero
-  lazy val max = UInt5(31.toByte)
+  private lazy val minUnderlying: A = 0
+  private lazy val maxUnderlying: A = 31
+
+  lazy val min = UInt5(minUnderlying)
+  lazy val max = UInt5(maxUnderlying)
+
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   def apply(byte: Byte): UInt5 = fromByte(byte)
 
   def apply(bigInt: BigInt): UInt5 = {
-
     require(
       bigInt.toByteArray.length == 1,
       s"To create a uint5 from a BigInt it must be less than 32. Got: ${bigInt.toString}")
@@ -242,16 +258,25 @@ object UInt5 extends Factory[UInt5] with BaseNumbers[UInt5] {
   }
 }
 
-object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
+object UInt8
+    extends Factory[UInt8]
+    with NumberObject[UInt8]
+    with Bounded[UInt8] {
   private case class UInt8Impl(underlying: BigInt) extends UInt8 {
-    require(isValid(underlying),
-            "Invalid range for a UInt8, got: " + underlying)
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
   lazy val zero = UInt8(0.toShort)
   lazy val one = UInt8(1.toShort)
 
-  lazy val min: UInt8 = zero
-  lazy val max = UInt8(255.toShort)
+  private lazy val minUnderlying: A = 0
+  private lazy val maxUnderlying: A = 255
+
+  lazy val min = UInt8(minUnderlying)
+  lazy val max = UInt8(maxUnderlying)
+
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   def apply(short: Short): UInt8 = UInt8(BigInt(short))
 
@@ -259,14 +284,11 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
 
   def apply(bigint: BigInt): UInt8 = UInt8Impl(bigint)
 
-  def isValid(bigInt: BigInt): Boolean = bigInt >= 0 && bigInt < 256
-
   override def fromBytes(bytes: ByteVector): UInt8 = {
     require(
       bytes.size == 1,
       "Can only create a uint8 from a byte array of size one, got: " + bytes)
-    val res = NumberUtil.toUnsignedInt(bytes)
-    checkBounds(res)
+    UInt8(NumberUtil.toUnsignedInt(bytes))
   }
 
   def toUInt8(byte: Byte): UInt8 = {
@@ -282,94 +304,90 @@ object UInt8 extends Factory[UInt8] with BaseNumbers[UInt8] {
   def toUInt8s(bytes: ByteVector): Vector[UInt8] = {
     bytes.toArray.map(toUInt8).toVector
   }
-
-  def checkBounds(res: BigInt): UInt8 = {
-    if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException(
-        "Out of boudns for a UInt8, got: " + res)
-    } else UInt8(res.toShort)
-  }
 }
 
-object UInt32 extends Factory[UInt32] with BaseNumbers[UInt32] {
+object UInt32
+    extends Factory[UInt32]
+    with NumberObject[UInt32]
+    with Bounded[UInt32] {
   private case class UInt32Impl(underlying: BigInt) extends UInt32 {
-    require(
-      underlying >= 0,
-      "We cannot have a negative number in an unsigned number, got: " + underlying)
-    require(
-      underlying <= 4294967295L,
-      "We cannot have a number larger than 2^32 -1 in UInt32, got: " + underlying)
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = UInt32(0)
   lazy val one = UInt32(1)
 
-  lazy val min: UInt32 = zero
-  lazy val max = UInt32(4294967295L)
+  private lazy val minUnderlying: A = 0
+  private lazy val maxUnderlying: A = 4294967295L
+
+  lazy val min = UInt32(minUnderlying)
+  lazy val max = UInt32(maxUnderlying)
+
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): UInt32 = {
     require(
       bytes.size <= 4,
       "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
-    val res = NumberUtil.toUnsignedInt(bytes)
-    checkBounds(res)
+    UInt32(NumberUtil.toUnsignedInt(bytes))
   }
 
   def apply(long: Long): UInt32 = UInt32(BigInt(long))
 
   def apply(bigInt: BigInt): UInt32 = UInt32Impl(bigInt)
-
-  def checkBounds(res: BigInt): UInt32 = {
-    if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException(
-        "Out of boudns for a UInt8, got: " + res)
-    } else UInt32(res)
-  }
-
 }
 
-object UInt64 extends Factory[UInt64] with BaseNumbers[UInt64] {
+object UInt64
+    extends Factory[UInt64]
+    with NumberObject[UInt64]
+    with Bounded[UInt64] {
   private case class UInt64Impl(underlying: BigInt) extends UInt64 {
-    require(
-      underlying >= 0,
-      "We cannot have a negative number in an unsigned number: " + underlying)
-    require(
-      underlying <= BigInt("18446744073709551615"),
-      "We cannot have a number larger than 2^64 -1 in UInt64, got: " + underlying)
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = UInt64(BigInt(0))
   lazy val one = UInt64(BigInt(1))
 
-  lazy val min: UInt64 = zero
-  lazy val max = UInt64(BigInt("18446744073709551615"))
+  private lazy val minUnderlying: A = 0
+  private lazy val maxUnderlying: A = BigInt("18446744073709551615")
+
+  lazy val min = UInt64(minUnderlying)
+  lazy val max = UInt64(maxUnderlying)
+
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): UInt64 = {
     require(bytes.size <= 8)
-    val res: BigInt = NumberUtil.toUnsignedInt(bytes)
-    if (res > max.underlying || res < min.underlying) {
-      throw new IllegalArgumentException(
-        "Out of bounds for a UInt64, got: " + res)
-    } else UInt64(res)
+    UInt64(NumberUtil.toUnsignedInt(bytes))
   }
 
   def apply(num: BigInt): UInt64 = UInt64Impl(num)
-
 }
 
-object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
+object Int32
+    extends Factory[Int32]
+    with NumberObject[Int32]
+    with Bounded[Int32] {
   private case class Int32Impl(underlying: BigInt) extends Int32 {
-    require(underlying >= -2147483648,
-            "Number was too small for a int32, got: " + underlying)
-    require(underlying <= 2147483647,
-            "Number was too large for a int32, got: " + underlying)
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = Int32(0)
   lazy val one = Int32(1)
 
-  lazy val min = Int32(-2147483648)
-  lazy val max = Int32(2147483647)
+  private lazy val minUnderlying: A = -2147483648
+  private lazy val maxUnderlying: A = 2147483647
+
+  lazy val min = Int32(minUnderlying)
+  lazy val max = Int32(maxUnderlying)
+
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
@@ -381,19 +399,26 @@ object Int32 extends Factory[Int32] with BaseNumbers[Int32] {
   def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
 }
 
-object Int64 extends Factory[Int64] with BaseNumbers[Int64] {
+object Int64
+    extends Factory[Int64]
+    with NumberObject[Int64]
+    with Bounded[Int64] {
   private case class Int64Impl(underlying: BigInt) extends Int64 {
-    require(underlying >= -9223372036854775808L,
-            "Number was too small for a int64, got: " + underlying)
-    require(underlying <= 9223372036854775807L,
-            "Number was too big for a int64, got: " + underlying)
+    require(isInBound(underlying),
+            s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
   lazy val zero = Int64(0)
   lazy val one = Int64(1)
 
-  lazy val min = Int64(-9223372036854775808L)
-  lazy val max = Int64(9223372036854775807L)
+  private lazy val minUnderlying: A = -9223372036854775808L
+  private lazy val maxUnderlying: A = 9223372036854775807L
+
+  lazy val min = Int64(minUnderlying)
+  lazy val max = Int64(maxUnderlying)
+
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): Int64 = {
     require(bytes.size <= 8, "We cannot have an Int64 be larger than 8 bytes")
