@@ -6,6 +6,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
+import org.bitcoins.rpc.BitcoindException.MiscError
 
 class NodeRpcTest extends BitcoindRpcTest {
   lazy val clientF: Future[BitcoindRpcClient] =
@@ -18,7 +19,7 @@ class NodeRpcTest extends BitcoindRpcTest {
       // generate some extra blocks so rescan isn't too quick
       client.generate(3000).flatMap { _ =>
         val rescanFailedF =
-          recoverToSucceededIf[RuntimeException](client.rescanBlockChain())
+          recoverToSucceededIf[MiscError](client.rescanBlockChain())
         client.abortRescan().flatMap { _ =>
           rescanFailedF
         }

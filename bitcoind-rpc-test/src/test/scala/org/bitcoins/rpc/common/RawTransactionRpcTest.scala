@@ -16,6 +16,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
+import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 
 class RawTransactionRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
@@ -249,7 +250,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
           client
             .createRawTransaction(Vector(), Map(address -> Bitcoins(1)))
             .flatMap { tx =>
-              recoverToSucceededIf[RuntimeException](
+              recoverToSucceededIf[InvalidAddressOrKey](
                 client.abandonTransaction(tx.txId))
             }
         }

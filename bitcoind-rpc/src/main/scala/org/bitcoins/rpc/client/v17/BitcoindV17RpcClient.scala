@@ -26,6 +26,8 @@ import scala.util.Try
 /**
   * This class is compatible with version 0.17 of Bitcoin Core.
   *
+  * @see [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient Scaladocs]]
+  *
   * @define signRawTx Bitcoin Core 0.17 had a breaking change in the API
   *                   for signing raw transactions. Previously the same
   *                   RPC call was used for signing a TX with existing keys
