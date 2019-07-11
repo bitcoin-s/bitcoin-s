@@ -11,8 +11,6 @@ flywayClean / aggregate := false
 //allow us to wipe our test databases
 Test / flywayClean / aggregate := true
 
-lazy val timestamp = new java.util.Date().getTime
-
 lazy val commonCompilerOpts = {
   List(
     "-Xmax-classfile-name",
@@ -54,28 +52,24 @@ lazy val commonSettings = List(
   ),
   ////
   // scaladoc settings
-      Compile / doc / scalacOptions ++= List(
-        "-doc-title",
-        "Bitcoin-S",
-        "-doc-version",
-        version.value,
-      ),
-  // Set apiURL to define the base URL for the Scaladocs for our library. 
-  // This will enable clients of our library to automatically link against 
-  // the API documentation using autoAPIMappings. 
-  apiURL := homepage.value.map(_.toString + "/api").map(url(_)), 
-
+  Compile / doc / scalacOptions ++= List(
+    "-doc-title",
+    "Bitcoin-S",
+    "-doc-version",
+    version.value
+  ),
+  // Set apiURL to define the base URL for the Scaladocs for our library.
+  // This will enable clients of our library to automatically link against
+  // the API documentation using autoAPIMappings.
+  apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
   // scaladoc settings end
   ////
-
   scalacOptions in Compile := compilerOpts,
   scalacOptions in Test := testCompilerOpts,
   //show full stack trace of failed tests
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
   //show duration of tests
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
-  assemblyOption in assembly := (assemblyOption in assembly).value
-    .copy(includeScala = false),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   // Travis has performance issues on macOS
   Test / parallelExecution := !(Properties.isMac && sys.props
@@ -115,13 +109,15 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
   )
 }
 
-lazy val bitcoins = project
+// quoting the val name this way makes it appear as
+// 'bitcoin-s' in sbt/bloop instead of 'bitcoins'
+lazy val `bitcoin-s` = project
   .in(file("."))
   .aggregate(
     secp256k1jni,
     chain,
     chainTest,
-    cli, 
+    cli,
     cliTest,
     core,
     coreTest,
@@ -145,7 +141,8 @@ lazy val bitcoins = project
   .settings(commonSettings: _*)
   // crossScalaVersions must be set to Nil on the aggregating project
   .settings(crossScalaVersions := Nil)
-  .enablePlugins(ScalaUnidocPlugin, GitVersioning)
+  // unidoc aggregates Scaladocs for all subprojects into one big doc
+  .enablePlugins(ScalaUnidocPlugin)
   .settings(
     // we modify the unidoc task to move the generated Scaladocs into the
     // website directory afterwards
@@ -215,13 +212,13 @@ lazy val secp256k1jni = project
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Deps.secp256k1jni,
+    // we place lib files in this directory
     unmanagedResourceDirectories in Compile += baseDirectory.value / "natives",
     //since this is not a scala module, we have no code coverage
     //this also doesn't place nice with scoverage, see
     //https://github.com/scoverage/sbt-scoverage/issues/275
     coverageEnabled := false
   )
-  .enablePlugins(GitVersioning)
 
 /**
   * If you want sbt projects to depend on each other in
@@ -270,7 +267,6 @@ lazy val core = project
   .dependsOn(
     secp256k1jni
   )
-  .enablePlugins(GitVersioning)
 
 lazy val coreTest = project
   .in(file("core-test"))
@@ -282,49 +278,46 @@ lazy val coreTest = project
     core % testAndCompile,
     testkit
   )
-  .enablePlugins()
 
 lazy val walletServer = project
-    .in(file("app/server"))
-    .settings(commonSettings: _*)
-    .dependsOn(
-      picklers,
-      node,
-      chain, 
-      wallet,
-      bitcoindRpc
-    )
+  .in(file("app/server"))
+  .settings(commonSettings: _*)
+  .dependsOn(
+    picklers,
+    node,
+    chain,
+    wallet,
+    bitcoindRpc
+  )
 
 lazy val walletServerTest = project
-    .in(file("app/server-test"))
-    .settings(commonTestSettings)
-    .dependsOn(
-      walletServer,
-      testkit
-    )
+  .in(file("app/server-test"))
+  .settings(commonTestSettings)
+  .dependsOn(
+    walletServer,
+    testkit
+  )
 
 // internal picklers used by server
 // and CLI
 lazy val picklers = project
-    .in(file("app/picklers"))
-    .dependsOn(core % testAndCompile)
-
+  .in(file("app/picklers"))
+  .dependsOn(core % testAndCompile)
 
 lazy val cli = project
-    .in(file("app/cli"))
-    .settings(commonSettings: _*)
-    .dependsOn(
-      picklers
-    )
+  .in(file("app/cli"))
+  .settings(commonSettings: _*)
+  .dependsOn(
+    picklers
+  )
 
 lazy val cliTest = project
-    .in(file("app/cli-test"))
-    .settings(commonTestSettings: _*)
-    .dependsOn(
-      cli, 
-      testkit
-    )
-
+  .in(file("app/cli-test"))
+  .settings(commonTestSettings: _*)
+  .dependsOn(
+    cli,
+    testkit
+  )
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
 lazy val chain = project
@@ -334,7 +327,8 @@ lazy val chain = project
   .settings(
     name := "bitcoin-s-chain",
     libraryDependencies ++= Deps.chain
-  ).dependsOn(core, dbCommons)
+  )
+  .dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
 
 lazy val chainTest = project
@@ -354,9 +348,8 @@ lazy val dbCommons = project
   .settings(
     name := "bitcoin-s-db-commons",
     libraryDependencies ++= Deps.dbCommons
-  ).dependsOn(core)
-  .enablePlugins()
-
+  )
+  .dependsOn(core)
 
 lazy val zmq = project
   .in(file("zmq"))
@@ -365,7 +358,6 @@ lazy val zmq = project
   .dependsOn(
     core % testAndCompile
   )
-  .enablePlugins(GitVersioning)
 
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
@@ -373,7 +365,6 @@ lazy val bitcoindRpc = project
   .settings(name := "bitcoin-s-bitcoind-rpc",
             libraryDependencies ++= Deps.bitcoindRpc)
   .dependsOn(core)
-  .enablePlugins(GitVersioning)
 
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
@@ -381,20 +372,16 @@ lazy val bitcoindRpcTest = project
   .settings(libraryDependencies ++= Deps.bitcoindRpcTest,
             name := "bitcoin-s-bitcoind-rpc-test")
   .dependsOn(core % testAndCompile, testkit)
-  .enablePlugins()
 
 lazy val bench = project
   .in(file("bench"))
   .settings(commonSettings: _*)
-  .settings(assemblyOption in assembly := (assemblyOption in assembly).value
-    .copy(includeScala = true))
   .settings(
     libraryDependencies ++= Deps.bench,
     name := "bitcoin-s-bench",
     skip in publish := true
   )
   .dependsOn(core % testAndCompile)
-  .enablePlugins(GitVersioning)
 
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
@@ -405,7 +392,6 @@ lazy val eclairRpc = project
     core,
     bitcoindRpc
   )
-  .enablePlugins(GitVersioning)
 
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
@@ -413,10 +399,9 @@ lazy val eclairRpcTest = project
   .settings(libraryDependencies ++= Deps.eclairRpcTest,
             name := "bitcoin-s-eclair-rpc-test")
   .dependsOn(core % testAndCompile, testkit)
-  .enablePlugins()
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
-lazy val node = {
+lazy val node =
   project
     .in(file("node"))
     .settings(commonSettings: _*)
@@ -430,21 +415,21 @@ lazy val node = {
       chain,
       dbCommons,
       bitcoindRpc
-    ).enablePlugins(FlywayPlugin)
-}
+    )
+    .enablePlugins(FlywayPlugin)
 
-lazy val nodeTest = {
+lazy val nodeTest =
   project
     .in(file("node-test"))
     .settings(commonTestWithDbSettings: _*)
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
-      // There's a weird issue with forking 
+      // There's a weird issue with forking
       // in node tests, for example this CI
       // error: https://travis-ci.org/bitcoin-s/bitcoin-s-core/jobs/525018199#L1252
       // It seems to be related to this
-      // Scalatest issue: 
+      // Scalatest issue:
       // https://github.com/scalatest/scalatest/issues/556
       Test / fork := false,
       libraryDependencies ++= Deps.nodeTest
@@ -455,7 +440,6 @@ lazy val nodeTest = {
       testkit
     )
     .enablePlugins(FlywayPlugin)
-}
 
 lazy val testkit = project
   .in(file("testkit"))
@@ -471,8 +455,6 @@ lazy val testkit = project
     wallet,
     zmq
   )
-  .enablePlugins(GitVersioning)
-
 
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
@@ -528,8 +510,8 @@ lazy val scripts = project
     zmq
   )
 
-publishArtifact in bitcoins := false
-
+/** Given a database name, returns the appropriate
+  * Flyway settings we apply to a project (chain, node, wallet) */
 def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val DB_HOST = "localhost"
   lazy val DB_NAME = s"${dbName}.sqlite"
@@ -540,7 +522,7 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
   lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
 
-  lazy val dirs = List(mainnetDir,testnetDir,regtestDir,unittestDir)
+  lazy val dirs = List(mainnetDir, testnetDir, regtestDir, unittestDir)
 
   //create directies if they DNE
   dirs.foreach { d =>
@@ -569,12 +551,11 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val unittest = makeNetworkSettings(unittestDir)
 
   network match {
-    case "mainnet" => mainnet
+    case "mainnet"  => mainnet
     case "testnet3" => testnet3
-    case "regtest" => regtest
+    case "regtest"  => regtest
     case "unittest" => unittest
-    case unknown: String => throw new IllegalArgumentException(s"Unknown network=${unknown}")
+    case unknown: String =>
+      throw new IllegalArgumentException(s"Unknown network=${unknown}")
   }
 }
-
-publishArtifact in bitcoins := false
