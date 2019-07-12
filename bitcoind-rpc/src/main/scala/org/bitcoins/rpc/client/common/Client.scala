@@ -175,24 +175,31 @@ trait Client extends BitcoinSLogger {
     * Checks whether the underlying bitcoind daemon is running
     */
   def isStartedF: Future[Boolean] = {
-    val request = buildRequest(instance, "ping", JsArray.empty)
-    val responseF = sendRequest(request)
+    def tryPing: Future[Boolean] = {
+      val request = buildRequest(instance, "ping", JsArray.empty)
+      val responseF = sendRequest(request)
 
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+      val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
 
-    // Ping successful if no error can be parsed from the payload
-    val parsedF = payloadF.map { payload =>
-      (payload \ errorKey).validate[RpcError] match {
-        case _: JsSuccess[RpcError] => false
-        case _: JsError             => true
+      // Ping successful if no error can be parsed from the payload
+      val parsedF = payloadF.map { payload =>
+        (payload \ errorKey).validate[RpcError] match {
+          case _: JsSuccess[RpcError] => false
+          case _: JsError             => true
+        }
+      }
+
+      parsedF.recover {
+        case exc: StreamTcpException
+            if exc.getMessage.contains("Connection refused") =>
+          false
       }
     }
-
-    parsedF.recover {
-      case exc: StreamTcpException
-          if exc.getMessage.contains("Connection refused") =>
-        false
-
+    instance.authCredentials match {
+      case cookie: CookieBased if Files.notExists(cookie.cookiePath) =>
+        // if the cookie file doesn't exist we're not started
+        Future.successful(false)
+      case (CookieBased(_, _) | PasswordBased(_, _)) => tryPing
     }
   }
 
