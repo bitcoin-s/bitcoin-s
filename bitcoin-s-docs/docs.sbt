@@ -1,10 +1,10 @@
-lazy val bitcoins = RootProject(file("."))
+lazy val `bitcoin-s` = RootProject(file("."))
 
 lazy val publishWebsite = taskKey[Unit]("Publish website")
 
 publishWebsite := Def
   .sequential(
-    bitcoins / Compile / unidoc,
+    `bitcoin-s` / Compile / unidoc,
     Compile / docusaurusPublishGhpages
   )
   .value
@@ -22,12 +22,17 @@ publish / skip := true
 // See this issue: https://github.com/scalameta/mdoc/issues/94
 mdocExtraArguments := List("--no-link-hygiene")
 
+// these variables gets passed to mdoc, and can be read
+// from there
 mdocVariables := Map(
   "STABLE_VERSION" -> previousStableVersion.value.get,
   "UNSTABLE_VERSION" -> version.value
 )
 
-enablePlugins(MdocPlugin, DocusaurusPlugin, BuildInfoPlugin)
+enablePlugins(MdocPlugin, DocusaurusPlugin)
+
+// this expoes the values below as typed values in Scala sources
+enablePlugins(BuildInfoPlugin)
 buildInfoKeys := Seq[BuildInfoKey](mdocVariables, mdocExtraArguments)
 buildInfoPackage := "org.bitcoins.docs"
 
