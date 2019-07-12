@@ -1,8 +1,5 @@
 package org.bitcoins.eclair.rpc
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
@@ -23,17 +20,13 @@ import org.slf4j.Logger
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, PaymentPreimage}
 import scala.concurrent.duration._
+import java.net.ConnectException
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
-  implicit val system: ActorSystem =
-    ActorSystem("EclairRpcClient", BitcoindRpcTestUtil.AKKA_CONFIG)
-  implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-  implicit val ec: ExecutionContext = m.executionContext
   implicit val bitcoinNp: RegTest.type = EclairRpcTestUtil.network
 
   val logger: Logger = BitcoinSLogger.logger
@@ -308,7 +301,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       _ <- eclair.getInfo
         .map(_ => fail("Got info from a closed node!"))
         .recover {
-          case _: StreamTcpException => ()
+          case _: ConnectException => ()
         }
     } yield succeed
   }
@@ -1052,6 +1045,5 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     clients.result().foreach(EclairRpcTestUtil.shutdown)
-    TestKit.shutdownActorSystem(system)
   }
 }

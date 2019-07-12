@@ -1,6 +1,5 @@
 package org.bitcoins.chain.blockchain
 
-import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -26,8 +25,6 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 class ChainHandlerTest extends ChainUnitTest {
 
   override type FixtureParam = ChainHandler
-
-  implicit override val system = ActorSystem("ChainUnitTest")
 
   // we're working with mainnet data
   implicit override lazy val appConfig: ChainAppConfig = {

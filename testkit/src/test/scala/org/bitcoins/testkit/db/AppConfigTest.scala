@@ -7,7 +7,6 @@ import org.bitcoins.server.BitcoinSAppConfig._
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.chain.models.BlockHeaderDAO
-import akka.actor.ActorSystem
 import scala.concurrent.ExecutionContext
 import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.testkit.chain.ChainTestUtil
@@ -30,8 +29,7 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 class AppConfigTest extends BitcoinSUnitTest {
 
-  val system = ActorSystem()
-  implicit val ec: ExecutionContext = system.dispatcher
+  implicit private val ec = ExecutionContext.Implicits.global
 
   behavior of "BitcoinSAppConfig"
 

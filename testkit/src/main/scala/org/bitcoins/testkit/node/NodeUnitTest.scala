@@ -108,8 +108,7 @@ trait NodeUnitTest
               bloomFilter = NodeTestUtil.emptyBloomFilter)
   }
 
-  def withSpvNode(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+  def withSpvNode(test: OneArgAsyncTest): FutureOutcome = {
 
     val spvBuilder: () => Future[SpvNode] = { () =>
       val bitcoindF = createBitcoind()

@@ -5,14 +5,9 @@ import scala.concurrent.duration._
 import scala.concurrent._
 import org.scalatest.compatible.Assertion
 import org.scalatest.AsyncFlatSpec
-import akka.actor.ActorSystem
 
 class FutureUtilTest extends AsyncFlatSpec with BitcoinSLogger {
   it must "execute futures sequentially in the correct order" in {
-
-    val actorSystem = ActorSystem()
-    implicit val ec = actorSystem.dispatcher
-    val scheduler = actorSystem.scheduler
 
     val assertionP = Promise[Assertion]()
     val assertionF = assertionP.future

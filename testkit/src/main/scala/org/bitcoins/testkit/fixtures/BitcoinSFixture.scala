@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.fixtures
 
-import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
@@ -111,8 +110,7 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
     }
   }
 
-  def createBitcoindWithFunds()(
-      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+  def createBitcoindWithFunds(): Future[BitcoindRpcClient] = {
     for {
       bitcoind <- createBitcoind()
       address <- bitcoind.getNewAddress
@@ -121,8 +119,7 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
   }
 
   /** Creates a new bitcoind instance */
-  def createBitcoind()(
-      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+  def createBitcoind(): Future[BitcoindRpcClient] = {
     val instance = BitcoindRpcTestUtil.instance()
     val bitcoind = new BitcoindRpcClient(instance)
 

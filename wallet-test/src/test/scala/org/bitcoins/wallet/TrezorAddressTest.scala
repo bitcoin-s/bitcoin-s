@@ -24,7 +24,6 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.server.BitcoinSAppConfig
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
 import scala.concurrent.Future
 import org.bitcoins.wallet.api.InitializeWalletSuccess
 import org.scalatest.AsyncFlatSpec

@@ -1,15 +1,15 @@
 package org.bitcoins.rpc.util
 
-import akka.actor.ActorSystem
-import org.bitcoins.core.util.BitcoinSLogger
-
 import scala.concurrent._
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration._
 
-abstract class AsyncUtil extends BitcoinSLogger {
+abstract class AsyncUtil {
   import AsyncUtil.DEFAULT_INTERNVAL
   import AsyncUtil.DEFAULT_MAX_TRIES
 
+  /** Returns a runnable that completes the
+    * given promise with the given condition
+    */
   private def retryRunnable(
       condition: => Boolean,
       p: Promise[Boolean]): Runnable = new Runnable {
@@ -23,7 +23,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       condition: => Boolean,
       duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     val f = () => Future.successful(condition)
     retryUntilSatisfiedF(f, duration, maxTries)
   }
@@ -40,7 +40,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       conditionF: () => Future[Boolean],
       duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     val stackTrace: Array[StackTraceElement] =
       Thread.currentThread().getStackTrace
 
@@ -55,14 +55,14 @@ abstract class AsyncUtil extends BitcoinSLogger {
       caller: Array[StackTraceElement])
       extends Exception(message) {
 
-    /*
-    Someone who calls a method in this class will be interested
-     * in where the call was made (and the stack trace from there
-     * backwards) and what happens between their call and the failure,
-     * i.e. the internal calls of this class, are not of interest.
-     *
-     * This trims the top of the stack trace to exclude these internal calls.
-     */
+    /**
+      * Someone who calls a method in this class will be interested
+      * in where the call was made (and the stack trace from there
+      * backwards) and what happens between their call and the failure,
+      * i.e. the internal calls of this class, are not of interest.
+      *
+      * This trims the top of the stack trace to exclude these internal calls.
+      */
     val internalFiles: Vector[String] = Vector("AsyncUtil.scala",
                                                "RpcUtil.scala",
                                                "TestAsyncUtil.scala",
@@ -81,9 +81,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       counter: Int = 0,
       maxTries: Int,
       stackTrace: Array[StackTraceElement])(
-      implicit system: ActorSystem): Future[Unit] = {
-
-    import system.dispatcher
+      implicit ec: ExecutionContext): Future[Unit] = {
 
     conditionF().flatMap { condition =>
       if (condition) {
@@ -97,7 +95,10 @@ abstract class AsyncUtil extends BitcoinSLogger {
         val p = Promise[Boolean]()
         val runnable = retryRunnable(condition, p)
 
-        system.scheduler.scheduleOnce(duration, runnable)
+        Future {
+          Thread.sleep(duration.toMillis)
+          runnable.run()
+        }
 
         p.future.flatMap {
           case true => Future.successful(())
@@ -124,7 +125,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       condition: () => Boolean,
       duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
 
     //type hackery here to go from () => Boolean to () => Future[Boolean]
     //to make sure we re-evaluate every time retryUntilSatisfied is called
@@ -139,7 +140,7 @@ abstract class AsyncUtil extends BitcoinSLogger {
       conditionF: () => Future[Boolean],
       duration: FiniteDuration = DEFAULT_INTERNVAL,
       maxTries: Int = DEFAULT_MAX_TRIES)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
 
     retryUntilSatisfiedF(conditionF = conditionF,
                          duration = duration,

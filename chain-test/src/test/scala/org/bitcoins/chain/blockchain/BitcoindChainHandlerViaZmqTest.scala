@@ -1,6 +1,5 @@
 package org.bitcoins.chain.blockchain
 
-import akka.actor.ActorSystem
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaZmq
@@ -11,8 +10,6 @@ import scala.concurrent.Future
 class BitcoindChainHandlerViaZmqTest extends ChainUnitTest {
 
   override type FixtureParam = BitcoindChainHandlerViaZmq
-
-  override implicit val system: ActorSystem = ActorSystem("ChainUnitTest")
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBitcoindChainHandlerViaZmq(test)

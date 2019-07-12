@@ -1,6 +1,5 @@
 package org.bitcoins.chain.blockchain
 
-import akka.actor.ActorSystem
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
@@ -11,8 +10,6 @@ class BlockchainTest extends ChainUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
-
-  override implicit val system: ActorSystem = ActorSystem("BlockchainTest")
 
   behavior of "Blockchain"
 

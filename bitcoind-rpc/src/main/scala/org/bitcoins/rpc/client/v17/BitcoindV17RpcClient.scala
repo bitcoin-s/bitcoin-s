@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.client.v17
 
-import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -22,6 +21,7 @@ import play.api.libs.json.{JsArray, JsBoolean, JsString, Json}
 
 import scala.concurrent.Future
 import scala.util.Try
+import scala.concurrent.ExecutionContext
 
 /**
   * This class is compatible with version 0.17 of Bitcoin Core.
@@ -35,8 +35,7 @@ import scala.util.Try
   *                   These RPC calls are now separated out into two distinct calls.
   */
 class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
-    implicit
-    actorSystem: ActorSystem)
+    implicit ec: ExecutionContext)
     extends BitcoindRpcClient(instance)
     with V17LabelRpc
     with V17PsbtRpc {
@@ -98,7 +97,7 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
 object BitcoindV17RpcClient {
 
   def fromUnknownVersion(rpcClient: BitcoindRpcClient)(
-      implicit actorSystem: ActorSystem): Try[BitcoindV17RpcClient] =
+      implicit ec: ExecutionContext): Try[BitcoindV17RpcClient] =
     Try {
       new BitcoindV17RpcClient(rpcClient.instance)
     }

@@ -1,6 +1,5 @@
 package org.bitcoins.chain.pow
 
-import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
@@ -25,8 +24,6 @@ class BitcoinPowTest extends ChainUnitTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainFixture(test)
-
-  implicit override val system: ActorSystem = ActorSystem("BitcoinPowTest")
 
   behavior of "BitcoinPow"
 

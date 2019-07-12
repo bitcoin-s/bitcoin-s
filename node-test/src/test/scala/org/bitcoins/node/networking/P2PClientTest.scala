@@ -15,10 +15,8 @@ import org.scalatest._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import akka.actor.ActorSystem
 
-/**
-  * Created by chris on 6/7/16.
-  */
 class ClientTest
     extends BitcoindRpcTest
     with MustMatchers
@@ -30,7 +28,8 @@ class ClientTest
   implicit private val chainConf = config.chainConf
   implicit private val nodeConf = config.nodeConf
 
-  implicit val np = config.chainConf.network
+  implicit private val np = config.chainConf.network
+  implicit private val system = ActorSystem()
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -71,7 +70,7 @@ class ClientTest
     * @param port the port we are binding on our machine
     * @return
     */
-  def connectAndDisconnect(peer: Peer): Future[Assertion] = {
+  private def connectAndDisconnect(peer: Peer): Future[Assertion] = {
     val probe = TestProbe()
     val remote = peer.socket
     val peerMessageReceiver =

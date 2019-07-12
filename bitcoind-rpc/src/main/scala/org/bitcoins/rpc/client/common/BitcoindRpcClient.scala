@@ -2,8 +2,8 @@ package org.bitcoins.rpc.client.common
 
 import java.io.File
 
-import akka.actor.ActorSystem
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
+import scala.concurrent.ExecutionContext
 
 /**
   * This class is not guaranteed to be compatible with any particular
@@ -20,8 +20,7 @@ import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
   * on the errors, and handle them as you see fit.
   */
 class BitcoindRpcClient(val instance: BitcoindInstance)(
-    implicit
-    override val system: ActorSystem)
+    implicit ec: ExecutionContext)
     extends Client
     with BlockchainRpc
     with MessageRpc
@@ -49,7 +48,7 @@ object BitcoindRpcClient {
     * the default datadir if no directory is provided
     */
   def fromDatadir(datadir: File = BitcoindConfig.DEFAULT_DATADIR)(
-      implicit system: ActorSystem): BitcoindRpcClient = {
+      implicit ec: ExecutionContext): BitcoindRpcClient = {
     val instance = BitcoindInstance.fromDatadir(datadir)
     val cli = new BitcoindRpcClient(instance)
     cli

@@ -3,19 +3,18 @@ package org.bitcoins.eclair.rpc.client
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorSystem
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
-import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{
+  LnInvoice,
+  LnParams,
+  PaymentPreimage,
+  ShortChannelId
+}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -29,21 +28,23 @@ import org.slf4j.LoggerFactory
 import play.api.libs.json._
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
+
+import com.softwaremill.sttp._
+import akka.actor.ActorSystem
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 class EclairRpcClient(val instance: EclairInstance)(
     implicit system: ActorSystem)
     extends EclairApi {
   import JsonReaders._
+  implicit val executionContext = system.dispatcher
 
-  implicit val m = ActorMaterializer.create(system)
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def getDaemon: EclairInstance = instance
-
-  override implicit def executionContext: ExecutionContext = m.executionContext
 
   override def allChannels(): Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
@@ -511,8 +512,7 @@ class EclairRpcClient(val instance: EclairInstance)(
     logger.trace(s"eclair rpc call ${request}")
     val responseF = sendRequest(request)
 
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-    payloadF.map { payload =>
+    responseF.map { payload =>
       val validated: JsResult[T] = payload.validate[T]
       val parsed: T = parseResult(validated, payload, command)
       parsed
@@ -547,34 +547,27 @@ class EclairRpcClient(val instance: EclairInstance)(
     }
   }
 
-  private def getPayload(response: HttpResponse): Future[JsValue] = {
-    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
-
-    payloadF.map { payload =>
-      val parsed: JsValue = Json.parse(payload.decodeString(ByteString.UTF_8))
-      parsed
+  private def sendRequest(req: Request[String, Nothing]): Future[JsValue] = {
+    import com.softwaremill.sttp.asynchttpclient.future.AsyncHttpClientFutureBackend
+    implicit val backend: SttpBackend[Future, Nothing] =
+      AsyncHttpClientFutureBackend()
+    req.send().map { response =>
+      Json.parse(response.unsafeBody)
     }
-  }
-
-  private def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    val respF = Http(m.system).singleRequest(req)
-    respF
   }
 
   private def buildRequest(
       instance: EclairInstance,
       methodName: String,
-      params: (String, String)*): HttpRequest = {
+      params: (String, String)*): Request[String, Nothing] = {
 
-    val uri = instance.rpcUri.resolve("/" + methodName).toString
+    val uri = uri"${Uri(instance.rpcUri)}/$methodName"
     // Eclair doesn't use a username
     val username = ""
     val password = instance.authCredentials.password
-    HttpRequest(method = HttpMethods.POST,
-                uri,
-                entity = FormData(params: _*).toEntity)
-      .addCredentials(
-        HttpCredentials.createBasicHttpCredentials(username, password))
+
+    val paramsMap = Map(params: _*)
+    sttp.body(paramsMap).auth.basic(username, password).post(uri)
   }
 
   private def pathToEclairJar: String = {
@@ -663,9 +656,9 @@ class EclairRpcClient(val instance: EclairInstance)(
     * 3. We have attempted to query the eclair more than maxAttempts, and the payment is still pending
     */
   override def monitorSentPayment(
-                                   paymentId: PaymentId,
-                                   interval: FiniteDuration,
-                                   maxAttempts: Int): Future[PaymentResult] = {
+      paymentId: PaymentId,
+      interval: FiniteDuration,
+      maxAttempts: Int): Future[PaymentResult] = {
     val p: Promise[PaymentResult] = Promise[PaymentResult]()
 
     val runnable = new Runnable() {
@@ -684,7 +677,10 @@ class EclairRpcClient(val instance: EclairInstance)(
         } else {
           val resultsF = getSentInfo(paymentId)
           resultsF.recover {
-            case e: Throwable => logger.error(s"Cannot check payment status for paymentId=${paymentId}", e)
+            case e: Throwable =>
+              logger.error(
+                s"Cannot check payment status for paymentId=${paymentId}",
+                e)
           }
           val _ = for {
             results <- resultsF

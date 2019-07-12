@@ -2,7 +2,6 @@ package org.bitcoins.testkit.chain
 
 import java.net.InetSocketAddress
 
-import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -39,8 +38,6 @@ trait ChainUnitTest
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
-  implicit def system: ActorSystem
-
   val timeout: FiniteDuration = 10.seconds
 
   implicit lazy val chainParam: ChainParams = appConfig.chain
@@ -60,9 +57,6 @@ trait ChainUnitTest
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(appConfig)
   }
-
-  implicit def ec: ExecutionContext =
-    system.dispatcher
 
   /**
     * All untagged tests will be given this tag. Override this if you are using
@@ -266,8 +260,7 @@ trait ChainUnitTest
     * @param system
     * @return
     */
-  def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+  def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
       composeBuildersAndWrap(builder = () => createBitcoind,
                              dependentBuilder =
@@ -277,8 +270,7 @@ trait ChainUnitTest
     makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
   }
 
-  def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+  def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaRpc] = { () =>
       createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
     }
@@ -286,10 +278,6 @@ trait ChainUnitTest
     makeDependentFixture(builder, destroyBitcoindChainApiViaRpc)(test)
   }
 
-  override def afterAll(): Unit = {
-    system.terminate()
-    ()
-  }
 }
 
 object ChainUnitTest extends BitcoinSLogger {
@@ -384,7 +372,7 @@ object ChainUnitTest extends BitcoinSLogger {
   }
 
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)
   }
 

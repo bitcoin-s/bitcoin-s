@@ -29,8 +29,11 @@ import scala.util.Success
 import scala.concurrent.Await
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.bloom.BloomFilter
+import akka.actor.ActorSystem
 
 class NodeWithWalletTest extends BitcoinSWalletTest {
+
+  implicit private val system = ActorSystem()
 
   override type FixtureParam = WalletWithBitcoind
 
@@ -117,7 +120,7 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
         }
 
         logger.debug(s"Setting timeout for receiving TX in thru node")
-        cancellable = Some(actorSystem.scheduler.scheduleOnce(delay, runnable))
+        cancellable = Some(system.scheduler.scheduleOnce(delay, runnable))
         tx
       }
 

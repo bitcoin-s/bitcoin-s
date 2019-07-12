@@ -34,7 +34,7 @@ object Deps {
 
     // CLI deps
     val scoptV = "4.0.0-RC2"
-    val sttpV = "1.6.0"
+    val sttpV = "1.6.2"
   }
 
   object Compile {
@@ -76,6 +76,7 @@ object Deps {
 
     // HTTP client lib
     val sttp = "com.softwaremill.sttp" %% "core" % V.sttpV
+    val sttpFuture = "com.softwaremill.sttp" %% "async-http-client-backend-future" % V.sttpV
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
@@ -135,16 +136,14 @@ object Deps {
   )
 
   val bitcoindRpc = List(
-    Compile.akkaHttp,
-    Compile.akkaStream,
+    Compile.sttp,
+    Compile.sttpFuture,
     Compile.playJson,
     Compile.slf4j,
     Compile.typesafeConfig
   )
 
   val bitcoindRpcTest = List(
-    Test.akkaHttp,
-    Test.akkaStream,
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
@@ -181,15 +180,13 @@ object Deps {
   )
 
   val eclairRpc = List(
-    Compile.akkaHttp,
-    Compile.akkaStream,
-    Compile.playJson,
+    Compile.sttp,
+    Compile.sttpFuture,
+    Compile.akkaActor,
     Compile.slf4j
   )
 
   val eclairRpcTest = List(
-    Test.akkaHttp,
-    Test.akkaStream,
     Test.logback,
     Test.scalaTest,
     Test.scalacheck

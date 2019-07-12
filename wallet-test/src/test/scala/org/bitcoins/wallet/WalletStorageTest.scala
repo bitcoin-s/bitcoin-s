@@ -9,8 +9,6 @@ import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.crypto.AesPassword
 import scala.util.Success
 import java.nio.file.Files
-import akka.compat.Future
-import akka.compat.Future
 import scala.concurrent.Future
 import scala.collection.JavaConverters._
 import java.nio.file.Path

@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.util
 
-import akka.actor.ActorSystem
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -8,15 +7,19 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 abstract class BitcoindRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  implicit val system: ActorSystem =
-    ActorSystem(getClass.getSimpleName, BitcoindRpcTestUtil.AKKA_CONFIG)
-  implicit val ec: ExecutionContext = system.dispatcher
+  /** AsyncFlatSpec provides its own execution context, but for some
+    * reason that doesn't allow doing anything in `afterAll`. We add
+    * our own.
+    */
+  implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
+
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 
   /**
@@ -30,7 +33,7 @@ abstract class BitcoindRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     Vector[BitcoindRpcClient]] = Vector.newBuilder
 
   override protected def afterAll(): Unit = {
-    BitcoindRpcTestUtil.stopServers(clientAccum.result)
-    val _ = Await.result(system.terminate, 10.seconds)
+    val stopF = BitcoindRpcTestUtil.stopServers(clientAccum.result)
+    Await.result(stopF, 10.seconds)
   }
 }

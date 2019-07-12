@@ -3,9 +3,6 @@ package org.bitcoins.testkit.rpc
 import java.net.URI
 import java.nio.file.Paths
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -232,9 +229,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * Stops the given servers and deletes their data directories
     */
   def stopServers(servers: Vector[BitcoindRpcClient])(
-      implicit system: ActorSystem): Future[Unit] = {
-    implicit val ec: ExecutionContextExecutor = system.getDispatcher
-
+      implicit ec: ExecutionContext): Future[Unit] = {
     val serverStops = servers.map { s =>
       val stopF = s.stop()
       deleteTmpDir(s.getDaemon.datadir)
@@ -255,7 +250,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * Stops the given server and deletes its data directory
     */
   def stopServer(server: BitcoindRpcClient)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     stopServers(Vector(server))
   }
 
@@ -287,9 +282,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       from: BitcoindRpcClient,
       to: BitcoindRpcClient,
       duration: FiniteDuration = 100.milliseconds,
-      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
-
+      maxTries: Int = 50)(implicit ec: ExecutionContext): Future[Unit] = {
     val isConnected: () => Future[Boolean] = () => {
       from
         .getAddedNodeInfo(to.getDaemon.uri)
@@ -335,10 +328,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     *         list of provided clients
     */
   def generateAllAndSync(clients: Vector[BitcoindRpcClient], blocks: Int = 6)(
-      implicit system: ActorSystem): Future[
+      implicit ec: ExecutionContext): Future[
     Vector[Vector[DoubleSha256DigestBE]]] = {
-    import system.dispatcher
-
     val sliding = ListUtil.rotateHead(clients)
 
     val initF = Future.successful(Vector.empty[Vector[DoubleSha256DigestBE]])
@@ -361,11 +352,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * @return Blockhashes of generated blocks
     */
   def generateAndSync(clients: Vector[BitcoindRpcClient], blocks: Int = 6)(
-      implicit system: ActorSystem): Future[Vector[DoubleSha256DigestBE]] = {
+      implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
     require(clients.length > 1, "Can't sync less than 2 nodes")
-
-    import system.dispatcher
-
     for {
       hashes <- clients.head.generate(blocks)
       _ <- {
@@ -383,9 +371,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       client1: BitcoindRpcClient,
       client2: BitcoindRpcClient,
       duration: FiniteDuration = DEFAULT_LONG_DURATION,
-      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
-    implicit val ec: ExecutionContextExecutor = system.dispatcher
-
+      maxTries: Int = 50)(implicit ec: ExecutionContext): Future[Unit] = {
     def isSynced(): Future[Boolean] = {
       client1.getBestBlockHash.flatMap { hash1 =>
         client2.getBestBlockHash.map { hash2 =>
@@ -403,9 +389,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       client1: BitcoindRpcClient,
       client2: BitcoindRpcClient,
       duration: FiniteDuration = DEFAULT_LONG_DURATION,
-      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
-
+      maxTries: Int = 50)(implicit ec: ExecutionContext): Future[Unit] = {
     def isSameBlockHeight(): Future[Boolean] = {
       client1.getBlockCount.flatMap { count1 =>
         client2.getBlockCount.map { count2 =>
@@ -423,9 +407,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       from: BitcoindRpcClient,
       to: BitcoindRpcClient,
       duration: FiniteDuration = 100.milliseconds,
-      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
-
+      maxTries: Int = 50)(implicit ec: ExecutionContext): Future[Unit] = {
     def isDisconnected(): Future[Boolean] = {
       from
         .getAddedNodeInfo(to.getDaemon.uri)
@@ -452,10 +434,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def createUnconnectedNodePair(
       clientAccum: RpcClientAccum = Vector.newBuilder
-  )(
-      implicit
-      system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
-    implicit val ec: ExecutionContextExecutor = system.getDispatcher
+  )(implicit ec: ExecutionContext): Future[
+    (BitcoindRpcClient, BitcoindRpcClient)] = {
     val client1: BitcoindRpcClient = new BitcoindRpcClient(instance())
     val client2: BitcoindRpcClient = new BitcoindRpcClient(instance())
 
@@ -472,8 +452,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   def syncPairs(pairs: Vector[(BitcoindRpcClient, BitcoindRpcClient)])(
-      implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
+      implicit ec: ExecutionContext): Future[Unit] = {
     val futures = pairs.map {
       case (first, second) => BitcoindRpcTestUtil.awaitSynced(first, second)
     }
@@ -485,8 +464,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * are connected
     */
   def connectPairs(pairs: Vector[(BitcoindRpcClient, BitcoindRpcClient)])(
-      implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
+      implicit ec: ExecutionContext): Future[Unit] = {
     val addNodesF: Future[Vector[Unit]] = {
       val addedF = pairs.map {
         case (first, second) =>
@@ -515,9 +493,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       numNodes: Int,
       version: BitcoindVersion,
       clientAccum: RpcClientAccum)(
-      implicit system: ActorSystem): Future[Vector[T]] = {
-    import system.dispatcher
-
+      implicit ec: ExecutionContext): Future[Vector[T]] = {
     val clients: Vector[T] = (0 until numNodes).map { _ =>
       val rpc = version match {
         case BitcoindVersion.Unknown =>
@@ -554,9 +530,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   private def createNodePairInternal[T <: BitcoindRpcClient](
       version: BitcoindVersion,
       clientAccum: RpcClientAccum)(
-      implicit system: ActorSystem): Future[(T, T)] = {
-    import system.dispatcher
-
+      implicit ec: ExecutionContext): Future[(T, T)] = {
     createNodeSequence[T](numNodes = 2, version, clientAccum).map {
       case first +: second +: _ => (first, second)
       case _: Vector[BitcoindRpcClient] =>
@@ -569,7 +543,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * that are connected with some blocks in the chain
     */
   def createNodePair(clientAccum: RpcClientAccum = Vector.newBuilder)(
-      implicit system: ActorSystem): Future[
+      implicit ec: ExecutionContext): Future[
     (BitcoindRpcClient, BitcoindRpcClient)] =
     createNodePairInternal(BitcoindVersion.Unknown, clientAccum)
 
@@ -578,7 +552,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * that are connected with some blocks in the chain
     */
   def createNodePairV16(clientAccum: RpcClientAccum = Vector.newBuilder)(
-      implicit system: ActorSystem): Future[
+      implicit ec: ExecutionContext): Future[
     (BitcoindV16RpcClient, BitcoindV16RpcClient)] =
     createNodePairInternal(BitcoindVersion.V16, clientAccum)
 
@@ -587,7 +561,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * that are connected with some blocks in the chain
     */
   def createNodePairV17(clientAccum: RpcClientAccum = Vector.newBuilder)(
-      implicit system: ActorSystem): Future[
+      implicit ec: ExecutionContext): Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient)] =
     createNodePairInternal(BitcoindVersion.V17, clientAccum)
 
@@ -598,9 +572,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   private def createNodeTripleInternal[T <: BitcoindRpcClient](
       version: BitcoindVersion,
       clientAccum: RpcClientAccum
-  )(implicit system: ActorSystem): Future[(T, T, T)] = {
-    import system.dispatcher
-
+  )(implicit ec: ExecutionContext): Future[(T, T, T)] = {
     createNodeSequence[T](numNodes = 3, version, clientAccum).map {
       case first +: second +: third +: _ => (first, second, third)
       case _: Vector[T] =>
@@ -614,7 +586,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def createNodeTriple(
       clientAccum: RpcClientAccum = Vector.newBuilder
-  )(implicit system: ActorSystem): Future[
+  )(implicit ec: ExecutionContext): Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.Unknown, clientAccum)
   }
@@ -625,7 +597,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def createNodeTripleV17(
       clientAccum: RpcClientAccum = Vector.newBuilder
-  )(implicit system: ActorSystem): Future[
+  )(implicit ec: ExecutionContext): Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.V17, clientAccum)
   }
@@ -670,7 +642,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       signer: BitcoindRpcClient,
       transaction: Transaction,
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
-  )(implicit actorSystemw: ActorSystem): Future[SignRawTransactionResult] =
+  )(implicit ec: ExecutionContext): Future[SignRawTransactionResult] =
     signer match {
       case v17: BitcoindV17RpcClient =>
         v17.signRawTransactionWithWallet(transaction, utxoDeps)
@@ -698,9 +670,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * bitcoin address in a version-agnostic manner
     */
   def getPubkey(client: BitcoindRpcClient, address: BitcoinAddress)(
-      implicit system: ActorSystem): Future[Option[ECPublicKey]] = {
-    import system.dispatcher
-
+      implicit ec: ExecutionContext): Future[Option[ECPublicKey]] = {
     client match {
       case v17: BitcoindV17RpcClient =>
         v17.getAddressInfo(address).map(_.pubkey)
@@ -720,10 +690,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       sender: BitcoindRpcClient,
       receiver: BitcoindRpcClient,
       amount: Bitcoins = Bitcoins(1))(
-      implicit actorSystem: ActorSystem): Future[GetTransactionResult] = {
-    implicit val materializer: ActorMaterializer =
-      ActorMaterializer.create(actorSystem)
-    implicit val ec: ExecutionContextExecutor = materializer.executionContext
+      implicit ec: ExecutionContext): Future[GetTransactionResult] = {
     createRawCoinbaseTransaction(sender, receiver, amount)
       .flatMap(signRawTransaction(sender, _))
       .flatMap { signedTransaction =>
@@ -760,9 +727,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       sender: BitcoindRpcClient,
       address: BitcoinAddress,
       amount: Bitcoins)(
-      implicit system: ActorSystem): Future[DoubleSha256DigestBE] = {
-    implicit val mat: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec: ExecutionContextExecutor = mat.executionContext
+      implicit ec: ExecutionContext): Future[DoubleSha256DigestBE] = {
     fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
       sender.generate(1).map { _ =>
         txid
@@ -778,8 +743,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       sender: BitcoindRpcClient,
       address: BitcoinAddress,
       amount: Bitcoins)(
-      implicit system: ActorSystem): Future[DoubleSha256DigestBE] = {
-    import system.dispatcher
+      implicit ec: ExecutionContext): Future[DoubleSha256DigestBE] = {
     sender
       .createRawTransaction(Vector.empty, Map(address -> amount))
       .flatMap(sender.fundRawTransaction)
@@ -830,8 +794,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def startedBitcoindRpcClient(
       instance: BitcoindInstance = BitcoindRpcTestUtil.instance(),
       clientAccum: RpcClientAccum = Vector.newBuilder)(
-      implicit system: ActorSystem): Future[BitcoindRpcClient] = {
-    implicit val ec: ExecutionContextExecutor = system.dispatcher
+      implicit ec: ExecutionContext): Future[BitcoindRpcClient] = {
     assert(
       instance.datadir.getPath().startsWith(Properties.tmpDir),
       s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")

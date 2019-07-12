@@ -3,11 +3,14 @@ package org.bitcoins.testkit.eclair.rpc
 import java.io.{File, PrintWriter}
 import java.net.URI
 
-import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
+import org.bitcoins.core.protocol.ln.channel.{
+  ChannelId,
+  ChannelState,
+  FundedChannelId
+}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
@@ -25,6 +28,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
+import akka.actor.ActorSystem
 
 /**
   * @define nodeLinkDoc
@@ -53,7 +57,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     * Makes a best effort to get a 0.16 bitcoind instance
     */
   def startedBitcoindRpcClient(instance: BitcoindInstance = bitcoindInstance())(
-      implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
+      implicit ec: ExecutionContext): Future[BitcoindRpcClient] = {
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
   }
 
@@ -62,8 +66,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort): BitcoindInstance = {
     BitcoindRpcTestUtil.v17Instance(port = port,
-      rpcPort = rpcPort,
-      zmqPort = zmqPort)
+                                    rpcPort = rpcPort,
+                                    zmqPort = zmqPort)
   }
 
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
@@ -195,19 +199,19 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     * @param chanId
     */
   def awaitUntilChannelNormal(client: EclairApi, chanId: ChannelId)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     awaitUntilChannelState(client, chanId, ChannelState.NORMAL)
   }
 
   def awaitUntilChannelClosing(client: EclairApi, chanId: ChannelId)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     awaitUntilChannelState(client, chanId, ChannelState.CLOSING)
   }
 
   private def awaitUntilChannelState(
       client: EclairApi,
       chanId: ChannelId,
-      state: ChannelState)(implicit system: ActorSystem): Future[Unit] = {
+      state: ChannelState)(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Awaiting ${chanId} to enter ${state} state")
     def isState(): Future[Boolean] = {
       val chanF = client.channel(chanId)
@@ -217,7 +221,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
             s"ChanId ${chanId} has not entered ${state} yet. Currently in ${chan.state}")
         }
         chan.state == state
-      }(system.dispatcher)
+      }
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(),
@@ -225,43 +229,55 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   def awaitUntilPaymentSucceeded(
-                                  client: EclairApi,
-                                  paymentId: PaymentId,
-                                  duration: FiniteDuration = 1.second,
-                                  maxTries: Int = 50,
-                                  failFast: Boolean = true)
-                                (implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client, paymentId, PaymentStatus.SUCCEEDED, duration, maxTries, failFast)
+      client: EclairApi,
+      paymentId: PaymentId,
+      duration: FiniteDuration = 1.second,
+      maxTries: Int = 50,
+      failFast: Boolean = true)(implicit ec: ExecutionContext): Future[Unit] = {
+    awaitUntilPaymentStatus(client,
+                            paymentId,
+                            PaymentStatus.SUCCEEDED,
+                            duration,
+                            maxTries,
+                            failFast)
   }
 
   def awaitUntilPaymentFailed(
-                               client: EclairApi,
-                               paymentId: PaymentId,
-                               duration: FiniteDuration = 1.second,
-                               maxTries: Int = 50,
-                               failFast: Boolean = false)
-                             (implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client, paymentId, PaymentStatus.FAILED, duration, maxTries, failFast)
+      client: EclairApi,
+      paymentId: PaymentId,
+      duration: FiniteDuration = 1.second,
+      maxTries: Int = 50,
+      failFast: Boolean = false)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    awaitUntilPaymentStatus(client,
+                            paymentId,
+                            PaymentStatus.FAILED,
+                            duration,
+                            maxTries,
+                            failFast)
   }
 
   def awaitUntilPaymentPending(
-                                client: EclairApi,
-                                paymentId: PaymentId,
-                                duration: FiniteDuration = 1.second,
-                                maxTries: Int = 50,
-                                failFast: Boolean = true)
-                              (implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client, paymentId, PaymentStatus.PENDING, duration, maxTries, failFast)
+      client: EclairApi,
+      paymentId: PaymentId,
+      duration: FiniteDuration = 1.second,
+      maxTries: Int = 50,
+      failFast: Boolean = true)(implicit ec: ExecutionContext): Future[Unit] = {
+    awaitUntilPaymentStatus(client,
+                            paymentId,
+                            PaymentStatus.PENDING,
+                            duration,
+                            maxTries,
+                            failFast)
   }
 
   private def awaitUntilPaymentStatus(
-                                       client: EclairApi,
-                                       paymentId: PaymentId,
-                                       state: PaymentStatus,
-                                       duration: FiniteDuration,
-                                       maxTries: Int,
-                                       failFast: Boolean)
-                                     (implicit system: ActorSystem): Future[Unit] = {
+      client: EclairApi,
+      paymentId: PaymentId,
+      state: PaymentStatus,
+      duration: FiniteDuration,
+      maxTries: Int,
+      failFast: Boolean)(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Awaiting payment ${paymentId} to enter ${state} state")
 
     def isState(): Future[Boolean] = {
@@ -278,17 +294,19 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         } else {
           true
         }
-      }(system.dispatcher)
+      }
     }
 
-    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(), duration = duration, maxTries = maxTries)
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(),
+                                       duration = duration,
+                                       maxTries = maxTries)
   }
 
   private def createNodeLink(
       bitcoindRpcClient: Option[BitcoindRpcClient],
       channelAmount: MilliSatoshis)(
-      implicit actorSystem: ActorSystem): Future[EclairNodes4] = {
-    implicit val ec: ExecutionContext = actorSystem.dispatcher
+      implicit system: ActorSystem): Future[EclairNodes4] = {
+    import system.dispatcher
     val internalBitcoindF = {
       if (bitcoindRpcClient.isDefined) {
         Future.successful(bitcoindRpcClient.get)
@@ -361,7 +379,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     */
   def createNodeLink(
       bitcoindRpcClient: BitcoindRpcClient
-  )(implicit actorSystem: ActorSystem): Future[EclairNodes4] = {
+  )(implicit system: ActorSystem): Future[EclairNodes4] = {
     createNodeLink(Some(bitcoindRpcClient), DEFAULT_CHANNEL_MSAT_AMT)
   }
 
@@ -374,7 +392,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def createNodeLink(
       bitcoindRpcClient: BitcoindRpcClient,
       channelAmount: MilliSatoshis)(
-      implicit actorSystem: ActorSystem): Future[EclairNodes4] = {
+      implicit system: ActorSystem): Future[EclairNodes4] = {
     createNodeLink(Some(bitcoindRpcClient), channelAmount)
   }
 
@@ -384,8 +402,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     * @return A 4-tuple of the created nodes' respective
     *         [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]
     */
-  def createNodeLink()(
-      implicit actorSystem: ActorSystem): Future[EclairNodes4] = {
+  def createNodeLink()(implicit system: ActorSystem): Future[EclairNodes4] = {
     createNodeLink(None, DEFAULT_CHANNEL_MSAT_AMT)
   }
 
@@ -397,7 +414,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     */
   def createNodeLink(
       channelAmount: MilliSatoshis
-  )(implicit actorSystem: ActorSystem): Future[EclairNodes4] = {
+  )(implicit system: ActorSystem): Future[EclairNodes4] = {
     createNodeLink(None, channelAmount)
   }
 
@@ -450,9 +467,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   def connectLNNodes(client: EclairApi, otherClient: EclairApi)(
-      implicit
-      system: ActorSystem): Future[Unit] = {
-    implicit val dispatcher = system.dispatcher
+      implicit ec: ExecutionContext): Future[Unit] = {
     val infoF = otherClient.getInfo
     val nodeIdF = infoF.map(_.nodeId)
     val connection: Future[Unit] = infoF.flatMap { info =>
@@ -487,10 +502,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     * this method is just for populating channel update history with
     * <i>something<i/>.
     */
-  def sendPayments(
-      c1: EclairApi,
-      c2: EclairApi,
-      numPayments: Int = 5)(
+  def sendPayments(c1: EclairApi, c2: EclairApi, numPayments: Int = 5)(
       implicit ec: ExecutionContext): Future[Vector[PaymentId]] = {
     val payments = (1 to numPayments)
       .map(MilliSatoshis(_))
@@ -527,10 +539,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       amt: CurrencyUnit = DEFAULT_CHANNEL_MSAT_AMT.toSatoshis,
       pushMSat: MilliSatoshis = MilliSatoshis(
         DEFAULT_CHANNEL_MSAT_AMT.toLong / 2))(
-      implicit system: ActorSystem): Future[FundedChannelId] = {
+      implicit ec: ExecutionContext): Future[FundedChannelId] = {
 
     val bitcoindRpcClient = getBitcoindRpc(n1)
-    implicit val ec = system.dispatcher
 
     val n1NodeIdF = n1.nodeId()
     val n2NodeIdF = n2.nodeId()
@@ -576,12 +587,12 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   def awaitChannelOpened(client1: EclairApi, chanId: ChannelId)(
-      implicit system: ActorSystem): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     EclairRpcTestUtil.awaitUntilChannelNormal(client1, chanId)
   }
 
   def getBitcoindRpc(eclairRpcClient: EclairRpcClient)(
-      implicit system: ActorSystem): BitcoindRpcClient = {
+      implicit ec: ExecutionContext): BitcoindRpcClient = {
     val bitcoindRpc = {
       val instance = eclairRpcClient.instance
       val auth = instance.authCredentials
@@ -591,15 +602,14 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         rpcUri = auth.bitcoindRpcUri,
         authCredentials = auth.bitcoinAuthOpt.get
       )
-      new BitcoindRpcClient(bitcoindInstance)(system)
+      new BitcoindRpcClient(bitcoindInstance)
     }
     bitcoindRpc
   }
 
   /** Shuts down an eclair daemon and the bitcoind daemon it is associated with */
   def shutdown(eclairRpcClient: EclairRpcClient)(
-      implicit system: ActorSystem): Future[Unit] = {
-    import system.dispatcher
+      implicit ec: ExecutionContext): Future[Unit] = {
     val bitcoindRpc = getBitcoindRpc(eclairRpcClient)
 
     logger.debug(s"shutting down eclair")

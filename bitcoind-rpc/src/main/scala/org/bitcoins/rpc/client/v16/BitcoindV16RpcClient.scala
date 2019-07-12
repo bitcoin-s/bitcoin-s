@@ -1,6 +1,5 @@
 package org.bitcoins.rpc.client.v16
 
-import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
@@ -17,6 +16,7 @@ import play.api.libs.json._
 
 import scala.concurrent.Future
 import scala.util.Try
+import scala.concurrent.ExecutionContext
 
 /**
   * This class is compatible with version 0.16 of Bitcoin Core.
@@ -24,8 +24,7 @@ import scala.util.Try
   * @see [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient Scaladocs]]
   */
 class BitcoindV16RpcClient(override val instance: BitcoindInstance)(
-    implicit
-    actorSystem: ActorSystem)
+    implicit ec: ExecutionContext)
     extends BitcoindRpcClient(instance)
     with V16AccountRpc
     with V16SendRpc {
@@ -78,7 +77,7 @@ class BitcoindV16RpcClient(override val instance: BitcoindInstance)(
 object BitcoindV16RpcClient {
 
   def fromUnknownVersion(rpcClient: BitcoindRpcClient)(
-      implicit actorSystem: ActorSystem): Try[BitcoindV16RpcClient] =
+      implicit ec: ExecutionContext): Try[BitcoindV16RpcClient] =
     Try {
       new BitcoindV16RpcClient(rpcClient.instance)
     }

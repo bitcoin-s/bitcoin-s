@@ -2,7 +2,6 @@ package org.bitcoins.rpc.util
 
 import java.net.ServerSocket
 
-import akka.actor.ActorSystem
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 import scala.annotation.tailrec
@@ -10,13 +9,14 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Random, Success, Try}
+import scala.concurrent.ExecutionContext
 
 abstract class RpcUtil extends AsyncUtil {
 
   def awaitServerShutdown(
       server: BitcoindRpcClient,
       duration: FiniteDuration = 300.milliseconds,
-      maxTries: Int = 50)(implicit system: ActorSystem): Future[Unit] = {
+      maxTries: Int = 50)(implicit ec: ExecutionContext): Future[Unit] = {
     retryUntilSatisfiedF(() => server.isStoppedF, duration, maxTries)
   }
 

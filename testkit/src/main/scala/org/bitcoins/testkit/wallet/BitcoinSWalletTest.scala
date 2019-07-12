@@ -1,7 +1,5 @@
 package org.bitcoins.testkit.wallet
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
@@ -29,8 +27,6 @@ trait BitcoinSWalletTest
     with BitcoinSFixture
     with BeforeAndAfterAll
     with BitcoinSLogger {
-  implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
-  implicit val ec: ExecutionContext = actorSystem.dispatcher
 
   protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
 
@@ -42,10 +38,6 @@ trait BitcoinSWalletTest
   protected val timeout: FiniteDuration = 10.seconds
 
   protected val networkParam: RegTest.type = WalletTestUtil.networkParam
-
-  override protected def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(actorSystem)
-  }
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)

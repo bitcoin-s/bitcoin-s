@@ -9,7 +9,6 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.io.Source
-import akka.stream.StreamTcpException
 import java.nio.file.Paths
 import scala.util.Properties
 import org.bitcoins.rpc.config.BitcoindConfig
@@ -142,7 +141,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
           fail("Was able to connect to bitcoind after shutting down")
         }
         .recover {
-          case _: StreamTcpException =>
+          case _: java.net.ConnectException =>
             ()
         }
     } yield assert(balance > Bitcoins(0))

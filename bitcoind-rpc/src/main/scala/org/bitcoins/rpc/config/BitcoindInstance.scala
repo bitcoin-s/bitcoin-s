@@ -10,8 +10,8 @@ import scala.sys.process._
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.config.NetworkParameters
 
-import scala.util.{Properties, Try}
 import java.nio.file.Files
+import scala.util.Properties
 
 /**
   * Created by chris on 4/29/17.

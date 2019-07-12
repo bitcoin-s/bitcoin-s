@@ -2,12 +2,6 @@ package org.bitcoins.rpc.client.common
 
 import java.util.UUID
 
-import akka.actor.ActorSystem
-import akka.http.javadsl.model.headers.HttpCredentials
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.stream.{ActorMaterializer, StreamTcpException}
-import akka.util.ByteString
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.util.BitcoinSLogger
@@ -17,7 +11,7 @@ import org.bitcoins.rpc.util.AsyncUtil
 import play.api.libs.json._
 
 import scala.concurrent._
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration._
 import scala.sys.process._
 import scala.util.{Failure, Success}
 import java.nio.file.Files
@@ -27,6 +21,8 @@ import java.nio.file.Path
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.rpc.BitcoindException
+import com.softwaremill.sttp._
+import java.net.ConnectException
 
 /**
   * This is the base trait for Bitcoin Core
@@ -36,7 +32,8 @@ import org.bitcoins.rpc.BitcoindException
   * client, like data directories, log files
   * and whether or not the client is started.
   */
-trait Client extends BitcoinSLogger {
+abstract class Client()(implicit protected[rpc] val ec: ExecutionContext)
+    extends BitcoinSLogger {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
 
@@ -57,10 +54,6 @@ trait Client extends BitcoinSLogger {
   lazy val confFile: Path =
     instance.datadir.toPath.resolve("bitcoin.conf")
 
-  implicit protected val system: ActorSystem
-  implicit protected val materializer: ActorMaterializer =
-    ActorMaterializer.create(system)
-  implicit protected val executor: ExecutionContext = system.getDispatcher
   implicit protected val network: NetworkParameters = instance.network
 
   /**
@@ -180,10 +173,8 @@ trait Client extends BitcoinSLogger {
       val request = buildRequest(instance, "ping", JsArray.empty)
       val responseF = sendRequest(request)
 
-      val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-
       // Ping successful if no error can be parsed from the payload
-      val parsedF = payloadF.map { payload =>
+      val parsedF = responseF.map { payload =>
         (payload \ errorKey).validate[BitcoindException] match {
           case _: JsSuccess[BitcoindException] => false
           case _: JsError                      => true
@@ -191,7 +182,7 @@ trait Client extends BitcoinSLogger {
       }
 
       parsedF.recover {
-        case exc: StreamTcpException
+        case exc: ConnectException
             if exc.getMessage.contains("Connection refused") =>
           false
       }
@@ -227,9 +218,7 @@ trait Client extends BitcoinSLogger {
     val request = buildRequest(instance, command, JsArray(parameters))
     val responseF = sendRequest(request)
 
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-
-    payloadF
+    responseF
       .map { payload =>
         {
 
@@ -265,36 +254,32 @@ trait Client extends BitcoinSLogger {
   protected def buildRequest(
       instance: BitcoindInstance,
       methodName: String,
-      params: JsArray): HttpRequest = {
+      params: JsArray): Request[String, Nothing] = {
     val uuid = UUID.randomUUID().toString
 
-    val m: Map[String, JsValue] = Map("method" -> JsString(methodName),
-                                      "params" -> params,
-                                      "id" -> JsString(uuid))
+    val bodyMap: Map[String, JsValue] = Map("method" -> JsString(methodName),
+                                            "params" -> params,
+                                            "id" -> JsString(uuid))
 
-    val jsObject = JsObject(m)
+    val bodyJson = JsObject(bodyMap)
 
     // Would toString work?
-    val uri = "http://" + instance.rpcUri.getHost + ":" + instance.rpcUri.getPort
+    val uri = Uri(instance.rpcUri)
     val username = instance.authCredentials.username
     val password = instance.authCredentials.password
-    HttpRequest(
-      method = HttpMethods.POST,
-      uri,
-      entity = HttpEntity(ContentTypes.`application/json`, jsObject.toString()))
-      .addCredentials(
-        HttpCredentials.createBasicHttpCredentials(username, password))
+    sttp
+      .body(Json.stringify(bodyJson))
+      .auth
+      .basic(username, password)
+      .post(uri)
   }
 
-  protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    Http(materializer.system).singleRequest(req)
-  }
-
-  protected def getPayload(response: HttpResponse): Future[JsValue] = {
-    val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
-
-    payloadF.map { payload =>
-      Json.parse(payload.decodeString(ByteString.UTF_8))
+  private def sendRequest(req: Request[String, Nothing]): Future[JsValue] = {
+    import asynchttpclient.future.AsyncHttpClientFutureBackend
+    implicit val backend: SttpBackend[Future, Nothing] =
+      AsyncHttpClientFutureBackend()
+    req.send().map { response =>
+      Json.parse(response.unsafeBody)
     }
   }
 
