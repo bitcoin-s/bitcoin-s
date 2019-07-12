@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.serializers
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
@@ -87,6 +87,11 @@ object JsonWriters {
 
   implicit object AddressTypeWrites extends Writes[AddressType] {
     override def writes(addr: AddressType): JsValue = JsString(addr.toString)
+  }
+
+  implicit object CurrencyUnitWrites extends Writes[CurrencyUnit] {
+    override def writes(amount: CurrencyUnit): JsValue =
+      JsNumber(amount.toBigDecimal)
   }
 
   implicit object WalletCreateFundedPsbtOptionsWrites

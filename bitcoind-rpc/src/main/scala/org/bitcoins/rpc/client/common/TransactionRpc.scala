@@ -1,12 +1,13 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.rpc.client.common.RpcOpts.{AddressType, FeeEstimationMode}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.serializers.JsonWriters.CurrencyUnitWrites
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -148,7 +149,7 @@ trait TransactionRpc { self: Client =>
 
   def sendToAddress(
       address: BitcoinAddress,
-      amount: Bitcoins,
+      amount: CurrencyUnit,
       localComment: String = "",
       toComment: String = "",
       subractFeeFromAmount: Boolean = false): Future[DoubleSha256DigestBE] = {
