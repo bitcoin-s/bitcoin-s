@@ -22,6 +22,8 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait EclairApi {
 
+  implicit def executionContext: ExecutionContext
+
   def allChannels(): Future[Vector[ChannelDesc]]
 
   def allNodes(): Future[Vector[NodeInfo]]
@@ -108,7 +110,7 @@ trait EclairApi {
 
   def networkFees(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[NetworkFeesResult]]
 
-  def nodeId()(implicit ec: ExecutionContext): Future[NodeId] = {
+  def nodeId(): Future[NodeId] = {
     getNodeURI.map(_.nodeId)
   }
 

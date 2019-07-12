@@ -44,10 +44,11 @@ class EclairRpcClient(val instance: EclairInstance)(
   import JsonReaders._
 
   implicit val m = ActorMaterializer.create(system)
-  implicit val ec: ExecutionContext = m.executionContext
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def getDaemon: EclairInstance = instance
+
+  override implicit def executionContext: ExecutionContext = m.executionContext
 
   override def allChannels(): Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
