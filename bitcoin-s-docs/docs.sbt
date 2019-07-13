@@ -25,7 +25,7 @@ mdocExtraArguments := List("--no-link-hygiene")
 // these variables gets passed to mdoc, and can be read
 // from there
 mdocVariables := Map(
-  "STABLE_VERSION" -> previousStableVersion.value.get,
+  "STABLE_VERSION" -> "0.1.0",
   "UNSTABLE_VERSION" -> version.value
 )
 
