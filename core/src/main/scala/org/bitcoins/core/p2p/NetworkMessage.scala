@@ -7,13 +7,14 @@ import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
 /**
-  * Created by chris on 6/10/16.
-  * Represents an entire p2p network message in bitcoins
+  * Represents a P2P network message
   */
 sealed abstract class NetworkMessage extends NetworkElement {
   def header: NetworkHeader
   def payload: NetworkPayload
   override def bytes: ByteVector = RawNetworkMessageSerializer.write(this)
+
+  override def toString(): String = s"NetworkMessage($header, $payload)"
 }
 
 object NetworkMessage extends Factory[NetworkMessage] {
