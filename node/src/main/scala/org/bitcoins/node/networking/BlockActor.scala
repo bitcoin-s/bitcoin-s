@@ -6,7 +6,6 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.constant.Constants
 import org.bitcoins.core.p2p._
 
 /**

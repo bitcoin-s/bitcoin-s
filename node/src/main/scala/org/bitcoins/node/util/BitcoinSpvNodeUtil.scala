@@ -1,6 +1,5 @@
 package org.bitcoins.node.util
 
-import akka.util.{ByteString, CompactByteString}
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
@@ -51,15 +50,6 @@ trait BitcoinSpvNodeUtil extends BitcoinSLogger {
     }
     val (messages, remainingBytes) = loop(bytes, Nil)
     (messages, remainingBytes)
-  }
-
-  /**
-    * Wraps our ByteVector into an akka [[ByteString]] object
-    * @param bytes
-    * @return
-    */
-  def buildByteString(bytes: ByteVector): ByteString = {
-    CompactByteString(bytes.toArray)
   }
 
   /**

@@ -10,7 +10,6 @@ import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.constant.Constants
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 

@@ -274,23 +274,18 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
   * The headers message sends one or more block headers to a node
   * which previously requested certain headers with a getheaders message.
   * @see [[https://bitcoin.org/en/developer-reference#headers]]
+  *
+  * @param count Number of block headers up to a maximum of 2,000.
+  *              Note: headers-first sync assumes the sending node
+  *              will send the maximum number of headers whenever possible.
+  *
+  * @param headers Block headers: each 80-byte block header is in the format described in the
+  *                block headers section with an additional 0x00 suffixed.
+  *                This 0x00 is called the transaction count, but because the headers message
+  *                doesn’t include any transactions, the transaction count is always zero.
   */
-trait HeadersMessage extends DataPayload {
-
-  /**
-    * Number of block headers up to a maximum of 2,000.
-    * Note: headers-first sync assumes the sending node
-    * will send the maximum number of headers whenever possible.
-    */
-  def count: CompactSizeUInt
-
-  /**
-    * Block headers: each 80-byte block header is in the format described in the
-    * block headers section with an additional 0x00 suffixed.
-    * This 0x00 is called the transaction count, but because the headers message
-    * doesn’t include any transactions, the transaction count is always zero.
-    */
-  def headers: Vector[BlockHeader]
+case class HeadersMessage(count: CompactSizeUInt, headers: Vector[BlockHeader])
+    extends DataPayload {
 
   override def commandName = NetworkPayload.headersCommandName
 
@@ -298,22 +293,13 @@ trait HeadersMessage extends DataPayload {
 }
 
 object HeadersMessage extends Factory[HeadersMessage] {
-  private case class HeadersMessageImpl(
-      count: CompactSizeUInt,
-      headers: Vector[BlockHeader])
-      extends HeadersMessage
 
   def fromBytes(bytes: ByteVector): HeadersMessage =
     RawHeadersMessageSerializer.read(bytes)
 
-  def apply(
-      count: CompactSizeUInt,
-      headers: Vector[BlockHeader]): HeadersMessage =
-    HeadersMessageImpl(count, headers)
-
   def apply(headers: Vector[BlockHeader]): HeadersMessage = {
     val count = CompactSizeUInt(UInt64(headers.length))
-    HeadersMessageImpl(count, headers)
+    HeadersMessage(count, headers)
   }
 }
 
@@ -397,11 +383,10 @@ case object MemPoolMessage extends DataPayload {
   * they will be sent separately as tx messages.
   *
   * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
+  *
+  * @param merkleBlock The actual [[MerkleBlock]] that this message represents
   */
-trait MerkleBlockMessage extends DataPayload {
-
-  /** The actual [[MerkleBlock]] that this message represents */
-  def merkleBlock: MerkleBlock
+case class MerkleBlockMessage(merkleBlock: MerkleBlock) extends DataPayload {
 
   override def commandName = NetworkPayload.merkleBlockCommandName
 
@@ -414,15 +399,9 @@ trait MerkleBlockMessage extends DataPayload {
   */
 object MerkleBlockMessage extends Factory[MerkleBlockMessage] {
 
-  private case class MerkleBlockMessageImpl(merkleBlock: MerkleBlock)
-      extends MerkleBlockMessage
-
   def fromBytes(bytes: ByteVector): MerkleBlockMessage =
     RawMerkleBlockMessageSerializer.read(bytes)
 
-  def apply(merkleBlock: MerkleBlock): MerkleBlockMessage = {
-    MerkleBlockMessageImpl(merkleBlock)
-  }
 }
 
 /**

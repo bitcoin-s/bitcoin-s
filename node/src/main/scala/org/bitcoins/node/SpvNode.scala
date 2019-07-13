@@ -3,11 +3,10 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.Client
+import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageSender
@@ -34,11 +33,11 @@ case class SpvNode(
   private val peerMsgRecv =
     PeerMessageReceiver.newReceiver(callbacks)
 
-  private val client: Client =
-    Client(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)
+  private val client: P2PClient =
+    P2PClient(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)
 
   private val peerMsgSender: PeerMessageSender = {
-    PeerMessageSender(client, nodeAppConfig.network)
+    PeerMessageSender(client)
   }
 
   /**

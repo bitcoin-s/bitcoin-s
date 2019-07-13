@@ -7,7 +7,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.Client
+import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Disconnected,
   Initializing,
@@ -49,7 +49,7 @@ class PeerMessageReceiver(
     * but have NOT started the handshake
     * This method will initiate the handshake
     */
-  protected[networking] def connect(client: Client): Try[Unit] = {
+  protected[networking] def connect(client: P2PClient): Try[Unit] = {
 
     internalState match {
       case bad @ (_: Initializing | _: Normal | _: Disconnected) =>
@@ -65,7 +65,7 @@ class PeerMessageReceiver(
 
         val _ = toState(newState)
 
-        val peerMsgSender = PeerMessageSender(client, chainAppConfig.network)
+        val peerMsgSender = PeerMessageSender(client)
 
         peerMsgSender.sendVersionMessage()
 
@@ -114,7 +114,7 @@ class PeerMessageReceiver(
     val client = networkMsgRecv.client
 
     //create a way to send a response if we need too
-    val peerMsgSender = PeerMessageSender(client, chainAppConfig.network)
+    val peerMsgSender = PeerMessageSender(client)
 
     logger.debug(
       s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} ")
@@ -142,6 +142,7 @@ class PeerMessageReceiver(
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMsgHandler.handleDataPayload(payload, sender)
+    ()
   }
 
   /**
@@ -224,10 +225,10 @@ object PeerMessageReceiver {
     /** Who we need to use to send a reply to our peer
       * if a response is needed for this message
       */
-    def client: Client
+    def client: P2PClient
   }
 
-  case class NetworkMessageReceived(msg: NetworkMessage, client: Client)
+  case class NetworkMessageReceived(msg: NetworkMessage, client: P2PClient)
       extends PeerMessageReceiverMsg
 
   def apply(
