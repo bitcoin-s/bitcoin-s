@@ -15,12 +15,7 @@ import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{
-  LnInvoice,
-  LnParams,
-  PaymentPreimage,
-  ShortChannelId
-}
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -389,19 +384,6 @@ class EclairRpcClient(val instance: EclairInstance)(
     eclairCall[PaymentId]("payinvoice", params: _*)
   }
 
-  def payAndMonitorInvoice(invoice: LnInvoice): Future[PaymentResult] =
-    for {
-      paymentId <- payInvoice(invoice)
-      paymentResult <- monitorSentPayment(paymentId)
-    } yield paymentResult
-
-
-  def payAndMonitorInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentResult] =
-    for {
-      paymentId <- payInvoice(invoice, amount)
-      paymentResult <- monitorSentPayment(paymentId)
-    } yield paymentResult
-
   override def getReceivedInfo(
       paymentHash: Sha256Digest): Future[ReceivedPaymentResult] = {
     eclairCall[ReceivedPaymentResult]("getreceivedinfo",
@@ -669,29 +651,31 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   /**
-    * Pings eclair every second to see if a invoice has been paid
+    * Pings eclair to see if a invoice has been paid
     * If the invoice has been paid or the payment has failed, we publish a
     * [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
     * event to the [[akka.actor.ActorSystem ActorSystem]]'s
     * [[akka.event.EventStream ActorSystem.eventStream]]
     */
   override def monitorSentPayment(
-      paymentId: PaymentId, notifyPayment: PaymentResult => Future[Unit] = notifySentPayment): Future[PaymentResult] = {
+      paymentId: PaymentId, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult] = {
     val p: Promise[PaymentResult] = Promise[PaymentResult]()
 
     val runnable = new Runnable() {
 
-      private var attempt = new AtomicInteger(1)
+      private val attempt = new AtomicInteger(1)
 
       override def run(): Unit = {
+        val resultsF = getSentInfo(paymentId)
+        resultsF.recover { case e: Throwable => logger.error("Cannot check payment status", e) }
         for {
-          results <- getSentInfo(paymentId)
+          results <- resultsF
         } yield {
           results.find(_.status != PaymentStatus.PENDING) match {
             case Some(result) =>
-              notifyPayment(result).foreach(_ => p.success(result))
+              p.success(result)
             case None =>
-              if (attempt.incrementAndGet() > 60) {
+              if (attempt.incrementAndGet() > maxAttempts) {
                 p.failure(new RuntimeException(
                   s"EclairApi.sentPaymentMonitor() too many attempts: ${attempt.get()}"))
               }
@@ -700,14 +684,14 @@ class EclairRpcClient(val instance: EclairInstance)(
       }
     }
 
-    val cancellable = system.scheduler.schedule(1.seconds, 1.seconds, runnable)
+    val cancellable = system.scheduler.schedule(interval, interval, runnable)
 
     val f = p.future
 
     f.onComplete(_ => cancellable.cancel())
+    f.foreach(system.eventStream.publish)
 
     f
   }
 
-  def notifySentPayment(paymentResult: PaymentResult): Future[Unit] = Future(system.eventStream.publish(paymentResult))
 }
