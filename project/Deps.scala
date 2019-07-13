@@ -15,7 +15,7 @@ object Deps {
     val playv = "2.7.4"
     val scodecV = "1.1.12"
     val junitV = "0.11"
-    val nativeLoaderV = "2.3.2"
+    val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.3.4"
     val ammoniteV = "1.6.7"
 
