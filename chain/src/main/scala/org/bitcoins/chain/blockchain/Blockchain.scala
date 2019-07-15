@@ -1,12 +1,11 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
-import org.bitcoins.chain.validation.TipUpdateResult.BadPreviousBlockHash
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.BitcoinSLogger
 
-import scala.collection.{IndexedSeqLike, IterableLike, SeqLike, mutable}
+import scala.collection.{IndexedSeqLike, mutable}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -51,15 +50,15 @@ object Blockchain extends BitcoinSLogger {
   /**
     * Attempts to connect the given block header with the given blockchain
     * This is done via the companion object for blockchain because
-    * we query [[BlockHeaderDAO block header dao]] for the chain tips
+    * we query [[org.bitcoins.chain.models.BlockHeaderDAO BlockHeaderDAO]] for the chain tips
     * We then attempt to connect this block header to all of our current
     * chain tips.
     * @param header the block header to connect to our chain
     * @param blockHeaderDAO where we can find our blockchain
     * @param ec
-    * @return a [[Future future]] that contains a [[BlockchainUpdate update]] indicating
-    *         we [[BlockchainUpdate.Successful successfully]] connected the tip,
-    *         or [[BlockchainUpdate.Failed failed]] to connect to a tip
+    * @return a [[scala.concurrent.Future Future]] that contains a [[org.bitcoins.chain.blockchain.BlockchainUpdate BlockchainUpdate]] indicating
+    *         we [[org.bitcoins.chain.blockchain.BlockchainUpdate.Successful successful]] connected the tip,
+    *         or [[org.bitcoins.chain.blockchain.BlockchainUpdate.Failed Failed]] to connect to a tip
     */
   def connectTip(header: BlockHeader, blockHeaderDAO: BlockHeaderDAO)(
       implicit ec: ExecutionContext): Future[BlockchainUpdate] = {

@@ -40,8 +40,22 @@ object NetworkHeader extends Factory[NetworkHeader] {
     RawNetworkHeaderSerializer.read(bytes)
 
   /**
-    * Creates a [[NetworkHeader]] from it's [[NetworkParameters]] and [[NetworkPayload]]
-    * @param network the [[NetworkParameters]] object that indicates what network the payload needs to be sent on
+    * Creates a [[NetworkHeader]] from all of its individual components
+    * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] object indicating what network this header is sent on
+    * @param commandName the name of the command being sent in the header
+    * @param payloadSize the size of the payload being sent by this header
+    * @param checksum the checksum of the payload to ensure that the entire payload was sent
+    */
+  def apply(
+      network: NetworkParameters,
+      commandName: String,
+      payloadSize: UInt32,
+      checksum: ByteVector): NetworkHeader =
+    NetworkHeader(network, commandName, payloadSize, checksum)
+
+  /**
+    * Creates a [[NetworkHeader]] from it's [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] and [[NetworkPayload]]
+    * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] object that indicates what network the payload needs to be sent on
     * @param payload the [[NetworkPayload]] object that needs to be sent on the network
     */
   def apply(

@@ -3,6 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
@@ -10,13 +11,12 @@ import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.bitcoins.wallet.api._
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-import org.bitcoins.core.hd._
-import org.bitcoins.wallet.config.WalletAppConfig
 
 sealed abstract class Wallet
     extends LockedWallet
@@ -165,7 +165,6 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
   override def initializeWithEntropy(entropy: BitVector)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
 
     logger.info(s"Initializing wallet on chain ${config.network}")
 

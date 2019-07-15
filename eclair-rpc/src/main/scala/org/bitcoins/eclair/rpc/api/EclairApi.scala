@@ -190,7 +190,7 @@ trait EclairApi {
   /**
     * Pings eclair to see if a invoice has been paid and returns [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
     *
-    * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice()]]
+    * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
     * @param interval the ping interval
     * @param maxAttempts the maximum number of pings
     *

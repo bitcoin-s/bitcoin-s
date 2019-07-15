@@ -1,20 +1,13 @@
 package org.bitcoins.wallet
 
-import java.nio.charset.StandardCharsets
-
-import org.bitcoins.core.crypto.{AesCrypt, AesEncryptedData, MnemonicCode}
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
-import scala.util.Try
-import org.bitcoins.core.crypto.AesSalt
-import org.bitcoins.core.crypto.AesPassword
-import org.bitcoins.core.util.BitcoinSLogger
-import scala.util.Success
-import scala.util.Failure
+import scala.util.{Failure, Success, Try}
 
 case class EncryptedMnemonic(value: AesEncryptedData, salt: AesSalt)
     extends BitcoinSLogger {
-  import org.bitcoins.core.util.EitherUtil.EitherOps._
 
   def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
     val key = password.toKey(salt)

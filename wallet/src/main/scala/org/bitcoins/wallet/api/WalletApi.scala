@@ -47,8 +47,8 @@ trait LockedWalletApi extends WalletApi {
 
   /**
     * Processes the given transaction, updating our DB state if it's relevant to us.
-    * @param transaction The transacton we're processing
-    * @param confirmation How many confirmations the TX has
+    * @param transaction The transaction we're processing
+    * @param confirmations How many confirmations the TX has
     */
   def processTransaction(
       transaction: Transaction,
@@ -78,7 +78,9 @@ trait LockedWalletApi extends WalletApi {
     */
   // def updateUtxo: Future[WalletApi]
 
-  /** Lists unspent transaction outputs in the wallet */
+  /** Lists unspent transaction outputs in the wallet
+    * @return Vector[SpendingInfoDb]
+    * */
   def listUtxos(): Future[Vector[SpendingInfoDb]]
 
   def listAddresses(): Future[Vector[AddressDb]]
@@ -88,10 +90,10 @@ trait LockedWalletApi extends WalletApi {
     * type. Calling this method multiple
     * times will return the same address, until it has
     * received funds.
-    *
+    *  TODO: Last sentence is not true, implement that
+    *  https://github.com/bitcoin-s/bitcoin-s/issues/628
+    *  @param addressType
     */
-  // TODO: Last sentence is not true, implement that
-  // https://github.com/bitcoin-s/bitcoin-s/issues/628
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
 
   /**
@@ -109,6 +111,7 @@ trait LockedWalletApi extends WalletApi {
   /**
     * Mimics the `getaddressinfo` RPC call in Bitcoin Core
     *
+    * @param address
     * @return If the address is found in our database `Some(address)`
     *         is returned, otherwise `None`
     */
@@ -129,10 +132,13 @@ trait LockedWalletApi extends WalletApi {
 
   /**
     * Fetches the default account from the DB
+    * @return Future[AccountDb]
     */
   protected[wallet] def getDefaultAccount(): Future[AccountDb]
 
-  /** Fetches the default account for the given address/acount kind  */
+  /** Fetches the default account for the given address/account kind
+    * @param addressType
+    * */
   protected[wallet] def getDefaultAccountForType(
       addressType: AddressType): Future[AccountDb]
 
@@ -144,7 +150,10 @@ trait LockedWalletApi extends WalletApi {
 
   def listAccounts(): Future[Vector[AccountDb]]
 
-  /** Lists all wallet accounts with the given type */
+  /** Lists all wallet accounts with the given type
+    * @param purpose
+    * @return [[Future[Vector[AccountDb]]
+    * */
   def listAccounts(purpose: HDPurpose): Future[Vector[AccountDb]] =
     listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
 

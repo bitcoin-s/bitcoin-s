@@ -9,18 +9,18 @@ import scala.concurrent.{Future, Promise}
 sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
 
   /** This promise gets completed when we receive a
-    * [[akka.io.Tcp.Connected]] message from [[Client]]
+    * [[akka.io.Tcp.Connected]] message from [[org.bitcoins.node.networking.P2PClient P2PClient]]
     */
   def clientConnectP: Promise[P2PClient]
 
-  /** The [[org.bitcoins.node.networking.Client]] we are
+  /** The [[org.bitcoins.node.networking.P2PClient P2PClient]] we are
     * connected to. This isn't initiated until the client
-    * has called [[PeerMessageReceiver.connect()]]
+    * has called [[org.bitcoins.node.networking.peer.PeerMessageReceiver.connect() connect()]]
     */
   private val clientConnectF: Future[P2PClient] = clientConnectP.future
 
-  /** This promise is completed in the [[PeerMessageReceiver.disconnect()]]
-    * when a [[Client]] initiates a disconnections from
+  /** This promise is completed in the [[org.bitcoins.node.networking.peer.PeerMessageReceiver.disconnect() disconnect()]]
+    * when a [[org.bitcoins.node.networking.P2PClient P2PClient]] initiates a disconnections from
     * our peer on the p2p network
     */
   def clientDisconnectP: Promise[Unit]
@@ -31,7 +31,7 @@ sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
     * connected to our client. Note, there is
     * no timeout on this future and no guarantee
     * that some one has actually initiated
-    * a connection with a [[Client]]
+    * a connection with a [[org.bitcoins.node.networking.P2PClient P2PClient]]
     * @return
     */
   def isConnected: Boolean = {
@@ -45,7 +45,7 @@ sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
   def versionMsgP: Promise[VersionMessage]
 
   /** This future is completed when our peer has sent
-    * us their [[VersionMessage]] indicating what protocol
+    * us their [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] indicating what protocol
     * features they support
     */
   def hasReceivedVersionMsg: Future[VersionMessage] = {
@@ -55,8 +55,8 @@ sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
   def verackMsgP: Promise[VerAckMessage.type]
 
   /** This future completes when we have received a
-    * [[VerAckMessage]] from our peer. This means our
-    * peer has accepted our [[VersionMessage]] and is
+    * [[org.bitcoins.core.p2p.VerAckMessage VerAckMessage]] from our peer. This means our
+    * peer has accepted our [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] and is
     * willing to connect with us
     * @return
     */
@@ -67,7 +67,7 @@ sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
   /** Indicates we have connected and completed the initial
     * handshake that is required to connect to the bitcoin p2p network
     * If this is true, we can start sending and receiving normal
-    * [[NetworkMessage]] with our peer on the network
+    * [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]] with our peer on the network
     * @return
     */
   def isInitialized: Boolean = {
@@ -77,7 +77,7 @@ sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
 
 object PeerMessageReceiverState {
 
-  /** Represents a [[org.bitcoins.node.networking.peer.PeerMessageReceiverState]]
+  /** Represents a [[org.bitcoins.node.networking.peer.PeerMessageReceiverState PeerMessageReceiverState]]
     * where the peer is not connected to the p2p network
     */
   final case object Preconnection extends PeerMessageReceiverState {
@@ -88,7 +88,7 @@ object PeerMessageReceiverState {
     def versionMsgP: Promise[VersionMessage] = Promise[VersionMessage]()
     def verackMsgP: Promise[VerAckMessage.type] = Promise[VerAckMessage.type]()
 
-    /** Converts [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection]] to [[Initializing]] */
+    /** Converts [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection Preconnection]] to [[Initializing]] */
     def toInitializing(client: P2PClient): Initializing = {
       val p = clientConnectP
       p.success(client)
@@ -103,7 +103,7 @@ object PeerMessageReceiverState {
 
   /** Means that our [[org.bitcoins.node.networking.peer.PeerMessageReceiver]]
     * is still going through the initilization process. This means
-    * we still need to receive a [[VersionMessage]] or [[VerAckMessage]]
+    * we still need to receive a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] or [[org.bitcoins.core.p2p.VerAckMessage VerAckMessage]]
     * from our peer on the p2p network
     */
   case class Initializing(
@@ -117,7 +117,7 @@ object PeerMessageReceiverState {
       "We cannot have a PeerMessageReceiverState.Initializng if we are not connected")
 
     /** Helper method to modifing the state of [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Initializing]]
-      * when we receive a [[VersionMessage]]. This completes versoinMsgP
+      * when we receive a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]]. This completes versoinMsgP
       * @return
       */
     def withVersionMsg(versionMsg: VersionMessage): Initializing = {
@@ -130,7 +130,7 @@ object PeerMessageReceiverState {
     }
 
     /** Completes the verack message promise and transitions
-      * our [[PeerMessageReceiverState]] to [[PeerMessageReceiverState.Normal]]
+      * our [[org.bitcoins.node.networking.peer.PeerMessageReceiverState PeerMessageReceiverState]] to [[org.bitcoins.node.networking.peer.PeerMessageReceiverState.Normal PeerMessageReceiverState.Normal]]
       */
     def toNormal(verAckMessage: VerAckMessage.type): Normal = {
       Normal(

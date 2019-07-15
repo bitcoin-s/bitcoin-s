@@ -20,10 +20,10 @@ import org.bitcoins.node.SpvNodeCallbacks
 
 /**
   * Responsible for receiving messages from a peer on the
-  * p2p network. This is called by [[Client]] when doing the p2p
+  * p2p network. This is called by [[org.bitcoins.rpc.client.common.Client Client]] when doing the p2p
   * handshake and during the [[PeerMessageReceiverState.Normal Normal]]
   * operations. This is the entry point for handling all received
-  * [[NetworkMessage]]
+  * [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]]
   */
 class PeerMessageReceiver(
     state: PeerMessageReceiverState,

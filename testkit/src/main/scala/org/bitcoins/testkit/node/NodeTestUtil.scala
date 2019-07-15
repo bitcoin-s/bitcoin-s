@@ -96,7 +96,7 @@ abstract class NodeTestUtil extends BitcoinSLogger {
     new InetSocketAddress(instance.uri.getHost, instance.p2pPort)
   }
 
-  /** Gets the [[Peer]] that
+  /** Gets the [[org.bitcoins.node.models.Peer]] that
     * corresponds to [[org.bitcoins.rpc.client.common.BitcoindRpcClient]] */
   def getBitcoindPeer(bitcoindRpcClient: BitcoindRpcClient): Peer = {
     val socket = getBitcoindSocketAddress(bitcoindRpcClient)

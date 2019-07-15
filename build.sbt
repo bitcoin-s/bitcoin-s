@@ -61,7 +61,8 @@ lazy val commonSettings = List(
     "-doc-title",
     "Bitcoin-S",
     "-doc-version",
-    version.value
+    version.value,
+    "-no-link-warnings"
   ),
   // Set apiURL to define the base URL for the Scaladocs for our library.
   // This will enable clients of our library to automatically link against

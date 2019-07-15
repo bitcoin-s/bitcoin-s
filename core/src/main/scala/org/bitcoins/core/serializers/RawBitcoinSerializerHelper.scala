@@ -54,7 +54,7 @@ sealed abstract class RawSerializerHelper {
     cmpct.bytes ++ serialized
   }
 
-  /** Serializes a [[Seq]] of [[org.bitcoins.core.protocol.NetworkElement]] to a [[scodec.bits.ByteVector]] */
+  /** Serializes a [[scala.Seq Seq]] of [[org.bitcoins.core.protocol.NetworkElement]] to a [[scodec.bits.ByteVector]] */
   def writeNetworkElements[T <: NetworkElement](ts: Seq[T]): ByteVector = {
     val f = { t: T =>
       t.bytes

@@ -48,7 +48,7 @@ object ControlMessageGenerator {
   }
 
   /**
-    * Generates a random [[VersionMessage]]
+    * Generates a random [[org.bitcoins.core.p2p.VersionMessage VersionMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#version]]
     */
@@ -85,7 +85,7 @@ object ControlMessageGenerator {
       )
 
   /**
-    * Generates a [[PingMessage]]
+    * Generates a [[org.bitcoins.core.p2p.PingMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#ping]]
     */
@@ -95,7 +95,7 @@ object ControlMessageGenerator {
     } yield PingMessage(uInt64)
 
   /**
-    * Generates a [[PongMessage]]
+    * Generates a [[org.bitcoins.core.p2p.PongMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#pong]]
     */
@@ -111,7 +111,7 @@ object ControlMessageGenerator {
   }
 
   /**
-    * Generates a random [[ProtocolVersion]]
+    * Generates a random [[org.bitcoins.core.p2p.ProtocolVersion]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#protocol-versions]]
     */
@@ -121,7 +121,7 @@ object ControlMessageGenerator {
     } yield ProtocolVersion.versions(randomNum)
 
   /**
-    * Generates a [[ServiceIdentifier]]
+    * Generates a [[org.bitcoins.core.p2p.ServiceIdentifier]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#version]]
     */
@@ -144,7 +144,7 @@ object ControlMessageGenerator {
   def portNumber: Gen[Int] = Gen.choose(0, 65535)
 
   /**
-    * Creates a [[FilterLoadMessage]]
+    * Creates a [[org.bitcoins.core.p2p.FilterLoadMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#filterload]]
     */
@@ -158,7 +158,7 @@ object ControlMessageGenerator {
       FilterLoadMessage(ByteVector(filter), UInt32(hashFuncs), tweak, flags)
 
   /**
-    * Creates a [[FilterAddMessage]]
+    * Creates a [[org.bitcoins.core.p2p.FilterAddMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#filteradd]]
     */
@@ -169,7 +169,7 @@ object ControlMessageGenerator {
     } yield FilterAddMessage(elementSize, element.bytes)
 
   /**
-    * Creates a [[RejectMessage]]
+    * Creates a [[org.bitcoins.core.p2p.RejectMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#reject]]
     */

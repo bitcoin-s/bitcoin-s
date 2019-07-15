@@ -72,7 +72,7 @@ abstract class DbCommonsColumnMappers {
     MappedColumnType
       .base[Sha256Hash160Digest, String](_.hex, Sha256Hash160Digest.fromHex)
 
-  /** Responsible for mapping a [[UInt32]] to a long in Slick, and vice versa */
+  /** Responsible for mapping a [[org.bitcoins.core.number.UInt32 UInt32]] to a long in Slick, and vice versa */
   implicit val uInt32Mapper: BaseColumnType[UInt32] =
     MappedColumnType.base[UInt32, Long](
       tmap = _.toLong,
@@ -83,7 +83,7 @@ abstract class DbCommonsColumnMappers {
     MappedColumnType.base[Int32, Long](tmap = _.toLong, tcomap = Int32(_))
   }
 
-  /** Responsible for mapping a [[TransactionOutput]] to hex in Slick, and vice versa */
+  /** Responsible for mapping a [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] to hex in Slick, and vice versa */
   implicit val transactionOutputMapper: BaseColumnType[TransactionOutput] = {
     MappedColumnType.base[TransactionOutput, String](
       _.hex,
