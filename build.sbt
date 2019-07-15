@@ -447,7 +447,6 @@ lazy val testkit = project
   .dependsOn(
     core % testAndCompile,
     walletServer,
-    cli,
     chain,
     bitcoindRpc,
     eclairRpc,
