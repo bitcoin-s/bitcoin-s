@@ -46,73 +46,68 @@ static const secp256k1_fe secp256k1_ecdsa_const_p_minus_order = SECP256K1_FE_CON
     0, 0, 0, 1, 0x45512319UL, 0x50B75FC4UL, 0x402DA172UL, 0x2FC9BAEEUL
 );
 
-static int secp256k1_der_read_len(size_t *len, const unsigned char **sigp, const unsigned char *sigend) {
-    size_t lenleft;
-    unsigned char b1;
-    VERIFY_CHECK(len != NULL);
-    *len = 0;
+static int secp256k1_der_read_len(const unsigned char **sigp, const unsigned char *sigend) {
+    int lenleft, b1;
+    size_t ret = 0;
     if (*sigp >= sigend) {
-        return 0;
+        return -1;
     }
     b1 = *((*sigp)++);
     if (b1 == 0xFF) {
         /* X.690-0207 8.1.3.5.c the value 0xFF shall not be used. */
-        return 0;
+        return -1;
     }
     if ((b1 & 0x80) == 0) {
         /* X.690-0207 8.1.3.4 short form length octets */
-        *len = b1;
-        return 1;
+        return b1;
     }
     if (b1 == 0x80) {
         /* Indefinite length is not allowed in DER. */
-        return 0;
+        return -1;
     }
     /* X.690-207 8.1.3.5 long form length octets */
-    lenleft = b1 & 0x7F; /* lenleft is at least 1 */
-    if (lenleft > (size_t)(sigend - *sigp)) {
-        return 0;
+    lenleft = b1 & 0x7F;
+    if (lenleft > sigend - *sigp) {
+        return -1;
     }
     if (**sigp == 0) {
         /* Not the shortest possible length encoding. */
-        return 0;
+        return -1;
     }
-    if (lenleft > sizeof(size_t)) {
+    if ((size_t)lenleft > sizeof(size_t)) {
         /* The resulting length would exceed the range of a size_t, so
          * certainly longer than the passed array size.
          */
-        return 0;
+        return -1;
     }
     while (lenleft > 0) {
-        *len = (*len << 8) | **sigp;
+        ret = (ret << 8) | **sigp;
+        if (ret + lenleft > (size_t)(sigend - *sigp)) {
+            /* Result exceeds the length of the passed array. */
+            return -1;
+        }
         (*sigp)++;
         lenleft--;
     }
-    if (*len > (size_t)(sigend - *sigp)) {
-        /* Result exceeds the length of the passed array. */
-        return 0;
-    }
-    if (*len < 128) {
+    if (ret < 128) {
         /* Not the shortest possible length encoding. */
-        return 0;
+        return -1;
     }
-    return 1;
+    return ret;
 }
 
 static int secp256k1_der_parse_integer(secp256k1_scalar *r, const unsigned char **sig, const unsigned char *sigend) {
     int overflow = 0;
     unsigned char ra[32] = {0};
-    size_t rlen;
+    int rlen;
 
     if (*sig == sigend || **sig != 0x02) {
         /* Not a primitive integer (X.690-0207 8.3.1). */
         return 0;
     }
     (*sig)++;
-    if (secp256k1_der_read_len(&rlen, sig, sigend) == 0) {
-        return 0;
-    }
-    if (rlen == 0 || *sig + rlen > sigend) {
+    rlen = secp256k1_der_read_len(sig, sigend);
+    if (rlen <= 0 || (*sig) + rlen > sigend) {
         /* Exceeds bounds or not at least length 1 (X.690-0207 8.3.1).  */
         return 0;
     }
@@ -128,11 +123,8 @@ static int secp256k1_der_parse_integer(secp256k1_scalar *r, const unsigned char 
         /* Negative. */
         overflow = 1;
     }
-    /* There is at most one leading zero byte:
-     * if there were two leading zero bytes, we would have failed and returned 0
-     * because of excessive 0x00 padding already. */
-    if (rlen > 0 && **sig == 0) {
-        /* Skip leading zero byte */
+    while (rlen > 0 && **sig == 0) {
+        /* Skip leading zero bytes */
         rlen--;
         (*sig)++;
     }
@@ -152,16 +144,18 @@ static int secp256k1_der_parse_integer(secp256k1_scalar *r, const unsigned char 
 
 static int secp256k1_ecdsa_sig_parse(secp256k1_scalar *rr, secp256k1_scalar *rs, const unsigned char *sig, size_t size) {
     const unsigned char *sigend = sig + size;
-    size_t rlen;
+    int rlen;
     if (sig == sigend || *(sig++) != 0x30) {
         /* The encoding doesn't start with a constructed sequence (X.690-0207 8.9.1). */
         return 0;
     }
-    if (secp256k1_der_read_len(&rlen, &sig, sigend) == 0) {
+    rlen = secp256k1_der_read_len(&sig, sigend);
+    if (rlen < 0 || sig + rlen > sigend) {
+        /* Tuple exceeds bounds */
         return 0;
     }
-    if (rlen != (size_t)(sigend - sig)) {
-        /* Tuple exceeds bounds or garage after tuple. */
+    if (sig + rlen != sigend) {
+        /* Garbage after tuple. */
         return 0;
     }
 

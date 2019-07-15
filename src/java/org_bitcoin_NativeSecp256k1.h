@@ -94,7 +94,7 @@ SECP256K1_API jint JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1ec_1secke
  * Signature: (Ljava/nio/ByteBuffer;J)[[B
  */
 SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1ec_1pubkey_1create
-  (JNIEnv *, jclass, jobject, jlong, jboolean);
+  (JNIEnv *, jclass, jobject, jlong);
 
 /*
  * Class:     org_bitcoin_NativeSecp256k1
@@ -103,6 +103,22 @@ SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1e
  */
 SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1ec_1pubkey_1decompress
   (JNIEnv *, jclass, jobject, jlong, jint);
+
+/*
+ * Class:     org_bitcoin_NativeSecp256k1
+ * Method:    secp256k1_schnorr_verify
+ * Signature: (Ljava/nio/ByteBuffer;JI)I
+ */
+SECP256K1_API jint JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1schnorr_1verify
+  (JNIEnv *, jclass, jobject, jlong, jint);
+
+/*
+ * Class:     org_bitcoin_NativeSecp256k1
+ * Method:    secp256k1_schnorr_sign
+ * Signature: (Ljava/nio/ByteBuffer;J)[[B
+ */
+SECP256K1_API jobjectArray JNICALL Java_org_bitcoin_NativeSecp256k1_secp256k1_1schnorr_1sign
+  (JNIEnv *, jclass, jobject, jlong);
 
 /*
  * Class:     org_bitcoin_NativeSecp256k1

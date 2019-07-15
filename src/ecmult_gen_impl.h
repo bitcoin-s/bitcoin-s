@@ -7,7 +7,6 @@
 #ifndef SECP256K1_ECMULT_GEN_IMPL_H
 #define SECP256K1_ECMULT_GEN_IMPL_H
 
-#include "util.h"
 #include "scalar.h"
 #include "group.h"
 #include "ecmult_gen.h"
@@ -15,32 +14,23 @@
 #ifdef USE_ECMULT_STATIC_PRECOMPUTATION
 #include "ecmult_static_context.h"
 #endif
-
-#ifndef USE_ECMULT_STATIC_PRECOMPUTATION
-    static const size_t SECP256K1_ECMULT_GEN_CONTEXT_PREALLOCATED_SIZE = ROUND_TO_ALIGN(sizeof(*((secp256k1_ecmult_gen_context*) NULL)->prec));
-#else
-    static const size_t SECP256K1_ECMULT_GEN_CONTEXT_PREALLOCATED_SIZE = 0;
-#endif
-
 static void secp256k1_ecmult_gen_context_init(secp256k1_ecmult_gen_context *ctx) {
     ctx->prec = NULL;
 }
 
-static void secp256k1_ecmult_gen_context_build(secp256k1_ecmult_gen_context *ctx, void **prealloc) {
+static void secp256k1_ecmult_gen_context_build(secp256k1_ecmult_gen_context *ctx, const secp256k1_callback* cb) {
 #ifndef USE_ECMULT_STATIC_PRECOMPUTATION
     secp256k1_ge prec[1024];
     secp256k1_gej gj;
     secp256k1_gej nums_gej;
     int i, j;
-    size_t const prealloc_size = SECP256K1_ECMULT_GEN_CONTEXT_PREALLOCATED_SIZE;
-    void* const base = *prealloc;
 #endif
 
     if (ctx->prec != NULL) {
         return;
     }
 #ifndef USE_ECMULT_STATIC_PRECOMPUTATION
-    ctx->prec = (secp256k1_ge_storage (*)[64][16])manual_alloc(prealloc, prealloc_size, base, prealloc_size);
+    ctx->prec = (secp256k1_ge_storage (*)[64][16])checked_malloc(cb, sizeof(*ctx->prec));
 
     /* get the generator */
     secp256k1_gej_set_ge(&gj, &secp256k1_ge_const_g);
@@ -87,7 +77,7 @@ static void secp256k1_ecmult_gen_context_build(secp256k1_ecmult_gen_context *ctx
                 secp256k1_gej_add_var(&numsbase, &numsbase, &nums_gej, NULL);
             }
         }
-        secp256k1_ge_set_all_gej_var(prec, precj, 1024);
+        secp256k1_ge_set_all_gej_var(prec, precj, 1024, cb);
     }
     for (j = 0; j < 64; j++) {
         for (i = 0; i < 16; i++) {
@@ -95,7 +85,7 @@ static void secp256k1_ecmult_gen_context_build(secp256k1_ecmult_gen_context *ctx
         }
     }
 #else
-    (void)prealloc;
+    (void)cb;
     ctx->prec = (secp256k1_ge_storage (*)[64][16])secp256k1_ecmult_static_context;
 #endif
     secp256k1_ecmult_gen_blind(ctx, NULL);
@@ -105,18 +95,27 @@ static int secp256k1_ecmult_gen_context_is_built(const secp256k1_ecmult_gen_cont
     return ctx->prec != NULL;
 }
 
-static void secp256k1_ecmult_gen_context_finalize_memcpy(secp256k1_ecmult_gen_context *dst, const secp256k1_ecmult_gen_context *src) {
+static void secp256k1_ecmult_gen_context_clone(secp256k1_ecmult_gen_context *dst,
+                                               const secp256k1_ecmult_gen_context *src, const secp256k1_callback* cb) {
+    if (src->prec == NULL) {
+        dst->prec = NULL;
+    } else {
 #ifndef USE_ECMULT_STATIC_PRECOMPUTATION
-    if (src->prec != NULL) {
-        /* We cast to void* first to suppress a -Wcast-align warning. */
-        dst->prec = (secp256k1_ge_storage (*)[64][16])(void*)((unsigned char*)dst + ((unsigned char*)src->prec - (unsigned char*)src));
-    }
+        dst->prec = (secp256k1_ge_storage (*)[64][16])checked_malloc(cb, sizeof(*dst->prec));
+        memcpy(dst->prec, src->prec, sizeof(*dst->prec));
 #else
-    (void)dst, (void)src;
+        (void)cb;
+        dst->prec = src->prec;
 #endif
+        dst->initial = src->initial;
+        dst->blind = src->blind;
+    }
 }
 
 static void secp256k1_ecmult_gen_context_clear(secp256k1_ecmult_gen_context *ctx) {
+#ifndef USE_ECMULT_STATIC_PRECOMPUTATION
+    free(ctx->prec);
+#endif
     secp256k1_scalar_clear(&ctx->blind);
     secp256k1_gej_clear(&ctx->initial);
     ctx->prec = NULL;
@@ -187,7 +186,7 @@ static void secp256k1_ecmult_gen_blind(secp256k1_ecmult_gen_context *ctx, const 
     do {
         secp256k1_rfc6979_hmac_sha256_generate(&rng, nonce32, 32);
         retry = !secp256k1_fe_set_b32(&s, nonce32);
-        retry = retry || secp256k1_fe_is_zero(&s);
+        retry |= secp256k1_fe_is_zero(&s);
     } while (retry); /* This branch true is cryptographically unreachable. Requires sha256_hmac output > Fp. */
     /* Randomize the projection to defend against multiplier sidechannels. */
     secp256k1_gej_rescale(&ctx->initial, &s);
@@ -196,7 +195,7 @@ static void secp256k1_ecmult_gen_blind(secp256k1_ecmult_gen_context *ctx, const 
         secp256k1_rfc6979_hmac_sha256_generate(&rng, nonce32, 32);
         secp256k1_scalar_set_b32(&b, nonce32, &retry);
         /* A blinding value of 0 works, but would undermine the projection hardening. */
-        retry = retry || secp256k1_scalar_is_zero(&b);
+        retry |= secp256k1_scalar_is_zero(&b);
     } while (retry); /* This branch true is cryptographically unreachable. Requires sha256_hmac output > order. */
     secp256k1_rfc6979_hmac_sha256_finalize(&rng);
     memset(nonce32, 0, 32);
