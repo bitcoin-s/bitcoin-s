@@ -663,22 +663,28 @@ class EclairRpcClient(val instance: EclairInstance)(
 
     val runnable = new Runnable() {
 
-      private val attempt = new AtomicInteger(1)
+      private val attempts = new AtomicInteger(1)
 
       override def run(): Unit = {
-        val resultsF = getSentInfo(paymentId)
-        resultsF.recover { case e: Throwable => logger.error("Cannot check payment status", e) }
-        for {
-          results <- resultsF
-        } yield {
-          results.find(_.status != PaymentStatus.PENDING) match {
-            case Some(result) =>
+        if (attempts.incrementAndGet() > maxAttempts) {
+          // too many tries to get info about a payment
+          // either Eclair is down or the payment is still in PENDING state for some reason
+          // complete the promise with an exception so the runnable will be canceled
+          p.failure(new RuntimeException(
+            s"EclairApi.monitorSentPayment() too many attempts: ${attempts.get()}"))
+        } else {
+          val resultsF = getSentInfo(paymentId)
+          resultsF.recover { case e: Throwable => logger.error("Cannot check payment status", e) }
+          for {
+            results <- resultsF
+          } yield {
+            results.find(_.status != PaymentStatus.PENDING).foreach { result =>
+              // invoice has been paid or has failed, let's publish to event stream
+              // so subscribers to the even stream can see that a payment
+              // was received or failed
+              // complete the promise so the runnable will be canceled
               p.success(result)
-            case None =>
-              if (attempt.incrementAndGet() > maxAttempts) {
-                p.failure(new RuntimeException(
-                  s"EclairApi.sentPaymentMonitor() too many attempts: ${attempt.get()}"))
-              }
+            }
           }
         }
       }
