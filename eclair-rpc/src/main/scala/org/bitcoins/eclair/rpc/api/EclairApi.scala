@@ -12,7 +12,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.NodeUri
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -21,6 +21,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * @see [[https://acinq.github.io/eclair/]]
   */
 trait EclairApi {
+
+  implicit def executionContext: ExecutionContext
 
   def allChannels(): Future[Vector[ChannelDesc]]
 
@@ -108,7 +110,7 @@ trait EclairApi {
 
   def networkFees(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[NetworkFeesResult]]
 
-  def nodeId()(implicit ec: ExecutionContext): Future[NodeId] = {
+  def nodeId(): Future[NodeId] = {
     getNodeURI.map(_.nodeId)
   }
 
@@ -135,6 +137,29 @@ trait EclairApi {
   def payInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentId]
 
   def payInvoice(invoice: LnInvoice, amountMsat: Option[MilliSatoshis], maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
+
+  /**
+    * Pings eclair to see if a invoice has been paid and returns [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
+    *
+    * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice()]]
+    * @param interval the ping interval
+    * @param maxAttempts the maximum number of pings
+    *
+    */
+  def monitorSentPayment(paymentId: PaymentId, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult]
+
+  def payAndMonitorInvoice(invoice: LnInvoice, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult] =
+    for {
+      paymentId <- payInvoice(invoice)
+      paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
+    } yield paymentResult
+
+
+  def payAndMonitorInvoice(invoice: LnInvoice, amount: MilliSatoshis, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult] =
+    for {
+      paymentId <- payInvoice(invoice, amount)
+      paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
+    } yield paymentResult
 
   def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]]
 

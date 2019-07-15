@@ -170,6 +170,23 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     AsyncUtil.awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20).map(_ => succeed)
   }
 
+  it should "pay an invoice and monitor the payment" in {
+    val checkPayment = {
+      (client: EclairRpcClient, otherClient: EclairRpcClient) =>
+
+        for {
+          _ <- openAndConfirmChannel(clientF, otherClientF)
+          invoice <- otherClient.createInvoice("abc", 50.msats)
+          paymentResult <- client.payAndMonitorInvoice(invoice, 1.second, 10)
+        } yield {
+          assert(paymentResult.amountMsat == 50.msats)
+        }
+    }
+
+    executeWithClientOtherClient(checkPayment)
+  }
+
+
   it should "check a payment" in {
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
@@ -532,8 +549,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         {
           for {
             channelId <- openAndConfirmChannel(clientF, otherClientF)
-            invoice <- otherClient.createInvoice("no amount", None, None, None, None)
-            paymentId <- client.payInvoice(invoice, Some(amt), None, None, None)
+            invoice <- otherClient.createInvoice("no amount")
+            paymentId <- client.payInvoice(invoice, amt)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             _ <- client.close(channelId)
