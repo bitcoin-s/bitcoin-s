@@ -656,34 +656,50 @@ class EclairRpcClient(val instance: EclairInstance)(
     * [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
     * event to the [[akka.actor.ActorSystem ActorSystem]]'s
     * [[akka.event.EventStream ActorSystem.eventStream]]
+    *
+    * We also return a Future[PaymentResult] that is completed when one of three things is true
+    * 1. The payment has succeeded
+    * 2. The payment has failed
+    * 3. We have attempted to query the eclair more than maxAttempts, and the payment is still pending
     */
   override def monitorSentPayment(
-      paymentId: PaymentId, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult] = {
+                                   paymentId: PaymentId,
+                                   interval: FiniteDuration,
+                                   maxAttempts: Int): Future[PaymentResult] = {
     val p: Promise[PaymentResult] = Promise[PaymentResult]()
 
     val runnable = new Runnable() {
 
-      private val attempts = new AtomicInteger(1)
+      private val attempts = new AtomicInteger(0)
 
       override def run(): Unit = {
         if (attempts.incrementAndGet() > maxAttempts) {
           // too many tries to get info about a payment
           // either Eclair is down or the payment is still in PENDING state for some reason
           // complete the promise with an exception so the runnable will be canceled
-          p.failure(new RuntimeException(
-            s"EclairApi.monitorSentPayment() too many attempts: ${attempts.get()}"))
+          p.failure(
+            new RuntimeException(
+              s"EclairApi.monitorSentPayment() too many attempts: ${attempts
+                .get()} for paymentId=${paymentId} for interval=${interval}"))
         } else {
           val resultsF = getSentInfo(paymentId)
-          resultsF.recover { case e: Throwable => logger.error("Cannot check payment status", e) }
-          for {
+          resultsF.recover {
+            case e: Throwable => logger.error(s"Cannot check payment status for paymentId=${paymentId}", e)
+          }
+          val _ = for {
             results <- resultsF
           } yield {
-            results.find(_.status != PaymentStatus.PENDING).foreach { result =>
-              // invoice has been paid or has failed, let's publish to event stream
-              // so subscribers to the even stream can see that a payment
-              // was received or failed
-              // complete the promise so the runnable will be canceled
-              p.success(result)
+            results.foreach { result =>
+              result.status match {
+                case PaymentStatus.PENDING =>
+                //do nothing, while we wait for eclair to attempt to process
+                case PaymentStatus.SUCCEEDED | PaymentStatus.FAILED =>
+                  // invoice has been succeeded or has failed, let's publish to event stream
+                  // so subscribers to the event stream can see that a payment
+                  // was received or failed
+                  // complete the promise so the runnable will be canceled
+                  p.success(result)
+              }
             }
           }
         }
@@ -699,5 +715,4 @@ class EclairRpcClient(val instance: EclairInstance)(
 
     f
   }
-
 }
