@@ -8,7 +8,6 @@ import org.bitcoins.wallet.models.AccountDb
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.hd.HDPath
-import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.hd.HDAddress
 import scala.util.Failure
 import scala.util.Success
@@ -22,6 +21,7 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.hd.AddressType
 
 /**
   * Provides functionality related to addresses. This includes
@@ -75,9 +75,10 @@ private[wallet] trait AddressHandling { self: LockedWallet =>
 
     val lastAddrOptF = chainType match {
       case HDChainType.External =>
-        addressDAO.findMostRecentExternal(accountIndex)
+        addressDAO.findMostRecentExternal(account.hdAccount.purpose,
+                                          accountIndex)
       case HDChainType.Change =>
-        addressDAO.findMostRecentChange(accountIndex)
+        addressDAO.findMostRecentChange(account.hdAccount.purpose, accountIndex)
     }
 
     lastAddrOptF.flatMap { lastAddrOpt =>
@@ -88,8 +89,7 @@ private[wallet] trait AddressHandling { self: LockedWallet =>
             s"Found previous address at path=${addr.path}, next=$next")
           next
         case None =>
-          val account = HDAccount(DEFAULT_HD_COIN, accountIndex)
-          val chain = account.toChain(chainType)
+          val chain = account.hdAccount.toChain(chainType)
           val address = HDAddress(chain, 0)
           val path = address.toPath
           logger.debug(s"Did not find previous address, next=$path")
@@ -135,10 +135,19 @@ private[wallet] trait AddressHandling { self: LockedWallet =>
     }
   }
 
-  /** @inheritdoc */
-  override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
-    val addrF = getNewAddressHelper(account, HDChainType.External)
+  def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
+    val addrF =
+      getNewAddressHelper(account, HDChainType.External)
     addrF
+  }
+
+  /** @inheritdoc */
+  override def getNewAddress(
+      addressType: AddressType): Future[BitcoinAddress] = {
+    for {
+      account <- getDefaultAccountForType(addressType)
+      address <- getNewAddressHelper(account, HDChainType.External)
+    } yield address
   }
 
   /** Generates a new change address */
