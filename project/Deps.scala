@@ -24,7 +24,7 @@ object Deps {
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
-    val sqliteV = "3.27.2.1"
+    val sqliteV = "3.28.0"
     val scalameterV = "0.17"
 
     // Wallet/node/chain server deps
