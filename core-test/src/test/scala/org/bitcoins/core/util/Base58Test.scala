@@ -28,12 +28,6 @@ class Base58Test extends FlatSpec with MustMatchers {
     Base58.decode("Z").head must be(32.toByte)
   }
 
-  it must "decode and return same result as bitcoinj" in {
-    val address = "1AGNa15ZQXAZUgFiqJ2i7Z2DPU2J6hW62i"
-    val bitcoinj = org.bitcoinj.core.Base58.decode(address)
-    Base58.decode(address).toArray must be(bitcoinj)
-  }
-
   it must "encode tests in base58_encode_decode.json" in {
     Base58.encode("") must be("")
     Base58.encode("61") must be("2g")
@@ -67,25 +61,6 @@ class Base58Test extends FlatSpec with MustMatchers {
     decodedBase58EncodeToHex("EJDM8drfXA6uyA") must be("ecac89cad93923c02321")
     decodedBase58EncodeToHex("Rt5zm") must be("10c8511e")
     decodedBase58EncodeToHex("1111111111") must be("00000000000000000000")
-  }
-
-  it must "decode address into bytes, then encode bytes back to address the same as bitcoinj" in {
-    //1C4kYhyLftmkn48YarSoLupxHfYFo8kp64
-    val address = TestUtil.bitcoinAddress.get.value
-    val bitcoinj =
-      org.bitcoinj.core.Base58.encode(org.bitcoinj.core.Base58.decode(address))
-    Base58.encode(Base58.decode(address)) must be(bitcoinj)
-    Base58.encode(Base58.decode(address)) must be(
-      "1C4kYhyLftmkn48YarSoLupxHfYFo8kp64")
-  }
-
-  it must "decode multisig address into bytes then encode back to multisig" in {
-    val multi = TestUtil.multiSigAddress.get.value
-    val bitcoinj =
-      org.bitcoinj.core.Base58.encode(org.bitcoinj.core.Base58.decode(multi))
-    Base58.encode(Base58.decode(multi)) must be(
-      TestUtil.multiSigAddress.get.value)
-    Base58.encode(Base58.decode(multi)) must be(bitcoinj)
   }
 
   it must "read base58_keys_valid.json and validate each case" in {
