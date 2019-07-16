@@ -8,9 +8,9 @@ import scala.collection.mutable
   * @inheritdoc
   * @param blockHeaderDAO
   */
-case class BlockchainBuilder(blockHeaderDAO: BlockHeaderDAO) extends mutable.Builder[BlockHeaderDb, Blockchain] {
+case class BlockchainBuilder(blockHeaderDAO: BlockHeaderDAO)
+    extends mutable.Builder[BlockHeaderDb, Blockchain] {
   private val internal = Vector.newBuilder[BlockHeaderDb]
-
 
   override def result(): Blockchain = {
     Blockchain.fromHeaders(internal.result().reverse)
@@ -20,7 +20,6 @@ case class BlockchainBuilder(blockHeaderDAO: BlockHeaderDAO) extends mutable.Bui
     internal.+=(blockHeaderDb)
     this
   }
-
 
   override def clear(): Unit = internal.clear()
 }

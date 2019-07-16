@@ -1,7 +1,11 @@
 package org.bitcoins.core.hd
 
 import org.bitcoins.core.crypto.{ExtKey, ExtPublicKey}
-import org.bitcoins.testkit.core.gen.{CryptoGenerators, HDGenerators, NumberGenerator}
+import org.bitcoins.testkit.core.gen.{
+  CryptoGenerators,
+  HDGenerators,
+  NumberGenerator
+}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.{Gen, Shrink}
 
@@ -9,7 +13,7 @@ import scala.util.{Success, Try}
 
 class BIP32PathTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   behavior of "BIP32Child"

@@ -20,7 +20,7 @@ private[fixtures] trait DAOFixture
 
   // to get around the config in `BitcoinSWalletTest` not resolving
   // as an AppConfig
-  private implicit val walletConfig: WalletAppConfig = config.walletConf
+  implicit private val walletConfig: WalletAppConfig = config.walletConf
 
   override def beforeAll(): Unit = {
     val tables = daoAccumulator.result()

@@ -8,19 +8,40 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE, ECPublicKey}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPublicKey
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion, RpcOpts}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  RpcOpts
+}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindConfig, BitcoindInstance, ZmqConfig}
-import org.bitcoins.rpc.jsonmodels.{GetBlockWithTransactionsResult, GetTransactionResult, SignRawTransactionResult}
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindConfig,
+  BitcoindInstance,
+  ZmqConfig
+}
+import org.bitcoins.rpc.jsonmodels.{
+  GetBlockWithTransactionsResult,
+  GetTransactionResult,
+  SignRawTransactionResult
+}
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import org.bitcoins.util.ListUtil
 

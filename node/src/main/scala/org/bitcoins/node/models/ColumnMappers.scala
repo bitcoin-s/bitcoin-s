@@ -1,6 +1,5 @@
 package org.bitcoins.node.models
 
-trait ColumnMappers {
-}
+trait ColumnMappers {}
 
 object ColumnMappers extends ColumnMappers

@@ -2,7 +2,12 @@ package org.bitcoins.wallet
 
 import java.nio.file.{Files, Path, Paths}
 
-import org.bitcoins.core.crypto.{AesEncryptedData, AesPassword, AesSalt, MnemonicCode}
+import org.bitcoins.core.crypto.{
+  AesEncryptedData,
+  AesPassword,
+  AesSalt,
+  MnemonicCode
+}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.wallet.config.WalletAppConfig
 import scodec.bits.ByteVector

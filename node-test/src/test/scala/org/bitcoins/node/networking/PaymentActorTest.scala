@@ -22,8 +22,8 @@ import scodec.bits.BitVector
 import scala.concurrent.duration.DurationInt
 
 /**
-  * Created by chris on 9/1/16.
-  */
+ * Created by chris on 9/1/16.
+ */
 class PaymentActorTest
     extends TestKit(ActorSystem("PaymentActorTest"))
     with ImplicitSender
@@ -115,4 +115,4 @@ class PaymentActorTest
     TestActorRef(paymentProps, self)
   }
 }
-*/
+ */

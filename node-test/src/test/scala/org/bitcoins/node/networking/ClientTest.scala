@@ -31,13 +31,15 @@ class ClientTest
 
   implicit val np = config.chainConf.network
 
-  lazy val bitcoindRpcF = BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+  lazy val bitcoindRpcF =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeerF = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)
   }
 
-  lazy val bitcoindRpc2F = BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
+  lazy val bitcoindRpc2F =
+    BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
 
   lazy val bitcoindPeer2F = bitcoindRpcF.map { bitcoind =>
     NodeTestUtil.getBitcoindPeer(bitcoind)

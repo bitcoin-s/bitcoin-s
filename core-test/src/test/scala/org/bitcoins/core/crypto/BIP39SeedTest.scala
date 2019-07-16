@@ -8,7 +8,7 @@ import scala.util.{Failure, Try}
 class BIP39SeedTest extends BitcoinSUnitTest {
   behavior of "BIP39Seed"
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   it must "have serialization symmetry - with password" in {

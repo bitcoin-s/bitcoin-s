@@ -11,7 +11,7 @@ import scala.util.{Failure, Try}
 
 class MnemonicCodeTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   behavior of "MnemonicCode"

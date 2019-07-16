@@ -12,7 +12,7 @@ class BlockchainTest extends ChainUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
 
-  override implicit val system: ActorSystem = ActorSystem("BlockchainTest")
+  implicit override val system: ActorSystem = ActorSystem("BlockchainTest")
 
   behavior of "Blockchain"
 

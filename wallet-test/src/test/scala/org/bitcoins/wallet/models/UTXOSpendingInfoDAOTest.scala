@@ -1,7 +1,10 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.transaction.{TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.wallet.fixtures.UtxoDAOFixture
 

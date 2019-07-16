@@ -2,7 +2,12 @@ package org.bitcoins.wallet
 
 import java.nio.charset.StandardCharsets
 
-import org.bitcoins.core.crypto.{AesCrypt, AesEncryptedData, AesPassword, MnemonicCode}
+import org.bitcoins.core.crypto.{
+  AesCrypt,
+  AesEncryptedData,
+  AesPassword,
+  MnemonicCode
+}
 import scodec.bits.ByteVector
 
 import scala.util.Try

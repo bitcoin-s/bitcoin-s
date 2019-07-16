@@ -21,30 +21,31 @@ import java.net.URI
 //can connect to a running local bitcoind instance as well
 
 val username = "FILL_ME_IN" //this username comes from 'rpcuser' in your bitcoin.conf file
-val password = "FILL_ME_IN" //this password comes from your 'rpcpassword' in your bitcoin.conf file
-val rpcPort = 8332 //this is default port for mainnet, 18332 for testnet/regtest
-
+  val password = "FILL_ME_IN" //this password comes from your 'rpcpassword' in your bitcoin.conf file
+  val rpcPort = 8332 //this is default port for mainnet, 18332 for testnet/regtest
 
 val authCredentials = BitcoindAuthCredentials(
-  username = username,
-  password = password,
-  rpcPort = rpcPort
-)
+    username = username,
+    password = password,
+    rpcPort = rpcPort
+  )
 
 val bitcoindInstance = {
-  BitcoindInstance (
-    network = MainNet,
-    uri = new URI(s"http://localhost:${authCredentials.rpcPort + 1}"),
-    rpcUri = new URI(s"http://localhost:${authCredentials.rpcPort}"),
-    authCredentials = authCredentials
-  )
-}
+    BitcoindInstance(
+      network = MainNet,
+      uri = new URI(s"http://localhost:${authCredentials.rpcPort + 1}"),
+      rpcUri = new URI(s"http://localhost:${authCredentials.rpcPort}"),
+      authCredentials = authCredentials
+    )
+  }
 
-implicit val system = ActorSystem(s"connnect-bitcoind-ssh-${System.currentTimeMillis()}")
+implicit val system = ActorSystem(
+    s"connnect-bitcoind-ssh-${System.currentTimeMillis()}")
 implicit val ec = system.dispatcher
 val rpcCli = new BitcoindRpcClient(bitcoindInstance)
 
-rpcCli.getBalance.onComplete { case balance =>
-  println(s"Wallet balance=${balance}")
-  system.terminate()
-}
+rpcCli.getBalance.onComplete {
+    case balance =>
+      println(s"Wallet balance=${balance}")
+      system.terminate()
+  }

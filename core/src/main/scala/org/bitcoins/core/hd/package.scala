@@ -11,4 +11,3 @@ package org.bitcoins.core
   *     Hierarchical Deterministic Wallets
   */
 package object hd
-

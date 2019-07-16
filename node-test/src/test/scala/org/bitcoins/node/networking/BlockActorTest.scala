@@ -15,8 +15,8 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpecLike, MustMatch
 import scala.concurrent.duration.DurationInt
 
 /**
-  * Created by chris on 7/10/16.
-  */
+ * Created by chris on 7/10/16.
+ */
 class BlockActorTest
     extends TestKit(ActorSystem("BlockActorTest"))
     with FlatSpecLike
@@ -58,4 +58,4 @@ class BlockActorTest
     TestKit.shutdownActorSystem(system)
   }
 }
-*/
+ */

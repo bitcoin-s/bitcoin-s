@@ -49,21 +49,23 @@ sealed abstract class RawSerializerHelper {
   def writeCmpctSizeUInt[T](
       ts: Seq[T],
       serializer: T => ByteVector): ByteVector = {
-    val serialized = write(ts,serializer)
+    val serialized = write(ts, serializer)
     val cmpct = CompactSizeUInt(UInt64(ts.size))
     cmpct.bytes ++ serialized
   }
 
-
   /** Serializes a [[Seq]] of [[org.bitcoins.core.protocol.NetworkElement]] to a [[scodec.bits.ByteVector]] */
   def writeNetworkElements[T <: NetworkElement](ts: Seq[T]): ByteVector = {
-    val f = {t : T => t.bytes}
+    val f = { t: T =>
+      t.bytes
+    }
     write(ts, f)
   }
 
   def write[T](ts: Seq[T], serializer: T => ByteVector): ByteVector = {
-    ts.foldLeft(ByteVector.empty) { case (accum, t) =>
-      accum ++ serializer(t)
+    ts.foldLeft(ByteVector.empty) {
+      case (accum, t) =>
+        accum ++ serializer(t)
     }
   }
 }

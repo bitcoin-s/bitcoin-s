@@ -29,9 +29,8 @@ import scala.util._
 //you can run this script with
 //$ sbt "doc/run doc/src/main/scala/org/bitcoins/doc/chain/sync-chain.sc"
 
-
 //boring config stuff
-val logger = LoggerFactory.getLogger("org.bitcoins.doc.chain.SyncChain")
+  val logger = LoggerFactory.getLogger("org.bitcoins.doc.chain.SyncChain")
 val time = System.currentTimeMillis()
 implicit val system = ActorSystem(s"sync-chain-${time}")
 import system.dispatcher
@@ -43,40 +42,45 @@ import system.dispatcher
 //background and that you have ~/.bitcoin/bitcoin.conf setup.
 //you need to have 'rpcuser' and 'rpcpassword' set in that bitcoin.conf file
 //You can pass in an alternative datadir if you wish by construct a new java.io.File()
-val bitcoindInstance = BitcoindInstance.fromDatadir()
+  val bitcoindInstance = BitcoindInstance.fromDatadir()
 val rpcCli = new BitcoindRpcClient(bitcoindInstance)
 
 logger.info(s"Done configuring rpc client")
-//next we need to create a way to monitor the chain
-val getBestBlockHash = ChainTestUtil.bestBlockHashFnRpc(Future.successful(rpcCli))
 
-val getBlockHeader = ChainTestUtil.getBlockHeaderFnRpc(Future.successful(rpcCli))
+//next we need to create a way to monitor the chain
+  val getBestBlockHash =
+    ChainTestUtil.bestBlockHashFnRpc(Future.successful(rpcCli))
+
+val getBlockHeader =
+    ChainTestUtil.getBlockHeaderFnRpc(Future.successful(rpcCli))
 
 val chainDbConfig = ChainDbConfig.RegTestDbConfig
 val chainAppConfig = ChainAppConfig(chainDbConfig)
 
 logger.info(s"Creating chain tables")
 //initialize chain tables in bitcoin-s if they do not exist
-val chainProjectInitF = ChainTestUtil.initializeIfNeeded(chainAppConfig)
+  val chainProjectInitF = ChainTestUtil.initializeIfNeeded(chainAppConfig)
 
 val blockHeaderDAO = BlockHeaderDAO(appConfig = chainAppConfig)
 
 val chainHandler = ChainHandler(blockHeaderDAO, chainAppConfig)
 
 val syncedChainApiF = chainProjectInitF.flatMap { _ =>
-  logger.info(s"Beginning sync to bitcoin-s chain state")
-  ChainSync.sync(chainHandler, getBlockHeader, getBestBlockHash)
-}
+    logger.info(s"Beginning sync to bitcoin-s chain state")
+    ChainSync.sync(chainHandler, getBlockHeader, getBestBlockHash)
+  }
 
 val syncResultF = syncedChainApiF.flatMap { chainApi =>
-  chainApi.getBlockCount.map(count => logger.info(s"chain api blockcount=${count}"))
+    chainApi.getBlockCount.map(count =>
+      logger.info(s"chain api blockcount=${count}"))
 
-  rpcCli.getBlockCount.map(count => logger.info(s"bitcoind blockcount=${count}"))
-}
+    rpcCli.getBlockCount.map(count =>
+      logger.info(s"bitcoind blockcount=${count}"))
+  }
 
-syncResultF.onComplete { case result =>
-
-  logger.info(s"Sync result=${result}")
-  system.terminate()
-}
+syncResultF.onComplete {
+    case result =>
+      logger.info(s"Sync result=${result}")
+      system.terminate()
+  }
 

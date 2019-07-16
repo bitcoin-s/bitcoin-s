@@ -54,7 +54,8 @@ sealed abstract class Pow extends BitcoinSLogger {
     } else {
       val firstHeight = currentHeight - (chainParams.difficultyChangeInterval - 1)
 
-      require(firstHeight >= 0, s"We must have our first height be postive, got=${firstHeight}")
+      require(firstHeight >= 0,
+              s"We must have our first height be postive, got=${firstHeight}")
 
       val firstBlockAtIntervalF: Future[Option[BlockHeaderDb]] = {
         blockHeaderDAO.getAncestorAtHeight(tip, firstHeight)

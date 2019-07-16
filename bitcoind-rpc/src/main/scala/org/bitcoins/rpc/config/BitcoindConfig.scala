@@ -332,11 +332,8 @@ object BitcoindConfig extends BitcoinSLogger {
                 "Application Support",
                 "Bitcoin")
     } else if (Properties.isWin) {
-      Paths.get("C:",
-        "Program Files",
-                        "Bitcoin")
-    }
-    else {
+      Paths.get("C:", "Program Files", "Bitcoin")
+    } else {
       Paths.get(Properties.userHome, ".bitcoin")
     }
     path.toFile

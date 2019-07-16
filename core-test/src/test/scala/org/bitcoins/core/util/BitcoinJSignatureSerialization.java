@@ -66,7 +66,6 @@ public class BitcoinJSignatureSerialization {
             List<TransactionOutput> outputs = tx.getOutputs();
 
 
-
             if ((sigHashType & 0x1f) == (Transaction.SigHash.NONE.ordinal() + 1)) {
                 // SIGHASH_NONE means no outputs are signed at all - the signature is effectively for a "blank cheque".
                 //this.outputs = new ArrayList<TransactionOutput>(0);
@@ -119,7 +118,7 @@ public class BitcoinJSignatureSerialization {
                         tx.addOutput(spendingTx.getOutput(inputIndex));
                     } else {
                         //this.outputs.set(i, new TransactionOutput(params, this, Coin.NEGATIVE_SATOSHI, new byte[] {}));
-                        tx.addOutput(new TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, new byte[] {}));
+                        tx.addOutput(new TransactionOutput(params, tx, Coin.NEGATIVE_SATOSHI, new byte[]{}));
                     }
 
                 // The signature isn't broken by new versions of the transaction issued by other parties.
@@ -131,7 +130,7 @@ public class BitcoinJSignatureSerialization {
 
             List<TransactionInput> inputs = tx.getInputs();
 
-            if ((sigHashType & (byte)0x80) == (byte)0x80) {
+            if ((sigHashType & (byte) 0x80) == (byte) 0x80) {
                 // SIGHASH_ANYONECANPAY means the signature in the input is not broken by changes/additions/removals
                 // of other inputs. For example, this is useful for building assurance contracts.
                 tx.clearInputs();
@@ -150,7 +149,7 @@ public class BitcoinJSignatureSerialization {
             // Put the transaction back to how we found it.
             //tx.inputs = inputs;
             tx.clearInputs();
-            for (int i = 0; i < inputs.size(); i ++ ) {
+            for (int i = 0; i < inputs.size(); i++) {
                 tx.addInput(inputs.get(i));
             }
             for (int i = 0; i < inputs.size(); i++) {
@@ -170,19 +169,19 @@ public class BitcoinJSignatureSerialization {
 
 
     public static byte[] hashForSignature(Transaction tx, int inputIndex, byte[] connectedScript, byte sigHashType) {
-        byte[] serializedSig = serializeForSignature(tx,inputIndex,connectedScript, sigHashType);
+        byte[] serializedSig = serializeForSignature(tx, inputIndex, connectedScript, sigHashType);
 
         Sha256Hash hash = Sha256Hash.twiceOf(serializedSig);
         String hashHex = Utils.HEX.encode(hash.getBytes());
         //check hash against the reference implementation inside of bitcoinj
-        byte[] referenceImplementation = tx.hashForSignature(inputIndex,connectedScript,sigHashType).getBytes();
+        byte[] referenceImplementation = tx.hashForSignature(inputIndex, connectedScript, sigHashType).getBytes();
         String referenceImplementationHex = Utils.HEX.encode(referenceImplementation);
-        if (!hashHex.equals(referenceImplementationHex))  {
+        if (!hashHex.equals(referenceImplementationHex)) {
             logger.error("bitcoins: " + hashHex);
-            logger.error("bitcoinj: " + referenceImplementationHex );
+            logger.error("bitcoinj: " + referenceImplementationHex);
             throw new RuntimeException("Difference between BitcoinJSignatureSerialization & Actual Bitcoinj\n" +
-                "bitcoin-s: " + hashHex + "\n" +
-                "bitcoin-j: " + referenceImplementationHex);
+                    "bitcoin-s: " + hashHex + "\n" +
+                    "bitcoin-j: " + referenceImplementationHex);
         }
         return hash.getBytes();
     }

@@ -17,7 +17,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
     test(())
   }
 
-  private implicit val akkaTimeout = Timeout(timeout)
+  implicit private val akkaTimeout = Timeout(timeout)
 
   behavior of "PeerHandler"
 

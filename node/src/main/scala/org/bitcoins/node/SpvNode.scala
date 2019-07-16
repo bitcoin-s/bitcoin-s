@@ -9,7 +9,10 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.Client
-import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageSender
+}
 import org.bitcoins.rpc.util.AsyncUtil
 
 import scala.concurrent.Future

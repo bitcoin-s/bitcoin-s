@@ -3,7 +3,13 @@ package org.bitcoins.core.protocol.blockchain
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
 
-import org.bitcoins.core.config.{BitcoinNetwork, MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config.{
+  BitcoinNetwork,
+  MainNet,
+  NetworkParameters,
+  RegTest,
+  TestNet3
+}
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -219,7 +225,6 @@ sealed abstract class BitcoinChainParams extends ChainParams {
 
   /** The best chain should have this amount of work */
   def minimumChainWork: BigInteger
-
 
   /**
     * @inheritdoc

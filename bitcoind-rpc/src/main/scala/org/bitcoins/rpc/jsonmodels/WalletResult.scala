@@ -3,9 +3,9 @@ package org.bitcoins.rpc.jsonmodels
 import java.io.File
 
 import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE, 
-  ECPublicKey, 
-  RipeMd160Digest, 
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  RipeMd160Digest,
   Sha256Hash160Digest
 }
 import org.bitcoins.core.currency.Bitcoins

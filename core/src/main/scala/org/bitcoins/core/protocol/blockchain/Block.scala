@@ -51,7 +51,7 @@ sealed abstract class Block extends NetworkElement {
   */
 object Block extends Factory[Block] {
 
-  private sealed case class BlockImpl(
+  sealed private case class BlockImpl(
       blockHeader: BlockHeader,
       txCount: CompactSizeUInt,
       transactions: Seq[Transaction])

@@ -16,7 +16,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
 
-  override implicit val system: ActorSystem = ActorSystem("BlockHeaderDAOTest")
+  implicit override val system: ActorSystem = ActorSystem("BlockHeaderDAOTest")
 
   behavior of "BlockHeaderDAO"
 

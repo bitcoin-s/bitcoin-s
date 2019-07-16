@@ -1,6 +1,6 @@
 <included>
     <!-- Stop output INFO at start -->
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
 
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
@@ -18,8 +18,8 @@
     </appender>
 
     <root level="INFO">
-        <appender-ref ref="FILE" />
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="STDOUT"/>
     </root>
 
     <!-- ╔═══════════════════════╗ -->
@@ -31,28 +31,28 @@
     <!-- ╚═══════════════════╝ -->
 
     <!-- inspect resolved DB connection -->
-    <logger name="org.bitcoins.db.SafeDatabase" level="INFO" />
+    <logger name="org.bitcoins.db.SafeDatabase" level="INFO"/>
 
     <!-- inspect resolved config -->
-    <logger name="org.bitcoins.chain.config" level="INFO" />
-    <logger name="org.bitcoins.node.config" level="INFO" />
-    <logger name="org.bitcoins.wallet.config" level="INFO" />
+    <logger name="org.bitcoins.chain.config" level="INFO"/>
+    <logger name="org.bitcoins.node.config" level="INFO"/>
+    <logger name="org.bitcoins.wallet.config" level="INFO"/>
 
     <!-- ╔═════════════════╗ -->
     <!-- ║   Node module   ║ -->
     <!-- ╚═════════════════╝ -->
 
     <!-- See incoming message names and the peer it's sent from -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO" />
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageReceiver" level="INFO"/>
 
     <!-- See outgoing message names and the peer it's sent to -->
-    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO" />
+    <logger name="org.bitcoins.node.networking.peer.PeerMessageSender" level="INFO"/>
 
     <!-- Inspect handling of headers and inventory messages  -->
-    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO" /> 
+    <logger name="org.bitcoins.node.networking.peer.DataMessageHandler" level="INFO"/>
 
     <!-- inspect TCP details -->
-    <logger name="org.bitcoins.node.networking.Client" level="INFO" />
+    <logger name="org.bitcoins.node.networking.Client" level="INFO"/>
 
     <!-- ╔════════════════════╗ -->
     <!-- ║   Chain module     ║ -->
@@ -60,10 +60,10 @@
 
     <!-- See queries received by chain handler, as well as result of  -->
     <!-- connecting new block headers to chain -->
-    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO" />
+    <logger name="org.bitcoins.chain.blockchain.ChainHandler" level="INFO"/>
 
     <!-- Set to TRACE to inspect details of chain vaidation -->
-    <logger name="org.bitcoins.chain.validation" level="INFO" />
+    <logger name="org.bitcoins.chain.validation" level="INFO"/>
 
     <!-- ╔═════════════════════╗ -->
     <!-- ║   Wallet module     ║ -->
@@ -87,7 +87,7 @@
     <logger name="slick.compiler" level="INFO"/>
 
     <!-- see what's returned by Slick -->
-    <logger name="slick.jdbc.StatementInvoker.result" level="INFO" />
+    <logger name="slick.jdbc.StatementInvoker.result" level="INFO"/>
 
     <!-- Get rid of messages like this: 
     Connection attempt failed. Backing off new connection 
@@ -95,5 +95,5 @@
     <logger name="akka.http.impl.engine.client.PoolGateway" level="OFF"/>
 
     <!-- get rid of "Slf4jLogger started" messages -->
-    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF" />
+    <logger name="akka.event.slf4j.Slf4jLogger" level="OFF"/>
 </included>

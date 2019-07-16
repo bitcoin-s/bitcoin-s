@@ -27,8 +27,8 @@ import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.DurationInt
 
 /**
-  * Created by chris on 9/13/16.
-  */
+ * Created by chris on 9/13/16.
+ */
 class BlockHeaderSyncActorTest
     extends TestKit(ActorSystem("BlockHeaderSyncActorSpec"))
     with ImplicitSender
@@ -239,4 +239,4 @@ class BlockHeaderSyncActorTest
     TestKit.shutdownActorSystem(system)
   }
 }
-*/
+ */

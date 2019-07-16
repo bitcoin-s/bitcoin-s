@@ -6,7 +6,11 @@ import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.UnlockWalletError.{BadPassword, JsonParsingError, MnemonicNotFound}
+import org.bitcoins.wallet.api.UnlockWalletError.{
+  BadPassword,
+  JsonParsingError,
+  MnemonicNotFound
+}
 import org.bitcoins.wallet.api.{UnlockWalletSuccess, UnlockedWalletApi}
 import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome

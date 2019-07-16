@@ -7,7 +7,11 @@ import akka.stream.StreamTcpException
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindConfig, BitcoindInstance}
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindConfig,
+  BitcoindInstance
+}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
