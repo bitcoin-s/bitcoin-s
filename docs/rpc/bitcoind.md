@@ -87,6 +87,45 @@ rpcCli.getBalance.onComplete { case balance =>
 }
 ```
 
+## Error handling
+
+All errors returned by Bitcoin Core are mapped to a corresponding
+[`BitcoindException`](https://github.com/bitcoin-s/bitcoin-s/blob/master/bitcoind-rpc/src/main/scala/org/bitcoins/rpc/BitcoindException.scala).
+These exceptions contain an error code and a message. `BitcoindException` is a sealed
+trait, which means you can easily pattern match exhaustively. Of course, other errors
+could also happen: network errors, stack overflows or out-of-memory errors. The provided
+class is only intended to cover errors returned by Bitcoin Core. An example of how error
+handling could look:
+
+```scala mdoc:compile-only
+import org.bitcoins.rpc.client.common._
+import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.rpc.BitcoindWalletException
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.protocol._
+import org.bitcoins.core.currency._
+
+import scala.concurrent._
+
+implicit val system = akka.actor.ActorSystem()
+implicit val ec = system.dispatcher
+
+// let's assume you have an already running client,
+// so there's no need to start this one
+val cli = BitcoindRpcClient.fromDatadir()
+
+// let's also assume you have a bitcoin address
+val address: BitcoinAddress = ???
+
+val txid: Future[DoubleSha256DigestBE] =
+  cli.sendToAddress(address, 3.bitcoins).recoverWith {
+    case BitcoindWalletException.UnlockNeeded(_) =>
+      cli.walletPassphrase("my_passphrase", 60).flatMap { _ =>
+        cli.sendToAddress(address, 3.bitcoins)
+      }
+  }
+```
+
 ## Testing
 
 To test the Bitcoin-S RPC project you need both version 0.16 and 0.17 of Bitcoin Core. A list of current and previous releases can be found [here](https://bitcoincore.org/en/releases/).

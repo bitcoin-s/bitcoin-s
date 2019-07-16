@@ -20,6 +20,8 @@ import scala.util.Try
 
 /**
   * This class is compatible with version 0.16 of Bitcoin Core.
+  *
+  * @see [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient Scaladocs]]
   */
 class BitcoindV16RpcClient(override val instance: BitcoindInstance)(
     implicit
