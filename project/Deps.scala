@@ -105,7 +105,6 @@ object Deps {
   )
 
   val coreTest = List(
-    Test.bitcoinj,
     Test.junitInterface,
     Test.logback,
     Test.scalaTest,

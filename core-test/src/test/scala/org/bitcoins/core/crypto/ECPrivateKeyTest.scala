@@ -35,16 +35,6 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
     bitcoinsPublicKey.bytes.toArray must be(bitcoinjPublicKey)
   }
 
-  it must "create a bitcionj private key from a bitcoins private key and get the same public key" in {
-    val bitcoinsPrivKey = ECPrivateKey.freshPrivateKey
-    val bitcoinjPrivKey =
-      org.bitcoinj.core.ECKey.fromPrivate(bitcoinsPrivKey.bytes.toArray)
-    val bitcoinjPublicKey = bitcoinjPrivKey.getPubKey
-    val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
-
-    bitcoinsPublicKey.bytes.toArray must be(bitcoinjPublicKey)
-  }
-
   it must "create a private key from the dumped base58 in bitcoin-cli" in {
     val bitcoinjDumpedPrivateKey = CryptoTestUtil.bitcoinjDumpedPrivateKey
     val bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
