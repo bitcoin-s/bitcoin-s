@@ -151,30 +151,33 @@ trait BitcoinSWalletTest
 
   }
 
+  /** Funds the given wallet with money from the given bitcoind */
+  def fundWalletWithBitcoind(
+      pair: WalletWithBitcoind): Future[WalletWithBitcoind] = {
+    val WalletWithBitcoind(wallet, bitcoind) = pair
+    for {
+      addr <- wallet.getNewAddress()
+      tx <- bitcoind
+        .sendToAddress(addr, 25.bitcoins)
+        .flatMap(bitcoind.getRawTransaction(_))
+
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      _ <- wallet.processTransaction(tx.hex, 6)
+      balance <- wallet.getBalance()
+
+    } yield {
+      assert(balance >= 25.bitcoins)
+      pair
+    }
+  }
+
   def withFundedWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] =
       composeBuildersAndWrapFuture(
         builder = createDefaultWallet _,
         dependentBuilder = createWalletWithBitcoind,
-        processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoind) => {
-          val WalletWithBitcoind(wallet, bitcoind) = pair
-
-          for {
-            addr <- wallet.getNewAddress()
-            tx <- bitcoind
-              .sendToAddress(addr, 25.bitcoins)
-              .flatMap(bitcoind.getRawTransaction(_))
-
-            _ <- bitcoind.getNewAddress.flatMap(
-              bitcoind.generateToAddress(6, _))
-            _ <- wallet.processTransaction(tx.hex, 6)
-            balance <- wallet.getBalance()
-
-          } yield {
-            assert(balance >= 25.bitcoins)
-            pair
-          }
-        }
+        processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoind) =>
+          fundWalletWithBitcoind(pair)
       )
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
