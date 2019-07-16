@@ -11,6 +11,7 @@ import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.util.AsyncUtil
+import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.scalactic.Bool
 import scala.concurrent.Future
@@ -41,12 +42,11 @@ class BroadcastTransactionTest extends BitcoinSWalletTest {
           true
         }
         .recover {
-          case err: Throwable
-              if err.getMessage.contains(
-                s"No such mempool or blockchain transaction") =>
+          case BitcoindException.InvalidAddressOrKey(_) =>
             false
           case other =>
-            logger.info(s"Received other error: $other")
+            logger.error(
+              s"Received unexpected error on getrawtransaction: $other")
             throw other
         }
     }
