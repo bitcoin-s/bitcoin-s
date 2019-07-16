@@ -15,13 +15,13 @@ lazy val commonCompilerOpts = {
   List(
     "-Xmax-classfile-name",
     "128",
-    "-Xsource:2.12"
+    "-Xsource:2.12",
+    "-target:jvm-1.8"
   )
 }
 
 //https://docs.scala-lang.org/overviews/compiler-options/index.html
 lazy val compilerOpts = Seq(
-  "-target:jvm-1.8",
   "-encoding",
   "UTF-8",
   "-unchecked",
