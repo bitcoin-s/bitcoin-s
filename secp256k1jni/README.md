@@ -120,7 +120,7 @@ $ sudo update-alternatives --config x86_64-w64-mingw32-g++ # Set the default min
 # libtool: warning: undefined symbols not allowed in x86_64-w64-mingw32 shared libraries; building static only
 $ echo "LDFLAGS = -no-undefined" >> Makefile.am
 $ ./configure --host=x86_64-w64-mingw32 --enable-experimental --enable-module_ecdh --enable-jni && make clean && make CFLAGS="-std=c99"
-cp ./.libs/libsecp256k1-0.dll ../src/main/resources/fr/acinq/native/Windows/x86_64/secp256k1.dll
+✗ cp .libs/libsecp256k1-0.dll ../secp256k1jni/natives/windows_64/
 ```
 
 
