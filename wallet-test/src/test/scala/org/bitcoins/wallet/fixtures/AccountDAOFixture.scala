@@ -16,7 +16,8 @@ trait AccountDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
   implicit private val walletConfig: WalletAppConfig = config.walletConf
 
   final override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeDependentFixture(createAccountTable, dropAccountTable)(test)
+    makeDependentFixture(AccountDAOFixture.this.createAccountTable,
+                         dropAccountTable)(test)
 
   private def dropAccountTable(accountDAO: AccountDAO): Future[Unit] = {
     WalletDbManagement.dropTable(accountDAO.table)
