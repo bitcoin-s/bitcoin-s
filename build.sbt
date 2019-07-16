@@ -66,7 +66,7 @@ lazy val commonSettings = List(
   ////
   scalacOptions in Compile := compilerOpts,
   scalacOptions in Test := testCompilerOpts,
-  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  Compile / compile / javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   //show full stack trace of failed tests
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
   //show duration of tests
