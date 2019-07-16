@@ -39,6 +39,11 @@ lazy val compilerOpts = Seq(
 
 lazy val testCompilerOpts = commonCompilerOpts
 
+lazy val isCI = {
+  sys.props
+    .get("CI")
+    .isDefined
+}
 lazy val commonSettings = List(
   organization := "org.bitcoin-s",
   homepage := Some(url("https://bitcoin-s.org")),
@@ -66,16 +71,23 @@ lazy val commonSettings = List(
   ////
   scalacOptions in Compile := compilerOpts,
   scalacOptions in Test := testCompilerOpts,
-  Compile / compile / javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
+  Compile / compile / javacOptions ++= {
+    if (isCI) {
+      //jdk11 is used on CI, we need to use the --release flag to make sure
+      //byte code is compatible with jdk 8
+      //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
+      Seq("--release", "8")
+    } else {
+      Seq("-source", "1.8", "-target", "1.8")
+    }
+  },
   //show full stack trace of failed tests
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
   //show duration of tests
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
   licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
   // Travis has performance issues on macOS
-  Test / parallelExecution := !(Properties.isMac && sys.props
-    .get("CI")
-    .isDefined)
+  Test / parallelExecution := !(Properties.isMac && isCI)
 )
 
 lazy val commonTestSettings = Seq(
