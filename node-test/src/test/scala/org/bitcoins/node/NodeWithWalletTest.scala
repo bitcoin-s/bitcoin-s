@@ -49,9 +49,6 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
       implicit val chainConfig: ChainAppConfig = config
 
       var expectedTxId: Option[DoubleSha256Digest] = None
-      var unexpectedTxId: Option[DoubleSha256Digest] = None
-      var addressFromWallet: Option[BitcoinAddress] = None
-      var bloomFromWallet: Option[BloomFilter] = None
       var cancellable: Option[Cancellable] = None
 
       val completionP = Promise[Assertion]
@@ -59,13 +56,6 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
       val amountFromBitcoind = 1.bitcoin
 
       val callbacks = {
-        val onBlock: DataMessageHandler.OnBlockReceived = { block =>
-          completionP.failure(
-            new TestFailedException(
-              s"Received a block! We are only expecting merkle blocks",
-              failedCodeStackDepth = 0))
-        }
-
         val onTx: DataMessageHandler.OnTxReceived = { tx =>
           if (expectedTxId.contains(tx.txId)) {
             logger.debug(s"Cancelling timeout we set earlier")
@@ -75,30 +65,15 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
               prevBalance <- wallet.getUnconfirmedBalance()
               _ <- wallet.processTransaction(tx, confirmations = 0)
               balance <- wallet.getUnconfirmedBalance()
-            } {
-              completionP.complete {
-                Try {
-                  assert(balance == prevBalance + amountFromBitcoind)
-                }
+            } completionP.complete {
+              Try {
+                assert(balance == prevBalance + amountFromBitcoind)
               }
             }
-
-          } else if (unexpectedTxId.contains(tx.txId)) {
-            val errMsg =
-              s"Got ${tx.txId}, which is a TX we expect to NOT get notified about!"
-            logger.error(errMsg)
-            logger.error(s"Bloom filter hex: ${bloomFromWallet.get.hex}")
-            logger.error(s"Address from wallet: ${addressFromWallet.get}")
-            logger.error(s"Unexpected TX hex: ${tx.hex}")
-            completionP.failure(
-              new TestFailedException(errMsg, failedCodeStackDepth = 0))
-          } else {
-            logger.info(s"Didn't match expected TX or unexpected TX")
           }
         }
 
         SpvNodeCallbacks(
-          onBlockReceived = Seq(onBlock),
           onTxReceived = Seq(onTx)
         )
       }
@@ -107,7 +82,8 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
         expectedTxId = Some(tx.flip)
         // how long we're waiting for a tx notify before failing the test
         val delay = 15.seconds
-        val runnable: Runnable = new Runnable {
+
+        val failTest: Runnable = new Runnable {
           override def run = {
             val msg =
               s"Did not receive sent transaction within $delay"
@@ -116,8 +92,8 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
           }
         }
 
-        logger.debug(s"Setting timeout for receiving TX in thru node")
-        cancellable = Some(actorSystem.scheduler.scheduleOnce(delay, runnable))
+        logger.debug(s"Setting timeout for receiving TX through node")
+        cancellable = Some(actorSystem.scheduler.scheduleOnce(delay, failTest))
         tx
       }
 
@@ -126,10 +102,6 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
 
         address <- wallet.getNewAddress()
         bloom <- wallet.getBloomFilter()
-        _ = {
-          bloomFromWallet = Some(bloom)
-          addressFromWallet = Some(address)
-        }
 
         spv <- {
           val peer = Peer.fromBitcoind(rpc.instance)
@@ -152,25 +124,10 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
           .sendToAddress(address, amountFromBitcoind)
           .map(processWalletTx)
 
-        notOurTxid <- rpc.getNewAddress
-          .flatMap(rpc.sendToAddress(_, 1.bitcoin))
-          .map { tx =>
-            // we're generating a TX from bitcoind that should _not_ trigger
-            // our bloom filter, and not get sent to us. if it gets sent to
-            // us we fail the test
-            unexpectedTxId = Some(tx.flip)
-            tx
-          }
-
         ourTx <- rpc.getTransaction(ourTxid)
-        notOurTx <- rpc.getTransaction(notOurTxid)
+        _ = assert(bloom.isRelevant(ourTx.hex))
 
-        assertion <- {
-          assert(bloom.isRelevant(ourTx.hex))
-          assert(!bloom.isRelevant(notOurTx.hex))
-
-          completionP.future
-        }
+        assertion <- completionP.future
       } yield assertion
 
   }
