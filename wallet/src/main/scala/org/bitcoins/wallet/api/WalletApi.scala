@@ -15,6 +15,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.hd.AddressType
 
 /**
   * API for the wallet project.
@@ -83,12 +84,15 @@ trait LockedWalletApi extends WalletApi {
   def listAddresses(): Future[Vector[AddressDb]]
 
   /**
-    * Gets a new external address from the specified
-    * account. Calling this method multiple
+    * Gets a new external address with the specified
+    * type. Calling this method multiple
     * times will return the same address, until it has
     * received funds.
+    *
     */
-  def getNewAddress(account: AccountDb): Future[BitcoinAddress]
+  // TODO: Last sentence is not true, implement that
+  // https://github.com/bitcoin-s/bitcoin-s/issues/628
+  def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
 
   /**
     * Gets a new external address from the default account.
@@ -98,8 +102,7 @@ trait LockedWalletApi extends WalletApi {
     */
   def getNewAddress(): Future[BitcoinAddress] = {
     for {
-      account <- getDefaultAccount()
-      address <- getNewAddress(account)
+      address <- getNewAddress(walletConfig.defaultAddressType)
     } yield address
   }
 
@@ -128,6 +131,10 @@ trait LockedWalletApi extends WalletApi {
     * Fetches the default account from the DB
     */
   protected[wallet] def getDefaultAccount(): Future[AccountDb]
+
+  /** Fetches the default account for the given address/acount kind  */
+  protected[wallet] def getDefaultAccountForType(
+      addressType: AddressType): Future[AccountDb]
 
   /**
     * Unlocks the wallet with the provided passphrase,

@@ -12,6 +12,7 @@ import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.hd.HDPurpose
 
 case class AddressDAO()(
     implicit val ec: ExecutionContext,
@@ -44,8 +45,11 @@ case class AddressDAO()(
   /**
     * Finds the most recent change address in the wallet, if any
     */
-  def findMostRecentChange(accountIndex: Int): Future[Option[AddressDb]] = {
-    val query = findMostRecentForChain(accountIndex, HDChainType.Change)
+  def findMostRecentChange(
+      purpose: HDPurpose,
+      accountIndex: Int): Future[Option[AddressDb]] = {
+    val query =
+      findMostRecentForChain(purpose, accountIndex, HDChainType.Change)
 
     database.run(query)
   }
@@ -63,9 +67,11 @@ case class AddressDAO()(
   }
 
   private def findMostRecentForChain(
+      purpose: HDPurpose,
       accountIndex: Int,
       chain: HDChainType): SqlAction[Option[AddressDb], NoStream, Effect.Read] = {
     addressesForAccountQuery(accountIndex)
+      .filter(_.purpose === purpose)
       .filter(_.accountChainType === chain)
       .sortBy(_.addressIndex.desc)
       .take(1)
@@ -76,8 +82,11 @@ case class AddressDAO()(
   /**
     * Finds the most recent external address in the wallet, if any
     */
-  def findMostRecentExternal(accountIndex: Int): Future[Option[AddressDb]] = {
-    val query = findMostRecentForChain(accountIndex, HDChainType.External)
+  def findMostRecentExternal(
+      purpose: HDPurpose,
+      accountIndex: Int): Future[Option[AddressDb]] = {
+    val query =
+      findMostRecentForChain(purpose, accountIndex, HDChainType.External)
     database.run(query)
   }
 }

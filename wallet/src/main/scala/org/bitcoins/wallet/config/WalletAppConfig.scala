@@ -9,6 +9,7 @@ import scala.util.Success
 import java.nio.file.Files
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.hd.AddressType
 
 case class WalletAppConfig(private val conf: Config*) extends AppConfig {
   override val configOverrides: List[Config] = conf.toList
@@ -26,6 +27,17 @@ case class WalletAppConfig(private val conf: Config*) extends AppConfig {
       case other: String =>
         throw new RuntimeException(s"$other is not a valid account type!")
     }
+
+  lazy val defaultAddressType: AddressType = {
+    defaultAccountKind match {
+      case HDPurposes.Legacy       => AddressType.Legacy
+      case HDPurposes.NestedSegWit => AddressType.NestedSegWit
+      case HDPurposes.SegWit       => AddressType.SegWit
+      // todo: validate this pre-app startup
+      case other =>
+        throw new RuntimeException(s"$other is not a valid account type!")
+    }
+  }
 
   lazy val bloomFalsePositiveRate: Double =
     config.getDouble("wallet.bloomFalsePositiveRate")

@@ -114,7 +114,8 @@ object AddressDbHelper {
       pub: ECPublicKey,
       path: NestedSegWitHDPath,
       np: NetworkParameters): NestedSegWitAddressDb = {
-    ???
+    throw new UnsupportedOperationException(
+      "Nested segwit is not implemented yet!")
   }
 
   /** Gets an address. Derives the correct type by looking at the kind of path passed in */
