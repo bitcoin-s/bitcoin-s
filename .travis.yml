@@ -69,6 +69,7 @@ jobs:
       script: sbt docs/mdoc
     # run ci-release only if previous stages passed
     - stage: release
+      jdk: openjdk8
       name: Publish library
       script: sbt ci-release
     # run website push only if previous stages passed
