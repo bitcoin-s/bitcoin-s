@@ -1,6 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoinj.core.DumpedPrivateKey
 import org.bitcoins.core.crypto.ECPrivateKey
 
 /**
@@ -9,9 +8,6 @@ import org.bitcoins.core.crypto.ECPrivateKey
 trait CryptoTestUtil {
   def privateKeyBase58 = "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT"
 
-  def bitcoinjDumpedPrivateKey =
-    new DumpedPrivateKey(BitcoinJTestUtil.params, privateKeyBase58)
-  def bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
   def privateKey = ECPrivateKey.fromWIFToPrivateKey(privateKeyBase58)
 
 }

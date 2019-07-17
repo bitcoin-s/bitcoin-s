@@ -18,8 +18,6 @@ import scala.util.Try
 class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
   private def logger = BitcoinSLogger.logger
 
-  val scriptPubKey =
-    BitcoinjConversions.toScriptPubKey(BitcoinJTestUtil.multiSigScript)
   "TransactionSignatureSerializer" must "correctly serialize an input that is being checked where another input in the same tx is using SIGHASH_ANYONECANPAY" in {
     //this is from a test case inside of tx_valid.json
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/tx_valid.json#L91
