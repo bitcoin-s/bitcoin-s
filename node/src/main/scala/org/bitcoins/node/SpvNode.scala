@@ -17,6 +17,12 @@ import scala.concurrent.Future
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.p2p.FilterLoadMessage
 import org.bitcoins.core.p2p.NetworkPayload
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.node.models.BroadcastAbleTransaction
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import slick.jdbc.SQLiteProfile
+import scala.util.Failure
+import scala.util.Success
 
 case class SpvNode(
     peer: Peer,
@@ -29,6 +35,8 @@ case class SpvNode(
     chainAppConfig: ChainAppConfig)
     extends BitcoinSLogger {
   import system.dispatcher
+
+  private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
   private val peerMsgRecv =
     PeerMessageReceiver.newReceiver(callbacks)
@@ -83,6 +91,22 @@ case class SpvNode(
     val isStoppedF = AsyncUtil.retryUntilSatisfied(peerMsgRecv.isDisconnected)
 
     isStoppedF.map(_ => this)
+  }
+
+  /** Broadcasts the given transaction over the P2P network */
+  def broadcastTransaction(transaction: Transaction): Unit = {
+    val broadcastTx = BroadcastAbleTransaction(transaction)
+
+    txDAO.create(broadcastTx).onComplete {
+      case Failure(exception) =>
+        logger.error(s"Error when writing broadcastable TX to DB", exception)
+      case Success(written) =>
+        logger.debug(
+          s"Wrote tx=${written.transaction.txIdBE} to broadcastable table")
+    }
+
+    logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
+    peerMsgSender.sendInventoryMessage(transaction)
   }
 
   /** Checks if we have a tcp connection with our peer */

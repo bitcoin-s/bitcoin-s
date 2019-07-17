@@ -58,13 +58,6 @@ abstract class DbCommonsColumnMappers {
 
     }
 
-  /** Responsible for mapping a [[DoubleSha256Digest]] to a String, and vice versa */
-  implicit val doubleSha256DigestMapper: BaseColumnType[DoubleSha256Digest] =
-    MappedColumnType.base[DoubleSha256Digest, String](
-      _.hex,
-      DoubleSha256Digest.fromHex
-    )
-
   implicit val doubleSha256DigestBEMapper: BaseColumnType[
     DoubleSha256DigestBE] =
     MappedColumnType.base[DoubleSha256DigestBE, String](

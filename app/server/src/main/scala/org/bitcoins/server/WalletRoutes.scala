@@ -11,12 +11,14 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.currency._
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.node.SpvNode
 
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import scala.util.Failure
 import scala.util.Success
 
-case class WalletRoutes(wallet: UnlockedWalletApi)(implicit system: ActorSystem)
+case class WalletRoutes(wallet: UnlockedWalletApi, node: SpvNode)(
+    implicit system: ActorSystem)
     extends BitcoinSLogger
     with ServerRoute {
   import system.dispatcher
@@ -48,10 +50,8 @@ case class WalletRoutes(wallet: UnlockedWalletApi)(implicit system: ActorSystem)
             // TODO dynamic fees
             val feeRate = SatoshisPerByte(100.sats)
             wallet.sendToAddress(address, bitcoins, feeRate).map { tx =>
-              // TODO this TX isn't being broadcast anywhere
-              // would be better to dump the entire TX hex until that's implemented?
+              node.broadcastTransaction(tx)
               Server.httpSuccess(tx.txIdBE)
-
             }
           }
       }

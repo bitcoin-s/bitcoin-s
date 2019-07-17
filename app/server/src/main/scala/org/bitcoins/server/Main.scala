@@ -120,7 +120,7 @@ object Main
     _ <- node.sync()
 
     start <- {
-      val walletRoutes = WalletRoutes(wallet)
+      val walletRoutes = WalletRoutes(wallet, node)
       val nodeRoutes = NodeRoutes(node)
       val chainRoutes = ChainRoutes(node.chainApi)
       val server = Server(Seq(walletRoutes, nodeRoutes, chainRoutes))
