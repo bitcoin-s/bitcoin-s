@@ -20,7 +20,7 @@ object Deps {
     val ammoniteV = "1.6.7"
 
     val asyncV = "0.9.7"
-    val jodaV = "2.10.2"
+    val jodaV = "2.10.3"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
