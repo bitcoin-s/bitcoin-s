@@ -19,6 +19,8 @@ import org.bitcoins.core.p2p.GetDataMessage
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import slick.jdbc.SQLiteProfile
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.core.p2p.TypeIdentifier
+import org.bitcoins.core.p2p.MsgUnassigned
 
 /** This actor is meant to handle a [[org.bitcoins.node.messages.DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -46,13 +48,28 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks)(
           s"Received a getdata message for inventories=${getData.inventories}")
         getData.inventories.foreach { inv =>
           logger.debug(s"Looking for inv=$inv")
-          txDAO.findByHash(inv.hash).map {
-            case Some(tx) =>
-              peerMsgSender.sendTransactionMessage(tx.transaction)
-            case None =>
+          inv.typeIdentifier match {
+            case TypeIdentifier.MsgTx =>
+              txDAO.findByHash(inv.hash).map {
+                case Some(tx) =>
+                  peerMsgSender.sendTransactionMessage(tx.transaction)
+                case None =>
+                  logger.warn(
+                    s"Got request to send data with hash=${inv.hash}, but found nothing")
+              }
+            case other @ (TypeIdentifier.MsgBlock |
+                TypeIdentifier.MsgFilteredBlock |
+                TypeIdentifier.MsgCompactBlock |
+                TypeIdentifier.MsgFilteredWitnessBlock |
+                TypeIdentifier.MsgWitnessBlock | TypeIdentifier.MsgWitnessTx) =>
               logger.warn(
-                s"Got request to send data with hash=${inv.hash}, but found nothing")
+                s"Got request to send data type=$other, this is not implemented yet")
+
+            case unassigned: MsgUnassigned =>
+              logger.warn(
+                s"Received unassigned message we do not understand, msg=${unassigned}")
           }
+
         }
         FutureUtil.unit
       case headersMsg: HeadersMessage =>

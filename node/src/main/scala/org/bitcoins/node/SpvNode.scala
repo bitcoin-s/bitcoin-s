@@ -94,7 +94,7 @@ case class SpvNode(
   }
 
   /** Broadcasts the given transaction over the P2P network */
-  def broadcastTransaction(transaction: Transaction) = {
+  def broadcastTransaction(transaction: Transaction): Unit = {
     val broadcastTx = BroadcastAbleTransaction(transaction)
 
     txDAO.create(broadcastTx).onComplete {

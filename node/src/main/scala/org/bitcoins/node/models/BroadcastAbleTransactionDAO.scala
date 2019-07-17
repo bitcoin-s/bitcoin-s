@@ -22,7 +22,7 @@ final case class BroadcastAbleTransactionDAO(profile: JdbcProfile)(
       hash: DoubleSha256Digest): Future[Option[BroadcastAbleTransaction]] = {
     import org.bitcoins.db.DbCommonsColumnMappers._
 
-    val query = table.filter(_.txid === hash)
+    val query = table.filter(_.txid === hash.flip)
     database.run(query.result).map(_.headOption)
   }
 
