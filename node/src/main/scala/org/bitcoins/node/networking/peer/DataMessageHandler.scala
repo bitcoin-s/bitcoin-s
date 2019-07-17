@@ -16,6 +16,11 @@ import org.bitcoins.core.p2p.TransactionMessage
 import org.bitcoins.core.p2p.MerkleBlockMessage
 import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.core.p2p.GetDataMessage
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import slick.jdbc.SQLiteProfile
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.core.p2p.TypeIdentifier
+import org.bitcoins.core.p2p.MsgUnassigned
 
 /** This actor is meant to handle a [[org.bitcoins.node.messages.DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -23,25 +28,56 @@ import org.bitcoins.core.p2p.GetDataMessage
   */
 class DataMessageHandler(callbacks: SpvNodeCallbacks)(
     implicit ec: ExecutionContext,
-    appConfig: ChainAppConfig)
+    chainConf: ChainAppConfig,
+    nodeConf: NodeAppConfig)
     extends BitcoinSLogger {
 
-  val callbackNum = callbacks.onBlockReceived.length + callbacks.onMerkleBlockReceived.length + callbacks.onTxReceived.length
+  private val callbackNum = callbacks.onBlockReceived.length + callbacks.onMerkleBlockReceived.length + callbacks.onTxReceived.length
   logger.debug(s"Given $callbackNum of callback(s)")
 
   private val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO()
+  private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
   def handleDataPayload(
       payload: DataPayload,
       peerMsgSender: PeerMessageSender): Future[Unit] = {
 
     payload match {
+      case getData: GetDataMessage =>
+        logger.debug(
+          s"Received a getdata message for inventories=${getData.inventories}")
+        getData.inventories.foreach { inv =>
+          logger.debug(s"Looking for inv=$inv")
+          inv.typeIdentifier match {
+            case TypeIdentifier.MsgTx =>
+              txDAO.findByHash(inv.hash).map {
+                case Some(tx) =>
+                  peerMsgSender.sendTransactionMessage(tx.transaction)
+                case None =>
+                  logger.warn(
+                    s"Got request to send data with hash=${inv.hash}, but found nothing")
+              }
+            case other @ (TypeIdentifier.MsgBlock |
+                TypeIdentifier.MsgFilteredBlock |
+                TypeIdentifier.MsgCompactBlock |
+                TypeIdentifier.MsgFilteredWitnessBlock |
+                TypeIdentifier.MsgWitnessBlock | TypeIdentifier.MsgWitnessTx) =>
+              logger.warn(
+                s"Got request to send data type=$other, this is not implemented yet")
+
+            case unassigned: MsgUnassigned =>
+              logger.warn(
+                s"Received unassigned message we do not understand, msg=${unassigned}")
+          }
+
+        }
+        FutureUtil.unit
       case headersMsg: HeadersMessage =>
         logger.trace(
           s"Received headers message with ${headersMsg.count.toInt} headers")
         val headers = headersMsg.headers
         val chainApi: ChainApi =
-          ChainHandler(blockHeaderDAO, chainConfig = appConfig)
+          ChainHandler(blockHeaderDAO, chainConfig = chainConf)
         val chainApiF = chainApi.processHeaders(headers)
 
         chainApiF.map { newApi =>
