@@ -28,7 +28,7 @@ private[wallet] trait TransactionProcessing extends KeyHandlingLogger {
     logger.info(
       s"Processing transaction=${transaction.txIdBE} with confirmations=$confirmations")
     processTransactionImpl(transaction, confirmations).map {
-      case ProcessTxResult(outgoing, incoming) =>
+      case ProcessTxResult(incoming, outgoing) =>
         logger.info(
           s"Finished processing of transaction=${transaction.txIdBE}. Relevant incomingTXOs=${incoming.length}, outgoingTXOs=${outgoing.length}")
         this
