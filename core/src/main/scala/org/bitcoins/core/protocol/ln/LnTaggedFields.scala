@@ -77,17 +77,9 @@ object LnTaggedFields {
       extends LnTaggedFields
 
   /**
-    * According to BOLT11 these are the required fields in a LnInvoice
-    * You need to provide a payment hash and either a description,
-    * or the hash of the description
+    * According to BOLT11 the required fields in a LnInvoice are a payment hash
+    * and either a description, or the hash of the description.
     */
-  def apply(
-      paymentHashTag: PaymentHashTag,
-      descriptionOrHash: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag]): LnTaggedFields = {
-
-    LnTaggedFields.apply(paymentHashTag, descriptionOrHash)
-  }
-
   def apply(
       paymentHash: LnTag.PaymentHashTag,
       descriptionOrHash: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag],
