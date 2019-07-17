@@ -5,11 +5,12 @@ import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.db.ChainVerificationLogger
 
-trait ChainSync extends BitcoinSLogger {
+trait ChainSync extends ChainVerificationLogger {
 
   /** This method checks if our chain handler has the tip of the blockchain as an external source
     * If we do not have the same chain, we sync our chain handler until we are at the same best block hash
@@ -20,9 +21,12 @@ trait ChainSync extends BitcoinSLogger {
     * @param ec
     * @return
     */
-  def sync(chainHandler: ChainHandler,
-           getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader],
-           getBestBlockHashFunc: () => Future[DoubleSha256DigestBE])(implicit ec: ExecutionContext): Future[ChainApi] = {
+  def sync(
+      chainHandler: ChainHandler,
+      getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader],
+      getBestBlockHashFunc: () => Future[DoubleSha256DigestBE])(
+      implicit ec: ExecutionContext,
+      conf: ChainAppConfig): Future[ChainApi] = {
     val currentTipsF: Future[Vector[BlockHeaderDb]] = {
       chainHandler.blockHeaderDAO.chainTips
     }
@@ -40,16 +44,15 @@ trait ChainSync extends BitcoinSLogger {
     val updatedChainApi = bestBlockHashF.flatMap { bestBlockHash =>
       currentTipsF.flatMap { tips =>
         syncTips(chainApi = chainHandler,
-          tips = tips,
-          bestBlockHash = bestBlockHash,
-          getBlockHeaderFunc = getBlockHeaderFunc)
+                 tips = tips,
+                 bestBlockHash = bestBlockHash,
+                 getBlockHeaderFunc = getBlockHeaderFunc)
       }
     }
 
     updatedChainApi
 
   }
-
 
   /**
     * Keeps walking backwards on the chain until we match one
@@ -61,17 +64,22 @@ trait ChainSync extends BitcoinSLogger {
     * @param ec
     * @return
     */
-  private def syncTips(chainApi: ChainApi,
-                       tips: Vector[BlockHeaderDb],
-                       bestBlockHash: DoubleSha256DigestBE,
-                       getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader])(implicit ec: ExecutionContext): Future[ChainApi] = {
+  private def syncTips(
+      chainApi: ChainApi,
+      tips: Vector[BlockHeaderDb],
+      bestBlockHash: DoubleSha256DigestBE,
+      getBlockHeaderFunc: DoubleSha256DigestBE => Future[BlockHeader])(
+      implicit ec: ExecutionContext,
+      conf: ChainAppConfig): Future[ChainApi] = {
     require(tips.nonEmpty, s"Cannot sync without the genesis block")
 
     //we need to walk backwards on the chain until we get to one of our tips
 
     val tipsBH = tips.map(_.blockHeader)
 
-    def loop(lastHeaderF: Future[BlockHeader], accum: List[BlockHeader]): Future[List[BlockHeader]] = {
+    def loop(
+        lastHeaderF: Future[BlockHeader],
+        accum: List[BlockHeader]): Future[List[BlockHeader]] = {
       lastHeaderF.flatMap { lastHeader =>
         if (tipsBH.contains(lastHeader)) {
           //means we have synced back to a block that we know
@@ -81,9 +89,10 @@ trait ChainSync extends BitcoinSLogger {
           logger.debug(s"Last header=${lastHeader.hashBE.hex}")
           //we don't know this block, so we need to keep walking backwards
           //to find a block a we know
-          val newLastHeaderF = getBlockHeaderFunc(lastHeader.previousBlockHashBE)
+          val newLastHeaderF =
+            getBlockHeaderFunc(lastHeader.previousBlockHashBE)
 
-          loop(newLastHeaderF,lastHeader +: accum)
+          loop(newLastHeaderF, lastHeader +: accum)
         }
       }
     }
@@ -91,7 +100,9 @@ trait ChainSync extends BitcoinSLogger {
     val bestHeaderF = getBlockHeaderFunc(bestBlockHash)
 
     bestHeaderF.map { bestHeader =>
-      logger.info(s"Best tip from third party=${bestHeader.hashBE.hex} currentTips=${tips.map(_.hashBE.hex)}")
+      logger.info(
+        s"Best tip from third party=${bestHeader.hashBE.hex} currentTips=${tips
+          .map(_.hashBE.hex)}")
     }
 
     //one sanity check to make sure we aren't _ahead_ of our data source
@@ -110,7 +121,8 @@ trait ChainSync extends BitcoinSLogger {
 
         //now we are going to add them to our chain and return the chain api
         headersToSyncF.flatMap { headers =>
-          logger.info(s"Attempting to sync ${headers.length} blockheader to our chainstate")
+          logger.info(
+            s"Attempting to sync ${headers.length} blockheader to our chainstate")
           chainApi.processHeaders(headers.toVector)
         }
       }
@@ -119,6 +131,5 @@ trait ChainSync extends BitcoinSLogger {
 
   }
 }
-
 
 object ChainSync extends ChainSync

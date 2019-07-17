@@ -16,7 +16,6 @@ import org.bitcoins.core.hd.HDPath
 
 import org.bitcoins.core.hd.SegWitHDPath
 import org.bitcoins.core.crypto.BIP39Seed
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.hd.LegacyHDPath
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 
@@ -85,9 +84,7 @@ case class LegacySpendingInfo(
   * we need to derive the private keys, given
   * the root wallet seed.
   */
-sealed trait SpendingInfoDb
-    extends DbRowAutoInc[SpendingInfoDb]
-    with BitcoinSLogger {
+sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
   protected type PathType <: HDPath
 
@@ -140,13 +137,6 @@ sealed trait SpendingInfoDb
     val pubAtPath = privKey.publicKey
 
     val sign: Sign = Sign(privKey.signFunction, pubAtPath)
-
-    logger.info({
-      val shortStr = s"${outPoint.txId.hex}:${outPoint.vout.toInt}"
-      val detailsStr =
-        s"scriptPubKey=${output.scriptPubKey}, amount=${output.value}, keyPath=${privKeyPath}, pubKey=${pubAtPath}"
-      s"Converting DB UTXO $shortStr ($detailsStr) to spending info"
-    })
 
     BitcoinUTXOSpendingInfo(outPoint,
                             output,

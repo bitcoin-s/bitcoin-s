@@ -61,7 +61,7 @@ class BroadcastTransactionTest extends BitcoinSWalletTest {
         val peer = Peer.fromBitcoind(rpc.instance)
         val chainHandler = {
           val bhDao = BlockHeaderDAO()
-          ChainHandler(bhDao, config)
+          ChainHandler(bhDao)
         }
 
         val spv =

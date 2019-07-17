@@ -184,7 +184,7 @@ trait ChainUnitTest
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
-    } yield ChainHandler(blockHeaderDAO = blockHeaderDAO, appConfig)
+    } yield ChainHandler(blockHeaderDAO = blockHeaderDAO)
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
@@ -415,7 +415,7 @@ object ChainUnitTest extends BitcoinSLogger {
       ec: ExecutionContext): ChainHandler = {
     lazy val blockHeaderDAO = BlockHeaderDAO()
 
-    ChainHandler(blockHeaderDAO = blockHeaderDAO, appConfig)
+    ChainHandler(blockHeaderDAO)
   }
 
 }

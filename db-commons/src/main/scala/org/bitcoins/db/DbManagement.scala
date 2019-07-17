@@ -1,11 +1,10 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.util.BitcoinSLogger
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class DbManagement extends BitcoinSLogger {
+abstract class DbManagement extends DatabaseLogger {
   def allTables: List[TableQuery[_ <: Table[_]]]
 
   /** Lists all tables in the given database */

@@ -1,7 +1,0 @@
-<configuration>
-    <!-- Although this file is on the core project classpath, 
-    we exclude all XML files from being included in published 
-    artifacts. This way users of Bitcoin-S won't get our config
-    pushed on them. -->
-    <include resource="common-logback.xml" />
-</configuration>

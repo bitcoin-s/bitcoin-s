@@ -22,12 +22,14 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.hd.AddressType
+import org.bitcoins.db.KeyHandlingLogger
 
 /**
   * Provides functionality related to addresses. This includes
   * enumeratng and creating them, primarily.
   */
-private[wallet] trait AddressHandling { self: LockedWallet =>
+private[wallet] trait AddressHandling extends KeyHandlingLogger {
+  self: LockedWallet =>
 
   override def listAddresses(): Future[Vector[AddressDb]] =
     addressDAO.findAll()

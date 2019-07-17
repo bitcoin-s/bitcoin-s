@@ -26,6 +26,7 @@ import scala.util.Properties
 import scala.util.matching.Regex
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import ch.qos.logback.classic.Level
 
 /**
   * Everything needed to configure functionality
@@ -277,6 +278,56 @@ abstract class AppConfig extends BitcoinSLogger {
     }
     basedir.resolve(lastDirname)
   }
+
+  private def stringToLogLevel(str: String): Level =
+    str.toLowerCase() match {
+      case "trace"       => Level.TRACE
+      case "debug"       => Level.DEBUG
+      case "info"        => Level.INFO
+      case "warn"        => Level.WARN
+      case "error"       => Level.ERROR
+      case "off"         => Level.OFF
+      case other: String => sys.error(s"Unknown logging level: $other")
+    }
+
+  /** The default logging level */
+  lazy val logLevel: Level = {
+    val levelString = config.getString("logging.level")
+    stringToLogLevel(levelString)
+  }
+
+  /** Whether or not we should log to file */
+  lazy val disableFileLogging = config.getBoolean("logging.disable-file")
+
+  /** Whether or not we should log to stdout */
+  lazy val disableConsoleLogging = config.getBoolean("logging.disable-console")
+
+  private def levelOrDefault(key: String): Level =
+    config
+      .getStringOrNone(key)
+      .map(stringToLogLevel)
+      .getOrElse(logLevel)
+
+  /** The logging level for our P2P logger */
+  lazy val p2pLogLevel: Level = levelOrDefault("logging.p2p")
+
+  /** The logging level for our chain verification logger */
+  lazy val verificationLogLevel: Level =
+    levelOrDefault("logging.chain-verification")
+
+  /** The logging level for our key handling logger */
+  lazy val keyHandlingLogLevel: Level =
+    levelOrDefault("logging.key-handling")
+
+  /** Logging level for wallet */
+  lazy val walletLogLeveL: Level =
+    levelOrDefault("logging.wallet")
+
+  /** Logging level for HTTP RPC server */
+  lazy val httpLogLevel: Level = levelOrDefault("logging.http")
+
+  /** Logging level for database interactions */
+  lazy val databaseLogLevel: Level = levelOrDefault("logging.database")
 
 }
 

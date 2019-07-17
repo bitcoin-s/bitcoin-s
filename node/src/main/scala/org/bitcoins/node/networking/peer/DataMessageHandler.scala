@@ -1,10 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,21 +18,20 @@ import slick.jdbc.SQLiteProfile
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.p2p.TypeIdentifier
 import org.bitcoins.core.p2p.MsgUnassigned
+import org.bitcoins.db.P2PLogger
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
   */
-class DataMessageHandler(callbacks: SpvNodeCallbacks)(
+class DataMessageHandler(callbacks: SpvNodeCallbacks, chainHandler: ChainApi)(
     implicit ec: ExecutionContext,
-    chainConf: ChainAppConfig,
-    nodeConf: NodeAppConfig)
-    extends BitcoinSLogger {
+    appConfig: NodeAppConfig)
+    extends P2PLogger {
 
   private val callbackNum = callbacks.onBlockReceived.length + callbacks.onMerkleBlockReceived.length + callbacks.onTxReceived.length
   logger.debug(s"Given $callbackNum of callback(s)")
 
-  private val blockHeaderDAO: BlockHeaderDAO = BlockHeaderDAO()
   private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
   def handleDataPayload(
@@ -76,9 +72,7 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks)(
         logger.trace(
           s"Received headers message with ${headersMsg.count.toInt} headers")
         val headers = headersMsg.headers
-        val chainApi: ChainApi =
-          ChainHandler(blockHeaderDAO, chainConfig = chainConf)
-        val chainApiF = chainApi.processHeaders(headers)
+        val chainApiF = chainHandler.processHeaders(headers)
 
         chainApiF.map { newApi =>
           val lastHeader = headers.last

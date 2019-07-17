@@ -1,12 +1,11 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p.{VerAckMessage, VersionMessage}
 import org.bitcoins.node.networking.P2PClient
 
 import scala.concurrent.{Future, Promise}
 
-sealed abstract class PeerMessageReceiverState extends BitcoinSLogger {
+sealed abstract class PeerMessageReceiverState {
 
   /** This promise gets completed when we receive a
     * [[akka.io.Tcp.Connected]] message from [[org.bitcoins.node.networking.P2PClient P2PClient]]

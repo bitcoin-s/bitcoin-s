@@ -22,6 +22,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import scala.util.Success
 import scala.util.Failure
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.KeyHandlingLogger
 
 /**
   * Provides functionality related to handling UTXOs in our wallet.
@@ -29,7 +30,8 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
   * UTXOs in the wallet and importing a UTXO into the wallet for later
   * spending.
   */
-private[wallet] trait UtxoHandling { self: LockedWallet =>
+private[wallet] trait UtxoHandling extends KeyHandlingLogger {
+  self: LockedWallet =>
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] =
