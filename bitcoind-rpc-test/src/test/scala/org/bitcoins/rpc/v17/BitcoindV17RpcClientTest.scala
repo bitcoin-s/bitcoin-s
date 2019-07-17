@@ -1,5 +1,7 @@
 package org.bitcoins.rpc.v17
 
+import java.util.Calendar
+
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.core.currency.Bitcoins
@@ -7,11 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionInput
-import org.bitcoins.rpc.client.common.RpcOpts.{
-  AddressType,
-  LabelPurpose,
-  SignRawTransactionOutputParameter
-}
+import org.bitcoins.rpc.client.common.RpcOpts.{AddressType, LabelPurpose, SignRawTransactionOutputParameter}
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -101,7 +99,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress
       info <- client.getAddressInfo(addr)
-    } yield assert(info.timestamp.exists(_.dayOfYear == DateTime.now.dayOfYear))
+    } yield assert(info.timestamp.exists(_.get(info.timestamp.DAY_OF_YEAR) == Calendar.DAY_OF_YEAR) //todo: figure out why this isn't working or pick a more adequate typing
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {

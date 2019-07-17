@@ -2,24 +2,15 @@ package org.bitcoins.rpc.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
+import java.util.Calendar
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.script.{
-  ScriptPubKey,
-  ScriptSignature,
-  WitnessVersion,
-  WitnessVersion0
-}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature, WitnessVersion, WitnessVersion0}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{
-  Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.protocol.{Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
@@ -61,13 +52,9 @@ object JsonReaders {
       }
     }
   }
-
-  implicit object DateTimeReads extends Reads[DateTime] {
-    override def reads(json: JsValue): JsResult[DateTime] =
-      SerializerUtil.processJsNumber { num =>
-        // Joda counts in millis since epoch, Core in seconds
-        new DateTime(num.toLong * 1000)
-      }(json)
+  implicit object CalendarReads extends Reads[Calendar] {
+    override def reads(json: JsValue): JsResult[Calendar] =
+      SerializerUtil.processJsNumber[Calendar](_.) //todo: figure out how to make this reader work
   }
 
   implicit object BigIntReads extends Reads[BigInt] {
