@@ -44,28 +44,20 @@ sealed trait DataPayload extends NetworkPayload
 /**
   * The block message transmits a single serialized block
   *
+  * @param block The block being transmitted inside of this message
+  *
   * @see [[https://bitcoin.org/en/developer-reference#block]]
   */
-trait BlockMessage extends DataPayload {
-
-  /**
-    * The block being transmitted inside of this [[BlockMessage]]
-    */
-  def block: Block
-
-  override def commandName = NetworkPayload.blockCommandName
+case class BlockMessage(block: Block) extends DataPayload {
+  override val commandName = NetworkPayload.blockCommandName
 
   override def bytes: ByteVector = RawBlockMessageSerializer.write(this)
 }
 
 object BlockMessage extends Factory[BlockMessage] {
 
-  private case class BlockMessageImpl(block: Block) extends BlockMessage
-
   def fromBytes(bytes: ByteVector): BlockMessage =
     RawBlockMessageSerializer.read(bytes)
-
-  def apply(block: Block): BlockMessage = BlockMessageImpl(block)
 
 }
 
@@ -148,39 +140,25 @@ object GetBlocksMessage extends Factory[GetBlocksMessage] {
   * The getdata message requests one or more data objects from another node.
   * The objects are requested by an inventory,
   * which the requesting node typically previously received by way of an inv message.
+  *
+  * @param inventoryCount The number of inventory enteries
+  * @param inventories One or more inventory entries up to a maximum of 50,000 entries.
+  *
   * @see [[https://bitcoin.org/en/developer-reference#getdata]]
   */
-trait GetDataMessage extends DataPayload {
-
-  /**
-    * The number of inventory enteries
-    */
-  def inventoryCount: CompactSizeUInt
-
-  /**
-    * One or more inventory entries up to a maximum of 50,000 entries.
-    */
-  def inventories: Seq[Inventory]
-
+case class GetDataMessage(
+    inventoryCount: CompactSizeUInt,
+    inventories: Seq[Inventory])
+    extends DataPayload {
   override def commandName = NetworkPayload.getDataCommandName
 
   override def bytes: ByteVector = RawGetDataMessageSerializer.write(this)
 }
 
 object GetDataMessage extends Factory[GetDataMessage] {
-  private case class GetDataMessageImpl(
-      inventoryCount: CompactSizeUInt,
-      inventories: Seq[Inventory])
-      extends GetDataMessage
 
   override def fromBytes(bytes: ByteVector): GetDataMessage = {
     RawGetDataMessageSerializer.read(bytes)
-  }
-
-  def apply(
-      inventoryCount: CompactSizeUInt,
-      inventories: Seq[Inventory]): GetDataMessage = {
-    GetDataMessageImpl(inventoryCount, inventories)
   }
 
   def apply(inventories: Seq[Inventory]): GetDataMessage = {
@@ -389,7 +367,7 @@ case object MemPoolMessage extends DataPayload {
   */
 case class MerkleBlockMessage(merkleBlock: MerkleBlock) extends DataPayload {
 
-  override def commandName = NetworkPayload.merkleBlockCommandName
+  override val commandName = NetworkPayload.merkleBlockCommandName
 
   def bytes: ByteVector = RawMerkleBlockMessageSerializer.write(this)
 
@@ -448,16 +426,12 @@ object NotFoundMessage extends Factory[NotFoundMessage] {
 /**
   * The tx message transmits a single transaction in the raw transaction format.
   * It can be sent in a variety of situations;
+  * @param transaction The transaction being sent over the wire
   * @see [[https://bitcoin.org/en/developer-reference#tx]]
   */
-trait TransactionMessage extends DataPayload {
+case class TransactionMessage(transaction: Transaction) extends DataPayload {
 
-  /**
-    * The transaction being sent over the wire
-    */
-  def transaction: Transaction
-
-  override def commandName = NetworkPayload.transactionCommandName
+  override val commandName = NetworkPayload.transactionCommandName
   override def bytes: ByteVector = RawTransactionMessageSerializer.write(this)
 
   override def toString(): String = s"TransactionMessage(${transaction.txIdBE})"
@@ -469,14 +443,8 @@ trait TransactionMessage extends DataPayload {
   */
 object TransactionMessage extends Factory[TransactionMessage] {
 
-  private case class TransactionMessageImpl(transaction: Transaction)
-      extends TransactionMessage
-
   def fromBytes(bytes: ByteVector): TransactionMessage =
     RawTransactionMessageSerializer.read(bytes)
-
-  def apply(transaction: Transaction): TransactionMessage =
-    TransactionMessageImpl(transaction)
 }
 
 /**
