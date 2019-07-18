@@ -2,64 +2,12 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoTestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
-import scodec.bits.ByteVector
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.core.gen.ChainParamsGenerator
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.core.config.Networks
 
 class ECPrivateKeyTest extends BitcoinSUnitTest {
-  "ECPrivateKey" must "have the same byte representation as a bitcoinj private key" in {
-    val bitcoinjPrivateKey =
-      CryptoTestUtil.bitcoinjPrivateKey.getPrivateKeyAsHex
-    CryptoTestUtil.privateKey.hex must be(bitcoinjPrivateKey)
-  }
-
-  it must "derive the same public from a private key as bitcoinj" in {
-    val bitcoinjPublicKeyBytes =
-      ByteVector(CryptoTestUtil.bitcoinjPrivateKey.getPubKey)
-    CryptoTestUtil.privateKey.publicKey.hex must be(
-      BitcoinSUtil.encodeHex(bitcoinjPublicKeyBytes))
-  }
-
-  it must "create a bitcoin-s private key from a bitcoinj private key, then convert to the same public key" in {
-    val bitcoinjKey = new org.bitcoinj.core.ECKey()
-    val bitcoinsPrivKey = ECPrivateKey(ByteVector(bitcoinjKey.getSecretBytes))
-    val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
-    val bitcoinjPublicKey = bitcoinjKey.getPubKey
-
-    bitcoinsPublicKey.bytes.toArray must be(bitcoinjPublicKey)
-  }
-
-  it must "create a bitcionj private key from a bitcoins private key and get the same public key" in {
-    val bitcoinsPrivKey = ECPrivateKey.freshPrivateKey
-    val bitcoinjPrivKey =
-      org.bitcoinj.core.ECKey.fromPrivate(bitcoinsPrivKey.bytes.toArray)
-    val bitcoinjPublicKey = bitcoinjPrivKey.getPubKey
-    val bitcoinsPublicKey = bitcoinsPrivKey.publicKey
-
-    bitcoinsPublicKey.bytes.toArray must be(bitcoinjPublicKey)
-  }
-
-  it must "create a private key from the dumped base58 in bitcoin-cli" in {
-    val bitcoinjDumpedPrivateKey = CryptoTestUtil.bitcoinjDumpedPrivateKey
-    val bitcoinjPrivateKey = bitcoinjDumpedPrivateKey.getKey
-    val privateKey =
-      ECPrivateKey.fromWIFToPrivateKey(CryptoTestUtil.privateKeyBase58)
-    privateKey.hex must be(bitcoinjPrivateKey.getPrivateKeyAsHex)
-  }
-
-  it must "create a private key from a sequence of bytes that has the same byte representation of bitcoinj ECKeys" in {
-    val bitcoinJKey = CryptoTestUtil.bitcoinjPrivateKey
-    val privateKey: ECPrivateKey =
-      ECPrivateKey(ByteVector(bitcoinJKey.getPrivKeyBytes))
-    privateKey.hex must be(bitcoinJKey.getPrivateKeyAsHex)
-  }
-
   it must "create a private key from its hex representation" in {
     val privateKeyHex =
       "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
