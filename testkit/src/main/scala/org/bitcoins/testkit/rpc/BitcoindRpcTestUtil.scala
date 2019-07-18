@@ -269,10 +269,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def deleteTmpDir(dir: File): Boolean = {
     val isTemp = dir.getPath startsWith Properties.tmpDir
     if (!isTemp) {
-      throw new IllegalArgumentException(
+      logger.warn(
         s"Directory $dir is not in the system temp dir location! You most likely didn't mean to delete this directory.")
-    }
-    if (!dir.isDirectory) {
+      false
+    } else if (!dir.isDirectory) {
       dir.delete()
     } else {
       dir.listFiles().foreach(deleteTmpDir)
@@ -832,7 +832,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       clientAccum: RpcClientAccum = Vector.newBuilder)(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
-    assert(
+    require(
       instance.datadir.getPath().startsWith(Properties.tmpDir),
       s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")
 
