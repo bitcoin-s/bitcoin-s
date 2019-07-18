@@ -185,8 +185,12 @@ case class P2PClientActor(
           val length = messages.length
           val suffix = if (length == 0) "" else s": ${messages.mkString(", ")}"
 
-          s"Parsed $length messages from bytes$suffix"
+          s"Parsed $length message(s) from bytes$suffix"
         })
+        logger.debug(s"Unaligned bytes after this: ${newUnalignedBytes.length}")
+        if (newUnalignedBytes.nonEmpty) {
+          logger.trace(s"Unaligned bytes: ${newUnalignedBytes.toHex}")
+        }
 
         //for the messages we successfully parsed above
         //send them to 'context.parent' -- this is the
