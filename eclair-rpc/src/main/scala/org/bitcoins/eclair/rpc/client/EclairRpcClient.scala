@@ -15,9 +15,14 @@ import org.bitcoins.core.protocol.Address
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{
+  LnInvoice,
+  LnParams,
+  PaymentPreimage,
+  ShortChannelId
+}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.config.EclairInstance
@@ -43,7 +48,7 @@ class EclairRpcClient(val instance: EclairInstance)(
 
   def getDaemon: EclairInstance = instance
 
-  override implicit def executionContext: ExecutionContext = m.executionContext
+  implicit override def executionContext: ExecutionContext = m.executionContext
 
   override def allChannels(): Future[Vector[ChannelDesc]] = {
     eclairCall[Vector[ChannelDesc]]("allchannels")
@@ -353,6 +358,50 @@ class EclairRpcClient(val instance: EclairInstance)(
     }
   }
 
+  /** @inheritdoc */
+  override def monitorInvoice(
+      lnInvoice: LnInvoice,
+      maxAttempts: Int = 60): Future[ReceivedPaymentResult] = {
+    val p: Promise[ReceivedPaymentResult] = Promise[ReceivedPaymentResult]()
+    val attempts = new AtomicInteger(0)
+    val runnable = new Runnable() {
+
+      override def run(): Unit = {
+        val receivedInfoF = getReceivedInfo(lnInvoice)
+
+        //register callback that publishes a payment to our actor system's
+        //event stream,
+        receivedInfoF.map {
+          case None =>
+            if (attempts.incrementAndGet() > maxAttempts) {
+              // too many tries to get info about a payment
+              // either Eclair is down or the payment is still in PENDING state for some reason
+              // complete the promise with an exception so the runnable will be canceled
+              p.failure(
+                new RuntimeException(
+                  s"EclairApi.monitorInvoice() too many attempts: ${attempts
+                    .get()} for invoice=${lnInvoice}"))
+            }
+          case Some(result) =>
+            //invoice has been paid, let's publish to event stream
+            //so subscribers so the even stream can see that a payment
+            //was received
+            //we need to create a `PaymentSucceeded`
+            system.eventStream.publish(result)
+
+            //complete the promise so the runnable will be canceled
+            p.success(result)
+        }
+      }
+    }
+
+    val cancellable = system.scheduler.schedule(1.seconds, 1.seconds, runnable)
+
+    p.future.map(_ => cancellable.cancel())
+
+    p.future
+  }
+
   override def parseInvoice(invoice: LnInvoice): Future[InvoiceResult] = {
     eclairCall[InvoiceResult]("parseinvoice", "invoice" -> invoice.toString)
   }
@@ -385,15 +434,21 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   override def getReceivedInfo(
-      paymentHash: Sha256Digest): Future[ReceivedPaymentResult] = {
-    eclairCall[ReceivedPaymentResult]("getreceivedinfo",
-                                      "paymentHash" -> paymentHash.hex)
-  }
+      paymentHash: Sha256Digest): Future[Option[ReceivedPaymentResult]] = {
 
-  override def getReceivedInfo(
-      invoice: LnInvoice): Future[ReceivedPaymentResult] = {
-    eclairCall[ReceivedPaymentResult]("getreceivedinfo",
-                                      "invoice" -> invoice.toString)
+    //eclair continues the tradition of not responding to things in json...
+    //the failure case here is the string 'Not found'
+    implicit val r: Reads[Option[ReceivedPaymentResult]] = Reads { js =>
+      val result: JsResult[ReceivedPaymentResult] =
+        js.validate[ReceivedPaymentResult]
+      result match {
+        case JsSuccess(result, _) => JsSuccess(Some(result))
+        case _: JsError           => JsSuccess(None)
+      }
+    }
+    eclairCall[Option[ReceivedPaymentResult]](
+      "getreceivedinfo",
+      "paymentHash" -> paymentHash.hex)(r)
   }
 
   override def getSentInfo(
@@ -663,9 +718,9 @@ class EclairRpcClient(val instance: EclairInstance)(
     * 3. We have attempted to query the eclair more than maxAttempts, and the payment is still pending
     */
   override def monitorSentPayment(
-                                   paymentId: PaymentId,
-                                   interval: FiniteDuration,
-                                   maxAttempts: Int): Future[PaymentResult] = {
+      paymentId: PaymentId,
+      interval: FiniteDuration,
+      maxAttempts: Int): Future[PaymentResult] = {
     val p: Promise[PaymentResult] = Promise[PaymentResult]()
 
     val runnable = new Runnable() {
@@ -684,7 +739,10 @@ class EclairRpcClient(val instance: EclairInstance)(
         } else {
           val resultsF = getSentInfo(paymentId)
           resultsF.recover {
-            case e: Throwable => logger.error(s"Cannot check payment status for paymentId=${paymentId}", e)
+            case e: Throwable =>
+              logger.error(
+                s"Cannot check payment status for paymentId=${paymentId}",
+                e)
           }
           val _ = for {
             results <- resultsF
