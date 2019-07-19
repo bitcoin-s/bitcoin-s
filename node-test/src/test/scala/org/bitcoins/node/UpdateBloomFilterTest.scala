@@ -105,7 +105,6 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
 
   it must "update the bloom filter with a TX" in { param =>
     val WalletWithBitcoind(wallet, rpc) = param
-    logger.info(s"RPC datadir: ${rpc.instance.datadir}")
     implicit val chainConf: ChainAppConfig = config
     implicit val nodeConf: NodeAppConfig = config
 
@@ -125,7 +124,7 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
       firstBloom <- wallet.getBloomFilter()
 
       spv <- {
-        val callback = SpvNodeCallbacks.onMerkleBlockReceived { block =>
+        val callback = SpvNodeCallbacks.onMerkleBlockReceived { (block, txs) =>
           logger.info(s"Received merkleBlock=${block} from node")
           ???
         }

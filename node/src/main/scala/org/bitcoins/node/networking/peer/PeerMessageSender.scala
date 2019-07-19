@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.db.P2PLogger
 import org.bitcoins.core.crypto.HashDigest
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     extends P2PLogger {
@@ -88,6 +89,16 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   def sendTransactionMessage(transaction: Transaction): Unit = {
     val message = TransactionMessage(transaction)
     logger.trace(s"Sending txmessage=$message to peer=${client.peer}")
+    sendMsg(message)
+  }
+
+  /** Sends a request for filtered blocks matching the given headers */
+  def sendGetDataMessage(headers: BlockHeader*): Unit = {
+    val inventories =
+      headers.map(header =>
+        Inventory(TypeIdentifier.MsgFilteredBlock, header.hash))
+    val message = GetDataMessage(inventories)
+    logger.info(s"Sending getdata=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
