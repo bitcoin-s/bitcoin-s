@@ -18,27 +18,31 @@ sealed abstract class RawMerkleBlockSerializer
     extends RawBitcoinSerializer[MerkleBlock] {
 
   def read(bytes: ByteVector): MerkleBlock = {
-    val blockHeader = RawBlockHeaderSerializer.read(bytes.take(80))
-    val bytesAfterBlockHeaderParsing =
-      bytes.slice(blockHeader.bytes.size, bytes.size)
-    val transactionCount = UInt32(
-      bytesAfterBlockHeaderParsing.slice(0, 4).reverse)
-    val hashCount = CompactSizeUInt.parseCompactSizeUInt(
-      bytesAfterBlockHeaderParsing.slice(4, bytesAfterBlockHeaderParsing.size))
-    val txHashStartIndex = (4 + hashCount.size).toInt
-    val bytesAfterHashCountParsing = bytesAfterBlockHeaderParsing.slice(
-      txHashStartIndex,
-      bytesAfterBlockHeaderParsing.size)
+    val (headerBytes, afterHeader) = bytes.splitAt(80)
+    val blockHeader = RawBlockHeaderSerializer.read(headerBytes)
+
+    val (txCountBytes, afterTxCount) = afterHeader.splitAt(4)
+
+    val transactionCount = UInt32.fromBytes(txCountBytes.reverse)
+    val hashCount = CompactSizeUInt.parseCompactSizeUInt(afterTxCount)
+
+    val (_, afterHashCountBytes) = afterTxCount.splitAt(hashCount.bytes.length)
 
     val (hashes, bytesAfterTxHashParsing) =
-      parseTransactionHashes(bytesAfterHashCountParsing, hashCount)
+      parseTransactionHashes(afterHashCountBytes, hashCount)
+
     val flagCount =
       CompactSizeUInt.parseCompactSizeUInt(bytesAfterTxHashParsing)
-    val flags = bytesAfterTxHashParsing.slice(flagCount.size.toInt,
-                                              bytesAfterTxHashParsing.size)
+
+    val (_, afterFlagCountBytes) =
+      bytesAfterTxHashParsing.splitAt(flagCount.bytes.length)
+
+    val flags = afterFlagCountBytes.take(flagCount.toInt)
+
     val matches = flags.toArray
       .map(BitVector(_).reverse)
       .foldLeft(BitVector.empty)(_ ++ _)
+
     MerkleBlock(blockHeader, transactionCount, hashes, matches)
   }
 
@@ -74,10 +78,12 @@ sealed abstract class RawMerkleBlockSerializer
         remainingBytes: ByteVector,
         accum: List[DoubleSha256Digest]): (Seq[DoubleSha256Digest], ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
-      else
+      else {
+        val (hashBytes, newRemainingBytes) = remainingBytes.splitAt(32)
         loop(remainingHashes - 1,
-             remainingBytes.slice(32, remainingBytes.size),
-             DoubleSha256Digest(remainingBytes.take(32)) :: accum)
+             newRemainingBytes,
+             DoubleSha256Digest(hashBytes) :: accum)
+      }
     }
     loop(hashCount.num.toInt, bytes, Nil)
   }
