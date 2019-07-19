@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.util.AsyncUtil
+import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 
@@ -120,7 +120,7 @@ abstract class NodeTestUtil extends BitcoinSLogger {
   def awaitSync(node: SpvNode, rpc: BitcoindRpcClient)(
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
-    AsyncUtil
+    TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 500.milliseconds)
   }
 
