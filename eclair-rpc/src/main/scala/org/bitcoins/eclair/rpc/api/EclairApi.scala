@@ -3,7 +3,12 @@ package org.bitcoins.eclair.rpc.api
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.Address
-import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{
+  LnInvoice,
+  LnParams,
+  PaymentPreimage,
+  ShortChannelId
+}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
@@ -38,7 +43,9 @@ trait EclairApi {
     * @param from start timestamp
     * @param to end timestamp
     */
-  def audit(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[AuditResult]
+  def audit(
+      from: Option[FiniteDuration],
+      to: Option[FiniteDuration]): Future[AuditResult]
 
   def allUpdates(): Future[Vector[ChannelUpdate]]
 
@@ -65,11 +72,15 @@ trait EclairApi {
 
   def close(id: ChannelId, spk: ScriptPubKey): Future[Unit]
 
-  def findRoute(nodeId: NodeId, amountMsat: MilliSatoshis): Future[Vector[NodeId]]
+  def findRoute(
+      nodeId: NodeId,
+      amountMsat: MilliSatoshis): Future[Vector[NodeId]]
 
   def findRoute(invoice: LnInvoice): Future[Vector[NodeId]]
 
-  def findRoute(invoice: LnInvoice, amountMsat: MilliSatoshis): Future[Vector[NodeId]]
+  def findRoute(
+      invoice: LnInvoice,
+      amountMsat: MilliSatoshis): Future[Vector[NodeId]]
 
   def forceClose(channelId: ChannelId): Future[Unit]
 
@@ -108,7 +119,9 @@ trait EclairApi {
     */
   def network: LnParams
 
-  def networkFees(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[NetworkFeesResult]]
+  def networkFees(
+      from: Option[FiniteDuration],
+      to: Option[FiniteDuration]): Future[Vector[NetworkFeesResult]]
 
   def nodeId(): Future[NodeId] = {
     getNodeURI.map(_.nodeId)
@@ -116,19 +129,50 @@ trait EclairApi {
 
   def createInvoice(description: String): Future[LnInvoice]
 
-  def createInvoice(description: String, amountMsat: MilliSatoshis): Future[LnInvoice]
+  def createInvoice(
+      description: String,
+      amountMsat: MilliSatoshis): Future[LnInvoice]
 
-  def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration): Future[LnInvoice]
+  def createInvoice(
+      description: String,
+      amountMsat: MilliSatoshis,
+      expireIn: FiniteDuration): Future[LnInvoice]
 
-  def createInvoice(description: String, amountMsat: MilliSatoshis, paymentPreimage: PaymentPreimage): Future[LnInvoice]
+  def createInvoice(
+      description: String,
+      amountMsat: MilliSatoshis,
+      paymentPreimage: PaymentPreimage): Future[LnInvoice]
 
-  def createInvoice(description: String, amountMsat: MilliSatoshis, expireIn: FiniteDuration, paymentPreimage: PaymentPreimage): Future[LnInvoice]
+  def createInvoice(
+      description: String,
+      amountMsat: MilliSatoshis,
+      expireIn: FiniteDuration,
+      paymentPreimage: PaymentPreimage): Future[LnInvoice]
 
-  def createInvoice(description: String, amountMsat: Option[MilliSatoshis], expireIn: Option[FiniteDuration], fallbackAddress: Option[Address], paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
+  def createInvoice(
+      description: String,
+      amountMsat: Option[MilliSatoshis],
+      expireIn: Option[FiniteDuration],
+      fallbackAddress: Option[Address],
+      paymentPreimage: Option[PaymentPreimage]): Future[LnInvoice]
+
+  /**
+    * Returns a future that is completed when this invoice has been paid too.
+    * This also publishes the [[ReceivedPaymentResult received payment result]] to the event bush
+    * when the payment is received
+    *
+    * @param lnInvoice the invoice to monitor
+    * @param maxAttempts the number of attempts we ping eclair until we fail the returned future. Pinging occurrs every 1 second
+    * */
+  def monitorInvoice(
+      lnInvoice: LnInvoice,
+      maxAttempts: Int): Future[ReceivedPaymentResult]
 
   def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]
 
-  def listInvoices(from: Option[FiniteDuration], to: Option[FiniteDuration]): Future[Vector[LnInvoice]]
+  def listInvoices(
+      from: Option[FiniteDuration],
+      to: Option[FiniteDuration]): Future[Vector[LnInvoice]]
 
   def parseInvoice(invoice: LnInvoice): Future[InvoiceResult]
 
@@ -136,7 +180,12 @@ trait EclairApi {
 
   def payInvoice(invoice: LnInvoice, amount: MilliSatoshis): Future[PaymentId]
 
-  def payInvoice(invoice: LnInvoice, amountMsat: Option[MilliSatoshis], maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
+  def payInvoice(
+      invoice: LnInvoice,
+      amountMsat: Option[MilliSatoshis],
+      maxAttempts: Option[Int],
+      feeThresholdSat: Option[Satoshis],
+      maxFeePct: Option[Int]): Future[PaymentId]
 
   /**
     * Pings eclair to see if a invoice has been paid and returns [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
@@ -146,16 +195,25 @@ trait EclairApi {
     * @param maxAttempts the maximum number of pings
     *
     */
-  def monitorSentPayment(paymentId: PaymentId, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult]
+  def monitorSentPayment(
+      paymentId: PaymentId,
+      interval: FiniteDuration,
+      maxAttempts: Int): Future[PaymentResult]
 
-  def payAndMonitorInvoice(invoice: LnInvoice, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult] =
+  def payAndMonitorInvoice(
+      invoice: LnInvoice,
+      interval: FiniteDuration,
+      maxAttempts: Int): Future[PaymentResult] =
     for {
       paymentId <- payInvoice(invoice)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
     } yield paymentResult
 
-
-  def payAndMonitorInvoice(invoice: LnInvoice, amount: MilliSatoshis, interval: FiniteDuration, maxAttempts: Int): Future[PaymentResult] =
+  def payAndMonitorInvoice(
+      invoice: LnInvoice,
+      amount: MilliSatoshis,
+      interval: FiniteDuration,
+      maxAttempts: Int): Future[PaymentResult] =
     for {
       paymentId <- payInvoice(invoice, amount)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
@@ -165,16 +223,30 @@ trait EclairApi {
 
   def getSentInfo(id: PaymentId): Future[Vector[PaymentResult]]
 
-  def getReceivedInfo(paymentHash: Sha256Digest): Future[ReceivedPaymentResult]
+  def getReceivedInfo(
+      paymentHash: Sha256Digest): Future[Option[ReceivedPaymentResult]]
 
-  def getReceivedInfo(invoice: LnInvoice): Future[ReceivedPaymentResult]
+  def getReceivedInfo(
+      invoice: LnInvoice): Future[Option[ReceivedPaymentResult]] = {
+    getReceivedInfo(invoice.lnTags.paymentHash.hash)
+  }
 
-  def sendToNode(nodeId: NodeId, amountMsat: MilliSatoshis, paymentHash: Sha256Digest, maxAttempts: Option[Int], feeThresholdSat: Option[Satoshis], maxFeePct: Option[Int]): Future[PaymentId]
+  def sendToNode(
+      nodeId: NodeId,
+      amountMsat: MilliSatoshis,
+      paymentHash: Sha256Digest,
+      maxAttempts: Option[Int],
+      feeThresholdSat: Option[Satoshis],
+      maxFeePct: Option[Int]): Future[PaymentId]
 
   /**
     * Documented by not implemented in Eclair
     */
-  def sendToRoute(route: TraversableOnce[NodeId], amountMsat: MilliSatoshis, paymentHash: Sha256Digest, finalCltvExpiry: Long): Future[PaymentId]
+  def sendToRoute(
+      route: TraversableOnce[NodeId],
+      amountMsat: MilliSatoshis,
+      paymentHash: Sha256Digest,
+      finalCltvExpiry: Long): Future[PaymentId]
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
 }

@@ -560,8 +560,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
           } yield {
             assert(succeeded.nonEmpty)
 
-            assert(received.paymentHash == invoice.lnTags.paymentHash.hash)
-            assert(received.amountMsat == amt)
+            assert(received.get.paymentHash == invoice.lnTags.paymentHash.hash)
+            assert(received.get.amountMsat == amt)
 
             val succeededPayment = succeeded.head
             assert(succeededPayment.status == PaymentStatus.SUCCEEDED)
@@ -693,6 +693,45 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       assert(i.amount.get.toMSat == amt)
       assert(paymentRequest.timestamp == expiry)
     }
+  }
+
+  it should "fail to get received info about an invoice that hasn't been paid too, and then sucessfully get the info after the payment happened" in {
+    val amt = 1000.msat
+    for {
+      c1 <- clientF
+      c2 <- otherClientF
+      invoice <- c2.createInvoice(s"invoice-payment")
+      receiveOpt <- c2.getReceivedInfo(invoice)
+      _ = assert(receiveOpt.isEmpty)
+      _ <- c1.payInvoice(invoice, amt)
+      _ <- AsyncUtil.retryUntilSatisfiedF(
+        () => c2.getReceivedInfo(invoice).map(_.isDefined),
+        1.seconds)
+      receivedAgainOpt <- c2.getReceivedInfo(invoice)
+    } yield {
+      assert(receivedAgainOpt.isDefined)
+      assert(receivedAgainOpt.get.amountMsat == amt)
+      assert(
+        receivedAgainOpt.get.paymentHash == invoice.lnTags.paymentHash.hash)
+    }
+  }
+
+  it should "monitor an invoice" in {
+    val amt = 1000.msat
+    val test = (client: EclairRpcClient, otherClient: EclairRpcClient) => {
+      val invoiceF = otherClient.createInvoice("monitor an invoice", amt)
+      val paidF = invoiceF.flatMap(i => client.payInvoice(i))
+      val monitorF = invoiceF.flatMap(i => otherClient.monitorInvoice(i))
+      for {
+        paid <- paidF
+        invoice <- invoiceF
+        received <- monitorF
+      } yield {
+        assert(received.amountMsat == amt)
+        assert(received.paymentHash == invoice.lnTags.paymentHash.hash)
+      }
+    }
+    executeWithClientOtherClient(test)
   }
 
   // We spawn fresh clients in this test because the test
