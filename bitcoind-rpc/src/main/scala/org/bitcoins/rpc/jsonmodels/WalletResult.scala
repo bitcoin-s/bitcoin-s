@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.jsonmodels
 
 import java.io.File
-import java.util.Calendar
+import java.time.LocalDateTime
 
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
@@ -206,7 +206,7 @@ case class AddressInfoResult(
     pubkey: Option[ECPublicKey],
     embedded: Option[EmbeddedResult],
     label: String,
-    timestamp: Option[Calendar], //todo: fix this type so we can get current day of year of the timestamp
+    timestamp: Option[LocalDateTime],
     hdkeypath: Option[BIP32Path],
     hdseedid: Option[RipeMd160Digest],
     hdmasterkeyid: Option[RipeMd160Digest],
