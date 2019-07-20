@@ -28,6 +28,7 @@ lazy val compilerOpts = Seq(
   "-feature",
   "-deprecation",
   "-Xfuture",
+  "-Xfatal-warnings",
   "-Ywarn-dead-code",
   "-Ywarn-unused-import",
   "-Ywarn-value-discard",
