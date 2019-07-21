@@ -40,7 +40,11 @@ sealed abstract class Pow extends BitcoinSLogger {
           Future.successful(powLimit)
         } else {
           // Return the last non-special-min-difficulty-rules-block
-          val nonMinDiffF = blockHeaderDAO.find(_.nBits != powLimit)
+          //while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
+          //                    pindex = pindex->pprev;
+          val nonMinDiffF = blockHeaderDAO.find { h =>
+            h.nBits != powLimit || h.height % chainParams.difficultyChangeInterval == 0
+          }
 
           nonMinDiffF.map {
             case Some(bh) => bh.nBits
