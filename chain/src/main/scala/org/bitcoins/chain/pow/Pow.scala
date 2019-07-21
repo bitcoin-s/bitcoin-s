@@ -40,13 +40,15 @@ sealed abstract class Pow extends BitcoinSLogger {
           Future.successful(powLimit)
         } else {
           // Return the last non-special-min-difficulty-rules-block
+          val nonMinDiffF = blockHeaderDAO.find(_.nBits != powLimit)
 
-          // this is complex to implement and requires walking the
-          //chain until we find a block header that does not have
-          //the minimum difficulty rule on testnet
-
-          //TODO: This is not correctly implemented, come back and fix this when BlockHeaderDAO has a predicate to satisfy
-          Future.successful(powLimit)
+          nonMinDiffF.map {
+            case Some(bh) => bh.nBits
+            case None     =>
+              //if we can't find a non min diffulty block, let's just fail
+              throw new RuntimeException(
+                s"Could not find non mindiffulty block in chain! hash=${tip.hashBE.hex} height=${currentHeight}")
+          }
         }
       } else {
         Future.successful(tip.blockHeader.nBits)
@@ -54,7 +56,8 @@ sealed abstract class Pow extends BitcoinSLogger {
     } else {
       val firstHeight = currentHeight - (chainParams.difficultyChangeInterval - 1)
 
-      require(firstHeight >= 0, s"We must have our first height be postive, got=${firstHeight}")
+      require(firstHeight >= 0,
+              s"We must have our first height be postive, got=${firstHeight}")
 
       val firstBlockAtIntervalF: Future[Option[BlockHeaderDb]] = {
         blockHeaderDAO.getAncestorAtHeight(tip, firstHeight)

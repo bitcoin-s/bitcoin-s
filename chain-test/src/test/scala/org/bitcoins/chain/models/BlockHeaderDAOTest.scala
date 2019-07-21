@@ -16,7 +16,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
 
-  override implicit val system: ActorSystem = ActorSystem("BlockHeaderDAOTest")
+  implicit override val system: ActorSystem = ActorSystem("BlockHeaderDAOTest")
 
   behavior of "BlockHeaderDAO"
 
@@ -171,5 +171,21 @@ class BlockHeaderDAOTest extends ChainUnitTest {
         case headers =>
           assert(headers == Seq(blockHeader, blockHeader1))
       }
+  }
+
+  it must "find a header with height 1" in { blockHeaderDAO: BlockHeaderDAO =>
+    val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+    val createdF = blockHeaderDAO.create(blockHeader)
+
+    val f: BlockHeaderDb => Boolean = { bh =>
+      bh.height == 1
+    }
+
+    val foundF = createdF.flatMap(created => blockHeaderDAO.find(f))
+
+    for {
+      created <- createdF
+      found <- foundF
+    } yield assert(found.get == created)
   }
 }
