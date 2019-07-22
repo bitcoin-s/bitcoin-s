@@ -1,5 +1,9 @@
-# Use container-based infrastructure
-sudo: false
+# We've been seeing very strange errors
+# where bitcoind returns a 503 error.
+# We have a suspicion that this comes from
+# a service running on the Travis servers
+# in non-sudo mode
+sudo: true
 
 language: scala
 
