@@ -195,7 +195,7 @@ case class BlockHeaderDAO()(
     }
   }
 
-  /** Finds a [[BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
+  /** Finds a [[org.bitcoins.chain.models.BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
   def find(f: BlockHeaderDb => Boolean)(
       implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
     val chainsF = getBlockchains()
@@ -203,7 +203,13 @@ case class BlockHeaderDAO()(
       val headersOpt: Vector[Option[BlockHeaderDb]] =
         chains.map(_.headers.find(f))
       //if there are multiple, we just choose the first one for now
-      headersOpt.find(_.isDefined).flatten
+      val result = headersOpt.filter(_.isDefined).flatten
+      if (result.length > 1) {
+        logger.warn(
+          s"Discarding other matching headers for predicate headers=${result
+            .map(_.hashBE.hex)}")
+      }
+      result.headOption
     }
   }
 }
