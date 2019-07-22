@@ -82,8 +82,6 @@ object TypeIdentifier extends Factory[TypeIdentifier] {
   override def fromBytes(bytes: ByteVector): TypeIdentifier =
     RawTypeIdentifierSerializer.read(bytes)
 
-  def apply(num: Long): TypeIdentifier = TypeIdentifier(UInt32(num))
-
   def apply(uInt32: UInt32): TypeIdentifier = uInt32 match {
     case UInt32.one                 => MsgTx
     case _ if (uInt32 == UInt32(2)) => MsgBlock

@@ -9,7 +9,7 @@ import scala.util.Try
   * operator to throw. This method wraps it in a `Try`
   * block.
   */
-trait BasicArithmetic[N] {
+trait BasicArithmetic[N] extends Any {
 
   def +(n: N): N
 

@@ -63,10 +63,25 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   def toInt(hex: String): Int = toInt(BitcoinSUtil.decodeHex(hex))
 
   /** Converts a sequence of [[scala.Byte Byte]] to a [[scala.Long Long]]. */
-  def toLong(bytes: ByteVector): Long = toBigInt(bytes).toLong
+  def toLongUnsigned(bytes: ByteVector): Long = {
+    toLong(bytes, false)
+  }
 
   /** Converts a hex string to a [[scala.Long Long]]. */
-  def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
+  def toLongUnsigned(hex: String): Long =
+    toLongUnsigned(BitcoinSUtil.decodeHex(hex))
+
+  def toLongSigned(bytes: ByteVector): Long = {
+    toLong(bytes, true)
+  }
+
+  def toLongSigned(hex: String): Long = {
+    toLong(BitcoinSUtil.decodeHex(hex), true)
+  }
+
+  private def toLong(bytes: ByteVector, signed: Boolean): Long = {
+    bytes.toLong(signed)
+  }
 
   /**
     *
@@ -112,7 +127,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
           val r: Long = ((acc << (to - bits) & maxv)).toLong
           ret.+=(f(UInt8(r.toShort)))
         }
-      } else if (bits >= from || ((acc << (to - bits)) & maxv) != UInt8.zero) {
+      } else if (bits >= from || ((acc << (to - bits)) & maxv) != UInt32.zero) {
         Failure(new IllegalArgumentException("Invalid padding in encoding"))
       }
       Success(ret.result())

@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
 
 class ExtKeyTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   behavior of "ExtKey"
@@ -30,7 +30,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
         val pub = priv.extPublicKey
         val derivedPubUInt32: Try[ExtPublicKey] = pub.deriveChildPubKey(index)
         val derivedPubPrimitive: Try[ExtPublicKey] =
-          pub.deriveChildPubKey(index.toLong)
+          pub.deriveChildPubKey(index)
         (derivedPubUInt32, derivedPubPrimitive) match {
           case (Success(_), Success(_)) => succeed
           case (Failure(exc1), Failure(exc2)) =>

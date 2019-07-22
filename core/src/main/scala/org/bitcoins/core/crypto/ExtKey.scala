@@ -57,13 +57,6 @@ sealed abstract class ExtKey extends NetworkElement {
   }
 
   /**
-    * Derives the child pubkey at the specified index
-    */
-  def deriveChildPubKey(idx: Long): Try[ExtPublicKey] = {
-    Try(UInt32(idx)).flatMap(deriveChildPubKey)
-  }
-
-  /**
     * Derives the child pubkey at the specified index and
     * hardening value
     */

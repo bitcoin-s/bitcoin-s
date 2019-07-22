@@ -1,6 +1,5 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 /**
@@ -8,7 +7,7 @@ import scodec.bits.ByteVector
   * This represents a element that can be serialized to
   * be sent over the network
   */
-abstract class NetworkElement {
+trait NetworkElement extends Any {
 
   /** The size of the NetworkElement in bytes. */
   def size: Long = bytes.size
@@ -18,6 +17,4 @@ abstract class NetworkElement {
 
   /** The byte representation of the NetworkElement */
   def bytes: ByteVector
-
-  lazy val logger = BitcoinSLogger.logger
 }

@@ -15,13 +15,17 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.util.{
+  BitcoinSLogger,
+  BitcoinSUtil,
+  CryptoUtil,
+  Factory
+}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.util.CryptoUtil
 
 /**
   * Implements a bloom filter that abides by the semantics of BIP37
@@ -29,7 +33,7 @@ import org.bitcoins.core.util.CryptoUtil
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
   * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h Bitcoin Core bloom.h]]
   */
-sealed abstract class BloomFilter extends NetworkElement {
+sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
 
   /** How large the bloom filter is, in Bytes */
   def filterSize: CompactSizeUInt

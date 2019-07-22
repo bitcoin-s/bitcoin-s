@@ -8,7 +8,6 @@ import org.scalacheck.{Prop, Properties}
   * Created by chris on 6/20/16.
   */
 class NumberUtilSpec extends Properties("NumberUtilSpec") {
-  private val logger = BitcoinSLogger.logger
 
   property("Serialization symmetry for BigInt") =
     Prop.forAll(NumberGenerator.bigInts) { bigInt: BigInt =>
@@ -20,7 +19,7 @@ class NumberUtilSpec extends Properties("NumberUtilSpec") {
   }
 
   property("serialization symmetry for longs") = Prop.forAll { long: Long =>
-    NumberUtil.toLong(BitcoinSUtil.encodeHex(long)) == long
+    NumberUtil.toLongSigned(BitcoinSUtil.encodeHex(long)) == long
   }
 
   property("convertBits symmetry") = {

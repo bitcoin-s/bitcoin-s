@@ -129,11 +129,75 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
 /**
   * Represents a uint32_t in C
   */
-sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
-  override def apply: A => UInt32 = UInt32(_)
-  override def hex: String = BitcoinSUtil.encodeHex(toLong).slice(8, 16)
+final case class UInt32(underlying: Long)
+    extends AnyVal
+    with NetworkElement
+    with BasicArithmetic[UInt32]
+    with Ordered[UInt32] {
+  override def hex: String = BitcoinSUtil.encodeHex(underlying).slice(8, 16)
 
-  override def andMask = 0xffffffffL
+  override def bytes: ByteVector = ByteVector.fromValidHex(hex)
+
+  override def +(y: UInt32): UInt32 = {
+    UInt32(underlying + y.underlying)
+  }
+
+  override def -(y: UInt32): UInt32 = {
+    UInt32(underlying - y.underlying)
+  }
+
+  override def *(y: UInt32): UInt32 = {
+    UInt32(underlying * y.underlying)
+  }
+
+  override def *(factor: BigInt): UInt32 = ???
+
+  def |(u32: UInt32): UInt32 = {
+    UInt32(underlying | u32.underlying)
+  }
+
+  def &(u32: UInt32): UInt32 = {
+    UInt32(underlying & u32.underlying)
+  }
+
+  def <<(u32: UInt32): UInt32 = {
+    UInt32(underlying << u32.underlying)
+  }
+
+  def <<(int: Int): UInt32 = {
+    this.<<(UInt32(int))
+  }
+
+  def >>(u32: UInt32): UInt32 = {
+    UInt32(underlying >> u32.underlying)
+  }
+
+  def >>(int: Int): UInt32 = {
+    UInt32(underlying >> int)
+  }
+
+  def toInt: Int = {
+    val i = underlying.toInt
+    require(underlying == i,
+            s"Rounded when converting long=${underlying} toInt=${i}")
+    i
+  }
+
+  def toLong: Long = underlying
+
+  def toBigInt: BigInt = toLong
+
+  def toDouble(x: UInt32): Double = x.underlying.toDouble
+  def toFloat(x: UInt32): Float = x.underlying.toFloat
+
+  def toInt(x: UInt32): Int = {
+    val i = x.underlying.toInt
+    require(x.underlying == i)
+    i
+  }
+  def toLong(x: UInt32): Long = x.underlying
+
+  override def compare(that: UInt32): Int = underlying.compare(that.underlying)
 }
 
 /**
@@ -308,35 +372,35 @@ object UInt8
 
 object UInt32
     extends Factory[UInt32]
-    with NumberObject[UInt32]
+    /*    with NumberObject[UInt32]*/
     with Bounded[UInt32] {
-  private case class UInt32Impl(underlying: BigInt) extends UInt32 {
+  /*  private case class UInt32Impl(underlying: BigInt) extends UInt32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
-  }
+  }*/
 
   lazy val zero = UInt32(0)
   lazy val one = UInt32(1)
 
-  private lazy val minUnderlying: A = 0
-  private lazy val maxUnderlying: A = 4294967295L
+  private lazy val minUnderlying = 0
+  private lazy val maxUnderlying = 4294967295L
 
   lazy val min = UInt32(minUnderlying)
   lazy val max = UInt32(maxUnderlying)
 
-  override def isInBound(num: A): Boolean =
-    num <= maxUnderlying && num >= minUnderlying
+  /*  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying*/
 
   override def fromBytes(bytes: ByteVector): UInt32 = {
     require(
       bytes.size <= 4,
       "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
-    UInt32(NumberUtil.toUnsignedInt(bytes))
+    UInt32(NumberUtil.toLongUnsigned(bytes))
   }
 
-  def apply(long: Long): UInt32 = UInt32(BigInt(long))
-
-  def apply(bigInt: BigInt): UInt32 = UInt32Impl(bigInt)
+  def apply(bigInt: BigInt): UInt32 = {
+    UInt32(bigInt.bigInteger.longValueExact())
+  }
 }
 
 object UInt64
