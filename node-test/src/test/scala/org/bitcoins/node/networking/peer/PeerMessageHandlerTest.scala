@@ -24,30 +24,19 @@ class PeerMessageHandlerTest extends NodeUnitTest {
   it must "be able to fully initialize a PeerMessageReceiver" in { _ =>
     val peerHandlerF = bitcoindPeerF.map(p => NodeUnitTest.buildPeerHandler(p))
     val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
-    val peerMsgRecvF = peerHandlerF.map(_.peerMsgRecv)
+    val p2pClientF = peerHandlerF.map(_.p2pClient)
 
     val _ =
       bitcoindPeerF.flatMap(p => peerHandlerF.map(_.peerMsgSender.connect()))
 
     val isConnectedF = TestAsyncUtil.retryUntilSatisfiedF(
-      () => peerMsgRecvF.map(_.isConnected),
+      () => p2pClientF.flatMap(_.isConnected),
       duration = 500.millis
     )
 
-    val hasVersionMsgF = isConnectedF.flatMap { _ =>
-      TestAsyncUtil.retryUntilSatisfiedF(
-        conditionF = () => peerMsgRecvF.map(_.hasReceivedVersionMsg)
-      )
-    }
-
-    val hasVerackMsg = hasVersionMsgF.flatMap { _ =>
-      TestAsyncUtil.retryUntilSatisfiedF(
-        conditionF = () => peerMsgRecvF.map(_.hasReceivedVerackMsg)
-      )
-    }
-
-    val isInitF = hasVerackMsg.flatMap { _ =>
-      peerMsgRecvF.map(p => assert(p.isInitialized))
+    val isInitF = isConnectedF.flatMap { _ =>
+      TestAsyncUtil.retryUntilSatisfiedF(() =>
+        p2pClientF.flatMap(_.isInitialized()))
     }
 
     val disconnectF = isInitF.flatMap { _ =>
@@ -56,7 +45,7 @@ class PeerMessageHandlerTest extends NodeUnitTest {
 
     val isDisconnectedF = disconnectF.flatMap { _ =>
       TestAsyncUtil.retryUntilSatisfiedF(() =>
-        peerMsgRecvF.map(_.isDisconnected))
+        p2pClientF.flatMap(_.isDisconnected()))
 
     }
 

@@ -1,5 +1,7 @@
 package org.bitcoins.node.networking.peer
 
+import org.bitcoins.node.networking.P2PClient
+
 /*
 abstract class PeerHandler extends BitcoinSLogger {
   implicit val system: ActorSystem
@@ -58,6 +60,4 @@ object PeerHandler {
 }
  */
 
-case class PeerHandler(
-    peerMsgRecv: PeerMessageReceiver,
-    peerMsgSender: PeerMessageSender)
+case class PeerHandler(p2pClient: P2PClient, peerMsgSender: PeerMessageSender)

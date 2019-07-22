@@ -2,20 +2,25 @@ package org.bitcoins.node.networking
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 import akka.io.{IO, Tcp}
-import akka.util.ByteString
+import akka.pattern.AskTimeoutException
+import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.p2p.NetworkPayload
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
 import org.bitcoins.node.config.NodeAppConfig
-import akka.util.CompactByteString
+
 import scala.annotation.tailrec
 import scala.util._
 import org.bitcoins.db.P2PLogger
+
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
 
 /**
   * This actor is responsible for creating a connection,
@@ -43,16 +48,18 @@ import org.bitcoins.db.P2PLogger
   * CANNOT fit in a single TCP packet. This means we must cache
   * the bytes and wait for the rest of them to be sent.
   *
-  * @param peerMsgHandlerReceiver The place we send messages that we successfully parsed
+  * @param initPeerMsgHandlerReceiver The place we send messages that we successfully parsed
   *                               from our peer on the P2P network. This is mostly likely
   *                               a [[org.bitcoins.node.networking.peer.PeerMessageSender]]
   */
 case class P2PClientActor(
     peer: Peer,
-    peerMsgHandlerReceiver: PeerMessageReceiver
+    initPeerMsgHandlerReceiver: PeerMessageReceiver
 )(implicit config: NodeAppConfig)
     extends Actor
     with P2PLogger {
+
+  private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   /**
     * The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
@@ -64,6 +71,8 @@ case class P2PClientActor(
     * The parameters for the network we are connected to
     */
   val network: NetworkParameters = config.network
+
+  private val timeout = 10.seconds
 
   /**
     * TODO: this comment seems wrong?
@@ -80,8 +89,12 @@ case class P2PClientActor(
       self.forward(networkMsg)
     case message: Tcp.Message =>
       val newUnalignedBytes =
-        handleTcpMessage(message, Some(peer), unalignedBytes)
+        Await.result(handleTcpMessage(message, Some(peer), unalignedBytes),
+                     timeout)
       context.become(awaitNetworkRequest(peer, newUnalignedBytes))
+
+    case metaMsg: P2PClient.MetaMsg =>
+      sender ! handleMetaMsg(metaMsg)
   }
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
@@ -92,16 +105,19 @@ case class P2PClientActor(
       //after receiving Tcp.Connected we switch to the
       //'awaitNetworkRequest' context. This is the main
       //execution loop for the Client actor
-      val _ = handleCommand(cmd, peer = None)
+      handleCommand(cmd, peer = None)
 
     case connected: Tcp.Connected =>
-      val _ = handleEvent(connected, unalignedBytes = ByteVector.empty)
-
+      Await.result(handleEvent(connected, unalignedBytes = ByteVector.empty),
+                   timeout)
     case msg: NetworkMessage =>
       self.forward(msg.payload)
     case payload: NetworkPayload =>
       logger.error(
         s"Cannot send a message to our peer when we are not connected! payload=${payload} peer=${peer}")
+
+    case metaMsg: P2PClient.MetaMsg =>
+      sender ! handleMetaMsg(metaMsg)
   }
 
   /**
@@ -112,14 +128,14 @@ case class P2PClientActor(
   private def handleTcpMessage(
       message: Tcp.Message,
       peer: Option[ActorRef],
-      unalignedBytes: ByteVector): ByteVector = {
+      unalignedBytes: ByteVector): Future[ByteVector] = {
     message match {
       case event: Tcp.Event =>
-        handleEvent(event, unalignedBytes)
+        handleEvent(event, unalignedBytes = unalignedBytes)
       case command: Tcp.Command =>
         handleCommand(command, peer)
 
-        unalignedBytes
+        Future.successful(unalignedBytes)
     }
   }
 
@@ -128,18 +144,19 @@ case class P2PClientActor(
     */
   private def handleEvent(
       event: Tcp.Event,
-      unalignedBytes: ByteVector): ByteVector = {
+      unalignedBytes: ByteVector): Future[ByteVector] = {
+    import context.dispatcher
     event match {
       case Tcp.Bound(localAddress) =>
         logger.debug(
           s"Actor is now bound to the local address: ${localAddress}")
         context.parent ! Tcp.Bound(localAddress)
 
-        unalignedBytes
+        Future.successful(unalignedBytes)
       case Tcp.CommandFailed(command) =>
         logger.debug(s"Client Command failed: ${command}")
 
-        unalignedBytes
+        Future.successful(unalignedBytes)
       case Tcp.Connected(remote, local) =>
         logger.debug(s"Tcp connection to: ${remote}")
         logger.debug(s"Local: ${local}")
@@ -149,22 +166,30 @@ case class P2PClientActor(
         //our bitcoin peer will send all messages to this actor.
         sender ! Tcp.Register(self)
 
-        val _ = peerMsgHandlerReceiver.connect(P2PClient(self, peer))
+        val newPeerMsgRecvF: Future[PeerMessageReceiver] =
+          currentPeerMsgHandlerRecv.connect(P2PClient(self, peer))
+        newPeerMsgRecvF.map { newPeerMsgRecv =>
+          currentPeerMsgHandlerRecv = newPeerMsgRecv
+          context.become(awaitNetworkRequest(sender, unalignedBytes))
+          unalignedBytes
+        }
 
-        context.become(awaitNetworkRequest(sender, ByteVector.empty))
-
-        unalignedBytes
       case closeCmd @ (Tcp.ConfirmedClosed | Tcp.Closed | Tcp.Aborted |
           Tcp.PeerClosed) =>
         logger.debug(s"Closed command received: ${closeCmd}")
 
         //tell our peer message handler we are disconnecting
-        val disconnectT = peerMsgHandlerReceiver.disconnect()
+        val newPeerMsgRecvF = currentPeerMsgHandlerRecv.disconnect()
 
-        disconnectT.failed.foreach(err =>
+        newPeerMsgRecvF.failed.foreach(err =>
           logger.error(s"Failed to disconnect=${err}"))
-        context.stop(self)
-        unalignedBytes
+
+        newPeerMsgRecvF.map { newPeerMsgRecv =>
+          currentPeerMsgHandlerRecv = newPeerMsgRecv
+          context.stop(self)
+          unalignedBytes
+        }
+
       case Tcp.Received(byteString: ByteString) =>
         val byteVec = ByteVector(byteString.toArray)
         logger.debug(s"Received ${byteVec.length} TCP bytes")
@@ -194,17 +219,25 @@ case class P2PClientActor(
           logger.trace(s"Unaligned bytes: ${newUnalignedBytes.toHex}")
         }
 
-        //for the messages we successfully parsed above
-        //send them to 'context.parent' -- this is the
-        //PeerMessageHandler that is responsible for
-        //creating this Client Actor
-        messages.foreach { m =>
-          val msg = NetworkMessageReceived(m, P2PClient(self, peer))
-          peerMsgHandlerReceiver.handleNetworkMessageReceived(msg)
-
+        val f: (
+            PeerMessageReceiver,
+            NetworkMessage) => Future[PeerMessageReceiver] = {
+          case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
+            logger.trace(s"Processing message=${m}")
+            val msg = NetworkMessageReceived(m, P2PClient(self, peer))
+            val doneF = peerMsgRecv.handleNetworkMessageReceived(msg)
+            doneF
         }
 
-        newUnalignedBytes
+        val newMsgReceiverF: Future[PeerMessageReceiver] = {
+          logger.trace(s"About to process ${messages.length} messages")
+          FutureUtil.foldLeftAsync(currentPeerMsgHandlerRecv, messages)(f)
+        }
+
+        newMsgReceiverF.map { newMsgReceiver =>
+          currentPeerMsgHandlerRecv = newMsgReceiver
+          newUnalignedBytes
+        }
     }
   }
 
@@ -225,6 +258,17 @@ case class P2PClientActor(
     }
 
   /**
+    * Returns the current state of our peer given the [[P2PClient.MetaMsg meta message]]
+    */
+  private def handleMetaMsg(metaMsg: P2PClient.MetaMsg): Boolean = {
+    metaMsg match {
+      case P2PClient.IsConnected    => currentPeerMsgHandlerRecv.isConnected
+      case P2PClient.IsInitialized  => currentPeerMsgHandlerRecv.isInitialized
+      case P2PClient.IsDisconnected => currentPeerMsgHandlerRecv.isDisconnected
+    }
+  }
+
+  /**
     * Sends a network request to our peer on the network
     */
   private def sendNetworkMessage(
@@ -237,9 +281,59 @@ case class P2PClientActor(
 
 }
 
-case class P2PClient(actor: ActorRef, peer: Peer)
+case class P2PClient(actor: ActorRef, peer: Peer) extends P2PLogger {
+  import akka.pattern.ask
+
+  def isConnected()(
+      implicit timeout: Timeout,
+      ec: ExecutionContext): Future[Boolean] = {
+    val isConnectedF = actor.ask(P2PClient.IsConnected).mapTo[Boolean]
+    isConnectedF.recoverWith {
+      case _: Throwable => Future.successful(false)
+    }
+  }
+
+  def isInitialized()(
+      implicit timeout: Timeout,
+      ec: ExecutionContext): Future[Boolean] = {
+    val isInitF = actor.ask(P2PClient.IsInitialized).mapTo[Boolean]
+    isInitF.recoverWith {
+      case _: Throwable => Future.successful(false)
+    }
+  }
+
+  def isDisconnected()(
+      implicit timeout: Timeout,
+      ec: ExecutionContext): Future[Boolean] = {
+    val isDisconnect: Future[Boolean] =
+      actor.ask(P2PClient.IsDisconnected).mapTo[Boolean]
+
+    //this future can be failed, as we stop the P2PClientActor if we send a disconnect
+    //if that actor has been killed, the peer _has_ to have been disconnected
+    isDisconnect.recoverWith {
+      case _: Throwable => Future.successful(true)
+    }
+  }
+}
 
 object P2PClient extends P2PLogger {
+
+  /** A message hierarchy that canbe sent to [[P2PClientActor P2P Client Actor]]
+    * to query about meta information of a peer
+    * */
+  sealed trait MetaMsg
+
+  /** A message that can be sent to [[P2PClient p2p client]] that returns true
+    * if the peer is connected, false if not */
+  final case object IsConnected extends MetaMsg
+
+  /** A message that can be sent to [[P2PClient p2p client]] that returns true
+    * if the peer is initialized (p2p handshake complete), false if not */
+  final case object IsInitialized extends MetaMsg
+
+  /** A message that can be sent to [[P2PClient p2p client]] that returns true
+    * if the peer is disconnected, false otherwise */
+  final case object IsDisconnected extends MetaMsg
 
   def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver)(
       implicit config: NodeAppConfig

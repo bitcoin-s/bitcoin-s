@@ -27,9 +27,10 @@ class SpvNodeTest extends NodeUnitTest {
       val spvNode = spvNodeConnectedWithBitcoind.spvNode
       val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
 
-      assert(spvNode.isConnected)
-
-      assert(spvNode.isInitialized)
+      val assert1F = for {
+        _ <- spvNode.isConnected.map(assert(_))
+        a2 <- spvNode.isInitialized.map(assert(_))
+      } yield a2
 
       val hashF: Future[DoubleSha256DigestBE] = {
         bitcoind.generate(1).map(_.head)
@@ -37,6 +38,7 @@ class SpvNodeTest extends NodeUnitTest {
 
       //sync our spv node expecting to get that generated hash
       val spvSyncF = for {
+        _ <- assert1F
         _ <- hashF
         sync <- spvNode.sync()
       } yield sync
@@ -62,7 +64,9 @@ class SpvNodeTest extends NodeUnitTest {
       //as they happen with the 'sendheaders' message
       //both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
       //at this point so no actual syncing is happening
-      val initSyncF = gen1F.flatMap(_ => spvNode.sync())
+      val initSyncF = gen1F.flatMap { _ =>
+        spvNode.sync()
+      }
 
       //start generating a block every 10 seconds with bitcoind
       //this should result in 5 blocks
@@ -76,7 +80,8 @@ class SpvNodeTest extends NodeUnitTest {
         //we should expect 5 headers have been announced to us via
         //the send headers message.
         val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
-          conditionF = () => spvNode.chainApi.getBlockCount.map(_ == 6),
+          conditionF =
+            () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map(_ == 6)),
           duration = 1.seconds)
 
         has6BlocksF.map(_ => succeed)

@@ -12,7 +12,7 @@ class BlockchainTest extends ChainUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
 
-  override implicit val system: ActorSystem = ActorSystem("BlockchainTest")
+  implicit override val system: ActorSystem = ActorSystem("BlockchainTest")
 
   behavior of "Blockchain"
 
@@ -26,7 +26,8 @@ class BlockchainTest extends ChainUnitTest {
         BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
 
       val connectTipF = Blockchain.connectTip(header = newHeader.blockHeader,
-                                              blockHeaderDAO = bhDAO)
+                                              blockHeaderDAO = bhDAO,
+                                              Vector(blockchain))
 
       connectTipF.map {
         case BlockchainUpdate.Successful(_, connectedHeader) =>
