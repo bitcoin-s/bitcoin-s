@@ -19,13 +19,14 @@ import play.api.libs.json._
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import scala.sys.process._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
+
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import java.nio.file.Path
+
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.rpc.BitcoindException
 
 /**
@@ -180,7 +181,8 @@ trait Client extends BitcoinSLogger {
       val request = buildRequest(instance, "ping", JsArray.empty)
       val responseF = sendRequest(request)
 
-      val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+      val payloadF: Future[JsValue] =
+        responseF.flatMap(getPayload(_, command = "ping", request = request))
 
       // Ping successful if no error can be parsed from the payload
       val parsedF = payloadF.map { payload =>
@@ -227,39 +229,25 @@ trait Client extends BitcoinSLogger {
     val request = buildRequest(instance, command, JsArray(parameters))
     val responseF = sendRequest(request)
 
-    val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
+    val payloadF: Future[JsValue] =
+      responseF.flatMap(getPayload(_, command, request, parameters))
 
-    payloadF
-      .map { payload =>
-        {
-
-          /**
-            * These lines are handy if you want to inspect what's being sent to and
-            * returned from bitcoind before it's parsed into a Scala type. However,
-            * there will sensitive material in some of those calls (private keys,
-            * XPUBs, balances, etc). It's therefore not a good idea to enable
-            * this logging in production.
-            */
-          // logger.info(
-          // s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
-          // logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
-          parseResult(result = (payload \ resultKey).validate[T],
-                      json = payload,
-                      printError = printError,
-                      command = command)
-
-        }
-      }
-      .recover {
-        // this can contain sensitive information, so only log this
-        // if not on mainnet
-        case err: JsonParseException if network != MainNet =>
-          logger.error(s"Error when parsing result of command: $command")
-          logger.error(s"Parameters: ${Json.stringify(JsArray(parameters))}")
-          logger.error(s"Sent HTTP request: $request")
-          logger.error(s"Error: $err")
-          throw err
-      }
+    payloadF.map { payload =>
+      /**
+        * These lines are handy if you want to inspect what's being sent to and
+        * returned from bitcoind before it's parsed into a Scala type. However,
+        * there will sensitive material in some of those calls (private keys,
+        * XPUBs, balances, etc). It's therefore not a good idea to enable
+        * this logging in production.
+        */
+      // logger.info(
+      // s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+      // logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
+      parseResult(result = (payload \ resultKey).validate[T],
+                  json = payload,
+                  printError = printError,
+                  command = command)
+    }
   }
 
   protected def buildRequest(
@@ -290,11 +278,32 @@ trait Client extends BitcoinSLogger {
     Http(materializer.system).singleRequest(req)
   }
 
-  protected def getPayload(response: HttpResponse): Future[JsValue] = {
+  /** Parses the payload of the given response into JSON.
+    *
+    * The command, parameters and request are given as debug parameters,
+    * and only used for printing diagnostics if things go belly-up.
+    */
+  protected def getPayload(
+      response: HttpResponse,
+      command: String,
+      request: HttpRequest,
+      parameters: List[JsValue] = List.empty): Future[JsValue] = {
     val payloadF = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
 
-    payloadF.map { payload =>
-      Json.parse(payload.decodeString(ByteString.UTF_8))
+    payloadF.flatMap { payload =>
+      Try(Json.parse(payload.decodeString(ByteString.UTF_8))) match {
+        case Failure(err) =>
+          if (network != MainNet) {
+            logger.error(s"Error when parsing result of command: $command")
+            logger.error(s"Parameters: ${Json.stringify(JsArray(parameters))}")
+            logger.error(s"Sent HTTP request: $request")
+            logger.error(s"Received HTTP response: $response")
+            logger.error(s"Error: $err")
+
+          }
+          Future.failed(err)
+        case Success(js) => Future.successful(js)
+      }
     }
   }
 
