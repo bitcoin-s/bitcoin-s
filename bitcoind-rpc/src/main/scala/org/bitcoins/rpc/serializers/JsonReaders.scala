@@ -3,7 +3,6 @@ package org.bitcoins.rpc.serializers
 import java.io.File
 import java.net.{InetAddress, URI}
 import java.time.LocalDateTime
-import java.util.Calendar
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -28,7 +27,6 @@ import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
 import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.joda.time.DateTime
 import play.api.libs.json._
 
 import scala.util.{Failure, Success}
