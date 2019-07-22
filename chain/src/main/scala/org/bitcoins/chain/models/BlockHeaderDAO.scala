@@ -174,7 +174,7 @@ case class BlockHeaderDAO()(
 
   /** Returns competing blockchains that are contained in our BlockHeaderDAO
     * Each chain returns the last [[org.bitcoins.core.protocol.blockchain.ChainParams.difficultyChangeInterval difficutly interval]]
-    * as defined by the network we are on. For instance, on bitcoin mainnet this will be 2016 block headers.
+    * block headers as defined by the network we are on. For instance, on bitcoin mainnet this will be 2016 block headers.
     * If no competing tips are found, we only return one [[Blockchain blockchain]], else we
     * return n chains for the number of competing [[chainTips tips]] we have
     * @see [[Blockchain]]
@@ -192,6 +192,24 @@ case class BlockHeaderDAO()(
         headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
       }
       Future.sequence(nestedFuture)
+    }
+  }
+
+  /** Finds a [[org.bitcoins.chain.models.BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
+  def find(f: BlockHeaderDb => Boolean)(
+      implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
+    val chainsF = getBlockchains()
+    chainsF.map { chains =>
+      val headersOpt: Vector[Option[BlockHeaderDb]] =
+        chains.map(_.headers.find(f))
+      //if there are multiple, we just choose the first one for now
+      val result = headersOpt.filter(_.isDefined).flatten
+      if (result.length > 1) {
+        logger.warn(
+          s"Discarding other matching headers for predicate headers=${result
+            .map(_.hashBE.hex)}")
+      }
+      result.headOption
     }
   }
 }
