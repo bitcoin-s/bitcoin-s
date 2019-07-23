@@ -63,7 +63,7 @@ object JsonReaders {
   }
   implicit object LocalDateTimeReads extends Reads[LocalDateTime] {
     override def reads(json: JsValue): JsResult[LocalDateTime] =
-      SerializerUtil.processJsObject[LocalDateTime](LocalDateTime.now)(json)
+      SerializerUtil.processJsString[LocalDateTime](LocalDateTime.parse)(json)
   }
   implicit object BigIntReads extends Reads[BigInt] {
     override def reads(json: JsValue): JsResult[BigInt] =
