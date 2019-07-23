@@ -20,7 +20,6 @@ object Deps {
     val ammoniteV = "1.6.7"
 
     val asyncV = "0.9.7"
-    val jodaV = "2.10.2"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.1"
@@ -47,8 +46,6 @@ object Deps {
     val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV cross CrossVersion.full
 
     //node deps
-    val joda = "joda-time" % "joda-time" % V.jodaV
-
     val slick = "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
@@ -175,7 +172,6 @@ object Deps {
   val node = List(
     Compile.akkaActor,
     Compile.logback,
-    Compile.joda,
     Compile.slick,
     Compile.slickHikari,
     Compile.sqlite,
