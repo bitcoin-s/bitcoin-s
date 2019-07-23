@@ -2,7 +2,7 @@ package org.bitcoins.rpc.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneId, ZoneOffset}
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -63,7 +63,8 @@ object JsonReaders {
   }
   implicit object LocalDateTimeReads extends Reads[LocalDateTime] {
     override def reads(json: JsValue): JsResult[LocalDateTime] =
-      SerializerUtil.processJsString[LocalDateTime](LocalDateTime.parse)(json)
+      SerializerUtil.processJsNumberBigInt[LocalDateTime](bigInt =>
+        LocalDateTime.ofEpochSecond(bigInt.toLong, 0, ZoneOffset.UTC))(json)
   }
   implicit object BigIntReads extends Reads[BigInt] {
     override def reads(json: JsValue): JsResult[BigInt] =
