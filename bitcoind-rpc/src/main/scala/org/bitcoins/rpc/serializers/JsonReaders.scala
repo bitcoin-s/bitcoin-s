@@ -66,6 +66,7 @@ object JsonReaders {
       SerializerUtil.processJsNumberBigInt[LocalDateTime](bigInt =>
         LocalDateTime.ofEpochSecond(bigInt.toLong, 0, ZoneOffset.UTC))(json)
   }
+
   implicit object BigIntReads extends Reads[BigInt] {
     override def reads(json: JsValue): JsResult[BigInt] =
       SerializerUtil.processJsNumber[BigInt](_.toBigInt())(json)
