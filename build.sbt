@@ -340,7 +340,8 @@ lazy val chain = project
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain",
-    libraryDependencies ++= Deps.chain
+    libraryDependencies ++= Deps.chain,
+    dependencyOverrides += Deps.Overrides.slf4j
   )
   .dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
@@ -361,14 +362,17 @@ lazy val dbCommons = project
   .settings(commonSettings: _*)
   .settings(
     name := "bitcoin-s-db-commons",
-    libraryDependencies ++= Deps.dbCommons
+    libraryDependencies ++= Deps.dbCommons,
+    dependencyOverrides += Deps.Overrides.typesafeconfig
   )
   .dependsOn(core)
 
 lazy val zmq = project
   .in(file("zmq"))
   .settings(commonSettings: _*)
-  .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
+  .settings(name := "bitcoin-s-zmq",
+            libraryDependencies ++= Deps.bitcoindZmq,
+            dependencyOverrides += Deps.Overrides.slf4j)
   .dependsOn(
     core % testAndCompile
   )
@@ -376,15 +380,27 @@ lazy val zmq = project
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(commonProdSettings: _*)
-  .settings(name := "bitcoin-s-bitcoind-rpc",
-            libraryDependencies ++= Deps.bitcoindRpc)
+  .settings(
+    name := "bitcoin-s-bitcoind-rpc",
+    libraryDependencies ++= Deps.bitcoindRpc,
+    dependencyOverrides += Deps.Overrides.slf4j,
+    dependencyOverrides += Deps.Overrides.typesafeakka,
+    dependencyOverrides += Deps.Overrides.typesafeconfig,
+    dependencyOverrides += Deps.Overrides.jackson
+  )
   .dependsOn(core)
 
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(commonTestSettings: _*)
-  .settings(libraryDependencies ++= Deps.bitcoindRpcTest,
-            name := "bitcoin-s-bitcoind-rpc-test")
+  .settings(
+    libraryDependencies ++= Deps.bitcoindRpcTest,
+    dependencyOverrides += Deps.Overrides.slf4j,
+    dependencyOverrides += Deps.Overrides.typesafeakka,
+    dependencyOverrides += Deps.Overrides.typesafeconfig,
+    dependencyOverrides += Deps.Overrides.jackson,
+    name := "bitcoin-s-bitcoind-rpc-test"
+  )
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val bench = project
@@ -392,6 +408,7 @@ lazy val bench = project
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Deps.bench,
+    dependencyOverrides += Deps.Overrides.slf4j,
     name := "bitcoin-s-bench",
     skip in publish := true
   )
@@ -400,8 +417,14 @@ lazy val bench = project
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
   .settings(commonProdSettings: _*)
-  .settings(name := "bitcoin-s-eclair-rpc",
-            libraryDependencies ++= Deps.eclairRpc)
+  .settings(
+    name := "bitcoin-s-eclair-rpc",
+    libraryDependencies ++= Deps.eclairRpc,
+    dependencyOverrides += Deps.Overrides.slf4j,
+    dependencyOverrides += Deps.Overrides.typesafeakka,
+    dependencyOverrides += Deps.Overrides.typesafeconfig,
+    dependencyOverrides += Deps.Overrides.jackson
+  )
   .dependsOn(
     core,
     bitcoindRpc
@@ -410,8 +433,13 @@ lazy val eclairRpc = project
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
   .settings(commonTestSettings: _*)
-  .settings(libraryDependencies ++= Deps.eclairRpcTest,
-            name := "bitcoin-s-eclair-rpc-test")
+  .settings(
+    libraryDependencies ++= Deps.eclairRpcTest,
+    dependencyOverrides += Deps.Overrides.slf4j,
+    dependencyOverrides += Deps.Overrides.typesafeakka,
+    dependencyOverrides += Deps.Overrides.typesafeconfig,
+    name := "bitcoin-s-eclair-rpc-test"
+  )
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
@@ -422,7 +450,10 @@ lazy val node =
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node",
-      libraryDependencies ++= Deps.node
+      libraryDependencies ++= Deps.node,
+      dependencyOverrides += Deps.Overrides.slf4j,
+      dependencyOverrides += Deps.Overrides.typesafeakka,
+      dependencyOverrides += Deps.Overrides.typesafeconfig
     )
     .dependsOn(
       core,
@@ -446,7 +477,10 @@ lazy val nodeTest =
       // Scalatest issue:
       // https://github.com/scalatest/scalatest/issues/556
       Test / fork := false,
-      libraryDependencies ++= Deps.nodeTest
+      libraryDependencies ++= Deps.nodeTest,
+      dependencyOverrides += Deps.Overrides.slf4j,
+      dependencyOverrides += Deps.Overrides.typesafeakka,
+      dependencyOverrides += Deps.Overrides.typesafeconfig
     )
     .dependsOn(
       core % testAndCompile,

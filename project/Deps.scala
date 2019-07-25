@@ -81,6 +81,15 @@ object Deps {
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
   }
 
+  object Overrides {
+    val slf4j = "org.slf4j" % "slf4j-api" % "1.7.26"
+    val typesafeconfig = "com.typesafe" % "config" % "1.3.4"
+    val jackson = "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.8"
+    val scalalangcompat = "org.scala-lang.modules" % "scala-collection-compat_2.12" % "2.0.0"
+    val typesafeakka = "com.typesafe.akka" % "akka-http_2.12" % "10.1.9"
+    val scalalangxml = "org.scala-lang.modules" % "scala-xml_2.12" % "1.2.0"
+  }
+
   object Test {
     val async = "org.scala-lang.modules" %% "scala-async" % V.asyncV % "test" withSources () withJavadoc ()
     val junitInterface = "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
