@@ -231,10 +231,73 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 /**
   * Represents a int32_t in C
   */
-sealed abstract class Int32 extends SignedNumber[Int32] {
-  override def apply: A => Int32 = Int32(_)
-  override def andMask = 0xffffffff
-  override def hex: String = BitcoinSUtil.encodeHex(toInt)
+final case class Int32(underlying: Int)
+    extends AnyVal
+    with NetworkElement
+    with BasicArithmetic[Int32]
+    with Ordered[Int32] {
+  override def hex: String = BitcoinSUtil.encodeHex(underlying).slice(-8, 8)
+
+  override def bytes: ByteVector = ByteVector.fromValidHex(hex)
+
+  override def +(y: Int32): Int32 = {
+    Int32(underlying + y.underlying)
+  }
+
+  override def -(y: Int32): Int32 = {
+    Int32(underlying - y.underlying)
+  }
+
+  override def *(y: Int32): Int32 = {
+    Int32(underlying * y.underlying)
+  }
+
+  override def *(factor: BigInt): Int32 = ???
+
+  def |(s32: Int32): Int32 = {
+    Int32(underlying | s32.underlying)
+  }
+
+  def &(s32: Int32): Int32 = {
+    Int32(underlying & s32.underlying)
+  }
+
+  def <<(s32: Int32): Int32 = {
+    Int32(underlying << s32.underlying)
+  }
+
+  def <<(int: Int): Int32 = {
+    this.<<(Int32(int))
+  }
+
+  def >>(s32: Int32): Int32 = {
+    Int32(underlying >> s32.underlying)
+  }
+
+  def >>(int: Int): Int32 = {
+    Int32(underlying >> int)
+  }
+
+  def toInt: Int = {
+    val i = underlying.toInt
+    require(underlying == i,
+            s"Rounded when converting int=${underlying} toInt=${i}")
+    i
+  }
+
+  def toBigInt: BigInt = toInt
+
+  def toDouble(x: Int32): Double = x.underlying.toDouble
+  def toFloat(x: Int32): Float = x.underlying.toFloat
+
+  def toInt(x: Int32): Int = {
+    val i = x.underlying
+    require(x.underlying == i)
+    i
+  }
+  def toLong(x: Int32): Long = x.underlying
+
+  override def compare(that: Int32): Int = underlying.compare(that.underlying)
 }
 
 /**
