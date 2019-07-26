@@ -497,33 +497,33 @@ object UInt64
 
 object Int32
     extends Factory[Int32]
-    with NumberObject[Int32]
+    //with NumberObject[Int32]
     with Bounded[Int32] {
-  private case class Int32Impl(underlying: BigInt) extends Int32 {
+  /*private case class Int32Impl(underlying: BigInt) extends Int32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
-
+   */
   lazy val zero = Int32(0)
   lazy val one = Int32(1)
 
-  private lazy val minUnderlying: A = -2147483648
-  private lazy val maxUnderlying: A = 2147483647
+  private lazy val minUnderlying = -2147483648
+  private lazy val maxUnderlying = 2147483647
 
   lazy val min = Int32(minUnderlying)
   lazy val max = Int32(maxUnderlying)
 
-  override def isInBound(num: A): Boolean =
-    num <= maxUnderlying && num >= minUnderlying
+  /*override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying*/
 
   override def fromBytes(bytes: ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
     Int32(BigInt(bytes.toArray).toInt)
   }
 
-  def apply(int: Int): Int32 = Int32(BigInt(int))
-
-  def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
+  def apply(bigInt: BigInt): Int32 = {
+    Int32(bigInt.bigInteger.intValueExact())
+  }
 }
 
 object Int64
