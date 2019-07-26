@@ -203,10 +203,15 @@ final case class UInt32(underlying: Long)
 /**
   * Represents a uint64_t in C
   */
-sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
-  override def hex: String = encodeHex(underlying)
-  override def apply: A => UInt64 = UInt64(_)
-  override def andMask = 0xffffffffffffffffL
+final case class UInt64(underlying: BigInt)
+    extends AnyVal
+    with NetworkElement
+    with BasicArithmetic[UInt64]
+    with Ordered[UInt64] {
+
+  override def hex: String = BitcoinSUtil.encodeHex(underlying)
+
+  override def bytes: ByteVector = ByteVector.fromValidHex(hex)
 
   /**
     * Converts a [[BigInt]] to a 8 byte hex representation.
@@ -236,7 +241,7 @@ final case class Int32(underlying: Int)
     with NetworkElement
     with BasicArithmetic[Int32]
     with Ordered[Int32] {
-  override def hex: String = BitcoinSUtil.encodeHex(underlying).slice(-8, 8)
+  override def hex: String = BitcoinSUtil.encodeHex(underlying).slice(8, 16)
 
   override def bytes: ByteVector = ByteVector.fromValidHex(hex)
 
