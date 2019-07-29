@@ -7,7 +7,6 @@ import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.rpc.client.common.RpcOpts.{AddressType, FeeEstimationMode}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonWriters.CurrencyUnitWrites
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -134,17 +133,19 @@ trait TransactionRpc { self: Client =>
   }
 
   def sendMany(
-      amounts: Map[BitcoinAddress, Bitcoins],
+      amounts: Map[BitcoinAddress, CurrencyUnit],
       minconf: Int = 1,
       comment: String = "",
       subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
     DoubleSha256DigestBE] = {
-    bitcoindCall[DoubleSha256DigestBE]("sendmany",
-                                       List(JsString(""),
-                                            Json.toJson(amounts),
-                                            JsNumber(minconf),
-                                            JsString(comment),
-                                            Json.toJson(subtractFeeFrom)))
+    bitcoindCall[DoubleSha256DigestBE](
+      "sendmany",
+      List(JsString(""),
+           Json.toJson(amounts.mapValues(curr => Bitcoins(curr.satoshis))),
+           JsNumber(minconf),
+           JsString(comment),
+           Json.toJson(subtractFeeFrom))
+    )
   }
 
   def sendToAddress(
@@ -156,7 +157,7 @@ trait TransactionRpc { self: Client =>
     bitcoindCall[DoubleSha256DigestBE](
       "sendtoaddress",
       List(Json.toJson(address),
-           Json.toJson(amount),
+           Json.toJson(Bitcoins(amount.satoshis)),
            JsString(localComment),
            JsString(toComment),
            JsBoolean(subractFeeFromAmount))

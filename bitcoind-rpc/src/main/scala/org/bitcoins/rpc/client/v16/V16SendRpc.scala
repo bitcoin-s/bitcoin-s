@@ -9,6 +9,8 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.{JsNumber, JsString}
 
 import scala.concurrent.Future
+import org.bitcoins.core.currency.CurrencyUnit
+import play.api.libs.json.Json
 
 /**
   * RPC calls related to transaction sending
@@ -19,12 +21,12 @@ trait V16SendRpc { self: Client =>
   def move(
       fromAccount: String,
       toAccount: String,
-      amount: Bitcoins,
+      amount: CurrencyUnit,
       comment: String = ""): Future[Boolean] = {
     bitcoindCall[Boolean]("move",
                           List(JsString(fromAccount),
                                JsString(toAccount),
-                               JsNumber(amount.toBigDecimal),
+                               Json.toJson(Bitcoins(amount.satoshis)),
                                JsNumber(6),
                                JsString(comment)))
   }
@@ -32,15 +34,15 @@ trait V16SendRpc { self: Client =>
   def sendFrom(
       fromAccount: String,
       toAddress: BitcoinAddress,
-      amount: Bitcoins,
+      amount: CurrencyUnit,
       confirmations: Int = 1,
       comment: String = "",
       toComment: String = ""): Future[DoubleSha256DigestBE] = {
     bitcoindCall[DoubleSha256DigestBE](
       "sendfrom",
       List(JsString(fromAccount),
-           JsString(toAddress.value),
-           JsNumber(amount.toBigDecimal),
+           Json.toJson(toAddress),
+           Json.toJson(Bitcoins(amount.satoshis)),
            JsNumber(confirmations),
            JsString(comment),
            JsString(toComment))

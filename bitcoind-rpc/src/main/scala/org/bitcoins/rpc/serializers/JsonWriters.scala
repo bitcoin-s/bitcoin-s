@@ -89,11 +89,6 @@ object JsonWriters {
     override def writes(addr: AddressType): JsValue = JsString(addr.toString)
   }
 
-  implicit object CurrencyUnitWrites extends Writes[CurrencyUnit] {
-    override def writes(amount: CurrencyUnit): JsValue =
-      JsNumber(amount.toBigDecimal)
-  }
-
   implicit object WalletCreateFundedPsbtOptionsWrites
       extends Writes[WalletCreateFundedPsbtOptions] {
     override def writes(opts: WalletCreateFundedPsbtOptions): JsValue = {
