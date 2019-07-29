@@ -26,13 +26,13 @@ import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonWriters._
-import org.joda.time.DateTime
+import java.time.LocalDateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
 object JsonSerializers {
   implicit val bigIntReads: Reads[BigInt] = BigIntReads
-  implicit val dateTimeReads: Reads[DateTime] = DateTimeReads
+  implicit val localDateTimeReads: Reads[LocalDateTime] = LocalDateTimeReads
 
   // Internal Types
   implicit val doubleSha256DigestReads: Reads[DoubleSha256Digest] =

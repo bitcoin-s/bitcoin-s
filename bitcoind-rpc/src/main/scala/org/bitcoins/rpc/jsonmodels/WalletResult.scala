@@ -1,11 +1,12 @@
 package org.bitcoins.rpc.jsonmodels
 
 import java.io.File
+import java.time.LocalDateTime
 
 import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE, 
-  ECPublicKey, 
-  RipeMd160Digest, 
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  RipeMd160Digest,
   Sha256Hash160Digest
 }
 import org.bitcoins.core.currency.Bitcoins
@@ -17,7 +18,6 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
-import org.joda.time.DateTime
 
 sealed abstract class WalletResult
 
@@ -206,7 +206,7 @@ case class AddressInfoResult(
     pubkey: Option[ECPublicKey],
     embedded: Option[EmbeddedResult],
     label: String,
-    timestamp: Option[DateTime],
+    timestamp: Option[LocalDateTime],
     hdkeypath: Option[BIP32Path],
     hdseedid: Option[RipeMd160Digest],
     hdmasterkeyid: Option[RipeMd160Digest],

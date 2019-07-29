@@ -1,12 +1,12 @@
 package org.bitcoins.core.p2p
 
 import java.net.InetAddress
+import java.time.Instant
 
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.number.{Int32, UInt64}
 import org.bitcoins.testkit.core.gen.p2p.ControlMessageGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.joda.time.DateTime
 import scodec.bits._
 
 class VersionMessageTest extends BitcoinSUnitTest {
@@ -29,7 +29,7 @@ class VersionMessageTest extends BitcoinSUnitTest {
 
     versionMessage.nonce must be(UInt64.zero)
     versionMessage.startHeight must be(Int32.zero)
-    versionMessage.timestamp.toLong must be(DateTime.now.getMillis +- 1000)
+    versionMessage.timestamp.toLong must be(Instant.now().toEpochMilli +- 1000)
   }
 
   it must "correctly deduce service flags" in {
