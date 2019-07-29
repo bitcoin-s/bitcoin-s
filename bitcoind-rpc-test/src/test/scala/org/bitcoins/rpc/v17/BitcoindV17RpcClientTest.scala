@@ -16,7 +16,7 @@ import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
-import org.joda.time.DateTime
+import java.time.LocalDateTime
 
 import scala.concurrent.Future
 
@@ -101,7 +101,9 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress
       info <- client.getAddressInfo(addr)
-    } yield assert(info.timestamp.exists(_.dayOfYear == DateTime.now.dayOfYear))
+    } yield
+      assert(
+        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {
@@ -109,7 +111,9 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.P2SHSegwit)
       info <- client.getAddressInfo(addr)
-    } yield assert(info.timestamp.exists(_.dayOfYear == DateTime.now.dayOfYear))
+    } yield
+      assert(
+        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   it should "be able to get the address info for a given Legacy address" in {
@@ -117,7 +121,9 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.Legacy)
       info <- client.getAddressInfo(addr)
-    } yield assert(info.timestamp.exists(_.dayOfYear == DateTime.now.dayOfYear))
+    } yield
+      assert(
+        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   // needs #360 to be merged
@@ -128,7 +134,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       info <- client.getAddressInfo(addr)
     } yield {
       assert(info.address.networkParameters == RegTest)
-      assert(info.timestamp.exists(_.dayOfYear == DateTime.now.dayOfYear))
+      assert(
+        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
     }
   }
 
