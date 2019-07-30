@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.serializers
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis

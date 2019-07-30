@@ -17,6 +17,7 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.concurrent.Future
+import org.bitcoins.core.currency.CurrencyUnit
 
 /**
   * RPC calls related to PSBT (partially signed bitcoin transactions)
@@ -43,14 +44,15 @@ trait V17PsbtRpc { self: Client =>
 
   def createPsbt(
       inputs: Vector[TransactionInput],
-      outputs: Map[BitcoinAddress, Bitcoins],
+      outputs: Map[BitcoinAddress, CurrencyUnit],
       locktime: Int = 0,
       replacable: Boolean = false): Future[String] = {
-    bitcoindCall[String]("createpsbt",
-                         List(Json.toJson(inputs),
-                              Json.toJson(outputs),
-                              JsNumber(locktime),
-                              JsBoolean(replacable)))
+    bitcoindCall[String](
+      "createpsbt",
+      List(Json.toJson(inputs),
+           Json.toJson(outputs.mapValues(curr => Bitcoins(curr.satoshis))),
+           JsNumber(locktime),
+           JsBoolean(replacable)))
   }
 
   def combinePsbt(psbts: Vector[String]): Future[String] = {
@@ -66,17 +68,19 @@ trait V17PsbtRpc { self: Client =>
 
   def walletCreateFundedPsbt(
       inputs: Vector[TransactionInput],
-      outputs: Map[BitcoinAddress, Bitcoins],
+      outputs: Map[BitcoinAddress, CurrencyUnit],
       locktime: Int = 0,
       options: WalletCreateFundedPsbtOptions = WalletCreateFundedPsbtOptions(),
       bip32derivs: Boolean = false
   ): Future[WalletCreateFundedPsbtResult] =
-    bitcoindCall[WalletCreateFundedPsbtResult]("walletcreatefundedpsbt",
-                                               List(Json.toJson(inputs),
-                                                    Json.toJson(outputs),
-                                                    JsNumber(locktime),
-                                                    Json.toJson(options),
-                                                    Json.toJson(bip32derivs)))
+    bitcoindCall[WalletCreateFundedPsbtResult](
+      "walletcreatefundedpsbt",
+      List(Json.toJson(inputs),
+           Json.toJson(outputs.mapValues(curr => Bitcoins(curr.satoshis))),
+           JsNumber(locktime),
+           Json.toJson(options),
+           Json.toJson(bip32derivs))
+    )
 
   def walletProcessPsbt(
       psbt: String,
