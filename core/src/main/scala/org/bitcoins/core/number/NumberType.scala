@@ -251,16 +251,16 @@ final case class UInt64(underlying: BigInt)
     UInt64(underlying >> int)
   }
 
-  def toInt: Int = {
-    val i = underlying.toInt
+  def toBigInt: BigInt = {
+    val i = underlying
     require(underlying == i,
-            s"Rounded when converting long=${underlying} toInt=${i}")
+            s"Rounded when converting long=${underlying} toBigInt=${i}")
     i
   }
 
   def toBigInt: BigInt = underlying
 
-  def toLong: Long = toBigInt
+  def toLong: Long = underlying.toLong
 
   def toDouble(x: UInt64): Double = x.underlying.toDouble
   def toFloat(x: UInt64): Float = x.underlying.toFloat
