@@ -26,7 +26,7 @@ https://bitcoin-s.org/docs/getting-started
 res4: String = "bc1q7ynsz7tamtnvlmts4snrl7e98jc9d8gqwsjsr5"
 ```
 
-## Build tools
+## Getting prebuilt JARs
 
 If you want to add Bitcoin-S to your project, follow the
 instructions for your build tool
@@ -74,3 +74,11 @@ ${List.fill(3)("`").mkString /* Hacky solution to get around nesting backticks *
 ### Mill
 
 TODO
+
+## Building JARs yourself
+
+If you want to build Bitcoin-S JARs yourself, you need to use the
+[sbt](https://www.scala-sbt.org/) build tool. Once you have sbt
+installed, run `sbt publishLocal`. This places the required JAR
+files in your `.ivy2/local` folder. On Linux, this is located at
+`$HOME/.ivy2/local/` by default.
