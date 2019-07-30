@@ -203,7 +203,7 @@ final case class UInt32(underlying: Long)
 /**
   * Represents a uint64_t in C
   */
-final case class UInt64(underlying: BigInt)
+final case class UInt64(underlying: java.math.BigInteger)
     extends AnyVal
     with NetworkElement
     with BasicArithmetic[UInt64]
@@ -236,19 +236,11 @@ final case class UInt64(underlying: BigInt)
   }
 
   def <<(u64: UInt64): UInt64 = {
-    UInt64(underlying.u64.underlying)
-  }
-
-  def <<(int: Int): UInt64 = {
-    this.shiftleft()(UInt64(int))
+    UInt64(underlying.shiftLeft(u64))
   }
 
   def >>(u64: UInt64): UInt64 = {
-    UInt64(underlying underlying)
-  }
-
-  def >>(int: Int): UInt64 = {
-    UInt64(underlying.shiftright() int)
+    UInt64(underlying.shiftRight(u64))
   }
 
   def toBigInt: BigInt = {
@@ -260,10 +252,10 @@ final case class UInt64(underlying: BigInt)
 
   def toBigInt: BigInt = underlying
 
-  def toLong: Long = underlying.toLong
+  def toLong: Long = underlying.longValueExact()
 
-  def toDouble(x: UInt64): Double = x.underlying.toDouble
-  def toFloat(x: UInt64): Float = x.underlying.toFloat
+  def toDouble(x: UInt64): Double = x.underlying.doubleValueExact()
+  def toFloat(x: UInt64): Float = x.underlying.floatValueExact()
 
   def toBigInt(x: UInt64): BigInt = x.underlying
 
