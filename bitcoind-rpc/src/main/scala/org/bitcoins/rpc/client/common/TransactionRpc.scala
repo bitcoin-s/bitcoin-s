@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.rpc.client.common.RpcOpts.{AddressType, FeeEstimationMode}
@@ -133,29 +133,31 @@ trait TransactionRpc { self: Client =>
   }
 
   def sendMany(
-      amounts: Map[BitcoinAddress, Bitcoins],
+      amounts: Map[BitcoinAddress, CurrencyUnit],
       minconf: Int = 1,
       comment: String = "",
       subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
     DoubleSha256DigestBE] = {
-    bitcoindCall[DoubleSha256DigestBE]("sendmany",
-                                       List(JsString(""),
-                                            Json.toJson(amounts),
-                                            JsNumber(minconf),
-                                            JsString(comment),
-                                            Json.toJson(subtractFeeFrom)))
+    bitcoindCall[DoubleSha256DigestBE](
+      "sendmany",
+      List(JsString(""),
+           Json.toJson(amounts.mapValues(curr => Bitcoins(curr.satoshis))),
+           JsNumber(minconf),
+           JsString(comment),
+           Json.toJson(subtractFeeFrom))
+    )
   }
 
   def sendToAddress(
       address: BitcoinAddress,
-      amount: Bitcoins,
+      amount: CurrencyUnit,
       localComment: String = "",
       toComment: String = "",
       subractFeeFromAmount: Boolean = false): Future[DoubleSha256DigestBE] = {
     bitcoindCall[DoubleSha256DigestBE](
       "sendtoaddress",
       List(Json.toJson(address),
-           Json.toJson(amount),
+           Json.toJson(Bitcoins(amount.satoshis)),
            JsString(localComment),
            JsString(toComment),
            JsBoolean(subractFeeFromAmount))
