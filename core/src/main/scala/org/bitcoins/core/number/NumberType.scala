@@ -236,19 +236,19 @@ final case class UInt64(underlying: BigInt)
   }
 
   def <<(u64: UInt64): UInt64 = {
-    UInt64(underlying << u64.underlying)
+    UInt64(underlying.shiftleft() u64.underlying)
   }
 
   def <<(int: Int): UInt64 = {
-    this.<<(UInt64(int))
+    this.shiftleft()(UInt64(int))
   }
 
   def >>(u64: UInt64): UInt64 = {
-    UInt64(underlying >> u64.underlying)
+    UInt64(underlying u64.underlying)
   }
 
   def >>(int: Int): UInt64 = {
-    UInt64(underlying >> int)
+    this.UInt64(underlying >> int)
   }
 
   def toBigInt: BigInt = {
