@@ -209,9 +209,65 @@ final case class UInt64(underlying: BigInt)
     with BasicArithmetic[UInt64]
     with Ordered[UInt64] {
 
-  override def hex: String = BitcoinSUtil.encodeHex(underlying)
+  override def hex: String = encodeHex(underlying)
 
   override def bytes: ByteVector = ByteVector.fromValidHex(hex)
+
+  override def +(y: UInt64): UInt64 = {
+    UInt64(underlying + y.underlying)
+  }
+
+  override def -(y: UInt64): UInt64 = {
+    UInt64(underlying - y.underlying)
+  }
+
+  override def *(y: UInt64): UInt64 = {
+    UInt64(underlying * y.underlying)
+  }
+
+  override def *(factor: BigInt): UInt64 = ???
+
+  def |(u64: UInt64): UInt64 = {
+    UInt64(underlying | u64.underlying)
+  }
+
+  def &(u64: UInt64): UInt64 = {
+    UInt64(underlying & u64.underlying)
+  }
+
+  def <<(u64: UInt64): UInt64 = {
+    UInt64(underlying << u64.underlying)
+  }
+
+  def <<(int: Int): UInt64 = {
+    this.<<(UInt64(int))
+  }
+
+  def >>(u64: UInt64): UInt64 = {
+    UInt64(underlying >> u64.underlying)
+  }
+
+  def >>(int: Int): UInt64 = {
+    UInt64(underlying >> int)
+  }
+
+  def toInt: Int = {
+    val i = underlying.toInt
+    require(underlying == i,
+            s"Rounded when converting long=${underlying} toInt=${i}")
+    i
+  }
+
+  def toBigInt: BigInt = underlying
+
+  def toLong: Long = toBigInt
+
+  def toDouble(x: UInt64): Double = x.underlying.toDouble
+  def toFloat(x: UInt64): Float = x.underlying.toFloat
+
+  def toBigInt(x: UInt64): BigInt = x.underlying
+
+  override def compare(that: UInt64): Int = underlying.compare(that.underlying)
 
   /**
     * Converts a [[BigInt]] to a 8 byte hex representation.
@@ -473,31 +529,34 @@ object UInt32
 
 object UInt64
     extends Factory[UInt64]
-    with NumberObject[UInt64]
+    /* with NumberObject[UInt64] */
     with Bounded[UInt64] {
-  private case class UInt64Impl(underlying: BigInt) extends UInt64 {
+  /* private case class UInt64Impl(underlying: BigInt) extends UInt64 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
-
+   */
   lazy val zero = UInt64(BigInt(0))
   lazy val one = UInt64(BigInt(1))
 
-  private lazy val minUnderlying: A = 0
-  private lazy val maxUnderlying: A = BigInt("18446744073709551615")
+  private lazy val minUnderlying = 0
+  private lazy val maxUnderlying = BigInt("18446744073709551615")
 
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
 
-  override def isInBound(num: A): Boolean =
+  /* override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
+   */
   override def fromBytes(bytes: ByteVector): UInt64 = {
     require(bytes.size <= 8)
     UInt64(NumberUtil.toUnsignedInt(bytes))
   }
 
-  def apply(num: BigInt): UInt64 = UInt64Impl(num)
+  def apply(num: BigInt): UInt64 = {
+    UInt64(num.bigInteger)
+  }
 }
 
 object Int32
