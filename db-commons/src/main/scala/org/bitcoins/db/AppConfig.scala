@@ -227,8 +227,7 @@ abstract class AppConfig extends BitcoinSLogger {
     logger.trace(
       s"Classpath config: ${classPathConfig.getConfig("bitcoin-s").asReadableJson}")
 
-    // loads reference.conf as well as application.conf,
-    // if the user has made one
+    // loads reference.conf (provided by Bitcoin-S)
     val unresolvedConfig = classPathConfig
       .withFallback(dbConfig)
 
@@ -257,16 +256,52 @@ abstract class AppConfig extends BitcoinSLogger {
         unresolvedConfig
       }
 
-    val config = withOverrides
+    val classPathAndOverrides = withOverrides
       .resolve()
-      .getConfig("bitcoin-s")
+
+    val datadirConfig = {
+      val datadir = classPathAndOverrides
+        .getStringOrNone("bitcoin-s.datadir")
+        .map(Paths.get(_))
+        .getOrElse(DEFAULT_DATADIR)
+
+      val file = datadir.resolve("bitcoin-s.conf")
+      val config = if (Files.isReadable(file)) {
+        ConfigFactory.parseFile(file.toFile())
+      } else {
+        ConfigFactory.empty()
+      }
+      config
+    }
+
+    logger.trace(s"Data directory config:")
+    if (datadirConfig.hasPath("bitcoin-s")) {
+      logger.trace(datadirConfig.getConfig("bitcoin-s").asReadableJson)
+    } else {
+      logger.trace(ConfigFactory.empty().asReadableJson)
+    }
+
+    // we want data directory configuration to take
+    // precedence
+    val withDatadirConfiguration =
+      datadirConfig.withFallback(classPathAndOverrides)
+
+    val finalConfig = withDatadirConfiguration.getConfig("bitcoin-s").resolve()
 
     logger.debug(s"Resolved bitcoin-s config:")
-    logger.debug(config.asReadableJson)
+    logger.debug(finalConfig.asReadableJson)
 
-    config
+    finalConfig
 
   }
+
+  /** The default data directory
+    *
+    * TODO: use different directories on Windows and Mac,
+    * should probably mimic what Bitcoin Core does
+    */
+  private val DEFAULT_DATADIR: Path =
+    Paths.get(Properties.userHome, ".bitcoin-s")
 
   /** The data directory used by bitcoin-s apps */
   lazy val datadir: Path = {

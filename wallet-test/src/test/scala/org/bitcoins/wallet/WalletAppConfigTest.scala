@@ -10,6 +10,8 @@ import org.bitcoins.core.config.MainNet
 import org.bitcoins.wallet.config.WalletAppConfig
 import java.nio.file.Paths
 import org.bitcoins.core.hd.HDPurposes
+import java.nio.file.Files
+import ch.qos.logback.classic.Level
 
 class WalletAppConfigTest extends BitcoinSUnitTest {
   val config = WalletAppConfig()
@@ -65,6 +67,33 @@ class WalletAppConfigTest extends BitcoinSUnitTest {
     val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val overriden: WalletAppConfig = config.withOverrides(testnet, mainnet)
     assert(overriden.network == MainNet)
+  }
 
+  it must "have user data directory configuration take precedence" in {
+
+    val tempDir = Files.createTempDirectory("bitcoin-s")
+    val tempFile = Files.createFile(tempDir.resolve("bitcoin-s.conf"))
+    val confStr = """
+    | bitcoin-s {
+    |   network = testnet3
+    |   
+    |   logging {
+    |     level = off
+    |
+    |     p2p = warn
+    |   }
+    | }
+    """.stripMargin
+    val _ = Files.write(tempFile, confStr.getBytes())
+
+    val datadirConfig =
+      ConfigFactory.parseString(s"bitcoin-s.datadir = $tempDir")
+
+    val appConfig = WalletAppConfig(datadirConfig)
+
+    assert(appConfig.datadir == tempDir.resolve("testnet3"))
+    assert(appConfig.network == TestNet3)
+    assert(appConfig.logLevel == Level.OFF)
+    assert(appConfig.p2pLogLevel == Level.WARN)
   }
 }
