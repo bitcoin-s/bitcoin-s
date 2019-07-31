@@ -12,9 +12,17 @@ import java.nio.file.Paths
 import org.bitcoins.core.hd.HDPurposes
 import java.nio.file.Files
 import ch.qos.logback.classic.Level
+import java.nio.file.Path
+import scala.util.Properties
 
 class WalletAppConfigTest extends BitcoinSUnitTest {
-  val config = WalletAppConfig()
+
+  val tempDir = Files.createTempDirectory("bitcoin-s")
+  val config = WalletAppConfig(directory = tempDir)
+
+  it must "resolve DB connections correctly " in {
+    assert(config.dbPath.startsWith(Properties.tmpDir))
+  }
 
   it must "be overridable" in {
     assert(config.network == RegTest)
@@ -29,27 +37,25 @@ class WalletAppConfigTest extends BitcoinSUnitTest {
   }
 
   it should "not matter how the overrides are passed in" in {
-    val dir = Paths.get("/", "bar", "biz")
     val overrider = ConfigFactory.parseString(s"""
     |bitcoin-s {
-    |  datadir = $dir 
     |  network = mainnet
     |}
     |""".stripMargin)
 
-    val throughConstuctor = WalletAppConfig(overrider)
+    val throughConstuctor = WalletAppConfig(tempDir, overrider)
     val throughWithOverrides = config.withOverrides(overrider)
     assert(throughWithOverrides.network == MainNet)
     assert(throughWithOverrides.network == throughConstuctor.network)
 
-    assert(throughWithOverrides.datadir.startsWith(dir))
     assert(throughWithOverrides.datadir == throughConstuctor.datadir)
 
   }
 
   it must "be overridable without screwing up other options" in {
-    val dir = Paths.get("/", "foo", "bar")
-    val otherConf = ConfigFactory.parseString(s"bitcoin-s.datadir = $dir")
+    val otherConf = ConfigFactory.parseString(
+      s"bitcoin-s.wallet.defaultAccountType = segwit"
+    )
     val thirdConf = ConfigFactory.parseString(
       s"bitcoin-s.wallet.defaultAccountType = nested-segwit")
 
@@ -57,9 +63,11 @@ class WalletAppConfigTest extends BitcoinSUnitTest {
 
     val twiceOverriden = overriden.withOverrides(thirdConf)
 
-    assert(overriden.datadir.startsWith(dir))
-    assert(twiceOverriden.datadir.startsWith(dir))
+    assert(overriden.defaultAccountKind == HDPurposes.SegWit)
     assert(twiceOverriden.defaultAccountKind == HDPurposes.NestedSegWit)
+
+    assert(config.datadir == overriden.datadir)
+    assert(twiceOverriden.datadir == overriden.datadir)
   }
 
   it must "be overridable with multiple levels" in {
@@ -86,10 +94,7 @@ class WalletAppConfigTest extends BitcoinSUnitTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val datadirConfig =
-      ConfigFactory.parseString(s"bitcoin-s.datadir = $tempDir")
-
-    val appConfig = WalletAppConfig(datadirConfig)
+    val appConfig = WalletAppConfig(directory = tempDir)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

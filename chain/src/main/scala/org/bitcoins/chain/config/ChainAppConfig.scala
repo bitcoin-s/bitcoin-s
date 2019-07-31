@@ -11,13 +11,24 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.Success
 import scala.util.Failure
+import java.nio.file.Path
 
-case class ChainAppConfig(private val confs: Config*) extends AppConfig {
-  override protected val configOverrides: List[Config] = confs.toList
-  override protected val moduleName: String = "chain"
-  override protected type ConfigType = ChainAppConfig
-  override protected def newConfigOfType(configs: Seq[Config]): ChainAppConfig =
-    ChainAppConfig(configs: _*)
+/** Configuration for the Bitcoin-S chain verification module
+  * @param directory The data directory of the module
+  * @param confs Optional sequence of configuration overrides
+  */
+case class ChainAppConfig(
+    private val directory: Path,
+    private val confs: Config*)
+    extends AppConfig {
+  override protected[bitcoins] def configOverrides: List[Config] = confs.toList
+  override protected[bitcoins] val moduleName: String = "chain"
+  override protected[bitcoins] type ConfigType = ChainAppConfig
+  override protected[bitcoins] def newConfigOfType(
+      configs: Seq[Config]): ChainAppConfig =
+    ChainAppConfig(directory, configs: _*)
+
+  protected[bitcoins] def baseDatadir: Path = directory
 
   /**
     * Checks whether or not the chain project is initialized by
@@ -69,4 +80,13 @@ case class ChainAppConfig(private val confs: Config*) extends AppConfig {
       }
     }
   }
+}
+
+object ChainAppConfig {
+
+  /** Constructs a chain verification configuration from the default Bitcoin-S
+    * data directory and given list of configuration overrides.
+    */
+  def fromDefaultDatadir(confs: Config*): ChainAppConfig =
+    ChainAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 }

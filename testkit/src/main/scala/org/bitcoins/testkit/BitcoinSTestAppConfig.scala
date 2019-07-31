@@ -13,15 +13,7 @@ object BitcoinSTestAppConfig {
     */
   def getTestConfig(config: Config*): BitcoinSAppConfig = {
     val tmpDir = Files.createTempDirectory("bitcoin-s-")
-    val confStr = s"""
-    | bitcoin-s {
-    |   datadir = $tmpDir
-    | }
-    |
-    |""".stripMargin
-    val conf = ConfigFactory.parseString(confStr)
-    val allConfs = conf +: config
-    BitcoinSAppConfig(allConfs: _*)
+    BitcoinSAppConfig(tmpDir, config: _*)
   }
 
   sealed trait ProjectType

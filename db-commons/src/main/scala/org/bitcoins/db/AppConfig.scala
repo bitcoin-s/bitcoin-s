@@ -52,15 +52,16 @@ abstract class AppConfig extends BitcoinSLogger {
     * the type of themselves, ensuring `withOverrides` return
     * the correct type
     */
-  protected type ConfigType <: AppConfig
+  protected[bitcoins] type ConfigType <: AppConfig
 
   /** Constructor to make a new instance of this config type */
-  protected def newConfigOfType(configOverrides: Seq[Config]): ConfigType
+  protected[bitcoins] def newConfigOfType(
+      configOverrides: Seq[Config]): ConfigType
 
   /** List of user-provided configs that should
     * override defaults
     */
-  protected val configOverrides: List[Config] = List.empty
+  protected[bitcoins] def configOverrides: List[Config] = List.empty
 
   /**
     * This method returns a new `AppConfig`, where every
@@ -122,7 +123,7 @@ abstract class AppConfig extends BitcoinSLogger {
   /**
     * Name of the module. `chain`, `wallet`, `node` etc.
     */
-  protected def moduleName: String
+  protected[bitcoins] def moduleName: String
 
   /**
     * The configuration details for connecting/using the database for our projects
@@ -207,6 +208,27 @@ abstract class AppConfig extends BitcoinSLogger {
     * rest of the fields in this class from
     */
   private[bitcoins] lazy val config: Config = {
+
+    val datadirConfig = {
+      val file = baseDatadir.resolve("bitcoin-s.conf")
+      val config = if (Files.isReadable(file)) {
+        ConfigFactory.parseFile(file.toFile())
+      } else {
+        ConfigFactory.empty()
+      }
+
+      val withDatadir =
+        ConfigFactory.parseString(s"bitcoin-s.datadir = $baseDatadir")
+      withDatadir.withFallback(config)
+    }
+
+    logger.trace(s"Data directory config:")
+    if (datadirConfig.hasPath("bitcoin-s")) {
+      logger.trace(datadirConfig.getConfig("bitcoin-s").asReadableJson)
+    } else {
+      logger.trace(ConfigFactory.empty().asReadableJson)
+    }
+
     // `load` tries to resolve substitions,
     // `parseResources` does not
     val dbConfig = ConfigFactory
@@ -227,8 +249,12 @@ abstract class AppConfig extends BitcoinSLogger {
     logger.trace(
       s"Classpath config: ${classPathConfig.getConfig("bitcoin-s").asReadableJson}")
 
+    // we want the data directory configuration
+    // to take preference over any bundled (classpath)
+    // configurations
     // loads reference.conf (provided by Bitcoin-S)
-    val unresolvedConfig = classPathConfig
+    val unresolvedConfig = datadirConfig
+      .withFallback(classPathConfig)
       .withFallback(dbConfig)
 
     logger.trace(s"Unresolved bitcoin-s config:")
@@ -256,37 +282,9 @@ abstract class AppConfig extends BitcoinSLogger {
         unresolvedConfig
       }
 
-    val classPathAndOverrides = withOverrides
+    val finalConfig = withOverrides
       .resolve()
-
-    val datadirConfig = {
-      val datadir = classPathAndOverrides
-        .getStringOrNone("bitcoin-s.datadir")
-        .map(Paths.get(_))
-        .getOrElse(DEFAULT_DATADIR)
-
-      val file = datadir.resolve("bitcoin-s.conf")
-      val config = if (Files.isReadable(file)) {
-        ConfigFactory.parseFile(file.toFile())
-      } else {
-        ConfigFactory.empty()
-      }
-      config
-    }
-
-    logger.trace(s"Data directory config:")
-    if (datadirConfig.hasPath("bitcoin-s")) {
-      logger.trace(datadirConfig.getConfig("bitcoin-s").asReadableJson)
-    } else {
-      logger.trace(ConfigFactory.empty().asReadableJson)
-    }
-
-    // we want data directory configuration to take
-    // precedence
-    val withDatadirConfiguration =
-      datadirConfig.withFallback(classPathAndOverrides)
-
-    val finalConfig = withDatadirConfiguration.getConfig("bitcoin-s").resolve()
+      .getConfig("bitcoin-s")
 
     logger.debug(s"Resolved bitcoin-s config:")
     logger.debug(finalConfig.asReadableJson)
@@ -295,23 +293,17 @@ abstract class AppConfig extends BitcoinSLogger {
 
   }
 
-  /** The default data directory
-    *
-    * TODO: use different directories on Windows and Mac,
-    * should probably mimic what Bitcoin Core does
-    */
-  private val DEFAULT_DATADIR: Path =
-    Paths.get(Properties.userHome, ".bitcoin-s")
+  /** The base data directory. This is where we look for a configuration file */
+  protected[bitcoins] def baseDatadir: Path
 
-  /** The data directory used by bitcoin-s apps */
-  lazy val datadir: Path = {
-    val basedir = Paths.get(config.getString("datadir"))
+  /** The network specific data directory. */
+  val datadir: Path = {
     val lastDirname = network match {
       case MainNet  => "mainnet"
       case TestNet3 => "testnet3"
       case RegTest  => "regtest"
     }
-    basedir.resolve(lastDirname)
+    baseDatadir.resolve(lastDirname)
   }
 
   private def stringToLogLevel(str: String): Level =
@@ -367,6 +359,14 @@ abstract class AppConfig extends BitcoinSLogger {
 }
 
 object AppConfig extends BitcoinSLogger {
+
+  /** The default data directory
+    *
+    * TODO: use different directories on Windows and Mac,
+    * should probably mimic what Bitcoin Core does
+    */
+  private[bitcoins] val DEFAULT_BITCOIN_S_DATADIR: Path =
+    Paths.get(Properties.userHome, ".bitcoin-s")
 
   /**
     * Matches the default data directory location

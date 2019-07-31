@@ -29,7 +29,7 @@ import org.bitcoins.chain.models.BlockHeaderDAO
 object Main extends App {
   implicit val conf = {
     // val custom = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-    BitcoinSAppConfig()
+    BitcoinSAppConfig.fromDefaultDatadir()
   }
 
   private val logger = AppLoggers.getHttpLogger(

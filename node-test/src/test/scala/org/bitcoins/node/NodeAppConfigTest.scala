@@ -11,7 +11,8 @@ import ch.qos.logback.classic.Level
 import java.nio.file.Files
 
 class NodeAppConfigTest extends BitcoinSUnitTest {
-  val config = NodeAppConfig()
+  val tempDir = Files.createTempDirectory("bitcoin-s")
+  val config = NodeAppConfig(directory = tempDir)
 
   it must "be overridable" in {
     assert(config.network == RegTest)
@@ -50,10 +51,7 @@ class NodeAppConfigTest extends BitcoinSUnitTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val datadirConfig =
-      ConfigFactory.parseString(s"bitcoin-s.datadir = $tempDir")
-
-    val appConfig = NodeAppConfig(datadirConfig)
+    val appConfig = NodeAppConfig(directory = tempDir)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

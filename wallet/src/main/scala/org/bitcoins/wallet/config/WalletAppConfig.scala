@@ -10,13 +10,24 @@ import java.nio.file.Files
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.AddressType
+import java.nio.file.Path
 
-case class WalletAppConfig(private val conf: Config*) extends AppConfig {
-  override val configOverrides: List[Config] = conf.toList
-  override def moduleName: String = "wallet"
-  override type ConfigType = WalletAppConfig
-  override def newConfigOfType(configs: Seq[Config]): WalletAppConfig =
-    WalletAppConfig(configs: _*)
+/** Configuration for the Bitcoin-S wallet
+  * @param directory The data directory of the wallet
+  * @param confs Optional sequence of configuration overrides
+  */
+case class WalletAppConfig(
+    private val directory: Path,
+    private val conf: Config*)
+    extends AppConfig {
+  override protected[bitcoins] def configOverrides: List[Config] = conf.toList
+  override protected[bitcoins] def moduleName: String = "wallet"
+  override protected[bitcoins] type ConfigType = WalletAppConfig
+  override protected[bitcoins] def newConfigOfType(
+      configs: Seq[Config]): WalletAppConfig =
+    WalletAppConfig(directory, configs: _*)
+
+  protected[bitcoins] def baseDatadir: Path = directory
 
   lazy val defaultAccountKind: HDPurpose =
     config.getString("wallet.defaultAccountType") match {
@@ -62,4 +73,13 @@ case class WalletAppConfig(private val conf: Config*) extends AppConfig {
     initF
   }
 
+}
+
+object WalletAppConfig {
+
+  /** Constructs a wallet configuration from the default Bitcoin-S
+    * data directory and given list of configuration overrides.
+    */
+  def fromDefaultDatadir(confs: Config*): WalletAppConfig =
+    WalletAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 }
