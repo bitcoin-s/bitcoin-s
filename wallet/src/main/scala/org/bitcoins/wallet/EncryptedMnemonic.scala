@@ -10,6 +10,7 @@ case class EncryptedMnemonic(value: AesEncryptedData, salt: AesSalt)
     extends BitcoinSLogger {
 
   def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
+    import org.bitcoins.core.util.EitherUtil.EitherOps._
     val key = password.toKey(salt)
     AesCrypt.decrypt(value, key).toTry.flatMap { decrypted =>
       decrypted.decodeUtf8 match {
