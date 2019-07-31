@@ -165,6 +165,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
   override def initializeWithEntropy(entropy: BitVector)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
+    import org.bitcoins.core.util.EitherUtil.EitherOps._
 
     logger.info(s"Initializing wallet on chain ${config.network}")
 
