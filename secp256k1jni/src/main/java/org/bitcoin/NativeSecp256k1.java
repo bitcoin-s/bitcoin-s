@@ -569,6 +569,45 @@ public class NativeSecp256k1 {
     }
 
     /**
+     * libsecp256k1 Computes a Schnorr public key given a pre-committed R value.
+     *
+     * @param data Message hash, 32 bytes
+     * @param rKey Pre-committed R value, 33 bytes
+     * @param pubKey Signer's public key, 33 bytes
+     * @return sigPubKey byte array with public key associated with signature
+     */
+    public static byte[] computeSchnorrPubKey(byte[] data, byte[] rKey, byte[] pubKey) throws AssertFailException {
+        checkArgument(data.length == 32 && rKey.length == 33 && pubKey.length == 33);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < data.length + rKey.length + pubKey.length) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 33 + 33);
+
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(rKey);
+        byteBuff.put(data);
+        byteBuff.put(pubKey);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_schnorrsig_compute_pubkey(byteBuff, Secp256k1Context.getContext());
+        } finally {
+            r.unlock();
+        }
+
+        byte[] sigPubKey = retByteArray[0];
+        int retVal = new BigInteger(new byte[] { retByteArray[1][0] }).intValue();
+
+        assertEquals(sigPubKey.length, 33, "Got bad pubkey length.");
+
+        return retVal == 0 ? new byte[0] : sigPubKey;
+    }
+
+    /**
      * Verifies the given Schnorr signature in native code.
      * Calling when enabled == false is undefined (probably library not loaded)
      *
@@ -650,6 +689,8 @@ public class NativeSecp256k1 {
     private static native byte[][] secp256k1_ec_pubkey_decompress(ByteBuffer byteBuff, long context, int inputLen);
 
     private static native int secp256k1_schnorrsig_verify(ByteBuffer byteBuff, long context, int pubLen);
+
+    private static native byte[][] secp256k1_schnorrsig_compute_pubkey(ByteBuffer byteBuff, long context);
 
     private static native byte[][] secp256k1_schnorrsig_sign(ByteBuffer byteBuff, long context);
 
