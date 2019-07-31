@@ -129,7 +129,7 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
 /**
   * Represents a uint32_t in C
   */
-final case class UInt32(underlying: Long)
+final case class UInt32 private (private underlying: Long)
     extends AnyVal
     with NetworkElement
     with BasicArithmetic[UInt32]
@@ -203,7 +203,7 @@ final case class UInt32(underlying: Long)
 /**
   * Represents a uint64_t in C
   */
-final case class UInt64(underlying: java.math.BigInteger)
+final case class UInt64 private (private val underlying: java.math.BigInteger)
     extends AnyVal
     with NetworkElement
     with BasicArithmetic[UInt64]
@@ -214,33 +214,33 @@ final case class UInt64(underlying: java.math.BigInteger)
   override def bytes: ByteVector = ByteVector.fromValidHex(hex)
 
   override def +(y: UInt64): UInt64 = {
-    UInt64(underlying + y.underlying)
+    UInt64(underlying.add(y.underlying))
   }
 
   override def -(y: UInt64): UInt64 = {
-    UInt64(underlying - y.underlying)
+    UInt64(underlying.subtract(y.underlying))
   }
 
   override def *(y: UInt64): UInt64 = {
-    UInt64(underlying * y.underlying)
+    UInt64(underlying.multiply(y.underlying))
   }
 
   override def *(factor: BigInt): UInt64 = ???
 
   def |(u64: UInt64): UInt64 = {
-    UInt64(underlying | u64.underlying)
+    UInt64(underlying.or(u64.underlying))
   }
 
   def &(u64: UInt64): UInt64 = {
-    UInt64(underlying & u64.underlying)
+    UInt64(underlying.and(u64.underlying))
   }
 
   def <<(u64: UInt64): UInt64 = {
-    UInt64(underlying.shiftLeft(u64))
+    UInt64(underlying.shiftLeft(u64.underlying.intValueExact()))
   }
 
   def >>(u64: UInt64): UInt64 = {
-    UInt64(underlying.shiftRight(u64))
+    UInt64(underlying.shiftRight(u64.underlying.intValueExact()))
   }
 
   def toBigInt: BigInt = {
@@ -254,12 +254,13 @@ final case class UInt64(underlying: java.math.BigInteger)
 
   def toLong: Long = underlying.longValueExact()
 
-  def toDouble(x: UInt64): Double = x.underlying.doubleValueExact()
-  def toFloat(x: UInt64): Float = x.underlying.floatValueExact()
+  def toDouble(x: UInt64): Double = x.underlying.doubleValue()
+  def toFloat(x: UInt64): Float = x.underlying.floatValue()
 
   def toBigInt(x: UInt64): BigInt = x.underlying
 
-  override def compare(that: UInt64): Int = underlying.compare(that.underlying)
+  override def compare(that: UInt64): Int =
+    underlying.compareTo(that.underlying)
 
   /**
     * Converts a [[BigInt]] to a 8 byte hex representation.
@@ -284,7 +285,7 @@ final case class UInt64(underlying: java.math.BigInteger)
 /**
   * Represents a int32_t in C
   */
-final case class Int32(underlying: Int)
+final case class Int32 private (private underlying: Int)
     extends AnyVal
     with NetworkElement
     with BasicArithmetic[Int32]
@@ -504,17 +505,18 @@ object UInt32
   lazy val min = UInt32(minUnderlying)
   lazy val max = UInt32(maxUnderlying)
 
-  /*  override def isInBound(num: A): Boolean =
-    num <= maxUnderlying && num >= minUnderlying*/
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): UInt32 = {
     require(
       bytes.size <= 4,
       "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
-    UInt32(NumberUtil.toLongUnsigned(bytes))
   }
 
   def apply(bigInt: BigInt): UInt32 = {
+    require(isInBound(bigInt) == true,
+            "UInt32 number is not within the max/min bounds allowed")
     UInt32(bigInt.bigInteger.longValueExact())
   }
 }
@@ -537,16 +539,17 @@ object UInt64
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
 
-  /* override def isInBound(num: A): Boolean =
+  override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
-   */
   override def fromBytes(bytes: ByteVector): UInt64 = {
     require(bytes.size <= 8)
     UInt64(NumberUtil.toUnsignedInt(bytes))
   }
 
   def apply(num: BigInt): UInt64 = {
+    require(isInBound(num) == true,
+            "UInt64 number is not within the min/max bounds")
     UInt64(num.bigInteger)
   }
 }
@@ -569,8 +572,8 @@ object Int32
   lazy val min = Int32(minUnderlying)
   lazy val max = Int32(maxUnderlying)
 
-  /*override def isInBound(num: A): Boolean =
-    num <= maxUnderlying && num >= minUnderlying*/
+  override def isInBound(num: A): Boolean =
+    num <= maxUnderlying && num >= minUnderlying */
 
   override def fromBytes(bytes: ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
@@ -578,6 +581,7 @@ object Int32
   }
 
   def apply(bigInt: BigInt): Int32 = {
+    require(isInBound(bigInt) == true)
     Int32(bigInt.bigInteger.intValueExact())
   }
 }
