@@ -3,9 +3,9 @@ package org.bitcoins.core.serializers.p2p
 import java.net.InetAddress
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.util.{BitcoinSLogger, NumberUtil}
 import org.bitcoins.core.p2p._
+import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 /**

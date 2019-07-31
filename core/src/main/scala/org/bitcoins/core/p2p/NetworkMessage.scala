@@ -38,7 +38,7 @@ object NetworkMessage extends Factory[NetworkMessage] {
 
   /**
     * Creates a [[NetworkMessage]] out of it's [[NetworkPayload]]
-    * @param network the [[NetworkParameters]] indicating the network which the message is going to be sent on
+    * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] indicating the network which the message is going to be sent on
     * @param payload the payload that needs to be sent across the network
     * @return
     */

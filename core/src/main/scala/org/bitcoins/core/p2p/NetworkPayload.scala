@@ -384,7 +384,7 @@ case object MemPoolMessage extends DataPayload {
   *
   * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
   *
-  * @param merkleBlock The actual [[MerkleBlock]] that this message represents
+  * @param merkleBlock The actual [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] that this message represents 
   */
 case class MerkleBlockMessage(merkleBlock: MerkleBlock) extends DataPayload {
 

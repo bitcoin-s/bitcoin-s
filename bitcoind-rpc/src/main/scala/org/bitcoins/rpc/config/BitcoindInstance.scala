@@ -2,16 +2,14 @@ package org.bitcoins.rpc.config
 
 import java.io.File
 import java.net.URI
-import java.nio.file.Paths
+import java.nio.file.{Files, Paths}
 
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindVersion
 
 import scala.sys.process._
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.config.NetworkParameters
-
-import scala.util.{Properties, Try}
-import java.nio.file.Files
+import scala.util.Properties
 
 /**
   * Created by chris on 4/29/17.
@@ -123,7 +121,7 @@ object BitcoindInstance {
     * Construct a `bitcoind` from the given config file. If no `datadir` setting
     * is found, the parent directory to the given file is used.
     *
-    * @throws IllegalArgumentException if the given config file does not exist
+    * @throws  IllegalArgumentException if the given config file does not exist
     */
   def fromConfigFile(
       file: File = BitcoindConfig.DEFAULT_CONF_FILE): BitcoindInstance = {

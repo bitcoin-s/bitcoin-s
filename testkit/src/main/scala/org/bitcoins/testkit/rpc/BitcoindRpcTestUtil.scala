@@ -609,7 +609,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   /**
-    * Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
+    * Returns a triple of org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient
     * that are connected with some blocks in the chain
     */
   def createNodeTriple(
@@ -620,7 +620,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   }
 
   /**
-    * Returns a triple of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
+    * @return a triple of [[org.bitcoins.rpc.client.v17.BitcoindV17RpcClient BitcoindV17RpcClient]]
     * that are connected with some blocks in the chain
     */
   def createNodeTripleV17(
@@ -662,7 +662,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     * or a [[org.bitcoins.rpc.client.v16.BitcoindV16RpcClient BitcoindV16RpcClient]]
     * from the provided `signer`, and then calls the appropriate method on the result.
     *
-    * Throws a [[RuntimeException]] if no versioned
+    * @throws RuntimeException if no versioned
     * [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * can be constructed.
     */

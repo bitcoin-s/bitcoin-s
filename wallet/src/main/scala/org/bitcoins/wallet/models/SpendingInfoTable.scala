@@ -160,14 +160,10 @@ sealed trait SpendingInfoDb
 
 /**
   * This table stores the necessary information to spend
-  * a TXO at a later point in time.
-  *
-  * It does not contain informations about whether or not
-  * it is spent, how many (if any) confirmations it has
-  * or which block/transaction it was included in.
-  *
-  * That is rather handled by
-  * [[org.bitcoins.wallet.models.WalletTXOTable WalletTXOTable]].
+  * a transaction output (TXO) at a later point in time. It
+  * also stores how many confirmations it has, whether
+  * or not it is spent (i.e. if it is a UTXO or not) and the
+  * TXID of the transaction that created this output.
   */
 case class SpendingInfoTable(tag: Tag)
     extends TableAutoInc[SpendingInfoDb](tag, "txo_spending_info") {

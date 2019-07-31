@@ -15,7 +15,7 @@ import org.scalacheck.Gen
   */
 sealed abstract class WitnessGenerators extends BitcoinSLogger {
 
-  /** Generates a random [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] */
+  /** Generates a random [[org.bitcoins.core.protocol.script.ScriptWitness]] */
   def scriptWitness: Gen[ScriptWitness] = {
 
     //TODO: I need to come back and uncomment out this code after fixing
@@ -38,7 +38,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0)
   }
 
-  /** Generates a [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]] with
+  /** Generates a [[org.bitcoins.core.protocol.transaction.TransactionWitness]] with
     * the specified number of witnesses */
   def transactionWitness(numWitnesses: Int): Gen[TransactionWitness] =
     for {
@@ -51,7 +51,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
       wit <- transactionWitness(num)
     } yield wit
 
-  /** Generates a validly signed [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]] */
+  /** Generates a validly signed [[org.bitcoins.core.protocol.transaction.TransactionWitness]] */
   def signedP2WPKHTransactionWitness: Gen[
     (TransactionWitness, WitnessTxSigComponent, Seq[ECPrivateKey])] =
     for {
@@ -173,7 +173,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   /**
     * Generates a random signed [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]
     * with the corresponding [[org.bitcoins.core.crypto.WitnessTxSigComponent WitnessTxSigComponent]]
-    * and [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]s
+    * and [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]
     */
   def signedP2WSHTransactionWitness: Gen[
     (TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {
@@ -202,14 +202,14 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     signedScriptSig
   }
 
-  /** Generates a random [[org.bitcoins.core.protocol.script.P2WPKHWitnessV0 P2WPKHWitnessV0]] */
+  /** Generates a random [[org.bitcoins.core.protocol.script.P2WPKHWitnessV0 P2PWPKHWitnessV0]] */
   def p2wpkhWitnessV0: Gen[P2WPKHWitnessV0] =
     for {
       publicKey <- CryptoGenerators.publicKey
       sig <- CryptoGenerators.digitalSignature
     } yield P2WPKHWitnessV0(publicKey, sig)
 
-  /** Generates a random [[org.bitcoins.core.protocol.script.P2WSHWitnessV0 P2WSHWitnessV0]] */
+  /** Generates a random [[org.bitcoins.core.protocol.script.P2WPKHWitnessV0 P2PWPKHWitnessV0]] */
   def p2wshWitnessV0: Gen[P2WSHWitnessV0] =
     for {
       (redeem, _) <- ScriptGenerators.scriptPubKey
@@ -247,7 +247,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     (signedTxWitness, signedWtxSigComponent)
   }
 
-  /** Creates a unsigned [[org.bitcoins.core.crypto.WitnessTxSigComponent WitnessTxSigComponent]] from
+  /** Creates a unsigned [[org.bitcoins.core.crypto.WitnessTxSigComponent]] from
     * the given parameters */
   def createUnsignedRawWTxSigComponent(
       witScriptPubKey: WitnessScriptPubKey,

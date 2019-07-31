@@ -17,12 +17,12 @@ object TipUpdateResult {
     def header: BlockHeader
   }
 
-  /** Means that [[header.previousBlockHashBE]] was incorrect */
+  /** Means that [[org.bitcoins.core.protocol.blockchain.BlockHeader.previousBlockHashBE previousBlockHashBE]] was incorrect */
   case class BadPreviousBlockHash(header: BlockHeader) extends Failure
 
-  /** Means that [[header.nBits]] was invalid */
+  /** Means that [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits nBits]] was invalid */
   case class BadPOW(header: BlockHeader) extends Failure
 
-  /** Means that [[header.nonce]] was invalid */
+  /** Means that [[org.bitcoins.core.protocol.blockchain.BlockHeader.nonce nonce]] was invalid */
   case class BadNonce(header: BlockHeader) extends Failure
 }

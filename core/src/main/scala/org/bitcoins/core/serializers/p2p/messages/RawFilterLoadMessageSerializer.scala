@@ -6,8 +6,8 @@ import org.bitcoins.core.p2p.FilterLoadMessage
 import scodec.bits.ByteVector
 
 /**
-  * Serializes and deserializes a [[FilterLoadMessage]]
-  * @see https://bitcoin.org/en/developer-reference#filterload
+  * Serializes and deserializes a [[org.bitcoins.core.p2p.FilterLoadMessage FilterLoadMessage]]
+  * @see [[https://bitcoin.org/en/developer-reference#filterload]]
   */
 trait RawFilterLoadMessageSerializer
     extends RawBitcoinSerializer[FilterLoadMessage] {

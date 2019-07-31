@@ -40,9 +40,9 @@ object NetworkHeader extends Factory[NetworkHeader] {
     RawNetworkHeaderSerializer.read(bytes)
 
   /**
-    * Creates a [[NetworkHeader]] from it's [[NetworkParameters]] and [[NetworkPayload]]
-    * @param network the [[NetworkParameters]] object that indicates what network the payload needs to be sent on
-    * @param payload the [[NetworkPayload]] object that needs to be sent on the network
+    * Creates a network header from it's [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] and [[NetworkPayload]]
+    * @param network the [[org.bitcoins.core.config.NetworkParameters NetworkParameters]] object that indicates what network the payload needs to be sent on
+    * @param payload the payload object that needs to be sent on the network
     */
   def apply(
       network: NetworkParameters,

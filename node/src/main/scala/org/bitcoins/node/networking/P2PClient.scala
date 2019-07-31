@@ -22,7 +22,7 @@ import akka.util.CompactByteString
   * with the p2p network. It's responsibly is to deal with low
   * level .TCP messages.
   *
-  * If the client receives a [[NetworkMessage]], from a
+  * If the client receives a [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]], from a
   * [[org.bitcoins.node.networking.peer.PeerMessageSender PeerMessageSender]]
   * it serializes the message to it to a [[akka.util.ByteString]] and then
   * sends it to the internal `manager` which streams the data to our peer

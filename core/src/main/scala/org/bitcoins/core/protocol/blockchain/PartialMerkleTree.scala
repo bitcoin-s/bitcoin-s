@@ -168,10 +168,11 @@ object PartialMerkleTree {
 
     /**
       * This loops through our merkle tree building `bits` so we can instruct another node how to create the partial merkle tree
-      * [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78]]
+      * @see [[https://github.com/bitcoin/bitcoin/blob/b7b48c8bbdf7a90861610b035d8b0a247ef78c45/src/merkleblock.cpp#L78]]
       * @param bits the accumulator for bits indicating how to reconsctruct the partial merkle tree
       * @param hashes the relevant hashes used with bits to reconstruct the merkle tree
       * @param height the transaction index we are currently looking at -- if it was matched in our bloom filter we need the entire merkle branch
+      * @param pos the position in the loop represented as an int
       * @return the binary tree that represents the partial merkle tree, the bits needed to reconstruct this partial merkle tree, and the hashes needed to be inserted
       *         according to the flags inside of bits
       */

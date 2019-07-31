@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Chain Handler is meant to be the reference implementation
-  * of [[ChainApi]], this is the entry point in to the
+  * of [[org.bitcoins.chain.api.ChainApi ChainApi]], this is the entry point in to the
   * chain project.
   */
 case class ChainHandler(

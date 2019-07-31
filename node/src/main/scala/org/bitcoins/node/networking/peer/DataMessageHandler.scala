@@ -22,9 +22,9 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.p2p.TypeIdentifier
 import org.bitcoins.core.p2p.MsgUnassigned
 
-/** This actor is meant to handle a [[org.bitcoins.node.messages.DataPayload]]
+/** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
-  * [[HeadersMessage]] we should store those headers in our database
+  * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
   */
 class DataMessageHandler(callbacks: SpvNodeCallbacks)(
     implicit ec: ExecutionContext,
