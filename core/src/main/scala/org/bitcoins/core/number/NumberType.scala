@@ -1,5 +1,7 @@
 package org.bitcoins.core.number
 
+import java.math.BigInteger
+
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{BitcoinSUtil, Factory, NumberUtil}
 import scodec.bits.ByteVector
@@ -129,7 +131,7 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
 /**
   * Represents a uint32_t in C
   */
-final case class UInt32 private (private underlying: Long)
+final case class UInt32 private (private val underlying: Long)
     extends AnyVal
     with NetworkElement
     with BasicArithmetic[UInt32]
@@ -243,14 +245,14 @@ final case class UInt64 private (private val underlying: java.math.BigInteger)
     UInt64(underlying.shiftRight(u64.underlying.intValueExact()))
   }
 
-  def toBigInt: BigInt = {
+  def toBigInt: BigInteger = {
     val i = underlying
     require(underlying == i,
             s"Rounded when converting long=${underlying} toBigInt=${i}")
     i
   }
 
-  def toBigInt: BigInt = underlying
+  def toBigInt: BigInteger = underlying
 
   def toLong: Long = underlying.longValueExact()
 
@@ -285,7 +287,7 @@ final case class UInt64 private (private val underlying: java.math.BigInteger)
 /**
   * Represents a int32_t in C
   */
-final case class Int32 private (private underlying: Int)
+final case class Int32 private (private val underlying: Int)
     extends AnyVal
     with NetworkElement
     with BasicArithmetic[Int32]
@@ -505,7 +507,7 @@ object UInt32
   lazy val min = UInt32(minUnderlying)
   lazy val max = UInt32(maxUnderlying)
 
-  override def isInBound(num: A): Boolean =
+  def isInBound(num: Long): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): UInt32 = {
@@ -515,7 +517,7 @@ object UInt32
   }
 
   def apply(bigInt: BigInt): UInt32 = {
-    require(isInBound(bigInt) == true,
+    require(isInBound(bigInt.toLong),
             "UInt32 number is not within the max/min bounds allowed")
     UInt32(bigInt.bigInteger.longValueExact())
   }
