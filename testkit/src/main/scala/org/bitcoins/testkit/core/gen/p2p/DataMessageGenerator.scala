@@ -47,7 +47,7 @@ trait DataMessageGenerator {
   }
 
   /**
-    * Generates a random [[GetHeadersMessage]]
+    * Generates a random [[org.bitcoins.core.p2p.GetHeadersMessage]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#getheaders]]
     */
@@ -78,7 +78,7 @@ trait DataMessageGenerator {
     } yield HeadersMessage(blockHeaders.toVector)
 
   /**
-    * Generates a random [[TypeIdentifier]]
+    * Generates a random [[org.bitcoins.core.p2p.TypeIdentifier]]
     *
     * @see [[https://bitcoin.org/en/developer-reference#data-messages]]
     */
@@ -88,7 +88,7 @@ trait DataMessageGenerator {
     } yield TypeIdentifier(UInt32(num))
 
   /**
-    * Generates a random [[Inventory]]
+    * Generates a random [[org.bitcoins.core.p2p.Inventory]]
     * @see [[https://bitcoin.org/en/developer-reference#term-inventory]]
     */
   def inventory: Gen[Inventory] =
@@ -98,7 +98,7 @@ trait DataMessageGenerator {
     } yield Inventory(identifier, hash)
 
   /**
-    * Generates a random [[InventoryMessage]]
+    * Generates a random [[org.bitcoins.core.p2p.InventoryMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#inv]]
     */
   def inventoryMessages: Gen[InventoryMessage] =
@@ -114,7 +114,7 @@ trait DataMessageGenerator {
   }
 
   /**
-    * Generate a random [[GetDataMessage]]
+    * Generate a random [[org.bitcoins.core.p2p.GetDataMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#getdata]]
     */
   def getDataMessages: Gen[GetDataMessage] =
@@ -123,7 +123,7 @@ trait DataMessageGenerator {
     } yield GetDataMessage(invMsgs.inventoryCount, invMsgs.inventories)
 
   /**
-    * Generates a random [[MerkleBlockMessage]]
+    * Generates a random [[org.bitcoins.core.p2p.MerkleBlockMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
     */
   def merkleBlockMessage: Gen[MerkleBlockMessage] =
@@ -131,7 +131,7 @@ trait DataMessageGenerator {
       (merkleBlock, _, _) <- MerkleGenerator.merkleBlockWithInsertedTxIds
     } yield MerkleBlockMessage(merkleBlock)
 
-  /** Generates a [[TransactionMessage]]
+  /** Generates a [[org.bitcoins.core.p2p.TransactionMessage]]
     * @see [[https://bitcoin.org/en/developer-reference#tx]]
     * */
   def transactionMessage: Gen[TransactionMessage] =

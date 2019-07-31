@@ -26,7 +26,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     (client.actor ! Tcp.Close)
   }
 
-  /** Sends a [[org.bitcoins.node.messages.VersionMessage VersionMessage]] to our peer */
+  /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
   def sendVersionMessage(): Unit = {
     val versionMsg = VersionMessage(client.peer.socket, conf.network)
     logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")

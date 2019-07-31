@@ -21,9 +21,9 @@ import scala.concurrent.{ExecutionContext, Future}
 sealed abstract class TipValidation extends BitcoinSLogger {
 
   /** Checks if the given header can be connected to the current tip
-    * This is the method where a [[BlockHeader]] is transformed into a
-    * [[BlockHeaderDb]]. What this really means is that a height is
-    * assigned to a [[BlockHeader header]] after all these
+    * This is the method where a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] is transformed into a
+    * [[org.bitcoins.chain.models.BlockHeaderDb BlockHeaderDb]]. What this really means is that a height is
+    * assigned to a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] after all these
     * validation checks occur
     * */
   def checkNewTip(

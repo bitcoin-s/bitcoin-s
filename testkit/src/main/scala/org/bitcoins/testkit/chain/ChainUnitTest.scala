@@ -259,7 +259,7 @@ trait ChainUnitTest
   }
 
   /**
-    * Creates a [[BitcoindRpcClient bitcoind]] that is linked to our [[ChainHandler bitcoin-s chain handler]]
+    * Creates a [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]] that is linked to our [[org.bitcoins.chain.blockchain.ChainHandler ChainHandler]]
     * via a [[org.bitcoins.zmq.ZMQSubscriber zmq]]. This means messages are passed between bitcoin and our chain handler
     * with a zmq pub/sub message passing
     * @param test the test to be executed with bitcoind and chain handler via zmq

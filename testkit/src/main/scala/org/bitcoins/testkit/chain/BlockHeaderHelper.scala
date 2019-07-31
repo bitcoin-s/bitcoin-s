@@ -99,10 +99,10 @@ abstract class BlockHeaderHelper {
                 nonce = bh.nonce)
   }
 
-  /** Buidls a block header on top the given prev header
+  /** Builds a block header on top the given prev header
     * The only consensus requirement that this method adheres to
-    * with the returned [[BlockHeaderDb]] is that
-    * 1. We reference the [[prevHeader.blockHeader.hash]] correct
+    * with the returned [[org.bitcoins.chain.models.BlockHeaderDb]] is that
+    * 1. We reference the [[org.bitcoins.chain.models.BlockHeaderDb.blockHeader.hash]] correct
     * 2. We increment the height of [[prevHeader]] by one
     * @param prevHeader
     * @return

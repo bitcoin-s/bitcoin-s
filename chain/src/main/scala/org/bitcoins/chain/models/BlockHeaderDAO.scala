@@ -175,9 +175,9 @@ case class BlockHeaderDAO()(
   /** Returns competing blockchains that are contained in our BlockHeaderDAO
     * Each chain returns the last [[org.bitcoins.core.protocol.blockchain.ChainParams.difficultyChangeInterval difficutly interval]]
     * block headers as defined by the network we are on. For instance, on bitcoin mainnet this will be 2016 block headers.
-    * If no competing tips are found, we only return one [[Blockchain blockchain]], else we
+    * If no competing tips are found, we only return one [[[org.bitcoins.chain.blockchain.Blockchain Blockchain]], else we
     * return n chains for the number of competing [[chainTips tips]] we have
-    * @see [[Blockchain]]
+    * @see [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     * @param ec
     * @return
     */

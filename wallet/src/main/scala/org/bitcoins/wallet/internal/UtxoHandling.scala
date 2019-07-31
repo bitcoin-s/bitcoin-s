@@ -31,7 +31,7 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
   */
 private[wallet] trait UtxoHandling { self: LockedWallet =>
 
-  /** $inheritdoc */
+  /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] =
     spendingInfoDAO.findAllUnspent()
 
