@@ -49,11 +49,9 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
       // this has to be generated after our bloom filter
       // is calculated
       addressFromWallet <- wallet.getNewAddress()
-      _ = logger.info(s"Address from wallet: $addressFromWallet")
 
       spv <- {
         val callback = SpvNodeCallbacks.onTxReceived { tx =>
-          logger.info(s"Received tx=${tx.txId} from node")
           rpc.getRawTransaction(tx.txIdBE).foreach { res =>
             val paysToOurAddress =
               // we check if any of the addresses in the TX
@@ -74,7 +72,7 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
         val peer = Peer.fromBitcoind(rpc.instance)
         val chain = {
           val dao = BlockHeaderDAO()
-          ChainHandler(dao, config)
+          ChainHandler(dao)
         }
         val spv =
           SpvNode(peer, chain, bloomFilter = firstBloom, callbacks = callback)
@@ -87,7 +85,6 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
       _ = {
         val runnable = new Runnable {
           override def run: Unit = {
-            logger.error(s"Failing assertionP after $timeout")
             assertionP.failure(
               new TestFailedException(
                 s"Did not receive a TX message after $timeout!",
@@ -116,7 +113,12 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
     // we need to cancel that runnable once
     // we get a result
     var cancelable: Option[Cancellable] = None
-    val timeout = 1.minute
+
+    // the TX we sent from our wallet to bitcoind,
+    // we expect to get notified once this is
+    // confirmed
+    var txFromWallet: Option[Transaction] = None
+    val timeout = 15.seconds
 
     for {
       _ <- config.initialize()
@@ -125,14 +127,15 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
 
       spv <- {
         val callback = SpvNodeCallbacks.onMerkleBlockReceived { (block, txs) =>
-          logger.info(s"Received merkleBlock=${block} from node")
-          ???
+          assertionP.complete(Try {
+            assert(txFromWallet.exists(tx => txs.contains(tx)))
+          })
         }
 
         val peer = Peer.fromBitcoind(rpc.instance)
         val chain = {
           val dao = BlockHeaderDAO()
-          ChainHandler(dao, config)
+          ChainHandler(dao)
         }
         val spv =
           SpvNode(peer, chain, bloomFilter = firstBloom, callbacks = callback)
@@ -142,25 +145,33 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
       _ <- NodeTestUtil.awaitSync(spv, rpc)
 
       addressFromBitcoind <- rpc.getNewAddress
-      tx <- wallet.sendToAddress(addressFromBitcoind,
-                                 5.bitcoin,
-                                 SatoshisPerByte(100.sats))
-
-      _ = spv.broadcastTransaction(tx)
-      SpvNode(_, _, newBloom, _) = spv.updateBloomFilter(tx)
-      _ = assert(newBloom.contains(tx.txId))
-      _ = {
-        val runnable = new Runnable {
-          override def run: Unit = {
-            logger.error(s"Failing assertionP after $timeout")
-            assertionP.failure(
-              new TestFailedException(
-                s"Did not receive a merkle block message after $timeout!",
-                failedCodeStackDepth = 0))
-          }
+      tx <- wallet
+        .sendToAddress(addressFromBitcoind,
+                       5.bitcoin,
+                       SatoshisPerByte(100.sats))
+        .map { tx =>
+          txFromWallet = Some(tx)
+          tx
         }
+
+      _ = {
+        val _ = spv.broadcastTransaction(tx)
+        val SpvNode(_, _, newBloom, _) = spv.updateBloomFilter(tx)
+        assert(newBloom.contains(tx.txId))
+
         cancelable = Some {
-          actorSystem.scheduler.scheduleOnce(timeout, runnable)
+          actorSystem.scheduler.scheduleOnce(
+            timeout,
+            new Runnable {
+              override def run: Unit = {
+                if (!assertionP.isCompleted)
+                  assertionP.failure(
+                    new TestFailedException(
+                      s"Did not receive a merkle block message after $timeout!",
+                      failedCodeStackDepth = 0))
+              }
+            }
+          )
         }
       }
       // this should confirm our TX
@@ -172,16 +183,6 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
         assert(tx.blockhash.contains(blockhash))
       }
 
-      // inv message we shouldn't get
-      tx1 <- rpc.getNewAddress.flatMap(rpc.sendToAddress(_, 3.BTC))
-      _ = logger.info(s"tx1: $tx1")
-
-      // inv message we should get
-      tx2 <- wallet.getNewAddress().flatMap(rpc.sendToAddress(_, 7.bitcoin))
-      _ = logger.info(s"tx2: $tx2")
-
-      _ = logger.info(s"bitcoind generated block with hash $blockhash")
-      block <- rpc.getBlock(blockhash)
       assertion <- assertionF
     } yield assertion
 
