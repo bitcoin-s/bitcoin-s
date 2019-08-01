@@ -159,6 +159,16 @@ class PeerMessageReceiver(
         logger.trace(
           s"Received versionMsg=${versionMsg}from peer=${peerOpt.get}")
 
+        if (nodeAppConfig.isNeutrinoEnabled && !versionMsg.services.nodeCompactFilters) {
+          logger.warn(
+            s"Neutrino mode is enabled, but connected peer (${peerOpt.get}) does not serve compact block filters")
+        }
+
+        if (nodeAppConfig.isSPVEnabled && !versionMsg.services.nodeBloom) {
+          logger.warn(
+            s"SPV mode is enabled, but connected peer (${peerOpt.get}) does not servce bloom filters")
+        }
+
         internalState match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
             Failure(

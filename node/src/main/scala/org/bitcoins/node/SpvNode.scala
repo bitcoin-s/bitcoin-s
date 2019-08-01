@@ -23,6 +23,8 @@ import org.bitcoins.db.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.protocol.BitcoinAddress
 
+// TODO either rename this, or split
+// into SPV node and Neutrino node
 case class SpvNode(
     peer: Peer,
     chainApi: ChainApi,
@@ -31,6 +33,11 @@ case class SpvNode(
 )(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
     extends P2PLogger {
   import system.dispatcher
+
+  if (!(nodeAppConfig.isSPVEnabled || nodeAppConfig.isNeutrinoEnabled)) {
+    logger.warn(
+      s"Neither Neutrino nor SPV mode is enabled. This means you won't receive any data.")
+  }
 
   private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
@@ -102,9 +109,23 @@ case class SpvNode(
           this
         }
       }
+      bestHash <- chainApi.getBestBlockHash
+      blockCount <- chainApi.getBlockCount
     } yield {
-      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
-      val _ = peerMsgSender.sendFilterLoadMessage(bloomFilter)
+      if (nodeAppConfig.isSPVEnabled) {
+        logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+        val filterMsg = FilterLoadMessage(bloomFilter)
+        val _ = peerMsgSender.sendFilterLoadMessage(bloomFilter)
+      }
+
+      // we're going to get banned if we request the genesis block
+      if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0) {
+        // TODO keep track of where to request from
+        logger.info(s"Requesting compact filter headers from=0 to=$bestHash")
+        peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight = 0,
+                                                         stopHash =
+                                                           bestHash.flip)
+      }
       node
     }
   }
