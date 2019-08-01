@@ -7,7 +7,6 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.currency._
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -19,8 +18,7 @@ import scala.util.Success
 
 case class WalletRoutes(wallet: UnlockedWalletApi, node: SpvNode)(
     implicit system: ActorSystem)
-    extends BitcoinSLogger
-    with ServerRoute {
+    extends ServerRoute {
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
 

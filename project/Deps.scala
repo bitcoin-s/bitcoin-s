@@ -30,6 +30,7 @@ object Deps {
     val uPickleV = "0.7.4"
     val akkaHttpUpickleV = "1.27.0"
     val uJsonV = uPickleV // Li Haoyi ecosystem does common versioning
+    val sourcecodeV = "0.1.7"
 
     // CLI deps
     val scoptV = "4.0.0-RC2"
@@ -44,7 +45,6 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
     val akkaActor = "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
-    val akkaLog = "com.typesafe.akka" %% "akka-slf4j" % V.akkaStreamv
 
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
@@ -64,6 +64,9 @@ object Deps {
 
     // serializing to and from JSON
     val uPickle = "com.lihaoyi" %% "upickle" % V.uPickleV
+
+    // get access to reflection data at compile-time
+    val sourcecode = "com.lihaoyi" %% "sourcecode" % V.sourcecodeV
 
     // make akka-http play nice with upickle
     val akkaHttpUpickle = "de.heikoseeberger" %% "akka-http-upickle" % V.akkaHttpUpickleV
@@ -93,12 +96,10 @@ object Deps {
   }
 
   val chain = List(
-    Compile.slf4j
+    Compile.logback
   )
 
-  val chainTest = List(
-    Test.logback
-  )
+  val chainTest = List()
 
   val core = List(
     Compile.bouncycastle,
@@ -151,6 +152,8 @@ object Deps {
 
   val dbCommons = List(
     Compile.slick,
+    Compile.sourcecode,
+    Compile.logback,
     Compile.sqlite,
     Compile.slickHikari
   )
@@ -169,7 +172,6 @@ object Deps {
     Compile.akkaHttpUpickle,
     Compile.uPickle,
     Compile.logback,
-    Compile.akkaLog,
     Compile.akkaHttp
   )
 
@@ -198,7 +200,6 @@ object Deps {
 
   val nodeTest = List(
     Test.akkaTestkit,
-    Test.logback,
     Test.scalaTest
   )
 
@@ -215,11 +216,11 @@ object Deps {
   )
 
   val wallet = List(
-    Compile.uJson
+    Compile.uJson,
+    Compile.logback
   )
 
   val walletTest = List(
-    Test.logback,
     Test.akkaTestkit
   )
 

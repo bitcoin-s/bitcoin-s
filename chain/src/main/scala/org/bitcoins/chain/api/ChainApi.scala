@@ -12,7 +12,7 @@ import org.bitcoins.chain.config.ChainAppConfig
   */
 trait ChainApi {
 
-  def chainConfig: ChainAppConfig
+  implicit private[chain] val chainConfig: ChainAppConfig
 
   /**
     * Adds a block header to our chain project

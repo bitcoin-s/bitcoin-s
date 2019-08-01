@@ -8,9 +8,11 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.{BitcoinSLogger, NumberUtil}
+import org.bitcoins.core.util.NumberUtil
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.db.ChainVerificationLogger
 
 /**
   * Responsible for checking if we can connect two
@@ -18,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * things like proof of work difficulty, if it
   * references the previous block header correctly etc.
   */
-sealed abstract class TipValidation extends BitcoinSLogger {
+sealed abstract class TipValidation extends ChainVerificationLogger {
 
   /** Checks if the given header can be connected to the current tip
     * This is the method where a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] is transformed into a
@@ -30,7 +32,8 @@ sealed abstract class TipValidation extends BitcoinSLogger {
       newPotentialTip: BlockHeader,
       currentTip: BlockHeaderDb,
       blockHeaderDAO: BlockHeaderDAO)(
-      implicit ec: ExecutionContext): Future[TipUpdateResult] = {
+      implicit ec: ExecutionContext,
+      conf: ChainAppConfig): Future[TipUpdateResult] = {
     val header = newPotentialTip
     logger.trace(
       s"Checking header=${header.hashBE.hex} to try to connect to currentTip=${currentTip.hashBE.hex} with height=${currentTip.height}")
@@ -67,7 +70,9 @@ sealed abstract class TipValidation extends BitcoinSLogger {
   /** Logs the result of [[org.bitcoins.chain.validation.TipValidation.checkNewTip() checkNewTip]] */
   private def logTipResult(
       connectTipResultF: Future[TipUpdateResult],
-      currentTip: BlockHeaderDb)(implicit ec: ExecutionContext): Unit = {
+      currentTip: BlockHeaderDb)(
+      implicit ec: ExecutionContext,
+      conf: ChainAppConfig): Unit = {
     connectTipResultF.map {
       case TipUpdateResult.Success(tipDb) =>
         logger.trace(
@@ -102,7 +107,8 @@ sealed abstract class TipValidation extends BitcoinSLogger {
       newPotentialTip: BlockHeader,
       currentTip: BlockHeaderDb,
       blockHeaderDAO: BlockHeaderDAO)(
-      implicit ec: ExecutionContext): Future[UInt32] = {
+      implicit ec: ExecutionContext,
+      config: ChainAppConfig): Future[UInt32] = {
     Pow.getNetworkWorkRequired(tip = currentTip,
                                newPotentialTip = newPotentialTip,
                                blockHeaderDAO = blockHeaderDAO)

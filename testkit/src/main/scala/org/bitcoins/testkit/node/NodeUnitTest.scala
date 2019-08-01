@@ -30,6 +30,9 @@ import org.scalatest.{
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.node.SpvNodeCallbacks
 
 trait NodeUnitTest
     extends BitcoinSFixture
@@ -67,8 +70,11 @@ trait NodeUnitTest
   lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 
   def buildPeerMessageReceiver(): PeerMessageReceiver = {
+
+    val dao = BlockHeaderDAO()
+    val chainHandler = ChainHandler(dao)
     val receiver =
-      PeerMessageReceiver.newReceiver()
+      PeerMessageReceiver.newReceiver(chainHandler, SpvNodeCallbacks.empty)
     receiver
   }
 

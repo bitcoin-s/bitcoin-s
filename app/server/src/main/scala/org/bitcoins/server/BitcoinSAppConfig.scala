@@ -6,6 +6,8 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.chain.config.ChainAppConfig
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import java.nio.file.Path
+import org.bitcoins.db.AppConfig
 
 /**
   * A unified config class for all submodules of Bitcoin-S
@@ -13,11 +15,16 @@ import scala.concurrent.Future
   * in this case class' companion object an instance
   * of this class can be passed in anywhere a wallet,
   * chain or node config is required.
+  *
+  * @param directory The data directory of this app configuration
+  * @param confs A sequence of optional configuration overrides
   */
-case class BitcoinSAppConfig(private val confs: Config*) {
-  val walletConf = WalletAppConfig(confs: _*)
-  val nodeConf = NodeAppConfig(confs: _*)
-  val chainConf = ChainAppConfig(confs: _*)
+case class BitcoinSAppConfig(
+    private val directory: Path,
+    private val confs: Config*) {
+  val walletConf = WalletAppConfig(directory, confs: _*)
+  val nodeConf = NodeAppConfig(directory, confs: _*)
+  val chainConf = ChainAppConfig(directory, confs: _*)
 
   /** Initializes the wallet, node and chain projects */
   def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
@@ -44,6 +51,13 @@ case class BitcoinSAppConfig(private val confs: Config*) {
   * to be passed in wherever a specializes one is required
   */
 object BitcoinSAppConfig {
+
+  /** Constructs an app configuration from the default Bitcoin-S
+    * data directory and given list of configuration overrides.
+    */
+  def fromDefaultDatadir(confs: Config*): BitcoinSAppConfig =
+    BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+
   import scala.language.implicitConversions
 
   /** Converts the given implicit config to a wallet config */

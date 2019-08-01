@@ -2,7 +2,6 @@ package org.bitcoins.server
 
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.node.models.Peer
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import akka.actor.ActorSystem
 import scala.concurrent.Await
@@ -17,7 +16,6 @@ import org.bitcoins.wallet.api.InitializeWalletSuccess
 import org.bitcoins.wallet.api.InitializeWalletError
 import org.bitcoins.node.SpvNode
 import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.api.UnlockWalletSuccess
@@ -25,16 +23,18 @@ import org.bitcoins.wallet.api.UnlockWalletError
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.wallet.WalletStorage
+import org.bitcoins.db.AppLoggers
+import org.bitcoins.chain.models.BlockHeaderDAO
 
-object Main
-    extends App
-    // TODO we want to log to user data directory
-    // how do we do this?
-    with BitcoinSLogger {
+object Main extends App {
   implicit val conf = {
     // val custom = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-    BitcoinSAppConfig()
+    BitcoinSAppConfig.fromDefaultDatadir()
   }
+
+  private val logger = AppLoggers.getHttpLogger(
+    conf.walletConf // doesn't matter which one we pass in
+  )
 
   implicit val walletConf: WalletAppConfig = conf.walletConf
   implicit val nodeConf: NodeAppConfig = conf.nodeConf
@@ -113,7 +113,7 @@ object Main
         SpvNodeCallbacks(onTxReceived = Seq(onTX))
       }
       val blockheaderDAO = BlockHeaderDAO()
-      val chain = ChainHandler(blockheaderDAO, conf)
+      val chain = ChainHandler(blockheaderDAO)
       SpvNode(peer, chain, bloom, callbacks).start()
     }
     _ = logger.info(s"Starting SPV node sync")
@@ -123,7 +123,9 @@ object Main
       val walletRoutes = WalletRoutes(wallet, node)
       val nodeRoutes = NodeRoutes(node)
       val chainRoutes = ChainRoutes(node.chainApi)
-      val server = Server(Seq(walletRoutes, nodeRoutes, chainRoutes))
+      val server =
+        Server(nodeConf, // could use either of configurations
+               Seq(walletRoutes, nodeRoutes, chainRoutes))
       server.start()
     }
   } yield start

@@ -15,8 +15,8 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.hd.HDPurpose
 
 case class AddressDAO()(
-    implicit val ec: ExecutionContext,
-    val appConfig: WalletAppConfig
+    implicit ec: ExecutionContext,
+    config: WalletAppConfig
 ) extends CRUD[AddressDb, BitcoinAddress] {
   import org.bitcoins.db.DbCommonsColumnMappers._
 

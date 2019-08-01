@@ -6,8 +6,7 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-case class EncryptedMnemonic(value: AesEncryptedData, salt: AesSalt)
-    extends BitcoinSLogger {
+case class EncryptedMnemonic(value: AesEncryptedData, salt: AesSalt) {
 
   def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
     import org.bitcoins.core.util.EitherUtil.EitherOps._

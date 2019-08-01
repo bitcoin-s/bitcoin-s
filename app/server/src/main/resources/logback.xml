@@ -1,0 +1,13 @@
+<configuration>  
+    <!-- see how long statements took to execute by setting to DEBUG -->
+    <logger name="slick.jdbc.JdbcBackend.benchmark" level="INFO"/>
+
+    <!-- see what statements are executed by setting to DEBUG -->
+    <logger name="slick.jdbc.JdbcBackend.statement" level="INFO"/>
+
+    <!-- see what slick is compiling to in sql -->
+    <logger name="slick.compiler" level="INFO"/>
+
+    <!-- see what's returned by Slick -->
+    <logger name="slick.jdbc.StatementInvoker.result" level="INFO"/>
+</configuration>

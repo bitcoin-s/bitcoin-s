@@ -3,10 +3,11 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.collection.{IndexedSeqLike, mutable}
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.db.ChainVerificationLogger
 
 /**
   * In memory implementation of a blockchain
@@ -21,8 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   */
 case class Blockchain(headers: Vector[BlockHeaderDb])
-    extends IndexedSeqLike[BlockHeaderDb, Vector[BlockHeaderDb]]
-    with BitcoinSLogger {
+    extends IndexedSeqLike[BlockHeaderDb, Vector[BlockHeaderDb]] {
   val tip: BlockHeaderDb = headers.head
 
   /** @inheritdoc */
@@ -41,7 +41,7 @@ case class Blockchain(headers: Vector[BlockHeaderDb])
 
 }
 
-object Blockchain extends BitcoinSLogger {
+object Blockchain extends ChainVerificationLogger {
 
   def fromHeaders(headers: Vector[BlockHeaderDb]): Blockchain = {
     Blockchain(headers)
@@ -61,7 +61,8 @@ object Blockchain extends BitcoinSLogger {
     *         or [[org.bitcoins.chain.blockchain.BlockchainUpdate.Failed Failed]] to connect to a tip
     */
   def connectTip(header: BlockHeader, blockHeaderDAO: BlockHeaderDAO)(
-      implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
+      implicit ec: ExecutionContext,
+      conf: ChainAppConfig): Future[BlockchainUpdate] = {
 
     //get all competing chains we have
     val blockchainsF: Future[Vector[Blockchain]] =

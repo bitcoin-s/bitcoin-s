@@ -11,6 +11,24 @@ package object db {
       val options = ConfigRenderOptions.concise().setFormatted(true)
       config.root().render(options)
     }
+
+    /** Returns the string at key or the given default value */
+    def getStringOrElse(key: String, default: => String): String = {
+      if (config.hasPath(key)) {
+        config.getString(key)
+      } else {
+        default
+      }
+    }
+
+    /** Returns the string at the given key, if it exists */
+    def getStringOrNone(key: String): Option[String] = {
+      if (config.hasPath(key)) {
+        Some(config.getString(key))
+      } else {
+        None
+      }
+    }
   }
 
 }
