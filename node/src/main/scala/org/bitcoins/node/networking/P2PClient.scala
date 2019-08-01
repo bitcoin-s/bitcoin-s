@@ -277,14 +277,20 @@ object P2PClient extends P2PLogger {
         val messageTry = Try(NetworkMessage(remainingBytes))
         messageTry match {
           case Success(message) =>
-            if (message.header.payloadSize.toInt != message.payload.bytes.size) {
+            val expectedPayloadSize = message.header.payloadSize.toInt
+            val actualPayloadSize = message.payload.bytes.size
+            if (expectedPayloadSize != actualPayloadSize) {
               //this means our tcp frame was not aligned, therefore put the message back in the
               //buffer and wait for the remaining bytes
+              logger.trace(
+                s"TCP frame not aligned, payload sizes differed. Expected=$expectedPayloadSize, actual=$actualPayloadSize")
               (accum.reverse, remainingBytes)
             } else {
               val newRemainingBytes = remainingBytes.slice(
                 message.bytes.length,
                 remainingBytes.length)
+              logger.trace(
+                s"Parsed a message=${message.header.commandName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}")
               loop(newRemainingBytes, message :: accum)
             }
           case Failure(exc) =>
