@@ -88,10 +88,6 @@ case class GolombFilter(
 
 object BlockFilter {
 
-  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]] */
-  val M: UInt64 = UInt64(784931)
-  val P: UInt8 = UInt8(19)
-
   /**
     * Returns all ScriptPubKeys from a Block's outputs that are relevant
     * to BIP 158 Basic Block Filters
@@ -173,7 +169,11 @@ object BlockFilter {
     val keyBytes: ByteVector = blockHash.bytes.take(16)
     val key: SipHashKey = SipHashKey(keyBytes)
 
-    GolombFilter(key, BlockFilter.M, BlockFilter.P, n, filterBytes.toBitVector)
+    GolombFilter(key,
+                 FilterType.Basic.M,
+                 FilterType.Basic.P,
+                 n,
+                 filterBytes.toBitVector)
   }
 
   def fromHex(hex: String, blockHash: DoubleSha256Digest): GolombFilter = {

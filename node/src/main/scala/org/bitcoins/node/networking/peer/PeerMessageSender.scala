@@ -102,6 +102,16 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
+  def sendGetCompactFilterHeadersMessage(
+      startHeight: Int,
+      stopHash: DoubleSha256Digest): Unit = {
+    val message =
+      GetCompactFilterHeadersMessage(startHeight, stopHash)
+    logger.trace(s"Sending getcfheaders=$message to peer ${client.peer}")
+    sendMsg(message)
+
+  }
+
   private[node] def sendMsg(msg: NetworkPayload): Unit = {
     logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
     val newtworkMsg = NetworkMessage(conf.network, msg)

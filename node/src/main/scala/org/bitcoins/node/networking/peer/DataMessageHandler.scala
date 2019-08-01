@@ -20,6 +20,15 @@ import org.bitcoins.core.p2p.TypeIdentifier
 import org.bitcoins.core.p2p.MsgUnassigned
 import org.bitcoins.db.P2PLogger
 import org.bitcoins.core.p2p.Inventory
+import org.bitcoins.core.p2p.CompactFilterCheckPointMessage
+import org.bitcoins.core.p2p.CompactFilterHeadersMessage
+import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.p2p.GetBlocksMessage
+import org.bitcoins.core.p2p.MemPoolMessage
+import org.bitcoins.core.p2p.GetHeadersMessage
+import org.bitcoins.core.p2p.GetCompactFiltersMessage
+import org.bitcoins.core.p2p.GetCompactFilterHeadersMessage
+import org.bitcoins.core.p2p.GetCompactFilterCheckPointMessage
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -37,6 +46,24 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks, chainHandler: ChainApi)(
       peerMsgSender: PeerMessageSender): Future[Unit] = {
 
     payload match {
+      case checkpoint: CompactFilterCheckPointMessage =>
+        logger.debug(
+          s"Received ${checkpoint.commandName} message, this is not implemented yet")
+        FutureUtil.unit
+      case filterHeader: CompactFilterHeadersMessage =>
+        logger.debug(
+          s"Received ${filterHeader.commandName} message, this is not implemented yet")
+        FutureUtil.unit
+      case filter: CompactFilterMessage =>
+        logger.debug(
+          s"Received ${filter.commandName}, this is not implemented yet")
+        FutureUtil.unit
+      case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
+          _: GetBlocksMessage | _: GetCompactFiltersMessage |
+          _: GetCompactFilterHeadersMessage |
+          _: GetCompactFilterCheckPointMessage) =>
+        logger.debug(s"Received ${notHandling.commandName} message, skipping ")
+        FutureUtil.unit
       case getData: GetDataMessage =>
         logger.debug(
           s"Received a getdata message for inventories=${getData.inventories}")
