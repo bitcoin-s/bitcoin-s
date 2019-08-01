@@ -83,6 +83,11 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks, chainHandler: ChainApi)(
                   s"Processed headers, most recent has height=$count and hash=$lastHash.")
               }
               peerMsgSender.sendGetHeadersMessage(lastHash)
+
+              if (headers.length == 1) {
+                peerMsgSender.sendGetDataMessage(headers: _*)
+              }
+
             }
           }
           .failed
