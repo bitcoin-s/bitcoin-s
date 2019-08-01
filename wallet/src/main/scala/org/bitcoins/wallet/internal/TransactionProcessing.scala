@@ -9,13 +9,15 @@ import org.bitcoins.wallet.api.AddUtxoSuccess
 import org.bitcoins.wallet.api.AddUtxoError
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.db.KeyHandlingLogger
 
 /** Provides functionality for processing transactions. This
   * includes importing UTXOs spent to our wallet, updating
   * confirmation counts and marking UTXOs as spent when
   * spending from our wallet
   */
-private[wallet] trait TransactionProcessing { self: LockedWallet =>
+private[wallet] trait TransactionProcessing extends KeyHandlingLogger {
+  self: LockedWallet =>
   /////////////////////
   // Public facing API
 

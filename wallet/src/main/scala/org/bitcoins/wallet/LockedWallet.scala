@@ -12,17 +12,22 @@ import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.wallet.internal._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.db.AppLoggers
 
 abstract class LockedWallet
     extends LockedWalletApi
     with UtxoHandling
     with AddressHandling
     with AccountHandling
-    with TransactionProcessing
-    with BitcoinSLogger {
+    with TransactionProcessing {
+
+  // through trait inheritance we get `logger`
+  // exposed, but this is not the generic wallet
+  // logger we want. Therefore we expose `walletLogger`
+  // as well
+  private val walletLogger = AppLoggers.getWalletLogger
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
@@ -47,14 +52,14 @@ abstract class LockedWallet
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
     val confirmed = filterThenSum(_.confirmations > 0)
     confirmed.foreach(balance =>
-      logger.trace(s"Confirmed balance=${balance.satoshis}"))
+      walletLogger.trace(s"Confirmed balance=${balance.satoshis}"))
     confirmed
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
     val unconfirmed = filterThenSum(_.confirmations == 0)
     unconfirmed.foreach(balance =>
-      logger.trace(s"Unconfirmed balance=${balance.satoshis}"))
+      walletLogger.trace(s"Unconfirmed balance=${balance.satoshis}"))
     unconfirmed
 
   }
@@ -63,21 +68,23 @@ abstract class LockedWallet
     * @inheritdoc
     */
   override def unlock(passphrase: AesPassword): UnlockWalletResult = {
-    logger.debug(s"Trying to unlock wallet")
+    walletLogger.debug(s"Trying to unlock wallet")
     val result = WalletStorage.decryptMnemonicFromDisk(passphrase)
     result match {
       case DecryptionError =>
-        logger.error(s"Bad password for unlocking wallet!")
+        walletLogger.error(s"Bad password for unlocking wallet!")
         UnlockWalletError.BadPassword
       case JsonParsingError(message) =>
-        logger.error(s"JSON parsing error when unlocking wallet: $message")
+        walletLogger.error(
+          s"JSON parsing error when unlocking wallet: $message")
         UnlockWalletError.JsonParsingError(message)
       case ReadMnemonicError.NotFoundError =>
-        logger.error(s"Encrypted mnemonic not found when unlocking the wallet!")
+        walletLogger.error(
+          s"Encrypted mnemonic not found when unlocking the wallet!")
         UnlockWalletError.MnemonicNotFound
 
       case ReadMnemonicSuccess(mnemonic) =>
-        logger.debug(s"Successfully uunlocked wallet")
+        walletLogger.debug(s"Successfully uunlocked wallet")
         UnlockWalletSuccess(Wallet(mnemonic))
     }
   }

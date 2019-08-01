@@ -4,7 +4,6 @@ import upickle.{default => up}
 import akka.actor.ActorSystem
 import akka.http.scaladsl._
 import akka.stream.ActorMaterializer
-import org.bitcoins.core.util.BitcoinSLogger
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
@@ -12,9 +11,14 @@ import akka.http.scaladsl.server.Directives._
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.event.Logging
+import org.bitcoins.db.HttpLogger
+import org.bitcoins.db.AppConfig
 
-case class Server(handlers: Seq[ServerRoute])(implicit system: ActorSystem)
-    extends BitcoinSLogger {
+case class Server(conf: AppConfig, handlers: Seq[ServerRoute])(
+    implicit system: ActorSystem)
+    extends HttpLogger {
+  implicit private val config: AppConfig = conf
+
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
@@ -83,7 +87,7 @@ case class Server(handlers: Seq[ServerRoute])(implicit system: ActorSystem)
   }
 }
 
-object Server extends BitcoinSLogger {
+object Server {
 
   // TODO id parameter
   case class Response(

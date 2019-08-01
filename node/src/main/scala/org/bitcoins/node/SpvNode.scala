@@ -2,9 +2,6 @@ package org.bitcoins.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{
@@ -23,23 +20,22 @@ import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import slick.jdbc.SQLiteProfile
 import scala.util.Failure
 import scala.util.Success
+import org.bitcoins.db.P2PLogger
+import org.bitcoins.node.config.NodeAppConfig
 
 case class SpvNode(
     peer: Peer,
     chainApi: ChainApi,
     bloomFilter: BloomFilter,
     callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty
-)(
-    implicit system: ActorSystem,
-    nodeAppConfig: NodeAppConfig,
-    chainAppConfig: ChainAppConfig)
-    extends BitcoinSLogger {
+)(implicit system: ActorSystem, nodeAppConfig: NodeAppConfig)
+    extends P2PLogger {
   import system.dispatcher
 
   private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
   private val peerMsgRecv =
-    PeerMessageReceiver.newReceiver(callbacks)
+    PeerMessageReceiver.newReceiver(chainApi, callbacks)
 
   private val client: P2PClient =
     P2PClient(context = system, peer = peer, peerMessageReceiver = peerMsgRecv)

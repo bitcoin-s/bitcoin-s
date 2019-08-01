@@ -5,7 +5,6 @@ import akka.io.{IO, Tcp}
 import akka.util.ByteString
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.p2p.NetworkMessage
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
@@ -14,6 +13,9 @@ import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
 import org.bitcoins.node.config.NodeAppConfig
 import akka.util.CompactByteString
+import scala.annotation.tailrec
+import scala.util._
+import org.bitcoins.db.P2PLogger
 
 /**
   * This actor is responsible for creating a connection,
@@ -50,7 +52,7 @@ case class P2PClientActor(
     peerMsgHandlerReceiver: PeerMessageReceiver
 )(implicit config: NodeAppConfig)
     extends Actor
-    with BitcoinSLogger {
+    with P2PLogger {
 
   /**
     * The manager is an actor that handles the underlying low level I/O resources (selectors, channels)
@@ -179,7 +181,7 @@ case class P2PClientActor(
         val bytes: ByteVector = unalignedBytes ++ byteVec
         logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
         val (messages, newUnalignedBytes) =
-          BitcoinSpvNodeUtil.parseIndividualMessages(bytes)
+          P2PClient.parseIndividualMessages(bytes)
 
         logger.debug({
           val length = messages.length
@@ -237,7 +239,7 @@ case class P2PClientActor(
 
 case class P2PClient(actor: ActorRef, peer: Peer)
 
-object P2PClient {
+object P2PClient extends P2PLogger {
 
   def props(peer: Peer, peerMsgHandlerReceiver: PeerMessageReceiver)(
       implicit config: NodeAppConfig
@@ -254,6 +256,50 @@ object P2PClient {
       BitcoinSpvNodeUtil.createActorName(this.getClass))
 
     P2PClient(actorRef, peer)
+  }
+
+  /**
+    * Akka sends messages as one byte stream. There is not a 1 to 1 relationship between byte streams received and
+    * bitcoin protocol messages. This function parses our byte stream into individual network messages
+    *
+    * @param bytes the bytes that need to be parsed into individual messages
+    * @return the parsed [[NetworkMessage]]'s and the unaligned bytes that did not parse to a message
+    */
+  private[bitcoins] def parseIndividualMessages(bytes: ByteVector)(
+      implicit conf: NodeAppConfig): (List[NetworkMessage], ByteVector) = {
+    @tailrec
+    def loop(
+        remainingBytes: ByteVector,
+        accum: List[NetworkMessage]): (List[NetworkMessage], ByteVector) = {
+      if (remainingBytes.length <= 0) {
+        (accum.reverse, remainingBytes)
+      } else {
+        val messageTry = Try(NetworkMessage(remainingBytes))
+        messageTry match {
+          case Success(message) =>
+            if (message.header.payloadSize.toInt != message.payload.bytes.size) {
+              //this means our tcp frame was not aligned, therefore put the message back in the
+              //buffer and wait for the remaining bytes
+              (accum.reverse, remainingBytes)
+            } else {
+              val newRemainingBytes = remainingBytes.slice(
+                message.bytes.length,
+                remainingBytes.length)
+              loop(newRemainingBytes, message :: accum)
+            }
+          case Failure(exception) =>
+            logger.error(
+              "Failed to parse network message, could be because TCP frame isn't aligned",
+              exception)
+            //this case means that our TCP frame was not aligned with bitcoin protocol
+            //return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
+            //http://stackoverflow.com/a/37979529/967713
+            (accum.reverse, remainingBytes)
+        }
+      }
+    }
+    val (messages, remainingBytes) = loop(bytes, Nil)
+    (messages, remainingBytes)
   }
 
 }

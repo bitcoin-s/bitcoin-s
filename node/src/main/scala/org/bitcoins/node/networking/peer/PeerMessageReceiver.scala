@@ -1,9 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRefFactory
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.p2p.NetworkMessage
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.models.Peer
@@ -17,6 +15,8 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
 
 import scala.util.{Failure, Success, Try}
 import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.db.P2PLogger
+import org.bitcoins.chain.api.ChainApi
 
 /**
   * Responsible for receiving messages from a peer on the
@@ -27,12 +27,10 @@ import org.bitcoins.node.SpvNodeCallbacks
   */
 class PeerMessageReceiver(
     state: PeerMessageReceiverState,
-    callbacks: SpvNodeCallbacks
-)(
-    implicit ref: ActorRefFactory,
-    nodeAppConfig: NodeAppConfig,
-    chainAppConfig: ChainAppConfig)
-    extends BitcoinSLogger {
+    callbacks: SpvNodeCallbacks,
+    chainHandler: ChainApi
+)(implicit ref: ActorRefFactory, nodeAppConfig: NodeAppConfig)
+    extends P2PLogger {
 
   import ref.dispatcher
 
@@ -138,7 +136,7 @@ class PeerMessageReceiver(
   private def handleDataPayload(
       payload: DataPayload,
       sender: PeerMessageSender): Unit = {
-    val dataMsgHandler = new DataMessageHandler(callbacks)
+    val dataMsgHandler = new DataMessageHandler(callbacks, chainHandler)
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
     dataMsgHandler.handleDataPayload(payload, sender)
@@ -233,18 +231,20 @@ object PeerMessageReceiver {
 
   def apply(
       state: PeerMessageReceiverState,
+      chainHandler: ChainApi,
       callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
       implicit ref: ActorRefFactory,
-      nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig
-  ): PeerMessageReceiver = {
-    new PeerMessageReceiver(state, callbacks)
+      nodeAppConfig: NodeAppConfig): PeerMessageReceiver = {
+    new PeerMessageReceiver(state, callbacks, chainHandler)
   }
 
-  def newReceiver(callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
+  def newReceiver(
+      chainHandler: ChainApi,
+      callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
       implicit nodeAppConfig: NodeAppConfig,
-      chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {
-    new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(), callbacks)
+    new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
+                            callbacks,
+                            chainHandler)
   }
 }

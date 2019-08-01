@@ -1,7 +1,6 @@
 package org.bitcoins.wallet
 
 import scala.collection.JavaConverters._
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.crypto.AesPassword
 import java.nio.file.Files
 import org.bitcoins.core.crypto.MnemonicCode
@@ -15,9 +14,10 @@ import java.nio.file.Path
 import scala.util.Try
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.crypto.AesIV
+import org.bitcoins.db.KeyHandlingLogger
 
 // what do we do if seed exists? error if they aren't equal?
-object WalletStorage extends BitcoinSLogger {
+object WalletStorage extends KeyHandlingLogger {
 
   /** Checks if a wallet seed exists in datadir */
   def seedExists()(implicit config: WalletAppConfig): Boolean = {
@@ -183,6 +183,7 @@ object WalletStorage extends BitcoinSLogger {
   def decryptMnemonicFromDisk(passphrase: AesPassword)(
       implicit
       config: WalletAppConfig): ReadMnemonicResult = {
+
     val encryptedEither = readEncryptedMnemonicFromDisk()
 
     import org.bitcoins.core.util.EitherUtil.EitherOps._

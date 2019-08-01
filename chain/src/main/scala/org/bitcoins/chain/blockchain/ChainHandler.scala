@@ -5,20 +5,19 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.BitcoinSLogger
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.db.ChainVerificationLogger
 
 /**
   * Chain Handler is meant to be the reference implementation
   * of [[org.bitcoins.chain.api.ChainApi ChainApi]], this is the entry point in to the
   * chain project.
   */
-case class ChainHandler(
-    blockHeaderDAO: BlockHeaderDAO,
-    chainConfig: ChainAppConfig)
-    extends ChainApi
-    with BitcoinSLogger {
+case class ChainHandler(blockHeaderDAO: BlockHeaderDAO)(
+    implicit private[chain] val chainConfig: ChainAppConfig
+) extends ChainApi
+    with ChainVerificationLogger {
 
   override def getBlockCount(implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"Querying for block count")
@@ -43,7 +42,8 @@ case class ChainHandler(
   override def processHeader(header: BlockHeader)(
       implicit ec: ExecutionContext): Future[ChainHandler] = {
 
-    val blockchainUpdateF = Blockchain.connectTip(header, blockHeaderDAO)
+    val blockchainUpdateF =
+      Blockchain.connectTip(header, blockHeaderDAO)
 
     val newHandlerF = blockchainUpdateF.flatMap {
       case BlockchainUpdate.Successful(_, updatedHeader) =>
@@ -53,7 +53,7 @@ case class ChainHandler(
         createdF.map { header =>
           logger.debug(
             s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE}")
-          ChainHandler(blockHeaderDAO, chainConfig)
+          ChainHandler(blockHeaderDAO)
         }
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =

@@ -6,7 +6,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.util.{BitcoinSLogger, EitherUtil}
+import org.bitcoins.core.util.EitherUtil
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
@@ -17,11 +17,9 @@ import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import org.bitcoins.db.KeyHandlingLogger
 
-sealed abstract class Wallet
-    extends LockedWallet
-    with UnlockedWalletApi
-    with BitcoinSLogger {
+sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 
   /**
     * @inheritdoc
@@ -140,7 +138,7 @@ sealed abstract class Wallet
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
-object Wallet extends CreateWalletApi with BitcoinSLogger {
+object Wallet extends CreateWalletApi with KeyHandlingLogger {
 
   private case class WalletImpl(
       mnemonicCode: MnemonicCode
@@ -235,6 +233,7 @@ object Wallet extends CreateWalletApi with BitcoinSLogger {
   private def createRootAccount(wallet: Wallet, purpose: HDPurpose)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[AccountDb] = {
+
     val coin =
       HDCoin(purpose, HDUtil.getCoinType(config.network))
     val account = HDAccount(coin, 0)

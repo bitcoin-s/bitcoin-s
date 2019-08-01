@@ -4,8 +4,12 @@ import slick.dbio.Effect.Write
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
-abstract class CRUDAutoInc[T <: DbRowAutoInc[T]] extends CRUD[T, Long] {
+abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](
+    implicit config: AppConfig,
+    ec: ExecutionContext)
+    extends CRUD[T, Long] {
 
   /** The table inside our database we are inserting into */
   override val table: TableQuery[_ <: TableAutoInc[T]]

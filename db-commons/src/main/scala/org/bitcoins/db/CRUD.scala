@@ -1,6 +1,5 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.util.BitcoinSLogger
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,16 +14,16 @@ import org.bitcoins.core.config.MainNet
   * You are responsible for the create function. You also need to specify
   * the table and the database you are connecting to.
   */
-abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
-
-  def appConfig: AppConfig
-  implicit val ec: ExecutionContext
+abstract class CRUD[T, PrimaryKeyType](
+    implicit private val config: AppConfig,
+    private val ec: ExecutionContext)
+    extends DatabaseLogger {
 
   /** The table inside our database we are inserting into */
   val table: TableQuery[_ <: Table[T]]
 
   /** Binding to the actual database itself, this is what is used to run querys */
-  def database: SafeDatabase = SafeDatabase(appConfig)
+  def database: SafeDatabase = SafeDatabase(config)
 
   /**
     * create a record in the database
@@ -33,7 +32,7 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
     * @return the inserted record
     */
   def create(t: T): Future[T] = {
-    logger.trace(s"Writing $t to DB with config: ${appConfig.config}")
+    logger.trace(s"Writing $t to DB with config: ${config.config}")
     createAll(Vector(t)).map(_.head)
   }
 
@@ -46,7 +45,7 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
     * @return Option[T] - the record if found, else none
     */
   def read(id: PrimaryKeyType): Future[Option[T]] = {
-    logger.trace(s"Reading from DB with config: ${appConfig.config}")
+    logger.trace(s"Reading from DB with config: ${config.config}")
     val query = findByPrimaryKey(id)
     val rows: Future[Seq[T]] = database.run(query.result)
     rows.map(_.headOption)
@@ -130,7 +129,8 @@ abstract class CRUD[T, PrimaryKeyType] extends BitcoinSLogger {
 
 }
 
-case class SafeDatabase(config: AppConfig) extends BitcoinSLogger {
+case class SafeDatabase(config: AppConfig) extends DatabaseLogger {
+  implicit private val conf: AppConfig = config
 
   import config.database
 

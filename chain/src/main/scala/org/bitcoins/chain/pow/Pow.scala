@@ -2,8 +2,9 @@ package org.bitcoins.chain.pow
 
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
-import org.bitcoins.core.util.{BitcoinSLogger, NumberUtil}
+import org.bitcoins.core.util.NumberUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -11,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Implements functions found inside of bitcoin core's
   * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp pow.cpp]]
   */
-sealed abstract class Pow extends BitcoinSLogger {
+sealed abstract class Pow {
 
   /**
     * Gets the next proof of work requirement for a block
@@ -24,8 +25,9 @@ sealed abstract class Pow extends BitcoinSLogger {
       tip: BlockHeaderDb,
       newPotentialTip: BlockHeader,
       blockHeaderDAO: BlockHeaderDAO)(
-      implicit ec: ExecutionContext): Future[UInt32] = {
-    val chainParams = blockHeaderDAO.appConfig.chain
+      implicit ec: ExecutionContext,
+      config: ChainAppConfig): Future[UInt32] = {
+    val chainParams = config.chain
     val currentHeight = tip.height
 
     val powLimit = NumberUtil.targetCompression(bigInteger =

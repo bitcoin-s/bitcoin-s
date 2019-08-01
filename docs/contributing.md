@@ -13,6 +13,42 @@ It's possible to communicate with other developers through a variety of communic
 - [Bitcoin-S Gitter](https://gitter.im/bitcoin-s-core/)
 - [#bitcoin-scala](https://webchat.freenode.net/?channels=bitcoin-scala) on IRC Freenode
 
+## Working on Bitcoin-S applications
+
+Bitcoin-S includes a couple of applications that can be run as standalone executables.
+This includes the node, wallet and (partial) blockchain verification modules, as well
+as the server that bundles these three together and the CLI used to communicate with
+the server. These applications are configured with HOCON files. The file
+[`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf)
+is the basis configuration file, and every option read by Bitcoin-S should be present in
+this file. This means that you can copy sections from this file and edit them, to tune
+how the application runs on your machine.
+
+One example of things you can tune is logging levels. Lets say you wanted general logging
+to happen at the `WARN` level, but the P2P message handling to be logged at `DEBUG`. Your
+configuration file would then look like:
+
+```conf
+bitcoins-s {
+  logging {
+    level = warn
+
+    p2p = debug
+  }
+}
+```
+
+### Running the applications
+
+When running the applications configuration placed in `bitcoin-s.conf` in the current
+data directory gets picked up. For linux this is by default `$HOME/.bitcoin-s/`, so the
+file you should edit would be `$HOME/.bitcoin-s/bitcoin-s.conf`.
+
+### Running tests for the applications
+
+You can place configuration files in the data directory that tests are being run in,
+but you can also edit [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf).
+
 ## Developer productivity
 
 ### Bloop

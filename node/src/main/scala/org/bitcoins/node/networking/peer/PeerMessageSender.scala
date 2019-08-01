@@ -4,14 +4,14 @@ import akka.actor.ActorRef
 import akka.io.Tcp
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.p2p.NetworkMessage
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.db.P2PLogger
 
 case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
-    extends BitcoinSLogger {
+    extends P2PLogger {
   private val socket = client.peer.socket
 
   /** Initiates a connection with the given peer */
