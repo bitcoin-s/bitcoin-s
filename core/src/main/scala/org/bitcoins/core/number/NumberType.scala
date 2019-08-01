@@ -189,16 +189,6 @@ final case class UInt32 private (private val underlying: Long)
 
   def toBigInt: BigInt = toLong
 
-  def toDouble(x: UInt32): Double = x.underlying.toDouble
-  def toFloat(x: UInt32): Float = x.underlying.toFloat
-
-  def toInt(x: UInt32): Int = {
-    val i = x.underlying.toInt
-    require(x.underlying == i)
-    i
-  }
-  def toLong(x: UInt32): Long = x.underlying
-
   override def compare(that: UInt32): Int = underlying.compare(that.underlying)
 }
 
@@ -255,11 +245,6 @@ final case class UInt64 private (private val underlying: java.math.BigInteger)
   def toBigInt: BigInteger = underlying
 
   def toLong: Long = underlying.longValueExact()
-
-  def toDouble(x: UInt64): Double = x.underlying.doubleValue()
-  def toFloat(x: UInt64): Float = x.underlying.floatValue()
-
-  def toBigInt(x: UInt64): BigInt = x.underlying
 
   override def compare(that: UInt64): Int =
     underlying.compareTo(that.underlying)
@@ -342,16 +327,6 @@ final case class Int32 private (private val underlying: Int)
   }
 
   def toBigInt: BigInt = toInt
-
-  def toDouble(x: Int32): Double = x.underlying.toDouble
-  def toFloat(x: Int32): Float = x.underlying.toFloat
-
-  def toInt(x: Int32): Int = {
-    val i = x.underlying
-    require(x.underlying == i)
-    i
-  }
-  def toLong(x: Int32): Long = x.underlying
 
   override def compare(that: Int32): Int = underlying.compare(that.underlying)
 }
@@ -514,12 +489,13 @@ object UInt32
     require(
       bytes.size <= 4,
       "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
+    UInt32(NumberUtil.toLongUnsigned(bytes))
   }
 
-  def apply(bigInt: BigInt): UInt32 = {
-    require(isInBound(bigInt.toLong),
+  def apply(longnum: Long): UInt32 = {
+    require(isInBound(longnum.toLong),
             "UInt32 number is not within the max/min bounds allowed")
-    UInt32(bigInt.bigInteger.longValueExact())
+    UInt32(longnum)
   }
 }
 
@@ -541,7 +517,7 @@ object UInt64
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
 
-  override def isInBound(num: A): Boolean =
+  override def isInBound(num: BigInteger): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): UInt64 = {
@@ -549,10 +525,9 @@ object UInt64
     UInt64(NumberUtil.toUnsignedInt(bytes))
   }
 
-  def apply(num: BigInt): UInt64 = {
-    require(isInBound(num) == true,
-            "UInt64 number is not within the min/max bounds")
-    UInt64(num.bigInteger)
+  def apply(num: BigInteger): UInt64 = {
+    require(isInBound(num), "UInt64 number is not within the min/max bounds")
+    UInt64(num)
   }
 }
 
@@ -574,17 +549,18 @@ object Int32
   lazy val min = Int32(minUnderlying)
   lazy val max = Int32(maxUnderlying)
 
-  override def isInBound(num: A): Boolean =
-    num <= maxUnderlying && num >= minUnderlying */
+  def isInBound(num: Int): Boolean =
+    num <= maxUnderlying && num >= minUnderlying
 
   override def fromBytes(bytes: ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
     Int32(BigInt(bytes.toArray).toInt)
   }
 
-  def apply(bigInt: BigInt): Int32 = {
-    require(isInBound(bigInt) == true)
-    Int32(bigInt.bigInteger.intValueExact())
+  def apply(num: Int): Int32 = {
+    require(isInBound(num.toInt),
+            "Int 32 number is not within the max/min bounds allowed")
+    Int32(num)
   }
 }
 
