@@ -4,8 +4,6 @@ import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.node.models.Peer
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import akka.actor.ActorSystem
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import java.nio.file.Files
@@ -25,8 +23,9 @@ import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.wallet.WalletStorage
 import org.bitcoins.db.AppLoggers
 import org.bitcoins.chain.models.BlockHeaderDAO
+import java.util.concurrent.ExecutionException
 
-object Main extends App {
+object ServerMain extends App {
   implicit val conf = {
     // val custom = ConfigFactory.parseString("bitcoin-s.network = testnet3")
     BitcoinSAppConfig.fromDefaultDatadir()
@@ -40,17 +39,39 @@ object Main extends App {
   implicit val nodeConf: NodeAppConfig = conf.nodeConf
   implicit val chainConf: ChainAppConfig = conf.chainConf
 
+  logger.info(s"Starting Bitcoin-S server")
+  logger.info(s"Chain: ${nodeConf.chain}")
+  logger.info(s"Data directory: ${nodeConf.datadir}")
+  logger.info(s"SPV mode enabled: ${nodeConf.isSPVEnabled}")
+  logger.info(s"Neutrino mode enabled: ${nodeConf.isNeutrinoEnabled}")
+  println(nodeConf.httpLogLevel)
+
   implicit val system = ActorSystem("bitcoin-s")
   import system.dispatcher
 
   /** Log the given message, shut down the actor system and quit. */
   def error(message: Any): Nothing = {
-    logger.error(s"FATAL: $message")
-    logger.error(s"Shutting down actor system")
-    Await.result(system.terminate(), 10.seconds)
-    logger.error("Actor system terminated")
-    logger.error(s"Exiting")
-    sys.error(message.toString())
+    // we might want to log the stack trace if message is an error
+    val (processedMessage: Any, stackTrace: Option[Array[StackTraceElement]]) =
+      message match {
+        case maybeBoxed: ExecutionException =>
+          maybeBoxed.getCause() match {
+            case null                     => (maybeBoxed, None)
+            case err: NotImplementedError => (err, Some(err.getStackTrace()))
+            case other: Throwable         => (other, None)
+          }
+        case notImpl: NotImplementedError =>
+          (notImpl, Some(notImpl.getStackTrace()))
+        case rest => (rest, None)
+      }
+
+    logger.error(s"FATAL: $processedMessage")
+    stackTrace.foreach { stack =>
+      stack.map(_.toString()).foreach(stackStr => logger.error(s"   $stackStr"))
+    }
+
+    // actor system cleanup etc is happening in the shutdown hook
+    sys.exit(1)
   }
 
   /** Checks if the user already has a wallet */
@@ -135,7 +156,5 @@ object Main extends App {
     start
   }
 
-  startFut.failed.foreach { err =>
-    logger.info(s"Error on server startup!", err)
-  }
+  startFut.failed.foreach { error }
 }
