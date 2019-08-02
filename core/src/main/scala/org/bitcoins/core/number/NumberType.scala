@@ -242,7 +242,11 @@ final case class UInt64 private (private val underlying: java.math.BigInteger)
     i
   }
 
-  def toBigInt: BigInteger = underlying
+  def toInt: Int = underlying.intValueExact()
+
+  def toFloat: Float = underlying.floatValue()
+
+  def toDouble: Double = underlying.doubleValue()
 
   def toLong: Long = underlying.longValueExact()
 
@@ -257,7 +261,7 @@ final case class UInt64 private (private val underlying: java.math.BigInteger)
     * @param bigInt The number to encode
     * @return The hex encoded number
     */
-  private def encodeHex(bigInt: BigInt): String = {
+  private def encodeHex(bigInt: BigInteger): String = {
     val hex = BitcoinSUtil.encodeHex(bigInt)
     if (hex.length == 18) {
       //means that encodeHex(BigInt) padded an extra byte, giving us 9 bytes instead of 8
@@ -307,16 +311,8 @@ final case class Int32 private (private val underlying: Int)
     Int32(underlying << s32.underlying)
   }
 
-  def <<(int: Int): Int32 = {
-    this.<<(Int32(int))
-  }
-
   def >>(s32: Int32): Int32 = {
     Int32(underlying >> s32.underlying)
-  }
-
-  def >>(int: Int): Int32 = {
-    Int32(underlying >> int)
   }
 
   def toInt: Int = {
@@ -501,7 +497,7 @@ object UInt32
 
 object UInt64
     extends Factory[UInt64]
-    /* with NumberObject[UInt64] */
+    //withNumberObject[UInt64]
     with Bounded[UInt64] {
   /* private case class UInt64Impl(underlying: BigInt) extends UInt64 {
     require(isInBound(underlying),
@@ -511,14 +507,15 @@ object UInt64
   lazy val zero = UInt64(BigInt(0))
   lazy val one = UInt64(BigInt(1))
 
-  private lazy val minUnderlying = 0
+  private lazy val minUnderlying = BigInt(0)
   private lazy val maxUnderlying = BigInt("18446744073709551615")
 
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
 
-  override def isInBound(num: BigInteger): Boolean =
-    num <= maxUnderlying && num >= minUnderlying
+  def isInBound(num: BigInteger): Boolean =
+    (num.compareTo(maxUnderlying) == (-1 | 0))
+      .&&(num.compareTo(minUnderlying) == (0 | 1))
 
   override def fromBytes(bytes: ByteVector): UInt64 = {
     require(bytes.size <= 8)
@@ -529,6 +526,17 @@ object UInt64
     require(isInBound(num), "UInt64 number is not within the min/max bounds")
     UInt64(num)
   }
+
+  def apply(longnum: Long): UInt64 = {
+    require(longnum >= 0)
+    UInt64(longnum)
+  }
+
+  def apply(bigintnum: BigInt): UInt64 = {
+    require(bigintnum < maxUnderlying && bigintnum > 0)
+    UInt64(bigintnum)
+  }
+
 }
 
 object Int32
