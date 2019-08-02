@@ -31,7 +31,11 @@ private[peer] object MerkleBuffers extends BitcoinSLogger {
 
     if (matches.nonEmpty) {
       logger.trace(s"Adding merkleBlock=${merkle.blockHeader.hashBE} to buffer")
-      underlyingMap.put(merkle, Vector.newBuilder)
+      underlyingMap.put(merkle,
+                        // it's important to use a collection
+                        // type that can call .result() without
+                        // clearing the builder
+                        Vector.newBuilder)
     } else {
       logger.trace(
         s"Merkleblock=${merkle.blockHeader.hashBE} has no matches, not adding to buffer")

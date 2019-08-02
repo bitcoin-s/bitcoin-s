@@ -153,6 +153,18 @@ case class GetDataMessage(
   override def commandName = NetworkPayload.getDataCommandName
 
   override def bytes: ByteVector = RawGetDataMessageSerializer.write(this)
+
+  override def toString(): String = {
+
+    val count = s"inventoryCount=${inventoryCount.toInt}"
+    val invs = s"inventories=${
+      val base = inventories.toString
+      val cutoff = 100
+      if (base.length() > cutoff) base.take(cutoff) + "..."
+      else base
+    }"
+    s"GetDataMessage($count, $invs)"
+  }
 }
 
 object GetDataMessage extends Factory[GetDataMessage] {
@@ -273,9 +285,17 @@ case class HeadersMessage(count: CompactSizeUInt, headers: Vector[BlockHeader])
 
 object HeadersMessage extends Factory[HeadersMessage] {
 
+  /** The maximum amount of headers sent in one `headers` message
+    *
+    * @see [[https://bitcoin.org/en/developer-reference#getheaders bitcoin.org]]
+    *      developer reference
+    */
+  val MaxHeadersCount: Int = 2000
+
   def fromBytes(bytes: ByteVector): HeadersMessage =
     RawHeadersMessageSerializer.read(bytes)
 
+  /** Constructs a `headers` message from the given headers */
   def apply(headers: Vector[BlockHeader]): HeadersMessage = {
     val count = CompactSizeUInt(UInt64(headers.length))
     HeadersMessage(count, headers)
@@ -363,7 +383,7 @@ case object MemPoolMessage extends DataPayload {
   *
   * @see [[https://bitcoin.org/en/developer-reference#merkleblock]]
   *
-  * @param merkleBlock The actual [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] that this message represents 
+  * @param merkleBlock The actual [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]] that this message represents
   */
 case class MerkleBlockMessage(merkleBlock: MerkleBlock) extends DataPayload {
 
