@@ -66,10 +66,10 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks, chainHandler: ChainApi)(
 
         }
         FutureUtil.unit
-      case headersMsg: HeadersMessage =>
+      case HeadersMessage(count, headers) =>
+        logger.debug(s"Received headers message with ${count.toInt} headers")
         logger.trace(
-          s"Received headers message with ${headersMsg.count.toInt} headers")
-        val headers = headersMsg.headers
+          s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainHandler.processHeaders(headers)
 
         chainApiF
