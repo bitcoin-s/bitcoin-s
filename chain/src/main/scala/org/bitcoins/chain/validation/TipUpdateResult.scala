@@ -18,7 +18,10 @@ object TipUpdateResult {
   }
 
   /** Means that [[org.bitcoins.core.protocol.blockchain.BlockHeader.previousBlockHashBE previousBlockHashBE]] was incorrect */
-  case class BadPreviousBlockHash(header: BlockHeader) extends Failure
+  case class BadPreviousBlockHash(header: BlockHeader) extends Failure {
+    override def toString: String =
+      s"BadPreviousBlockHash(hash=${header.hashBE}, previous=${header.previousBlockHashBE})"
+  }
 
   /** Means that [[org.bitcoins.core.protocol.blockchain.BlockHeader.nBits nBits]] was invalid */
   case class BadPOW(header: BlockHeader) extends Failure

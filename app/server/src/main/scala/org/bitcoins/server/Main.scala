@@ -43,11 +43,6 @@ object Main extends App {
   implicit val system = ActorSystem("bitcoin-s")
   import system.dispatcher
 
-  sys.addShutdownHook {
-    logger.error(s"Exiting process")
-    system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
-  }
-
   /** Log the given message, shut down the actor system and quit. */
   def error(message: Any): Nothing = {
     logger.error(s"FATAL: $message")
@@ -128,7 +123,17 @@ object Main extends App {
                Seq(walletRoutes, nodeRoutes, chainRoutes))
       server.start()
     }
-  } yield start
+  } yield {
+
+    sys.addShutdownHook {
+      logger.error(s"Exiting process")
+
+      node.stop().foreach(_ => logger.info(s"Stopped SPV node"))
+      system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
+    }
+
+    start
+  }
 
   startFut.failed.foreach { err =>
     logger.info(s"Error on server startup!", err)

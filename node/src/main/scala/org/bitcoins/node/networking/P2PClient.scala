@@ -287,10 +287,10 @@ object P2PClient extends P2PLogger {
                 remainingBytes.length)
               loop(newRemainingBytes, message :: accum)
             }
-          case Failure(exception) =>
+          case Failure(exc) =>
             logger.error(
-              "Failed to parse network message, could be because TCP frame isn't aligned",
-              exception)
+              s"Failed to parse network message, could be because TCP frame isn't aligned: $exc")
+
             //this case means that our TCP frame was not aligned with bitcoin protocol
             //return the unaligned bytes so we can apply them to the next tcp frame of bytes we receive
             //http://stackoverflow.com/a/37979529/967713

@@ -8,6 +8,11 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.db.ChainVerificationLogger
+import org.bitcoins.chain.validation.TipUpdateResult.BadNonce
+import org.bitcoins.chain.validation.TipUpdateResult.BadPOW
+import org.bitcoins.chain.validation.TipUpdateResult.BadPreviousBlockHash
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.chain.validation.TipUpdateResult
 
 /**
   * Chain Handler is meant to be the reference implementation
@@ -41,6 +46,8 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO)(
 
   override def processHeader(header: BlockHeader)(
       implicit ec: ExecutionContext): Future[ChainHandler] = {
+    logger.debug(
+      s"Processing header=${header.hashBE.hex}, previousHash=${header.previousBlockHashBE.hex}")
 
     val blockchainUpdateF =
       Blockchain.connectTip(header, blockHeaderDAO)
@@ -52,14 +59,17 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO)(
         val createdF = blockHeaderDAO.create(updatedHeader)
         createdF.map { header =>
           logger.debug(
-            s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE}")
+            s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE.hex}")
           ChainHandler(blockHeaderDAO)
         }
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
           s"Failed to add header to chain, header=${header.hashBE.hex} reason=${reason}"
         logger.warn(errMsg)
-        Future.failed(new RuntimeException(errMsg))
+        // potential chain split happening, let's log what's going on
+        logTipConnectionFailure(reason).flatMap { _ =>
+          Future.failed(new RuntimeException(errMsg))
+        }
     }
 
     blockchainUpdateF.failed.foreach { err =>
@@ -69,6 +79,32 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO)(
     }
 
     newHandlerF
+  }
+
+  /** Logs a tip connection failure by querying local chain state
+    * and comparing it to the received `TipUpdateResult`
+    */
+  private def logTipConnectionFailure(failure: TipUpdateResult.Failure)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    failure match {
+      case _ @(_: BadPOW | _: BadNonce) =>
+        // TODO: Log this in a meaningful way
+        FutureUtil.unit
+      case _: BadPreviousBlockHash =>
+        blockHeaderDAO.chainTips.map { tips =>
+          if (tips.length > 1) {
+            logger.warn {
+              s"We have multiple (${tips.length}) , competing chainTips=${tips
+                .map(_.hashBE.hex)
+                .mkString("[", ",", "]")}"
+            }
+          } else {
+            logger.warn(
+              s"We don't have competing chainTips. Most recent, valid header=${tips.head.hashBE.hex}")
+          }
+        }
+    }
+
   }
 
   /**
