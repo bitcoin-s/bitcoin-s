@@ -72,6 +72,9 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks, chainHandler: ChainApi)(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainHandler.processHeaders(headers)
 
+        logger.trace(s"Requesting data for headers=${headers.length}")
+        peerMsgSender.sendGetDataMessage(headers: _*)
+
         chainApiF
           .map { newApi =>
             if (headers.nonEmpty) {
@@ -82,10 +85,17 @@ class DataMessageHandler(callbacks: SpvNodeCallbacks, chainHandler: ChainApi)(
                 logger.trace(
                   s"Processed headers, most recent has height=$count and hash=$lastHash.")
               }
-              peerMsgSender.sendGetHeadersMessage(lastHash)
 
-              if (headers.length == 1) {
-                peerMsgSender.sendGetDataMessage(headers: _*)
+              if (count.toInt == HeadersMessage.MaxHeadersCount) {
+                logger.error(
+                  s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
+                peerMsgSender.sendGetHeadersMessage(lastHash)
+              } else {
+                logger.debug(
+                  List(s"Received headers=${count.toInt} in one message,",
+                       "which is less than max. This means we are synced,",
+                       "not requesting more.")
+                    .mkString(" "))
               }
 
             }

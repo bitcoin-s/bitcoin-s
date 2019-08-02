@@ -127,9 +127,12 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
 
       spv <- {
         val callback = SpvNodeCallbacks.onMerkleBlockReceived { (block, txs) =>
-          assertionP.complete(Try {
-            assert(txFromWallet.exists(tx => txs.contains(tx)))
-          })
+          val isFromOurWallet = txFromWallet.exists(tx => txs.contains(tx))
+          // we might receive more merkle blocks than just the
+          // one for our TX
+          if (isFromOurWallet) {
+            assertionP.success(assert(isFromOurWallet))
+          }
         }
 
         val peer = Peer.fromBitcoind(rpc.instance)
@@ -177,11 +180,7 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
       // this should confirm our TX
       // since we updated the bloom filter
       // we should get notified about the block
-      blockhash +: _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(1, _))
-      _ <- rpc.getRawTransaction(tx.txIdBE).flatMap { tx =>
-        assert(tx.confirmations.exists(_ > 0))
-        assert(tx.blockhash.contains(blockhash))
-      }
+      _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(1, _))
 
       assertion <- assertionF
     } yield assertion
