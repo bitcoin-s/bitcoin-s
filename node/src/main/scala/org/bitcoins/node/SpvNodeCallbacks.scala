@@ -16,6 +16,18 @@ case class SpvNodeCallbacks(
 
 object SpvNodeCallbacks {
 
+  /** Constructs a set of callbacks that only acts on TX received */
+  def onTxReceived(f: OnTxReceived): SpvNodeCallbacks =
+    SpvNodeCallbacks(onTxReceived = Seq(f))
+
+  /** Constructs a set of callbacks that only acts on block received */
+  def onBlockReceived(f: OnBlockReceived): SpvNodeCallbacks =
+    SpvNodeCallbacks(onBlockReceived = Seq(f))
+
+  /** Constructs a set of callbacks that only acts on merkle block received */
+  def onMerkleBlockReceived(f: OnMerkleBlockReceived): SpvNodeCallbacks =
+    SpvNodeCallbacks(onMerkleBlockReceived = Seq(f))
+
   /** Empty callbacks that does nothing with the received data */
   val empty: SpvNodeCallbacks =
     SpvNodeCallbacks(

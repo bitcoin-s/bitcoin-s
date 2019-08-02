@@ -8,40 +8,21 @@ import scodec.bits.ByteVector
 
 /**
   * These are used as unique identifiers inside the peer-to-peer network
+  *
+  * @param typeIdentifier The type of object which was hashed
+  * @param hash SHA256(SHA256()) hash of the object in internal byte order.
+  *
   * @see [[https://bitcoin.org/en/developer-reference#term-inventory]]
   */
-trait Inventory extends NetworkElement {
-
-  /**
-    * The type of object which was hashed
-    * @return
-    */
-  def typeIdentifier: TypeIdentifier
-
-  /**
-    * SHA256(SHA256()) hash of the object in internal byte order.
-    * @return
-    */
-  def hash: DoubleSha256Digest
+case class Inventory(typeIdentifier: TypeIdentifier, hash: DoubleSha256Digest)
+    extends NetworkElement {
 
   override def bytes: ByteVector = RawInventorySerializer.write(this)
-
-  override def toString(): String = s"Inventory($typeIdentifier, $hash)"
 }
 
 object Inventory extends Factory[Inventory] {
 
-  private case class InventoryImpl(
-      typeIdentifier: TypeIdentifier,
-      hash: DoubleSha256Digest)
-      extends Inventory
-
   override def fromBytes(bytes: ByteVector): Inventory =
     RawInventorySerializer.read(bytes)
 
-  def apply(
-      typeIdentifier: TypeIdentifier,
-      hash: DoubleSha256Digest): Inventory = {
-    InventoryImpl(typeIdentifier, hash)
-  }
 }
