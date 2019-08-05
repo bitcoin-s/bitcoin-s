@@ -130,8 +130,13 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
     }
   }
 
+}
+
+object BitcoinSFixture {
+
   def createBitcoindWithFunds()(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+    import system.dispatcher
     for {
       bitcoind <- createBitcoind()
       address <- bitcoind.getNewAddress
@@ -142,6 +147,7 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
   /** Creates a new bitcoind instance */
   def createBitcoind()(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+    import system.dispatcher
     val instance = BitcoindRpcTestUtil.instance()
     val bitcoind = new BitcoindRpcClient(instance)
 

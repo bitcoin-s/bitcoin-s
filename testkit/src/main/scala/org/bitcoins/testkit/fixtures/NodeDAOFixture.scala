@@ -18,9 +18,8 @@ trait NodeDAOFixture extends fixture.AsyncFlatSpec with NodeUnitTest {
 
   final override type FixtureParam = NodeDAOs
 
-  implicit private val nodeConfig: NodeAppConfig = config
-
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(build = () => NodeDbManagement.createAll().map(_ => daos),
-                destroy = () => NodeDbManagement.dropAll())(test)
+    makeFixture(
+      build = () => NodeDbManagement.createAll()(nodeConfig, ec).map(_ => daos),
+      destroy = () => NodeDbManagement.dropAll()(nodeConfig, ec))(test)
 }

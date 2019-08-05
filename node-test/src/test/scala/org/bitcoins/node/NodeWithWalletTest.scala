@@ -13,6 +13,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 
 import scala.concurrent.Future
 import org.bitcoins.node.networking.peer.DataMessageHandler
+
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import org.scalatest.compatible.Assertion
@@ -23,12 +24,14 @@ import org.bitcoins.testkit.node.NodeTestUtil
 import akka.actor.Cancellable
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+
 import scala.util.Try
 import scala.util.Failure
 import scala.util.Success
 import scala.concurrent.Await
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
 
 class NodeWithWalletTest extends BitcoinSWalletTest {
 

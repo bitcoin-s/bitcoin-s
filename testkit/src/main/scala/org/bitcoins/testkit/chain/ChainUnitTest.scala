@@ -232,7 +232,7 @@ trait ChainUnitTest
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
-    composeBuildersAndWrap(() => createBitcoind,
+    composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind,
                            createChainHandlerWithBitcoindZmq,
                            BitcoindChainHandlerViaZmq.apply)()
   }
@@ -269,7 +269,7 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
-      composeBuildersAndWrap(builder = () => createBitcoind,
+      composeBuildersAndWrap(builder = () => BitcoinSFixture.createBitcoind,
                              dependentBuilder =
                                createChainHandlerWithBitcoindZmq,
                              wrap = BitcoindChainHandlerViaZmq.apply)
@@ -280,7 +280,7 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaRpc] = { () =>
-      createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
+      BitcoinSFixture.createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
     }
 
     makeDependentFixture(builder, destroyBitcoindChainApiViaRpc)(test)

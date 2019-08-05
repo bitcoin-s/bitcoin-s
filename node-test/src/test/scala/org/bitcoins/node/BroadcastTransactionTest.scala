@@ -14,9 +14,11 @@ import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.scalactic.Bool
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
 
 class BroadcastTransactionTest extends BitcoinSWalletTest {
 
