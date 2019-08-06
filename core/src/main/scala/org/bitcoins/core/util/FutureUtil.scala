@@ -23,4 +23,21 @@ object FutureUtil {
   }
 
   val unit: Future[Unit] = Future.successful(())
+
+  /**
+    * Folds over the given elements sequentially in a non-blocking async way
+    * @param init the initialized value for the accumulator
+    * @param items the items we are folding over
+    * @param fun the function we are applying to every element that returns a future
+    * @return
+    */
+  def foldLeftAsync[T, U](init: T, items: Seq[U])(fun: (T, U) => Future[T])(
+      implicit ec: ExecutionContext): Future[T] = {
+    items.foldLeft(Future.successful(init)) {
+      case (accumF, elem) =>
+        accumF.flatMap { accum =>
+          fun(accum, elem)
+        }
+    }
+  }
 }

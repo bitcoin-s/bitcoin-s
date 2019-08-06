@@ -184,7 +184,8 @@ trait ChainUnitTest
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
-    } yield ChainHandler(blockHeaderDAO = blockHeaderDAO)
+      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO)
+    } yield chainHandler
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
@@ -194,15 +195,17 @@ trait ChainUnitTest
 
   def createChainHandlerWithBitcoindZmq(
       bitcoind: BitcoindRpcClient): Future[(ChainHandler, ZMQSubscriber)] = {
-    val (chainHandler, genesisHeaderF) =
+    val handlerWithGenesisHeaderF =
       ChainUnitTest.setupHeaderTableWithGenesisHeader()
+
+    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
 
     val zmqRawBlockUriOpt: Option[InetSocketAddress] =
       bitcoind.instance.zmqConfig.rawBlock
 
     val handleRawBlock: ByteVector => Unit = { bytes: ByteVector =>
       val block = Block.fromBytes(bytes)
-      chainHandler.processHeader(block.blockHeader)
+      chainHandlerF.flatMap(_.processHeader(block.blockHeader))
 
       ()
     }
@@ -217,15 +220,19 @@ trait ChainUnitTest
     zmqSubscriber.start()
     Thread.sleep(1000)
 
-    genesisHeaderF.map(_ => (chainHandler, zmqSubscriber))
+    for {
+      chainHandler <- chainHandlerF
+    } yield (chainHandler, zmqSubscriber)
   }
 
   def createChainApiWithBitcoindRpc(
       bitcoind: BitcoindRpcClient): Future[BitcoindChainHandlerViaRpc] = {
-    val (handler, genesisHeaderF) =
+    val handlerWithGenesisHeaderF =
       ChainUnitTest.setupHeaderTableWithGenesisHeader()
 
-    genesisHeaderF.map { _ =>
+    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
+
+    chainHandlerF.map { handler =>
       chain.fixture.BitcoindChainHandlerViaRpc(bitcoind, handler)
     }
 
@@ -304,16 +311,21 @@ object ChainUnitTest extends BitcoinSLogger {
   def createChainHandler()(
       implicit ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[ChainHandler] = {
-    val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
-    genesisHeaderF.map(_ => chainHandler)
+    val handlerWithGenesisHeaderF =
+      ChainUnitTest.setupHeaderTableWithGenesisHeader()
+
+    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
+    chainHandlerF
   }
 
   def createBlockHeaderDAO()(
       implicit ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[BlockHeaderDAO] = {
-    val (chainHandler, genesisHeaderF) = setupHeaderTableWithGenesisHeader()
+    val handlerWithGenesisHeaderF =
+      ChainUnitTest.setupHeaderTableWithGenesisHeader()
 
-    genesisHeaderF.map(_ => chainHandler.blockHeaderDAO)
+    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
+    chainHandlerF.map(_.blockHeaderDAO)
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
@@ -365,17 +377,21 @@ object ChainUnitTest extends BitcoinSLogger {
                                                 dbHeaders = dbHeaders,
                                                 batchesSoFar = Vector.empty)
 
-        val chainHandler = ChainUnitTest.makeChainHandler()
+        val chainHandlerF = ChainUnitTest.makeChainHandler()
 
         val insertedF = tableSetupF.flatMap { _ =>
           batchedDbHeaders.foldLeft(
             Future.successful[Vector[BlockHeaderDb]](Vector.empty)) {
             case (fut, batch) =>
-              fut.flatMap(_ => chainHandler.blockHeaderDAO.createAll(batch))
+              for {
+                _ <- fut
+                chainHandler <- chainHandlerF
+                headers <- chainHandler.blockHeaderDAO.createAll(batch)
+              } yield headers
           }
         }
 
-        insertedF.map(_ => chainHandler.blockHeaderDAO)
+        insertedF.flatMap(_ => chainHandlerF.map(_.blockHeaderDAO))
     }
   }
 
@@ -398,24 +414,31 @@ object ChainUnitTest extends BitcoinSLogger {
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   def setupHeaderTableWithGenesisHeader()(
       implicit ec: ExecutionContext,
-      appConfig: ChainAppConfig): (ChainHandler, Future[BlockHeaderDb]) = {
+      appConfig: ChainAppConfig): Future[(ChainHandler, BlockHeaderDb)] = {
     val tableSetupF = setupHeaderTable()
 
-    val chainHandler = makeChainHandler()
+    val chainHandlerF = makeChainHandler()
 
     val genesisHeaderF = tableSetupF.flatMap { _ =>
-      chainHandler.blockHeaderDAO.create(genesisHeaderDb)
+      for {
+        chainHandler <- chainHandlerF
+        genHeader <- chainHandler.blockHeaderDAO.create(genesisHeaderDb)
+      } yield genHeader
     }
 
-    (chainHandler, genesisHeaderF)
+    for {
+      genHeader <- genesisHeaderF
+      chainHandler <- makeChainHandler()
+    } yield (chainHandler, genHeader)
   }
 
   def makeChainHandler()(
       implicit appConfig: ChainAppConfig,
-      ec: ExecutionContext): ChainHandler = {
+      ec: ExecutionContext): Future[ChainHandler] = {
     lazy val blockHeaderDAO = BlockHeaderDAO()
 
-    ChainHandler(blockHeaderDAO)
+    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO)
+
   }
 
 }

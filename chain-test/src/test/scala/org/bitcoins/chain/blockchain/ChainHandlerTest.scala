@@ -120,7 +120,9 @@ class ChainHandlerTest extends ChainUnitTest {
       val createdF = chainHandler.blockHeaderDAO.createAll(firstThreeBlocks)
 
       createdF.flatMap { _ =>
-        val processorF = Future.successful(chainHandler)
+        val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
+        val handler = ChainHandler(chainHandler.blockHeaderDAO, blockchain)
+        val processorF = Future.successful(handler)
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
           .take(
