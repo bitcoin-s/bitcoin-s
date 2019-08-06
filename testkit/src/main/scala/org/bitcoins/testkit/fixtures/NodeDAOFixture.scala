@@ -1,11 +1,10 @@
 package org.bitcoins.testkit.fixtures
 
-import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.scalatest._
-import org.bitcoins.testkit.node.NodeUnitTest
-import slick.jdbc.SQLiteProfile
 import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import org.bitcoins.testkit.node.NodeUnitTest
+import org.scalatest._
+import slick.jdbc.SQLiteProfile
 
 case class NodeDAOs(txDAO: BroadcastAbleTransactionDAO)
 
@@ -18,9 +17,8 @@ trait NodeDAOFixture extends fixture.AsyncFlatSpec with NodeUnitTest {
 
   final override type FixtureParam = NodeDAOs
 
-  implicit private val nodeConfig: NodeAppConfig = config
-
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(build = () => NodeDbManagement.createAll().map(_ => daos),
-                destroy = () => NodeDbManagement.dropAll())(test)
+    makeFixture(
+      build = () => NodeDbManagement.createAll()(nodeConfig, ec).map(_ => daos),
+      destroy = () => NodeDbManagement.dropAll()(nodeConfig, ec))(test)
 }

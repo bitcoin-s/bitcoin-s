@@ -10,6 +10,7 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
 
 class WalletIntegrationTest extends BitcoinSWalletTest {
 

@@ -1,177 +1,150 @@
 package org.bitcoins.node
 
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
-import org.bitcoins.node.models.Peer
-import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.testkit.node.NodeTestUtil
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.networking.peer.DataMessageHandler
+import akka.actor.Cancellable
+import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.scalatest.exceptions.TestFailedException
+import org.scalatest.{BeforeAndAfter, FutureOutcome}
+
 import scala.concurrent._
 import scala.concurrent.duration._
-import org.scalatest.compatible.Assertion
-import org.bitcoins.core.currency._
-import scala.util.Try
-import akka.actor.Cancellable
-import org.scalatest.run
-import org.scalatest.exceptions.TestFailedException
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 
-class UpdateBloomFilterTest extends BitcoinSWalletTest {
-  override type FixtureParam = WalletWithBitcoind
+class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
+  override type FixtureParam = SpvNodeFundedWalletBitcoind
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withFundedWalletAndBitcoind(test)
+  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withSpvNodeFundedWalletBitcoind(test, callbacks)
+  }
+
+  val testTimeout = 30.seconds
+  private var assertionP: Promise[Boolean] = Promise()
+  after {
+    //reset assertion after a test runs, because we
+    //are doing mutation to work around our callback
+    //limitations, we can't currently modify callbacks
+    //after a SpvNode is constructed :-(
+    assertionP = Promise()
+  }
+
+  /** The address we expect to receive funds at */
+  private val addressFromWalletP: Promise[BitcoinAddress] = Promise()
+
+  // the TX we sent from our wallet to bitcoind,
+  // we expect to get notified once this is
+  // confirmed
+  private val txFromWalletP: Promise[Transaction] = Promise()
+
+  def addressCallback: DataMessageHandler.OnTxReceived = { tx: Transaction =>
+    // we check if any of the addresses in the TX
+    // pays to our wallet address
+    val _ = for {
+      addressFromWallet <- addressFromWalletP.future
+      result = tx.outputs.exists(
+        _.scriptPubKey == addressFromWallet.scriptPubKey)
+    } yield {
+      if (result) {
+        assertionP.success(true)
+      }
+    }
+  }
+
+  def txCallback: DataMessageHandler.OnMerkleBlockReceived = {
+    (_: MerkleBlock, txs: Vector[Transaction]) =>
+      {
+        txFromWalletP.future
+          .map { tx =>
+            if (txs.contains(tx)) {
+              assertionP.success(true)
+            }
+          }
+      }
+  }
+
+  def callbacks: SpvNodeCallbacks = {
+    SpvNodeCallbacks(onTxReceived = Vector(addressCallback),
+                     onMerkleBlockReceived = Vector(txCallback))
+  }
 
   it must "update the bloom filter with an address" in { param =>
-    val WalletWithBitcoind(wallet, rpc) = param
-    implicit val chainConf: ChainAppConfig = config
-    implicit val nodeConf: NodeAppConfig = config
-
-    val assertionP = Promise[Assertion]
-    val assertionF = assertionP.future
+    val SpvNodeFundedWalletBitcoind(initSpv, wallet, rpc) = param
 
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
     // we need to cancel that runnable once
     // we get a result
     var cancelable: Option[Cancellable] = None
-    val timeout = 15.seconds
 
     for {
-      _ <- config.initialize()
-
       firstBloom <- wallet.getBloomFilter()
 
       // this has to be generated after our bloom filter
       // is calculated
       addressFromWallet <- wallet.getNewAddress()
-
-      spv <- {
-        val callback = SpvNodeCallbacks.onTxReceived { tx =>
-          rpc.getRawTransaction(tx.txIdBE).foreach { res =>
-            val paysToOurAddress =
-              // we check if any of the addresses in the TX
-              // pays to our wallet address
-              res.vout.exists(_.scriptPubKey.addresses match {
-                case None            => false
-                case Some(addresses) => addresses.exists(_ == addressFromWallet)
-              })
-            cancelable.forall(_.cancel())
-            assertionP.complete {
-              Try {
-                assert(paysToOurAddress)
-              }
-            }
-          }
-        }
-
-        val peer = Peer.fromBitcoind(rpc.instance)
-        val chain = {
-          val dao = BlockHeaderDAO()
-          ChainHandler(dao)
-        }
-        val spv =
-          SpvNode(peer, chain, bloomFilter = firstBloom, callbacks = callback)
-        spv.start()
-      }
+      _ = addressFromWalletP.success(addressFromWallet)
+      spv <- initSpv.start()
+      _ = spv.updateBloomFilter(addressFromWallet)
       _ <- spv.sync()
+      _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
       _ <- NodeTestUtil.awaitSync(spv, rpc)
 
-      _ = spv.updateBloomFilter(addressFromWallet)
       _ = {
-        val runnable = new Runnable {
-          override def run: Unit = {
-            assertionP.failure(
-              new TestFailedException(
-                s"Did not receive a TX message after $timeout!",
-                failedCodeStackDepth = 0))
-          }
-        }
         cancelable = Some {
-          actorSystem.scheduler.scheduleOnce(timeout, runnable)
+          system.scheduler.scheduleOnce(
+            testTimeout,
+            new Runnable {
+              override def run: Unit = {
+                if (!assertionP.isCompleted)
+                  assertionP.failure(new TestFailedException(
+                    s"Did not receive a merkle block message after $testTimeout!",
+                    failedCodeStackDepth = 0))
+              }
+            }
+          )
         }
       }
-      _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
-      assertion <- assertionF
-    } yield assertion
+      result <- assertionP.future
+    } yield assert(result)
   }
 
   it must "update the bloom filter with a TX" in { param =>
-    val WalletWithBitcoind(wallet, rpc) = param
-    implicit val chainConf: ChainAppConfig = config
-    implicit val nodeConf: NodeAppConfig = config
-
-    val assertionP = Promise[Assertion]
-    val assertionF = assertionP.future
-
+    val SpvNodeFundedWalletBitcoind(initSpv, wallet, rpc) = param
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
     // we need to cancel that runnable once
     // we get a result
     var cancelable: Option[Cancellable] = None
 
-    // the TX we sent from our wallet to bitcoind,
-    // we expect to get notified once this is
-    // confirmed
-    var txFromWallet: Option[Transaction] = None
-    val timeout = 15.seconds
-
     for {
-      _ <- config.initialize()
-
       firstBloom <- wallet.getBloomFilter()
 
-      spv <- {
-        val callback = SpvNodeCallbacks.onMerkleBlockReceived { (block, txs) =>
-          val isFromOurWallet = txFromWallet.exists(tx => txs.contains(tx))
-          // we might receive more merkle blocks than just the
-          // one for our TX
-          if (isFromOurWallet) {
-            assertionP.success(assert(isFromOurWallet))
-          }
-        }
-
-        val peer = Peer.fromBitcoind(rpc.instance)
-        val chain = {
-          val dao = BlockHeaderDAO()
-          ChainHandler(dao)
-        }
-        val spv =
-          SpvNode(peer, chain, bloomFilter = firstBloom, callbacks = callback)
-        spv.start()
-      }
-      _ <- spv.sync()
-      _ <- NodeTestUtil.awaitSync(spv, rpc)
-
+      spv <- initSpv.start()
       addressFromBitcoind <- rpc.getNewAddress
       tx <- wallet
         .sendToAddress(addressFromBitcoind,
                        5.bitcoin,
                        SatoshisPerByte(100.sats))
-        .map { tx =>
-          txFromWallet = Some(tx)
-          tx
-        }
-
+      _ = txFromWalletP.success(tx)
+      spvNewBloom = spv.updateBloomFilter(tx)
+      _ = spv.broadcastTransaction(tx)
+      _ <- spv.sync()
+      _ <- NodeTestUtil.awaitSync(spv, rpc)
+      _ = assert(spvNewBloom.bloomFilter.contains(tx.txId))
       _ = {
-        val _ = spv.broadcastTransaction(tx)
-        val SpvNode(_, _, newBloom, _) = spv.updateBloomFilter(tx)
-        assert(newBloom.contains(tx.txId))
-
         cancelable = Some {
-          actorSystem.scheduler.scheduleOnce(
-            timeout,
+          system.scheduler.scheduleOnce(
+            testTimeout,
             new Runnable {
               override def run: Unit = {
                 if (!assertionP.isCompleted)
-                  assertionP.failure(
-                    new TestFailedException(
-                      s"Did not receive a merkle block message after $timeout!",
-                      failedCodeStackDepth = 0))
+                  assertionP.failure(new TestFailedException(
+                    s"Did not receive a merkle block message after $testTimeout!",
+                    failedCodeStackDepth = 0))
               }
             }
           )
@@ -182,8 +155,8 @@ class UpdateBloomFilterTest extends BitcoinSWalletTest {
       // we should get notified about the block
       _ <- rpc.getNewAddress.flatMap(rpc.generateToAddress(1, _))
 
-      assertion <- assertionF
-    } yield assertion
+      result <- assertionP.future
+    } yield assert(result)
 
   }
 }
