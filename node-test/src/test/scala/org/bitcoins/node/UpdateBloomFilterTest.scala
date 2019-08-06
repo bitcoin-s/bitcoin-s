@@ -43,7 +43,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   def addressCallback: DataMessageHandler.OnTxReceived = { tx: Transaction =>
     // we check if any of the addresses in the TX
     // pays to our wallet address
-    val resultF = for {
+    val _ = for {
       addressFromWallet <- addressFromWalletP.future
       result = tx.outputs.exists(
         _.scriptPubKey == addressFromWallet.scriptPubKey)
@@ -133,12 +133,12 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
         .sendToAddress(addressFromBitcoind,
                        5.bitcoin,
                        SatoshisPerByte(100.sats))
+      _ = txFromWalletP.success(tx)
       spvNewBloom = spv.updateBloomFilter(tx)
+      _ = spv.broadcastTransaction(tx)
       _ <- spv.sync()
       _ <- NodeTestUtil.awaitSync(spv, rpc)
       _ = assert(spvNewBloom.bloomFilter.contains(tx.txId))
-      _ = spv.broadcastTransaction(tx)
-      _ = txFromWalletP.success(tx)
       _ = {
         cancelable = Some {
           system.scheduler.scheduleOnce(
