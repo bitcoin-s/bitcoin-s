@@ -1,11 +1,10 @@
 package org.bitcoins.testkit.fixtures
 
-import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.scalatest._
-import org.bitcoins.testkit.node.NodeUnitTest
-import slick.jdbc.SQLiteProfile
 import org.bitcoins.node.db.NodeDbManagement
-import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import org.bitcoins.testkit.node.NodeUnitTest
+import org.scalatest._
+import slick.jdbc.SQLiteProfile
 
 case class NodeDAOs(txDAO: BroadcastAbleTransactionDAO)
 

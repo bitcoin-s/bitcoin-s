@@ -23,6 +23,7 @@ import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
+import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
@@ -63,7 +64,7 @@ trait NodeUnitTest
   val timeout: FiniteDuration = 10.seconds
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected lazy val config: BitcoinSAppConfig =
+  implicit protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getTestConfig()
 
   implicit protected lazy val chainConfig: ChainAppConfig = config.chainConf
@@ -77,35 +78,39 @@ trait NodeUnitTest
   lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 
   def withSpvNode(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+      implicit system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     val spvBuilder: () => Future[SpvNode] = { () =>
       val bitcoindF = BitcoinSFixture.createBitcoind()
       bitcoindF.flatMap { bitcoind =>
         NodeUnitTest
           .createSpvNode(bitcoind, SpvNodeCallbacks.empty)(system,
-                                                           chainConfig,
-                                                           nodeConfig)
+                                                           appConfig.chainConf,
+                                                           appConfig.nodeConf)
           .flatMap(_.start())
       }
     }
 
     makeDependentFixture(
       build = spvBuilder,
-      destroy = NodeUnitTest.destroySpvNode
+      destroy =
+        NodeUnitTest.destroySpvNode(_: SpvNode)(appConfig, system.dispatcher)
     )(test)
   }
 
   def withSpvNodeConnectedToBitcoind(test: OneArgAsyncTest)(
-      implicit system: ActorSystem): FutureOutcome = {
+      implicit system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
     val spvWithBitcoindBuilder: () => Future[SpvNodeConnectedWithBitcoind] = {
       () =>
         val bitcoindF = BitcoinSFixture.createBitcoind()
         bitcoindF.flatMap { bitcoind =>
           val spvNode = NodeUnitTest
-            .createSpvNode(bitcoind, SpvNodeCallbacks.empty)(system,
-                                                             chainConfig,
-                                                             nodeConfig)
+            .createSpvNode(bitcoind, SpvNodeCallbacks.empty)(
+              system,
+              appConfig.chainConf,
+              appConfig.nodeConf)
           val startedSpv = spvNode
             .flatMap(_.start())
 
@@ -115,18 +120,23 @@ trait NodeUnitTest
 
     makeDependentFixture(
       build = spvWithBitcoindBuilder,
-      destroy = NodeUnitTest.destorySpvNodeConnectedWithBitcoind
+      destroy = NodeUnitTest.destorySpvNodeConnectedWithBitcoind(
+        _: SpvNodeConnectedWithBitcoind)(system, appConfig)
     )(test)
   }
 
   def withSpvNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
       callbacks: SpvNodeCallbacks)(
-      implicit system: ActorSystem): FutureOutcome = {
+      implicit system: ActorSystem,
+      appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     makeDependentFixture(
-      build = () => NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks),
-      destroy = NodeUnitTest.destroySpvNodeFundedWalletBitcoind
+      build = () =>
+        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks)(system,
+                                                                  appConfig),
+      destroy = NodeUnitTest.destroySpvNodeFundedWalletBitcoind(
+        _: SpvNodeFundedWalletBitcoind)(system, appConfig)
     )(test)
   }
 }

@@ -22,7 +22,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
     withSpvNodeFundedWalletBitcoind(test, callbacks)
   }
 
-  val testTimeout = 20.seconds
+  val testTimeout = 30.seconds
   private var assertionP: Promise[Boolean] = Promise()
   after {
     //reset assertion after a test runs, because we
@@ -92,8 +92,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       spv <- initSpv.start()
       _ = spv.updateBloomFilter(addressFromWallet)
       _ <- spv.sync()
-      _ <- NodeTestUtil.awaitSync(spv, rpc)
       _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
+      _ <- NodeTestUtil.awaitSync(spv, rpc)
+
       _ = {
         cancelable = Some {
           system.scheduler.scheduleOnce(

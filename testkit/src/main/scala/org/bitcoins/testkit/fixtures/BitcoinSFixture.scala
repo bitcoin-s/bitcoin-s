@@ -35,7 +35,7 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec with BitcoinSLogger {
         destroy(fixture).onComplete {
           case Success(_) => destroyP.success(())
           case Failure(err) =>
-            println(s"Failed to destroy fixture with err=${err}")
+            logger.error(s"Failed to destroy fixture with err=${err}")
             destroyP.failure(err)
         }
       }
