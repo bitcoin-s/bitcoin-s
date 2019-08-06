@@ -17,18 +17,11 @@ import scala.util.Failure
 class MerkleBuffersTest extends BitcoinSUnitTest {
   behavior of "MerkleBuffers"
 
-  /** Generating blocks and transactions take a little while,
-    * this is to prevent the test from taking a _really_ long
-    * time
-    */
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    customGenDrivenConfig(executions = 3)
-
   it must "match a merkle block with its corresponding transactions" in {
 
     val txsAndBlockGen: Gen[(Seq[Transaction], Seq[Transaction], Block)] = for {
-      txs <- Gen.nonEmptyListOf(TransactionGenerators.transaction)
-      otherTxs <- Gen.nonEmptyListOf(TransactionGenerators.transaction)
+      txs <- TransactionGenerators.nonEmptySmallTransactions
+      otherTxs <- TransactionGenerators.nonEmptySmallTransactions
       block <- BlockchainElementsGenerator.block(txs)
     } yield (txs, otherTxs, block)
 

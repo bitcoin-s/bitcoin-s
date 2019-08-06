@@ -128,6 +128,10 @@ object TransactionGenerators extends BitcoinSLogger {
   def smallTransactions: Gen[Seq[Transaction]] =
     Gen.choose(0, 10).flatMap(i => Gen.listOfN(i, transaction))
 
+  def nonEmptySmallTransactions: Gen[Seq[Transaction]] = {
+    Gen.choose(1, 10).flatMap(i => Gen.listOfN(i, transaction))
+  }
+
   def transaction: Gen[Transaction] =
     Gen.oneOf(baseTransaction, witnessTransaction)
 

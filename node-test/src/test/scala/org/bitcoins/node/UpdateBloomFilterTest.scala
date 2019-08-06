@@ -137,8 +137,8 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
                        SatoshisPerByte(100.sats))
       _ = txFromWalletP.success(tx)
       _ = {
-        val _ = spv.broadcastTransaction(tx)
         val SpvNode(_, _, newBloom, _) = spv.updateBloomFilter(tx)
+        val _ = spv.broadcastTransaction(tx)
         assert(newBloom.contains(tx.txId))
 
         cancelable = Some {

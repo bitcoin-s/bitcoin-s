@@ -133,7 +133,12 @@ trait NodeUnitTest
 
 object NodeUnitTest extends BitcoinSLogger {
 
-  /** Represents a spv node, a funded bitcoin-s wallet, and a bitcoind instance that is running */
+  /**
+    * Creates
+    * 1. a funded bitcoind wallet
+    * 2. a funded bitcoin-s wallet
+    * 3. a chain handler with the appropriate tables created
+    * 4. a spv node that is connected to the bitcoin instance -- but not started!  */
   case class SpvNodeFundedWalletBitcoind(
       spvNode: SpvNode,
       wallet: UnlockedWalletApi,
