@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 
 class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
-
+  val testTimeout = 20.seconds
   private var assertionP: Promise[Boolean] = Promise()
   after {
     //reset assertion after a test runs, because we
@@ -74,7 +74,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
     // we need to cancel that runnable once
     // we get a result
     var cancelable: Option[Cancellable] = None
-    val timeout = 15.seconds
 
     for {
       _ <- config.initialize()
@@ -94,7 +93,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       _ = {
         cancelable = Some {
           system.scheduler.scheduleOnce(
-            timeout,
+            testTimeout,
             new Runnable {
               override def run: Unit = {
                 if (!assertionP.isCompleted)
@@ -119,8 +118,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
     // we get a result
     var cancelable: Option[Cancellable] = None
 
-    val timeout = 20.seconds
-
     for {
       _ <- config.initialize()
 
@@ -143,7 +140,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
 
         cancelable = Some {
           system.scheduler.scheduleOnce(
-            timeout,
+            testTimeout,
             new Runnable {
               override def run: Unit = {
                 if (!assertionP.isCompleted)
