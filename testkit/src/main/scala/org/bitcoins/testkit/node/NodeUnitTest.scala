@@ -6,6 +6,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
@@ -15,6 +16,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.{
   PeerHandler,
   PeerMessageReceiver,
+  PeerMessageReceiverState,
   PeerMessageSender
 }
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -154,6 +156,38 @@ object NodeUnitTest extends BitcoinSLogger {
       wallet: UnlockedWalletApi,
       bitcoindRpc: BitcoindRpcClient)
 
+  def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(
+      implicit appConfig: BitcoinSAppConfig,
+      system: ActorSystem): Future[PeerMessageReceiver] = {
+    val receiver =
+      PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
+                          chainApi = chainApi,
+                          peer = peer,
+                          callbacks = SpvNodeCallbacks.empty)
+    Future.successful(receiver)
+  }
+
+  def buildPeerHandler(peer: Peer)(
+      implicit nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig,
+      system: ActorSystem): Future[PeerHandler] = {
+    import system.dispatcher
+    val chainApiF = ChainUnitTest.createChainHandler()
+    val peerMsgReceiverF = chainApiF.flatMap { _ =>
+      PeerMessageReceiver.preConnection(peer, SpvNodeCallbacks.empty)
+    }
+    //the problem here is the 'self', this needs to be an ordinary peer message handler
+    //that can handle the handshake
+    val peerHandlerF = for {
+      peerMsgReceiver <- peerMsgReceiverF
+      client = NodeTestUtil.client(peer, peerMsgReceiver)
+      peerMsgSender = PeerMessageSender(client)
+    } yield PeerHandler(client, peerMsgSender)
+
+    peerHandlerF
+
+  }
+
   def destroySpvNode(spvNode: SpvNode)(
       implicit config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Unit] = {
@@ -165,6 +199,7 @@ object NodeUnitTest extends BitcoinSLogger {
       spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
+    logger.debug(s"Beggining tear down of spv node connected with bitcoind")
     import system.dispatcher
     val spvNode = spvNodeConnectedWithBitcoind.spvNode
     val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
@@ -174,7 +209,10 @@ object NodeUnitTest extends BitcoinSLogger {
     for {
       _ <- spvNodeDestroyF
       _ <- bitcoindDestroyF
-    } yield ()
+    } yield {
+      logger.debug(s"Done with teardown of spv node connected with bitcoind!")
+      ()
+    }
   }
 
   /** Creates a spv node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
@@ -211,31 +249,16 @@ object NodeUnitTest extends BitcoinSLogger {
 
   }
 
-  def buildPeerMessageReceiver()(
-      implicit system: ActorSystem,
+  def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(
+      implicit nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
-      nodeAppConfig: NodeAppConfig): PeerMessageReceiver = {
-    import system.dispatcher
-    val dao = BlockHeaderDAO()
-    val chainHandler = ChainHandler(dao)
+      system: ActorSystem): Future[PeerMessageReceiver] = {
     val receiver =
-      PeerMessageReceiver.newReceiver(chainHandler, SpvNodeCallbacks.empty)
-    receiver
-  }
-
-  def buildPeerHandler(peer: Peer)(
-      implicit system: ActorSystem,
-      chainAppConfig: ChainAppConfig,
-      nodeAppConfig: NodeAppConfig): PeerHandler = {
-    val peerMsgReceiver = buildPeerMessageReceiver()
-    //the problem here is the 'self', this needs to be an ordinary peer message handler
-    //that can handle the handshake
-    val peerMsgSender: PeerMessageSender = {
-      val client = NodeTestUtil.client(peer, peerMsgReceiver)
-      PeerMessageSender(client)
-    }
-    PeerHandler(peerMsgReceiver, peerMsgSender)
-
+      PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
+                          chainApi = chainApi,
+                          peer = peer,
+                          callbacks = SpvNodeCallbacks.empty)
+    Future.successful(receiver)
   }
 
   def peerSocketAddress(
@@ -256,10 +279,9 @@ object NodeUnitTest extends BitcoinSLogger {
     val chainApiF = ChainUnitTest.createChainHandler()
     val peer = createPeer(bitcoind)
     for {
-      chainApi <- chainApiF
+      _ <- chainApiF
     } yield {
       SpvNode(peer = peer,
-              chainApi = chainApi,
               bloomFilter = NodeTestUtil.emptyBloomFilter,
               callbacks = callbacks)
     }

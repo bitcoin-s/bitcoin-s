@@ -1,30 +1,22 @@
 package org.bitcoins.server
 
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.node.models.Peer
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import akka.actor.ActorSystem
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.node.config.NodeAppConfig
 import java.nio.file.Files
-import scala.concurrent.Future
-import org.bitcoins.wallet.LockedWallet
-import org.bitcoins.wallet.Wallet
-import org.bitcoins.wallet.api.InitializeWalletSuccess
-import org.bitcoins.wallet.api.InitializeWalletError
-import org.bitcoins.node.SpvNode
-import org.bitcoins.chain.blockchain.ChainHandler
+
+import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.bitcoins.wallet.api.UnlockWalletSuccess
-import org.bitcoins.wallet.api.UnlockWalletError
-import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.node.SpvNodeCallbacks
-import org.bitcoins.wallet.WalletStorage
 import org.bitcoins.db.AppLoggers
-import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.node.{SpvNode, SpvNodeCallbacks}
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.models.Peer
+import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.wallet.{LockedWallet, Wallet, WalletStorage}
+import org.bitcoins.wallet.api._
+import org.bitcoins.wallet.config.WalletAppConfig
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
 object Main extends App {
   implicit val conf = {
@@ -107,20 +99,17 @@ object Main extends App {
 
         SpvNodeCallbacks(onTxReceived = Seq(onTX))
       }
-      val blockheaderDAO = BlockHeaderDAO()
-      val chain = ChainHandler(blockheaderDAO)
-      SpvNode(peer, chain, bloom, callbacks).start()
+      SpvNode(peer, bloom, callbacks).start()
     }
     _ = logger.info(s"Starting SPV node sync")
     _ <- node.sync()
-
+    chainApi <- node.chainApiFromDb()
     start <- {
       val walletRoutes = WalletRoutes(wallet, node)
       val nodeRoutes = NodeRoutes(node)
-      val chainRoutes = ChainRoutes(node.chainApi)
-      val server =
-        Server(nodeConf, // could use either of configurations
-               Seq(walletRoutes, nodeRoutes, chainRoutes))
+      val chainRoutes = ChainRoutes(chainApi)
+      val server = Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes))
+
       server.start()
     }
   } yield {

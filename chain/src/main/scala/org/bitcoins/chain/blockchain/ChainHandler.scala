@@ -19,9 +19,11 @@ import org.bitcoins.chain.validation.TipUpdateResult
   * of [[org.bitcoins.chain.api.ChainApi ChainApi]], this is the entry point in to the
   * chain project.
   */
-case class ChainHandler(blockHeaderDAO: BlockHeaderDAO)(
-    implicit private[chain] val chainConfig: ChainAppConfig
-) extends ChainApi
+case class ChainHandler(
+    blockHeaderDAO: BlockHeaderDAO,
+    blockchains: Vector[Blockchain])(
+    implicit private[chain] val chainConfig: ChainAppConfig)
+    extends ChainApi
     with ChainVerificationLogger {
 
   override def getBlockCount(implicit ec: ExecutionContext): Future[Long] = {
@@ -49,18 +51,40 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO)(
     logger.debug(
       s"Processing header=${header.hashBE.hex}, previousHash=${header.previousBlockHashBE.hex}")
 
-    val blockchainUpdateF =
-      Blockchain.connectTip(header, blockHeaderDAO)
+    val blockchainUpdateF = Blockchain.connectTip(header = header,
+                                                  blockHeaderDAO =
+                                                    blockHeaderDAO,
+                                                  blockchains = blockchains)
 
     val newHandlerF = blockchainUpdateF.flatMap {
-      case BlockchainUpdate.Successful(_, updatedHeader) =>
+      case BlockchainUpdate.Successful(newChain, updatedHeader) =>
         //now we have successfully connected the header, we need to insert
         //it into the database
         val createdF = blockHeaderDAO.create(updatedHeader)
         createdF.map { header =>
           logger.debug(
-            s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE.hex}")
-          ChainHandler(blockHeaderDAO)
+            s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE}")
+          val chainIdxOpt = blockchains.zipWithIndex.find {
+            case (chain, _) =>
+              val oldTip = newChain(1) //should be safe, even with genesis header as we just connected a tip
+              oldTip == chain.tip
+          }
+
+          val updatedChains = {
+            chainIdxOpt match {
+              case Some((_, idx)) =>
+                logger.trace(
+                  s"Updating chain at idx=${idx} out of competing chains=${blockchains.length} with new tip=${header.hashBE.hex}")
+                blockchains.updated(idx, newChain)
+
+              case None =>
+                logger.info(
+                  s"New competing blockchain with tip=${newChain.tip}")
+                blockchains.:+(newChain)
+            }
+          }
+
+          ChainHandler(blockHeaderDAO, updatedChains)
         }
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
@@ -117,11 +141,42 @@ case class ChainHandler(blockHeaderDAO: BlockHeaderDAO)(
     //this does _not_ mean that it is on the chain that has the most work
     //TODO: Enhance this in the future to return the "heaviest" header
     //https://bitcoin.org/en/glossary/block-chain
-    blockHeaderDAO.chainTips.map { tips =>
-      val sorted = tips.sortBy(header => header.blockHeader.difficulty)
-      val hash = sorted.head.hashBE
-      logger.debug(s"getBestBlockHash result: hash=$hash")
-      hash
+    val groupedChains = blockchains.groupBy(_.tip.height)
+    val maxHeight = groupedChains.keys.max
+    val chains = groupedChains(maxHeight)
+
+    val hashBE: DoubleSha256DigestBE = chains match {
+      case Vector() =>
+        val errMsg = s"Did not find blockchain with height $maxHeight"
+        logger.error(errMsg)
+        throw new RuntimeException(errMsg)
+      case chain +: Vector() =>
+        chain.tip.hashBE
+      case chain +: rest =>
+        logger.warn(
+          s"We have multiple competing blockchains: ${(chain +: rest).map(_.tip.hashBE.hex).mkString(", ")}")
+        chain.tip.hashBE
     }
+    Future.successful(hashBE)
+  }
+}
+
+object ChainHandler {
+
+  /** Constructs a [[ChainHandler chain handler]] from the state in the database
+    * This gives us the guaranteed latest state we have in the database
+    * */
+  def fromDatabase(blockHeaderDAO: BlockHeaderDAO)(
+      implicit ec: ExecutionContext,
+      chainConfig: ChainAppConfig): Future[ChainHandler] = {
+    val bestChainsF = blockHeaderDAO.getBlockchains()
+
+    bestChainsF.map(chains =>
+      new ChainHandler(blockHeaderDAO = blockHeaderDAO, blockchains = chains))
+  }
+
+  def apply(blockHeaderDAO: BlockHeaderDAO, blockchains: Blockchain)(
+      implicit chainConfig: ChainAppConfig): ChainHandler = {
+    new ChainHandler(blockHeaderDAO, Vector(blockchains))
   }
 }

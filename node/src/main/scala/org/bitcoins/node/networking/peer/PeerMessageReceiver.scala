@@ -1,9 +1,14 @@
 package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRefFactory
-import org.bitcoins.core.p2p.NetworkMessage
+import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.core.p2p.{NetworkMessage, _}
+import org.bitcoins.db.P2PLogger
+import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.core.p2p._
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
@@ -13,10 +18,7 @@ import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
   Preconnection
 }
 
-import scala.util.{Failure, Success, Try}
-import org.bitcoins.node.SpvNodeCallbacks
-import org.bitcoins.db.P2PLogger
-import org.bitcoins.chain.api.ChainApi
+import scala.concurrent.Future
 
 /**
   * Responsible for receiving messages from a peer on the
@@ -26,20 +28,16 @@ import org.bitcoins.chain.api.ChainApi
   * [[org.bitcoins.core.p2p.NetworkMessage NetworkMessage]]
   */
 class PeerMessageReceiver(
-    state: PeerMessageReceiverState,
-    callbacks: SpvNodeCallbacks,
-    chainHandler: ChainApi
-)(implicit ref: ActorRefFactory, nodeAppConfig: NodeAppConfig)
+    dataMessageHandler: DataMessageHandler,
+    val state: PeerMessageReceiverState,
+    peer: Peer,
+    callbacks: SpvNodeCallbacks
+)(
+    implicit ref: ActorRefFactory,
+    nodeAppConfig: NodeAppConfig,
+    chainAppConfig: ChainAppConfig)
     extends P2PLogger {
-
   import ref.dispatcher
-
-  //TODO: Really bad to just modify this internal state
-  //not async safe at all
-  private var internalState: PeerMessageReceiverState = state
-
-  /** The peer we are connected to. */
-  private var peerOpt: Option[Peer] = None
 
   /** This method is called when we have received
     * a [[akka.io.Tcp.Connected]] message from our peer
@@ -47,41 +45,40 @@ class PeerMessageReceiver(
     * but have NOT started the handshake
     * This method will initiate the handshake
     */
-  protected[networking] def connect(client: P2PClient): Try[Unit] = {
+  protected[networking] def connect(
+      client: P2PClient): Future[PeerMessageReceiver] = {
 
-    internalState match {
+    state match {
       case bad @ (_: Initializing | _: Normal | _: Disconnected) =>
-        Failure(
+        Future.failed(
           new RuntimeException(s"Cannot call connect when in state=${bad}")
         )
       case Preconnection =>
-        peerOpt = Some(client.peer)
-
-        logger.info(s"Connection established with peer=${peerOpt.get}")
+        logger(nodeAppConfig).info(s"Connection established with peer=${peer}")
 
         val newState = Preconnection.toInitializing(client)
-
-        val _ = toState(newState)
 
         val peerMsgSender = PeerMessageSender(client)
 
         peerMsgSender.sendVersionMessage()
 
-        Success(())
+        val newRecv = toState(newState)
+
+        Future.successful(newRecv)
     }
   }
 
-  protected[networking] def disconnect(): Try[Unit] = {
-
-    internalState match {
+  protected[networking] def disconnect(): Future[PeerMessageReceiver] = {
+    logger(nodeAppConfig).trace(s"Disconnecting with internalstate=${state}")
+    state match {
       case bad @ (_: Initializing | _: Disconnected | Preconnection) =>
-        Failure(
+        Future.failed(
           new RuntimeException(
-            s"Cannot disconnect from peer=${peerOpt.get} when in state=${bad}")
+            s"Cannot disconnect from peer=${peer} when in state=${bad}")
         )
 
       case good: Normal =>
-        logger.debug(s"Disconnected bitcoin peer=${peerOpt.get}")
+        logger(nodeAppConfig).debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
           clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP.success(()),
@@ -89,37 +86,40 @@ class PeerMessageReceiver(
           verackMsgP = good.verackMsgP
         )
 
-        val _ = toState(newState)
-        Success(())
+        val newRecv = toState(newState)
+
+        Future.successful(newRecv)
     }
   }
 
-  def isConnected: Boolean = internalState.isConnected
+  private[networking] def isConnected: Boolean = state.isConnected
 
-  def isDisconnected: Boolean = internalState.isDisconnected
+  private[networking] def isDisconnected: Boolean = state.isDisconnected
 
-  def hasReceivedVersionMsg: Boolean =
-    internalState.hasReceivedVersionMsg.isCompleted
+  private[networking] def hasReceivedVersionMsg: Boolean =
+    state.hasReceivedVersionMsg.isCompleted
 
-  def hasReceivedVerackMsg: Boolean =
-    internalState.hasReceivedVerackMsg.isCompleted
+  private[networking] def hasReceivedVerackMsg: Boolean =
+    state.hasReceivedVerackMsg.isCompleted
 
-  def isInitialized: Boolean = internalState.isInitialized
+  private[networking] def isInitialized: Boolean = state.isInitialized
 
   def handleNetworkMessageReceived(
-      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Unit = {
+      networkMsgRecv: PeerMessageReceiver.NetworkMessageReceived): Future[
+    PeerMessageReceiver] = {
 
     val client = networkMsgRecv.client
 
     //create a way to send a response if we need too
     val peerMsgSender = PeerMessageSender(client)
 
-    logger.debug(
-      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} ")
+    logger(nodeAppConfig).debug(
+      s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} state=${state} ")
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
-        handleControlPayload(payload = controlPayload, sender = peerMsgSender)
-        ()
+        val peerMsgRecvF =
+          handleControlPayload(payload = controlPayload, sender = peerMsgSender)
+        peerMsgRecvF
       case dataPayload: DataPayload =>
         handleDataPayload(payload = dataPayload, sender = peerMsgSender)
     }
@@ -135,12 +135,15 @@ class PeerMessageReceiver(
     */
   private def handleDataPayload(
       payload: DataPayload,
-      sender: PeerMessageSender): Unit = {
-    val dataMsgHandler = new DataMessageHandler(callbacks, chainHandler)
+      sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     //else it means we are receiving this data payload from a peer,
     //we need to handle it
-    dataMsgHandler.handleDataPayload(payload, sender)
-    ()
+    val newDataMessageHandlerF =
+      dataMessageHandler.handleDataPayload(payload, sender)
+
+    newDataMessageHandlerF.map { handler =>
+      new PeerMessageReceiver(handler, state, peer, callbacks)
+    }
   }
 
   /**
@@ -152,21 +155,21 @@ class PeerMessageReceiver(
     */
   private def handleControlPayload(
       payload: ControlPayload,
-      sender: PeerMessageSender): Try[Unit] = {
+      sender: PeerMessageSender): Future[PeerMessageReceiver] = {
     payload match {
 
       case versionMsg: VersionMessage =>
-        logger.trace(
-          s"Received versionMsg=${versionMsg}from peer=${peerOpt.get}")
+        logger(nodeAppConfig).trace(
+          s"Received versionMsg=${versionMsg}from peer=${peer}")
 
-        internalState match {
+        state match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
-            Failure(
+            Future.failed(
               new RuntimeException(
                 s"Cannot handle version message while in state=${bad}"))
 
           case good: Initializing =>
-            internalState = good.withVersionMsg(versionMsg)
+            val newState = good.withVersionMsg(versionMsg)
 
             sender.sendVerackMessage()
 
@@ -174,45 +177,52 @@ class PeerMessageReceiver(
             //we don't want to have to request them manually
             sender.sendHeadersMessage()
 
-            Success(())
+            val newRecv = toState(newState)
+
+            Future.successful(newRecv)
         }
 
       case VerAckMessage =>
-        internalState match {
+        state match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>
-            Failure(
+            Future.failed(
               new RuntimeException(
                 s"Cannot handle version message while in state=${bad}"))
 
           case good: Initializing =>
-            internalState = good.toNormal(VerAckMessage)
-            Success(())
+            val newState = good.toNormal(VerAckMessage)
+            val newRecv = toState(newState)
+            Future.successful(newRecv)
         }
 
       case ping: PingMessage =>
         sender.sendPong(ping)
-        Success(())
+        Future.successful(this)
       case SendHeadersMessage =>
         //not implemented as of now
-        Success(())
+        Future.successful(this)
       case _: AddrMessage =>
-        Success(())
+        Future.successful(this)
       case _ @(_: FilterAddMessage | _: FilterLoadMessage |
           FilterClearMessage) =>
-        Success(())
+        Future.successful(this)
       case _ @(GetAddrMessage | _: PongMessage) =>
-        Success(())
+        Future.successful(this)
       case _: RejectMessage =>
-        Success(())
+        Future.successful(this)
       case _: FeeFilterMessage =>
-        Success(())
+        Future.successful(this)
     }
   }
 
-  private def toState(state: PeerMessageReceiverState): Unit = {
-    logger.debug(
-      s"PeerMessageReceiver changing state, oldState=$internalState, newState=$state")
-    internalState = state
+  /** Transitions our PeerMessageReceiver to a new state */
+  def toState(newState: PeerMessageReceiverState): PeerMessageReceiver = {
+    new PeerMessageReceiver(
+      dataMessageHandler = dataMessageHandler,
+      state = newState,
+      peer = peer,
+      callbacks = callbacks
+    )
   }
 }
 
@@ -231,20 +241,52 @@ object PeerMessageReceiver {
 
   def apply(
       state: PeerMessageReceiverState,
-      chainHandler: ChainApi,
-      callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
+      chainApi: ChainApi,
+      peer: Peer,
+      callbacks: SpvNodeCallbacks)(
       implicit ref: ActorRefFactory,
-      nodeAppConfig: NodeAppConfig): PeerMessageReceiver = {
-    new PeerMessageReceiver(state, callbacks, chainHandler)
+      nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig
+  ): PeerMessageReceiver = {
+    import ref.dispatcher
+    val dataHandler = new DataMessageHandler(chainApi, callbacks)
+    new PeerMessageReceiver(dataMessageHandler = dataHandler,
+                            state = state,
+                            peer = peer,
+                            callbacks = callbacks)
   }
 
-  def newReceiver(
-      chainHandler: ChainApi,
-      callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty)(
+  /**
+    * Creates a peer message receiver that is ready
+    * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
+    * to connect to a peer on the network
+    */
+  def preConnection(peer: Peer, callbacks: SpvNodeCallbacks)(
+      implicit ref: ActorRefFactory,
+      nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig
+  ): Future[PeerMessageReceiver] = {
+    import ref.dispatcher
+    val blockHeaderDAO = BlockHeaderDAO()
+    val chainHandlerF =
+      ChainHandler.fromDatabase(blockHeaderDAO)
+    for {
+      chainHandler <- chainHandlerF
+    } yield {
+      PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
+                          chainApi = chainHandler,
+                          peer = peer,
+                          callbacks = callbacks)
+    }
+  }
+
+  def newReceiver(chainApi: ChainApi, peer: Peer, callbacks: SpvNodeCallbacks)(
       implicit nodeAppConfig: NodeAppConfig,
+      chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {
-    new PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
-                            callbacks,
-                            chainHandler)
+    PeerMessageReceiver(state = PeerMessageReceiverState.fresh(),
+                        chainApi = chainApi,
+                        peer = peer,
+                        callbacks = callbacks)
   }
 }
