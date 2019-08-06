@@ -22,7 +22,8 @@ class PeerMessageHandlerTest extends NodeUnitTest {
   behavior of "PeerHandler"
 
   it must "be able to fully initialize a PeerMessageReceiver" in { _ =>
-    val peerHandlerF = bitcoindPeerF.map(p => NodeUnitTest.buildPeerHandler(p))
+    val peerHandlerF =
+      bitcoindPeerF.flatMap(p => NodeUnitTest.buildPeerHandler(p))
     val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
     val p2pClientF = peerHandlerF.map(_.p2pClient)
 

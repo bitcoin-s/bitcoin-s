@@ -88,7 +88,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       addressFromWallet <- wallet.getNewAddress()
       _ = addressFromWalletP.success(addressFromWallet)
       spv <- initSpv.start()
-      _ = spv.updateBloomFilter(addressFromWallet)
+      _ <- spv.updateBloomFilter(addressFromWallet)
       _ <- spv.sync()
       _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
       _ <- NodeTestUtil.awaitSync(spv, rpc)
@@ -130,11 +130,11 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
                        5.bitcoin,
                        SatoshisPerByte(100.sats))
       _ = txFromWalletP.success(tx)
-      spvNewBloom = spv.updateBloomFilter(tx)
+      updatedBloom <- spv.updateBloomFilter(tx).map(_.bloomFilter)
       _ = spv.broadcastTransaction(tx)
       _ <- spv.sync()
       _ <- NodeTestUtil.awaitSync(spv, rpc)
-      _ = assert(spvNewBloom.bloomFilter.contains(tx.txId))
+      _ = assert(updatedBloom.contains(tx.txId))
       _ = {
         cancelable = Some {
           system.scheduler.scheduleOnce(

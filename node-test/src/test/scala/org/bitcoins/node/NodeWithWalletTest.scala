@@ -90,7 +90,7 @@ class NodeWithWalletTest extends NodeUnitTest {
         bloom <- wallet.getBloomFilter()
         address <- wallet.getNewAddress()
         spv <- initSpv.start()
-        updatedBloom = spv.updateBloomFilter(address).bloomFilter
+        updatedBloom <- spv.updateBloomFilter(address).map(_.bloomFilter)
         _ <- spv.sync()
         _ <- NodeTestUtil.awaitSync(spv, rpc)
 
