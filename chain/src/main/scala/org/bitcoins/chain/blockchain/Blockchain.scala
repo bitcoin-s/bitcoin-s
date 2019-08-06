@@ -125,6 +125,8 @@ object Blockchain extends ChainVerificationLogger {
     */
   private def parseSuccessOrFailure(nested: Vector[Future[BlockchainUpdate]])(
       implicit ec: ExecutionContext): Future[BlockchainUpdate] = {
+    require(nested.nonEmpty,
+            s"Cannot parse success or failure if we don't have any updates!")
     val successfulTipOptF: Future[Option[BlockchainUpdate]] = {
       Future.find(nested) {
         case update: BlockchainUpdate =>

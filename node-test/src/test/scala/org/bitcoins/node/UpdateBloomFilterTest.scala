@@ -17,6 +17,11 @@ import scala.concurrent.duration._
 
 class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   override type FixtureParam = SpvNodeFundedWalletBitcoind
+
+  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withSpvNodeFundedWalletBitcoind(test, callbacks)
+  }
+
   val testTimeout = 20.seconds
   private var assertionP: Promise[Boolean] = Promise()
   after {
@@ -42,28 +47,28 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       addressFromWallet <- addressFromWalletP.future
       result = tx.outputs.exists(
         _.scriptPubKey == addressFromWallet.scriptPubKey)
-    } yield result
-
-    resultF.map(r => assertionP.success(r))
-    ()
+    } yield {
+      if (result) {
+        assertionP.success(true)
+      }
+    }
   }
 
   def txCallback: DataMessageHandler.OnMerkleBlockReceived = {
     (_: MerkleBlock, txs: Vector[Transaction]) =>
       {
-        val isFromOurWalletF = txFromWalletP.future
-          .map(tx => txs.contains(tx))
-        isFromOurWalletF.map(assertionP.success(_))
+        txFromWalletP.future
+          .map { tx =>
+            if (txs.contains(tx)) {
+              assertionP.success(true)
+            }
+          }
       }
   }
 
   def callbacks: SpvNodeCallbacks = {
     SpvNodeCallbacks(onTxReceived = Vector(addressCallback),
                      onMerkleBlockReceived = Vector(txCallback))
-  }
-
-  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, callbacks)
   }
 
   it must "update the bloom filter with an address" in { param =>
@@ -85,10 +90,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       addressFromWallet <- wallet.getNewAddress()
       _ = addressFromWalletP.success(addressFromWallet)
       spv <- initSpv.start()
+      _ = spv.updateBloomFilter(addressFromWallet)
       _ <- spv.sync()
       _ <- NodeTestUtil.awaitSync(spv, rpc)
-
-      _ = spv.updateBloomFilter(addressFromWallet)
       _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
       _ = {
         cancelable = Some {
@@ -97,10 +101,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
             new Runnable {
               override def run: Unit = {
                 if (!assertionP.isCompleted)
-                  assertionP.failure(
-                    new TestFailedException(
-                      s"Did not receive a merkle block message after $timeout!",
-                      failedCodeStackDepth = 0))
+                  assertionP.failure(new TestFailedException(
+                    s"Did not receive a merkle block message after $testTimeout!",
+                    failedCodeStackDepth = 0))
               }
             }
           )
@@ -124,30 +127,27 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       firstBloom <- wallet.getBloomFilter()
 
       spv <- initSpv.start()
-      _ <- spv.sync()
-      _ <- NodeTestUtil.awaitSync(spv, rpc)
-
       addressFromBitcoind <- rpc.getNewAddress
       tx <- wallet
         .sendToAddress(addressFromBitcoind,
                        5.bitcoin,
                        SatoshisPerByte(100.sats))
+      spvNewBloom = spv.updateBloomFilter(tx)
+      _ <- spv.sync()
+      _ <- NodeTestUtil.awaitSync(spv, rpc)
+      _ = assert(spvNewBloom.bloomFilter.contains(tx.txId))
+      _ = spv.broadcastTransaction(tx)
       _ = txFromWalletP.success(tx)
       _ = {
-        val SpvNode(_, _, newBloom, _) = spv.updateBloomFilter(tx)
-        val _ = spv.broadcastTransaction(tx)
-        assert(newBloom.contains(tx.txId))
-
         cancelable = Some {
           system.scheduler.scheduleOnce(
             testTimeout,
             new Runnable {
               override def run: Unit = {
                 if (!assertionP.isCompleted)
-                  assertionP.failure(
-                    new TestFailedException(
-                      s"Did not receive a merkle block message after $timeout!",
-                      failedCodeStackDepth = 0))
+                  assertionP.failure(new TestFailedException(
+                    s"Did not receive a merkle block message after $testTimeout!",
+                    failedCodeStackDepth = 0))
               }
             }
           )
