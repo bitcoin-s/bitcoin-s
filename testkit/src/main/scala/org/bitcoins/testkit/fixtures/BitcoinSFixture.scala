@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
@@ -8,7 +9,7 @@ import org.scalatest._
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
-trait BitcoinSFixture extends fixture.AsyncFlatSpec {
+trait BitcoinSFixture extends fixture.AsyncFlatSpec with BitcoinSLogger {
 
   /**
     * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome
@@ -32,8 +33,10 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
     outcomeF.onComplete { _ =>
       fixtureF.foreach { fixture =>
         destroy(fixture).onComplete {
-          case Success(_)   => destroyP.success(())
-          case Failure(err) => destroyP.failure(err)
+          case Success(_) => destroyP.success(())
+          case Failure(err) =>
+            logger.error(s"Failed to destroy fixture with err=${err}")
+            destroyP.failure(err)
         }
       }
     }
@@ -130,8 +133,13 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
     }
   }
 
+}
+
+object BitcoinSFixture {
+
   def createBitcoindWithFunds()(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+    import system.dispatcher
     for {
       bitcoind <- createBitcoind()
       address <- bitcoind.getNewAddress
@@ -142,6 +150,7 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
   /** Creates a new bitcoind instance */
   def createBitcoind()(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
+    import system.dispatcher
     val instance = BitcoindRpcTestUtil.instance()
     val bitcoind = new BitcoindRpcClient(instance)
 

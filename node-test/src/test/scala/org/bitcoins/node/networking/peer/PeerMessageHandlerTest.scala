@@ -17,12 +17,12 @@ class PeerMessageHandlerTest extends NodeUnitTest {
     test(())
   }
 
-  private implicit val akkaTimeout = Timeout(timeout)
+  implicit private val akkaTimeout = Timeout(timeout)
 
   behavior of "PeerHandler"
 
   it must "be able to fully initialize a PeerMessageReceiver" in { _ =>
-    val peerHandlerF = buildPeerHandler()
+    val peerHandlerF = bitcoindPeerF.map(p => NodeUnitTest.buildPeerHandler(p))
     val peerMsgSenderF = peerHandlerF.map(_.peerMsgSender)
     val peerMsgRecvF = peerHandlerF.map(_.peerMsgRecv)
 

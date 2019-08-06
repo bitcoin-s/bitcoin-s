@@ -1,122 +1,96 @@
 package org.bitcoins.node
 
-import org.bitcoins.core.currency._
-import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.Peer
-import org.scalatest.FutureOutcome
-import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-
-import scala.concurrent.Future
-import org.bitcoins.node.networking.peer.DataMessageHandler
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import org.scalatest.compatible.Assertion
-import org.scalatest.exceptions.TestFailedException
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.testkit.node.NodeTestUtil
 import akka.actor.Cancellable
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import scala.util.Try
-import scala.util.Failure
-import scala.util.Success
-import scala.concurrent.Await
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.currency._
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.scalatest.FutureOutcome
+import org.scalatest.exceptions.TestFailedException
 
-class NodeWithWalletTest extends BitcoinSWalletTest {
+import scala.concurrent.duration._
+import scala.concurrent.{Future, Promise}
 
-  override type FixtureParam = WalletWithBitcoind
+class NodeWithWalletTest extends NodeUnitTest {
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWalletAndBitcoind(test)
+  override type FixtureParam = SpvNodeFundedWalletBitcoind
+
+  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withSpvNodeFundedWalletBitcoind(test, callbacks)
+  }
+
+  private val assertionP: Promise[Boolean] = Promise()
+
+  private val expectedTxIdP: Promise[DoubleSha256Digest] = Promise()
+  private val expectedTxIdF: Future[DoubleSha256Digest] = expectedTxIdP.future
+
+  private val walletP: Promise[UnlockedWalletApi] = Promise()
+  private val walletF: Future[UnlockedWalletApi] = walletP.future
+
+  val amountFromBitcoind = 1.bitcoin
+
+  def callbacks: SpvNodeCallbacks = {
+    val onTx: DataMessageHandler.OnTxReceived = { tx =>
+      for {
+        expectedTxId <- expectedTxIdF
+        wallet <- walletF
+      } yield {
+        if (expectedTxId == tx.txId) {
+          for {
+            prevBalance <- wallet.getUnconfirmedBalance()
+            _ <- wallet.processTransaction(tx, confirmations = 0)
+            balance <- wallet.getUnconfirmedBalance()
+          } yield {
+            val result = balance == prevBalance + amountFromBitcoind
+            assertionP.success(result)
+          }
+        }
+      }
+    }
+    SpvNodeCallbacks(
+      onTxReceived = Seq(onTx)
+    )
+  }
 
   it must "load a bloom filter and receive information about received payments" in {
     param =>
-      val WalletWithBitcoind(wallet, rpc) = param
+      val SpvNodeFundedWalletBitcoind(initSpv, wallet, rpc) = param
 
-      /**
-        * This is not ideal, how do we get one implicit value (`config`)
-        * to resolve to multiple implicit parameters?
-        */
-      implicit val nodeConfig: NodeAppConfig = config
-      implicit val chainConfig: ChainAppConfig = config
+      walletP.success(wallet)
 
-      var expectedTxId: Option[DoubleSha256Digest] = None
       var cancellable: Option[Cancellable] = None
 
-      val completionP = Promise[Assertion]
-
-      val amountFromBitcoind = 1.bitcoin
-
-      val callbacks = {
-        val onTx: DataMessageHandler.OnTxReceived = { tx =>
-          if (expectedTxId.contains(tx.txId)) {
-            logger.debug(s"Cancelling timeout we set earlier")
-            cancellable.map(_.cancel())
-
-            for {
-              prevBalance <- wallet.getUnconfirmedBalance()
-              _ <- wallet.processTransaction(tx, confirmations = 0)
-              balance <- wallet.getUnconfirmedBalance()
-            } completionP.complete {
-              Try {
-                assert(balance == prevBalance + amountFromBitcoind)
-              }
-            }
-          }
-        }
-
-        SpvNodeCallbacks(
-          onTxReceived = Seq(onTx)
-        )
-      }
-
-      def processWalletTx(tx: DoubleSha256DigestBE) = {
-        expectedTxId = Some(tx.flip)
+      def processWalletTx(tx: DoubleSha256DigestBE): DoubleSha256DigestBE = {
+        expectedTxIdP.success(tx.flip)
         // how long we're waiting for a tx notify before failing the test
         val delay = 15.seconds
 
         val failTest: Runnable = new Runnable {
           override def run = {
-            val msg =
-              s"Did not receive sent transaction within $delay"
-            logger.error(msg)
-            completionP.failure(new TestFailedException(msg, 0))
+            if (!assertionP.isCompleted) {
+              val msg =
+                s"Did not receive sent transaction within $delay"
+              logger.error(msg)
+              assertionP.failure(new TestFailedException(msg, 0))
+            }
           }
         }
 
         logger.debug(s"Setting timeout for receiving TX through node")
-        cancellable = Some(actorSystem.scheduler.scheduleOnce(delay, failTest))
+        cancellable = Some(system.scheduler.scheduleOnce(delay, failTest))
         tx
       }
 
       for {
-        _ <- config.initialize()
 
-        address <- wallet.getNewAddress()
         bloom <- wallet.getBloomFilter()
-
-        spv <- {
-          val peer = Peer.fromBitcoind(rpc.instance)
-          val chainHandler = {
-            val bhDao = BlockHeaderDAO()
-            ChainHandler(bhDao)
-          }
-
-          val spv =
-            SpvNode(peer,
-                    chainHandler,
-                    bloomFilter = bloom,
-                    callbacks = callbacks)
-          spv.start()
-        }
+        address <- wallet.getNewAddress()
+        spv <- initSpv.start()
+        updatedBloom = spv.updateBloomFilter(address).bloomFilter
         _ <- spv.sync()
         _ <- NodeTestUtil.awaitSync(spv, rpc)
 
@@ -125,10 +99,10 @@ class NodeWithWalletTest extends BitcoinSWalletTest {
           .map(processWalletTx)
 
         ourTx <- rpc.getTransaction(ourTxid)
-        _ = assert(bloom.isRelevant(ourTx.hex))
+        _ = assert(updatedBloom.isRelevant(ourTx.hex))
 
-        assertion <- completionP.future
-      } yield assertion
+        result <- assertionP.future
+      } yield assert(result)
 
   }
 }
