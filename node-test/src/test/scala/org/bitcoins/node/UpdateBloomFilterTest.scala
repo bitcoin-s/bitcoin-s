@@ -81,8 +81,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
     var cancelable: Option[Cancellable] = None
 
     for {
-      _ <- config.initialize()
-
       firstBloom <- wallet.getBloomFilter()
 
       // this has to be generated after our bloom filter
@@ -123,8 +121,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
     var cancelable: Option[Cancellable] = None
 
     for {
-      _ <- config.initialize()
-
       firstBloom <- wallet.getBloomFilter()
 
       spv <- initSpv.start()
