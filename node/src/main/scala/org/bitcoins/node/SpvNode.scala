@@ -158,7 +158,8 @@ case class SpvNode(
 
     val isStoppedF = disconnectF.flatMap { _ =>
       logger(nodeAppConfig).info(s"Awaiting disconnect")
-      AsyncUtil.retryUntilSatisfiedF(() => isDisconnected, 200.millis)
+      //50 seconds to disconnect
+      AsyncUtil.retryUntilSatisfiedF(() => isDisconnected, 500.millis)
     }
 
     isStoppedF.map { _ =>
