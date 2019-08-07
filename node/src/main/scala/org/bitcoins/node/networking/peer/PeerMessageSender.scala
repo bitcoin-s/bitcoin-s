@@ -26,7 +26,7 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   /** Disconnects the given peer */
   def disconnect(): Unit = {
     logger.info(s"Disconnecting peer at socket=${socket}")
-    (client.actor ! Tcp.Close)
+    (client.actor ! Tcp.Abort)
   }
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
