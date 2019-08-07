@@ -495,6 +495,41 @@ public class NativeSecp256k1 {
     }
 
     /**
+     * libsecp256k1 Compute pubkey associated with schnorr nonce.
+     *
+     * @param nonce Schnorr nonce, 32 bytes
+     * @return pubkey 33 byte ECPublicKey associated with nonce
+     */
+    public static byte[] schnorrPublicNonce(byte[] nonce) throws AssertFailException {
+        checkArgument(nonce.length == 32);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < nonce.length) {
+            byteBuff = ByteBuffer.allocateDirect(32);
+
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(nonce);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_schnorrsig_pubnonce(byteBuff, Secp256k1Context.getContext());
+        } finally {
+            r.unlock();
+        }
+
+        byte[] pubKeyArr = retByteArray[0];
+        int retVal = new BigInteger(new byte[] { retByteArray[1][0] }).intValue();
+
+        assertEquals(pubKeyArr.length, 33, "Got bad pubkey length.");
+
+        return retVal == 0 ? new byte[0] : pubKeyArr;
+    }
+
+    /**
      * libsecp256k1 Create a Schnorr signature using a specified nonce.
      *
      * @param data Message hash, 32 bytes
@@ -617,6 +652,8 @@ public class NativeSecp256k1 {
     private static native int secp256k1_schnorrsig_verify(ByteBuffer byteBuff, long context, int pubLen);
 
     private static native byte[][] secp256k1_schnorrsig_sign(ByteBuffer byteBuff, long context);
+
+    private static native byte[][] secp256k1_schnorrsig_pubnonce(ByteBuffer byteBuff, long context);
 
     private static native byte[][] secp256k1_schnorrsig_sign_with_nonce(ByteBuffer byteBuff, long context);
 
