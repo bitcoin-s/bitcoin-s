@@ -255,6 +255,87 @@ object MultiSignatureScriptPubKey
   }
 }
 
+sealed trait MultiSignatureWithTimeoutScriptPubKey extends ScriptPubKey {
+  import org.bitcoins.core.script.control.OP_ELSE
+
+  def multiSigSPK: MultiSignatureScriptPubKey = {
+    val multiSigAsm = asm.slice(1, opElseIndex)
+    MultiSignatureScriptPubKey(multiSigAsm)
+  }
+
+  private def opElseIndex: Int = {
+    val idx = asm.indexOf(OP_ELSE)
+    require(idx != -1,
+            "MultiSignatureWithTimeout has to contain OP_ELSE asm token")
+    idx
+  }
+
+  def requiredSigs: Int = multiSigSPK.requiredSigs
+
+  def maxSigs: Int = multiSigSPK.maxSigs
+
+  def multiSigPubKeys: Seq[ECPublicKey] = multiSigSPK.publicKeys
+
+  def timeoutSPK: LockTimeScriptPubKey = {
+    val timelockAsm = asm.slice(opElseIndex + 1, asm.length - 1)
+    LockTimeScriptPubKey.fromAsm(timelockAsm)
+  }
+
+  def timeout: Int = timeoutSPK.locktime.toInt
+}
+
+object MultiSignatureWithTimeoutScriptPubKey
+    extends ScriptFactory[MultiSignatureWithTimeoutScriptPubKey] {
+  import org.bitcoins.core.script.control._
+
+  private case class MultiSignatureWithTimeoutScriptPubKeyImpl(
+      override val asm: Vector[ScriptToken])
+      extends MultiSignatureWithTimeoutScriptPubKey {
+    override def toString = s"MultiSignatureWithTimeoutScriptPubKeyImpl($hex)"
+  }
+
+  def apply(
+      requiredSigs: Int,
+      pubKeys: Seq[ECPublicKey],
+      timeout: Int,
+      timeoutPubKey: ECPublicKey): MultiSignatureWithTimeoutScriptPubKey = {
+    val multiSigBranch = MultiSignatureScriptPubKey(requiredSigs, pubKeys)
+    val timelockedBranch =
+      CSVScriptPubKey(ScriptNumber(timeout), P2PKHScriptPubKey(timeoutPubKey))
+
+    fromAsm(
+      Seq(OP_IF) ++ multiSigBranch.asm ++ Seq(OP_ELSE) ++ timelockedBranch.asm ++ Seq(
+        OP_ENDIF))
+  }
+
+  def fromAsm(asm: Seq[ScriptToken]): MultiSignatureWithTimeoutScriptPubKey = {
+    buildScript(
+      asm.toVector,
+      MultiSignatureWithTimeoutScriptPubKeyImpl(_),
+      isMultiSignatureWithTimeoutScriptPubKey(_),
+      "Given asm was not a MultSignatureScriptPubKey, got: " + asm
+    )
+  }
+
+  def apply(asm: Seq[ScriptToken]): MultiSignatureWithTimeoutScriptPubKey =
+    fromAsm(asm)
+
+  def isMultiSignatureWithTimeoutScriptPubKey(
+      asm: Seq[ScriptToken]): Boolean = {
+    val opElseIndex = asm.indexOf(OP_ELSE)
+    val correctControlStructure = asm.headOption.contains(OP_IF) && asm.last == OP_ENDIF && opElseIndex != -1
+
+    if (correctControlStructure) {
+      val multiSigAsm = asm.slice(1, opElseIndex)
+      val timeoutAsm = asm.slice(opElseIndex + 1, asm.length - 1)
+      MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(multiSigAsm) &&
+      LockTimeScriptPubKey.isValidLockTimeScriptPubKey(timeoutAsm)
+    } else {
+      false
+    }
+  }
+}
+
 /**
   * Represents a [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
   * Format: `OP_HASH160 <Hash160(redeemScript)> OP_EQUAL`
