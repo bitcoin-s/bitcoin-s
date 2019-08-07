@@ -125,6 +125,8 @@ case class SpvNode(
 
   /** Starts our spv node */
   def start(): Future[SpvNode] = {
+    logger(nodeAppConfig).info("Starting spv node")
+    val start = System.currentTimeMillis()
     for {
       _ <- nodeAppConfig.initialize()
       node <- {
@@ -140,6 +142,9 @@ case class SpvNode(
 
         isInitializedF.map { _ =>
           logger(nodeAppConfig).info(s"Our peer=${peer} has been initialized")
+          logger(nodeAppConfig).info(
+            s"Our spv node has been full started. It took=${System
+              .currentTimeMillis() - start}ms")
           this
         }
       }
@@ -156,6 +161,7 @@ case class SpvNode(
     logger(nodeAppConfig).info(s"Stopping spv node")
     val disconnectF = peerMsgSenderF.map(_.disconnect())
 
+    val start = System.currentTimeMillis()
     val isStoppedF = disconnectF.flatMap { _ =>
       logger(nodeAppConfig).info(s"Awaiting disconnect")
       //50 seconds to disconnect
@@ -163,7 +169,8 @@ case class SpvNode(
     }
 
     isStoppedF.map { _ =>
-      logger(nodeAppConfig).info(s"Spv node stopped!")
+      logger(nodeAppConfig).info(
+        s"Spv node stopped! It took=${System.currentTimeMillis() - start}ms")
       this
     }
   }

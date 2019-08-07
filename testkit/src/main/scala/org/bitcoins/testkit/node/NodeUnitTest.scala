@@ -206,13 +206,16 @@ object NodeUnitTest extends BitcoinSLogger {
     val spvNodeDestroyF = destroySpvNode(spvNode)
     val bitcoindDestroyF = ChainUnitTest.destroyBitcoind(bitcoind)
 
-    for {
+    val resultF = for {
       _ <- spvNodeDestroyF
       _ <- bitcoindDestroyF
     } yield {
       logger.debug(s"Done with teardown of spv node connected with bitcoind!")
       ()
     }
+
+    resultF.failed.foreach(err => throw err)
+    resultF
   }
 
   /** Creates a spv node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
@@ -240,9 +243,12 @@ object NodeUnitTest extends BitcoinSLogger {
       BitcoinSWalletTest.WalletWithBitcoind(fundedWalletBitcoind.wallet,
                                             fundedWalletBitcoind.bitcoindRpc)
     }
+    val destroySpvF = destroySpvNode(fundedWalletBitcoind.spvNode)
+    val destroyWalletF =
+      BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
     val destroyedF = for {
-      _ <- destroySpvNode(fundedWalletBitcoind.spvNode)
-      _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
+      _ <- destroySpvF
+      _ <- destroyWalletF
     } yield ()
 
     destroyedF
