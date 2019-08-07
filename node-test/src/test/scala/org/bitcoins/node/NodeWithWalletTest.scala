@@ -58,7 +58,7 @@ class NodeWithWalletTest extends NodeUnitTest {
 
   it must "load a bloom filter and receive information about received payments" in {
     param =>
-      val SpvNodeFundedWalletBitcoind(initSpv, wallet, rpc) = param
+      val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
       walletP.success(wallet)
 
@@ -89,7 +89,6 @@ class NodeWithWalletTest extends NodeUnitTest {
 
         bloom <- wallet.getBloomFilter()
         address <- wallet.getNewAddress()
-        spv <- initSpv.start()
         updatedBloom <- spv.updateBloomFilter(address).map(_.bloomFilter)
         _ <- spv.sync()
         _ <- NodeTestUtil.awaitSync(spv, rpc)

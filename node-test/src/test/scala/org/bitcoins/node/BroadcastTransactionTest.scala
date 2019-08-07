@@ -20,7 +20,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
     withSpvNodeFundedWalletBitcoind(test, SpvNodeCallbacks.empty)
 
   it must "broadcast a transaction" in { param =>
-    val SpvNodeFundedWalletBitcoind(initSpv, wallet, rpc) = param
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc
@@ -42,9 +42,6 @@ class BroadcastTransactionTest extends NodeUnitTest {
 
       address <- rpc.getNewAddress
       bloom <- wallet.getBloomFilter()
-      spv <- {
-        initSpv.start()
-      }
       _ <- spv.sync()
       _ <- NodeTestUtil.awaitSync(spv, rpc)
 

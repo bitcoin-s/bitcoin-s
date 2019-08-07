@@ -72,7 +72,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   }
 
   it must "update the bloom filter with an address" in { param =>
-    val SpvNodeFundedWalletBitcoind(initSpv, wallet, rpc) = param
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
@@ -87,7 +87,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       // is calculated
       addressFromWallet <- wallet.getNewAddress()
       _ = addressFromWalletP.success(addressFromWallet)
-      spv <- initSpv.start()
       _ <- spv.updateBloomFilter(addressFromWallet)
       _ <- spv.sync()
       _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
@@ -113,7 +112,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   }
 
   it must "update the bloom filter with a TX" in { param =>
-    val SpvNodeFundedWalletBitcoind(initSpv, wallet, rpc) = param
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
     // we need to cancel that runnable once
@@ -123,7 +122,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
     for {
       firstBloom <- wallet.getBloomFilter()
 
-      spv <- initSpv.start()
       addressFromBitcoind <- rpc.getNewAddress
       tx <- wallet
         .sendToAddress(addressFromBitcoind,
