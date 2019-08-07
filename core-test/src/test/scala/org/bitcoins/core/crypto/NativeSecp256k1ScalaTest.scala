@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoin.NativeSecp256k1
+import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
@@ -8,36 +9,65 @@ import scodec.bits.ByteVector
 class NativeSecp256k1ScalaTest extends BitcoinSUnitTest {
   behavior of "NativeSecp256k1"
 
+  it must "act like a normal schnorrSign if the normal nonce is specified" in {
+    forAll(
+      NumberGenerator.bytevector(32).filter(_.toArray.exists(_ != 0.toByte)),
+      NumberGenerator.bytevector(32)) {
+      case (privKeyBytes, message) =>
+        val privKey = ECPrivateKey.fromBytes(privKeyBytes)
+
+        // This is the nonce specified in bip-schnorr
+        val nonce =
+          CryptoUtil.sha256(privKey.bytes ++ message).bytes
+
+        assert(nonce.toArray.exists(_ != 0.toByte))
+
+        val sigWithNonce =
+          NativeSecp256k1.schnorrSignWithNonce(message.toArray,
+                                               privKeyBytes.toArray,
+                                               nonce.toArray)
+
+        val sig =
+          NativeSecp256k1.schnorrSign(message.toArray, privKeyBytes.toArray)
+
+        assert(ByteVector(sigWithNonce) == ByteVector(sig))
+    }
+  }
+
   it must "correctly compute a Schnorr public key given an R value" in {
-    forAll(NumberGenerator.bytes(32), NumberGenerator.bytes(32)) {
-      case (privKeyBytes, messageBytes) =>
+    forAll(
+      NumberGenerator.bytevector(32).filter(_.toArray.exists(_ != 0.toByte)),
+      NumberGenerator.bytevector(32)) {
+      case (privKeyBytes, message) =>
         val privKey: ECPrivateKey =
-          ECPrivateKey.fromBytes(ByteVector(privKeyBytes))
+          ECPrivateKey.fromBytes(privKeyBytes)
         val publicKey: ECPublicKey = privKey.publicKey
-        val message: Array[Byte] = messageBytes.toArray
+        val messageArr: Array[Byte] = message.toArray
+
+        // This is the nonce specified in bip-schnorr
+        val nonce =
+          CryptoUtil.sha256(privKey.bytes ++ message).bytes
+
+        assert(nonce.toArray.exists(_ != 0.toByte))
+
+        val rBytes = NativeSecp256k1.schnorrPublicNonce(nonce.toArray)
 
         val sig: Array[Byte] =
-          NativeSecp256k1.schnorrSign(message, privKey.bytes.toArray)
+          NativeSecp256k1.schnorrSign(messageArr, privKey.bytes.toArray)
 
         val (rKey, s) = sig.splitAt(32)
 
-        val sPub1: Array[Byte] =
-          NativeSecp256k1.computeSchnorrPubKey(message,
-                                               rKey.+:(2.toByte),
-                                               publicKey.bytes.toArray)
+        assert(ByteVector(rBytes.tail) == ByteVector(rKey))
 
-        val sPub2: Array[Byte] =
-          NativeSecp256k1.computeSchnorrPubKey(message,
-                                               rKey.+:(3.toByte),
+        val sPub: Array[Byte] =
+          NativeSecp256k1.computeSchnorrPubKey(messageArr,
+                                               rKey.+:(rBytes.head),
                                                publicKey.bytes.toArray)
 
         val realSPriv = ECPrivateKey.fromBytes(ByteVector(s))
         val realSPub = realSPriv.publicKey
 
-        assert(
-          ECPublicKey.fromBytes(ByteVector(sPub1)) == realSPub ||
-            ECPublicKey.fromBytes(ByteVector(sPub2)) == realSPub
-        )
+        assert(ECPublicKey.fromBytes(ByteVector(sPub)) == realSPub)
     }
   }
 }
