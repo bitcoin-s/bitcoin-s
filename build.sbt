@@ -135,6 +135,7 @@ lazy val `bitcoin-s` = project
     core,
     coreTest,
     dbCommons,
+    dlc,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -522,6 +523,15 @@ lazy val scripts = project
     wallet,
     zmq
   )
+
+lazy val dlc = project
+  .in(file("dlc"))
+  .settings(commonSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc",
+    libraryDependencies ++= Deps.dlc
+  )
+  .dependsOn(core)
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet) */
