@@ -43,6 +43,11 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec with BitcoinSLogger {
 
     val outcomeAfterDestroyF = destroyP.future.flatMap(_ => outcomeF)
 
+    outcomeAfterDestroyF.failed.foreach { err =>
+      println(s"err creating and destroying fixture")
+      throw err
+
+    }
     new FutureOutcome(outcomeAfterDestroyF)
   }
 
