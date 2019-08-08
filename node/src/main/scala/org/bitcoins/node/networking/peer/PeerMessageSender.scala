@@ -2,6 +2,7 @@ package org.bitcoins.node.networking.peer
 
 import akka.actor.ActorRef
 import akka.io.Tcp
+import akka.util.Timeout
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.p2p._
@@ -13,9 +14,13 @@ import org.bitcoins.core.crypto.HashDigest
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
+
 case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     extends P2PLogger {
   private val socket = client.peer.socket
+  implicit private val timeout = Timeout(10.seconds)
 
   /** Initiates a connection with the given peer */
   def connect(): Unit = {
@@ -23,10 +28,32 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     (client.actor ! Tcp.Connect(socket))
   }
 
+  def isConnected()(implicit ec: ExecutionContext): Future[Boolean] = {
+    client.isConnected()
+  }
+
+  def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
+    client.isInitialized()
+  }
+
+  def isDisconnected()(implicit ec: ExecutionContext): Future[Boolean] = {
+    client.isDisconnected()
+  }
+
   /** Disconnects the given peer */
-  def disconnect(): Unit = {
-    logger.info(s"Disconnecting peer at socket=${socket}")
-    (client.actor ! Tcp.Close)
+  def disconnect()(implicit ec: ExecutionContext): Future[Unit] = {
+    isConnected().flatMap {
+      case true =>
+        logger.info(s"Disconnecting peer at socket=${socket}")
+        (client.actor ! Tcp.Close)
+        Future.unit
+      case false =>
+        val err =
+          s"Cannot disconnect client that is not connected to socket=${socket}!"
+        logger.warn(err)
+        Future.failed(new RuntimeException(err))
+    }
+
   }
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */

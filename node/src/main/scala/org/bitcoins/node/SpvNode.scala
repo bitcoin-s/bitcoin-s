@@ -159,7 +159,10 @@ case class SpvNode(
   /** Stops our spv node */
   def stop(): Future[SpvNode] = {
     logger(nodeAppConfig).info(s"Stopping spv node")
-    val disconnectF = peerMsgSenderF.map(_.disconnect())
+    val disconnectF = for {
+      p <- peerMsgSenderF
+      disconnect <- p.disconnect()
+    } yield disconnect
 
     val start = System.currentTimeMillis()
     val isStoppedF = disconnectF.flatMap { _ =>
@@ -193,15 +196,15 @@ case class SpvNode(
   }
 
   /** Checks if we have a tcp connection with our peer */
-  def isConnected: Future[Boolean] = clientF.flatMap(_.isConnected)
+  def isConnected: Future[Boolean] = peerMsgSenderF.flatMap(_.isConnected)
 
   /** Checks if we are fully initialized with our peer and have executed the handshake
     * This means we can now send arbitrary messages to our peer
     * @return
     */
-  def isInitialized: Future[Boolean] = clientF.flatMap(_.isInitialized)
+  def isInitialized: Future[Boolean] = peerMsgSenderF.flatMap(_.isInitialized)
 
-  def isDisconnected: Future[Boolean] = clientF.flatMap(_.isDisconnected)
+  def isDisconnected: Future[Boolean] = peerMsgSenderF.flatMap(_.isDisconnected)
 
   /** Starts to sync our spv node with our peer
     * If our local best block hash is the same as our peers
