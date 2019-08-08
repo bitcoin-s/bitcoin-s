@@ -58,31 +58,33 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   }
 
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our peer */
-  def sendVersionMessage(): Unit = {
+  def sendVersionMessage()(implicit ec: ExecutionContext): Future[Unit] = {
     val versionMsg = VersionMessage(client.peer.socket, conf.network)
     logger.trace(s"Sending versionMsg=$versionMsg to peer=${client.peer}")
     sendMsg(versionMsg)
   }
 
-  def sendVerackMessage(): Unit = {
+  def sendVerackMessage()(implicit ec: ExecutionContext): Future[Unit] = {
     val verackMsg = VerAckMessage
     sendMsg(verackMsg)
   }
 
   /** Responds to a ping message */
-  def sendPong(ping: PingMessage): Unit = {
+  def sendPong(ping: PingMessage)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val pong = PongMessage(ping.nonce)
     logger.trace(s"Sending pong=$pong to peer=${client.peer}")
     sendMsg(pong)
   }
 
-  def sendGetHeadersMessage(lastHash: DoubleSha256Digest): Unit = {
+  def sendGetHeadersMessage(lastHash: DoubleSha256Digest)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val headersMsg = GetHeadersMessage(lastHash)
     logger.trace(s"Sending getheaders=$headersMsg to peer=${client.peer}")
     sendMsg(headersMsg)
   }
 
-  def sendHeadersMessage(): Unit = {
+  def sendHeadersMessage()(implicit ec: ExecutionContext): Future[Unit] = {
     val sendHeadersMsg = SendHeadersMessage
     sendMsg(sendHeadersMsg)
   }
@@ -90,7 +92,8 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   /**
     * Sends a inventory message with the given transactions
     */
-  def sendInventoryMessage(transactions: Transaction*): Unit = {
+  def sendInventoryMessage(transactions: Transaction*)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val inventories =
       transactions.map(tx => Inventory(TypeIdentifier.MsgTx, tx.txId))
     val message = InventoryMessage(inventories)
@@ -98,30 +101,34 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
-  def sendFilterClearMessage(): Unit = {
+  def sendFilterClearMessage()(implicit ec: ExecutionContext): Future[Unit] = {
     sendMsg(FilterClearMessage)
   }
 
-  def sendFilterAddMessage(hash: HashDigest): Unit = {
+  def sendFilterAddMessage(hash: HashDigest)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val message = FilterAddMessage.fromHash(hash)
     logger.trace(s"Sending filteradd=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
-  def sendFilterLoadMessage(bloom: BloomFilter): Unit = {
+  def sendFilterLoadMessage(bloom: BloomFilter)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val message = FilterLoadMessage(bloom)
     logger.trace(s"Sending filterload=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
-  def sendTransactionMessage(transaction: Transaction): Unit = {
+  def sendTransactionMessage(transaction: Transaction)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val message = TransactionMessage(transaction)
     logger.trace(s"Sending txmessage=$message to peer=${client.peer}")
     sendMsg(message)
   }
 
   /** Sends a request for filtered blocks matching the given headers */
-  def sendGetDataMessage(headers: BlockHeader*): Unit = {
+  def sendGetDataMessage(headers: BlockHeader*)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val inventories =
       headers.map(header =>
         Inventory(TypeIdentifier.MsgFilteredBlock, header.hash))
@@ -130,10 +137,13 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
-  private[node] def sendMsg(msg: NetworkPayload): Unit = {
-    logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
-    val newtworkMsg = NetworkMessage(conf.network, msg)
-    client.actor ! newtworkMsg
+  private[node] def sendMsg(msg: NetworkPayload)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    isInitialized().map { _ =>
+      logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
+      val newtworkMsg = NetworkMessage(conf.network, msg)
+      client.actor ! newtworkMsg
+    }
   }
 }
 

@@ -120,7 +120,7 @@ case class SpvNode(
     * `private[node]`.
     */
   private[node] def send(msg: NetworkPayload): Future[Unit] = {
-    peerMsgSenderF.map(_.sendMsg(msg))
+    peerMsgSenderF.flatMap(_.sendMsg(msg))
   }
 
   /** Starts our spv node */
@@ -192,7 +192,7 @@ case class SpvNode(
     }
 
     logger(nodeAppConfig).info(s"Sending out inv for tx=${transaction.txIdBE}")
-    peerMsgSenderF.map(_.sendInventoryMessage(transaction))
+    peerMsgSenderF.flatMap(_.sendInventoryMessage(transaction))
   }
 
   /** Checks if we have a tcp connection with our peer */

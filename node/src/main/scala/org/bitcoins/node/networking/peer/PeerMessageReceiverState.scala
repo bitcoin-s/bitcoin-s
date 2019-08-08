@@ -38,7 +38,7 @@ sealed abstract class PeerMessageReceiverState {
   }
 
   def isDisconnected: Boolean = {
-    clientDisconnectF.isCompleted
+    clientDisconnectF.isCompleted && !isConnected
   }
 
   def versionMsgP: Promise[VersionMessage]
