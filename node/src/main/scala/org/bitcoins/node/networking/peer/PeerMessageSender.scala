@@ -13,6 +13,7 @@ import org.bitcoins.db.P2PLogger
 import org.bitcoins.core.crypto.HashDigest
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.util.FutureUtil
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -46,12 +47,12 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       case true =>
         logger.info(s"Disconnecting peer at socket=${socket}")
         (client.actor ! Tcp.Close)
-        Future.unit
+        FutureUtil.unit
       case false =>
         val err =
           s"Cannot disconnect client that is not connected to socket=${socket}!"
         logger.warn(err)
-        Future.failed(new RuntimeException(err))
+        FutureUtil.unit
     }
 
   }
