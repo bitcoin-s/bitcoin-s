@@ -67,7 +67,7 @@ class NodeWithWalletTest extends NodeUnitTest {
       def processWalletTx(tx: DoubleSha256DigestBE): DoubleSha256DigestBE = {
         expectedTxIdP.success(tx.flip)
         // how long we're waiting for a tx notify before failing the test
-        val delay = 15.seconds
+        val delay = 25.seconds
 
         val failTest: Runnable = new Runnable {
           override def run = {

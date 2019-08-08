@@ -1,8 +1,7 @@
 package org.bitcoins.testkit.node
 
-import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
+import akka.testkit.TestKit
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
@@ -36,6 +35,7 @@ import org.scalatest.{
   FutureOutcome,
   MustMatchers
 }
+import java.net.InetSocketAddress
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -52,7 +52,7 @@ trait NodeUnitTest
   }
 
   override def afterAll(): Unit = {
-    system.terminate()
+    TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
     ()
   }
 
