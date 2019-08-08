@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   MultiSignatureWithTimeoutScriptPubKey,
   P2PKHScriptPubKey,
+  P2WSHWitnessSPKV0,
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
@@ -48,7 +49,8 @@ case class BinaryOutcomeDLC(
     val spk: ScriptPubKey =
       MultiSignatureScriptPubKey(2, Vector(key1, key2))
 
-    val output: TransactionOutput = TransactionOutput(totalAmount, spk)
+    val output: TransactionOutput =
+      TransactionOutput(totalAmount, P2WSHWitnessSPKV0(spk))
 
     val outputs: Vector[TransactionOutput] = Vector(output)
     val txBuilderF: Future[BitcoinTxBuilder] =
@@ -75,7 +77,8 @@ case class BinaryOutcomeDLC(
       timeout = timeout,
       timeoutPubKey = remotePubKey)
 
-    val toLocal: TransactionOutput = TransactionOutput(localPayout, toLocalSPK)
+    val toLocal: TransactionOutput =
+      TransactionOutput(localPayout, P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
       TransactionOutput(remotePayout, P2PKHScriptPubKey(remotePubKey))
 
