@@ -92,14 +92,13 @@ case class P2PClientActor(
         Await.result(handleTcpMessage(message, Some(peer), unalignedBytes),
                      timeout)
       context.become(awaitNetworkRequest(peer, newUnalignedBytes))
-
     case metaMsg: P2PClient.MetaMsg =>
       sender ! handleMetaMsg(metaMsg)
   }
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
   def receive: Receive = {
-    case cmd: Tcp.Command =>
+    case cmd: Tcp.Connect =>
       //we only accept a Tcp.Connect/Tcp.Connected
       //message to the default receive on this actor
       //after receiving Tcp.Connected we switch to the
