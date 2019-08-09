@@ -1,5 +1,6 @@
 package org.bitcoins.chain.validation
 
+import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
   BlockHeaderDb,
@@ -106,12 +107,11 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
   private def isBadPow(
       newPotentialTip: BlockHeader,
       currentTip: BlockHeaderDb,
-      blockHeaderDAO: BlockHeaderDAO)(
+      blockchain: Blockchain)(
       implicit ec: ExecutionContext,
       config: ChainAppConfig): Future[UInt32] = {
-    Pow.getNetworkWorkRequired(tip = currentTip,
-                               newPotentialTip = newPotentialTip,
-                               blockHeaderDAO = blockHeaderDAO)
+    Pow.getNetworkWorkRequired(newPotentialTip = newPotentialTip,
+                               blockchain = blockchain)
 
   }
 }

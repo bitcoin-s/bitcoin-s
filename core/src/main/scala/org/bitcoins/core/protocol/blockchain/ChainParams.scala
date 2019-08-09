@@ -2,7 +2,6 @@ package org.bitcoins.core.protocol.blockchain
 
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
-
 import org.bitcoins.core.config.{
   BitcoinNetwork,
   MainNet,
@@ -18,7 +17,7 @@ import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
-import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
 import scodec.bits.{ByteVector, _}
 
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -160,6 +159,12 @@ sealed abstract class ChainParams {
     * @return
     */
   def powLimit: BigInteger
+
+  /** The minimum proof of required for a block as specified by [[org.bitcoins.core.protocol.blockchain.ChainParams.powLimit powLimit]], compressed to a UInt32 */
+  lazy val compressedPowLimit: UInt32 = {
+    NumberUtil.targetCompression(bigInteger = powLimit, isNegative = false)
+
+  }
 
   /** The targetted timespan between difficulty adjustments
     * As of this implementation, all of these are the same in bitcoin core
