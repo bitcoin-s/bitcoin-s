@@ -216,7 +216,7 @@ class ChainHandlerTest extends ChainUnitTest {
   final def processHeaders(
       processorF: Future[ChainHandler],
       remainingHeaders: List[BlockHeader],
-      height: Long): Future[Assertion] = {
+      height: Int): Future[Assertion] = {
     remainingHeaders match {
       case header :: headersTail =>
         val newProcessorF = processorF.flatMap(_.processHeader(header))

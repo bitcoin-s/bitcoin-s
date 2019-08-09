@@ -57,7 +57,7 @@ case class BlockHeaderDAO()(
     */
   def getAncestorAtHeight(
       child: BlockHeaderDb,
-      height: Long): Future[Option[BlockHeaderDb]] = {
+      height: Int): Future[Option[BlockHeaderDb]] = {
     /*
      * To avoid making many database reads, we make one database read for all
      * possibly useful block headers.
@@ -112,12 +112,12 @@ case class BlockHeaderDAO()(
   }
 
   /** Retrieves a [[BlockHeaderDb]] at the given height */
-  def getAtHeight(height: Long): Future[Vector[BlockHeaderDb]] = {
+  def getAtHeight(height: Int): Future[Vector[BlockHeaderDb]] = {
     val query = getAtHeightQuery(height)
     database.runVec(query)
   }
 
-  def getAtHeightQuery(height: Long): SQLiteProfile.StreamingProfileAction[
+  def getAtHeightQuery(height: Int): SQLiteProfile.StreamingProfileAction[
     Seq[BlockHeaderDb],
     BlockHeaderDb,
     Effect.Read] = {
@@ -125,14 +125,14 @@ case class BlockHeaderDAO()(
   }
 
   /** Gets Block Headers between (inclusive) from and to, could be out of order */
-  def getBetweenHeights(from: Long, to: Long): Future[Vector[BlockHeaderDb]] = {
+  def getBetweenHeights(from: Int, to: Int): Future[Vector[BlockHeaderDb]] = {
     val query = getBetweenHeightsQuery(from, to)
     database.runVec(query)
   }
 
   def getBetweenHeightsQuery(
-      from: Long,
-      to: Long): SQLiteProfile.StreamingProfileAction[
+      from: Int,
+      to: Int): SQLiteProfile.StreamingProfileAction[
     Seq[BlockHeaderDb],
     BlockHeaderDb,
     Effect.Read] = {
@@ -140,17 +140,17 @@ case class BlockHeaderDAO()(
   }
 
   /** Returns the maximum block height from our database */
-  def maxHeight: Future[Long] = {
+  def maxHeight: Future[Int] = {
     val query = maxHeightQuery
     val result = database.run(query)
     result
   }
 
   private def maxHeightQuery: SQLiteProfile.ProfileAction[
-    Long,
+    Int,
     NoStream,
     Effect.Read] = {
-    val query = table.map(_.height).max.getOrElse(0L).result
+    val query = table.map(_.height).max.getOrElse(0).result
     query
   }
 
