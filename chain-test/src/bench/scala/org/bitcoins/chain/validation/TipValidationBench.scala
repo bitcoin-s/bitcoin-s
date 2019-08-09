@@ -16,7 +16,6 @@ object TipValidationBench
     with java.io.Serializable {
   import org.scalameter.api._
   import org.scalameter.picklers.noPickler._
-
   /**
     * Behaves exactly like the default conf, execpt
     * network is set to mainnet

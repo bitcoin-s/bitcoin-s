@@ -99,7 +99,7 @@ object Deps {
     Compile.logback
   )
 
-  val chainTest = List()
+  val chainTest = List(Test.scalameter)
 
   val core = List(
     Compile.bouncycastle,

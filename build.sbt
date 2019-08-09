@@ -345,13 +345,15 @@ lazy val chain = project
 
 lazy val chainTest = project
   .in(file("chain-test"))
+  .dependsOn(chain, core % testAndCompile, testkit, zmq)
   .settings(commonTestWithDbSettings: _*)
   .settings(chainDbSettings: _*)
+  .settings(benchSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
     libraryDependencies ++= Deps.chainTest
   )
-  .dependsOn(chain, core % testAndCompile, testkit, zmq)
+  .configs(Benchmark)
   .enablePlugins(FlywayPlugin)
 
 lazy val dbCommons = project

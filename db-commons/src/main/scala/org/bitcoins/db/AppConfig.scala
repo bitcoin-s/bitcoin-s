@@ -35,7 +35,7 @@ import ch.qos.logback.classic.Level
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends BitcoinSLogger {
+abstract class AppConfig extends BitcoinSLogger with java.io.Serializable {
 
   /**
     * Initializes this project.

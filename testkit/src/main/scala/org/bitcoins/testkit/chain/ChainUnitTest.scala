@@ -1,7 +1,5 @@
 package org.bitcoins.testkit.chain
 
-import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
@@ -12,6 +10,7 @@ import org.bitcoins.chain.models.{
   BlockHeaderDb,
   BlockHeaderDbHelper
 }
+import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -200,7 +199,7 @@ trait ChainUnitTest
 
     val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
 
-    val zmqRawBlockUriOpt: Option[InetSocketAddress] =
+    val zmqRawBlockUriOpt: Option[java.net.InetSocketAddress] =
       bitcoind.instance.zmqConfig.rawBlock
 
     val handleRawBlock: ByteVector => Unit = { bytes: ByteVector =>
@@ -441,4 +440,16 @@ object ChainUnitTest extends BitcoinSLogger {
 
   }
 
+  def runCheckNewTip(
+      header: BlockHeader,
+      expected: TipUpdateResult,
+      blockHeaderDAO: BlockHeaderDAO,
+      currentTipDbDefault: BlockHeaderDb)(
+      implicit chainAppConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Boolean] = {
+    val checkTipF =
+      TipValidation.checkNewTip(header, currentTipDbDefault, blockHeaderDAO)
+
+    checkTipF.map(validationResult => validationResult == expected)
+  }
 }

@@ -33,7 +33,7 @@ import scala.concurrent.duration.{Duration, DurationInt}
   *      [[https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.h#L42 this C++ interface]]
   *      in Bitcoin Core
   */
-sealed abstract class ChainParams {
+sealed abstract class ChainParams extends java.io.Serializable {
 
   /** Return the BIP70 network string (
     * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams MainNetChainParams]],
