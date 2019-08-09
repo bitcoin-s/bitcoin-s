@@ -182,8 +182,8 @@ sealed abstract class ChainParams {
   /** In bitcoin [[MainNetChainParams mainnet]], the network recalculates the difficulty for the network every 2016 blocks
     * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L75 bitcoin core implementation]]
     * */
-  def difficultyChangeInterval: Long = {
-    powTargetTimeSpan.toSeconds / powTargetSpacing.toSeconds
+  def difficultyChangeInterval: Int = {
+    (powTargetTimeSpan.toSeconds / powTargetSpacing.toSeconds).toInt
   }
 
   /**
