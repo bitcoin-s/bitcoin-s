@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import slick.jdbc.SQLiteProfile.api._
 
 case class BlockHeaderDb(
-    height: Long,
+    height: Int,
     hashBE: DoubleSha256DigestBE,
     version: Int32,
     previousBlockHashBE: DoubleSha256DigestBE,
@@ -31,7 +31,7 @@ case class BlockHeaderDb(
 
 object BlockHeaderDbHelper {
 
-  def fromBlockHeader(height: Long, bh: BlockHeader): BlockHeaderDb = {
+  def fromBlockHeader(height: Int, bh: BlockHeader): BlockHeaderDb = {
     BlockHeaderDb(
       height = height,
       hashBE = bh.hashBE,
@@ -51,7 +51,7 @@ class BlockHeaderTable(tag: Tag)
     extends Table[BlockHeaderDb](tag, "block_headers") {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  def height = column[Long]("height")
+  def height = column[Int]("height")
 
   def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
 
