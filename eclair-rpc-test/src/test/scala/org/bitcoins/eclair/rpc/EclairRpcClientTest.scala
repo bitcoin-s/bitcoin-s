@@ -7,11 +7,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
-import org.bitcoins.core.protocol.ln.channel.{
-  ChannelId,
-  ChannelState,
-  FundedChannelId
-}
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
@@ -29,11 +25,9 @@ import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.ln.{
-  LnHumanReadablePart,
-  LnInvoice,
-  PaymentPreimage
-}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, PaymentPreimage}
+import org.bitcoins.testkit.async.TestAsyncUtil
+
 import scala.concurrent.duration._
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
@@ -327,15 +321,13 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         val eclair = new EclairRpcClient(server)
         eclair.start().map(_ => eclair)
       }
-
-      _ <- eclair.getInfo
-
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => eclair.isStarted(),
+        duration = 1.second,
+        maxTries = 60)
       _ = EclairRpcTestUtil.shutdown(eclair)
-      _ <- eclair.getInfo
-        .map(_ => fail("Got info from a closed node!"))
-        .recover {
-          case _: StreamTcpException => ()
-        }
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => eclair.isStarted().map(!_),
+        duration = 1.second,
+        maxTries = 60)
     } yield succeed
   }
   it should "be able to open and close a channel" in {
