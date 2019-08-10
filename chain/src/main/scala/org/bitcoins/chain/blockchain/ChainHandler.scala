@@ -51,12 +51,12 @@ case class ChainHandler(
     logger.debug(
       s"Processing header=${header.hashBE.hex}, previousHash=${header.previousBlockHashBE.hex}")
 
-    val blockchainUpdateF = Blockchain.connectTip(header = header,
-                                                  blockHeaderDAO =
-                                                    blockHeaderDAO,
-                                                  blockchains = blockchains)
+    val blockchainUpdate = Blockchain.connectTip(
+      header = header,
+      blockHeaderDAO = blockHeaderDAO,
+      blockchains = blockchains)
 
-    val newHandlerF = blockchainUpdateF.flatMap {
+    val newHandlerF = blockchainUpdate match {
       case BlockchainUpdate.Successful(newChain, updatedHeader) =>
         //now we have successfully connected the header, we need to insert
         //it into the database
@@ -94,12 +94,6 @@ case class ChainHandler(
         logTipConnectionFailure(reason).flatMap { _ =>
           Future.failed(new RuntimeException(errMsg))
         }
-    }
-
-    blockchainUpdateF.failed.foreach { err =>
-      logger.error(
-        s"Failed to connect header=${header.hashBE.hex} err=${err.getMessage}")
-
     }
 
     newHandlerF

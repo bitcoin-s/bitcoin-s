@@ -21,27 +21,25 @@ sealed abstract class Pow {
     */
   def getNetworkWorkRequired(
       newPotentialTip: BlockHeader,
-      blockchain: Blockchain)(
-      implicit ec: ExecutionContext,
-      config: ChainAppConfig): UInt32 = {
+      blockchain: Blockchain)(implicit config: ChainAppConfig): UInt32 = {
     val chainParams = config.chain
     val tip = blockchain.tip
     val currentHeight = tip.height
 
-    val powLimit =
+    val powLimit: UInt32 =
       if ((currentHeight + 1) % chainParams.difficultyChangeInterval != 0) {
         if (chainParams.allowMinDifficultyBlocks) {
           // Special difficulty rule for testnet:
           // If the new block's timestamp is more than 2* 10 minutes
           // then allow mining of a min-difficulty block.
           if (newPotentialTip.time.toLong > tip.blockHeader.time.toLong + chainParams.powTargetSpacing.toSeconds * 2) {
-            Future.successful(powLimit)
+            chainParams.compressedPowLimit
           } else {
             // Return the last non-special-min-difficulty-rules-block
             //while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
             //                    pindex = pindex->pprev;
             val nonMinDiffF = blockchain.find { h =>
-              h.nBits != powLimit || h.height % chainParams.difficultyChangeInterval == 0
+              h.nBits != chainParams.compressedPowLimit || h.height % chainParams.difficultyChangeInterval == 0
             }
 
             nonMinDiffF match {
@@ -61,18 +59,22 @@ sealed abstract class Pow {
         require(firstHeight >= 0,
                 s"We must have our first height be postive, got=${firstHeight}")
 
-        val firstBlockAtIntervalF: BlockHeaderDb = blockchain(firstHeight)
+        val firstBlockAtIntervalOpt: Option[BlockHeaderDb] =
+          blockchain.findAtHeight(firstHeight)
 
-        firstBlockAtIntervalF.flatMap {
-          case Some(firstBlock) =>
-            calculateNextWorkRequired(currentTip = tip, firstBlock, chainParams)
+        firstBlockAtIntervalOpt match {
+          case Some(firstBlockAtInterval) =>
+            calculateNextWorkRequired(currentTip = tip,
+                                      firstBlockAtInterval,
+                                      chainParams)
           case None =>
-            Future.failed(
-              new IllegalArgumentException(
-                s"Could not find ancestor for block=${tip.hashBE.hex}"))
+            throw new RuntimeException(
+              s"Could not find block at height=${firstHeight} out of ${blockchain.length} headers to calculate pow difficutly change")
         }
 
       }
+
+    powLimit
   }
 
   /**
@@ -86,9 +88,9 @@ sealed abstract class Pow {
   def calculateNextWorkRequired(
       currentTip: BlockHeaderDb,
       firstBlock: BlockHeaderDb,
-      chainParams: ChainParams): Future[UInt32] = {
+      chainParams: ChainParams): UInt32 = {
     if (chainParams.noRetargeting) {
-      Future.successful(currentTip.nBits)
+      currentTip.nBits
     } else {
       var actualTimespan = (currentTip.time - firstBlock.time).toLong
       val timespanSeconds = chainParams.powTargetTimeSpan.toSeconds
@@ -114,7 +116,7 @@ sealed abstract class Pow {
 
       val newTarget = NumberUtil.targetCompression(bnNew, false)
 
-      Future.successful(newTarget)
+      newTarget
     }
   }
 }
