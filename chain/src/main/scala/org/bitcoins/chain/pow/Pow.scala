@@ -1,13 +1,11 @@
 package org.bitcoins.chain.pow
 
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
+import org.bitcoins.chain.models.{BlockHeaderDb}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.core.util.NumberUtil
-
-import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Implements functions found inside of bitcoin core's

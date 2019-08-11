@@ -3,16 +3,18 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
+import org.bitcoins.chain.validation.TipUpdateResult
+import org.bitcoins.chain.validation.TipUpdateResult.{
+  BadNonce,
+  BadPOW,
+  BadPreviousBlockHash
+}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.db.ChainVerificationLogger
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.db.ChainVerificationLogger
-import org.bitcoins.chain.validation.TipUpdateResult.BadNonce
-import org.bitcoins.chain.validation.TipUpdateResult.BadPOW
-import org.bitcoins.chain.validation.TipUpdateResult.BadPreviousBlockHash
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.chain.validation.TipUpdateResult
 
 /**
   * Chain Handler is meant to be the reference implementation
@@ -51,10 +53,8 @@ case class ChainHandler(
     logger.debug(
       s"Processing header=${header.hashBE.hex}, previousHash=${header.previousBlockHashBE.hex}")
 
-    val blockchainUpdate = Blockchain.connectTip(
-      header = header,
-      blockHeaderDAO = blockHeaderDAO,
-      blockchains = blockchains)
+    val blockchainUpdate =
+      Blockchain.connectTip(header = header, blockchains = blockchains)
 
     val newHandlerF = blockchainUpdate match {
       case BlockchainUpdate.Successful(newChain, updatedHeader) =>

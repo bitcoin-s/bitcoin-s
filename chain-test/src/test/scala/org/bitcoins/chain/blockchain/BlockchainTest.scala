@@ -26,7 +26,6 @@ class BlockchainTest extends ChainUnitTest {
         BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
 
       val connectTip = Blockchain.connectTip(header = newHeader.blockHeader,
-                                             blockHeaderDAO = bhDAO,
                                              Vector(blockchain))
 
       connectTip match {

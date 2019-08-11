@@ -1,17 +1,12 @@
 package org.bitcoins.chain.validation
 
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.NumberUtil
 
-import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.db.ChainVerificationLogger
 

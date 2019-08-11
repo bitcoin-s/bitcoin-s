@@ -1,7 +1,7 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
+import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.db.ChainVerificationLogger
@@ -69,16 +69,12 @@ object Blockchain extends ChainVerificationLogger {
     * We then attempt to connect this block header to all of our current
     * chain tips.
     * @param header the block header to connect to our chain
-    * @param blockHeaderDAO where we can find our blockchain
-    * @param ec
+    * @param blockchains the blockchain we are attempting to connect to
     * @return a [[scala.concurrent.Future Future]] that contains a [[org.bitcoins.chain.blockchain.BlockchainUpdate BlockchainUpdate]] indicating
     *         we [[org.bitcoins.chain.blockchain.BlockchainUpdate.Successful successful]] connected the tip,
     *         or [[org.bitcoins.chain.blockchain.BlockchainUpdate.Failed Failed]] to connect to a tip
     */
-  def connectTip(
-      header: BlockHeader,
-      blockHeaderDAO: BlockHeaderDAO,
-      blockchains: Vector[Blockchain])(
+  def connectTip(header: BlockHeader, blockchains: Vector[Blockchain])(
       implicit conf: ChainAppConfig): BlockchainUpdate = {
     logger.debug(
       s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
