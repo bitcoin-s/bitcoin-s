@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{
