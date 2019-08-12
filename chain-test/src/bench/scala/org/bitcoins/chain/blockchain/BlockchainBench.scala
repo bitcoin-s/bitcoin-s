@@ -1,7 +1,6 @@
-package org.bitcoins.chain.validation
+package org.bitcoins.chain.blockchain
 
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -9,11 +8,7 @@ import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.scalameter
 import org.scalameter.Bench
 
-import scala.concurrent.ExecutionContext
-
-object TipValidationBench
-    extends Bench.OfflineReport
-    with java.io.Serializable {
+object BlockchainBench extends Bench.OfflineReport {
   import org.scalameter.api._
   import org.scalameter.picklers.noPickler._
 
@@ -36,20 +31,19 @@ object TipValidationBench
     scalameter.Gen.single("header")(newValidTip, blockchain)
   }
 
-  performance of "TipValidation" in {
-    measure method "checkNewTip" in {
+  performance of "Blockchain" in {
+    measure method "connectTip" in {
       using(headerToConnect)
         .config(
           exec.jvmflags -> List("-Xmx128m")
         )
         .in {
           case (header: BlockHeader, blockchain: Blockchain) =>
-            val result = TipValidation.checkNewTip(header, blockchain)
+            Blockchain.connectTip(header, Vector(blockchain))
         }
     }
   }
 
-  // GZIPJSONSerializationPersistor is default but we want to choose custom path for regression data
   override def persistor: Persistor =
     new SerializationPersistor("target/results")
 }
