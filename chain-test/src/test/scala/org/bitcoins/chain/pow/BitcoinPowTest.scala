@@ -1,6 +1,7 @@
 package org.bitcoins.chain.pow
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
@@ -32,14 +33,15 @@ class BitcoinPowTest extends ChainUnitTest {
 
   it must "NOT calculate a POW change when one is not needed" inFixtured {
     case ChainFixture.Empty =>
-      val blockHeaderDAO = BlockHeaderDAO()
-      val header1 = ChainTestUtil.ValidPOWChange.blockHeaderDb566494
+      val blockchain = Blockchain.fromHeaders(
+        Vector(ChainTestUtil.ValidPOWChange.blockHeaderDb566494))
       val header2 = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
 
-      val nextWorkF =
-        Pow.getNetworkWorkRequired(header1, header2.blockHeader, blockHeaderDAO)
+      val nextWork =
+        Pow.getNetworkWorkRequired(newPotentialTip = header2.blockHeader,
+                                   blockchain = blockchain)
 
-      nextWorkF.map(nextWork => assert(nextWork == header1.nBits))
+      assert(nextWork == blockchain.tip.nBits)
   }
 
   it must "calculate a pow change as per the bitcoin network" inFixtured {
@@ -48,13 +50,12 @@ class BitcoinPowTest extends ChainUnitTest {
       val currentTipDb = ChainTestUtil.ValidPOWChange.blockHeaderDb566495
       val expectedNextWork =
         ChainTestUtil.ValidPOWChange.blockHeader566496.nBits
-      val calculatedWorkF =
+      val calculatedWork =
         Pow.calculateNextWorkRequired(currentTipDb,
                                       firstBlockDb,
                                       MainNetChainParams)
 
-      calculatedWorkF.map(calculatedWork =>
-        assert(calculatedWork == expectedNextWork))
+      assert(calculatedWork == expectedNextWork)
   }
 
   it must "GetNextWorkRequired correctly" taggedAs ChainFixtureTag.PopulatedBlockHeaderDAO inFixtured {
@@ -66,14 +67,15 @@ class BitcoinPowTest extends ChainUnitTest {
         (ChainUnitTest.FIRST_POW_CHANGE + 1 until ChainUnitTest.FIRST_POW_CHANGE + 1 + iterations)
           .map { height =>
             val blockF = blockHeaderDAO.getAtHeight(height).map(_.head)
+            val blockchainF =
+              blockF.flatMap(b => blockHeaderDAO.getBlockchainFrom(b))
             val nextBlockF = blockHeaderDAO.getAtHeight(height + 1).map(_.head)
 
             for {
-              currentTip <- blockF
+              blockchain <- blockchainF
               nextTip <- nextBlockF
-              nextNBits <- Pow.getNetworkWorkRequired(currentTip,
-                                                      nextTip.blockHeader,
-                                                      blockHeaderDAO)
+              nextNBits = Pow.getNetworkWorkRequired(nextTip.blockHeader,
+                                                     blockchain)
             } yield assert(nextNBits == nextTip.nBits)
           }
 

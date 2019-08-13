@@ -1,12 +1,11 @@
 package org.bitcoins.chain.pow
 
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
+import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.chain.models.{BlockHeaderDb}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
 import org.bitcoins.core.util.NumberUtil
-
-import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Implements functions found inside of bitcoin core's
@@ -17,68 +16,63 @@ sealed abstract class Pow {
   /**
     * Gets the next proof of work requirement for a block
     * @see [[https://github.com/bitcoin/bitcoin/blob/35477e9e4e3f0f207ac6fa5764886b15bf9af8d0/src/pow.cpp#L13 Mimics bitcoin core implmentation]]
-    * @param tip
-    * @param newPotentialTip
-    * @return
     */
   def getNetworkWorkRequired(
-      tip: BlockHeaderDb,
       newPotentialTip: BlockHeader,
-      blockHeaderDAO: BlockHeaderDAO)(
-      implicit ec: ExecutionContext,
-      config: ChainAppConfig): Future[UInt32] = {
+      blockchain: Blockchain)(implicit config: ChainAppConfig): UInt32 = {
     val chainParams = config.chain
+    val tip = blockchain.tip
     val currentHeight = tip.height
 
-    val powLimit = NumberUtil.targetCompression(bigInteger =
-                                                  chainParams.powLimit,
-                                                isNegative = false)
-    if ((currentHeight + 1) % chainParams.difficultyChangeInterval != 0) {
-      if (chainParams.allowMinDifficultyBlocks) {
-        // Special difficulty rule for testnet:
-        // If the new block's timestamp is more than 2* 10 minutes
-        // then allow mining of a min-difficulty block.
-        if (newPotentialTip.time.toLong > tip.blockHeader.time.toLong + chainParams.powTargetSpacing.toSeconds * 2) {
-          Future.successful(powLimit)
-        } else {
-          // Return the last non-special-min-difficulty-rules-block
-          //while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
-          //                    pindex = pindex->pprev;
-          val nonMinDiffF = blockHeaderDAO.find { h =>
-            h.nBits != powLimit || h.height % chainParams.difficultyChangeInterval == 0
-          }
+    val powLimit: UInt32 =
+      if ((currentHeight + 1) % chainParams.difficultyChangeInterval != 0) {
+        if (chainParams.allowMinDifficultyBlocks) {
+          // Special difficulty rule for testnet:
+          // If the new block's timestamp is more than 2* 10 minutes
+          // then allow mining of a min-difficulty block.
+          if (newPotentialTip.time.toLong > tip.blockHeader.time.toLong + chainParams.powTargetSpacing.toSeconds * 2) {
+            chainParams.compressedPowLimit
+          } else {
+            // Return the last non-special-min-difficulty-rules-block
+            //while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
+            //                    pindex = pindex->pprev;
+            val nonMinDiffF = blockchain.find { h =>
+              h.nBits != chainParams.compressedPowLimit || h.height % chainParams.difficultyChangeInterval == 0
+            }
 
-          nonMinDiffF.map {
-            case Some(bh) => bh.nBits
-            case None     =>
-              //if we can't find a non min diffulty block, let's just fail
-              throw new RuntimeException(
-                s"Could not find non mindiffulty block in chain! hash=${tip.hashBE.hex} height=${currentHeight}")
+            nonMinDiffF match {
+              case Some(bh) => bh.nBits
+              case None     =>
+                //if we can't find a non min diffulty block, let's just fail
+                throw new RuntimeException(
+                  s"Could not find non mindiffulty block in chain! hash=${tip.hashBE.hex} height=${currentHeight}")
+            }
           }
+        } else {
+          tip.blockHeader.nBits
         }
       } else {
-        Future.successful(tip.blockHeader.nBits)
+        val firstHeight: Int = currentHeight - (chainParams.difficultyChangeInterval - 1)
+
+        require(firstHeight >= 0,
+                s"We must have our first height be postive, got=${firstHeight}")
+
+        val firstBlockAtIntervalOpt: Option[BlockHeaderDb] =
+          blockchain.findAtHeight(firstHeight)
+
+        firstBlockAtIntervalOpt match {
+          case Some(firstBlockAtInterval) =>
+            calculateNextWorkRequired(currentTip = tip,
+                                      firstBlockAtInterval,
+                                      chainParams)
+          case None =>
+            throw new RuntimeException(
+              s"Could not find block at height=${firstHeight} out of ${blockchain.length} headers to calculate pow difficutly change")
+        }
+
       }
-    } else {
-      val firstHeight = currentHeight - (chainParams.difficultyChangeInterval - 1)
 
-      require(firstHeight >= 0,
-              s"We must have our first height be postive, got=${firstHeight}")
-
-      val firstBlockAtIntervalF: Future[Option[BlockHeaderDb]] = {
-        blockHeaderDAO.getAncestorAtHeight(tip, firstHeight)
-      }
-
-      firstBlockAtIntervalF.flatMap {
-        case Some(firstBlock) =>
-          calculateNextWorkRequired(currentTip = tip, firstBlock, chainParams)
-        case None =>
-          Future.failed(
-            new IllegalArgumentException(
-              s"Could not find ancestor for block=${tip.hashBE.hex}"))
-      }
-
-    }
+    powLimit
   }
 
   /**
@@ -92,9 +86,9 @@ sealed abstract class Pow {
   def calculateNextWorkRequired(
       currentTip: BlockHeaderDb,
       firstBlock: BlockHeaderDb,
-      chainParams: ChainParams): Future[UInt32] = {
+      chainParams: ChainParams): UInt32 = {
     if (chainParams.noRetargeting) {
-      Future.successful(currentTip.nBits)
+      currentTip.nBits
     } else {
       var actualTimespan = (currentTip.time - firstBlock.time).toLong
       val timespanSeconds = chainParams.powTargetTimeSpan.toSeconds
@@ -120,7 +114,7 @@ sealed abstract class Pow {
 
       val newTarget = NumberUtil.targetCompression(bnNew, false)
 
-      Future.successful(newTarget)
+      newTarget
     }
   }
 }
