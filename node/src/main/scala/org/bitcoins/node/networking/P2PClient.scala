@@ -98,7 +98,7 @@ case class P2PClientActor(
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
   def receive: Receive = {
-    case cmd: Tcp.Connect =>
+    case cmd: Tcp.Command =>
       //we only accept a Tcp.Connect/Tcp.Connected
       //message to the default receive on this actor
       //after receiving Tcp.Connected we switch to the
@@ -253,6 +253,9 @@ case class P2PClientActor(
           case None =>
             logger.error(
               s"Failing to disconnect node because we do not have peer defined!")
+            val newPeerMsgHandlerRecvF = currentPeerMsgHandlerRecv.disconnect()
+            currentPeerMsgHandlerRecv =
+              Await.result(newPeerMsgHandlerRecvF, timeout)
         }
         ()
       case connectCmd: Tcp.Connect =>
