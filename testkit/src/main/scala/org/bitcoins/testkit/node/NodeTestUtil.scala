@@ -1,8 +1,7 @@
 package org.bitcoins.testkit.node
 
-import java.net.InetSocketAddress
-
 import akka.actor.ActorRefFactory
+import java.net.InetSocketAddress
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -14,6 +13,7 @@ import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.node.SpvNode
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -22,6 +22,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 
 abstract class NodeTestUtil extends BitcoinSLogger {
 
@@ -128,17 +129,22 @@ abstract class NodeTestUtil extends BitcoinSLogger {
     } yield rpcCount == spvCount
   }
 
-  /** Awaits sync between the given SPV node and bitcoind client
-    *
-    * TODO: We should check for hash, not block height. however,
-    * our way of determining what the best hash is when having
-    * multiple tips is not good enough yet
-    */
+  /** Awaits sync between the given SPV node and bitcoind client */
   def awaitSync(node: SpvNode, rpc: BitcoindRpcClient)(
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBlockCount(node, rpc), 500.milliseconds)
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 500.milliseconds)
+  }
+
+  /** The future doesn't complete until the spv nodes best hash is the given hash */
+  def awaitBestHash(hash: DoubleSha256DigestBE, spvNode: SpvNode)(
+      implicit system: ActorSystem): Future[Unit] = {
+    import system.dispatcher
+    def spvBestHashF: Future[DoubleSha256DigestBE] = {
+      spvNode.chainApiFromDb().flatMap(_.getBestBlockHash)
+    }
+    TestAsyncUtil.retryUntilSatisfiedF(() => spvBestHashF.map(_ == hash))
   }
 
 }

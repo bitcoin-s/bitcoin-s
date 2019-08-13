@@ -64,11 +64,11 @@ class SpvNodeTest extends NodeUnitTest {
       //as they happen with the 'sendheaders' message
       //both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
       //at this point so no actual syncing is happening
-      val initSyncF = gen1F.flatMap { hash =>
+      val initSyncF = gen1F.flatMap { hashes =>
         val syncF = spvNode.sync()
         for {
           _ <- syncF
-          _ <- NodeTestUtil.isSameBestHash(spvNode, bitcoind)
+          _ <- NodeTestUtil.awaitBestHash(hashes.head, spvNode)
         } yield ()
       }
 

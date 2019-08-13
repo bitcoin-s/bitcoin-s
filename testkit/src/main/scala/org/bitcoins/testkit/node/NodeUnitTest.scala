@@ -2,9 +2,7 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
@@ -209,7 +207,6 @@ object NodeUnitTest extends BitcoinSLogger {
       ()
     }
 
-    resultF.failed.foreach(err => throw err)
     resultF
   }
 
@@ -246,7 +243,6 @@ object NodeUnitTest extends BitcoinSLogger {
       _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
     } yield ()
 
-    destroyedF.failed.foreach(err => throw err)
     destroyedF
 
   }
