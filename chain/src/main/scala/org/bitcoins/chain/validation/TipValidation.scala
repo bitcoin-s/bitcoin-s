@@ -1,16 +1,12 @@
 package org.bitcoins.chain.validation
 
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.NumberUtil
 
-import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.db.ChainVerificationLogger
 
@@ -28,52 +24,44 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     * assigned to a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] after all these
     * validation checks occur
     * */
-  def checkNewTip(
-      newPotentialTip: BlockHeader,
-      currentTip: BlockHeaderDb,
-      blockHeaderDAO: BlockHeaderDAO)(
-      implicit ec: ExecutionContext,
-      conf: ChainAppConfig): Future[TipUpdateResult] = {
+  def checkNewTip(newPotentialTip: BlockHeader, blockchain: Blockchain)(
+      implicit conf: ChainAppConfig): TipUpdateResult = {
     val header = newPotentialTip
+    val currentTip = blockchain.tip
     logger.trace(
       s"Checking header=${header.hashBE.hex} to try to connect to currentTip=${currentTip.hashBE.hex} with height=${currentTip.height}")
 
-    val powCheckF = isBadPow(newPotentialTip = newPotentialTip,
-                             currentTip = currentTip,
-                             blockHeaderDAO = blockHeaderDAO)
+    val expectedWork: UInt32 =
+      isBadPow(newPotentialTip = newPotentialTip, blockchain = blockchain)(conf)
 
-    val connectTipResultF: Future[TipUpdateResult] = {
-      powCheckF.map { expectedWork =>
-        if (header.previousBlockHashBE != currentTip.hashBE) {
-          logger.warn(
-            s"Failed to connect tip=${header.hashBE.hex} to current chain")
-          TipUpdateResult.BadPreviousBlockHash(newPotentialTip)
-        } else if (header.nBits != expectedWork) {
-          //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L19
-          TipUpdateResult.BadPOW(newPotentialTip)
-        } else if (isBadNonce(newPotentialTip)) {
-          TipUpdateResult.BadNonce(newPotentialTip)
-        } else {
-          val headerDb = BlockHeaderDbHelper.fromBlockHeader(
-            height = currentTip.height + 1,
-            bh = newPotentialTip
-          )
-          TipUpdateResult.Success(headerDb)
-        }
+    val connectTipResult: TipUpdateResult = {
+      if (header.previousBlockHashBE != currentTip.hashBE) {
+        logger.warn(
+          s"Failed to connect tip=${header.hashBE.hex} to current chain")
+        TipUpdateResult.BadPreviousBlockHash(newPotentialTip)
+      } else if (header.nBits != expectedWork) {
+        //https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/pow.cpp#L19
+        TipUpdateResult.BadPOW(newPotentialTip)
+      } else if (isBadNonce(newPotentialTip)) {
+        TipUpdateResult.BadNonce(newPotentialTip)
+      } else {
+        val headerDb = BlockHeaderDbHelper.fromBlockHeader(
+          height = currentTip.height + 1,
+          bh = newPotentialTip
+        )
+        TipUpdateResult.Success(headerDb)
       }
     }
 
-    logTipResult(connectTipResultF, currentTip)
-    connectTipResultF
+    logTipResult(connectTipResult, currentTip)
+    connectTipResult
   }
 
   /** Logs the result of [[org.bitcoins.chain.validation.TipValidation.checkNewTip() checkNewTip]] */
   private def logTipResult(
-      connectTipResultF: Future[TipUpdateResult],
-      currentTip: BlockHeaderDb)(
-      implicit ec: ExecutionContext,
-      conf: ChainAppConfig): Unit = {
-    connectTipResultF.map {
+      connectTipResult: TipUpdateResult,
+      currentTip: BlockHeaderDb)(implicit conf: ChainAppConfig): Unit = {
+    connectTipResult match {
       case TipUpdateResult.Success(tipDb) =>
         logger.trace(
           s"Successfully connected ${tipDb.hashBE.hex} with height=${tipDb.height} to block=${currentTip.hashBE.hex} with height=${currentTip.height}")
@@ -83,7 +71,6 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
           s"Failed to connect ${bad.header.hashBE.hex} to ${currentTip.hashBE.hex} with height=${currentTip.height}, reason=${bad}")
 
     }
-
     ()
   }
 
@@ -103,15 +90,10 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     }
   }
 
-  private def isBadPow(
-      newPotentialTip: BlockHeader,
-      currentTip: BlockHeaderDb,
-      blockHeaderDAO: BlockHeaderDAO)(
-      implicit ec: ExecutionContext,
-      config: ChainAppConfig): Future[UInt32] = {
-    Pow.getNetworkWorkRequired(tip = currentTip,
-                               newPotentialTip = newPotentialTip,
-                               blockHeaderDAO = blockHeaderDAO)
+  private def isBadPow(newPotentialTip: BlockHeader, blockchain: Blockchain)(
+      config: ChainAppConfig): UInt32 = {
+    Pow.getNetworkWorkRequired(newPotentialTip = newPotentialTip,
+                               blockchain = blockchain)(config)
 
   }
 }
