@@ -2,7 +2,7 @@ package org.bitcoins.testkit.chain
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.chain.blockchain.{Blockchain, ChainHandler}
+import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{
@@ -10,11 +10,11 @@ import org.bitcoins.chain.models.{
   BlockHeaderDb,
   BlockHeaderDbHelper
 }
-import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.chain
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, chain}
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -26,8 +26,6 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.db.AppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 trait ChainUnitTest
     extends org.scalatest.fixture.AsyncFlatSpec
@@ -438,18 +436,5 @@ object ChainUnitTest extends BitcoinSLogger {
 
     ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO)
 
-  }
-
-  def runCheckNewTip(
-      header: BlockHeader,
-      expected: TipUpdateResult,
-      blockHeaderDAO: BlockHeaderDAO,
-      currentTipDbDefault: BlockHeaderDb)(
-      implicit chainAppConfig: ChainAppConfig,
-      ec: ExecutionContext): Future[Boolean] = {
-    val checkTipF =
-      TipValidation.checkNewTip(header, currentTipDbDefault, blockHeaderDAO)
-
-    checkTipF.map(validationResult => validationResult == expected)
   }
 }
