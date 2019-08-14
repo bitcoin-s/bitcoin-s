@@ -1,41 +1,26 @@
 package org.bitcoins.node
 
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.node.models.Peer
-import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.core.currency._
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.scalactic.Bool
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
 
-class BroadcastTransactionTest extends BitcoinSWalletTest {
+class BroadcastTransactionTest extends NodeUnitTest {
 
-  override type FixtureParam = WalletWithBitcoind
+  override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withFundedWalletAndBitcoind(test)
+    withSpvNodeFundedWalletBitcoind(test, SpvNodeCallbacks.empty)
 
   it must "broadcast a transaction" in { param =>
-    val WalletWithBitcoind(wallet, rpc) = param
-
-    /**
-      * This is not ideal, how do we get one implicit value (`config`)
-      * to resolve to multiple implicit parameters?
-      */
-    implicit val nodeConfig: NodeAppConfig = config
-    implicit val chainConfig: ChainAppConfig = config
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc
@@ -54,16 +39,9 @@ class BroadcastTransactionTest extends BitcoinSWalletTest {
     }
 
     for {
-      _ <- config.initialize()
 
       address <- rpc.getNewAddress
       bloom <- wallet.getBloomFilter()
-      spv <- {
-        val peer = Peer.fromBitcoind(rpc.instance)
-
-        val spv = SpvNode(peer, bloomFilter = bloom)
-        spv.start()
-      }
       _ <- spv.sync()
       _ <- NodeTestUtil.awaitSync(spv, rpc)
 

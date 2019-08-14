@@ -173,10 +173,6 @@ class PeerMessageReceiver(
 
             sender.sendVerackMessage()
 
-            //we want peers to just send us headers
-            //we don't want to have to request them manually
-            sender.sendHeadersMessage()
-
             val newRecv = toState(newState)
 
             Future.successful(newRecv)
@@ -199,7 +195,9 @@ class PeerMessageReceiver(
         sender.sendPong(ping)
         Future.successful(this)
       case SendHeadersMessage =>
-        //not implemented as of now
+        //we want peers to just send us headers
+        //we don't want to have to request them manually
+        sender.sendHeadersMessage()
         Future.successful(this)
       case _: AddrMessage =>
         Future.successful(this)

@@ -3,7 +3,7 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import org.bitcoins.testkit.node.NodeUnitTest
 import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.scalatest.FutureOutcome
@@ -64,8 +64,12 @@ class SpvNodeTest extends NodeUnitTest {
       //as they happen with the 'sendheaders' message
       //both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
       //at this point so no actual syncing is happening
-      val initSyncF = gen1F.flatMap { _ =>
-        spvNode.sync()
+      val initSyncF = gen1F.flatMap { hashes =>
+        val syncF = spvNode.sync()
+        for {
+          _ <- syncF
+          _ <- NodeTestUtil.awaitBestHash(hashes.head, spvNode)
+        } yield ()
       }
 
       //start generating a block every 10 seconds with bitcoind
@@ -82,7 +86,7 @@ class SpvNodeTest extends NodeUnitTest {
         val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
           conditionF =
             () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map(_ == 6)),
-          duration = 1.seconds)
+          duration = 250.millis)
 
         has6BlocksF.map(_ => succeed)
       }
@@ -107,6 +111,6 @@ class SpvNodeTest extends NodeUnitTest {
       }
     }
 
-    system.scheduler.schedule(interval, interval, genBlock)
+    system.scheduler.schedule(2.second, interval, genBlock)
   }
 }

@@ -255,7 +255,6 @@ trait Client extends BitcoinSLogger {
       methodName: String,
       params: JsArray): HttpRequest = {
     val uuid = UUID.randomUUID().toString
-
     val m: Map[String, JsValue] = Map("method" -> JsString(methodName),
                                       "params" -> params,
                                       "id" -> JsString(uuid))
