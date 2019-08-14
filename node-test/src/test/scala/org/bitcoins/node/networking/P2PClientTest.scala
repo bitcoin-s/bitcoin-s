@@ -140,7 +140,6 @@ class P2PClientTest
 
   it must "establish a tcp connection with a bitcoin node" in {
     bitcoindPeerF.flatMap { remote =>
-      println(s"Starting test")
       connectAndDisconnect(remote)
     }
   }

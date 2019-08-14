@@ -92,7 +92,6 @@ case class P2PClientActor(
         Await.result(handleTcpMessage(message, Some(peer), unalignedBytes),
                      timeout)
       context.become(awaitNetworkRequest(peer, newUnalignedBytes))
-
     case metaMsg: P2PClient.MetaMsg =>
       sender ! handleMetaMsg(metaMsg)
   }
@@ -105,7 +104,7 @@ case class P2PClientActor(
       //after receiving Tcp.Connected we switch to the
       //'awaitNetworkRequest' context. This is the main
       //execution loop for the Client actor
-      handleCommand(cmd, peer = None)
+      handleCommand(cmd, peerOpt = None)
 
     case connected: Tcp.Connected =>
       Await.result(handleEvent(connected, unalignedBytes = ByteVector.empty),
@@ -246,10 +245,18 @@ case class P2PClientActor(
     */
   private def handleCommand(
       command: Tcp.Command,
-      peer: Option[ActorRef]): Unit =
+      peerOpt: Option[ActorRef]): Unit =
     command match {
       case closeCmd @ (Tcp.ConfirmedClose | Tcp.Close | Tcp.Abort) =>
-        peer.map(p => p ! closeCmd)
+        peerOpt match {
+          case Some(peer) => peer ! closeCmd
+          case None =>
+            logger.error(
+              s"Failing to disconnect node because we do not have peer defined!")
+            val newPeerMsgHandlerRecvF = currentPeerMsgHandlerRecv.disconnect()
+            currentPeerMsgHandlerRecv =
+              Await.result(newPeerMsgHandlerRecvF, timeout)
+        }
         ()
       case connectCmd: Tcp.Connect =>
         manager ! connectCmd

@@ -1,11 +1,8 @@
 package org.bitcoins.testkit.node
 
-import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
-import org.bitcoins.chain.blockchain.ChainHandler
+import akka.testkit.TestKit
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.BitcoinSLogger
@@ -36,6 +33,7 @@ import org.scalatest.{
   FutureOutcome,
   MustMatchers
 }
+import java.net.InetSocketAddress
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -52,7 +50,7 @@ trait NodeUnitTest
   }
 
   override def afterAll(): Unit = {
-    system.terminate()
+    TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
     ()
   }
 
@@ -108,21 +106,19 @@ trait NodeUnitTest
       () =>
         val bitcoindF = BitcoinSFixture.createBitcoind()
         bitcoindF.flatMap { bitcoind =>
-          val spvNode = NodeUnitTest
+          val spvNodeF = NodeUnitTest
             .createSpvNode(bitcoind, SpvNodeCallbacks.empty)(
               system,
               appConfig.chainConf,
               appConfig.nodeConf)
-          val startedSpv = spvNode
-            .flatMap(_.start())
 
-          startedSpv.map(spv => SpvNodeConnectedWithBitcoind(spv, bitcoind))
+          spvNodeF.map(spv => SpvNodeConnectedWithBitcoind(spv, bitcoind))
         }
     }
 
     makeDependentFixture(
       build = spvWithBitcoindBuilder,
-      destroy = NodeUnitTest.destorySpvNodeConnectedWithBitcoind(
+      destroy = NodeUnitTest.destroySpvNodeConnectedWithBitcoind(
         _: SpvNodeConnectedWithBitcoind)(system, appConfig)
     )(test)
   }
@@ -195,7 +191,7 @@ object NodeUnitTest extends BitcoinSLogger {
     stopF.flatMap(_ => ChainUnitTest.destroyHeaderTable())
   }
 
-  def destorySpvNodeConnectedWithBitcoind(
+  def destroySpvNodeConnectedWithBitcoind(
       spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
@@ -203,16 +199,15 @@ object NodeUnitTest extends BitcoinSLogger {
     import system.dispatcher
     val spvNode = spvNodeConnectedWithBitcoind.spvNode
     val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
-    val spvNodeDestroyF = destroySpvNode(spvNode)
-    val bitcoindDestroyF = ChainUnitTest.destroyBitcoind(bitcoind)
-
-    for {
-      _ <- spvNodeDestroyF
-      _ <- bitcoindDestroyF
+    val resultF = for {
+      _ <- destroySpvNode(spvNode)
+      _ <- ChainUnitTest.destroyBitcoind(bitcoind)
     } yield {
       logger.debug(s"Done with teardown of spv node connected with bitcoind!")
       ()
     }
+
+    resultF
   }
 
   /** Creates a spv node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
@@ -240,6 +235,9 @@ object NodeUnitTest extends BitcoinSLogger {
       BitcoinSWalletTest.WalletWithBitcoind(fundedWalletBitcoind.wallet,
                                             fundedWalletBitcoind.bitcoindRpc)
     }
+
+    //these need to be done in order, as the spv node needs to be
+    //stopped before the bitcoind node is stopped
     val destroyedF = for {
       _ <- destroySpvNode(fundedWalletBitcoind.spvNode)
       _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
@@ -271,6 +269,8 @@ object NodeUnitTest extends BitcoinSLogger {
     Peer(id = None, socket = socket)
   }
 
+  /** Creates a spv node peered with the given bitcoind client, this method
+    * also calls [[org.bitcoins.node.SpvNode.start() start]] to start the node */
   def createSpvNode(bitcoind: BitcoindRpcClient, callbacks: SpvNodeCallbacks)(
       implicit system: ActorSystem,
       chainAppConfig: ChainAppConfig,
@@ -278,13 +278,15 @@ object NodeUnitTest extends BitcoinSLogger {
     import system.dispatcher
     val chainApiF = ChainUnitTest.createChainHandler()
     val peer = createPeer(bitcoind)
-    for {
+    val spvNodeF = for {
       _ <- chainApiF
     } yield {
       SpvNode(peer = peer,
               bloomFilter = NodeTestUtil.emptyBloomFilter,
               callbacks = callbacks)
     }
+
+    spvNodeF.flatMap(_.start())
   }
 
 }
