@@ -403,6 +403,7 @@ public class NativeSecp256k1Test {
 
     /**
      * This tests signSchnorrWithNonce() against the first test case
+     * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr/test-vectors.csv]]
      */
     @Test
     public void testSchnorrSignWithNonce1() throws AssertFailException{
@@ -444,6 +445,7 @@ public class NativeSecp256k1Test {
 
     /**
      * This tests signSchnorrWithNonce() against the second test case
+     * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr/test-vectors.csv]]
      */
     @Test
     public void testSchnorrSignWithNonce2() throws AssertFailException {
@@ -485,6 +487,7 @@ public class NativeSecp256k1Test {
 
     /**
      * This tests signSchnorrWithNonce() against the third test case
+     * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr/test-vectors.csv]]
      */
     @Test
     public void testSchnorrSignWithNonce3() throws AssertFailException {

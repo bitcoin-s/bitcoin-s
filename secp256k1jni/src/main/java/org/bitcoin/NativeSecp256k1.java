@@ -538,7 +538,7 @@ public class NativeSecp256k1 {
      * @return sig byte array of signature
      */
     public static byte[] schnorrSignWithNonce(byte[] data, byte[] seckey, byte[] nonce) throws AssertFailException {
-        checkArgument(data.length == 32 && seckey.length <= 32 && nonce.length == 32);
+        checkArgument(data.length == 32 && seckey.length == 32 && nonce.length == 32);
 
         ByteBuffer byteBuff = nativeECDSABuffer.get();
         if (byteBuff == null || byteBuff.capacity() < data.length + seckey.length + nonce.length) {
