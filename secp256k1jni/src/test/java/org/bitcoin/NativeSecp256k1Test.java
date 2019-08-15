@@ -6,6 +6,7 @@ import java.math.BigInteger;
 
 import static org.bitcoin.NativeSecp256k1Util.AssertFailException;
 import static org.bitcoin.NativeSecp256k1Util.assertEquals;
+import static org.bitcoin.NativeSecp256k1Util.assertNotEquals;
 
 /**
  * This class holds test cases defined for testing this library.
@@ -398,6 +399,132 @@ public class NativeSecp256k1Test {
         sigStr = toHex(sig);
 
         assertEquals(sigStr, "00DA9B08172A9B6F0466A2DEFD817F2D7AB437E0D253CB5395A963866B3574BE00880371D01766935B92D2AB4CD5C8A2A5837EC57FED7660773A05F0DE142380", "testSchnorrSigReal");
+    }
+
+    /**
+     * This tests signSchnorrWithNonce() against the first test case
+     * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr/test-vectors.csv]]
+     */
+    @Test
+    public void testSchnorrSignWithNonce1() throws AssertFailException{
+        byte[] data = toByteArray("0000000000000000000000000000000000000000000000000000000000000000");
+
+        byte[] sec = toByteArray("0000000000000000000000000000000000000000000000000000000000000001");
+        byte[] pubkey = toByteArray("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798");
+
+        byte[] nonce = toByteArray("0000000000000000000000000000000000000000000000000000000000000002");
+        String noncePubKeyHex = "c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5";
+        byte[] noncePubKey = toByteArray(noncePubKeyHex);
+        String expectedNoncePubKey = toHex(NativeSecp256k1.schnorrPublicNonce(nonce));
+
+        assertEquals(expectedNoncePubKey.substring(0, 2), "02", "schnorrPublicNonce should produce the correct y coordinate");
+        assertEquals(noncePubKeyHex.toUpperCase(), expectedNoncePubKey.substring(2), "schnorrPublicNonce should produce a valid x coordinate");
+
+        byte[] bipSchnorrNonce = toByteArray("58e8f2a1f78f0a591feb75aebecaaa81076e4290894b1c445cc32953604db089");
+
+        byte[] sig1 = NativeSecp256k1.schnorrSignWithNonce(data, sec, nonce);
+        byte[] sig2 = NativeSecp256k1.schnorrSignWithNonce(data, sec, nonce);
+        byte[] sig3 = NativeSecp256k1.schnorrSignWithNonce(data, sec, bipSchnorrNonce);
+
+        String sig1Str = toHex(sig1);
+        String sig2Str = toHex(sig2);
+        String sig3Str = toHex(sig3);
+
+        assertEquals(sig1Str, sig2Str, sig1Str + " should be " + sig2Str);
+        assertNotEquals(sig1Str, sig3Str, sig3Str + " should not be " + sig1Str);
+
+        boolean result = NativeSecp256k1.schnorrVerify(data, sig1, pubkey);
+        assertEquals(result, true, "schnorrSignWithNonce should produce a valid signature");
+
+        String noncePubStr = toHex(noncePubKey);
+
+        assertEquals(sig1Str.substring(0, noncePubStr.length()), noncePubStr, noncePubStr + " should prefix " + sig1Str);
+
+        assertEquals(sig3Str, "787A848E71043D280C50470E8E1532B2DD5D20EE912A45DBDD2BD1DFBF187EF67031A98831859DC34DFFEEDDA86831842CCD0079E1F92AF177F7F22CC1DCED05", "schnorrSignWithNonce 1");
+    }
+
+    /**
+     * This tests signSchnorrWithNonce() against the second test case
+     * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr/test-vectors.csv]]
+     */
+    @Test
+    public void testSchnorrSignWithNonce2() throws AssertFailException {
+        byte[] data = toByteArray("243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89");
+
+        byte[] sec = toByteArray("B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF");
+        byte[] pubkey = toByteArray("02dff1d77f2a671c5f36183726db2341be58feae1da2deced843240f7b502ba659");
+
+        byte[] nonce = toByteArray("67cbfa3d322bbabc3e15510789a7ae670cde7aaccd1d7d966aa51345381c6c6f");
+        String noncePubKeyHex = "2c73d693e9dbf1caec8bb2de97e92b971573ef9773ae56ca4c11add9a8182aaf";
+        byte[] noncePubKey = toByteArray(noncePubKeyHex);
+        String expectedNoncePubKey = toHex(NativeSecp256k1.schnorrPublicNonce(nonce));
+
+        assertEquals(expectedNoncePubKey.substring(0, 2), "03", "schnorrPublicNonce should produce the correct y coordinate");
+        assertEquals(noncePubKeyHex.toUpperCase(), expectedNoncePubKey.substring(2), "schnorrPublicNonce should produce a valid x coordinate");
+
+        byte[] bipSchnorrNonce = toByteArray("921d79a6345d16c7cf9df63620753cf69ef45db8731005cb9a3a89d757e0a5e4");
+
+        byte[] sig1 = NativeSecp256k1.schnorrSignWithNonce(data, sec, nonce);
+        byte[] sig2 = NativeSecp256k1.schnorrSignWithNonce(data, sec, nonce);
+        byte[] sig3 = NativeSecp256k1.schnorrSignWithNonce(data, sec, bipSchnorrNonce);
+
+        String sig1Str = toHex(sig1);
+        String sig2Str = toHex(sig2);
+        String sig3Str = toHex(sig3);
+
+        assertEquals(sig1Str, sig2Str, sig1Str + " should be " + sig2Str);
+        assertNotEquals(sig1Str, sig3Str, sig3Str + " should not be " + sig1Str);
+
+        boolean result = NativeSecp256k1.schnorrVerify(data, sig1, pubkey);
+        assertEquals(result, true, "schnorrSignWithNonce should produce a valid signature");
+
+        String noncePubStr = toHex(noncePubKey);
+
+        assertEquals(sig1Str.substring(0, noncePubStr.length()), noncePubStr, noncePubStr + " should prefix " + sig1Str);
+
+        assertEquals(sig3Str, "2A298DACAE57395A15D0795DDBFD1DCB564DA82B0F269BC70A74F8220429BA1D1E51A22CCEC35599B8F266912281F8365FFC2D035A230434A1A64DC59F7013FD", "schnorrSignWithNonce 2");
+    }
+
+    /**
+     * This tests signSchnorrWithNonce() against the third test case
+     * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr/test-vectors.csv]]
+     */
+    @Test
+    public void testSchnorrSignWithNonce3() throws AssertFailException {
+        byte[] data = toByteArray("5E2D58D8B3BCDF1ABADEC7829054F90DDA9805AAB56C77333024B9D0A508B75C");
+
+        byte[] sec = toByteArray("C90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B14E5C7");
+        byte[] pubkey = toByteArray("03fac2114c2fbb091527eb7c64ecb11f8021cb45e8e7809d3c0938e4b8c0e5f84b");
+
+        byte[] nonce = toByteArray("d00b4d3404e9cfe04b5cc6d9834e6c03acb6d4cf30d10ee733db996c5cc39eba");
+        String noncePubKeyHex = "ef29043b0cb2bc7fe1174f7bbf950c20436dbb835f8d892819b9a1beba48eb0c";
+        byte[] noncePubKey = toByteArray(noncePubKeyHex);
+        String expectedNoncePubKey = toHex(NativeSecp256k1.schnorrPublicNonce(nonce));
+
+        assertEquals(expectedNoncePubKey.substring(0, 2), "03", "schnorrPublicNonce should produce the correct y coordinate");
+        assertEquals(noncePubKeyHex.toUpperCase(), expectedNoncePubKey.substring(2), "schnorrPublicNonce should produce a valid x coordinate");
+
+        byte[] bipSchnorrNonce = toByteArray("688d7ea518846efebd8372ac6b7a3ed82927d078a4572c65cbc8729002a990b6");
+
+        byte[] sig1 = NativeSecp256k1.schnorrSignWithNonce(data, sec, nonce);
+        byte[] sig2 = NativeSecp256k1.schnorrSignWithNonce(data, sec, nonce);
+        byte[] sig3 = NativeSecp256k1.schnorrSignWithNonce(data, sec, bipSchnorrNonce);
+
+        String sig1Str = toHex(sig1);
+        String sig2Str = toHex(sig2);
+        String sig3Str = toHex(sig3);
+
+        assertEquals(sig1Str, sig2Str, sig1Str + " should be " + sig2Str);
+        assertNotEquals(sig1Str, sig3Str, sig3Str + " should not be " + sig1Str);
+
+        boolean result = NativeSecp256k1.schnorrVerify(data, sig1, pubkey);
+        assertEquals(result, true, "schnorrSignWithNonce should produce a valid signature");
+
+        String noncePubStr = toHex(noncePubKey);
+
+        assertEquals(sig1Str.substring(0, noncePubStr.length()), noncePubStr, noncePubStr + " should prefix " + sig1Str);
+
+        assertEquals(sig3Str, "00DA9B08172A9B6F0466A2DEFD817F2D7AB437E0D253CB5395A963866B3574BE00880371D01766935B92D2AB4CD5C8A2A5837EC57FED7660773A05F0DE142380", "schnorrSignWithNonce 3");
     }
 
     @Test
