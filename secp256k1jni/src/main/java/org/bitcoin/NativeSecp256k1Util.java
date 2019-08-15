@@ -37,6 +37,13 @@ public class NativeSecp256k1Util{
         System.out.println("PASS: " + message);
     }
 
+    public static void assertNotEquals( String val, String val2, String message ) throws AssertFailException{
+        if( val.equals(val2) )
+            throw new AssertFailException("FAIL: " + message);
+        else
+            System.out.println("PASS: " + message);
+    }
+
     public static class AssertFailException extends Exception {
       public AssertFailException(String message) {
         super( message );
