@@ -28,7 +28,7 @@ import static org.bitcoin.NativeSecp256k1Util.*;
 /**
  * <p>This class holds native methods to handle ECDSA verification.</p>
  *
- * <p>You can find an example library that can be used for this at https://github.com/bitcoin-core/secp256k1</p>
+ * <p>You can find an example library that can be used for this at https://github.com/bitcoin/secp256k1</p>
  *
  * <p>To build secp256k1 for use with bitcoinj, run
  * `./configure --enable-jni --enable-experimental --enable-module-ecdh`
@@ -66,9 +66,9 @@ public class NativeSecp256k1 {
 
         r.lock();
         try {
-          return secp256k1_ecdsa_verify(byteBuff, Secp256k1Context.getContext(), signature.length, pub.length) == 1;
+            return secp256k1_ecdsa_verify(byteBuff, Secp256k1Context.getContext(), signature.length, pub.length) == 1;
         } finally {
-          r.unlock();
+            r.unlock();
         }
     }
 
@@ -96,9 +96,9 @@ public class NativeSecp256k1 {
 
         r.lock();
         try {
-          retByteArray = secp256k1_ecdsa_sign(byteBuff, Secp256k1Context.getContext());
+            retByteArray = secp256k1_ecdsa_sign(byteBuff, Secp256k1Context.getContext());
         } finally {
-          r.unlock();
+            r.unlock();
         }
 
         byte[] sigArr = retByteArray[0];
@@ -130,9 +130,9 @@ public class NativeSecp256k1 {
 
         r.lock();
         try {
-          return secp256k1_ec_seckey_verify(byteBuff,Secp256k1Context.getContext()) == 1;
+            return secp256k1_ec_seckey_verify(byteBuff,Secp256k1Context.getContext()) == 1;
         } finally {
-          r.unlock();
+            r.unlock();
         }
     }
 
@@ -160,9 +160,9 @@ public class NativeSecp256k1 {
 
         r.lock();
         try {
-          retByteArray = secp256k1_ec_pubkey_create(byteBuff, Secp256k1Context.getContext(), compressed);
+            retByteArray = secp256k1_ec_pubkey_create(byteBuff, Secp256k1Context.getContext(), compressed);
         } finally {
-          r.unlock();
+            r.unlock();
         }
 
         byte[] pubArr = retByteArray[0];
@@ -181,17 +181,17 @@ public class NativeSecp256k1 {
     public static synchronized void cleanup() {
         w.lock();
         try {
-          secp256k1_destroy_context(Secp256k1Context.getContext());
+            secp256k1_destroy_context(Secp256k1Context.getContext());
         } finally {
-          w.unlock();
+            w.unlock();
         }
     }
 
     public static long cloneContext() {
-       r.lock();
-       try {
-        return secp256k1_ctx_clone(Secp256k1Context.getContext());
-       } finally { r.unlock(); }
+        r.lock();
+        try {
+            return secp256k1_ctx_clone(Secp256k1Context.getContext());
+        } finally { r.unlock(); }
     }
 
     /**
@@ -216,9 +216,9 @@ public class NativeSecp256k1 {
         byte[][] retByteArray;
         r.lock();
         try {
-          retByteArray = secp256k1_privkey_tweak_mul(byteBuff,Secp256k1Context.getContext());
+            retByteArray = secp256k1_privkey_tweak_mul(byteBuff,Secp256k1Context.getContext());
         } finally {
-          r.unlock();
+            r.unlock();
         }
 
         byte[] privArr = retByteArray[0];
@@ -255,9 +255,9 @@ public class NativeSecp256k1 {
         byte[][] retByteArray;
         r.lock();
         try {
-          retByteArray = secp256k1_privkey_tweak_add(byteBuff,Secp256k1Context.getContext());
+            retByteArray = secp256k1_privkey_tweak_add(byteBuff,Secp256k1Context.getContext());
         } finally {
-          r.unlock();
+            r.unlock();
         }
 
         byte[] privArr = retByteArray[0];
@@ -295,9 +295,9 @@ public class NativeSecp256k1 {
         byte[][] retByteArray;
         r.lock();
         try {
-          retByteArray = secp256k1_pubkey_tweak_add(byteBuff, Secp256k1Context.getContext(), pubkey.length, compressed);
+            retByteArray = secp256k1_pubkey_tweak_add(byteBuff, Secp256k1Context.getContext(), pubkey.length, compressed);
         } finally {
-          r.unlock();
+            r.unlock();
         }
 
         byte[] pubArr = retByteArray[0];
@@ -335,9 +335,9 @@ public class NativeSecp256k1 {
         byte[][] retByteArray;
         r.lock();
         try {
-          retByteArray = secp256k1_pubkey_tweak_mul(byteBuff,Secp256k1Context.getContext(), pubkey.length, compressed);
+            retByteArray = secp256k1_pubkey_tweak_mul(byteBuff,Secp256k1Context.getContext(), pubkey.length, compressed);
         } finally {
-          r.unlock();
+            r.unlock();
         }
 
         byte[] pubArr = retByteArray[0];
@@ -443,9 +443,9 @@ public class NativeSecp256k1 {
         byte[][] retByteArray;
         r.lock();
         try {
-          retByteArray = secp256k1_ecdh(byteBuff, Secp256k1Context.getContext(), pubkey.length);
+            retByteArray = secp256k1_ecdh(byteBuff, Secp256k1Context.getContext(), pubkey.length);
         } finally {
-          r.unlock();
+            r.unlock();
         }
 
         byte[] resArr = retByteArray[0];
@@ -482,6 +482,80 @@ public class NativeSecp256k1 {
         r.lock();
         try {
             retByteArray = secp256k1_schnorrsig_sign(byteBuff, Secp256k1Context.getContext());
+        } finally {
+            r.unlock();
+        }
+
+        byte[] sigArr = retByteArray[0];
+        int retVal = new BigInteger(new byte[] { retByteArray[1][0] }).intValue();
+
+        assertEquals(sigArr.length, 64, "Got bad signature length.");
+
+        return retVal == 0 ? new byte[0] : sigArr;
+    }
+
+    /**
+     * libsecp256k1 Compute pubkey associated with schnorr nonce.
+     *
+     * @param nonce Schnorr nonce, 32 bytes
+     * @return pubkey 33 byte ECPublicKey associated with nonce
+     */
+    public static byte[] schnorrPublicNonce(byte[] nonce) throws AssertFailException {
+        checkArgument(nonce.length == 32);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < nonce.length) {
+            byteBuff = ByteBuffer.allocateDirect(32);
+
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(nonce);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_schnorrsig_pubnonce(byteBuff, Secp256k1Context.getContext());
+        } finally {
+            r.unlock();
+        }
+
+        byte[] pubKeyArr = retByteArray[0];
+        int retVal = new BigInteger(new byte[] { retByteArray[1][0] }).intValue();
+
+        assertEquals(pubKeyArr.length, 33, "Got bad pubkey length.");
+
+        return retVal == 0 ? new byte[0] : pubKeyArr;
+    }
+
+    /**
+     * libsecp256k1 Create a Schnorr signature using a specified nonce.
+     *
+     * @param data Message hash, 32 bytes
+     * @param seckey Secret key, 32 bytes
+     * @param nonce One-time nonce, 32 bytes
+     * @return sig byte array of signature
+     */
+    public static byte[] schnorrSignWithNonce(byte[] data, byte[] seckey, byte[] nonce) throws AssertFailException {
+        checkArgument(data.length == 32 && seckey.length == 32 && nonce.length == 32);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < data.length + seckey.length + nonce.length) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 32 + 32);
+
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(data);
+        byteBuff.put(seckey);
+        byteBuff.put(nonce);
+
+        byte[][] retByteArray;
+
+        r.lock();
+        try {
+            retByteArray = secp256k1_schnorrsig_sign_with_nonce(byteBuff, Secp256k1Context.getContext());
         } finally {
             r.unlock();
         }
@@ -545,9 +619,9 @@ public class NativeSecp256k1 {
 
         w.lock();
         try {
-          return secp256k1_context_randomize(byteBuff, Secp256k1Context.getContext()) == 1;
+            return secp256k1_context_randomize(byteBuff, Secp256k1Context.getContext()) == 1;
         } finally {
-          w.unlock();
+            w.unlock();
         }
     }
 
@@ -578,6 +652,10 @@ public class NativeSecp256k1 {
     private static native int secp256k1_schnorrsig_verify(ByteBuffer byteBuff, long context, int pubLen);
 
     private static native byte[][] secp256k1_schnorrsig_sign(ByteBuffer byteBuff, long context);
+
+    private static native byte[][] secp256k1_schnorrsig_pubnonce(ByteBuffer byteBuff, long context);
+
+    private static native byte[][] secp256k1_schnorrsig_sign_with_nonce(ByteBuffer byteBuff, long context);
 
     private static native byte[][] secp256k1_ecdh(ByteBuffer byteBuff, long context, int inputLen);
 
