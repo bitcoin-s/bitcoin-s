@@ -8,18 +8,22 @@ import slick.jdbc.SQLiteProfile.api._
 case class CompactFilterHeaderDb(
   hashBE: DoubleSha256DigestBE,
   filterHashBE: DoubleSha256DigestBE,
-  previousFilterHeaderBE: DoubleSha256DigestBE) {
+  previousFilterHeaderBE: DoubleSha256DigestBE,
+  blockHash: DoubleSha256DigestBE,
+  height: Int) {
 
   def filterHeader: FilterHeader = FilterHeader(hashBE.flip, previousFilterHeaderBE.flip)
 }
 
 object CompactFilterHeaderDbHelper {
 
-  def fromFilterHeader(filterHeader: FilterHeader) =
+  def fromFilterHeader(filterHeader: FilterHeader, blockHash: DoubleSha256DigestBE, height: Int) =
     CompactFilterHeaderDb(
       hashBE = filterHeader.hash.flip,
       filterHashBE = filterHeader.filterHash.flip,
-      previousFilterHeaderBE = filterHeader.prevHeaderHash.flip
+      previousFilterHeaderBE = filterHeader.prevHeaderHash.flip,
+      blockHash = blockHash,
+      height = height
     )
 }
 
@@ -33,8 +37,13 @@ class CompactFilterHeaderTable(tag: Tag)
 
   def previousFilterHeader = column[DoubleSha256DigestBE]("previous_filter_header")
 
+  def blockHash = column[DoubleSha256DigestBE]("block_hash")
+
+  def height = column[Int]("height")
+
+  def heightIndex = index("cfheaders_height_index", height)
 
   override def * = {
-    (hash, filterHash, previousFilterHeader) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)
+    (hash, filterHash, previousFilterHeader, blockHash, height) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)
   }
 }

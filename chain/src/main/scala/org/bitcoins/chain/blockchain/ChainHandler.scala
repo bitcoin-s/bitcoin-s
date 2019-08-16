@@ -5,11 +5,12 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterHeaderDAO, CompactFilterHeaderDbHelper}
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.chain.validation.TipUpdateResult.{BadNonce, BadPOW, BadPreviousBlockHash}
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.ChainVerificationLogger
+import org.sqlite.{SQLiteErrorCode, SQLiteException}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -152,10 +153,20 @@ case class ChainHandler(
     Future.successful(hashBE)
   }
 
-  override def processFilterHeader(filterHeader: FilterHeader)(implicit ec: ExecutionContext): Future[ChainApi] = {
-    val filterHeaderDb = CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader)
+  override def processFilterHeader(filterHeader: FilterHeader, blockHash: DoubleSha256DigestBE, height: Int)(implicit ec: ExecutionContext): Future[ChainApi] = {
+    val filterHeaderDb = CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader, blockHash, height)
     for {
-      _ <- filterHeaderDAO.create(filterHeaderDb)
+      _ <- filterHeaderDAO.create(filterHeaderDb).recoverWith {
+        case e: SQLiteException if e.getResultCode == SQLiteErrorCode.SQLITE_CONSTRAINT =>
+          filterHeaderDAO.findByHash(filterHeaderDb.hashBE).map {
+            case Some(fhDb) =>
+              if (fhDb != filterHeaderDb)
+                throw new RuntimeException(s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB")
+              else
+                fhDb
+            case None => throw new RuntimeException("Something is really wrong with cfheader table")
+          }
+      }
     } yield this
   }
 }

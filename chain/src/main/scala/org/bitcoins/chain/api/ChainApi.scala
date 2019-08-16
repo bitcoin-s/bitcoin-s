@@ -1,7 +1,7 @@
 package org.bitcoins.chain.api
 
 import org.bitcoins.chain.models.BlockHeaderDb
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -63,15 +63,29 @@ trait ChainApi {
       }
   }
 
-  def processFilterHeader(filterHeader: FilterHeader)(
-    implicit ec: ExecutionContext): Future[ChainApi]
+  def processFilterHeader(
+      filterHeader: FilterHeader,
+      blockHash: DoubleSha256DigestBE,
+      height: Int)(implicit ec: ExecutionContext): Future[ChainApi]
 
-  def processFilterHeaders(filterHeaders: Vector[FilterHeader])(
-    implicit ec: ExecutionContext): Future[ChainApi] = {
-    filterHeaders.foldLeft(Future.successful(this)) {
-      case (chainF, filterHeader) =>
-        chainF.flatMap(_.processFilterHeader(filterHeader))
-    }
+  def processFilterHeaders(
+      filterHeaders: Vector[FilterHeader],
+      stopHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
+
+    filterHeaders.reverseIterator
+      .foldLeft(Future.successful(stopHash)) { (blockHashF, filterHeader) =>
+        for {
+          blockHash <- blockHashF
+          headerOpt <- getHeader(blockHash)
+          header = headerOpt.getOrElse(
+            throw new RuntimeException(s"Unknown block hash ${blockHash.hex}"))
+          _ <- processFilterHeader(filterHeader, blockHash, header.height)
+        } yield {
+          header.previousBlockHashBE
+        }
+      }
+      .map(_ => this)
   }
 
 }
