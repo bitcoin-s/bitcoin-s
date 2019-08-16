@@ -49,7 +49,7 @@ object GCS {
   def buildBasicBlockFilter(
       data: Vector[ByteVector],
       key: SipHashKey): GolombFilter = {
-    buildGolombFilter(data, key, BlockFilter.P, BlockFilter.M)
+    buildGolombFilter(data, key, FilterType.Basic.P, FilterType.Basic.M)
   }
 
   private def sipHash(item: ByteVector, key: SipHashKey): UInt64 = {

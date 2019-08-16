@@ -4,23 +4,16 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.db.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{
-  BroadcastAbleTransaction,
-  BroadcastAbleTransactionDAO,
-  Peer
-}
+import org.bitcoins.node.models.{BroadcastAbleTransaction, BroadcastAbleTransactionDAO, Peer}
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
 import org.bitcoins.rpc.util.AsyncUtil
 import slick.jdbc.SQLiteProfile
 
@@ -28,6 +21,8 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
+// TODO either rename this, or split
+// into SPV node and Neutrino node
 case class SpvNode(
     peer: Peer,
     bloomFilter: BloomFilter,
@@ -39,10 +34,16 @@ case class SpvNode(
     extends P2PLogger {
   import system.dispatcher
 
-  /** This implicit is required for using the [[akka.pattern.ask akka ask]]
-    * to query what the state of our node is, like [[isConnected isConnected]]
-    * */
-  implicit private val timeout = akka.util.Timeout(10.seconds)
+  if (!(nodeAppConfig.isSPVEnabled || nodeAppConfig.isNeutrinoEnabled)) {
+    logger(nodeAppConfig).warn(
+      s"Neither Neutrino nor SPV mode is enabled. This means you won't receive any data.")
+  }
+
+  if (nodeAppConfig.isSPVEnabled && nodeAppConfig.isNeutrinoEnabled) {
+    logger(nodeAppConfig).warn(
+      s"Both Neutrino and SPV mode is enabled. This means you will be banned by your peers.")
+  }
+
   private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
   /** This is constructing a chain api from disk every time we call this method
@@ -50,7 +51,7 @@ case class SpvNode(
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     * */
   def chainApiFromDb(): Future[ChainApi] = {
-    ChainHandler.fromDatabase(BlockHeaderDAO())
+    ChainHandler.fromDatabase(BlockHeaderDAO(), CompactFilterHeaderDAO())
   }
 
   /** Unlike our chain api, this is cached inside our spv node
@@ -148,10 +149,26 @@ case class SpvNode(
           this
         }
       }
-      _ <- peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
+      chainApi <- chainApiFromDb()
+      bestHash <- chainApi.getBestBlockHash
+      blockCount <- chainApi.getBlockCount
     } yield {
-      logger(nodeAppConfig).info(
-        s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+      if (nodeAppConfig.isSPVEnabled) {
+        // TODO keep track of where to request from
+        logger(nodeAppConfig).info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+        peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
+      }
+
+      // we're going to get banned if we request the genesis block
+      if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0) {
+        // TODO keep track of where to request from
+//        logger.info(s"Requesting compact filter header checkpoints up to=$bestHash")
+//        peerMsgSenderF.map(_.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip))
+        logger(nodeAppConfig).info(s"Requesting compact filter headers from=0 to=$bestHash")
+        peerMsgSenderF.map(_.sendGetCompactFilterHeadersMessage(startHeight = 0,
+          stopHash = bestHash.flip))
+      }
+
       node
     }
   }

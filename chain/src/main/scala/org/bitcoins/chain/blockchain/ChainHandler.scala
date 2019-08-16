@@ -2,14 +2,11 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterHeaderDAO, CompactFilterHeaderDbHelper}
 import org.bitcoins.chain.validation.TipUpdateResult
-import org.bitcoins.chain.validation.TipUpdateResult.{
-  BadNonce,
-  BadPOW,
-  BadPreviousBlockHash
-}
+import org.bitcoins.chain.validation.TipUpdateResult.{BadNonce, BadPOW, BadPreviousBlockHash}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.ChainVerificationLogger
@@ -23,6 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class ChainHandler(
     blockHeaderDAO: BlockHeaderDAO,
+    filterHeaderDAO: CompactFilterHeaderDAO,
     blockchains: Vector[Blockchain])(
     implicit private[chain] val chainConfig: ChainAppConfig)
     extends ChainApi
@@ -84,7 +82,7 @@ case class ChainHandler(
             }
           }
 
-          ChainHandler(blockHeaderDAO, updatedChains)
+          ChainHandler(blockHeaderDAO, filterHeaderDAO, updatedChains)
         }
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
@@ -153,6 +151,13 @@ case class ChainHandler(
     }
     Future.successful(hashBE)
   }
+
+  override def processFilterHeader(filterHeader: FilterHeader)(implicit ec: ExecutionContext): Future[ChainApi] = {
+    val filterHeaderDb = CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader)
+    for {
+      _ <- filterHeaderDAO.create(filterHeaderDb)
+    } yield this
+  }
 }
 
 object ChainHandler {
@@ -160,17 +165,17 @@ object ChainHandler {
   /** Constructs a [[ChainHandler chain handler]] from the state in the database
     * This gives us the guaranteed latest state we have in the database
     * */
-  def fromDatabase(blockHeaderDAO: BlockHeaderDAO)(
+  def fromDatabase(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO)(
       implicit ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[ChainHandler] = {
     val bestChainsF = blockHeaderDAO.getBlockchains()
 
     bestChainsF.map(chains =>
-      new ChainHandler(blockHeaderDAO = blockHeaderDAO, blockchains = chains))
+      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, blockchains = chains))
   }
 
-  def apply(blockHeaderDAO: BlockHeaderDAO, blockchains: Blockchain)(
+  def apply(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, blockchains: Blockchain)(
       implicit chainConfig: ChainAppConfig): ChainHandler = {
-    new ChainHandler(blockHeaderDAO, Vector(blockchains))
+    new ChainHandler(blockHeaderDAO, filterHeaderDAO, Vector(blockchains))
   }
 }

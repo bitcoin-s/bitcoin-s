@@ -1,16 +1,35 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.core.p2p.{Inventory, MsgUnassigned, TypeIdentifier, _}
-import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.db.P2PLogger
-import org.bitcoins.node.SpvNodeCallbacks
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import slick.jdbc.SQLiteProfile
+import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
 
 import scala.concurrent.{ExecutionContext, Future}
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.blockchain.MerkleBlock
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.p2p.BlockMessage
+import org.bitcoins.core.p2p.TransactionMessage
+import org.bitcoins.core.p2p.MerkleBlockMessage
+import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.core.p2p.GetDataMessage
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import slick.jdbc.SQLiteProfile
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.core.p2p.TypeIdentifier
+import org.bitcoins.core.p2p.MsgUnassigned
+import org.bitcoins.db.P2PLogger
+import org.bitcoins.core.p2p.Inventory
+import org.bitcoins.core.p2p.CompactFilterCheckPointMessage
+import org.bitcoins.core.p2p.CompactFilterHeadersMessage
+import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.p2p.GetBlocksMessage
+import org.bitcoins.core.p2p.MemPoolMessage
+import org.bitcoins.core.p2p.GetHeadersMessage
+import org.bitcoins.core.p2p.GetCompactFiltersMessage
+import org.bitcoins.core.p2p.GetCompactFilterHeadersMessage
+import org.bitcoins.core.p2p.GetCompactFilterCheckPointMessage
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -29,6 +48,27 @@ class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
 
     payload match {
+      case checkpoint: CompactFilterCheckPointMessage =>
+        // TODO implement me
+        logger.debug(
+          s"Received ${checkpoint.commandName} message, this is not implemented yet")
+        Future.successful(this)
+      case filterHeader: CompactFilterHeadersMessage =>
+        logger.debug(s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
+        val filterHeaders = CompactFilterHeadersMessage.extractFilterHeaders(filterHeader)
+        chainApi.processFilterHeaders(filterHeaders)
+        Future.successful(this)
+      case filter: CompactFilterMessage =>
+        // TODO implement me
+        logger.debug(
+          s"Received ${filter.commandName}, this is not implemented yet")
+        Future.successful(this)
+      case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
+          _: GetBlocksMessage | _: GetCompactFiltersMessage |
+          _: GetCompactFilterHeadersMessage |
+          _: GetCompactFilterCheckPointMessage) =>
+        logger.debug(s"Received ${notHandling.commandName} message, skipping ")
+        Future.successful(this)
       case getData: GetDataMessage =>
         logger.debug(
           s"Received a getdata message for inventories=${getData.inventories}")

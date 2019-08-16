@@ -7,11 +7,7 @@ import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper, CompactFilterHeaderDAO}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -184,7 +180,8 @@ trait ChainUnitTest
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
-      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO)
+      filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
+      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO)
     } yield chainHandler
   }
 
@@ -328,6 +325,18 @@ object ChainUnitTest extends BitcoinSLogger {
     chainHandlerF.map(_.blockHeaderDAO)
   }
 
+  def createFilterHeaderDAO()(
+    implicit appConfig: ChainAppConfig,
+    ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
+    Future.successful(CompactFilterHeaderDAO())
+  }
+
+  def createPopulatedFilterHeaderDAO()(
+    implicit appConfig: ChainAppConfig,
+    ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
+    createFilterHeaderDAO()
+  }
+
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
   def createPopulatedBlockHeaderDAO()(
       implicit appConfig: ChainAppConfig,
@@ -436,8 +445,9 @@ object ChainUnitTest extends BitcoinSLogger {
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[ChainHandler] = {
     lazy val blockHeaderDAO = BlockHeaderDAO()
+    lazy val filterHeaderDAO = CompactFilterHeaderDAO()
 
-    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO)
+    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO)
 
   }
 

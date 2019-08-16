@@ -137,6 +137,23 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
+  def sendGetCompactFilterHeadersMessage(
+      startHeight: Int,
+      stopHash: DoubleSha256Digest)(
+    implicit ec: ExecutionContext): Future[Unit] = {
+    val message =
+      GetCompactFilterHeadersMessage(startHeight, stopHash)
+    logger.trace(s"Sending getcfheaders=$message to peer ${client.peer}")
+    sendMsg(message)
+  }
+
+  def sendGetCompactFilterCheckPointMessage(stopHash: DoubleSha256Digest)(
+    implicit ec: ExecutionContext): Future[Unit] = {
+    val message = GetCompactFilterCheckPointMessage(stopHash)
+    logger.trace(s"Sending getcfcheckpt=$message to peer ${client.peer}")
+    sendMsg(message)
+  }
+
   private[node] def sendMsg(msg: NetworkPayload)(
       implicit ec: ExecutionContext): Future[Unit] = {
     isInitialized().map { _ =>

@@ -18,6 +18,9 @@ import java.net.InetSocketAddress
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.bloom.BloomFlag
 import org.bitcoins.core.crypto.HashDigest
+import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.gcs.FilterType
+import org.bitcoins.core.gcs.GolombFilter
 
 /**
   * Trait that represents a payload for a message on the Bitcoin p2p network
@@ -870,6 +873,169 @@ case object VerAckMessage extends ControlPayload {
   override val bytes: ByteVector = ByteVector.empty
 }
 
+// TODO doc
+case class GetCompactFiltersMessage(
+    filterType: FilterType,
+    startHeight: UInt32,
+    stopHash: DoubleSha256Digest)
+    extends DataPayload {
+  val commandName: String = NetworkPayload.getCompactFiltersCommandName
+
+  def bytes: ByteVector = ???
+}
+
+object GetCompactFiltersMessage extends Factory[GetCompactFiltersMessage] {
+  def fromBytes(bytes: ByteVector): GetCompactFiltersMessage = ???
+
+  /** Constructs a message with the default basic filter type */
+  def apply(startHeight: UInt32, stopHash: DoubleSha256Digest) =
+    new GetCompactFiltersMessage(FilterType.Basic, startHeight, stopHash)
+}
+
+// TODO doc
+case class CompactFilterMessage(
+    filterType: FilterType,
+    blockHash: DoubleSha256Digest,
+    filterBytes: ByteVector
+) extends DataPayload {
+
+  /** The number of filter bytes in this message */
+  val numFilterBytes: CompactSizeUInt = CompactSizeUInt(
+    UInt64(filterBytes.length))
+
+  val commandName: String = NetworkPayload.compactFilterCommandName
+  def bytes: ByteVector = ???
+}
+
+object CompactFilterMessage extends Factory[CompactFilterMessage] {
+
+  /** Constructs a message from the tiven blockhash and filter */
+  def apply(
+      blockHash: DoubleSha256Digest,
+      filter: GolombFilter): CompactFilterMessage = {
+    val filterBytes = filter.bytes
+    new CompactFilterMessage(FilterType.Basic, blockHash, filterBytes)
+  }
+
+  def fromBytes(bytes: ByteVector): CompactFilterMessage = ???
+}
+
+// TODO doc
+/**
+  * `getcfheaders` is used to request verifiable filter headers for a range of blocks
+  *
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfheaders BIP157]]
+  */
+case class GetCompactFilterHeadersMessage(
+    filterType: FilterType,
+    startHeight: UInt32,
+    stopHash: DoubleSha256Digest
+) extends DataPayload {
+  val commandName: String = NetworkPayload.getCompactFilterHeadersCommandName
+
+  def bytes: ByteVector =
+    RawGetCompactFilterHeadersMessageSerializer.write(this)
+}
+
+object GetCompactFilterHeadersMessage
+    extends Factory[GetCompactFilterHeadersMessage] {
+
+  /** Constructs a message from the given startheight and stophash */
+  def apply(
+      startHeight: Int,
+      stopHash: DoubleSha256Digest): GetCompactFilterHeadersMessage = {
+    new GetCompactFilterHeadersMessage(FilterType.Basic,
+                                       UInt32(startHeight),
+                                       stopHash)
+  }
+
+  def fromBytes(bytes: ByteVector): GetCompactFilterHeadersMessage = ???
+}
+
+/**
+  * `cfheaders` is sent in response to `getcfheaders`. Instead of including
+  * the filter headers themselves, the response includes one filter header
+  * and a sequence of filter hashes, from which the headers can be derived.
+  * This has the benefit that the client can verify the binding links
+  * between the headers.
+  *
+  * TODO: doc on params
+  *
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfheaders BIP157]]
+  */
+case class CompactFilterHeadersMessage(
+    filterType: FilterType,
+    stopHash: DoubleSha256Digest,
+    previousFilterHeader: DoubleSha256Digest,
+    filterHashes: Vector[DoubleSha256Digest])
+    extends DataPayload {
+
+  /** The number of hashes in this message */
+  val filterHashesLength: CompactSizeUInt = CompactSizeUInt(
+    UInt64(filterHashes.length))
+
+  val commandName: String = NetworkPayload.compactFilterHeadersCommandName
+  def bytes: ByteVector = RawCompactFilterHeadersMessageSerializer.write(this)
+
+  override def toString(): String =
+    s"CompactFilterHeadersMessage($filterType, stopHash=$stopHash, previousFilterHeader=$previousFilterHeader, filterHashes=$filterHashes)"
+}
+
+object CompactFilterHeadersMessage
+    extends Factory[CompactFilterHeadersMessage] {
+
+  def fromBytes(bytes: ByteVector): CompactFilterHeadersMessage =
+    RawCompactFilterHeadersMessageSerializer.read(bytes)
+
+  def extractFilterHeaders(message: CompactFilterHeadersMessage): Vector[FilterHeader] = {
+    val z = FilterHeader(message.filterHashes.head, message.previousFilterHeader)
+    message.filterHashes.tail.foldLeft(Vector(z)) { (acc, x) =>
+      acc :+ acc.last.nextHeader(x)
+    }
+  }
+}
+
+// TODO doc
+case class GetCompactFilterCheckPointMessage(
+    filterType: FilterType,
+    stopHash: DoubleSha256Digest)
+    extends DataPayload {
+  val commandName: String = NetworkPayload.getCompactFilterCheckpointCommandName
+
+  def bytes: ByteVector = RawGetCompactFilterCheckpointMessageSerializer.write(this)
+}
+
+object GetCompactFilterCheckPointMessage
+    extends Factory[GetCompactFilterCheckPointMessage] {
+
+  def apply(stopHash: DoubleSha256Digest): GetCompactFilterCheckPointMessage = {
+    new GetCompactFilterCheckPointMessage(FilterType.Basic,
+      stopHash)
+  }
+
+  def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage = ???
+}
+
+// TODO doc
+case class CompactFilterCheckPointMessage(
+    filterType: FilterType,
+    stophash: DoubleSha256Digest,
+    filterHeaders: Vector[FilterHeader])
+    extends DataPayload {
+
+  /** The amount of filter headers in this message */
+  val filterHeadersLength: CompactSizeUInt = CompactSizeUInt(
+    UInt64(filterHeaders.length))
+
+  val commandName: String = NetworkPayload.compactFilterCheckpointCommandName
+  def bytes: ByteVector = ???
+}
+
+object CompactFilterCheckPointMessage
+    extends Factory[CompactFilterCheckPointMessage] {
+  def fromBytes(bytes: ByteVector): CompactFilterCheckPointMessage = ???
+}
+
 /**
   * The version message provides information about the transmitting node to the
   * receiving node at the beginning of a connection.
@@ -1083,29 +1249,35 @@ object VersionMessage extends Factory[VersionMessage] {
 }
 
 object NetworkPayload {
-  val alertCommandName = "alert"
-  val blockCommandName = "block"
-  val getBlocksCommandName = "getblocks"
-  val getHeadersCommandName = "getheaders"
-  val headersCommandName = "headers"
-  val invCommandName = "inv"
-  val getDataCommandName = "getdata"
-  val memPoolCommandName = "mempool"
-  val merkleBlockCommandName = "merkleblock"
-  val notFoundCommandName = "notfound"
-  val transactionCommandName = "tx"
-  val addrCommandName = "addr"
-  val feeFilterCommandName = "feefilter"
-  val filterAddCommandName = "filteradd"
-  val filterClearCommandName = "filterclear"
-  val filterLoadCommandName = "filterload"
-  val getAddrCommandName = "getaddr"
-  val pingCommandName = "ping"
-  val pongCommandName = "pong"
-  val rejectCommandName = "reject"
-  val sendHeadersCommandName = "sendheaders"
-  val verAckCommandName = "verack"
-  val versionCommandName = "version"
+  private[core] val alertCommandName = "alert"
+  private[core] val blockCommandName = "block"
+  private[core] val getBlocksCommandName = "getblocks"
+  private[core] val getHeadersCommandName = "getheaders"
+  private[core] val headersCommandName = "headers"
+  private[core] val invCommandName = "inv"
+  private[core] val getDataCommandName = "getdata"
+  private[core] val memPoolCommandName = "mempool"
+  private[core] val merkleBlockCommandName = "merkleblock"
+  private[core] val notFoundCommandName = "notfound"
+  private[core] val transactionCommandName = "tx"
+  private[core] val addrCommandName = "addr"
+  private[core] val feeFilterCommandName = "feefilter"
+  private[core] val filterAddCommandName = "filteradd"
+  private[core] val filterClearCommandName = "filterclear"
+  private[core] val filterLoadCommandName = "filterload"
+  private[core] val getAddrCommandName = "getaddr"
+  private[core] val pingCommandName = "ping"
+  private[core] val pongCommandName = "pong"
+  private[core] val rejectCommandName = "reject"
+  private[core] val sendHeadersCommandName = "sendheaders"
+  private[core] val verAckCommandName = "verack"
+  private[core] val versionCommandName = "version"
+  private[core] val getCompactFiltersCommandName = "getcfilters"
+  private[core] val compactFilterCommandName = "cfilter"
+  private[core] val getCompactFilterHeadersCommandName = "getcfheaders"
+  private[core] val compactFilterHeadersCommandName = "cfheaders"
+  private[core] val getCompactFilterCheckpointCommandName = "getcfcheckpt"
+  private[core] val compactFilterCheckpointCommandName = "cfcheckpt"
 
   /**
     * Contains all the valid command names with their deserializer on the p2p protocol.
@@ -1116,38 +1288,44 @@ object NetworkPayload {
     *
     */
   val readers: Map[String, ByteVector => NetworkPayload] = Map(
-    blockCommandName -> { RawBlockMessageSerializer.read(_) },
-    getBlocksCommandName -> { RawGetBlocksMessageSerializer.read(_) },
-    getHeadersCommandName -> { RawGetHeadersMessageSerializer.read(_) },
-    getDataCommandName -> { RawGetDataMessageSerializer.read(_) },
-    headersCommandName -> { RawHeadersMessageSerializer.read(_) },
-    invCommandName -> { RawInventoryMessageSerializer.read(_) },
+    blockCommandName -> RawBlockMessageSerializer.read,
+    getBlocksCommandName -> RawGetBlocksMessageSerializer.read,
+    getHeadersCommandName -> RawGetHeadersMessageSerializer.read,
+    getDataCommandName -> RawGetDataMessageSerializer.read,
+    headersCommandName -> RawHeadersMessageSerializer.read,
+    invCommandName -> RawInventoryMessageSerializer.read,
     memPoolCommandName -> { _: ByteVector =>
       MemPoolMessage
     },
-    merkleBlockCommandName -> { RawMerkleBlockMessageSerializer.read(_) },
-    notFoundCommandName -> { RawNotFoundMessageSerializer.read(_) },
-    transactionCommandName -> { RawTransactionMessageSerializer.read(_) },
-    addrCommandName -> { RawAddrMessageSerializer.read(_) },
-    feeFilterCommandName -> { RawFeeFilterMessageSerializer.read(_) },
-    filterAddCommandName -> { RawFilterAddMessageSerializer.read(_) },
+    merkleBlockCommandName -> RawMerkleBlockMessageSerializer.read,
+    notFoundCommandName -> RawNotFoundMessageSerializer.read,
+    transactionCommandName -> RawTransactionMessageSerializer.read,
+    addrCommandName -> RawAddrMessageSerializer.read,
+    feeFilterCommandName -> RawFeeFilterMessageSerializer.read,
+    filterAddCommandName -> RawFilterAddMessageSerializer.read,
     filterClearCommandName -> { _: ByteVector =>
       FilterClearMessage
     },
-    filterLoadCommandName -> { RawFilterLoadMessageSerializer.read(_) },
+    filterLoadCommandName -> RawFilterLoadMessageSerializer.read,
     getAddrCommandName -> { _: ByteVector =>
       GetAddrMessage
     },
-    pingCommandName -> { RawPingMessageSerializer.read(_) },
-    pongCommandName -> { RawPongMessageSerializer.read(_) },
-    rejectCommandName -> { RawRejectMessageSerializer.read(_) },
+    pingCommandName -> RawPingMessageSerializer.read,
+    pongCommandName -> RawPongMessageSerializer.read,
+    rejectCommandName -> RawRejectMessageSerializer.read,
     sendHeadersCommandName -> { _: ByteVector =>
       SendHeadersMessage
     },
     verAckCommandName -> { _: ByteVector =>
       VerAckMessage
     },
-    versionCommandName -> { RawVersionMessageSerializer.read(_) }
+    versionCommandName -> RawVersionMessageSerializer.read,
+    getCompactFiltersCommandName -> RawGetCompactFiltersMessageSerializer.read,
+    compactFilterCommandName -> RawCompactFilterMessageSerializer.read,
+    getCompactFilterHeadersCommandName -> RawGetCompactFilterHeadersMessageSerializer.read,
+    compactFilterHeadersCommandName -> RawCompactFilterHeadersMessageSerializer.read,
+    getCompactFilterCheckpointCommandName -> RawGetCompactFilterCheckpointMessageSerializer.read,
+    compactFilterCheckpointCommandName -> RawCompactFilterCheckpointMessageSerializer.read
   )
 
   /** All command names for P2P messages */

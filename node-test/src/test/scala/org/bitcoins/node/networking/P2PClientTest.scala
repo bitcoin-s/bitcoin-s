@@ -131,9 +131,11 @@ class P2PClientTest
 
   override def beforeAll(): Unit = {
     ChainDbManagement.createHeaderTable()
+    ChainDbManagement.creareFilterHeaderTable()
   }
 
   override def afterAll(): Unit = {
+    ChainDbManagement.dropFilterHeaderTable()
     ChainDbManagement.dropHeaderTable()
     super.afterAll()
   }

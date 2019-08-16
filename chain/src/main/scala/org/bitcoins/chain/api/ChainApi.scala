@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.gcs.FilterHeader
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -61,4 +62,16 @@ trait ChainApi {
         case Some(header) => header
       }
   }
+
+  def processFilterHeader(filterHeader: FilterHeader)(
+    implicit ec: ExecutionContext): Future[ChainApi]
+
+  def processFilterHeaders(filterHeaders: Vector[FilterHeader])(
+    implicit ec: ExecutionContext): Future[ChainApi] = {
+    filterHeaders.foldLeft(Future.successful(this)) {
+      case (chainF, filterHeader) =>
+        chainF.flatMap(_.processFilterHeader(filterHeader))
+    }
+  }
+
 }
