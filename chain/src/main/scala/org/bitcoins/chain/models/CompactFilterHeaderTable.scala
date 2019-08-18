@@ -43,6 +43,8 @@ class CompactFilterHeaderTable(tag: Tag)
 
   def heightIndex = index("cfheaders_height_index", height)
 
+  def blockHashIndex = index("cfheaders_block_hash_index", height)
+
   override def * = {
     (hash, filterHash, previousFilterHeader, blockHash, height) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)
   }

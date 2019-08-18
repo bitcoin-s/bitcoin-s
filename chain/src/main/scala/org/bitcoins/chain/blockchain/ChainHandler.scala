@@ -5,8 +5,8 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterHeaderDAO, CompactFilterHeaderDbHelper}
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.chain.validation.TipUpdateResult.{BadNonce, BadPOW, BadPreviousBlockHash}
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.ChainVerificationLogger
@@ -22,7 +22,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class ChainHandler(
     blockHeaderDAO: BlockHeaderDAO,
     filterHeaderDAO: CompactFilterHeaderDAO,
-    blockchains: Vector[Blockchain])(
+    blockchains: Vector[Blockchain],
+    blockFilters: Map[DoubleSha256DigestBE, GolombFilter])(
     implicit private[chain] val chainConfig: ChainAppConfig)
     extends ChainApi
     with ChainVerificationLogger {
@@ -83,7 +84,7 @@ case class ChainHandler(
             }
           }
 
-          ChainHandler(blockHeaderDAO, filterHeaderDAO, updatedChains)
+          ChainHandler(blockHeaderDAO, filterHeaderDAO, updatedChains, blockFilters)
         }
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
@@ -169,6 +170,21 @@ case class ChainHandler(
       }
     } yield this
   }
+
+  override def processFilter(golombFilter: GolombFilter, blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi] = {
+    for {
+      filterHeaderOpt <- filterHeaderDAO.findByBlockHash(blockHash)
+      filterHeader = filterHeaderOpt.getOrElse(throw new RuntimeException(s"Cannot find a filter header for block hash ${blockHash}"))
+    } yield {
+      logger.debug(golombFilter.hash.hex)
+      logger.debug(filterHeader.hashBE.hex)
+      logger.debug(filterHeader.hashBE.flip.hex)
+      if (golombFilter.hash != filterHeader.hashBE.flip) {
+        logger.error("Filter hash does not match filter header hash")
+      }
+      this.copy(blockFilters = blockFilters.updated(blockHash, golombFilter))
+    }
+  }
 }
 
 object ChainHandler {
@@ -182,11 +198,11 @@ object ChainHandler {
     val bestChainsF = blockHeaderDAO.getBlockchains()
 
     bestChainsF.map(chains =>
-      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, blockchains = chains))
+      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, blockchains = chains, blockFilters = Map.empty))
   }
 
   def apply(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, blockchains: Blockchain)(
       implicit chainConfig: ChainAppConfig): ChainHandler = {
-    new ChainHandler(blockHeaderDAO, filterHeaderDAO, Vector(blockchains))
+    new ChainHandler(blockHeaderDAO, filterHeaderDAO, Vector(blockchains), blockFilters = Map.empty)
   }
 }

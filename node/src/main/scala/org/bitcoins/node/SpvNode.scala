@@ -165,8 +165,13 @@ case class SpvNode(
 //        logger.info(s"Requesting compact filter header checkpoints up to=$bestHash")
 //        peerMsgSenderF.map(_.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip))
         logger(nodeAppConfig).info(s"Requesting compact filter headers from=0 to=$bestHash")
-        peerMsgSenderF.map(_.sendGetCompactFilterHeadersMessage(startHeight = 0,
-          stopHash = bestHash.flip))
+        for {
+          peerMsgSender <- peerMsgSenderF
+//          _ <- peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight = 0,
+//            stopHash = bestHash.flip)
+          _ <- peerMsgSender.sendGetCompactFiltersMessage(startHeight = 0,
+            stopHash = bestHash.flip)
+        } yield ()
       }
 
       node

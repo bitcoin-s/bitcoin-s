@@ -38,8 +38,13 @@ case class CompactFilterHeaderDAO()(
     Seq] = findByPrimaryKeys(ts.map(_.hashBE))
 
   def findByHash(hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
-    val query = findByPrimaryKey(hash).result
-    database.runVec(query).map(_.headOption)
+    val query = findByPrimaryKey(hash)
+    database.runVec(query.result).map(_.headOption)
+  }
+
+  def findByBlockHash(hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
+    val query = table.filter(_.blockHash === hash)
+    database.runVec(query.result).map(_.headOption)
   }
 
 }

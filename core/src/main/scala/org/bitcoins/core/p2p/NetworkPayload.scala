@@ -881,15 +881,15 @@ case class GetCompactFiltersMessage(
     extends DataPayload {
   val commandName: String = NetworkPayload.getCompactFiltersCommandName
 
-  def bytes: ByteVector = ???
+  def bytes: ByteVector = RawGetCompactFiltersMessageSerializer.write(this)
 }
 
 object GetCompactFiltersMessage extends Factory[GetCompactFiltersMessage] {
   def fromBytes(bytes: ByteVector): GetCompactFiltersMessage = ???
 
   /** Constructs a message with the default basic filter type */
-  def apply(startHeight: UInt32, stopHash: DoubleSha256Digest) =
-    new GetCompactFiltersMessage(FilterType.Basic, startHeight, stopHash)
+  def apply(startHeight: Int, stopHash: DoubleSha256Digest) =
+    new GetCompactFiltersMessage(FilterType.Basic, UInt32(startHeight), stopHash)
 }
 
 // TODO doc
@@ -904,7 +904,7 @@ case class CompactFilterMessage(
     UInt64(filterBytes.length))
 
   val commandName: String = NetworkPayload.compactFilterCommandName
-  def bytes: ByteVector = ???
+  def bytes: ByteVector = RawCompactFilterMessageSerializer.write(this)
 }
 
 object CompactFilterMessage extends Factory[CompactFilterMessage] {
@@ -917,7 +917,8 @@ object CompactFilterMessage extends Factory[CompactFilterMessage] {
     new CompactFilterMessage(FilterType.Basic, blockHash, filterBytes)
   }
 
-  def fromBytes(bytes: ByteVector): CompactFilterMessage = ???
+  def fromBytes(bytes: ByteVector): CompactFilterMessage = RawCompactFilterMessageSerializer.read(bytes)
+
 }
 
 // TODO doc

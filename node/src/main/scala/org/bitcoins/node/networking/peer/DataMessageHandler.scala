@@ -1,7 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
 
@@ -62,10 +62,14 @@ class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
           new DataMessageHandler(newChainApi, callbacks)
         }
       case filter: CompactFilterMessage =>
-        // TODO implement me
+        val blockFilter = BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
         logger.debug(
-          s"Received ${filter.commandName}, this is not implemented yet")
-        Future.successful(this)
+          s"Received ${filter.commandName}, ${blockFilter}")
+        for {
+          newChainApi <- chainApi.processFilter(blockFilter, filter.blockHash.flip)
+        } yield {
+          new DataMessageHandler(newChainApi, callbacks)
+        }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
           _: GetBlocksMessage | _: GetCompactFiltersMessage |
           _: GetCompactFilterHeadersMessage |

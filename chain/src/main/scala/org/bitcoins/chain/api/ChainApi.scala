@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -87,5 +87,10 @@ trait ChainApi {
       }
       .map(_ => this)
   }
+
+  def processFilter(
+      golombFilter: GolombFilter,
+      blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi]
 
 }
