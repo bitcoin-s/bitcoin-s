@@ -1019,9 +1019,9 @@ object GetCompactFilterCheckPointMessage
 
 // TODO doc
 case class CompactFilterCheckPointMessage(
-    filterType: FilterType,
-    stophash: DoubleSha256Digest,
-    filterHeaders: Vector[FilterHeader])
+                                           filterType: FilterType,
+                                           stopHash: DoubleSha256Digest,
+                                           filterHeaders: Vector[DoubleSha256Digest])
     extends DataPayload {
 
   /** The amount of filter headers in this message */
@@ -1029,12 +1029,12 @@ case class CompactFilterCheckPointMessage(
     UInt64(filterHeaders.length))
 
   val commandName: String = NetworkPayload.compactFilterCheckpointCommandName
-  def bytes: ByteVector = ???
+  def bytes: ByteVector = RawCompactFilterCheckpointMessageSerializer.write(this)
 }
 
 object CompactFilterCheckPointMessage
     extends Factory[CompactFilterCheckPointMessage] {
-  def fromBytes(bytes: ByteVector): CompactFilterCheckPointMessage = ???
+  def fromBytes(bytes: ByteVector): CompactFilterCheckPointMessage = RawCompactFilterCheckpointMessageSerializer.read(bytes)
 }
 
 /**

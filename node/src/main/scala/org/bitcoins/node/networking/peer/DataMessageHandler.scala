@@ -1,8 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,7 +35,7 @@ import org.bitcoins.core.p2p.GetCompactFilterCheckPointMessage
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
   */
 
-class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
+case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
     implicit ec: ExecutionContext,
     appConfig: NodeAppConfig)
     extends P2PLogger {
@@ -49,17 +48,20 @@ class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
 
     payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
-        // TODO implement me
         logger.debug(
-          s"Received ${checkpoint.commandName} message, this is not implemented yet")
-        Future.successful(this)
+          s"Got ${checkpoint.filterHeaders.size} checkpoints")
+        for {
+          newChainApi <- chainApi.processCheckpoints(checkpoint.filterHeaders.map(_.flip), checkpoint.stopHash.flip)
+        } yield {
+          this.copy(chainApi = newChainApi)
+        }
       case filterHeader: CompactFilterHeadersMessage =>
         logger.debug(s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
         val filterHeaders = CompactFilterHeadersMessage.extractFilterHeaders(filterHeader)
         for {
           newChainApi <- chainApi.processFilterHeaders(filterHeaders, filterHeader.stopHash.flip)
         } yield {
-          new DataMessageHandler(newChainApi, callbacks)
+          this.copy(chainApi = newChainApi)
         }
       case filter: CompactFilterMessage =>
         val blockFilter = BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
@@ -68,7 +70,7 @@ class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
         for {
           newChainApi <- chainApi.processFilter(blockFilter, filter.blockHash.flip)
         } yield {
-          new DataMessageHandler(newChainApi, callbacks)
+          this.copy(chainApi = newChainApi)
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
           _: GetBlocksMessage | _: GetCompactFiltersMessage |
@@ -148,7 +150,7 @@ class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
           newApi <- chainApiF
           _ <- getHeadersF
         } yield {
-          new DataMessageHandler(newApi, callbacks)
+          this.copy(chainApi = newApi)
         }
       case msg: BlockMessage =>
         Future {

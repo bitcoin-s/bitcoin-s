@@ -19,6 +19,6 @@ object RawGetCompactFiltersMessageSerializer
   }
 
   def write(message: GetCompactFiltersMessage): ByteVector =
-    message.filterType.bytes ++ message.startHeight.bytes ++ message.stopHash.bytes
+    message.filterType.bytes ++ message.startHeight.bytes.reverse ++ message.stopHash.bytes
 
 }

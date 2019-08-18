@@ -9,5 +9,5 @@ object RawGetCompactFilterHeadersMessageSerializer
   def read(bytes: ByteVector): GetCompactFilterHeadersMessage = ???
 
   def write(message: GetCompactFilterHeadersMessage): ByteVector =
-    message.filterType.bytes ++ message.startHeight.bytes ++ message.stopHash.bytes
+    message.filterType.bytes ++ message.startHeight.bytes.reverse ++ message.stopHash.bytes
 }

@@ -93,4 +93,19 @@ trait ChainApi {
       blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi]
 
+  def processCheckpoint(
+      filterHeaderHash: DoubleSha256DigestBE,
+      blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi]
+
+  def processCheckpoints(
+      checkpoints: Vector[DoubleSha256DigestBE],
+      blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
+
+    checkpoints.foldLeft(Future.successful(this)) { (api, checkpoint) =>
+      api.flatMap(_.processCheckpoint(checkpoint, blockHash))
+    }
+  }
+
 }

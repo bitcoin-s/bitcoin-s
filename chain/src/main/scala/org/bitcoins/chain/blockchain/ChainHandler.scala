@@ -23,7 +23,8 @@ case class ChainHandler(
     blockHeaderDAO: BlockHeaderDAO,
     filterHeaderDAO: CompactFilterHeaderDAO,
     blockchains: Vector[Blockchain],
-    blockFilters: Map[DoubleSha256DigestBE, GolombFilter])(
+    blockFilters: Map[DoubleSha256DigestBE, GolombFilter],
+    blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
     implicit private[chain] val chainConfig: ChainAppConfig)
     extends ChainApi
     with ChainVerificationLogger {
@@ -84,7 +85,7 @@ case class ChainHandler(
             }
           }
 
-          ChainHandler(blockHeaderDAO, filterHeaderDAO, updatedChains, blockFilters)
+          this.copy(blockchains = updatedChains)
         }
       case BlockchainUpdate.Failed(_, _, reason) =>
         val errMsg =
@@ -185,6 +186,20 @@ case class ChainHandler(
       this.copy(blockFilters = blockFilters.updated(blockHash, golombFilter))
     }
   }
+
+  override def processCheckpoint(filterHeaderHash: DoubleSha256DigestBE, blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi] = {
+    Future {
+      blockFilterCheckpoints.get(blockHash) match {
+        case Some(oldFilterHeaderHash) =>
+          if (filterHeaderHash != oldFilterHeaderHash)
+            throw new RuntimeException("The peer sent us a different filter header hash")
+          else
+            this.copy(blockFilterCheckpoints = blockFilterCheckpoints.updated(blockHash, filterHeaderHash))
+        case None =>
+          this
+      }
+    }
+  }
 }
 
 object ChainHandler {
@@ -198,11 +213,11 @@ object ChainHandler {
     val bestChainsF = blockHeaderDAO.getBlockchains()
 
     bestChainsF.map(chains =>
-      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, blockchains = chains, blockFilters = Map.empty))
+      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, blockchains = chains, blockFilters = Map.empty, blockFilterCheckpoints = Map.empty))
   }
 
   def apply(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, blockchains: Blockchain)(
       implicit chainConfig: ChainAppConfig): ChainHandler = {
-    new ChainHandler(blockHeaderDAO, filterHeaderDAO, Vector(blockchains), blockFilters = Map.empty)
+    new ChainHandler(blockHeaderDAO, filterHeaderDAO, Vector(blockchains), blockFilters = Map.empty, blockFilterCheckpoints = Map.empty)
   }
 }
