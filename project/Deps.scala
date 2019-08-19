@@ -24,7 +24,7 @@ object Deps {
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
     val sqliteV = "3.28.0"
-    val scalameterV = "0.17"
+    val scalameterV = "0.19"
 
     // Wallet/node/chain server deps
     val uPickleV = "0.7.4"
