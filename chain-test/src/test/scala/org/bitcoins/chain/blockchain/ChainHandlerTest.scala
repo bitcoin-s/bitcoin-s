@@ -214,7 +214,7 @@ class ChainHandlerTest extends ChainUnitTest {
   }
 
   final def processHeaders(
-      processorF: Future[ChainHandler],
+      processorF: Future[ChainApi],
       remainingHeaders: List[BlockHeader],
       height: Int): Future[Assertion] = {
     remainingHeaders match {

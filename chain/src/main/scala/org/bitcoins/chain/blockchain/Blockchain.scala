@@ -6,6 +6,7 @@ import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.chain.ChainVerificationLogger
 
+import scala.annotation.tailrec
 import scala.collection.{IndexedSeqLike, mutable}
 
 /**
@@ -53,6 +54,9 @@ case class Blockchain(headers: Vector[BlockHeaderDb])
     }
   }
 
+  /** The height of the chain */
+  def height: Int = tip.height
+
 }
 
 object Blockchain extends ChainVerificationLogger {
@@ -69,61 +73,99 @@ object Blockchain extends ChainVerificationLogger {
     * We then attempt to connect this block header to all of our current
     * chain tips.
     * @param header the block header to connect to our chain
-    * @param blockchains the blockchain we are attempting to connect to
+    * @param blockchain the blockchain we are attempting to connect to
     * @return a [[scala.concurrent.Future Future]] that contains a [[org.bitcoins.chain.blockchain.BlockchainUpdate BlockchainUpdate]] indicating
     *         we [[org.bitcoins.chain.blockchain.BlockchainUpdate.Successful successful]] connected the tip,
     *         or [[org.bitcoins.chain.blockchain.BlockchainUpdate.Failed Failed]] to connect to a tip
     */
-  def connectTip(header: BlockHeader, blockchains: Vector[Blockchain])(
+  def connectTip(header: BlockHeader, blockchain: Blockchain)(
       implicit conf: ChainAppConfig): BlockchainUpdate = {
     logger.debug(
       s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
 
     val tipResult: BlockchainUpdate = {
-      val nested: Vector[BlockchainUpdate] = blockchains.map { blockchain =>
-        val prevBlockHeaderIdxOpt =
-          blockchain.headers.zipWithIndex.find {
-            case (headerDb, _) =>
-              headerDb.hashBE == header.previousBlockHashBE
-          }
-        prevBlockHeaderIdxOpt match {
-          case None =>
-            logger.warn(
-              s"No common ancestor found in the chain to connect to ${header.hashBE}")
-            val err = TipUpdateResult.BadPreviousBlockHash(header)
-            val failed = BlockchainUpdate.Failed(blockchain = blockchain,
-                                                 failedHeader = header,
-                                                 tipUpdateFailure = err)
-            failed
-
-          case Some((prevBlockHeader, prevHeaderIdx)) =>
-            //found a header to connect to!
-            logger.debug(
-              s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
-            val chain = blockchain.fromHeader(prevBlockHeader)
-            val tipResult =
-              TipValidation.checkNewTip(newPotentialTip = header, chain.get)
-
-            tipResult match {
-              case TipUpdateResult.Success(headerDb) =>
-                logger.debug(
-                  s"Successfully verified=${headerDb.hashBE.hex}, connecting to chain")
-                val oldChain =
-                  blockchain.takeRight(blockchain.length - prevHeaderIdx)
-                val newChain =
-                  Blockchain.fromHeaders(headerDb +: oldChain)
-                BlockchainUpdate.Successful(newChain, headerDb)
-              case fail: TipUpdateResult.Failure =>
-                logger.warn(
-                  s"Could not verify header=${header.hashBE.hex}, reason=$fail")
-                BlockchainUpdate.Failed(blockchain, header, fail)
-            }
+      val prevBlockHeaderIdxOpt =
+        blockchain.headers.zipWithIndex.find {
+          case (headerDb, _) =>
+            headerDb.hashBE == header.previousBlockHashBE
         }
+      prevBlockHeaderIdxOpt match {
+        case None =>
+          logger.warn(
+            s"No common ancestor found in the chain to connect to ${header.hashBE}")
+          val err = TipUpdateResult.BadPreviousBlockHash(header)
+          val failed = BlockchainUpdate.Failed(blockchain = blockchain,
+                                               successfulHeaders = Vector.empty,
+                                               failedHeader = header,
+                                               tipUpdateFailure = err)
+          failed
+
+        case Some((prevBlockHeader, prevHeaderIdx)) =>
+          //found a header to connect to!
+          logger.debug(
+            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
+          val chain = blockchain.fromHeader(prevBlockHeader)
+          val tipResult =
+            TipValidation.checkNewTip(newPotentialTip = header, chain.get)
+
+          tipResult match {
+            case TipUpdateResult.Success(headerDb) =>
+              logger.debug(
+                s"Successfully verified=${headerDb.hashBE.hex}, connecting to chain")
+              val oldChain =
+                blockchain.takeRight(blockchain.length - prevHeaderIdx)
+              val newChain =
+                Blockchain.fromHeaders(headerDb +: oldChain)
+              BlockchainUpdate.Successful(newChain, Vector(headerDb))
+            case fail: TipUpdateResult.Failure =>
+              logger.warn(
+                s"Could not verify header=${header.hashBE.hex}, reason=$fail")
+              BlockchainUpdate.Failed(blockchain = blockchain,
+                                      successfulHeaders = Vector.empty,
+                                      failedHeader = header,
+                                      tipUpdateFailure = fail)
+          }
       }
-      parseSuccessOrFailure(nested)
+    }
+    tipResult
+  }
+
+  /** Iterates through each given blockchains attempting to connect the given headers to that chain
+    * @return The final updates for each chain
+    *
+    * */
+  def connectHeadersToChains(
+      headers: Vector[BlockHeader],
+      blockchains: Vector[Blockchain])(
+      implicit chainAppConfig: ChainAppConfig): Vector[BlockchainUpdate] = {
+    @tailrec
+    def loop(
+        headersToProcess: List[BlockHeader],
+        lastUpdate: BlockchainUpdate): BlockchainUpdate = {
+      lastUpdate match {
+        case BlockchainUpdate.Successful(blockchain, updatedHeaders) =>
+          headersToProcess match {
+            case h :: t =>
+              val newUpdate =
+                Blockchain.connectTip(header = h, blockchain = blockchain)
+              val newHeaders = blockchain.tip +: lastUpdate.successfulHeaders
+
+              loop(headersToProcess = t,
+                   lastUpdate = newUpdate.addSuccessfulHeader())
+            case Nil =>
+              BlockchainUpdate.Successful(
+                blockchain,
+                successfulHeaders = updatedHeaders
+              )
+          }
+        case f: BlockchainUpdate.Failed => f
+      }
     }
 
-    tipResult
+    blockchains.map { blockchain =>
+      val initUpdate = BlockchainUpdate.Successful(blockchain, Vector.empty)
+      loop(headersToProcess = headers.toList, lastUpdate = initUpdate)
+    }
   }
 
   /** Takes in a vector of blockchain updates being executed asynchronously, we can only connect one [[BlockHeader header]]

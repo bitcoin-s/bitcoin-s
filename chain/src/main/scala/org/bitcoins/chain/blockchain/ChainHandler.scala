@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.chain.ChainVerificationLogger
 
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -48,55 +49,27 @@ case class ChainHandler(
     }
   }
 
-  override def processHeader(header: BlockHeader)(
-      implicit ec: ExecutionContext): Future[ChainHandler] = {
-    logger.debug(
-      s"Processing header=${header.hashBE.hex}, previousHash=${header.previousBlockHashBE.hex}")
-
-    val blockchainUpdate =
-      Blockchain.connectTip(header = header, blockchains = blockchains)
-
-    val newHandlerF = blockchainUpdate match {
-      case BlockchainUpdate.Successful(newChain, updatedHeader) =>
-        //now we have successfully connected the header, we need to insert
-        //it into the database
-        val createdF = blockHeaderDAO.create(updatedHeader)
-        createdF.map { header =>
-          logger.debug(
-            s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE}")
-          val chainIdxOpt = blockchains.zipWithIndex.find {
-            case (chain, _) =>
-              val oldTip = newChain(1) //should be safe, even with genesis header as we just connected a tip
-              oldTip == chain.tip
-          }
-
-          val updatedChains = {
-            chainIdxOpt match {
-              case Some((_, idx)) =>
-                logger.trace(
-                  s"Updating chain at idx=${idx} out of competing chains=${blockchains.length} with new tip=${header.hashBE.hex}")
-                blockchains.updated(idx, newChain)
-
-              case None =>
-                logger.info(
-                  s"New competing blockchain with tip=${newChain.tip}")
-                blockchains.:+(newChain)
-            }
-          }
-
-          ChainHandler(blockHeaderDAO, updatedChains)
-        }
-      case BlockchainUpdate.Failed(_, _, reason) =>
-        val errMsg =
-          s"Failed to add header to chain, header=${header.hashBE.hex} reason=${reason}"
-        logger.warn(errMsg)
-        // potential chain split happening, let's log what's going on
-        logTipConnectionFailure(reason).flatMap { _ =>
-          Future.failed(new RuntimeException(errMsg))
-        }
+  /** @inheritdoc */
+  override def processHeaders(headers: Vector[BlockHeader])(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
+    val blockchainUpdates: Vector[BlockchainUpdate] = {
+      Blockchain.connectHeadersToChains(headers, blockchains)
     }
 
-    newHandlerF
+    val headersToBeCreated = {
+      blockchainUpdates.map(_.successfulHeaders).flatten.toVector
+    }
+
+    val chains = blockchainUpdates.map(_.blockchain).toVector
+
+    val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+
+    val newChainHandler =
+      ChainHandler(blockHeaderDAO = blockHeaderDAO, blockchains = chains)
+
+    createdF.map { _ =>
+      newChainHandler
+    }
   }
 
   /** Logs a tip connection failure by querying local chain state
