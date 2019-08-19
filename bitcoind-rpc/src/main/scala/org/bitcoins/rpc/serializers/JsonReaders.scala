@@ -30,6 +30,7 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.util.{Failure, Success}
+
 import org.bitcoins.core.config._
 
 object JsonReaders {
@@ -42,11 +43,14 @@ object JsonReaders {
       implicit readsK: Reads[K],
       readsV: Reads[V]): JsResult[Map[K, V]] = {
     js.validate[JsObject].flatMap { jsObj =>
-      val jsResults: Seq[(JsResult[K], JsResult[V])] = jsObj.fields.map {
-        case (key, value) => JsString(key).validate[K] -> value.validate[V]
-      }
+      val jsResults: scala.collection.Seq[(JsResult[K], JsResult[V])] =
+        jsObj.fields.map {
+          case (key, value) => JsString(key).validate[K] -> value.validate[V]
+        }
 
-      val allErrors: Seq[(JsPath, Seq[JsonValidationError])] =
+      val allErrors: scala.collection.Seq[(
+          JsPath,
+          scala.collection.Seq[JsonValidationError])] =
         jsResults.collect {
           case (JsError(keyErrors), _)   => keyErrors
           case (_, JsError(valueErrors)) => valueErrors
@@ -70,7 +74,7 @@ object JsonReaders {
 
   implicit object BigIntReads extends Reads[BigInt] {
     override def reads(json: JsValue): JsResult[BigInt] =
-      SerializerUtil.processJsNumber[BigInt](_.toBigInt())(json)
+      SerializerUtil.processJsNumber[BigInt](_.toBigInt)(json)
   }
 
   implicit object Sha256DigestReads extends Reads[Sha256Digest] {
@@ -122,7 +126,7 @@ object JsonReaders {
   implicit object Int32Reads extends Reads[Int32] {
     override def reads(json: JsValue): JsResult[Int32] = json match {
       case JsNumber(n) =>
-        n.toBigIntExact() match {
+        n.toBigIntExact match {
           case Some(num) => JsSuccess(Int32(num))
           case None      => SerializerUtil.buildErrorMsg("Int32", n)
         }
@@ -135,7 +139,7 @@ object JsonReaders {
   implicit object UInt32Reads extends Reads[UInt32] {
     override def reads(json: JsValue): JsResult[UInt32] = json match {
       case JsNumber(n) =>
-        n.toBigIntExact() match {
+        n.toBigIntExact match {
           case Some(num) =>
             if (num >= 0) {
               JsSuccess(UInt32(num))
@@ -153,7 +157,7 @@ object JsonReaders {
   implicit object UInt64Reads extends Reads[UInt64] {
     override def reads(json: JsValue): JsResult[UInt64] = json match {
       case JsNumber(n) =>
-        n.toBigIntExact() match {
+        n.toBigIntExact match {
           case Some(num) =>
             if (num >= 0) {
               JsSuccess(UInt64(num))
@@ -353,9 +357,10 @@ object JsonReaders {
           case None => JsError("error.expected.balance")
         }
         bitcoinResult.flatMap { bitcoins =>
-          val jsStrings: IndexedSeq[String] = array.value
-            .filter(_.isInstanceOf[JsString])
-            .map(_.asInstanceOf[JsString].value)
+          val jsStrings =
+            array.value
+              .filter(_.isInstanceOf[JsString])
+              .map(_.asInstanceOf[JsString].value)
           val addressResult = jsStrings.find(BitcoinAddress.isValid) match {
             case Some(s) =>
               BitcoinAddress.fromString(s) match {
@@ -518,7 +523,7 @@ object JsonReaders {
   implicit object BitcoinFeeUnitReads extends Reads[BitcoinFeeUnit] {
     override def reads(json: JsValue): JsResult[BitcoinFeeUnit] =
       SerializerUtil.processJsNumber[BitcoinFeeUnit](num =>
-        SatoshisPerByte(Satoshis(Int64((num * 100000).toBigInt()))))(json)
+        SatoshisPerByte(Satoshis(Int64((num * 100000).toBigInt))))(json)
   }
 
   implicit object FileReads extends Reads[File] {

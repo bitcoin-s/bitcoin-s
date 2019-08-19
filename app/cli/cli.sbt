@@ -1,6 +1,6 @@
 name := "bitcoin-s-cli"
 
-libraryDependencies ++= Deps.cli
+libraryDependencies ++= Deps.cli(scalaVersion.value)
 
 graalVMNativeImageOptions ++= Seq(
   "-H:EnableURLProtocols=http",

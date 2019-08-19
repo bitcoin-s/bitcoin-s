@@ -13,6 +13,7 @@
       "rpc/rpc-bitcoind"
     ],
     "Contributing": ["contributing", "contributing-website"],
+    "Applications": ["applications/configuration"],
     "Security": ["security"]
   }
 }

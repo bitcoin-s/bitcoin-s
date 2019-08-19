@@ -36,9 +36,7 @@ sealed abstract class LnPolicy {
 
   private def calc(mul: LnMultiplier): BigInt = {
     maxPicoBitcoins /
-      (mul.multiplier / LnMultiplier.Pico.multiplier)
-        .toBigIntExact()
-        .get
+      (mul.multiplier / LnMultiplier.Pico.multiplier).toBigIntExact.get
   }
 
   val DEFAULT_LN_P2P_PORT = 9735

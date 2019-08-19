@@ -284,10 +284,11 @@ sealed abstract class BloomFilter extends NetworkElement {
   private def murmurConstant = UInt32("fba4c795")
 
   /** Adds a sequence of byte vectors to our bloom filter then returns that new filter*/
-  def insertByteVectors(bytes: Seq[ByteVector]): BloomFilter = {
+  def insertByteVectors(
+      bytes: scala.collection.Seq[ByteVector]): BloomFilter = {
     @tailrec
     def loop(
-        remainingByteVectors: Seq[ByteVector],
+        remainingByteVectors: scala.collection.Seq[ByteVector],
         accumBloomFilter: BloomFilter): BloomFilter = {
       if (remainingByteVectors.isEmpty) accumBloomFilter
       else
