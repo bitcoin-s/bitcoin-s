@@ -2,7 +2,7 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterHeaderDAO, CompactFilterHeaderDbHelper}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterDAO, CompactFilterDb, CompactFilterDbHelper, CompactFilterHeaderDAO, CompactFilterHeaderDb, CompactFilterHeaderDbHelper}
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.chain.validation.TipUpdateResult.{BadNonce, BadPOW, BadPreviousBlockHash}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
@@ -22,8 +22,8 @@ import scala.concurrent.{ExecutionContext, Future}
 case class ChainHandler(
     blockHeaderDAO: BlockHeaderDAO,
     filterHeaderDAO: CompactFilterHeaderDAO,
+    filterDAO: CompactFilterDAO,
     blockchains: Vector[Blockchain],
-    blockFilters: Map[DoubleSha256DigestBE, GolombFilter],
     blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
     implicit private[chain] val chainConfig: ChainAppConfig)
     extends ChainApi
@@ -157,33 +157,55 @@ case class ChainHandler(
 
   override def processFilterHeader(filterHeader: FilterHeader, blockHash: DoubleSha256DigestBE, height: Int)(implicit ec: ExecutionContext): Future[ChainApi] = {
     val filterHeaderDb = CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader, blockHash, height)
-    for {
-      _ <- filterHeaderDAO.create(filterHeaderDb).recoverWith {
-        case e: SQLiteException if e.getResultCode == SQLiteErrorCode.SQLITE_CONSTRAINT =>
-          filterHeaderDAO.findByHash(filterHeaderDb.hashBE).map {
-            case Some(fhDb) =>
-              if (fhDb != filterHeaderDb)
-                throw new RuntimeException(s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB")
-              else
-                fhDb
-            case None => throw new RuntimeException("Something is really wrong with cfheader table")
-          }
+
+    def validateAndInsert(filterHeaderDbOpt: Option[CompactFilterHeaderDb]): Future[CompactFilterHeaderDb] = {
+      filterHeaderDbOpt match {
+        case Some(found) =>
+          if (found != filterHeaderDb)
+            Future.failed(new RuntimeException(s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB"))
+          else
+            Future.successful(filterHeaderDb)
+        case None =>
+          filterHeaderDAO.create(filterHeaderDb)
       }
+    }
+
+    for {
+      blockHeaderOpt <- blockHeaderDAO.findByHash(filterHeaderDb.blockHashBE)
+      _ = blockHeaderOpt.getOrElse(throw new RuntimeException(s"Unknown block ${blockHash}"))
+      filterHeaderDbOpt <- filterHeaderDAO.findByHash(filterHeaderDb.hashBE)
+      _ <- validateAndInsert(filterHeaderDbOpt)
     } yield this
   }
 
   override def processFilter(golombFilter: GolombFilter, blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi] = {
+
+    val filterHashBE = golombFilter.hash.flip
+
+    def validateAndInsert(filterHeader: CompactFilterHeaderDb, filerOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
+      if (filterHashBE != filterHeader.filterHashBE) {
+        Future.failed(new RuntimeException(s"Filter hash does not match: ${golombFilter.hash} != ${filterHeader.filterHashBE}"))
+      } else {
+        filerOpt match {
+          case Some(filter) =>
+            if (filter.golombFilter != golombFilter)
+              Future.failed(new RuntimeException(s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"))
+            else
+              Future.successful(filter)
+          case None =>
+            val filterDb = CompactFilterDbHelper.fromGolombFilter(golombFilter, blockHash)
+            filterDAO.create(filterDb)
+        }
+      }
+    }
+
     for {
       filterHeaderOpt <- filterHeaderDAO.findByBlockHash(blockHash)
       filterHeader = filterHeaderOpt.getOrElse(throw new RuntimeException(s"Cannot find a filter header for block hash ${blockHash}"))
+      filerOpt <- filterDAO.findByHash(filterHashBE)
+      _ <- validateAndInsert(filterHeader, filerOpt)
     } yield {
-      logger.debug(golombFilter.hash.hex)
-      logger.debug(filterHeader.hashBE.hex)
-      logger.debug(filterHeader.hashBE.flip.hex)
-      if (golombFilter.hash != filterHeader.hashBE.flip) {
-        logger.error("Filter hash does not match filter header hash")
-      }
-      this.copy(blockFilters = blockFilters.updated(blockHash, golombFilter))
+      this
     }
   }
 
@@ -207,17 +229,19 @@ object ChainHandler {
   /** Constructs a [[ChainHandler chain handler]] from the state in the database
     * This gives us the guaranteed latest state we have in the database
     * */
-  def fromDatabase(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO)(
+  def fromDatabase(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, filterDAO: CompactFilterDAO)(
       implicit ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[ChainHandler] = {
     val bestChainsF = blockHeaderDAO.getBlockchains()
 
     bestChainsF.map(chains =>
-      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, blockchains = chains, blockFilters = Map.empty, blockFilterCheckpoints = Map.empty))
+      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO,
+        blockchains = chains, blockFilterCheckpoints = Map.empty))
   }
 
-  def apply(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, blockchains: Blockchain)(
+  def apply(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, filterDAO: CompactFilterDAO, blockchains: Blockchain)(
       implicit chainConfig: ChainAppConfig): ChainHandler = {
-    new ChainHandler(blockHeaderDAO, filterHeaderDAO, Vector(blockchains), blockFilters = Map.empty, blockFilterCheckpoints = Map.empty)
+    new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO,
+      blockchains = Vector(blockchains), blockFilterCheckpoints = Map.empty)
   }
 }

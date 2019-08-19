@@ -9,7 +9,7 @@ case class CompactFilterHeaderDb(
   hashBE: DoubleSha256DigestBE,
   filterHashBE: DoubleSha256DigestBE,
   previousFilterHeaderBE: DoubleSha256DigestBE,
-  blockHash: DoubleSha256DigestBE,
+  blockHashBE: DoubleSha256DigestBE,
   height: Int) {
 
   def filterHeader: FilterHeader = FilterHeader(hashBE.flip, previousFilterHeaderBE.flip)
@@ -22,7 +22,7 @@ object CompactFilterHeaderDbHelper {
       hashBE = filterHeader.hash.flip,
       filterHashBE = filterHeader.filterHash.flip,
       previousFilterHeaderBE = filterHeader.prevHeaderHash.flip,
-      blockHash = blockHash,
+      blockHashBE = blockHash,
       height = height
     )
 }
@@ -43,7 +43,7 @@ class CompactFilterHeaderTable(tag: Tag)
 
   def heightIndex = index("cfheaders_height_index", height)
 
-  def blockHashIndex = index("cfheaders_block_hash_index", height)
+  def blockHashIndex = index("cfheaders_block_hash_index", blockHash)
 
   override def * = {
     (hash, filterHash, previousFilterHeader, blockHash, height) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)

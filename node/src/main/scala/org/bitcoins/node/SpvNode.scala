@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -51,7 +51,7 @@ case class SpvNode(
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     * */
   def chainApiFromDb(): Future[ChainApi] = {
-    ChainHandler.fromDatabase(BlockHeaderDAO(), CompactFilterHeaderDAO())
+    ChainHandler.fromDatabase(BlockHeaderDAO(), CompactFilterHeaderDAO(), CompactFilterDAO())
   }
 
   /** Unlike our chain api, this is cached inside our spv node

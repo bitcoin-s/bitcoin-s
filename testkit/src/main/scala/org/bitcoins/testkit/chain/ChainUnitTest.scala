@@ -7,7 +7,7 @@ import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -181,7 +181,8 @@ trait ChainUnitTest
     for {
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
       filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
-      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO)
+      filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
+      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO)
     } yield chainHandler
   }
 
@@ -337,6 +338,18 @@ object ChainUnitTest extends BitcoinSLogger {
     createFilterHeaderDAO()
   }
 
+  def createFilterDAO()(
+    implicit appConfig: ChainAppConfig,
+    ec: ExecutionContext): Future[CompactFilterDAO] = {
+    Future.successful(CompactFilterDAO())
+  }
+
+  def createPopulatedFilterDAO()(
+    implicit appConfig: ChainAppConfig,
+    ec: ExecutionContext): Future[CompactFilterDAO] = {
+    createFilterDAO()
+  }
+
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
   def createPopulatedBlockHeaderDAO()(
       implicit appConfig: ChainAppConfig,
@@ -446,8 +459,9 @@ object ChainUnitTest extends BitcoinSLogger {
       ec: ExecutionContext): Future[ChainHandler] = {
     lazy val blockHeaderDAO = BlockHeaderDAO()
     lazy val filterHeaderDAO = CompactFilterHeaderDAO()
+    lazy val filterDAO = CompactFilterDAO()
 
-    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO)
+    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO)
 
   }
 

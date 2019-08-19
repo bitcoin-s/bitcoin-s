@@ -18,6 +18,10 @@ sealed abstract class FilterType extends NetworkElement {
 
 object FilterType extends Factory[FilterType] {
 
+  val knownFilterTypes: Map[FilterType, UInt8] = Map(Basic -> UInt8(0))
+
+  val knownFilterTypeCodes: Map[UInt8, FilterType] = Map(UInt8(0) -> Basic)
+
   def fromBytes(bytes: ByteVector): FilterType = bytes match {
     case Basic.bytes => Basic
     case other: ByteVector =>

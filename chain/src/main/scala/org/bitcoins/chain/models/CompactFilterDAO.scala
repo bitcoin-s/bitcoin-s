@@ -8,37 +8,38 @@ import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class CompactFilterHeaderDAO()(
+case class CompactFilterDAO()(
     implicit ec: ExecutionContext,
     appConfig: ChainAppConfig)
-    extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE] {
+    extends CRUD[CompactFilterDb, DoubleSha256DigestBE] {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table = TableQuery[CompactFilterHeaderTable]
+  override val table = TableQuery[CompactFilterTable]
 
-  override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]):
-    Future[Vector[CompactFilterHeaderDb]] = {
-    SlickUtil.createAllNoAutoInc(ts = filterHeaders,
+  override def createAll(
+      filters: Vector[CompactFilterDb]): Future[Vector[CompactFilterDb]] = {
+    SlickUtil.createAllNoAutoInc(ts = filters,
                                  database = database,
                                  table = table)
   }
 
   /** Finds the rows that correlate to the given primary keys */
   override protected def findByPrimaryKeys(
-      ids: Vector[DoubleSha256DigestBE]): Query[Table[_], CompactFilterHeaderDb, Seq] =
+      ids: Vector[DoubleSha256DigestBE]): Query[Table[_], CompactFilterDb, Seq] = {
     table.filter(_.hash.inSet(ids))
+  }
 
-  override protected def findAll(ts: Vector[CompactFilterHeaderDb]): Query[Table[_], CompactFilterHeaderDb, Seq] =
+  override protected def findAll(
+      ts: Vector[CompactFilterDb]): Query[Table[_], CompactFilterDb, Seq] = {
     findByPrimaryKeys(ts.map(_.hashBE))
+  }
 
-  def findByHash(
-      hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
+  def findByHash(hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
     val query = findByPrimaryKey(hash)
     database.runVec(query.result).map(_.headOption)
   }
 
-  def findByBlockHash(
-      hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
+  def findByBlockHash(hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
     val query = table.filter(_.blockHash === hash)
     database.runVec(query.result).map(_.headOption)
   }
