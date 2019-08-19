@@ -6,9 +6,7 @@ import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-import scala.annotation.tailrec
-
-class NativeSecp256k1ScalaTest extends BitcoinSUnitTest {
+class SchnorrTest extends BitcoinSUnitTest {
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
@@ -17,19 +15,27 @@ class NativeSecp256k1ScalaTest extends BitcoinSUnitTest {
   it must "act like a normal schnorrSign if the normal nonce is specified" in {
     forAll(CryptoGenerators.nonZeroPrivKey, NumberGenerator.bytevector(32)) {
       case (privKey, message) =>
-        // This is the nonce specified in bip-schnorr
-        val nonce =
-          CryptoUtil.sha256(privKey.bytes ++ message).bytes
+        val nonce = SchnorrNonce.fromBipSchnorr(privKey, message)
 
-        assert(nonce.toArray.exists(_ != 0.toByte))
+        assert(nonce.bytes.toArray.exists(_ != 0.toByte))
 
         val sigWithNonce =
           NativeSecp256k1.schnorrSignWithNonce(message.toArray,
                                                privKey.bytes.toArray,
-                                               nonce.toArray)
+                                               nonce.bytes.toArray)
+
+        assert(
+          SchnorrDigitalSignature(ByteVector(sigWithNonce)) ==
+            Schnorr.signWithNonce(message, privKey, nonce)
+        )
 
         val sig =
           NativeSecp256k1.schnorrSign(message.toArray, privKey.bytes.toArray)
+
+        assert(
+          SchnorrDigitalSignature(ByteVector(sig)) ==
+            Schnorr.sign(message, privKey)
+        )
 
         assert(ByteVector(sigWithNonce) == ByteVector(sig))
     }
@@ -41,30 +47,32 @@ class NativeSecp256k1ScalaTest extends BitcoinSUnitTest {
         val publicKey: ECPublicKey = privKey.publicKey
         val messageArr: Array[Byte] = message.toArray
 
-        // This is the nonce specified in bip-schnorr
-        val nonce =
-          CryptoUtil.sha256(privKey.bytes ++ message).bytes
+        val nonce = SchnorrNonce.fromBipSchnorr(privKey, message)
 
-        assert(nonce.toArray.exists(_ != 0.toByte))
+        assert(nonce.bytes.toArray.exists(_ != 0.toByte))
 
-        val rBytes = NativeSecp256k1.schnorrPublicNonce(nonce.toArray)
+        val rBytes = nonce.publicKey.bytes
 
         val sig: Array[Byte] =
           NativeSecp256k1.schnorrSign(messageArr, privKey.bytes.toArray)
 
         val (rKey, s) = sig.splitAt(32)
 
-        assert(ByteVector(rBytes.tail) == ByteVector(rKey))
+        assert(rBytes.tail == ByteVector(rKey))
 
         val sPub: Array[Byte] =
           NativeSecp256k1.computeSchnorrPubKey(messageArr,
-                                               rBytes,
+                                               rBytes.toArray,
                                                publicKey.bytes.toArray)
+        val sPubKey: ECPublicKey = ECPublicKey.fromBytes(ByteVector(sPub))
+
+        assert(
+          sPubKey == Schnorr.computePubKey(message, nonce.publicKey, publicKey))
 
         val realSPriv = ECPrivateKey.fromBytes(ByteVector(s))
         val realSPub = realSPriv.publicKey
 
-        assert(ECPublicKey.fromBytes(ByteVector(sPub)) == realSPub)
+        assert(sPubKey == realSPub)
     }
   }
 
@@ -118,7 +126,7 @@ class NativeSecp256k1ScalaTest extends BitcoinSUnitTest {
     }
 
     forAll(CryptoGenerators.nonZeroPrivKey,
-           CryptoGenerators.nonZeroPrivKey,
+           CryptoGenerators.schnorrNonce,
            NumberGenerator.bytevector(32),
            NumberGenerator.bytevector(32)) {
       case (privKey, nonce, message1, message2) =>
