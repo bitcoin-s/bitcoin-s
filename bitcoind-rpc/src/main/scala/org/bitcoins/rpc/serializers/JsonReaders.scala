@@ -2,7 +2,8 @@ package org.bitcoins.rpc.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
-import java.time.{LocalDateTime, ZoneId, ZoneOffset}
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}

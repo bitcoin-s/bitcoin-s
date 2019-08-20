@@ -44,7 +44,7 @@ class Bech32Spec extends Properties("Bech32Spec") {
       val idx = rand % old.length
       val (f, l) = old.splitAt(idx)
       val replacementChar = pickReplacementChar(l.head)
-      val replaced = f ++ Seq(replacementChar) ++ l.tail
+      val replaced = s"$f$replacementChar${l.tail}"
       //should fail because we replaced a char in the addr, so checksum invalid
       Bech32Address.fromString(replaced).isFailure
     }
@@ -76,10 +76,14 @@ class Bech32Spec extends Properties("Bech32Spec") {
     val (f, l) = addr.splitAt(idx)
     if (l.head.isDigit) {
       switchCaseRandChar(addr)
-    } else if (l.head.isUpper) {
-      f ++ Seq(l.head.toLower) ++ l.tail
     } else {
-      f ++ Seq(l.head.toUpper) ++ l.tail
+      val middle =
+        if (l.head.isUpper) {
+          l.head.toLower
+        } else {
+          l.head.toUpper
+        }
+      s"$f$middle${l.tail}"
     }
   }
 }

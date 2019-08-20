@@ -47,12 +47,17 @@ trait V17PsbtRpc { self: Client =>
       outputs: Map[BitcoinAddress, CurrencyUnit],
       locktime: Int = 0,
       replacable: Boolean = false): Future[String] = {
-    bitcoindCall[String](
-      "createpsbt",
-      List(Json.toJson(inputs),
-           Json.toJson(outputs.mapValues(curr => Bitcoins(curr.satoshis))),
-           JsNumber(locktime),
-           JsBoolean(replacable)))
+    val outputsJson =
+      Json.toJson {
+        outputs.map {
+          case (addr, curr) => addr -> Bitcoins(curr.satoshis)
+        }
+      }
+    bitcoindCall[String]("createpsbt",
+                         List(Json.toJson(inputs),
+                              outputsJson,
+                              JsNumber(locktime),
+                              JsBoolean(replacable)))
   }
 
   def combinePsbt(psbts: Vector[String]): Future[String] = {
@@ -72,15 +77,20 @@ trait V17PsbtRpc { self: Client =>
       locktime: Int = 0,
       options: WalletCreateFundedPsbtOptions = WalletCreateFundedPsbtOptions(),
       bip32derivs: Boolean = false
-  ): Future[WalletCreateFundedPsbtResult] =
+  ): Future[WalletCreateFundedPsbtResult] = {
+    val jsonOutputs =
+      Json.toJson {
+        outputs.map { case (addr, curr) => addr -> Bitcoins(curr.satoshis) }
+      }
     bitcoindCall[WalletCreateFundedPsbtResult](
       "walletcreatefundedpsbt",
       List(Json.toJson(inputs),
-           Json.toJson(outputs.mapValues(curr => Bitcoins(curr.satoshis))),
+           jsonOutputs,
            JsNumber(locktime),
            Json.toJson(options),
            Json.toJson(bip32derivs))
     )
+  }
 
   def walletProcessPsbt(
       psbt: String,
