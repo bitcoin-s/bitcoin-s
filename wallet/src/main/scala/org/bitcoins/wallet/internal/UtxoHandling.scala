@@ -22,7 +22,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import scala.util.Success
 import scala.util.Failure
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.db.KeyHandlingLogger
+import org.bitcoins.wallet.KeyHandlingLogger
 
 /**
   * Provides functionality related to handling UTXOs in our wallet.

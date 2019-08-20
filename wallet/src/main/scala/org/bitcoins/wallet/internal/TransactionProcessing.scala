@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.wallet.LockedWallet
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.wallet._
 import org.bitcoins.wallet.models._
 import scala.concurrent.Future
 import org.bitcoins.core.protocol.transaction.TransactionOutput
@@ -9,7 +9,6 @@ import org.bitcoins.wallet.api.AddUtxoSuccess
 import org.bitcoins.wallet.api.AddUtxoError
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db.KeyHandlingLogger
 
 /** Provides functionality for processing transactions. This
   * includes importing UTXOs spent to our wallet, updating

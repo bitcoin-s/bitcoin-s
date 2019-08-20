@@ -4,7 +4,7 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.p2p.{Inventory, MsgUnassigned, TypeIdentifier, _}
 import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.db.P2PLogger
+import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO

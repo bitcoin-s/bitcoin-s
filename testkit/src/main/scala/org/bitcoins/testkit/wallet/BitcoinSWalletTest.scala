@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.protocol.blockchain.ChainParams
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.wallet.Wallet
@@ -14,6 +13,7 @@ import org.bitcoins.wallet.api.{
   UnlockedWalletApi
 }
 import org.bitcoins.wallet.db.{WalletDbManagement}
+import org.bitcoins.wallet.WalletLogger
 import org.scalatest._
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -21,6 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.core.currency._
 import org.bitcoins.db.AppConfig
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -29,7 +30,7 @@ trait BitcoinSWalletTest
     extends fixture.AsyncFlatSpec
     with BitcoinSFixture
     with BeforeAndAfterAll
-    with BitcoinSLogger {
+    with WalletLogger {
   import BitcoinSWalletTest._
   implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = actorSystem.dispatcher
@@ -103,7 +104,7 @@ trait BitcoinSWalletTest
 
 }
 
-object BitcoinSWalletTest extends BitcoinSLogger {
+object BitcoinSWalletTest extends WalletLogger {
 
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,

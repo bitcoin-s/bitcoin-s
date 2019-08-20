@@ -1,9 +1,10 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.node.P2PLogger
 import scala.collection.mutable
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.node.config.NodeAppConfig
 
 /**
   * A buffer of merkleblocks and the transactions associated with them.
@@ -16,14 +17,14 @@ import org.bitcoins.core.protocol.transaction.Transaction
   * This buffer is responsible for calling the approriate callbacks
   * once a merkle block has received all its transactions.
   */
-private[peer] object MerkleBuffers extends BitcoinSLogger {
+private[peer] object MerkleBuffers extends P2PLogger {
   private type MerkleBlocksWithTransactions =
     mutable.Map[MerkleBlock, mutable.Builder[Transaction, Vector[Transaction]]]
 
   private val underlyingMap: MerkleBlocksWithTransactions = mutable.Map.empty
 
   /** Adds the given merkleblock to the buffer */
-  def putMerkle(merkle: MerkleBlock): Unit = {
+  def putMerkle(merkle: MerkleBlock)(implicit config: NodeAppConfig): Unit = {
     val tree = merkle.partialMerkleTree
     val matches = tree.extractMatches
 
@@ -56,7 +57,8 @@ private[peer] object MerkleBuffers extends BitcoinSLogger {
     */
   def putTx(
       tx: Transaction,
-      callbacks: Seq[DataMessageHandler.OnMerkleBlockReceived]): Boolean = {
+      callbacks: Seq[DataMessageHandler.OnMerkleBlockReceived])(
+      implicit config: NodeAppConfig): Boolean = {
     val blocksInBuffer = underlyingMap.keys.toList
     logger.trace(s"Looking for transaction=${tx.txIdBE} in merkleblock buffer")
     logger.trace(s"Merkleblocks in buffer: ${blocksInBuffer.length}")
@@ -81,7 +83,8 @@ private[peer] object MerkleBuffers extends BitcoinSLogger {
   private def handleMerkleMatch(
       transaction: Transaction,
       merkleBlock: MerkleBlock,
-      callbacks: Seq[DataMessageHandler.OnMerkleBlockReceived]) = {
+      callbacks: Seq[DataMessageHandler.OnMerkleBlockReceived])(
+      implicit config: NodeAppConfig) = {
     val merkleBlockMatches = merkleBlock.partialMerkleTree.extractMatches
     val merkleHash = merkleBlock.blockHeader.hashBE
 

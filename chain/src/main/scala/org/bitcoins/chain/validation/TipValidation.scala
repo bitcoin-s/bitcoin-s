@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.NumberUtil
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.db.ChainVerificationLogger
+import org.bitcoins.chain.ChainVerificationLogger
 
 /**
   * Responsible for checking if we can connect two

@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.db.ChainVerificationLogger
+import org.bitcoins.chain.ChainVerificationLogger
 
 trait ChainSync extends ChainVerificationLogger {
 

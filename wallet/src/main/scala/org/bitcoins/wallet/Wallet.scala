@@ -17,7 +17,6 @@ import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-import org.bitcoins.db.KeyHandlingLogger
 
 sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 

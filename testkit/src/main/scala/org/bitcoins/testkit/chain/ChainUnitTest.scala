@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
+import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
@@ -13,7 +14,6 @@ import org.bitcoins.chain.models.{
   BlockHeaderDbHelper
 }
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain
 import org.bitcoins.testkit.chain.fixture._
@@ -35,7 +35,7 @@ trait ChainUnitTest
     with BitcoinSFixture
     with ChainFixtureHelper
     with MustMatchers
-    with BitcoinSLogger
+    with ChainVerificationLogger
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
@@ -299,7 +299,7 @@ trait ChainUnitTest
   }
 }
 
-object ChainUnitTest extends BitcoinSLogger {
+object ChainUnitTest extends ChainVerificationLogger {
 
   /** Height of the first block in populated fixtures */
   val FIRST_BLOCK_HEIGHT: Int = 562375
