@@ -2,10 +2,10 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import org.bitcoins.node.P2PLogger
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node.{SpvNode, SpvNodeCallbacks}
 import org.bitcoins.node.config.NodeAppConfig
@@ -41,7 +41,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait NodeUnitTest
     extends BitcoinSFixture
     with MustMatchers
-    with BitcoinSLogger
+    with P2PLogger
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
@@ -139,7 +139,7 @@ trait NodeUnitTest
   }
 }
 
-object NodeUnitTest extends BitcoinSLogger {
+object NodeUnitTest extends P2PLogger {
 
   /**
     * Creates

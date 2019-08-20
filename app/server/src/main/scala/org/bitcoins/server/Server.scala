@@ -11,7 +11,6 @@ import akka.http.scaladsl.server.Directives._
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.event.Logging
-import org.bitcoins.db.HttpLogger
 import org.bitcoins.db.AppConfig
 
 case class Server(conf: AppConfig, handlers: Seq[ServerRoute])(

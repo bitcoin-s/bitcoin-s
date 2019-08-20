@@ -6,7 +6,7 @@ import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.p2p.{NetworkMessage, _}
-import org.bitcoins.db.P2PLogger
+import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -54,7 +54,7 @@ class PeerMessageReceiver(
           new RuntimeException(s"Cannot call connect when in state=${bad}")
         )
       case Preconnection =>
-        logger(nodeAppConfig).info(s"Connection established with peer=${peer}")
+        logger.info(s"Connection established with peer=${peer}")
 
         val newState = Preconnection.toInitializing(client)
 
@@ -69,7 +69,7 @@ class PeerMessageReceiver(
   }
 
   protected[networking] def disconnect(): Future[PeerMessageReceiver] = {
-    logger(nodeAppConfig).trace(s"Disconnecting with internalstate=${state}")
+    logger.trace(s"Disconnecting with internalstate=${state}")
     state match {
       case bad @ (_: Initializing | _: Disconnected | Preconnection) =>
         Future.failed(
@@ -78,7 +78,7 @@ class PeerMessageReceiver(
         )
 
       case good: Normal =>
-        logger(nodeAppConfig).debug(s"Disconnected bitcoin peer=${peer}")
+        logger.debug(s"Disconnected bitcoin peer=${peer}")
         val newState = Disconnected(
           clientConnectP = good.clientConnectP,
           clientDisconnectP = good.clientDisconnectP.success(()),
@@ -113,7 +113,7 @@ class PeerMessageReceiver(
     //create a way to send a response if we need too
     val peerMsgSender = PeerMessageSender(client)
 
-    logger(nodeAppConfig).debug(
+    logger.debug(
       s"Received message=${networkMsgRecv.msg.header.commandName} from peer=${client.peer} state=${state} ")
     networkMsgRecv.msg.payload match {
       case controlPayload: ControlPayload =>
@@ -159,8 +159,7 @@ class PeerMessageReceiver(
     payload match {
 
       case versionMsg: VersionMessage =>
-        logger(nodeAppConfig).trace(
-          s"Received versionMsg=${versionMsg}from peer=${peer}")
+        logger.trace(s"Received versionMsg=${versionMsg}from peer=${peer}")
 
         state match {
           case bad @ (_: Disconnected | _: Normal | Preconnection) =>

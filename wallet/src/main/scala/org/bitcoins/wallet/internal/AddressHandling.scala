@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.wallet.LockedWallet
+import org.bitcoins.wallet._
 import scala.concurrent.Future
 import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.core.crypto.ECPublicKey
@@ -22,7 +22,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.hd.AddressType
-import org.bitcoins.db.KeyHandlingLogger
 
 /**
   * Provides functionality related to addresses. This includes
