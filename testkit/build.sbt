@@ -1,3 +1,3 @@
-name := "bitcoin-s-testkit"
+name := "bitcoin-s-testkit-schnorr-dlc"
 
 libraryDependencies ++= Deps.testkit
