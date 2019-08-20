@@ -5,6 +5,7 @@ import scodec.bits.ByteVector
 
 object Schnorr {
 
+  /** Generates a Schnorr signature for the 32 byte msg using privateKey */
   def sign(
       msg: ByteVector,
       privateKey: ECPrivateKey): SchnorrDigitalSignature = {
@@ -16,6 +17,12 @@ object Schnorr {
     SchnorrDigitalSignature.fromBytes(ByteVector(sigArr))
   }
 
+  /** Generates a Schnorr signature for the 32 byte msg using privateKey
+    * and nonce.
+    *
+    * IMPORTANT: Never sign two messages with the same privateKey and nonce!
+    *            This leaks your private key publicly.
+    */
   def signWithNonce(
       msg: ByteVector,
       privateKey: ECPrivateKey,
@@ -30,6 +37,7 @@ object Schnorr {
     SchnorrDigitalSignature.fromBytes(ByteVector(sigArr))
   }
 
+  /** Verifies a Schnorr signature of a given msg with a given publicKey */
   def verify(
       msg: ByteVector,
       sig: SchnorrDigitalSignature,
@@ -41,6 +49,7 @@ object Schnorr {
                                   publicKey.bytes.toArray)
   }
 
+  /** Computes the public key associated with Schnorr signature from public information */
   def computePubKey(
       msg: ByteVector,
       r: ECPublicKey,
@@ -55,6 +64,10 @@ object Schnorr {
     ECPublicKey.fromBytes(ByteVector(sigKeyArr))
   }
 
+  /** Computes the public key associated with a SchnorrNonce as specified in bip-schnorr.
+    * They y-coordinate is chosen to be a quadratic residue.
+    * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki]]
+    */
   def computeR(nonce: SchnorrNonce): ECPublicKey = {
     val keyArr = NativeSecp256k1.schnorrPublicNonce(nonce.bytes.toArray)
 
