@@ -1,7 +1,9 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.Implicits._
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
 import org.bitcoins.testkit.core.gen.TransactionGenerators
@@ -15,6 +17,10 @@ import scala.util.Try
 import scala.util.Failure
 
 class MerkleBuffersTest extends BitcoinSUnitTest {
+
+  implicit private val config: NodeAppConfig =
+    BitcoinSTestAppConfig.getTestConfig().nodeConf
+
   behavior of "MerkleBuffers"
 
   it must "match a merkle block with its corresponding transactions" in {

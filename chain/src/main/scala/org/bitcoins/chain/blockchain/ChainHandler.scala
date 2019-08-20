@@ -12,7 +12,7 @@ import org.bitcoins.chain.validation.TipUpdateResult.{
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db.ChainVerificationLogger
+import org.bitcoins.chain.ChainVerificationLogger
 
 import scala.concurrent.{ExecutionContext, Future}
 

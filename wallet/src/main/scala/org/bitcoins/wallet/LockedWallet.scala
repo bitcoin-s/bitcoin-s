@@ -14,7 +14,6 @@ import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 import org.bitcoins.wallet.internal._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.db.AppLoggers
 
 abstract class LockedWallet
     extends LockedWalletApi
@@ -27,7 +26,7 @@ abstract class LockedWallet
   // exposed, but this is not the generic wallet
   // logger we want. Therefore we expose `walletLogger`
   // as well
-  private val walletLogger = AppLoggers.getWalletLogger
+  private val walletLogger = WalletLogger.getLogger
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()

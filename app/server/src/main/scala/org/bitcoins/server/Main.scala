@@ -24,7 +24,7 @@ object Main extends App {
     BitcoinSAppConfig.fromDefaultDatadir()
   }
 
-  private val logger = AppLoggers.getHttpLogger(
+  private val logger = HttpLogger.getLogger(
     conf.walletConf // doesn't matter which one we pass in
   )
 
