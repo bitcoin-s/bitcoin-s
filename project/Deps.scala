@@ -43,8 +43,6 @@ object Deps {
     // value here with whatever is in there. This
     // obviously has to be changed before this is
     // merged.
-    val snapshotAkkaHttpUpickleV = "1.27.0+6-70ee6fce+20190819-1442-SNAPSHOT"
-    val akkaHttpUpickleV = "1.27.0"
 
     val sourcecodeV = "0.1.7"
 
@@ -89,11 +87,6 @@ object Deps {
 
     // get access to reflection data at compile-time
     val sourcecode = "com.lihaoyi" %% "sourcecode" % V.sourcecodeV
-
-    // make akka-http play nice with upickle
-    val akkaHttpUpickle = "de.heikoseeberger" %% "akka-http-upickle" % V.akkaHttpUpickleV
-    // compatible with Scala 2.13
-    val snapshotAkkaHttpUpickle = "de.heikoseeberger" %% "akka-http-upickle" % V.snapshotAkkaHttpUpickleV
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -197,9 +190,6 @@ object Deps {
   )
 
   def server(scalaVersion: String) = List(
-    if (scalaVersion.startsWith("2.13")) Compile.snapshotAkkaHttpUpickle
-    else
-      Compile.akkaHttpUpickle,
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
     else Compile.newMicroPickle,
     Compile.logback,
