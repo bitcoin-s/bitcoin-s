@@ -1,40 +1,32 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
-sealed abstract class SchnorrDigitalSignature extends NetworkElement {
+case class SchnorrDigitalSignature(rx: ByteVector, s: ByteVector)
+    extends NetworkElement {
   require(rx.length == 32, s"R must be 32 bytes, got $rx")
   require(s.length == 32, s"s must be 32 bytes, got $s")
   require(bytes.length == 64, s"This must be 64 bytes, got $bytes")
 
-  /** Represents the x coordinate of the R value used in the signature */
-  def rx: ByteVector
-
-  /** The s = k + e*x value of the signature */
-  def s: ByteVector
-
   override def bytes: ByteVector = rx ++ s
-
-  override def toString: String = s"SchnorrDigitalSignature($rx, $s)"
 }
 
-final case object DummySchnorrDigitalSignature extends SchnorrDigitalSignature {
-  override val rx: ByteVector = ByteVector.low(32)
-  override val s: ByteVector = rx
-}
+final object DummySchnorrDigitalSignature
+    extends SchnorrDigitalSignature(ByteVector.low(32), ByteVector.low(32))
 
-object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
-  private case class SchnorrDigitalSignatureImpl(rx: ByteVector, s: ByteVector)
-      extends SchnorrDigitalSignature
+object SchnorrDigitalSignature {
 
-  override def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
+  def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
     require(bytes.length == 64,
             s"SchnorrDigitalSignature must be 64 bytes, got $bytes")
 
     val (rx, s) = bytes.splitAt(32)
-    SchnorrDigitalSignatureImpl(rx, s)
+    SchnorrDigitalSignature(rx, s)
+  }
+
+  def apply(bytes: ByteVector): SchnorrDigitalSignature = {
+    fromBytes(bytes)
   }
 
   /** Constructs a SchnorrDigitalSignature from the x-coordinate of the R
@@ -44,11 +36,7 @@ object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
     require(rx.length == 32, s"rx must be 32 bytes, got $rx")
     require(s.length == 32, s"s must be 32 bytes, got $s")
 
-    SchnorrDigitalSignatureImpl(rx, s)
-  }
-
-  def apply(rx: ByteVector, s: ByteVector): SchnorrDigitalSignature = {
-    fromRxS(rx, s)
+    SchnorrDigitalSignature(rx, s)
   }
 
   /** Consturcts a SchnorrDigitalSignature form the R and s values. */
