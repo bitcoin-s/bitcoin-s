@@ -10,10 +10,20 @@ object BitcoinSTestAppConfig {
     * App configuration suitable for test purposes:
     *
     * 1) Data directory is set to user temp directory
+    * 2) Logging is turned down to WARN
     */
   def getTestConfig(config: Config*): BitcoinSAppConfig = {
+    val overrideConf = ConfigFactory.parseString {
+      """
+      |bitcoin-s {
+      |  logging {
+      |     level = WARN
+      |  } 
+      |}
+      """.stripMargin
+    }
     val tmpDir = Files.createTempDirectory("bitcoin-s-")
-    BitcoinSAppConfig(tmpDir, config: _*)
+    BitcoinSAppConfig(tmpDir, (overrideConf +: config): _*)
   }
 
   sealed trait ProjectType
