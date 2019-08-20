@@ -7,6 +7,17 @@ sudo: true
 
 language: scala
 
+env:
+  matrix:
+    - TEST_COMMAND="core/coverage coreTest/test core/coverageReport core/coverageAggregate core/coveralls"
+    - TEST_COMMAND="chain/coverage chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls"
+    - TEST_COMMAND="wallet/coverage walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
+    - TEST_COMMAND="node/coverage nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+    - TEST_COMMAND="bitcoindRpc/coverage bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls"
+    - TEST_COMMAND="eclairRpc/coverage eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
+    - TEST_COMMAND="zmq/coverage zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+    - TEST_COMMAND="secp256k1jni/test"
+
 #https://docs.travis-ci.com/user/reference/osx#jdk-and-os-x
 #Note: osx uses jdk10 by default which is NOT officially supported by scala
 #This does not seem to be causing any errors right now
@@ -19,15 +30,18 @@ scala:
   - 2.12.8
 
 # These directories are cached to S3 at the end of the build
+# https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
 
+# https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 before_cache:
-  # Tricks to avoid unnecessary cache updates
-  - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
 
 install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export PLATFORM="x86_64-linux-gnu"; else export PLATFORM="osx64"; fi
@@ -60,11 +74,7 @@ stages:
   - name: release
     if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
 
-script: sbt ++$TRAVIS_SCALA_VERSION coverage test &&
-  sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
-  sbt ++$TRAVIS_SCALA_VERSION chain/coverageReport &&
-  sbt ++$TRAVIS_SCALA_VERSION coverageAggregate &&
-  sbt ++$TRAVIS_SCALA_VERSION coveralls
+script: sbt ++$TRAVIS_SCALA_VERSION "$TEST_COMMAND"
 
 jobs:
   include:
