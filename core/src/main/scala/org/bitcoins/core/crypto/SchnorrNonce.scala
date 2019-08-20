@@ -22,10 +22,10 @@ object SchnorrNonce {
     if (bytes.length == 32)
       SchnorrNonce(bytes)
     else if (bytes.length < 32) {
-      //means we need to pad the private key with 0 bytes so we have 32 bytes
+      // means we need to pad the private key with 0 bytes so we have 32 bytes
       SchnorrNonce.fromBytes(bytes.padLeft(32))
-    } //this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
-    else {
+    } else {
+      // this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
       SchnorrNonce.fromBytes(bytes.tail)
     }
   }

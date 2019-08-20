@@ -66,7 +66,7 @@ object Schnorr {
 
   /** Computes the public key associated with a SchnorrNonce as specified in bip-schnorr.
     * They y-coordinate is chosen to be a quadratic residue.
-    * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki]]
+    * @see [[https://github.com/sipa/bips/blob/bip-schnorr/bip-schnorr.mediawiki#design]]
     */
   def computeR(nonce: SchnorrNonce): ECPublicKey = {
     val keyArr = NativeSecp256k1.schnorrPublicNonce(nonce.bytes.toArray)

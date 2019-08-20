@@ -15,28 +15,34 @@ class SchnorrTest extends BitcoinSUnitTest {
   it must "act like a normal schnorrSign if the normal nonce is specified" in {
     forAll(CryptoGenerators.nonZeroPrivKey, NumberGenerator.bytevector(32)) {
       case (privKey, message) =>
+        // First lets manually generate the bip-schnorr nonce
         val nonce = SchnorrNonce.fromBipSchnorr(privKey, message)
 
         assert(nonce.bytes.toArray.exists(_ != 0.toByte))
 
+        // Then we will sign with that nonce
         val sigWithNonce =
           NativeSecp256k1.schnorrSignWithNonce(message.toArray,
                                                privKey.bytes.toArray,
                                                nonce.bytes.toArray)
 
+        // Make sure that NativeSecp256k1 doesn't deviate from Schnorr
         assert(
           SchnorrDigitalSignature(ByteVector(sigWithNonce)) ==
             Schnorr.signWithNonce(message, privKey, nonce)
         )
 
+        // Then we will sign with no nonce specified
         val sig =
           NativeSecp256k1.schnorrSign(message.toArray, privKey.bytes.toArray)
 
+        // Make sure that NativeSecp256k1 doesn't deviate from Schnorr
         assert(
           SchnorrDigitalSignature(ByteVector(sig)) ==
             Schnorr.sign(message, privKey)
         )
 
+        // Finally, both signatures should be the same since we specified the bip-schnorr nonce
         assert(ByteVector(sigWithNonce) == ByteVector(sig))
     }
   }
@@ -47,37 +53,56 @@ class SchnorrTest extends BitcoinSUnitTest {
         val publicKey: ECPublicKey = privKey.publicKey
         val messageArr: Array[Byte] = message.toArray
 
+        // We manually compute the bip-schnorr nonce in order to compute R
         val nonce = SchnorrNonce.fromBipSchnorr(privKey, message)
 
         assert(nonce.bytes.toArray.exists(_ != 0.toByte))
 
+        // R is the bip-schnorr nonce's publicKey
         val rBytes = nonce.publicKey.bytes
 
+        // Sign message with privKey and bip-schnorr nonce
         val sig: Array[Byte] =
           NativeSecp256k1.schnorrSign(messageArr, privKey.bytes.toArray)
 
+        // The first 32 bytes are the x-coordinate of R, the last 32 are the signature
         val (rKey, s) = sig.splitAt(32)
 
+        // Assert our R value was the one used by comparing x-coordinates
         assert(rBytes.tail == ByteVector(rKey))
 
+        // Compute the public key associated with s from public information
+        // (s*G = R + m*P)
         val sPub: Array[Byte] =
           NativeSecp256k1.computeSchnorrPubKey(messageArr,
                                                rBytes.toArray,
                                                publicKey.bytes.toArray)
         val sPubKey: ECPublicKey = ECPublicKey.fromBytes(ByteVector(sPub))
 
+        // Make sure that NativeSecp256k1 doesn't deviate from Schnorr
         assert(
           sPubKey == Schnorr.computePubKey(message, nonce.publicKey, publicKey))
 
+        // Compute the public key associated with s from s itself (private info)
         val realSPriv = ECPrivateKey.fromBytes(ByteVector(s))
         val realSPub = realSPriv.publicKey
 
+        // Assert that both ways of computing s*G are equal
         assert(sPubKey == realSPub)
     }
   }
 
+  /* Schnorr signatures have the property that if two messages are signed with the same keys,
+   * then those keys are leaked:
+   *
+   * sig1 = nonce + message1*privKey
+   * sig2 = nonce + message2*privKey
+   *
+   * => sig1 - sig2 = (message1 - message2)*privKey
+   * => privKey = (sig1 - sig2) * inverse(message1 - message2)
+   */
   it should "leak keys if two messages are signed" in {
-    // The order of the secp256k1 curve
+    // The order of the secp256k1 curve (and thus the modulus of the field elements)
     val M = BigInt(
       "115792089237316195423570985008687907852837564279074904382605163141518161494337")
 
@@ -90,7 +115,9 @@ class SchnorrTest extends BitcoinSUnitTest {
       }
     }
 
-    /** Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]] */
+    /** Computes the inverse (mod M) of the input using the Euclidean Algorithm (log time)
+      * Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]
+      */
     def modInverse(aInit: BigInt): BigInt = {
       var a = modM(aInit)
       var m = M
@@ -130,8 +157,10 @@ class SchnorrTest extends BitcoinSUnitTest {
            NumberGenerator.bytevector(32),
            NumberGenerator.bytevector(32)) {
       case (privKey, nonce, message1, message2) =>
+        // This will only work if we sign two different messages
         assert(message1 != message2)
 
+        // Sign both messages using the same privKey and nonce
         val sig1 = Schnorr.signWithNonce(message1, privKey, nonce)
         val sig2 = Schnorr.signWithNonce(message2, privKey, nonce)
 
@@ -140,6 +169,7 @@ class SchnorrTest extends BitcoinSUnitTest {
         // s2 = nonce + e2*privKey
         val s2 = NumberUtil.toUnsignedInt(sig2.s)
 
+        // When signing a message you actually sign SHA256(Rx || pubKey || message)
         val e1Bytes =
           CryptoUtil
             .sha256(sig1.rx ++ privKey.publicKey.bytes ++ message1)
@@ -160,6 +190,7 @@ class SchnorrTest extends BitcoinSUnitTest {
         // => privKey = (s1 - s2) * modInverse(e1 - e2)
         val privNum = modM(modM(s1 - s2) * modInverse(e1 - e2))
 
+        // Assert that we've correctly recovered the private key form public info
         assert(privNum == NumberUtil.toUnsignedInt(privKey.bytes))
     }
   }
