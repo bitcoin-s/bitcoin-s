@@ -1,6 +1,9 @@
 *.class
 *.log
 
+# binaries downloaded by sbt for tests
+binaries/bitcoind
+
 # sbt specific
 .cache
 .history

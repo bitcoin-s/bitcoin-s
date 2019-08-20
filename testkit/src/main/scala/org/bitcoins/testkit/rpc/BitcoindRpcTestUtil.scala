@@ -141,33 +141,20 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 
-  private val V16_ENV = "BITCOIND_V16_PATH"
-  private val V17_ENV = "BITCOIND_V17_PATH"
-
-  private def getFileFromEnv(env: String): File = {
-    val envValue = Properties
-      .envOrNone(env)
-      .getOrElse(
-        throw new IllegalArgumentException(
-          s"$env environment variable is not set"))
-
-    val maybeDir = new File(envValue.trim)
-
-    val binary = if (maybeDir.isDirectory) {
-      Paths.get(maybeDir.getAbsolutePath, "bitcoind").toFile
-    } else {
-      maybeDir
+  private def getBinary(version: BitcoindVersion): File = {
+    val middleSegment = version match {
+      case BitcoindVersion.V16     => "bitcoin-0.16.3"
+      case BitcoindVersion.V17     => "bitcoin-0.17.0.1"
+      case BitcoindVersion.Unknown => ???
     }
 
-    binary
+    Paths.get(Properties.userDir,
+              "binaries",
+              "bitcoind",
+              middleSegment,
+              "bin",
+              "bitcoind")
   }
-
-  private def getBinary(version: BitcoindVersion): File =
-    version match {
-      case BitcoindVersion.V16     => getFileFromEnv(V16_ENV)
-      case BitcoindVersion.V17     => getFileFromEnv(V17_ENV)
-      case BitcoindVersion.Unknown => BitcoindInstance.DEFAULT_BITCOIND_LOCATION
-    }
 
   /** Creates a `bitcoind` instance within the user temporary directory */
   def instance(
