@@ -104,7 +104,7 @@ stages:
   - name: test
     if:
       commit_message !~ /^Docs:/ AND NOT
-      ((branch = master AND type = push) OR (tag IS present))
+      ((branch = schnorr AND type = push) OR (tag IS present))
       # don't run tests on merge builds, just publish library
       # and website
   - name: release
