@@ -40,7 +40,10 @@ object BlockchainUpdate {
       successfulHeaders: Vector[BlockHeaderDb])
       extends BlockchainUpdate {
     if (successfulHeaders.nonEmpty) {
-      require(blockchain.tip == successfulHeaders.head)
+      require(
+        blockchain.tip == successfulHeaders.head,
+        s"Tip did not equal last successful header, tip=${blockchain.tip.hashBE} lastSuccessfulHeader=${successfulHeaders.head.hashBE}"
+      )
     }
     def height: Long = blockchain.height
   }

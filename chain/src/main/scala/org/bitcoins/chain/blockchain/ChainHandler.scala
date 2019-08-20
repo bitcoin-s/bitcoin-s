@@ -1,20 +1,12 @@
 package org.bitcoins.chain.blockchain
 
+import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
-import org.bitcoins.chain.validation.TipUpdateResult
-import org.bitcoins.chain.validation.TipUpdateResult.{
-  BadNonce,
-  BadPOW,
-  BadPreviousBlockHash
-}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.chain.ChainVerificationLogger
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -57,7 +49,7 @@ case class ChainHandler(
     }
 
     val headersToBeCreated = {
-      blockchainUpdates.map(_.successfulHeaders).flatten.toVector
+      blockchainUpdates.map(_.successfulHeaders).flatten.distinct.toVector
     }
 
     val chains = blockchainUpdates.map(_.blockchain).toVector
@@ -70,32 +62,6 @@ case class ChainHandler(
     createdF.map { _ =>
       newChainHandler
     }
-  }
-
-  /** Logs a tip connection failure by querying local chain state
-    * and comparing it to the received `TipUpdateResult`
-    */
-  private def logTipConnectionFailure(failure: TipUpdateResult.Failure)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    failure match {
-      case _ @(_: BadPOW | _: BadNonce) =>
-        // TODO: Log this in a meaningful way
-        FutureUtil.unit
-      case _: BadPreviousBlockHash =>
-        blockHeaderDAO.chainTips.map { tips =>
-          if (tips.length > 1) {
-            logger.warn {
-              s"We have multiple (${tips.length}) , competing chainTips=${tips
-                .map(_.hashBE.hex)
-                .mkString("[", ",", "]")}"
-            }
-          } else {
-            logger.warn(
-              s"We don't have competing chainTips. Most recent, valid header=${tips.head.hashBE.hex}")
-          }
-        }
-    }
-
   }
 
   /**
