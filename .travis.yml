@@ -58,7 +58,7 @@ stages:
       # don't run tests on merge builds, just publish library
       # and website
   - name: release
-    if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
+    if: ((branch = schnorr-dlc AND type = push) OR (tag IS present)) AND NOT fork
 
 script: sbt ++$TRAVIS_SCALA_VERSION coverage test &&
   sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
@@ -68,16 +68,8 @@ script: sbt ++$TRAVIS_SCALA_VERSION coverage test &&
 
 jobs:
   include:
-    - stage: test
-      name: Compile website
-      script: sbt docs/mdoc
     # run ci-release only if previous stages passed
     - stage: release
       jdk: openjdk8
       name: Publish library
       script: sbt ci-release
-    # run website push only if previous stages passed
-    # we use custom sbt task that first compiles Scaladocs
-    # and then calls the docusaurusPublishGhpages task
-    - script: sbt docs/publishWebsite
-      name: Publish website

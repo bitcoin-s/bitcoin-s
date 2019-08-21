@@ -1,3 +1,3 @@
-name := "bitcoin-s-app-picklers-schnorr-dlc"
+name := "bitcoin-s-app-picklers"
 
 libraryDependencies ++= Deps.picklers

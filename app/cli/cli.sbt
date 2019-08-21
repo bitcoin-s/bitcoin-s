@@ -1,4 +1,4 @@
-name := "bitcoin-s-cli-schnorr-dlc"
+name := "bitcoin-s-cli"
 
 libraryDependencies ++= Deps.cli
 

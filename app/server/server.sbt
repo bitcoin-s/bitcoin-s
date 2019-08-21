@@ -1,4 +1,4 @@
-name := "bitcoin-s-server-schnorr-dlc"
+name := "bitcoin-s-server"
 
 // Ensure actor system is shut down
 // when server is quit

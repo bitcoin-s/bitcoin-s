@@ -1,4 +1,4 @@
-name := "bitcoin-s-core-schnorr-dlc"
+name := "bitcoin-s-core"
 
 libraryDependencies ++= Deps.core
 

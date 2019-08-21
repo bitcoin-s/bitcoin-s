@@ -337,7 +337,7 @@ lazy val chain = project
   .settings(commonProdSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
-    name := "bitcoin-s-chain-schnorr-dlc",
+    name := "bitcoin-s-chain",
     libraryDependencies ++= Deps.chain
   )
   .dependsOn(core, dbCommons)
@@ -358,7 +358,7 @@ lazy val dbCommons = project
   .in(file("db-commons"))
   .settings(commonSettings: _*)
   .settings(
-    name := "bitcoin-s-db-commons-schnorr-dlc",
+    name := "bitcoin-s-db-commons",
     libraryDependencies ++= Deps.dbCommons
   )
   .dependsOn(core)
@@ -366,8 +366,7 @@ lazy val dbCommons = project
 lazy val zmq = project
   .in(file("zmq"))
   .settings(commonSettings: _*)
-  .settings(name := "bitcoin-s-zmq-schnorr-dlc",
-            libraryDependencies ++= Deps.bitcoindZmq)
+  .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
     core % testAndCompile
   )
@@ -375,7 +374,7 @@ lazy val zmq = project
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(commonProdSettings: _*)
-  .settings(name := "bitcoin-s-bitcoind-rpc-schnorr-dlc",
+  .settings(name := "bitcoin-s-bitcoind-rpc",
             libraryDependencies ++= Deps.bitcoindRpc)
   .dependsOn(core)
 
@@ -399,7 +398,7 @@ lazy val bench = project
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
   .settings(commonProdSettings: _*)
-  .settings(name := "bitcoin-s-eclair-rpc-schnorr-dlc",
+  .settings(name := "bitcoin-s-eclair-rpc",
             libraryDependencies ++= Deps.eclairRpc)
   .dependsOn(
     core,
@@ -420,7 +419,7 @@ lazy val node =
     .settings(commonSettings: _*)
     .settings(nodeDbSettings: _*)
     .settings(
-      name := "bitcoin-s-node-schnorr-dlc",
+      name := "bitcoin-s-node",
       libraryDependencies ++= Deps.node
     )
     .dependsOn(
@@ -486,7 +485,7 @@ lazy val wallet = project
   .settings(commonProdSettings: _*)
   .settings(walletDbSettings: _*)
   .settings(
-    name := "bitcoin-s-wallet-schnorr-dlc",
+    name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet
   )
   .dependsOn(core, dbCommons)
