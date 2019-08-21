@@ -46,6 +46,7 @@ import org.bitcoins.util.ListUtil
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
@@ -54,6 +55,10 @@ import java.io.File
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Path
+import org.bitcoins.rpc.client.common.BitcoindVersion.Unknown
+import org.bitcoins.rpc.client.common.BitcoindVersion.V16
+import org.bitcoins.rpc.client.common.BitcoindVersion.V17
+import java.nio.file.Files
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -141,19 +146,45 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 
-  private def getBinary(version: BitcoindVersion): File = {
-    val middleSegment = version match {
-      case BitcoindVersion.V16     => "bitcoin-0.16.3"
-      case BitcoindVersion.V17     => "bitcoin-0.17.0.1"
-      case BitcoindVersion.Unknown => ???
+  /** The directory that sbt downloads bitcoind binaries into */
+  private[bitcoins] val binaryDirectory = {
+    val baseDirectory = {
+      val cwd = Paths.get(Properties.userDir)
+      if (cwd.endsWith("bitcoind-rpc-test")) {
+        cwd.getParent()
+      } else cwd
     }
 
-    Paths.get(Properties.userDir,
-              "binaries",
-              "bitcoind",
-              middleSegment,
-              "bin",
-              "bitcoind")
+    baseDirectory.resolve("binaries").resolve("bitcoind")
+  }
+
+  private def getBinary(version: BitcoindVersion): File = version match {
+    // default to newest version
+    case Unknown => getBinary(BitcoindVersion.newest)
+    case known @ (V16 | V17) =>
+      val versionFolder = Files
+        .list(binaryDirectory)
+        .iterator()
+        .asScala
+        .toList
+        .filter { f =>
+          val isFolder = Files.isDirectory(f)
+          val matchesVersion = f.toString.contains {
+            // drop leading 'v'
+            known.toString.drop(1)
+          }
+          isFolder && matchesVersion
+        }
+        // might be multiple versions downloaded for
+        // each major version, i.e. 0.16.2 and 0.16.3
+        .sorted
+        // we want the most recent one
+        .last
+
+      versionFolder
+        .resolve("bin")
+        .resolve("bitcoind")
+        .toFile()
   }
 
   /** Creates a `bitcoind` instance within the user temporary directory */
