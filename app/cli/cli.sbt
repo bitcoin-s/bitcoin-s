@@ -1,4 +1,4 @@
-name := "bitcoin-s-cli-schnorr"
+name := "bitcoin-s-cli"
 
 libraryDependencies ++= Deps.cli(scalaVersion.value)
 
