@@ -9,7 +9,11 @@ import org.scalatest._
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
-trait BitcoinSFixture extends fixture.AsyncFlatSpec with BitcoinSLogger {
+trait BitcoinSFixture extends fixture.AsyncFlatSpec {
+
+  // to avoid this trickling up to things that extend
+  // this trait
+  private val logger = BitcoinSLogger.logger
 
   /**
     * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome

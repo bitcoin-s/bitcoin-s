@@ -4,7 +4,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.db.ChainVerificationLogger
+import org.bitcoins.chain.ChainVerificationLogger
 
 import scala.collection.{IndexedSeqLike, mutable}
 

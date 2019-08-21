@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.p2p.BlockMessage
 import org.bitcoins.core.p2p.TransactionMessage
 import org.bitcoins.core.p2p.MerkleBlockMessage
+import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.core.p2p.GetDataMessage
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
@@ -18,7 +19,6 @@ import slick.jdbc.SQLiteProfile
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.p2p.TypeIdentifier
 import org.bitcoins.core.p2p.MsgUnassigned
-import org.bitcoins.db.P2PLogger
 import org.bitcoins.core.p2p.Inventory
 import org.bitcoins.core.p2p.CompactFilterCheckPointMessage
 import org.bitcoins.core.p2p.CompactFilterHeadersMessage

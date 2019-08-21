@@ -14,7 +14,6 @@ import java.nio.file.Path
 import scala.util.Try
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.crypto.AesIV
-import org.bitcoins.db.KeyHandlingLogger
 
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage extends KeyHandlingLogger {

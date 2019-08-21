@@ -1,7 +1,6 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}

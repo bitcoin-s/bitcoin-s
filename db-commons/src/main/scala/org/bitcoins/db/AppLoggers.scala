@@ -15,10 +15,10 @@ import ch.qos.logback.classic.joran.JoranConfigurator
 /** Provides logging functionality for Bitcoin-S
   * app modules (i.e. the modules that are capable
   * of running on their own) */
-private[bitcoins] object AppLoggers {
+private[bitcoins] trait AppLoggers {
 
-  sealed private trait LoggerKind
-  private object LoggerKind {
+  sealed private[bitcoins] trait LoggerKind
+  protected[bitcoins] object LoggerKind {
     case object P2P extends LoggerKind
     case object ChainVerification extends LoggerKind
     case object KeyHandling extends LoggerKind
@@ -26,41 +26,6 @@ private[bitcoins] object AppLoggers {
     case object Http extends LoggerKind
     case object Database extends LoggerKind
   }
-
-  /**
-    * @return the peer-to-peer submobule logger
-    */
-  def getP2PLogger(implicit conf: AppConfig) = getLoggerImpl(LoggerKind.P2P)
-
-  /**
-    * @return the chain verification submobule logger
-    */
-  def getVerificationLogger(implicit conf: AppConfig): Logger =
-    getLoggerImpl(LoggerKind.ChainVerification)
-
-  /**
-    * @return the key handling submobule logger
-    */
-  def getKeyHandlingLogger(implicit conf: AppConfig): Logger =
-    getLoggerImpl(LoggerKind.KeyHandling)
-
-  /**
-    * @return the generic wallet logger (i.e. everything not related to key handling)
-    */
-  def getWalletLogger(implicit conf: AppConfig): Logger =
-    getLoggerImpl(LoggerKind.Wallet)
-
-  /**
-    * @return the HTTP RPC server submobule logger
-    */
-  def getHttpLogger(implicit conf: AppConfig): Logger =
-    getLoggerImpl(LoggerKind.Http)
-
-  /**
-    * @return the database interaction logger
-    */
-  def getDatabaseLogger(implicit conf: AppConfig): Logger =
-    getLoggerImpl(LoggerKind.Database)
 
   private val context = {
     val context = LoggerFactory.getILoggerFactory() match {
@@ -124,7 +89,7 @@ private[bitcoins] object AppLoggers {
   /** Stitches together the encoder, appenders and sets the correct
     * logging level
     */
-  private def getLoggerImpl(loggerKind: LoggerKind)(
+  protected def getLoggerImpl(loggerKind: LoggerKind)(
       implicit conf: AppConfig): Logger = {
     import LoggerKind._
 
@@ -156,59 +121,5 @@ private[bitcoins] object AppLoggers {
     logger.setAdditive(true)
 
     logger
-  }
-}
-
-private[bitcoins] trait P2PLogger {
-  private var _logger: Logger = _
-  protected def logger(implicit config: AppConfig) = {
-    if (_logger == null) {
-      _logger = AppLoggers.getP2PLogger
-    }
-    _logger
-  }
-}
-
-/** Exposes access to the key handling logger */
-private[bitcoins] trait KeyHandlingLogger {
-  private var _logger: Logger = _
-  protected[bitcoins] def logger(implicit config: AppConfig) = {
-    if (_logger == null) {
-      _logger = AppLoggers.getKeyHandlingLogger
-    }
-    _logger
-  }
-}
-
-/** Exposes access to the chain verification logger */
-private[bitcoins] trait ChainVerificationLogger {
-  private var _logger: Logger = _
-  protected[bitcoins] def logger(implicit config: AppConfig) = {
-    if (_logger == null) {
-      _logger = AppLoggers.getVerificationLogger
-    }
-    _logger
-  }
-}
-
-/** Exposes access to the HTTP RPC server logger */
-private[bitcoins] trait HttpLogger {
-  private var _logger: Logger = _
-  protected[bitcoins] def logger(implicit config: AppConfig) = {
-    if (_logger == null) {
-      _logger = AppLoggers.getHttpLogger
-    }
-    _logger
-  }
-}
-
-/** Exposes access to the database interaction logger */
-private[bitcoins] trait DatabaseLogger {
-  private var _logger: Logger = _
-  protected[bitcoins] def logger(implicit config: AppConfig) = {
-    if (_logger == null) {
-      _logger = AppLoggers.getDatabaseLogger
-    }
-    _logger
   }
 }

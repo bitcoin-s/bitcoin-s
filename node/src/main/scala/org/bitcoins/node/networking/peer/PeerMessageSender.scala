@@ -9,7 +9,7 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.db.P2PLogger
+import org.bitcoins.node.P2PLogger
 import org.bitcoins.core.crypto.HashDigest
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.protocol.blockchain.BlockHeader

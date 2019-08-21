@@ -18,13 +18,13 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.node.P2PLogger
 
-abstract class NodeTestUtil extends BitcoinSLogger {
+abstract class NodeTestUtil extends P2PLogger {
 
   //txid on testnet 44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff
   //this tx has multiple inputs and outputs

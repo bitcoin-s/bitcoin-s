@@ -11,11 +11,10 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.db.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
   BroadcastAbleTransaction,
@@ -99,8 +98,7 @@ case class SpvNode(
     * @return SPV node with the updated bloom filter
     */
   def updateBloomFilter(transaction: Transaction): Future[SpvNode] = {
-    logger(nodeAppConfig).info(
-      s"Updating bloom filter with transaction=${transaction.txIdBE}")
+    logger.info(s"Updating bloom filter with transaction=${transaction.txIdBE}")
     val newBloom = bloomFilter.update(transaction)
 
     // we could send filteradd messages, but we would
@@ -119,7 +117,7 @@ case class SpvNode(
     * @return SPV node with the updated bloom filter
     */
   def updateBloomFilter(address: BitcoinAddress): Future[SpvNode] = {
-    logger(nodeAppConfig).info(s"Updating bloom filter with address=$address")
+    logger.info(s"Updating bloom filter with address=$address")
     val hash = address.hash
     val newBloom = bloomFilter.insert(hash)
     val sentFilterAddF = peerMsgSenderF.map(_.sendFilterAddMessage(hash))
@@ -205,7 +203,7 @@ case class SpvNode(
 
   /** Starts our spv node */
   def start(): Future[SpvNode] = {
-    logger(nodeAppConfig).info("Starting spv node")
+    logger.info("Starting spv node")
     val start = System.currentTimeMillis()
     for {
       _ <- nodeAppConfig.initialize()
@@ -215,16 +213,13 @@ case class SpvNode(
           _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized)
         } yield ()
 
-        isInitializedF.failed.foreach(
-          err =>
-            logger(nodeAppConfig).error(
-              s"Failed to connect with peer=$peer with err=${err}"))
+        isInitializedF.failed.foreach(err =>
+          logger.error(s"Failed to connect with peer=$peer with err=${err}"))
 
         isInitializedF.map { _ =>
-          logger(nodeAppConfig).info(s"Our peer=${peer} has been initialized")
-          logger(nodeAppConfig).info(
-            s"Our spv node has been full started. It took=${System
-              .currentTimeMillis() - start}ms")
+          logger.info(s"Our peer=${peer} has been initialized")
+          logger.info(s"Our spv node has been full started. It took=${System
+            .currentTimeMillis() - start}ms")
           this
         }
       }
@@ -237,7 +232,7 @@ case class SpvNode(
     } yield {
       if (nodeAppConfig.isSPVEnabled) {
         // TODO keep track of where to request from
-        logger(nodeAppConfig).info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+        logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
         peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
       }
 
@@ -249,9 +244,9 @@ case class SpvNode(
         for {
           peerMsgSender <- peerMsgSenderF
           _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
-          _ = logger(nodeAppConfig).info(s"Requesting compact filter headers from=$highestFilterHeaderHeight to=$bestHash")
+          _ = logger.info(s"Requesting compact filter headers from=$highestFilterHeaderHeight to=$bestHash")
           _ <- rescan(bestHeader.get, blockCount, highestFilterHeaderHeight, 1000)(peerMsgSender.sendGetCompactFilterHeadersMessage)
-          _ = logger(nodeAppConfig).info(s"Requesting compact filters from=$highestFilterHeight to=$bestHash")
+          _ = logger.info(s"Requesting compact filters from=$highestFilterHeight to=$bestHash")
           _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 100)(peerMsgSender.sendGetCompactFiltersMessage)
         } yield ()
       }
@@ -261,7 +256,7 @@ case class SpvNode(
 
   /** Stops our spv node */
   def stop(): Future[SpvNode] = {
-    logger(nodeAppConfig).info(s"Stopping spv node")
+    logger.info(s"Stopping spv node")
     val disconnectF = for {
       p <- peerMsgSenderF
       disconnect <- p.disconnect()
@@ -269,13 +264,13 @@ case class SpvNode(
 
     val start = System.currentTimeMillis()
     val isStoppedF = disconnectF.flatMap { _ =>
-      logger(nodeAppConfig).info(s"Awaiting disconnect")
+      logger.info(s"Awaiting disconnect")
       //25 seconds to disconnect
       AsyncUtil.retryUntilSatisfiedF(() => isDisconnected, 500.millis)
     }
 
     isStoppedF.map { _ =>
-      logger(nodeAppConfig).info(
+      logger.info(
         s"Spv node stopped! It took=${System.currentTimeMillis() - start}ms")
       this
     }
@@ -287,14 +282,13 @@ case class SpvNode(
 
     txDAO.create(broadcastTx).onComplete {
       case Failure(exception) =>
-        logger(nodeAppConfig)
-          .error(s"Error when writing broadcastable TX to DB", exception)
+        logger.error(s"Error when writing broadcastable TX to DB", exception)
       case Success(written) =>
-        logger(nodeAppConfig).debug(
+        logger.debug(
           s"Wrote tx=${written.transaction.txIdBE} to broadcastable table")
     }
 
-    logger(nodeAppConfig).info(s"Sending out inv for tx=${transaction.txIdBE}")
+    logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
     peerMsgSenderF.flatMap(_.sendInventoryMessage(transaction))
   }
 
@@ -324,8 +318,7 @@ case class SpvNode(
         .map(_.get) // .get is safe since this is an internal call
     } yield {
       peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
-      logger(nodeAppConfig).info(
-        s"Starting sync node, height=${header.height} hash=$hash")
+      logger.info(s"Starting sync node, height=${header.height} hash=$hash")
     }
   }
 }

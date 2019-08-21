@@ -2,7 +2,6 @@ package org.bitcoins.node.networking
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
 import akka.io.{IO, Tcp}
-import akka.pattern.AskTimeoutException
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.p2p.NetworkMessage
@@ -17,7 +16,7 @@ import org.bitcoins.node.config.NodeAppConfig
 
 import scala.annotation.tailrec
 import scala.util._
-import org.bitcoins.db.P2PLogger
+import org.bitcoins.node.P2PLogger
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
