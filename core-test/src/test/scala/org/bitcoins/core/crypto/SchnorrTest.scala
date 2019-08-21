@@ -92,8 +92,8 @@ class SchnorrTest extends BitcoinSUnitTest {
     }
   }
 
-  /* Schnorr signatures have the property that if two messages are signed with the same keys,
-   * then those keys are leaked:
+  /* Schnorr signatures have the property that if two messages are signed with the same key
+   * and nonce, then they are leaked:
    *
    * sig1 = nonce + message1*privKey
    * sig2 = nonce + message2*privKey
@@ -103,15 +103,14 @@ class SchnorrTest extends BitcoinSUnitTest {
    */
   it should "leak keys if two messages are signed" in {
     // The order of the secp256k1 curve (and thus the modulus of the field elements)
-    val M = BigInt(
-      "115792089237316195423570985008687907852837564279074904382605163141518161494337")
+    val N = BigInt(CryptoParams.params.getN)
 
     /** Returns num % M as a positive integer */
     def modM(num: BigInt): BigInt = {
       if (num < 0) {
-        (num % M) + M
+        (num % N) + N
       } else {
-        num % M
+        num % N
       }
     }
 
@@ -120,7 +119,7 @@ class SchnorrTest extends BitcoinSUnitTest {
       */
     def modInverse(aInit: BigInt): BigInt = {
       var a = modM(aInit)
-      var m = M
+      var m = N
       var m0 = m
       var y = BigInt(0)
       var x = BigInt(1)

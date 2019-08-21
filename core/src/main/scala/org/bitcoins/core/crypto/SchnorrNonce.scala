@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -24,9 +24,13 @@ object SchnorrNonce {
     else if (bytes.length < 32) {
       // means we need to pad the private key with 0 bytes so we have 32 bytes
       SchnorrNonce.fromBytes(bytes.padLeft(32))
-    } else {
+    } else if (bytes.length == 33) {
       // this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
       SchnorrNonce.fromBytes(bytes.tail)
+    } else {
+      throw new IllegalArgumentException(
+        "Private keys cannot be greater than 33 bytes in size, got: " +
+          BitcoinSUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
     }
   }
 
