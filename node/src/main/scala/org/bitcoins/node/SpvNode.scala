@@ -4,7 +4,12 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  BlockHeaderDb,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.p2p.NetworkPayload
@@ -12,9 +17,16 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.db.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{BroadcastAbleTransaction, BroadcastAbleTransactionDAO, Peer}
+import org.bitcoins.node.models.{
+  BroadcastAbleTransaction,
+  BroadcastAbleTransactionDAO,
+  Peer
+}
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageSender
+}
 import org.bitcoins.rpc.util.AsyncUtil
 import slick.jdbc.SQLiteProfile
 
@@ -52,7 +64,9 @@ case class SpvNode(
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     * */
   def chainApiFromDb(): Future[ChainApi] = {
-    ChainHandler.fromDatabase(BlockHeaderDAO(), CompactFilterHeaderDAO(), CompactFilterDAO())
+    ChainHandler.fromDatabase(BlockHeaderDAO(),
+                              CompactFilterHeaderDAO(),
+                              CompactFilterDAO())
   }
 
   /** Unlike our chain api, this is cached inside our spv node
@@ -125,33 +139,68 @@ case class SpvNode(
     peerMsgSenderF.flatMap(_.sendMsg(msg))
   }
 
-  private def rescan(bestHeader: BlockHeaderDb, blockCount: Long, highestFilterHeight: Long, maxBlocks: Int, chainApi: ChainApi)(f: (Int, DoubleSha256Digest) => Future[_]): Future[Unit] = {
-    val diff = blockCount - highestFilterHeight + 1
+  private def computeBlockBatches(
+      bestHeader: BlockHeaderDb,
+      blockCount: Long,
+      startHeight: Long,
+      batchSize: Int): Future[Vector[(Int, DoubleSha256Digest)]] = {
+    val diff = blockCount - startHeight + 1
 
-    val n = if (diff % maxBlocks == 0) diff / maxBlocks else diff / maxBlocks + 1
+    val n =
+      if (diff % batchSize == 0) diff / batchSize else diff / batchSize + 1
 
-    val res = 0L.until(n).foldLeft(Future.successful(Option(bestHeader))) { (acc, i) =>
-      acc.flatMap { headerOpt: Option[BlockHeaderDb] =>
-        headerOpt match {
-          case Some(header) =>
-            val stopHash = header.hashBE
-            val sh = header.height - maxBlocks + 1
-            val startHeight = if (sh < 0) 0 else sh
-            for {
-              _ <- f(startHeight.toInt, stopHash.flip)
-              nextHeader <- chainApi.getNthHeader(stopHash, maxBlocks)
-            } yield {
-              nextHeader
+    val rv = for {
+      chainApi <- chainApiFromDb()
+      res <- 0L
+        .until(n)
+        .foldLeft(Future.successful(
+          (Option(bestHeader), Vector.empty[(Int, DoubleSha256Digest)]))) {
+          (acc, _) =>
+            val newAcc: Future[(Option[BlockHeaderDb], Vector[(Int, DoubleSha256Digest)])] = acc.flatMap {
+              case (headerOpt, res) =>
+                val xxx: Future[(Option[BlockHeaderDb], Vector[(Int, DoubleSha256Digest)])] = headerOpt match {
+                  case Some(header) =>
+                    val stopHash = header.hashBE
+                    val sh = header.height - batchSize + 1
+                    val startHeight = if (sh < 0) 0 else sh
+                    for {
+                      nextHeader <- chainApi.getNthHeader(stopHash, batchSize)
+                    } yield {
+                      (nextHeader, res :+ (startHeight.toInt, stopHash.flip))
+                    }
+                  case None => acc
+                }
+                xxx
             }
-          case None => acc
+          newAcc
         }
-      }
+
+    } yield {
+      res._2
     }
+
+    rv
+  }
+
+  private def rescan(
+      bestHeader: BlockHeaderDb,
+      blockCount: Long,
+      startHeight: Long,
+      batchSize: Int)(
+      f: (Int, DoubleSha256Digest) => Future[Unit]): Future[Unit] = {
+
+    val res = for {
+      batches <- computeBlockBatches(bestHeader, blockCount, startHeight, batchSize)
+      _ <- batches.reverseIterator.foldLeft(Future.unit) { case (fut, (startHeight, stopBlock)) => fut.flatMap(_ => f(startHeight, stopBlock)) }
+    } yield {
+      ()
+    }
+
     res.recover {
       case e: Throwable => logger(nodeAppConfig).error(s"Cannot rescan", e)
-
     }
-    res.map(_ => ())
+
+    res
   }
 
   /** Starts our spv node */
@@ -184,6 +233,7 @@ case class SpvNode(
       bestHeader <- chainApi.getHeader(bestHash)
       blockCount <- chainApi.getBlockCount
       highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
+      highestFilterOpt <- chainApi.getHighestFilter
     } yield {
       if (nodeAppConfig.isSPVEnabled) {
         // TODO keep track of where to request from
@@ -191,17 +241,18 @@ case class SpvNode(
         peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
       }
 
-      val highestFilterHeight = highestFilterHeaderOpt.map(_.height).getOrElse(0)
-//      val highestFilterHeight = 0
+      val highestFilterHeaderHeight = highestFilterHeaderOpt.map(_.height).getOrElse(0)
+      val highestFilterHeight = highestFilterOpt.map(_.height).getOrElse(0)
 
       // we're going to get banned if we request the genesis block
       if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0 && highestFilterHeight < blockCount) {
-        logger(nodeAppConfig).info(s"Requesting compact filter headers from=0 to=$bestHash")
         for {
           peerMsgSender <- peerMsgSenderF
           _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
-          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 2000, chainApi)(peerMsgSender.sendGetCompactFilterHeadersMessage)
-          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 100, chainApi)(peerMsgSender.sendGetCompactFiltersMessage)
+          _ = logger(nodeAppConfig).info(s"Requesting compact filter headers from=$highestFilterHeaderHeight to=$bestHash")
+          _ <- rescan(bestHeader.get, blockCount, highestFilterHeaderHeight, 1000)(peerMsgSender.sendGetCompactFilterHeadersMessage)
+          _ = logger(nodeAppConfig).info(s"Requesting compact filters from=$highestFilterHeight to=$bestHash")
+          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 100)(peerMsgSender.sendGetCompactFiltersMessage)
         } yield ()
       }
       node

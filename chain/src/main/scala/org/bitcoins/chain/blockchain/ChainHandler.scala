@@ -228,19 +228,21 @@ case class ChainHandler(
         filerOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
       if (filterHashBE != filterHeader.filterHashBE) {
         Future.failed(new RuntimeException(
-          s"Filter hash does not match: ${golombFilter.hash} != ${filterHeader.filterHashBE}"))
+          s"Filter hash does not match: ${filterHashBE} != ${filterHeader.filterHashBE}"))
       } else {
         filerOpt match {
           case Some(filter) =>
             if (filter.golombFilter != golombFilter)
-              Future.failed(new RuntimeException(
-                s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"))
-            else
+              logger.error(s"Filter does not match: ${golombFilter} != ${filter.golombFilter}")
+//              Future.failed(new RuntimeException(
+//                s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"))
+//            else
               Future.successful(filter)
           case None =>
-            val filterDb =
-              CompactFilterDbHelper.fromGolombFilter(golombFilter, blockHash)
-            filterDAO.create(filterDb)
+            val filterDb = CompactFilterDbHelper.fromGolombFilter(golombFilter, filterHeader.blockHashBE, filterHeader.height)
+            for {
+              res <- filterDAO.create(filterDb)
+            } yield res
         }
       }
     }
@@ -287,9 +289,13 @@ case class ChainHandler(
     filterHeaderDAO.findByHash(hash).map(_.map(x => x.filterHeader))
   }
 
+  override def getHighestFilter(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
+    filterDAO.findHighest()
+  }
+
   override def getFilter(hash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[Option[GolombFilter]] = {
-    filterDAO.findByHash(hash).map(_.map(x => x.golombFilter))
+      implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
+    filterDAO.findByHash(hash)
   }
 
 }

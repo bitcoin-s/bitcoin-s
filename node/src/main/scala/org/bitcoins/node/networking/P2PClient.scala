@@ -72,7 +72,7 @@ case class P2PClientActor(
     */
   val network: NetworkParameters = config.network
 
-  private val timeout = 10.seconds
+  private val timeout = 1000.seconds
 
   /**
     * TODO: this comment seems wrong?

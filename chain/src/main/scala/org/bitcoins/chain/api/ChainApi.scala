@@ -1,6 +1,6 @@
 package org.bitcoins.chain.api
 
-import org.bitcoins.chain.models.{BlockHeaderDb, CompactFilterHeaderDb}
+import org.bitcoins.chain.models.{BlockHeaderDb, CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
@@ -93,8 +93,7 @@ trait ChainApi {
 
   def processFilter(
       golombFilter: GolombFilter,
-      blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi]
+      blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi]
 
   def processCheckpoint(
       filterHeaderHash: DoubleSha256DigestBE,
@@ -115,6 +114,8 @@ trait ChainApi {
 
   def getFilterHeader(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[FilterHeader]]
 
-  def getFilter(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[GolombFilter]]
+  def getHighestFilter(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
+
+  def getFilter(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
 
 }

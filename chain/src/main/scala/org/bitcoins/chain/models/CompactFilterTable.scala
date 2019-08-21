@@ -10,6 +10,7 @@ case class CompactFilterDb(
     hashBE: DoubleSha256DigestBE,
     filterType: Short,
     bytes: ByteVector,
+    height: Int,
     blockHash: DoubleSha256DigestBE) {
 
   def golombFilter: GolombFilter = filterType match {
@@ -19,8 +20,8 @@ case class CompactFilterDb(
 }
 
 object CompactFilterDbHelper {
-  def fromGolombFilter(golombFilter: GolombFilter, blockHash: DoubleSha256DigestBE): CompactFilterDb =
-    CompactFilterDb(golombFilter.hash.flip, 0, golombFilter.bytes, blockHash)
+  def fromGolombFilter(golombFilter: GolombFilter, blockHash: DoubleSha256DigestBE, height: Int): CompactFilterDb =
+    CompactFilterDb(golombFilter.hash.flip, 0, golombFilter.bytes, height, blockHash)
 }
 
 class CompactFilterTable(tag: Tag)
@@ -33,11 +34,15 @@ class CompactFilterTable(tag: Tag)
 
   def bytes = column[ByteVector]("bytes")
 
+  def height = column[Int]("height")
+
   def blockHash = column[DoubleSha256DigestBE]("block_hash")
+
+  def heightIndex = index("cfilters_height_index", height)
 
   def blockHashIndex = index("cfilters_block_hash_index", blockHash)
 
   override def * = {
-    (hash, filterType, bytes, blockHash) <> (CompactFilterDb.tupled, CompactFilterDb.unapply)
+    (hash, filterType, bytes, height, blockHash) <> (CompactFilterDb.tupled, CompactFilterDb.unapply)
   }
 }

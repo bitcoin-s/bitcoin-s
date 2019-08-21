@@ -44,4 +44,9 @@ case class CompactFilterDAO()(
     database.runVec(query.result).map(_.headOption)
   }
 
+  def findHighest(): Future[Option[CompactFilterDb]] = {
+    val query = table.filter(_.height === table.map(_.height).max)
+    database.runVec(query.result).map(_.headOption)
+  }
+
 }
