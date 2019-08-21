@@ -224,3 +224,8 @@ case class EmbeddedResult(
     extends WalletResult
 
 case class LabelResult(name: String, purpose: LabelPurpose) extends WalletResult
+
+final case class CreateWalletResult(
+    name: String,
+    warning: String
+) extends WalletResult
