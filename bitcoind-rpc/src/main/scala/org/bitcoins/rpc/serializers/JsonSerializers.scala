@@ -379,6 +379,9 @@ object JsonSerializers {
   implicit val testMempoolAcceptResultReads: Reads[TestMempoolAcceptResult] =
     TestMempoolAcceptResultReads
 
+  implicit val createWalletResultReads: Reads[CreateWalletResult] =
+    Json.reads[CreateWalletResult]
+
   // Map stuff
   implicit def mapDoubleSha256DigestReads: Reads[
     Map[DoubleSha256Digest, GetMemPoolResult]] =

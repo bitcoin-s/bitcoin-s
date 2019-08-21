@@ -234,4 +234,12 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       assert(list.forall(_.label != unusedLabel))
     }
   }
+
+  it should "create a wallet" in {
+    for {
+      (client, otherClient) <- clientsF
+      wallet <- client.createWallet("suredbits")
+    } yield {}
+
+  }
 }

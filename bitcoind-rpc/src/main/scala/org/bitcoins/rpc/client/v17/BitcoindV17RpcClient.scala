@@ -13,6 +13,7 @@ import org.bitcoins.rpc.client.common.{
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels.{
   AddressInfoResult,
+  CreateWalletResult,
   SignRawTransactionResult,
   TestMempoolAcceptResult
 }
@@ -93,6 +94,13 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
       .map(_.head)
   }
 
+  def createWallet(
+      walletName: String,
+      disablePrivateKeys: Boolean = false): Future[CreateWalletResult] = {
+    bitcoindCall[CreateWalletResult](
+      "createwallet",
+      List(JsString(walletName), Json.toJson(disablePrivateKeys)))
+  }
 }
 
 object BitcoindV17RpcClient {
