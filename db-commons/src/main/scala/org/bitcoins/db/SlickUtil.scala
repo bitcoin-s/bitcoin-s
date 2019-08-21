@@ -12,8 +12,8 @@ sealed abstract class SlickUtil {
       database: SafeDatabase,
       table: TableQuery[U])(
       implicit ec: ExecutionContext): Future[Vector[T]] = {
-    val actions = ts.map(t => (table += t).andThen(DBIO.successful(t)))
-    val result = database.run(DBIO.sequence(actions))
+    val actions = (table ++= ts).andThen(DBIO.successful(ts)).transactionally
+    val result = database.run(actions)
     result
   }
 }
