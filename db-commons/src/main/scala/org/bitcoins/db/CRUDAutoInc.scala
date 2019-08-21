@@ -18,9 +18,9 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](
     val query = table
       .returning(table.map(_.id))
       .into((t, id) => t.copyWithId(id = id))
-    val actions: Vector[DBIOAction[query.SingleInsertResult, NoStream, Write]] =
-      ts.map(r => query.+=(r))
-    database.runVec(DBIO.sequence(actions))
+    val actions: DBIOAction[query.MultiInsertResult, NoStream, Write] =
+      query.++=(ts)
+    database.runVec(actions)
   }
 
   override def findByPrimaryKeys(ids: Vector[Long]): Query[Table[_], T, Seq] = {
