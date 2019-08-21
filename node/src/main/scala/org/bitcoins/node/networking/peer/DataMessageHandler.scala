@@ -49,7 +49,7 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
     payload match {
       case checkpoint: CompactFilterCheckPointMessage =>
         logger.debug(
-          s"Got ${checkpoint.filterHeaders.size} checkpoints")
+          s"Got ${checkpoint.filterHeaders.size} checkpoints ${checkpoint}")
         for {
           newChainApi <- chainApi.processCheckpoints(checkpoint.filterHeaders.map(_.flip), checkpoint.stopHash.flip)
         } yield {

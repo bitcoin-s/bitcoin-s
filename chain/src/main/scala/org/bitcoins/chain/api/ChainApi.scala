@@ -1,6 +1,6 @@
 package org.bitcoins.chain.api
 
-import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.chain.models.{BlockHeaderDb, CompactFilterHeaderDb}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
@@ -40,6 +40,9 @@ trait ChainApi {
   /** Get's a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
+
+  def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
+    implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
 
   /** Gets the number of blocks in the database */
   def getBlockCount(implicit ec: ExecutionContext): Future[Long]
@@ -107,5 +110,11 @@ trait ChainApi {
       api.flatMap(_.processCheckpoint(checkpoint, blockHash))
     }
   }
+
+  def getHighestFilterHeader(implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]]
+
+  def getFilterHeader(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[FilterHeader]]
+
+  def getFilter(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[GolombFilter]]
 
 }

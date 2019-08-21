@@ -2,9 +2,22 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterDAO, CompactFilterDb, CompactFilterDbHelper, CompactFilterHeaderDAO, CompactFilterHeaderDb, CompactFilterHeaderDbHelper}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  BlockHeaderDb,
+  CompactFilterDAO,
+  CompactFilterDb,
+  CompactFilterDbHelper,
+  CompactFilterHeaderDAO,
+  CompactFilterHeaderDb,
+  CompactFilterHeaderDbHelper
+}
 import org.bitcoins.chain.validation.TipUpdateResult
-import org.bitcoins.chain.validation.TipUpdateResult.{BadNonce, BadPOW, BadPreviousBlockHash}
+import org.bitcoins.chain.validation.TipUpdateResult.{
+  BadNonce,
+  BadPOW,
+  BadPreviousBlockHash
+}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -47,6 +60,21 @@ case class ChainHandler(
       logger.debug(s"getHeader result: $resultStr")
       header
     }
+  }
+
+  def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
+      implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
+    for {
+      res <- 0.until(count).foldLeft(getHeader(hash)) { (headerF, _) =>
+        (for {
+          headerOpt <- headerF
+        } yield {
+          (for {
+            header <- headerOpt
+          } yield getHeader(header.previousBlockHashBE)).getOrElse(headerF)
+        }).flatten
+      }
+    } yield res
   }
 
   override def processHeader(header: BlockHeader)(
@@ -155,14 +183,23 @@ case class ChainHandler(
     Future.successful(hashBE)
   }
 
-  override def processFilterHeader(filterHeader: FilterHeader, blockHash: DoubleSha256DigestBE, height: Int)(implicit ec: ExecutionContext): Future[ChainApi] = {
-    val filterHeaderDb = CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader, blockHash, height)
+  override def processFilterHeader(
+      filterHeader: FilterHeader,
+      blockHash: DoubleSha256DigestBE,
+      height: Int)(implicit ec: ExecutionContext): Future[ChainApi] = {
+    val filterHeaderDb = CompactFilterHeaderDbHelper.fromFilterHeader(
+      filterHeader,
+      blockHash,
+      height)
 
-    def validateAndInsert(filterHeaderDbOpt: Option[CompactFilterHeaderDb]): Future[CompactFilterHeaderDb] = {
+    def validateAndInsert(
+        filterHeaderDbOpt: Option[CompactFilterHeaderDb]): Future[
+      CompactFilterHeaderDb] = {
       filterHeaderDbOpt match {
         case Some(found) =>
           if (found != filterHeaderDb)
-            Future.failed(new RuntimeException(s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB"))
+            Future.failed(new RuntimeException(
+              s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB"))
           else
             Future.successful(filterHeaderDb)
         case None =>
@@ -172,28 +209,37 @@ case class ChainHandler(
 
     for {
       blockHeaderOpt <- blockHeaderDAO.findByHash(filterHeaderDb.blockHashBE)
-      _ = blockHeaderOpt.getOrElse(throw new RuntimeException(s"Unknown block ${blockHash}"))
+      _ = blockHeaderOpt.getOrElse(
+        throw new RuntimeException(s"Unknown block ${blockHash}"))
       filterHeaderDbOpt <- filterHeaderDAO.findByHash(filterHeaderDb.hashBE)
       _ <- validateAndInsert(filterHeaderDbOpt)
     } yield this
   }
 
-  override def processFilter(golombFilter: GolombFilter, blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi] = {
+  override def processFilter(
+      golombFilter: GolombFilter,
+      blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
 
     val filterHashBE = golombFilter.hash.flip
 
-    def validateAndInsert(filterHeader: CompactFilterHeaderDb, filerOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
+    def validateAndInsert(
+        filterHeader: CompactFilterHeaderDb,
+        filerOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
       if (filterHashBE != filterHeader.filterHashBE) {
-        Future.failed(new RuntimeException(s"Filter hash does not match: ${golombFilter.hash} != ${filterHeader.filterHashBE}"))
+        Future.failed(new RuntimeException(
+          s"Filter hash does not match: ${golombFilter.hash} != ${filterHeader.filterHashBE}"))
       } else {
         filerOpt match {
           case Some(filter) =>
             if (filter.golombFilter != golombFilter)
-              Future.failed(new RuntimeException(s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"))
+              Future.failed(new RuntimeException(
+                s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"))
             else
               Future.successful(filter)
           case None =>
-            val filterDb = CompactFilterDbHelper.fromGolombFilter(golombFilter, blockHash)
+            val filterDb =
+              CompactFilterDbHelper.fromGolombFilter(golombFilter, blockHash)
             filterDAO.create(filterDb)
         }
       }
@@ -201,7 +247,9 @@ case class ChainHandler(
 
     for {
       filterHeaderOpt <- filterHeaderDAO.findByBlockHash(blockHash)
-      filterHeader = filterHeaderOpt.getOrElse(throw new RuntimeException(s"Cannot find a filter header for block hash ${blockHash}"))
+      filterHeader = filterHeaderOpt.getOrElse(
+        throw new RuntimeException(
+          s"Cannot find a filter header for block hash ${blockHash}"))
       filerOpt <- filterDAO.findByHash(filterHashBE)
       _ <- validateAndInsert(filterHeader, filerOpt)
     } yield {
@@ -209,19 +257,41 @@ case class ChainHandler(
     }
   }
 
-  override def processCheckpoint(filterHeaderHash: DoubleSha256DigestBE, blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi] = {
+  override def processCheckpoint(
+      filterHeaderHash: DoubleSha256DigestBE,
+      blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
     Future {
       blockFilterCheckpoints.get(blockHash) match {
         case Some(oldFilterHeaderHash) =>
           if (filterHeaderHash != oldFilterHeaderHash)
-            throw new RuntimeException("The peer sent us a different filter header hash")
+            throw new RuntimeException(
+              "The peer sent us a different filter header hash")
           else
-            this.copy(blockFilterCheckpoints = blockFilterCheckpoints.updated(blockHash, filterHeaderHash))
+            this.copy(
+              blockFilterCheckpoints =
+                blockFilterCheckpoints.updated(blockHash, filterHeaderHash))
         case None =>
           this
       }
     }
   }
+
+  def getHighestFilterHeader(
+      implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]] = {
+    filterHeaderDAO.findHighest()
+  }
+
+  override def getFilterHeader(hash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[FilterHeader]] = {
+    filterHeaderDAO.findByHash(hash).map(_.map(x => x.filterHeader))
+  }
+
+  override def getFilter(hash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[GolombFilter]] = {
+    filterDAO.findByHash(hash).map(_.map(x => x.golombFilter))
+  }
+
 }
 
 object ChainHandler {
@@ -229,19 +299,33 @@ object ChainHandler {
   /** Constructs a [[ChainHandler chain handler]] from the state in the database
     * This gives us the guaranteed latest state we have in the database
     * */
-  def fromDatabase(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, filterDAO: CompactFilterDAO)(
+  def fromDatabase(
+      blockHeaderDAO: BlockHeaderDAO,
+      filterHeaderDAO: CompactFilterHeaderDAO,
+      filterDAO: CompactFilterDAO)(
       implicit ec: ExecutionContext,
       chainConfig: ChainAppConfig): Future[ChainHandler] = {
     val bestChainsF = blockHeaderDAO.getBlockchains()
 
-    bestChainsF.map(chains =>
-      new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO,
-        blockchains = chains, blockFilterCheckpoints = Map.empty))
+    bestChainsF.map(
+      chains =>
+        new ChainHandler(blockHeaderDAO = blockHeaderDAO,
+                         filterHeaderDAO = filterHeaderDAO,
+                         filterDAO = filterDAO,
+                         blockchains = chains,
+                         blockFilterCheckpoints = Map.empty))
   }
 
-  def apply(blockHeaderDAO: BlockHeaderDAO, filterHeaderDAO: CompactFilterHeaderDAO, filterDAO: CompactFilterDAO, blockchains: Blockchain)(
+  def apply(
+      blockHeaderDAO: BlockHeaderDAO,
+      filterHeaderDAO: CompactFilterHeaderDAO,
+      filterDAO: CompactFilterDAO,
+      blockchains: Blockchain)(
       implicit chainConfig: ChainAppConfig): ChainHandler = {
-    new ChainHandler(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO,
-      blockchains = Vector(blockchains), blockFilterCheckpoints = Map.empty)
+    new ChainHandler(blockHeaderDAO = blockHeaderDAO,
+                     filterHeaderDAO = filterHeaderDAO,
+                     filterDAO = filterDAO,
+                     blockchains = Vector(blockchains),
+                     blockFilterCheckpoints = Map.empty)
   }
 }

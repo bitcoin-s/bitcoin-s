@@ -4,8 +4,9 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -124,6 +125,35 @@ case class SpvNode(
     peerMsgSenderF.flatMap(_.sendMsg(msg))
   }
 
+  private def rescan(bestHeader: BlockHeaderDb, blockCount: Long, highestFilterHeight: Long, maxBlocks: Int, chainApi: ChainApi)(f: (Int, DoubleSha256Digest) => Future[_]): Future[Unit] = {
+    val diff = blockCount - highestFilterHeight + 1
+
+    val n = if (diff % maxBlocks == 0) diff / maxBlocks else diff / maxBlocks + 1
+
+    val res = 0L.until(n).foldLeft(Future.successful(Option(bestHeader))) { (acc, i) =>
+      acc.flatMap { headerOpt: Option[BlockHeaderDb] =>
+        headerOpt match {
+          case Some(header) =>
+            val stopHash = header.hashBE
+            val sh = header.height - maxBlocks + 1
+            val startHeight = if (sh < 0) 0 else sh
+            for {
+              _ <- f(startHeight.toInt, stopHash.flip)
+              nextHeader <- chainApi.getNthHeader(stopHash, maxBlocks)
+            } yield {
+              nextHeader
+            }
+          case None => acc
+        }
+      }
+    }
+    res.recover {
+      case e: Throwable => logger(nodeAppConfig).error(s"Cannot rescan", e)
+
+    }
+    res.map(_ => ())
+  }
+
   /** Starts our spv node */
   def start(): Future[SpvNode] = {
     logger(nodeAppConfig).info("Starting spv node")
@@ -151,7 +181,9 @@ case class SpvNode(
       }
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash
+      bestHeader <- chainApi.getHeader(bestHash)
       blockCount <- chainApi.getBlockCount
+      highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
     } yield {
       if (nodeAppConfig.isSPVEnabled) {
         // TODO keep track of where to request from
@@ -159,22 +191,19 @@ case class SpvNode(
         peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
       }
 
+      val highestFilterHeight = highestFilterHeaderOpt.map(_.height).getOrElse(0)
+//      val highestFilterHeight = 0
+
       // we're going to get banned if we request the genesis block
-      if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0) {
-        // TODO keep track of where to request from
-//        logger.info(s"Requesting compact filter header checkpoints up to=$bestHash")
-//        peerMsgSenderF.map(_.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip))
+      if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0 && highestFilterHeight < blockCount) {
         logger(nodeAppConfig).info(s"Requesting compact filter headers from=0 to=$bestHash")
         for {
           peerMsgSender <- peerMsgSenderF
           _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
-          _ <- peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight = (blockCount - 2000 + 1).toInt,
-            stopHash = bestHash.flip)
-          _ <- peerMsgSender.sendGetCompactFiltersMessage(startHeight = (blockCount - 100 + 1).toInt,
-            stopHash = bestHash.flip)
+          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 2000, chainApi)(peerMsgSender.sendGetCompactFilterHeadersMessage)
+          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 100, chainApi)(peerMsgSender.sendGetCompactFiltersMessage)
         } yield ()
       }
-
       node
     }
   }
