@@ -241,7 +241,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       _ <- client.createWallet("suredbits")
       wallets <- client.listWallets
     } yield {
-      assert(wallets.head.contains("suredbits"))
+      assert(wallets.head.exists(_ == 's'))
     }
 
   }
