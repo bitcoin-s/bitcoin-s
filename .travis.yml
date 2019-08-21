@@ -108,7 +108,7 @@ stages:
       # don't run tests on merge builds, just publish library
       # and website
   - name: release
-    if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
+    if: ((branch = schnorr AND type = push) OR (tag IS present)) AND NOT fork
 
 script:
   # Modify PATH to include binaries we are about to download
