@@ -54,6 +54,11 @@ case class Blockchain(headers: Vector[BlockHeaderDb])
     }
   }
 
+  /** Unsafe version for [[org.bitcoins.chain.blockchain.Blockchain.fromHeader() fromHeader]] that can throw [[NoSuchElementException]] */
+  def fromValidHeader(header: BlockHeaderDb): Blockchain = {
+    fromHeader(header).get
+  }
+
   /** The height of the chain */
   def height: Int = tip.height
 
@@ -93,9 +98,9 @@ object Blockchain extends ChainVerificationLogger {
           //found a header to connect to!
           logger.debug(
             s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
-          val chain = blockchain.fromHeader(prevBlockHeader)
+          val chain = blockchain.fromValidHeader(prevBlockHeader)
           val tipResult =
-            TipValidation.checkNewTip(newPotentialTip = header, chain.get)
+            TipValidation.checkNewTip(newPotentialTip = header, chain)
 
           tipResult match {
             case success: TipUpdateResult.Success =>
@@ -138,33 +143,29 @@ object Blockchain extends ChainVerificationLogger {
 
     @tailrec
     def loop(
-        headersToProcess: List[BlockHeader],
+        headersToProcess: Vector[BlockHeader],
         lastUpdates: Vector[BlockchainUpdate]): Vector[BlockchainUpdate] = {
       headersToProcess match {
-        case h :: t =>
+        case h +: t =>
           val newUpdates: Vector[BlockchainUpdate] = lastUpdates
-            .map { lastUpdate =>
+            .flatMap { lastUpdate =>
               val connectTipResult =
                 Blockchain.connectTip(header = h,
                                       blockchain = lastUpdate.blockchain)
               parseConnectTipResult(connectTipResult, lastUpdate)
             }
-            .flatten
-            .toVector
 
           loop(headersToProcess = t, lastUpdates = newUpdates)
-        case Nil =>
+        case Vector() =>
           lastUpdates
       }
     }
 
     val initUpdates = blockchains.map { blockchain =>
       BlockchainUpdate.Successful(blockchain, Vector.empty)
-    }.toVector
+    }
 
-    val updates: Vector[BlockchainUpdate] = loop(headers.toList, initUpdates)
-
-    updates
+    loop(headers, initUpdates)
   }
 
   /** Parses a connect tip result, and depending on the result it

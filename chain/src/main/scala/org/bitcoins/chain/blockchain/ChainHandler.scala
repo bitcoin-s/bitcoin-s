@@ -49,10 +49,10 @@ case class ChainHandler(
     }
 
     val headersToBeCreated = {
-      blockchainUpdates.map(_.successfulHeaders).flatten.distinct.toVector
+      blockchainUpdates.flatMap(_.successfulHeaders).distinct
     }
 
-    val chains = blockchainUpdates.map(_.blockchain).toVector
+    val chains = blockchainUpdates.map(_.blockchain)
 
     val createdF = blockHeaderDAO.createAll(headersToBeCreated)
 

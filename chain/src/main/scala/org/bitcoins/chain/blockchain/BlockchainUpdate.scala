@@ -5,9 +5,7 @@ import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
-/** Represents the state of an update to our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
-  * An example of a successful update is receiving a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] and successfully
-  * adding it to our database.
+/** Represens the state of a batch of [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeaders]] being added to our blockchain
   *
   * An example of a [[org.bitcoins.chain.blockchain.BlockchainUpdate.Failed Failed]] update
   * is when we receive a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] that is invalid and because of a
@@ -16,8 +14,11 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
   * [[org.bitcoins.chain.validation.TipUpdateResult.BadNonce BadNonce]] etc
   */
 sealed abstract class BlockchainUpdate {
+
+  /** The successful headers in this batch blockchain update that need to be persisted */
   def successfulHeaders: Vector[BlockHeaderDb]
 
+  /** Our current blockchain */
   def blockchain: Blockchain
 
   def withSuccessfulHeaders(headers: Vector[BlockHeaderDb]): BlockchainUpdate =
