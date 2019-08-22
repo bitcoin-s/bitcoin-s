@@ -118,6 +118,13 @@ sealed abstract class CryptoGenerators {
 
   def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
 
+  /** Generates a random non-zero private key */
+  def nonZeroPrivKey: Gen[ECPrivateKey] =
+    privateKey.filter(_.bytes.toArray.exists(_ != 0.toByte))
+
+  def schnorrNonce: Gen[SchnorrNonce] =
+    nonZeroPrivKey.map(_.bytes).map(SchnorrNonce.fromBytes)
+
   /**
     * Generate a sequence of private keys
     * @param num maximum number of keys to generate
