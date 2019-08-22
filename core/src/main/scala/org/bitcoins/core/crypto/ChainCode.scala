@@ -4,13 +4,14 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
-sealed abstract class ChainCode extends NetworkElement
+case class ChainCode(bytes: ByteVector) extends NetworkElement {
+  require(bytes.size == 32,
+          "ChainCode must be 32 bytes in size, got: " + bytes.size)
+}
 
 object ChainCode extends Factory[ChainCode] {
-  private case class ChainCodeImpl(bytes: ByteVector) extends ChainCode {
-    require(bytes.size == 32,
-            "ChainCode must be 32 bytes in size, got: " + bytes.size)
-  }
 
-  def fromBytes(bytes: ByteVector): ChainCode = ChainCodeImpl(bytes)
+  def fromBytes(bytes: ByteVector): ChainCode =
+    // use new to avoid inf loop
+    new ChainCode(bytes)
 }

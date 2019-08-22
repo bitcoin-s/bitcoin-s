@@ -134,7 +134,7 @@ object WalletStorage extends KeyHandlingLogger {
       }
     }
 
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
+    import EitherUtil.EitherOps._
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
@@ -185,7 +185,7 @@ object WalletStorage extends KeyHandlingLogger {
 
     val encryptedEither = readEncryptedMnemonicFromDisk()
 
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
+    import EitherUtil.EitherOps._
     val decryptedEither: Either[ReadMnemonicError, MnemonicCode] =
       encryptedEither.flatMap { encrypted =>
         encrypted.toMnemonic(passphrase) match {

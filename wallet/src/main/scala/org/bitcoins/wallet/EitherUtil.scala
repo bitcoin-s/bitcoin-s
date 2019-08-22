@@ -1,4 +1,4 @@
-package org.bitcoins.core.util
+package org.bitcoins.wallet
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Try, Success, Failure}
@@ -12,7 +12,7 @@ object EitherUtil {
 
   /**
     * Flattens a nested `Either[Foo, Future[Foo, Bar]]` into
-    * a `Future[Either[Foo, Bar]]`. This is useful for situtations
+    * a `Future[Either[Foo, Bar]]`. This is EitherUtiluseful for situtations
     * where the right hand side of an either is asynchronous.
     */
   def flattenFutureE[L, R](

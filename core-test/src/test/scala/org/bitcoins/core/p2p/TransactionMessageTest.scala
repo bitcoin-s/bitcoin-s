@@ -11,4 +11,10 @@ class TransactionMessageTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "have a meaningful toString" in {
+    forAll(DataMessageGenerator.transactionMessage) { txMsg =>
+      assert(txMsg.toString.length < 120)
+    }
+  }
+
 }

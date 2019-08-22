@@ -200,10 +200,10 @@ trait GetHeadersMessage extends DataPayload {
 
   override def toString(): String = {
     val count = hashCount.toInt
-    val hashesStr = if (count > 5) {
-      hashes.take(5).mkString + "..."
-    } else {
-      hashes.mkString
+    // only display first hash, otherwise this gets really long
+    val hashesStr = hashes match {
+      case head +: Nil => head.toString
+      case head +: _   => s"$head, ..."
     }
     s"GetHeadersMessage($version, hashCount=$count, hashes=$hashesStr, stop=$hashStop)"
   }
@@ -326,12 +326,12 @@ trait InventoryMessage extends DataPayload {
 
   override def toString(): String = {
     val invCount = inventoryCount.toInt
-    val limit = 5
-    val invList = if (invCount > limit) {
-      inventories.take(limit).mkString + "..."
-    } else {
-      inventories.mkString
-    }
+    val invList =
+      if (invCount > 1) {
+        inventories.take(1).mkString + "..."
+      } else {
+        inventories.mkString
+      }
     s"InventoryMessage($invCount inv(s)${if (invList.nonEmpty) ", " + invList
     else ""})"
   }
