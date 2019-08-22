@@ -20,8 +20,8 @@ object Schnorr {
   /** Generates a Schnorr signature for the 32 byte msg using privateKey
     * and nonce.
     *
-    * IMPORTANT: Never sign two messages with the same privateKey and nonce!
-    *            This leaks your private key publicly.
+    * ```IMPORTANT```: Never sign two messages with the same privateKey and nonce!
+    *                  This leaks your private key publicly.
     */
   def signWithNonce(
       msg: ByteVector,

@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 
 case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
-  require(bytes.length == 32, s"Schnorr Nonce must be 32 bytes, got $bytes")
+  require(bytes.length == 32, s"Schnorr nonce must be 32 bytes, got $bytes")
 
   def publicKey: ECPublicKey = Schnorr.computeR(this)
 }
@@ -29,7 +29,7 @@ object SchnorrNonce {
       SchnorrNonce.fromBytes(bytes.tail)
     } else {
       throw new IllegalArgumentException(
-        "Private keys cannot be greater than 33 bytes in size, got: " +
+        "Scnorr nonce cannot be greater than 33 bytes in size, got: " +
           BitcoinSUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
     }
   }
