@@ -1,5 +1,6 @@
 package org.bitcoins.chain.blockchain
 
+import scala.concurrent.duration.DurationInt
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
@@ -22,6 +23,11 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import scala.concurrent.duration.Deadline
+import java.time.LocalDateTime
+import scala.util.Properties
+import play.api.libs.json.JsError
+import play.api.libs.json.JsSuccess
 
 class ChainHandlerTest extends ChainUnitTest {
 
@@ -90,6 +96,54 @@ class ChainHandlerTest extends ChainUnitTest {
 
   it must "be able to process and fetch real headers from mainnet" in {
     chainHandler: ChainHandler =>
+      var processedHeaders = 0
+      val durationBetweenLogs = 2.minutes
+      val logProcessedHeaders: Runnable = new Runnable {
+        def run(): Unit =
+          // we do println because normal logs are disabled, and we
+          // want to force something to stdout to avoid Travis killing
+          // our job
+          println {
+            s"ChainHandlerTest - ${LocalDateTime.now()}: processed $processedHeaders headers"
+          }
+      }
+      if (Properties.propIsSet("CI")) {
+        system.scheduler.schedule(durationBetweenLogs,
+                                  durationBetweenLogs,
+                                  logProcessedHeaders)
+      }
+
+      def processHeaders(
+          processorF: Future[ChainApi],
+          remainingHeaders: List[BlockHeader],
+          height: Int): Future[Assertion] =
+        remainingHeaders match {
+          case header :: headersTail =>
+            val newProcessorF = processorF.flatMap(_.processHeader(header))
+            val getHeaderF = newProcessorF.flatMap(_.getHeader(header.hashBE))
+            val expectedBlockHeaderDb =
+              BlockHeaderDbHelper.fromBlockHeader(height, header)
+            val assertionF =
+              getHeaderF.map(tips =>
+                assert(tips.contains(expectedBlockHeaderDb)))
+            assertionF.flatMap { _ =>
+              processedHeaders = processedHeaders + 1
+              processHeaders(newProcessorF, headersTail, height = height + 1)
+            }
+          case Nil => succeed
+        }
+
+      val source = FileUtil.getFileAsSource("block_headers.json")
+      val arrStr = source.getLines.next
+      source.close()
+
+      import org.bitcoins.rpc.serializers.JsonReaders.BlockHeaderReads
+      val headersResult =
+        Json.parse(arrStr).validate[Vector[BlockHeader]] match {
+          case error: JsError        => fail(error.toString)
+          case JsSuccess(success, _) => success
+        }
+
       val blockHeaders =
         headersResult.drop(
           ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT)
@@ -254,24 +308,6 @@ class ChainHandlerTest extends ChainUnitTest {
         headerE <- headerEF
         bestHash <- chainHandlerF.getBestBlockHash
       } yield assert(bestHash == headerE.hashBE)
-  }
-
-  final def processHeaders(
-      processorF: Future[ChainApi],
-      remainingHeaders: List[BlockHeader],
-      height: Int): Future[Assertion] = {
-    remainingHeaders match {
-      case header :: headersTail =>
-        val newProcessorF = processorF.flatMap(_.processHeader(header))
-        val getHeaderF = newProcessorF.flatMap(_.getHeader(header.hashBE))
-        val expectedBlockHeaderDb =
-          BlockHeaderDbHelper.fromBlockHeader(height, header)
-        val assertionF =
-          getHeaderF.map(tips => assert(tips.contains(expectedBlockHeaderDb)))
-        assertionF.flatMap(_ =>
-          processHeaders(newProcessorF, headersTail, height = height + 1))
-      case Nil => succeed
-    }
   }
 
   /** Builds two competing headers that are built from the same parent */
