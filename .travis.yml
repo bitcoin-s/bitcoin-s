@@ -104,11 +104,11 @@ stages:
   - name: test
     if:
       commit_message !~ /^Docs:/ AND NOT
-      ((branch = schnorr AND type = push) OR (tag IS present))
+      ((branch = schnorr-dlc AND type = push) OR (tag IS present))
       # don't run tests on merge builds, just publish library
       # and website
   - name: release
-    if: ((branch = schnorr AND type = push) OR (tag IS present)) AND NOT fork
+    if: ((branch = schnorr-dlc AND type = push) OR (tag IS present)) AND NOT fork
 
 script:
   # Modify PATH to include binaries we are about to download
