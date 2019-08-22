@@ -1,6 +1,6 @@
 version in ThisBuild ~= { version =>
   val withoutSuffix = version.dropRight(8)
-  withoutSuffix + "SCHNORR-SNAPSHOT"
+  withoutSuffix + "SCHNORR-DLC-SNAPSHOT"
 }
 
 val scala2_11 = "2.11.12"
