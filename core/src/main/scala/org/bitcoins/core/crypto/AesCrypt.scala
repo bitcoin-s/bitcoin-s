@@ -158,23 +158,16 @@ object AesPassword {
   * [[javax.crypto.SecretKey SecretKey]]s,
   * and have certain length requirements.
   */
-final case class AesKey private (private[crypto] val underlying: ByteVector)
-    extends NetworkElement {
-  require(
-    AesKey.keylengths.exists(_ == underlying.length), {
-      val lengths = AesKey.keylengths.mkString(", ")
-      s"Invalid AES key length: ${underlying.length}! Valid lengths: $lengths"
-    }
-  )
-
-  override val bytes: ByteVector = underlying
+final case class AesKey private (bytes: ByteVector)
+    extends AnyVal
+    with NetworkElement {
 
   /**
     * The Java [[javax.crypto.SecretKey SecretKey]] representation
     * of this key.
     */
-  lazy val toSecretKey: SecretKey =
-    new SecretKeySpec(underlying.toArray, "AES")
+  def toSecretKey: SecretKey =
+    new SecretKeySpec(bytes.toArray, "AES")
 
 }
 
@@ -236,15 +229,9 @@ object AesKey {
 /** Represents an initialization vector (IV) used
   * in AES encryption.
   */
-final case class AesIV private (private val underlying: ByteVector)
-    extends NetworkElement {
-  require(
-    underlying.length == 16,
-    s"AES salt must be 16 bytes long! Got: ${underlying.length}"
-  )
-
-  override val bytes: ByteVector = underlying
-}
+final case class AesIV private (bytes: ByteVector)
+    extends AnyVal
+    with NetworkElement
 
 object AesIV {
 
@@ -259,7 +246,7 @@ object AesIV {
     * (in CFB mode, which is what we use here).
     */
   def fromBytes(bytes: ByteVector): Option[AesIV] =
-    if (bytes.length == AesIV.length) Some(AesIV(bytes)) else None
+    if (bytes.length == AesIV.length) Some(new AesIV(bytes)) else None
 
   /** Constructs an AES IV from the given bytes. Throws if the given bytes are invalid */
   def fromValidBytes(bytes: ByteVector): AesIV =
@@ -347,15 +334,6 @@ object AesCrypt {
       iv: AesIV,
       key: AesKey): AesEncryptedData = {
     val cipher = encryptionCipher(key, iv)
-    val params = cipher.getParameters
-
-    // if assertions aren't enabled, this calculation won't
-    // get triggered
-    lazy val foundIV = params.getParameterSpec(classOf[IvParameterSpec]).getIV
-    assert(
-      ByteVector(foundIV) == iv.bytes,
-      s"foundIV: ${ByteVector(foundIV).toHex}, iv: ${iv.hex}"
-    )
 
     val cipherText = cipher.doFinal(plainText.toArray)
 

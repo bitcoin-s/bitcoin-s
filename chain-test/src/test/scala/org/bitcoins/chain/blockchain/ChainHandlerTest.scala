@@ -9,7 +9,7 @@ import org.bitcoins.chain.models.{
   BlockHeaderDbHelper
 }
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.FileUtil
+import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
