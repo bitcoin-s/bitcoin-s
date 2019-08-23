@@ -1,18 +1,11 @@
 package org.bitcoins.chain.blockchain
 
+import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb}
-import org.bitcoins.chain.validation.TipUpdateResult
-import org.bitcoins.chain.validation.TipUpdateResult.{
-  BadNonce,
-  BadPOW,
-  BadPreviousBlockHash
-}
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.chain.ChainVerificationLogger
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,81 +41,27 @@ case class ChainHandler(
     }
   }
 
-  override def processHeader(header: BlockHeader)(
-      implicit ec: ExecutionContext): Future[ChainHandler] = {
-    logger.debug(
-      s"Processing header=${header.hashBE.hex}, previousHash=${header.previousBlockHashBE.hex}")
-
-    val blockchainUpdate =
-      Blockchain.connectTip(header = header, blockchains = blockchains)
-
-    val newHandlerF = blockchainUpdate match {
-      case BlockchainUpdate.Successful(newChain, updatedHeader) =>
-        //now we have successfully connected the header, we need to insert
-        //it into the database
-        val createdF = blockHeaderDAO.create(updatedHeader)
-        createdF.map { header =>
-          logger.debug(
-            s"Connected new header to blockchain, height=${header.height} hash=${header.hashBE}")
-          val chainIdxOpt = blockchains.zipWithIndex.find {
-            case (chain, _) =>
-              val oldTip = newChain(1) //should be safe, even with genesis header as we just connected a tip
-              oldTip == chain.tip
-          }
-
-          val updatedChains = {
-            chainIdxOpt match {
-              case Some((_, idx)) =>
-                logger.trace(
-                  s"Updating chain at idx=${idx} out of competing chains=${blockchains.length} with new tip=${header.hashBE.hex}")
-                blockchains.updated(idx, newChain)
-
-              case None =>
-                logger.info(
-                  s"New competing blockchain with tip=${newChain.tip}")
-                blockchains.:+(newChain)
-            }
-          }
-
-          ChainHandler(blockHeaderDAO, updatedChains)
-        }
-      case BlockchainUpdate.Failed(_, _, reason) =>
-        val errMsg =
-          s"Failed to add header to chain, header=${header.hashBE.hex} reason=${reason}"
-        logger.warn(errMsg)
-        // potential chain split happening, let's log what's going on
-        logTipConnectionFailure(reason).flatMap { _ =>
-          Future.failed(new RuntimeException(errMsg))
-        }
+  /** @inheritdoc */
+  override def processHeaders(headers: Vector[BlockHeader])(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
+    val blockchainUpdates: Vector[BlockchainUpdate] = {
+      Blockchain.connectHeadersToChains(headers, blockchains)
     }
 
-    newHandlerF
-  }
-
-  /** Logs a tip connection failure by querying local chain state
-    * and comparing it to the received `TipUpdateResult`
-    */
-  private def logTipConnectionFailure(failure: TipUpdateResult.Failure)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    failure match {
-      case _ @(_: BadPOW | _: BadNonce) =>
-        // TODO: Log this in a meaningful way
-        FutureUtil.unit
-      case _: BadPreviousBlockHash =>
-        blockHeaderDAO.chainTips.map { tips =>
-          if (tips.length > 1) {
-            logger.warn {
-              s"We have multiple (${tips.length}) , competing chainTips=${tips
-                .map(_.hashBE.hex)
-                .mkString("[", ",", "]")}"
-            }
-          } else {
-            logger.warn(
-              s"We don't have competing chainTips. Most recent, valid header=${tips.head.hashBE.hex}")
-          }
-        }
+    val headersToBeCreated = {
+      blockchainUpdates.flatMap(_.successfulHeaders).distinct
     }
 
+    val chains = blockchainUpdates.map(_.blockchain)
+
+    val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+
+    val newChainHandler =
+      ChainHandler(blockHeaderDAO = blockHeaderDAO, blockchains = chains)
+
+    createdF.map { _ =>
+      newChainHandler
+    }
   }
 
   /**

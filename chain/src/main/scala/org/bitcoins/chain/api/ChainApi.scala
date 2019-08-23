@@ -20,7 +20,9 @@ trait ChainApi {
     * @return
     */
   def processHeader(header: BlockHeader)(
-      implicit ec: ExecutionContext): Future[ChainApi]
+      implicit ec: ExecutionContext): Future[ChainApi] = {
+    processHeaders(Vector(header))
+  }
 
   /** Process all of the given headers and returns a new [[ChainApi chain api]]
     * that contains these headers. This method processes headers in the order
@@ -29,12 +31,7 @@ trait ChainApi {
     * @return
     */
   def processHeaders(headers: Vector[BlockHeader])(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
-    headers.foldLeft(Future.successful(this)) {
-      case (chainF, header) =>
-        chainF.flatMap(_.processHeader(header))
-    }
-  }
+      implicit ec: ExecutionContext): Future[ChainApi]
 
   /** Get's a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE)(

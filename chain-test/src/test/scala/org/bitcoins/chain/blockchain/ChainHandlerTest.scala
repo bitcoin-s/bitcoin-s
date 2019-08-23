@@ -38,6 +38,13 @@ class ChainHandlerTest extends ChainUnitTest {
     mainnetAppConfig.withOverrides(memoryDb)
   }
 
+  val source = FileUtil.getFileAsSource("block_headers.json")
+  val arrStr = source.getLines.next
+  source.close()
+
+  import org.bitcoins.rpc.serializers.JsonReaders.BlockHeaderReads
+  val headersResult = Json.parse(arrStr).validate[Vector[BlockHeader]].get
+
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
@@ -83,18 +90,8 @@ class ChainHandlerTest extends ChainUnitTest {
 
   it must "be able to process and fetch real headers from mainnet" in {
     chainHandler: ChainHandler =>
-      val source = FileUtil.getFileAsSource("block_headers.json")
-      val arrStr = source.getLines.next
-      source.close()
-
-      import org.bitcoins.rpc.serializers.JsonReaders.BlockHeaderReads
-      val headersResult = Json.parse(arrStr).validate[Vector[BlockHeader]]
-      if (headersResult.isError) {
-        fail(headersResult.toString)
-      }
-
       val blockHeaders =
-        headersResult.get.drop(
+        headersResult.drop(
           ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT)
 
       val firstBlockHeaderDb =
@@ -132,6 +129,52 @@ class ChainHandlerTest extends ChainUnitTest {
         processHeaders(processorF = processorF,
                        remainingHeaders = blockHeadersToTest,
                        height = ChainUnitTest.FIRST_POW_CHANGE + 1)
+      }
+  }
+
+  it must "benchmark ChainHandler.processHeaders()" in {
+    chainHandler: ChainHandler =>
+      val blockHeaders =
+        headersResult.drop(
+          ChainUnitTest.FIRST_POW_CHANGE - ChainUnitTest.FIRST_BLOCK_HEIGHT)
+
+      val firstBlockHeaderDb =
+        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 2,
+                                            ChainTestUtil.blockHeader562462)
+
+      val secondBlockHeaderDb =
+        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 1,
+                                            ChainTestUtil.blockHeader562463)
+
+      val thirdBlockHeaderDb =
+        BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE,
+                                            ChainTestUtil.blockHeader562464)
+
+      /*
+       * We need to insert one block before the first POW check because it is used on the next
+       * POW check. We then need to insert the next to blocks to circumvent a POW check since
+       * that would require we have an old block in the Blockchain that we don't have.
+       */
+      val firstThreeBlocks =
+        Vector(firstBlockHeaderDb, secondBlockHeaderDb, thirdBlockHeaderDb)
+
+      val createdF = chainHandler.blockHeaderDAO.createAll(firstThreeBlocks)
+
+      createdF.flatMap { _ =>
+        val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
+        val handler = ChainHandler(chainHandler.blockHeaderDAO, blockchain)
+
+        // Takes way too long to do all blocks
+        val blockHeadersToTest = blockHeaders.tail
+          .take(
+            (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1))
+
+        val processedF = handler.processHeaders(blockHeadersToTest)
+
+        for {
+          ch <- processedF
+          bestHash <- ch.getBestBlockHash
+        } yield assert(bestHash == blockHeadersToTest.last.hashBE)
       }
   }
 
@@ -214,7 +257,7 @@ class ChainHandlerTest extends ChainUnitTest {
   }
 
   final def processHeaders(
-      processorF: Future[ChainHandler],
+      processorF: Future[ChainApi],
       remainingHeaders: List[BlockHeader],
       height: Int): Future[Assertion] = {
     remainingHeaders match {
