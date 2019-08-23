@@ -401,12 +401,6 @@ lazy val bench = project
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
   .settings(commonProdSettings: _*)
-  .settings(name := "bitcoin-s-eclair-rpc",
-            libraryDependencies ++= Deps.eclairRpc)
-  .dependsOn(
-    core,
-    bitcoindRpc
-  )
 
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))

@@ -13,7 +13,7 @@ dependsOn {
 }
 
 lazy val downloadBitcoind = taskKey[Unit] {
-  "Download bitcoind binaries, extract to ./bitcoind-binaries"
+  "Download bitcoind binaries, extract to ./binaries/bitcoind"
 }
 
 downloadBitcoind := {
