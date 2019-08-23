@@ -25,14 +25,14 @@ class BlockchainTest extends ChainUnitTest {
       val newHeader =
         BlockHeaderHelper.buildNextHeader(ChainUnitTest.genesisHeaderDb)
 
-      val connectTip = Blockchain.connectTip(header = newHeader.blockHeader,
-                                             Vector(blockchain))
+      val connectTip =
+        Blockchain.connectTip(header = newHeader.blockHeader, blockchain)
 
       connectTip match {
-        case BlockchainUpdate.Successful(_, connectedHeader) =>
-          assert(newHeader == connectedHeader)
+        case ConnectTipResult.ExtendChain(_, newChain) =>
+          assert(newHeader == newChain.tip)
 
-        case fail: BlockchainUpdate.Failed =>
+        case fail @ (_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
           assert(false)
       }
   }
