@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import scala.collection.JavaConverters._
+import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.crypto.AesPassword
 import java.nio.file.Files
 import org.bitcoins.core.crypto.MnemonicCode
