@@ -373,7 +373,7 @@ class EclairRpcClient(val instance: EclairInstance)(
         //event stream,
         receivedInfoF.map {
           case None =>
-            if (attempts.incrementAndGet() > maxAttempts) {
+            if (attempts.incrementAndGet() >= maxAttempts) {
               // too many tries to get info about a payment
               // either Eclair is down or the payment is still in PENDING state for some reason
               // complete the promise with an exception so the runnable will be canceled
