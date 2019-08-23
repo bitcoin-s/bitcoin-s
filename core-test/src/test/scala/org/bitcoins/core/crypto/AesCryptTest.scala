@@ -7,6 +7,7 @@ import scodec.bits.{ByteVector, HexStringSyntax}
 import java.{util => ju}
 import org.scalatest.compatible.Assertion
 import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.scalacheck.Gen
 
 class AesCryptTest extends BitcoinSUnitTest {
   behavior of "AesEncrypt"
@@ -332,8 +333,16 @@ class AesCryptTest extends BitcoinSUnitTest {
   }
 
   it must "not be constructable from bad byte lenghts" in {
-    forAll(NumberGenerator.bytevector.suchThat(bytes =>
-      !AesKey.keylengths.contains(bytes.length))) { bytes =>
+    val bytevectorGens: Seq[Gen[ByteVector]] =
+      (0 until 100)
+        .filter(!AesKey.keylengths.contains(_))
+        .map(NumberGenerator.bytevector(_))
+
+    val first +: second +: rest = bytevectorGens
+    val badKeyLenghts: Gen[ByteVector] =
+      Gen.oneOf(first, second, bytevectorGens: _*)
+
+    forAll(badKeyLenghts) { bytes =>
       assert(AesKey.fromBytes(bytes).isEmpty)
 
       intercept[IllegalArgumentException] {
