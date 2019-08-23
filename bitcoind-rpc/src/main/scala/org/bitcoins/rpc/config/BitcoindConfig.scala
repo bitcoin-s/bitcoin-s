@@ -299,7 +299,7 @@ object BitcoindConfig extends BitcoinSLogger {
     * by splitting it on newlines
     */
   def apply(config: String, datadir: File): BitcoindConfig =
-    apply(config.split("\n"), datadir)
+    apply(config.split("\n").toList, datadir)
 
   /** Reads the given path and construct a `bitcoind` config from it */
   def apply(config: Path): BitcoindConfig =
@@ -307,7 +307,7 @@ object BitcoindConfig extends BitcoinSLogger {
 
   /** Reads the given file and construct a `bitcoind` config from it */
   def apply(config: File, datadir: File = DEFAULT_DATADIR): BitcoindConfig = {
-    import scala.collection.JavaConverters._
+    import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
       .iterator()
@@ -369,7 +369,7 @@ object BitcoindConfig extends BitcoinSLogger {
     Files.createDirectories(datadir.toPath)
     val confFile = datadir.toPath.resolve("bitcoin.conf")
 
-    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE) {
+    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE.toPath) {
       logger.warn(
         s"We will not overrwrite the existing bitcoin.conf in default datadir")
     } else {

@@ -16,7 +16,8 @@ os:
 
 scala:
   - 2.11.12
-  - 2.12.8
+  - 2.12.9
+  - 2.13.0
 
 # These directories are cached to S3 at the end of the build
 cache:
@@ -70,7 +71,7 @@ jobs:
   include:
     - stage: test
       name: Compile website
-      script: sbt docs/mdoc
+      script: sbt ++2.12.9 docs/mdoc
     # run ci-release only if previous stages passed
     - stage: release
       jdk: openjdk8
@@ -79,5 +80,5 @@ jobs:
     # run website push only if previous stages passed
     # we use custom sbt task that first compiles Scaladocs
     # and then calls the docusaurusPublishGhpages task
-    - script: sbt docs/publishWebsite
+    - script: sbt ++2.12.9 docs/publishWebsite
       name: Publish website

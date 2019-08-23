@@ -1,6 +1,8 @@
 package org.bitcoins.wallet
 
-import scala.collection.JavaConverters._
+import org.bitcoins.core.compat.JavaConverters._
+
+import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto.AesPassword
 import java.nio.file.Files
 import org.bitcoins.core.crypto.MnemonicCode
@@ -68,9 +70,9 @@ object WalletStorage extends KeyHandlingLogger {
 
     val foundMnemonicOpt: Option[EncryptedMnemonic] =
       readEncryptedMnemonicFromDisk() match {
-        case Left(_) =>
+        case CompatLeft(_) =>
           None
-        case Right(mnemonic) => Some(mnemonic)
+        case CompatRight(mnemonic) => Some(mnemonic)
       }
 
     foundMnemonicOpt match {
@@ -104,7 +106,7 @@ object WalletStorage extends KeyHandlingLogger {
     * performing no decryption
     */
   private def readEncryptedMnemonicFromDisk()(
-      implicit config: WalletAppConfig): Either[
+      implicit config: WalletAppConfig): CompatEither[
     ReadMnemonicError,
     EncryptedMnemonic] = {
 
@@ -112,7 +114,7 @@ object WalletStorage extends KeyHandlingLogger {
       config.datadir.resolve(ENCRYPTED_SEED_FILE_NAME)
     }
 
-    val jsonE: Either[ReadMnemonicError, ujson.Value] = {
+    val jsonE: CompatEither[ReadMnemonicError, ujson.Value] = {
       if (Files.isRegularFile(path)) {
         val rawJson = Files.readAllLines(path).asScala.mkString("\n")
         logger.debug(s"Read raw encrypted mnemonic from $path")
@@ -121,24 +123,23 @@ object WalletStorage extends KeyHandlingLogger {
           ujson.read(rawJson)
         } match {
           case Failure(ujson.ParseException(clue, _, _, _)) =>
-            Left(ReadMnemonicError.JsonParsingError(clue))
+            CompatLeft(ReadMnemonicError.JsonParsingError(clue))
           case Failure(exception) => throw exception
 
           case Success(value) =>
             logger.debug(s"Parsed $path into valid json")
-            Right(value)
+            CompatRight(value)
         }
       } else {
         logger.error(s"Encrypted mnemonic not found at $path")
-        Left(ReadMnemonicError.NotFoundError)
+        CompatLeft(ReadMnemonicError.NotFoundError)
       }
     }
 
-    import EitherUtil.EitherOps._
     import MnemonicJsonKeys._
     import ReadMnemonicError._
 
-    val readJsonTupleEither: Either[
+    val readJsonTupleEither: CompatEither[
       ReadMnemonicError,
       (String, String, String)] = jsonE.flatMap { json =>
       logger.trace(s"Read encrypted mnemonic JSON: $json")
@@ -148,15 +149,15 @@ object WalletStorage extends KeyHandlingLogger {
         val rawSaltString = json(SALT).str
         (ivString, cipherTextString, rawSaltString)
       } match {
-        case Success(value) => Right(value)
+        case Success(value) => CompatRight(value)
         case Failure(value: ujson.Value.InvalidData) =>
           logger.error(s"Error when parsing JSON file $path: ${value.msg}")
-          Left(JsonParsingError(value.msg))
+          CompatLeft(JsonParsingError(value.msg))
         case Failure(exception) => throw exception
       }
     }
 
-    val encryptedEither: Either[ReadMnemonicError, EncryptedMnemonic] =
+    val encryptedEither: CompatEither[ReadMnemonicError, EncryptedMnemonic] =
       readJsonTupleEither.flatMap {
         case (rawIv, rawCipherText, rawSalt) =>
           val encryptedOpt = for {
@@ -167,10 +168,12 @@ object WalletStorage extends KeyHandlingLogger {
             logger.debug(s"Parsed contents of $path into an EncryptedMnemonic")
             EncryptedMnemonic(AesEncryptedData(cipherText, iv), salt)
           }
-          encryptedOpt
-            .map(Right(_))
-            .getOrElse(
-              Left(JsonParsingError("JSON contents was not hex strings")))
+          val toRight: Option[
+            CompatRight[ReadMnemonicError, EncryptedMnemonic]] = encryptedOpt
+            .map(CompatRight(_))
+
+          toRight.getOrElse(
+            CompatLeft(JsonParsingError("JSON contents was not hex strings")))
       }
     encryptedEither
   }
@@ -185,22 +188,21 @@ object WalletStorage extends KeyHandlingLogger {
 
     val encryptedEither = readEncryptedMnemonicFromDisk()
 
-    import EitherUtil.EitherOps._
-    val decryptedEither: Either[ReadMnemonicError, MnemonicCode] =
+    val decryptedEither: CompatEither[ReadMnemonicError, MnemonicCode] =
       encryptedEither.flatMap { encrypted =>
         encrypted.toMnemonic(passphrase) match {
           case Failure(exc) =>
             logger.error(s"Error when decrypting $encrypted: $exc")
-            Left(ReadMnemonicError.DecryptionError)
+            CompatLeft(ReadMnemonicError.DecryptionError)
           case Success(value) =>
             logger.debug(s"Decrypted $encrypted successfully")
-            Right(value)
+            CompatRight(value)
         }
       }
 
     decryptedEither match {
-      case Left(value)  => value
-      case Right(value) => ReadMnemonicSuccess(value)
+      case CompatLeft(value)  => value
+      case CompatRight(value) => ReadMnemonicSuccess(value)
     }
   }
 }

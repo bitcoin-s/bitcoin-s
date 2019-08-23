@@ -466,7 +466,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       _ <- start1F
       _ <- start2F
     } yield {
-      clientAccum += (client1, client2)
+      clientAccum ++= List(client1, client2)
       (client1, client2)
     }
   }

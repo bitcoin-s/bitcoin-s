@@ -99,7 +99,6 @@ handling could look:
 
 ```scala mdoc:compile-only
 import org.bitcoins.rpc.client.common._
-import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.BitcoindWalletException
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol._

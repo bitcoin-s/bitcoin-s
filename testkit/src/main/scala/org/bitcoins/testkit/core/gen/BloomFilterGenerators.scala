@@ -19,7 +19,8 @@ abstract class BloomFilterGenerator {
     } yield BloomFilter(size, falsePositiveRate, tweak, flags)
 
   /** Loads a generic bloom filter with the given byte vectors and returns it */
-  def bloomFilter(byteVectors: Seq[ByteVector]): Gen[BloomFilter] =
+  def bloomFilter(
+      byteVectors: scala.collection.Seq[ByteVector]): Gen[BloomFilter] =
     for {
       filter <- bloomFilter
     } yield filter.insertByteVectors(byteVectors)

@@ -138,10 +138,15 @@ trait TransactionRpc { self: Client =>
       comment: String = "",
       subtractFeeFrom: Vector[BitcoinAddress] = Vector.empty): Future[
     DoubleSha256DigestBE] = {
+    val jsonOutputs: JsValue = Json.toJson {
+      amounts.map {
+        case (addr, curr) => addr -> Bitcoins(curr.satoshis)
+      }
+    }
     bitcoindCall[DoubleSha256DigestBE](
       "sendmany",
       List(JsString(""),
-           Json.toJson(amounts.mapValues(curr => Bitcoins(curr.satoshis))),
+           jsonOutputs,
            JsNumber(minconf),
            JsString(comment),
            Json.toJson(subtractFeeFrom))

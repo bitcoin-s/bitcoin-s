@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.util
 
 import org.scalactic.anyvals.PosInt
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -9,7 +9,7 @@ import org.slf4j.{Logger, LoggerFactory}
 abstract class BitcoinSUnitTest
     extends FlatSpec
     with MustMatchers
-    with PropertyChecks {
+    with ScalaCheckPropertyChecks {
 
   protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 

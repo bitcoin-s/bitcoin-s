@@ -11,31 +11,40 @@ Test / flywayClean / aggregate := true
 
 lazy val commonCompilerOpts = {
   List(
-    "-Xmax-classfile-name",
-    "128",
     "-Xsource:2.12",
     "-target:jvm-1.8"
   )
 }
 
-//https://docs.scala-lang.org/overviews/compiler-options/index.html
-lazy val compilerOpts = Seq(
-  "-encoding",
-  "UTF-8",
-  "-unchecked",
-  "-feature",
-  "-deprecation",
-  "-Xfuture",
-  "-Ywarn-dead-code",
-  "-Ywarn-unused-import",
-  "-Ywarn-value-discard",
-  "-Ywarn-unused",
-  "-unchecked",
-  "-deprecation",
-  "-feature"
-) ++ commonCompilerOpts
+val scala2_13CompilerOpts = Seq("-Xlint:unused")
 
-lazy val testCompilerOpts = commonCompilerOpts
+val nonScala2_13CompilerOpts = Seq(
+  "-Xmax-classfile-name",
+  "128",
+  "-Ywarn-unused",
+  "-Ywarn-unused-import"
+)
+
+//https://docs.scala-lang.org/overviews/compiler-options/index.html
+def compilerOpts(scalaVersion: String) =
+  Seq(
+    "-encoding",
+    "UTF-8",
+    "-unchecked",
+    "-feature",
+    "-deprecation",
+    "-Ywarn-dead-code",
+    "-Ywarn-value-discard",
+    "-Ywarn-unused",
+    "-unchecked",
+    "-deprecation",
+    "-feature"
+  ) ++ commonCompilerOpts ++ {
+    if (scalaVersion.startsWith("2.13")) scala2_13CompilerOpts
+    else nonScala2_13CompilerOpts
+  }
+
+val testCompilerOpts = commonCompilerOpts
 
 lazy val isCI = {
   sys.props
@@ -67,7 +76,7 @@ lazy val commonSettings = List(
   apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
   // scaladoc settings end
   ////
-  scalacOptions in Compile := compilerOpts,
+  scalacOptions in Compile := compilerOpts(scalaVersion.value),
   scalacOptions in Test := testCompilerOpts,
   Compile / compile / javacOptions ++= {
     if (isCI) {
@@ -146,7 +155,6 @@ lazy val `bitcoin-s` = project
     walletServer,
     walletServerTest,
     testkit,
-    scripts,
     zmq
   )
   .settings(commonSettings: _*)
@@ -381,7 +389,7 @@ lazy val bitcoindRpc = project
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(commonTestSettings: _*)
-  .settings(libraryDependencies ++= Deps.bitcoindRpcTest,
+  .settings(libraryDependencies ++= Deps.bitcoindRpcTest(scalaVersion.value),
             name := "bitcoin-s-bitcoind-rpc-test")
   .dependsOn(core % testAndCompile, testkit)
 
@@ -486,7 +494,7 @@ lazy val wallet = project
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
-    libraryDependencies ++= Deps.wallet
+    libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
   .dependsOn(core, dbCommons)
   .enablePlugins(FlywayPlugin)
@@ -501,25 +509,6 @@ lazy val walletTest = project
   )
   .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
-
-lazy val scripts = project
-  .in(file("scripts"))
-  .settings(commonTestSettings: _*)
-  .settings(
-    name := "bitcoin-s-scripts",
-    libraryDependencies ++= Deps.scripts
-  )
-  .dependsOn(
-    bitcoindRpc,
-    chain,
-    core % testAndCompile,
-    eclairRpc,
-    node,
-    secp256k1jni,
-    testkit,
-    wallet,
-    zmq
-  )
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet) */
