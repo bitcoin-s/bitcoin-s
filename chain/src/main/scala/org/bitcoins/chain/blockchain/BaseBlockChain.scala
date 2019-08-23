@@ -6,6 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.chain.validation.TipValidation
+import scala.annotation.tailrec
 
 // INTERNAL NOTE: Due to changes in the Scala collections in 2.13 this
 // class and its companion object
@@ -36,6 +37,9 @@ private[blockchain] trait BaseBlockChain {
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
 
   val tip: BlockHeaderDb = headers.head
+
+  /** The height of the chain */
+  val height: Int = tip.height
 
   val length: Int = headers.length
 

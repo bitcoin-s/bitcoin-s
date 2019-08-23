@@ -2,7 +2,6 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.models.BlockHeaderDb
 
-import scala.annotation.tailrec
 import scala.collection.{IndexedSeqLike, mutable}
 
 /** @inheritdoc */
