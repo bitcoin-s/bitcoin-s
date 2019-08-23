@@ -326,7 +326,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()
       eclair <- {
         val server = EclairRpcTestUtil.eclairInstance(bitcoind)
-        val eclair = new EclairRpcClient(server)
+        val eclair = new EclairRpcClient(server, EclairRpcTestUtil.binary)
         eclair.start().map(_ => eclair)
       }
       _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF =
@@ -451,7 +451,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       executeWithClientOtherClient(getBadInstance)
     }
 
-    val badClientF = badInstanceF.map(new EclairRpcClient(_))
+    val badClientF = badInstanceF.map(new EclairRpcClient(_, EclairRpcTestUtil.binary))
 
     badClientF.flatMap { badClient =>
       recoverToSucceededIf[RuntimeException](badClient.getInfo)
