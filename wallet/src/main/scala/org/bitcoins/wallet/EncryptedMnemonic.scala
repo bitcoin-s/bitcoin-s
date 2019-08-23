@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.compat.CompatEither
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -8,9 +9,9 @@ import scala.util.{Failure, Success, Try}
 case class EncryptedMnemonic(value: AesEncryptedData, salt: AesSalt) {
 
   def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
-    import EitherUtil.EitherOps._
     val key = password.toKey(salt)
-    AesCrypt.decrypt(value, key).toTry.flatMap { decrypted =>
+    val either = AesCrypt.decrypt(value, key)
+    CompatEither(either).toTry.flatMap { decrypted =>
       decrypted.decodeUtf8 match {
         case Left(_) =>
           // when failing to decode this to a UTF-8 string

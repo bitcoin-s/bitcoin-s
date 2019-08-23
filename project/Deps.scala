@@ -8,7 +8,7 @@ object Deps {
     val scalacheck = "1.14.0"
     val scalaTest = "3.0.8"
     val slf4j = "1.7.28"
-    val spray = "1.3.4"
+    val spray = "1.3.5"
     val zeromq = "0.5.1"
     val akkav = "10.1.9"
     val akkaStreamv = "2.5.25"
@@ -17,9 +17,11 @@ object Deps {
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.3.4"
-    val ammoniteV = "1.6.7"
 
-    val asyncV = "0.9.7"
+    // async dropped Scala 2.11 in 0.10.0
+    val asyncOldScalaV = "0.9.7"
+    val asyncNewScalaV = "0.10.0"
+
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
@@ -27,9 +29,21 @@ object Deps {
     val scalameterV = "0.17"
 
     // Wallet/node/chain server deps
-    val uPickleV = "0.7.4"
-    val akkaHttpUpickleV = "1.27.0"
-    val uJsonV = uPickleV // Li Haoyi ecosystem does common versioning
+    val oldMicroPickleV = "0.7.4"
+    val oldMicroJsonV = oldMicroPickleV
+
+    val newMicroPickleV = "0.7.5"
+    val newMicroJsonV = newMicroPickleV
+
+    // akka-http-upickle is not yet published
+    // to Maven central. There's a PR for adding
+    // suport, https://github.com/hseeberger/akka-http-json/pull/314.
+    // Until that's merged, you'll have to pull down
+    // that PR, do `sbt publishLocal` and replace the
+    // value here with whatever is in there. This
+    // obviously has to be changed before this is
+    // merged.
+
     val sourcecodeV = "0.1.7"
 
     // CLI deps
@@ -38,6 +52,7 @@ object Deps {
   }
 
   object Compile {
+
     val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
     val scodec = "org.scodec" %% "scodec-bits" % V.scodecV withSources () withJavadoc ()
     val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided" withSources () withJavadoc ()
@@ -53,23 +68,25 @@ object Deps {
 
     //for loading secp256k1 natively
     val nativeLoader = "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
-    val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV cross CrossVersion.full
 
     //node deps
     val slick = "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
-    val uJson = "com.lihaoyi" %% "ujson" % V.uJsonV
 
-    // serializing to and from JSON
-    val uPickle = "com.lihaoyi" %% "upickle" % V.uPickleV
+    // zero dep JSON library. Have to use different versiont to juggle
+    // Scala 2.11/12/13
+    val oldMicroJson = "com.lihaoyi" %% "ujson" % V.oldMicroJsonV
+    val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
+
+    // serializing to and from JSON Have to use different versiont to juggle
+    // Scala 2.11/12/13
+    val oldMicroPickle = "com.lihaoyi" %% "upickle" % V.oldMicroPickleV
+    val newMicroPickle = "com.lihaoyi" %% "upickle" % V.newMicroPickleV
 
     // get access to reflection data at compile-time
     val sourcecode = "com.lihaoyi" %% "sourcecode" % V.sourcecodeV
-
-    // make akka-http play nice with upickle
-    val akkaHttpUpickle = "de.heikoseeberger" %% "akka-http-upickle" % V.akkaHttpUpickleV
 
     // parsing of CLI opts and args
     val scopt = "com.github.scopt" %% "scopt" % V.scoptV
@@ -82,7 +99,8 @@ object Deps {
   }
 
   object Test {
-    val async = "org.scala-lang.modules" %% "scala-async" % V.asyncV % "test" withSources () withJavadoc ()
+    val oldAsync = "org.scala-lang.modules" %% "scala-async" % V.asyncOldScalaV % "test" withSources () withJavadoc ()
+    val newAsync = "org.scala-lang.modules" %% "scala-async" % V.asyncNewScalaV % "test" withSources () withJavadoc ()
     val junitInterface = "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
     val logback = Compile.logback % "test"
     val scalacheck = Compile.scalacheck % "test"
@@ -136,13 +154,13 @@ object Deps {
     Compile.typesafeConfig
   )
 
-  val bitcoindRpcTest = List(
+  def bitcoindRpcTest(scalaVersion: String) = List(
     Test.akkaHttp,
     Test.akkaStream,
     Test.logback,
     Test.scalaTest,
     Test.scalacheck,
-    Test.async
+    if (scalaVersion.startsWith("2.11")) Test.oldAsync else Test.newAsync
   )
 
   val bench = List(
@@ -158,19 +176,22 @@ object Deps {
     Compile.slickHikari
   )
 
-  val cli = List(
+  def cli(scalaVersion: String) = List(
     Compile.sttp,
-    Compile.uPickle,
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
+    else Compile.newMicroPickle,
+    Compile.logback,
     Compile.scopt
   )
 
-  val picklers = List(
-    Compile.uPickle
+  def picklers(scalaVersion: String) = List(
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
+    else Compile.newMicroPickle
   )
 
-  val server = List(
-    Compile.akkaHttpUpickle,
-    Compile.uPickle,
+  def server(scalaVersion: String) = List(
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
+    else Compile.newMicroPickle,
     Compile.logback,
     Compile.akkaHttp
   )
@@ -210,13 +231,9 @@ object Deps {
     Test.akkaTestkit
   )
 
-  val scripts = List(
-    Compile.ammonite,
-    Compile.logback
-  )
-
-  val wallet = List(
-    Compile.uJson,
+  def wallet(scalaVersion: String) = List(
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
+    else Compile.newMicroJson,
     Compile.logback
   )
 

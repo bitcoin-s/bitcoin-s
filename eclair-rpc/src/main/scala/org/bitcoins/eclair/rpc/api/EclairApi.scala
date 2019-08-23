@@ -243,7 +243,7 @@ trait EclairApi {
     * Documented by not implemented in Eclair
     */
   def sendToRoute(
-      route: TraversableOnce[NodeId],
+      route: scala.collection.immutable.Seq[NodeId],
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
       finalCltvExpiry: Long): Future[PaymentId]

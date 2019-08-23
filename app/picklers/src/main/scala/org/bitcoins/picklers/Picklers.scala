@@ -2,7 +2,6 @@ package org.bitcoins
 
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import upickle.default._
 
 package object picklers {

@@ -20,7 +20,7 @@ sealed trait BitcoindAuthCredentials {
 }
 
 object BitcoindAuthCredentials extends BitcoinSLogger {
-  import scala.collection.JavaConverters._
+  import org.bitcoins.core.compat.JavaConverters._
 
   /**
     * Authenticate by providing a username and password.

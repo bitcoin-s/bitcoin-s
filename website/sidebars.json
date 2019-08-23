@@ -12,7 +12,10 @@
       "rpc/rpc-eclair",
       "rpc/rpc-bitcoind"
     ],
+    "Chain": ["chain/sync-chain"],
+    "Wallet": ["wallet/create-wallet"],
     "Contributing": ["contributing", "contributing-website"],
+    "Applications": ["applications/configuration"],
     "Security": ["security"]
   }
 }

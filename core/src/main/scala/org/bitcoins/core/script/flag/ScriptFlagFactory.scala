@@ -47,7 +47,7 @@ trait ScriptFlagFactory {
 
   /** Parses a list of [[ScriptFlag]]s that is separated by commas. */
   def fromList(str: String): Seq[ScriptFlag] = {
-    fromList(str.split(","))
+    fromList(str.split(",").toList)
   }
 
   /** Empty script flag. */

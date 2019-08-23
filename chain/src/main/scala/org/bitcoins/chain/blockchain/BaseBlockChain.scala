@@ -1,13 +1,23 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDb
-import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.ChainVerificationLogger
-
+import org.bitcoins.chain.validation.TipUpdateResult
+import org.bitcoins.chain.validation.TipValidation
 import scala.annotation.tailrec
-import scala.collection.{IndexedSeqLike, mutable}
+
+// INTERNAL NOTE: Due to changes in the Scala collections in 2.13 this
+// class and its companion object
+// has to be implemented separetely for the different Scala versions.
+// The general idea is that all three implement a collection, but slightly
+// different ones (the one that the 2.12 and 2.11 versions implement got
+// removed in 2.13). The most interesting method is `compObjectFromHeaders`.
+// This is a method that's meant to represent a `fromHeaders` method on the
+// companion object. Because Scala has restrictions on where to place companion
+// objects (they have to be in the same file as the trait/class), this was
+// the least ugly workaround I could come up with.
 
 /**
   * In memory implementation of a blockchain
@@ -21,23 +31,23 @@ import scala.collection.{IndexedSeqLike, mutable}
   * }}}
   *
   */
-case class Blockchain(headers: Vector[BlockHeaderDb])
-    extends IndexedSeqLike[BlockHeaderDb, Vector[BlockHeaderDb]] {
+private[blockchain] trait BaseBlockChain {
+
+  protected[blockchain] def compObjectfromHeaders(
+      headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
+
   val tip: BlockHeaderDb = headers.head
 
-  /** @inheritdoc */
-  override def newBuilder: mutable.Builder[
-    BlockHeaderDb,
-    Vector[BlockHeaderDb]] = Vector.newBuilder[BlockHeaderDb]
+  /** The height of the chain */
+  val height: Int = tip.height
 
-  /** @inheritdoc */
-  override def seq: IndexedSeq[BlockHeaderDb] = headers
+  val length: Int = headers.length
 
-  /** @inheritdoc */
-  override def length: Int = headers.length
+  def apply(idx: Int): BlockHeaderDb = headers(idx)
 
-  /** @inheritdoc */
-  override def apply(idx: Int): BlockHeaderDb = headers.apply(idx)
+  def headers: Vector[BlockHeaderDb]
+
+  def find(predicate: BlockHeaderDb => Boolean): Option[BlockHeaderDb]
 
   /** Finds a block header at a given height */
   def findAtHeight(height: Int): Option[BlockHeaderDb] =
@@ -48,7 +58,7 @@ case class Blockchain(headers: Vector[BlockHeaderDb])
     val headerIdxOpt = headers.zipWithIndex.find(_._1 == header)
     headerIdxOpt.map {
       case (header, idx) =>
-        val newChain = Blockchain.fromHeaders(headers.splitAt(idx)._2)
+        val newChain = this.compObjectfromHeaders(headers.splitAt(idx)._2)
         require(newChain.tip == header)
         newChain
     }
@@ -58,17 +68,13 @@ case class Blockchain(headers: Vector[BlockHeaderDb])
   def fromValidHeader(header: BlockHeaderDb): Blockchain = {
     fromHeader(header).get
   }
-
-  /** The height of the chain */
-  def height: Int = tip.height
-
 }
 
-object Blockchain extends ChainVerificationLogger {
+private[blockchain] trait BaseBlockChainCompObject
+    extends ChainVerificationLogger {
 
-  def fromHeaders(headers: Vector[BlockHeaderDb]): Blockchain = {
-    Blockchain(headers)
-  }
+  def fromHeaders(
+      headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
 
   /**
     * Attempts to connect the given block header with the given blockchain
@@ -204,4 +210,5 @@ object Blockchain extends ChainVerificationLogger {
     }
 
   }
+
 }

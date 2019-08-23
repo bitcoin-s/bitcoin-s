@@ -22,7 +22,7 @@ import org.bitcoins.core.protocol.ln.{
   ShortChannelId
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.{BitcoinSUtil, FutureUtil}
+import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.config.EclairInstance
@@ -371,7 +371,7 @@ class EclairRpcClient(val instance: EclairInstance)(
 
         //register callback that publishes a payment to our actor system's
         //event stream,
-        receivedInfoF.map {
+        receivedInfoF.foreach {
           case None =>
             if (attempts.incrementAndGet() >= maxAttempts) {
               // too many tries to get info about a payment
@@ -480,13 +480,13 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   def sendToRoute(
-      route: TraversableOnce[NodeId],
+      route: scala.collection.immutable.Seq[NodeId],
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
       finalCltvExpiry: Long): Future[PaymentId] = {
     eclairCall[PaymentId](
       "sendtoroute",
-      "route" -> route.mkString(","),
+      "route" -> route.iterator.mkString(","),
       "amountMsat" -> amountMsat.toBigDecimal.toString,
       "paymentHash" -> paymentHash.hex,
       "finalCltvExpiry" -> finalCltvExpiry.toString

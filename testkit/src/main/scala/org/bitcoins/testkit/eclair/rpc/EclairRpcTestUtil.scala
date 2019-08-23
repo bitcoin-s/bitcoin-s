@@ -42,7 +42,7 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials
   *
   */
 trait EclairRpcTestUtil extends BitcoinSLogger {
-  import collection.JavaConverters._
+  import org.bitcoins.core.compat.JavaConverters._
 
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
