@@ -726,7 +726,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       for {
         paid <- paidF
         invoice <- invoiceF
-        received <- otherClient.monitorInvoice(invoice)
+        //CI is super slow... wait 2 minutes
+        received <- otherClient.monitorInvoice(invoice, maxAttempts = 120)
       } yield {
         assert(received.amountMsat == amt)
         assert(received.paymentHash == invoice.lnTags.paymentHash.hash)
