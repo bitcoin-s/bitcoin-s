@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.compat._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -161,26 +162,28 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
   override def initializeWithEntropy(entropy: BitVector)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
-    import EitherUtil.EitherOps._
 
     logger.info(s"Initializing wallet on chain ${config.network}")
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
-    val mnemonicE: Either[InitializeWalletError, MnemonicCode] =
+    val mnemonicE: CompatEither[InitializeWalletError, MnemonicCode] =
       mnemonicT match {
         case Success(mnemonic) =>
           logger.trace(s"Created mnemonic from entropy")
-          Right(mnemonic)
+          CompatEither(Right(mnemonic))
         case Failure(err) =>
           logger.error(s"Could not create mnemonic from entropy! $err")
-          Left(InitializeWalletError.BadEntropy)
-
+          CompatEither(Left(InitializeWalletError.BadEntropy))
       }
 
-    val encryptedMnemonicE: Either[InitializeWalletError, EncryptedMnemonic] =
+    val encryptedMnemonicE: CompatEither[
+      InitializeWalletError,
+      EncryptedMnemonic] =
       mnemonicE.map { EncryptedMnemonicHelper.encrypt(_, badPassphrase) }
 
-    val biasedFinalEither: Either[InitializeWalletError, Future[WalletImpl]] =
+    val biasedFinalEither: CompatEither[
+      InitializeWalletError,
+      Future[WalletImpl]] =
       for {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
@@ -216,14 +219,14 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
         } yield wallet
       }
 
-    val finalEither: Future[Either[InitializeWalletError, WalletImpl]] =
+    val finalEither: Future[CompatEither[InitializeWalletError, WalletImpl]] =
       EitherUtil.liftRightBiasedFutureE(biasedFinalEither)
 
     finalEither.map {
-      case Right(wallet) =>
+      case CompatRight(wallet) =>
         logger.debug(s"Successfully initialized wallet")
         InitializeWalletSuccess(wallet)
-      case Left(err) => err
+      case CompatLeft(err) => err
     }
   }
 

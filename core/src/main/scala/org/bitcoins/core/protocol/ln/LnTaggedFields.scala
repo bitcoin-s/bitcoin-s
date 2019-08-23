@@ -91,10 +91,12 @@ object LnTaggedFields {
     val (description, descriptionHash): (
         Option[LnTag.DescriptionTag],
         Option[LnTag.DescriptionHashTag]) = {
-      if (descriptionOrHash.isLeft) {
-        (descriptionOrHash.left.toOption, None)
-      } else {
-        (None, descriptionOrHash.right.toOption)
+
+      descriptionOrHash match {
+        case Left(description) =>
+          (Some(description), None)
+        case Right(hash) =>
+          (None, Some(hash))
       }
     }
 

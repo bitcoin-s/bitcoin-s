@@ -267,7 +267,10 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
     * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation BIP32]]
     */
   private val BIP32_KEY: ByteVector =
-    ByteVector.encodeAscii("Bitcoin seed").right.get
+    ByteVector.encodeAscii("Bitcoin seed") match {
+      case Left(exception) => throw exception
+      case Right(bytevec)  => bytevec
+    }
 
   /**
     * Generates a master private key
