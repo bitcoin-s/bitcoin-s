@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.config
 
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.config._
 import java.io.File
 import java.nio.file.Files
@@ -207,16 +207,24 @@ case class BitcoindConfig(
     }.headOption
   }
 
+  import com.sun.jndi.toolkit.url.Uri
+
+  /** Converts a string to an InetSocketAddress */
+  private def toInetSocketAddress(string: String): InetSocketAddress = {
+    val uri = new Uri(string)
+    new InetSocketAddress(uri.getHost, uri.getPort)
+  }
+
   lazy val username: Option[String] = getValue("rpcuser")
   lazy val password: Option[String] = getValue("rpcpassword")
   lazy val zmqpubrawblock: Option[InetSocketAddress] =
-    getValue("zmqpubrawblock").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubrawblock").map(toInetSocketAddress)
   lazy val zmqpubrawtx: Option[InetSocketAddress] =
-    getValue("zmqpubrawtx").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubrawtx").map(toInetSocketAddress)
   lazy val zmqpubhashblock: Option[InetSocketAddress] =
-    getValue("zmqpubhashblock").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubhashblock").map(toInetSocketAddress)
   lazy val zmqpubhashtx: Option[InetSocketAddress] =
-    getValue("zmqpubhashtx").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubhashtx").map(toInetSocketAddress)
 
   lazy val port: Int = getValue("port").map(_.toInt).getOrElse(network.port)
 

@@ -23,4 +23,10 @@ class GetDataMessageTest extends BitcoinSUnitTest {
     val inventory = Inventory(TypeIdentifier.MsgBlock, DoubleSha256Digest.empty)
     assert(GetDataMessage(inventory) == GetDataMessage(Seq(inventory)))
   }
+
+  it must "have a meaningful toString" in {
+    forAll(DataMessageGenerator.getDataMessages) { message =>
+      assert(message.toString.length() < 200)
+    }
+  }
 }

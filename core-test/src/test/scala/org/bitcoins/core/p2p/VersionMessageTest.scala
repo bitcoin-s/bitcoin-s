@@ -17,6 +17,12 @@ class VersionMessageTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "have a meaningful toString message" in {
+    forAll(ControlMessageGenerator.versionMessage) { version =>
+      assert(version.toString.length < 350 + version.userAgent.length())
+    }
+  }
+
   "VersionMessage" must "create a new version message to be sent to another node on the network" in {
     val versionMessage = VersionMessage(MainNet, InetAddress.getLocalHost)
     assert(versionMessage.addressReceiveServices.nodeNone)

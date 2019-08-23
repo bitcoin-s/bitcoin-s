@@ -6,7 +6,6 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.util.EitherUtil
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
@@ -162,7 +161,7 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
   override def initializeWithEntropy(entropy: BitVector)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
+    import EitherUtil.EitherOps._
 
     logger.info(s"Initializing wallet on chain ${config.network}")
 

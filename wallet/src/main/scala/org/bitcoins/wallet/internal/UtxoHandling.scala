@@ -15,7 +15,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.wallet.api.AddUtxoResult
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.wallet.api.AddUtxoError
-import org.bitcoins.core.util.EitherUtil
+import org.bitcoins.wallet.EitherUtil
 import org.bitcoins.wallet.api.AddUtxoSuccess
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -103,7 +103,7 @@ private[wallet] trait UtxoHandling extends KeyHandlingLogger {
       confirmations: Int,
       spent: Boolean): Future[AddUtxoResult] = {
     import AddUtxoError._
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
+    import EitherUtil.EitherOps._
 
     logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
 

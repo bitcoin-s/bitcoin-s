@@ -4,9 +4,6 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
-/**
-  * Created by chris on 5/24/16.
-  */
 sealed trait HashDigest extends Any with NetworkElement {
 
   /** The message digest represented in bytes */
@@ -109,49 +106,44 @@ object Sha256DigestBE extends Factory[Sha256DigestBE] {
 /**
   * Represents the result of SHA256(SHA256())
   */
-sealed trait DoubleSha256Digest extends Any with HashDigest {
-  def flip: DoubleSha256DigestBE = DoubleSha256DigestBE(bytes.reverse)
+case class DoubleSha256Digest(bytes: ByteVector) extends HashDigest {
+  require(bytes.length == 32,
+          "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
+
+  lazy val flip: DoubleSha256DigestBE = DoubleSha256DigestBE(bytes.reverse)
+
+  override def toString = s"DoubleSha256Digest($hex)"
 }
 
 object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
-  private case class DoubleSha256DigestImpl(bytes: ByteVector)
-      extends AnyVal
-      with DoubleSha256Digest {
-    override def toString = s"DoubleSha256DigestImpl($hex)"
-    // $COVERAGE-ON$
-  }
   override def fromBytes(bytes: ByteVector): DoubleSha256Digest = {
-    require(bytes.length == 32,
-            // $COVERAGE-OFF$
-            "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
-    DoubleSha256DigestImpl(bytes)
+    // have to use new to avoid infinite loop
+    new DoubleSha256Digest(bytes)
   }
 
-  private val e = ByteVector(Array.fill(32)(0.toByte))
-  val empty: DoubleSha256Digest = DoubleSha256Digest.fromBytes(e)
+  val empty: DoubleSha256Digest = DoubleSha256Digest(
+    ByteVector.low(32)
+  )
 
 }
 
 /** The big endian version of [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
-sealed trait DoubleSha256DigestBE extends Any with HashDigest {
-  def flip: DoubleSha256Digest = DoubleSha256Digest.fromBytes(bytes.reverse)
+case class DoubleSha256DigestBE(bytes: ByteVector) extends HashDigest {
+  require(bytes.length == 32,
+          "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
+
+  def flip: DoubleSha256Digest =
+    DoubleSha256Digest.fromBytes(bytes.reverse)
+
+  override def toString = s"DoubleSha256BDigestBE($hex)"
 }
 
 object DoubleSha256DigestBE extends Factory[DoubleSha256DigestBE] {
-  private case class DoubleSha256DigestBEImpl(bytes: ByteVector)
-      extends AnyVal
-      with DoubleSha256DigestBE {
-    override def toString = s"DoubleSha256BDigestBEImpl($hex)"
-    // $COVERAGE-ON$
-  }
-  override def fromBytes(bytes: ByteVector): DoubleSha256DigestBE = {
-    require(bytes.length == 32,
-            // $COVERAGE-OFF$
-            "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)
-    DoubleSha256DigestBEImpl(bytes)
-  }
+  override def fromBytes(bytes: ByteVector): DoubleSha256DigestBE =
+    // have to use new to avoid infinite loop
+    new DoubleSha256DigestBE(bytes)
 
-  val empty: DoubleSha256DigestBE = DoubleSha256Digest.empty.flip
+  val empty: DoubleSha256DigestBE = DoubleSha256DigestBE(ByteVector.low(32))
 }
 
 /**
