@@ -71,7 +71,7 @@ jobs:
   include:
     - stage: test
       name: Compile website
-      script: sbt ++2.12.9 docs/mdoc
+      script: sbt docs/mdoc
     # run ci-release only if previous stages passed
     - stage: release
       jdk: openjdk8
@@ -80,5 +80,5 @@ jobs:
     # run website push only if previous stages passed
     # we use custom sbt task that first compiles Scaladocs
     # and then calls the docusaurusPublishGhpages task
-    - script: sbt ++2.12.9 docs/publishWebsite
+    - script: sbt docs/publishWebsite
       name: Publish website
