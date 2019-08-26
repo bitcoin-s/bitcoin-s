@@ -4,7 +4,7 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
@@ -109,6 +109,26 @@ case class ChainHandler(
         chain.tip.hashBE
     }
     Future.successful(hashBE)
+  }
+
+  override def nextCompactFilterHeadersRange(prevStopHash: DoubleSha256Digest)(implicit ec: ExecutionContext): Future[(Int, DoubleSha256Digest)] = {
+    val startHeightF = if (prevStopHash == DoubleSha256Digest.empty) {
+      Future.successful(0)
+    } else {
+      for {
+        prevStopHeaderOpt <- getHeader(prevStopHash.flip)
+        prevStopHeader = prevStopHeaderOpt.getOrElse(throw new RuntimeException(s"Unknown block hash ${prevStopHash}"))
+      } yield prevStopHeader.height + 1
+    }
+    for {
+      startHeight <- startHeightF
+      blockCount <- getBlockCount
+      stopHeight = if (startHeight - 1 + 2000L > blockCount) blockCount else startHeight - 1 + 2000L
+      stopBlockOpt <- getHeadersByHeight(stopHeight.toInt).map(_.headOption)
+      stopBlock = stopBlockOpt.getOrElse(throw new RuntimeException(s"Unknown header height ${stopHeight}"))
+    } yield {
+      (startHeight, stopBlock.hashBE.flip)
+    }
   }
 
   override def processFilterHeader(
@@ -226,6 +246,10 @@ case class ChainHandler(
     filterDAO.findByHash(hash)
   }
 
+  override def getHeadersByHeight(height: Int)(
+    implicit ec: ExecutionContext): Future[Seq[BlockHeaderDb]] = {
+    blockHeaderDAO.findByHeight(height)
+  }
 }
 
 object ChainHandler {

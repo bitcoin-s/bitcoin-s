@@ -38,6 +38,9 @@ trait ChainApi {
   def getHeader(hash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
 
+  def getHeadersByHeight(height: Int)(
+    implicit ec: ExecutionContext): Future[Seq[BlockHeaderDb]]
+
   def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
     implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
 
@@ -87,6 +90,8 @@ trait ChainApi {
       }
       .map(_ => this)
   }
+
+  def nextCompactFilterHeadersRange(stopHash: DoubleSha256Digest)(implicit ec: ExecutionContext): Future[(Int, DoubleSha256Digest)]
 
   def processFilter(
       golombFilter: GolombFilter,

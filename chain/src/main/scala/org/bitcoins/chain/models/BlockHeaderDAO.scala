@@ -218,4 +218,10 @@ case class BlockHeaderDAO()(
       result.headOption
     }
   }
+
+  def findByHeight(height: Int): Future[Seq[BlockHeaderDb]] = {
+    val query = table.filter(_.height === height).result
+    database.run(query)
+  }
+
 }

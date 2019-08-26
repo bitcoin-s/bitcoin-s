@@ -4,31 +4,20 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  CompactFilterDAO,
-  CompactFilterHeaderDAO
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.p2p.NetworkPayload
+import org.bitcoins.core.p2p.{GetCompactFilterHeadersMessage, NetworkPayload}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{
-  BroadcastAbleTransaction,
-  BroadcastAbleTransactionDAO,
-  Peer
-}
+import org.bitcoins.node.models.{BroadcastAbleTransaction, BroadcastAbleTransactionDAO, Peer}
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
 import org.bitcoins.rpc.util.AsyncUtil
 import slick.jdbc.SQLiteProfile
 
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
@@ -142,42 +131,29 @@ case class SpvNode(
       blockCount: Long,
       startHeight: Long,
       batchSize: Int): Future[Vector[(Int, DoubleSha256Digest)]] = {
-    val diff = blockCount - startHeight + 1
 
-    val n =
-      if (diff % batchSize == 0) diff / batchSize else diff / batchSize + 1
-
-    val rv = for {
-      chainApi <- chainApiFromDb()
-      res <- 0L
-        .until(n)
-        .foldLeft(Future.successful(
-          (Option(bestHeader), Vector.empty[(Int, DoubleSha256Digest)]))) {
-          (acc, _) =>
-            val newAcc: Future[(Option[BlockHeaderDb], Vector[(Int, DoubleSha256Digest)])] = acc.flatMap {
-              case (headerOpt, res) =>
-                val xxx: Future[(Option[BlockHeaderDb], Vector[(Int, DoubleSha256Digest)])] = headerOpt match {
-                  case Some(header) =>
-                    val stopHash = header.hashBE
-                    val sh = header.height - batchSize + 1
-                    val startHeight = if (sh < 0) 0 else sh
-                    for {
-                      nextHeader <- chainApi.getNthHeader(stopHash, batchSize)
-                    } yield {
-                      (nextHeader, res :+ (startHeight.toInt, stopHash.flip))
-                    }
-                  case None => acc
-                }
-                xxx
-            }
-          newAcc
-        }
-
-    } yield {
-      res._2
+    val heights = {
+      val hs = startHeight.to(blockCount).by(batchSize)
+      if (hs.lastOption.exists(_ <= blockCount))
+        hs :+ blockCount.toLong + 1
+      else
+        hs
     }
 
-    rv
+    val heightPairs = heights.zip(heights.tail.map(_ - 1L))
+
+    val chainApiF = chainApiFromDb()
+
+    heightPairs.foldLeft(Future.successful(Vector.empty[(Int, DoubleSha256Digest)])) { (accF, pair) =>
+      val (start, end) = pair
+      for {
+        chainApi <- chainApiF
+        acc <- accF
+        header <- chainApi.getHeadersByHeight(end.toInt)
+      } yield {
+        acc :+ (start.toInt, header.map(_.hashBE.flip).head)
+      }
+    }
   }
 
   private def rescan(
@@ -189,14 +165,12 @@ case class SpvNode(
 
     val res = for {
       batches <- computeBlockBatches(bestHeader, blockCount, startHeight, batchSize)
-      _ <- batches.reverseIterator.foldLeft(Future.unit) { case (fut, (startHeight, stopBlock)) => fut.flatMap(_ => f(startHeight, stopBlock)) }
+      _ <- batches.foldLeft(Future.unit) { case (fut, (startHeight, stopBlock)) => fut.flatMap(_ => f(startHeight, stopBlock)) }
     } yield {
       ()
     }
 
-    res.recover {
-      case e: Throwable => logger(nodeAppConfig).error(s"Cannot rescan", e)
-    }
+    res.failed.foreach(e => logger(nodeAppConfig).error(s"Cannot rescan", e))
 
     res
   }
@@ -237,17 +211,22 @@ case class SpvNode(
       }
 
       val highestFilterHeaderHeight = highestFilterHeaderOpt.map(_.height).getOrElse(0)
-      val highestFilterHeight = highestFilterOpt.map(_.height).getOrElse(0)
+      val highestFilterHeaderHash = highestFilterHeaderOpt.map(_.hashBE.flip).getOrElse(DoubleSha256Digest.empty)
+//      val highestFilterHeight = highestFilterOpt.map(_.height).getOrElse(0)
+
+//      val highestFilterHeaderHeight = 0
 
       // we're going to get banned if we request the genesis block
-      if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0 && highestFilterHeight < blockCount) {
+      if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0) {
         for {
           peerMsgSender <- peerMsgSenderF
           _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
           _ = logger.info(s"Requesting compact filter headers from=$highestFilterHeaderHeight to=$bestHash")
-          _ <- rescan(bestHeader.get, blockCount, highestFilterHeaderHeight, 1000)(peerMsgSender.sendGetCompactFilterHeadersMessage)
-          _ = logger.info(s"Requesting compact filters from=$highestFilterHeight to=$bestHash")
-          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 100)(peerMsgSender.sendGetCompactFiltersMessage)
+          (startHeight, stopHash) <- chainApi.nextCompactFilterHeadersRange(highestFilterHeaderHash)
+          _ <- peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
+//          _ <- rescan(bestHeader.get, blockCount, highestFilterHeaderHeight, 2000)(peerMsgSender.sendGetCompactFilterHeadersMessage)
+//          _ = logger.info(s"Requesting compact filters from=$highestFilterHeight to=$bestHash")
+//          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 100)(peerMsgSender.sendGetCompactFiltersMessage)
         } yield ()
       }
       node

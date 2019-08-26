@@ -56,11 +56,26 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
           this.copy(chainApi = newChainApi)
         }
       case filterHeader: CompactFilterHeadersMessage =>
-        logger.debug(s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
+        logger.info(s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
         val filterHeaders = CompactFilterHeadersMessage.extractFilterHeaders(filterHeader)
         for {
           newChainApi <- chainApi.processFilterHeaders(filterHeaders, filterHeader.stopHash.flip)
         } yield {
+          if (filterHeaders.size == 2000) {
+            logger.error(
+              s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
+            for {
+              (startHeight, stopHash) <- newChainApi.nextCompactFilterHeadersRange(filterHeader.stopHash)
+              _ <- peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
+            } yield ()
+          } else {
+            logger.debug(
+              List(s"Received filter headers=${filterHeaders.size} in one message,",
+                "which is less than max. This means we are synced,",
+                "not requesting more.")
+                .mkString(" "))
+
+          }
           this.copy(chainApi = newChainApi)
         }
       case filter: CompactFilterMessage =>
@@ -79,7 +94,7 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
         logger.debug(s"Received ${notHandling.commandName} message, skipping ")
         Future.successful(this)
       case getData: GetDataMessage =>
-        logger.debug(
+        logger.info(
           s"Received a getdata message for inventories=${getData.inventories}")
         getData.inventories.foreach { inv =>
           logger.debug(s"Looking for inv=$inv")
@@ -108,7 +123,7 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
         }
         Future.successful(this)
       case HeadersMessage(count, headers) =>
-        logger.debug(s"Received headers message with ${count.toInt} headers")
+        logger.info(s"Received headers message with ${count.toInt} headers")
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
