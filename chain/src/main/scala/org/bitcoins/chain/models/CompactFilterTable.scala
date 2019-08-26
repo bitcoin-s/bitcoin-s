@@ -15,7 +15,7 @@ case class CompactFilterDb(
 
   def golombFilter: GolombFilter = filterType match {
     case 0 => BlockFilter.fromBytes(bytes, blockHash.flip)
-    case _ => throw new RuntimeException(s"Invalid filter type $filterType")
+    case _: Short => throw new RuntimeException(s"Invalid filter type $filterType")
   }
 }
 

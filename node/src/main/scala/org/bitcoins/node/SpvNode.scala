@@ -207,7 +207,7 @@ case class SpvNode(
       if (nodeAppConfig.isSPVEnabled) {
         // TODO keep track of where to request from
         logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
-        peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
+        peerMsgSenderF.foreach(_.sendFilterLoadMessage(bloomFilter))
       }
 
       val highestFilterHeaderHeight = highestFilterHeaderOpt.map(_.height).getOrElse(0)

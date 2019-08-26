@@ -153,7 +153,6 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
       GetCompactFilterHeadersMessage(if (startHeight < 0) 0 else startHeight, stopHash)
     logger.debug(s"Sending getcfheaders=$message to peer ${client.peer}")
     sendMsg(message)
-//    Future.unit
   }
 
   def sendGetCompactFilterCheckPointMessage(stopHash: DoubleSha256Digest)(

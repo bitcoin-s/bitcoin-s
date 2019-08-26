@@ -34,13 +34,15 @@ trait ChainApi {
   def processHeaders(headers: Vector[BlockHeader])(
       implicit ec: ExecutionContext): Future[ChainApi]
 
-  /** Get's a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
+  /** Gets a [[org.bitcoins.chain.models.BlockHeaderDb]] from the chain's database */
   def getHeader(hash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
 
+  /**  Gets all [[org.bitcoins.chain.models.BlockHeaderDb]]s at a given height  */
   def getHeadersByHeight(height: Int)(
     implicit ec: ExecutionContext): Future[Seq[BlockHeaderDb]]
 
+  /** Gets n-th [[org.bitcoins.chain.models.BlockHeaderDb]] down the blockchain form a given block */
   def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
     implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
 
@@ -76,7 +78,7 @@ trait ChainApi {
       stopHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi] = {
 
-    filterHeaders.reverseIterator
+    filterHeaders
       .foldLeft(Future.successful(stopHash)) { (blockHashF, filterHeader) =>
         for {
           blockHash <- blockHashF

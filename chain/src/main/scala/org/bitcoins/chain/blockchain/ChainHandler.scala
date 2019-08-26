@@ -45,19 +45,14 @@ case class ChainHandler(
     }
   }
 
-  def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
-      implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
-    for {
-      res <- 0.until(count).foldLeft(getHeader(hash)) { (headerF, _) =>
-        (for {
-          headerOpt <- headerF
-        } yield {
-          (for {
-            header <- headerOpt
-          } yield getHeader(header.previousBlockHashBE)).getOrElse(headerF)
-        }).flatten
+  override def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
+    implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
+    0.until(count).foldLeft(getHeader(hash)) { (headerF, _) =>
+      headerF.flatMap {
+        case Some(header) => getHeader(header.previousBlockHashBE)
+        case None => headerF
       }
-    } yield res
+    }
   }
 
   /** @inheritdoc */
@@ -145,11 +140,14 @@ case class ChainHandler(
       CompactFilterHeaderDb] = {
       filterHeaderDbOpt match {
         case Some(found) =>
-          if (found != filterHeaderDb)
-            Future.failed(new RuntimeException(
-              s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB"))
-          else
+          if (found != filterHeaderDb) {
+            val errMsg =
+              s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB"
+            Future.failed(new RuntimeException(errMsg))
+          } else {
+            logger.debug(s"We have already processed filter header=${found.hashBE}")
             Future.successful(filterHeaderDb)
+          }
         case None =>
           filterHeaderDAO.create(filterHeaderDb)
       }
@@ -173,20 +171,21 @@ case class ChainHandler(
 
     def validateAndInsert(
         filterHeader: CompactFilterHeaderDb,
-        filerOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
+        filterOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
       if (filterHashBE != filterHeader.filterHashBE) {
         Future.failed(new RuntimeException(
-          s"Filter hash does not match: ${filterHashBE} != ${filterHeader.filterHashBE}"))
+          s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}"))
       } else {
-        filerOpt match {
+        filterOpt match {
           case Some(filter) =>
-            if (filter.golombFilter != golombFilter)
-              logger.error(s"Filter does not match: ${golombFilter} != ${filter.golombFilter}")
-//              Future.failed(new RuntimeException(
-//                s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"))
-//            else
+//            if (filter.golombFilter != golombFilter) {
+//              val errMsg = s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"
+//              logger.error(errMsg)
+//              Future.failed(new RuntimeException(errMsg))
+//            } else {
+              logger.debug(s"We have already processed filter=${filter.hashBE}")
               Future.successful(filter)
-          case None =>
+//            }          case None =>
             val filterDb = CompactFilterDbHelper.fromGolombFilter(golombFilter, filterHeader.blockHashBE, filterHeader.height)
             for {
               res <- filterDAO.create(filterDb)
@@ -200,8 +199,8 @@ case class ChainHandler(
       filterHeader = filterHeaderOpt.getOrElse(
         throw new RuntimeException(
           s"Cannot find a filter header for block hash ${blockHash}"))
-      filerOpt <- filterDAO.findByHash(filterHashBE)
-      _ <- validateAndInsert(filterHeader, filerOpt)
+      filterOpt <- filterDAO.findByHash(filterHashBE)
+      _ <- validateAndInsert(filterHeader, filterOpt)
     } yield {
       this
     }
@@ -211,23 +210,22 @@ case class ChainHandler(
       filterHeaderHash: DoubleSha256DigestBE,
       blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi] = {
-    Future {
       blockFilterCheckpoints.get(blockHash) match {
         case Some(oldFilterHeaderHash) =>
           if (filterHeaderHash != oldFilterHeaderHash)
-            throw new RuntimeException(
-              "The peer sent us a different filter header hash")
+            Future.failed(new RuntimeException(
+              "The peer sent us a different filter header hash"))
           else
-            this.copy(
+            Future.successful(this.copy(
               blockFilterCheckpoints =
-                blockFilterCheckpoints.updated(blockHash, filterHeaderHash))
+                blockFilterCheckpoints.updated(blockHash, filterHeaderHash)))
         case None =>
-          this
+          Future.successful(this)
       }
-    }
+
   }
 
-  def getHighestFilterHeader(
+  override def getHighestFilterHeader(
       implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]] = {
     filterHeaderDAO.findHighest()
   }

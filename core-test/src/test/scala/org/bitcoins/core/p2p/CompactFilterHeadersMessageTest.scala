@@ -38,7 +38,7 @@ class CompactFilterHeadersMessageTest extends BitcoinSUnitTest {
           "aeb7d751ef3bc6c65466d7962fa989ea519bd98759fdb68a7547ed70d3f7aa67")
       )
     )
-    val headers = CompactFilterHeadersMessage.extractFilterHeaders(message)
+    val headers = message.filterHeaders
     val hashes = headers.map(_.hash)
     println(message)
     println(headers)

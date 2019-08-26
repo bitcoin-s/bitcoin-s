@@ -1,10 +1,11 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.core.serializers.{RawBitcoinSerializer, RawSerializerHelper}
 import org.bitcoins.core.p2p.CompactFilterHeadersMessage
 import scodec.bits.ByteVector
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.FilterType
+
 import scala.annotation.tailrec
 import org.bitcoins.core.protocol.CompactSizeUInt
 
@@ -39,10 +40,10 @@ object RawCompactFilterHeadersMessageSerializer
         loop(hashes :+ DoubleSha256Digest.fromBytes(hashBytes), remainingBytes)
       }
 
-    val (hashes, remainingBytes) = loop(Vector.empty, filterHashesBytes)
+    val (hashes, _) = loop(Vector.empty, filterHashesBytes)
 
-    require(hashes.length == filterHashesLength.toInt)
-    require(remainingBytes.isEmpty)
+    require(hashes.length == filterHashesLength.toInt,
+      s"Invalid compact filter headers message: expected number of hashes ${filterHashesLength.toInt}, but got ${hashes.length}")
 
     val message = CompactFilterHeadersMessage(filterType,
                                               stopHash,
@@ -53,9 +54,12 @@ object RawCompactFilterHeadersMessageSerializer
   }
 
   def write(message: CompactFilterHeadersMessage): ByteVector = {
-    import message._
-    filterType.bytes ++ stopHash.bytes ++ previousFilterHeader.bytes ++ filterHashesLength.bytes ++ filterHashes
-      .foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    val filterType = message.filterType.bytes
+    val stopHash = message.stopHash.bytes
+    val previousFilterHeader = message.previousFilterHeader.bytes
+    val filterHashes = RawSerializerHelper.writeCmpctSizeUInt(message.filterHashes, {fh: DoubleSha256Digest => fh.bytes})
+
+    filterType ++ stopHash ++ previousFilterHeader ++ filterHashes
   }
 
 }

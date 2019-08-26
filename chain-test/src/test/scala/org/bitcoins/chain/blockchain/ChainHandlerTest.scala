@@ -162,7 +162,7 @@ class ChainHandlerTest extends ChainUnitTest {
 
       createdF.flatMap { _ =>
         val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
-        val handler = ChainHandler(chainHandler.blockHeaderDAO, blockchain)
+        val handler = chainHandler.copy(blockchains = Vector(blockchain))
 
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail

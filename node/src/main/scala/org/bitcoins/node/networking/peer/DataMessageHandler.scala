@@ -57,7 +57,7 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
         }
       case filterHeader: CompactFilterHeadersMessage =>
         logger.info(s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
-        val filterHeaders = CompactFilterHeadersMessage.extractFilterHeaders(filterHeader)
+        val filterHeaders = filterHeader.filterHeaders
         for {
           newChainApi <- chainApi.processFilterHeaders(filterHeaders, filterHeader.stopHash.flip)
         } yield {

@@ -33,18 +33,17 @@ case class CompactFilterHeaderDAO()(
 
   def findByHash(
       hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
-    val query = findByPrimaryKey(hash)
-    database.runVec(query.result).map(_.headOption)
+    read(hash)
   }
 
   def findByBlockHash(
       hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
-    val query = table.filter(_.blockHash === hash)
+    val query = table.filter(_.blockHash === hash).take(1)
     database.runVec(query.result).map(_.headOption)
   }
 
   def findHighest(): Future[Option[CompactFilterHeaderDb]] = {
-    val query = table.filter(_.height === table.map(_.height).max)
+    val query = table.filter(_.height === table.map(_.height).max).take(1)
     database.runVec(query.result).map(_.headOption)
   }
 

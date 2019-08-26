@@ -980,6 +980,13 @@ case class CompactFilterHeadersMessage(
 
   override def toString(): String =
     s"CompactFilterHeadersMessage($filterType, stopHash=$stopHash, previousFilterHeader=$previousFilterHeader, filterHashes=$filterHashes)"
+
+  def filterHeaders: Vector[FilterHeader] = {
+    val z = FilterHeader(filterHashes.head, previousFilterHeader)
+    filterHashes.tail.foldLeft(Vector(z)) { (acc, nextFilterHash) =>
+      acc :+ acc.last.nextHeader(nextFilterHash)
+    }
+  }
 }
 
 object CompactFilterHeadersMessage
@@ -987,16 +994,11 @@ object CompactFilterHeadersMessage
 
   def fromBytes(bytes: ByteVector): CompactFilterHeadersMessage =
     RawCompactFilterHeadersMessageSerializer.read(bytes)
-
-  def extractFilterHeaders(message: CompactFilterHeadersMessage): Vector[FilterHeader] = {
-    val z = FilterHeader(message.filterHashes.head, message.previousFilterHeader)
-    message.filterHashes.tail.foldLeft(Vector(z)) { (acc, x) =>
-      acc :+ acc.last.nextHeader(x)
-    }
-  }
 }
 
-// TODO doc
+/**
+ * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfcheckpt BIP157]]
+ */
 case class GetCompactFilterCheckPointMessage(
     filterType: FilterType,
     stopHash: DoubleSha256Digest)
@@ -1017,7 +1019,9 @@ object GetCompactFilterCheckPointMessage
   def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage = ???
 }
 
-// TODO doc
+/**
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfcheckpt BIP-157 ]]
+  */
 case class CompactFilterCheckPointMessage(
                                            filterType: FilterType,
                                            stopHash: DoubleSha256Digest,
