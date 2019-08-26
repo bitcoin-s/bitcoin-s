@@ -11,32 +11,21 @@ import org.bouncycastle.math.ec.ECPoint
 import scodec.bits.{BitVector, ByteVector}
 
 /**
-  * Created by chris on 1/14/16.
   * Utility cryptographic functions
   */
 trait CryptoUtil extends BitcoinSLogger {
 
   /** Does the following computation: RIPEMD160(SHA256(hex)).*/
-  def sha256Hash160(hex: String): Sha256Hash160Digest =
-    sha256Hash160(BitcoinSUtil.decodeHex(hex))
-
   def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
     val hash = ripeMd160(sha256(bytes).bytes).bytes
     Sha256Hash160Digest(hash)
   }
-
-  /** Performs sha256(sha256(hex)). */
-  def doubleSHA256(hex: String): DoubleSha256Digest =
-    doubleSHA256(BitcoinSUtil.decodeHex(hex))
 
   /** Performs sha256(sha256(bytes)). */
   def doubleSHA256(bytes: ByteVector): DoubleSha256Digest = {
     val hash: ByteVector = sha256(sha256(bytes).bytes).bytes
     DoubleSha256Digest(hash)
   }
-
-  /** Takes sha256(hex). */
-  def sha256(hex: String): Sha256Digest = sha256(BitcoinSUtil.decodeHex(hex))
 
   /** Takes sha256(bytes). */
   def sha256(bytes: ByteVector): Sha256Digest = {
@@ -55,13 +44,6 @@ trait CryptoUtil extends BitcoinSLogger {
     Sha1Digest(ByteVector(hash))
   }
 
-  /** Performs SHA1(hex). */
-  def sha1(hex: String): Sha1Digest = sha1(BitcoinSUtil.decodeHex(hex))
-
-  /** Performs RIPEMD160(hex). */
-  def ripeMd160(hex: String): RipeMd160Digest =
-    ripeMd160(BitcoinSUtil.decodeHex(hex))
-
   /** Performs RIPEMD160(bytes). */
   def ripeMd160(bytes: ByteVector): RipeMd160Digest = {
     //from this tutorial http://rosettacode.org/wiki/RIPEMD-160#Scala
@@ -72,9 +54,6 @@ trait CryptoUtil extends BitcoinSLogger {
     messageDigest.doFinal(out, 0)
     RipeMd160Digest(ByteVector(out))
   }
-
-  val emptyDoubleSha256Hash = DoubleSha256Digest(
-    "0000000000000000000000000000000000000000000000000000000000000000")
 
   /**
     * Calculates `HMAC-SHA512(key, data)`
