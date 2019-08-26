@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.compat._
 import org.bitcoins.wallet.LockedWallet
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
@@ -15,7 +16,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.wallet.api.AddUtxoResult
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.wallet.api.AddUtxoError
-import org.bitcoins.core.util.EitherUtil
+import org.bitcoins.wallet.EitherUtil
 import org.bitcoins.wallet.api.AddUtxoSuccess
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -42,14 +43,14 @@ private[wallet] trait UtxoHandling extends KeyHandlingLogger {
     * it in our address table
     */
   private def findAddress(
-      spk: ScriptPubKey): Future[Either[AddUtxoError, AddressDb]] =
+      spk: ScriptPubKey): Future[CompatEither[AddUtxoError, AddressDb]] =
     BitcoinAddress.fromScriptPubKey(spk, networkParameters) match {
       case Success(address) =>
         addressDAO.findAddress(address).map {
-          case Some(addrDb) => Right(addrDb)
-          case None         => Left(AddUtxoError.AddressNotFound)
+          case Some(addrDb) => CompatRight(addrDb)
+          case None         => CompatLeft(AddUtxoError.AddressNotFound)
         }
-      case Failure(_) => Future.successful(Left(AddUtxoError.BadSPK))
+      case Failure(_) => Future.successful(CompatLeft(AddUtxoError.BadSPK))
     }
 
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
@@ -103,7 +104,6 @@ private[wallet] trait UtxoHandling extends KeyHandlingLogger {
       confirmations: Int,
       spent: Boolean): Future[AddUtxoResult] = {
     import AddUtxoError._
-    import org.bitcoins.core.util.EitherUtil.EitherOps._
 
     logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
 
@@ -127,12 +127,12 @@ private[wallet] trait UtxoHandling extends KeyHandlingLogger {
 
       // second check: do we have an address associated with the provided
       // output in our DB?
-      val addressDbEitherF: Future[Either[AddUtxoError, AddressDb]] =
+      val addressDbEitherF: Future[CompatEither[AddUtxoError, AddressDb]] =
         findAddress(output.scriptPubKey)
 
       // insert the UTXO into the DB
       addressDbEitherF.flatMap { addressDbE =>
-        val biasedE: Either[AddUtxoError, Future[SpendingInfoDb]] = for {
+        val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
           addressDb <- addressDbE
         } yield
           writeUtxo(txid = transaction.txIdBE,
@@ -144,8 +144,8 @@ private[wallet] trait UtxoHandling extends KeyHandlingLogger {
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {
-        case Right(utxo) => AddUtxoSuccess(utxo)
-        case Left(e)     => e
+        case CompatRight(utxo) => AddUtxoSuccess(utxo)
+        case CompatLeft(e)     => e
       }
     }
   }

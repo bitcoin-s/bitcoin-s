@@ -2,7 +2,6 @@ package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.protocol.ln.LnTag.PaymentHashTag
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util.Bech32
 import scodec.bits.ByteVector
@@ -92,10 +91,12 @@ object LnTaggedFields {
     val (description, descriptionHash): (
         Option[LnTag.DescriptionTag],
         Option[LnTag.DescriptionHashTag]) = {
-      if (descriptionOrHash.isLeft) {
-        (descriptionOrHash.left.toOption, None)
-      } else {
-        (None, descriptionOrHash.right.toOption)
+
+      descriptionOrHash match {
+        case Left(description) =>
+          (Some(description), None)
+        case Right(hash) =>
+          (None, Some(hash))
       }
     }
 

@@ -49,6 +49,21 @@ file you should edit would be `$HOME/.bitcoin-s/bitcoin-s.conf`.
 You can place configuration files in the data directory that tests are being run in,
 but you can also edit [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf).
 
+## Logging when working on Bitcoin-S tests
+
+When working on various parts of Bitcoin-S the need to log what's going on arises
+pretty quickly. There's two way of doing this:
+
+1. Using the way described in the section above, "Working on Bitcoin-S applications".
+   You could either use traits (like `HTTPLogger` or `P2PLogger`) that exposes a
+   field `logger`, or acquire the logger directly through the traits companion
+   object.
+2. Use the standard `BitcoinSLogger`, which is also available as both a trait and
+   a companion object with a field you can access (`BitcoinSLogger.logger`). Note
+   that by default all logging from this logger is turned off in tests, to make
+   output less noisy. You can tune this by changing the level found in
+   `core-test/src/test/resources/logback-test.xml`.
+
 ## Developer productivity
 
 ### Bloop

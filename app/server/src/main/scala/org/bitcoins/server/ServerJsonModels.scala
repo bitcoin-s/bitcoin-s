@@ -4,11 +4,9 @@ import upickle.default._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.currency.Bitcoins
 
-import org.bitcoins.picklers._
 import scala.util.Failure
 import scala.util.Try
 import scala.util.Success
-import akka.io.Udp.Send
 
 // TODO ID?
 case class ServerCommand(method: String, params: ujson.Arr)

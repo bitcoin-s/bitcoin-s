@@ -5,8 +5,6 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.config.Networks
-import scala.util.Failure
-import scala.util.Success
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {

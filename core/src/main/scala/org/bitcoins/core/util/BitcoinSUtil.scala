@@ -1,8 +1,5 @@
 package org.bitcoins.core.util
 
-import java.net.InetSocketAddress
-
-import com.sun.jndi.toolkit.url.Uri
 import org.bitcoins.core.protocol.NetworkElement
 import scodec.bits.{BitVector, ByteVector}
 
@@ -67,8 +64,6 @@ trait BitcoinSUtil {
   /** Flips the endianness of the given sequence of bytes. */
   def flipEndianness(bytes: ByteVector): String = encodeHex(bytes.reverse)
 
-  def flipEndiannessBytes(bytes: ByteVector): ByteVector = bytes.reverse
-
   /**
     * Adds the amount padding bytes needed to fix the size of the hex string
     * for instance, ints are required to be 4 bytes. If the number is just 1
@@ -80,11 +75,6 @@ trait BitcoinSUtil {
     val padding = Vector.fill(paddingNeeded)("0")
     val paddedHex = padding.mkString + hex
     paddedHex
-  }
-
-  /** Converts a sequence of bytes to a sequence of bit vectors */
-  def bytesToBitVectors(bytes: ByteVector): BitVector = {
-    bytes.toBitVector
   }
 
   /** Converts a byte to a bit vector representing that byte */
@@ -104,10 +94,6 @@ trait BitcoinSUtil {
     h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
 
-  def toInetSocketAddress(string: String): InetSocketAddress = {
-    val uri = new Uri(string)
-    new InetSocketAddress(uri.getHost, uri.getPort)
-  }
 }
 
 object BitcoinSUtil extends BitcoinSUtil

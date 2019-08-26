@@ -1,6 +1,6 @@
 package org.bitcoins.rpc.config
 
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.config._
 import java.io.File
 import java.nio.file.Files
@@ -207,16 +207,24 @@ case class BitcoindConfig(
     }.headOption
   }
 
+  import com.sun.jndi.toolkit.url.Uri
+
+  /** Converts a string to an InetSocketAddress */
+  private def toInetSocketAddress(string: String): InetSocketAddress = {
+    val uri = new Uri(string)
+    new InetSocketAddress(uri.getHost, uri.getPort)
+  }
+
   lazy val username: Option[String] = getValue("rpcuser")
   lazy val password: Option[String] = getValue("rpcpassword")
   lazy val zmqpubrawblock: Option[InetSocketAddress] =
-    getValue("zmqpubrawblock").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubrawblock").map(toInetSocketAddress)
   lazy val zmqpubrawtx: Option[InetSocketAddress] =
-    getValue("zmqpubrawtx").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubrawtx").map(toInetSocketAddress)
   lazy val zmqpubhashblock: Option[InetSocketAddress] =
-    getValue("zmqpubhashblock").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubhashblock").map(toInetSocketAddress)
   lazy val zmqpubhashtx: Option[InetSocketAddress] =
-    getValue("zmqpubhashtx").map(BitcoinSUtil.toInetSocketAddress)
+    getValue("zmqpubhashtx").map(toInetSocketAddress)
 
   lazy val port: Int = getValue("port").map(_.toInt).getOrElse(network.port)
 
@@ -291,7 +299,7 @@ object BitcoindConfig extends BitcoinSLogger {
     * by splitting it on newlines
     */
   def apply(config: String, datadir: File): BitcoindConfig =
-    apply(config.split("\n"), datadir)
+    apply(config.split("\n").toList, datadir)
 
   /** Reads the given path and construct a `bitcoind` config from it */
   def apply(config: Path): BitcoindConfig =
@@ -299,7 +307,7 @@ object BitcoindConfig extends BitcoinSLogger {
 
   /** Reads the given file and construct a `bitcoind` config from it */
   def apply(config: File, datadir: File = DEFAULT_DATADIR): BitcoindConfig = {
-    import scala.collection.JavaConverters._
+    import org.bitcoins.core.compat.JavaConverters._
     val lines = Files
       .readAllLines(config.toPath)
       .iterator()
@@ -361,7 +369,7 @@ object BitcoindConfig extends BitcoinSLogger {
     Files.createDirectories(datadir.toPath)
     val confFile = datadir.toPath.resolve("bitcoin.conf")
 
-    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE) {
+    if (datadir == DEFAULT_DATADIR && confFile == DEFAULT_CONF_FILE.toPath) {
       logger.warn(
         s"We will not overrwrite the existing bitcoin.conf in default datadir")
     } else {

@@ -26,7 +26,10 @@ sealed abstract class LnHumanReadablePart extends Bech32HumanReadablePart {
   }
 
   lazy val bytes: ByteVector =
-    ByteVector.encodeAscii(chars).right.get
+    ByteVector.encodeAscii(chars) match {
+      case Left(exc)      => throw exc
+      case Right(bytevec) => bytevec
+    }
 
   override lazy val toString: String = chars
 }

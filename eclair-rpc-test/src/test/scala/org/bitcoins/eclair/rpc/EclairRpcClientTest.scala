@@ -7,7 +7,11 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
-import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
+import org.bitcoins.core.protocol.ln.channel.{
+  ChannelId,
+  ChannelState,
+  FundedChannelId
+}
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
@@ -25,7 +29,11 @@ import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, PaymentPreimage}
+import org.bitcoins.core.protocol.ln.{
+  LnHumanReadablePart,
+  LnInvoice,
+  PaymentPreimage
+}
 import org.bitcoins.testkit.async.TestAsyncUtil
 
 import scala.concurrent.duration._
@@ -321,11 +329,13 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         val eclair = new EclairRpcClient(server)
         eclair.start().map(_ => eclair)
       }
-      _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => eclair.isStarted(),
-        duration = 1.second,
-        maxTries = 60)
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF =
+                                                () => eclair.isStarted(),
+                                              duration = 1.second,
+                                              maxTries = 60)
       _ = EclairRpcTestUtil.shutdown(eclair)
-      _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => eclair.isStarted().map(!_),
+      _ <- TestAsyncUtil.retryUntilSatisfiedF(
+        conditionF = () => eclair.isStarted().map(!_),
         duration = 1.second,
         maxTries = 60)
     } yield succeed
@@ -713,11 +723,11 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     val test = (client: EclairRpcClient, otherClient: EclairRpcClient) => {
       val invoiceF = otherClient.createInvoice("monitor an invoice", amt)
       val paidF = invoiceF.flatMap(i => client.payInvoice(i))
-      val monitorF = invoiceF.flatMap(i => otherClient.monitorInvoice(i))
       for {
         paid <- paidF
         invoice <- invoiceF
-        received <- monitorF
+        //CI is super slow... wait 2 minutes
+        received <- otherClient.monitorInvoice(invoice, maxAttempts = 120)
       } yield {
         assert(received.amountMsat == amt)
         assert(received.paymentHash == invoice.lnTags.paymentHash.hash)

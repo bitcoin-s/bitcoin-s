@@ -91,7 +91,7 @@ sealed abstract class LnCurrencyUnit
     * would appear as "100p"
     */
   def toEncodedString: String = {
-    toBigInt + character.toString
+    toBigInt.toString + character.toString
   }
 
   override def toString(): String = s"$underlying ${character}BTC"

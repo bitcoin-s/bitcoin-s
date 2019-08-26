@@ -98,6 +98,9 @@ trait NumberGenerator {
   /** Generates an arbitrary [[scodec.bits.ByteVector ByteVector]] */
   def bytevector: Gen[ByteVector] = Gen.listOf(byte).map(ByteVector(_))
 
+  def bytevector(length: Int): Gen[ByteVector] =
+    Gen.listOfN(length, byte).map(ByteVector(_))
+
   /** Generates a 100 byte sequence */
   def bytes: Gen[List[Byte]] =
     for {

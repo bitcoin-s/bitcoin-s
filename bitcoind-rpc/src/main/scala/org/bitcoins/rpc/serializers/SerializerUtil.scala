@@ -7,7 +7,7 @@ sealed abstract class SerializerUtil {
   def processJsNumberBigInt[T](numFunc: BigInt => T)(
       json: JsValue): JsResult[T] = json match {
     case JsNumber(nDecimal) =>
-      val nOpt = nDecimal.toBigIntExact()
+      val nOpt = nDecimal.toBigIntExact
       nOpt match {
         case Some(t) => JsSuccess(numFunc(t))
         case None =>

@@ -32,4 +32,10 @@ class GetHeadersMessageTest extends BitcoinSUnitTest {
     val otherMsg = GetHeadersMessage(hash)
     assert(otherMsg == GetHeadersMessage(Vector(hash)))
   }
+
+  it must "have a meaningful toString" in {
+    forAll(DataMessageGenerator.getHeaderMessages) { message =>
+      assert(message.toString().length() < 300)
+    }
+  }
 }

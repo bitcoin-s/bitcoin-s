@@ -32,7 +32,7 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit {
 
   def toSatPerByte: SatoshisPerByte = {
-    val conversionOpt = (currencyUnit.toBigDecimal * 0.001).toBigIntExact()
+    val conversionOpt = (currencyUnit.toBigDecimal * 0.001).toBigIntExact
     conversionOpt match {
       case Some(conversion) =>
         val sat = Satoshis(Int64(conversion))

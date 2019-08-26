@@ -12,7 +12,7 @@ import java.nio.file.Files
 import akka.compat.Future
 import akka.compat.Future
 import scala.concurrent.Future
-import scala.collection.JavaConverters._
+import org.bitcoins.core.compat.JavaConverters._
 import java.nio.file.Path
 import org.scalatest.BeforeAndAfterEach
 import java.nio.file.Paths

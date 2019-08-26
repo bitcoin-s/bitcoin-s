@@ -758,7 +758,7 @@ sealed abstract class ScriptInterpreter {
                      calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
             //no more script operations to run, return whether the program is valid and the final state of the program
             case Nil    => loop(ScriptProgram.toExecutedProgram(p), opCount)
-            case h :: _ => throw new RuntimeException(h + " was unmatched")
+            case h :: _ => throw new RuntimeException(s"$h was unmatched")
           }
       }
     }

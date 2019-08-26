@@ -98,7 +98,7 @@ abstract class DbCommonsColumnMappers {
       },
       //this has the potential to throw
       { bigDec: BigDecimal =>
-        UInt64(bigDec.toBigIntExact().get)
+        UInt64(bigDec.toBigIntExact.get)
       }
     )
   }

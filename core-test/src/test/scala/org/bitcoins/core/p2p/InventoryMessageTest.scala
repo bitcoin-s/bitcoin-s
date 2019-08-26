@@ -10,4 +10,10 @@ class InventoryMessageTest extends BitcoinSUnitTest {
       assert(InventoryMessage(invMessage.hex) == invMessage)
     }
   }
+
+  it must "have a meaningful toString" in {
+    forAll(DataMessageGenerator.inventoryMessages) { inv =>
+      assert(inv.toString.length < 200)
+    }
+  }
 }
