@@ -10,13 +10,13 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency._
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.node.SpvNode
+import org.bitcoins.node.Node
 
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import scala.util.Failure
 import scala.util.Success
 
-case class WalletRoutes(wallet: UnlockedWalletApi, node: SpvNode)(
+case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
     implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher

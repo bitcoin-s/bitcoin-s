@@ -5,7 +5,7 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.db.AppLoggers
-import org.bitcoins.node.{SpvNode, SpvNodeCallbacks}
+import org.bitcoins.node.{NeutrinoNode, SpvNode, SpvNodeCallbacks}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
@@ -85,9 +85,6 @@ object Main extends App {
     _ <- conf.initialize()
     wallet <- walletInitF
 
-    bloom <- wallet.getBloomFilter()
-    _ = logger.info(s"Got bloom filter with ${bloom.filterSize.toInt} elements")
-
     node <- {
 
       val callbacks = {
@@ -99,7 +96,17 @@ object Main extends App {
 
         SpvNodeCallbacks(onTxReceived = Seq(onTX))
       }
-      SpvNode(peer, bloom, callbacks).start()
+      if (nodeConf.isSPVEnabled) {
+        for {
+          bloom <- wallet.getBloomFilter()
+          _ = logger.info(s"Got bloom filter with ${bloom.filterSize.toInt} elements")
+          spvNode <- SpvNode(peer, bloom, callbacks, nodeConf, chainConf, system).start()
+        } yield spvNode
+      } else if (nodeConf.isNeutrinoEnabled) {
+        NeutrinoNode(peer, callbacks, nodeConf, chainConf, system).start()
+      } else {
+        Future.failed(new RuntimeException("Neither Neutrino nor SPV mode is enabled."))
+      }
     }
     _ = logger.info(s"Starting SPV node sync")
     _ <- node.sync()

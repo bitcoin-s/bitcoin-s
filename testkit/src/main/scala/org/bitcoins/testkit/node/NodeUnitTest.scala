@@ -2,20 +2,14 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.bitcoins.node.P2PLogger
+import org.bitcoins.node.{P2PLogger, SpvNode, SpvNodeCallbacks}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.db.AppConfig
-import org.bitcoins.node.{SpvNode, SpvNodeCallbacks}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
-import org.bitcoins.node.networking.peer.{
-  PeerHandler,
-  PeerMessageReceiver,
-  PeerMessageReceiverState,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{PeerHandler, PeerMessageReceiver, PeerMessageReceiverState, PeerMessageSender}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
@@ -27,12 +21,7 @@ import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.scalatest.{
-  BeforeAndAfter,
-  BeforeAndAfterAll,
-  FutureOutcome,
-  MustMatchers
-}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FutureOutcome, MustMatchers}
 import java.net.InetSocketAddress
 
 import scala.concurrent.duration._
@@ -88,7 +77,7 @@ trait NodeUnitTest
           .createSpvNode(bitcoind, SpvNodeCallbacks.empty)(system,
                                                            appConfig.chainConf,
                                                            appConfig.nodeConf)
-          .flatMap(_.start())
+          .flatMap(_.start().map(_.asInstanceOf[SpvNode]))
       }
     }
 
@@ -281,12 +270,16 @@ object NodeUnitTest extends P2PLogger {
     val spvNodeF = for {
       _ <- chainApiF
     } yield {
-      SpvNode(peer = peer,
-              bloomFilter = NodeTestUtil.emptyBloomFilter,
-              callbacks = callbacks)
+      SpvNode(nodePeer = peer,
+        bloomFilter = NodeTestUtil.emptyBloomFilter,
+        nodeCallbacks = callbacks,
+        nodeConfig = nodeAppConfig,
+        chainConfig = chainAppConfig,
+        actorSystem = system
+      )
     }
 
-    spvNodeF.flatMap(_.start())
+    spvNodeF.flatMap(_.start().map(_.asInstanceOf[SpvNode]))
   }
 
 }

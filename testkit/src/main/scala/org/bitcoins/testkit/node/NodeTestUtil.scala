@@ -2,6 +2,7 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorRefFactory
 import java.net.InetSocketAddress
+
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -12,7 +13,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.node.SpvNode
+import org.bitcoins.node.{P2PLogger, SpvNode}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -22,7 +23,6 @@ import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.P2PLogger
 
 abstract class NodeTestUtil extends P2PLogger {
 

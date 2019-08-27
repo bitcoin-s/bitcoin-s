@@ -1,86 +1,32 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.p2p.{GetCompactFilterHeadersMessage, NetworkPayload}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{BroadcastAbleTransaction, BroadcastAbleTransactionDAO, Peer}
-import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
-import org.bitcoins.rpc.util.AsyncUtil
-import slick.jdbc.SQLiteProfile
+import org.bitcoins.node.models.Peer
 
-import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.util.{Failure, Success}
 
-// TODO either rename this, or split
-// into SPV node and Neutrino node
 case class SpvNode(
-    peer: Peer,
+    nodePeer: Peer,
     bloomFilter: BloomFilter,
-    callbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty
-)(
-    implicit system: ActorSystem,
-    nodeAppConfig: NodeAppConfig,
-    chainAppConfig: ChainAppConfig)
-    extends P2PLogger {
-  import system.dispatcher
+    nodeCallbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty,
+    nodeConfig: NodeAppConfig,
+    chainConfig: ChainAppConfig,
+    actorSystem: ActorSystem)
+    extends Node {
+  override implicit def system: ActorSystem = actorSystem
 
-  if (!(nodeAppConfig.isSPVEnabled || nodeAppConfig.isNeutrinoEnabled)) {
-    logger(nodeAppConfig).warn(
-      s"Neither Neutrino nor SPV mode is enabled. This means you won't receive any data.")
-  }
+  override implicit def nodeAppConfig: NodeAppConfig = nodeConfig
 
-  if (nodeAppConfig.isSPVEnabled && nodeAppConfig.isNeutrinoEnabled) {
-    logger(nodeAppConfig).warn(
-      s"Both Neutrino and SPV mode is enabled. This means you will be banned by your peers.")
-  }
+  override implicit def chainAppConfig: ChainAppConfig = chainConfig
 
-  private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
+  override val peer: Peer = nodePeer
 
-  /** This is constructing a chain api from disk every time we call this method
-    * This involves database calls which can be slow and expensive to construct
-    * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
-    * */
-  def chainApiFromDb(): Future[ChainApi] = {
-    ChainHandler.fromDatabase(BlockHeaderDAO(),
-                              CompactFilterHeaderDAO(),
-                              CompactFilterDAO())
-  }
-
-  /** Unlike our chain api, this is cached inside our spv node
-    * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
-    * the [[org.bitcoins.chain.api.ChainApi chain api]] is updated inside of the p2p client
-    * */
-  private val clientF: Future[P2PClient] = {
-    for {
-      chainApi <- chainApiFromDb()
-    } yield {
-      val peerMsgRecv: PeerMessageReceiver =
-        PeerMessageReceiver.newReceiver(chainApi = chainApi,
-                                        peer = peer,
-                                        callbacks = callbacks)
-      val p2p = P2PClient(context = system,
-                          peer = peer,
-                          peerMessageReceiver = peerMsgRecv)
-      p2p
-    }
-  }
-
-  private val peerMsgSenderF: Future[PeerMessageSender] = {
-    clientF.map { client =>
-      PeerMessageSender(client)
-    }
-  }
+  override val callbacks: SpvNodeCallbacks = nodeCallbacks
 
   /** Updates our bloom filter to match the given TX
     *
@@ -116,188 +62,14 @@ case class SpvNode(
     }
   }
 
-  /**
-    * Sends the given P2P to our peer.
-    * This method is useful for playing around
-    * with P2P messages, therefore marked as
-    * `private[node]`.
-    */
-  private[node] def send(msg: NetworkPayload): Future[Unit] = {
-    peerMsgSenderF.flatMap(_.sendMsg(msg))
-  }
-
-  private def computeBlockBatches(
-      bestHeader: BlockHeaderDb,
-      blockCount: Long,
-      startHeight: Long,
-      batchSize: Int): Future[Vector[(Int, DoubleSha256Digest)]] = {
-
-    val heights = {
-      val hs = startHeight.to(blockCount).by(batchSize)
-      if (hs.lastOption.exists(_ <= blockCount))
-        hs :+ blockCount.toLong + 1
-      else
-        hs
-    }
-
-    val heightPairs = heights.zip(heights.tail.map(_ - 1L))
-
-    val chainApiF = chainApiFromDb()
-
-    heightPairs.foldLeft(Future.successful(Vector.empty[(Int, DoubleSha256Digest)])) { (accF, pair) =>
-      val (start, end) = pair
-      for {
-        chainApi <- chainApiF
-        acc <- accF
-        header <- chainApi.getHeadersByHeight(end.toInt)
-      } yield {
-        acc :+ (start.toInt, header.map(_.hashBE.flip).head)
-      }
-    }
-  }
-
-  private def rescan(
-      bestHeader: BlockHeaderDb,
-      blockCount: Long,
-      startHeight: Long,
-      batchSize: Int)(
-      f: (Int, DoubleSha256Digest) => Future[Unit]): Future[Unit] = {
-
-    val res = for {
-      batches <- computeBlockBatches(bestHeader, blockCount, startHeight, batchSize)
-      _ <- batches.foldLeft(Future.unit) { case (fut, (startHeight, stopBlock)) => fut.flatMap(_ => f(startHeight, stopBlock)) }
-    } yield {
-      ()
-    }
-
-    res.failed.foreach(e => logger(nodeAppConfig).error(s"Cannot rescan", e))
-
-    res
-  }
-
-  /** Starts our spv node */
-  def start(): Future[SpvNode] = {
-    logger.info("Starting spv node")
-    val start = System.currentTimeMillis()
+  override def onStart(): Future[Unit] = {
     for {
-      _ <- nodeAppConfig.initialize()
-      node <- {
-        val isInitializedF = for {
-          _ <- peerMsgSenderF.map(_.connect())
-          _ <- AsyncUtil.retryUntilSatisfiedF(() => isInitialized)
-        } yield ()
-
-        isInitializedF.failed.foreach(err =>
-          logger.error(s"Failed to connect with peer=$peer with err=${err}"))
-
-        isInitializedF.map { _ =>
-          logger.info(s"Our peer=${peer} has been initialized")
-          logger.info(s"Our spv node has been full started. It took=${System
-            .currentTimeMillis() - start}ms")
-          this
-        }
-      }
-      chainApi <- chainApiFromDb()
-      bestHash <- chainApi.getBestBlockHash
-      bestHeader <- chainApi.getHeader(bestHash)
-      blockCount <- chainApi.getBlockCount
-      highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
-      highestFilterOpt <- chainApi.getHighestFilter
+      _ <- peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
     } yield {
-      if (nodeAppConfig.isSPVEnabled) {
-        // TODO keep track of where to request from
-        logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
-        peerMsgSenderF.foreach(_.sendFilterLoadMessage(bloomFilter))
-      }
-
-      val highestFilterHeaderHeight = highestFilterHeaderOpt.map(_.height).getOrElse(0)
-      val highestFilterHeaderHash = highestFilterHeaderOpt.map(_.hashBE.flip).getOrElse(DoubleSha256Digest.empty)
-//      val highestFilterHeight = highestFilterOpt.map(_.height).getOrElse(0)
-
-//      val highestFilterHeaderHeight = 0
-
-      // we're going to get banned if we request the genesis block
-      if (nodeAppConfig.isNeutrinoEnabled && blockCount != 0) {
-        for {
-          peerMsgSender <- peerMsgSenderF
-          _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
-          _ = logger.info(s"Requesting compact filter headers from=$highestFilterHeaderHeight to=$bestHash")
-          (startHeight, stopHash) <- chainApi.nextCompactFilterHeadersRange(highestFilterHeaderHash)
-          _ <- peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
-//          _ <- rescan(bestHeader.get, blockCount, highestFilterHeaderHeight, 2000)(peerMsgSender.sendGetCompactFilterHeadersMessage)
-//          _ = logger.info(s"Requesting compact filters from=$highestFilterHeight to=$bestHash")
-//          _ <- rescan(bestHeader.get, blockCount, highestFilterHeight, 100)(peerMsgSender.sendGetCompactFiltersMessage)
-        } yield ()
-      }
-      node
+      logger(nodeAppConfig).info(
+        s"Sending bloomfilter=${bloomFilter.hex} to $peer")
+      logger.info(s"Sending bloomfilter=${bloomFilter.hex} to $peer")
     }
   }
 
-  /** Stops our spv node */
-  def stop(): Future[SpvNode] = {
-    logger.info(s"Stopping spv node")
-    val disconnectF = for {
-      p <- peerMsgSenderF
-      disconnect <- p.disconnect()
-    } yield disconnect
-
-    val start = System.currentTimeMillis()
-    val isStoppedF = disconnectF.flatMap { _ =>
-      logger.info(s"Awaiting disconnect")
-      //25 seconds to disconnect
-      AsyncUtil.retryUntilSatisfiedF(() => isDisconnected, 500.millis)
-    }
-
-    isStoppedF.map { _ =>
-      logger.info(
-        s"Spv node stopped! It took=${System.currentTimeMillis() - start}ms")
-      this
-    }
-  }
-
-  /** Broadcasts the given transaction over the P2P network */
-  def broadcastTransaction(transaction: Transaction): Future[Unit] = {
-    val broadcastTx = BroadcastAbleTransaction(transaction)
-
-    txDAO.create(broadcastTx).onComplete {
-      case Failure(exception) =>
-        logger.error(s"Error when writing broadcastable TX to DB", exception)
-      case Success(written) =>
-        logger.debug(
-          s"Wrote tx=${written.transaction.txIdBE} to broadcastable table")
-    }
-
-    logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
-    peerMsgSenderF.flatMap(_.sendInventoryMessage(transaction))
-  }
-
-  /** Checks if we have a tcp connection with our peer */
-  def isConnected: Future[Boolean] = peerMsgSenderF.flatMap(_.isConnected)
-
-  /** Checks if we are fully initialized with our peer and have executed the handshake
-    * This means we can now send arbitrary messages to our peer
-    * @return
-    */
-  def isInitialized: Future[Boolean] = peerMsgSenderF.flatMap(_.isInitialized)
-
-  def isDisconnected: Future[Boolean] = peerMsgSenderF.flatMap(_.isDisconnected)
-
-  /** Starts to sync our spv node with our peer
-    * If our local best block hash is the same as our peers
-    * we will not sync, otherwise we will keep syncing
-    * until our best block hashes match up
-    * @return
-    */
-  def sync(): Future[Unit] = {
-    for {
-      chainApi <- chainApiFromDb()
-      hash <- chainApi.getBestBlockHash
-      header <- chainApi
-        .getHeader(hash)
-        .map(_.get) // .get is safe since this is an internal call
-    } yield {
-      peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
-      logger.info(s"Starting sync node, height=${header.height} hash=$hash")
-    }
-  }
 }
