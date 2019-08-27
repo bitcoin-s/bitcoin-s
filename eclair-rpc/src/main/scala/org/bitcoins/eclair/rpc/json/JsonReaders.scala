@@ -16,8 +16,8 @@ import scala.util.{Failure, Success}
 object JsonReaders {
   import org.bitcoins.rpc.serializers.JsonReaders._
 
-  implicit val feeProportionalMillionthsReads: Reads[
-    FeeProportionalMillionths] = Reads { js =>
+  implicit val feeProportionalMillionthsReads
+    : Reads[FeeProportionalMillionths] = Reads { js =>
     SerializerUtil.processJsNumberBigInt(FeeProportionalMillionths.fromBigInt)(
       js)
   }

@@ -54,7 +54,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     sys.error {
       val msg =
         s""""Eclair binary directory (${BitcoindRpcTestUtil.binaryDirectory}) is empty. 
-        |Run 'sbt downloadEclair' to fetch needed binaries""".stripMargin
+           |Run 'sbt downloadEclair' to fetch needed binaries""".stripMargin
       msg
     }
   }
@@ -988,7 +988,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
             ourUpdates.flatMap(our =>
               allUpdates.map { all =>
                 our != all
-            })
+              })
           }
 
           val checkedUpatesF: Future[Unit] =

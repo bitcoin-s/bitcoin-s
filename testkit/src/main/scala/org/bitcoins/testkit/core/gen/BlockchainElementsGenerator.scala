@@ -72,13 +72,12 @@ sealed abstract class BlockchainElementsGenerator {
       merkleRootHash = Merkle.computeMerkleRoot(txs)
       time <- NumberGenerator.uInt32s
       nonce <- NumberGenerator.uInt32s
-    } yield
-      BlockHeader(version,
-                  previousBlockHash,
-                  merkleRootHash,
-                  time,
-                  nBits,
-                  nonce)
+    } yield BlockHeader(version,
+                        previousBlockHash,
+                        merkleRootHash,
+                        time,
+                        nBits,
+                        nonce)
 
   /** Generates a [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] that has a merkle root
     * hash corresponding to the given txs */

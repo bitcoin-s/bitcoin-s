@@ -16,7 +16,7 @@ import org.bitcoins.core.crypto.ExtPrivateKey
 
 class BIP32PathTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   behavior of "BIP32Child"

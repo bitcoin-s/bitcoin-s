@@ -63,15 +63,14 @@ class BlockFilterTest extends BitcoinSUnitTest {
         header <- array(6).validate[String].map(DoubleSha256DigestBE.fromHex)
 
         notes <- array(7).validate[String]
-      } yield
-        Bip158TestCase(height,
-                       blockHash,
-                       block,
-                       scripts,
-                       prevHeader,
-                       filter,
-                       header,
-                       notes)
+      } yield Bip158TestCase(height,
+                             blockHash,
+                             block,
+                             scripts,
+                             prevHeader,
+                             filter,
+                             header,
+                             notes)
 
       parseResult.get
     }

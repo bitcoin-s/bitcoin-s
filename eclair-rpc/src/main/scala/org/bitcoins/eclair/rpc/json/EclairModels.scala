@@ -1,12 +1,22 @@
 package org.bitcoins.eclair.rpc.json
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE, ECDigitalSignature, Sha256Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECDigitalSignature,
+  Sha256Digest
+}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoiceSignature, PaymentPreimage, ShortChannelId}
+import org.bitcoins.core.protocol.ln.{
+  LnHumanReadablePart,
+  LnInvoiceSignature,
+  PaymentPreimage,
+  ShortChannelId
+}
 import org.bitcoins.eclair.rpc.network.PeerState
 import play.api.libs.json.JsObject
 
@@ -265,19 +275,20 @@ case class ChannelResult(
     feeProportionalMillionths: Option[FeeProportionalMillionths],
     data: JsObject) {
   import JsonReaders._
-  lazy val shortChannelId: Option[ShortChannelId] = (data \ "shortChannelId").validate[ShortChannelId].asOpt
+  lazy val shortChannelId: Option[ShortChannelId] =
+    (data \ "shortChannelId").validate[ShortChannelId].asOpt
 }
 
 // ChannelResult ends here
 
 case class InvoiceResult(
-  prefix: LnHumanReadablePart,
-  timestamp: FiniteDuration,
-  nodeId: NodeId,
-  serialized: String,
-  description: String,
-  paymentHash: Sha256Digest,
-  expiry: FiniteDuration)
+    prefix: LnHumanReadablePart,
+    timestamp: FiniteDuration,
+    nodeId: NodeId,
+    serialized: String,
+    description: String,
+    paymentHash: Sha256Digest,
+    expiry: FiniteDuration)
 
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
@@ -288,30 +299,33 @@ case class PaymentRequest(
     signature: LnInvoiceSignature)
 
 case class PaymentResult(
-  id: String,
-  paymentHash: Sha256Digest,
-  preimage: Option[PaymentPreimage],
-  amountMsat: MilliSatoshis,
-  createdAt: FiniteDuration,
-  completedAt: Option[FiniteDuration],
-  status: PaymentStatus)
+    id: String,
+    paymentHash: Sha256Digest,
+    preimage: Option[PaymentPreimage],
+    amountMsat: MilliSatoshis,
+    createdAt: FiniteDuration,
+    completedAt: Option[FiniteDuration],
+    status: PaymentStatus)
 
 case class ReceivedPaymentResult(
-  paymentHash: Sha256Digest,
-  amountMsat: MilliSatoshis,
-  receivedAt: FiniteDuration)
+    paymentHash: Sha256Digest,
+    amountMsat: MilliSatoshis,
+    receivedAt: FiniteDuration)
 
 sealed trait PaymentStatus
+
 object PaymentStatus {
   case object PENDING extends PaymentStatus
   case object SUCCEEDED extends PaymentStatus
   case object FAILED extends PaymentStatus
 
   def apply(s: String): PaymentStatus = s match {
-    case "PENDING" => PENDING
+    case "PENDING"   => PENDING
     case "SUCCEEDED" => SUCCEEDED
-    case "FAILED" => FAILED
-    case err => throw new IllegalArgumentException(s"Unknown payment status code `${err}`")
+    case "FAILED"    => FAILED
+    case err =>
+      throw new IllegalArgumentException(
+        s"Unknown payment status code `${err}`")
   }
 }
 
@@ -319,11 +333,9 @@ case class PaymentId(value: String) {
   override def toString: String = value
 }
 
-
 sealed trait WebSocketEvent
 
 object WebSocketEvent {
-
 
   case class PaymentRelayed(
       amountIn: MilliSatoshis,
@@ -331,17 +343,18 @@ object WebSocketEvent {
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration) extends WebSocketEvent
+      timestamp: FiniteDuration)
+      extends WebSocketEvent
 
   case class PaymentReceived(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
-      timestamp: FiniteDuration) extends WebSocketEvent
+      timestamp: FiniteDuration)
+      extends WebSocketEvent
 
-  case class PaymentFailed(
-      paymentHash: Sha256Digest,
-      failures: Vector[String]) extends WebSocketEvent
+  case class PaymentFailed(paymentHash: Sha256Digest, failures: Vector[String])
+      extends WebSocketEvent
 
   case class PaymentSent(
       amount: MilliSatoshis,
@@ -349,11 +362,13 @@ object WebSocketEvent {
       paymentHash: Sha256Digest,
       paymentPreimage: PaymentPreimage,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration) extends WebSocketEvent
+      timestamp: FiniteDuration)
+      extends WebSocketEvent
 
   case class PaymentSettlingOnchain(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
-      timestamp: FiniteDuration) extends WebSocketEvent
+      timestamp: FiniteDuration)
+      extends WebSocketEvent
 
 }

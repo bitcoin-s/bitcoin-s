@@ -38,13 +38,12 @@ object ControlMessageGenerator {
     for {
       fee <- CurrencyUnitGenerator.feeUnit.suchThat(
         !_.isInstanceOf[SatoshisPerVirtualByte])
-    } yield
-      fee match {
-        case fee: SatoshisPerByte     => FeeFilterMessage(fee)
-        case fee: SatoshisPerKiloByte => FeeFilterMessage(fee)
-        case SatoshisPerVirtualByte(_) =>
-          throw new RuntimeException(s"We cannot end up here")
-      }
+    } yield fee match {
+      case fee: SatoshisPerByte     => FeeFilterMessage(fee)
+      case fee: SatoshisPerKiloByte => FeeFilterMessage(fee)
+      case SatoshisPerVirtualByte(_) =>
+        throw new RuntimeException(s"We cannot end up here")
+    }
   }
 
   /**
@@ -67,22 +66,21 @@ object ControlMessageGenerator {
       userAgent <- StringGenerators.genString
       startHeight <- NumberGenerator.int32s
       relay = scala.util.Random.nextInt() % 2 == 0
-    } yield
-      VersionMessage(
-        version,
-        identifier,
-        timestamp,
-        addressReceiveServices,
-        addressReceiveIpAddress,
-        addressReceivePort,
-        addressTransServices,
-        addressTransIpAddress,
-        addressTransPort,
-        nonce,
-        userAgent,
-        startHeight,
-        relay
-      )
+    } yield VersionMessage(
+      version,
+      identifier,
+      timestamp,
+      addressReceiveServices,
+      addressReceiveIpAddress,
+      addressReceivePort,
+      addressTransServices,
+      addressTransIpAddress,
+      addressTransPort,
+      nonce,
+      userAgent,
+      startHeight,
+      relay
+    )
 
   /**
     * Generates a [[org.bitcoins.core.p2p.PingMessage]]
@@ -154,8 +152,10 @@ object ControlMessageGenerator {
       hashFuncs <- Gen.choose(0, 50)
       tweak <- NumberGenerator.uInt32s
       flags <- BloomFilterGenerator.bloomFlag
-    } yield
-      FilterLoadMessage(ByteVector(filter), UInt32(hashFuncs), tweak, flags)
+    } yield FilterLoadMessage(ByteVector(filter),
+                              UInt32(hashFuncs),
+                              tweak,
+                              flags)
 
   /**
     * Creates a [[org.bitcoins.core.p2p.FilterAddMessage]]
