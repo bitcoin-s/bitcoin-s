@@ -92,7 +92,7 @@ trait Merkle extends BitcoinSLogger {
     * [[https://github.com/bitcoin/bitcoin/blob/7490ae8b699d2955b665cf849d86ff5bb5245c28/src/consensus/merkle.cpp#L168]]
     */
   def computeBlockWitnessMerkleTree(block: Block): MerkleTree = {
-    val coinbaseWTxId = CryptoUtil.emptyDoubleSha256Hash
+    val coinbaseWTxId = DoubleSha256Digest.empty
     val hashes = block.transactions.tail.map {
       case wtx: WitnessTransaction => wtx.wTxId
       case btx: BaseTransaction    => btx.txId
