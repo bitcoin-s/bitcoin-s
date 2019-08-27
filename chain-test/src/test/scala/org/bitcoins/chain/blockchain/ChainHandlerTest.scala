@@ -124,10 +124,9 @@ class ChainHandlerTest extends ChainUnitTest {
         val blockHeadersToTest = blockHeaders.tail
           .take(
             (2 * chainHandler.chainConfig.chain.difficultyChangeInterval + 1).toInt)
-          .toList
 
         processHeaders(processorF = processorF,
-                       remainingHeaders = blockHeadersToTest,
+                       headers = blockHeadersToTest,
                        height = ChainUnitTest.FIRST_POW_CHANGE + 1)
       }
   }
@@ -258,20 +257,26 @@ class ChainHandlerTest extends ChainUnitTest {
 
   final def processHeaders(
       processorF: Future[ChainApi],
-      remainingHeaders: List[BlockHeader],
+      headers: Vector[BlockHeader],
       height: Int): Future[Assertion] = {
-    remainingHeaders match {
-      case header :: headersTail =>
-        val newProcessorF = processorF.flatMap(_.processHeader(header))
-        val getHeaderF = newProcessorF.flatMap(_.getHeader(header.hashBE))
-        val expectedBlockHeaderDb =
-          BlockHeaderDbHelper.fromBlockHeader(height, header)
-        val assertionF =
-          getHeaderF.map(tips => assert(tips.contains(expectedBlockHeaderDb)))
-        assertionF.flatMap(_ =>
-          processHeaders(newProcessorF, headersTail, height = height + 1))
-      case Nil => succeed
+    val processedHeadersF = processorF.flatMap(_.processHeaders(headers))
+
+    def loop(
+        remainingHeaders: Vector[BlockHeader],
+        height: Int): Future[Assertion] = {
+      remainingHeaders match {
+        case header +: headersTail =>
+          val getHeaderF = processedHeadersF.flatMap(_.getHeader(header.hashBE))
+          val expectedBlockHeaderDb =
+            BlockHeaderDbHelper.fromBlockHeader(height, header)
+          val assertionF =
+            getHeaderF.map(tips => assert(tips.contains(expectedBlockHeaderDb)))
+          assertionF.flatMap(_ => loop(headersTail, height = height + 1))
+        case Vector() => succeed
+      }
     }
+
+    loop(headers, height)
   }
 
   /** Builds two competing headers that are built from the same parent */

@@ -5,7 +5,6 @@ import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -52,6 +51,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
 import org.bitcoins.rpc.config.BitcoindConfig
 import java.io.File
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Path
@@ -59,6 +59,8 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.Unknown
 import org.bitcoins.rpc.client.common.BitcoindVersion.V16
 import org.bitcoins.rpc.client.common.BitcoindVersion.V17
 import java.nio.file.Files
+
+import org.bitcoins.testkit.util.FileUtil
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -271,7 +273,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val serverStops = servers.map { s =>
       val stopF = s.stop()
-      deleteTmpDir(s.getDaemon.datadir)
+      FileUtil.deleteTmpDir(s.getDaemon.datadir)
       stopF.onComplete {
         case Failure(exception) =>
           logger.error(s"Could not shut down sever: $exception")
@@ -291,27 +293,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def stopServer(server: BitcoindRpcClient)(
       implicit system: ActorSystem): Future[Unit] = {
     stopServers(Vector(server))
-  }
-
-  /**
-    * Deletes the given temporary directory
-    *
-    * @throws IllegalArgumentException if the
-    *         given directory isn't in the user
-    *         temp dir location
-    */
-  def deleteTmpDir(dir: File): Boolean = {
-    val isTemp = dir.getPath startsWith Properties.tmpDir
-    if (!isTemp) {
-      logger.warn(
-        s"Directory $dir is not in the system temp dir location! You most likely didn't mean to delete this directory.")
-      false
-    } else if (!dir.isDirectory) {
-      dir.delete()
-    } else {
-      dir.listFiles().foreach(deleteTmpDir)
-      dir.delete()
-    }
   }
 
   /**
@@ -831,7 +812,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       implicit executionContext: ExecutionContext): Future[Unit] = {
     val stopsF = List(client1, client2).map { client =>
       client.stop().map { _ =>
-        deleteTmpDir(client.getDaemon.datadir)
+        FileUtil.deleteTmpDir(client.getDaemon.datadir)
       }
     }
     Future.sequence(stopsF).map(_ => ())
