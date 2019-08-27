@@ -198,8 +198,7 @@ class BlockHeaderDAOTest extends ChainUnitTest {
         blockHeaderDAO.getAncestorAtHeight(created, 0))
 
       genesisF.map { genesisOpt =>
-        assert(genesisOpt.get == genesisHeaderDb)
-
+        assert(genesisOpt.contains(genesisHeaderDb))
       }
   }
 }

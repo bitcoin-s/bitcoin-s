@@ -9,7 +9,7 @@ import org.bitcoins.chain.models.{
   BlockHeaderDbHelper
 }
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
@@ -263,20 +263,27 @@ class ChainHandlerTest extends ChainUnitTest {
 
     def loop(
         remainingHeaders: Vector[BlockHeader],
-        height: Int): Future[Assertion] = {
+        height: Int,
+        accum: Vector[Future[Assertion]]): Vector[Future[Assertion]] = {
       remainingHeaders match {
         case header +: headersTail =>
           val getHeaderF = processedHeadersF.flatMap(_.getHeader(header.hashBE))
           val expectedBlockHeaderDb =
             BlockHeaderDbHelper.fromBlockHeader(height, header)
           val assertionF =
-            getHeaderF.map(tips => assert(tips.contains(expectedBlockHeaderDb)))
-          assertionF.flatMap(_ => loop(headersTail, height = height + 1))
-        case Vector() => succeed
+            getHeaderF.map(headerOpt =>
+              assert(headerOpt.contains(expectedBlockHeaderDb)))
+          val newAccum = accum.:+(assertionF)
+          loop(headersTail, height + 1, newAccum)
+        case Vector() =>
+          accum
       }
     }
 
-    loop(headers, height)
+    val vecFutAssert: Vector[Future[Assertion]] =
+      loop(headers, height, Vector.empty)
+
+    ScalaTestUtil.toAssertF(vecFutAssert)
   }
 
   /** Builds two competing headers that are built from the same parent */
