@@ -101,9 +101,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress
       info <- client.getAddressInfo(addr)
-    } yield
-      assert(
-        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+    } yield assert(
+      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {
@@ -111,9 +110,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.P2SHSegwit)
       info <- client.getAddressInfo(addr)
-    } yield
-      assert(
-        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+    } yield assert(
+      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   it should "be able to get the address info for a given Legacy address" in {
@@ -121,9 +119,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.Legacy)
       info <- client.getAddressInfo(addr)
-    } yield
-      assert(
-        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+    } yield assert(
+      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   // needs #360 to be merged
@@ -168,7 +165,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
             case exc =>
               logger.error(s"throwing $exc")
               throw exc
-        }
+          }
 
         def importTx(n: Int): Future[Unit] =
           for {

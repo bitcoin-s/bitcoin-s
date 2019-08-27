@@ -39,15 +39,15 @@ class NodeAppConfigTest extends BitcoinSUnitTest {
     val tempDir = Files.createTempDirectory("bitcoin-s")
     val tempFile = Files.createFile(tempDir.resolve("bitcoin-s.conf"))
     val confStr = """
-    | bitcoin-s {
-    |   network = testnet3
-    |   
-    |   logging {
-    |     level = off
-    |
-    |     p2p = warn
-    |   }
-    | }
+                    | bitcoin-s {
+                    |   network = testnet3
+                    |   
+                    |   logging {
+                    |     level = off
+                    |
+                    |     p2p = warn
+                    |   }
+                    | }
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 

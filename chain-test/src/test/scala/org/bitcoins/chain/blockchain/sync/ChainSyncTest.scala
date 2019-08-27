@@ -12,7 +12,7 @@ import scala.concurrent.Future
 class ChainSyncTest extends ChainUnitTest {
   override type FixtureParam = BitcoindChainHandlerViaRpc
 
-  override implicit val system = ActorSystem(
+  implicit override val system = ActorSystem(
     s"chain-sync-test-${System.currentTimeMillis()}")
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {

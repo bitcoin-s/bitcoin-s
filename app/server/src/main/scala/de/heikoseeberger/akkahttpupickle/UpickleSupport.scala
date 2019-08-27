@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.MediaType
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
-import upickle.default.{Reader, Writer, read, write}
+import upickle.default.{read, write, Reader, Writer}
 import scala.collection.immutable.Seq
 
 /**

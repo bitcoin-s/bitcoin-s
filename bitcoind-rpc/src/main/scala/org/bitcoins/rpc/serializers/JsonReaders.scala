@@ -442,10 +442,9 @@ object JsonReaders {
         pubkey <- (json \ "pubkey").validate[ECPublicKey]
         masterFingerprint <- (json \ "master_fingerprint").validate[String]
         path <- (json \ "path").validate[String]
-      } yield
-        PsbtBIP32Deriv(pubkey = pubkey,
-                       masterFingerprint = masterFingerprint,
-                       path = path)
+      } yield PsbtBIP32Deriv(pubkey = pubkey,
+                             masterFingerprint = masterFingerprint,
+                             path = path)
   }
 
   implicit object RpcPsbtScriptReads extends Reads[RpcPsbtScript] {
@@ -455,11 +454,10 @@ object JsonReaders {
         hex <- (json \ "hex").validate[ScriptPubKey]
         scriptType <- (json \ "type").validateOpt[ScriptType]
         address <- (json \ "address").validateOpt[BitcoinAddress]
-      } yield
-        RpcPsbtScript(asm = asm,
-                      hex = hex,
-                      scriptType = scriptType,
-                      address = address)
+      } yield RpcPsbtScript(asm = asm,
+                            hex = hex,
+                            scriptType = scriptType,
+                            address = address)
   }
 
   implicit object MapPubKeySignatureReads

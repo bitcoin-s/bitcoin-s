@@ -19,19 +19,17 @@ import scodec.bits.ByteVector
   * @param rawBlockListener
   */
 class ZMQSubscriber(
-                     socket: InetSocketAddress,
-                     hashTxListener: Option[ByteVector => Unit],
-                     hashBlockListener: Option[ByteVector => Unit],
-                     rawTxListener: Option[ByteVector => Unit],
-                     rawBlockListener: Option[ByteVector => Unit])
-  extends BitcoinSLogger {
+    socket: InetSocketAddress,
+    hashTxListener: Option[ByteVector => Unit],
+    hashBlockListener: Option[ByteVector => Unit],
+    rawTxListener: Option[ByteVector => Unit],
+    rawBlockListener: Option[ByteVector => Unit])
+    extends BitcoinSLogger {
 
   private var running = true
   private val context = ZMQ.context(1)
 
   private val subscriber: ZMQ.Socket = context.socket(SocketType.SUB)
-
-
 
   private val uri = socket.getHostString + ":" + socket.getPort
 
@@ -91,7 +89,8 @@ class ZMQSubscriber(
   }
 
   private val subscriberThread = new Thread(SubscriberRunnable)
-  subscriberThread.setName(s"ZMQSubscriber-thread-${System.currentTimeMillis()}")
+  subscriberThread.setName(
+    s"ZMQSubscriber-thread-${System.currentTimeMillis()}")
   subscriberThread.setDaemon(true)
 
   def start(): Unit = {

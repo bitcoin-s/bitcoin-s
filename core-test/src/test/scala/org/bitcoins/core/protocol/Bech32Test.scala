@@ -13,7 +13,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scala.util.{Failure, Success}
 
 class Bech32Test extends BitcoinSUnitTest {
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   behavior of "Bech32"
