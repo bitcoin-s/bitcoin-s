@@ -174,7 +174,7 @@ sealed abstract class TransactionSignatureSerializer {
         val isNotSigHashSingle = !(HashType.isSigHashSingle(hashType.num))
         val isNotSigHashNone = !(HashType.isSigHashNone(hashType.num))
         val inputIndexInt = inputIndex.toInt
-        val emptyHash = CryptoUtil.emptyDoubleSha256Hash
+        val emptyHash = DoubleSha256Digest.empty
 
         val outPointHash: ByteVector = if (isNotAnyoneCanPay) {
           val prevOuts = spendingTransaction.inputs.map(_.previousOutput)

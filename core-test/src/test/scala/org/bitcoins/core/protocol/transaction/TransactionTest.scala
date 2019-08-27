@@ -39,7 +39,7 @@ class TransactionTest extends BitcoinSUnitTest {
 
   it must "always have TXID of a base transaction be SHA256(SHA256(hex))" in {
     forAll(TransactionGenerators.baseTransaction) { btx: BaseTransaction =>
-      assert(btx.txId == CryptoUtil.doubleSHA256(btx.hex))
+      assert(btx.txId == CryptoUtil.doubleSHA256(btx.bytes))
     }
   }
 
@@ -48,7 +48,7 @@ class TransactionTest extends BitcoinSUnitTest {
       "wtxid and txid are not the same for witness transactions" in {
     forAll(TransactionGenerators.witnessTransaction) {
       wtx: WitnessTransaction =>
-        assert(wtx.wTxId == CryptoUtil.doubleSHA256(wtx.hex))
+        assert(wtx.wTxId == CryptoUtil.doubleSHA256(wtx.bytes))
         assert(wtx.wTxId != wtx.txId)
     }
   }
@@ -95,12 +95,12 @@ class TransactionTest extends BitcoinSUnitTest {
 
   it must "calculate the correct txid and wtxid for a witness transaction" in {
     //from http://tapi.qbit.ninja/tx/d869f854e1f8788bcff294cc83b280942a8c728de71eb709a2c29d10bfe21b7c
-    val hex =
-      "0100000000010115e180dc28a2327e687facc33f10f2a20da717e5548406f7ae8b4c811072f8560100000000ffffffff0100b4f505000000001976a9141d7cd6c75c2e86f4cbf98eaed221b30bd9a0b92888ac02483045022100df7b7e5cda14ddf91290e02ea10786e03eb11ee36ec02dd862fe9a326bbcb7fd02203f5b4496b667e6e281cc654a2da9e4f08660c620a1051337fa8965f727eb19190121038262a6c6cec93c2d3ecd6c6072efea86d02ff8e3328bbd0242b20af3425990ac00000000"
-    val wtx = WitnessTransaction(hex)
+    val bytes =
+      hex"0100000000010115e180dc28a2327e687facc33f10f2a20da717e5548406f7ae8b4c811072f8560100000000ffffffff0100b4f505000000001976a9141d7cd6c75c2e86f4cbf98eaed221b30bd9a0b92888ac02483045022100df7b7e5cda14ddf91290e02ea10786e03eb11ee36ec02dd862fe9a326bbcb7fd02203f5b4496b667e6e281cc654a2da9e4f08660c620a1051337fa8965f727eb19190121038262a6c6cec93c2d3ecd6c6072efea86d02ff8e3328bbd0242b20af3425990ac00000000"
+    val wtx = WitnessTransaction.fromBytes(bytes)
     val expected =
       "d869f854e1f8788bcff294cc83b280942a8c728de71eb709a2c29d10bfe21b7c"
-    val wTxExpected = CryptoUtil.doubleSHA256(hex)
+    val wTxExpected = CryptoUtil.doubleSHA256(bytes)
     wtx.txId.flip.hex must be(expected)
     wtx.txIdBE.hex must be(expected)
     wtx.wTxId must be(wTxExpected)

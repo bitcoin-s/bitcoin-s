@@ -111,7 +111,7 @@ sealed abstract class BaseTransaction extends Transaction {
 }
 
 case object EmptyTransaction extends BaseTransaction {
-  override def txId = CryptoUtil.emptyDoubleSha256Hash
+  override def txId = DoubleSha256Digest.empty
   override def version = TransactionConstants.version
   override def inputs = Nil
   override def outputs = Nil
