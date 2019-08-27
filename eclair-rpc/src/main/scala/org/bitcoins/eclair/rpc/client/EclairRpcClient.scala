@@ -37,8 +37,13 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
+import java.nio.file.NoSuchFileException
 
-class EclairRpcClient(val instance: EclairInstance)(
+/**
+  * @param binary Path to Eclair Jar. If not present, reads
+  *               environment variable `ECLAIR_PATH`
+  */
+class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)(
     implicit system: ActorSystem)
     extends EclairApi {
   import JsonReaders._
@@ -633,21 +638,33 @@ class EclairRpcClient(val instance: EclairInstance)(
   }
 
   private def pathToEclairJar: String = {
-    val path = Properties
-      .envOrNone("ECLAIR_PATH")
-      .getOrElse(throw new RuntimeException(
-        List("Environment variable ECLAIR_PATH is not set!",
-             "This needs to be set to the directory containing the Eclair Jar")
-          .mkString(" ")))
 
-    val eclairV = "/eclair-node-0.3.1-6906ecb.jar"
-    val fullPath = path + eclairV
+    (binary, Properties.envOrNone("ECLAIR_PATH")) match {
+      // default to provided binary
+      case (Some(binary), _) =>
+        if (binary.exists) {
+          binary.toString
+        } else {
+          throw new NoSuchFileException(
+            s"Given binary ($binary) does not exist!")
+        }
+      case (None, Some(path)) =>
+        val eclairV =
+          s"/eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}.jar"
+        val fullPath = path + eclairV
 
-    val jar = new File(fullPath)
-    if (jar.exists) {
-      fullPath
-    } else {
-      throw new RuntimeException(s"Could not Eclair Jar at location $fullPath")
+        val jar = new File(fullPath)
+        if (jar.exists) {
+          fullPath
+        } else {
+          throw new NoSuchFileException(
+            s"Could not Eclair Jar at location $fullPath")
+        }
+      case (None, None) =>
+        val msg = List(
+          "Environment variable ECLAIR_PATH is not set, and no binary is given!",
+          "Either needs to be set in order to start Eclair.")
+        throw new RuntimeException(msg.mkString(" "))
     }
   }
 
@@ -773,4 +790,13 @@ class EclairRpcClient(val instance: EclairInstance)(
 
     f
   }
+}
+
+object EclairRpcClient {
+
+  /** The current commit we support of Eclair */
+  private[bitcoins] val commit = "6906ecb"
+
+  /** The current version we support of Eclair */
+  private[bitcoins] val version = "0.3.1"
 }

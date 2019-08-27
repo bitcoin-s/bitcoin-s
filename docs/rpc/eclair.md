@@ -22,6 +22,7 @@ To run Eclair you can use this command:
 $ java -jar eclair-node-0.2-beta8-52821b8.jar &
 ```
 
-Alternatively you can set the `ECLAIR_PATH` env variable and then you can start Eclair with the `start` method on `EclairRpcClient`.
+If you wish to start Eclair from the RPC client, you can do one of the following:
 
-**YOU NEED TO SET `ECLAIR_PATH` CORRECTLY TO BE ABLE TO RUN THE UNIT TESTS**
+1. Construct a `EclairRpcClient` with the `binary` field set
+2. Set the `ECLAIR_PATH` environment variable to the directory where the Eclair Jar is located.

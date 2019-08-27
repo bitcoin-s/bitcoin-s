@@ -1,52 +1,89 @@
-# We've been seeing very strange errors
-# where bitcoind returns a 503 error.
-# We have a suspicion that this comes from
-# a service running on the Travis servers
-# in non-sudo mode
-sudo: true
-
 language: scala
 
-#https://docs.travis-ci.com/user/reference/osx#jdk-and-os-x
-#Note: osx uses jdk10 by default which is NOT officially supported by scala
-#This does not seem to be causing any errors right now
-os:
-  - linux
-  - osx
+env:
+  matrix:
+    - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls"
+    - TEST_COMMAND="chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls"
+    - TEST_COMMAND="eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
+    - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+    - TEST_COMMAND="coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
 
+os: linux
 scala:
-  - 2.11.12
   - 2.12.9
   - 2.13.0
 
+# Fiddling with Travis config is not fun:-(
+# To avoid spending too much time waiting on Travis, you
+# can use this tool to parse the config file locally: https://github.com/travis-ci/travis-yml
+# After getting it set up, do:
+# $ curl -X POST --data-binary @.travis.yml localhost:9292/v1/parse | jq
+# this should return a big JSON object, where especially
+# config.matrix.include tells you a lot about what the build
+# is going to look like
+matrix:
+  include:
+    # this way of including jobs is not ideal... unfortunately it's not
+    # possible to nest env.matrix. could a better solution be to write
+    # a small script that generates a Travis config for us?
+    - os: linux
+      name: "Linux compile for 2.11"
+      env:
+        - TEST_COMMAND="test:compile"
+      scala:
+        - 2.11.12
+    - os: osx
+      name: "macOS bitcoind tests"
+      env:
+        - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls"
+      scala:
+        - 2.13.0
+    - os: osx
+      name: "macOS Eclair tests"
+      env:
+        - TEST_COMMAND="eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
+      scala:
+        - 2.13.0
+    - os: osx
+      name: "macOS node and wallet tests"
+      env:
+        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+      scala:
+        - 2.13.0
+
+    # compile website, to check for documentation regressions
+    - stage: test
+      name: Compile website
+      script: sbt docs/mdoc
+
+    # Release snapshots/versions of all libraries
+    # run ci-release only if previous stages passed
+    - stage: release
+      jdk: openjdk8
+      name: Publish library
+      script: sbt ci-release
+
+    # run website push only if website compilation passed
+    # we use custom sbt task that first compiles Scaladocs
+    # and then calls the docusaurusPublishGhpages task
+    - script: sbt docs/publishWebsite
+      name: Publish website
+
 # These directories are cached to S3 at the end of the build
+# https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
+    - $PWD/binaries/bitcoind/
+    - $PWD/binaries/eclair/
 
+# https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 before_cache:
-  # Tricks to avoid unnecessary cache updates
-  - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
-
-install:
-  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export PLATFORM="x86_64-linux-gnu"; else export PLATFORM="osx64"; fi
-  # # # bitcoind v16
-  - wget https://bitcoincore.org/bin/bitcoin-core-0.16.3/bitcoin-0.16.3-${PLATFORM}.tar.gz
-  - tar -xzf bitcoin-0.16.3-${PLATFORM}.tar.gz
-  - export BITCOIND_V16_PATH=$(pwd)/bitcoin-0.16.3/bin
-  # # # bitcoind v17
-  - wget https://bitcoincore.org/bin/bitcoin-core-0.17.0.1/bitcoin-0.17.0.1-${PLATFORM}.tar.gz
-  - tar -xzf bitcoin-0.17.0.1-${PLATFORM}.tar.gz
-  # tar places the unpacked directory in a not so intuitive location
-  - export BITCOIND_V17_PATH=$(pwd)/bitcoin-0.17.0/bin
-  # set default bitcoind to randomly choose between 0.16 and 0.17
-  - if [ $(($RANDOM%2)) == 1 ]; then BITCOIND_PATH=$BITCOIND_V16_PATH; else BITCOIND_PATH=$BITCOIND_V17_PATH; fi;
-  - export PATH=$BITCOIND_PATH:$PATH
-  # # # Eclair
-  - wget https://github.com/ACINQ/eclair/releases/download/v0.3.1/eclair-node-0.3.1-6906ecb.jar
-  - export ECLAIR_PATH=$(pwd)
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
 
 before_script:
   - git fetch --tags
@@ -61,24 +98,7 @@ stages:
   - name: release
     if: ((branch = master AND type = push) OR (tag IS present)) AND NOT fork
 
-script: sbt ++$TRAVIS_SCALA_VERSION coverage test &&
-  sbt ++$TRAVIS_SCALA_VERSION core/coverageReport &&
-  sbt ++$TRAVIS_SCALA_VERSION chain/coverageReport &&
-  sbt ++$TRAVIS_SCALA_VERSION coverageAggregate &&
-  sbt ++$TRAVIS_SCALA_VERSION coveralls
-
-jobs:
-  include:
-    - stage: test
-      name: Compile website
-      script: sbt docs/mdoc
-    # run ci-release only if previous stages passed
-    - stage: release
-      jdk: openjdk8
-      name: Publish library
-      script: sbt ci-release
-    # run website push only if previous stages passed
-    # we use custom sbt task that first compiles Scaladocs
-    # and then calls the docusaurusPublishGhpages task
-    - script: sbt docs/publishWebsite
-      name: Publish website
+script:
+  # Modify PATH to include binaries we are about to download
+  - export PATH=$PWD/binaries/bitcoind/bitcoin-0.17.0/bin/:$PATH
+  - sbt ++$TRAVIS_SCALA_VERSION downloadBitcoind downloadEclair coverage $TEST_COMMAND
