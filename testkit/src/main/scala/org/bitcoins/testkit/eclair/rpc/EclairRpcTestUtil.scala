@@ -29,6 +29,9 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
+import java.nio.file.Paths
+import scala.util.Properties
+import java.nio.file.Files
 
 /**
   * @define nodeLinkDoc
@@ -43,6 +46,32 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials
   */
 trait EclairRpcTestUtil extends BitcoinSLogger {
   import org.bitcoins.core.compat.JavaConverters._
+
+  /** Directory where sbt downloads Eclair binaries */
+  private[bitcoins] lazy val binaryDirectory = {
+    val baseDirectory = {
+      val cwd = Paths.get(Properties.userDir)
+      if (cwd.endsWith("eclair-rpc-test") || cwd.endsWith("bitcoind-rpc-test")) {
+        cwd.getParent()
+      } else cwd
+    }
+
+    baseDirectory.resolve("binaries").resolve("eclair")
+  }
+
+  /** Path to Jar downloaded by Eclair, if it exists */
+  private[bitcoins] lazy val binary: Option[File] = {
+    val path = binaryDirectory
+      .resolve(EclairRpcClient.version)
+      .resolve(
+        s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}.jar")
+
+    if (Files.exists(path)) {
+      Some(path.toFile)
+    } else {
+      None
+    }
+  }
 
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
@@ -169,7 +198,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     val randInstanceF = bitcoindRpcF.map(randomEclairInstance(_))
-    val eclairRpcF = randInstanceF.map(i => new EclairRpcClient(i))
+    val eclairRpcF = randInstanceF.map(i => new EclairRpcClient(i, binary))
 
     val startedF = eclairRpcF.flatMap(_.start())
 
@@ -179,7 +208,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def cannonicalEclairClient()(
       implicit system: ActorSystem): EclairRpcClient = {
     val inst = cannonicalEclairInstance()
-    new EclairRpcClient(inst)
+    new EclairRpcClient(inst, binary)
   }
 
   def deleteTmpDir(dir: File): Boolean = {
@@ -441,13 +470,13 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       bitcoindRpcClientF.map(EclairRpcTestUtil.eclairInstance(_))
 
     val clientF = e1InstanceF.flatMap { e1 =>
-      val e = new EclairRpcClient(e1)
+      val e = new EclairRpcClient(e1, binary)
       logger.debug(
         s"Temp eclair directory created ${e.getDaemon.authCredentials.datadir}")
       e.start().map(_ => e)
     }
     val otherClientF = e2InstanceF.flatMap { e2 =>
-      val e = new EclairRpcClient(e2)
+      val e = new EclairRpcClient(e2, binary)
       logger.debug(
         s"Temp eclair directory created ${e.getDaemon.authCredentials.datadir}")
       e.start().map(_ => e)
