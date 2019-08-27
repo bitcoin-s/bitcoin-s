@@ -657,7 +657,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
         if (jar.exists) {
           fullPath
         } else {
-          throw new RuntimeException(
+          throw new NoSuchFileException(
             s"Could not Eclair Jar at location $fullPath")
         }
       case (None, None) =>

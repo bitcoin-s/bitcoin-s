@@ -37,8 +37,27 @@ import org.bitcoins.core.protocol.ln.{
 import org.bitcoins.testkit.async.TestAsyncUtil
 
 import scala.concurrent.duration._
+import java.nio.file.Files
 
 class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
+
+  private val dirExists = Files.exists(EclairRpcTestUtil.binaryDirectory)
+  private val hasContents = dirExists && Files
+    .list(EclairRpcTestUtil.binaryDirectory)
+    .toArray()
+    .nonEmpty
+
+  if (!hasContents) {
+    import System.err.{println => printerr}
+    printerr()
+    printerr(s"Run 'sbt downloadEclair' to fetch needed binaries")
+    sys.error {
+      val msg =
+        s""""Eclair binary directory (${BitcoindRpcTestUtil.binaryDirectory}) is empty. 
+        |Run 'sbt downloadEclair' to fetch needed binaries""".stripMargin
+      msg
+    }
+  }
 
   implicit val system: ActorSystem =
     ActorSystem("EclairRpcClient", BitcoindRpcTestUtil.AKKA_CONFIG)
@@ -451,7 +470,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
       executeWithClientOtherClient(getBadInstance)
     }
 
-    val badClientF = badInstanceF.map(new EclairRpcClient(_, EclairRpcTestUtil.binary))
+    val badClientF =
+      badInstanceF.map(new EclairRpcClient(_, EclairRpcTestUtil.binary))
 
     badClientF.flatMap { badClient =>
       recoverToSucceededIf[RuntimeException](badClient.getInfo)

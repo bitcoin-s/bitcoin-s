@@ -48,10 +48,10 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   import org.bitcoins.core.compat.JavaConverters._
 
   /** Directory where sbt downloads Eclair binaries */
-  private[eclair] lazy val binaryDirectory = {
+  private[bitcoins] lazy val binaryDirectory = {
     val baseDirectory = {
       val cwd = Paths.get(Properties.userDir)
-      if (cwd.endsWith("eclair-rpc-test")) {
+      if (cwd.endsWith("eclair-rpc-test") || cwd.endsWith("bitcoind-rpc-test")) {
         cwd.getParent()
       } else cwd
     }

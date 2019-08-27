@@ -150,7 +150,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   private[bitcoins] val binaryDirectory = {
     val baseDirectory = {
       val cwd = Paths.get(Properties.userDir)
-      if (cwd.endsWith("bitcoind-rpc-test")) {
+      if (cwd.endsWith("bitcoind-rpc-test") || cwd.endsWith("eclair-rpc-test")) {
         cwd.getParent()
       } else cwd
     }
