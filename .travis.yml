@@ -53,8 +53,10 @@ matrix:
 
     # compile website, to check for documentation regressions
     - stage: test
-      name: Compile website
-      script: sbt docs/mdoc
+      name: Compile website and check formatting
+      script:
+        - sbt docs/mdoc
+        - ./binaries/scalafmt --test --non-interactive
 
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
