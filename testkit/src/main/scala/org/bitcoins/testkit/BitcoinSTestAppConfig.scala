@@ -4,6 +4,8 @@ import org.bitcoins.server.BitcoinSAppConfig
 import com.typesafe.config._
 import java.nio.file._
 
+import org.bitcoins.testkit.util.FileUtil
+
 object BitcoinSTestAppConfig {
 
   /**
@@ -63,5 +65,11 @@ object BitcoinSTestAppConfig {
     | }
     |""".stripMargin
     ConfigFactory.parseString(nestedConfStr)
+  }
+
+  def deleteAppConfig(app: BitcoinSAppConfig): Boolean = {
+    FileUtil.deleteTmpDir(app.walletConf.baseDatadir) &&
+    FileUtil.deleteTmpDir(app.chainConf.baseDatadir) &&
+    FileUtil.deleteTmpDir(app.nodeConf.baseDatadir)
   }
 }

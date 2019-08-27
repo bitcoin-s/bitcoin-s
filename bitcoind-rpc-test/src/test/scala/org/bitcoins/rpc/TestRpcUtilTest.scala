@@ -8,7 +8,7 @@ import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.util.AsyncUtil.RpcRetryException
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -114,7 +114,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
     assert(dir.getPath().startsWith(scala.util.Properties.tmpDir))
     assert(
       dir.listFiles.contains(new File(dir.getAbsolutePath + "/bitcoin.conf")))
-    BitcoindRpcTestUtil.deleteTmpDir(dir)
+    FileUtil.deleteTmpDir(dir)
     assert(!dir.exists)
   }
 
