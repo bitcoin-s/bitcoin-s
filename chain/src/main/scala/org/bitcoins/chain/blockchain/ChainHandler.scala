@@ -106,23 +106,26 @@ case class ChainHandler(
     Future.successful(hashBE)
   }
 
-  override def nextCompactFilterHeadersRange(prevStopHash: DoubleSha256Digest)(implicit ec: ExecutionContext): Future[(Int, DoubleSha256Digest)] = {
-    val startHeightF = if (prevStopHash == DoubleSha256Digest.empty) {
+  override def nextCompactFilterHeadersRange(prevStopHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]] = {
+    val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
       for {
-        prevStopHeaderOpt <- getHeader(prevStopHash.flip)
+        prevStopHeaderOpt <- getHeader(prevStopHash)
         prevStopHeader = prevStopHeaderOpt.getOrElse(throw new RuntimeException(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
     for {
       startHeight <- startHeightF
       blockCount <- getBlockCount
-      stopHeight = if (startHeight - 1 + 2000L > blockCount) blockCount else startHeight - 1 + 2000L
+      stopHeight = if (startHeight - 1 + chainConfig.maxFilterHeaderCount > blockCount) blockCount else startHeight - 1 + chainConfig.maxFilterHeaderCount
       stopBlockOpt <- getHeadersByHeight(stopHeight.toInt).map(_.headOption)
       stopBlock = stopBlockOpt.getOrElse(throw new RuntimeException(s"Unknown header height ${stopHeight}"))
     } yield {
-      (startHeight, stopBlock.hashBE.flip)
+      if (startHeight > stopHeight)
+        None
+      else
+        Some((startHeight, stopBlock.hashBE.flip))
     }
   }
 

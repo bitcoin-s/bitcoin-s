@@ -1,6 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
 
@@ -37,7 +38,8 @@ import org.bitcoins.core.p2p.GetCompactFilterCheckPointMessage
 
 case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
     implicit ec: ExecutionContext,
-    appConfig: NodeAppConfig)
+    appConfig: NodeAppConfig,
+    chainConfig: ChainAppConfig)
     extends P2PLogger {
 
   private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
@@ -61,12 +63,18 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
         for {
           newChainApi <- chainApi.processFilterHeaders(filterHeaders, filterHeader.stopHash.flip)
         } yield {
-          if (filterHeaders.size == 2000) {
+          if (filterHeaders.size == chainConfig.maxFilterHeaderCount) {
             logger.error(
               s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
             for {
-              (startHeight, stopHash) <- newChainApi.nextCompactFilterHeadersRange(filterHeader.stopHash)
-              _ <- peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
+              nextRangeOpt <- newChainApi.nextCompactFilterHeadersRange(filterHeader.stopHash.flip)
+              _ <- nextRangeOpt match {
+                case Some((startHeight, stopHash)) =>
+                  logger.info(s"Requesting compact filter headers from=$startHeight to=$stopHash")
+                  peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
+                case None =>
+                  Future.unit
+              }
             } yield ()
           } else {
             logger.debug(
@@ -128,8 +136,8 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks)(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
 
-        logger.trace(s"Requesting data for headers=${headers.length}")
-        peerMsgSender.sendGetDataMessage(headers: _*)
+//        logger.trace(s"Requesting data for headers=${headers.length}")
+//        peerMsgSender.sendGetDataMessage(headers: _*)
 
         val getHeadersF = chainApiF
           .map { newApi =>

@@ -3,7 +3,7 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDb
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 
@@ -27,71 +27,29 @@ case class NeutrinoNode(
 
   override val callbacks: SpvNodeCallbacks = nodeCallbacks
 
-  private def computeBlockBatches(
-      bestHeader: BlockHeaderDb,
-      blockCount: Long,
-      startHeight: Long,
-      batchSize: Int): Future[Vector[(Int, DoubleSha256Digest)]] = {
-
-    val heights = {
-      val hs = startHeight.to(blockCount).by(batchSize)
-      if (hs.lastOption.exists(_ <= blockCount))
-        hs :+ blockCount.toLong + 1
-      else
-        hs
-    }
-
-    val heightPairs = heights.zip(heights.tail.map(_ - 1L))
-
-    val chainApiF = chainApiFromDb()
-
-    heightPairs.foldLeft(Future.successful(Vector.empty[(Int, DoubleSha256Digest)])) { (accF, pair) =>
-      val (start, end) = pair
-      for {
-        chainApi <- chainApiF
-        acc <- accF
-        header <- chainApi.getHeadersByHeight(end.toInt)
-      } yield {
-        acc :+ (start.toInt, header.map(_.hashBE.flip).head)
-      }
-    }
-  }
-
-  private def rescan(
-      bestHeader: BlockHeaderDb,
-      blockCount: Long,
-      startHeight: Long,
-      batchSize: Int)(
-      f: (Int, DoubleSha256Digest) => Future[Unit]): Future[Unit] = {
-
+  override def onStart(): Future[Unit] = {
     val res = for {
-      batches <- computeBlockBatches(bestHeader, blockCount, startHeight, batchSize)
-      _ <- batches.foldLeft(Future.unit) { case (fut, (startHeight, stopBlock)) => fut.flatMap(_ => f(startHeight, stopBlock)) }
+      chainApi <- chainApiFromDb()
+      bestHash <- chainApi.getBestBlockHash
+      highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
+      highestFilterHeaderBlockHash = highestFilterHeaderOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
+      peerMsgSender <- peerMsgSenderF
+      _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
+      nextRangeOpt <- chainApi.nextCompactFilterHeadersRange(highestFilterHeaderBlockHash)
+      _ <- nextRangeOpt match {
+        case Some((startHeight, stopHash)) =>
+          logger.info(s"Requesting compact filter headers from=$startHeight to=$stopHash")
+          peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
+        case None =>
+          Future.unit
+      }
     } yield {
       ()
     }
 
-    res.failed.foreach(e => logger(nodeAppConfig).error(s"Cannot rescan", e))
+    res.failed.foreach(logger.error("Cannot start Neutrino node", _))
 
     res
-  }
-
-  override def onStart(): Future[Unit] = {
-    for {
-      chainApi <- chainApiFromDb()
-      bestHash <- chainApi.getBestBlockHash
-      highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
-      highestFilterOpt <- chainApi.getHighestFilter
-      highestFilterHeaderHeight = highestFilterHeaderOpt.map(_.height).getOrElse(0)
-      highestFilterHeaderHash = highestFilterHeaderOpt.map(_.hashBE.flip).getOrElse(DoubleSha256Digest.empty)
-//      highestFilterHeight = highestFilterOpt.map(_.height).getOrElse(0)
-//      highestFilterHeaderHeight = 0
-      peerMsgSender <- peerMsgSenderF
-      _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
-      _ = logger.info(s"Requesting compact filter headers from=$highestFilterHeaderHeight to=$bestHash")
-      (startHeight, stopHash) <- chainApi.nextCompactFilterHeadersRange(highestFilterHeaderHash)
-      _ <- peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
-    } yield ()
   }
 
 }

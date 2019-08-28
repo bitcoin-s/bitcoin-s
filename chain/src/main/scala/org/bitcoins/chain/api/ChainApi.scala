@@ -78,7 +78,7 @@ trait ChainApi {
       stopHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi] = {
 
-    filterHeaders
+    filterHeaders.reverseIterator
       .foldLeft(Future.successful(stopHash)) { (blockHashF, filterHeader) =>
         for {
           blockHash <- blockHashF
@@ -93,7 +93,7 @@ trait ChainApi {
       .map(_ => this)
   }
 
-  def nextCompactFilterHeadersRange(stopHash: DoubleSha256Digest)(implicit ec: ExecutionContext): Future[(Int, DoubleSha256Digest)]
+  def nextCompactFilterHeadersRange(stopHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
 
   def processFilter(
       golombFilter: GolombFilter,
