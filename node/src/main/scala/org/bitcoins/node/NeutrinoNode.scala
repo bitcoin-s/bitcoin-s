@@ -35,7 +35,7 @@ case class NeutrinoNode(
       highestFilterHeaderBlockHash = highestFilterHeaderOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
       peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
-      nextRangeOpt <- chainApi.nextCompactFilterHeadersRange(highestFilterHeaderBlockHash)
+      nextRangeOpt <- chainApi.nextBatchRange(highestFilterHeaderBlockHash, chainConfig.maxFilterHeaderCount)
       _ <- nextRangeOpt match {
         case Some((startHeight, stopHash)) =>
           logger.info(s"Requesting compact filter headers from=$startHeight to=$stopHash")

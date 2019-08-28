@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
+import org.bitcoins.core.p2p.CompactFilterMessage
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -93,9 +94,10 @@ trait ChainApi {
       .map(_ => this)
   }
 
-  def nextCompactFilterHeadersRange(stopHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
+  def nextBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Long)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
 
   def processFilter(
+      message: CompactFilterMessage,
       golombFilter: GolombFilter,
       blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi]
 

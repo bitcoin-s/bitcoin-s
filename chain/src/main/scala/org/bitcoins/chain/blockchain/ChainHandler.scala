@@ -6,7 +6,9 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
+import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.util.CryptoUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -106,7 +108,7 @@ case class ChainHandler(
     Future.successful(hashBE)
   }
 
-  override def nextCompactFilterHeadersRange(prevStopHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]] = {
+  override def nextBatchRange(prevStopHash: DoubleSha256DigestBE, batchSize: Long)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -118,7 +120,7 @@ case class ChainHandler(
     for {
       startHeight <- startHeightF
       blockCount <- getBlockCount
-      stopHeight = if (startHeight - 1 + chainConfig.maxFilterHeaderCount > blockCount) blockCount else startHeight - 1 + chainConfig.maxFilterHeaderCount
+      stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount else startHeight - 1 + batchSize
       stopBlockOpt <- getHeadersByHeight(stopHeight.toInt).map(_.headOption)
       stopBlock = stopBlockOpt.getOrElse(throw new RuntimeException(s"Unknown header height ${stopHeight}"))
     } yield {
@@ -166,30 +168,38 @@ case class ChainHandler(
   }
 
   override def processFilter(
+      message: CompactFilterMessage,
       golombFilter: GolombFilter,
       blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi] = {
 
-    val filterHashBE = golombFilter.hash.flip
+    val messagefilterHashBE = CryptoUtil.doubleSHA256(message.filterBytes).flip
+    val golombFilterHashBE = golombFilter.hash.flip
+    val filterHashBE = messagefilterHashBE
 
     def validateAndInsert(
         filterHeader: CompactFilterHeaderDb,
         filterOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
       if (filterHashBE != filterHeader.filterHashBE) {
+        logger.error(s"message=$message")
+        logger.error(s"golombFilter=$golombFilter")
+        logger.error(s"blockHash=$blockHash")
         Future.failed(new RuntimeException(
           s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}"))
       } else {
         filterOpt match {
           case Some(filter) =>
-//            if (filter.golombFilter != golombFilter) {
-//              val errMsg = s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"
-//              logger.error(errMsg)
-//              Future.failed(new RuntimeException(errMsg))
-//            } else {
-              logger.debug(s"We have already processed filter=${filter.hashBE}")
-              Future.successful(filter)
-//            }          case None =>
+            //            if (filter.golombFilter != golombFilter) {
+            //              val errMsg = s"Filter does not match: ${golombFilter} != ${filter.golombFilter}"
+            //              logger.error(errMsg)
+            //              Future.failed(new RuntimeException(errMsg))
+            //            } else {
+            logger.debug(s"We have already processed filter=${filter.hashBE}")
+            Future.successful(filter)
+          //            }
+          case None =>
             val filterDb = CompactFilterDbHelper.fromGolombFilter(golombFilter, filterHeader.blockHashBE, filterHeader.height)
+//            require(message.filterBytes == filterDb.bytes)
             for {
               res <- filterDAO.create(filterDb)
             } yield res

@@ -518,7 +518,7 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
   lazy val network = "unittest" //mainnet, testnet3, regtest, unittest
 
   lazy val mainnetDir = s"${System.getenv("HOME")}/.bitcoin-s/mainnet/"
-  lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet3/"
+  lazy val testnetDir = s"${System.getenv("HOME")}/.bitcoin-s/testnet/"
   lazy val regtestDir = s"${System.getenv("HOME")}/.bitcoin-s/regtest/"
   lazy val unittestDir = s"${System.getenv("HOME")}/.bitcoin-s/unittest/"
 
@@ -552,7 +552,6 @@ def dbFlywaySettings(dbName: String): List[Setting[_]] = {
 
   network match {
     case "mainnet"  => mainnet
-    case "testnet3" => testnet3
     case "regtest"  => regtest
     case "unittest" => unittest
     case unknown: String =>

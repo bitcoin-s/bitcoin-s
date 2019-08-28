@@ -17,7 +17,7 @@ class ChainAppConfigTest extends BitcoinSUnitTest {
   it must "be overridable" in {
     assert(config.network == RegTest)
 
-    val otherConf = ConfigFactory.parseString("bitcoin-s.network = testnet3")
+    val otherConf = ConfigFactory.parseString("bitcoin-s.network = testnet")
     val withOther: ChainAppConfig = config.withOverrides(otherConf)
     assert(withOther.network == TestNet3)
 
@@ -27,7 +27,7 @@ class ChainAppConfigTest extends BitcoinSUnitTest {
   }
 
   it must "be overridable with multiple levels" in {
-    val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet3")
+    val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet")
     val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val overriden: ChainAppConfig = config.withOverrides(testnet, mainnet)
     assert(overriden.network == MainNet)
@@ -40,7 +40,7 @@ class ChainAppConfigTest extends BitcoinSUnitTest {
     val tempFile = Files.createFile(tempDir.resolve("bitcoin-s.conf"))
     val confStr = """
     | bitcoin-s {
-    |   network = testnet3
+    |   network = testnet
     |   
     |   logging {
     |     level = off
@@ -53,7 +53,7 @@ class ChainAppConfigTest extends BitcoinSUnitTest {
 
     val appConfig = ChainAppConfig(directory = tempDir)
 
-    assert(appConfig.datadir == tempDir.resolve("testnet3"))
+    assert(appConfig.datadir == tempDir.resolve("testnet"))
     assert(appConfig.network == TestNet3)
     assert(appConfig.logLevel == Level.OFF)
     assert(appConfig.p2pLogLevel == Level.WARN)

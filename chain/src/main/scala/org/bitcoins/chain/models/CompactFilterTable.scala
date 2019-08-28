@@ -11,10 +11,10 @@ case class CompactFilterDb(
     filterType: Short,
     bytes: ByteVector,
     height: Int,
-    blockHash: DoubleSha256DigestBE) {
+    blockHashBE: DoubleSha256DigestBE) {
 
   def golombFilter: GolombFilter = filterType match {
-    case 0 => BlockFilter.fromBytes(bytes, blockHash.flip)
+    case 0 => BlockFilter.fromBytes(bytes, blockHashBE.flip)
     case _: Short => throw new RuntimeException(s"Invalid filter type $filterType")
   }
 }

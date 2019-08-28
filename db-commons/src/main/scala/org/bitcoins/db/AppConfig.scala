@@ -192,11 +192,11 @@ abstract class AppConfig extends BitcoinSLogger {
     val networkStr = config.getString("network")
     networkStr match {
       case "mainnet"  => MainNetChainParams
-      case "testnet3" => TestNetChainParams
+      case "testnet" => TestNetChainParams
       case "regtest"  => RegTestNetChainParams
       case other: String =>
         throw new IllegalArgumentException(
-          s"'$other' is not a recognized network! Available options: mainnet, testnet3, regtest")
+          s"'$other' is not a recognized network! Available options: mainnet, testnet, regtest")
     }
   }
 
@@ -300,7 +300,7 @@ abstract class AppConfig extends BitcoinSLogger {
   val datadir: Path = {
     val lastDirname = network match {
       case MainNet  => "mainnet"
-      case TestNet3 => "testnet3"
+      case TestNet3 => "testnet"
       case RegTest  => "regtest"
     }
     baseDatadir.resolve(lastDirname)
@@ -383,7 +383,7 @@ object AppConfig extends BitcoinSLogger {
     * both with and without a trailing `/`
     */
   private val defaultDatadirRegex: Regex = {
-    (Properties.userHome + "/.bitcoin-s/(testnet3|mainnet|regtest)/?$").r
+    (Properties.userHome + "/.bitcoin-s/(testnet|mainnet|regtest)/?$").r
   }
 
   /**
