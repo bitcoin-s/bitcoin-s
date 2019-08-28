@@ -1,7 +1,14 @@
 ---
-id: sync-chain
-title: Syncing block headers with Bitcoin-S
+title: Blockchain Verification
+id: chain
 ---
+
+Bitcoin-S comes bundled with a rudimentary blockchain verification
+module. This module is currently only released as a library, and not as a binary.
+This is because it (nor the documentation) is not deemed production
+ready. Use at your own risk, and without too much money depending on it.
+
+## Syncing and verifying block headers
 
 Using the `chain` module of Bitcoin-S it's possible to
 sync and verify block headers from the Bitcoin blockchain. In this document
