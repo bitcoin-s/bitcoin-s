@@ -16,9 +16,7 @@ This code snippet you have a running `bitcoind` instance, locally
 on regtest.
 
 ```scala mdoc:compile-only
-import akka.actor.ActorSystem
-implicit val system = ActorSystem()
-import system.dispatcher
+implicit val ec = scala.concurrent.ExecutionContext.global
 
 import com.typesafe.config.ConfigFactory
 val config = ConfigFactory.parseString {
@@ -53,7 +51,7 @@ import org.bitcoins.rpc.config.BitcoindInstance
 val bitcoindInstance = BitcoindInstance.fromDatadir()
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-val bitcoind = new BitcoindRpcClient(bitcoindInstance)
+val bitcoind = BitcoindRpcClient(bitcoindInstance)
 
 // when this future completes, we have
 // synced our chain handler to our bitcoind

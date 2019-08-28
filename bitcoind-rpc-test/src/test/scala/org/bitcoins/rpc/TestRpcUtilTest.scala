@@ -120,7 +120,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
 
   it should "be able to create a single node, wait for it to start and then delete it" in {
     val instance = BitcoindRpcTestUtil.instance()
-    val client = new BitcoindRpcClient(instance)
+    val client = BitcoindRpcClient.withActorSystem(instance)
     val startedF = client.start()
 
     startedF.map { _ =>
