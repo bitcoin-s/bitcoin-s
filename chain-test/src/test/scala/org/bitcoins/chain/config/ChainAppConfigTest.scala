@@ -1,20 +1,39 @@
-package org.bitcoins.chain
+package org.bitcoins.chain.config
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.config.TestNet3
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.chain.config.ChainAppConfig
 import java.nio.file.Files
-import ch.qos.logback.classic.Level
 
-class ChainAppConfigTest extends BitcoinSUnitTest {
+import akka.actor.ActorSystem
+import ch.qos.logback.classic.Level
+import com.typesafe.config.ConfigFactory
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.testkit.chain.ChainUnitTest
+import org.bitcoins.testkit.util.FileUtil
+import org.scalatest.FutureOutcome
+
+class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
   val config = ChainAppConfig(directory = tempDir)
+  val chainAppConfig = appConfig
 
-  it must "be overridable" in {
+  implicit override val system = ActorSystem("ChainAppConfigTest")
+
+  behavior of "ChainAppConfig"
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
+    withChainFixture(test)
+
+  it must "initialize our chain project" in { _ =>
+    val isInitF = chainAppConfig.isInitialized()
+
+    for {
+      isInit <- isInitF
+      _ = assert(!isInit)
+      _ <- chainAppConfig.initialize()
+      isInitAgain <- chainAppConfig.isInitialized()
+    } yield assert(isInitAgain)
+  }
+
+  it must "be overridable" in { _ =>
     assert(config.network == RegTest)
 
     val otherConf = ConfigFactory.parseString("bitcoin-s.network = testnet")
@@ -26,7 +45,7 @@ class ChainAppConfigTest extends BitcoinSUnitTest {
     assert(mainnet.network == MainNet)
   }
 
-  it must "be overridable with multiple levels" in {
+  it must "be overridable with multiple levels" in { _ =>
     val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet")
     val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val overriden: ChainAppConfig = config.withOverrides(testnet, mainnet)
@@ -34,8 +53,7 @@ class ChainAppConfigTest extends BitcoinSUnitTest {
 
   }
 
-  it must "have user data directory configuration take precedence" in {
-
+  it must "have user data directory configuration take precedence" in { _ =>
     val tempDir = Files.createTempDirectory("bitcoin-s")
     val tempFile = Files.createFile(tempDir.resolve("bitcoin-s.conf"))
     val confStr = """
@@ -57,5 +75,10 @@ class ChainAppConfigTest extends BitcoinSUnitTest {
     assert(appConfig.network == TestNet3)
     assert(appConfig.logLevel == Level.OFF)
     assert(appConfig.p2pLogLevel == Level.WARN)
+  }
+
+  override def afterAll: Unit = {
+
+    FileUtil.deleteTmpDir(chainAppConfig.baseDatadir)
   }
 }

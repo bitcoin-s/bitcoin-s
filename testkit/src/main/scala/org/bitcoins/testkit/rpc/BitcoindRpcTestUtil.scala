@@ -5,7 +5,6 @@ import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -46,14 +45,22 @@ import org.bitcoins.util.ListUtil
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
 import org.bitcoins.rpc.config.BitcoindConfig
 import java.io.File
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Path
+import org.bitcoins.rpc.client.common.BitcoindVersion.Unknown
+import org.bitcoins.rpc.client.common.BitcoindVersion.V16
+import org.bitcoins.rpc.client.common.BitcoindVersion.V17
+import java.nio.file.Files
+
+import org.bitcoins.testkit.util.FileUtil
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -141,33 +148,46 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 
-  private val V16_ENV = "BITCOIND_V16_PATH"
-  private val V17_ENV = "BITCOIND_V17_PATH"
-
-  private def getFileFromEnv(env: String): File = {
-    val envValue = Properties
-      .envOrNone(env)
-      .getOrElse(
-        throw new IllegalArgumentException(
-          s"$env environment variable is not set"))
-
-    val maybeDir = new File(envValue.trim)
-
-    val binary = if (maybeDir.isDirectory) {
-      Paths.get(maybeDir.getAbsolutePath, "bitcoind").toFile
-    } else {
-      maybeDir
+  /** The directory that sbt downloads bitcoind binaries into */
+  private[bitcoins] val binaryDirectory = {
+    val baseDirectory = {
+      val cwd = Paths.get(Properties.userDir)
+      if (cwd.endsWith("bitcoind-rpc-test") || cwd.endsWith("eclair-rpc-test")) {
+        cwd.getParent()
+      } else cwd
     }
 
-    binary
+    baseDirectory.resolve("binaries").resolve("bitcoind")
   }
 
-  private def getBinary(version: BitcoindVersion): File =
-    version match {
-      case BitcoindVersion.V16     => getFileFromEnv(V16_ENV)
-      case BitcoindVersion.V17     => getFileFromEnv(V17_ENV)
-      case BitcoindVersion.Unknown => BitcoindInstance.DEFAULT_BITCOIND_LOCATION
-    }
+  private def getBinary(version: BitcoindVersion): File = version match {
+    // default to newest version
+    case Unknown => getBinary(BitcoindVersion.newest)
+    case known @ (V16 | V17) =>
+      val versionFolder = Files
+        .list(binaryDirectory)
+        .iterator()
+        .asScala
+        .toList
+        .filter { f =>
+          val isFolder = Files.isDirectory(f)
+          val matchesVersion = f.toString.contains {
+            // drop leading 'v'
+            known.toString.drop(1)
+          }
+          isFolder && matchesVersion
+        }
+        // might be multiple versions downloaded for
+        // each major version, i.e. 0.16.2 and 0.16.3
+        .sorted
+        // we want the most recent one
+        .last
+
+      versionFolder
+        .resolve("bin")
+        .resolve("bitcoind")
+        .toFile()
+  }
 
   /** Creates a `bitcoind` instance within the user temporary directory */
   def instance(
@@ -181,10 +201,26 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val configFile = writtenConfig(uri, rpcUri, zmqPort, pruneMode)
     val conf = BitcoindConfig(configFile)
     val auth = BitcoindAuthCredentials.fromConfig(conf)
-    val binary = versionOpt match {
-      case Some(version) =>
-        getBinary(version)
-      case None => BitcoindInstance.DEFAULT_BITCOIND_LOCATION
+    val binary: File = versionOpt match {
+      case Some(version) => getBinary(version)
+      case None =>
+        Try {
+          BitcoindInstance.DEFAULT_BITCOIND_LOCATION
+        }.recoverWith {
+          case _: RuntimeException =>
+            if (Files.exists(
+                  BitcoindRpcTestUtil.binaryDirectory
+                )) {
+              Success(getBinary(BitcoindVersion.newest))
+            } else {
+              Failure(new RuntimeException(
+                "Could not locate bitcoind. Make sure it is installed on your PATH, or if working with Bitcoin-S directly, try running 'sbt downloadBitcoind'"))
+            }
+
+        } match {
+          case Failure(exception) => throw exception
+          case Success(value)     => value
+        }
     }
     val instance = BitcoindInstance(network = network,
                                     uri = uri,
@@ -237,7 +273,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
     val serverStops = servers.map { s =>
       val stopF = s.stop()
-      deleteTmpDir(s.getDaemon.datadir)
+      FileUtil.deleteTmpDir(s.getDaemon.datadir)
       stopF.onComplete {
         case Failure(exception) =>
           logger.error(s"Could not shut down sever: $exception")
@@ -257,27 +293,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def stopServer(server: BitcoindRpcClient)(
       implicit system: ActorSystem): Future[Unit] = {
     stopServers(Vector(server))
-  }
-
-  /**
-    * Deletes the given temporary directory
-    *
-    * @throws IllegalArgumentException if the
-    *         given directory isn't in the user
-    *         temp dir location
-    */
-  def deleteTmpDir(dir: File): Boolean = {
-    val isTemp = dir.getPath startsWith Properties.tmpDir
-    if (!isTemp) {
-      logger.warn(
-        s"Directory $dir is not in the system temp dir location! You most likely didn't mean to delete this directory.")
-      false
-    } else if (!dir.isDirectory) {
-      dir.delete()
-    } else {
-      dir.listFiles().foreach(deleteTmpDir)
-      dir.delete()
-    }
   }
 
   /**
@@ -797,7 +812,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       implicit executionContext: ExecutionContext): Future[Unit] = {
     val stopsF = List(client1, client2).map { client =>
       client.stop().map { _ =>
-        deleteTmpDir(client.getDaemon.datadir)
+        FileUtil.deleteTmpDir(client.getDaemon.datadir)
       }
     }
     Future.sequence(stopsF).map(_ => ())

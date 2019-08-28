@@ -10,8 +10,28 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
+import java.nio.file.Files
 
 abstract class BitcoindRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
+
+  private val dirExists = Files.exists(BitcoindRpcTestUtil.binaryDirectory)
+  private val hasContents = dirExists && Files
+    .list(BitcoindRpcTestUtil.binaryDirectory)
+    .toArray()
+    .nonEmpty
+
+  if (!hasContents) {
+    import System.err.{println => printerr}
+    printerr()
+    printerr(s"Run 'sbt downloadBitcoind' to fetch needed binaries")
+    sys.error {
+      val msg =
+        s""""bitcoind binary directory (${BitcoindRpcTestUtil.binaryDirectory}) is empty. 
+        |Run 'sbt downloadBitcoind' to fetch needed binaries""".stripMargin
+      msg
+    }
+  }
+
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
   implicit val system: ActorSystem =

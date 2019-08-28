@@ -382,15 +382,10 @@ lazy val zmq = project
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(commonProdSettings: _*)
-  .settings(name := "bitcoin-s-bitcoind-rpc",
-            libraryDependencies ++= Deps.bitcoindRpc)
-  .dependsOn(core)
 
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(commonTestSettings: _*)
-  .settings(libraryDependencies ++= Deps.bitcoindRpcTest(scalaVersion.value),
-            name := "bitcoin-s-bitcoind-rpc-test")
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val bench = project
@@ -406,12 +401,6 @@ lazy val bench = project
 lazy val eclairRpc = project
   .in(file("eclair-rpc"))
   .settings(commonProdSettings: _*)
-  .settings(name := "bitcoin-s-eclair-rpc",
-            libraryDependencies ++= Deps.eclairRpc)
-  .dependsOn(
-    core,
-    bitcoindRpc
-  )
 
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))

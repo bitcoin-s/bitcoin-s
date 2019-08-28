@@ -188,4 +188,17 @@ class BlockHeaderDAOTest extends ChainUnitTest {
       found <- foundF
     } yield assert(found.get == created)
   }
+
+  it must "get an ancestor at a specified height" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val createdF = blockHeaderDAO.create(blockHeader)
+
+      val genesisF = createdF.flatMap(created =>
+        blockHeaderDAO.getAncestorAtHeight(created, 0))
+
+      genesisF.map { genesisOpt =>
+        assert(genesisOpt.contains(genesisHeaderDb))
+      }
+  }
 }
