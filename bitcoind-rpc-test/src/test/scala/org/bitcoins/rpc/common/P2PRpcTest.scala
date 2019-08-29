@@ -187,7 +187,7 @@ class P2PRpcTest extends BitcoindRpcTest {
 
       (client1, client2) <- BitcoindRpcTestUtil.createUnconnectedNodePair(
         clientAccum = clientAccum)
-      hash <- client2.generate(1)
+      hash <- client2.getNewAddress.flatMap(client2.generateToAddress(1, _))
       block <- client2.getBlockRaw(hash.head)
       preCount1 <- client1.getBlockCount
       preCount2 <- client2.getBlockCount

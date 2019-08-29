@@ -39,7 +39,8 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     for {
       _ <- walletClient.start()
-      _ <- walletClient.generate(200)
+      _ <- walletClient.getNewAddress.flatMap(
+        walletClient.generateToAddress(200, _))
       _ <- walletClient.encryptWallet(password)
       _ <- walletClient.stop()
       _ <- RpcUtil.awaitServerShutdown(walletClient)
@@ -219,7 +220,7 @@ class WalletRpcTest extends BitcoindRpcTest {
         .fundBlockChainTransaction(client, address, Bitcoins(1.5))
     val txid = await(txidF)
 
-    await(client.generate(1))
+    await(client.getNewAddress.flatMap(client.generateToAddress(1, _)))
 
     val tx = await(client.getTransaction(txid))
 
@@ -343,7 +344,7 @@ class WalletRpcTest extends BitcoindRpcTest {
     for {
       (client, _, _) <- clientsF
       balance <- client.getBalance
-      _ <- client.generate(1)
+      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       newBalance <- client.getBalance
     } yield {
       assert(balance.toBigDecimal > 0)

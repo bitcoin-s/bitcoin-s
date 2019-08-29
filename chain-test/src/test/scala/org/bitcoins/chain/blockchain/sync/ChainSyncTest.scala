@@ -12,7 +12,7 @@ import scala.concurrent.Future
 class ChainSyncTest extends ChainUnitTest {
   override type FixtureParam = BitcoindChainHandlerViaRpc
 
-  override implicit val system = ActorSystem(
+  implicit override val system = ActorSystem(
     s"chain-sync-test-${System.currentTimeMillis()}")
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
@@ -35,7 +35,8 @@ class ChainSyncTest extends ChainUnitTest {
       }
 
       //let's generate a block on bitcoind
-      val block1F = bitcoind.generate(1)
+      val block1F =
+        bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
       val newChainHandlerF: Future[ChainApi] = block1F.flatMap { hashes =>
         ChainSync.sync(chainHandler = chainHandler,
                        getBlockHeaderFunc = getBlockHeaderFunc,
