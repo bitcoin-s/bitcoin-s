@@ -7,9 +7,11 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.rpc.jsonmodels.{
   FundRawTransactionResult,
   GetRawTransactionResult,
-  RpcTransaction
+  RpcTransaction,
+  SignRawTransactionResult
 }
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.serializers.JsonWriters._
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -94,4 +96,5 @@ trait RawTransactionRpc { self: Client =>
       "sendrawtransaction",
       List(JsString(transaction.hex), JsBoolean(allowHighFees)))
   }
+
 }

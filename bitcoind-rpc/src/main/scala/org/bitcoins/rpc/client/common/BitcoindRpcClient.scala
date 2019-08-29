@@ -86,8 +86,10 @@ sealed trait BitcoindVersion
 
 object BitcoindVersion {
 
-  /** The newest `bitcoind` version supported by Bitcoin-S */
-  val newest = V17
+
+
+  /** The newest version of `bitcoind` we support */
+  val newest = V18
 
   case object V16 extends BitcoindVersion {
     override def toString: String = "v0.16"
@@ -95,6 +97,10 @@ object BitcoindVersion {
 
   case object V17 extends BitcoindVersion {
     override def toString: String = "v0.17"
+  }
+
+  case object V18 extends BitcoindVersion {
+    override def toString: String = "v0.18"
   }
 
   case object Unknown extends BitcoindVersion {

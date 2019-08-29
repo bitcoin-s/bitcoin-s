@@ -16,8 +16,10 @@ import scala.util.{Failure, Success}
 object JsonReaders {
   import org.bitcoins.rpc.serializers.JsonReaders._
 
-  implicit val feeProportionalMillionthsReads: Reads[FeeProportionalMillionths] = Reads { js =>
-    SerializerUtil.processJsNumberBigInt(FeeProportionalMillionths.fromBigInt)(js)
+  implicit val feeProportionalMillionthsReads: Reads[
+    FeeProportionalMillionths] = Reads { js =>
+    SerializerUtil.processJsNumberBigInt(FeeProportionalMillionths.fromBigInt)(
+      js)
   }
 
   implicit val channelStateReads: Reads[ChannelState] = {
@@ -85,7 +87,8 @@ object JsonReaders {
 
   implicit val shortChannelIdReads: Reads[ShortChannelId] = {
     Reads { jsValue =>
-      SerializerUtil.processJsString(ShortChannelId.fromHumanReadableString)(jsValue)
+      SerializerUtil.processJsString(ShortChannelId.fromHumanReadableString)(
+        jsValue)
     }
   }
 
@@ -120,14 +123,13 @@ object JsonReaders {
         paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
         expiry <- (jsValue \ "expiry").validate[Long]
       } yield
-        InvoiceResult(
-          prefix,
-          timestamp.seconds,
-          nodeId,
-          serialized,
-          description,
-          paymentHash,
-          expiry.seconds)
+        InvoiceResult(prefix,
+                      timestamp.seconds,
+                      nodeId,
+                      serialized,
+                      description,
+                      paymentHash,
+                      expiry.seconds)
     }
   }
 
