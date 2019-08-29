@@ -9,6 +9,9 @@ import org.bitcoins.core.gcs.FilterType
 import scala.annotation.tailrec
 import org.bitcoins.core.protocol.CompactSizeUInt
 
+/**
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfheaders BIP157]]
+  */
 object RawCompactFilterHeadersMessageSerializer
     extends RawBitcoinSerializer[CompactFilterHeadersMessage] {
 

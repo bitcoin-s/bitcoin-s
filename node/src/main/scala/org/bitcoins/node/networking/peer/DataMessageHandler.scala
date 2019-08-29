@@ -3,7 +3,6 @@ package org.bitcoins.node.networking.peer
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -97,11 +96,10 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
           this.copy(chainApi = newChainApi)
         }
       case filter: CompactFilterMessage =>
-        val blockFilter = BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
         logger.debug(
-          s"Received ${filter.commandName}, ${blockFilter}")
+          s"Received ${filter.commandName}, $filter")
         for {
-          newChainApi <- chainApi.processFilter(filter, blockFilter, filter.blockHash.flip)
+          newChainApi <- chainApi.processFilter(filter, filter.blockHash.flip)
         } yield {
           val count = if (filterCount == chainConfig.maxFilterCount - 1) {
             logger.info(
@@ -164,9 +162,6 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
         logger.trace(
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
-
-//        logger.trace(s"Requesting data for headers=${headers.length}")
-//        peerMsgSender.sendGetDataMessage(headers: _*)
 
         val getHeadersF = chainApiF
           .map { newApi =>

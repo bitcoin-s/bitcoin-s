@@ -31,6 +31,7 @@ object FilterType extends Factory[FilterType] {
 
   /** Currently the only defined filter type */
   final case object Basic extends FilterType {
+    val code: Byte = 0
     val bytes: ByteVector = hex"0x00"
 
     val M: UInt64 = UInt64(784931)

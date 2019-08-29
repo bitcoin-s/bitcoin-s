@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.{ActorRefFactory, ActorSystem}
+import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
@@ -13,11 +13,14 @@ import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
 import org.bitcoins.rpc.util.AsyncUtil
 import slick.jdbc.SQLiteProfile
-import scala.concurrent.duration.DurationInt
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
+/**
+  This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
+ */
 trait Node extends P2PLogger {
 
   implicit def system: ActorSystem

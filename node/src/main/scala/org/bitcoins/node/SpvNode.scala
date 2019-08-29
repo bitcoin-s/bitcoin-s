@@ -64,7 +64,8 @@ case class SpvNode(
 
   override def onStart(): Future[Unit] = {
     for {
-      _ <- peerMsgSenderF.map(_.sendFilterLoadMessage(bloomFilter))
+      peerMsgSender <- peerMsgSenderF
+      _ <- peerMsgSender.sendFilterLoadMessage(bloomFilter)
     } yield {
       logger(nodeAppConfig).info(
         s"Sending bloomfilter=${bloomFilter.hex} to $peer")

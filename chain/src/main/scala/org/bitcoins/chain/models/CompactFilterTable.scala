@@ -1,7 +1,8 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
+import org.bitcoins.core.gcs.{BlockFilter, FilterType, GolombFilter}
+import org.bitcoins.core.util.CryptoUtil
 import scodec.bits.ByteVector
 import slick.lifted.Tag
 import slick.jdbc.SQLiteProfile.api._
@@ -14,14 +15,17 @@ case class CompactFilterDb(
     blockHashBE: DoubleSha256DigestBE) {
 
   def golombFilter: GolombFilter = filterType match {
-    case 0 => BlockFilter.fromBytes(bytes, blockHashBE.flip)
+    case FilterType.Basic.code => BlockFilter.fromBytes(bytes, blockHashBE.flip)
     case _: Short => throw new RuntimeException(s"Invalid filter type $filterType")
   }
 }
 
 object CompactFilterDbHelper {
   def fromGolombFilter(golombFilter: GolombFilter, blockHash: DoubleSha256DigestBE, height: Int): CompactFilterDb =
-    CompactFilterDb(golombFilter.hash.flip, 0, golombFilter.bytes, height, blockHash)
+    fromFilterBytes(golombFilter.bytes, blockHash, height)
+
+  def fromFilterBytes(filterBytes: ByteVector, blockHash: DoubleSha256DigestBE, height: Int): CompactFilterDb =
+    CompactFilterDb(CryptoUtil.doubleSHA256(filterBytes).flip, FilterType.Basic.code, filterBytes, height, blockHash)
 }
 
 class CompactFilterTable(tag: Tag)

@@ -873,7 +873,9 @@ case object VerAckMessage extends ControlPayload {
   override val bytes: ByteVector = ByteVector.empty
 }
 
-// TODO doc
+/**
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfilters BIP157]]
+  */
 case class GetCompactFiltersMessage(
     filterType: FilterType,
     startHeight: UInt32,
@@ -892,7 +894,9 @@ object GetCompactFiltersMessage extends Factory[GetCompactFiltersMessage] {
     new GetCompactFiltersMessage(FilterType.Basic, UInt32(startHeight), stopHash)
 }
 
-// TODO doc
+/**
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfilters BIP157]]
+  */
 case class CompactFilterMessage(
     filterType: FilterType,
     blockHash: DoubleSha256Digest,
@@ -921,7 +925,6 @@ object CompactFilterMessage extends Factory[CompactFilterMessage] {
 
 }
 
-// TODO doc
 /**
   * `getcfheaders` is used to request verifiable filter headers for a range of blocks
   *
@@ -944,8 +947,9 @@ object GetCompactFilterHeadersMessage
   /** Constructs a message from the given startheight and stophash */
   def apply(
       startHeight: Int,
-      stopHash: DoubleSha256Digest): GetCompactFilterHeadersMessage = {
-    new GetCompactFilterHeadersMessage(FilterType.Basic,
+      stopHash: DoubleSha256Digest,
+      filterType: FilterType = FilterType.Basic): GetCompactFilterHeadersMessage = {
+    new GetCompactFilterHeadersMessage(filterType,
                                        UInt32(startHeight),
                                        stopHash)
   }

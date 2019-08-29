@@ -69,11 +69,19 @@ trait ChainApi {
       }
   }
 
+  /**
+    * Adds a compact filter header into the filter header chain and returns a new [[ChainApi chain api]]
+    * that contains this header
+    */
   def processFilterHeader(
       filterHeader: FilterHeader,
       blockHash: DoubleSha256DigestBE,
       height: Int)(implicit ec: ExecutionContext): Future[ChainApi]
 
+  /**
+    * Process all of the given compact filter headers and returns a new [[ChainApi chain api]]
+    * that contains these headers.
+    */
   def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE)(
@@ -94,18 +102,29 @@ trait ChainApi {
       .map(_ => this)
   }
 
+  /**
+    * Generates a block range in form of (startHeight, stopHash) by the given stop hash.
+    */
   def nextBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Long)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
 
+  /**
+    * Adds a compact filter into the filter database.
+    */
   def processFilter(
       message: CompactFilterMessage,
-      golombFilter: GolombFilter,
       blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi]
 
+  /**
+    * Adds a compact filter header check point into the list of check points.
+    */
   def processCheckpoint(
       filterHeaderHash: DoubleSha256DigestBE,
       blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi]
 
+  /**
+    * Process all ompact filter header check points.
+    */
   def processCheckpoints(
       checkpoints: Vector[DoubleSha256DigestBE],
       blockHash: DoubleSha256DigestBE)(
@@ -116,12 +135,24 @@ trait ChainApi {
     }
   }
 
+  /**
+    * Returns the highest know compact filter header.
+    */
   def getHighestFilterHeader(implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]]
 
+  /**
+    * Looks up a compact filter header by its hash.
+    */
   def getFilterHeader(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[FilterHeader]]
 
+  /**
+    * Returns the highest know compact filter.
+    */
   def getHighestFilter(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
 
+  /**
+    * Looks up a compact filter by its hash.
+    */
   def getFilter(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
 
 }

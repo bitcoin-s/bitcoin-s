@@ -41,7 +41,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
     for {
 
       address <- rpc.getNewAddress
-      bloom <- wallet.getBloomFilter()
+      _ <- wallet.getBloomFilter()
       _ <- spv.sync()
       _ <- NodeTestUtil.awaitSync(spv, rpc)
 

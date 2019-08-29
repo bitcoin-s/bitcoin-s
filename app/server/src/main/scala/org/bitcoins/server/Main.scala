@@ -4,19 +4,18 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.db.AppLoggers
-import org.bitcoins.node.{NeutrinoNode, SpvNode, SpvNodeCallbacks}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.node.{NeutrinoNode, SpvNode, SpvNodeCallbacks}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.wallet.{LockedWallet, Wallet, WalletStorage}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.{LockedWallet, Wallet, WalletStorage}
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 object Main extends App {
   implicit val conf = {

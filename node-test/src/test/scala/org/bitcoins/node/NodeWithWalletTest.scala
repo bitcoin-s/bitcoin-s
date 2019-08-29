@@ -1,10 +1,8 @@
 package org.bitcoins.node
 
 import akka.actor.Cancellable
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
@@ -87,7 +85,7 @@ class NodeWithWalletTest extends NodeUnitTest {
 
       for {
 
-        bloom <- wallet.getBloomFilter()
+        _ <- wallet.getBloomFilter()
         address <- wallet.getNewAddress()
         updatedBloom <- spv.updateBloomFilter(address).map(_.bloomFilter)
         _ <- spv.sync()

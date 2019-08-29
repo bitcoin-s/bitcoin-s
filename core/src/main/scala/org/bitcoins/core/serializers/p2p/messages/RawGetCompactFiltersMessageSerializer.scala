@@ -7,6 +7,9 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.crypto.DoubleSha256Digest
 
+/**
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfilters BIP157]]
+  */
 object RawGetCompactFiltersMessageSerializer
     extends RawBitcoinSerializer[GetCompactFiltersMessage] {
 

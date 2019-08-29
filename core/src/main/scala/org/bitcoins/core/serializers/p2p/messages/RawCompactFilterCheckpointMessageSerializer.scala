@@ -9,6 +9,9 @@ import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 
+/**
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfcheckpt BIP-157 ]]
+  */
 object RawCompactFilterCheckpointMessageSerializer
     extends RawBitcoinSerializer[CompactFilterCheckPointMessage] {
   def read(bytes: ByteVector): CompactFilterCheckPointMessage = {
