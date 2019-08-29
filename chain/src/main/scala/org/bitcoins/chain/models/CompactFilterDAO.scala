@@ -26,21 +26,21 @@ case class CompactFilterDAO()(
   /** Finds the rows that correlate to the given primary keys */
   override protected def findByPrimaryKeys(
       ids: Vector[DoubleSha256DigestBE]): Query[Table[_], CompactFilterDb, Seq] = {
-    table.filter(_.hash.inSet(ids))
+    table.filter(_.blockHash.inSet(ids))
   }
 
   override protected def findAll(
       ts: Vector[CompactFilterDb]): Query[Table[_], CompactFilterDb, Seq] = {
-    findByPrimaryKeys(ts.map(_.hashBE))
+    findByPrimaryKeys(ts.map(_.blockHashBE))
   }
 
-  def findByHash(hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
-    read(hash)
+  def findByHash(hash: DoubleSha256DigestBE): Future[Seq[CompactFilterDb]] = {
+    val query = table.filter(_.hash === hash)
+    database.runVec(query.result)
   }
 
   def findByBlockHash(hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
-    val query = table.filter(_.blockHash === hash).take(1)
-    database.runVec(query.result).map(_.headOption)
+    read(hash)
   }
 
   def findHighest(): Future[Option[CompactFilterDb]] = {

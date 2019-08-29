@@ -194,11 +194,11 @@ case class ChainHandler(
         case Some(filter) =>
           val filterDb = CompactFilterDbHelper.fromFilterBytes(message.filterBytes, filterHeader.blockHashBE, filterHeader.height)
           if (filterDb != filter) {
-            val errMsg = s"Golomb filter does not match: ${filterDb} != ${filter}\n" +
+            val errMsg = s"Filter does not match: ${filterDb} != ${filter}\n" +
               s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}"
             logger.warn(errMsg)
             for {
-              res <- filterDAO.create(filterDb)
+              res <- filterDAO.update(filterDb)
             } yield res
           } else {
             logger.debug(s"We have already processed filter=${filter.hashBE}")
@@ -224,7 +224,7 @@ case class ChainHandler(
       filterHeader = filterHeaderOpt.getOrElse(
         throw new RuntimeException(
           s"Cannot find a filter header for block hash ${blockHash}"))
-      filterOpt <- filterDAO.findByHash(filterHashBE)
+      filterOpt <- filterDAO.findByBlockHash(blockHash)
       _ <- validateAndInsert(filterHeader, filterOpt)
     } yield {
       this
@@ -264,9 +264,9 @@ case class ChainHandler(
     filterDAO.findHighest()
   }
 
-  override def getFilter(hash: DoubleSha256DigestBE)(
+  override def getFilter(blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
-    filterDAO.findByHash(hash)
+    filterDAO.findByBlockHash(blockHash)
   }
 
   override def getHeadersByHeight(height: Int)(

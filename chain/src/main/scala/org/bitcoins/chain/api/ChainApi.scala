@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
+import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 
 /**

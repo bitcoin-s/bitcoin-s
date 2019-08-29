@@ -32,7 +32,7 @@ class CompactFilterTable(tag: Tag)
   extends Table[CompactFilterDb](tag, "cfilters") {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
+  def hash = column[DoubleSha256DigestBE]("hash")
 
   def filterType = column[Short]("filter_type")
 
@@ -40,11 +40,11 @@ class CompactFilterTable(tag: Tag)
 
   def height = column[Int]("height")
 
-  def blockHash = column[DoubleSha256DigestBE]("block_hash")
+  def blockHash = column[DoubleSha256DigestBE]("block_hash", O.PrimaryKey)
 
   def heightIndex = index("cfilters_height_index", height)
 
-  def blockHashIndex = index("cfilters_block_hash_index", blockHash)
+  def hashIndex = index("cfilters_hash_index", hash)
 
   override def * = {
     (hash, filterType, bytes, height, blockHash) <> (CompactFilterDb.tupled, CompactFilterDb.unapply)
