@@ -164,8 +164,8 @@ object BlockFilter {
   def fromBytes(
       bytes: ByteVector,
       blockHash: DoubleSha256Digest): GolombFilter = {
-    val (size, filterBytes) = bytes.splitAt(1)
-    val n = CompactSizeUInt.fromBytes(size)
+    val n = CompactSizeUInt.fromBytes(bytes)
+    val filterBytes = bytes.drop(n.bytes.length)
     val keyBytes: ByteVector = blockHash.bytes.take(16)
     val key: SipHashKey = SipHashKey(keyBytes)
 

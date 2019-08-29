@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import scodec.bits.ByteVector
 
 /**
-  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfilters BIP157]]
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfilter BIP157]]
   */
 object RawCompactFilterMessageSerializer
     extends RawBitcoinSerializer[CompactFilterMessage] {
