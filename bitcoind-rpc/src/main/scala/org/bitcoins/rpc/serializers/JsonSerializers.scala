@@ -6,7 +6,7 @@ import java.net.{InetAddress, URI}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{
@@ -21,7 +21,7 @@ import org.bitcoins.core.protocol.{
   P2SHAddress
 }
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerKiloByte}
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
@@ -30,7 +30,10 @@ import java.time.LocalDateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
+import scala.concurrent.duration.DurationLong
+
 object JsonSerializers {
+
   implicit val bigIntReads: Reads[BigInt] = BigIntReads
   implicit val localDateTimeReads: Reads[LocalDateTime] = LocalDateTimeReads
 
@@ -146,21 +149,22 @@ object JsonSerializers {
     Json.reads[GetNetworkInfoResult]
 
   implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
-    Json.reads[PeerNetworkInfo]
-  implicit val peerReads: Reads[Peer] = ((__ \ "id").read[Int] and
-    __.read[PeerNetworkInfo] and
-    (__ \ "version").read[Int] and
-    (__ \ "subver").read[String] and
-    (__ \ "inbound").read[Boolean] and
-    (__ \ "addnode").read[Boolean] and
-    (__ \ "startingheight").read[Int] and
-    (__ \ "banscore").read[Int] and
-    (__ \ "synced_headers").read[Int] and
-    (__ \ "synced_blocks").read[Int] and
-    (__ \ "inflight").read[Vector[Int]] and
-    (__ \ "whitelisted").read[Boolean] and
-    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
-    (__ \ "bytesrecv_per_msg").read[Map[String, Int]])(Peer)
+    ((__ \ "addr").read[URI] and
+      (__ \ "addrbind").read[URI] and
+      (__ \ "addrlocal").readNullable[URI] and
+      (__ \ "services").read[String] and
+      (__ \ "relaytxes").read[Boolean] and
+      (__ \ "lastsend").read[UInt32] and
+      (__ \ "lastrecv").read[UInt32] and
+      (__ \ "bytessent").read[Int] and
+      (__ \ "bytesrecv").read[Int] and
+      (__ \ "conntime").read[UInt32] and
+      (__ \ "timeoffset").read[Int] and
+      (__ \ "pingtime").readNullable[BigDecimal] and
+      (__ \ "minping").readNullable[BigDecimal] and
+      (__ \ "pingwait").readNullable[BigDecimal])(PeerNetworkInfo)
+
+  implicit val peerReads: Reads[Peer] = Json.reads[Peer]
 
   implicit val nodeBanReads: Reads[NodeBan] = Json.reads[NodeBan]
 
@@ -368,8 +372,61 @@ object JsonSerializers {
 
   implicit val rpcPsbtInputReads: Reads[RpcPsbtInput] = RpcPsbtInputReads
 
-  implicit val decodePsbtResult: Reads[DecodePsbtResult] =
+  implicit val decodePsbtResultReads: Reads[DecodePsbtResult] =
     Json.reads[DecodePsbtResult]
+
+  implicit val psbtMissingDataReads: Reads[PsbtMissingData] =
+    Json.reads[PsbtMissingData]
+
+  implicit val analyzePsbtInputReads: Reads[AnalyzePsbtInput] =
+    Json.reads[AnalyzePsbtInput]
+
+  implicit val analyzePsbtResultReads: Reads[AnalyzePsbtResult] =
+    Json.reads[AnalyzePsbtResult]
+
+  implicit val getNodeAddressesReads: Reads[GetNodeAddressesResult] =
+    Reads[GetNodeAddressesResult] { js =>
+      for {
+        time <- (js \ "time").validate[Long].map(_.seconds)
+        services <- (js \ "services").validate[Int]
+        address <- (js \ "address").validate[URI]
+        port <- (js \ "port").validate[Int]
+      } yield GetNodeAddressesResult(time, services, address, port)
+    }
+
+  implicit val rgetpcCommandsReads: Reads[RpcCommands] = Reads[RpcCommands] {
+    js =>
+      for {
+        method <- (js \ "method").validate[String]
+        duration <- (js \ "duration").validate[Long].map(_.microseconds)
+      } yield RpcCommands(method, duration)
+  }
+
+  implicit val getRpcInfoResultReads: Reads[GetRpcInfoResult] =
+    Json.reads[GetRpcInfoResult]
+
+  implicit val satsPerKbReads: Reads[SatoshisPerKiloByte] =
+    new Reads[SatoshisPerKiloByte] {
+
+      def reads(json: JsValue): JsResult[SatoshisPerKiloByte] =
+        SerializerUtil.processJsNumber(num =>
+          SatoshisPerKiloByte(Satoshis(Int64(num.toBigInt))))(json)
+    }
+
+  implicit val arrayOfWalletsInputReads: Reads[ArrayOfWalletsInput] =
+    Json.reads[ArrayOfWalletsInput]
+
+  implicit val listWalletsDirResultReads: Reads[ListWalletDirResult] =
+    Json.reads[ListWalletDirResult]
+
+  implicit val deriveAddressesResultReads: Reads[DeriveAddressesResult] =
+    Json.reads[DeriveAddressesResult]
+
+  implicit val submitHeaderResultReads: Reads[SubmitHeaderResult] =
+    Json.reads[SubmitHeaderResult]
+
+  implicit val getDescriptorInfoResultReads: Reads[GetDescriptorInfoResult] =
+    Json.reads[GetDescriptorInfoResult]
 
   implicit val walletCreateFundedPsbtResultReads: Reads[
     WalletCreateFundedPsbtResult] = Json.reads[WalletCreateFundedPsbtResult]
@@ -400,4 +457,5 @@ object JsonSerializers {
 
   implicit val outputMapWrites: Writes[Map[BitcoinAddress, Bitcoins]] =
     mapWrites[BitcoinAddress, Bitcoins](_.value)
+
 }

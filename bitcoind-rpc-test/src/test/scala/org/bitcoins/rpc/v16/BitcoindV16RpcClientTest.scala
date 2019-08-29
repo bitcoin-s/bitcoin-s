@@ -26,7 +26,19 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
     BitcoindRpcTestUtil.createNodePairV16(clientAccum)
 
-  behavior of "BitoindV16RpcClient"
+  behavior of "BitcoindV16RpcClient"
+
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- clientsF
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
+    }
+  }
 
   it should "be able to start a V16 bitcoind" in {
     for {

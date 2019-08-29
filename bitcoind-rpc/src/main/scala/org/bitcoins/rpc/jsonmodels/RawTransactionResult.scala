@@ -8,6 +8,8 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.script.ScriptType
 
+import scala.concurrent.duration.FiniteDuration
+
 sealed abstract class RawTransactionResult
 
 case class RpcTransaction(
@@ -91,3 +93,12 @@ case class SignRawTransactionError(
     sequence: UInt32,
     error: String)
     extends RawTransactionResult
+
+final case class GetRpcInfoResult(
+    active_commands: Vector[RpcCommands]
+) extends RawTransactionResult
+
+final case class RpcCommands(
+    method: String,
+    duration: FiniteDuration //this time is in microseconds
+) extends RawTransactionResult
