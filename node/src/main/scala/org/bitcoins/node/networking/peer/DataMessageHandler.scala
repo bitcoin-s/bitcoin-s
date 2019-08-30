@@ -2,7 +2,7 @@ package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,65 +62,35 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
         val filterHeaders = filterHeader.filterHeaders
         for {
           newChainApi <- chainApi.processFilterHeaders(filterHeaders, filterHeader.stopHash.flip)
-        } yield {
-          if (filterHeaders.size == chainConfig.maxFilterHeaderCount) {
+          _ <- if (filterHeaders.size == chainConfig.maxFilterHeaderCount) {
             logger.info(
               s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
-            for {
-              nextRangeOpt <- newChainApi.nextBatchRange(filterHeader.stopHash.flip, chainConfig.maxFilterHeaderCount)
-              _ <- nextRangeOpt match {
-                case Some((startHeight, stopHash)) =>
-                  logger.info(s"Requesting compact filter headers from=$startHeight to=$stopHash")
-                  peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
-                case None =>
-                  Future.unit
-              }
-            } yield ()
+            sendNextGetCompactFilterHeadersCommand(peerMsgSender, filterHeader.stopHash.flip)
           } else {
             logger.debug(
               s"Received filter headers=${filterHeaders.size} in one message, " +
                 "which is less than max. This means we are synced.")
-            for {
-              highestFilterOpt <- newChainApi.getHighestFilter
-              highestFilterBlockHash = highestFilterOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
-              nextRangeOpt <- newChainApi.nextBatchRange(highestFilterBlockHash, chainConfig.maxFilterCount)
-              _ <- nextRangeOpt match {
-                case Some((startHeight, stopHash)) =>
-                  logger.info(s"Requesting compact filters from=$startHeight to=$stopHash")
-                  peerMsgSender.sendGetCompactFiltersMessage(startHeight, stopHash)
-                case None =>
-                  Future.unit
-              }
-            } yield ()
+            sendFirstGetCompactFilterCommand(peerMsgSender)
           }
+        } yield {
           this.copy(chainApi = newChainApi)
         }
       case filter: CompactFilterMessage =>
         logger.debug(
           s"Received ${filter.commandName}, $filter")
         for {
-          newChainApi <- chainApi.processFilter(filter, filter.blockHash.flip)
-        } yield {
-          val count = if (filterCount == chainConfig.maxFilterCount - 1) {
+          newCount <- if (filterCount == chainConfig.maxFilterCount - 1) {
             logger.info(
               s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
             for {
-              highestFilterOpt <- newChainApi.getHighestFilter
-              highestFilterBlockHash = highestFilterOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
-              nextRangeOpt <- newChainApi.nextBatchRange(highestFilterBlockHash, chainConfig.maxFilterCount)
-              _ <- nextRangeOpt match {
-                case Some((startHeight, stopHash)) =>
-                  logger.info(s"Requesting compact filters from=$startHeight to=$stopHash")
-                  peerMsgSender.sendGetCompactFiltersMessage(startHeight, stopHash)
-                case None =>
-                  Future.unit
-              }
-            } yield ()
-            0
+              _ <- sendNextGetCompactFilterCommand(peerMsgSender, filter.blockHash.flip)
+            } yield 0
           } else {
-            filterCount + 1
+            Future.successful(filterCount + 1)
           }
-          this.copy(chainApi = newChainApi, filterCount = count)
+          newChainApi <- chainApi.processFilter(filter)
+        } yield {
+          this.copy(chainApi = newChainApi, filterCount = newCount)
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
           _: GetBlocksMessage | _: GetCompactFiltersMessage |
@@ -184,8 +154,8 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
                        "which is less than max. This means we are synced,",
                        "not requesting more.")
                     .mkString(" "))
+                sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
               }
-
             }
           }
 
@@ -227,6 +197,39 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
     }
   }
 
+  private def sendNextGetCompactFilterHeadersCommand(peerMsgSender: PeerMessageSender, stopHash: DoubleSha256DigestBE): Future[Unit] =
+    sendNextBatchCommand(stopHash, chainConfig.maxFilterHeaderCount, "compact filter headers")(peerMsgSender.sendGetCompactFilterHeadersMessage)
+
+  private def sendFirstGetCompactFilterHeadersCommand(peerMsgSender: PeerMessageSender): Future[Unit] =
+    for {
+      highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
+      highestFilterBlockHash = highestFilterHeaderOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
+      res <- sendNextGetCompactFilterHeadersCommand(peerMsgSender, highestFilterBlockHash)
+    } yield res
+
+  private def sendNextGetCompactFilterCommand(peerMsgSender: PeerMessageSender, stopHash: DoubleSha256DigestBE): Future[Unit] =
+    sendNextBatchCommand(stopHash, chainConfig.maxFilterCount, "compact filters")(peerMsgSender.sendGetCompactFiltersMessage)
+
+  private def sendFirstGetCompactFilterCommand(peerMsgSender: PeerMessageSender): Future[Unit] =
+    for {
+      highestFilterOpt <- chainApi.getHighestFilter
+      highestFilterBlockHash = highestFilterOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
+      res <- sendNextGetCompactFilterCommand(peerMsgSender, highestFilterBlockHash)
+    } yield res
+
+  private def sendNextBatchCommand(stopHash: DoubleSha256DigestBE, batchSize: Long, message: String)(f: (Int, DoubleSha256Digest) => Future[Unit]): Future[Unit] = {
+    for {
+      nextRangeOpt <- chainApi.nextBatchRange(stopHash, batchSize)
+      res <- nextRangeOpt match {
+        case Some((startHeight, stopHash)) =>
+          logger.info(s"Requesting $message from=$startHeight to=$stopHash")
+          f(startHeight, stopHash)
+        case None =>
+          Future.unit
+      }
+    } yield res
+  }
+
   private def handleInventoryMsg(
       invMsg: InventoryMessage,
       peerMsgSender: PeerMessageSender): Future[DataMessageHandler] = {
@@ -255,5 +258,6 @@ object DataMessageHandler {
 
   /** Does nothing */
   def noop[T]: T => Unit = _ => ()
+
 
 }

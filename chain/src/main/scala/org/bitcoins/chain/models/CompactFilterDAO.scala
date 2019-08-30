@@ -34,6 +34,10 @@ case class CompactFilterDAO()(
     findByPrimaryKeys(ts.map(_.blockHashBE))
   }
 
+  def findByHeightRange(start: Int, stop: Int): Future[Seq[CompactFilterDb]] = {
+    val query = table.filter(_.height >= start).filter(_.height <= stop)
+    database.runVec(query.result)
+  }
   def findByHash(hash: DoubleSha256DigestBE): Future[Seq[CompactFilterDb]] = {
     val query = table.filter(_.hash === hash)
     database.runVec(query.result)

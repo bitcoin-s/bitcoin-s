@@ -5,7 +5,7 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
+import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.CryptoUtil
@@ -139,93 +139,63 @@ case class ChainHandler(
     }
   }
 
-  override def processFilterHeader(
-      filterHeader: FilterHeader,
-      blockHash: DoubleSha256DigestBE,
-      height: Int)(implicit ec: ExecutionContext): Future[ChainApi] = {
-    val filterHeaderDb = CompactFilterHeaderDbHelper.fromFilterHeader(
-      filterHeader,
-      blockHash,
-      height)
+  override def processFilterHeaders(
+      filterHeaders: Vector[FilterHeader],
+      stopHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
 
-    def validateAndInsert(
-        filterHeaderDbOpt: Option[CompactFilterHeaderDb]): Future[
-      CompactFilterHeaderDb] = {
-      filterHeaderDbOpt match {
-        case Some(found) =>
-          if (found != filterHeaderDb) {
-            val errMsg =
-              s"We have a conflicting compact filter header (${filterHeaderDb.hashBE}) in the DB"
-            Future.failed(new RuntimeException(errMsg))
-          } else {
-            logger.debug(s"We have already processed filter header=${found.hashBE}")
-            Future.successful(filterHeaderDb)
-          }
-        case None =>
-          filterHeaderDAO.create(filterHeaderDb)
+    val filterHeadersToCreateF = for {
+      blockHeaders <- blockHeaderDAO.getNChildren(stopHash, filterHeaders.size - 1).map(_.sortBy(_.height))
+    } yield {
+      if (blockHeaders.size != filterHeaders.size) {
+        throw new RuntimeException(s"Filter header batch size does not match block header batch size ${filterHeaders.size} != ${blockHeaders.size}")
+      }
+      blockHeaders.indices.toVector.map { i =>
+        val blockHeader = blockHeaders(i)
+        val filterHeader = filterHeaders(i)
+        CompactFilterHeaderDbHelper.fromFilterHeader(
+          filterHeader,
+          blockHeader.hashBE,
+          blockHeader.height)
       }
     }
 
     for {
-      blockHeaderOpt <- blockHeaderDAO.findByHash(filterHeaderDb.blockHashBE)
-      _ = blockHeaderOpt.getOrElse(
-        throw new RuntimeException(s"Unknown block ${blockHash}"))
-      filterHeaderDbOpt <- filterHeaderDAO.findByHash(filterHeaderDb.hashBE)
-      _ <- validateAndInsert(filterHeaderDbOpt)
+      filterHeadersToCreate <- filterHeadersToCreateF
+      _ <- if (filterHeadersToCreate.nonEmpty && filterHeadersToCreate.head.height > 0) {
+        filterHeaderDAO.findByHash(filterHeadersToCreate.head.previousFilterHeaderBE).map { prevHeaderOpt =>
+          require(prevHeaderOpt.nonEmpty, s"Previous filter header does not exist: ${filterHeadersToCreate.head.previousFilterHeaderBE}")
+          require(prevHeaderOpt.get.height == filterHeadersToCreate.head.height - 1, s"Unexpected previous header's height: ${prevHeaderOpt.get.height} != ${filterHeadersToCreate.head.height - 1}")
+        }
+      } else Future.unit
+      _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
     } yield this
   }
 
-  override def processFilter(
-      message: CompactFilterMessage,
-      blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
-
-    val filterHashBE = CryptoUtil.doubleSHA256(message.filterBytes).flip
-
-    def validateAndInsert(
-        filterHeader: CompactFilterHeaderDb,
-        filterOpt: Option[CompactFilterDb]): Future[CompactFilterDb] = {
-      if (filterHashBE != filterHeader.filterHashBE) {
-        val errMsg = s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}\n" +
-        s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}\nfilterHeader=${filterHeader}"
-        logger.warn(errMsg)
-      }
-      filterOpt match {
-        case Some(filter) =>
-          val filterDb = CompactFilterDbHelper.fromFilterBytes(message.filterBytes, filterHeader.blockHashBE, filterHeader.height)
-          if (filterDb != filter) {
-            val errMsg = s"Filter does not match: ${filterDb} != ${filter}\n" +
-              s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}"
-            logger.warn(errMsg)
-            for {
-              res <- filterDAO.update(filterDb)
-            } yield res
-          } else {
-            logger.debug(s"We have already processed filter=${filter.hashBE}")
-            Future.successful(filter)
-          }
-        case None =>
-          val filterDb = CompactFilterDbHelper.fromFilterBytes(message.filterBytes, filterHeader.blockHashBE, filterHeader.height)
-          val golombFilter = BlockFilter.fromBytes(message.filterBytes, message.blockHash)
-          val filterDb1 = CompactFilterDbHelper.fromGolombFilter(golombFilter, filterHeader.blockHashBE, filterHeader.height)
-          if (filterDb != filterDb1) {
-            val errMsg = s"Golomb filter does not match: ${filterDb} != ${filterDb1}\n" +
-              s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}"
-            logger.warn(errMsg)
-          }
-          for {
-            res <- filterDAO.create(filterDb)
-          } yield res
-      }
-    }
-
+  override def processFilters(messages: Vector[CompactFilterMessage])(implicit ec: ExecutionContext): Future[ChainApi] = {
     for {
-      filterHeaderOpt <- filterHeaderDAO.findByBlockHash(blockHash)
-      filterHeader = filterHeaderOpt.getOrElse(
-        throw new RuntimeException(
-          s"Cannot find a filter header for block hash ${blockHash}"))
-      filterOpt <- filterDAO.findByBlockHash(blockHash)
-      _ <- validateAndInsert(filterHeader, filterOpt)
+      filterHeaders <- filterHeaderDAO.findAllByBlockHashes(messages.map(_.blockHash.flip)).map(_.sortBy(_.height))
+      _ = if (filterHeaders.size != messages.size) {
+        throw new RuntimeException(s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}")
+      }
+      byBlockHash = messages.groupBy(_.blockHash.flip)
+      compactFilterDbs = filterHeaders.map { filterHeader =>
+        byBlockHash.get(filterHeader.blockHashBE) match {
+          case Some(messages) if messages.size == 1 =>
+            val message = messages.head
+            val filterHashBE = CryptoUtil.doubleSHA256(message.filterBytes).flip
+            if (filterHashBE != filterHeader.filterHashBE) {
+              val errMsg = s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}\n" +
+                s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}\nfilterHeader=${filterHeader}"
+              logger.warn(errMsg)
+            }
+            val filter = CompactFilterDbHelper.fromFilterBytes(message.filterBytes, filterHeader.blockHashBE, filterHeader.height)
+            filter
+          case error@_ =>
+            throw new RuntimeException()
+        }
+      }
+      _ <- filterDAO.createAll(compactFilterDbs)
     } yield {
       this
     }

@@ -30,18 +30,8 @@ case class NeutrinoNode(
     val res = for {
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash
-      highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
-      highestFilterHeaderBlockHash = highestFilterHeaderOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
       peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
-      nextRangeOpt <- chainApi.nextBatchRange(highestFilterHeaderBlockHash, chainConfig.maxFilterHeaderCount)
-      _ <- nextRangeOpt match {
-        case Some((startHeight, stopHash)) =>
-          logger.info(s"Requesting compact filter headers from=$startHeight to=$stopHash")
-          peerMsgSender.sendGetCompactFilterHeadersMessage(startHeight, stopHash)
-        case None =>
-          Future.unit
-      }
     } yield {
       ()
     }

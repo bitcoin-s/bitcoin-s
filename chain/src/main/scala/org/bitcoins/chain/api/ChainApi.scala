@@ -76,7 +76,10 @@ trait ChainApi {
   def processFilterHeader(
       filterHeader: FilterHeader,
       blockHash: DoubleSha256DigestBE,
-      height: Int)(implicit ec: ExecutionContext): Future[ChainApi]
+      height: Int)(implicit ec: ExecutionContext): Future[ChainApi] = {
+    processFilterHeaders(Vector(filterHeader), blockHash)
+
+  }
 
   /**
     * Process all of the given compact filter headers and returns a new [[ChainApi chain api]]
@@ -85,22 +88,7 @@ trait ChainApi {
   def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
-
-    filterHeaders.reverseIterator
-      .foldLeft(Future.successful(stopHash)) { (blockHashF, filterHeader) =>
-        for {
-          blockHash <- blockHashF
-          headerOpt <- getHeader(blockHash)
-          header = headerOpt.getOrElse(
-            throw new RuntimeException(s"Unknown block hash ${blockHash.hex}"))
-          _ <- processFilterHeader(filterHeader, blockHash, header.height)
-        } yield {
-          header.previousBlockHashBE
-        }
-      }
-      .map(_ => this)
-  }
+      implicit ec: ExecutionContext): Future[ChainApi]
 
   /**
     * Generates a block range in form of (startHeight, stopHash) by the given stop hash.
@@ -111,8 +99,14 @@ trait ChainApi {
     * Adds a compact filter into the filter database.
     */
   def processFilter(
-      message: CompactFilterMessage,
-      blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi]
+      message: CompactFilterMessage)(implicit ec: ExecutionContext): Future[ChainApi] = processFilters(Vector(message))
+
+  /**
+    * Process all of the given compact filters and returns a new [[ChainApi chain api]]
+    * that contains these headers.
+    */
+  def processFilters(
+      message: Vector[CompactFilterMessage])(implicit ec: ExecutionContext): Future[ChainApi]
 
   /**
     * Adds a compact filter header check point into the list of check points.
