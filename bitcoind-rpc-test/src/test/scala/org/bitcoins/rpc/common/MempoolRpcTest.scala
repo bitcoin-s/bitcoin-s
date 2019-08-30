@@ -36,7 +36,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
           BitcoindInstance.fromConfig(configNoBroadcast)
 
         val clientWithoutBroadcast =
-          new BitcoindRpcClient(instanceWithoutBroadcast)
+          BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
         clientAccum += clientWithoutBroadcast
 
         val pairs = Vector(client -> clientWithoutBroadcast,

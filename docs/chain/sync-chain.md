@@ -10,7 +10,6 @@ able to read this chain on subsequent runs, assuming we are connected
 to the same `bitcoind` instance.
 
 ```scala mdoc:compile-only
-import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain._
 import org.bitcoins.chain.blockchain.sync._
 import org.bitcoins.chain.models._
@@ -20,8 +19,7 @@ import org.bitcoins.testkit.chain._
 
 import scala.concurrent._
 
-implicit val system = ActorSystem()
-implicit val exectionContext = system.dispatcher
+implicit val ec = ExecutionContext.global
 
 // We are assuming that a `bitcoind` regtest node is running the background.
 // You can see our `bitcoind` guides to see how to connect
@@ -31,7 +29,7 @@ import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 val bitcoindInstance = BitcoindInstance.fromDatadir()
-val rpcCli = new BitcoindRpcClient(bitcoindInstance)
+val rpcCli = BitcoindRpcClient(bitcoindInstance)
 
 // Next, we need to create a way to monitor the chain:
 
@@ -79,6 +77,5 @@ val syncResultF = syncedChainApiF.flatMap { chainApi =>
 
 syncResultF.onComplete { case result =>
   println(s"Sync result=${result}")
-  system.terminate()
 }
 ```

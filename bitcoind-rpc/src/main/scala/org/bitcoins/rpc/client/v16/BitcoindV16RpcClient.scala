@@ -77,9 +77,31 @@ class BitcoindV16RpcClient(override val instance: BitcoindInstance)(
 
 object BitcoindV16RpcClient {
 
-  def fromUnknownVersion(rpcClient: BitcoindRpcClient)(
-      implicit actorSystem: ActorSystem): Try[BitcoindV16RpcClient] =
+  /**
+    * Creates an RPC client from the given instance.
+    *
+    * Behind the scenes, we create an actor system for
+    * you. You can use `withActorSystem` if you want to
+    * manually specify an actor system for the RPC client.
+    */
+  def apply(instance: BitcoindInstance): BitcoindV16RpcClient = {
+    implicit val system = ActorSystem.create(BitcoindRpcClient.ActorSystemName)
+    withActorSystem(instance)
+  }
+
+  /**
+    * Creates an RPC client from the given instance,
+    * together with the given actor system. This is for
+    * advanced users, wher you need fine grained control
+    * over the RPC client.
+    */
+  def withActorSystem(instance: BitcoindInstance)(
+      implicit system: ActorSystem): BitcoindV16RpcClient =
+    new BitcoindV16RpcClient(instance)
+
+  def fromUnknownVersion(
+      rpcClient: BitcoindRpcClient): Try[BitcoindV16RpcClient] =
     Try {
-      new BitcoindV16RpcClient(rpcClient.instance)
+      new BitcoindV16RpcClient(rpcClient.instance)(rpcClient.system)
     }
 }

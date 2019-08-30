@@ -14,14 +14,12 @@ version lines. It can be set up to work with both local and remote Bitcoin Core 
 
 ```scala mdoc:compile-only
 import scala.concurrent._
-import akka.actor.ActorSystem
 
 import org.bitcoins.{rpc, core}
 import core.currency.Bitcoins
 import rpc.client.common._
 
-implicit val system = ActorSystem.create()
-implicit val ec: ExecutionContext = system.dispatcher
+implicit val ec: ExecutionContext = ExecutionContext.global
 
 // this reads authentication credentials and
 // connection details from the default data
@@ -51,7 +49,6 @@ Now that we have a secure connection between our remote `bitcoind`, we're
 ready to create the connection with our RPC client
 
 ```scala mdoc:compile-only
-import akka.actor.ActorSystem
 import java.net.URI
 import scala.concurrent._
 
@@ -76,14 +73,12 @@ val bitcoindInstance = {
   )
 }
 
-implicit val system: ActorSystem = ActorSystem.create()
-implicit val ec: ExecutionContext = system.dispatcher
+implicit val ec: ExecutionContext = ExecutionContext.global
 
-val rpcCli = new BitcoindRpcClient(bitcoindInstance)
+val rpcCli = BitcoindRpcClient(bitcoindInstance)
 
 rpcCli.getBalance.onComplete { case balance =>
   println(s"Wallet balance=${balance}")
-  system.terminate()
 }
 ```
 
@@ -106,8 +101,7 @@ import org.bitcoins.core.currency._
 
 import scala.concurrent._
 
-implicit val system = akka.actor.ActorSystem()
-implicit val ec = system.dispatcher
+implicit val ec = ExecutionContext.global
 
 // let's assume you have an already running client,
 // so there's no need to start this one

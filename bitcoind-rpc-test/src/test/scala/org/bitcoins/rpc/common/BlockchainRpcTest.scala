@@ -19,7 +19,8 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   lazy val pruneClientF: Future[BitcoindRpcClient] = clientsF.flatMap {
     case (_, _) =>
       val pruneClient =
-        new BitcoindRpcClient(BitcoindRpcTestUtil.instance(pruneMode = true))
+        BitcoindRpcClient.withActorSystem(
+          BitcoindRpcTestUtil.instance(pruneMode = true))
 
       clientAccum += pruneClient
 

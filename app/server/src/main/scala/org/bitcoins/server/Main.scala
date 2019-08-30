@@ -69,7 +69,7 @@ object Main extends App {
   }
 
   val bitcoind = BitcoindInstance.fromDatadir()
-  val bitcoindCli = new BitcoindRpcClient(bitcoind)
+  val bitcoindCli = BitcoindRpcClient.withActorSystem(bitcoind)
   val peer = Peer.fromBitcoind(bitcoind)
 
   val startFut = for {
