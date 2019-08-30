@@ -6,7 +6,7 @@ env:
     - TEST_COMMAND="chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls"
     - TEST_COMMAND="eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
     - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
-    - TEST_COMMAND="coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+    - TEST_COMMAND="coreTest/test core/coverageReport core/coverageAggregate core/coveralls cli/graalvm-native-image:packageBin secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
 
 os: linux
 scala:
