@@ -2,6 +2,8 @@ name := "bitcoin-s-cli"
 
 libraryDependencies ++= Deps.cli(scalaVersion.value)
 
+ThisBuild / scalaVersion := "2.12.9"
+
 graalVMNativeImageOptions ++= Seq(
   "-H:EnableURLProtocols=http",
   // builds a stand-alone image or reports a failure
