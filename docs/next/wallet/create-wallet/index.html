@@ -59,9 +59,7 @@ the JVM ecosystem and more granular control over your
 UTXOs with popular database like Postgres, SQLite, etc.</p>
 <p>This code snippet you have a running <code>bitcoind</code> instance, locally
 on regtest.</p>
-<pre><code class="hljs css language-scala">import akka.actor.ActorSystem
-implicit val system = ActorSystem()
-import system.dispatcher
+<pre><code class="hljs css language-scala">implicit val ec = scala.concurrent.ExecutionContext.global
 
 import com.typesafe.config.ConfigFactory
 val config = ConfigFactory.parseString {
@@ -96,7 +94,7 @@ import org.bitcoins.rpc.config.BitcoindInstance
 val bitcoindInstance = BitcoindInstance.fromDatadir()
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-val bitcoind = new BitcoindRpcClient(bitcoindInstance)
+val bitcoind = BitcoindRpcClient(bitcoindInstance)
 
 // when this future completes, we have
 // synced our chain handler to our bitcoind

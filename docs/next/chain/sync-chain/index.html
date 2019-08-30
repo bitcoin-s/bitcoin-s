@@ -55,8 +55,7 @@ sync and verify block headers from the Bitcoin blockchain. In this document
 we demonstrate how to do this, while persisting it to disk. We should be
 able to read this chain on subsequent runs, assuming we are connected
 to the same <code>bitcoind</code> instance.</p>
-<pre><code class="hljs css language-scala">import akka.actor.ActorSystem
-import org.bitcoins.chain.blockchain._
+<pre><code class="hljs css language-scala">import org.bitcoins.chain.blockchain._
 import org.bitcoins.chain.blockchain.sync._
 import org.bitcoins.chain.models._
 
@@ -65,8 +64,7 @@ import org.bitcoins.testkit.chain._
 
 import scala.concurrent._
 
-implicit val system = ActorSystem()
-implicit val exectionContext = system.dispatcher
+implicit val ec = ExecutionContext.global
 
 // We are assuming that a `bitcoind` regtest node is running the background.
 // You can see our `bitcoind` guides to see how to connect
@@ -76,7 +74,7 @@ import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 val bitcoindInstance = BitcoindInstance.fromDatadir()
-val rpcCli = new BitcoindRpcClient(bitcoindInstance)
+val rpcCli = BitcoindRpcClient(bitcoindInstance)
 
 // Next, we need to create a way to monitor the chain:
 
@@ -124,7 +122,6 @@ val syncResultF = syncedChainApiF.flatMap { chainApi =&gt;
 
 syncResultF.onComplete { case result =&gt;
   println(s"Sync result=${result}")
-  system.terminate()
 }
 </code></pre>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/rpc/rpc-bitcoind"><span class="arrow-prev">← </span><span>bitcoind/Bitcoin Core</span></a><a class="docs-next button" href="/docs/next/wallet/create-wallet"><span>Creating a Bitcoin-S wallet</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
