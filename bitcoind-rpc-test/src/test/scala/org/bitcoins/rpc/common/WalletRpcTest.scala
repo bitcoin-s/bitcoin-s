@@ -34,7 +34,8 @@ class WalletRpcTest extends BitcoindRpcTest {
 
   // This client's wallet is encrypted
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
-    val walletClient = new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+    val walletClient =
+      BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
     clientAccum += walletClient
 
     for {

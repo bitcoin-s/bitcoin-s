@@ -44,14 +44,40 @@ class BitcoindRpcClient(val instance: BitcoindInstance)(
 
 object BitcoindRpcClient {
 
+  /** The name we give to actor systems we create. We use this
+    * information to know which actor systems to shut down */
+  private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
+
+  /**
+    * Creates an RPC client from the given instance.
+    *
+    * Behind the scenes, we create an actor system for
+    * you. You can use `withActorSystem` if you want to
+    * manually specify an actor system for the RPC client.
+    */
+  def apply(instance: BitcoindInstance): BitcoindRpcClient = {
+    implicit val system = ActorSystem.create(ActorSystemName)
+    withActorSystem(instance)
+  }
+
+  /**
+    * Creates an RPC client from the given instance,
+    * together with the given actor system. This is for
+    * advanced users, wher you need fine grained control
+    * over the RPC client.
+    */
+  def withActorSystem(instance: BitcoindInstance)(
+      implicit system: ActorSystem): BitcoindRpcClient =
+    new BitcoindRpcClient(instance)
+
   /**
     * Constructs a RPC client from the given datadir, or
     * the default datadir if no directory is provided
     */
-  def fromDatadir(datadir: File = BitcoindConfig.DEFAULT_DATADIR)(
-      implicit system: ActorSystem): BitcoindRpcClient = {
+  def fromDatadir(
+      datadir: File = BitcoindConfig.DEFAULT_DATADIR): BitcoindRpcClient = {
     val instance = BitcoindInstance.fromDatadir(datadir)
-    val cli = new BitcoindRpcClient(instance)
+    val cli = BitcoindRpcClient(instance)
     cli
   }
 }

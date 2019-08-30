@@ -45,7 +45,6 @@ import org.bitcoins.util.ListUtil
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
 import scala.collection.mutable
-import scala.collection.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
@@ -164,6 +163,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     // default to newest version
     case Unknown => getBinary(BitcoindVersion.newest)
     case known @ (V16 | V17) =>
+      import org.bitcoins.core.compat.JavaConverters._
       val versionFolder = Files
         .list(binaryDirectory)
         .iterator()
@@ -471,8 +471,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
-    val client1: BitcoindRpcClient = new BitcoindRpcClient(instance())
-    val client2: BitcoindRpcClient = new BitcoindRpcClient(instance())
+    val client1: BitcoindRpcClient =
+      BitcoindRpcClient.withActorSystem(instance())
+    val client2: BitcoindRpcClient =
+      BitcoindRpcClient.withActorSystem(instance())
 
     val start1F = client1.start()
     val start2F = client2.start()
@@ -536,11 +538,13 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val clients: Vector[T] = (0 until numNodes).map { _ =>
       val rpc = version match {
         case BitcoindVersion.Unknown =>
-          new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+          BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
         case BitcoindVersion.V16 =>
-          new BitcoindV16RpcClient(BitcoindRpcTestUtil.v16Instance())
+          BitcoindV16RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v16Instance())
         case BitcoindVersion.V17 =>
-          new BitcoindV17RpcClient(BitcoindRpcTestUtil.v17Instance())
+          BitcoindV17RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v17Instance())
       }
 
       // this is safe as long as this method is never
@@ -685,7 +689,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       signer: BitcoindRpcClient,
       transaction: Transaction,
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
-  )(implicit actorSystemw: ActorSystem): Future[SignRawTransactionResult] =
+  ): Future[SignRawTransactionResult] =
     signer match {
       case v17: BitcoindV17RpcClient =>
         v17.signRawTransactionWithWallet(transaction, utxoDeps)
@@ -852,7 +856,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")
 
     //start the bitcoind instance so eclair can properly use it
-    val rpc = new BitcoindRpcClient(instance)
+    val rpc = BitcoindRpcClient.withActorSystem(instance)
     val startedF = rpc.start()
 
     val blocksToGenerate = 102

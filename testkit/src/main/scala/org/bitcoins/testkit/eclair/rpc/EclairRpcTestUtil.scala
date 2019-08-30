@@ -634,7 +634,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         rpcUri = auth.bitcoindRpcUri,
         authCredentials = auth.bitcoinAuthOpt.get
       )
-      new BitcoindRpcClient(bitcoindInstance)(system)
+      BitcoindRpcClient.withActorSystem(bitcoindInstance)
     }
     bitcoindRpc
   }
@@ -648,20 +648,19 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     val bitcoindRpc = getBitcoindRpc(eclairRpcClient)
 
     logger.debug(s"shutting down eclair")
-    val killEclairOpt = eclairRpcClient.stop()
+    val stopEclairF = eclairRpcClient.stop()
     val killBitcoindF = BitcoindRpcTestUtil.stopServer(bitcoindRpc)
 
     for {
       _ <- killBitcoindF
+      stopped <- stopEclairF
     } yield {
-      killEclairOpt match {
-        case Some(_) =>
-          logger.debug(
-            "Successfully shutdown eclair and it's corresponding bitcoind")
-        case None =>
-          logger.info(
-            s"Killed a bitcoind instance, but could not find an eclair process to kill")
-      }
+      if (stopped)
+        logger.debug(
+          "Successfully shutdown eclair and it's corresponding bitcoind")
+      else
+        logger.info(
+          s"Killed a bitcoind instance, but could not find an eclair process to kill")
     }
   }
 }

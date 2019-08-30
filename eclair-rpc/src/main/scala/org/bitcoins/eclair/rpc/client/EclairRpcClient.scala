@@ -38,6 +38,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
 import java.nio.file.NoSuchFileException
+import org.bitcoins.core.util.FutureUtil
 
 /**
   * @param binary Path to Eclair Jar. If not present, reads
@@ -718,8 +719,20 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     p.future
   }
 
-  def stop(): Option[Unit] = {
-    process.map(_.destroy())
+  /** Returns true if able to shut down
+    * Eclair instance */
+  def stop(): Future[Boolean] = {
+    val res = process.map(_.destroy()) match {
+      case None    => false
+      case Some(_) => true
+    }
+    val actorSystemF = if (system.name == EclairRpcClient.ActorSystemName) {
+      system.terminate()
+    } else {
+      FutureUtil.unit
+    }
+
+    actorSystemF.map(_ => res)
   }
 
   /**
@@ -793,6 +806,30 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 }
 
 object EclairRpcClient {
+
+  /** THe name we use to create actor systems. We use this to know which
+    * actor systems to shut down on node shutdown */
+  private[eclair] val ActorSystemName = "eclair-rpc-client-created-by-bitcoin-s"
+
+  /**
+    * Creates an RPC client from the given instance,
+    * together with the given actor system. This is for
+    * advanced users, wher you need fine grained control
+    * over the RPC client.
+    */
+  def apply(
+      instance: EclairInstance,
+      binary: Option[File] = None): EclairRpcClient = {
+    implicit val systme = ActorSystem.create(ActorSystemName)
+    withActorSystem(instance, binary)
+  }
+
+  /**
+    * Constructs a RPC client from the given datadir, or
+    * the default datadir if no directory is provided
+    */
+  def withActorSystem(instance: EclairInstance, binary: Option[File] = None)(
+      implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
   private[bitcoins] val commit = "6906ecb"
