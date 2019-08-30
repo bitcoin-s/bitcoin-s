@@ -7,16 +7,11 @@ name := "bitcoin-s-bitcoind-rpc"
 
 libraryDependencies ++= Deps.bitcoindRpc
 
-dependsOn {
-  lazy val core = project in Paths.get("..", "core").toFile
-  core
-}
+dependsOn(Projects.core)
 
-lazy val downloadBitcoind = taskKey[Unit] {
-  "Download bitcoind binaries, extract to ./binaries/bitcoind"
-}
+CommonSettings.prodSettings
 
-downloadBitcoind := {
+TaskKeys.downloadBitcoind := {
   val logger = streams.value.log
   import scala.sys.process._
 
