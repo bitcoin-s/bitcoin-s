@@ -88,7 +88,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
   it should "be able to create a raw transaction" in {
     for {
       (client, otherClient) <- clientsF
-      blocks <- client.generate(2)
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
       firstBlock <- client.getBlock(blocks(0))
       transaction0 <- client.getTransaction(firstBlock.tx(0))
       secondBlock <- client.getBlock(blocks(1))
@@ -123,7 +123,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
                                                                 otherClient)
       signedTransaction <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
 
-      _ <- client.generate(100) // Can't spend coinbase until depth 100
+      _ <- client.getNewAddress.flatMap(client.generateToAddress(100, _)) // Can't spend coinbase until depth 100
 
       _ <- client.sendRawTransaction(signedTransaction.hex,
                                      allowHighFees = true)

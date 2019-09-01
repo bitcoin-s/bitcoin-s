@@ -147,16 +147,25 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 
+  /** The base directory where binaries needed in tests
+    * are located. */
+  private[bitcoins] val baseBinaryDirectory = {
+    val cwd = Paths.get(Properties.userDir)
+    val pathsToGoBackFrom = List("eclair-rpc-test",
+                                 "bitcoind-rpc-test",
+                                 "node-test",
+                                 "wallet-test",
+                                 "chain-test")
+
+    val rootDir = if (pathsToGoBackFrom.exists(cwd.endsWith)) {
+      cwd.getParent()
+    } else cwd
+    rootDir.resolve("binaries")
+  }
+
   /** The directory that sbt downloads bitcoind binaries into */
   private[bitcoins] val binaryDirectory = {
-    val baseDirectory = {
-      val cwd = Paths.get(Properties.userDir)
-      if (cwd.endsWith("bitcoind-rpc-test") || cwd.endsWith("eclair-rpc-test")) {
-        cwd.getParent()
-      } else cwd
-    }
-
-    baseDirectory.resolve("binaries").resolve("bitcoind")
+    baseBinaryDirectory.resolve("bitcoind")
   }
 
   private def getBinary(version: BitcoindVersion): File = version match {

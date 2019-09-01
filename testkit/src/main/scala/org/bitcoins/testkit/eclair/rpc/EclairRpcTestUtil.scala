@@ -29,8 +29,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import java.nio.file.Paths
-import scala.util.Properties
 import java.nio.file.Files
 
 /**
@@ -48,16 +46,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   import org.bitcoins.core.compat.JavaConverters._
 
   /** Directory where sbt downloads Eclair binaries */
-  private[bitcoins] lazy val binaryDirectory = {
-    val baseDirectory = {
-      val cwd = Paths.get(Properties.userDir)
-      if (cwd.endsWith("eclair-rpc-test") || cwd.endsWith("bitcoind-rpc-test")) {
-        cwd.getParent()
-      } else cwd
-    }
-
-    baseDirectory.resolve("binaries").resolve("eclair")
-  }
+  private[bitcoins] val binaryDirectory =
+    BitcoindRpcTestUtil.baseBinaryDirectory.resolve("eclair")
 
   /** Path to Jar downloaded by Eclair, if it exists */
   private[bitcoins] lazy val binary: Option[File] = {
@@ -389,7 +379,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     val genBlocksF = openChannelsF.flatMap { _ =>
-      internalBitcoindF.flatMap(_.generate(3))
+      internalBitcoindF.flatMap(client =>
+        client.getNewAddress.flatMap(client.generateToAddress(3, _)))
     }
 
     genBlocksF.flatMap { _ =>
@@ -595,7 +586,11 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    val gen = fundedChannelIdF.flatMap(_ => bitcoindRpcClient.generate(6))
+    val gen = for {
+      _ <- fundedChannelIdF
+      address <- bitcoindRpcClient.getNewAddress
+      blocks <- bitcoindRpcClient.generateToAddress(6, address)
+    } yield blocks
 
     val openedF = {
       gen.flatMap { _ =>

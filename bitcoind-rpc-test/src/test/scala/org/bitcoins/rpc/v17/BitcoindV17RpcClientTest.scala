@@ -213,7 +213,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       addressNoLabel <- client.getNewAddress
       _ <- otherClient.sendToAddress(addressNoLabel, Bitcoins.one)
       _ <- otherClient.sendToAddress(addressWithLabel, Bitcoins.one)
-      newBlock +: _ <- otherClient.generate(1)
+      newBlock +: _ <- client.getNewAddress.flatMap(
+        otherClient.generateToAddress(1, _))
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
         BitcoindRpcTestUtil.hasSeenBlock(client, newBlock))
       list <- client.listReceivedByLabel()

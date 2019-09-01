@@ -17,13 +17,15 @@ class NodeRpcTest extends BitcoindRpcTest {
   it should "be able to abort a rescan of the blockchain" in {
     clientF.flatMap { client =>
       // generate some extra blocks so rescan isn't too quick
-      client.generate(3000).flatMap { _ =>
-        val rescanFailedF =
-          recoverToSucceededIf[MiscError](client.rescanBlockChain())
-        client.abortRescan().flatMap { _ =>
-          rescanFailedF
+      client.getNewAddress
+        .flatMap(client.generateToAddress(3000, _))
+        .flatMap { _ =>
+          val rescanFailedF =
+            recoverToSucceededIf[MiscError](client.rescanBlockChain())
+          client.abortRescan().flatMap { _ =>
+            rescanFailedF
+          }
         }
-      }
     }
   }
 

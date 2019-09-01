@@ -32,9 +32,9 @@ class SpvNodeTest extends NodeUnitTest {
         a2 <- spvNode.isInitialized.map(assert(_))
       } yield a2
 
-      val hashF: Future[DoubleSha256DigestBE] = {
-        bitcoind.generate(1).map(_.head)
-      }
+      val hashF: Future[DoubleSha256DigestBE] = bitcoind.getNewAddress
+        .flatMap(bitcoind.generateToAddress(1, _))
+        .map(_.head)
 
       //sync our spv node expecting to get that generated hash
       val spvSyncF = for {
@@ -58,7 +58,8 @@ class SpvNodeTest extends NodeUnitTest {
       //we need to generate 1 block for bitcoind to consider
       //itself out of IBD. bitcoind will not sendheaders
       //when it believes itself, or it's peer is in IBD
-      val gen1F = bitcoind.generate(1)
+      val gen1F =
+        bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
 
       //this needs to be called to get our peer to send us headers
       //as they happen with the 'sendheaders' message
@@ -103,7 +104,7 @@ class SpvNodeTest extends NodeUnitTest {
     val genBlock = new Runnable {
       override def run(): Unit = {
         if (counter < desiredBlocks) {
-          bitcoind.generate(1)
+          bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
           counter = counter + 1
         } else {
           //do nothing
