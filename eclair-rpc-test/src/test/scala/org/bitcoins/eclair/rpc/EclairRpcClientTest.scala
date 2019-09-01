@@ -68,12 +68,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   val logger: Logger = BitcoinSLogger.logger
 
   lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
-    val cliF = EclairRpcTestUtil.startedBitcoindRpcClient()
-    // make sure we have enough money open channels
-    //not async safe
-    val blocksF = cliF.flatMap(_.generate(200))
-
-    blocksF.flatMap(_ => cliF)
+    for {
+      cli <- EclairRpcTestUtil.startedBitcoindRpcClient()
+      // make sure we have enough money to open channels
+      address <- cli.getNewAddress
+      _ <- cli.generateToAddress(200, address)
+    } yield cli
   }
 
   lazy val eclairNodesF: Future[EclairNodes4] = {
@@ -383,15 +383,16 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
         val getIsConfirmed = { (client: EclairRpcClient, _: EclairRpcClient) =>
           isOpenedF.flatMap {
             case (chanId, assertion) =>
-              val generatedF = bitcoindRpcClientF.flatMap(_.generate(6))
-              val normalF = generatedF.flatMap { _ =>
-                EclairRpcTestUtil.awaitUntilChannelNormal(
+              for {
+                bitcoind <- bitcoindRpcClientF
+                address <- bitcoind.getNewAddress
+                _ <- bitcoind.generateToAddress(6, address)
+                _ <- EclairRpcTestUtil.awaitUntilChannelNormal(
                   client = client,
                   chanId = chanId
                 )
-              }
 
-              normalF.map(_ => (chanId, assertion))
+              } yield (chanId, assertion)
           }
         }
 
@@ -545,7 +546,9 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             _ <- client.close(channelId)
-            _ <- bitcoindRpcClientF.flatMap(_.generate(6))
+            bitcoind <- bitcoindRpcClientF
+            address <- bitcoind.getNewAddress
+            _ <- bitcoind.generateToAddress(6, address)
           } yield {
             assert(succeeded.nonEmpty)
 
@@ -578,7 +581,9 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
             _ <- EclairRpcTestUtil.awaitUntilChannelClosing(otherClient,
                                                             channelId)
             channel <- otherClient.channel(channelId)
-            _ <- bitcoindRpcClientF.flatMap(_.generate(6))
+            bitcoind <- bitcoindRpcClientF
+            address <- bitcoind.getNewAddress
+            _ <- bitcoind.generateToAddress(6, address)
           } yield {
             assert(succeeded.nonEmpty)
 
@@ -610,7 +615,9 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             _ <- client.close(channelId)
-            _ <- bitcoindRpcClientF.flatMap(_.generate(6))
+            bitcoind <- bitcoindRpcClientF
+            address <- bitcoind.getNewAddress
+            _ <- bitcoind.generateToAddress(6, address)
           } yield {
             assert(succeeded.nonEmpty)
 
@@ -811,7 +818,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
 
     val gen10F =
-      openedChannelsF.flatMap(_ => bitcoindRpcClientF.flatMap(_.generate(10)))
+      for {
+        _ <- openedChannelsF
+        bitcoind <- bitcoindRpcClientF
+        address <- bitcoind.getNewAddress
+        hashes <- bitcoind.generateToAddress(10, address)
+      } yield hashes
 
     val nodesReadyForPayments = gen10F.flatMap(_ => connectedClientsF)
 
@@ -1122,9 +1134,12 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
 
     //confirm the funding tx
-    val genF = channelIdF.flatMap { _ =>
-      bitcoindRpcF.flatMap(_.generate(6))
-    }
+    val genF = for {
+      _ <- channelIdF
+      bitcoind <- bitcoindRpcF
+      address <- bitcoind.getNewAddress
+      headers <- bitcoind.generateToAddress(6, address)
+    } yield headers
 
     channelIdF.flatMap { cid =>
       genF.flatMap { _ =>

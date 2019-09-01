@@ -26,7 +26,8 @@ class BlockchainRpcTest extends BitcoindRpcTest {
 
       for {
         _ <- pruneClient.start()
-        _ <- pruneClient.generate(1000)
+        _ <- pruneClient.getNewAddress.flatMap(
+          pruneClient.generateToAddress(1000, _))
       } yield pruneClient
   }
 
@@ -90,14 +91,14 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       address <- otherClient.getNewAddress(addressType = AddressType.P2SHSegwit)
       txid <- BitcoindRpcTestUtil
         .fundMemPoolTransaction(client, address, Bitcoins(1))
-      blocks <- client.generate(1)
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       mostRecentBlock <- client.getBlock(blocks.head)
       _ <- client.invalidateBlock(blocks.head)
       mempool <- client.getRawMemPool
       count1 <- client.getBlockCount
       count2 <- otherClient.getBlockCount
 
-      _ <- client.generate(2) // Ensure client and otherClient have the same blockchain
+      _ <- client.getNewAddress.flatMap(client.generateToAddress(2, _)) // Ensure client and otherClient have the same blockchain
     } yield {
       assert(mostRecentBlock.tx.contains(txid))
       assert(mempool.contains(txid))
@@ -108,7 +109,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to get block hash by height" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.generate(2)
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
       count <- client.getBlockCount
       hash <- client.getBlockHash(count)
       prevhash <- client.getBlockHash(count - 1)
@@ -125,8 +126,10 @@ class BlockchainRpcTest extends BitcoindRpcTest {
       _ <- freshClient.disconnectNode(otherFreshClient.getDaemon.uri)
       _ <- BitcoindRpcTestUtil.awaitDisconnected(freshClient, otherFreshClient)
 
-      blocks1 <- freshClient.generate(1)
-      blocks2 <- otherFreshClient.generate(1)
+      blocks1 <- freshClient.getNewAddress.flatMap(
+        freshClient.generateToAddress(1, _))
+      blocks2 <- otherFreshClient.getNewAddress.flatMap(
+        otherFreshClient.generateToAddress(1, _))
 
       bestHash1 <- freshClient.getBestBlockHash
       _ = assert(bestHash1 == blocks1.head)
@@ -182,7 +185,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to get a raw block" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.generate(1)
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       block <- client.getBlockRaw(blocks.head)
       blockHeader <- client.getBlockHeaderRaw(blocks.head)
     } yield assert(block.blockHeader == blockHeader)
@@ -191,7 +194,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to get a block" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.generate(1)
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       block <- client.getBlock(blocks.head)
     } yield {
       assert(block.hash == blocks(0))
@@ -222,7 +225,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to get a block with verbose transactions" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.generate(2)
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(2, _))
       block <- client.getBlockWithTransactions(blocks(1))
     } yield {
       assert(block.hash == blocks(1))
@@ -249,7 +252,7 @@ class BlockchainRpcTest extends BitcoindRpcTest {
   it should "be able to list all blocks since a given block" in {
     for {
       (client, _) <- clientsF
-      blocks <- client.generate(3)
+      blocks <- client.getNewAddress.flatMap(client.generateToAddress(3, _))
       list <- client.listSinceBlock(blocks(0))
     } yield {
       assert(list.transactions.length >= 2)

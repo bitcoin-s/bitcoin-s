@@ -12,11 +12,12 @@ class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
   implicit private val actorSystem: ActorSystem =
     ActorSystem("EclairRpcTestUtilTest", BitcoindRpcTestUtil.AKKA_CONFIG)
 
-  private lazy val bitcoindRpcF = {
-    val cliF = EclairRpcTestUtil.startedBitcoindRpcClient()
-    val blocksF = cliF.flatMap(_.generate(200))
-    blocksF.flatMap(_ => cliF)
-  }
+  private lazy val bitcoindRpcF =
+    for {
+      cli <- EclairRpcTestUtil.startedBitcoindRpcClient()
+      address <- cli.getNewAddress
+      blocks <- cli.generateToAddress(200, address)
+    } yield cli
 
   private val clients =
     Vector.newBuilder[EclairRpcClient]

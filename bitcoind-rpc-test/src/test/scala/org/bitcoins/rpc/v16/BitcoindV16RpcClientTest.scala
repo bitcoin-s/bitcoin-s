@@ -42,7 +42,8 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
       (client, otherClient) <- clientsF
       addr <- client.getNewAddress
       _ <- otherClient.sendToAddress(addr, Bitcoins.one)
-      _ <- otherClient.generate(6)
+      _ <- otherClient.getNewAddress.flatMap(
+        otherClient.generateToAddress(6, _))
       peers <- client.getPeerInfo
       _ = assert(peers.exists(_.networkInfo.addr == otherClient.getDaemon.uri))
 

@@ -101,7 +101,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       }
 
       txid <- bitcoind.sendRawTransaction(signedTx)
-      _ <- bitcoind.generate(1)
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
       tx <- bitcoind.getRawTransaction(txid)
 
       _ <- wallet.listUtxos().map {
