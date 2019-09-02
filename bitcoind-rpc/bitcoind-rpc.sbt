@@ -22,21 +22,22 @@ TaskKeys.downloadBitcoind := {
     Files.createDirectories(binaryDir)
   }
 
-  val versions = List("0.17.0.1", "0.16.3")
+  val versions = List("0.18.1", "0.17.0.1", "0.16.3")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
 
-  val platform =
-    if (Properties.isLinux) "x86_64-linux-gnu"
-    else if (Properties.isMac) "osx64"
+  val (platform, suffix) =
+    if (Properties.isLinux) ("x86_64-linux-gnu", "tar.gz")
+    else if (Properties.isMac) ("osx64", "tar.gz")
+    else if (Properties.isWin) ("win64", "zip")
     else sys.error(s"Unsupported OS: ${Properties.osName}")
 
   versions.foreach { version =>
     val versionDir = binaryDir resolve version
-    val archiveLocation = binaryDir resolve s"$version.tar.gz"
+    val archiveLocation = binaryDir resolve s"$version.$suffix"
     val location =
-      s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.tar.gz"
+      s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
 
     val expectedEndLocation = binaryDir resolve s"bitcoin-$version"
     if (Files

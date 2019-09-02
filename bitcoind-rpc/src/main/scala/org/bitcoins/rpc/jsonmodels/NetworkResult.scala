@@ -4,6 +4,11 @@ import java.net.URI
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
+
+import scala.concurrent.duration.FiniteDuration
+import play.api.libs.json.Reads
+import play.api.libs.json.Json
 
 sealed abstract class NetworkResult
 
@@ -75,6 +80,40 @@ case class Peer(
     bytesrecv_per_msg: Map[String, Int])
     extends NetworkResult
 
+/** `bitcoind` v0.18 uses a slightly
+  * different JSON model then previous versions
+  */
+case class PeerV18(
+    addnode: Boolean,
+    addr: URI,
+    addrbind: URI,
+    addrlocal: Option[URI],
+    banscore: Int,
+    bytesrecv_per_msg: Map[String, Int],
+    bytesrecv: Int,
+    bytessent_per_msg: Map[String, Int],
+    bytessent: Int,
+    conntime: UInt32,
+    id: Int,
+    inbound: Boolean,
+    inflight: Vector[Int],
+    lastrecv: UInt32,
+    lastsend: UInt32,
+    minping: Option[BigDecimal],
+    minfeefilter: SatoshisPerKiloByte,
+    pingtime: Option[BigDecimal],
+    pingwait: Option[BigDecimal],
+    relaytxes: Boolean,
+    services: String,
+    startingheight: Int,
+    subver: String,
+    synced_blocks: Int,
+    synced_headers: Int,
+    timeoffset: Int,
+    version: Int,
+    whitelisted: Boolean
+) extends NetworkResult
+
 case class PeerNetworkInfo(
     addr: URI,
     addrbind: URI,
@@ -98,3 +137,10 @@ case class NodeBan(
     ban_created: UInt32,
     ban_reason: String)
     extends NetworkResult
+
+final case class GetNodeAddressesResult(
+    time: FiniteDuration,
+    services: Int,
+    address: java.net.URI,
+    port: Int
+) extends NetworkResult
