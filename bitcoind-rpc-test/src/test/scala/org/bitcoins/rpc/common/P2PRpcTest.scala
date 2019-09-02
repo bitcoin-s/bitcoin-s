@@ -19,18 +19,6 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   behavior of "P2PRpcTest"
 
-  it should "be able to get peer info" in {
-    for {
-      (freshClient, otherFreshClient) <- clientPairF
-      infoList <- freshClient.getPeerInfo
-    } yield {
-      assert(infoList.length >= 0)
-      val info = infoList.head
-      assert(info.addnode)
-      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
-    }
-  }
-
   it should "be able to get the added node info" in {
     for {
 

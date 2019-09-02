@@ -29,6 +29,18 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
 
   behavior of "BitcoindV17RpcClient"
 
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- clientsF
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
+    }
+  }
+
   it should "test mempool acceptance" in {
     for {
       (client, otherClient) <- clientsF

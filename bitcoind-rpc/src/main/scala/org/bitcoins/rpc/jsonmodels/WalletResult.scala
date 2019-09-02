@@ -225,6 +225,14 @@ case class EmbeddedResult(
 
 case class LabelResult(name: String, purpose: LabelPurpose) extends WalletResult
 
+final case class ListWalletDirResult(
+    wallets: Vector[ArrayOfWalletsInput]
+) extends WalletResult
+
+final case class ArrayOfWalletsInput(
+    name: String
+) extends WalletResult
+
 final case class CreateWalletResult(
     name: String,
     warning: String
