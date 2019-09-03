@@ -33,7 +33,6 @@ import play.api.libs.json._
 import scala.util.{Failure, Success}
 
 import org.bitcoins.core.config._
-import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
 
 object JsonReaders {
 
@@ -546,73 +545,5 @@ object JsonReaders {
         case "main"    => MainNet
         case "test"    => TestNet3
       }
-  }
-
-  implicit object PeerV18Reads extends Reads[PeerV18] {
-
-    def reads(json: JsValue): JsResult[PeerV18] =
-      for {
-
-        addnode <- (json \ "addnode").validate[Boolean]
-        addr <- (json \ "addr").validate[URI]
-        addrbind <- (json \ "addrbind").validate[URI]
-        addrlocal <- (json \ "addrlocal").validateOpt[URI]
-        banscore <- (json \ "banscore").validate[Int]
-        bytesrecv_per_msg <- (json \ "bytesrecv_per_msg")
-          .validate[Map[String, Int]]
-        bytesrecv <- (json \ "bytesrecv").validate[Int]
-        bytessent_per_msg <- (json \ "bytessent_per_msg")
-          .validate[Map[String, Int]]
-        bytessent <- (json \ "bytessent").validate[Int]
-        conntime <- (json \ "conntime").validate[UInt32]
-        id <- (json \ "id").validate[Int]
-        inbound <- (json \ "inbound").validate[Boolean]
-        inflight <- (json \ "inflight").validate[Vector[Int]]
-        lastrecv <- (json \ "lastrecv").validate[UInt32]
-        lastsend <- (json \ "lastsend").validate[UInt32]
-        minping <- (json \ "minping").validateOpt[BigDecimal]
-        minfeefilter <- (json \ "minfeefilter").validate[SatoshisPerKiloByte]
-        pingtime <- (json \ "pingtime").validateOpt[BigDecimal]
-        pingwait <- (json \ "pingwait").validateOpt[BigDecimal]
-        relaytxes <- (json \ "relaytxes").validate[Boolean]
-        services <- (json \ "services").validate[String]
-        startingheight <- (json \ "startingheight").validate[Int]
-        subver <- (json \ "subver").validate[String]
-        synced_blocks <- (json \ "synced_blocks").validate[Int]
-        synced_headers <- (json \ "synced_headers").validate[Int]
-        timeoffset <- (json \ "timeoffset").validate[Int]
-        version <- (json \ "version").validate[Int]
-        whitelisted <- (json \ "whitelisted").validate[Boolean]
-      } yield
-        PeerV18(
-          addnode = addnode,
-          addr = addr,
-          addrbind = addrbind,
-          addrlocal = addrlocal,
-          banscore = banscore,
-          bytesrecv_per_msg = bytesrecv_per_msg,
-          bytesrecv = bytesrecv,
-          bytessent_per_msg = bytessent_per_msg,
-          bytessent = bytessent,
-          conntime = conntime,
-          id = id,
-          inbound = inbound,
-          inflight = inflight,
-          lastrecv = lastrecv,
-          lastsend = lastsend,
-          minping = minping,
-          minfeefilter = minfeefilter,
-          pingtime = pingtime,
-          pingwait = pingwait,
-          relaytxes = relaytxes,
-          services = services,
-          startingheight = startingheight,
-          subver = subver,
-          synced_blocks = synced_blocks,
-          synced_headers = synced_headers,
-          timeoffset = timeoffset,
-          version = version,
-          whitelisted = whitelisted
-        )
   }
 }

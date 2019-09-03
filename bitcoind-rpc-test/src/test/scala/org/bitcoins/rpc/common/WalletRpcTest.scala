@@ -70,8 +70,8 @@ class WalletRpcTest extends BitcoindRpcTest {
     } yield {
 
       val expectedFileName =
-        if (client.instance.getVersion == BitcoindVersion.V17) ""
-        else "wallet.dat"
+        if (client.instance.getVersion == BitcoindVersion.V16) "wallet.dat"
+        else ""
 
       assert(wallets == Vector(expectedFileName))
     }

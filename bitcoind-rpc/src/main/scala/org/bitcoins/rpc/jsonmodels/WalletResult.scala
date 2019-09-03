@@ -72,7 +72,7 @@ case class GetWalletInfoResult(
     keypoolsize: Int,
     keypoolsize_hd_internal: Int,
     paytxfee: BitcoinFeeUnit,
-    hdmasterkeyid: Sha256Hash160Digest,
+    hdmasterkeyid: Option[Sha256Hash160Digest],
     unlocked_until: Option[Int])
     extends WalletResult
 
