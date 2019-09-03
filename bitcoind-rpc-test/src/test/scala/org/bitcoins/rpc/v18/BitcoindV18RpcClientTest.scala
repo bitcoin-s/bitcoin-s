@@ -23,18 +23,6 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
 
   behavior of "BitcoindV18RpcClient"
 
-  it should "be able to get peer info" ignore {
-    for {
-      (freshClient, otherFreshClient) <- clientPairF
-      infoList <- freshClient.getPeerInfo
-    } yield {
-      assert(infoList.length >= 0)
-      val info = infoList.head
-      assert(info.addnode)
-      assert(info.addr == otherFreshClient.getDaemon.uri)
-    }
-  }
-
   it should "be able to start a V18 bitcoind instance" in {
 
     clientF.map { client =>
@@ -98,22 +86,10 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
   }
 
   it should "get node addresses given a count" ignore {
-    /* val addedF =
-      clientF.flatMap(client =>
-        client.addNode(client.getDaemon.uri, AddNodeArgument.Add))
-    val nodeF = clientF.flatMap(client => client.getNodeAddresses(1))
-
-    nodeF.map({ result =>
-      assert(result.head.address.isAbsolute)
-      assert(result.head.services == 1)
-     */
     for {
       (freshClient, otherFreshClient) <- clientPairF
       freshclientnode <- freshClient.addNode(freshClient.getDaemon.uri,
                                              AddNodeArgument.Add)
-      otherFreshClientnode <- otherFreshClient.addNode(
-        otherFreshClient.getDaemon.uri,
-        AddNodeArgument.Add)
       nodeaddress <- freshClient.getNodeAddresses(1)
     } yield {
       assert(nodeaddress.head.address == otherFreshClient.instance.uri)

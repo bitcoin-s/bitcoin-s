@@ -24,7 +24,6 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
     implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
-    with V18P2PRpc
     with V18PsbtRpc
     with V18DescriptorRpc
     with V18AssortedRpc {
@@ -91,10 +90,10 @@ object BitcoindV18RpcClient {
       implicit system: ActorSystem): BitcoindV18RpcClient =
     new BitcoindV18RpcClient(instance)(system)
 
-  def fromUnknownVersion(rpcClient: BitcoindRpcClient)(
-      implicit actorSystem: ActorSystem): Try[BitcoindV18RpcClient] =
+  def fromUnknownVersion(
+      rpcClient: BitcoindRpcClient): Try[BitcoindV18RpcClient] =
     Try {
-      new BitcoindV18RpcClient(rpcClient.instance)
+      new BitcoindV18RpcClient(rpcClient.instance)(rpcClient.system)
     }
 
 }

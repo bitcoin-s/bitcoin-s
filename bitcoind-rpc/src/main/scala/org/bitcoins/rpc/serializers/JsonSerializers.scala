@@ -148,23 +148,32 @@ object JsonSerializers {
   implicit val networkInfoReads: Reads[GetNetworkInfoResult] =
     Json.reads[GetNetworkInfoResult]
 
-  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
-    ((__ \ "addr").read[URI] and
-      (__ \ "addrbind").read[URI] and
-      (__ \ "addrlocal").readNullable[URI] and
-      (__ \ "services").read[String] and
-      (__ \ "relaytxes").read[Boolean] and
-      (__ \ "lastsend").read[UInt32] and
-      (__ \ "lastrecv").read[UInt32] and
-      (__ \ "bytessent").read[Int] and
-      (__ \ "bytesrecv").read[Int] and
-      (__ \ "conntime").read[UInt32] and
-      (__ \ "timeoffset").read[Int] and
-      (__ \ "pingtime").readNullable[BigDecimal] and
-      (__ \ "minping").readNullable[BigDecimal] and
-      (__ \ "pingwait").readNullable[BigDecimal])(PeerNetworkInfo)
+  implicit val satsPerKbReads: Reads[SatoshisPerKiloByte] =
+    new Reads[SatoshisPerKiloByte] {
 
-  implicit val peerReads: Reads[Peer] = Json.reads[Peer]
+      def reads(json: JsValue): JsResult[SatoshisPerKiloByte] =
+        SerializerUtil.processJsNumber(num =>
+          SatoshisPerKiloByte(Satoshis(Int64(num.toBigInt))))(json)
+    }
+
+  implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
+    Json.reads[PeerNetworkInfo]
+
+  implicit val peerReads: Reads[Peer] = ((__ \ "id").read[Int] and
+    __.read[PeerNetworkInfo] and
+    (__ \ "version").read[Int] and
+    (__ \ "subver").read[String] and
+    (__ \ "inbound").read[Boolean] and
+    (__ \ "addnode").read[Boolean] and
+    (__ \ "startingheight").read[Int] and
+    (__ \ "banscore").read[Int] and
+    (__ \ "synced_headers").read[Int] and
+    (__ \ "synced_blocks").read[Int] and
+    (__ \ "inflight").read[Vector[Int]] and
+    (__ \ "whitelisted").read[Boolean] and
+    (__ \ "bytessent_per_msg").read[Map[String, Int]] and
+    (__ \ "bytesrecv_per_msg").read[Map[String, Int]] and
+    (__ \ "minfeefilter").readNullable[SatoshisPerKiloByte])(Peer)
 
   implicit val nodeBanReads: Reads[NodeBan] = Json.reads[NodeBan]
 
@@ -404,14 +413,6 @@ object JsonSerializers {
 
   implicit val getRpcInfoResultReads: Reads[GetRpcInfoResult] =
     Json.reads[GetRpcInfoResult]
-
-  implicit val satsPerKbReads: Reads[SatoshisPerKiloByte] =
-    new Reads[SatoshisPerKiloByte] {
-
-      def reads(json: JsValue): JsResult[SatoshisPerKiloByte] =
-        SerializerUtil.processJsNumber(num =>
-          SatoshisPerKiloByte(Satoshis(Int64(num.toBigInt))))(json)
-    }
 
   implicit val arrayOfWalletsInputReads: Reads[ArrayOfWalletsInput] =
     Json.reads[ArrayOfWalletsInput]

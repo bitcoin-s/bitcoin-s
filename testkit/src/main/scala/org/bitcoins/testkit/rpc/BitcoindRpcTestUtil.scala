@@ -472,16 +472,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         .recoverWith {
           case exception: BitcoindException
               if exception.getMessage.contains("Node has not been added") =>
-            from match {
-              case v18: BitcoindV18RpcClient =>
-                v18.getPeerInfo.map(_.forall(_.addr != to.instance.uri))
-              case v17: BitcoindV17RpcClient =>
-                v17.getPeerInfo.map(
-                  _.forall(_.networkInfo.addr != to.instance.uri))
-              case v16: BitcoindV16RpcClient =>
-                v16.getPeerInfo.map(
-                  _.forall(_.networkInfo.addr != to.instance.uri))
-            }
+            from.getPeerInfo.map(_.forall(_.networkInfo.addr != to.instance.uri)) 
         }
 
     }
@@ -741,17 +732,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       case unknown: BitcoindRpcClient =>
         val v16T = BitcoindV16RpcClient.fromUnknownVersion(unknown)
         val v17T = BitcoindV17RpcClient.fromUnknownVersion(unknown)
-        (v16T, v17T) match {
-          case (Failure(_), Failure(_)) =>
+        val v18T = BitcoindV18RpcClient.fromUnknownVersion(unknown)
+        (v16T, v17T, v18T) match {
+          case (Failure(_), Failure(_), Failure(_)) =>
             throw new RuntimeException(
-              "Could not figure out version of provided bitcoind RPC client!")
-          case (Success(_), Success(_)) =>
-            throw new RuntimeException(
+              "Could not figure out version of provided bitcoind RPC client!" + 
               "This should not happen, managed to construct different versioned RPC clients from one single client")
-          case (Success(v16), Failure(_)) =>
+          case (Success(v16), _, _) =>
             v16.signRawTransaction(transaction, utxoDeps)
-          case (Failure(_), Success(v17)) =>
+          case (_, Success(v17), _) =>
             v17.signRawTransactionWithWallet(transaction, utxoDeps)
+          case (_, _, Success(v18)) =>
+            v18.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
 
