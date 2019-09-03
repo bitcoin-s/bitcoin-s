@@ -52,7 +52,8 @@ class PsbtRpcTest extends BitcoindRpcTest {
       processedPsbt <- client.walletProcessPsbt(psbt)
       decoded <- client.decodePsbt(processedPsbt.psbt)
     } yield {
-      assert(decoded.inputs.exists(_.nonWitnessUtxo.isDefined))
+      assert(decoded.inputs.exists(inputs =>
+        inputs.nonWitnessUtxo.isDefined || inputs.witnessUtxo.isDefined))
     }
 
   }
