@@ -406,7 +406,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     import system.dispatcher
 
     for {
-      hashes <- clients.head.getNewAddress.flatMap(clients.head.generateToAddress(blocks, _))
+      address <- clients.head.getNewAddress
+      hashes <- clients.head.generateToAddress(blocks, address)
       _ <- {
         val pairs = ListUtil.uniquePairs(clients)
         val syncFuts = pairs.map {
@@ -472,7 +473,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         .recoverWith {
           case exception: BitcoindException
               if exception.getMessage.contains("Node has not been added") =>
-            from.getPeerInfo.map(_.forall(_.networkInfo.addr != to.instance.uri)) 
+            from.getPeerInfo.map(
+              _.forall(_.networkInfo.addr != to.instance.uri))
         }
 
     }
@@ -689,7 +691,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       amount: Bitcoins = Bitcoins(1))(
       implicit executionContext: ExecutionContext): Future[Transaction] = {
     for {
-      blocks <- sender.getNewAddress.flatMap(sender.generateToAddress(2, _))
+      address <- sender.getNewAddress
+      blocks <- sender.generateToAddress(2, address)
       block0 <- sender.getBlock(blocks(0))
       block1 <- sender.getBlock(blocks(1))
       transaction0 <- sender.getTransaction(block0.tx(0))
@@ -736,8 +739,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         (v16T, v17T, v18T) match {
           case (Failure(_), Failure(_), Failure(_)) =>
             throw new RuntimeException(
-              "Could not figure out version of provided bitcoind RPC client!" + 
-              "This should not happen, managed to construct different versioned RPC clients from one single client")
+              "Could not figure out version of provided bitcoind RPC client!" +
+                "This should not happen, managed to construct different versioned RPC clients from one single client")
           case (Success(v16), _, _) =>
             v16.signRawTransaction(transaction, utxoDeps)
           case (_, Success(v17), _) =>
@@ -778,19 +781,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     implicit val materializer: ActorMaterializer =
       ActorMaterializer.create(actorSystem)
     implicit val ec: ExecutionContextExecutor = materializer.executionContext
-    createRawCoinbaseTransaction(sender, receiver, amount)
-      .flatMap(signRawTransaction(sender, _))
-      .flatMap { signedTransaction =>
-        sender.getNewAddress.flatMap(sender
-          .generateToAddress(100, _))
-          .flatMap { _ => // Can't spend coinbase until depth 100
-            sender
-              .sendRawTransaction(signedTransaction.hex, allowHighFees = true)
-              .flatMap { transactionHash =>
-                sender.getTransaction(transactionHash)
-              }
-          }
-      }
+    for {
+      rawcoinbasetx <- createRawCoinbaseTransaction(sender, receiver, amount)
+      signedtx <- signRawTransaction(sender, rawcoinbasetx)
+      addr <- sender.getNewAddress
+      _ <- sender.generateToAddress(100, addr)
+      // Can't spend coinbase until depth 100
+      transactionHash <- sender.sendRawTransaction(signedtx.hex,
+                                                   allowHighFees = true)
+      transaction <- sender.getTransaction(transactionHash)
+    } yield transaction
   }
 
   /**
