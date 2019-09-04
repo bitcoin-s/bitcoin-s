@@ -75,6 +75,7 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
     }
   }
 
+  //TODO: currently the test doesn't work because of how known nodes work (remove ignore and implement test)
   it should "get node addresses given a count" ignore {
     for {
       (freshClient, otherFreshClient) <- clientPairF
