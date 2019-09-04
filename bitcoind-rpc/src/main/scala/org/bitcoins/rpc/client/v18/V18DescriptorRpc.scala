@@ -22,7 +22,7 @@ trait V18DescriptorRpc {
       range: Option[Vector[Double]]): Future[DeriveAddressesResult] = {
     bitcoindCall[DeriveAddressesResult](
       "deriveaddresses",
-      List(JsString(descriptor), Json.toJson(range))) //todo: specify call arguments
+      List(JsString(descriptor), Json.toJson(range)))
   }
 
   def getDescriptorInfo(descriptor: String): Future[GetDescriptorInfoResult] = {
