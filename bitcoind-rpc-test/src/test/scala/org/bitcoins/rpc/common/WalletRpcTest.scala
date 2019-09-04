@@ -4,22 +4,14 @@ import java.io.File
 import java.util.Scanner
 
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
-import org.bitcoins.core.protocol.P2PKHAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.client.common.{
-  BitcoindRpcClient,
-  BitcoindVersion,
-  RpcOpts
-}
-import org.bitcoins.rpc.jsonmodels.RpcAddress
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion, RpcOpts}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -247,30 +239,51 @@ class WalletRpcTest extends BitcoindRpcTest {
   }
 
   it should "be able to list address groupings" in {
+
+    val amount = Bitcoins(1.25)
+
+    def getChangeAddressAndAmount(client: BitcoindRpcClient, address: BitcoinAddress): Future[(BitcoinAddress,  CurrencyUnit)] = {
+      for {
+        listTx <- client.listTransactions().map(_.filter(tx => tx.address.contains(address) && tx.category == "send"))
+        _ = assert(listTx.nonEmpty)
+        tx = listTx.head
+        _ = assert(tx.txid.nonEmpty)
+        rawTx <- client.getRawTransactionRaw(tx.txid.get)
+      } yield {
+        val outs = rawTx.outputs.filterNot(_.value == amount)
+        val changeAddresses = outs
+          .map(out => (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam), out.value))
+        assert(changeAddresses.size == 1)
+        (changeAddresses.head._1.get, changeAddresses.head._2)
+      }
+    }
+
     for {
       (client, _, _) <- clientsF
+      groupingsBefore <- client.listAddressGroupings
+
       address <- client.getNewAddress
 
       _ <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, address, Bitcoins(1.25))
-      groupings <- client.listAddressGroupings
-      block <- BitcoindRpcTestUtil.getFirstBlock(client)
+        .fundBlockChainTransaction(client, address, amount)
+
+      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client, address)
+
+      groupingsAfter <- client.listAddressGroupings
     } yield {
+
+      // the address should appear in a new address grouping
       val rpcAddress =
-        groupings.find(vec => vec.head.address == address).get.head
+        groupingsAfter.find(vec => vec.head.address == address).get.head
       assert(rpcAddress.address == address)
-      assert(rpcAddress.balance == Bitcoins(1.25))
+      assert(rpcAddress.balance == amount)
 
-      val firstAddress =
-        block.tx.head.vout.head.scriptPubKey.addresses.get.head
-
-      val maxGroup =
-        groupings
-          .max(Ordering.by[Vector[RpcAddress], BigDecimal](addr =>
-            addr.head.balance.toBigDecimal))
-          .head
-
-      assert(maxGroup.address == firstAddress)
+      // the change address should be added to an exiting address grouping
+      val changeGrouping = groupingsAfter.find(after =>
+        groupingsBefore.exists(before => before.head == after.head && before.size + 1 == after.size)).get
+      val rpcChangeAddress = changeGrouping.find(addr => addr.address == changeAddress).get
+      assert(rpcChangeAddress.address == changeAddress)
+      assert(rpcChangeAddress.balance == changeAmount)
     }
   }
 
