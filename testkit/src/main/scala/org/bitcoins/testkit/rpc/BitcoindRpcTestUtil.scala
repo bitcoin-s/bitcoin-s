@@ -812,6 +812,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def fundBlockChainTransaction(
       sender: BitcoindRpcClient,
+      receiver: BitcoindRpcClient,
       address: BitcoinAddress,
       amount: Bitcoins)(
       implicit system: ActorSystem): Future[DoubleSha256DigestBE] = {
