@@ -132,13 +132,16 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
 
   it should "be able to sign a raw transaction" in {
     for {
-      (client, _) <- clientsF
+      (client, server) <- clientsF
       address <- client.getNewAddress
       pubkey <- BitcoindRpcTestUtil.getPubkey(client, address)
       multisig <- client
         .addMultiSigAddress(1, Vector(Left(pubkey.get)))
       txid <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, multisig.address, Bitcoins(1.2))
+        .fundBlockChainTransaction(client,
+                                   server,
+                                   multisig.address,
+                                   Bitcoins(1.2))
       rawTx <- client.getTransaction(txid)
 
       tx <- client.decodeRawTransaction(rawTx.hex)
@@ -187,6 +190,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
       _ <- otherClient.addMultiSigAddress(2, keys)
 
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
+                                                            otherClient,
                                                             multisig.address,
                                                             Bitcoins(1.2))
 

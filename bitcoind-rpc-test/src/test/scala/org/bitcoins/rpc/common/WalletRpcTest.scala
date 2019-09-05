@@ -7,11 +7,18 @@ import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionInput,
+  TransactionOutPoint
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion, RpcOpts}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  RpcOpts
+}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -210,7 +217,7 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     val txidF =
       BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, address, Bitcoins(1.5))
+        .fundBlockChainTransaction(client, thirdClient, address, Bitcoins(1.5))
     val txid = await(txidF)
 
     await(client.getNewAddress.flatMap(client.generateToAddress(1, _)))
@@ -242,9 +249,14 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     val amount = Bitcoins(1.25)
 
-    def getChangeAddressAndAmount(client: BitcoindRpcClient, address: BitcoinAddress): Future[(BitcoinAddress,  CurrencyUnit)] = {
+    def getChangeAddressAndAmount(
+        client: BitcoindRpcClient,
+        address: BitcoinAddress): Future[(BitcoinAddress, CurrencyUnit)] = {
       for {
-        listTx <- client.listTransactions().map(_.filter(tx => tx.address.contains(address) && tx.category == "send"))
+        listTx <- client
+          .listTransactions()
+          .map(_.filter(tx =>
+            tx.address.contains(address) && tx.category == "send"))
         _ = assert(listTx.nonEmpty)
         tx = listTx.head
         _ = assert(tx.txid.nonEmpty)
@@ -252,22 +264,26 @@ class WalletRpcTest extends BitcoindRpcTest {
       } yield {
         val outs = rawTx.outputs.filterNot(_.value == amount)
         val changeAddresses = outs
-          .map(out => (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam), out.value))
+          .map(
+            out =>
+              (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
+               out.value))
         assert(changeAddresses.size == 1)
         (changeAddresses.head._1.get, changeAddresses.head._2)
       }
     }
 
     for {
-      (client, _, _) <- clientsF
+      (client, otherClient, _) <- clientsF
       groupingsBefore <- client.listAddressGroupings
 
       address <- client.getNewAddress
 
       _ <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, address, amount)
+        .fundBlockChainTransaction(client, otherClient, address, amount)
 
-      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client, address)
+      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client,
+                                                                 address)
 
       groupingsAfter <- client.listAddressGroupings
     } yield {
@@ -279,9 +295,13 @@ class WalletRpcTest extends BitcoindRpcTest {
       assert(rpcAddress.balance == amount)
 
       // the change address should be added to an exiting address grouping
-      val changeGrouping = groupingsAfter.find(after =>
-        groupingsBefore.exists(before => before.head == after.head && before.size + 1 == after.size)).get
-      val rpcChangeAddress = changeGrouping.find(addr => addr.address == changeAddress).get
+      val changeGrouping = groupingsAfter
+        .find(after =>
+          groupingsBefore.exists(before =>
+            before.head == after.head && before.size + 1 == after.size))
+        .get
+      val rpcChangeAddress =
+        changeGrouping.find(addr => addr.address == changeAddress).get
       assert(rpcChangeAddress.address == changeAddress)
       assert(rpcChangeAddress.balance == changeAmount)
     }
@@ -319,7 +339,7 @@ class WalletRpcTest extends BitcoindRpcTest {
       (client, otherClient, _) <- clientsF
       address <- otherClient.getNewAddress
       txid <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, address, Bitcoins(1.5))
+        .fundBlockChainTransaction(client, otherClient, address, Bitcoins(1.5))
       receivedList <- otherClient.listReceivedByAddress()
     } yield {
       val entryList =
@@ -339,6 +359,7 @@ class WalletRpcTest extends BitcoindRpcTest {
       address <- client.getNewAddress
       _ <- otherClient.importAddress(address)
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
+                                                            otherClient,
                                                             address,
                                                             Bitcoins(1.5))
       list <- otherClient.listReceivedByAddress(includeWatchOnly = true)
