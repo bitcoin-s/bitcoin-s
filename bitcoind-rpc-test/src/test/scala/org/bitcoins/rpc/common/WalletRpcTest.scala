@@ -3,7 +3,7 @@ package org.bitcoins.rpc.common
 import java.io.File
 import java.util.Scanner
 
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -249,18 +249,9 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     val amount = Bitcoins(1.25)
 
-    def getChangeAddressAndAmount(
-        client: BitcoindRpcClient,
-        address: BitcoinAddress): Future[(BitcoinAddress, CurrencyUnit)] = {
+    def getChangeAddressAndAmount(client: BitcoindRpcClient, address: BitcoinAddress, txid: DoubleSha256DigestBE): Future[(BitcoinAddress,  CurrencyUnit)] = {
       for {
-        listTx <- client
-          .listTransactions()
-          .map(_.filter(tx =>
-            tx.address.contains(address) && tx.category == "send"))
-        _ = assert(listTx.nonEmpty)
-        tx = listTx.head
-        _ = assert(tx.txid.nonEmpty)
-        rawTx <- client.getRawTransactionRaw(tx.txid.get)
+        rawTx <- client.getRawTransactionRaw(txid)
       } yield {
         val outs = rawTx.outputs.filterNot(_.value == amount)
         val changeAddresses = outs
@@ -269,6 +260,7 @@ class WalletRpcTest extends BitcoindRpcTest {
               (BitcoinAddress.fromScriptPubKey(out.scriptPubKey, networkParam),
                out.value))
         assert(changeAddresses.size == 1)
+        assert(changeAddresses.head._1.get != address)
         (changeAddresses.head._1.get, changeAddresses.head._2)
       }
     }
@@ -279,29 +271,30 @@ class WalletRpcTest extends BitcoindRpcTest {
 
       address <- client.getNewAddress
 
-      _ <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, otherClient, address, amount)
+      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client, otherClient, address, amount)
 
-      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client,
-                                                                 address)
+      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client, address, txid)
 
       groupingsAfter <- client.listAddressGroupings
     } yield {
 
       // the address should appear in a new address grouping
-      val rpcAddress =
-        groupingsAfter.find(vec => vec.head.address == address).get.head
+      assert(!groupingsBefore.exists(vec => vec.exists(_.address == address)))
+
+      val rpcAddress = groupingsAfter.find(vec => vec.exists(_.address == address)).get.head
       assert(rpcAddress.address == address)
       assert(rpcAddress.balance == amount)
 
       // the change address should be added to an exiting address grouping
-      val changeGrouping = groupingsAfter
-        .find(after =>
-          groupingsBefore.exists(before =>
-            before.head == after.head && before.size + 1 == after.size))
-        .get
-      val rpcChangeAddress =
-        changeGrouping.find(addr => addr.address == changeAddress).get
+      assert(!groupingsBefore.exists(vec => vec.exists(_.address == changeAddress)))
+
+      val changeGroupingOpt = groupingsAfter.find(vec => vec.exists(_.address == changeAddress))
+      assert(changeGroupingOpt.nonEmpty)
+
+      val changeGrouping = changeGroupingOpt.get
+      assert(changeGrouping.size > 1)
+
+      val rpcChangeAddress = changeGrouping.find(addr => addr.address == changeAddress).get
       assert(rpcChangeAddress.address == changeAddress)
       assert(rpcChangeAddress.balance == changeAmount)
     }
