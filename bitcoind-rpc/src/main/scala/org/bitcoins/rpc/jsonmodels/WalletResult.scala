@@ -72,7 +72,7 @@ case class GetWalletInfoResult(
     keypoolsize: Int,
     keypoolsize_hd_internal: Int,
     paytxfee: BitcoinFeeUnit,
-    hdmasterkeyid: Sha256Hash160Digest,
+    hdmasterkeyid: Option[Sha256Hash160Digest],
     unlocked_until: Option[Int])
     extends WalletResult
 
@@ -224,6 +224,14 @@ case class EmbeddedResult(
     extends WalletResult
 
 case class LabelResult(name: String, purpose: LabelPurpose) extends WalletResult
+
+final case class ListWalletDirResult(
+    wallets: Vector[ArrayOfWalletsInput]
+) extends WalletResult
+
+final case class ArrayOfWalletsInput(
+    name: String
+) extends WalletResult
 
 final case class CreateWalletResult(
     name: String,

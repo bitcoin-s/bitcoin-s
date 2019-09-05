@@ -1,45 +1,34 @@
-package org.bitcoins.rpc.client.v17
-
+package org.bitcoins.rpc.client.v18
 import akka.actor.ActorSystem
-import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.rpc.client.common.{
-  BitcoindRpcClient,
-  BitcoindVersion,
-  RpcOpts
-}
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.{
-  SignRawTransactionResult,
-  TestMempoolAcceptResult
-}
+
+import scala.util.Try
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.rpc.client.common.RpcOpts
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.rpc.jsonmodels.SignRawTransactionResult
+import play.api.libs.json.Json
+import play.api.libs.json.JsString
+import scala.concurrent.Future
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters._
-import play.api.libs.json.{JsArray, JsBoolean, JsString, Json}
-
-import scala.concurrent.Future
-import scala.util.Try
 
 /**
-  * This class is compatible with version 0.17 of Bitcoin Core.
-  *
-  * @see [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient Scaladocs]]
-  *
-  * @define signRawTx Bitcoin Core 0.17 had a breaking change in the API
-  *                   for signing raw transactions. Previously the same
-  *                   RPC call was used for signing a TX with existing keys
-  *                   in the Bitcoin Core wallet or a manually provided private key.
-  *                   These RPC calls are now separated out into two distinct calls.
+  * Class for creating a BitcoindV18 instance that can access RPCs
+  * @param instance
+  * @param actorSystem
   */
-class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
+class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
     implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
-    with V17LabelRpc
-    with V17PsbtRpc {
+    with V18PsbtRpc
+    with V18DescriptorRpc
+    with V18AssortedRpc {
 
-  override def version: BitcoindVersion = BitcoindVersion.V17
+  override lazy val version: BitcoindVersion = BitcoindVersion.V18
 
   /**
     * $signRawTx
@@ -75,19 +64,9 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
                                                 Json.toJson(utxoDeps),
                                                 Json.toJson(sigHash)))
 
-  // testmempoolaccept expects (and returns) a list of txes,
-  // but currently only lists of length 1 is supported
-  def testMempoolAccept(
-      transaction: Transaction,
-      allowHighFees: Boolean = false): Future[TestMempoolAcceptResult] = {
-    bitcoindCall[Vector[TestMempoolAcceptResult]](
-      "testmempoolaccept",
-      List(JsArray(Vector(Json.toJson(transaction))), JsBoolean(allowHighFees)))
-      .map(_.head)
-  }
 }
 
-object BitcoindV17RpcClient {
+object BitcoindV18RpcClient {
 
   /**
     * Creates an RPC client from the given instance.
@@ -96,7 +75,7 @@ object BitcoindV17RpcClient {
     * you. You can use `withActorSystem` if you want to
     * manually specify an actor system for the RPC client.
     */
-  def apply(instance: BitcoindInstance): BitcoindV17RpcClient = {
+  def apply(instance: BitcoindInstance): BitcoindV18RpcClient = {
     implicit val system = ActorSystem.create(BitcoindRpcClient.ActorSystemName)
     withActorSystem(instance)
   }
@@ -108,12 +87,13 @@ object BitcoindV17RpcClient {
     * over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(
-      implicit system: ActorSystem): BitcoindV17RpcClient =
-    new BitcoindV17RpcClient(instance)
+      implicit system: ActorSystem): BitcoindV18RpcClient =
+    new BitcoindV18RpcClient(instance)(system)
 
   def fromUnknownVersion(
-      rpcClient: BitcoindRpcClient): Try[BitcoindV17RpcClient] =
+      rpcClient: BitcoindRpcClient): Try[BitcoindV18RpcClient] =
     Try {
-      new BitcoindV17RpcClient(rpcClient.instance)(rpcClient.system)
+      new BitcoindV18RpcClient(rpcClient.instance)(rpcClient.system)
     }
+
 }

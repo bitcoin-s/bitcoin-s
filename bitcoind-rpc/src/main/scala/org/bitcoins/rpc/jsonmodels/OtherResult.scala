@@ -9,6 +9,7 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
@@ -53,8 +54,8 @@ case class BlockTransaction(
 
 case class GetMiningInfoResult(
     blocks: Int,
-    currentblockweight: Int,
-    currentblocktx: Int,
+    currentblockweight: Option[Int],
+    currentblocktx: Option[Int],
     difficulty: BigDecimal,
     networkhashps: BigDecimal,
     pooledtx: Int,
@@ -99,8 +100,6 @@ trait ValidateAddressResult {
   @deprecated("Use 'getaddressinfo' instead", since = "0.16")
   def hex: Option[String]
 
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def addresses: Option[Vector[BitcoinAddress]]
   def sigsrequired: Option[Int]
 
   @deprecated("Use 'getaddressinfo' instead", since = "0.16")
@@ -117,6 +116,15 @@ trait ValidateAddressResult {
 
   @deprecated("Use 'getaddressinfo' instead", since = "0.16")
   def hdmasterkeyid: Option[Sha256Hash160Digest]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def ischange: Option[Boolean]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def solvable: Option[Boolean]
+
+  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
+  def desc: Option[String]
 }
 
 case class ValidateAddressResultImpl(
@@ -128,13 +136,15 @@ case class ValidateAddressResultImpl(
     isscript: Option[Boolean],
     script: Option[String],
     hex: Option[String],
-    addresses: Option[Vector[BitcoinAddress]],
     sigsrequired: Option[Int],
     pubkey: Option[ECPublicKey],
     iscompressed: Option[Boolean],
     account: Option[String],
     hdkeypath: Option[String],
-    hdmasterkeyid: Option[Sha256Hash160Digest])
+    hdmasterkeyid: Option[Sha256Hash160Digest],
+    ischange: Option[Boolean],
+    solvable: Option[Boolean],
+    desc: Option[String])
     extends ValidateAddressResult
 
 case class EstimateSmartFeeResult(
@@ -148,3 +158,15 @@ case class TestMempoolAcceptResult(
     allowed: Boolean,
     rejectReason: Option[String]
 )
+
+final case class DeriveAddressesResult(addresses: Vector[BitcoinAddress])
+    extends OtherResult
+
+final case class GetDescriptorInfoResult(
+    descriptor: String,
+    isrange: Boolean,
+    issolvable: Boolean,
+    hasprivatekeys: Boolean
+) extends OtherResult
+
+final case class SubmitHeaderResult(header: BlockHeader) extends OtherResult

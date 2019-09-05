@@ -49,12 +49,12 @@ trait P2PRpc { self: Client =>
     bitcoindCall[Int]("getconnectioncount")
   }
 
-  def getNetworkInfo: Future[GetNetworkInfoResult] = {
-    bitcoindCall[GetNetworkInfoResult]("getnetworkinfo")
-  }
-
   def getNetTotals: Future[GetNetTotalsResult] = {
     bitcoindCall[GetNetTotalsResult]("getnettotals")
+  }
+
+  def getNetworkInfo: Future[GetNetworkInfoResult] = {
+    bitcoindCall[GetNetworkInfoResult]("getnetworkinfo")
   }
 
   def getPeerInfo: Future[Vector[Peer]] = {
