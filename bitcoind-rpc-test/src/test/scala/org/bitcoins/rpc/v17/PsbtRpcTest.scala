@@ -60,9 +60,10 @@ class PsbtRpcTest extends BitcoindRpcTest {
 
   it should "finalize a simple PSBT" in {
     for {
-      (client, _, _) <- clientsF
+      (client, otherClient, _) <- clientsF
       addr <- client.getNewAddress
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
+                                                            otherClient,
                                                             addr,
                                                             Bitcoins.one)
       vout <- BitcoindRpcTestUtil.findOutput(client, txid, Bitcoins.one)

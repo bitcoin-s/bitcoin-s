@@ -147,8 +147,12 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
     val emptyAccount = "empty_account"
 
     val ourAccountAddress = await(client.getNewAddress(ourAccount))
-    await(BitcoindRpcTestUtil
-      .fundBlockChainTransaction(otherClient, ourAccountAddress, Bitcoins(1.5)))
+    await(
+      BitcoindRpcTestUtil
+        .fundBlockChainTransaction(otherClient,
+                                   client,
+                                   ourAccountAddress,
+                                   Bitcoins(1.5)))
 
     val accountlessAddress = await(client.getNewAddress)
 
@@ -156,7 +160,10 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
 
     val _ = await(
       BitcoindRpcTestUtil
-        .fundBlockChainTransaction(otherClient, accountlessAddress, sendAmt))
+        .fundBlockChainTransaction(otherClient,
+                                   client,
+                                   accountlessAddress,
+                                   sendAmt))
 
     if (Properties.isMac) Thread.sleep(10000)
     val ourAccountAmount = await(client.getReceivedByAccount(ourAccount))
