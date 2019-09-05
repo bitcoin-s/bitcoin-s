@@ -812,15 +812,20 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def fundBlockChainTransaction(
       sender: BitcoindRpcClient,
+      receiver: BitcoindRpcClient,
       address: BitcoinAddress,
       amount: Bitcoins)(
       implicit system: ActorSystem): Future[DoubleSha256DigestBE] = {
     implicit val mat: ActorMaterializer = ActorMaterializer.create(system)
     implicit val ec: ExecutionContextExecutor = mat.executionContext
-    fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
-      sender.getNewAddress.flatMap(sender.generateToAddress(1, _)).map { _ =>
-        txid
-      }
+
+    for {
+      txid <- fundMemPoolTransaction(sender, address, amount)
+      addr <- sender.getNewAddress
+      blockHash <- sender.generateToAddress(1, addr).map(_.head)
+      _ <- hasSeenBlock(receiver, blockHash)
+    } yield {
+      txid
     }
   }
 

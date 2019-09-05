@@ -153,10 +153,10 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
 
   it should "be able to get the amount received by a label" in {
     for {
-      (client, _) <- clientsF
+      (client, otherClient) <- clientsF
       address <- client.getNewAddress(usedLabel)
       _ <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, address, Bitcoins(1.5))
+        .fundBlockChainTransaction(client, otherClient, address, Bitcoins(1.5))
 
       amount <- client.getReceivedByLabel(usedLabel)
     } yield assert(amount == Bitcoins(1.5))
@@ -204,7 +204,10 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       addr <- client.getNewAddress
-      _ <- BitcoindRpcTestUtil.fundBlockChainTransaction(otherClient, addr, btc)
+      _ <- BitcoindRpcTestUtil.fundBlockChainTransaction(otherClient,
+                                                         client,
+                                                         addr,
+                                                         btc)
 
       newestBlock <- otherClient.getBestBlockHash
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
