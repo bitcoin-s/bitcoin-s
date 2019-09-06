@@ -173,10 +173,10 @@ class TransactionTest extends BitcoinSUnitTest {
       assert(
         outPoint.txId == input.previousOutput.txId,
         s"""
-        |OutPoint txId not the same as input prevout txid
-        |outPoint.txId: ${outPoint.txId}
-        |input prevout txid: ${input.previousOutput.txId}
-        |""".stripMargin
+           |OutPoint txId not the same as input prevout txid
+           |outPoint.txId: ${outPoint.txId}
+           |input prevout txid: ${input.previousOutput.txId}
+           |""".stripMargin
       )
       val txSigComponent = amountOpt match {
         case Some(amount) =>

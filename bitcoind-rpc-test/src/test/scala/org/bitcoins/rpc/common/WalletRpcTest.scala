@@ -3,7 +3,11 @@ package org.bitcoins.rpc.common
 import java.io.File
 import java.util.Scanner
 
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  ECPublicKey
+}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -249,7 +253,10 @@ class WalletRpcTest extends BitcoindRpcTest {
 
     val amount = Bitcoins(1.25)
 
-    def getChangeAddressAndAmount(client: BitcoindRpcClient, address: BitcoinAddress, txid: DoubleSha256DigestBE): Future[(BitcoinAddress,  CurrencyUnit)] = {
+    def getChangeAddressAndAmount(
+        client: BitcoindRpcClient,
+        address: BitcoinAddress,
+        txid: DoubleSha256DigestBE): Future[(BitcoinAddress, CurrencyUnit)] = {
       for {
         rawTx <- client.getRawTransactionRaw(txid)
       } yield {
@@ -271,9 +278,14 @@ class WalletRpcTest extends BitcoindRpcTest {
 
       address <- client.getNewAddress
 
-      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client, otherClient, address, amount)
+      txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
+                                                            otherClient,
+                                                            address,
+                                                            amount)
 
-      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client, address, txid)
+      (changeAddress, changeAmount) <- getChangeAddressAndAmount(client,
+                                                                 address,
+                                                                 txid)
 
       groupingsAfter <- client.listAddressGroupings
     } yield {
@@ -281,20 +293,24 @@ class WalletRpcTest extends BitcoindRpcTest {
       // the address should appear in a new address grouping
       assert(!groupingsBefore.exists(vec => vec.exists(_.address == address)))
 
-      val rpcAddress = groupingsAfter.find(vec => vec.exists(_.address == address)).get.head
+      val rpcAddress =
+        groupingsAfter.find(vec => vec.exists(_.address == address)).get.head
       assert(rpcAddress.address == address)
       assert(rpcAddress.balance == amount)
 
       // the change address should be added to an exiting address grouping
-      assert(!groupingsBefore.exists(vec => vec.exists(_.address == changeAddress)))
+      assert(
+        !groupingsBefore.exists(vec => vec.exists(_.address == changeAddress)))
 
-      val changeGroupingOpt = groupingsAfter.find(vec => vec.exists(_.address == changeAddress))
+      val changeGroupingOpt =
+        groupingsAfter.find(vec => vec.exists(_.address == changeAddress))
       assert(changeGroupingOpt.nonEmpty)
 
       val changeGrouping = changeGroupingOpt.get
       assert(changeGrouping.size > 1)
 
-      val rpcChangeAddress = changeGrouping.find(addr => addr.address == changeAddress).get
+      val rpcChangeAddress =
+        changeGrouping.find(addr => addr.address == changeAddress).get
       assert(rpcChangeAddress.address == changeAddress)
       assert(rpcChangeAddress.balance == changeAmount)
     }

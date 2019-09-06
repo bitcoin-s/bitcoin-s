@@ -197,7 +197,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
             ScriptNumber(g.group(1))
           } else {
             ScriptConstant(g.group(1))
-        }))
+          }))
     scriptConstants.toList
   }
 

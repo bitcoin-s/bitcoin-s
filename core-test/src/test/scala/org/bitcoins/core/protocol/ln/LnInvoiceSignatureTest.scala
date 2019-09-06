@@ -7,7 +7,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class LnInvoiceSignatureTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   behavior of "LnInvoiceSignature"

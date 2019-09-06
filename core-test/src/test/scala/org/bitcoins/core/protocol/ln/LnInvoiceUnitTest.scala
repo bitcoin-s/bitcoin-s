@@ -25,7 +25,7 @@ import scodec.bits.ByteVector
 class LnInvoiceUnitTest extends BitcoinSUnitTest {
   behavior of "LnInvoice"
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   val hrpEmpty = LnHumanReadablePart(LnBitcoinMainNet)

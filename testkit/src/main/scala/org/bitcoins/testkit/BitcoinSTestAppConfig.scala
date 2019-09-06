@@ -17,11 +17,11 @@ object BitcoinSTestAppConfig {
   def getTestConfig(config: Config*): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
-      |bitcoin-s {
-      |  logging {
-      |     level = WARN
-      |  } 
-      |}
+        |bitcoin-s {
+        |  logging {
+        |     level = WARN
+        |  } 
+        |}
       """.stripMargin
     }
     val tmpDir = Files.createTempDirectory("bitcoin-s-")
@@ -47,12 +47,12 @@ object BitcoinSTestAppConfig {
     def memConfigForProject(project: ProjectType): String = {
       val name = project.toString().toLowerCase()
       s"""
-        | $name.db {
-        |   url = "jdbc:sqlite:file:$name.db:?mode=memory&cache=shared"
-        |   connectionPool = disabled
-        |   keepAliveConnection = true
-        | }
-        |""".stripMargin
+         | $name.db {
+         |   url = "jdbc:sqlite:file:$name.db:?mode=memory&cache=shared"
+         |   connectionPool = disabled
+         |   keepAliveConnection = true
+         | }
+         |""".stripMargin
     }
 
     val confStr = project match {
@@ -60,10 +60,10 @@ object BitcoinSTestAppConfig {
       case Some(p) => memConfigForProject(p)
     }
     val nestedConfStr = s"""
-    | bitcoin-s {
-    | $confStr
-    | }
-    |""".stripMargin
+                           | bitcoin-s {
+                           | $confStr
+                           | }
+                           |""".stripMargin
     ConfigFactory.parseString(nestedConfStr)
   }
 

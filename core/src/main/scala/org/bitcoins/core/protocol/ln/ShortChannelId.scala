@@ -28,9 +28,9 @@ case class ShortChannelId(u64: UInt64) extends NetworkElement {
     * }}}
     */
   def toHumanReadableString: String = {
-    val blockHeight =  (u64 >> 40) & UInt64(0xFFFFFF)
-    val txIndex =  (u64 >> 16) & UInt64(0xFFFFFF)
-    val outputIndex =  u64 & UInt64(0xFFFF)
+    val blockHeight = (u64 >> 40) & UInt64(0xFFFFFF)
+    val txIndex = (u64 >> 16) & UInt64(0xFFFFFF)
+    val outputIndex = u64 & UInt64(0xFFFF)
     s"${blockHeight.toInt}x${txIndex.toInt}x${outputIndex.toInt}"
   }
 
@@ -42,19 +42,24 @@ object ShortChannelId extends Factory[ShortChannelId] {
     new ShortChannelId(UInt64.fromBytes(byteVector))
   }
 
-  def fromHumanReadableString(str: String): ShortChannelId = str.split("x") match {
-    case Array(_blockHeight, _txIndex, _outputIndex) =>
-      val blockHeight = BigInt(_blockHeight)
-      require(blockHeight >= 0 && blockHeight <= 0xffffff, "ShortChannelId: invalid block height")
+  def fromHumanReadableString(str: String): ShortChannelId =
+    str.split("x") match {
+      case Array(_blockHeight, _txIndex, _outputIndex) =>
+        val blockHeight = BigInt(_blockHeight)
+        require(blockHeight >= 0 && blockHeight <= 0xffffff,
+                "ShortChannelId: invalid block height")
 
-      val txIndex = _txIndex.toInt
-      require(txIndex >= 0 && txIndex <= 0xffffff, "ShortChannelId:invalid tx index")
+        val txIndex = _txIndex.toInt
+        require(txIndex >= 0 && txIndex <= 0xffffff,
+                "ShortChannelId:invalid tx index")
 
-      val outputIndex = _outputIndex.toInt
-      require(outputIndex >= 0 && outputIndex <= 0xffff, "ShortChannelId: invalid output index")
+        val outputIndex = _outputIndex.toInt
+        require(outputIndex >= 0 && outputIndex <= 0xffff,
+                "ShortChannelId: invalid output index")
 
-      val u64 = UInt64(((blockHeight & 0xffffffL) << 40) | ((txIndex & 0xffffffL) << 16) | (outputIndex & 0xffffL))
-      ShortChannelId(u64)
-    case _: Array[String] => fromHex(str)
-  }
+        val u64 = UInt64(
+          ((blockHeight & 0xFFFFFFL) << 40) | ((txIndex & 0xFFFFFFL) << 16) | (outputIndex & 0xFFFFL))
+        ShortChannelId(u64)
+      case _: Array[String] => fromHex(str)
+    }
 }

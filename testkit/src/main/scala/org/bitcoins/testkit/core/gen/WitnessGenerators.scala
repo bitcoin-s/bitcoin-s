@@ -192,10 +192,9 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
     val requiredSigs = scriptPubKey.requiredSigs
     val txSignatures = for {
       i <- 0 until requiredSigs
-    } yield
-      TransactionSignatureCreator.createSig(unsignedWtxSigComponent,
-                                            privateKeys(i),
-                                            hashType)
+    } yield TransactionSignatureCreator.createSig(unsignedWtxSigComponent,
+                                                  privateKeys(i),
+                                                  hashType)
 
     //add the signature to the scriptSig instead of having an empty scriptSig
     val signedScriptSig = MultiSignatureScriptSignature(txSignatures)

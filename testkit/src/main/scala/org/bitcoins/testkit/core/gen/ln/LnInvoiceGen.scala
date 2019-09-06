@@ -101,16 +101,15 @@ sealed abstract class LnInvoiceGen {
     for {
       paymentHash <- paymentHashTag
       descOrHashTag <- descriptionOrDescriptionHashTag
-    } yield
-      LnTaggedFields(
-        paymentHash = paymentHash,
-        descriptionOrHash = descOrHashTag,
-        expiryTime = None,
-        cltvExpiry = None,
-        fallbackAddress = None,
-        nodeId = None,
-        routingInfo = None
-      )
+    } yield LnTaggedFields(
+      paymentHash = paymentHash,
+      descriptionOrHash = descOrHashTag,
+      expiryTime = None,
+      cltvExpiry = None,
+      fallbackAddress = None,
+      nodeId = None,
+      routingInfo = None
+    )
   }
 
   def optionalTags(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] = {
@@ -123,16 +122,15 @@ sealed abstract class LnInvoiceGen {
       cltvExpiry <- Gen.option(cltvExpiry)
       fallbackAddress <- Gen.option(fallbackAddress)
       routes <- Gen.option(routingInfo)
-    } yield
-      LnTaggedFields(
-        paymentHash = paymentHash,
-        descriptionOrHash = descOrHashTag,
-        expiryTime = expiryTime,
-        cltvExpiry = cltvExpiry,
-        fallbackAddress = fallbackAddress,
-        nodeId = nodeIdOpt.map(NodeIdTag(_)),
-        routingInfo = routes
-      )
+    } yield LnTaggedFields(
+      paymentHash = paymentHash,
+      descriptionOrHash = descOrHashTag,
+      expiryTime = expiryTime,
+      cltvExpiry = cltvExpiry,
+      fallbackAddress = fallbackAddress,
+      nodeId = nodeIdOpt.map(NodeIdTag(_)),
+      routingInfo = routes
+    )
   }
 
   def allTags(nodeIdOpt: Option[NodeId]): Gen[LnTaggedFields] = {
@@ -145,16 +143,15 @@ sealed abstract class LnInvoiceGen {
       cltvExpiry <- cltvExpiry
       fallbackAddress <- fallbackAddress
       routes <- routingInfo
-    } yield
-      LnTaggedFields(
-        paymentHash = paymentHash,
-        descriptionOrHash = descOrHashTag,
-        expiryTime = Some(expiryTime),
-        cltvExpiry = Some(cltvExpiry),
-        fallbackAddress = Some(fallbackAddress),
-        nodeId = nodeIdOpt.map(NodeIdTag(_)),
-        routingInfo = Some(routes)
-      )
+    } yield LnTaggedFields(
+      paymentHash = paymentHash,
+      descriptionOrHash = descOrHashTag,
+      expiryTime = Some(expiryTime),
+      cltvExpiry = Some(cltvExpiry),
+      fallbackAddress = Some(fallbackAddress),
+      nodeId = nodeIdOpt.map(NodeIdTag(_)),
+      routingInfo = Some(routes)
+    )
   }
 
   /** Generated a tagged fields with an explicit

@@ -215,7 +215,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
 
       nWordNotZero && ((nSize > 34) ||
       (nWord > UInt8.max.toBigInt && nSize > 33) ||
-      (nWord > UInt32(0xffffL).toBigInt && nSize > 32))
+      (nWord > UInt32(0xFFFFL).toBigInt && nSize > 32))
     }
 
     BlockHeader.TargetDifficultyHelper(result.abs(), isNegative, isOverflow)
@@ -273,14 +273,14 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
     }
 
     //~0x007fffff = 0xff800000
-    require((compact & UInt32(0xff800000L)) == UInt32.zero,
+    require((compact & UInt32(0xFF800000L)) == UInt32.zero,
             s"Exponent/sign bit must not be set yet in compact encoding")
     require(size < 256, "Size of compact encoding can't be more than 2^256")
 
     compact = compact | UInt32(size << 24)
 
     compact = {
-      if (isNegative && ((compact & UInt32(0x007fffffL)) != UInt32.zero)) {
+      if (isNegative && ((compact & UInt32(0x007FFFFFL)) != UInt32.zero)) {
         compact | negativeFlag
       } else {
         compact | UInt32.zero

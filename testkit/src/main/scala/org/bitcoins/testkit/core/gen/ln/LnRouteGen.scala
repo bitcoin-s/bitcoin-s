@@ -39,12 +39,11 @@ trait LnRouteGen {
       baseFee <- feeBaseMSat
       feeProp <- feeProportionalMillionths
       cltvExpiryDelta <- NumberGenerator.positiveShort
-    } yield
-      LnRoute(pubkey = pubKey,
-              shortChannelID = id,
-              feeBaseMsat = baseFee,
-              feePropMilli = feeProp,
-              cltvExpiryDelta = cltvExpiryDelta)
+    } yield LnRoute(pubkey = pubKey,
+                    shortChannelID = id,
+                    feeBaseMsat = baseFee,
+                    feePropMilli = feeProp,
+                    cltvExpiryDelta = cltvExpiryDelta)
 
   def routes: Gen[Vector[LnRoute]] = {
     Gen

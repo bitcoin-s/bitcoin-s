@@ -59,7 +59,8 @@ sealed abstract class ScriptNumber
   def *(that: ScriptNumber): ScriptNumber =
     ScriptNumber(underlying * that.underlying)
 
-  override def compare(that: ScriptNumber): Int = underlying compare that.underlying
+  override def compare(that: ScriptNumber): Int =
+    underlying compare that.underlying
 
   def <(that: Int64): Boolean = underlying < that.toLong
 

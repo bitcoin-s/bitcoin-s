@@ -9,7 +9,7 @@ import scodec.bits.ByteVector
   */
 class ECDigitalSignatureTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig = generatorDrivenConfigNewCode
+  implicit override val generatorDrivenConfig = generatorDrivenConfigNewCode
 
   "ECDigitalSignature" must "say that empty signature is a valid DER encoded signature" in {
     val emptySiganture = ECDigitalSignature(ByteVector.empty)
