@@ -47,11 +47,10 @@ private[wallet] trait AddressHandling extends KeyHandlingLogger {
     Vector[(TransactionOutput, TransactionOutPoint)]] =
     for {
       spks <- listSPKs()
-    } yield
-      transaction.outputs.zipWithIndex.collect {
-        case (out, index) if spks.contains(out.scriptPubKey) =>
-          (out, TransactionOutPoint(transaction.txId, UInt32(index)))
-      }.toVector
+    } yield transaction.outputs.zipWithIndex.collect {
+      case (out, index) if spks.contains(out.scriptPubKey) =>
+        (out, TransactionOutPoint(transaction.txId, UInt32(index)))
+    }.toVector
 
   /**
     * Derives a new address in the wallet for the

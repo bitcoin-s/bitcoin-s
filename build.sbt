@@ -74,7 +74,7 @@ lazy val `bitcoin-s` = project
       import scala.collection.JavaConverters._
       val logger = streams.value.log
 
-      def cleanPath(path: Path, isRoot: Boolean = true): Unit = {
+      def cleanPath(path: Path, isRoot: Boolean = true): Unit =
         if (Files.isDirectory(path)) {
           path.toFile.list().map { file =>
             val toClean = path.resolve(file)
@@ -89,7 +89,6 @@ lazy val `bitcoin-s` = project
         } else {
           Files.deleteIfExists(path)
         }
-      }
 
       val websiteScaladocDir =
         Paths.get("website", "static", "api").toAbsolutePath
@@ -111,14 +110,17 @@ lazy val `bitcoin-s` = project
           .drop(1) // skip the root directory
           .foreach { child =>
             val pathDiff = generatedDir.toPath.relativize(child)
-            Files.copy(child,
-                       websiteScaladocDir.resolve(pathDiff),
-                       StandardCopyOption.REPLACE_EXISTING)
+            Files.copy(
+              child,
+              websiteScaladocDir.resolve(pathDiff),
+              StandardCopyOption.REPLACE_EXISTING
+            )
           }
       } catch {
         case e: Throwable =>
           logger.err(
-            "Error when copying Scaladocs to website folder: ${e.toString}")
+            "Error when copying Scaladocs to website folder: ${e.toString}"
+          )
           throw e
       }
       Seq(generatedDir)
@@ -294,8 +296,10 @@ lazy val bench = project
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
-  .settings(libraryDependencies ++= Deps.eclairRpcTest,
-            name := "bitcoin-s-eclair-rpc-test")
+  .settings(
+    libraryDependencies ++= Deps.eclairRpcTest,
+    name := "bitcoin-s-eclair-rpc-test"
+  )
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")

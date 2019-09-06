@@ -86,8 +86,6 @@ sealed trait BitcoindVersion
 
 object BitcoindVersion {
 
-
-
   /** The newest version of `bitcoind` we support */
   val newest = V18
 

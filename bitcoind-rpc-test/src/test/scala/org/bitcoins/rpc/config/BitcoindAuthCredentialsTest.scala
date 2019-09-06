@@ -9,7 +9,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
   it must "handle cookie based auth" in {
     val confStr = """
-        |regtest=1
+                    |regtest=1
         """.stripMargin
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
     val auth = BitcoindAuthCredentials.fromConfig(conf)
@@ -25,9 +25,9 @@ class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
 
   it must "default to password based auth" in {
     val confStr = """
-        |regtest=1
-        |rpcuser=foo
-        |rpcpassword=bar
+                    |regtest=1
+                    |rpcuser=foo
+                    |rpcpassword=bar
         """.stripMargin
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
     val auth = BitcoindAuthCredentials.fromConfig(conf)
@@ -44,9 +44,9 @@ class BitcoindAuthCredentialsTest extends BitcoinSUnitTest {
 
   it must "handle password based auth" in {
     val confStr = """
-      |regtest=1
-      |rpcuser=foo
-      |rpcpassword=bar
+                    |regtest=1
+                    |rpcuser=foo
+                    |rpcpassword=bar
       """.stripMargin
 
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())

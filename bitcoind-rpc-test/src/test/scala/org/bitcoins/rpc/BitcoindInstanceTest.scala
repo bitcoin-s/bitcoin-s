@@ -58,10 +58,10 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
   it should "start a bitcoind with cookie based authentication" in {
     val confStr = s"""
-    |regtest=1
-    |daemon=1
-    |port=${RpcUtil.randomPort}
-    |rpcport=${RpcUtil.randomPort}
+                     |regtest=1
+                     |daemon=1
+                     |port=${RpcUtil.randomPort}
+                     |rpcport=${RpcUtil.randomPort}
     """.stripMargin
 
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
@@ -76,12 +76,12 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
 
   it should "start a bitcoind with user and password based authentication" in {
     val confStr = s"""
-      |daemon=1
-      |regtest=1
-      |rpcuser=foobar
-      |rpcpassword=barfoo
-      |port=${RpcUtil.randomPort}
-      |rpcport=${RpcUtil.randomPort}
+                     |daemon=1
+                     |regtest=1
+                     |rpcuser=foobar
+                     |rpcpassword=barfoo
+                     |port=${RpcUtil.randomPort}
+                     |rpcport=${RpcUtil.randomPort}
       """.stripMargin
 
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
@@ -104,11 +104,11 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val port = RpcUtil.randomPort
     val rpcPort = RpcUtil.randomPort
     val confStr = s"""
-       |daemon=1
-       |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
-       |regtest=1
-       |port=${RpcUtil.randomPort}
-       |rpcport=${RpcUtil.randomPort}
+                     |daemon=1
+                     |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
+                     |regtest=1
+                     |port=${RpcUtil.randomPort}
+                     |rpcport=${RpcUtil.randomPort}
        """.stripMargin
 
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())

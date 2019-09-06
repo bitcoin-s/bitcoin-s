@@ -140,7 +140,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
       CompactSizeUInt(UInt64(script.bytes.size), 1)
     } else if (script.bytes.size <= 0xffff) {
       CompactSizeUInt(UInt64(script.bytes.size), 3)
-    } else if (script.bytes.size <= 0xffffffffL) {
+    } else if (script.bytes.size <= 0xFFFFFFFFL) {
       CompactSizeUInt(UInt64(script.bytes.size), 5)
     } else CompactSizeUInt(UInt64(script.bytes.size), 9)
   }

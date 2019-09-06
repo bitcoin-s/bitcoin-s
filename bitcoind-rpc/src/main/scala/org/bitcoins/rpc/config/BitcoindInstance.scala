@@ -18,7 +18,6 @@ import java.nio.file.Files
 
 import scala.util.Properties
 
-
 /**
   * Created by chris on 4/29/17.
   */

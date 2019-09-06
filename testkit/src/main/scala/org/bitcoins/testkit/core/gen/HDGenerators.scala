@@ -105,11 +105,10 @@ object HDGenerators {
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
       chainType <- hdChainType
-    } yield
-      LegacyHDPath(coinType = coinType,
-                   addressIndex = addressIndex,
-                   accountIndex = accountIndex,
-                   chainType = chainType)
+    } yield LegacyHDPath(coinType = coinType,
+                         addressIndex = addressIndex,
+                         accountIndex = accountIndex,
+                         chainType = chainType)
 
   def segwithHdPath: Gen[SegWitHDPath] =
     for {
@@ -117,11 +116,10 @@ object HDGenerators {
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
       chainType <- hdChainType
-    } yield
-      SegWitHDPath(coinType = coinType,
-                   addressIndex = addressIndex,
-                   accountIndex = accountIndex,
-                   chainType = chainType)
+    } yield SegWitHDPath(coinType = coinType,
+                         addressIndex = addressIndex,
+                         accountIndex = accountIndex,
+                         chainType = chainType)
 
   def nestedSegwithHdPath: Gen[NestedSegWitHDPath] =
     for {
@@ -129,11 +127,10 @@ object HDGenerators {
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
       chainType <- hdChainType
-    } yield
-      NestedSegWitHDPath(coinType = coinType,
-                         addressIndex = addressIndex,
-                         accountIndex = accountIndex,
-                         chainType = chainType)
+    } yield NestedSegWitHDPath(coinType = coinType,
+                               addressIndex = addressIndex,
+                               accountIndex = accountIndex,
+                               chainType = chainType)
 
   def hdPath: Gen[HDPath] =
     Gen.oneOf(legacyHdPath, segwithHdPath, nestedSegwithHdPath)
@@ -143,12 +140,11 @@ object HDGenerators {
   def hdPathWithConstructor: Gen[(HDPath, HDPathConstructor)] =
     for {
       path <- hdPath
-    } yield
-      path match {
-        case legacy: LegacyHDPath       => (legacy, LegacyHDPath(_))
-        case nested: NestedSegWitHDPath => (nested, NestedSegWitHDPath(_))
-        case segwit: SegWitHDPath       => (segwit, SegWitHDPath(_))
-      }
+    } yield path match {
+      case legacy: LegacyHDPath       => (legacy, LegacyHDPath(_))
+      case nested: NestedSegWitHDPath => (nested, NestedSegWitHDPath(_))
+      case segwit: SegWitHDPath       => (segwit, SegWitHDPath(_))
+    }
 
   /**
     * Generates a pair of paths that can be diffed.

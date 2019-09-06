@@ -20,7 +20,7 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
 
   it must "parse networks" in {
     val conf = BitcoindConfig("""
-        |regtest=1
+                                |regtest=1
         """.stripMargin,
                               tmpDir)
     assert(conf.network == RegTest)
@@ -28,13 +28,13 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
 
   it must "prioritize a prefixed option" in {
     val confStr = """
-    |regtest=1
-    |
-    |rpcport=2000
-    |regtest.rpcport=3000
-    |
-    |[regtest]
-    |rpcport=4000
+                    |regtest=1
+                    |
+                    |rpcport=2000
+                    |regtest.rpcport=3000
+                    |
+                    |[regtest]
+                    |rpcport=4000
     """.stripMargin.split("\n")
 
     val conf = BitcoindConfig(confStr, tmpDir)
@@ -44,14 +44,14 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
 
   it must "avoid to get prefixed options in section headers" in {
     val confStr = """
-    |regtest=1
-    |
-    |rpcport=2000
-    |
-    |[regtest]
-    |rpcport=4000
-    |
-    |regtest.rpcport=3000
+                    |regtest=1
+                    |
+                    |rpcport=2000
+                    |
+                    |[regtest]
+                    |rpcport=4000
+                    |
+                    |regtest.rpcport=3000
     """.stripMargin.split("\n")
 
     val conf = BitcoindConfig(confStr, tmpDir)
@@ -61,12 +61,12 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
 
   it must "avoid getting options for the wrong network" in {
     val confStr = """
-    |testnet=1
-    |
-    |[regtest]
-    |rpcport=4000
-    |
-    |regtest.rpcport=3000
+                    |testnet=1
+                    |
+                    |[regtest]
+                    |rpcport=4000
+                    |
+                    |regtest.rpcport=3000
     """.stripMargin.split("\n")
 
     val conf = BitcoindConfig(confStr, tmpDir)
@@ -76,17 +76,17 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
 
   it must "get options with multiple header sections" in {
     val confStr = """
-    |testnet=1
-    |
-    |[test]
-    |rpcuser=username
-    |rpcport=3000
-    |
-    |[regtest]
-    |rpcport=4000
-    |
-    |[main]
-    |rpcport=1000
+                    |testnet=1
+                    |
+                    |[test]
+                    |rpcuser=username
+                    |rpcport=3000
+                    |
+                    |[regtest]
+                    |rpcport=4000
+                    |
+                    |[main]
+                    |rpcport=1000
     """.stripMargin.split("\n")
 
     val conf = BitcoindConfig(confStr, tmpDir)
@@ -105,17 +105,17 @@ class BitcoindConfigTest extends BitcoinSUnitTest {
 
   it must "get options with multiple header sections when our section is the last" in {
     val confStr = """
-    |regtest=1
-    |
-    |[test]
-    |rpcport=3000
-    |
-    |[main]
-    |rpcport=1000
+                    |regtest=1
+                    |
+                    |[test]
+                    |rpcport=3000
+                    |
+                    |[main]
+                    |rpcport=1000
 
-    |[regtest]
-    |rpcport=4000
-    |rpcuser=username
+                    |[regtest]
+                    |rpcport=4000
+                    |rpcuser=username
     """.stripMargin.split("\n")
 
     val conf = BitcoindConfig(confStr, tmpDir)

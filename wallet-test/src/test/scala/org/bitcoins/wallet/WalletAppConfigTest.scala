@@ -38,10 +38,10 @@ class WalletAppConfigTest extends BitcoinSUnitTest {
 
   it should "not matter how the overrides are passed in" in {
     val overrider = ConfigFactory.parseString(s"""
-    |bitcoin-s {
-    |  network = mainnet
-    |}
-    |""".stripMargin)
+                                                 |bitcoin-s {
+                                                 |  network = mainnet
+                                                 |}
+                                                 |""".stripMargin)
 
     val throughConstuctor = WalletAppConfig(tempDir, overrider)
     val throughWithOverrides = config.withOverrides(overrider)
@@ -82,15 +82,15 @@ class WalletAppConfigTest extends BitcoinSUnitTest {
     val tempDir = Files.createTempDirectory("bitcoin-s")
     val tempFile = Files.createFile(tempDir.resolve("bitcoin-s.conf"))
     val confStr = """
-    | bitcoin-s {
-    |   network = testnet3
-    |   
-    |   logging {
-    |     level = off
-    |
-    |     p2p = warn
-    |   }
-    | }
+                    | bitcoin-s {
+                    |   network = testnet3
+                    |   
+                    |   logging {
+                    |     level = off
+                    |
+                    |     p2p = warn
+                    |   }
+                    | }
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 

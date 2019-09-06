@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
 
 class ExtKeyTest extends BitcoinSUnitTest {
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   behavior of "ExtKey"

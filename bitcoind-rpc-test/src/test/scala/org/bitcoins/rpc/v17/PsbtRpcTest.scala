@@ -73,11 +73,10 @@ class PsbtRpcTest extends BitcoindRpcTest {
         Map(newAddr -> Bitcoins(0.5)))
       processed <- client.walletProcessPsbt(psbt)
       finalized <- client.finalizePsbt(processed.psbt)
-    } yield
-      finalized match {
-        case _: FinalizedPsbt    => succeed
-        case _: NonFinalizedPsbt => fail
-      }
+    } yield finalized match {
+      case _: FinalizedPsbt    => succeed
+      case _: NonFinalizedPsbt => fail
+    }
   }
 
   // copies this test from Core: https://github.com/bitcoin/bitcoin/blob/master/test/functional/rpc_psbt.py#L158

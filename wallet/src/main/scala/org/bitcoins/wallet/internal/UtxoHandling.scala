@@ -134,13 +134,12 @@ private[wallet] trait UtxoHandling extends KeyHandlingLogger {
       addressDbEitherF.flatMap { addressDbE =>
         val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
           addressDb <- addressDbE
-        } yield
-          writeUtxo(txid = transaction.txIdBE,
-                    confirmations = confirmations,
-                    spent = spent,
-                    output,
-                    outPoint,
-                    addressDb)
+        } yield writeUtxo(txid = transaction.txIdBE,
+                          confirmations = confirmations,
+                          spent = spent,
+                          output,
+                          outPoint,
+                          addressDb)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {

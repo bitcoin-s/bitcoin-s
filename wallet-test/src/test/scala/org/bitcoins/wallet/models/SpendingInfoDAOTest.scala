@@ -25,12 +25,11 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     for {
       created <- WalletTestUtil.insertSegWitUTXO(daos)
       read <- utxoDAO.read(created.id.get)
-    } yield
-      read match {
-        case None                          => fail(s"Did not read back a UTXO")
-        case Some(_: SegwitV0SpendingInfo) => succeed
-        case Some(other)                   => fail(s"did not get segwit UTXO: $other")
-      }
+    } yield read match {
+      case None                          => fail(s"Did not read back a UTXO")
+      case Some(_: SegwitV0SpendingInfo) => succeed
+      case Some(other)                   => fail(s"did not get segwit UTXO: $other")
+    }
   }
 
   it should "insert a legacy UTXO and read it" in { daos =>
@@ -38,12 +37,11 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     for {
       created <- WalletTestUtil.insertLegacyUTXO(daos)
       read <- utxoDAO.read(created.id.get)
-    } yield
-      read match {
-        case None                        => fail(s"Did not read back a UTXO")
-        case Some(_: LegacySpendingInfo) => succeed
-        case Some(other)                 => fail(s"did not get a legacy UTXO: $other")
-      }
+    } yield read match {
+      case None                        => fail(s"Did not read back a UTXO")
+      case Some(_: LegacySpendingInfo) => succeed
+      case Some(other)                 => fail(s"did not get a legacy UTXO: $other")
+    }
   }
 
   it should "find incoming outputs being spent, given a TX" in { daos =>

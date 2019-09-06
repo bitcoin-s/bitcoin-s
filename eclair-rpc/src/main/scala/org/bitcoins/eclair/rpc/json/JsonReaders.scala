@@ -122,14 +122,13 @@ object JsonReaders {
         description <- (jsValue \ "description").validate[String]
         paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
         expiry <- (jsValue \ "expiry").validate[Long]
-      } yield
-        InvoiceResult(prefix,
-                      timestamp.seconds,
-                      nodeId,
-                      serialized,
-                      description,
-                      paymentHash,
-                      expiry.seconds)
+      } yield InvoiceResult(prefix,
+                            timestamp.seconds,
+                            nodeId,
+                            serialized,
+                            description,
+                            paymentHash,
+                            expiry.seconds)
     }
   }
 
@@ -145,13 +144,12 @@ object JsonReaders {
       localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
         .validate[MilliSatoshis]
 
-    } yield
-      OpenChannelInfo(nodeId = nodeId,
-                      shortChannelId = shortChannelId,
-                      channelId = channelId,
-                      localMsat = localMsat,
-                      remoteMsat = remoteMsat,
-                      state = state)
+    } yield OpenChannelInfo(nodeId = nodeId,
+                            shortChannelId = shortChannelId,
+                            channelId = channelId,
+                            localMsat = localMsat,
+                            remoteMsat = remoteMsat,
+                            state = state)
   }
 
   implicit val baseChannelInfoReads: Reads[BaseChannelInfo] = Reads { jsValue =>
@@ -164,12 +162,11 @@ object JsonReaders {
       localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
         .validate[MilliSatoshis]
 
-    } yield
-      BaseChannelInfo(nodeId = nodeId,
-                      channelId = channelId,
-                      localMsat = localMsat,
-                      remoteMsat = remoteMsat,
-                      state = state)
+    } yield BaseChannelInfo(nodeId = nodeId,
+                            channelId = channelId,
+                            localMsat = localMsat,
+                            remoteMsat = remoteMsat,
+                            state = state)
   }
 
   implicit val channelInfoReads: Reads[ChannelInfo] = Reads { jsValue =>
@@ -220,13 +217,12 @@ object JsonReaders {
       feeProportional <- (js \ "data" \ "channelUpdate" \ "feeProportionalMillionths")
         .validateOpt[FeeProportionalMillionths]
       data <- (js \ "data").validate[JsObject]
-    } yield
-      ChannelResult(nodeId = nodeId,
-                    state = state,
-                    channelId = channelId,
-                    feeBaseMsat = feeBaseMsat,
-                    feeProportionalMillionths = feeProportional,
-                    data = data)
+    } yield ChannelResult(nodeId = nodeId,
+                          state = state,
+                          channelId = channelId,
+                          feeBaseMsat = feeBaseMsat,
+                          feeProportionalMillionths = feeProportional,
+                          data = data)
   }
 
   implicit val lnInvoiceReads: Reads[LnInvoice] =

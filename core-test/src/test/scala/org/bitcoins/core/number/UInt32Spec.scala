@@ -112,7 +112,7 @@ class UInt32Spec extends Properties("UInt32") {
     Prop.forAllNoShrink(NumberGenerator.uInt32s, Gen.choose(0, 32)) {
       case (u32, shift) =>
         val r = Try(u32 << shift)
-        val expected = (u32.toLong << shift) & 0xffffffffL
+        val expected = (u32.toLong << shift) & 0xFFFFFFFFL
         if (r.isSuccess && expected <= UInt32.max.toLong) {
           r.get == UInt32(expected)
         } else {
