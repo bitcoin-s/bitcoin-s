@@ -9,107 +9,6 @@ flywayClean / aggregate := false
 //allow us to wipe our test databases
 Test / flywayClean / aggregate := true
 
-lazy val commonCompilerOpts = {
-  List(
-    "-Xsource:2.12",
-    "-target:jvm-1.8"
-  )
-}
-
-val scala2_13CompilerOpts = Seq("-Xlint:unused")
-
-val nonScala2_13CompilerOpts = Seq(
-  "-Xmax-classfile-name",
-  "128",
-  "-Ywarn-unused",
-  "-Ywarn-unused-import"
-)
-
-//https://docs.scala-lang.org/overviews/compiler-options/index.html
-def compilerOpts(scalaVersion: String) =
-  Seq(
-    "-encoding",
-    "UTF-8",
-    "-unchecked",
-    "-feature",
-    "-deprecation",
-    "-Ywarn-dead-code",
-    "-Ywarn-value-discard",
-    "-Ywarn-unused",
-    "-unchecked",
-    "-deprecation",
-    "-feature"
-  ) ++ commonCompilerOpts ++ {
-    if (scalaVersion.startsWith("2.13")) scala2_13CompilerOpts
-    else nonScala2_13CompilerOpts
-  }
-
-val testCompilerOpts = commonCompilerOpts
-
-lazy val isCI = {
-  sys.props
-    .get("CI")
-    .isDefined
-}
-lazy val commonSettings = List(
-  organization := "org.bitcoin-s",
-  homepage := Some(url("https://bitcoin-s.org")),
-  developers := List(
-    Developer(
-      "christewart",
-      "Chris Stewart",
-      "stewart.chris1234@gmail.com",
-      url("https://twitter.com/Chris_Stewart_5")
-    )
-  ),
-  ////
-  // scaladoc settings
-  Compile / doc / scalacOptions ++= List(
-    "-doc-title",
-    "Bitcoin-S",
-    "-doc-version",
-    version.value
-  ),
-  // Set apiURL to define the base URL for the Scaladocs for our library.
-  // This will enable clients of our library to automatically link against
-  // the API documentation using autoAPIMappings.
-  apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
-  // scaladoc settings end
-  ////
-  scalacOptions in Compile := compilerOpts(scalaVersion.value),
-  scalacOptions in Test := testCompilerOpts,
-  Compile / compile / javacOptions ++= {
-    if (isCI) {
-      //jdk11 is used on CI, we need to use the --release flag to make sure
-      //byte code is compatible with jdk 8
-      //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
-      Seq("--release", "8")
-    } else {
-      Seq("-source", "1.8", "-target", "1.8")
-    }
-  },
-  //show full stack trace of failed tests
-  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
-  //show duration of tests
-  testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
-  licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-  // Travis has performance issues on macOS
-  Test / parallelExecution := !(Properties.isMac && isCI)
-)
-
-lazy val commonTestSettings = Seq(
-  publish / skip := true
-) ++ commonSettings
-
-lazy val commonTestWithDbSettings = Seq(
-  // To make in-memory DBs work properly
-  Test / fork := true,
-  // To avoid deadlock issues with SQLite
-  Test / parallelExecution := false
-) ++ commonTestSettings
-
-lazy val commonProdSettings = commonSettings
-
 lazy val Benchmark = config("bench") extend Test
 lazy val benchSettings: Seq[Def.SettingsDefinition] = {
   //for scalameter
@@ -128,6 +27,11 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
     inConfig(Benchmark)(Defaults.testSettings)
   )
 }
+
+import Projects._
+lazy val core = project in file("core")
+lazy val bitcoindRpc = project in file("bitcoind-rpc")
+lazy val eclairRpc = project in file("eclair-rpc")
 
 // quoting the val name this way makes it appear as
 // 'bitcoin-s' in sbt/bloop instead of 'bitcoins'
@@ -157,7 +61,7 @@ lazy val `bitcoin-s` = project
     testkit,
     zmq
   )
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.settings: _*)
   // crossScalaVersions must be set to Nil on the aggregating project
   .settings(crossScalaVersions := Nil)
   // unidoc aggregates Scaladocs for all subprojects into one big doc
@@ -170,7 +74,7 @@ lazy val `bitcoin-s` = project
       import scala.collection.JavaConverters._
       val logger = streams.value.log
 
-      def cleanPath(path: Path, isRoot: Boolean = true): Unit = {
+      def cleanPath(path: Path, isRoot: Boolean = true): Unit =
         if (Files.isDirectory(path)) {
           path.toFile.list().map { file =>
             val toClean = path.resolve(file)
@@ -185,7 +89,6 @@ lazy val `bitcoin-s` = project
         } else {
           Files.deleteIfExists(path)
         }
-      }
 
       val websiteScaladocDir =
         Paths.get("website", "static", "api").toAbsolutePath
@@ -207,14 +110,17 @@ lazy val `bitcoin-s` = project
           .drop(1) // skip the root directory
           .foreach { child =>
             val pathDiff = generatedDir.toPath.relativize(child)
-            Files.copy(child,
-                       websiteScaladocDir.resolve(pathDiff),
-                       StandardCopyOption.REPLACE_EXISTING)
+            Files.copy(
+              child,
+              websiteScaladocDir.resolve(pathDiff),
+              StandardCopyOption.REPLACE_EXISTING
+            )
           }
       } catch {
         case e: Throwable =>
           logger.err(
-            "Error when copying Scaladocs to website folder: ${e.toString}")
+            "Error when copying Scaladocs to website folder: ${e.toString}"
+          )
           throw e
       }
       Seq(generatedDir)
@@ -228,7 +134,7 @@ lazy val `bitcoin-s` = project
 
 lazy val secp256k1jni = project
   .in(file("secp256k1jni"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .settings(
     libraryDependencies ++= Deps.secp256k1jni,
     // we place lib files in this directory
@@ -280,16 +186,9 @@ lazy val secp256k1jni = project
   */
 val testAndCompile = "compile->compile;test->test"
 
-lazy val core = project
-  .in(file("core"))
-  .settings(commonProdSettings: _*)
-  .dependsOn(
-    secp256k1jni
-  )
-
 lazy val coreTest = project
   .in(file("core-test"))
-  .settings(commonTestSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .settings(
     name := "bitcoin-s-core-test"
   )
@@ -300,7 +199,7 @@ lazy val coreTest = project
 
 lazy val walletServer = project
   .in(file("app/server"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     picklers,
     node,
@@ -311,7 +210,7 @@ lazy val walletServer = project
 
 lazy val walletServerTest = project
   .in(file("app/server-test"))
-  .settings(commonTestSettings)
+  .settings(CommonSettings.testSettings)
   .dependsOn(
     walletServer,
     testkit
@@ -321,19 +220,19 @@ lazy val walletServerTest = project
 // and CLI
 lazy val picklers = project
   .in(file("app/picklers"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(core % testAndCompile)
 
 lazy val cli = project
   .in(file("app/cli"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     picklers
   )
 
 lazy val cliTest = project
   .in(file("app/cli-test"))
-  .settings(commonTestSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .dependsOn(
     cli,
     testkit
@@ -342,7 +241,7 @@ lazy val cliTest = project
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
 lazy val chain = project
   .in(file("chain"))
-  .settings(commonProdSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain",
@@ -353,7 +252,7 @@ lazy val chain = project
 
 lazy val chainTest = project
   .in(file("chain-test"))
-  .settings(commonTestWithDbSettings: _*)
+  .settings(CommonSettings.testWithDbSettings: _*)
   .settings(chainDbSettings: _*)
   .settings(
     name := "bitcoin-s-chain-test",
@@ -364,7 +263,7 @@ lazy val chainTest = project
 
 lazy val dbCommons = project
   .in(file("db-commons"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-db-commons",
     libraryDependencies ++= Deps.dbCommons
@@ -373,24 +272,20 @@ lazy val dbCommons = project
 
 lazy val zmq = project
   .in(file("zmq"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-zmq", libraryDependencies ++= Deps.bitcoindZmq)
   .dependsOn(
     core % testAndCompile
   )
 
-lazy val bitcoindRpc = project
-  .in(file("bitcoind-rpc"))
-  .settings(commonProdSettings: _*)
-
 lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
-  .settings(commonTestSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val bench = project
   .in(file("bench"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .settings(
     libraryDependencies ++= Deps.bench,
     name := "bitcoin-s-bench",
@@ -398,22 +293,20 @@ lazy val bench = project
   )
   .dependsOn(core % testAndCompile)
 
-lazy val eclairRpc = project
-  .in(file("eclair-rpc"))
-  .settings(commonProdSettings: _*)
-
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
-  .settings(commonTestSettings: _*)
-  .settings(libraryDependencies ++= Deps.eclairRpcTest,
-            name := "bitcoin-s-eclair-rpc-test")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    libraryDependencies ++= Deps.eclairRpcTest,
+    name := "bitcoin-s-eclair-rpc-test"
+  )
   .dependsOn(core % testAndCompile, testkit)
 
 lazy val nodeDbSettings = dbFlywaySettings("nodedb")
 lazy val node =
   project
     .in(file("node"))
-    .settings(commonSettings: _*)
+    .settings(CommonSettings.prodSettings: _*)
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node",
@@ -430,7 +323,7 @@ lazy val node =
 lazy val nodeTest =
   project
     .in(file("node-test"))
-    .settings(commonTestWithDbSettings: _*)
+    .settings(CommonSettings.testWithDbSettings: _*)
     .settings(nodeDbSettings: _*)
     .settings(
       name := "bitcoin-s-node-test",
@@ -452,7 +345,7 @@ lazy val nodeTest =
 
 lazy val testkit = project
   .in(file("testkit"))
-  .settings(commonSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     core % testAndCompile,
     walletServer,
@@ -466,7 +359,7 @@ lazy val testkit = project
 
 lazy val docs = project
   .in(file("bitcoin-s-docs")) // important: it must not be docs/
-  .settings(commonTestSettings: _*)
+  .settings(CommonSettings.testSettings: _*)
   .dependsOn(
     bitcoindRpc,
     core,
@@ -479,7 +372,7 @@ lazy val docs = project
 lazy val walletDbSettings = dbFlywaySettings("walletdb")
 lazy val wallet = project
   .in(file("wallet"))
-  .settings(commonProdSettings: _*)
+  .settings(CommonSettings.prodSettings: _*)
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet",
@@ -490,7 +383,7 @@ lazy val wallet = project
 
 lazy val walletTest = project
   .in(file("wallet-test"))
-  .settings(commonTestWithDbSettings: _*)
+  .settings(CommonSettings.testWithDbSettings: _*)
   .settings(walletDbSettings: _*)
   .settings(
     name := "bitcoin-s-wallet-test",

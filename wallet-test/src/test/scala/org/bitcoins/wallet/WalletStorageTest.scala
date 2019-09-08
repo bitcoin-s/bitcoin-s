@@ -91,11 +91,11 @@ class WalletStorageTest
   it must "fail to read a mnemonic that has bad JSON in it" in { _ =>
     val badJson =
       """
-      | {
-      |   "iv":"ba7722683dad8067df8d069ee04530cc",
-      |   "cipherText":,
-      |   "salt":"2b7e7d718139518070a87fbbda03ea33cdcda83b555020e9344774e6e7d08af2"
-      | }
+        | {
+        |   "iv":"ba7722683dad8067df8d069ee04530cc",
+        |   "cipherText":,
+        |   "salt":"2b7e7d718139518070a87fbbda03ea33cdcda83b555020e9344774e6e7d08af2"
+        | }
     """.stripMargin
     Files.write(datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME),
                 badJson.getBytes())

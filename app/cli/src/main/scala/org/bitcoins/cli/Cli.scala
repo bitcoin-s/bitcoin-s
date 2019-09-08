@@ -199,7 +199,9 @@ object Cli extends App {
     }
 
     val js = ujson.read(rawBody)
-    val jsObj = try { js.obj } catch {
+    val jsObj = try {
+      js.obj
+    } catch {
       case _: Throwable =>
         error(s"Response was not a JSON object! Got: $rawBody")
     }

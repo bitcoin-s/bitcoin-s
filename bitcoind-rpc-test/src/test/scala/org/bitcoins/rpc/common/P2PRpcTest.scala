@@ -19,18 +19,6 @@ class P2PRpcTest extends BitcoindRpcTest {
 
   behavior of "P2PRpcTest"
 
-  it should "be able to get peer info" in {
-    for {
-      (freshClient, otherFreshClient) <- clientPairF
-      infoList <- freshClient.getPeerInfo
-    } yield {
-      assert(infoList.length >= 0)
-      val info = infoList.head
-      assert(info.addnode)
-      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
-    }
-  }
-
   it should "be able to get the added node info" in {
     for {
 
@@ -187,7 +175,7 @@ class P2PRpcTest extends BitcoindRpcTest {
 
       (client1, client2) <- BitcoindRpcTestUtil.createUnconnectedNodePair(
         clientAccum = clientAccum)
-      hash <- client2.generate(1)
+      hash <- client2.getNewAddress.flatMap(client2.generateToAddress(1, _))
       block <- client2.getBlockRaw(hash.head)
       preCount1 <- client1.getBlockCount
       preCount2 <- client2.getBlockCount

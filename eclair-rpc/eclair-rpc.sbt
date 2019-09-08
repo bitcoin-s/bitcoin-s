@@ -4,16 +4,11 @@ name := "bitcoin-s-eclair-rpc"
 
 libraryDependencies ++= Deps.eclairRpc
 
-dependsOn {
-  lazy val bitcoindRpc = project in Paths.get("..", "bitcoind-rpc").toFile
-  bitcoindRpc
-}
+dependsOn(Projects.bitcoindRpc)
 
-lazy val downloadEclair = taskKey[Unit] {
-  "Download Eclair binaries, extract ./binaries/eclair"
-}
+CommonSettings.prodSettings
 
-downloadEclair := {
+TaskKeys.downloadEclair := {
   val logger = streams.value.log
   import scala.sys.process._
 

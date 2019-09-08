@@ -29,6 +29,18 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
 
   behavior of "BitcoindV17RpcClient"
 
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- clientsF
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
+    }
+  }
+
   it should "test mempool acceptance" in {
     for {
       (client, otherClient) <- clientsF
@@ -101,9 +113,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress
       info <- client.getAddressInfo(addr)
-    } yield
-      assert(
-        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+    } yield assert(
+      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {
@@ -111,9 +122,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.P2SHSegwit)
       info <- client.getAddressInfo(addr)
-    } yield
-      assert(
-        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+    } yield assert(
+      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   it should "be able to get the address info for a given Legacy address" in {
@@ -121,9 +131,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       (client, _) <- clientsF
       addr <- client.getNewAddress(addressType = AddressType.Legacy)
       info <- client.getAddressInfo(addr)
-    } yield
-      assert(
-        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+    } yield assert(
+      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
   }
 
   // needs #360 to be merged
@@ -141,10 +150,10 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
 
   it should "be able to get the amount received by a label" in {
     for {
-      (client, _) <- clientsF
+      (client, otherClient) <- clientsF
       address <- client.getNewAddress(usedLabel)
       _ <- BitcoindRpcTestUtil
-        .fundBlockChainTransaction(client, address, Bitcoins(1.5))
+        .fundBlockChainTransaction(client, otherClient, address, Bitcoins(1.5))
 
       amount <- client.getReceivedByLabel(usedLabel)
     } yield assert(amount == Bitcoins(1.5))
@@ -168,7 +177,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
             case exc =>
               logger.error(s"throwing $exc")
               throw exc
-        }
+          }
 
         def importTx(n: Int): Future[Unit] =
           for {
@@ -192,7 +201,10 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     for {
       (client, otherClient) <- clientsF
       addr <- client.getNewAddress
-      _ <- BitcoindRpcTestUtil.fundBlockChainTransaction(otherClient, addr, btc)
+      _ <- BitcoindRpcTestUtil.fundBlockChainTransaction(otherClient,
+                                                         client,
+                                                         addr,
+                                                         btc)
 
       newestBlock <- otherClient.getBestBlockHash
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
@@ -213,7 +225,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       addressNoLabel <- client.getNewAddress
       _ <- otherClient.sendToAddress(addressNoLabel, Bitcoins.one)
       _ <- otherClient.sendToAddress(addressWithLabel, Bitcoins.one)
-      newBlock +: _ <- otherClient.generate(1)
+      newBlock +: _ <- client.getNewAddress.flatMap(
+        otherClient.generateToAddress(1, _))
       _ <- AsyncUtil.retryUntilSatisfiedF(() =>
         BitcoindRpcTestUtil.hasSeenBlock(client, newBlock))
       list <- client.listReceivedByLabel()

@@ -173,7 +173,7 @@ sealed abstract class StackInterpreter {
           logger.error(
             "The index for OP_ROLL would have caused an index out of bounds exception")
           ScriptProgram(program, ScriptErrorInvalidStackOperation)
-      }
+        }
     )
   }
 

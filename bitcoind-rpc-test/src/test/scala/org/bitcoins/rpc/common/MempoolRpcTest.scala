@@ -36,7 +36,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
           BitcoindInstance.fromConfig(configNoBroadcast)
 
         val clientWithoutBroadcast =
-          new BitcoindRpcClient(instanceWithoutBroadcast)
+          BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
         clientAccum += clientWithoutBroadcast
 
         val pairs = Vector(client -> clientWithoutBroadcast,
@@ -91,7 +91,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
   it should "be able to get mem pool info" in {
     for {
       (client, otherClient) <- clientsF
-      _ <- client.generate(1)
+      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       info <- client.getMemPoolInfo
       _ <- BitcoindRpcTestUtil
         .sendCoinbaseTransaction(client, otherClient)
@@ -122,7 +122,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
   it should "be able to find mem pool ancestors and descendants" in {
     for {
       (client, _) <- clientsF
-      _ <- client.generate(1)
+      _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       address1 <- client.getNewAddress
       txid1 <- BitcoindRpcTestUtil.fundMemPoolTransaction(client,
                                                           address1,

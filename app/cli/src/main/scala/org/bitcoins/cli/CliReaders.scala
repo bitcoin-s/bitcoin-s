@@ -24,7 +24,7 @@ object CliReaders {
             val msg =
               s"$str is not a valid network! Valid networks: $networks"
             sys.error(msg)
-        }
+          }
     }
 
   implicit val bitcoinAddressReads: Read[BitcoinAddress] =

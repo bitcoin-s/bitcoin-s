@@ -52,16 +52,18 @@ class PsbtRpcTest extends BitcoindRpcTest {
       processedPsbt <- client.walletProcessPsbt(psbt)
       decoded <- client.decodePsbt(processedPsbt.psbt)
     } yield {
-      assert(decoded.inputs.exists(_.nonWitnessUtxo.isDefined))
+      assert(decoded.inputs.exists(inputs =>
+        inputs.nonWitnessUtxo.isDefined || inputs.witnessUtxo.isDefined))
     }
 
   }
 
   it should "finalize a simple PSBT" in {
     for {
-      (client, _, _) <- clientsF
+      (client, otherClient, _) <- clientsF
       addr <- client.getNewAddress
       txid <- BitcoindRpcTestUtil.fundBlockChainTransaction(client,
+                                                            otherClient,
                                                             addr,
                                                             Bitcoins.one)
       vout <- BitcoindRpcTestUtil.findOutput(client, txid, Bitcoins.one)
@@ -71,11 +73,10 @@ class PsbtRpcTest extends BitcoindRpcTest {
         Map(newAddr -> Bitcoins(0.5)))
       processed <- client.walletProcessPsbt(psbt)
       finalized <- client.finalizePsbt(processed.psbt)
-    } yield
-      finalized match {
-        case _: FinalizedPsbt    => succeed
-        case _: NonFinalizedPsbt => fail
-      }
+    } yield finalized match {
+      case _: FinalizedPsbt    => succeed
+      case _: NonFinalizedPsbt => fail
+    }
   }
 
   // copies this test from Core: https://github.com/bitcoin/bitcoin/blob/master/test/functional/rpc_psbt.py#L158

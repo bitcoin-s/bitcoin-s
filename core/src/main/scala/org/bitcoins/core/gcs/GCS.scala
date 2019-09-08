@@ -4,7 +4,7 @@ import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bouncycastle.crypto.macs.SipHash
 import org.bouncycastle.crypto.params.KeyParameter
-import scodec.bits.{BitVector, BinStringSyntax, ByteVector}
+import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
 
 import scala.annotation.tailrec
 

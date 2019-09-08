@@ -120,7 +120,7 @@ class TestRpcUtilTest extends BitcoindRpcTest {
 
   it should "be able to create a single node, wait for it to start and then delete it" in {
     val instance = BitcoindRpcTestUtil.instance()
-    val client = new BitcoindRpcClient(instance)
+    val client = BitcoindRpcClient.withActorSystem(instance)
     val startedF = client.start()
 
     startedF.map { _ =>
@@ -181,24 +181,6 @@ class TestRpcUtilTest extends BitcoindRpcTest {
       assert(
         heightPostGeneration - heightPreGeneration == blocksToGenerate * allClients.length)
     }
-  }
-
-  it should "be able to wait for disconnected nodes" in {
-    for {
-      (first, second) <- BitcoindRpcTestUtil.createUnconnectedNodePair(
-        clientAccum)
-      _ <- first.addNode(second.instance.uri, AddNodeArgument.Add)
-      _ <- BitcoindRpcTestUtil.awaitConnection(first, second)
-
-      peerInfo <- first.getPeerInfo
-      _ = assert(peerInfo.length == 1)
-      _ = assert(peerInfo.head.addnode)
-      _ = assert(peerInfo.head.networkInfo.addr == second.instance.uri)
-
-      _ <- first.disconnectNode(peerInfo.head.networkInfo.addr)
-      _ <- BitcoindRpcTestUtil.awaitDisconnected(first, second)
-      newPeerInfo <- first.getPeerInfo
-    } yield assert(newPeerInfo.isEmpty)
   }
 
   it should "be able to find outputs of previous transactions" in {

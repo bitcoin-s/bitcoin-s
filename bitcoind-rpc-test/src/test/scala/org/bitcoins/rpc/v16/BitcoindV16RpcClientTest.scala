@@ -26,7 +26,19 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
     BitcoindRpcTestUtil.createNodePairV16(clientAccum)
 
-  behavior of "BitoindV16RpcClient"
+  behavior of "BitcoindV16RpcClient"
+
+  it should "be able to get peer info" in {
+    for {
+      (freshClient, otherFreshClient) <- clientsF
+      infoList <- freshClient.getPeerInfo
+    } yield {
+      assert(infoList.length >= 0)
+      val info = infoList.head
+      assert(info.addnode)
+      assert(info.networkInfo.addr == otherFreshClient.getDaemon.uri)
+    }
+  }
 
   it should "be able to start a V16 bitcoind" in {
     for {
@@ -42,7 +54,8 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
       (client, otherClient) <- clientsF
       addr <- client.getNewAddress
       _ <- otherClient.sendToAddress(addr, Bitcoins.one)
-      _ <- otherClient.generate(6)
+      _ <- otherClient.getNewAddress.flatMap(
+        otherClient.generateToAddress(6, _))
       peers <- client.getPeerInfo
       _ = assert(peers.exists(_.networkInfo.addr == otherClient.getDaemon.uri))
 
@@ -134,8 +147,12 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
     val emptyAccount = "empty_account"
 
     val ourAccountAddress = await(client.getNewAddress(ourAccount))
-    await(BitcoindRpcTestUtil
-      .fundBlockChainTransaction(otherClient, ourAccountAddress, Bitcoins(1.5)))
+    await(
+      BitcoindRpcTestUtil
+        .fundBlockChainTransaction(otherClient,
+                                   client,
+                                   ourAccountAddress,
+                                   Bitcoins(1.5)))
 
     val accountlessAddress = await(client.getNewAddress)
 
@@ -143,7 +160,10 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
 
     val _ = await(
       BitcoindRpcTestUtil
-        .fundBlockChainTransaction(otherClient, accountlessAddress, sendAmt))
+        .fundBlockChainTransaction(otherClient,
+                                   client,
+                                   accountlessAddress,
+                                   sendAmt))
 
     if (Properties.isMac) Thread.sleep(10000)
     val ourAccountAmount = await(client.getReceivedByAccount(ourAccount))

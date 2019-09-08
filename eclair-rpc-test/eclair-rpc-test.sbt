@@ -1,8 +1,7 @@
-lazy val downloadEclair = taskKey[Unit] {
-  "Download Eclair binaries, extract ./binaries/eclair"
-}
+Test / test := (Test / test dependsOn {
+  Projects.eclairRpc / TaskKeys.downloadEclair
+}).value
 
-import java.nio.file.Paths
-lazy val eclairRpc = project in Paths.get("..", "eclair-rpc").toFile
-
-Test / test := (Test / test dependsOn eclairRpc / downloadEclair).value
+Test / test := (Test / test dependsOn {
+  Projects.bitcoindRpc / TaskKeys.downloadBitcoind
+}).value

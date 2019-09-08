@@ -29,8 +29,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import java.nio.file.Paths
-import scala.util.Properties
 import java.nio.file.Files
 
 /**
@@ -48,16 +46,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   import org.bitcoins.core.compat.JavaConverters._
 
   /** Directory where sbt downloads Eclair binaries */
-  private[bitcoins] lazy val binaryDirectory = {
-    val baseDirectory = {
-      val cwd = Paths.get(Properties.userDir)
-      if (cwd.endsWith("eclair-rpc-test") || cwd.endsWith("bitcoind-rpc-test")) {
-        cwd.getParent()
-      } else cwd
-    }
-
-    baseDirectory.resolve("binaries").resolve("eclair")
-  }
+  private[bitcoins] val binaryDirectory =
+    BitcoindRpcTestUtil.baseBinaryDirectory.resolve("eclair")
 
   /** Path to Jar downloaded by Eclair, if it exists */
   private[bitcoins] lazy val binary: Option[File] = {
@@ -389,7 +379,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     val genBlocksF = openChannelsF.flatMap { _ =>
-      internalBitcoindF.flatMap(_.generate(3))
+      internalBitcoindF.flatMap(client =>
+        client.getNewAddress.flatMap(client.generateToAddress(3, _)))
     }
 
     genBlocksF.flatMap { _ =>
@@ -595,7 +586,11 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       }
     }
 
-    val gen = fundedChannelIdF.flatMap(_ => bitcoindRpcClient.generate(6))
+    val gen = for {
+      _ <- fundedChannelIdF
+      address <- bitcoindRpcClient.getNewAddress
+      blocks <- bitcoindRpcClient.generateToAddress(6, address)
+    } yield blocks
 
     val openedF = {
       gen.flatMap { _ =>
@@ -634,7 +629,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         rpcUri = auth.bitcoindRpcUri,
         authCredentials = auth.bitcoinAuthOpt.get
       )
-      new BitcoindRpcClient(bitcoindInstance)(system)
+      BitcoindRpcClient.withActorSystem(bitcoindInstance)
     }
     bitcoindRpc
   }
@@ -648,20 +643,19 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     val bitcoindRpc = getBitcoindRpc(eclairRpcClient)
 
     logger.debug(s"shutting down eclair")
-    val killEclairOpt = eclairRpcClient.stop()
+    val stopEclairF = eclairRpcClient.stop()
     val killBitcoindF = BitcoindRpcTestUtil.stopServer(bitcoindRpc)
 
     for {
       _ <- killBitcoindF
+      stopped <- stopEclairF
     } yield {
-      killEclairOpt match {
-        case Some(_) =>
-          logger.debug(
-            "Successfully shutdown eclair and it's corresponding bitcoind")
-        case None =>
-          logger.info(
-            s"Killed a bitcoind instance, but could not find an eclair process to kill")
-      }
+      if (stopped)
+        logger.debug(
+          "Successfully shutdown eclair and it's corresponding bitcoind")
+      else
+        logger.info(
+          s"Killed a bitcoind instance, but could not find an eclair process to kill")
     }
   }
 }

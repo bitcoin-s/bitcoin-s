@@ -4,6 +4,9 @@ import java.net.URI
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
+
+import scala.concurrent.duration.FiniteDuration
 
 sealed abstract class NetworkResult
 
@@ -72,7 +75,8 @@ case class Peer(
     inflight: Vector[Int],
     whitelisted: Boolean,
     bytessent_per_msg: Map[String, Int],
-    bytesrecv_per_msg: Map[String, Int])
+    bytesrecv_per_msg: Map[String, Int],
+    minfeefilter: Option[SatoshisPerKiloByte])
     extends NetworkResult
 
 case class PeerNetworkInfo(
@@ -98,3 +102,10 @@ case class NodeBan(
     ban_created: UInt32,
     ban_reason: String)
     extends NetworkResult
+
+final case class GetNodeAddressesResult(
+    time: FiniteDuration,
+    services: Int,
+    address: java.net.URI,
+    port: Int
+) extends NetworkResult

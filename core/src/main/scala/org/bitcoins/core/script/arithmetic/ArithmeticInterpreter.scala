@@ -61,7 +61,7 @@ sealed abstract class ArithmeticInterpreter {
         x match {
           case ScriptNumber.zero => ScriptNumber.zero
           case _: ScriptNumber   => ScriptNumber(x.toLong.abs)
-      })
+        })
   }
 
   /** Negates the stack top. */

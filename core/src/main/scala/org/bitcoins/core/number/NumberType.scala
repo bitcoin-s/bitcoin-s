@@ -133,7 +133,7 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
   override def hex: String = BitcoinSUtil.encodeHex(toLong).slice(8, 16)
 
-  override def andMask = 0xffffffffL
+  override def andMask = 0xFFFFFFFFL
 }
 
 /**
@@ -142,7 +142,7 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   override def hex: String = encodeHex(underlying)
   override def apply: A => UInt64 = UInt64(_)
-  override def andMask = 0xffffffffffffffffL
+  override def andMask = 0xFFFFFFFFFFFFFFFFL
 
   /**
     * Converts a [[BigInt]] to a 8 byte hex representation.
@@ -178,7 +178,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
   */
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
-  override def andMask = 0xffffffffffffffffL
+  override def andMask = 0xFFFFFFFFFFFFFFFFL
   override def hex: String = BitcoinSUtil.encodeHex(toLong)
 }
 

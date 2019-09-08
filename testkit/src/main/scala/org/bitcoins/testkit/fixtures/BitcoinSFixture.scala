@@ -166,7 +166,7 @@ object BitcoinSFixture {
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
     val instance = BitcoindRpcTestUtil.instance()
-    val bitcoind = new BitcoindRpcClient(instance)
+    val bitcoind = BitcoindRpcClient.withActorSystem(instance)
 
     bitcoind.start().map(_ => bitcoind)
   }

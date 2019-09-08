@@ -355,12 +355,11 @@ object TransactionGenerators extends BitcoinSLogger {
     for {
       (signedScriptSig, csvScriptPubKey, privateKeys) <- ScriptGenerators
         .signedCSVScriptSignature(csvScriptNum, sequence)
-    } yield
-      lockTimeTxHelper(signedScriptSig,
-                       csvScriptPubKey,
-                       privateKeys,
-                       sequence,
-                       None)
+    } yield lockTimeTxHelper(signedScriptSig,
+                             csvScriptPubKey,
+                             privateKeys,
+                             sequence,
+                             None)
 
   /** Generates a [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]] that has all of
     * it's inputs signed correctly */

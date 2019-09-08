@@ -60,13 +60,12 @@ trait ChainApi {
     for {
       hash <- getBestBlockHash
       headerOpt <- getHeader(hash)
-    } yield
-      headerOpt match {
-        case None =>
-          throw new RuntimeException(
-            s"We found best hash=${hash.hex} but could not retrieve the full header!!!")
-        case Some(header) => header
-      }
+    } yield headerOpt match {
+      case None =>
+        throw new RuntimeException(
+          s"We found best hash=${hash.hex} but could not retrieve the full header!!!")
+      case Some(header) => header
+    }
   }
 
   /**

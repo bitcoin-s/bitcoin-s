@@ -2,7 +2,6 @@ package org.bitcoins.rpc.client.v17
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.rpc.client.common.{
@@ -12,8 +11,6 @@ import org.bitcoins.rpc.client.common.{
 }
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels.{
-  AddressInfoResult,
-  CreateWalletResult,
   SignRawTransactionResult,
   TestMempoolAcceptResult
 }
@@ -43,11 +40,6 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
     with V17PsbtRpc {
 
   override def version: BitcoindVersion = BitcoindVersion.V17
-
-  def getAddressInfo(address: BitcoinAddress): Future[AddressInfoResult] = {
-    bitcoindCall[AddressInfoResult]("getaddressinfo",
-                                    List(JsString(address.value)))
-  }
 
   /**
     * $signRawTx
@@ -93,21 +85,35 @@ class BitcoindV17RpcClient(override val instance: BitcoindInstance)(
       List(JsArray(Vector(Json.toJson(transaction))), JsBoolean(allowHighFees)))
       .map(_.head)
   }
-
-  def createWallet(
-      walletName: String,
-      disablePrivateKeys: Boolean = false): Future[CreateWalletResult] = {
-    bitcoindCall[CreateWalletResult](
-      "createwallet",
-      List(JsString(walletName), Json.toJson(disablePrivateKeys)))
-  }
 }
 
 object BitcoindV17RpcClient {
 
-  def fromUnknownVersion(rpcClient: BitcoindRpcClient)(
-      implicit actorSystem: ActorSystem): Try[BitcoindV17RpcClient] =
+  /**
+    * Creates an RPC client from the given instance.
+    *
+    * Behind the scenes, we create an actor system for
+    * you. You can use `withActorSystem` if you want to
+    * manually specify an actor system for the RPC client.
+    */
+  def apply(instance: BitcoindInstance): BitcoindV17RpcClient = {
+    implicit val system = ActorSystem.create(BitcoindRpcClient.ActorSystemName)
+    withActorSystem(instance)
+  }
+
+  /**
+    * Creates an RPC client from the given instance,
+    * together with the given actor system. This is for
+    * advanced users, wher you need fine grained control
+    * over the RPC client.
+    */
+  def withActorSystem(instance: BitcoindInstance)(
+      implicit system: ActorSystem): BitcoindV17RpcClient =
+    new BitcoindV17RpcClient(instance)
+
+  def fromUnknownVersion(
+      rpcClient: BitcoindRpcClient): Try[BitcoindV17RpcClient] =
     Try {
-      new BitcoindV17RpcClient(rpcClient.instance)
+      new BitcoindV17RpcClient(rpcClient.instance)(rpcClient.system)
     }
 }

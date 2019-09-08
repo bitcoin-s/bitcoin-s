@@ -27,7 +27,7 @@ abstract class BitcoindRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
     sys.error {
       val msg =
         s""""bitcoind binary directory (${BitcoindRpcTestUtil.binaryDirectory}) is empty. 
-        |Run 'sbt downloadBitcoind' to fetch needed binaries""".stripMargin
+           |Run 'sbt downloadBitcoind' to fetch needed binaries""".stripMargin
       msg
     }
   }

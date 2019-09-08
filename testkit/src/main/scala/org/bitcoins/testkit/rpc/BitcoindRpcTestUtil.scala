@@ -29,6 +29,7 @@ import org.bitcoins.rpc.client.common.{
 }
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
+import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindInstance,
@@ -45,7 +46,7 @@ import org.bitcoins.util.ListUtil
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
 import scala.collection.mutable
-import scala.collection.JavaConverters._
+import org.bitcoins.core.compat.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
@@ -58,9 +59,11 @@ import java.nio.file.Path
 import org.bitcoins.rpc.client.common.BitcoindVersion.Unknown
 import org.bitcoins.rpc.client.common.BitcoindVersion.V16
 import org.bitcoins.rpc.client.common.BitcoindVersion.V17
+import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import java.nio.file.Files
 
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.rpc.BitcoindException
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -148,22 +151,31 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 
+  /** The base directory where binaries needed in tests
+    * are located. */
+  private[bitcoins] val baseBinaryDirectory = {
+    val cwd = Paths.get(Properties.userDir)
+    val pathsToGoBackFrom = List("eclair-rpc-test",
+                                 "bitcoind-rpc-test",
+                                 "node-test",
+                                 "wallet-test",
+                                 "chain-test")
+
+    val rootDir = if (pathsToGoBackFrom.exists(cwd.endsWith)) {
+      cwd.getParent()
+    } else cwd
+    rootDir.resolve("binaries")
+  }
+
   /** The directory that sbt downloads bitcoind binaries into */
   private[bitcoins] val binaryDirectory = {
-    val baseDirectory = {
-      val cwd = Paths.get(Properties.userDir)
-      if (cwd.endsWith("bitcoind-rpc-test") || cwd.endsWith("eclair-rpc-test")) {
-        cwd.getParent()
-      } else cwd
-    }
-
-    baseDirectory.resolve("binaries").resolve("bitcoind")
+    baseBinaryDirectory.resolve("bitcoind")
   }
 
   private def getBinary(version: BitcoindVersion): File = version match {
     // default to newest version
     case Unknown => getBinary(BitcoindVersion.newest)
-    case known @ (V16 | V17) =>
+    case known @ (V16 | V17 | V18) =>
       val versionFolder = Files
         .list(binaryDirectory)
         .iterator()
@@ -185,7 +197,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
       versionFolder
         .resolve("bin")
-        .resolve("bitcoind")
+        .resolve(if (Properties.isWin) "bitcoind.exe" else "bitcoind")
         .toFile()
   }
 
@@ -256,6 +268,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
              zmqPort = zmqPort,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V17))
+
+  def v18Instance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort,
+      pruneMode: Boolean = false
+  ): BitcoindInstance =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqPort = zmqPort,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.V18))
 
   def startServers(servers: Vector[BitcoindRpcClient])(
       implicit ec: ExecutionContext): Future[Unit] = {
@@ -382,7 +406,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     import system.dispatcher
 
     for {
-      hashes <- clients.head.generate(blocks)
+      address <- clients.head.getNewAddress
+      hashes <- clients.head.generateToAddress(blocks, address)
       _ <- {
         val pairs = ListUtil.uniquePairs(clients)
         val syncFuts = pairs.map {
@@ -446,11 +471,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         .getAddedNodeInfo(to.getDaemon.uri)
         .map(info => info.isEmpty || info.head.connected.contains(false))
         .recoverWith {
-          case exception: Exception
+          case exception: BitcoindException
               if exception.getMessage.contains("Node has not been added") =>
-            from.getPeerInfo.map { peerInfo =>
-              peerInfo.forall(_.networkInfo.addr != to.instance.uri)
-            }
+            from.getPeerInfo.map(
+              _.forall(_.networkInfo.addr != to.instance.uri))
         }
 
     }
@@ -471,8 +495,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       implicit
       system: ActorSystem): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
-    val client1: BitcoindRpcClient = new BitcoindRpcClient(instance())
-    val client2: BitcoindRpcClient = new BitcoindRpcClient(instance())
+    val client1: BitcoindRpcClient =
+      BitcoindRpcClient.withActorSystem(instance())
+    val client2: BitcoindRpcClient =
+      BitcoindRpcClient.withActorSystem(instance())
 
     val start1F = client1.start()
     val start2F = client2.start()
@@ -536,11 +562,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val clients: Vector[T] = (0 until numNodes).map { _ =>
       val rpc = version match {
         case BitcoindVersion.Unknown =>
-          new BitcoindRpcClient(BitcoindRpcTestUtil.instance())
+          BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
         case BitcoindVersion.V16 =>
-          new BitcoindV16RpcClient(BitcoindRpcTestUtil.v16Instance())
+          BitcoindV16RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v16Instance())
         case BitcoindVersion.V17 =>
-          new BitcoindV17RpcClient(BitcoindRpcTestUtil.v17Instance())
+          BitcoindV17RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v17Instance())
+        case BitcoindVersion.V18 =>
+          BitcoindV18RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v18Instance())
       }
 
       // this is safe as long as this method is never
@@ -607,6 +638,15 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     createNodePairInternal(BitcoindVersion.V17, clientAccum)
 
   /**
+    * Returns a pair of [[org.bitcoins.rpc.client.v18.BitcoindV18RpcClient BitcoindV18RpcClient]]
+    * that are connected with some blocks in the chain
+    */
+  def createNodePairV18(clientAccum: RpcClientAccum = Vector.newBuilder)(
+      implicit system: ActorSystem): Future[
+    (BitcoindV18RpcClient, BitcoindV18RpcClient)] =
+    createNodePairInternal(BitcoindVersion.V18, clientAccum)
+
+  /**
     * Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * that are connected with some blocks in the chain
     */
@@ -651,7 +691,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       amount: Bitcoins = Bitcoins(1))(
       implicit executionContext: ExecutionContext): Future[Transaction] = {
     for {
-      blocks <- sender.generate(2)
+      address <- sender.getNewAddress
+      blocks <- sender.generateToAddress(2, address)
       block0 <- sender.getBlock(blocks(0))
       block1 <- sender.getBlock(blocks(1))
       transaction0 <- sender.getTransaction(block0.tx(0))
@@ -685,7 +726,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       signer: BitcoindRpcClient,
       transaction: Transaction,
       utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty
-  )(implicit actorSystemw: ActorSystem): Future[SignRawTransactionResult] =
+  ): Future[SignRawTransactionResult] =
     signer match {
       case v17: BitcoindV17RpcClient =>
         v17.signRawTransactionWithWallet(transaction, utxoDeps)
@@ -694,17 +735,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       case unknown: BitcoindRpcClient =>
         val v16T = BitcoindV16RpcClient.fromUnknownVersion(unknown)
         val v17T = BitcoindV17RpcClient.fromUnknownVersion(unknown)
-        (v16T, v17T) match {
-          case (Failure(_), Failure(_)) =>
+        val v18T = BitcoindV18RpcClient.fromUnknownVersion(unknown)
+        (v16T, v17T, v18T) match {
+          case (Failure(_), Failure(_), Failure(_)) =>
             throw new RuntimeException(
-              "Could not figure out version of provided bitcoind RPC client!")
-          case (Success(_), Success(_)) =>
-            throw new RuntimeException(
-              "This should not happen, managed to construct different versioned RPC clients from one single client")
-          case (Success(v16), Failure(_)) =>
+              "Could not figure out version of provided bitcoind RPC client!" +
+                "This should not happen, managed to construct different versioned RPC clients from one single client")
+          case (Success(v16), _, _) =>
             v16.signRawTransaction(transaction, utxoDeps)
-          case (Failure(_), Success(v17)) =>
+          case (_, Success(v17), _) =>
             v17.signRawTransactionWithWallet(transaction, utxoDeps)
+          case (_, _, Success(v18)) =>
+            v18.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
 
@@ -739,19 +781,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     implicit val materializer: ActorMaterializer =
       ActorMaterializer.create(actorSystem)
     implicit val ec: ExecutionContextExecutor = materializer.executionContext
-    createRawCoinbaseTransaction(sender, receiver, amount)
-      .flatMap(signRawTransaction(sender, _))
-      .flatMap { signedTransaction =>
-        sender
-          .generate(100)
-          .flatMap { _ => // Can't spend coinbase until depth 100
-            sender
-              .sendRawTransaction(signedTransaction.hex, allowHighFees = true)
-              .flatMap { transactionHash =>
-                sender.getTransaction(transactionHash)
-              }
-          }
-      }
+    for {
+      rawcoinbasetx <- createRawCoinbaseTransaction(sender, receiver, amount)
+      signedtx <- signRawTransaction(sender, rawcoinbasetx)
+      addr <- sender.getNewAddress
+      _ <- sender.generateToAddress(100, addr)
+      // Can't spend coinbase until depth 100
+      transactionHash <- sender.sendRawTransaction(signedtx.hex,
+                                                   allowHighFees = true)
+      transaction <- sender.getTransaction(transactionHash)
+    } yield transaction
   }
 
   /**
@@ -773,15 +812,20 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     */
   def fundBlockChainTransaction(
       sender: BitcoindRpcClient,
+      receiver: BitcoindRpcClient,
       address: BitcoinAddress,
       amount: Bitcoins)(
       implicit system: ActorSystem): Future[DoubleSha256DigestBE] = {
     implicit val mat: ActorMaterializer = ActorMaterializer.create(system)
     implicit val ec: ExecutionContextExecutor = mat.executionContext
-    fundMemPoolTransaction(sender, address, amount).flatMap { txid =>
-      sender.generate(1).map { _ =>
-        txid
-      }
+
+    for {
+      txid <- fundMemPoolTransaction(sender, address, amount)
+      addr <- sender.getNewAddress
+      blockHash <- sender.generateToAddress(1, addr).map(_.head)
+      _ <- hasSeenBlock(receiver, blockHash)
+    } yield {
+      txid
     }
   }
 
@@ -852,14 +896,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       s"${instance.datadir} is not in user temp dir! This could lead to bad things happening.")
 
     //start the bitcoind instance so eclair can properly use it
-    val rpc = new BitcoindRpcClient(instance)
+    val rpc = BitcoindRpcClient.withActorSystem(instance)
     val startedF = rpc.start()
 
     val blocksToGenerate = 102
     //fund the wallet by generating 102 blocks, need this to get over coinbase maturity
     val generatedF = startedF.flatMap { _ =>
       clientAccum += rpc
-      rpc.generate(blocksToGenerate)
+      rpc.getNewAddress.flatMap(rpc.generateToAddress(blocksToGenerate, _))
     }
 
     def areBlocksGenerated(): Future[Boolean] = {

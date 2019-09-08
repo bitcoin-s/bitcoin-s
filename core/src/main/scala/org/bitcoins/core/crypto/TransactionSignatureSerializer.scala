@@ -62,10 +62,10 @@ sealed abstract class TransactionSignatureSerializer {
         val inputSigsRemoved = for {
           input <- spendingTransaction.inputs
           s = input.scriptSignature
-        } yield
-          TransactionInput(input.previousOutput,
-                           NonStandardScriptSignature(s.compactSizeUInt.hex),
-                           input.sequence)
+        } yield TransactionInput(
+          input.previousOutput,
+          NonStandardScriptSignature(s.compactSizeUInt.hex),
+          input.sequence)
 
         //make sure all scriptSigs have empty asm
         inputSigsRemoved.map(

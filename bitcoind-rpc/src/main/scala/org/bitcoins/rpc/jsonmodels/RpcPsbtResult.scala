@@ -69,3 +69,23 @@ final case class WalletCreateFundedPsbtResult(
     fee: Bitcoins,
     changepos: Int
 ) extends RpcPsbtResult
+
+final case class AnalyzePsbtResult(
+    inputs: Vector[AnalyzePsbtInput],
+    estimated_vsize: Option[Double],
+    estimated_feerate: Option[Double],
+    fee: Option[Bitcoins],
+    next: String
+) extends RpcPsbtResult
+final case class AnalyzePsbtInput(
+    has_utxo: Boolean,
+    is_final: Boolean,
+    missing: Option[PsbtMissingData],
+    next: Option[String]
+) extends RpcPsbtResult
+final case class PsbtMissingData(
+    pubkeys: Option[Vector[ECPublicKey]],
+    signatures: Option[Vector[ECDigitalSignature]],
+    redeemscript: Option[RpcPsbtScript],
+    witnessscript: Option[RpcPsbtScript]
+) extends RpcPsbtResult

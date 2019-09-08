@@ -1,7 +1,18 @@
 ---
-id: create-wallet
-title: Creating a Bitcoin-S wallet
+title: Wallet
+id: wallet
 ---
+
+Bitcoin-S comes bundled with a rudimentary Bitcoin wallet. This wallet
+is capable of managing private keys, generating addresses, constructing
+and signing transactions, among other things. It is BIP32/BIP44/BIP49/BIP84
+compatible.
+
+This wallet is currently only released as a library, and not as a binary.
+This is because it (nor the documentation) is not deemed production
+ready. Use at your own risk, and without too much money depending on it.
+
+## Creating a wallet
 
 This guide shows how to create a Bitcoin-S wallet and then
 peer it with a `bitcoind` instance that relays
@@ -16,9 +27,7 @@ This code snippet you have a running `bitcoind` instance, locally
 on regtest.
 
 ```scala mdoc:compile-only
-import akka.actor.ActorSystem
-implicit val system = ActorSystem()
-import system.dispatcher
+implicit val ec = scala.concurrent.ExecutionContext.global
 
 import com.typesafe.config.ConfigFactory
 val config = ConfigFactory.parseString {
@@ -53,7 +62,7 @@ import org.bitcoins.rpc.config.BitcoindInstance
 val bitcoindInstance = BitcoindInstance.fromDatadir()
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-val bitcoind = new BitcoindRpcClient(bitcoindInstance)
+val bitcoind = BitcoindRpcClient(bitcoindInstance)
 
 // when this future completes, we have
 // synced our chain handler to our bitcoind
