@@ -1,8 +1,9 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
+import org.bitcoins.chain.models.CompactFilterHeaderDb
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -13,26 +14,26 @@ import org.scalatest.FutureOutcome
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class SpvNodeTest extends NodeUnitTest {
+class NeutrinoNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getSpvTestConfig()
+  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
   override type FixtureParam = NodeConnectedWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNodeConnectedToBitcoind(test)
+    withNodeConnectedToBitcoind(test, Some(BitcoindVersion.Experimental))
 
-  behavior of "SpvNode"
+  behavior of "NeutrinoNode"
 
   it must "receive notification that a block occurred on the p2p network" in {
-    spvNodeConnectedWithBitcoind: NodeConnectedWithBitcoind =>
-      val spvNode = spvNodeConnectedWithBitcoind.spvNode
-      val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
+    nodeConnectedWithBitcoind: NodeConnectedWithBitcoind =>
+      val node = nodeConnectedWithBitcoind.neutrinoNode
+      val bitcoind = nodeConnectedWithBitcoind.bitcoind
 
       val assert1F = for {
-        _ <- spvNode.isConnected.map(assert(_))
-        a2 <- spvNode.isInitialized.map(assert(_))
+        _ <- node.isConnected.map(assert(_))
+        a2 <- node.isInitialized.map(assert(_))
       } yield a2
 
       val hashF: Future[DoubleSha256DigestBE] = bitcoind.getNewAddress
@@ -43,20 +44,20 @@ class SpvNodeTest extends NodeUnitTest {
       val spvSyncF = for {
         _ <- assert1F
         _ <- hashF
-        sync <- spvNode.sync()
+        sync <- node.sync()
       } yield sync
 
       spvSyncF.flatMap { _ =>
         NodeTestUtil
-          .awaitSync(spvNode, bitcoind)
+          .awaitSync(node, bitcoind)
           .map(_ => succeed)
       }
   }
 
   it must "stay in sync with a bitcoind instance" in {
-    spvNodeConnectedWithBitcoind: NodeConnectedWithBitcoind =>
-      val spvNode = spvNodeConnectedWithBitcoind.spvNode
-      val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
+    nodeConnectedWithBitcoind: NodeConnectedWithBitcoind =>
+      val spvNode = nodeConnectedWithBitcoind.neutrinoNode
+      val bitcoind = nodeConnectedWithBitcoind.bitcoind
 
       //we need to generate 1 block for bitcoind to consider
       //itself out of IBD. bitcoind will not sendheaders
@@ -87,12 +88,31 @@ class SpvNodeTest extends NodeUnitTest {
       startGenF.flatMap { _ =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
-        val has6BlocksF = RpcUtil.retryUntilSatisfiedF(
+        def has6BlocksF = RpcUtil.retryUntilSatisfiedF(
           conditionF =
-            () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map(_ == 6)),
+            () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map { c =>
+              c == 6 }),
           duration = 250.millis)
 
-        has6BlocksF.map(_ => succeed)
+        def has6FilterHeadersF = RpcUtil.retryUntilSatisfiedF(
+          conditionF =
+            () => spvNode.chainApiFromDb().flatMap(_.getHighestFilterHeader.map{ header: Option[CompactFilterHeaderDb] =>
+              header.exists(_.height == 6)
+            }),
+          duration = 250.millis)
+
+        def has6FiltersF = RpcUtil.retryUntilSatisfiedF(
+          conditionF =
+            () => spvNode.chainApiFromDb().flatMap(_.getHighestFilter.map { filter =>
+              filter.exists(_.height == 6)
+            }),
+          duration = 250.millis)
+
+        for {
+          _ <- has6BlocksF
+          _ <- has6FilterHeadersF
+          _ <- has6FiltersF
+        } yield succeed
       }
   }
 
@@ -116,6 +136,5 @@ class SpvNodeTest extends NodeUnitTest {
     }
 
     system.scheduler.schedule(2.second, interval, genBlock)
-    ()
   }
 }

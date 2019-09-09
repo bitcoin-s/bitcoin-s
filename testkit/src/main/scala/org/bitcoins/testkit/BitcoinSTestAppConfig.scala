@@ -14,13 +14,35 @@ object BitcoinSTestAppConfig {
     * 1) Data directory is set to user temp directory
     * 2) Logging is turned down to WARN
     */
-  def getTestConfig(config: Config*): BitcoinSAppConfig = {
+  def getSpvTestConfig(config: Config*): BitcoinSAppConfig = {
+    val overrideConf = ConfigFactory.parseString {
+      """
+      |bitcoin-s {
+      |  logging {
+      |     level = WARN
+      |  } 
+      |  node {
+      |     spv-mode = yes
+      |     neutrino-mode = no
+      |  }
+      |}
+      """.stripMargin
+    }
+    val tmpDir = Files.createTempDirectory("bitcoin-s-")
+    BitcoinSAppConfig(tmpDir, (overrideConf +: config): _*)
+  }
+
+  def getNeutrinoTestConfig(config: Config*): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {
         |  logging {
-        |     level = WARN
-        |  } 
+        |     level = INFO
+        |  }
+        |  node {
+        |     spv-mode = no
+        |     neutrino-mode = yes
+        |  }
         |}
       """.stripMargin
     }

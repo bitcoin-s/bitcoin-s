@@ -4,7 +4,9 @@ import akka.actor.Cancellable
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.scalatest.FutureOutcome
@@ -15,10 +17,13 @@ import scala.concurrent.{Future, Promise}
 
 class NodeWithWalletTest extends NodeUnitTest {
 
-  override type FixtureParam = SpvNodeFundedWalletBitcoind
+  /** Wallet config with data directory set to user temp directory */
+  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getSpvTestConfig()
+
+  override type FixtureParam = NodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, callbacks)
+    withNodeFundedWalletBitcoind(test, callbacks)
   }
 
   private val assertionP: Promise[Boolean] = Promise()
@@ -56,7 +61,9 @@ class NodeWithWalletTest extends NodeUnitTest {
 
   it must "load a bloom filter and receive information about received payments" in {
     param =>
-      val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+      val NodeFundedWalletBitcoind(_, wallet, rpc) = param
+
+      val spv = param.spvNode
 
       walletP.success(wallet)
 

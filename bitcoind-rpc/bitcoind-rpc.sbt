@@ -22,7 +22,9 @@ TaskKeys.downloadBitcoind := {
     Files.createDirectories(binaryDir)
   }
 
-  val versions = List("0.18.1", "0.17.0.1", "0.16.3")
+  val experimentalVersion = "0.18.99"
+
+  val versions = List("0.18.1", "0.17.0.1", "0.16.3", experimentalVersion)
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -36,8 +38,10 @@ TaskKeys.downloadBitcoind := {
   versions.foreach { version =>
     val versionDir = binaryDir resolve version
     val archiveLocation = binaryDir resolve s"$version.$suffix"
-    val location =
-      s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
+    val location = if (version == experimentalVersion)
+        s"https://s3-us-west-1.amazonaws.com/suredbits.com/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
+      else
+        s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
 
     val expectedEndLocation = binaryDir resolve s"bitcoin-$version"
     if (Files

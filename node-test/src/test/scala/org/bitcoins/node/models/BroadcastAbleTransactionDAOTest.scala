@@ -1,11 +1,16 @@
 package org.bitcoins.node.models
 
-import org.bitcoins.testkit.node.NodeUnitTest
-import org.bitcoins.testkit.fixtures.NodeDAOFixture
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkit.fixtures.NodeDAOFixture
 
 class BroadcastAbleTransactionDAOTest extends NodeDAOFixture {
+
+  /** Wallet config with data directory set to user temp directory */
+  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getSpvTestConfig()
+
   behavior of "BroadcastAbleTransactionDAO"
 
   it must "write a TX and read it back" in { daos =>

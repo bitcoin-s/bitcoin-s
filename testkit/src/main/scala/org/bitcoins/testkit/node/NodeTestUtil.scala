@@ -13,7 +13,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.node.{P2PLogger, SpvNode}
+import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger, SpvNode}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -105,7 +105,7 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   /** Checks if the given SPV node and bitcoind is synced */
-  def isSameBestHash(node: SpvNode, rpc: BitcoindRpcClient)(
+  def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val hashF = rpc.getBestBlockHash
     for {
@@ -120,7 +120,7 @@ abstract class NodeTestUtil extends P2PLogger {
   /** Checks if the given light client and bitcoind
     * has the same number of blocks in their blockchains
     */
-  def isSameBlockCount(spv: SpvNode, rpc: BitcoindRpcClient)(
+  def isSameBlockCount(spv: Node, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
@@ -130,19 +130,35 @@ abstract class NodeTestUtil extends P2PLogger {
   }
 
   /** Awaits sync between the given SPV node and bitcoind client */
-  def awaitSync(node: SpvNode, rpc: BitcoindRpcClient)(
+  def awaitSync(node: Node, rpc: BitcoindRpcClient)(
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 500.milliseconds)
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
+  }
+
+  /** Awaits sync between the given SPV node and bitcoind client */
+  def awaitCompactFilterHeadersSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(
+    implicit sys: ActorSystem): Future[Unit] = {
+    import sys.dispatcher
+    TestAsyncUtil
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
+  }
+
+  /** Awaits sync between the given SPV node and bitcoind client */
+  def awaitCompactFiltersSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(
+    implicit sys: ActorSystem): Future[Unit] = {
+    import sys.dispatcher
+    TestAsyncUtil
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
   }
 
   /** The future doesn't complete until the spv nodes best hash is the given hash */
-  def awaitBestHash(hash: DoubleSha256DigestBE, spvNode: SpvNode)(
+  def awaitBestHash(hash: DoubleSha256DigestBE, node: Node)(
       implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     def spvBestHashF: Future[DoubleSha256DigestBE] = {
-      spvNode.chainApiFromDb().flatMap(_.getBestBlockHash)
+      node.chainApiFromDb().flatMap(_.getBestBlockHash)
     }
     TestAsyncUtil.retryUntilSatisfiedF(() => spvBestHashF.map(_ == hash))
   }

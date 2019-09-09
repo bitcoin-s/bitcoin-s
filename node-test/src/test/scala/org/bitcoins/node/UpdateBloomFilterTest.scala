@@ -7,7 +7,9 @@ import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{BeforeAndAfter, FutureOutcome}
@@ -16,10 +18,14 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
-  override type FixtureParam = SpvNodeFundedWalletBitcoind
+
+  /** Wallet config with data directory set to user temp directory */
+  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getSpvTestConfig()
+
+  override type FixtureParam = NodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withSpvNodeFundedWalletBitcoind(test, callbacks)
+    withNodeFundedWalletBitcoind(test, callbacks)
   }
 
   val testTimeout = 30.seconds
@@ -72,7 +78,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   }
 
   it must "update the bloom filter with an address" in { param =>
-    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+    val NodeFundedWalletBitcoind(_, wallet, rpc) = param
+
+    val spv = param.spvNode
 
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
@@ -112,7 +120,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   }
 
   it must "update the bloom filter with a TX" in { param =>
-    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+    val NodeFundedWalletBitcoind(_, wallet, rpc) = param
+
+    val spv = param.spvNode
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
     // we need to cancel that runnable once

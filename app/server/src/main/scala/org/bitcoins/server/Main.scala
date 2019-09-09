@@ -29,6 +29,7 @@ object Main extends App {
 
   implicit val walletConf: WalletAppConfig = conf.walletConf
   implicit val nodeConf: NodeAppConfig = conf.nodeConf
+  require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled, "Either Neutrino or SPV mode should be enabled")
   implicit val chainConf: ChainAppConfig = conf.chainConf
 
   implicit val system = ActorSystem("bitcoin-s")

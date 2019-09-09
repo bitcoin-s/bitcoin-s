@@ -133,6 +133,11 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
           s"Received headers=${headers.map(_.hashBE.hex).mkString("[", ",", "]")}")
         val chainApiF = chainApi.processHeaders(headers)
 
+        if (appConfig.isSPVEnabled) {
+          logger.trace(s"Requesting data for headers=${headers.length}")
+          peerMsgSender.sendGetDataMessage(headers: _*)
+        }
+
         val getHeadersF = chainApiF
           .map { newApi =>
             if (headers.nonEmpty) {
@@ -154,7 +159,9 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
                        "which is less than max. This means we are synced,",
                        "not requesting more.")
                     .mkString(" "))
-                sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                if (appConfig.isNeutrinoEnabled) {
+                  sendFirstGetCompactFilterHeadersCommand(peerMsgSender)
+                }
               }
             }
           }

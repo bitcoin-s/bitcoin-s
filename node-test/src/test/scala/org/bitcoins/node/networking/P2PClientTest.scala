@@ -3,10 +3,15 @@ package org.bitcoins.node.networking
 import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.chain.db.ChainDbManagement
+import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.p2p.{HeadersMessage, NetworkMessage, VersionMessage}
+import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.Preconnection
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -18,18 +23,6 @@ import scodec.bits._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import org.bitcoins.core.p2p.HeadersMessage
-import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.number.Int32
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.p2p.NetworkMessage
-import org.bitcoins.core.p2p.VersionMessage
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.chain.models.BlockHeaderDAO
 
 class P2PClientTest
     extends BitcoindRpcTest
@@ -38,7 +31,7 @@ class P2PClientTest
     with BeforeAndAfterAll {
 
   implicit private val config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getTestConfig()
+    BitcoinSTestAppConfig.getSpvTestConfig()
   implicit private val chainConf = config.chainConf
   implicit private val nodeConf = config.nodeConf
   implicit private val timeout = akka.util.Timeout(10.seconds)

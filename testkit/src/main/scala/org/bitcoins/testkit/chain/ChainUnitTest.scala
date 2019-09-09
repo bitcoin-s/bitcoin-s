@@ -42,7 +42,7 @@ trait ChainUnitTest
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
   implicit lazy val appConfig: ChainAppConfig =
-    BitcoinSTestAppConfig.getTestConfig()
+    BitcoinSTestAppConfig.getSpvTestConfig()
 
   /**
     * Behaves exactly like the default conf, execpt
@@ -50,7 +50,7 @@ trait ChainUnitTest
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    BitcoinSTestAppConfig.getTestConfig(mainnetConf)
+    BitcoinSTestAppConfig.getSpvTestConfig(mainnetConf)
   }
 
   override def beforeAll(): Unit = {
@@ -237,7 +237,7 @@ trait ChainUnitTest
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
-    composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind,
+    composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind(),
                            createChainHandlerWithBitcoindZmq,
                            BitcoindChainHandlerViaZmq.apply)()
   }
@@ -274,7 +274,7 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
-      composeBuildersAndWrap(builder = () => BitcoinSFixture.createBitcoind,
+      composeBuildersAndWrap(builder = () => BitcoinSFixture.createBitcoind(),
                              dependentBuilder =
                                createChainHandlerWithBitcoindZmq,
                              wrap = BitcoindChainHandlerViaZmq.apply)
@@ -421,6 +421,14 @@ object ChainUnitTest extends ChainVerificationLogger {
     ChainDbManagement.dropHeaderTable()
   }
 
+  def destroyFilterHeaderTable()(implicit appConfig: ChainAppConfig): Future[Unit] = {
+    ChainDbManagement.dropFilterHeaderTable()
+  }
+
+  def destroyFilterTable()(implicit appConfig: ChainAppConfig): Future[Unit] = {
+    ChainDbManagement.dropFilterTable()
+  }
+
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(
       implicit system: ActorSystem): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)
@@ -433,11 +441,17 @@ object ChainUnitTest extends ChainVerificationLogger {
     ChainDbManagement.createHeaderTable(createIfNotExists = true)
   }
 
+  private def setupAllTables()(
+    implicit appConfig: ChainAppConfig,
+    ec: ExecutionContext): Future[Unit] = {
+    ChainDbManagement.createAll()
+  }
+
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   def setupHeaderTableWithGenesisHeader()(
       implicit ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[(ChainHandler, BlockHeaderDb)] = {
-    val tableSetupF = setupHeaderTable()
+    val tableSetupF = setupAllTables()
 
     val chainHandlerF = makeChainHandler()
 

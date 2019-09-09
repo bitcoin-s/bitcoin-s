@@ -4,8 +4,10 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.FutureOutcome
 
@@ -14,13 +16,16 @@ import scala.concurrent.duration._
 
 class BroadcastTransactionTest extends NodeUnitTest {
 
-  override type FixtureParam = SpvNodeFundedWalletBitcoind
+  /** Wallet config with data directory set to user temp directory */
+  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getSpvTestConfig()
+
+  override type FixtureParam = NodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withSpvNodeFundedWalletBitcoind(test, SpvNodeCallbacks.empty)
+    withNodeFundedWalletBitcoind(test, SpvNodeCallbacks.empty)
 
   it must "broadcast a transaction" in { param =>
-    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+    val NodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc

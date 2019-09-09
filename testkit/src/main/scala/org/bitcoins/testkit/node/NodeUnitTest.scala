@@ -2,7 +2,7 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.bitcoins.node.{P2PLogger, SpvNode, SpvNodeCallbacks}
+import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger, SpvNode, SpvNodeCallbacks}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.config.NetworkParameters
@@ -10,19 +10,20 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.{PeerHandler, PeerMessageReceiver, PeerMessageReceiverState, PeerMessageSender}
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
-import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
+import org.bitcoins.testkit.node.fixture.NodeConnectedWithBitcoind
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FutureOutcome, MustMatchers}
 import java.net.InetSocketAddress
+
+import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,8 +54,7 @@ trait NodeUnitTest
   val timeout: FiniteDuration = 10.seconds
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getTestConfig()
+  implicit protected def config: BitcoinSAppConfig
 
   implicit protected lazy val chainConfig: ChainAppConfig = config.chainConf
 
@@ -66,53 +66,60 @@ trait NodeUnitTest
 
   lazy val bitcoindPeerF = startedBitcoindF.map(NodeTestUtil.getBitcoindPeer)
 
-  def withSpvNode(test: OneArgAsyncTest)(
+  def createNode(bitcoind: BitcoindRpcClient, callbacks: SpvNodeCallbacks)(
+    implicit system: ActorSystem,
+    chainAppConfig: ChainAppConfig,
+    nodeAppConfig: NodeAppConfig): Future[Node] = {
+    if (nodeAppConfig.isNeutrinoEnabled)
+      NodeUnitTest.createNeutrinoNode(bitcoind, callbacks)(system, chainAppConfig, nodeAppConfig)
+    else
+      NodeUnitTest.createSpvNode(bitcoind, callbacks)(system, chainAppConfig, nodeAppConfig)
+  }
+
+  def withNode(test: OneArgAsyncTest)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
-    val spvBuilder: () => Future[SpvNode] = { () =>
+    val nodeBuilder: () => Future[Node] = { () =>
       val bitcoindF = BitcoinSFixture.createBitcoind()
       bitcoindF.flatMap { bitcoind =>
-        NodeUnitTest
-          .createSpvNode(bitcoind, SpvNodeCallbacks.empty)(system,
-                                                           appConfig.chainConf,
-                                                           appConfig.nodeConf)
-          .flatMap(_.start().map(_.asInstanceOf[SpvNode]))
+          createNode(bitcoind, SpvNodeCallbacks.empty)(system, appConfig.chainConf, appConfig.nodeConf)
+          .flatMap(_.start())
       }
     }
 
     makeDependentFixture(
-      build = spvBuilder,
+      build = nodeBuilder,
       destroy =
-        NodeUnitTest.destroySpvNode(_: SpvNode)(appConfig, system.dispatcher)
+        NodeUnitTest.destroyNode(_: Node)(appConfig, system.dispatcher)
     )(test)
   }
 
-  def withSpvNodeConnectedToBitcoind(test: OneArgAsyncTest)(
+  def withNodeConnectedToBitcoind(test: OneArgAsyncTest, versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
-    val spvWithBitcoindBuilder: () => Future[SpvNodeConnectedWithBitcoind] = {
+    val nodeWithBitcoindBuilder: () => Future[NodeConnectedWithBitcoind] = {
       () =>
-        val bitcoindF = BitcoinSFixture.createBitcoind()
+        val bitcoindF = BitcoinSFixture.createBitcoind(versionOpt)
         bitcoindF.flatMap { bitcoind =>
-          val spvNodeF = NodeUnitTest
-            .createSpvNode(bitcoind, SpvNodeCallbacks.empty)(
+          val nodeF =
+            createNode(bitcoind, SpvNodeCallbacks.empty)(
               system,
               appConfig.chainConf,
               appConfig.nodeConf)
 
-          spvNodeF.map(spv => SpvNodeConnectedWithBitcoind(spv, bitcoind))
+          nodeF.map(spv => NodeConnectedWithBitcoind(spv, bitcoind))
         }
     }
 
     makeDependentFixture(
-      build = spvWithBitcoindBuilder,
-      destroy = NodeUnitTest.destroySpvNodeConnectedWithBitcoind(
-        _: SpvNodeConnectedWithBitcoind)(system, appConfig)
+      build = nodeWithBitcoindBuilder,
+      destroy = NodeUnitTest.destroyNodeConnectedWithBitcoind(
+        _: NodeConnectedWithBitcoind)(system, appConfig)
     )(test)
   }
 
-  def withSpvNodeFundedWalletBitcoind(
+  def withNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
       callbacks: SpvNodeCallbacks)(
       implicit system: ActorSystem,
@@ -120,10 +127,10 @@ trait NodeUnitTest
 
     makeDependentFixture(
       build = () =>
-        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks)(system,
-                                                                  appConfig),
-      destroy = NodeUnitTest.destroySpvNodeFundedWalletBitcoind(
-        _: SpvNodeFundedWalletBitcoind)(system, appConfig)
+        NodeUnitTest.createNodeFundedWalletBitcoind(callbacks)(system,
+          appConfig),
+      destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
+        _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
   }
 }
@@ -136,10 +143,13 @@ object NodeUnitTest extends P2PLogger {
     * 2. a funded bitcoin-s wallet
     * 3. a chain handler with the appropriate tables created
     * 4. a spv node that is connected to the bitcoin instance -- but not started!  */
-  case class SpvNodeFundedWalletBitcoind(
-      spvNode: SpvNode,
+  case class NodeFundedWalletBitcoind(
+      node: Node,
       wallet: UnlockedWalletApi,
-      bitcoindRpc: BitcoindRpcClient)
+      bitcoindRpc: BitcoindRpcClient) {
+    def spvNode: SpvNode = node.asInstanceOf[SpvNode]
+    def neutrinoNode: NeutrinoNode = node.asInstanceOf[NeutrinoNode]
+  }
 
   def buildPeerMessageReceiver(chainApi: ChainApi, peer: Peer)(
       implicit appConfig: BitcoinSAppConfig,
@@ -173,23 +183,25 @@ object NodeUnitTest extends P2PLogger {
 
   }
 
-  def destroySpvNode(spvNode: SpvNode)(
+  def destroyNode(node: Node)(
       implicit config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    val stopF = spvNode.stop()
-    stopF.flatMap(_ => ChainUnitTest.destroyHeaderTable())
+    node.stop()
+      .flatMap(_ => ChainUnitTest.destroyHeaderTable())
+      .flatMap(_ => ChainUnitTest.destroyFilterHeaderTable())
+      .flatMap(_ => ChainUnitTest.destroyFilterTable())
   }
 
-  def destroySpvNodeConnectedWithBitcoind(
-      spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind)(
+  def destroyNodeConnectedWithBitcoind(
+      nodeConnectedWithBitcoind: NodeConnectedWithBitcoind)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
     logger.debug(s"Beggining tear down of spv node connected with bitcoind")
     import system.dispatcher
-    val spvNode = spvNodeConnectedWithBitcoind.spvNode
-    val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
+    val node = nodeConnectedWithBitcoind.node
+    val bitcoind = nodeConnectedWithBitcoind.bitcoind
     val resultF = for {
-      _ <- destroySpvNode(spvNode)
+      _ <- destroyNode(node)
       _ <- ChainUnitTest.destroyBitcoind(bitcoind)
     } yield {
       logger.debug(s"Done with teardown of spv node connected with bitcoind!")
@@ -200,23 +212,23 @@ object NodeUnitTest extends P2PLogger {
   }
 
   /** Creates a spv node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
-  def createSpvNodeFundedWalletBitcoind(callbacks: SpvNodeCallbacks)(
+  def createNodeFundedWalletBitcoind(callbacks: SpvNodeCallbacks)(
       implicit system: ActorSystem,
-      appConfig: BitcoinSAppConfig): Future[SpvNodeFundedWalletBitcoind] = {
+      appConfig: BitcoinSAppConfig): Future[NodeFundedWalletBitcoind] = {
     import system.dispatcher
     val fundedWalletF = BitcoinSWalletTest.fundedWalletAndBitcoind()
     for {
       fundedWallet <- fundedWalletF
       spvNode <- createSpvNode(fundedWallet.bitcoind, callbacks)
     } yield {
-      SpvNodeFundedWalletBitcoind(spvNode = spvNode,
+      NodeFundedWalletBitcoind(node = spvNode,
                                   wallet = fundedWallet.wallet,
                                   bitcoindRpc = fundedWallet.bitcoind)
     }
   }
 
-  def destroySpvNodeFundedWalletBitcoind(
-      fundedWalletBitcoind: SpvNodeFundedWalletBitcoind)(
+  def destroyNodeFundedWalletBitcoind(
+      fundedWalletBitcoind: NodeFundedWalletBitcoind)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[Unit] = {
     import system.dispatcher
@@ -228,7 +240,7 @@ object NodeUnitTest extends P2PLogger {
     //these need to be done in order, as the spv node needs to be
     //stopped before the bitcoind node is stopped
     val destroyedF = for {
-      _ <- destroySpvNode(fundedWalletBitcoind.spvNode)
+      _ <- destroyNode(fundedWalletBitcoind.node)
       _ <- BitcoinSWalletTest.destroyWalletWithBitcoind(walletWithBitcoind)
     } yield ()
 
@@ -259,15 +271,22 @@ object NodeUnitTest extends P2PLogger {
   }
 
   /** Creates a spv node peered with the given bitcoind client, this method
-    * also calls [[org.bitcoins.node.SpvNode.start() start]] to start the node */
+    * also calls [[org.bitcoins.node.Node.start() start]] to start the node */
   def createSpvNode(bitcoind: BitcoindRpcClient, callbacks: SpvNodeCallbacks)(
       implicit system: ActorSystem,
       chainAppConfig: ChainAppConfig,
-      nodeAppConfig: NodeAppConfig): Future[SpvNode] = {
+      nodeAppConfig: NodeAppConfig): Future[Node] = {
     import system.dispatcher
-    val chainApiF = ChainUnitTest.createChainHandler()
+    val checkConfigF = Future {
+      assert(nodeAppConfig.isSPVEnabled)
+      assert(!nodeAppConfig.isNeutrinoEnabled)
+    }
+    val chainApiF = for {
+      _ <- checkConfigF
+      chainHandler <- ChainUnitTest.createChainHandler()
+    } yield chainHandler
     val peer = createPeer(bitcoind)
-    val spvNodeF = for {
+    val nodeF = for {
       _ <- chainApiF
     } yield {
       SpvNode(nodePeer = peer,
@@ -279,7 +298,37 @@ object NodeUnitTest extends P2PLogger {
       )
     }
 
-    spvNodeF.flatMap(_.start().map(_.asInstanceOf[SpvNode]))
+    nodeF.flatMap(_.start())
+  }
+
+  /** Creates a Neutrino node peered with the given bitcoind client, this method
+    * also calls [[org.bitcoins.node.Node.start() start]] to start the node */
+  def createNeutrinoNode(bitcoind: BitcoindRpcClient, callbacks: SpvNodeCallbacks)(
+    implicit system: ActorSystem,
+    chainAppConfig: ChainAppConfig,
+    nodeAppConfig: NodeAppConfig): Future[Node] = {
+    import system.dispatcher
+    val checkConfigF = Future {
+      assert(!nodeAppConfig.isSPVEnabled)
+      assert(nodeAppConfig.isNeutrinoEnabled)
+    }
+    val chainApiF = for {
+      _ <- checkConfigF
+      chainHandler <- ChainUnitTest.createChainHandler()
+    } yield chainHandler
+    val peer = createPeer(bitcoind)
+    val nodeF = for {
+      _ <- chainApiF
+    } yield {
+      NeutrinoNode(nodePeer = peer,
+        nodeCallbacks = callbacks,
+        nodeConfig = nodeAppConfig,
+        chainConfig = chainAppConfig,
+        actorSystem = system
+      )
+    }
+
+    nodeF.flatMap(_.start())
   }
 
 }
