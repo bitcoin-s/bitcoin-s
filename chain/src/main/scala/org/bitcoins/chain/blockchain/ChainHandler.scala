@@ -168,7 +168,7 @@ case class ChainHandler(
           require(prevHeaderOpt.get.height == filterHeadersToCreate.head.height - 1, s"Unexpected previous header's height: ${prevHeaderOpt.get.height} != ${filterHeadersToCreate.head.height - 1}")
         }
       } else Future.unit
-      _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
+      _ <- filterHeaderDAO.upsertAll(filterHeadersToCreate)
     } yield this
   }
 
@@ -195,7 +195,7 @@ case class ChainHandler(
             throw new RuntimeException()
         }
       }
-      _ <- filterDAO.createAll(compactFilterDbs)
+      _ <- filterDAO.upsertAll(compactFilterDbs)
     } yield {
       this
     }

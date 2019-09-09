@@ -14,8 +14,8 @@ object DocsGen extends App {
     if (!cwd0.resolve("docs").isDirectory) cwd0.toNIO.getParent else cwd0.toNIO
 
   val settings = MainSettings()
-//    .withSiteVariables(BuildInfo.mdocVariables)
-//    .withArgs((BuildInfo.mdocExtraArguments ++ args).toList)
+    .withSiteVariables(BuildInfo.mdocVariables)
+    .withArgs((BuildInfo.mdocExtraArguments ++ args).toList)
     // it should work with mdoc when run inside bloop but it doesn't, let's wait until it's fixed
     .withIn(cwd.resolve("docs"))
     .withOut(cwd.resolve("bitcoin-s-docs").resolve("target").resolve("mdoc"))

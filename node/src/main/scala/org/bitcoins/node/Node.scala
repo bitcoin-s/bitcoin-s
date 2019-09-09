@@ -47,7 +47,7 @@ trait Node extends P2PLogger {
       CompactFilterDAO())
   }
 
-  /** Unlike our chain api, this is cached inside our spv node
+  /** Unlike our chain api, this is cached inside our node
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[org.bitcoins.chain.api.ChainApi chain api]] is updated inside of the p2p client
     * */
@@ -110,7 +110,7 @@ trait Node extends P2PLogger {
 
         isInitializedF.map { _ =>
           logger.info(s"Our peer=${peer} has been initialized")
-          logger.info(s"Our spv node has been full started. It took=${System
+          logger.info(s"Our node has been full started. It took=${System
             .currentTimeMillis() - start}ms")
           this
         }
@@ -140,12 +140,12 @@ trait Node extends P2PLogger {
 
     isStoppedF.map { _ =>
       logger.info(
-        s"Spv node stopped! It took=${System.currentTimeMillis() - start}ms")
+        s"Node stopped! It took=${System.currentTimeMillis() - start}ms")
       this
     }
   }
 
-  /** Starts to sync our spv node with our peer
+  /** Starts to sync our node with our peer
     * If our local best block hash is the same as our peers
     * we will not sync, otherwise we will keep syncing
     * until our best block hashes match up

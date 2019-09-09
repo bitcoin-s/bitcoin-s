@@ -41,13 +41,13 @@ class NeutrinoNodeTest extends NodeUnitTest {
         .map(_.head)
 
       //sync our spv node expecting to get that generated hash
-      val spvSyncF = for {
+      val syncF = for {
         _ <- assert1F
         _ <- hashF
         sync <- node.sync()
       } yield sync
 
-      spvSyncF.flatMap { _ =>
+      syncF.flatMap { _ =>
         NodeTestUtil
           .awaitSync(node, bitcoind)
           .map(_ => succeed)
@@ -56,7 +56,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
 
   it must "stay in sync with a bitcoind instance" in {
     nodeConnectedWithBitcoind: NodeConnectedWithBitcoind =>
-      val spvNode = nodeConnectedWithBitcoind.neutrinoNode
+      val node = nodeConnectedWithBitcoind.neutrinoNode
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
 
       //we need to generate 1 block for bitcoind to consider
@@ -70,10 +70,10 @@ class NeutrinoNodeTest extends NodeUnitTest {
       //both our spv node and our bitcoind node _should_ both be at the genesis block (regtest)
       //at this point so no actual syncing is happening
       val initSyncF = gen1F.flatMap { hashes =>
-        val syncF = spvNode.sync()
+        val syncF = node.sync()
         for {
           _ <- syncF
-          _ <- NodeTestUtil.awaitBestHash(hashes.head, spvNode)
+          _ <- NodeTestUtil.awaitBestHash(hashes.head, node)
         } yield ()
       }
 
@@ -90,23 +90,23 @@ class NeutrinoNodeTest extends NodeUnitTest {
         //the send headers message.
         def has6BlocksF = RpcUtil.retryUntilSatisfiedF(
           conditionF =
-            () => spvNode.chainApiFromDb().flatMap(_.getBlockCount.map { c =>
+            () => node.chainApiFromDb().flatMap(_.getBlockCount.map { c =>
               c == 6 }),
-          duration = 250.millis)
+          duration = 1000.millis)
 
         def has6FilterHeadersF = RpcUtil.retryUntilSatisfiedF(
           conditionF =
-            () => spvNode.chainApiFromDb().flatMap(_.getHighestFilterHeader.map{ header: Option[CompactFilterHeaderDb] =>
+            () => node.chainApiFromDb().flatMap(_.getHighestFilterHeader.map{ header: Option[CompactFilterHeaderDb] =>
               header.exists(_.height == 6)
             }),
-          duration = 250.millis)
+          duration = 1000.millis)
 
         def has6FiltersF = RpcUtil.retryUntilSatisfiedF(
           conditionF =
-            () => spvNode.chainApiFromDb().flatMap(_.getHighestFilter.map { filter =>
+            () => node.chainApiFromDb().flatMap(_.getHighestFilter.map { filter =>
               filter.exists(_.height == 6)
             }),
-          duration = 250.millis)
+          duration = 1000.millis)
 
         for {
           _ <- has6BlocksF
