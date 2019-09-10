@@ -138,6 +138,11 @@ trait Node extends P2PLogger {
       AsyncUtil.retryUntilSatisfiedF(() => isDisconnected, 500.millis)
     }
 
+    isStoppedF.failed.foreach { e =>
+      logger.warn(
+        s"Cannot stop node", e)
+    }
+
     isStoppedF.map { _ =>
       logger.info(
         s"Node stopped! It took=${System.currentTimeMillis() - start}ms")

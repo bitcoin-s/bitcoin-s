@@ -5,10 +5,10 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
+import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param filterHeaderDAO filter header DB
   * @param filterDAO filter DB
   * @param blockchains current blockchains
-  * @param blockFilterCheckpoints compact filter checkpoints for filter header verification
+  * @param blockFilterCheckpoints compact filter checkpoints for filter header verification in form of a map (block header hash -> filter header hash)
   * @param chainConfig config file
   */
 case class ChainHandler(
@@ -34,6 +34,7 @@ case class ChainHandler(
     extends ChainApi
     with ChainVerificationLogger {
 
+  /** @inheritdoc */
   override def getBlockCount(implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"Querying for block count")
     blockHeaderDAO.maxHeight.map { height =>
@@ -42,6 +43,7 @@ case class ChainHandler(
     }
   }
 
+  /** @inheritdoc */
   override def getHeader(hash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
     blockHeaderDAO.findByHash(hash).map { header =>
@@ -54,6 +56,7 @@ case class ChainHandler(
     }
   }
 
+  /** @inheritdoc */
   override def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
     implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
     val range = 0.until(count)
@@ -116,6 +119,7 @@ case class ChainHandler(
     Future.successful(hashBE)
   }
 
+  /** @inheritdoc */
   override def nextBatchRange(prevStopHash: DoubleSha256DigestBE, batchSize: Long)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
@@ -139,6 +143,7 @@ case class ChainHandler(
     }
   }
 
+  /** @inheritdoc */
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE)(
@@ -167,33 +172,36 @@ case class ChainHandler(
           require(prevHeaderOpt.nonEmpty, s"Previous filter header does not exist: ${filterHeadersToCreate.head.previousFilterHeaderBE}")
           require(prevHeaderOpt.get.height == filterHeadersToCreate.head.height - 1, s"Unexpected previous header's height: ${prevHeaderOpt.get.height} != ${filterHeadersToCreate.head.height - 1}")
         }
-      } else Future.unit
+      } else FutureUtil.unit
       _ <- filterHeaderDAO.upsertAll(filterHeadersToCreate)
     } yield this
   }
 
-  override def processFilters(messages: Vector[CompactFilterMessage])(implicit ec: ExecutionContext): Future[ChainApi] = {
-    for {
-      filterHeaders <- filterHeaderDAO.findAllByBlockHashes(messages.map(_.blockHash.flip)).map(_.sortBy(_.height))
-      _ = if (filterHeaders.size != messages.size) {
-        throw new RuntimeException(s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}")
+  /** @inheritdoc */
+  override def processFilters(messages: Vector[CompactFilterMessage])(
+    implicit ec: ExecutionContext): Future[ChainApi] = {
+
+    val filterHeadersF = filterHeaderDAO
+      .findAllByBlockHashes(messages.map(_.blockHash.flip))
+      .map(_.sortBy(_.height))
+
+    val messagesByBlockHash = messages.groupBy(_.blockHash.flip)
+
+    val sizeCheckF = for {
+      filterHeaders <- filterHeadersF
+      _ <- if (filterHeaders.size != messages.size) {
+        Future.failed(new RuntimeException(
+          s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}"))
+      } else {
+        FutureUtil.unit
       }
-      byBlockHash = messages.groupBy(_.blockHash.flip)
-      compactFilterDbs = filterHeaders.map { filterHeader =>
-        byBlockHash.get(filterHeader.blockHashBE) match {
-          case Some(messages) if messages.size == 1 =>
-            val message = messages.head
-            val filterHashBE = CryptoUtil.doubleSHA256(message.filterBytes).flip
-            if (filterHashBE != filterHeader.filterHashBE) {
-              val errMsg = s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}\n" +
-                s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}\nfilterHeader=${filterHeader}"
-              logger.warn(errMsg)
-            }
-            val filter = CompactFilterDbHelper.fromFilterBytes(message.filterBytes, filterHeader.blockHashBE, filterHeader.height)
-            filter
-          case error@_ =>
-            throw new RuntimeException()
-        }
+    } yield ()
+
+    for {
+      filterHeaders <- filterHeadersF
+      _ <- sizeCheckF
+      compactFilterDbs <- Future {
+        filterHeaders.map { filterHeader => findFilterDbFromMessage(filterHeader, messagesByBlockHash) }
       }
       _ <- filterDAO.upsertAll(compactFilterDbs)
     } yield {
@@ -201,46 +209,80 @@ case class ChainHandler(
     }
   }
 
-  override def processCheckpoint(
-      filterHeaderHash: DoubleSha256DigestBE,
-      blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
-      blockFilterCheckpoints.get(blockHash) match {
-        case Some(oldFilterHeaderHash) =>
-          if (filterHeaderHash != oldFilterHeaderHash)
-            Future.failed(new RuntimeException(
-              "The peer sent us a different filter header hash"))
-          else
-            Future.successful(this.copy(
-              blockFilterCheckpoints =
-                blockFilterCheckpoints.updated(blockHash, filterHeaderHash)))
-        case None =>
-          Future.successful(this)
+  private def findFilterDbFromMessage(
+      filterHeader: CompactFilterHeaderDb,
+      messagesByBlockHash: Map[DoubleSha256DigestBE, Vector[CompactFilterMessage]]): CompactFilterDb = {
+    messagesByBlockHash.get(filterHeader.blockHashBE) match {
+      case Some(messages) if messages.size == 1 =>
+        val message = messages.head
+        val filterHashBE = CryptoUtil.doubleSHA256(message.filterBytes).flip
+        if (filterHashBE != filterHeader.filterHashBE) {
+          //shouldn't we be throwing here? This seems really bad!
+          val errMsg = s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}\n" +
+            s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}\nfilterHeader=${filterHeader}"
+          logger.warn(errMsg)
+        }
+        val filter =
+          CompactFilterDbHelper.fromFilterBytes(message.filterBytes,
+            filterHeader.blockHashBE,
+            filterHeader.height)
+        filter
+      case None =>
+        throw new RuntimeException(s"Unknown block hash ${filterHeader.blockHashBE}")
+    }
+  }
+
+  /** @inheritdoc */
+  override def processCheckpoints(
+                          checkpoints: Vector[DoubleSha256DigestBE],
+                          blockHash: DoubleSha256DigestBE)(
+                          implicit ec: ExecutionContext): Future[ChainApi] = {
+
+    val blockHeadersF: Future[Seq[BlockHeaderDb]] = Future.traverse(checkpoints.indices.toVector) { i =>
+      blockHeaderDAO.findByHeight(i * 1000)
+    }.map(headers => headers.map(_.head))
+
+    for {
+      blockHeaders <- blockHeadersF
+    } yield {
+      val checkpointsWithBlocks = checkpoints.zip(blockHeaders)
+
+      val updatedCheckpoints = checkpointsWithBlocks.foldLeft(blockFilterCheckpoints) { (res, pair) =>
+        val (filterHeaderHash, blockHeader) = pair
+        res.updated(blockHeader.hashBE, filterHeaderHash)
       }
+
+      this.copy(blockFilterCheckpoints = updatedCheckpoints)
+    }
 
   }
 
+  /** @inheritdoc */
   override def getHighestFilterHeader(
       implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]] = {
     filterHeaderDAO.findHighest()
   }
 
+  /** @inheritdoc */
   override def getFilterHeader(hash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[FilterHeader]] = {
     filterHeaderDAO.findByHash(hash).map(_.map(x => x.filterHeader))
   }
 
+  /** @inheritdoc */
   override def getHighestFilter(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
     filterDAO.findHighest()
   }
 
+  /** @inheritdoc */
   override def getFilter(blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
     filterDAO.findByBlockHash(blockHash)
   }
 
+  /** @inheritdoc */
   override def getHeadersByHeight(height: Int)(
-    implicit ec: ExecutionContext): Future[Seq[BlockHeaderDb]] = {
+    implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]] = {
     blockHeaderDAO.findByHeight(height)
   }
 }

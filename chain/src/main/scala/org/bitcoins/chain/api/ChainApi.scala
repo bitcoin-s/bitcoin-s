@@ -41,7 +41,7 @@ trait ChainApi {
 
   /**  Gets all [[org.bitcoins.chain.models.BlockHeaderDb]]s at a given height  */
   def getHeadersByHeight(height: Int)(
-    implicit ec: ExecutionContext): Future[Seq[BlockHeaderDb]]
+    implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]]
 
   /** Gets n-th [[org.bitcoins.chain.models.BlockHeaderDb]] down the blockchain form a given block */
   def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
@@ -74,8 +74,7 @@ trait ChainApi {
     */
   def processFilterHeader(
       filterHeader: FilterHeader,
-      blockHash: DoubleSha256DigestBE,
-      height: Int)(implicit ec: ExecutionContext): Future[ChainApi] = {
+      blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi] = {
     processFilterHeaders(Vector(filterHeader), blockHash)
 
   }
@@ -113,7 +112,9 @@ trait ChainApi {
   def processCheckpoint(
       filterHeaderHash: DoubleSha256DigestBE,
       blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi]
+      implicit ec: ExecutionContext): Future[ChainApi] = {
+    processCheckpoints(Vector(filterHeaderHash), blockHash)
+  }
 
   /**
     * Process all ompact filter header check points.
@@ -121,12 +122,7 @@ trait ChainApi {
   def processCheckpoints(
       checkpoints: Vector[DoubleSha256DigestBE],
       blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
-
-    checkpoints.foldLeft(Future.successful(this)) { (api, checkpoint) =>
-      api.flatMap(_.processCheckpoint(checkpoint, blockHash))
-    }
-  }
+      implicit ec: ExecutionContext): Future[ChainApi]
 
   /**
     * Returns the highest know compact filter header.
