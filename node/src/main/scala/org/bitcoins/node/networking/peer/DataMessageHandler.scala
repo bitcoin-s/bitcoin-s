@@ -30,6 +30,7 @@ import org.bitcoins.core.p2p.GetHeadersMessage
 import org.bitcoins.core.p2p.GetCompactFiltersMessage
 import org.bitcoins.core.p2p.GetCompactFilterHeadersMessage
 import org.bitcoins.core.p2p.GetCompactFilterCheckPointMessage
+import org.bitcoins.core.util.FutureUtil
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -232,7 +233,7 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
           logger.info(s"Requesting $message from=$startHeight to=$stopHash")
           f(startHeight, stopHash)
         case None =>
-          Future.unit
+          FutureUtil.unit
       }
     } yield res
   }
