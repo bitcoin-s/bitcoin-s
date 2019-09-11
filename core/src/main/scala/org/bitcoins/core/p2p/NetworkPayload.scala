@@ -1,26 +1,19 @@
 package org.bitcoins.core.p2p
 
-import java.net.InetAddress
+import java.net.{InetAddress, InetSocketAddress}
 
-import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.{Int32, Int64, UInt64}
+import org.bitcoins.core.bloom.{BloomFilter, BloomFlag}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{DoubleSha256Digest, HashDigest}
+import org.bitcoins.core.gcs.{FilterHeader, FilterType, GolombFilter}
+import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.util.BitcoinSUtil
-import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerKiloByte}
 import org.bitcoins.core.serializers.p2p.messages._
+import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerKiloByte}
 import scodec.bits.ByteVector
-import org.bitcoins.core.util.Factory
-import org.bitcoins.core.config.NetworkParameters
-import java.net.InetSocketAddress
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.bloom.BloomFlag
-import org.bitcoins.core.crypto.HashDigest
-import org.bitcoins.core.gcs.FilterHeader
-import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.gcs.GolombFilter
 
 /**
   * Trait that represents a payload for a message on the Bitcoin p2p network
@@ -887,7 +880,7 @@ case class GetCompactFiltersMessage(
 }
 
 object GetCompactFiltersMessage extends Factory[GetCompactFiltersMessage] {
-  def fromBytes(bytes: ByteVector): GetCompactFiltersMessage = ???
+  def fromBytes(bytes: ByteVector): GetCompactFiltersMessage = RawGetCompactFiltersMessageSerializer.read(bytes)
 
   /** Constructs a message with the default basic filter type */
   def apply(startHeight: Int, stopHash: DoubleSha256Digest) =
@@ -954,7 +947,7 @@ object GetCompactFilterHeadersMessage
                                        stopHash)
   }
 
-  def fromBytes(bytes: ByteVector): GetCompactFilterHeadersMessage = ???
+  def fromBytes(bytes: ByteVector): GetCompactFilterHeadersMessage = RawGetCompactFilterHeadersMessageSerializer.read(bytes)
 }
 
 /**
@@ -1020,7 +1013,7 @@ object GetCompactFilterCheckPointMessage
       stopHash)
   }
 
-  def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage = ???
+  def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage = RawGetCompactFilterCheckpointMessageSerializer.read(bytes)
 }
 
 /**
