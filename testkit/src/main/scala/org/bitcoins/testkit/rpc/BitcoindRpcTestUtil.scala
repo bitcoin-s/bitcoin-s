@@ -163,24 +163,27 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     // default to newest version
     case Unknown => getBinary(BitcoindVersion.newest)
     case known @ (Experimental | V16 | V17 | V18) =>
-      val versionFolder = Files
+      val fileList = Files
         .list(binaryDirectory)
         .iterator()
         .asScala
         .toList
-        .filter { f =>
-          val isFolder = Files.isDirectory(f)
-          val matchesVersion = f.toString.contains {
-            // drop leading 'v'
-            known.toString.drop(1)
-          }
-          isFolder && matchesVersion
-        }
-        // might be multiple versions downloaded for
-        // each major version, i.e. 0.16.2 and 0.16.3
-        .sorted
-        // we want the most recent one
-        .last
+        .filter(f => Files.isDirectory(f))
+      // drop leading 'v'
+      val version = known.toString.drop(1)
+      val filtered = if (known == Experimental)
+        // we want exact match for the experimental version
+        fileList
+          .filter(f => f.toString.endsWith(version))
+      else
+        // we don't want the experimental version to appear in the list along with the production ones
+        fileList
+          .filterNot(f => f.toString.endsWith(Experimental.toString.drop(1)))
+          .filter(f => f.toString.contains(version))
+
+      // might be multiple versions downloaded for
+      // each major version, i.e. 0.16.2 and 0.16.3
+      val versionFolder = filtered.max
 
       versionFolder
         .resolve("bin")

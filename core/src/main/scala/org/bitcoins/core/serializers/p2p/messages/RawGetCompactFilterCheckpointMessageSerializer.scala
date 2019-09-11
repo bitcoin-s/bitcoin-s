@@ -24,7 +24,6 @@ object RawGetCompactFilterCheckpointMessageSerializer
     val filterType = message.filterType.bytes
     val stopHash = message.stopHash.bytes
     val bytes = filterType ++ stopHash
-    println(s"GetCompactFilterCheckPointMessage: ${bytes.toHex}")
     bytes
   }
 }

@@ -28,7 +28,6 @@ object RawGetCompactFilterHeadersMessageSerializer
     val startHeight = message.startHeight.bytes.reverse
     val stopHash = message.stopHash.bytes
     val bytes = filterType ++ startHeight ++ stopHash
-    println(s"GetCompactFilterHeadersMessage: ${bytes.toHex}")
     bytes
   }
 }
