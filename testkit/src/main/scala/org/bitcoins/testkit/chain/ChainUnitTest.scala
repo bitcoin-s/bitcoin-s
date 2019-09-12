@@ -163,17 +163,17 @@ trait ChainUnitTest
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createBlockHeaderDAO,
-                destroy = () => ChainUnitTest.destroyHeaderTable)(test)
+                destroy = () => ChainUnitTest.destroyAllTables)(test)
   }
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createPopulatedBlockHeaderDAO,
-                destroy = () => ChainUnitTest.destroyHeaderTable)(test)
+                destroy = () => ChainUnitTest.destroyAllTables)(test)
   }
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => ChainUnitTest.createChainHandler,
-                () => ChainUnitTest.destroyHeaderTable)(test)
+                () => ChainUnitTest.destroyAllTables)(test)
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
@@ -188,7 +188,7 @@ trait ChainUnitTest
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => createPopulatedChainHandler,
-                () => ChainUnitTest.destroyHeaderTable)(test)
+                () => ChainUnitTest.destroyAllTables)(test)
   }
 
   def createChainHandlerWithBitcoindZmq(
@@ -259,7 +259,7 @@ trait ChainUnitTest
       bitcoindChainHandler: BitcoindChainHandlerViaRpc): Future[Unit] = {
     val stopBitcoindF =
       BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
-    val dropTableF = ChainUnitTest.destroyHeaderTable()
+    val dropTableF = ChainUnitTest.destroyAllTables()
     stopBitcoindF.flatMap(_ => dropTableF)
   }
 
@@ -285,7 +285,7 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaRpc] = { () =>
-      BitcoinSFixture.createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
+      BitcoinSFixture.createBitcoind().flatMap(createChainApiWithBitcoindRpc)
     }
 
     makeDependentFixture(builder, destroyBitcoindChainApiViaRpc)(test)
@@ -441,10 +441,16 @@ object ChainUnitTest extends ChainVerificationLogger {
     ChainDbManagement.createHeaderTable(createIfNotExists = true)
   }
 
-  private def setupAllTables()(
+  def setupAllTables()(
     implicit appConfig: ChainAppConfig,
     ec: ExecutionContext): Future[Unit] = {
     ChainDbManagement.createAll()
+  }
+
+  def destroyAllTables()(
+    implicit appConfig: ChainAppConfig,
+    ec: ExecutionContext): Future[Unit] = {
+    ChainDbManagement.dropAll()
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */

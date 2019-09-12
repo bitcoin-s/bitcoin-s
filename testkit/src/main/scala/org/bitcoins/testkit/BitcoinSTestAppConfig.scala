@@ -37,7 +37,7 @@ object BitcoinSTestAppConfig {
       """
         |bitcoin-s {
         |  logging {
-        |     level = INFO
+        |     level = WARN
         |  }
         |  node {
         |     spv-mode = no
