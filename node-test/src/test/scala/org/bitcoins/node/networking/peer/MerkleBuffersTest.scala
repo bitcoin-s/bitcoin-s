@@ -5,7 +5,10 @@ import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.core.gen.{BlockchainElementsGenerator, TransactionGenerators}
+import org.bitcoins.testkit.core.gen.{
+  BlockchainElementsGenerator,
+  TransactionGenerators
+}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 

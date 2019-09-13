@@ -16,20 +16,32 @@ case class CompactFilterDb(
 
   def golombFilter: GolombFilter = filterType match {
     case FilterType.Basic.code => BlockFilter.fromBytes(bytes, blockHashBE.flip)
-    case _: Short => throw new RuntimeException(s"Invalid filter type $filterType")
+    case _: Short =>
+      throw new RuntimeException(s"Invalid filter type $filterType")
   }
 }
 
 object CompactFilterDbHelper {
-  def fromGolombFilter(golombFilter: GolombFilter, blockHash: DoubleSha256DigestBE, height: Int): CompactFilterDb =
+
+  def fromGolombFilter(
+      golombFilter: GolombFilter,
+      blockHash: DoubleSha256DigestBE,
+      height: Int): CompactFilterDb =
     fromFilterBytes(golombFilter.bytes, blockHash, height)
 
-  def fromFilterBytes(filterBytes: ByteVector, blockHash: DoubleSha256DigestBE, height: Int): CompactFilterDb =
-    CompactFilterDb(CryptoUtil.doubleSHA256(filterBytes).flip, FilterType.Basic.code, filterBytes, height, blockHash)
+  def fromFilterBytes(
+      filterBytes: ByteVector,
+      blockHash: DoubleSha256DigestBE,
+      height: Int): CompactFilterDb =
+    CompactFilterDb(CryptoUtil.doubleSHA256(filterBytes).flip,
+                    FilterType.Basic.code,
+                    filterBytes,
+                    height,
+                    blockHash)
 }
 
 class CompactFilterTable(tag: Tag)
-  extends Table[CompactFilterDb](tag, "cfilters") {
+    extends Table[CompactFilterDb](tag, "cfilters") {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
   def hash = column[DoubleSha256DigestBE]("hash")

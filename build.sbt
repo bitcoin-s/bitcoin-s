@@ -334,7 +334,8 @@ lazy val nodeTest =
       // Scalatest issue:
       // https://github.com/scalatest/scalatest/issues/556
       Test / fork := false,
-      libraryDependencies ++= Deps.nodeTest
+      libraryDependencies ++= Deps.nodeTest,
+      parallelExecution in Test := false
     )
     .dependsOn(
       core % testAndCompile,

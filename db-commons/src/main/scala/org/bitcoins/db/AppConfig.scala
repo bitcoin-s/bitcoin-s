@@ -191,9 +191,9 @@ abstract class AppConfig extends BitcoinSLogger {
   lazy val chain: ChainParams = {
     val networkStr = config.getString("network")
     networkStr match {
-      case "mainnet"  => MainNetChainParams
+      case "mainnet" => MainNetChainParams
       case "testnet" => TestNetChainParams
-      case "regtest"  => RegTestNetChainParams
+      case "regtest" => RegTestNetChainParams
       case other: String =>
         throw new IllegalArgumentException(
           s"'$other' is not a recognized network! Available options: mainnet, testnet, regtest")

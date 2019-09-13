@@ -16,8 +16,8 @@ case class CompactFilterHeaderDAO()(
 
   override val table = TableQuery[CompactFilterHeaderTable]
 
-  override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]):
-    Future[Vector[CompactFilterHeaderDb]] = {
+  override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
+    Vector[CompactFilterHeaderDb]] = {
     SlickUtil.createAllNoAutoInc(ts = filterHeaders,
                                  database = database,
                                  table = table)
@@ -25,10 +25,16 @@ case class CompactFilterHeaderDAO()(
 
   /** Finds the rows that correlate to the given primary keys */
   override protected def findByPrimaryKeys(
-      ids: Vector[DoubleSha256DigestBE]): Query[Table[_], CompactFilterHeaderDb, Seq] =
+      ids: Vector[DoubleSha256DigestBE]): Query[
+    Table[_],
+    CompactFilterHeaderDb,
+    Seq] =
     table.filter(_.hash.inSet(ids))
 
-  override protected def findAll(ts: Vector[CompactFilterHeaderDb]): Query[Table[_], CompactFilterHeaderDb, Seq] =
+  override protected def findAll(ts: Vector[CompactFilterHeaderDb]): Query[
+    Table[_],
+    CompactFilterHeaderDb,
+    Seq] =
     findByPrimaryKeys(ts.map(_.hashBE))
 
   def findByHash(
@@ -42,7 +48,8 @@ case class CompactFilterHeaderDAO()(
     database.runVec(query.result).map(_.headOption)
   }
 
-  def findAllByBlockHashes(hashes: Vector[DoubleSha256DigestBE]): Future[Vector[CompactFilterHeaderDb]] = {
+  def findAllByBlockHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
+    Vector[CompactFilterHeaderDb]] = {
     val query = table.filter(_.blockHash.inSet(hashes))
     database.runVec(query.result)
   }

@@ -880,11 +880,15 @@ case class GetCompactFiltersMessage(
 }
 
 object GetCompactFiltersMessage extends Factory[GetCompactFiltersMessage] {
-  def fromBytes(bytes: ByteVector): GetCompactFiltersMessage = RawGetCompactFiltersMessageSerializer.read(bytes)
+
+  def fromBytes(bytes: ByteVector): GetCompactFiltersMessage =
+    RawGetCompactFiltersMessageSerializer.read(bytes)
 
   /** Constructs a message with the default basic filter type */
   def apply(startHeight: Int, stopHash: DoubleSha256Digest) =
-    new GetCompactFiltersMessage(FilterType.Basic, UInt32(startHeight), stopHash)
+    new GetCompactFiltersMessage(FilterType.Basic,
+                                 UInt32(startHeight),
+                                 stopHash)
 }
 
 /**
@@ -914,7 +918,8 @@ object CompactFilterMessage extends Factory[CompactFilterMessage] {
     new CompactFilterMessage(FilterType.Basic, blockHash, filterBytes)
   }
 
-  def fromBytes(bytes: ByteVector): CompactFilterMessage = RawCompactFilterMessageSerializer.read(bytes)
+  def fromBytes(bytes: ByteVector): CompactFilterMessage =
+    RawCompactFilterMessageSerializer.read(bytes)
 
 }
 
@@ -947,7 +952,8 @@ object GetCompactFilterHeadersMessage
                                        stopHash)
   }
 
-  def fromBytes(bytes: ByteVector): GetCompactFilterHeadersMessage = RawGetCompactFilterHeadersMessageSerializer.read(bytes)
+  def fromBytes(bytes: ByteVector): GetCompactFilterHeadersMessage =
+    RawGetCompactFilterHeadersMessageSerializer.read(bytes)
 }
 
 /**
@@ -994,35 +1000,36 @@ object CompactFilterHeadersMessage
 }
 
 /**
- * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfcheckpt BIP157]]
- */
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#getcfcheckpt BIP157]]
+  */
 case class GetCompactFilterCheckPointMessage(
     filterType: FilterType,
     stopHash: DoubleSha256Digest)
     extends DataPayload {
   val commandName: String = NetworkPayload.getCompactFilterCheckpointCommandName
 
-  def bytes: ByteVector = RawGetCompactFilterCheckpointMessageSerializer.write(this)
+  def bytes: ByteVector =
+    RawGetCompactFilterCheckpointMessageSerializer.write(this)
 }
 
 object GetCompactFilterCheckPointMessage
     extends Factory[GetCompactFilterCheckPointMessage] {
 
   def apply(stopHash: DoubleSha256Digest): GetCompactFilterCheckPointMessage = {
-    new GetCompactFilterCheckPointMessage(FilterType.Basic,
-      stopHash)
+    new GetCompactFilterCheckPointMessage(FilterType.Basic, stopHash)
   }
 
-  def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage = RawGetCompactFilterCheckpointMessageSerializer.read(bytes)
+  def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage =
+    RawGetCompactFilterCheckpointMessageSerializer.read(bytes)
 }
 
 /**
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#cfcheckpt BIP-157 ]]
   */
 case class CompactFilterCheckPointMessage(
-                                           filterType: FilterType,
-                                           stopHash: DoubleSha256Digest,
-                                           filterHeaders: Vector[DoubleSha256Digest])
+    filterType: FilterType,
+    stopHash: DoubleSha256Digest,
+    filterHeaders: Vector[DoubleSha256Digest])
     extends DataPayload {
 
   /** The amount of filter headers in this message */
@@ -1030,12 +1037,16 @@ case class CompactFilterCheckPointMessage(
     UInt64(filterHeaders.length))
 
   val commandName: String = NetworkPayload.compactFilterCheckpointCommandName
-  def bytes: ByteVector = RawCompactFilterCheckpointMessageSerializer.write(this)
+
+  def bytes: ByteVector =
+    RawCompactFilterCheckpointMessageSerializer.write(this)
 }
 
 object CompactFilterCheckPointMessage
     extends Factory[CompactFilterCheckPointMessage] {
-  def fromBytes(bytes: ByteVector): CompactFilterCheckPointMessage = RawCompactFilterCheckpointMessageSerializer.read(bytes)
+
+  def fromBytes(bytes: ByteVector): CompactFilterCheckPointMessage =
+    RawCompactFilterCheckpointMessageSerializer.read(bytes)
 }
 
 /**

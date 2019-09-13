@@ -36,8 +36,10 @@ import org.bitcoins.core.util.FutureUtil
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
   */
-
-case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, filterCount: Int = 0)(
+case class DataMessageHandler(
+    chainApi: ChainApi,
+    callbacks: SpvNodeCallbacks,
+    filterCount: Int = 0)(
     implicit ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
@@ -54,19 +56,25 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
         logger.debug(
           s"Got ${checkpoint.filterHeaders.size} checkpoints ${checkpoint}")
         for {
-          newChainApi <- chainApi.processCheckpoints(checkpoint.filterHeaders.map(_.flip), checkpoint.stopHash.flip)
+          newChainApi <- chainApi.processCheckpoints(
+            checkpoint.filterHeaders.map(_.flip),
+            checkpoint.stopHash.flip)
         } yield {
           this.copy(chainApi = newChainApi)
         }
       case filterHeader: CompactFilterHeadersMessage =>
-        logger.info(s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
+        logger.info(
+          s"Got ${filterHeader.filterHashes.size} compact filter header hashes")
         val filterHeaders = filterHeader.filterHeaders
         for {
-          newChainApi <- chainApi.processFilterHeaders(filterHeaders, filterHeader.stopHash.flip)
+          newChainApi <- chainApi.processFilterHeaders(
+            filterHeaders,
+            filterHeader.stopHash.flip)
           _ <- if (filterHeaders.size == chainConfig.maxFilterHeaderCount) {
             logger.info(
               s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
-            sendNextGetCompactFilterHeadersCommand(peerMsgSender, filterHeader.stopHash.flip)
+            sendNextGetCompactFilterHeadersCommand(peerMsgSender,
+                                                   filterHeader.stopHash.flip)
           } else {
             logger.debug(
               s"Received filter headers=${filterHeaders.size} in one message, " +
@@ -77,14 +85,14 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
           this.copy(chainApi = newChainApi)
         }
       case filter: CompactFilterMessage =>
-        logger.debug(
-          s"Received ${filter.commandName}, $filter")
+        logger.debug(s"Received ${filter.commandName}, $filter")
         for {
           newCount <- if (filterCount == chainConfig.maxFilterCount - 1) {
             logger.info(
               s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
             for {
-              _ <- sendNextGetCompactFilterCommand(peerMsgSender, filter.blockHash.flip)
+              _ <- sendNextGetCompactFilterCommand(peerMsgSender,
+                                                   filter.blockHash.flip)
             } yield 0
           } else {
             Future.successful(filterCount + 1)
@@ -205,27 +213,49 @@ case class DataMessageHandler(chainApi: ChainApi, callbacks: SpvNodeCallbacks, f
     }
   }
 
-  private def sendNextGetCompactFilterHeadersCommand(peerMsgSender: PeerMessageSender, stopHash: DoubleSha256DigestBE): Future[Unit] =
-    sendNextBatchCommand(stopHash, chainConfig.maxFilterHeaderCount, "compact filter headers")(peerMsgSender.sendGetCompactFilterHeadersMessage)
+  private def sendNextGetCompactFilterHeadersCommand(
+      peerMsgSender: PeerMessageSender,
+      stopHash: DoubleSha256DigestBE): Future[Unit] =
+    sendNextBatchCommand(stopHash,
+                         chainConfig.maxFilterHeaderCount,
+                         "compact filter headers")(
+      peerMsgSender.sendGetCompactFilterHeadersMessage)
 
-  private def sendFirstGetCompactFilterHeadersCommand(peerMsgSender: PeerMessageSender): Future[Unit] =
+  private def sendFirstGetCompactFilterHeadersCommand(
+      peerMsgSender: PeerMessageSender): Future[Unit] =
     for {
       highestFilterHeaderOpt <- chainApi.getHighestFilterHeader
-      highestFilterBlockHash = highestFilterHeaderOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
-      res <- sendNextGetCompactFilterHeadersCommand(peerMsgSender, highestFilterBlockHash)
+      highestFilterBlockHash = highestFilterHeaderOpt
+        .map(_.blockHashBE)
+        .getOrElse(DoubleSha256DigestBE.empty)
+      res <- sendNextGetCompactFilterHeadersCommand(peerMsgSender,
+                                                    highestFilterBlockHash)
     } yield res
 
-  private def sendNextGetCompactFilterCommand(peerMsgSender: PeerMessageSender, stopHash: DoubleSha256DigestBE): Future[Unit] =
-    sendNextBatchCommand(stopHash, chainConfig.maxFilterCount, "compact filters")(peerMsgSender.sendGetCompactFiltersMessage)
+  private def sendNextGetCompactFilterCommand(
+      peerMsgSender: PeerMessageSender,
+      stopHash: DoubleSha256DigestBE): Future[Unit] =
+    sendNextBatchCommand(
+      stopHash,
+      chainConfig.maxFilterCount,
+      "compact filters")(peerMsgSender.sendGetCompactFiltersMessage)
 
-  private def sendFirstGetCompactFilterCommand(peerMsgSender: PeerMessageSender): Future[Unit] =
+  private def sendFirstGetCompactFilterCommand(
+      peerMsgSender: PeerMessageSender): Future[Unit] =
     for {
       highestFilterOpt <- chainApi.getHighestFilter
-      highestFilterBlockHash = highestFilterOpt.map(_.blockHashBE).getOrElse(DoubleSha256DigestBE.empty)
-      res <- sendNextGetCompactFilterCommand(peerMsgSender, highestFilterBlockHash)
+      highestFilterBlockHash = highestFilterOpt
+        .map(_.blockHashBE)
+        .getOrElse(DoubleSha256DigestBE.empty)
+      res <- sendNextGetCompactFilterCommand(peerMsgSender,
+                                             highestFilterBlockHash)
     } yield res
 
-  private def sendNextBatchCommand(stopHash: DoubleSha256DigestBE, batchSize: Long, message: String)(f: (Int, DoubleSha256Digest) => Future[Unit]): Future[Unit] = {
+  private def sendNextBatchCommand(
+      stopHash: DoubleSha256DigestBE,
+      batchSize: Long,
+      message: String)(
+      f: (Int, DoubleSha256Digest) => Future[Unit]): Future[Unit] = {
     for {
       nextRangeOpt <- chainApi.nextBatchRange(stopHash, batchSize)
       res <- nextRangeOpt match {
@@ -266,6 +296,5 @@ object DataMessageHandler {
 
   /** Does nothing */
   def noop[T]: T => Unit = _ => ()
-
 
 }

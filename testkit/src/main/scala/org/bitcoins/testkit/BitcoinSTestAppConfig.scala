@@ -17,15 +17,15 @@ object BitcoinSTestAppConfig {
   def getSpvTestConfig(config: Config*): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
-      |bitcoin-s {
-      |  logging {
-      |     level = WARN
-      |  } 
-      |  node {
-      |     spv-mode = yes
-      |     neutrino-mode = no
-      |  }
-      |}
+        |bitcoin-s {
+        |  logging {
+        |     level = WARN
+        |  } 
+        |  node {
+        |     spv-mode = yes
+        |     neutrino-mode = no
+        |  }
+        |}
       """.stripMargin
     }
     val tmpDir = Files.createTempDirectory("bitcoin-s-")

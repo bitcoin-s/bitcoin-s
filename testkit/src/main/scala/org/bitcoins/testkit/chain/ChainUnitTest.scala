@@ -8,7 +8,13 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDb, BlockHeaderDbHelper, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  BlockHeaderDb,
+  BlockHeaderDbHelper,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.chain
@@ -182,7 +188,10 @@ trait ChainUnitTest
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
       filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
       filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
-      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO)
+      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                                                filterHeaderDAO =
+                                                  filterHeaderDAO,
+                                                filterDAO = filterDAO)
     } yield chainHandler
   }
 
@@ -327,26 +336,26 @@ object ChainUnitTest extends ChainVerificationLogger {
   }
 
   def createFilterHeaderDAO()(
-    implicit appConfig: ChainAppConfig,
-    ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
     Future.successful(CompactFilterHeaderDAO())
   }
 
   def createPopulatedFilterHeaderDAO()(
-    implicit appConfig: ChainAppConfig,
-    ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
     createFilterHeaderDAO()
   }
 
   def createFilterDAO()(
-    implicit appConfig: ChainAppConfig,
-    ec: ExecutionContext): Future[CompactFilterDAO] = {
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterDAO] = {
     Future.successful(CompactFilterDAO())
   }
 
   def createPopulatedFilterDAO()(
-    implicit appConfig: ChainAppConfig,
-    ec: ExecutionContext): Future[CompactFilterDAO] = {
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterDAO] = {
     createFilterDAO()
   }
 
@@ -421,7 +430,8 @@ object ChainUnitTest extends ChainVerificationLogger {
     ChainDbManagement.dropHeaderTable()
   }
 
-  def destroyFilterHeaderTable()(implicit appConfig: ChainAppConfig): Future[Unit] = {
+  def destroyFilterHeaderTable()(
+      implicit appConfig: ChainAppConfig): Future[Unit] = {
     ChainDbManagement.dropFilterHeaderTable()
   }
 
@@ -442,14 +452,14 @@ object ChainUnitTest extends ChainVerificationLogger {
   }
 
   def setupAllTables()(
-    implicit appConfig: ChainAppConfig,
-    ec: ExecutionContext): Future[Unit] = {
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
     ChainDbManagement.createAll()
   }
 
   def destroyAllTables()(
-    implicit appConfig: ChainAppConfig,
-    ec: ExecutionContext): Future[Unit] = {
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
     ChainDbManagement.dropAll()
   }
 
@@ -481,7 +491,9 @@ object ChainUnitTest extends ChainVerificationLogger {
     lazy val filterHeaderDAO = CompactFilterHeaderDAO()
     lazy val filterDAO = CompactFilterDAO()
 
-    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO, filterHeaderDAO = filterHeaderDAO, filterDAO = filterDAO)
+    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                              filterHeaderDAO = filterHeaderDAO,
+                              filterDAO = filterDAO)
 
   }
 

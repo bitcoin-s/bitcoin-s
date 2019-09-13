@@ -139,7 +139,7 @@ abstract class NodeTestUtil extends P2PLogger {
 
   /** Awaits sync between the given SPV node and bitcoind client */
   def awaitCompactFilterHeadersSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(
-    implicit sys: ActorSystem): Future[Unit] = {
+      implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
@@ -147,7 +147,7 @@ abstract class NodeTestUtil extends P2PLogger {
 
   /** Awaits sync between the given SPV node and bitcoind client */
   def awaitCompactFiltersSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(
-    implicit sys: ActorSystem): Future[Unit] = {
+      implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
       .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)

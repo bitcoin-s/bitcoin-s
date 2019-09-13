@@ -16,11 +16,11 @@ case class NeutrinoNode(
     actorSystem: ActorSystem)
     extends Node {
 
-  override implicit def system: ActorSystem = actorSystem
+  implicit override def system: ActorSystem = actorSystem
 
-  override implicit def nodeAppConfig: NodeAppConfig = nodeConfig
+  implicit override def nodeAppConfig: NodeAppConfig = nodeConfig
 
-  override implicit def chainAppConfig: ChainAppConfig = chainConfig
+  implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
   override val peer: Peer = nodePeer
 
@@ -31,7 +31,8 @@ case class NeutrinoNode(
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash
       peerMsgSender <- peerMsgSenderF
-      _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(stopHash = bestHash.flip)
+      _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(
+        stopHash = bestHash.flip)
     } yield {
       ()
     }

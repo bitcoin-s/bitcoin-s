@@ -4,14 +4,23 @@ import akka.actor.ActorRefFactory
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.p2p.{NetworkMessage, _}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.SpvNodeCallbacks
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{Disconnected, Initializing, Normal, Preconnection}
+import org.bitcoins.node.networking.peer.PeerMessageReceiverState.{
+  Disconnected,
+  Initializing,
+  Normal,
+  Preconnection
+}
 
 import scala.concurrent.Future
 

@@ -1,6 +1,10 @@
 package org.bitcoins.chain.api
 
-import org.bitcoins.chain.models.{BlockHeaderDb, CompactFilterDb, CompactFilterHeaderDb}
+import org.bitcoins.chain.models.{
+  BlockHeaderDb,
+  CompactFilterDb,
+  CompactFilterHeaderDb
+}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
@@ -41,7 +45,7 @@ trait ChainApi {
 
   /**  Gets all [[org.bitcoins.chain.models.BlockHeaderDb]]s at a given height  */
   def getHeadersByHeight(height: Int)(
-    implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]]
+      implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]]
 
   /** Gets the number of blocks in the database */
   def getBlockCount(implicit ec: ExecutionContext): Future[Long]
@@ -70,7 +74,8 @@ trait ChainApi {
     */
   def processFilterHeader(
       filterHeader: FilterHeader,
-      blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[ChainApi] = {
+      blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
     processFilterHeaders(Vector(filterHeader), blockHash)
 
   }
@@ -87,20 +92,22 @@ trait ChainApi {
   /**
     * Generates a block range in form of (startHeight, stopHash) by the given stop hash.
     */
-  def nextBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Long)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
+  def nextBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Long)(
+      implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
 
   /**
     * Adds a compact filter into the filter database.
     */
-  def processFilter(
-      message: CompactFilterMessage)(implicit ec: ExecutionContext): Future[ChainApi] = processFilters(Vector(message))
+  def processFilter(message: CompactFilterMessage)(
+      implicit ec: ExecutionContext): Future[ChainApi] =
+    processFilters(Vector(message))
 
   /**
     * Process all of the given compact filters and returns a new [[ChainApi chain api]]
     * that contains these headers.
     */
-  def processFilters(
-      message: Vector[CompactFilterMessage])(implicit ec: ExecutionContext): Future[ChainApi]
+  def processFilters(message: Vector[CompactFilterMessage])(
+      implicit ec: ExecutionContext): Future[ChainApi]
 
   /**
     * Adds a compact filter header check point into the list of check points.
@@ -123,21 +130,25 @@ trait ChainApi {
   /**
     * Returns the highest know compact filter header.
     */
-  def getHighestFilterHeader(implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]]
+  def getHighestFilterHeader(
+      implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]]
 
   /**
     * Looks up a compact filter header by its hash.
     */
-  def getFilterHeader(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[FilterHeader]]
+  def getFilterHeader(hash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[FilterHeader]]
 
   /**
     * Returns the highest know compact filter.
     */
-  def getHighestFilter(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
+  def getHighestFilter(
+      implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
 
   /**
     * Looks up a compact filter by its hash.
     */
-  def getFilter(hash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
+  def getFilter(hash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
 
 }

@@ -1,7 +1,11 @@
 package org.bitcoins.chain.db
 
 import org.bitcoins.db._
-import org.bitcoins.chain.models.{BlockHeaderTable, CompactFilterHeaderTable, CompactFilterTable}
+import org.bitcoins.chain.models.{
+  BlockHeaderTable,
+  CompactFilterHeaderTable,
+  CompactFilterTable
+}
 import org.bitcoins.db.DbManagement
 import slick.lifted.TableQuery
 
@@ -37,8 +41,8 @@ sealed abstract class ChainDbManagement extends DbManagement {
   }
 
   def createFilterHeaderTable(createIfNotExists: Boolean = true)(
-    implicit config: ChainAppConfig,
-    ec: ExecutionContext): Future[Unit] = {
+      implicit config: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
     createTable(filterHeaderTable, createIfNotExists)
   }
 
@@ -47,8 +51,8 @@ sealed abstract class ChainDbManagement extends DbManagement {
   }
 
   def createFilterTable(createIfNotExists: Boolean = true)(
-    implicit config: ChainAppConfig,
-    ec: ExecutionContext): Future[Unit] = {
+      implicit config: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
     createTable(filterTable, createIfNotExists)
   }
 

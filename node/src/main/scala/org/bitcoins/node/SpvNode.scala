@@ -18,11 +18,11 @@ case class SpvNode(
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
     extends Node {
-  override implicit def system: ActorSystem = actorSystem
+  implicit override def system: ActorSystem = actorSystem
 
-  override implicit def nodeAppConfig: NodeAppConfig = nodeConfig
+  implicit override def nodeAppConfig: NodeAppConfig = nodeConfig
 
-  override implicit def chainAppConfig: ChainAppConfig = chainConfig
+  implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
   override val peer: Peer = nodePeer
 

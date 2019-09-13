@@ -11,6 +11,7 @@ import scodec.bits.ByteVector
   */
 object RawGetCompactFilterCheckpointMessageSerializer
     extends RawBitcoinSerializer[GetCompactFilterCheckPointMessage] {
+
   def read(bytes: ByteVector): GetCompactFilterCheckPointMessage = {
     val filterType = FilterType.fromBytes(bytes.take(1))
     val stopHash = bytes.drop(1).take(32)

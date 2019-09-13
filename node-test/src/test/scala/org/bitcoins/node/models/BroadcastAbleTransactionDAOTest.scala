@@ -9,7 +9,8 @@ import org.bitcoins.testkit.fixtures.NodeDAOFixture
 class BroadcastAbleTransactionDAOTest extends NodeDAOFixture {
 
   /** Wallet config with data directory set to user temp directory */
-  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getSpvTestConfig()
+  implicit override protected def config: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig()
 
   behavior of "BroadcastAbleTransactionDAO"
 

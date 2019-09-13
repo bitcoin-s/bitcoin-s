@@ -38,7 +38,8 @@ TaskKeys.downloadBitcoind := {
   versions.foreach { version =>
     val versionDir = binaryDir resolve version
     val archiveLocation = binaryDir resolve s"$version.$suffix"
-    val location = if (version == experimentalVersion)
+    val location =
+      if (version == experimentalVersion)
         s"https://s3-us-west-1.amazonaws.com/suredbits.com/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
       else
         s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"

@@ -4,13 +4,24 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.p2p.NetworkPayload
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{BroadcastAbleTransaction, BroadcastAbleTransactionDAO, Peer}
+import org.bitcoins.node.models.{
+  BroadcastAbleTransaction,
+  BroadcastAbleTransactionDAO,
+  Peer
+}
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
+import org.bitcoins.node.networking.peer.{
+  PeerMessageReceiver,
+  PeerMessageSender
+}
 import org.bitcoins.rpc.util.AsyncUtil
 import slick.jdbc.SQLiteProfile
 
@@ -20,7 +31,7 @@ import scala.util.{Failure, Success}
 
 /**
   This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
- */
+  */
 trait Node extends P2PLogger {
 
   implicit def system: ActorSystem
@@ -43,8 +54,8 @@ trait Node extends P2PLogger {
     * */
   def chainApiFromDb(): Future[ChainApi] = {
     ChainHandler.fromDatabase(BlockHeaderDAO(),
-      CompactFilterHeaderDAO(),
-      CompactFilterDAO())
+                              CompactFilterHeaderDAO(),
+                              CompactFilterDAO())
   }
 
   /** Unlike our chain api, this is cached inside our node
@@ -57,11 +68,11 @@ trait Node extends P2PLogger {
     } yield {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(chainApi = chainApi,
-          peer = peer,
-          callbacks = callbacks)
+                                        peer = peer,
+                                        callbacks = callbacks)
       val p2p = P2PClient(context = system,
-        peer = peer,
-        peerMessageReceiver = peerMsgRecv)
+                          peer = peer,
+                          peerMessageReceiver = peerMsgRecv)
       p2p
     }
   }
@@ -139,8 +150,7 @@ trait Node extends P2PLogger {
     }
 
     isStoppedF.failed.foreach { e =>
-      logger.warn(
-        s"Cannot stop node", e)
+      logger.warn(s"Cannot stop node", e)
     }
 
     isStoppedF.map { _ =>

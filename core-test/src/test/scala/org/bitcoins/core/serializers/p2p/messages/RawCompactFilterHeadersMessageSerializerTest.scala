@@ -51,17 +51,20 @@ class RawCompactFilterHeadersMessageSerializerTest extends BitcoinSUnitTest {
 
     val biggerMessage = CompactFilterHeadersMessage(
       filterType = FilterType.Basic,
-      stopHash = DoubleSha256Digest.fromHex("0000000000000000000000000000000000000000000000000000000000000001"),
-      previousFilterHeader = DoubleSha256Digest.fromHex("0000000000000000000000000000000000000000000000000000000000000002"),
+      stopHash = DoubleSha256Digest.fromHex(
+        "0000000000000000000000000000000000000000000000000000000000000001"),
+      previousFilterHeader = DoubleSha256Digest.fromHex(
+        "0000000000000000000000000000000000000000000000000000000000000002"),
       filterHashes = 1.to(2000).toVector.map(_ => DoubleSha256Digest.empty)
     )
 
     val biggerBytes = biggerMessage.bytes
-    assert(biggerBytes.size == 1 + // type size
-      32 + // stop hash size
-      32 + // previous filter header size
-      3 +  // num filters size
-      2000 * 32) // filter hashes size
+    assert(
+      biggerBytes.size == 1 + // type size
+        32 + // stop hash size
+        32 + // previous filter header size
+        3 + // num filters size
+        2000 * 32) // filter hashes size
 
     val parsedBiggerMessage = CompactFilterHeadersMessage.fromBytes(biggerBytes)
 

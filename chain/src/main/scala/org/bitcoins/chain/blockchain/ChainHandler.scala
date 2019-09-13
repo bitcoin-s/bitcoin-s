@@ -112,21 +112,27 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def nextBatchRange(prevStopHash: DoubleSha256DigestBE, batchSize: Long)(implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]] = {
+  override def nextBatchRange(
+      prevStopHash: DoubleSha256DigestBE,
+      batchSize: Long)(implicit ec: ExecutionContext): Future[
+    Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
       for {
         prevStopHeaderOpt <- getHeader(prevStopHash)
-        prevStopHeader = prevStopHeaderOpt.getOrElse(throw new UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
+        prevStopHeader = prevStopHeaderOpt.getOrElse(
+          throw new UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
     for {
       startHeight <- startHeightF
       blockCount <- getBlockCount
-      stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount else startHeight - 1 + batchSize
+      stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount
+      else startHeight - 1 + batchSize
       stopBlockOpt <- getHeadersByHeight(stopHeight.toInt).map(_.headOption)
-      stopBlock = stopBlockOpt.getOrElse(throw new UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
+      stopBlock = stopBlockOpt.getOrElse(
+        throw new UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
     } yield {
       if (startHeight > stopHeight)
         None
@@ -142,28 +148,37 @@ case class ChainHandler(
       implicit ec: ExecutionContext): Future[ChainApi] = {
 
     val filterHeadersToCreateF = for {
-      blockHeaders <- blockHeaderDAO.getNChildren(stopHash, filterHeaders.size - 1).map(_.sortBy(_.height))
+      blockHeaders <- blockHeaderDAO
+        .getNChildren(stopHash, filterHeaders.size - 1)
+        .map(_.sortBy(_.height))
     } yield {
       if (blockHeaders.size != filterHeaders.size) {
-        throw UnknownBlockHash(s"Filter header batch size does not match block header batch size ${filterHeaders.size} != ${blockHeaders.size}")
+        throw UnknownBlockHash(
+          s"Filter header batch size does not match block header batch size ${filterHeaders.size} != ${blockHeaders.size}")
       }
       blockHeaders.indices.toVector.map { i =>
         val blockHeader = blockHeaders(i)
         val filterHeader = filterHeaders(i)
-        CompactFilterHeaderDbHelper.fromFilterHeader(
-          filterHeader,
-          blockHeader.hashBE,
-          blockHeader.height)
+        CompactFilterHeaderDbHelper.fromFilterHeader(filterHeader,
+                                                     blockHeader.hashBE,
+                                                     blockHeader.height)
       }
     }
 
     for {
       filterHeadersToCreate <- filterHeadersToCreateF
       _ <- if (filterHeadersToCreate.nonEmpty && filterHeadersToCreate.head.height > 0) {
-        filterHeaderDAO.findByHash(filterHeadersToCreate.head.previousFilterHeaderBE).map { prevHeaderOpt =>
-          require(prevHeaderOpt.nonEmpty, s"Previous filter header does not exist: ${filterHeadersToCreate.head.previousFilterHeaderBE}")
-          require(prevHeaderOpt.get.height == filterHeadersToCreate.head.height - 1, s"Unexpected previous header's height: ${prevHeaderOpt.get.height} != ${filterHeadersToCreate.head.height - 1}")
-        }
+        filterHeaderDAO
+          .findByHash(filterHeadersToCreate.head.previousFilterHeaderBE)
+          .map { prevHeaderOpt =>
+            require(
+              prevHeaderOpt.nonEmpty,
+              s"Previous filter header does not exist: ${filterHeadersToCreate.head.previousFilterHeaderBE}")
+            require(
+              prevHeaderOpt.get.height == filterHeadersToCreate.head.height - 1,
+              s"Unexpected previous header's height: ${prevHeaderOpt.get.height} != ${filterHeadersToCreate.head.height - 1}"
+            )
+          }
       } else FutureUtil.unit
       _ <- filterHeaderDAO.upsertAll(filterHeadersToCreate)
     } yield this
@@ -171,7 +186,7 @@ case class ChainHandler(
 
   /** @inheritdoc */
   override def processFilters(messages: Vector[CompactFilterMessage])(
-    implicit ec: ExecutionContext): Future[ChainApi] = {
+      implicit ec: ExecutionContext): Future[ChainApi] = {
 
     val filterHeadersF = filterHeaderDAO
       .findAllByBlockHashes(messages.map(_.blockHash.flip))
@@ -193,7 +208,9 @@ case class ChainHandler(
       filterHeaders <- filterHeadersF
       _ <- sizeCheckF
       compactFilterDbs <- Future {
-        filterHeaders.map { filterHeader => findFilterDbFromMessage(filterHeader, messagesByBlockHash) }
+        filterHeaders.map { filterHeader =>
+          findFilterDbFromMessage(filterHeader, messagesByBlockHash)
+        }
       }
       _ <- filterDAO.upsertAll(compactFilterDbs)
     } yield {
@@ -203,7 +220,9 @@ case class ChainHandler(
 
   private def findFilterDbFromMessage(
       filterHeader: CompactFilterHeaderDb,
-      messagesByBlockHash: Map[DoubleSha256DigestBE, Vector[CompactFilterMessage]]): CompactFilterDb = {
+      messagesByBlockHash: Map[
+        DoubleSha256DigestBE,
+        Vector[CompactFilterMessage]]): CompactFilterDb = {
     messagesByBlockHash.get(filterHeader.blockHashBE) match {
       case Some(messages) if messages.size == 1 =>
         val message = messages.head
@@ -217,33 +236,37 @@ case class ChainHandler(
         }
         val filter =
           CompactFilterDbHelper.fromFilterBytes(message.filterBytes,
-            filterHeader.blockHashBE,
-            filterHeader.height)
+                                                filterHeader.blockHashBE,
+                                                filterHeader.height)
         filter
       case None =>
-        throw UnknownBlockHash(s"Unknown block hash ${filterHeader.blockHashBE}")
+        throw UnknownBlockHash(
+          s"Unknown block hash ${filterHeader.blockHashBE}")
     }
   }
 
   /** @inheritdoc */
   override def processCheckpoints(
-                          checkpoints: Vector[DoubleSha256DigestBE],
-                          blockHash: DoubleSha256DigestBE)(
-                          implicit ec: ExecutionContext): Future[ChainApi] = {
+      checkpoints: Vector[DoubleSha256DigestBE],
+      blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[ChainApi] = {
 
-    val blockHeadersF: Future[Seq[BlockHeaderDb]] = Future.traverse(checkpoints.indices.toVector) { i =>
-      blockHeaderDAO.findByHeight(i * 1000)
-    }.map(headers => headers.map(_.head))
+    val blockHeadersF: Future[Seq[BlockHeaderDb]] = Future
+      .traverse(checkpoints.indices.toVector) { i =>
+        blockHeaderDAO.findByHeight(i * 1000)
+      }
+      .map(headers => headers.map(_.head))
 
     for {
       blockHeaders <- blockHeadersF
     } yield {
       val checkpointsWithBlocks = checkpoints.zip(blockHeaders)
 
-      val updatedCheckpoints = checkpointsWithBlocks.foldLeft(blockFilterCheckpoints) { (res, pair) =>
-        val (filterHeaderHash, blockHeader) = pair
-        res.updated(blockHeader.hashBE, filterHeaderHash)
-      }
+      val updatedCheckpoints =
+        checkpointsWithBlocks.foldLeft(blockFilterCheckpoints) { (res, pair) =>
+          val (filterHeaderHash, blockHeader) = pair
+          res.updated(blockHeader.hashBE, filterHeaderHash)
+        }
 
       this.copy(blockFilterCheckpoints = updatedCheckpoints)
     }
@@ -263,7 +286,8 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def getHighestFilter(implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
+  override def getHighestFilter(
+      implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
     filterDAO.findHighest()
   }
 
@@ -275,7 +299,7 @@ case class ChainHandler(
 
   /** @inheritdoc */
   override def getHeadersByHeight(height: Int)(
-    implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]] = {
+      implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]] = {
     blockHeaderDAO.findByHeight(height)
   }
 }

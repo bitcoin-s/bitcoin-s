@@ -17,7 +17,8 @@ import scala.concurrent.duration.DurationInt
 class NeutrinoNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
+  implicit override protected def config: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
   override type FixtureParam = NodeConnectedWithBitcoind
 
@@ -88,25 +89,36 @@ class NeutrinoNodeTest extends NodeUnitTest {
       startGenF.flatMap { _ =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
-        def has6BlocksF = RpcUtil.retryUntilSatisfiedF(
-          conditionF =
-            () => node.chainApiFromDb().flatMap(_.getBlockCount.map { c =>
-              c == 6 }),
-          duration = 1000.millis)
+        def has6BlocksF =
+          RpcUtil.retryUntilSatisfiedF(conditionF = () =>
+                                         node
+                                           .chainApiFromDb()
+                                           .flatMap(_.getBlockCount.map { c =>
+                                             c == 6
+                                           }),
+                                       duration = 1000.millis)
 
-        def has6FilterHeadersF = RpcUtil.retryUntilSatisfiedF(
-          conditionF =
-            () => node.chainApiFromDb().flatMap(_.getHighestFilterHeader.map{ header: Option[CompactFilterHeaderDb] =>
-              header.exists(_.height == 6)
-            }),
-          duration = 1000.millis)
+        def has6FilterHeadersF =
+          RpcUtil.retryUntilSatisfiedF(
+            conditionF = () =>
+              node
+                .chainApiFromDb()
+                .flatMap(_.getHighestFilterHeader.map {
+                  header: Option[CompactFilterHeaderDb] =>
+                    header.exists(_.height == 6)
+                }),
+            duration = 1000.millis
+          )
 
-        def has6FiltersF = RpcUtil.retryUntilSatisfiedF(
-          conditionF =
-            () => node.chainApiFromDb().flatMap(_.getHighestFilter.map { filter =>
-              filter.exists(_.height == 6)
-            }),
-          duration = 1000.millis)
+        def has6FiltersF =
+          RpcUtil.retryUntilSatisfiedF(conditionF = () =>
+                                         node
+                                           .chainApiFromDb()
+                                           .flatMap(_.getHighestFilter.map {
+                                             filter =>
+                                               filter.exists(_.height == 6)
+                                           }),
+                                       duration = 1000.millis)
 
         for {
           _ <- has6BlocksF

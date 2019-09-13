@@ -29,7 +29,8 @@ object Main extends App {
 
   implicit val walletConf: WalletAppConfig = conf.walletConf
   implicit val nodeConf: NodeAppConfig = conf.nodeConf
-  require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled, "Either Neutrino or SPV mode should be enabled")
+  require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
+          "Either Neutrino or SPV mode should be enabled")
   implicit val chainConf: ChainAppConfig = conf.chainConf
 
   implicit val system = ActorSystem("bitcoin-s")
@@ -99,13 +100,20 @@ object Main extends App {
       if (nodeConf.isSPVEnabled) {
         for {
           bloom <- wallet.getBloomFilter()
-          _ = logger.info(s"Got bloom filter with ${bloom.filterSize.toInt} elements")
-          spvNode <- SpvNode(peer, bloom, callbacks, nodeConf, chainConf, system).start()
+          _ = logger.info(
+            s"Got bloom filter with ${bloom.filterSize.toInt} elements")
+          spvNode <- SpvNode(peer,
+                             bloom,
+                             callbacks,
+                             nodeConf,
+                             chainConf,
+                             system).start()
         } yield spvNode
       } else if (nodeConf.isNeutrinoEnabled) {
         NeutrinoNode(peer, callbacks, nodeConf, chainConf, system).start()
       } else {
-        Future.failed(new RuntimeException("Neither Neutrino nor SPV mode is enabled."))
+        Future.failed(
+          new RuntimeException("Neither Neutrino nor SPV mode is enabled."))
       }
     }
     _ = logger.info(s"Starting SPV node sync")

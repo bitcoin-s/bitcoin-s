@@ -21,10 +21,15 @@ class RawCompactFilterCheckPointMessageSerializerTest extends BitcoinSUnitTest {
     assert(
       message.stopHash == DoubleSha256Digest.fromHex(
         "6f0ee334fbba823804e14042c33bc5dfa5126e5076d8dcff02d4a045f266f427"))
-    assert(message.filterHeaders == Vector(
-      DoubleSha256Digest.fromHex("93daaed620ff44fb7a760860ee8084f7f8c722d6c7ea9d1e1a35059253f876e6"),
-      DoubleSha256Digest.fromHex("2c2faad9d5e25594914772dc815e157debf385cbe5de5a0aea59d15af42b19ad"),
-      DoubleSha256Digest.fromHex("dd9cc1baf1453d682d27958c0f64c97a69249d655151c3b25b1ef1a993ec4f4f")))
+    assert(
+      message.filterHeaders == Vector(
+        DoubleSha256Digest.fromHex(
+          "93daaed620ff44fb7a760860ee8084f7f8c722d6c7ea9d1e1a35059253f876e6"),
+        DoubleSha256Digest.fromHex(
+          "2c2faad9d5e25594914772dc815e157debf385cbe5de5a0aea59d15af42b19ad"),
+        DoubleSha256Digest.fromHex(
+          "dd9cc1baf1453d682d27958c0f64c97a69249d655151c3b25b1ef1a993ec4f4f")
+      ))
   }
 
   it must "have serialization symmetry" in {
@@ -52,7 +57,8 @@ class RawCompactFilterCheckPointMessageSerializerTest extends BitcoinSUnitTest {
         3 + // num filter headers size
         20000 * 32) // filter headers size
 
-    val parsedBiggerMessage = CompactFilterCheckPointMessage.fromBytes(biggerBytes)
+    val parsedBiggerMessage =
+      CompactFilterCheckPointMessage.fromBytes(biggerBytes)
 
     assert(biggerMessage == parsedBiggerMessage)
     assert(biggerBytes == parsedBiggerMessage.bytes)

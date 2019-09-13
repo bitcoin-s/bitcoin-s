@@ -12,6 +12,7 @@ import scodec.bits.ByteVector
   */
 object RawGetCompactFilterHeadersMessageSerializer
     extends RawBitcoinSerializer[GetCompactFilterHeadersMessage] {
+
   def read(bytes: ByteVector): GetCompactFilterHeadersMessage = {
     val filterType = FilterType.fromBytes(bytes.take(1))
     val startHeight = UInt32.fromBytes(bytes.drop(1).take(4).reverse)

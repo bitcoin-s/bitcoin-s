@@ -16,7 +16,8 @@ import scala.concurrent.duration.DurationInt
 class PeerMessageHandlerTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
-  override implicit protected def config: BitcoinSAppConfig = BitcoinSTestAppConfig.getSpvTestConfig()
+  implicit override protected def config: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig()
 
   override type FixtureParam = Unit
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
