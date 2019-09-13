@@ -12,6 +12,10 @@ import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+case class UnknownFilterHash(message: String) extends RuntimeException(message)
+case class UnknownBlockHash(message: String) extends RuntimeException(message)
+case class UnknownBlockHeight(message: String) extends RuntimeException(message)
+
 /**
   * Chain Handler is meant to be the reference implementation
   * of [[org.bitcoins.chain.api.ChainApi ChainApi]], this is the entry point in to the
@@ -53,18 +57,6 @@ case class ChainHandler(
         .getOrElse("None")
       logger.debug(s"getHeader result: $resultStr")
       header
-    }
-  }
-
-  /** @inheritdoc */
-  override def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
-    implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
-    val range = 0.until(count)
-    range.foldLeft(getHeader(hash)) { (headerF, _) =>
-      headerF.flatMap {
-        case Some(header) => getHeader(header.previousBlockHashBE)
-        case None => headerF
-      }
     }
   }
 
@@ -126,7 +118,7 @@ case class ChainHandler(
     } else {
       for {
         prevStopHeaderOpt <- getHeader(prevStopHash)
-        prevStopHeader = prevStopHeaderOpt.getOrElse(throw new RuntimeException(s"Unknown block hash ${prevStopHash}"))
+        prevStopHeader = prevStopHeaderOpt.getOrElse(throw new UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
     for {
@@ -134,7 +126,7 @@ case class ChainHandler(
       blockCount <- getBlockCount
       stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount else startHeight - 1 + batchSize
       stopBlockOpt <- getHeadersByHeight(stopHeight.toInt).map(_.headOption)
-      stopBlock = stopBlockOpt.getOrElse(throw new RuntimeException(s"Unknown header height ${stopHeight}"))
+      stopBlock = stopBlockOpt.getOrElse(throw new UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
     } yield {
       if (startHeight > stopHeight)
         None
@@ -153,7 +145,7 @@ case class ChainHandler(
       blockHeaders <- blockHeaderDAO.getNChildren(stopHash, filterHeaders.size - 1).map(_.sortBy(_.height))
     } yield {
       if (blockHeaders.size != filterHeaders.size) {
-        throw new RuntimeException(s"Filter header batch size does not match block header batch size ${filterHeaders.size} != ${blockHeaders.size}")
+        throw UnknownBlockHash(s"Filter header batch size does not match block header batch size ${filterHeaders.size} != ${blockHeaders.size}")
       }
       blockHeaders.indices.toVector.map { i =>
         val blockHeader = blockHeaders(i)
@@ -190,7 +182,7 @@ case class ChainHandler(
     val sizeCheckF = for {
       filterHeaders <- filterHeadersF
       _ <- if (filterHeaders.size != messages.size) {
-        Future.failed(new RuntimeException(
+        Future.failed(new UnknownBlockHash(
           s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}"))
       } else {
         FutureUtil.unit
@@ -221,6 +213,7 @@ case class ChainHandler(
           val errMsg = s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}\n" +
             s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}\nfilterHeader=${filterHeader}"
           logger.warn(errMsg)
+          throw UnknownFilterHash(errMsg)
         }
         val filter =
           CompactFilterDbHelper.fromFilterBytes(message.filterBytes,
@@ -228,7 +221,7 @@ case class ChainHandler(
             filterHeader.height)
         filter
       case None =>
-        throw new RuntimeException(s"Unknown block hash ${filterHeader.blockHashBE}")
+        throw UnknownBlockHash(s"Unknown block hash ${filterHeader.blockHashBE}")
     }
   }
 

@@ -43,10 +43,6 @@ trait ChainApi {
   def getHeadersByHeight(height: Int)(
     implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]]
 
-  /** Gets n-th [[org.bitcoins.chain.models.BlockHeaderDb]] down the blockchain form a given block */
-  def getNthHeader(hash: DoubleSha256DigestBE, count: Int)(
-    implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
-
   /** Gets the number of blocks in the database */
   def getBlockCount(implicit ec: ExecutionContext): Future[Long]
 
