@@ -454,13 +454,17 @@ object ChainUnitTest extends ChainVerificationLogger {
   def setupAllTables()(
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    ChainDbManagement.createAll()
+    ChainDbManagement.createHeaderTable()
+    ChainDbManagement.createFilterHeaderTable()
+    ChainDbManagement.createFilterTable()
   }
 
   def destroyAllTables()(
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    ChainDbManagement.dropAll()
+    ChainDbManagement.dropFilterTable()
+    ChainDbManagement.dropFilterHeaderTable()
+    ChainDbManagement.dropHeaderTable()
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */

@@ -123,15 +123,19 @@ class P2PClientTest
   behavior of "P2PClient"
 
   override def beforeAll(): Unit = {
-    ChainDbManagement.createHeaderTable()
-    ChainDbManagement.createFilterHeaderTable()
-    ChainDbManagement.createFilterTable()
+    for {
+      _ <- ChainDbManagement.createHeaderTable()
+      _ <- ChainDbManagement.createFilterHeaderTable()
+      _ <- ChainDbManagement.createFilterTable()
+    } yield ()
   }
 
   override def afterAll(): Unit = {
-    ChainDbManagement.dropFilterTable()
-    ChainDbManagement.dropFilterHeaderTable()
-    ChainDbManagement.dropHeaderTable()
+    for {
+      _ <- ChainDbManagement.dropFilterTable()
+      _ <- ChainDbManagement.dropFilterHeaderTable()
+      _ <- ChainDbManagement.dropHeaderTable()
+    } yield ()
     super.afterAll()
   }
 

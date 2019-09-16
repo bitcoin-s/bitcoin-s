@@ -134,12 +134,6 @@ trait ChainApi {
       implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]]
 
   /**
-    * Looks up a compact filter header by its hash.
-    */
-  def getFilterHeader(hash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[Option[FilterHeader]]
-
-  /**
     * Returns the highest know compact filter.
     */
   def getHighestFilter(

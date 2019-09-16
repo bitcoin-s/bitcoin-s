@@ -280,12 +280,6 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def getFilterHeader(hash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[Option[FilterHeader]] = {
-    filterHeaderDAO.findByHash(hash).map(_.map(x => x.filterHeader))
-  }
-
-  /** @inheritdoc */
   override def getHighestFilter(
       implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
     filterDAO.findHighest()
