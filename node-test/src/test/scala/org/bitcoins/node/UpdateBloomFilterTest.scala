@@ -9,7 +9,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{BeforeAndAfter, FutureOutcome}
@@ -23,10 +23,10 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   implicit override protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
-  override type FixtureParam = NodeFundedWalletBitcoind
+  override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNodeFundedWalletBitcoind(test, callbacks)
+    withSpvNodeFundedWalletBitcoind(test, callbacks)
   }
 
   val testTimeout = 30.seconds
@@ -79,9 +79,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   }
 
   it must "update the bloom filter with an address" in { param =>
-    val NodeFundedWalletBitcoind(_, wallet, rpc) = param
-
-    val spv = param.spvNode
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
@@ -121,9 +119,8 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   }
 
   it must "update the bloom filter with a TX" in { param =>
-    val NodeFundedWalletBitcoind(_, wallet, rpc) = param
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
-    val spv = param.spvNode
     // we want to schedule a runnable that aborts
     // the test after a timeout, but then
     // we need to cancel that runnable once

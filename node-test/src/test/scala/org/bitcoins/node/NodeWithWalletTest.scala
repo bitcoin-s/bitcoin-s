@@ -6,7 +6,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.scalatest.FutureOutcome
@@ -21,10 +21,10 @@ class NodeWithWalletTest extends NodeUnitTest {
   implicit override protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
-  override type FixtureParam = NodeFundedWalletBitcoind
+  override type FixtureParam = SpvNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNodeFundedWalletBitcoind(test, callbacks)
+    withSpvNodeFundedWalletBitcoind(test, callbacks)
   }
 
   private val assertionP: Promise[Boolean] = Promise()
@@ -62,9 +62,7 @@ class NodeWithWalletTest extends NodeUnitTest {
 
   it must "load a bloom filter and receive information about received payments" in {
     param =>
-      val NodeFundedWalletBitcoind(_, wallet, rpc) = param
-
-      val spv = param.spvNode
+      val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
       walletP.success(wallet)
 

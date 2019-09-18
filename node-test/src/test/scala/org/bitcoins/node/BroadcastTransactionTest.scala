@@ -7,7 +7,7 @@ import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
-import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
+import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.FutureOutcome
 
@@ -18,15 +18,15 @@ class BroadcastTransactionTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
-  override type FixtureParam = NodeFundedWalletBitcoind
+  override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNodeFundedWalletBitcoind(test, SpvNodeCallbacks.empty)
+    withNeutrinoNodeFundedWalletBitcoind(test, SpvNodeCallbacks.empty)
 
   it must "broadcast a transaction" in { param =>
-    val NodeFundedWalletBitcoind(spv, wallet, rpc) = param
+    val NeutrinoNodeFundedWalletBitcoind(node, wallet, rpc) = param
 
     def hasSeenTx(transaction: Transaction): Future[Boolean] = {
       rpc
@@ -48,14 +48,14 @@ class BroadcastTransactionTest extends NodeUnitTest {
 
       address <- rpc.getNewAddress
       _ <- wallet.getBloomFilter()
-      _ <- spv.sync()
-      _ <- NodeTestUtil.awaitSync(spv, rpc)
+      _ <- node.sync()
+      _ <- NodeTestUtil.awaitSync(node, rpc)
 
       tx <- wallet
         .sendToAddress(address, 1.bitcoin, SatoshisPerByte(10.sats))
 
       bitcoindBalancePreBroadcast <- rpc.getBalance
-      _ = spv.broadcastTransaction(tx)
+      _ = node.broadcastTransaction(tx)
       _ <- TestAsyncUtil.awaitConditionF(() => hasSeenTx(tx),
                                          duration = 1.second)
       fromBitcoind <- rpc.getRawTransaction(tx.txIdBE)

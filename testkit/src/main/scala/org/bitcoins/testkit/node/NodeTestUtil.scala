@@ -13,7 +13,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger, SpvNode}
+import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -134,7 +134,7 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds, maxTries = 100)
   }
 
   /** Awaits sync between the given SPV node and bitcoind client */

@@ -6,7 +6,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.fixture.NodeConnectedWithBitcoind
+import org.bitcoins.testkit.node.fixture.SpvNodeConnectedWithBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.FutureOutcome
 
@@ -19,16 +19,16 @@ class SpvNodeTest extends NodeUnitTest {
   implicit override protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
-  override type FixtureParam = NodeConnectedWithBitcoind
+  override type FixtureParam = SpvNodeConnectedWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNodeConnectedToBitcoind(test)
+    withSpvNodeConnectedToBitcoind(test)
 
   behavior of "SpvNode"
 
   it must "receive notification that a block occurred on the p2p network" in {
-    spvNodeConnectedWithBitcoind: NodeConnectedWithBitcoind =>
-      val spvNode = spvNodeConnectedWithBitcoind.spvNode
+    spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind =>
+      val spvNode = spvNodeConnectedWithBitcoind.node
       val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
 
       val assert1F = for {
@@ -55,8 +55,8 @@ class SpvNodeTest extends NodeUnitTest {
   }
 
   it must "stay in sync with a bitcoind instance" in {
-    spvNodeConnectedWithBitcoind: NodeConnectedWithBitcoind =>
-      val spvNode = spvNodeConnectedWithBitcoind.spvNode
+    spvNodeConnectedWithBitcoind: SpvNodeConnectedWithBitcoind =>
+      val spvNode = spvNodeConnectedWithBitcoind.node
       val bitcoind = spvNodeConnectedWithBitcoind.bitcoind
 
       //we need to generate 1 block for bitcoind to consider
