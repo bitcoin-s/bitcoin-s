@@ -12,7 +12,7 @@ env:
 os: linux
 scala:
   - 2.12.10
-  - 2.13.0
+  - 2.13.1
 
 # Fiddling with Travis config is not fun:-(
 # To avoid spending too much time waiting on Travis, you
