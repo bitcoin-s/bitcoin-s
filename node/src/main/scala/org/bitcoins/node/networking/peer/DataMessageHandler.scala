@@ -37,10 +37,10 @@ import org.bitcoins.core.util.FutureUtil
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
   */
 case class DataMessageHandler(
-    chainApi: ChainApi,
-    callbacks: SpvNodeCallbacks,
-    filterCount: Int = 0,
-    filtersSyncing: Boolean = false)(
+                               chainApi: ChainApi,
+                               callbacks: SpvNodeCallbacks,
+                               receivedFilterCount: Int = 0,
+                               filtersSyncing: Boolean = false)(
     implicit ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
@@ -92,7 +92,7 @@ case class DataMessageHandler(
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
         for {
-          (newCount, newFiltersSyncing) <- if (filterCount == chainConfig.maxFilterCount - 1) {
+          (newCount, newFiltersSyncing) <- if (receivedFilterCount == chainConfig.maxFilterCount - 1) {
             logger.info(
               s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
             for {
@@ -102,18 +102,18 @@ case class DataMessageHandler(
           } else {
             for {
               filterHeaderCount <- chainApi.getFilterHeaderCount
-              filterCount1 <- chainApi.getFilterCount
+              filterCount <- chainApi.getFilterCount
             } yield {
-              val syncing = filterCount1 < filterHeaderCount - 1
+              val syncing = filterCount < filterHeaderCount - 1
               if (!syncing) {
                 logger.info(s"We are synced")
               }
-              (filterCount + 1, syncing)
+              (receivedFilterCount + 1, syncing)
             }
           }
           newChainApi <- chainApi.processFilter(filter)
         } yield {
-          this.copy(chainApi = newChainApi, filterCount = newCount, filtersSyncing = newFiltersSyncing)
+          this.copy(chainApi = newChainApi, receivedFilterCount = newCount, filtersSyncing = newFiltersSyncing)
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
           _: GetBlocksMessage | _: GetCompactFiltersMessage |

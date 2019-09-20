@@ -343,7 +343,11 @@ class ChainHandlerTest extends ChainUnitTest {
           prevHeaderHash = DoubleSha256Digest.empty)
         newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
                                                             blockHashBE)
+        filterHeadersCount <- newChainHandler.getFilterHeaderCount
+        filterHeaders <- newChainHandler.getFilterHeadersAtHeight(0)
       } yield {
+        assert(filterHeadersCount == 0)
+        assert(filterHeaders.size == 1)
         assertThrows[UnknownFilterHash](
           Await.result(newChainHandler.processFilter(firstFilter), timeout))
       }
