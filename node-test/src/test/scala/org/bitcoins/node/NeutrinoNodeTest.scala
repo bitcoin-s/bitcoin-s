@@ -24,7 +24,8 @@ class NeutrinoNodeTest extends NodeUnitTest {
   override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNeutrinoNodeConnectedToBitcoind(test, Some(BitcoindVersion.Experimental))
+    withNeutrinoNodeConnectedToBitcoind(test,
+                                        Some(BitcoindVersion.Experimental))
 
   behavior of "NeutrinoNode"
 
@@ -109,11 +110,12 @@ class NeutrinoNodeTest extends NodeUnitTest {
           )
 
         def has6FiltersF =
-          RpcUtil.retryUntilSatisfiedF(conditionF = () =>
-                                         node
-                                           .chainApiFromDb()
-                                           .flatMap(_.getFilterCount.map(_ == 6)),
-                                       duration = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(
+            conditionF = () =>
+              node
+                .chainApiFromDb()
+                .flatMap(_.getFilterCount.map(_ == 6)),
+            duration = 1000.millis)
 
         for {
           _ <- has6BlocksF

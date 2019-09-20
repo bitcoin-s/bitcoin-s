@@ -37,10 +37,10 @@ import org.bitcoins.core.util.FutureUtil
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
   */
 case class DataMessageHandler(
-                               chainApi: ChainApi,
-                               callbacks: SpvNodeCallbacks,
-                               receivedFilterCount: Int = 0,
-                               filtersSyncing: Boolean = false)(
+    chainApi: ChainApi,
+    callbacks: SpvNodeCallbacks,
+    receivedFilterCount: Int = 0,
+    filtersSyncing: Boolean = false)(
     implicit ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
@@ -74,8 +74,9 @@ case class DataMessageHandler(
           newFiltersSyncing <- if (filterHeaders.size == chainConfig.maxFilterHeaderCount) {
             logger.info(
               s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more")
-            sendNextGetCompactFilterHeadersCommand(peerMsgSender,
-                                                   filterHeader.stopHash.flip).map(_ => filtersSyncing)
+            sendNextGetCompactFilterHeadersCommand(
+              peerMsgSender,
+              filterHeader.stopHash.flip).map(_ => filtersSyncing)
           } else {
             logger.debug(
               s"Received filter headers=${filterHeaders.size} in one message, " +
@@ -113,7 +114,9 @@ case class DataMessageHandler(
           }
           newChainApi <- chainApi.processFilter(filter)
         } yield {
-          this.copy(chainApi = newChainApi, receivedFilterCount = newCount, filtersSyncing = newFiltersSyncing)
+          this.copy(chainApi = newChainApi,
+                    receivedFilterCount = newCount,
+                    filtersSyncing = newFiltersSyncing)
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
           _: GetBlocksMessage | _: GetCompactFiltersMessage |
@@ -175,7 +178,9 @@ case class DataMessageHandler(
               if (count.toInt == HeadersMessage.MaxHeadersCount) {
                 logger.error(
                   s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
-                peerMsgSender.sendGetHeadersMessage(lastHash).map(_ =>  filtersSyncing)
+                peerMsgSender
+                  .sendGetHeadersMessage(lastHash)
+                  .map(_ => filtersSyncing)
               } else {
                 logger.debug(
                   List(s"Received headers=${count.toInt} in one message,",
@@ -187,8 +192,7 @@ case class DataMessageHandler(
                 else
                   Future.successful(filtersSyncing)
               }
-            }
-            else
+            } else
               Future.successful(filtersSyncing)
           }
 
@@ -243,7 +247,8 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender): Future[Boolean] =
     for {
       filterHeaderCount <- chainApi.getFilterHeaderCount
-      highestFilterHeaderOpt <- chainApi.getFilterHeadersAtHeight(filterHeaderCount)
+      highestFilterHeaderOpt <- chainApi
+        .getFilterHeadersAtHeight(filterHeaderCount)
         .map(_.headOption)
       highestFilterBlockHash = highestFilterHeaderOpt
         .map(_.blockHashBE)
@@ -264,7 +269,9 @@ case class DataMessageHandler(
       peerMsgSender: PeerMessageSender): Future[Boolean] =
     for {
       filterCount <- chainApi.getFilterCount
-      highestFilterOpt <- chainApi.getFiltersAtHeight(filterCount).map(_.headOption)
+      highestFilterOpt <- chainApi
+        .getFiltersAtHeight(filterCount)
+        .map(_.headOption)
       highestFilterBlockHash = highestFilterOpt
         .map(_.blockHashBE)
         .getOrElse(DoubleSha256DigestBE.empty)

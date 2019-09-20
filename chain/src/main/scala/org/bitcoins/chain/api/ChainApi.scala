@@ -128,8 +128,7 @@ trait ChainApi {
       implicit ec: ExecutionContext): Future[ChainApi]
 
   /** Gets the number of compact filter headers in the database */
-  def getFilterHeaderCount(
-      implicit ec: ExecutionContext): Future[Int]
+  def getFilterHeaderCount(implicit ec: ExecutionContext): Future[Int]
 
   /**
     * Looks up a compact filter header by its height.
@@ -150,13 +149,12 @@ trait ChainApi {
       implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
 
   /** Gets the number of compact filters in the database */
-  def getFilterCount(
-       implicit ec: ExecutionContext): Future[Int]
+  def getFilterCount(implicit ec: ExecutionContext): Future[Int]
 
   /**
     * Looks up a compact filter by its height.
     */
   def getFiltersAtHeight(height: Int)(
-       implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]]
+      implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]]
 
 }

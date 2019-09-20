@@ -134,7 +134,9 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds, maxTries = 100)
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
+                            1000.milliseconds,
+                            maxTries = 100)
   }
 
   /** Awaits sync between the given SPV node and bitcoind client */

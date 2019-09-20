@@ -279,7 +279,7 @@ class ChainHandlerTest extends ChainUnitTest {
         empty <- chainHandler.getFilterHeadersAtHeight(0)
         block <- chainHandler.getHeadersAtHeight(0)
         _ <- chainHandler.processFilterHeader(firstFilterHeader,
-                                                            block.head.hashBE)
+                                              block.head.hashBE)
         first <- chainHandler.getFilterHeadersAtHeight(0)
       } yield {
         assert(empty.isEmpty)

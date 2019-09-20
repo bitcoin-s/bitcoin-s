@@ -49,7 +49,8 @@ case class CompactFilterDAO()(
     database.runVec(query)
   }
 
-  private def getAtHeightQuery(height: Int): SQLiteProfile.StreamingProfileAction[
+  private def getAtHeightQuery(
+      height: Int): SQLiteProfile.StreamingProfileAction[
     Seq[CompactFilterDb],
     CompactFilterDb,
     Effect.Read] = {
