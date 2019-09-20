@@ -108,7 +108,7 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def nextBatchRange(
+  override def nextHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int)(implicit ec: ExecutionContext): Future[
     Option[(Int, DoubleSha256Digest)]] = {
@@ -126,7 +126,7 @@ case class ChainHandler(
       blockCount <- getBlockCount
       stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount
       else startHeight - 1 + batchSize
-      stopBlockOpt <- getHeadersAtHeight(stopHeight.toInt).map(_.headOption)
+      stopBlockOpt <- getHeadersAtHeight(stopHeight).map(_.headOption)
       stopBlock = stopBlockOpt.getOrElse(
         throw UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
     } yield {
@@ -134,6 +134,37 @@ case class ChainHandler(
         None
       else
         Some((startHeight, stopBlock.hashBE.flip))
+    }
+  }
+
+  /** @inheritdoc */
+  override def nextFilterHeaderBatchRange(
+      prevStopHash: DoubleSha256DigestBE,
+      batchSize: Int)(implicit ec: ExecutionContext): Future[
+    Option[(Int, DoubleSha256Digest)]] = {
+    val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
+      Future.successful(0)
+    } else {
+      for {
+        prevStopHeaderOpt <- getFilterHeader(prevStopHash)
+        prevStopHeader = prevStopHeaderOpt.getOrElse(
+          throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
+      } yield prevStopHeader.height + 1
+    }
+    for {
+      startHeight <- startHeightF
+      filterHeaderCount <- getFilterHeaderCount
+      stopHeight = if (startHeight - 1 + batchSize > filterHeaderCount)
+        filterHeaderCount
+      else startHeight - 1 + batchSize
+      stopBlockOpt <- getFilterHeadersAtHeight(stopHeight).map(_.headOption)
+      stopBlock = stopBlockOpt.getOrElse(
+        throw UnknownBlockHeight(s"Unknown filter header height ${stopHeight}"))
+    } yield {
+      if (startHeight > stopHeight)
+        None
+      else
+        Some((startHeight, stopBlock.blockHashBE.flip))
     }
   }
 
@@ -184,6 +215,7 @@ case class ChainHandler(
   override def processFilters(messages: Vector[CompactFilterMessage])(
       implicit ec: ExecutionContext): Future[ChainApi] = {
 
+    logger.debug(s"processFilters: messages=${messages}")
     val filterHeadersF = filterHeaderDAO
       .findAllByBlockHashes(messages.map(_.blockHash.flip))
       .map(_.sortBy(_.height))
@@ -198,6 +230,8 @@ case class ChainHandler(
 
     val sizeCheckF = for {
       filterHeaders <- filterHeadersF
+      _ = logger.debug(s"processFilters: filterHeaders=${filterHeaders}")
+
       _ <- if (filterHeaders.size != messages.size) {
         Future.failed(new UnknownBlockHash(
           s"Filter batch size does not match filter header batch size ${messages.size} != ${filterHeaders.size}"))

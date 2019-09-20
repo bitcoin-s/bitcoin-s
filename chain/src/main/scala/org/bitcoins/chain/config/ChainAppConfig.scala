@@ -81,11 +81,11 @@ case class ChainAppConfig(
     }
   }
 
-  lazy val maxFilterHeaderCount: Int =
-    config.getInt(s"${moduleName}.neutrino.max-filter-header-count")
+  lazy val filterHeaderBatchSize: Int =
+    config.getInt(s"${moduleName}.neutrino.filter-header-batch-size")
 
-  lazy val maxFilterCount: Int =
-    config.getInt(s"${moduleName}.neutrino.max-filter-count")
+  lazy val filterBatchSize: Int =
+    config.getInt(s"${moduleName}.neutrino.filter-batch-size")
 }
 
 object ChainAppConfig {

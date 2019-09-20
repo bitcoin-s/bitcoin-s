@@ -46,13 +46,17 @@ case class NodeAppConfig(
     * Whether or not SPV (simplified payment verification)
     * mode is enabled.
     */
-  lazy val isSPVEnabled: Boolean = config.getBoolean("node.spv-mode")
+  lazy val isSPVEnabled: Boolean = config
+    .getString("node.mode")
+    .toLowerCase == "spv"
 
   /**
     * Whether or not Neutrino (compact block filters) mode
     * is enabled
     */
-  lazy val isNeutrinoEnabled: Boolean = config.getBoolean("node.neutrino-mode")
+  lazy val isNeutrinoEnabled: Boolean = config
+    .getString("node.mode")
+    .toLowerCase == "neutrino"
 }
 
 object NodeAppConfig {

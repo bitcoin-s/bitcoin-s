@@ -281,7 +281,8 @@ class ChainHandlerTest extends ChainUnitTest {
         assert(Vector(first.get) == vec)
         assert(first.get.hashBE == firstFilterHeader.hash.flip)
         assert(first.get.filterHashBE == firstFilterHeader.filterHash.flip)
-        assert(first.get.previousFilterHeaderBE == firstFilterHeader.prevHeaderHash.flip)
+        assert(
+          first.get.previousFilterHeaderBE == firstFilterHeader.prevHeaderHash.flip)
         assert(first.get.blockHashBE == block.head.hashBE)
         assert(first.get.height == 0)
         assert(first.get.filterHeader == firstFilterHeader)

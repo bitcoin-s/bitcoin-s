@@ -22,8 +22,7 @@ object BitcoinSTestAppConfig {
         |     level = WARN
         |  } 
         |  node {
-        |     spv-mode = yes
-        |     neutrino-mode = no
+        |     mode = spv
         |  }
         |}
       """.stripMargin
@@ -40,8 +39,7 @@ object BitcoinSTestAppConfig {
         |     level = WARN
         |  }
         |  node {
-        |     spv-mode = no
-        |     neutrino-mode = yes
+        |     mode = neutrino
         |  }
         |}
       """.stripMargin

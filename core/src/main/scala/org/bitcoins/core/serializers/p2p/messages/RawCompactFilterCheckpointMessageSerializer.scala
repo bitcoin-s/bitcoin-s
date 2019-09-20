@@ -23,28 +23,17 @@ object RawCompactFilterCheckpointMessageSerializer
 
     val filterHeadersLength = CompactSizeUInt.parse(afterStopHash)
 
-    val filterHeadersBytes = afterStopHash
-      .drop(filterHeadersLength.bytes.length)
-      .take(filterHeadersLength.toInt * 32)
-
-    @tailrec
-    def loop(
-        hashes: Vector[DoubleSha256Digest],
-        bytes: ByteVector): (Vector[DoubleSha256Digest], ByteVector) =
-      if (bytes.isEmpty) (hashes, ByteVector.empty)
-      else {
-        val (hashBytes, remainingBytes) = bytes.splitAt(32)
-        loop(hashes :+ DoubleSha256Digest.fromBytes(hashBytes), remainingBytes)
-      }
-
-    val (headers, _) = loop(Vector.empty, filterHeadersBytes)
+    val (headers, _) =
+      RawSerializerHelper.parseCmpctSizeUIntSeq(afterStopHash, { bytes =>
+        DoubleSha256Digest.fromBytes(bytes.take(32))
+      })
 
     require(
       headers.length == filterHeadersLength.toInt,
       s"Invalid compact filter checkpoint message: expected number of headers ${filterHeadersLength.toInt}, but got ${headers.length}"
     )
 
-    CompactFilterCheckPointMessage(filterType, stopHash, headers)
+    CompactFilterCheckPointMessage(filterType, stopHash, headers.toVector)
   }
 
   def write(message: CompactFilterCheckPointMessage): ByteVector = {

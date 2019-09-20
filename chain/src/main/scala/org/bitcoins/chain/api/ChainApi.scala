@@ -91,7 +91,15 @@ trait ChainApi {
   /**
     * Generates a block range in form of (startHeight, stopHash) by the given stop hash.
     */
-  def nextBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Int)(
+  def nextHeaderBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Int)(
+      implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
+
+  /**
+    * Generates a filter header range in form of (startHeight, stopHash) by the given stop hash.
+    */
+  def nextFilterHeaderBatchRange(
+      stopHash: DoubleSha256DigestBE,
+      batchSize: Int)(
       implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
 
   /**

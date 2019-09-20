@@ -1,8 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
