@@ -77,7 +77,6 @@ trait ChainApi {
       blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi] = {
     processFilterHeaders(Vector(filterHeader), blockHash)
-
   }
 
   /**

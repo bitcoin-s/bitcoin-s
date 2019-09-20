@@ -9,14 +9,14 @@ import slick.jdbc.SQLiteProfile.api._
 
 case class CompactFilterDb(
     hashBE: DoubleSha256DigestBE,
-    filterType: Short,
+    filterType: FilterType,
     bytes: ByteVector,
     height: Int,
     blockHashBE: DoubleSha256DigestBE) {
 
   def golombFilter: GolombFilter = filterType match {
-    case FilterType.Basic.code => BlockFilter.fromBytes(bytes, blockHashBE.flip)
-    case _: Short =>
+    case FilterType.Basic => BlockFilter.fromBytes(bytes, blockHashBE.flip)
+    case _: FilterType =>
       throw new RuntimeException(s"Invalid filter type $filterType")
   }
 }
@@ -34,7 +34,7 @@ object CompactFilterDbHelper {
       blockHash: DoubleSha256DigestBE,
       height: Int): CompactFilterDb =
     CompactFilterDb(CryptoUtil.doubleSHA256(filterBytes).flip,
-                    FilterType.Basic.code,
+                    FilterType.Basic,
                     filterBytes,
                     height,
                     blockHash)
@@ -46,7 +46,7 @@ class CompactFilterTable(tag: Tag)
 
   def hash = column[DoubleSha256DigestBE]("hash")
 
-  def filterType = column[Short]("filter_type")
+  def filterType = column[FilterType]("filter_type")
 
   def bytes = column[ByteVector]("bytes")
 

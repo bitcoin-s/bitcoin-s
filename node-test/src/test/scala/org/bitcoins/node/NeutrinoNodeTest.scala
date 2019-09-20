@@ -1,9 +1,7 @@
 package org.bitcoins.node
 
-import akka.actor.ActorSystem
-import org.bitcoins.chain.models.CompactFilterHeaderDb
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -92,30 +90,25 @@ class NeutrinoNodeTest extends NodeUnitTest {
         //we should expect 5 headers have been announced to us via
         //the send headers message.
         def has6BlocksF =
-          RpcUtil.retryUntilSatisfiedF(conditionF = () =>
-                                         node
-                                           .chainApiFromDb()
-                                           .flatMap(_.getBlockCount.map { c =>
-                                             c == 6
-                                           }),
-                                       duration = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
+            node
+              .chainApiFromDb()
+              .flatMap(_.getBlockCount.map(_ == 6))
+          }, duration = 1000.millis)
 
         def has6FilterHeadersF =
-          RpcUtil.retryUntilSatisfiedF(
-            conditionF = () =>
-              node
-                .chainApiFromDb()
-                .flatMap(_.getFilterHeaderCount.map(_ == 6)),
-            duration = 1000.millis
-          )
+          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
+            node
+              .chainApiFromDb()
+              .flatMap(_.getFilterHeaderCount.map(_ == 6))
+          }, duration = 1000.millis)
 
         def has6FiltersF =
-          RpcUtil.retryUntilSatisfiedF(
-            conditionF = () =>
-              node
-                .chainApiFromDb()
-                .flatMap(_.getFilterCount.map(_ == 6)),
-            duration = 1000.millis)
+          RpcUtil.retryUntilSatisfiedF(conditionF = () => {
+            node
+              .chainApiFromDb()
+              .flatMap(_.getFilterCount.map(_ == 6))
+          }, duration = 1000.millis)
 
         for {
           _ <- has6BlocksF
@@ -125,25 +118,4 @@ class NeutrinoNodeTest extends NodeUnitTest {
       }
   }
 
-  /** Helper method to generate blocks every interval */
-  private def genBlockInterval(bitcoind: BitcoindRpcClient)(
-      implicit system: ActorSystem): Unit = {
-
-    var counter = 0
-    val desiredBlocks = 5
-    val interval = 500.millis
-
-    val genBlock = new Runnable {
-      override def run(): Unit = {
-        if (counter < desiredBlocks) {
-          bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
-          counter = counter + 1
-        } else {
-          //do nothing
-        }
-      }
-    }
-
-    system.scheduler.schedule(2.second, interval, genBlock)
-  }
 }

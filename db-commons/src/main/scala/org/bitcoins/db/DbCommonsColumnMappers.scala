@@ -18,11 +18,13 @@ import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.hd.SegWitHDPath
-import slick.jdbc.GetResult
+import slick.jdbc.{GetResult, JdbcType}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.number.Int64
+import slick.ast.BaseTypedType
 
 abstract class DbCommonsColumnMappers {
 
@@ -163,6 +165,9 @@ abstract class DbCommonsColumnMappers {
     MappedColumnType
       .base[CurrencyUnit, Long](_.satoshis.toLong, l => Satoshis(Int64(l)))
 
+  implicit val filterTypeMapper: BaseColumnType[FilterType] =
+    MappedColumnType
+      .base[FilterType, Short](FilterType.getCode, FilterType.byCode)
 }
 
 object DbCommonsColumnMappers extends DbCommonsColumnMappers

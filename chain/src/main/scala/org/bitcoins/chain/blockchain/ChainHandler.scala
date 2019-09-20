@@ -12,10 +12,6 @@ import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class UnknownFilterHash(message: String) extends RuntimeException(message)
-case class UnknownBlockHash(message: String) extends RuntimeException(message)
-case class UnknownBlockHeight(message: String) extends RuntimeException(message)
-
 /**
   * Chain Handler is meant to be the reference implementation
   * of [[org.bitcoins.chain.api.ChainApi ChainApi]], this is the entry point in to the
@@ -122,7 +118,7 @@ case class ChainHandler(
       for {
         prevStopHeaderOpt <- getHeader(prevStopHash)
         prevStopHeader = prevStopHeaderOpt.getOrElse(
-          throw new UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
+          throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
     for {
@@ -132,7 +128,7 @@ case class ChainHandler(
       else startHeight - 1 + batchSize
       stopBlockOpt <- getHeadersAtHeight(stopHeight.toInt).map(_.headOption)
       stopBlock = stopBlockOpt.getOrElse(
-        throw new UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
+        throw UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
     } yield {
       if (startHeight > stopHeight)
         None
@@ -192,7 +188,13 @@ case class ChainHandler(
       .findAllByBlockHashes(messages.map(_.blockHash.flip))
       .map(_.sortBy(_.height))
 
-    val messagesByBlockHash = messages.groupBy(_.blockHash.flip)
+    val messagesByBlockHash: Map[DoubleSha256DigestBE, CompactFilterMessage] =
+      messages.groupBy(_.blockHash.flip).map {
+        case (blockHash, messages) =>
+          if (messages.size > 1)
+            throw DuplicateFilters("Attempt to process duplicate filters")
+          (blockHash, messages.head)
+      }
 
     val sizeCheckF = for {
       filterHeaders <- filterHeadersF
@@ -220,15 +222,11 @@ case class ChainHandler(
 
   private def findFilterDbFromMessage(
       filterHeader: CompactFilterHeaderDb,
-      messagesByBlockHash: Map[
-        DoubleSha256DigestBE,
-        Vector[CompactFilterMessage]]): CompactFilterDb = {
+      messagesByBlockHash: Map[DoubleSha256DigestBE, CompactFilterMessage]): CompactFilterDb = {
     messagesByBlockHash.get(filterHeader.blockHashBE) match {
-      case Some(messages) if messages.size == 1 =>
-        val message = messages.head
+      case Some(message) =>
         val filterHashBE = CryptoUtil.doubleSHA256(message.filterBytes).flip
         if (filterHashBE != filterHeader.filterHashBE) {
-          //shouldn't we be throwing here? This seems really bad!
           val errMsg = s"Filter hash does not match filter header hash: ${filterHashBE} != ${filterHeader.filterHashBE}\n" +
             s"filter=${message.filterBytes.toHex}\nblock hash=${message.blockHash}\nfilterHeader=${filterHeader}"
           logger.warn(errMsg)

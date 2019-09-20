@@ -1,10 +1,12 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.gcs.SipHashKey
+import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 import org.scalacheck.Gen
-import scodec.bits.BitVector
+import scodec.bits.{BitVector, ByteVector}
 
 /**
   * Created by chris on 6/22/16.
@@ -238,6 +240,31 @@ sealed abstract class CryptoGenerators {
       cipher <- NumberGenerator.bytevector.suchThat(_.nonEmpty)
       iv <- aesIV
     } yield AesEncryptedData(cipherText = cipher, iv)
+
+  def genKey: Gen[SipHashKey] =
+    Gen
+      .listOfN(16, NumberGenerator.byte)
+      .map(ByteVector(_))
+      .map(SipHashKey(_))
+
+  def genPMRand: Gen[(UInt8, UInt64, UInt64)] = NumberGenerator.genP.flatMap {
+    p =>
+      // If hash's quotient when divided by 2^p is too large, we hang converting to unary
+      val upperBound: Long = p.toInt * 1000 + 1
+
+      val mGen = Gen
+        .chooseNum(1L, upperBound)
+        .map(UInt64(_))
+
+      mGen.flatMap { m =>
+        val upperBound = m.toInt * 2 - 2
+
+        val randGen = Gen.chooseNum(0L, upperBound).map(UInt64(_))
+
+        randGen.map(rand => (p, m, rand))
+      }
+  }
+
 }
 
 object CryptoGenerators extends CryptoGenerators

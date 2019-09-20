@@ -204,7 +204,6 @@ case class DataMessageHandler(
           newApi <- chainApiF
           newFiltersSyncing <- getHeadersF
         } yield {
-          logger.info(s"HeadersMessage ${newFiltersSyncing}")
           this.copy(chainApi = newApi, filtersSyncing = newFiltersSyncing)
         }
       case msg: BlockMessage =>

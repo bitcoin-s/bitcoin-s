@@ -14,6 +14,9 @@ case class NeutrinoNode(
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
     extends Node {
+  require(
+    nodeConfig.isNeutrinoEnabled,
+    s"We need our Neutrino mode enabled to be able to construct a Neutrino node!")
 
   implicit override def system: ActorSystem = actorSystem
 

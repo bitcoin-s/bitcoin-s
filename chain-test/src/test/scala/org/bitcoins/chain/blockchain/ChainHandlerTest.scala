@@ -3,36 +3,27 @@ package org.bitcoins.chain.blockchain
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
-}
+import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPrivateKey
 }
-import org.bitcoins.core.gcs.{
-  BlockFilter,
-  FilterHeader,
-  FilterType,
-  GolombFilter
-}
+import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
   ChainTestUtil,
   ChainUnitTest
 }
+import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
-import scala.concurrent.{Await, Future}
-import org.bitcoins.testkit.BitcoinSTestAppConfig
+import scala.concurrent.Future
 
 class ChainHandlerTest extends ChainUnitTest {
 
@@ -280,10 +271,20 @@ class ChainHandlerTest extends ChainUnitTest {
         block <- chainHandler.getHeadersAtHeight(0)
         _ <- chainHandler.processFilterHeader(firstFilterHeader,
                                               block.head.hashBE)
-        first <- chainHandler.getFilterHeadersAtHeight(0)
+        count <- chainHandler.getFilterHeaderCount
+        first <- chainHandler.getFilterHeader(block.head.hashBE)
+        vec <- chainHandler.getFilterHeadersAtHeight(count)
       } yield {
         assert(empty.isEmpty)
         assert(first.nonEmpty)
+        assert(vec.nonEmpty)
+        assert(Vector(first.get) == vec)
+        assert(first.get.hashBE == firstFilterHeader.hash.flip)
+        assert(first.get.filterHashBE == firstFilterHeader.filterHash.flip)
+        assert(first.get.previousFilterHeaderBE == firstFilterHeader.prevHeaderHash.flip)
+        assert(first.get.blockHashBE == block.head.hashBE)
+        assert(first.get.height == 0)
+        assert(first.get.filterHeader == firstFilterHeader)
       }
     }
   }
@@ -295,10 +296,10 @@ class ChainHandlerTest extends ChainUnitTest {
           filterHash =
             DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
           prevHeaderHash = DoubleSha256Digest.empty)
-        val newChainHandlerG = chainHandler.processFilterHeader(
+        val newChainHandlerF = chainHandler.processFilterHeader(
           firstFilterHeader,
           DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes))
-        assertThrows[UnknownBlockHash](Await.result(newChainHandlerG, timeout))
+        recoverToSucceededIf[UnknownBlockHash](newChainHandlerF)
       }
   }
 
@@ -324,7 +325,7 @@ class ChainHandlerTest extends ChainUnitTest {
         assert(first.get.hashBE == golombFilter.hash.flip)
         assert(first.get.height == 0)
         assert(first.get.blockHashBE == blockHashBE)
-        assert(first.get.filterType == FilterType.Basic.code)
+        assert(first.get.filterType == FilterType.Basic)
         assert(first.get.golombFilter == golombFilter)
       }
     }
@@ -332,7 +333,7 @@ class ChainHandlerTest extends ChainUnitTest {
 
   it must "NOT create an unknown filter" in { chainHandler: ChainHandler =>
     {
-      for {
+      val unknownHashF = for {
         blockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
         golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
         firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
@@ -343,14 +344,11 @@ class ChainHandlerTest extends ChainUnitTest {
           prevHeaderHash = DoubleSha256Digest.empty)
         newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
                                                             blockHashBE)
-        filterHeadersCount <- newChainHandler.getFilterHeaderCount
-        filterHeaders <- newChainHandler.getFilterHeadersAtHeight(0)
+        process <- newChainHandler.processFilter(firstFilter)
       } yield {
-        assert(filterHeadersCount == 0)
-        assert(filterHeaders.size == 1)
-        assertThrows[UnknownFilterHash](
-          Await.result(newChainHandler.processFilter(firstFilter), timeout))
+        process
       }
+      recoverToSucceededIf[UnknownFilterHash](unknownHashF)
     }
   }
 
@@ -365,16 +363,17 @@ class ChainHandlerTest extends ChainUnitTest {
         val firstFilterHeader = FilterHeader(filterHash = golombFilter.hash,
                                              prevHeaderHash =
                                                DoubleSha256Digest.empty)
-        for {
+        val unknownBlockF = for {
           realBlockHashBE <- chainHandler
             .getHeadersAtHeight(0)
             .map(_.head.hashBE)
           newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
-                                                              realBlockHashBE)
+                                                              blockHashBE)
         } yield {
-          assertThrows[UnknownBlockHash](
-            Await.result(newChainHandler.processFilter(firstFilter), timeout))
+          assert(realBlockHashBE != blockHashBE)
+          newChainHandler
         }
+        recoverToSucceededIf[UnknownBlockHash](unknownBlockF)
       }
   }
 

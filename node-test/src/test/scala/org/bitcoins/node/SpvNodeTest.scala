@@ -97,26 +97,4 @@ class SpvNodeTest extends NodeUnitTest {
       }
   }
 
-  /** Helper method to generate blocks every interval */
-  private def genBlockInterval(bitcoind: BitcoindRpcClient)(
-      implicit system: ActorSystem): Unit = {
-
-    var counter = 0
-    val desiredBlocks = 5
-    val interval = 500.millis
-
-    val genBlock = new Runnable {
-      override def run(): Unit = {
-        if (counter < desiredBlocks) {
-          bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
-          counter = counter + 1
-        } else {
-          //do nothing
-        }
-      }
-    }
-
-    system.scheduler.schedule(2.second, interval, genBlock)
-    ()
-  }
 }

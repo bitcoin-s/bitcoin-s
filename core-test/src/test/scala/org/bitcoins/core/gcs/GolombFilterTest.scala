@@ -1,8 +1,9 @@
 package org.bitcoins.core.gcs
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.number.{UInt64, UInt8}
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.testkit.core.gen.CryptoGenerators._
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
@@ -12,30 +13,6 @@ class GolombFilterTest extends BitcoinSUnitTest {
   behavior of "GolombFilter"
 
   it must "match encoded data for arbitrary GCS parameters" in {
-    def genKey: Gen[SipHashKey] =
-      Gen
-        .listOfN(16, NumberGenerator.byte)
-        .map(ByteVector(_))
-        .map(SipHashKey(_))
-
-    def genPMRand: Gen[(UInt8, UInt64, UInt64)] = NumberGenerator.genP.flatMap {
-      p =>
-        // If hash's quotient when divided by 2^p is too large, we hang converting to unary
-        val upperBound: Long = p.toInt * 1000 + 1
-
-        val mGen = Gen
-          .chooseNum(1L, upperBound)
-          .map(UInt64(_))
-
-        mGen.flatMap { m =>
-          val upperBound = m.toInt * 2 - 2
-
-          val randGen = Gen.chooseNum(0L, upperBound).map(UInt64(_))
-
-          randGen.map(rand => (p, m, rand))
-        }
-    }
-
     forAll(genKey, genPMRand) {
       case (k, (p, m, rand)) =>
         val data1 = rand + UInt64.one

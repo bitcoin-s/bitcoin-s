@@ -32,7 +32,6 @@ class P2PClientTest
 
   implicit private val config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
-  implicit private val chainConf = config.chainConf
   implicit private val nodeConf = config.nodeConf
   implicit private val timeout = akka.util.Timeout(10.seconds)
 
@@ -124,17 +123,13 @@ class P2PClientTest
 
   override def beforeAll(): Unit = {
     for {
-      _ <- ChainDbManagement.createHeaderTable()
-      _ <- ChainDbManagement.createFilterHeaderTable()
-      _ <- ChainDbManagement.createFilterTable()
+      _ <- ChainDbManagement.createAll()
     } yield ()
   }
 
   override def afterAll(): Unit = {
     for {
-      _ <- ChainDbManagement.dropFilterTable()
-      _ <- ChainDbManagement.dropFilterHeaderTable()
-      _ <- ChainDbManagement.dropHeaderTable()
+      _ <- ChainDbManagement.dropAll()
     } yield ()
     super.afterAll()
   }
@@ -165,6 +160,8 @@ class P2PClientTest
     * @return
     */
   def connectAndDisconnect(peer: Peer): Future[Assertion] = {
+    implicit val chainConf = config.chainConf
+
     val probe = TestProbe()
     val remote = peer.socket
     val peerMessageReceiverF =

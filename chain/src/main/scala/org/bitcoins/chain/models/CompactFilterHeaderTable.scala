@@ -13,7 +13,7 @@ case class CompactFilterHeaderDb(
     height: Int) {
 
   def filterHeader: FilterHeader =
-    FilterHeader(hashBE.flip, previousFilterHeaderBE.flip)
+    FilterHeader(filterHashBE.flip, previousFilterHeaderBE.flip)
 }
 
 object CompactFilterHeaderDbHelper {
