@@ -44,11 +44,11 @@ trait ChainApi {
       implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]]
 
   /**  Gets all [[org.bitcoins.chain.models.BlockHeaderDb]]s at a given height  */
-  def getHeadersByHeight(height: Int)(
+  def getHeadersAtHeight(height: Int)(
       implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]]
 
   /** Gets the number of blocks in the database */
-  def getBlockCount(implicit ec: ExecutionContext): Future[Long]
+  def getBlockCount(implicit ec: ExecutionContext): Future[Int]
 
   /** Gets the hash of the block that is what we consider "best" */
   def getBestBlockHash(
@@ -92,7 +92,7 @@ trait ChainApi {
   /**
     * Generates a block range in form of (startHeight, stopHash) by the given stop hash.
     */
-  def nextBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Long)(
+  def nextBatchRange(stopHash: DoubleSha256DigestBE, batchSize: Int)(
       implicit ec: ExecutionContext): Future[Option[(Int, DoubleSha256Digest)]]
 
   /**
@@ -127,22 +127,36 @@ trait ChainApi {
       blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[ChainApi]
 
-  /**
-    * Returns the highest know compact filter header.
-    */
-  def getHighestFilterHeader(
-      implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]]
+  /** Gets the number of compact filter headers in the database */
+  def getFilterHeaderCount(
+      implicit ec: ExecutionContext): Future[Int]
 
   /**
-    * Returns the highest know compact filter.
+    * Looks up a compact filter header by its height.
     */
-  def getHighestFilter(
-      implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
+  def getFilterHeadersAtHeight(height: Int)(
+      implicit ec: ExecutionContext): Future[Vector[CompactFilterHeaderDb]]
+
+  /**
+    * Looks up a compact filter header by its hash.
+    */
+  def getFilterHeader(blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]]
 
   /**
     * Looks up a compact filter by its hash.
     */
   def getFilter(hash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[CompactFilterDb]]
+
+  /** Gets the number of compact filters in the database */
+  def getFilterCount(
+       implicit ec: ExecutionContext): Future[Int]
+
+  /**
+    * Looks up a compact filter by its height.
+    */
+  def getFiltersAtHeight(height: Int)(
+       implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]]
 
 }

@@ -3,6 +3,7 @@ package org.bitcoins.chain.models
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.{CRUD, SlickUtil}
+import slick.jdbc.SQLiteProfile
 import slick.lifted.TableQuery
 import slick.jdbc.SQLiteProfile.api._
 
@@ -54,9 +55,31 @@ case class CompactFilterHeaderDAO()(
     database.runVec(query.result)
   }
 
-  def findHighest(): Future[Option[CompactFilterHeaderDb]] = {
-    val query = table.filter(_.height === table.map(_.height).max).take(1)
-    database.runVec(query.result).map(_.headOption)
+  /** Retrieves a [[CompactFilterHeaderDb]] at the given height */
+  def getAtHeight(height: Int): Future[Vector[CompactFilterHeaderDb]] = {
+    val query = getAtHeightQuery(height)
+    database.runVec(query)
   }
 
+  private def getAtHeightQuery(height: Int): SQLiteProfile.StreamingProfileAction[
+    Seq[CompactFilterHeaderDb],
+    CompactFilterHeaderDb,
+    Effect.Read] = {
+    table.filter(_.height === height).result
+  }
+
+  /** Returns the maximum block height from our database */
+  def maxHeight: Future[Int] = {
+    val query = maxHeightQuery
+    val result = database.run(query)
+    result
+  }
+
+  private def maxHeightQuery: SQLiteProfile.ProfileAction[
+    Int,
+    NoStream,
+    Effect.Read] = {
+    val query = table.map(_.height).max.getOrElse(0).result
+    query
+  }
 }

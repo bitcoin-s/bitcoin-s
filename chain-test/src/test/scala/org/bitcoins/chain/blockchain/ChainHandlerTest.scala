@@ -276,11 +276,11 @@ class ChainHandlerTest extends ChainUnitTest {
           DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
         prevHeaderHash = DoubleSha256Digest.empty)
       for {
-        empty <- chainHandler.getHighestFilterHeader
-        block <- chainHandler.getHeadersByHeight(0)
-        newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
+        empty <- chainHandler.getFilterHeadersAtHeight(0)
+        block <- chainHandler.getHeadersAtHeight(0)
+        _ <- chainHandler.processFilterHeader(firstFilterHeader,
                                                             block.head.hashBE)
-        first <- newChainHandler.getHighestFilterHeader
+        first <- chainHandler.getFilterHeadersAtHeight(0)
       } yield {
         assert(empty.isEmpty)
         assert(first.nonEmpty)
@@ -305,8 +305,8 @@ class ChainHandlerTest extends ChainUnitTest {
   it must "get the highest filter" in { chainHandler: ChainHandler =>
     {
       for {
-        empty <- chainHandler.getHighestFilter
-        blockHashBE <- chainHandler.getHeadersByHeight(0).map(_.head.hashBE)
+        empty <- chainHandler.getFilterCount
+        blockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
         golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
         firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
                                            filter = golombFilter)
@@ -316,9 +316,10 @@ class ChainHandlerTest extends ChainUnitTest {
         newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
                                                             blockHashBE)
         _ <- chainHandler.processFilter(firstFilter)
-        first <- newChainHandler.getHighestFilter
+        count <- newChainHandler.getFilterCount
+        first <- newChainHandler.getFiltersAtHeight(count).map(_.headOption)
       } yield {
-        assert(empty.isEmpty)
+        assert(empty == 0)
         assert(first.nonEmpty)
         assert(first.get.hashBE == golombFilter.hash.flip)
         assert(first.get.height == 0)
@@ -332,7 +333,7 @@ class ChainHandlerTest extends ChainUnitTest {
   it must "NOT create an unknown filter" in { chainHandler: ChainHandler =>
     {
       for {
-        blockHashBE <- chainHandler.getHeadersByHeight(0).map(_.head.hashBE)
+        blockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
         golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
         firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
                                            filter = golombFilter)
@@ -362,7 +363,7 @@ class ChainHandlerTest extends ChainUnitTest {
                                                DoubleSha256Digest.empty)
         for {
           realBlockHashBE <- chainHandler
-            .getHeadersByHeight(0)
+            .getHeadersAtHeight(0)
             .map(_.head.hashBE)
           newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
                                                               realBlockHashBE)
@@ -375,7 +376,7 @@ class ChainHandlerTest extends ChainUnitTest {
 
   it must "create a filter checkpoint map" in { chainHandler: ChainHandler =>
     for {
-      realBlockHashBE <- chainHandler.getHeadersByHeight(0).map(_.head.hashBE)
+      realBlockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
       filterHashBE = DoubleSha256DigestBE.fromBytes(
         ECPrivateKey.freshPrivateKey.bytes)
       newChainHandler <- chainHandler.processCheckpoint(filterHashBE,

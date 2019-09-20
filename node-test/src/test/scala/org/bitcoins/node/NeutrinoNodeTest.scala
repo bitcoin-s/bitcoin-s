@@ -104,10 +104,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
             conditionF = () =>
               node
                 .chainApiFromDb()
-                .flatMap(_.getHighestFilterHeader.map {
-                  header: Option[CompactFilterHeaderDb] =>
-                    header.exists(_.height == 6)
-                }),
+                .flatMap(_.getFilterHeaderCount.map(_ == 6)),
             duration = 1000.millis
           )
 
@@ -115,10 +112,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
           RpcUtil.retryUntilSatisfiedF(conditionF = () =>
                                          node
                                            .chainApiFromDb()
-                                           .flatMap(_.getHighestFilter.map {
-                                             filter =>
-                                               filter.exists(_.height == 6)
-                                           }),
+                                           .flatMap(_.getFilterCount.map(_ == 6)),
                                        duration = 1000.millis)
 
         for {

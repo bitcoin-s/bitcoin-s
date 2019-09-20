@@ -39,7 +39,7 @@ case class ChainHandler(
     with ChainVerificationLogger {
 
   /** @inheritdoc */
-  override def getBlockCount(implicit ec: ExecutionContext): Future[Long] = {
+  override def getBlockCount(implicit ec: ExecutionContext): Future[Int] = {
     logger.debug(s"Querying for block count")
     blockHeaderDAO.maxHeight.map { height =>
       logger.debug(s"getBlockCount result: count=$height")
@@ -114,7 +114,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def nextBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Long)(implicit ec: ExecutionContext): Future[
+      batchSize: Int)(implicit ec: ExecutionContext): Future[
     Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
@@ -130,7 +130,7 @@ case class ChainHandler(
       blockCount <- getBlockCount
       stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount
       else startHeight - 1 + batchSize
-      stopBlockOpt <- getHeadersByHeight(stopHeight.toInt).map(_.headOption)
+      stopBlockOpt <- getHeadersAtHeight(stopHeight.toInt).map(_.headOption)
       stopBlock = stopBlockOpt.getOrElse(
         throw new UnknownBlockHeight(s"Unknown header height ${stopHeight}"))
     } yield {
@@ -180,7 +180,7 @@ case class ChainHandler(
             )
           }
       } else FutureUtil.unit
-      _ <- filterHeaderDAO.upsertAll(filterHeadersToCreate)
+      _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
     } yield this
   }
 
@@ -212,7 +212,7 @@ case class ChainHandler(
           findFilterDbFromMessage(filterHeader, messagesByBlockHash)
         }
       }
-      _ <- filterDAO.upsertAll(compactFilterDbs)
+      _ <- filterDAO.createAll(compactFilterDbs)
     } yield {
       this
     }
@@ -253,7 +253,7 @@ case class ChainHandler(
 
     val blockHeadersF: Future[Seq[BlockHeaderDb]] = Future
       .traverse(checkpoints.indices.toVector) { i =>
-        blockHeaderDAO.findByHeight(i * 1000)
+        blockHeaderDAO.getAtHeight(i * 1000)
       }
       .map(headers => headers.map(_.head))
 
@@ -274,28 +274,45 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def getHighestFilterHeader(
-      implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]] = {
-    filterHeaderDAO.findHighest()
-  }
-
-  /** @inheritdoc */
-  override def getHighestFilter(
-      implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
-    filterDAO.findHighest()
-  }
-
-  /** @inheritdoc */
   override def getFilter(blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
     filterDAO.findByBlockHash(blockHash)
   }
 
   /** @inheritdoc */
-  override def getHeadersByHeight(height: Int)(
-      implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]] = {
-    blockHeaderDAO.findByHeight(height)
+  override def getHeadersAtHeight(height: Int)(
+      implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]] =
+    blockHeaderDAO.getAtHeight(height)
+
+  /** @inheritdoc */
+  override def getFilterHeaderCount(implicit ec: ExecutionContext): Future[Int] = {
+    logger.debug(s"Querying for filter header count")
+    filterHeaderDAO.maxHeight.map { height =>
+      logger.debug(s"getFilterHeaderCount result: count=$height")
+      height
+    }
   }
+
+  /** @inheritdoc */
+  override def getFilterHeadersAtHeight(height: Int)(implicit ec: ExecutionContext): Future[Vector[CompactFilterHeaderDb]] =
+    filterHeaderDAO.getAtHeight(height)
+
+  /** @inheritdoc */
+  override def getFilterHeader(blockHash: DoubleSha256DigestBE)(implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]] =
+    filterHeaderDAO.findByBlockHash(blockHash)
+
+  /** @inheritdoc */
+  override def getFilterCount(implicit ec: ExecutionContext): Future[Int] = {
+    logger.debug(s"Querying for filter count")
+    filterDAO.maxHeight.map { height =>
+      logger.debug(s"getFilterCount result: count=$height")
+      height
+    }
+  }
+
+  /** @inheritdoc */
+  override def getFiltersAtHeight(height: Int)(implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]] =
+    filterDAO.getAtHeight(height)
 }
 
 object ChainHandler {
