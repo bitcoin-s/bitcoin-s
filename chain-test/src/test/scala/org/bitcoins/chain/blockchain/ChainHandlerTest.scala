@@ -398,7 +398,9 @@ class ChainHandlerTest extends ChainUnitTest {
       for {
         bestBlock <- chainHandler.getBestBlockHeader
         bestBlockHashBE = bestBlock.hashBE
-        rangeOpt <- chainHandler.nextHeaderBatchRange(DoubleSha256DigestBE.empty, 1)
+        rangeOpt <- chainHandler.nextHeaderBatchRange(
+          DoubleSha256DigestBE.empty,
+          1)
       } yield {
         assert(rangeOpt.nonEmpty)
         assert(rangeOpt.get._1 == 0)
