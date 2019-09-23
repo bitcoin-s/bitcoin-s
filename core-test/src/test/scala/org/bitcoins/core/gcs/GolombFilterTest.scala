@@ -8,6 +8,7 @@ import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
+import scodec.bits._
 
 class GolombFilterTest extends BitcoinSUnitTest {
   behavior of "GolombFilter"
@@ -58,8 +59,6 @@ class GolombFilterTest extends BitcoinSUnitTest {
   }
 
   it must "deserialize and serialize Golomb filters correctly" in {
-    import scodec.bits._
-
     val filterBytes =
       hex"fd5b01041f9dce086df165db8ee8b1bd4f82b8de497613f464f2d47c4cc7445693ec5d011137152920fd54833157c0d4162e" ++
         hex"82d8ac631338172319d94941dc81d3eba82965b13493de62ec070f082ff1c7964970c0a7e102fa84109f01a8077009cdb72c" ++
@@ -85,5 +84,25 @@ class GolombFilterTest extends BitcoinSUnitTest {
       "73668ce5489ca6e42ec893ad406cc7853110ab2d63b52accf700000000000000")
 
     BlockFilter.fromBytes(filterBytes, blockHash).bytes must be(filterBytes)
+  }
+
+  it must "create filer header for a Golomb filter" in {
+    val filterBytes = hex"017fa880"
+    val blockHash = DoubleSha256Digest.fromHex(
+      "73668ce5489ca6e42ec893ad406cc7853110ab2d63b52accf700000000000000")
+    val filter = BlockFilter.fromBytes(filterBytes, blockHash)
+    filter.bytes must be(filterBytes)
+
+    val prevHeader = FilterHeader(
+      DoubleSha256Digest.fromHex(
+        "c03705b2d6fb76a59664f1d63fe8fdbb2dc076d18175fdc51d11c43afaf78a4c"),
+      DoubleSha256Digest.empty)
+
+    val header = filter.getHeader(prevHeader = prevHeader)
+
+    val nextHeader = prevHeader.nextHeader(filter.hash)
+
+    assert(header.prevHeaderHash == prevHeader.hash)
+    assert(header == nextHeader)
   }
 }
