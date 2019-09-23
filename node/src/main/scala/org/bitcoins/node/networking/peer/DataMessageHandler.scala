@@ -2,35 +2,16 @@ package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.p2p.{DataPayload, HeadersMessage, InventoryMessage}
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.p2p._
+import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.models.BroadcastAbleTransactionDAO
+import org.bitcoins.node.{P2PLogger, SpvNodeCallbacks}
+import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.p2p.BlockMessage
-import org.bitcoins.core.p2p.TransactionMessage
-import org.bitcoins.core.p2p.MerkleBlockMessage
-import org.bitcoins.node.P2PLogger
-import org.bitcoins.node.SpvNodeCallbacks
-import org.bitcoins.core.p2p.GetDataMessage
-import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import slick.jdbc.SQLiteProfile
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.core.p2p.TypeIdentifier
-import org.bitcoins.core.p2p.MsgUnassigned
-import org.bitcoins.core.p2p.Inventory
-import org.bitcoins.core.p2p.CompactFilterCheckPointMessage
-import org.bitcoins.core.p2p.CompactFilterHeadersMessage
-import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.p2p.GetBlocksMessage
-import org.bitcoins.core.p2p.MemPoolMessage
-import org.bitcoins.core.p2p.GetHeadersMessage
-import org.bitcoins.core.p2p.GetCompactFiltersMessage
-import org.bitcoins.core.p2p.GetCompactFilterHeadersMessage
-import org.bitcoins.core.p2p.GetCompactFilterCheckPointMessage
-import org.bitcoins.core.util.FutureUtil
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a

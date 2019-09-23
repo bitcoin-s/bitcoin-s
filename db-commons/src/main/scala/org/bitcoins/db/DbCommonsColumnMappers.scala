@@ -1,30 +1,22 @@
 package org.bitcoins.db
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.gcs.FilterType
+import org.bitcoins.core.hd._
+import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
+  Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import scodec.bits.ByteVector
+import slick.jdbc.GetResult
 import slick.jdbc.SQLiteProfile.api._
-import org.bitcoins.core.hd.HDCoinType
-import org.bitcoins.core.hd.HDPath
-import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.hd.HDPurpose
-import org.bitcoins.core.hd.HDPurposes
-import org.bitcoins.core.hd.SegWitHDPath
-import slick.jdbc.{GetResult, JdbcType}
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.number.Int64
-import slick.ast.BaseTypedType
 
 abstract class DbCommonsColumnMappers {
 

@@ -2,7 +2,6 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest
 import org.scalatest._
 import slick.jdbc.SQLiteProfile

@@ -8,6 +8,7 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.db.AppConfig
+import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.{
@@ -16,7 +17,6 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiverState,
   PeerMessageSender
 }
-import org.bitcoins.node._
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
@@ -175,6 +175,7 @@ trait NodeUnitTest
     }
 
     system.scheduler.schedule(2.second, interval, genBlock)
+    ()
   }
 }
 

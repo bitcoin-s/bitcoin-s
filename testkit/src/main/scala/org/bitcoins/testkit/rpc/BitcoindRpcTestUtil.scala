@@ -1,10 +1,13 @@
 package org.bitcoins.testkit.rpc
 
+import java.io.File
 import java.net.URI
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -21,6 +24,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
@@ -32,6 +37,7 @@ import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
+  BitcoindConfig,
   BitcoindInstance,
   ZmqConfig
 }
@@ -41,34 +47,15 @@ import org.bitcoins.rpc.jsonmodels.{
   SignRawTransactionResult
 }
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.util.ListUtil
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
 import scala.collection.mutable
-import org.bitcoins.core.compat.JavaConverters._
-
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
-import org.bitcoins.rpc.config.BitcoindConfig
-import java.io.File
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import java.nio.file.Path
-
-import org.bitcoins.rpc.client.common.BitcoindVersion.{
-  Experimental,
-  Unknown,
-  V16,
-  V17,
-  V18
-}
-import java.nio.file.Files
-
-import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.rpc.BitcoindException
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -303,6 +290,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
              zmqPort = zmqPort,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V18))
+
+  def vExperimentalInstance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort,
+      pruneMode: Boolean = false
+  ): BitcoindInstance =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqPort = zmqPort,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.Experimental))
 
   def startServers(servers: Vector[BitcoindRpcClient])(
       implicit ec: ExecutionContext): Future[Unit] = {
@@ -595,6 +594,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         case BitcoindVersion.V18 =>
           BitcoindV18RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v18Instance())
+        case BitcoindVersion.Experimental =>
+          BitcoindV18RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.vExperimentalInstance())
       }
 
       // this is safe as long as this method is never
@@ -785,9 +787,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       case v17: BitcoindV17RpcClient =>
         v17.getAddressInfo(address).map(_.pubkey)
       case v16: BitcoindV16RpcClient =>
-        v16.validateAddress(address).map(_.pubkey)
+        v16.getAddressInfo(address).map(_.pubkey)
       case other: BitcoindRpcClient =>
-        if (other.instance.getVersion == BitcoindVersion.V17) {
+        if (other.instance.getVersion.toString >= BitcoindVersion.V17.toString) {
           val v17 = new BitcoindV17RpcClient(other.instance)
           v17.getAddressInfo(address).map(_.pubkey)
         } else {
