@@ -37,7 +37,7 @@ class AppConfigTest extends BitcoinSUnitTest {
 
   it must "propagate values correctly to all sub configs" in {
     val networkOverride =
-      ConfigFactory.parseString("bitcoin-s.network = testnet")
+      ConfigFactory.parseString("bitcoin-s.network = testnet3")
 
     val config = BitcoinSTestAppConfig.getSpvTestConfig(networkOverride)
     val chainConf = config.chainConf
