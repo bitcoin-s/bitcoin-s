@@ -139,10 +139,27 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
 
   private[node] def sendMsg(msg: NetworkPayload)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    isInitialized().map { _ =>
-      logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
-      val newtworkMsg = NetworkMessage(conf.network, msg)
-      client.actor ! newtworkMsg
+    msg match {
+      case _: VersionMessage | VerAckMessage =>
+        //version or verack messages are the only messages that
+        //can be sent before we are fully initialized
+        //as they are needed to complete our handshake with our peer
+        logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
+        val newtworkMsg = NetworkMessage(conf.network, msg)
+        client.actor ! newtworkMsg
+        FutureUtil.unit
+      case _: NetworkPayload =>
+
+        isInitialized().map { isInit =>
+          if (isInit) {
+            logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
+            val newtworkMsg = NetworkMessage(conf.network, msg)
+            client.actor ! newtworkMsg
+          } else {
+            logger.warn(s"Cannot send msg=${msg.commandName} to peer=${socket} because we aren't initialized!")
+            ()
+          }
+      }
     }
   }
 }
