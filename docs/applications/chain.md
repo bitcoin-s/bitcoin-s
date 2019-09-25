@@ -65,9 +65,11 @@ implicit val chainConfig = ChainAppConfig(datadir, config)
 // Initialize the needed database tables if they don't exist:
 val chainProjectInitF = chainConfig.initialize()
 val blockHeaderDAO = BlockHeaderDAO()
+val compactFilterHeaderDAO = CompactFilterHeaderDAO()
+val compactFilterDAO = CompactFilterDAO()
 
 // Now, do the actual syncing:
-val chainHandlerF = ChainHandler.fromDatabase(blockHeaderDAO)
+val chainHandlerF = ChainHandler.fromDatabase(blockHeaderDAO, compactFilterHeaderDAO, compactFilterDAO)
 
 val syncedChainApiF = for {
     _ <- chainProjectInitF

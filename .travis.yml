@@ -5,7 +5,8 @@ env:
     - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls"
     - TEST_COMMAND="chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls"
     - TEST_COMMAND="eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
-    - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+    - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
+    - TEST_COMMAND="nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
     - TEST_COMMAND="coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
 
 os: linux
@@ -45,9 +46,15 @@ matrix:
       scala:
         - 2.13.0
     - os: osx
-      name: "macOS node and wallet tests"
+      name: "macOS wallet tests"
       env:
-        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
+      scala:
+        - 2.13.0
+    - os: osx
+      name: "macOS node tests"
+      env:
+        - TEST_COMMAND="nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala:
         - 2.13.0
 
@@ -83,6 +90,7 @@ cache:
 # https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
+  - rm -r $PWD/binaries/bitcoind/bitcoin-0.18.99
   - rm -fv $HOME/.ivy2/.sbt.ivy.lock
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete

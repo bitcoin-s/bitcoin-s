@@ -2,6 +2,7 @@ package org.bitcoins.testkit.node
 
 import akka.actor.ActorRefFactory
 import java.net.InetSocketAddress
+
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -12,7 +13,7 @@ import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.node.SpvNode
+import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -22,7 +23,6 @@ import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.P2PLogger
 
 abstract class NodeTestUtil extends P2PLogger {
 
@@ -104,47 +104,65 @@ abstract class NodeTestUtil extends P2PLogger {
     Peer(socket)
   }
 
-  /** Checks if the given SPV node and bitcoind is synced */
-  def isSameBestHash(node: SpvNode, rpc: BitcoindRpcClient)(
+  /** Checks if the given node and bitcoind is synced */
+  def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val hashF = rpc.getBestBlockHash
     for {
       chainApi <- node.chainApiFromDb()
-      spvBestHash <- chainApi.getBestBlockHash
+      bestHash <- chainApi.getBestBlockHash
       hash <- hashF
     } yield {
-      spvBestHash == hash
+      bestHash == hash
     }
   }
 
   /** Checks if the given light client and bitcoind
     * has the same number of blocks in their blockchains
     */
-  def isSameBlockCount(spv: SpvNode, rpc: BitcoindRpcClient)(
+  def isSameBlockCount(node: Node, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      spvCount <- spv.chainApiFromDb().flatMap(_.getBlockCount)
+      count <- node.chainApiFromDb().flatMap(_.getBlockCount)
       rpcCount <- rpcCountF
-    } yield rpcCount == spvCount
+    } yield rpcCount == count
   }
 
-  /** Awaits sync between the given SPV node and bitcoind client */
-  def awaitSync(node: SpvNode, rpc: BitcoindRpcClient)(
+  /** Awaits sync between the given node and bitcoind client */
+  def awaitSync(node: Node, rpc: BitcoindRpcClient)(
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 500.milliseconds)
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc),
+                            1000.milliseconds,
+                            maxTries = 100)
   }
 
-  /** The future doesn't complete until the spv nodes best hash is the given hash */
-  def awaitBestHash(hash: DoubleSha256DigestBE, spvNode: SpvNode)(
+  /** Awaits sync between the given node and bitcoind client */
+  def awaitCompactFilterHeadersSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(
+      implicit sys: ActorSystem): Future[Unit] = {
+    import sys.dispatcher
+    TestAsyncUtil
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
+  }
+
+  /** Awaits sync between the given node and bitcoind client */
+  def awaitCompactFiltersSync(node: NeutrinoNode, rpc: BitcoindRpcClient)(
+      implicit sys: ActorSystem): Future[Unit] = {
+    import sys.dispatcher
+    TestAsyncUtil
+      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
+  }
+
+  /** The future doesn't complete until the nodes best hash is the given hash */
+  def awaitBestHash(hash: DoubleSha256DigestBE, node: Node)(
       implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
-    def spvBestHashF: Future[DoubleSha256DigestBE] = {
-      spvNode.chainApiFromDb().flatMap(_.getBestBlockHash)
+    def bestHashF: Future[DoubleSha256DigestBE] = {
+      node.chainApiFromDb().flatMap(_.getBestBlockHash)
     }
-    TestAsyncUtil.retryUntilSatisfiedF(() => spvBestHashF.map(_ == hash))
+    TestAsyncUtil.retryUntilSatisfiedF(() => bestHashF.map(_ == hash))
   }
 
 }

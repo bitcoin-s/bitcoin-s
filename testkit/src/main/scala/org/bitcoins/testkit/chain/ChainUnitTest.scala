@@ -11,7 +11,9 @@ import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{
   BlockHeaderDAO,
   BlockHeaderDb,
-  BlockHeaderDbHelper
+  BlockHeaderDbHelper,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
 }
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -46,7 +48,7 @@ trait ChainUnitTest
   implicit lazy val chainParam: ChainParams = appConfig.chain
 
   implicit lazy val appConfig: ChainAppConfig =
-    BitcoinSTestAppConfig.getTestConfig()
+    BitcoinSTestAppConfig.getSpvTestConfig()
 
   /**
     * Behaves exactly like the default conf, execpt
@@ -54,7 +56,7 @@ trait ChainUnitTest
     */
   lazy val mainnetAppConfig: ChainAppConfig = {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    BitcoinSTestAppConfig.getTestConfig(mainnetConf)
+    BitcoinSTestAppConfig.getSpvTestConfig(mainnetConf)
   }
 
   override def beforeAll(): Unit = {
@@ -167,30 +169,35 @@ trait ChainUnitTest
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createBlockHeaderDAO,
-                destroy = () => ChainUnitTest.destroyHeaderTable)(test)
+                destroy = () => ChainUnitTest.destroyAllTables)(test)
   }
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(build = () => ChainUnitTest.createPopulatedBlockHeaderDAO,
-                destroy = () => ChainUnitTest.destroyHeaderTable)(test)
+                destroy = () => ChainUnitTest.destroyAllTables)(test)
   }
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => ChainUnitTest.createChainHandler,
-                () => ChainUnitTest.destroyHeaderTable)(test)
+                () => ChainUnitTest.destroyAllTables)(test)
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
   def createPopulatedChainHandler(): Future[ChainHandler] = {
     for {
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
-      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO)
+      filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
+      filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
+      chainHandler <- ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                                                filterHeaderDAO =
+                                                  filterHeaderDAO,
+                                                filterDAO = filterDAO)
     } yield chainHandler
   }
 
   def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(() => createPopulatedChainHandler,
-                () => ChainUnitTest.destroyHeaderTable)(test)
+                () => ChainUnitTest.destroyAllTables)(test)
   }
 
   def createChainHandlerWithBitcoindZmq(
@@ -239,7 +246,7 @@ trait ChainUnitTest
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
-    composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind,
+    composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind(),
                            createChainHandlerWithBitcoindZmq,
                            BitcoindChainHandlerViaZmq.apply)()
   }
@@ -261,7 +268,7 @@ trait ChainUnitTest
       bitcoindChainHandler: BitcoindChainHandlerViaRpc): Future[Unit] = {
     val stopBitcoindF =
       BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
-    val dropTableF = ChainUnitTest.destroyHeaderTable()
+    val dropTableF = ChainUnitTest.destroyAllTables()
     stopBitcoindF.flatMap(_ => dropTableF)
   }
 
@@ -276,7 +283,7 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaZmq(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaZmq] =
-      composeBuildersAndWrap(builder = () => BitcoinSFixture.createBitcoind,
+      composeBuildersAndWrap(builder = () => BitcoinSFixture.createBitcoind(),
                              dependentBuilder =
                                createChainHandlerWithBitcoindZmq,
                              wrap = BitcoindChainHandlerViaZmq.apply)
@@ -287,7 +294,7 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaRpc] = { () =>
-      BitcoinSFixture.createBitcoind().flatMap(createChainApiWithBitcoindRpc(_))
+      BitcoinSFixture.createBitcoind().flatMap(createChainApiWithBitcoindRpc)
     }
 
     makeDependentFixture(builder, destroyBitcoindChainApiViaRpc)(test)
@@ -326,6 +333,30 @@ object ChainUnitTest extends ChainVerificationLogger {
 
     val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
     chainHandlerF.map(_.blockHeaderDAO)
+  }
+
+  def createFilterHeaderDAO()(
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
+    Future.successful(CompactFilterHeaderDAO())
+  }
+
+  def createPopulatedFilterHeaderDAO()(
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterHeaderDAO] = {
+    createFilterHeaderDAO()
+  }
+
+  def createFilterDAO()(
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterDAO] = {
+    Future.successful(CompactFilterDAO())
+  }
+
+  def createPopulatedFilterDAO()(
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[CompactFilterDAO] = {
+    createFilterDAO()
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375 */
@@ -399,6 +430,15 @@ object ChainUnitTest extends ChainVerificationLogger {
     ChainDbManagement.dropHeaderTable()
   }
 
+  def destroyFilterHeaderTable()(
+      implicit appConfig: ChainAppConfig): Future[Unit] = {
+    ChainDbManagement.dropFilterHeaderTable()
+  }
+
+  def destroyFilterTable()(implicit appConfig: ChainAppConfig): Future[Unit] = {
+    ChainDbManagement.dropFilterTable()
+  }
+
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(
       implicit system: ActorSystem): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)
@@ -411,11 +451,23 @@ object ChainUnitTest extends ChainVerificationLogger {
     ChainDbManagement.createHeaderTable(createIfNotExists = true)
   }
 
+  def setupAllTables()(
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
+    ChainDbManagement.createAll()
+  }
+
+  def destroyAllTables()(
+      implicit appConfig: ChainAppConfig,
+      ec: ExecutionContext): Future[Unit] = {
+    ChainDbManagement.dropAll()
+  }
+
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
   def setupHeaderTableWithGenesisHeader()(
       implicit ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[(ChainHandler, BlockHeaderDb)] = {
-    val tableSetupF = setupHeaderTable()
+    val tableSetupF = setupAllTables()
 
     val chainHandlerF = makeChainHandler()
 
@@ -436,8 +488,12 @@ object ChainUnitTest extends ChainVerificationLogger {
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[ChainHandler] = {
     lazy val blockHeaderDAO = BlockHeaderDAO()
+    lazy val filterHeaderDAO = CompactFilterHeaderDAO()
+    lazy val filterDAO = CompactFilterDAO()
 
-    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO)
+    ChainHandler.fromDatabase(blockHeaderDAO = blockHeaderDAO,
+                              filterHeaderDAO = filterHeaderDAO,
+                              filterDAO = filterDAO)
 
   }
 

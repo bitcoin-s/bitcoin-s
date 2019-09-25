@@ -59,7 +59,7 @@ class ChainAppConfigTest extends ChainUnitTest {
     val confStr = """
                     | bitcoin-s {
                     |   network = testnet3
-                    |
+                    |   
                     |   logging {
                     |     level = off
                     |

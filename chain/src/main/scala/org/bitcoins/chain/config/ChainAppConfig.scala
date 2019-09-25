@@ -80,6 +80,12 @@ case class ChainAppConfig(
       }
     }
   }
+
+  lazy val filterHeaderBatchSize: Int =
+    config.getInt(s"${moduleName}.neutrino.filter-header-batch-size")
+
+  lazy val filterBatchSize: Int =
+    config.getInt(s"${moduleName}.neutrino.filter-batch-size")
 }
 
 object ChainAppConfig {

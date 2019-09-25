@@ -2,6 +2,8 @@ package org.bitcoins.node.networking.peer
 
 import akka.testkit.TestKit
 import akka.util.Timeout
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.node.NodeUnitTest
 import org.scalatest.FutureOutcome
@@ -12,6 +14,11 @@ import scala.concurrent.duration.DurationInt
   * Created by chris on 7/1/16.
   */
 class PeerMessageHandlerTest extends NodeUnitTest {
+
+  /** Wallet config with data directory set to user temp directory */
+  implicit override protected def config: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig()
+
   override type FixtureParam = Unit
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     test(())

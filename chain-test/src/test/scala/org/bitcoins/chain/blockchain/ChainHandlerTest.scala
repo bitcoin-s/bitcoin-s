@@ -3,25 +3,27 @@ package org.bitcoins.chain.blockchain
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper
+import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPrivateKey
 }
+import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
+import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
   ChainTestUtil,
   ChainUnitTest
 }
+import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
 import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
-import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 class ChainHandlerTest extends ChainUnitTest {
 
@@ -118,7 +120,10 @@ class ChainHandlerTest extends ChainUnitTest {
 
       createdF.flatMap { _ =>
         val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
-        val handler = ChainHandler(chainHandler.blockHeaderDAO, blockchain)
+        val handler = ChainHandler(chainHandler.blockHeaderDAO,
+                                   chainHandler.filterHeaderDAO,
+                                   chainHandler.filterDAO,
+                                   blockchain)
         val processorF = Future.successful(handler)
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
@@ -161,7 +166,7 @@ class ChainHandlerTest extends ChainUnitTest {
 
       createdF.flatMap { _ =>
         val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
-        val handler = ChainHandler(chainHandler.blockHeaderDAO, blockchain)
+        val handler = chainHandler.copy(blockchains = Vector(blockchain))
 
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
@@ -253,6 +258,154 @@ class ChainHandlerTest extends ChainUnitTest {
         headerE <- headerEF
         bestHash <- chainHandlerF.getBestBlockHash
       } yield assert(bestHash == headerE.hashBE)
+  }
+
+  it must "get the highest filter header" in { chainHandler: ChainHandler =>
+    {
+      val firstFilterHeader = FilterHeader(
+        filterHash =
+          DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
+        prevHeaderHash = DoubleSha256Digest.empty)
+      for {
+        empty <- chainHandler.getFilterHeadersAtHeight(0)
+        block <- chainHandler.getHeadersAtHeight(0)
+        _ <- chainHandler.processFilterHeader(firstFilterHeader,
+                                              block.head.hashBE)
+        count <- chainHandler.getFilterHeaderCount
+        first <- chainHandler.getFilterHeader(block.head.hashBE)
+        vec <- chainHandler.getFilterHeadersAtHeight(count)
+      } yield {
+        assert(empty.isEmpty)
+        assert(first.nonEmpty)
+        assert(vec.nonEmpty)
+        assert(Vector(first.get) == vec)
+        assert(first.get.hashBE == firstFilterHeader.hash.flip)
+        assert(first.get.filterHashBE == firstFilterHeader.filterHash.flip)
+        assert(
+          first.get.previousFilterHeaderBE == firstFilterHeader.prevHeaderHash.flip)
+        assert(first.get.blockHashBE == block.head.hashBE)
+        assert(first.get.height == 0)
+        assert(first.get.filterHeader == firstFilterHeader)
+      }
+    }
+  }
+
+  it must "NOT create a filter header for an unknown block" in {
+    chainHandler: ChainHandler =>
+      {
+        val firstFilterHeader = FilterHeader(
+          filterHash =
+            DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
+          prevHeaderHash = DoubleSha256Digest.empty)
+        val newChainHandlerF = chainHandler.processFilterHeader(
+          firstFilterHeader,
+          DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes))
+        recoverToSucceededIf[UnknownBlockHash](newChainHandlerF)
+      }
+  }
+
+  it must "get the highest filter" in { chainHandler: ChainHandler =>
+    {
+      for {
+        empty <- chainHandler.getFilterCount
+        blockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
+        golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
+        firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
+                                           filter = golombFilter)
+        firstFilterHeader = FilterHeader(filterHash = golombFilter.hash,
+                                         prevHeaderHash =
+                                           DoubleSha256Digest.empty)
+        newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
+                                                            blockHashBE)
+        _ <- chainHandler.processFilter(firstFilter)
+        count <- newChainHandler.getFilterCount
+        first <- newChainHandler.getFiltersAtHeight(count).map(_.headOption)
+      } yield {
+        assert(empty == 0)
+        assert(first.nonEmpty)
+        assert(first.get.hashBE == golombFilter.hash.flip)
+        assert(first.get.height == 0)
+        assert(first.get.blockHashBE == blockHashBE)
+        assert(first.get.filterType == FilterType.Basic)
+        assert(first.get.golombFilter == golombFilter)
+      }
+    }
+  }
+
+  it must "NOT create an unknown filter" in { chainHandler: ChainHandler =>
+    {
+      val unknownHashF = for {
+        blockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
+        golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
+        firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
+                                           filter = golombFilter)
+        firstFilterHeader = FilterHeader(
+          filterHash =
+            DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
+          prevHeaderHash = DoubleSha256Digest.empty)
+        newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
+                                                            blockHashBE)
+        process <- newChainHandler.processFilter(firstFilter)
+      } yield {
+        process
+      }
+      recoverToSucceededIf[UnknownFilterHash](unknownHashF)
+    }
+  }
+
+  it must "NOT create a filter of an unknown block" in {
+    chainHandler: ChainHandler =>
+      {
+        val blockHashBE =
+          DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
+        val golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
+        val firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
+                                               filter = golombFilter)
+        val firstFilterHeader = FilterHeader(filterHash = golombFilter.hash,
+                                             prevHeaderHash =
+                                               DoubleSha256Digest.empty)
+        val unknownBlockF = for {
+          realBlockHashBE <- chainHandler
+            .getHeadersAtHeight(0)
+            .map(_.head.hashBE)
+          newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
+                                                              blockHashBE)
+        } yield {
+          assert(realBlockHashBE != blockHashBE)
+          newChainHandler
+        }
+        recoverToSucceededIf[UnknownBlockHash](unknownBlockF)
+      }
+  }
+
+  it must "create a filter checkpoint map" in { chainHandler: ChainHandler =>
+    for {
+      realBlockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
+      filterHashBE = DoubleSha256DigestBE.fromBytes(
+        ECPrivateKey.freshPrivateKey.bytes)
+      newChainHandler <- chainHandler.processCheckpoint(filterHashBE,
+                                                        realBlockHashBE)
+    } yield {
+      assert(
+        newChainHandler
+          .asInstanceOf[ChainHandler]
+          .blockFilterCheckpoints == Map(realBlockHashBE -> filterHashBE))
+    }
+  }
+
+  it must "generate a range for a block filter query" in {
+    chainHandler: ChainHandler =>
+      for {
+        bestBlock <- chainHandler.getBestBlockHeader
+        bestBlockHashBE = bestBlock.hashBE
+        rangeOpt <- chainHandler.nextHeaderBatchRange(
+          DoubleSha256DigestBE.empty,
+          1)
+      } yield {
+        assert(rangeOpt.nonEmpty)
+        assert(rangeOpt.get._1 == 0)
+        assert(rangeOpt.get._2 == bestBlockHashBE.flip)
+      }
   }
 
   final def processHeaders(

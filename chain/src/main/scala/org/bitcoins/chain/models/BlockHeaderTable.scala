@@ -70,9 +70,9 @@ class BlockHeaderTable(tag: Tag)
   def hex = column[String]("hex")
 
   /** The sql index for searching based on [[height]] */
-  def heightIndex = index("height_index", height)
+  def heightIndex = index("block_headers_height_index", height)
 
-  def hashIndex = index("hash_index", hash)
+  def hashIndex = index("block_headers_hash_index", hash)
 
   def * = {
     (height,

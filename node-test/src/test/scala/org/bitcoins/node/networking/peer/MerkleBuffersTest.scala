@@ -1,25 +1,23 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
-import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.scalacheck.Gen
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.protocol.blockchain.Block
 import _root_.org.scalatest.compatible.Assertion
-import scala.concurrent.Future
-import scala.util.Success
-import scala.util.Try
-import scala.util.Failure
+import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.core.gen.{
+  BlockchainElementsGenerator,
+  TransactionGenerators
+}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.scalacheck.Gen
+
+import scala.util.{Failure, Success, Try}
 
 class MerkleBuffersTest extends BitcoinSUnitTest {
 
   implicit private val config: NodeAppConfig =
-    BitcoinSTestAppConfig.getTestConfig().nodeConf
+    BitcoinSTestAppConfig.getSpvTestConfig().nodeConf
 
   behavior of "MerkleBuffers"
 

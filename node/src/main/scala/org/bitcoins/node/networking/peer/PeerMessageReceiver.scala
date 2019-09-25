@@ -4,7 +4,11 @@ import akka.actor.ActorRefFactory
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.core.p2p.{NetworkMessage, _}
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.SpvNodeCallbacks
@@ -265,8 +269,10 @@ object PeerMessageReceiver {
   ): Future[PeerMessageReceiver] = {
     import ref.dispatcher
     val blockHeaderDAO = BlockHeaderDAO()
+    val filterHeaderDAO = CompactFilterHeaderDAO()
+    val filterDAO = CompactFilterDAO()
     val chainHandlerF =
-      ChainHandler.fromDatabase(blockHeaderDAO)
+      ChainHandler.fromDatabase(blockHeaderDAO, filterHeaderDAO, filterDAO)
     for {
       chainHandler <- chainHandlerF
     } yield {

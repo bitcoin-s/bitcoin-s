@@ -1,11 +1,11 @@
 package org.bitcoins.node
 
 import akka.actor.Cancellable
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.bitcoins.wallet.api.UnlockedWalletApi
@@ -16,6 +16,10 @@ import scala.concurrent.duration._
 import scala.concurrent.{Future, Promise}
 
 class NodeWithWalletTest extends NodeUnitTest {
+
+  /** Wallet config with data directory set to user temp directory */
+  implicit override protected def config: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getSpvTestConfig()
 
   override type FixtureParam = SpvNodeFundedWalletBitcoind
 
@@ -87,7 +91,7 @@ class NodeWithWalletTest extends NodeUnitTest {
 
       for {
 
-        bloom <- wallet.getBloomFilter()
+        _ <- wallet.getBloomFilter()
         address <- wallet.getNewAddress()
         updatedBloom <- spv.updateBloomFilter(address).map(_.bloomFilter)
         _ <- spv.sync()

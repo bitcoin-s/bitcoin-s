@@ -84,7 +84,7 @@ class WalletAppConfigTest extends BitcoinSUnitTest {
     val confStr = """
                     | bitcoin-s {
                     |   network = testnet3
-                    |   
+                    |
                     |   logging {
                     |     level = off
                     |

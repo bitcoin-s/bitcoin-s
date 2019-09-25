@@ -70,6 +70,19 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
   lazy val nodeXthin: Boolean = reversedBits(4) // 1 << 4
 
   /**
+    * NODE_COMPACT_FILTERS means the node will service basic
+    * block filter requests.
+    *
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157 BIP157]] and
+    *   [https://github.com/bitcoin/bips/blob/master/bip-0158 BIP158]
+    *   for details on how this is implemented.
+    *
+    * @note This is not yet supported by any Core release. Currently
+    *       (aug. 1 2019) is a open PR by jimpo: https://github.com/bitcoin/bitcoin/pull/16442
+    */
+  lazy val nodeCompactFilters: Boolean = reversedBits(6) // 1 << 6
+
+  /**
     * this means the same as `nodeNetwork` with the limitation of only
     * serving the last 288 (2 days) blocks
     *
@@ -82,7 +95,7 @@ sealed abstract class ServiceIdentifier extends NetworkElement {
     val innerText =
       if (nodeNone) "none"
       else
-        s"network=$nodeNetwork, getUtxo=$nodeGetUtxo, bloom=$nodeBloom, witness=$nodeWitness, xthin=$nodeXthin, networkLimited=$nodeNetworkLimited"
+        s"network=$nodeNetwork, compactFilters=$nodeCompactFilters, getUtxo=$nodeGetUtxo, bloom=$nodeBloom, witness=$nodeWitness, xthin=$nodeXthin, networkLimited=$nodeNetworkLimited"
     s"ServiceIdentifier($innerText)"
   }
 }
@@ -142,6 +155,8 @@ object ServiceIdentifier extends Factory[ServiceIdentifier] {
     * Bitcoin node.
     */
   val NODE_XTHIN: ServiceIdentifier = ServiceIdentifier(1 << 4)
+
+  val NODE_COMPACT_FILTERS = ServiceIdentifier(1 << 6)
 
   /**
     * This means the same as `NODE_NETWORK` with the limitation of only
