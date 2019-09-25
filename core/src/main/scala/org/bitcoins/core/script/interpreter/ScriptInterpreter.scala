@@ -47,74 +47,108 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     * indicating if the script was valid, or if not what error it encountered
     */
   def run(program: PreExecutionScriptProgram): ScriptResult = {
-    val scriptSig = program.txSignatureComponent.scriptSignature
     val scriptPubKey = program.txSignatureComponent.scriptPubKey
     val flags = program.flags
+
     val p2shEnabled = ScriptFlagUtil.p2shEnabled(flags)
     val segwitEnabled = ScriptFlagUtil.segWitEnabled(flags)
 
     val executedProgram: ExecutedScriptProgram =
-      if (ScriptFlagUtil.requirePushOnly(flags)
-          && !BitcoinScriptUtil.isPushOnly(program.script)) {
-        logger.error(
-          "We can only have push operations inside of the script sig when the SIGPUSHONLY flag is set")
-        ScriptProgram(program, ScriptErrorSigPushOnly)
-      } else if (scriptSig.isInstanceOf[P2SHScriptSignature] && p2shEnabled &&
-                 !BitcoinScriptUtil.isPushOnly(scriptSig.asm)) {
-        logger.error(
-          "P2SH scriptSigs are required to be push only by definition - see BIP16, got: " + scriptSig.asm)
-        ScriptProgram(program, ScriptErrorSigPushOnly)
-      } else {
-        val scriptSigExecutedProgram = loop(program, 0)
-        logger.trace(s"scriptSigExecutedProgram $scriptSigExecutedProgram")
-        val t = scriptSigExecutedProgram.txSignatureComponent
-        val scriptPubKeyProgram = ExecutionInProgressScriptProgram(
-          t,
-          scriptSigExecutedProgram.stack,
-          t.scriptPubKey.asm.toList,
-          t.scriptPubKey.asm.toList,
-          Nil,
-          scriptSigExecutedProgram.flags,
-          None)
-        val scriptPubKeyExecutedProgram: ExecutedScriptProgram =
-          loop(scriptPubKeyProgram, 0)
-        logger.trace(
-          s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
-        if (scriptSigExecutedProgram.error.isDefined) {
-          scriptSigExecutedProgram
-        } else if (scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse) {
-          scriptPubKeyExecutedProgram
-        } else {
-          scriptPubKey match {
-            case witness: WitnessScriptPubKey =>
-              if (segwitEnabled)
-                executeSegWitScript(scriptPubKeyExecutedProgram, witness).get
-              else scriptPubKeyExecutedProgram
-            case _: P2SHScriptPubKey =>
-              if (p2shEnabled) executeP2shScript(scriptSigExecutedProgram)
-              else scriptPubKeyExecutedProgram
-            case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
-                _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
-                _: CLTVScriptPubKey | _: NonStandardScriptPubKey |
-                _: WitnessCommitment | EmptyScriptPubKey =>
-              scriptPubKeyExecutedProgram
-          }
-        }
-      }
-    logger.trace("Executed Script Program: " + executedProgram)
-    if (executedProgram.error.isDefined) executedProgram.error.get
-    else if (hasUnexpectedWitness(program)) {
-      //note: the 'program' value we pass above is intentional, we need to check the original program
-      //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
+      programFlagsViolated(program) match {
+        case Some(err) => ScriptProgram(program, err)
+        case None =>
+          val scriptSigExecutedProgram = loop(program, 0)
+          logger.trace(s"scriptSigExecutedProgram $scriptSigExecutedProgram")
 
-      ScriptErrorWitnessUnexpected
-    } else if (executedProgram.stackTopIsTrue && flags.contains(
-                 ScriptVerifyCleanStack)) {
-      //require that the stack after execution has exactly one element on it
-      if (executedProgram.stack.size == 1) ScriptOk
-      else ScriptErrorCleanStack
-    } else if (executedProgram.stackTopIsTrue) ScriptOk
-    else ScriptErrorEvalFalse
+          val sigComponent = scriptSigExecutedProgram.txSignatureComponent
+          val scriptPubKeyProgram = ExecutionInProgressScriptProgram(
+            txSignatureComponent = sigComponent,
+            stack = scriptSigExecutedProgram.stack,
+            script = sigComponent.scriptPubKey.asm.toList,
+            originalScript = sigComponent.scriptPubKey.asm.toList,
+            altStack = Nil,
+            flags = scriptSigExecutedProgram.flags,
+            lastCodeSeparator = None
+          )
+
+          val scriptPubKeyExecutedProgram: ExecutedScriptProgram =
+            loop(scriptPubKeyProgram, 0)
+          logger.trace(
+            s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
+
+          if (scriptSigExecutedProgram.error.isDefined) {
+            scriptSigExecutedProgram
+          } else if (scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse) {
+            scriptPubKeyExecutedProgram
+          } else {
+            scriptPubKey match {
+              case witness: WitnessScriptPubKey =>
+                if (segwitEnabled)
+                  executeSegWitScript(scriptPubKeyExecutedProgram, witness).get
+                else scriptPubKeyExecutedProgram
+              case _: P2SHScriptPubKey =>
+                if (p2shEnabled) executeP2shScript(scriptSigExecutedProgram)
+                else scriptPubKeyExecutedProgram
+              case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
+                  _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
+                  _: CLTVScriptPubKey | _: NonStandardScriptPubKey |
+                  _: WitnessCommitment | EmptyScriptPubKey =>
+                scriptPubKeyExecutedProgram
+            }
+          }
+      }
+
+    logger.trace("Executed Script Program: " + executedProgram)
+
+    evaluateExecutedScriptProgram(program, executedProgram)
+  }
+
+  private def programFlagsViolated(
+      program: PreExecutionScriptProgram): Option[ScriptError] = {
+    val scriptSig = program.txSignatureComponent.scriptSignature
+    val flags = program.flags
+    val p2shEnabled = ScriptFlagUtil.p2shEnabled(flags)
+
+    if (ScriptFlagUtil.requirePushOnly(flags)
+        && !BitcoinScriptUtil.isPushOnly(program.script)) {
+      logger.error(
+        "We can only have push operations inside of the script sig when the SIGPUSHONLY flag is set")
+      Some(ScriptErrorSigPushOnly)
+    } else if (scriptSig.isInstanceOf[P2SHScriptSignature] && p2shEnabled &&
+               !BitcoinScriptUtil.isPushOnly(scriptSig.asm)) {
+      logger.error(
+        "P2SH scriptSigs are required to be push only by definition - see BIP16, got: " + scriptSig.asm)
+      Some(ScriptErrorSigPushOnly)
+    } else {
+      None
+    }
+  }
+
+  private def evaluateExecutedScriptProgram(
+      program: PreExecutionScriptProgram,
+      executedProgram: ExecutedScriptProgram): ScriptResult = {
+    executedProgram.error match {
+      case Some(err) => err
+      case None =>
+        if (hasUnexpectedWitness(program)) {
+          //note: the 'program' value we pass above is intentional, we need to check the original program
+          //as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
+          ScriptErrorWitnessUnexpected
+        } else if (executedProgram.stackTopIsTrue) {
+          if (program.flags.contains(ScriptVerifyCleanStack)) {
+            //require that the stack after execution has exactly one element on it
+            if (executedProgram.stack.size == 1) {
+              ScriptOk
+            } else {
+              ScriptErrorCleanStack
+            }
+          } else {
+            ScriptOk
+          }
+        } else {
+          ScriptErrorEvalFalse
+        }
+    }
   }
 
   /**
