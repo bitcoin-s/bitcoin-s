@@ -79,12 +79,17 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
     }
 
 
-    import org.bitcoins.chain.models.BlockHeaderDAO
+    import org.bitcoins.chain.models._
     import org.bitcoins.chain.blockchain.ChainHandler
     val blockHeaderDAO = BlockHeaderDAO()
+    val compactFilterHeaderDAO = CompactFilterHeaderDAO()
+    val compactFilterDAO = CompactFilterDAO()
     val chainHandler = ChainHandler(
         blockHeaderDAO,
-        blockchains = Vector.empty)
+        compactFilterHeaderDAO,
+        compactFilterDAO,
+        blockchains = Vector.empty,
+        blockFilterCheckpoints = Map.empty)
 
     import org.bitcoins.chain.blockchain.sync.ChainSync
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)

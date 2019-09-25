@@ -4,19 +4,18 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.db.AppLoggers
-import org.bitcoins.node.{SpvNode, SpvNodeCallbacks}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.node.{NeutrinoNode, SpvNode, SpvNodeCallbacks}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.wallet.{LockedWallet, Wallet, WalletStorage}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.{LockedWallet, Wallet, WalletStorage}
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 object Main extends App {
   implicit val conf = {
@@ -30,6 +29,8 @@ object Main extends App {
 
   implicit val walletConf: WalletAppConfig = conf.walletConf
   implicit val nodeConf: NodeAppConfig = conf.nodeConf
+  require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
+          "Either Neutrino or SPV mode should be enabled")
   implicit val chainConf: ChainAppConfig = conf.chainConf
 
   implicit val system = ActorSystem("bitcoin-s")
@@ -85,9 +86,6 @@ object Main extends App {
     _ <- conf.initialize()
     wallet <- walletInitF
 
-    bloom <- wallet.getBloomFilter()
-    _ = logger.info(s"Got bloom filter with ${bloom.filterSize.toInt} elements")
-
     node <- {
 
       val callbacks = {
@@ -99,7 +97,24 @@ object Main extends App {
 
         SpvNodeCallbacks(onTxReceived = Seq(onTX))
       }
-      SpvNode(peer, bloom, callbacks).start()
+      if (nodeConf.isSPVEnabled) {
+        for {
+          bloom <- wallet.getBloomFilter()
+          _ = logger.info(
+            s"Got bloom filter with ${bloom.filterSize.toInt} elements")
+          spvNode <- SpvNode(peer,
+                             bloom,
+                             callbacks,
+                             nodeConf,
+                             chainConf,
+                             system).start()
+        } yield spvNode
+      } else if (nodeConf.isNeutrinoEnabled) {
+        NeutrinoNode(peer, callbacks, nodeConf, chainConf, system).start()
+      } else {
+        Future.failed(
+          new RuntimeException("Neither Neutrino nor SPV mode is enabled."))
+      }
     }
     _ = logger.info(s"Starting SPV node sync")
     _ <- node.sync()

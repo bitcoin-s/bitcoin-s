@@ -306,21 +306,24 @@ abstract class AppConfig extends BitcoinSLogger {
     baseDatadir.resolve(lastDirname)
   }
 
-  private def stringToLogLevel(str: String): Level =
+  private def stringToLogLevel(str: String): Option[Level] =
     str.toLowerCase() match {
-      case "trace"       => Level.TRACE
-      case "debug"       => Level.DEBUG
-      case "info"        => Level.INFO
-      case "warn"        => Level.WARN
-      case "error"       => Level.ERROR
-      case "off"         => Level.OFF
-      case other: String => sys.error(s"Unknown logging level: $other")
+      case "trace"   => Some(Level.TRACE)
+      case "debug"   => Some(Level.DEBUG)
+      case "info"    => Some(Level.INFO)
+      case "warn"    => Some(Level.WARN)
+      case "error"   => Some(Level.ERROR)
+      case "off"     => Some(Level.OFF)
+      case _: String => None
     }
 
   /** The default logging level */
   lazy val logLevel: Level = {
     val levelString = config.getString("logging.level")
-    stringToLogLevel(levelString)
+    stringToLogLevel(levelString).getOrElse(
+      throw new ConfigException.WrongType(
+        config.origin(),
+        s"logging.level ($levelString) is not a valid logging level"))
   }
 
   /** Whether or not we should log to file */
@@ -331,9 +334,15 @@ abstract class AppConfig extends BitcoinSLogger {
 
   private def levelOrDefault(key: String): Level =
     config
-      .getStringOrNone(key)
-      .map(stringToLogLevel)
-      .getOrElse(logLevel)
+      .getStringOrNone(key) match {
+      case None => logLevel
+      case Some(levelStr) =>
+        stringToLogLevel(levelStr).getOrElse {
+          throw new ConfigException.WrongType(
+            config.origin(),
+            s"$key ($levelStr) is not a valid logging level")
+        }
+    }
 
   /** The logging level for our P2P logger */
   lazy val p2pLogLevel: Level = levelOrDefault("logging.p2p")

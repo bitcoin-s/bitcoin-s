@@ -124,6 +124,40 @@ case class BlockHeaderDAO()(
     table.filter(_.height === height).result
   }
 
+  /** Gets Block Headers between (inclusive) start height and stop hash, could be out of order */
+  def getBetweenHeightAndHash(
+      startHeight: Int,
+      stopHash: DoubleSha256DigestBE): Future[Vector[BlockHeaderDb]] = {
+    for {
+      headerOpt <- findByHash(stopHash)
+      res <- headerOpt match {
+        case Some(header) =>
+          getBetweenHeights(startHeight, header.height)
+        case None =>
+          Future.successful(Vector.empty)
+      }
+    } yield {
+      res
+    }
+  }
+
+  /** Gets Block Headers of all childred starting with the given block hash (inclusive), could be out of order */
+  def getNChildren(
+      ancestorHash: DoubleSha256DigestBE,
+      n: Int): Future[Vector[BlockHeaderDb]] = {
+    for {
+      headerOpt <- findByHash(ancestorHash)
+      res <- headerOpt match {
+        case Some(header) =>
+          getBetweenHeights(Math.max(header.height - n, 0), header.height)
+        case None =>
+          Future.successful(Vector.empty)
+      }
+    } yield {
+      res
+    }
+  }
+
   /** Gets Block Headers between (inclusive) from and to, could be out of order */
   def getBetweenHeights(from: Int, to: Int): Future[Vector[BlockHeaderDb]] = {
     val query = getBetweenHeightsQuery(from, to)
@@ -218,4 +252,5 @@ case class BlockHeaderDAO()(
       result.headOption
     }
   }
+
 }

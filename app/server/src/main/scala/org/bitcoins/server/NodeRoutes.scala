@@ -4,9 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import org.bitcoins.node.SpvNode
+import org.bitcoins.node.Node
 
-case class NodeRoutes(node: SpvNode)(implicit system: ActorSystem)
+case class NodeRoutes(node: Node)(implicit system: ActorSystem)
     extends ServerRoute {
   implicit val materializer = ActorMaterializer()
 

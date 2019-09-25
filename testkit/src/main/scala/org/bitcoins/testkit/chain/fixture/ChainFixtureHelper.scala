@@ -37,10 +37,10 @@ trait ChainFixtureHelper { this: ChainUnitTest =>
   def destroyFixture(fixture: ChainFixture): Future[Any] = {
     fixture match {
       case Empty                      => Future.successful(())
-      case GenisisBlockHeaderDAO(_)   => ChainUnitTest.destroyHeaderTable()
-      case PopulatedBlockHeaderDAO(_) => ChainUnitTest.destroyHeaderTable()
-      case GenisisChainHandler(_)     => ChainUnitTest.destroyHeaderTable()
-      case PopulatedChainHandler(_)   => ChainUnitTest.destroyHeaderTable()
+      case GenisisBlockHeaderDAO(_)   => ChainUnitTest.destroyAllTables()
+      case PopulatedBlockHeaderDAO(_) => ChainUnitTest.destroyAllTables()
+      case GenisisChainHandler(_)     => ChainUnitTest.destroyAllTables()
+      case PopulatedChainHandler(_)   => ChainUnitTest.destroyAllTables()
       case BitcoindZmqChainHandlerWithBlock(bitcoindHandler) =>
         destroyBitcoindChainHandlerViaZmq(bitcoindHandler)
     }

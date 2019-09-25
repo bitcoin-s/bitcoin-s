@@ -7,8 +7,7 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.rpc.jsonmodels.{
   FundRawTransactionResult,
   GetRawTransactionResult,
-  RpcTransaction,
-  SignRawTransactionResult
+  RpcTransaction
 }
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters._

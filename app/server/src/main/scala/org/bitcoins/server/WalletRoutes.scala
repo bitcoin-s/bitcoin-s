@@ -1,22 +1,18 @@
 package org.bitcoins.server
 
-import org.bitcoins.picklers._
-
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
-
 import org.bitcoins.core.currency._
-import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.node.SpvNode
+import org.bitcoins.node.Node
+import org.bitcoins.picklers._
+import org.bitcoins.wallet.api.UnlockedWalletApi
 
-import de.heikoseeberger.akkahttpupickle.UpickleSupport._
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: UnlockedWalletApi, node: SpvNode)(
+case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
     implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher

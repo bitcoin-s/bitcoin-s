@@ -2,7 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.scalatest._
 
@@ -151,21 +151,21 @@ trait BitcoinSFixture extends fixture.AsyncFlatSpec {
 
 object BitcoinSFixture {
 
-  def createBitcoindWithFunds()(
+  def createBitcoindWithFunds(versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
     for {
-      bitcoind <- createBitcoind()
+      bitcoind <- createBitcoind(versionOpt = versionOpt)
       address <- bitcoind.getNewAddress
       _ <- bitcoind.generateToAddress(blocks = 101, address)
     } yield bitcoind
   }
 
   /** Creates a new bitcoind instance */
-  def createBitcoind()(
+  def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
     import system.dispatcher
-    val instance = BitcoindRpcTestUtil.instance()
+    val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
     val bitcoind = BitcoindRpcClient.withActorSystem(instance)
 
     bitcoind.start().map(_ => bitcoind)

@@ -1,10 +1,13 @@
 package org.bitcoins.testkit.rpc
 
+import java.io.File
 import java.net.URI
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -21,6 +24,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
@@ -32,6 +37,7 @@ import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
+  BitcoindConfig,
   BitcoindInstance,
   ZmqConfig
 }
@@ -41,29 +47,15 @@ import org.bitcoins.rpc.jsonmodels.{
   SignRawTransactionResult
 }
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.util.ListUtil
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
 import scala.collection.mutable
-import org.bitcoins.core.compat.JavaConverters._
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
-import org.bitcoins.rpc.config.BitcoindConfig
-import java.io.File
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import java.nio.file.Path
-import org.bitcoins.rpc.client.common.BitcoindVersion.Unknown
-import org.bitcoins.rpc.client.common.BitcoindVersion.V16
-import org.bitcoins.rpc.client.common.BitcoindVersion.V17
-import org.bitcoins.rpc.client.common.BitcoindVersion.V18
-import java.nio.file.Files
-
-import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.rpc.BitcoindException
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -106,7 +98,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       uri: URI,
       rpcUri: URI,
       zmqPort: Int,
-      pruneMode: Boolean): BitcoindConfig = {
+      pruneMode: Boolean,
+      blockFilterIndex: Boolean = false): BitcoindConfig = {
     val pass = randomDirName
     val username = "random_user_name"
     val conf = s"""
@@ -127,7 +120,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |zmqpubrawblock=tcp://127.0.0.1:$zmqPort
                   |prune=${if (pruneMode) 1 else 0}
     """.stripMargin
-    BitcoindConfig(config = conf, datadir = BitcoindRpcTestUtil.tmpDir())
+    val config =
+      if (blockFilterIndex)
+        conf + """
+                 |blockfilterindex=1
+                 |""".stripMargin
+      else
+        conf
+    BitcoindConfig(config = config, datadir = BitcoindRpcTestUtil.tmpDir())
   }
 
   /**
@@ -139,9 +139,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       uri: URI,
       rpcUri: URI,
       zmqPort: Int,
-      pruneMode: Boolean
+      pruneMode: Boolean,
+      blockFilterIndex: Boolean = false
   ): Path = {
-    val conf = config(uri, rpcUri, zmqPort, pruneMode)
+    val conf = config(uri, rpcUri, zmqPort, pruneMode, blockFilterIndex)
 
     val datadir = conf.datadir
     val written = BitcoindConfig.writeConfigToFile(conf, datadir)
@@ -175,25 +176,29 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   private def getBinary(version: BitcoindVersion): File = version match {
     // default to newest version
     case Unknown => getBinary(BitcoindVersion.newest)
-    case known @ (V16 | V17 | V18) =>
-      val versionFolder = Files
+    case known @ (Experimental | V16 | V17 | V18) =>
+      val fileList = Files
         .list(binaryDirectory)
         .iterator()
         .asScala
         .toList
-        .filter { f =>
-          val isFolder = Files.isDirectory(f)
-          val matchesVersion = f.toString.contains {
-            // drop leading 'v'
-            known.toString.drop(1)
-          }
-          isFolder && matchesVersion
-        }
-        // might be multiple versions downloaded for
-        // each major version, i.e. 0.16.2 and 0.16.3
-        .sorted
-        // we want the most recent one
-        .last
+        .filter(f => Files.isDirectory(f))
+      // drop leading 'v'
+      val version = known.toString.drop(1)
+      val filtered =
+        if (known == Experimental)
+          // we want exact match for the experimental version
+          fileList
+            .filter(f => f.toString.endsWith(version))
+        else
+          // we don't want the experimental version to appear in the list along with the production ones
+          fileList
+            .filterNot(f => f.toString.endsWith(Experimental.toString.drop(1)))
+            .filter(f => f.toString.contains(version))
+
+      // might be multiple versions downloaded for
+      // each major version, i.e. 0.16.2 and 0.16.3
+      val versionFolder = filtered.max
 
       versionFolder
         .resolve("bin")
@@ -210,7 +215,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       versionOpt: Option[BitcoindVersion] = None): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    val configFile = writtenConfig(uri, rpcUri, zmqPort, pruneMode)
+    val configFile = writtenConfig(
+      uri,
+      rpcUri,
+      zmqPort,
+      pruneMode,
+      blockFilterIndex = versionOpt.contains(BitcoindVersion.Experimental))
     val conf = BitcoindConfig(configFile)
     val auth = BitcoindAuthCredentials.fromConfig(conf)
     val binary: File = versionOpt match {
@@ -280,6 +290,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
              zmqPort = zmqPort,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V18))
+
+  def vExperimentalInstance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort,
+      pruneMode: Boolean = false
+  ): BitcoindInstance =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqPort = zmqPort,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.Experimental))
 
   def startServers(servers: Vector[BitcoindRpcClient])(
       implicit ec: ExecutionContext): Future[Unit] = {
@@ -572,6 +594,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         case BitcoindVersion.V18 =>
           BitcoindV18RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v18Instance())
+        case BitcoindVersion.Experimental =>
+          BitcoindV18RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.vExperimentalInstance())
       }
 
       // this is safe as long as this method is never
@@ -762,9 +787,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       case v17: BitcoindV17RpcClient =>
         v17.getAddressInfo(address).map(_.pubkey)
       case v16: BitcoindV16RpcClient =>
-        v16.validateAddress(address).map(_.pubkey)
+        v16.getAddressInfo(address).map(_.pubkey)
       case other: BitcoindRpcClient =>
-        if (other.instance.getVersion == BitcoindVersion.V17) {
+        if (other.instance.getVersion.toString >= BitcoindVersion.V17.toString) {
           val v17 = new BitcoindV17RpcClient(other.instance)
           v17.getAddressInfo(address).map(_.pubkey)
         } else {
