@@ -30,18 +30,16 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by chris on 1/6/16.
   */
-sealed abstract class ScriptInterpreter {
-
-  private def logger = BitcoinSLogger.logger
+sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
   /**
     * Currently bitcoin core limits the maximum number of non-push operations per script
     * to 201
     */
-  private lazy val maxScriptOps = 201
+  private lazy val MAX_SCRIPT_OPS = 201
 
   /** We cannot push an element larger than 520 bytes onto the stack */
-  private lazy val maxPushSize = 520
+  private lazy val MAX_PUSH_SIZE = 520
 
   /**
     * Runs an entire script though our script programming language and
@@ -54,6 +52,7 @@ sealed abstract class ScriptInterpreter {
     val flags = program.flags
     val p2shEnabled = ScriptFlagUtil.p2shEnabled(flags)
     val segwitEnabled = ScriptFlagUtil.segWitEnabled(flags)
+
     val executedProgram: ExecutedScriptProgram =
       if (ScriptFlagUtil.requirePushOnly(flags)
           && !BitcoinScriptUtil.isPushOnly(program.script)) {
@@ -191,85 +190,84 @@ sealed abstract class ScriptInterpreter {
     } else if (scriptPubKeyExecutedProgram.error.isDefined) {
       scriptPubKeyExecutedProgram
     } else {
-      scriptPubKeyExecutedProgram.stackTopIsTrue match {
-        case true =>
-          logger.debug(
-            "Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
+      if (scriptPubKeyExecutedProgram.stackTopIsTrue) {
+        logger.debug(
+          "Hashes matched between the p2shScriptSignature & the p2shScriptPubKey")
 
-          //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
-          val stack = scriptPubKeyExecutedProgram.stack
+        //we need to run the deserialized redeemScript & the scriptSignature without the serialized redeemScript
+        val stack = scriptPubKeyExecutedProgram.stack
 
-          val redeemScriptBytes = stack.head.bytes
+        val redeemScriptBytes = stack.head.bytes
 
-          val c = CompactSizeUInt.calculateCompactSizeUInt(redeemScriptBytes)
+        val c = CompactSizeUInt.calculateCompactSizeUInt(redeemScriptBytes)
 
-          val redeemScript = ScriptPubKey(c.bytes ++ redeemScriptBytes)
+        val redeemScript = ScriptPubKey(c.bytes ++ redeemScriptBytes)
 
-          redeemScript match {
+        redeemScript match {
 
-            case p2wpkh: P2WPKHWitnessSPKV0 =>
-              val wtxSigP2SH = scriptPubKeyExecutedProgram.txSignatureComponent
-                .asInstanceOf[WitnessTxSigComponentP2SH]
+          case p2wpkh: P2WPKHWitnessSPKV0 =>
+            val wtxSigP2SH = scriptPubKeyExecutedProgram.txSignatureComponent
+              .asInstanceOf[WitnessTxSigComponentP2SH]
 
-              //for the p2sh(p2wpkh) case
-              //https://github.com/bitcoin/bitcoin/blob/78dae8caccd82cfbfd76557f1fb7d7557c7b5edb/src/script/interpreter.cpp#L1437
+            //for the p2sh(p2wpkh) case
+            //https://github.com/bitcoin/bitcoin/blob/78dae8caccd82cfbfd76557f1fb7d7557c7b5edb/src/script/interpreter.cpp#L1437
 
-              val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
+            val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
 
-              val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
+            val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
 
-              val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
-              if (segwitEnabled &&
-                  wtxSigP2SH.witness.stack.size == 2 &&
-                  isExpectedScriptBytes) {
-                executeSegWitScript(scriptPubKeyExecutedProgram, p2wpkh).get
-              } else if (segwitEnabled) {
-                ScriptProgram(oldProgram = scriptPubKeyExecutedProgram,
-                              error = ScriptErrorWitnessMalleatedP2SH)
-              } else {
-                //segwit not enabled, treat as old spk
-                run(scriptPubKeyExecutedProgram, p2wpkh)
-              }
+            val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
+            if (segwitEnabled &&
+                wtxSigP2SH.witness.stack.size == 2 &&
+                isExpectedScriptBytes) {
+              executeSegWitScript(scriptPubKeyExecutedProgram, p2wpkh).get
+            } else if (segwitEnabled) {
+              ScriptProgram(oldProgram = scriptPubKeyExecutedProgram,
+                            error = ScriptErrorWitnessMalleatedP2SH)
+            } else {
+              //segwit not enabled, treat as old spk
+              run(scriptPubKeyExecutedProgram, p2wpkh)
+            }
 
-            case p2wsh: P2WSHWitnessSPKV0 =>
-              val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
+          case p2wsh: P2WSHWitnessSPKV0 =>
+            val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
 
-              val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
+            val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
 
-              val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
+            val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
 
-              if (segwitEnabled && isExpectedScriptBytes) {
-                // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
-                // reintroduce malleability.
-                logger.debug(
-                  "redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
-                //TODO: remove .get here
-                executeSegWitScript(scriptPubKeyExecutedProgram, p2wsh).get
-              } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
-                logger.error(
-                  "Segwit was enabled, but p2sh redeem script was malleated")
-                logger.error("ScriptSig bytes: " + scriptSig.hex)
-                logger.error(
-                  "expected scriptsig bytes: " + expectedScriptBytes.toHex)
-                ScriptProgram(scriptPubKeyExecutedProgram,
-                              ScriptErrorWitnessMalleatedP2SH)
-              } else {
-                logger.warn(
-                  "redeem script was witness script pubkey, segwit was NOT enabled")
-                //treat the segwit scriptpubkey as any other redeem script
-                run(scriptPubKeyExecutedProgram, p2wsh)
-              }
-            case s @ (_: P2SHScriptPubKey | _: P2PKHScriptPubKey |
-                _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
-                _: CLTVScriptPubKey | _: CSVScriptPubKey |
-                _: NonStandardScriptPubKey | _: WitnessCommitment |
-                _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
-              run(scriptPubKeyExecutedProgram, s)
-          }
-        case false =>
-          logger.warn(
-            "P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
-          scriptPubKeyExecutedProgram
+            if (segwitEnabled && isExpectedScriptBytes) {
+              // The scriptSig must be _exactly_ a single push of the redeemScript. Otherwise we
+              // reintroduce malleability.
+              logger.debug(
+                "redeem script was witness script pubkey, segwit was enabled, scriptSig was single push of redeemScript")
+              //TODO: remove .get here
+              executeSegWitScript(scriptPubKeyExecutedProgram, p2wsh).get
+            } else if (segwitEnabled && (scriptSig.asmBytes != expectedScriptBytes)) {
+              logger.error(
+                "Segwit was enabled, but p2sh redeem script was malleated")
+              logger.error("ScriptSig bytes: " + scriptSig.hex)
+              logger.error(
+                "expected scriptsig bytes: " + expectedScriptBytes.toHex)
+              ScriptProgram(scriptPubKeyExecutedProgram,
+                            ScriptErrorWitnessMalleatedP2SH)
+            } else {
+              logger.warn(
+                "redeem script was witness script pubkey, segwit was NOT enabled")
+              //treat the segwit scriptpubkey as any other redeem script
+              run(scriptPubKeyExecutedProgram, p2wsh)
+            }
+          case s @ (_: P2SHScriptPubKey | _: P2PKHScriptPubKey |
+              _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
+              _: CLTVScriptPubKey | _: CSVScriptPubKey |
+              _: NonStandardScriptPubKey | _: WitnessCommitment |
+              _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
+            run(scriptPubKeyExecutedProgram, s)
+        }
+      } else {
+        logger.warn(
+          "P2SH scriptPubKey hash did not match the hash for the serialized redeemScript")
+        scriptPubKeyExecutedProgram
       }
     }
 
@@ -319,7 +317,7 @@ sealed abstract class ScriptInterpreter {
           Success(
             ScriptProgram(scriptPubKeyExecutedProgram,
                           ScriptErrorWitnessMalleated))
-        } else if (witness.stack.exists(_.size > maxPushSize)) {
+        } else if (witness.stack.exists(_.size > MAX_PUSH_SIZE)) {
           Success(
             ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize))
         } else {
@@ -399,7 +397,7 @@ sealed abstract class ScriptInterpreter {
     logger.trace("Stack: " + program.stack)
     logger.trace("Script: " + program.script)
     val scriptByteVector = BitcoinSUtil.toByteVector(program.script)
-    if (opCount > maxScriptOps && !program
+    if (opCount > MAX_SCRIPT_OPS && !program
           .isInstanceOf[ExecutedScriptProgram]) {
       logger.error(
         "We have reached the maximum amount of script operations allowed")
@@ -423,10 +421,9 @@ sealed abstract class ScriptInterpreter {
           loop(ScriptProgram.toExecutionInProgress(p, Some(p.stack)), opCount)
         case p: ExecutedScriptProgram =>
           val countedOps = program.originalScript
-            .map(BitcoinScriptUtil.countsTowardsScriptOpLimit(_))
-            .count(_ == true)
+            .count(BitcoinScriptUtil.countsTowardsScriptOpLimit)
           logger.trace("Counted ops: " + countedOps)
-          if (countedOps > maxScriptOps && p.error.isEmpty) {
+          if (countedOps > MAX_SCRIPT_OPS && p.error.isEmpty) {
             loop(ScriptProgram(p, ScriptErrorOpCount), opCount)
           } else p
 
@@ -471,12 +468,12 @@ sealed abstract class ScriptInterpreter {
               loop(ScriptProgram(p, ScriptErrorDisabledOpCode), opCount)
             //program cannot contain a push operation > 520 bytes
             case _
-                if (p.script.exists(token => token.bytes.size > maxPushSize)) =>
+                if p.script.exists(token => token.bytes.size > MAX_PUSH_SIZE) =>
               logger.error(
                 "We have a script constant that is larger than 520 bytes, this is illegal: " + p.script)
               loop(ScriptProgram(p, ScriptErrorPushSize), opCount)
             //program stack size cannot be greater than 1000 elements
-            case _ if ((p.stack.size + p.altStack.size) > 1000) =>
+            case _ if (p.stack.size + p.altStack.size) > 1000 =>
               logger.error(
                 "We cannot have a stack + alt stack size larger than 1000 elements")
               loop(ScriptProgram(p, ScriptErrorStackSize), opCount)
@@ -782,13 +779,11 @@ sealed abstract class ScriptInterpreter {
     val prevOutputs = transaction.inputs.map(_.previousOutput)
     val noDuplicateInputs = prevOutputs.distinct.size == prevOutputs.size
 
-    val isValidScriptSigForCoinbaseTx = transaction.isCoinbase match {
-      case true =>
-        transaction.inputs.head.scriptSignature.asmBytes.size >= 2 &&
-          transaction.inputs.head.scriptSignature.asmBytes.size <= 100
-      case false =>
-        //since this is not a coinbase tx we cannot have any empty previous outs inside of inputs
-        !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
+    val isValidScriptSigForCoinbaseTx = if (transaction.isCoinbase) {
+      transaction.inputs.head.scriptSignature.asmBytes.size >= 2 &&
+      transaction.inputs.head.scriptSignature.asmBytes.size <= 100
+    } else {
+      !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
     }
     inputOutputsNotZero && txNotLargerThanBlock && outputsSpendValidAmountsOfMoney &&
     allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
@@ -802,9 +797,10 @@ sealed abstract class ScriptInterpreter {
   /**  Calculates the new op count after the execution of the given
     * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] */
   private def calcOpCount(oldOpCount: Int, token: ScriptToken): Int =
-    BitcoinScriptUtil.countsTowardsScriptOpLimit(token) match {
-      case true  => oldOpCount + 1
-      case false => oldOpCount
+    if (BitcoinScriptUtil.countsTowardsScriptOpLimit(token)) {
+      oldOpCount + 1
+    } else {
+      oldOpCount
     }
 
   /**
