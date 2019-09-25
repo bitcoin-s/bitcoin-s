@@ -18,9 +18,6 @@ object BitcoinSTestAppConfig {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {
-        |  logging {
-        |     level = WARN
-        |  } 
         |  node {
         |     mode = spv
         |  }
@@ -35,9 +32,6 @@ object BitcoinSTestAppConfig {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {
-        |  logging {
-        |     level = WARN
-        |  }
         |  node {
         |     mode = neutrino
         |  }
