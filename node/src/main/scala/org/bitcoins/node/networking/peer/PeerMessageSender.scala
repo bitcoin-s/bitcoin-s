@@ -178,17 +178,17 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
         client.actor ! newtworkMsg
         FutureUtil.unit
       case _: NetworkPayload =>
-
         isInitialized().map { isInit =>
           if (isInit) {
             logger.debug(s"Sending msg=${msg.commandName} to peer=${socket}")
             val newtworkMsg = NetworkMessage(conf.network, msg)
             client.actor ! newtworkMsg
           } else {
-            logger.warn(s"Cannot send msg=${msg.commandName} to peer=${socket} because we aren't initialized!")
+            logger.warn(
+              s"Cannot send msg=${msg.commandName} to peer=${socket} because we aren't initialized!")
             ()
           }
-      }
+        }
     }
   }
 }
