@@ -6,6 +6,8 @@ import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 
+import scala.annotation.tailrec
+
 /**
   * Created by chris on 2/3/16.
   */
@@ -40,8 +42,8 @@ sealed trait ScriptProgram {
   def flags: Seq[ScriptFlag]
 
   /** Returns true if the stack top is true */
-  def stackTopIsTrue =
-    stack.headOption.isDefined && BitcoinScriptUtil.castToBool(stack.head)
+  def stackTopIsTrue: Boolean =
+    stack.nonEmpty && BitcoinScriptUtil.castToBool(stack.head)
 
   /** Returns true if the stack top is false */
   def stackTopIsFalse: Boolean = !stackTopIsTrue
@@ -52,20 +54,62 @@ sealed trait ScriptProgram {
   * before any script operations have been executed in the
   * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   */
-sealed trait PreExecutionScriptProgram extends ScriptProgram
-sealed trait ExecutionInProgressScriptProgram extends ScriptProgram {
+case class PreExecutionScriptProgram(
+    txSignatureComponent: TxSigComponent,
+    stack: List[ScriptToken],
+    script: List[ScriptToken],
+    originalScript: List[ScriptToken],
+    altStack: List[ScriptToken],
+    flags: Seq[ScriptFlag])
+    extends ScriptProgram
 
-  /** The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]] */
-  def lastCodeSeparator: Option[Int]
+object PreExecutionScriptProgram {
 
+  def apply(txSigComponent: TxSigComponent): PreExecutionScriptProgram = {
+    PreExecutionScriptProgram(
+      txSignatureComponent = txSigComponent,
+      stack = Nil,
+      script = txSigComponent.scriptSignature.asm.toList,
+      originalScript = txSigComponent.scriptSignature.asm.toList,
+      altStack = Nil,
+      flags = txSigComponent.flags
+    )
+  }
 }
 
-sealed trait ExecutedScriptProgram extends ScriptProgram {
+/**
+  * Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is currently being
+  * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
+  *
+  * @param lastCodeSeparator The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
+  */
+case class ExecutionInProgressScriptProgram(
+    txSignatureComponent: TxSigComponent,
+    stack: List[ScriptToken],
+    script: List[ScriptToken],
+    originalScript: List[ScriptToken],
+    altStack: List[ScriptToken],
+    flags: Seq[ScriptFlag],
+    lastCodeSeparator: Option[Int])
+    extends ScriptProgram
 
-  /** Indicates if the [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
-    * has encountered a [[org.bitcoins.core.script.result.ScriptError ScriptError]] in its execution.*/
-  def error: Option[ScriptError]
-}
+/**
+  * Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
+  * evaluated completely by the
+  * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
+  *
+  * @param error Indicates if the [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] has
+  *              encountered a [[org.bitcoins.core.script.result.ScriptError ScriptError]] in its execution.
+  */
+case class ExecutedScriptProgram(
+    txSignatureComponent: TxSigComponent,
+    stack: List[ScriptToken],
+    script: List[ScriptToken],
+    originalScript: List[ScriptToken],
+    altStack: List[ScriptToken],
+    flags: Seq[ScriptFlag],
+    error: Option[ScriptError])
+    extends ScriptProgram
 
 /**
   * Factory companion object for [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
@@ -86,6 +130,7 @@ object ScriptProgram extends BitcoinSLogger {
     * @param error the error that the program hit while being executed in the script interpreter
     * @return the ExecutedScriptProgram with the given error set inside of the trait
     */
+  @tailrec
   def apply(
       oldProgram: ScriptProgram,
       error: ScriptError): ExecutedScriptProgram = oldProgram match {
@@ -339,119 +384,5 @@ object ScriptProgram extends BitcoinSLogger {
           None
         )
     }
-  }
-}
-
-object PreExecutionScriptProgram {
-
-  /**
-    * Implementation type for a [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] - a
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has not yet begun being
-    * evaluated  by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
-    */
-  private case class PreExecutionScriptProgramImpl(
-      txSignatureComponent: TxSigComponent,
-      stack: List[ScriptToken],
-      script: List[ScriptToken],
-      originalScript: List[ScriptToken],
-      altStack: List[ScriptToken],
-      flags: Seq[ScriptFlag])
-      extends PreExecutionScriptProgram
-
-  def apply(
-      txSignatureComponent: TxSigComponent,
-      stack: List[ScriptToken],
-      script: List[ScriptToken],
-      originalScript: List[ScriptToken],
-      altStack: List[ScriptToken],
-      flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
-    PreExecutionScriptProgramImpl(txSignatureComponent,
-                                  stack,
-                                  script,
-                                  originalScript,
-                                  altStack,
-                                  flags)
-  }
-
-  def apply(txSigComponent: TxSigComponent): PreExecutionScriptProgram = {
-    PreExecutionScriptProgram(
-      txSignatureComponent = txSigComponent,
-      stack = Nil,
-      script = txSigComponent.scriptSignature.asm.toList,
-      originalScript = txSigComponent.scriptSignature.asm.toList,
-      altStack = Nil,
-      flags = txSigComponent.flags
-    )
-  }
-}
-
-object ExecutionInProgressScriptProgram {
-
-  /**
-    * Implementation type for a
-    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]] - a
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is currently being
-    * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
-    */
-  private case class ExecutionInProgressScriptProgramImpl(
-      txSignatureComponent: TxSigComponent,
-      stack: List[ScriptToken],
-      script: List[ScriptToken],
-      originalScript: List[ScriptToken],
-      altStack: List[ScriptToken],
-      flags: Seq[ScriptFlag],
-      lastCodeSeparator: Option[Int])
-      extends ExecutionInProgressScriptProgram
-
-  def apply(
-      txSignatureComponent: TxSigComponent,
-      stack: List[ScriptToken],
-      script: List[ScriptToken],
-      originalScript: List[ScriptToken],
-      altStack: List[ScriptToken],
-      flags: Seq[ScriptFlag],
-      lastCodeSeparator: Option[Int]): ExecutionInProgressScriptProgram = {
-    ExecutionInProgressScriptProgramImpl(txSignatureComponent,
-                                         stack,
-                                         script,
-                                         originalScript,
-                                         altStack,
-                                         flags,
-                                         lastCodeSeparator)
-  }
-}
-
-object ExecutedScriptProgram {
-
-  /**
-    * The implementation type for a [[org.bitcoins.core.script.ExecutedScriptProgram ExecutedScriptProgram]] - a
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been evaluated completely
-    * by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
-    */
-  private case class ExecutedScriptProgramImpl(
-      txSignatureComponent: TxSigComponent,
-      stack: List[ScriptToken],
-      script: List[ScriptToken],
-      originalScript: List[ScriptToken],
-      altStack: List[ScriptToken],
-      flags: Seq[ScriptFlag],
-      error: Option[ScriptError])
-      extends ExecutedScriptProgram
-
-  def apply(
-      txSignatureComponent: TxSigComponent,
-      stack: List[ScriptToken],
-      script: List[ScriptToken],
-      originalScript: List[ScriptToken],
-      altStack: List[ScriptToken],
-      flags: Seq[ScriptFlag],
-      error: Option[ScriptError]): ExecutedScriptProgram = {
-    ExecutedScriptProgramImpl(txSignatureComponent,
-                              stack,
-                              script,
-                              originalScript,
-                              altStack,
-                              flags,
-                              error)
   }
 }
