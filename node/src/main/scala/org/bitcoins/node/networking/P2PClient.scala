@@ -1,25 +1,24 @@
 package org.bitcoins.node.networking
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
+import akka.event.LoggingReceive
 import akka.io.{IO, Tcp}
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.p2p.NetworkMessage
-import org.bitcoins.core.p2p.NetworkPayload
+import org.bitcoins.core.p2p.{NetworkMessage, NetworkPayload}
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.node.P2PLogger
+import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import scodec.bits.ByteVector
-import org.bitcoins.node.config.NodeAppConfig
 
 import scala.annotation.tailrec
-import scala.util._
-import org.bitcoins.node.P2PLogger
-
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util._
 
 /**
   * This actor is responsible for creating a connection,
@@ -58,6 +57,8 @@ case class P2PClientActor(
     extends Actor
     with P2PLogger {
 
+
+
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   /**
@@ -81,7 +82,7 @@ case class P2PClientActor(
     */
   private def awaitNetworkRequest(
       peer: ActorRef,
-      unalignedBytes: ByteVector): Receive = {
+      unalignedBytes: ByteVector): Receive = LoggingReceive {
     case message: NetworkMessage => sendNetworkMessage(message, peer)
     case payload: NetworkPayload =>
       val networkMsg = NetworkMessage(network, payload)
@@ -96,7 +97,7 @@ case class P2PClientActor(
   }
 
   /** This context is responsible for initializing a tcp connection with a peer on the bitcoin p2p network */
-  def receive: Receive = {
+  def receive: Receive = LoggingReceive {
     case cmd: Tcp.Command =>
       //we only accept a Tcp.Connect/Tcp.Connected
       //message to the default receive on this actor
@@ -353,8 +354,8 @@ object P2PClient extends P2PLogger {
       peerMessageReceiver: PeerMessageReceiver)(
       implicit config: NodeAppConfig): P2PClient = {
     val actorRef = context.actorOf(
-      props(peer = peer, peerMsgHandlerReceiver = peerMessageReceiver),
-      BitcoinSpvNodeUtil.createActorName(this.getClass))
+      props = props(peer = peer, peerMsgHandlerReceiver = peerMessageReceiver),
+      name = BitcoinSpvNodeUtil.createActorName(getClass))
 
     P2PClient(actorRef, peer)
   }
