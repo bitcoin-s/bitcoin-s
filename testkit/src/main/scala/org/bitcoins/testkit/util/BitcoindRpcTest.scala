@@ -1,5 +1,7 @@
 package org.bitcoins.testkit.util
 
+import java.io.File
+
 import akka.actor.ActorSystem
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.rpc.client.common.BitcoindRpcClient

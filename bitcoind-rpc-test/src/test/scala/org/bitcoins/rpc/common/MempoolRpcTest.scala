@@ -1,9 +1,7 @@
 package org.bitcoins.rpc.common
 
 import java.io.File
-import java.nio.file.Files
 
-import com.typesafe.config.ConfigValueFactory
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -17,11 +15,10 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
-import java.nio.file.Path
 
 class MempoolRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV18(clientAccum = clientAccum)
 
   lazy val clientWithoutBroadcastF: Future[BitcoindRpcClient] =
     clientsF.flatMap {
@@ -33,7 +30,8 @@ class MempoolRpcTest extends BitcoindRpcTest {
             .withOption("walletbroadcast", 0.toString)
 
         val instanceWithoutBroadcast =
-          BitcoindInstance.fromConfig(configNoBroadcast)
+          BitcoindInstance.fromConfig(configNoBroadcast,
+                                      BitcoindRpcTestUtil.newestBitcoindBinary)
 
         val clientWithoutBroadcast =
           BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)

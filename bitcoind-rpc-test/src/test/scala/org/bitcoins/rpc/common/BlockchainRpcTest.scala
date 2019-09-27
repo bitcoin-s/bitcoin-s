@@ -2,7 +2,7 @@ package org.bitcoins.rpc.common
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.common.RpcOpts.{AddNodeArgument, AddressType}
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -14,13 +14,14 @@ import org.bitcoins.core.config.RegTest
 class BlockchainRpcTest extends BitcoindRpcTest {
 
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
 
   lazy val pruneClientF: Future[BitcoindRpcClient] = clientsF.flatMap {
     case (_, _) =>
       val pruneClient =
         BitcoindRpcClient.withActorSystem(
-          BitcoindRpcTestUtil.instance(pruneMode = true))
+          BitcoindRpcTestUtil.instance(pruneMode = true,
+                                       versionOpt = Some(BitcoindVersion.V17)))
 
       clientAccum += pruneClient
 
