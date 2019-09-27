@@ -19,7 +19,7 @@ Bitcoin-S includes a couple of applications that can be run as standalone execut
 This includes the node, wallet and (partial) blockchain verification modules, as well
 as the server that bundles these three together and the CLI used to communicate with
 the server. These applications are configured with HOCON files. The file
-[`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf)
+[`reference.conf`](../testkit/src/main/resources/reference.conf)
 is the basis configuration file, and every option read by Bitcoin-S should be present in
 this file. This means that you can copy sections from this file and edit them, to tune
 how the application runs on your machine.
@@ -46,8 +46,10 @@ file you should edit would be `$HOME/.bitcoin-s/bitcoin-s.conf`.
 
 ### Running tests for the applications
 
-You can place configuration files in the data directory that tests are being run in,
-but you can also edit [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf).
+You can place a `logback-test.xml` file in the `src/test/resources/` directory in the same project that tests are being run in.
+
+If the test suite depends on `testkit`, you can modify [`reference.conf`](../testkit/src/main/resources/reference.conf)
+that is built into the testkit to control logging.
 
 ## Logging when working on Bitcoin-S tests
 
