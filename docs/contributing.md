@@ -64,6 +64,16 @@ pretty quickly. There's two way of doing this:
    output less noisy. You can tune this by changing the level found in
    `core-test/src/test/resources/logback-test.xml`.
 
+### Akka logging
+
+The test logging for akka is controled by the [`akka.conf`](../testkit/src/main/resources/akka.conf) file inside of testkit.
+
+This allows you to debug what is happening in our actors inside of bitcoin-s easier. For examples of what you can enable for akka to log, please look at their [logging documentation](https://doc.akka.io/docs/akka/current/logging.html#auxiliary-logging-options)
+
+The easiest thing to do to enable akka logging is to adjust the `loglevel` and `stdout-loglevel` from `OFF` to `DEBUG`.
+
+If you want to enable this when you are running a bitcoin-s application, you will need to modify the [`application.conf`](../app/server/src/main/resources/application.conf) file
+
 ## Developer productivity
 
 ### Bloop
