@@ -63,7 +63,7 @@
 This includes the node, wallet and (partial) blockchain verification modules, as well
 as the server that bundles these three together and the CLI used to communicate with
 the server. These applications are configured with HOCON files. The file
-<a href="https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf"><code>reference.conf</code></a>
+<a href="../testkit/src/main/resources/reference.conf"><code>reference.conf</code></a>
 is the basis configuration file, and every option read by Bitcoin-S should be present in
 this file. This means that you can copy sections from this file and edit them, to tune
 how the application runs on your machine.</p>
@@ -83,8 +83,9 @@ configuration file would then look like:</p>
 data directory gets picked up. For linux this is by default <code>$HOME/.bitcoin-s/</code>, so the
 file you should edit would be <code>$HOME/.bitcoin-s/bitcoin-s.conf</code>.</p>
 <h3><a class="anchor" aria-hidden="true" id="running-tests-for-the-applications"></a><a href="#running-tests-for-the-applications" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Running tests for the applications</h3>
-<p>You can place configuration files in the data directory that tests are being run in,
-but you can also edit <a href="https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf"><code>reference.conf</code></a>.</p>
+<p>You can place a <code>logback-test.xml</code> file in the <code>src/test/resources/</code> directory in the same project that tests are being run in.</p>
+<p>If the test suite depends on <code>testkit</code>, you can modify <a href="../testkit/src/main/resources/reference.conf"><code>reference.conf</code></a>
+that is built into the testkit to control logging.</p>
 <h2><a class="anchor" aria-hidden="true" id="logging-when-working-on-bitcoin-s-tests"></a><a href="#logging-when-working-on-bitcoin-s-tests" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Logging when working on Bitcoin-S tests</h2>
 <p>When working on various parts of Bitcoin-S the need to log what's going on arises
 pretty quickly. There's two way of doing this:</p>
@@ -100,10 +101,10 @@ output less noisy. You can tune this by changing the level found in
 <code>core-test/src/test/resources/logback-test.xml</code>.</li>
 </ol>
 <h3><a class="anchor" aria-hidden="true" id="akka-logging"></a><a href="#akka-logging" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Akka logging</h3>
-<p>The test logging for akka is controled by the <a href="../testkit/src/main/resources/akka.conf"><code>akka.conf</code></a> file inside of testkit.</p>
+<p>The test logging for akka is controlled by the <a href="../testkit/src/main/resources/reference.conf"><code>reference.conf</code></a> file inside of testkit.</p>
 <p>This allows you to debug what is happening in our actors inside of bitcoin-s easier. For examples of what you can enable for akka to log, please look at their <a href="https://doc.akka.io/docs/akka/current/logging.html#auxiliary-logging-options">logging documentation</a></p>
 <p>The easiest thing to do to enable akka logging is to adjust the <code>loglevel</code> and <code>stdout-loglevel</code> from <code>OFF</code> to <code>DEBUG</code>.</p>
-<p>If you want to enable this when you are running a bitcoin-s application, you will need to modify the <a href="../app/server/src/main/resources/application.conf"><code>application.conf</code></a> file</p>
+<p>If you want to enable this when you are running a bitcoin-s application, you will need to modify the <a href="../app/server/src/main/resources/reference.conf"><code>reference.conf</code></a> file</p>
 <h2><a class="anchor" aria-hidden="true" id="developer-productivity"></a><a href="#developer-productivity" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Developer productivity</h2>
 <h3><a class="anchor" aria-hidden="true" id="bloop"></a><a href="#bloop" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Bloop</h3>
 <p>If you're tired of waiting around for sbt all day, there's a new,
