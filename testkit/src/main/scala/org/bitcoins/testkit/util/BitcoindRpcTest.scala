@@ -35,7 +35,7 @@ abstract class BitcoindRpcTest extends AsyncFlatSpec with BeforeAndAfterAll {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
   implicit val system: ActorSystem =
-    ActorSystem(getClass.getSimpleName, BitcoindRpcTestUtil.AKKA_CONFIG)
+    ActorSystem(getClass.getSimpleName)
   implicit val ec: ExecutionContext = system.dispatcher
   implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
 

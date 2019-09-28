@@ -60,7 +60,7 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
   }
 
   implicit val system: ActorSystem =
-    ActorSystem("EclairRpcClient", BitcoindRpcTestUtil.AKKA_CONFIG)
+    ActorSystem("EclairRpcClient")
   implicit val m: ActorMaterializer = ActorMaterializer.create(system)
   implicit val ec: ExecutionContext = m.executionContext
   implicit val bitcoinNp: RegTest.type = EclairRpcTestUtil.network
