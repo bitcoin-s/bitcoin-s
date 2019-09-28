@@ -7,11 +7,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
-import org.bitcoins.core.protocol.ln.channel.{
-  ChannelId,
-  ChannelState,
-  FundedChannelId
-}
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
@@ -29,17 +25,15 @@ import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.ln.{
-  LnHumanReadablePart,
-  LnInvoice,
-  PaymentPreimage
-}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, PaymentPreimage}
 import org.bitcoins.testkit.async.TestAsyncUtil
 
 import scala.concurrent.duration._
 import java.nio.file.Files
 
-class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
+
+class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   private val dirExists = Files.exists(EclairRpcTestUtil.binaryDirectory)
   private val hasContents = dirExists && Files
@@ -59,13 +53,8 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  implicit val system: ActorSystem =
-    ActorSystem("EclairRpcClient")
-  implicit val m: ActorMaterializer = ActorMaterializer.create(system)
-  implicit val ec: ExecutionContext = m.executionContext
-  implicit val bitcoinNp: RegTest.type = EclairRpcTestUtil.network
 
-  val logger: Logger = BitcoinSLogger.logger
+
 
   lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
     for {
@@ -1161,6 +1150,6 @@ class EclairRpcClientTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     clients.result().foreach(EclairRpcTestUtil.shutdown)
-    TestKit.shutdownActorSystem(system)
+    super.afterAll
   }
 }

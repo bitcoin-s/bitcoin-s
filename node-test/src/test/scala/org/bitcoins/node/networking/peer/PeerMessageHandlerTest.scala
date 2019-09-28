@@ -24,8 +24,6 @@ class PeerMessageHandlerTest extends NodeUnitTest {
     test(())
   }
 
-  implicit private val akkaTimeout = Timeout(timeout)
-
   behavior of "PeerHandler"
 
   it must "be able to fully initialize a PeerMessageReceiver" in { _ =>
@@ -199,6 +197,6 @@ class PeerMessageHandlerTest extends NodeUnitTest {
 
   override def afterAll = {
     startedBitcoindF.flatMap(_.stop())
-    TestKit.shutdownActorSystem(system)
+    super.afterAll
   }
 }
