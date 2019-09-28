@@ -57,8 +57,6 @@ case class P2PClientActor(
     extends Actor
     with P2PLogger {
 
-
-
   private var currentPeerMsgHandlerRecv = initPeerMsgHandlerReceiver
 
   /**
@@ -107,9 +105,9 @@ case class P2PClientActor(
       handleCommand(cmd, peerOpt = None)
 
     case connected: Tcp.Connected =>
-      val _ = Await.result(
-        handleEvent(connected, unalignedBytes = ByteVector.empty),
-        timeout)
+      val _ =
+        Await.result(handleEvent(connected, unalignedBytes = ByteVector.empty),
+                     timeout)
     case msg: NetworkMessage =>
       self.forward(msg.payload)
     case payload: NetworkPayload =>

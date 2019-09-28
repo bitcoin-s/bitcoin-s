@@ -10,7 +10,7 @@ import akka.stream.StreamTcpException
 class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   implicit private val actorSystem: ActorSystem =
-    ActorSystem("EclairRpcTestUtilTest", BitcoindRpcTestUtil.AKKA_CONFIG)
+    ActorSystem("EclairRpcTestUtilTest")
 
   private lazy val bitcoindRpcF =
     for {

@@ -19,7 +19,7 @@ Bitcoin-S includes a couple of applications that can be run as standalone execut
 This includes the node, wallet and (partial) blockchain verification modules, as well
 as the server that bundles these three together and the CLI used to communicate with
 the server. These applications are configured with HOCON files. The file
-[`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf)
+[`reference.conf`](../testkit/src/main/resources/reference.conf)
 is the basis configuration file, and every option read by Bitcoin-S should be present in
 this file. This means that you can copy sections from this file and edit them, to tune
 how the application runs on your machine.
@@ -46,8 +46,10 @@ file you should edit would be `$HOME/.bitcoin-s/bitcoin-s.conf`.
 
 ### Running tests for the applications
 
-You can place configuration files in the data directory that tests are being run in,
-but you can also edit [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/resources/reference.conf).
+You can place a `logback-test.xml` file in the `src/test/resources/` directory in the same project that tests are being run in.
+
+If the test suite depends on `testkit`, you can modify [`reference.conf`](../testkit/src/main/resources/reference.conf)
+that is built into the testkit to control logging.
 
 ## Logging when working on Bitcoin-S tests
 
@@ -66,13 +68,13 @@ pretty quickly. There's two way of doing this:
 
 ### Akka logging
 
-The test logging for akka is controled by the [`akka.conf`](../testkit/src/main/resources/akka.conf) file inside of testkit.
+The test logging for akka is controlled by the [`reference.conf`](../testkit/src/main/resources/reference.conf) file inside of testkit.
 
 This allows you to debug what is happening in our actors inside of bitcoin-s easier. For examples of what you can enable for akka to log, please look at their [logging documentation](https://doc.akka.io/docs/akka/current/logging.html#auxiliary-logging-options)
 
 The easiest thing to do to enable akka logging is to adjust the `loglevel` and `stdout-loglevel` from `OFF` to `DEBUG`.
 
-If you want to enable this when you are running a bitcoin-s application, you will need to modify the [`application.conf`](../app/server/src/main/resources/application.conf) file
+If you want to enable this when you are running a bitcoin-s application, you will need to modify the [`reference.conf`](../app/server/src/main/resources/reference.conf) file
 
 ## Developer productivity
 
