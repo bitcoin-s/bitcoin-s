@@ -61,16 +61,6 @@ class TestRpcUtilTest extends BitcoindRpcTest {
     }
   }
 
-  it should "fail if there is a delay and duration is zero" in {
-    val boolLater = trueLater(delay = 250)
-    recoverToSucceededIf[RpcRetryException] {
-      AsyncUtil
-        .retryUntilSatisfiedF(boolLaterDoneAndTrue(boolLater),
-                              duration = 0.millis)
-        .map(_ => succeed)
-    }
-  }
-
   it should "succeed immediately if condition is true" in {
     AsyncUtil
       .awaitCondition(condition = () => true, 0.millis)
@@ -92,15 +82,6 @@ class TestRpcUtilTest extends BitcoindRpcTest {
     AsyncUtil.awaitConditionF(boolLaterDoneAndTrue(boolLater)).flatMap { _ =>
       val after: Long = System.currentTimeMillis
       assert(after - before >= 250)
-    }
-  }
-
-  it should "timeout if there is a delay and duration is zero" in {
-    val boolLater = trueLater(delay = 250)
-    recoverToSucceededIf[RpcRetryException] {
-      AsyncUtil
-        .awaitConditionF(boolLaterDoneAndTrue(boolLater), duration = 0.millis)
-        .map(_ => succeed)
     }
   }
 

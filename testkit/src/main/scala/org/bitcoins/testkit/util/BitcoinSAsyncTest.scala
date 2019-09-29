@@ -41,7 +41,7 @@ trait BaseAsyncTest
   implicit override lazy val executionContext: ExecutionContext =
     system.dispatcher
 
-  override lazy val timeLimit: Span = 1.minutes
+  override lazy val timeLimit: Span = 5.minutes
 
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
