@@ -16,7 +16,7 @@ abstract class BitcoinSUnitTest
     with TimeLimitedTests
     with BitcoinSLogger {
 
-  override val timeLimit: Span = 60.seconds
+  override val timeLimit: Span = 120.seconds
 
   /** The configuration for property based tests in our testing suite
     * @see http://www.scalatest.org/user_guide/writing_scalacheck_style_properties
