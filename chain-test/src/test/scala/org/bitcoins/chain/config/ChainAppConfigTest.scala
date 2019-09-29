@@ -13,9 +13,11 @@ import org.scalatest.FutureOutcome
 class ChainAppConfigTest extends ChainUnitTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
   val config = ChainAppConfig(directory = tempDir)
-  val chainAppConfig = appConfig
 
-  implicit override val system = ActorSystem("ChainAppConfigTest")
+  //if we don't turn off logging here, isInitF a few lines down will
+  //produce some nasty error logs since we are testing initialization
+  //of the chain project
+  val chainAppConfig = appConfig.withOverrides(ConfigFactory.parseString("bitcoin-s.logging.level=OFF"))
 
   behavior of "ChainAppConfig"
 
