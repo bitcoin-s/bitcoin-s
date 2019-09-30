@@ -150,7 +150,8 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
     sendMsg(message)
   }
 
-  def sendGetCompactFilterCheckPointMessage(stopHash: DoubleSha256Digest): Future[Unit] = {
+  def sendGetCompactFilterCheckPointMessage(
+      stopHash: DoubleSha256Digest): Future[Unit] = {
     val message = GetCompactFilterCheckPointMessage(stopHash)
     logger.debug(s"Sending getcfcheckpt=$message to peer ${client.peer}")
     sendMsg(message)
