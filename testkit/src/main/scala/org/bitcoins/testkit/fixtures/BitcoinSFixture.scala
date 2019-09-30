@@ -1,19 +1,15 @@
 package org.bitcoins.testkit.fixtures
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest._
 
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
-trait BitcoinSFixture extends fixture.AsyncFlatSpec {
-
-  // to avoid this trickling up to things that extend
-  // this trait
-  private val logger = BitcoinSLogger.logger
+trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
   /**
     * Given functions to build and destroy a fixture, returns a OneArgAsyncTest => FutureOutcome

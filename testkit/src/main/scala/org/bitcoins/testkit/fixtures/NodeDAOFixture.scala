@@ -9,7 +9,7 @@ import slick.jdbc.SQLiteProfile
 case class NodeDAOs(txDAO: BroadcastAbleTransactionDAO)
 
 /** Provides a fixture where all DAOs used by the node projects are provided */
-trait NodeDAOFixture extends fixture.AsyncFlatSpec with NodeUnitTest {
+trait NodeDAOFixture extends NodeUnitTest {
   private lazy val daos = {
     val tx = BroadcastAbleTransactionDAO(SQLiteProfile)
     NodeDAOs(tx)
@@ -18,7 +18,11 @@ trait NodeDAOFixture extends fixture.AsyncFlatSpec with NodeUnitTest {
   final override type FixtureParam = NodeDAOs
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(
-      build = () => NodeDbManagement.createAll()(nodeConfig, ec).map(_ => daos),
-      destroy = () => NodeDbManagement.dropAll()(nodeConfig, ec))(test)
+    makeFixture(build = () =>
+                  NodeDbManagement
+                    .createAll()(nodeConfig, executionContext)
+                    .map(_ => daos),
+                destroy = () =>
+                  NodeDbManagement
+                    .dropAll()(nodeConfig, executionContext))(test)
 }

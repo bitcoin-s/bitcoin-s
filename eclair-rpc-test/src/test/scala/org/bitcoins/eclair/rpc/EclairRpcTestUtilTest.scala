@@ -1,13 +1,10 @@
 package org.bitcoins.eclair.rpc
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll}
-import akka.stream.StreamTcpException
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
+class EclairRpcTestUtilTest extends BitcoinSAsyncTest {
 
   implicit private val actorSystem: ActorSystem =
     ActorSystem("EclairRpcTestUtilTest")
@@ -24,7 +21,7 @@ class EclairRpcTestUtilTest extends AsyncFlatSpec with BeforeAndAfterAll {
 
   override def afterAll: Unit = {
     clients.result().foreach(EclairRpcTestUtil.shutdown)
-    TestKit.shutdownActorSystem(actorSystem)
+    super.afterAll()
   }
 
   behavior of "EclairRpcTestUtilTest"

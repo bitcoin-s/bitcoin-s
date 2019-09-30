@@ -63,7 +63,7 @@ matrix:
       name: Compile website and check formatting
       script:
         - sbt docs/mdoc
-        - ./binaries/scalafmt --test --non-interactive
+        - sbt scalafmtCheck
 
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
