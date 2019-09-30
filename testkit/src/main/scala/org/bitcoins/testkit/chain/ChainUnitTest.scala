@@ -8,16 +8,11 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  BlockHeaderDb,
-  BlockHeaderDbHelper,
-  CompactFilterDAO,
-  CompactFilterHeaderDAO
-}
-import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
+import org.bitcoins.chain.models._
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.chain
+import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -27,25 +22,12 @@ import play.api.libs.json.{JsError, JsSuccess, Json}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.db.AppConfig
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 
 trait ChainUnitTest
-    extends org.scalatest.fixture.AsyncFlatSpec
-    with BitcoinSFixture
+    extends BitcoinSFixture
     with ChainFixtureHelper
-    with MustMatchers
-    with ChainVerificationLogger
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
-
-  implicit def system: ActorSystem
-
-  val timeout: FiniteDuration = 10.seconds
-
-  implicit lazy val chainParam: ChainParams = appConfig.chain
+    with ChainVerificationLogger {
 
   implicit lazy val appConfig: ChainAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
@@ -62,9 +44,6 @@ trait ChainUnitTest
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(appConfig)
   }
-
-  implicit def ec: ExecutionContext =
-    system.dispatcher
 
   /**
     * All untagged tests will be given this tag. Override this if you are using
@@ -298,11 +277,6 @@ trait ChainUnitTest
     }
 
     makeDependentFixture(builder, destroyBitcoindChainApiViaRpc)(test)
-  }
-
-  override def afterAll(): Unit = {
-    system.terminate()
-    ()
   }
 }
 

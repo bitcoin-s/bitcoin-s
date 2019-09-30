@@ -25,16 +25,11 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class P2PClientTest
-    extends BitcoindRpcTest
-    with MustMatchers
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
+    extends BitcoindRpcTest {
 
   implicit private val config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
-  implicit private val timeout = akka.util.Timeout(10.seconds)
 
-  implicit val np = config.chainConf.network
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
