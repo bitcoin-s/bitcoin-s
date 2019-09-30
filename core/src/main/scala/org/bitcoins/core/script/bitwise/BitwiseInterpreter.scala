@@ -9,8 +9,8 @@ import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
   ExecutionInProgressScriptProgram,
-  PreExecutionScriptProgram,
-  ScriptProgram
+  ScriptProgram,
+  StartedScriptProgram
 }
 import org.bitcoins.core.util.BitcoinSLogger
 
@@ -21,7 +21,8 @@ sealed abstract class BitwiseInterpreter {
   private def logger = BitcoinSLogger.logger
 
   /** Returns 1 if the inputs are exactly equal, 0 otherwise. */
-  def opEqual(program: ScriptProgram): ScriptProgram = {
+  def opEqual(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_EQUAL),
             "Script operation must be OP_EQUAL")
     if (program.stack.size < 2) {
@@ -49,16 +50,22 @@ sealed abstract class BitwiseInterpreter {
 
   /** Same as [[org.bitcoins.core.script.bitwise.OP_EQUAL OP_EQUAL]], but runs
     * [[org.bitcoins.core.script.control.OP_VERIFY OP_VERIFY]] afterward. */
-  def opEqualVerify(program: ScriptProgram): ScriptProgram = {
+  def opEqualVerify(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_EQUALVERIFY),
             "Script operation must be OP_EQUALVERIFY")
     if (program.stack.size > 1) {
       //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
       val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
-      val newProgram: ScriptProgram = opEqual(
+      val newProgram = opEqual(
         ScriptProgram(program, program.stack, simpleScript))
-      ControlOperationsInterpreter.opVerify(newProgram) match {
-        case p: PreExecutionScriptProgram => p
+      val verifiedOrErr = newProgram match {
+        case err: ExecutedScriptProgram => err
+        case p: ExecutionInProgressScriptProgram =>
+          ControlOperationsInterpreter.opVerify(p)
+      }
+
+      verifiedOrErr match {
         case p: ExecutedScriptProgram =>
           if (p.error.isDefined) ScriptProgram(p, ScriptErrorEqualVerify)
           else p

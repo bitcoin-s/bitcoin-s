@@ -57,22 +57,21 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       programFlagsViolated(program) match {
         case Some(err) => ScriptProgram(program, err)
         case None =>
-          val scriptSigExecutedProgram = loop(program, 0)
+          val scriptSigExecutedProgram = executeProgram(program)
           logger.trace(s"scriptSigExecutedProgram $scriptSigExecutedProgram")
 
           val sigComponent = scriptSigExecutedProgram.txSignatureComponent
-          val scriptPubKeyProgram = ExecutionInProgressScriptProgram(
+          val scriptPubKeyProgram = PreExecutionScriptProgram(
             txSignatureComponent = sigComponent,
             stack = scriptSigExecutedProgram.stack,
             script = sigComponent.scriptPubKey.asm.toList,
             originalScript = sigComponent.scriptPubKey.asm.toList,
             altStack = Nil,
-            flags = scriptSigExecutedProgram.flags,
-            lastCodeSeparator = None
+            flags = scriptSigExecutedProgram.flags
           )
 
           val scriptPubKeyExecutedProgram: ExecutedScriptProgram =
-            loop(scriptPubKeyProgram, 0)
+            executeProgram(scriptPubKeyProgram)
           logger.trace(
             s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
 
@@ -197,14 +196,13 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
         p: ExecutedScriptProgram,
         s: ScriptPubKey): ExecutedScriptProgram = {
 
-      val p2shRedeemScriptProgram = ExecutionInProgressScriptProgram(
+      val p2shRedeemScriptProgram = PreExecutionScriptProgram(
         txSignatureComponent = p.txSignatureComponent,
         stack = p.stack.tail,
         script = s.asm.toList,
         originalScript = p.originalScript,
         altStack = Nil,
-        flags = p.flags,
-        lastCodeSeparator = None
+        flags = p.flags
       )
 
       /*ScriptProgram(p.txSignatureComponent, stack.tail,s.asm)*/
@@ -213,7 +211,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
         logger.error(
           "p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
         ScriptProgram(p2shRedeemScriptProgram, ScriptErrorSigPushOnly)
-      } else loop(p2shRedeemScriptProgram, 0)
+      } else executeProgram(p2shRedeemScriptProgram)
     }
 
     val scriptSig =
@@ -404,7 +402,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
                 altStack = Nil,
                 flags = comp.flags)
             }
-            val evaluated = newProgram.map(p => loop(p, 0))
+            val evaluated = newProgram.map(executeProgram)
             evaluated.map(e => postSegWitProgramChecks(e))
           case Right(err) =>
             val program = ExecutedScriptProgram(txSignatureComponent =
@@ -422,397 +420,448 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
   }
 
+  private def executeProgram(
+      program: PreExecutionScriptProgram): ExecutedScriptProgram = {
+    logger.trace("Stack: " + program.stack)
+    logger.trace("Script: " + program.script)
+    val scriptByteVector = BitcoinSUtil.toByteVector(program.script)
+    if (scriptByteVector.length > 10000) {
+      logger.error("We cannot run a script that is larger than 10,000 bytes")
+      ScriptProgram(ScriptProgram.toExecutionInProgress(program),
+                    ScriptErrorScriptSize)
+    } else {
+      loop(ScriptProgram.toExecutionInProgress(program, Some(program.stack)), 0)
+    }
+  }
+
+  @tailrec
+  private def completeProgramExecution(
+      program: ExecutedScriptProgram,
+      opCount: Int): ExecutedScriptProgram = {
+    val countedOps = program.originalScript
+      .count(BitcoinScriptUtil.countsTowardsScriptOpLimit)
+    logger.trace("Counted ops: " + countedOps)
+
+    if (countedOps > MAX_SCRIPT_OPS && program.error.isEmpty) {
+      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount),
+                               opCount)
+    } else {
+      program
+    }
+  }
+
   /**
     * The execution loop for a script
     *
     * @param program the program whose script needs to be evaluated
     * @return program the final state of the program after being evaluated by the interpreter
     */
-  @tailrec
+  //@tailrec
   private def loop(
-      program: ScriptProgram,
+      program: ExecutionInProgressScriptProgram,
       opCount: Int): ExecutedScriptProgram = {
+
+    def loopOrComplete(
+        program: StartedScriptProgram,
+        opCount: Int): ExecutedScriptProgram = {
+      program match {
+        case p: ExecutionInProgressScriptProgram => loop(p, opCount)
+        case p: ExecutedScriptProgram            => completeProgramExecution(p, opCount)
+      }
+    }
+
     logger.trace("Stack: " + program.stack)
     logger.trace("Script: " + program.script)
     val scriptByteVector = BitcoinSUtil.toByteVector(program.script)
-    program match {
-      case _: PreExecutionScriptProgram | _: ExecutionInProgressScriptProgram
-          if opCount > MAX_SCRIPT_OPS =>
-        logger.error(
-          "We have reached the maximum amount of script operations allowed")
-        logger.error(
-          "Here are the remaining operations in the script: " + program.script)
-        loop(ScriptProgram(program, ScriptErrorOpCount), opCount)
-      case p: PreExecutionScriptProgram if scriptByteVector.length > 10000 =>
-        logger.error("We cannot run a script that is larger than 10,000 bytes")
-        loop(ScriptProgram(ScriptProgram.toExecutionInProgress(p),
-                           ScriptErrorScriptSize),
-             opCount)
-      case _: ExecutionInProgressScriptProgram
-          if scriptByteVector.length > 10000 =>
-        logger.error("We cannot run a script that is larger than 10,000 bytes")
-        loop(ScriptProgram(program, ScriptErrorScriptSize), opCount)
-      case _ =>
-        program match {
-          case p: PreExecutionScriptProgram =>
-            loop(ScriptProgram.toExecutionInProgress(p, Some(p.stack)), opCount)
-          case p: ExecutedScriptProgram =>
-            val countedOps = program.originalScript
-              .count(BitcoinScriptUtil.countsTowardsScriptOpLimit)
-            logger.trace("Counted ops: " + countedOps)
-            if (countedOps > MAX_SCRIPT_OPS && p.error.isEmpty) {
-              loop(ScriptProgram(p, ScriptErrorOpCount), opCount)
-            } else p
 
-          case p: ExecutionInProgressScriptProgram =>
-            p.script match {
-              //if at any time we see that the program is not valid
-              //cease script execution
-              case _
-                  if p.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).nonEmpty =>
-                logger.error(
-                  "Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
-                loop(ScriptProgram(p, ScriptErrorBadOpCode), opCount)
-              //disabled splice operation
-              case _
-                  if p.script
-                    .intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT))
-                    .nonEmpty =>
-                logger.error(
-                  "Script is invalid because it contains a disabled splice operation")
-                loop(ScriptProgram(p, ScriptErrorDisabledOpCode), opCount)
-              //disabled bitwise operations
-              case _
-                  if p.script
-                    .intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR))
-                    .nonEmpty =>
-                logger.error(
-                  "Script is invalid because it contains a disabled bitwise operation")
-                loop(ScriptProgram(p, ScriptErrorDisabledOpCode), opCount)
-              //disabled arithmetic operations
-              case _
-                  if p.script
-                    .intersect(
-                      Seq(OP_MUL,
-                          OP_2MUL,
-                          OP_DIV,
-                          OP_2DIV,
-                          OP_MOD,
-                          OP_LSHIFT,
-                          OP_RSHIFT))
-                    .nonEmpty =>
-                logger.error(
-                  "Script is invalid because it contains a disabled arithmetic operation")
-                loop(ScriptProgram(p, ScriptErrorDisabledOpCode), opCount)
-              //program cannot contain a push operation > 520 bytes
-              case _
-                  if p.script.exists(token =>
-                    token.bytes.size > MAX_PUSH_SIZE) =>
-                logger.error(
-                  "We have a script constant that is larger than 520 bytes, this is illegal: " + p.script)
-                loop(ScriptProgram(p, ScriptErrorPushSize), opCount)
-              //program stack size cannot be greater than 1000 elements
-              case _ if (p.stack.size + p.altStack.size) > 1000 =>
-                logger.error(
-                  "We cannot have a stack + alt stack size larger than 1000 elements")
-                loop(ScriptProgram(p, ScriptErrorStackSize), opCount)
+    if (opCount > MAX_SCRIPT_OPS) {
+      logger.error(
+        "We have reached the maximum amount of script operations allowed")
+      logger.error(
+        "Here are the remaining operations in the script: " + program.script)
+      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount),
+                               opCount)
+    } else if (scriptByteVector.length > 10000) {
+      logger.error("We cannot run a script that is larger than 10,000 bytes")
+      completeProgramExecution(ScriptProgram(program, ScriptErrorScriptSize),
+                               opCount)
+    } else {
+      program.script match {
+        //if at any time we see that the program is not valid
+        //cease script execution
+        case _
+            if program.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).nonEmpty =>
+          logger.error(
+            "Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
+          completeProgramExecution(ScriptProgram(program, ScriptErrorBadOpCode),
+                                   opCount)
+        //disabled splice operation
+        case _
+            if program.script
+              .intersect(Seq(OP_CAT, OP_SUBSTR, OP_LEFT, OP_RIGHT))
+              .nonEmpty =>
+          logger.error(
+            "Script is invalid because it contains a disabled splice operation")
+          completeProgramExecution(
+            ScriptProgram(program, ScriptErrorDisabledOpCode),
+            opCount)
+        //disabled bitwise operations
+        case _
+            if program.script
+              .intersect(Seq(OP_INVERT, OP_AND, OP_OR, OP_XOR))
+              .nonEmpty =>
+          logger.error(
+            "Script is invalid because it contains a disabled bitwise operation")
+          completeProgramExecution(
+            ScriptProgram(program, ScriptErrorDisabledOpCode),
+            opCount)
+        //disabled arithmetic operations
+        case _
+            if program.script
+              .intersect(
+                Seq(OP_MUL,
+                    OP_2MUL,
+                    OP_DIV,
+                    OP_2DIV,
+                    OP_MOD,
+                    OP_LSHIFT,
+                    OP_RSHIFT))
+              .nonEmpty =>
+          logger.error(
+            "Script is invalid because it contains a disabled arithmetic operation")
+          completeProgramExecution(
+            ScriptProgram(program, ScriptErrorDisabledOpCode),
+            opCount)
+        //program cannot contain a push operation > 520 bytes
+        case _
+            if program.script.exists(token =>
+              token.bytes.size > MAX_PUSH_SIZE) =>
+          logger.error(
+            "We have a script constant that is larger than 520 bytes, this is illegal: " + program.script)
+          completeProgramExecution(ScriptProgram(program, ScriptErrorPushSize),
+                                   opCount)
+        //program stack size cannot be greater than 1000 elements
+        case _ if (program.stack.size + program.altStack.size) > 1000 =>
+          logger.error(
+            "We cannot have a stack + alt stack size larger than 1000 elements")
+          completeProgramExecution(ScriptProgram(program, ScriptErrorStackSize),
+                                   opCount)
 
-              //stack operations
-              case OP_DUP :: _ =>
-                loop(StackInterpreter.opDup(p), calcOpCount(opCount, OP_DUP))
-              case OP_DEPTH :: _ =>
-                loop(StackInterpreter.opDepth(p),
-                     calcOpCount(opCount, OP_DEPTH))
-              case OP_TOALTSTACK :: _ =>
-                loop(StackInterpreter.opToAltStack(p),
-                     calcOpCount(opCount, OP_TOALTSTACK))
-              case OP_FROMALTSTACK :: _ =>
-                loop(StackInterpreter.opFromAltStack(p),
-                     calcOpCount(opCount, OP_FROMALTSTACK))
-              case OP_DROP :: _ =>
-                loop(StackInterpreter.opDrop(p), calcOpCount(opCount, OP_DROP))
-              case OP_IFDUP :: _ =>
-                loop(StackInterpreter.opIfDup(p),
-                     calcOpCount(opCount, OP_IFDUP))
-              case OP_NIP :: _ =>
-                loop(StackInterpreter.opNip(p), calcOpCount(opCount, OP_NIP))
-              case OP_OVER :: _ =>
-                loop(StackInterpreter.opOver(p), calcOpCount(opCount, OP_OVER))
-              case OP_PICK :: _ =>
-                loop(StackInterpreter.opPick(p), calcOpCount(opCount, OP_PICK))
-              case OP_ROLL :: _ =>
-                loop(StackInterpreter.opRoll(p), calcOpCount(opCount, OP_ROLL))
-              case OP_ROT :: _ =>
-                loop(StackInterpreter.opRot(p), calcOpCount(opCount, OP_ROT))
-              case OP_2ROT :: _ =>
-                loop(StackInterpreter.op2Rot(p), calcOpCount(opCount, OP_2ROT))
-              case OP_2DROP :: _ =>
-                loop(StackInterpreter.op2Drop(p),
-                     calcOpCount(opCount, OP_2DROP))
-              case OP_SWAP :: _ =>
-                loop(StackInterpreter.opSwap(p), calcOpCount(opCount, OP_SWAP))
-              case OP_TUCK :: _ =>
-                loop(StackInterpreter.opTuck(p), calcOpCount(opCount, OP_TUCK))
-              case OP_2DUP :: _ =>
-                loop(StackInterpreter.op2Dup(p), calcOpCount(opCount, OP_2DUP))
-              case OP_3DUP :: _ =>
-                loop(StackInterpreter.op3Dup(p), calcOpCount(opCount, OP_3DUP))
-              case OP_2OVER :: _ =>
-                loop(StackInterpreter.op2Over(p),
-                     calcOpCount(opCount, OP_2OVER))
-              case OP_2SWAP :: _ =>
-                loop(StackInterpreter.op2Swap(p),
-                     calcOpCount(opCount, OP_2SWAP))
+        //stack operations
+        case OP_DUP :: _ =>
+          loopOrComplete(StackInterpreter.opDup(program),
+                         calcOpCount(opCount, OP_DUP))
+        case OP_DEPTH :: _ =>
+          loopOrComplete(StackInterpreter.opDepth(program),
+                         calcOpCount(opCount, OP_DEPTH))
+        case OP_TOALTSTACK :: _ =>
+          loopOrComplete(StackInterpreter.opToAltStack(program),
+                         calcOpCount(opCount, OP_TOALTSTACK))
+        case OP_FROMALTSTACK :: _ =>
+          loopOrComplete(StackInterpreter.opFromAltStack(program),
+                         calcOpCount(opCount, OP_FROMALTSTACK))
+        case OP_DROP :: _ =>
+          loopOrComplete(StackInterpreter.opDrop(program),
+                         calcOpCount(opCount, OP_DROP))
+        case OP_IFDUP :: _ =>
+          loopOrComplete(StackInterpreter.opIfDup(program),
+                         calcOpCount(opCount, OP_IFDUP))
+        case OP_NIP :: _ =>
+          loopOrComplete(StackInterpreter.opNip(program),
+                         calcOpCount(opCount, OP_NIP))
+        case OP_OVER :: _ =>
+          loopOrComplete(StackInterpreter.opOver(program),
+                         calcOpCount(opCount, OP_OVER))
+        case OP_PICK :: _ =>
+          loopOrComplete(StackInterpreter.opPick(program),
+                         calcOpCount(opCount, OP_PICK))
+        case OP_ROLL :: _ =>
+          loopOrComplete(StackInterpreter.opRoll(program),
+                         calcOpCount(opCount, OP_ROLL))
+        case OP_ROT :: _ =>
+          loopOrComplete(StackInterpreter.opRot(program),
+                         calcOpCount(opCount, OP_ROT))
+        case OP_2ROT :: _ =>
+          loopOrComplete(StackInterpreter.op2Rot(program),
+                         calcOpCount(opCount, OP_2ROT))
+        case OP_2DROP :: _ =>
+          loopOrComplete(StackInterpreter.op2Drop(program),
+                         calcOpCount(opCount, OP_2DROP))
+        case OP_SWAP :: _ =>
+          loopOrComplete(StackInterpreter.opSwap(program),
+                         calcOpCount(opCount, OP_SWAP))
+        case OP_TUCK :: _ =>
+          loopOrComplete(StackInterpreter.opTuck(program),
+                         calcOpCount(opCount, OP_TUCK))
+        case OP_2DUP :: _ =>
+          loopOrComplete(StackInterpreter.op2Dup(program),
+                         calcOpCount(opCount, OP_2DUP))
+        case OP_3DUP :: _ =>
+          loopOrComplete(StackInterpreter.op3Dup(program),
+                         calcOpCount(opCount, OP_3DUP))
+        case OP_2OVER :: _ =>
+          loopOrComplete(StackInterpreter.op2Over(program),
+                         calcOpCount(opCount, OP_2OVER))
+        case OP_2SWAP :: _ =>
+          loopOrComplete(StackInterpreter.op2Swap(program),
+                         calcOpCount(opCount, OP_2SWAP))
 
-              //arithmetic operations
-              case OP_ADD :: _ =>
-                loop(ArithmeticInterpreter.opAdd(p),
-                     calcOpCount(opCount, OP_ADD))
-              case OP_1ADD :: _ =>
-                loop(ArithmeticInterpreter.op1Add(p),
-                     calcOpCount(opCount, OP_1ADD))
-              case OP_1SUB :: _ =>
-                loop(ArithmeticInterpreter.op1Sub(p),
-                     calcOpCount(opCount, OP_1SUB))
-              case OP_SUB :: _ =>
-                loop(ArithmeticInterpreter.opSub(p),
-                     calcOpCount(opCount, OP_SUB))
-              case OP_ABS :: _ =>
-                loop(ArithmeticInterpreter.opAbs(p),
-                     calcOpCount(opCount, OP_ABS))
-              case OP_NEGATE :: _ =>
-                loop(ArithmeticInterpreter.opNegate(p),
-                     calcOpCount(opCount, OP_NEGATE))
-              case OP_NOT :: _ =>
-                loop(ArithmeticInterpreter.opNot(p),
-                     calcOpCount(opCount, OP_NOT))
-              case OP_0NOTEQUAL :: _ =>
-                loop(ArithmeticInterpreter.op0NotEqual(p),
-                     calcOpCount(opCount, OP_0NOTEQUAL))
-              case OP_BOOLAND :: _ =>
-                loop(ArithmeticInterpreter.opBoolAnd(p),
-                     calcOpCount(opCount, OP_BOOLAND))
-              case OP_BOOLOR :: _ =>
-                loop(ArithmeticInterpreter.opBoolOr(p),
-                     calcOpCount(opCount, OP_BOOLOR))
-              case OP_NUMEQUAL :: _ =>
-                loop(ArithmeticInterpreter.opNumEqual(p),
-                     calcOpCount(opCount, OP_NUMEQUAL))
-              case OP_NUMEQUALVERIFY :: _ =>
-                loop(ArithmeticInterpreter.opNumEqualVerify(p),
-                     calcOpCount(opCount, OP_NUMEQUALVERIFY))
-              case OP_NUMNOTEQUAL :: _ =>
-                loop(ArithmeticInterpreter.opNumNotEqual(p),
-                     calcOpCount(opCount, OP_NUMNOTEQUAL))
-              case OP_LESSTHAN :: _ =>
-                loop(ArithmeticInterpreter.opLessThan(p),
-                     calcOpCount(opCount, OP_LESSTHAN))
-              case OP_GREATERTHAN :: _ =>
-                loop(ArithmeticInterpreter.opGreaterThan(p),
-                     calcOpCount(opCount, OP_GREATERTHAN))
-              case OP_LESSTHANOREQUAL :: _ =>
-                loop(ArithmeticInterpreter.opLessThanOrEqual(p),
-                     calcOpCount(opCount, OP_LESSTHANOREQUAL))
-              case OP_GREATERTHANOREQUAL :: _ =>
-                loop(ArithmeticInterpreter.opGreaterThanOrEqual(p),
-                     calcOpCount(opCount, OP_GREATERTHANOREQUAL))
-              case OP_MIN :: _ =>
-                loop(ArithmeticInterpreter.opMin(p),
-                     calcOpCount(opCount, OP_MIN))
-              case OP_MAX :: _ =>
-                loop(ArithmeticInterpreter.opMax(p),
-                     calcOpCount(opCount, OP_MAX))
-              case OP_WITHIN :: _ =>
-                loop(ArithmeticInterpreter.opWithin(p),
-                     calcOpCount(opCount, OP_WITHIN))
+        //arithmetic operations
+        case OP_ADD :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opAdd(program),
+                         calcOpCount(opCount, OP_ADD))
+        case OP_1ADD :: _ =>
+          loopOrComplete(ArithmeticInterpreter.op1Add(program),
+                         calcOpCount(opCount, OP_1ADD))
+        case OP_1SUB :: _ =>
+          loopOrComplete(ArithmeticInterpreter.op1Sub(program),
+                         calcOpCount(opCount, OP_1SUB))
+        case OP_SUB :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opSub(program),
+                         calcOpCount(opCount, OP_SUB))
+        case OP_ABS :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opAbs(program),
+                         calcOpCount(opCount, OP_ABS))
+        case OP_NEGATE :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opNegate(program),
+                         calcOpCount(opCount, OP_NEGATE))
+        case OP_NOT :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opNot(program),
+                         calcOpCount(opCount, OP_NOT))
+        case OP_0NOTEQUAL :: _ =>
+          loopOrComplete(ArithmeticInterpreter.op0NotEqual(program),
+                         calcOpCount(opCount, OP_0NOTEQUAL))
+        case OP_BOOLAND :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opBoolAnd(program),
+                         calcOpCount(opCount, OP_BOOLAND))
+        case OP_BOOLOR :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opBoolOr(program),
+                         calcOpCount(opCount, OP_BOOLOR))
+        case OP_NUMEQUAL :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opNumEqual(program),
+                         calcOpCount(opCount, OP_NUMEQUAL))
+        case OP_NUMEQUALVERIFY :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opNumEqualVerify(program),
+                         calcOpCount(opCount, OP_NUMEQUALVERIFY))
+        case OP_NUMNOTEQUAL :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opNumNotEqual(program),
+                         calcOpCount(opCount, OP_NUMNOTEQUAL))
+        case OP_LESSTHAN :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opLessThan(program),
+                         calcOpCount(opCount, OP_LESSTHAN))
+        case OP_GREATERTHAN :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opGreaterThan(program),
+                         calcOpCount(opCount, OP_GREATERTHAN))
+        case OP_LESSTHANOREQUAL :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opLessThanOrEqual(program),
+                         calcOpCount(opCount, OP_LESSTHANOREQUAL))
+        case OP_GREATERTHANOREQUAL :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opGreaterThanOrEqual(program),
+                         calcOpCount(opCount, OP_GREATERTHANOREQUAL))
+        case OP_MIN :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opMin(program),
+                         calcOpCount(opCount, OP_MIN))
+        case OP_MAX :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opMax(program),
+                         calcOpCount(opCount, OP_MAX))
+        case OP_WITHIN :: _ =>
+          loopOrComplete(ArithmeticInterpreter.opWithin(program),
+                         calcOpCount(opCount, OP_WITHIN))
 
-              //bitwise operations
-              case OP_EQUAL :: _ =>
-                loop(BitwiseInterpreter.opEqual(p),
-                     calcOpCount(opCount, OP_EQUAL))
+        //bitwise operations
+        case OP_EQUAL :: _ =>
+          loopOrComplete(BitwiseInterpreter.opEqual(program),
+                         calcOpCount(opCount, OP_EQUAL))
 
-              case OP_EQUALVERIFY :: _ =>
-                loop(BitwiseInterpreter.opEqualVerify(p),
-                     calcOpCount(opCount, OP_EQUALVERIFY))
+        case OP_EQUALVERIFY :: _ =>
+          loopOrComplete(BitwiseInterpreter.opEqualVerify(program),
+                         calcOpCount(opCount, OP_EQUALVERIFY))
 
-              case OP_0 :: t =>
-                loop(ScriptProgram(p, ScriptNumber.zero :: p.stack, t),
-                     calcOpCount(opCount, OP_0))
-              case (scriptNumberOp: ScriptNumberOperation) :: t =>
-                loop(
-                  ScriptProgram(p,
-                                ScriptNumber(scriptNumberOp.toLong) :: p.stack,
-                                t),
-                  calcOpCount(opCount, scriptNumberOp))
-              case (bytesToPushOntoStack: BytesToPushOntoStack) :: _ =>
-                loop(ConstantInterpreter.pushScriptNumberBytesToStack(p),
-                     calcOpCount(opCount, bytesToPushOntoStack))
-              case (scriptNumber: ScriptNumber) :: t =>
-                loop(ScriptProgram(p, scriptNumber :: p.stack, t),
-                     calcOpCount(opCount, scriptNumber))
-              case OP_PUSHDATA1 :: _ =>
-                loop(ConstantInterpreter.opPushData1(p),
-                     calcOpCount(opCount, OP_PUSHDATA1))
-              case OP_PUSHDATA2 :: _ =>
-                loop(ConstantInterpreter.opPushData2(p),
-                     calcOpCount(opCount, OP_PUSHDATA2))
-              case OP_PUSHDATA4 :: _ =>
-                loop(ConstantInterpreter.opPushData4(p),
-                     calcOpCount(opCount, OP_PUSHDATA4))
+        case OP_0 :: t =>
+          loop(ScriptProgram(program, ScriptNumber.zero :: program.stack, t),
+               calcOpCount(opCount, OP_0))
+        case (scriptNumberOp: ScriptNumberOperation) :: t =>
+          loop(
+            ScriptProgram(program,
+                          ScriptNumber(scriptNumberOp.toLong) :: program.stack,
+                          t),
+            calcOpCount(opCount, scriptNumberOp))
+        case (bytesToPushOntoStack: BytesToPushOntoStack) :: _ =>
+          loopOrComplete(
+            ConstantInterpreter.pushScriptNumberBytesToStack(program),
+            calcOpCount(opCount, bytesToPushOntoStack))
+        case (scriptNumber: ScriptNumber) :: t =>
+          loop(ScriptProgram(program, scriptNumber :: program.stack, t),
+               calcOpCount(opCount, scriptNumber))
+        case OP_PUSHDATA1 :: _ =>
+          loopOrComplete(ConstantInterpreter.opPushData1(program),
+                         calcOpCount(opCount, OP_PUSHDATA1))
+        case OP_PUSHDATA2 :: _ =>
+          loopOrComplete(ConstantInterpreter.opPushData2(program),
+                         calcOpCount(opCount, OP_PUSHDATA2))
+        case OP_PUSHDATA4 :: _ =>
+          loopOrComplete(ConstantInterpreter.opPushData4(program),
+                         calcOpCount(opCount, OP_PUSHDATA4))
 
-              case (x: ScriptConstant) :: t =>
-                loop(ScriptProgram(p, x :: p.stack, t), calcOpCount(opCount, x))
+        case (x: ScriptConstant) :: t =>
+          loop(ScriptProgram(program, x :: program.stack, t),
+               calcOpCount(opCount, x))
 
-              //control operations
-              case OP_IF :: _ =>
-                loop(ControlOperationsInterpreter.opIf(p),
-                     calcOpCount(opCount, OP_IF))
-              case OP_NOTIF :: _ =>
-                loop(ControlOperationsInterpreter.opNotIf(p),
-                     calcOpCount(opCount, OP_NOTIF))
-              case OP_ELSE :: _ =>
-                loop(ControlOperationsInterpreter.opElse(p),
-                     calcOpCount(opCount, OP_ELSE))
-              case OP_ENDIF :: _ =>
-                loop(ControlOperationsInterpreter.opEndIf(p),
-                     calcOpCount(opCount, OP_ENDIF))
-              case OP_RETURN :: _ =>
-                loop(ControlOperationsInterpreter.opReturn(p),
-                     calcOpCount(opCount, OP_RETURN))
+        //control operations
+        case OP_IF :: _ =>
+          loopOrComplete(ControlOperationsInterpreter.opIf(program),
+                         calcOpCount(opCount, OP_IF))
+        case OP_NOTIF :: _ =>
+          loopOrComplete(ControlOperationsInterpreter.opNotIf(program),
+                         calcOpCount(opCount, OP_NOTIF))
+        case OP_ELSE :: _ =>
+          loopOrComplete(ControlOperationsInterpreter.opElse(program),
+                         calcOpCount(opCount, OP_ELSE))
+        case OP_ENDIF :: _ =>
+          loopOrComplete(ControlOperationsInterpreter.opEndIf(program),
+                         calcOpCount(opCount, OP_ENDIF))
+        case OP_RETURN :: _ =>
+          loopOrComplete(ControlOperationsInterpreter.opReturn(program),
+                         calcOpCount(opCount, OP_RETURN))
 
-              case OP_VERIFY :: _ =>
-                loop(ControlOperationsInterpreter.opVerify(p),
-                     calcOpCount(opCount, OP_VERIFY))
+        case OP_VERIFY :: _ =>
+          loopOrComplete(ControlOperationsInterpreter.opVerify(program),
+                         calcOpCount(opCount, OP_VERIFY))
 
-              //crypto operations
-              case OP_HASH160 :: _ =>
-                loop(CryptoInterpreter.opHash160(p),
-                     calcOpCount(opCount, OP_HASH160))
-              case OP_CHECKSIG :: _ =>
-                loop(CryptoInterpreter.opCheckSig(p),
-                     calcOpCount(opCount, OP_CHECKSIG))
-              case OP_CHECKSIGVERIFY :: _ =>
-                loop(CryptoInterpreter.opCheckSigVerify(p),
-                     calcOpCount(opCount, OP_CHECKSIGVERIFY))
-              case OP_SHA1 :: _ =>
-                loop(CryptoInterpreter.opSha1(p), calcOpCount(opCount, OP_SHA1))
-              case OP_RIPEMD160 :: _ =>
-                loop(CryptoInterpreter.opRipeMd160(p),
-                     calcOpCount(opCount, OP_RIPEMD160))
-              case OP_SHA256 :: _ =>
-                loop(CryptoInterpreter.opSha256(p),
-                     calcOpCount(opCount, OP_SHA256))
-              case OP_HASH256 :: _ =>
-                loop(CryptoInterpreter.opHash256(p),
-                     calcOpCount(opCount, OP_HASH256))
-              case OP_CODESEPARATOR :: _ =>
-                loop(CryptoInterpreter.opCodeSeparator(p),
-                     calcOpCount(opCount, OP_CODESEPARATOR))
-              case OP_CHECKMULTISIG :: _ =>
-                CryptoInterpreter.opCheckMultiSig(p) match {
-                  case newProgram: ExecutedScriptProgram =>
-                    //script was marked invalid for other reasons, don't need to update the opcount
-                    loop(newProgram, opCount)
-                  case newProgram @ (_: ExecutionInProgressScriptProgram |
-                      _: PreExecutionScriptProgram) =>
-                    val newOpCount = calcOpCount(opCount, OP_CHECKMULTISIG) + BitcoinScriptUtil
-                      .numPossibleSignaturesOnStack(program)
-                      .toInt
-                    loop(newProgram, newOpCount)
-                }
-              case OP_CHECKMULTISIGVERIFY :: _ =>
-                CryptoInterpreter.opCheckMultiSigVerify(p) match {
-                  case newProgram: ExecutedScriptProgram =>
-                    //script was marked invalid for other reasons, don't need to update the opcount
-                    loop(newProgram, opCount)
-                  case newProgram @ (_: ExecutionInProgressScriptProgram |
-                      _: PreExecutionScriptProgram) =>
-                    val newOpCount = calcOpCount(
-                      opCount,
-                      OP_CHECKMULTISIGVERIFY) + BitcoinScriptUtil
-                      .numPossibleSignaturesOnStack(program)
-                      .toInt
-                    loop(newProgram, newOpCount)
-                }
-              //reserved operations
-              case OP_NOP :: t =>
-                //script discourage upgradeable flag does not apply to a OP_NOP
-                loop(ScriptProgram(p, p.stack, t), calcOpCount(opCount, OP_NOP))
+        //crypto operations
+        case OP_HASH160 :: _ =>
+          loopOrComplete(CryptoInterpreter.opHash160(program),
+                         calcOpCount(opCount, OP_HASH160))
+        case OP_CHECKSIG :: _ =>
+          loopOrComplete(CryptoInterpreter.opCheckSig(program),
+                         calcOpCount(opCount, OP_CHECKSIG))
+        case OP_CHECKSIGVERIFY :: _ =>
+          loopOrComplete(CryptoInterpreter.opCheckSigVerify(program),
+                         calcOpCount(opCount, OP_CHECKSIGVERIFY))
+        case OP_SHA1 :: _ =>
+          loopOrComplete(CryptoInterpreter.opSha1(program),
+                         calcOpCount(opCount, OP_SHA1))
+        case OP_RIPEMD160 :: _ =>
+          loopOrComplete(CryptoInterpreter.opRipeMd160(program),
+                         calcOpCount(opCount, OP_RIPEMD160))
+        case OP_SHA256 :: _ =>
+          loopOrComplete(CryptoInterpreter.opSha256(program),
+                         calcOpCount(opCount, OP_SHA256))
+        case OP_HASH256 :: _ =>
+          loopOrComplete(CryptoInterpreter.opHash256(program),
+                         calcOpCount(opCount, OP_HASH256))
+        case OP_CODESEPARATOR :: _ =>
+          loopOrComplete(CryptoInterpreter.opCodeSeparator(program),
+                         calcOpCount(opCount, OP_CODESEPARATOR))
+        case OP_CHECKMULTISIG :: _ =>
+          CryptoInterpreter.opCheckMultiSig(program) match {
+            case newProgram: ExecutedScriptProgram =>
+              //script was marked invalid for other reasons, don't need to update the opcount
+              completeProgramExecution(newProgram, opCount)
+            case newProgram @ (_: ExecutionInProgressScriptProgram |
+                _: PreExecutionScriptProgram) =>
+              val newOpCount = calcOpCount(opCount, OP_CHECKMULTISIG) + BitcoinScriptUtil
+                .numPossibleSignaturesOnStack(program)
+                .toInt
+              loopOrComplete(newProgram, newOpCount)
+          }
+        case OP_CHECKMULTISIGVERIFY :: _ =>
+          CryptoInterpreter.opCheckMultiSigVerify(program) match {
+            case newProgram: ExecutedScriptProgram =>
+              //script was marked invalid for other reasons, don't need to update the opcount
+              completeProgramExecution(newProgram, opCount)
+            case newProgram @ (_: ExecutionInProgressScriptProgram |
+                _: PreExecutionScriptProgram) =>
+              val newOpCount = calcOpCount(opCount, OP_CHECKMULTISIGVERIFY) + BitcoinScriptUtil
+                .numPossibleSignaturesOnStack(program)
+                .toInt
+              loopOrComplete(newProgram, newOpCount)
+          }
+        //reserved operations
+        case OP_NOP :: t =>
+          //script discourage upgradeable flag does not apply to a OP_NOP
+          loop(ScriptProgram(program, program.stack, t),
+               calcOpCount(opCount, OP_NOP))
 
-              //if we see an OP_NOP and the DISCOURAGE_UPGRADABLE_OP_NOPS flag is set we must fail our program
-              case (nop: NOP) :: _
-                  if ScriptFlagUtil.discourageUpgradableNOPs(p.flags) =>
-                logger.error(
-                  "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-                loop(ScriptProgram(p, ScriptErrorDiscourageUpgradableNOPs),
-                     calcOpCount(opCount, nop))
-              case (nop: NOP) :: t =>
-                loop(ScriptProgram(p, p.stack, t), calcOpCount(opCount, nop))
-              case OP_RESERVED :: _ =>
-                logger.error(
-                  "OP_RESERVED automatically marks transaction invalid")
-                loop(ScriptProgram(p, ScriptErrorBadOpCode),
-                     calcOpCount(opCount, OP_RESERVED))
-              case OP_VER :: _ =>
-                logger.error("Transaction is invalid when executing OP_VER")
-                loop(ScriptProgram(p, ScriptErrorBadOpCode),
-                     calcOpCount(opCount, OP_VER))
-              case OP_RESERVED1 :: _ =>
-                logger.error(
-                  "Transaction is invalid when executing OP_RESERVED1")
-                loop(ScriptProgram(p, ScriptErrorBadOpCode),
-                     calcOpCount(opCount, OP_RESERVED1))
-              case OP_RESERVED2 :: _ =>
-                logger.error(
-                  "Transaction is invalid when executing OP_RESERVED2")
-                loop(ScriptProgram(p, ScriptErrorBadOpCode),
-                     calcOpCount(opCount, OP_RESERVED2))
+        //if we see an OP_NOP and the DISCOURAGE_UPGRADABLE_OP_NOPS flag is set we must fail our program
+        case (nop: NOP) :: _
+            if ScriptFlagUtil.discourageUpgradableNOPs(program.flags) =>
+          logger.error(
+            "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
+          completeProgramExecution(
+            ScriptProgram(program, ScriptErrorDiscourageUpgradableNOPs),
+            calcOpCount(opCount, nop))
+        case (nop: NOP) :: t =>
+          loop(ScriptProgram(program, program.stack, t),
+               calcOpCount(opCount, nop))
+        case OP_RESERVED :: _ =>
+          logger.error("OP_RESERVED automatically marks transaction invalid")
+          completeProgramExecution(ScriptProgram(program, ScriptErrorBadOpCode),
+                                   calcOpCount(opCount, OP_RESERVED))
+        case OP_VER :: _ =>
+          logger.error("Transaction is invalid when executing OP_VER")
+          completeProgramExecution(ScriptProgram(program, ScriptErrorBadOpCode),
+                                   calcOpCount(opCount, OP_VER))
+        case OP_RESERVED1 :: _ =>
+          logger.error("Transaction is invalid when executing OP_RESERVED1")
+          completeProgramExecution(ScriptProgram(program, ScriptErrorBadOpCode),
+                                   calcOpCount(opCount, OP_RESERVED1))
+        case OP_RESERVED2 :: _ =>
+          logger.error("Transaction is invalid when executing OP_RESERVED2")
+          completeProgramExecution(ScriptProgram(program, ScriptErrorBadOpCode),
+                                   calcOpCount(opCount, OP_RESERVED2))
 
-              case (reservedOperation: ReservedOperation) :: _ =>
-                logger.error(
-                  "Undefined operation found which automatically fails the script: " + reservedOperation)
-                loop(ScriptProgram(p, ScriptErrorBadOpCode),
-                     calcOpCount(opCount, reservedOperation))
-              //splice operations
-              case OP_SIZE :: _ =>
-                loop(SpliceInterpreter.opSize(p), calcOpCount(opCount, OP_SIZE))
+        case (reservedOperation: ReservedOperation) :: _ =>
+          logger.error(
+            "Undefined operation found which automatically fails the script: " + reservedOperation)
+          completeProgramExecution(ScriptProgram(program, ScriptErrorBadOpCode),
+                                   calcOpCount(opCount, reservedOperation))
+        //splice operations
+        case OP_SIZE :: _ =>
+          loopOrComplete(SpliceInterpreter.opSize(program),
+                         calcOpCount(opCount, OP_SIZE))
 
-              //locktime operations
-              case OP_CHECKLOCKTIMEVERIFY :: _ =>
-                //check if CLTV is enforced yet
-                if (ScriptFlagUtil.checkLockTimeVerifyEnabled(p.flags)) {
-                  loop(LockTimeInterpreter.opCheckLockTimeVerify(p),
-                       calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
-                } //if not, check to see if we should discourage p
-                else if (ScriptFlagUtil.discourageUpgradableNOPs(p.flags)) {
-                  logger.error(
-                    "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-                  loop(ScriptProgram(p, ScriptErrorDiscourageUpgradableNOPs),
-                       calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
-                } //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
-                else
-                  loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script),
-                       calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
-              case OP_CHECKSEQUENCEVERIFY :: _ =>
-                //check if CLTV is enforced yet
-                if (ScriptFlagUtil.checkSequenceVerifyEnabled(p.flags)) {
-                  loop(LockTimeInterpreter.opCheckSequenceVerify(p),
-                       calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
-                } //if not, check to see if we should discourage p
-                else if (ScriptFlagUtil.discourageUpgradableNOPs(p.flags)) {
-                  logger.error(
-                    "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-                  loop(ScriptProgram(p, ScriptErrorDiscourageUpgradableNOPs),
-                       calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
-                } //in this case, just read OP_CSV just like a NOP and remove it from the stack
-                else
-                  loop(ScriptProgram(p, p.script.tail, ScriptProgram.Script),
-                       calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
-              //no more script operations to run, return whether the program is valid and the final state of the program
-              case Nil    => loop(ScriptProgram.toExecutedProgram(p), opCount)
-              case h :: _ => throw new RuntimeException(s"$h was unmatched")
-            }
-        }
+        //locktime operations
+        case OP_CHECKLOCKTIMEVERIFY :: _ =>
+          //check if CLTV is enforced yet
+          if (ScriptFlagUtil.checkLockTimeVerifyEnabled(program.flags)) {
+            loopOrComplete(LockTimeInterpreter.opCheckLockTimeVerify(program),
+                           calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
+          } //if not, check to see if we should discourage p
+          else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
+            logger.error(
+              "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
+            completeProgramExecution(
+              ScriptProgram(program, ScriptErrorDiscourageUpgradableNOPs),
+              calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
+          } //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
+          else
+            loop(
+              ScriptProgram(program, program.script.tail, ScriptProgram.Script),
+              calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
+        case OP_CHECKSEQUENCEVERIFY :: _ =>
+          //check if CLTV is enforced yet
+          if (ScriptFlagUtil.checkSequenceVerifyEnabled(program.flags)) {
+            loopOrComplete(LockTimeInterpreter.opCheckSequenceVerify(program),
+                           calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
+          } //if not, check to see if we should discourage p
+          else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
+            logger.error(
+              "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
+            completeProgramExecution(
+              ScriptProgram(program, ScriptErrorDiscourageUpgradableNOPs),
+              calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
+          } //in this case, just read OP_CSV just like a NOP and remove it from the stack
+          else
+            loop(
+              ScriptProgram(program, program.script.tail, ScriptProgram.Script),
+              calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
+        //no more script operations to run, return whether the program is valid and the final state of the program
+        case Nil =>
+          completeProgramExecution(ScriptProgram.toExecutedProgram(program),
+                                   opCount)
+        case h :: _ => throw new RuntimeException(s"$h was unmatched")
+      }
     }
   }
 
@@ -947,16 +996,15 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     } else {
       //if we are not discouraging upgradable ops, we just trivially return the program with an OP_TRUE on the stack
       //see: https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L1386-L1389
-      val inProgress = ExecutionInProgressScriptProgram(
+      val inProgress = PreExecutionScriptProgram(
         txSignatureComponent = txSigComponent,
         stack = List(OP_TRUE),
         script = Nil,
         originalScript = txSigComponent.scriptPubKey.asm.toList,
         altStack = Nil,
-        flags = flags,
-        lastCodeSeparator = None
+        flags = flags
       )
-      val evaluated = loop(inProgress, 0)
+      val evaluated = executeProgram(inProgress)
       Success(evaluated)
     }
   }
