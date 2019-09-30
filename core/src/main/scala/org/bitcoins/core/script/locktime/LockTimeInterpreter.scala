@@ -2,7 +2,11 @@ package org.bitcoins.core.script.locktime
 
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.transaction.TransactionConstants
-import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.{
+  ExecutionInProgressScriptProgram,
+  ScriptProgram,
+  StartedScriptProgram
+}
 import org.bitcoins.core.script.constant.{
   ScriptConstant,
   ScriptNumber,
@@ -32,7 +36,8 @@ sealed abstract class LockTimeInterpreter {
     * The precise semantics are described in BIP 0065
     */
   @tailrec
-  final def opCheckLockTimeVerify(program: ScriptProgram): ScriptProgram = {
+  final def opCheckLockTimeVerify(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_CHECKLOCKTIMEVERIFY),
             "Script top must be OP_CHECKLOCKTIMEVERIFY")
     val input = program.txSignatureComponent.transaction
@@ -98,7 +103,8 @@ sealed abstract class LockTimeInterpreter {
     * See [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki BIP112]] for more information
     */
   @tailrec
-  final def opCheckSequenceVerify(program: ScriptProgram): ScriptProgram = {
+  final def opCheckSequenceVerify(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     if (program.stack.isEmpty) {
       logger.error("Cannot execute OP_CHECKSEQUENCEVERIFY on an empty stack")
       ScriptProgram(program, ScriptErrorInvalidStackOperation)
