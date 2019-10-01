@@ -157,27 +157,28 @@ object ScriptProgram extends BitcoinSLogger {
                             Some(error))
   }
 
-  def apply(oldProgram: ScriptProgram, flags: Seq[ScriptFlag]): ScriptProgram =
-    oldProgram match {
-      case program: PreExecutionScriptProgram =>
-        PreExecutionScriptProgram(program.txSignatureComponent,
-                                  program.stack,
-                                  program.script,
-                                  program.originalScript,
-                                  program.altStack,
-                                  flags)
-      case program: ExecutionInProgressScriptProgram =>
-        ExecutionInProgressScriptProgram(program.txSignatureComponent,
-                                         program.stack,
-                                         program.script,
-                                         program.originalScript,
-                                         program.altStack,
-                                         flags,
-                                         program.lastCodeSeparator)
-      case _: ExecutedScriptProgram =>
-        throw new RuntimeException(
-          "Cannot update the script flags on a program that has been executed")
-    }
+  def apply(
+      oldProgram: PreExecutionScriptProgram,
+      flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
+    PreExecutionScriptProgram(oldProgram.txSignatureComponent,
+                              oldProgram.stack,
+                              oldProgram.script,
+                              oldProgram.originalScript,
+                              oldProgram.altStack,
+                              flags)
+  }
+
+  def apply(
+      oldProgram: ExecutionInProgressScriptProgram,
+      flags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
+    ExecutionInProgressScriptProgram(oldProgram.txSignatureComponent,
+                                     oldProgram.stack,
+                                     oldProgram.script,
+                                     oldProgram.originalScript,
+                                     oldProgram.altStack,
+                                     flags,
+                                     oldProgram.lastCodeSeparator)
+  }
 
   def apply(
       oldProgram: PreExecutionScriptProgram,
