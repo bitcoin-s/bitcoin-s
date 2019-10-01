@@ -18,13 +18,14 @@ import scala.concurrent._
 import org.bitcoins.{rpc, core}
 import core.currency.Bitcoins
 import rpc.client.common._
+import java.io._
 
 implicit val ec: ExecutionContext = ExecutionContext.global
 
 // this reads authentication credentials and
 // connection details from the default data
 // directory on your platform
-val client = BitcoindRpcClient.fromDatadir()
+val client = BitcoindRpcClient.fromDatadir(binary=new File("/path/to/bitcoind"), datadir=new File("/path/to/bitcoind-datadir"))
 
 val balance: Future[Bitcoins] = for {
   _ <- client.start()
@@ -98,6 +99,7 @@ import org.bitcoins.rpc.BitcoindWalletException
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.currency._
+import java.io._
 
 import scala.concurrent._
 
@@ -105,7 +107,7 @@ implicit val ec = ExecutionContext.global
 
 // let's assume you have an already running client,
 // so there's no need to start this one
-val cli = BitcoindRpcClient.fromDatadir()
+val cli = BitcoindRpcClient.fromDatadir(binary=new File("/path/to/bitcoind"), datadir=new File("/path/to/bitcoind-datadir"))
 
 // let's also assume you have a bitcoin address
 val address: BitcoinAddress = ???

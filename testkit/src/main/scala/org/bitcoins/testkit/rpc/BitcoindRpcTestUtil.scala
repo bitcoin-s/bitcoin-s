@@ -171,6 +171,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     baseBinaryDirectory.resolve("bitcoind")
   }
 
+  def newestBitcoindBinary: File = getBinary(BitcoindVersion.newest)
+
   private def getBinary(version: BitcoindVersion): File = version match {
     // default to newest version
     case Unknown => getBinary(BitcoindVersion.newest)
@@ -224,23 +226,16 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val binary: File = versionOpt match {
       case Some(version) => getBinary(version)
       case None =>
-        Try {
-          BitcoindInstance.DEFAULT_BITCOIND_LOCATION
-        }.recoverWith {
-          case _: RuntimeException =>
-            if (Files.exists(
-                  BitcoindRpcTestUtil.binaryDirectory
-                )) {
-              Success(getBinary(BitcoindVersion.newest))
-            } else {
-              Failure(new RuntimeException(
-                "Could not locate bitcoind. Make sure it is installed on your PATH, or if working with Bitcoin-S directly, try running 'sbt downloadBitcoind'"))
-            }
-
-        } match {
-          case Failure(exception) => throw exception
-          case Success(value)     => value
+        if (Files.exists(
+              BitcoindRpcTestUtil.binaryDirectory
+            )) {
+          newestBitcoindBinary
+        } else {
+          throw new RuntimeException(
+            "Could not locate bitcoind. Make sure it is installed on your PATH, or if working with Bitcoin-S " +
+              "directly, try running 'sbt downloadBitcoind'")
         }
+
     }
     val instance = BitcoindInstance(network = network,
                                     uri = uri,
@@ -706,6 +701,13 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   )(implicit system: ActorSystem): Future[
     (BitcoindV17RpcClient, BitcoindV17RpcClient, BitcoindV17RpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.V17, clientAccum)
+  }
+
+  def createNodeTripleV18(
+      clientAccum: RpcClientAccum = Vector.newBuilder
+  )(implicit system: ActorSystem): Future[
+    (BitcoindV18RpcClient, BitcoindV18RpcClient, BitcoindV18RpcClient)] = {
+    createNodeTripleInternal(BitcoindVersion.V18, clientAccum)
   }
 
   def createRawCoinbaseTransaction(
