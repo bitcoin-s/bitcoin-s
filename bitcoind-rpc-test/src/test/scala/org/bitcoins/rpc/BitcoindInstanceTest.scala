@@ -1,24 +1,25 @@
 package org.bitcoins.rpc
 import java.io.{File, PrintWriter}
+import java.net.URI
 import java.nio.file.{Files, Path}
 
+import akka.stream.StreamTcpException
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.BitcoindRpcTest
-
-import scala.io.Source
-import akka.stream.StreamTcpException
-import java.nio.file.Paths
-import scala.util.Properties
-import org.bitcoins.rpc.config.BitcoindConfig
-import org.bitcoins.rpc.config.BitcoindAuthCredentials
+import org.bitcoins.rpc.config.{
+  BitcoindAuthCredentials,
+  BitcoindConfig,
+  BitcoindInstance
+}
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.core.config.RegTest
-import java.net.URI
-import scala.concurrent.Future
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil.newestBitcoindBinary
+import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest.compatible.Assertion
+
+import scala.concurrent.Future
+import scala.io.Source
 
 class BitcoindInstanceTest extends BitcoindRpcTest {
 
@@ -65,7 +66,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     """.stripMargin
 
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
-    val instance = BitcoindInstance.fromConfig(conf)
+    val instance = BitcoindInstance.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
         .isInstanceOf[BitcoindAuthCredentials.CookieBased])
@@ -85,7 +86,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
       """.stripMargin
 
     val conf = BitcoindConfig(confStr, BitcoindRpcTestUtil.tmpDir())
-    val instance = BitcoindInstance.fromConfig(conf)
+    val instance = BitcoindInstance.fromConfig(conf, newestBitcoindBinary)
     assert(
       instance.authCredentials
         .isInstanceOf[BitcoindAuthCredentials.PasswordBased])
@@ -121,14 +122,16 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         uri = new URI(s"http://localhost:$port"),
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         authCredentials = authCredentials,
-        datadir = conf.datadir
+        datadir = conf.datadir,
+        binary = newestBitcoindBinary
       )
 
     testClientStart(BitcoindRpcClient.withActorSystem(instance))
   }
 
   it should "parse a bitcoin.conf file, start bitcoind, mine some blocks and quit" in {
-    val instance = BitcoindInstance.fromDatadir(datadir.toFile)
+    val instance =
+      BitcoindInstance.fromDatadir(datadir.toFile, newestBitcoindBinary)
     val client = BitcoindRpcClient.withActorSystem(instance)
 
     for {

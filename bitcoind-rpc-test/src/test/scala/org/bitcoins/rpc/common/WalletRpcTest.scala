@@ -33,7 +33,7 @@ import scala.concurrent.Future
 class WalletRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[
     (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodeTriple(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodeTripleV17(clientAccum = clientAccum)
 
   // This client's wallet is encrypted
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
