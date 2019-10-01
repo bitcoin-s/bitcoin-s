@@ -66,13 +66,14 @@ version lines. It can be set up to work with both local and remote Bitcoin Core 
 <span class="hljs-keyword">import</span> org.bitcoins.{rpc, core}
 <span class="hljs-keyword">import</span> core.currency.<span class="hljs-type">Bitcoins</span>
 <span class="hljs-keyword">import</span> rpc.client.common._
+<span class="hljs-keyword">import</span> java.io._
 
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.global
 
 <span class="hljs-comment">// this reads authentication credentials and</span>
 <span class="hljs-comment">// connection details from the default data</span>
 <span class="hljs-comment">// directory on your platform</span>
-<span class="hljs-keyword">val</span> client = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir()
+<span class="hljs-keyword">val</span> client = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir(binary=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind"</span>), datadir=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind-datadir"</span>))
 
 <span class="hljs-keyword">val</span> balance: <span class="hljs-type">Future</span>[<span class="hljs-type">Bitcoins</span>] = <span class="hljs-keyword">for</span> {
   _ &lt;- client.start()
@@ -136,6 +137,7 @@ handling could look:</p>
 <span class="hljs-keyword">import</span> org.bitcoins.core.crypto._
 <span class="hljs-keyword">import</span> org.bitcoins.core.protocol._
 <span class="hljs-keyword">import</span> org.bitcoins.core.currency._
+<span class="hljs-keyword">import</span> java.io._
 
 <span class="hljs-keyword">import</span> scala.concurrent._
 
@@ -143,7 +145,7 @@ handling could look:</p>
 
 <span class="hljs-comment">// let's assume you have an already running client,</span>
 <span class="hljs-comment">// so there's no need to start this one</span>
-<span class="hljs-keyword">val</span> cli = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir()
+<span class="hljs-keyword">val</span> cli = <span class="hljs-type">BitcoindRpcClient</span>.fromDatadir(binary=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind"</span>), datadir=<span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-string">"/path/to/bitcoind-datadir"</span>))
 
 <span class="hljs-comment">// let's also assume you have a bitcoin address</span>
 <span class="hljs-keyword">val</span> address: <span class="hljs-type">BitcoinAddress</span> = ???
