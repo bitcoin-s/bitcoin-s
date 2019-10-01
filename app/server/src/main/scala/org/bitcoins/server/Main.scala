@@ -1,5 +1,6 @@
 package org.bitcoins.server
 
+import java.net.InetSocketAddress
 import java.nio.file.Files
 
 import akka.actor.ActorSystem
@@ -69,20 +70,11 @@ object Main extends App {
     }
   }
 
-  val bitcoind = BitcoindInstance.fromDatadir()
-  val bitcoindCli = BitcoindRpcClient.withActorSystem(bitcoind)
-  val peer = Peer.fromBitcoind(bitcoind)
+  val peerSocket =
+    new InetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
+  val peer = Peer.fromSocket(peerSocket)
 
   val startFut = for {
-    _ <- bitcoindCli.isStartedF.map { started =>
-      if (!started) error("Local bitcoind is not started!")
-    }
-    _ <- bitcoindCli.getBlockChainInfo.map { bitcoindInfo =>
-      if (bitcoindInfo.chain != nodeConf.network)
-        error(
-          s"bitcoind and Bitcoin-S node are on different chains! Bitcoind: ${bitcoindInfo.chain}. Bitcoin-S node: ${nodeConf.network}")
-    }
-
     _ <- conf.initialize()
     wallet <- walletInitF
 

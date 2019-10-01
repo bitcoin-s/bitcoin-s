@@ -57,6 +57,15 @@ case class NodeAppConfig(
   lazy val isNeutrinoEnabled: Boolean = config
     .getString("node.mode")
     .toLowerCase == "neutrino"
+
+  /**
+    * List of peers
+    */
+  lazy val peers: Vector[String] = {
+    val list = config.getStringList("node.peers")
+    0.until(list.size())
+      .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
+  }
 }
 
 object NodeAppConfig {
