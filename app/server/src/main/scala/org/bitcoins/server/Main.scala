@@ -71,7 +71,7 @@ object Main extends App {
   }
 
   val peerSocket =
-    new InetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
+    parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
   val peer = Peer.fromSocket(peerSocket)
 
   val startFut = for {
@@ -133,5 +133,30 @@ object Main extends App {
 
   startFut.failed.foreach { err =>
     logger.info(s"Error on server startup!", err)
+  }
+
+  private def parseInetSocketAddress(
+      address: String,
+      defaultPort: Int): InetSocketAddress = {
+
+    def parsePort(port: String): Int = {
+      lazy val errorMsg = s"Invalid peer port: $address"
+      try {
+        val res = port.toInt
+        if (res < 0 || res > 0xffff) {
+          throw new RuntimeException(errorMsg)
+        }
+        res
+      } catch {
+        case _: NumberFormatException =>
+          throw new RuntimeException(errorMsg)
+      }
+    }
+
+    address.split(":") match {
+      case Array(host)       => new InetSocketAddress(host, defaultPort)
+      case Array(host, port) => new InetSocketAddress(host, parsePort(port))
+      case _                 => throw new RuntimeException(s"Invalid peer address: $address")
+    }
   }
 }
