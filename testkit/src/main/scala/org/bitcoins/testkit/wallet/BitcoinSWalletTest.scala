@@ -1,54 +1,31 @@
 package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.protocol.blockchain.ChainParams
+import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.currency._
+import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.server.BitcoinSAppConfig._
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.{
   InitializeWalletError,
   InitializeWalletSuccess,
   UnlockedWalletApi
 }
-import org.bitcoins.wallet.db.{WalletDbManagement}
-import org.bitcoins.wallet.WalletLogger
+import org.bitcoins.wallet.db.WalletDbManagement
 import org.scalatest._
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.core.currency._
-import org.bitcoins.db.AppConfig
-import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.server.BitcoinSAppConfig._
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.testkit.BitcoinSTestAppConfig
 
-trait BitcoinSWalletTest
-    extends fixture.AsyncFlatSpec
-    with BitcoinSFixture
-    with BeforeAndAfterAll
-    with WalletLogger {
+trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   import BitcoinSWalletTest._
-  implicit val actorSystem: ActorSystem = ActorSystem(getClass.getSimpleName)
-  implicit val ec: ExecutionContext = actorSystem.dispatcher
-
-  protected lazy val chainParams: ChainParams = WalletTestUtil.chainParams
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected lazy val config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
-
-  /** Timeout for async operations */
-  protected val timeout: FiniteDuration = 10.seconds
-
-  protected val networkParam: RegTest.type = WalletTestUtil.networkParam
-
-  override protected def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(actorSystem)
-  }
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)

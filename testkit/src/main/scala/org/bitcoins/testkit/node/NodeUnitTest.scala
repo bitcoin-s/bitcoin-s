@@ -3,7 +3,6 @@ package org.bitcoins.testkit.node
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import akka.testkit.TestKit
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.NetworkParameters
@@ -31,40 +30,16 @@ import org.bitcoins.testkit.node.fixture.{
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.scalatest.{
-  BeforeAndAfter,
-  BeforeAndAfterAll,
-  FutureOutcome,
-  MustMatchers
-}
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
-trait NodeUnitTest
-    extends BitcoinSFixture
-    with MustMatchers
-    with P2PLogger
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
+trait NodeUnitTest extends BitcoinSFixture {
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.nodeConf)
   }
-
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
-    ()
-  }
-
-  implicit lazy val system: ActorSystem = {
-    ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis}")
-  }
-
-  implicit lazy val ec: ExecutionContext =
-    system.dispatcher
-
-  val timeout: FiniteDuration = 10.seconds
 
   /** Wallet config with data directory set to user temp directory */
   implicit protected def config: BitcoinSAppConfig
@@ -73,7 +48,7 @@ trait NodeUnitTest
 
   implicit protected lazy val nodeConfig: NodeAppConfig = config.nodeConf
 
-  implicit lazy val np: NetworkParameters = config.nodeConf.network
+  implicit override lazy val np: NetworkParameters = config.nodeConf.network
 
   lazy val startedBitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient()
 

@@ -64,8 +64,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   type RpcClientAccum =
     mutable.Builder[BitcoindRpcClient, Vector[BitcoindRpcClient]]
 
-  val AKKA_CONFIG: Config = ConfigFactory.load("akka.conf").resolve()
-
   @tailrec
   private def randomDirName: String = {
     val dirname = 0.until(5).map(_ => Random.alphanumeric.head).mkString

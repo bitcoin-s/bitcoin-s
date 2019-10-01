@@ -61,7 +61,6 @@ class BitcoinPowTest extends ChainUnitTest {
   it must "GetNextWorkRequired correctly" taggedAs ChainFixtureTag.PopulatedBlockHeaderDAO inFixtured {
     case ChainFixture.PopulatedBlockHeaderDAO(blockHeaderDAO) =>
       val iterations = 4200
-
       // We must start after the first POW change to avoid looking for a block we don't have
       val assertionFs =
         (ChainUnitTest.FIRST_POW_CHANGE + 1 until ChainUnitTest.FIRST_POW_CHANGE + 1 + iterations)
@@ -78,7 +77,8 @@ class BitcoinPowTest extends ChainUnitTest {
                                                      blockchain)
             } yield assert(nextNBits == nextTip.nBits)
           }
+      val seqF = Future.sequence(assertionFs)
 
-      Future.sequence(assertionFs).map(_ => succeed)
+      seqF.map(_ => succeed)
   }
 }
