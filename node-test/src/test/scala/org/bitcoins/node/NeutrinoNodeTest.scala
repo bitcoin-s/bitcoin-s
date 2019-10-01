@@ -12,7 +12,6 @@ import org.scalatest.{DoNotDiscover, FutureOutcome}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-@DoNotDiscover
 class NeutrinoNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */

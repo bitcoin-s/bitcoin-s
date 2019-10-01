@@ -4,7 +4,6 @@ import java.io.File
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.util.AsyncUtil.RpcRetryException
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil

@@ -75,8 +75,9 @@ object BitcoindRpcClient {
     * the default datadir if no directory is provided
     */
   def fromDatadir(
-      datadir: File = BitcoindConfig.DEFAULT_DATADIR): BitcoindRpcClient = {
-    val instance = BitcoindInstance.fromDatadir(datadir)
+      datadir: File = BitcoindConfig.DEFAULT_DATADIR,
+      binary: File): BitcoindRpcClient = {
+    val instance = BitcoindInstance.fromDatadir(datadir, binary)
     val cli = BitcoindRpcClient(instance)
     cli
   }

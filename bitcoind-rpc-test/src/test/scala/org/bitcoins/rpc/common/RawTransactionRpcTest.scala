@@ -20,7 +20,7 @@ import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 
 class RawTransactionRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodePair(clientAccum = clientAccum)
+    BitcoindRpcTestUtil.createNodePairV17(clientAccum = clientAccum)
 
   behavior of "RawTransactionRpc"
 
