@@ -56,7 +56,7 @@ matrix:
     - os: osx
       name: "macOS node tests"
       env:
-        - TEST_COMMAND="\"nodeTest/testOnly -- -l UsesExperimentalBitcoind\" node/coverageReport node/coverageAggregate node/coveralls"
+        - TEST_COMMAND="'nodeTest/testOnly -- -l UsesExperimentalBitcoind' node/coverageReport node/coverageAggregate node/coveralls"
       scala:
         - 2.13.0
 
