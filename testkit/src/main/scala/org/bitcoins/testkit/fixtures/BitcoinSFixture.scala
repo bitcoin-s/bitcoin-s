@@ -9,6 +9,8 @@ import org.scalatest._
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
+object UsesExperimentalBitcoind extends Tag("UsesExperimentalBitcoind")
+
 trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
   /**
