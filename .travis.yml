@@ -112,5 +112,6 @@ stages:
 
 script:
   # Modify PATH to include binaries we are about to download
-  - export PATH=$PWD/binaries/bitcoind/bitcoin-0.17.0/bin/:$PATH
-  - sbt ++$TRAVIS_SCALA_VERSION downloadBitcoind downloadEclair coverage $TEST_COMMAND
+  - sbt ++$TRAVIS_SCALA_VERSION downloadBitcoind downloadEclair
+  - sbt coverage
+  - sbt $TEST_COMMAND
