@@ -10,6 +10,10 @@ import scodec.bits.ByteVector
   */
 trait ScriptFactory[T <: Script] extends Factory[T] {
 
+  protected lazy val trivialInvariant: Seq[ScriptToken] => Boolean = { _ =>
+    true
+  }
+
   /** Builds a script from the given asm with the given constructor if the invariant holds true, else throws an error */
   def buildScript(
       asm: Vector[ScriptToken],
