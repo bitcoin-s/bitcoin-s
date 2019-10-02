@@ -173,7 +173,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   def newestBitcoindBinary: File = getBinary(BitcoindVersion.newest)
 
-  private def getBinary(version: BitcoindVersion): File = version match {
+  def getBinary(version: BitcoindVersion): File = version match {
     // default to newest version
     case Unknown => getBinary(BitcoindVersion.newest)
     case known @ (Experimental | V16 | V17 | V18) =>
@@ -195,6 +195,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
           fileList
             .filterNot(f => f.toString.endsWith(Experimental.toString.drop(1)))
             .filter(f => f.toString.contains(version))
+
+      if (filtered.isEmpty)
+        throw new RuntimeException(
+          s"bitcoind ${known.toString} is not installed in ${binaryDirectory}. Run `sbt downloadBitcoind`")
 
       // might be multiple versions downloaded for
       // each major version, i.e. 0.16.2 and 0.16.3
