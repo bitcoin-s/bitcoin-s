@@ -157,7 +157,7 @@ case class DataMessageHandler(
               }
 
               if (count.toInt == HeadersMessage.MaxHeadersCount) {
-                logger.error(
+                logger.info(
                   s"Received maximum amount of headers in one header message. This means we are not synced, requesting more")
                 peerMsgSender
                   .sendGetHeadersMessage(lastHash)
