@@ -55,7 +55,8 @@ private[blockchain] trait BaseBlockChain {
 
   /** Splits the blockchain at the header, returning a new blockchain where the best tip is the given header */
   def fromHeader(header: BlockHeaderDb): Option[Blockchain] = {
-    val headerIdxOpt = headers.zipWithIndex.find(_._1 == header)
+    // we don't want to create another copy of headers vector in zipWithIndex, so we wrap it in a Stream
+    val headerIdxOpt = headers.toStream.zipWithIndex.find(_._1 == header)
     headerIdxOpt.map {
       case (header, idx) =>
         val newChain = this.compObjectfromHeaders(headers.splitAt(idx)._2)
@@ -87,12 +88,7 @@ private[blockchain] trait BaseBlockChainCompObject
       s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
 
     val tipResult: ConnectTipResult = {
-      val prevBlockHeaderIdxOpt =
-        blockchain.headers.zipWithIndex.find {
-          case (headerDb, _) =>
-            headerDb.hashBE == header.previousBlockHashBE
-        }
-      prevBlockHeaderIdxOpt match {
+      findPrevBlockHeaderIdx(header, blockchain) match {
         case None =>
           logger.warn(
             s"No common ancestor found in the chain to connect to ${header.hashBE}")
@@ -114,15 +110,17 @@ private[blockchain] trait BaseBlockChainCompObject
                 s"Successfully verified=${success.header.hashBE.hex}, connecting to chain")
               val connectionIdx = blockchain.length - prevHeaderIdx
 
-              val oldChain =
-                blockchain.takeRight(connectionIdx)
-              val newChain =
-                Blockchain.fromHeaders(success.headerDb +: oldChain)
-
+              // we construct a new blockchain by prepending the headers vector from the old one with the new tip
+              // in order to avoid creating unnecessary hidden copies of the blockchain here
               if (connectionIdx != blockchain.length) {
+                val newChain = Blockchain(
+                  success.headerDb +: blockchain.headers.takeRight(
+                    connectionIdx))
                 //means we have a reorg, since we aren't connecting to latest tip
                 ConnectTipResult.Reorg(success, newChain)
               } else {
+                val newChain = Blockchain(
+                  success.headerDb +: blockchain.headers)
                 //we just extended the latest tip
                 ConnectTipResult.ExtendChain(success, newChain)
               }
@@ -137,6 +135,7 @@ private[blockchain] trait BaseBlockChainCompObject
   }
 
   /** Iterates through each given blockchains attempting to connect the given headers to that chain
+    *
     * @return The final updates for each chain
     *
     * */
@@ -147,31 +146,19 @@ private[blockchain] trait BaseBlockChainCompObject
     logger.debug(
       s"Attempting to connect ${headers.length} headers to ${blockchains.length} blockchains")
 
-    @tailrec
-    def loop(
-        headersToProcess: Vector[BlockHeader],
-        lastUpdates: Vector[BlockchainUpdate]): Vector[BlockchainUpdate] = {
-      headersToProcess match {
-        case h +: t =>
-          val newUpdates: Vector[BlockchainUpdate] = lastUpdates
-            .flatMap { lastUpdate =>
-              val connectTipResult =
-                Blockchain.connectTip(header = h,
-                                      blockchain = lastUpdate.blockchain)
-              parseConnectTipResult(connectTipResult, lastUpdate)
-            }
-
-          loop(headersToProcess = t, lastUpdates = newUpdates)
-        case Vector() =>
-          lastUpdates
-      }
-    }
-
-    val initUpdates = blockchains.map { blockchain =>
+    val initUpdates: Vector[BlockchainUpdate] = blockchains.map { blockchain =>
       BlockchainUpdate.Successful(blockchain, Vector.empty)
     }
 
-    loop(headers, initUpdates)
+    headers.foldLeft(initUpdates) { (lastUpdates, h) =>
+      lastUpdates
+        .flatMap { lastUpdate =>
+          val connectTipResult =
+            Blockchain.connectTip(header = h,
+                                  blockchain = lastUpdate.blockchain)
+          parseConnectTipResult(connectTipResult, lastUpdate)
+        }
+    }
   }
 
   /** Parses a connect tip result, and depending on the result it
@@ -209,6 +196,27 @@ private[blockchain] trait BaseBlockChainCompObject
       case f: BlockchainUpdate.Failed => Vector(f)
     }
 
+  }
+
+  /**
+    * Finds the parent of the given header
+    */
+  private def findPrevBlockHeaderIdx(
+      header: BlockHeader,
+      blockchain: Blockchain): Option[(BlockHeaderDb, Int)] = {
+    // Let's see if we are lucky and the latest tip is the parent.
+    val prevTipOpt = blockchain.headers.headOption
+    if (prevTipOpt.map(_.hashBE).contains(header.previousBlockHashBE)) {
+      // Yes we are. Returning the latest tip.
+      prevTipOpt.map(b => (b, 0))
+    } else {
+      // No. Scanning the blockchain to find the parent.
+      // We don't want to copy the whole headers vector in zipWithIndex, so we warp it into a Stream
+      blockchain.headers.toStream.zipWithIndex.find {
+        case (headerDb, _) =>
+          headerDb.hashBE == header.previousBlockHashBE
+      }
+    }
   }
 
 }
