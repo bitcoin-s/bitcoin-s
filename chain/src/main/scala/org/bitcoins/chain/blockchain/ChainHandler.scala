@@ -75,7 +75,7 @@ case class ChainHandler(
 
     createdF.map { _ =>
       chains.foreach {c =>
-        logger.info(s"Processed headers from height=${c(headers.length).height} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
+        logger.info(s"Processed headers from height=${c(headers.length-1).height} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
       }
       newChainHandler
     }
