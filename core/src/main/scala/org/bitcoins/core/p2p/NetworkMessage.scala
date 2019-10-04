@@ -10,6 +10,8 @@ import scodec.bits.ByteVector
   * Represents a P2P network message
   */
 sealed abstract class NetworkMessage extends NetworkElement {
+  require(header.payloadSize.toInt == payload.bytes.length, s"Payload size is not what header says it is, " +
+    s"header.payloadSize=${header.payloadSize.toInt} actual=${payload.bytes.length}")
   def header: NetworkHeader
   def payload: NetworkPayload
   override def bytes: ByteVector = RawNetworkMessageSerializer.write(this)
