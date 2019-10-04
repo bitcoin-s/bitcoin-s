@@ -277,6 +277,10 @@ case class HeadersMessage(count: CompactSizeUInt, headers: Vector[BlockHeader])
   override def commandName = NetworkPayload.headersCommandName
 
   override def bytes: ByteVector = RawHeadersMessageSerializer.write(this)
+
+  override def toString(): String = {
+    s"HeadersMessage(${count},${headers.head.hashBE.hex}..${headers.last.hashBE.hex}"
+  }
 }
 
 object HeadersMessage extends Factory[HeadersMessage] {
@@ -721,7 +725,7 @@ object PingMessage extends Factory[PingMessage] {
   private case class PingMessageImpl(nonce: UInt64) extends PingMessage
   override def fromBytes(bytes: ByteVector): PingMessage = {
     val pingMsg = RawPingMessageSerializer.read(bytes)
-    PingMessageImpl(pingMsg.nonce)
+    pingMsg
   }
 
   def apply(nonce: UInt64): PingMessage = PingMessageImpl(nonce)
@@ -753,7 +757,7 @@ object PongMessage extends Factory[PongMessage] {
 
   def fromBytes(bytes: ByteVector): PongMessage = {
     val pongMsg = RawPongMessageSerializer.read(bytes)
-    PongMessageImpl(pongMsg.nonce)
+    pongMsg
   }
 
   def apply(nonce: UInt64): PongMessage = PongMessageImpl(nonce)

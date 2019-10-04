@@ -8,9 +8,15 @@ trait RawNetworkMessageSerializer extends RawBitcoinSerializer[NetworkMessage] {
 
   def read(bytes: ByteVector): NetworkMessage = {
     //first 24 bytes are the header
-    val header = NetworkHeader(bytes.take(24))
-    val payload = NetworkPayload(header, bytes.slice(24, bytes.size))
-    NetworkMessage(header, payload)
+    val (headerBytes,payloadBytes) = bytes.splitAt(24)
+    val header = NetworkHeader.fromBytes(headerBytes)
+    if (header.payloadSize.toInt > payloadBytes.length) {
+      throw new RuntimeException(s"We do not have enough bytes for payload! Expected=${header.payloadSize.toInt} got=${payloadBytes.length}")
+    } else {
+      val payload = NetworkPayload(header, payloadBytes)
+      val n  = NetworkMessage(header, payload)
+      n
+    }
   }
 
   def write(networkMessage: NetworkMessage): ByteVector = {
