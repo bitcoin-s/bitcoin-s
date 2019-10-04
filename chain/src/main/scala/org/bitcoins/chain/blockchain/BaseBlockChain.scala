@@ -6,6 +6,8 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.chain.validation.TipValidation
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+
 import scala.annotation.tailrec
 
 // INTERNAL NOTE: Due to changes in the Scala collections in 2.13 this
@@ -55,8 +57,7 @@ private[blockchain] trait BaseBlockChain {
 
   /** Splits the blockchain at the header, returning a new blockchain where the best tip is the given header */
   def fromHeader(header: BlockHeaderDb): Option[Blockchain] = {
-    // we don't want to create another copy of headers vector in zipWithIndex, so we wrap it in a Stream
-    val headerIdxOpt = headers.toStream.zipWithIndex.find(_._1 == header)
+    val headerIdxOpt = findHeaderIdx(header.hashBE)
     headerIdxOpt.map {
       case (header, idx) =>
         val newChain = this.compObjectfromHeaders(headers.splitAt(idx)._2)
@@ -68,6 +69,26 @@ private[blockchain] trait BaseBlockChain {
   /** Unsafe version for [[org.bitcoins.chain.blockchain.Blockchain.fromHeader() fromHeader]] that can throw [[NoSuchElementException]] */
   def fromValidHeader(header: BlockHeaderDb): Blockchain = {
     fromHeader(header).get
+  }
+
+  /** Finds a header by the given hash and returns it along with its index in the headers vector */
+  def findHeaderIdx(
+      hashBE: DoubleSha256DigestBE): Option[(BlockHeaderDb, Int)] = {
+
+    @tailrec
+    def loop(idx: Int): Option[(BlockHeaderDb, Int)] = {
+      if (idx >= headers.size)
+        None
+      else {
+        val header = headers(idx)
+        if (header.hashBE == hashBE)
+          Some(header, idx)
+        else
+          loop(idx + 1)
+      }
+    }
+
+    loop(0)
   }
 }
 
@@ -205,17 +226,13 @@ private[blockchain] trait BaseBlockChainCompObject
       header: BlockHeader,
       blockchain: Blockchain): Option[(BlockHeaderDb, Int)] = {
     // Let's see if we are lucky and the latest tip is the parent.
-    val prevTipOpt = blockchain.headers.headOption
-    if (prevTipOpt.map(_.hashBE).contains(header.previousBlockHashBE)) {
+    val latestTip = blockchain.tip
+    if (latestTip.hashBE == header.previousBlockHashBE) {
       // Yes we are. Returning the latest tip.
-      prevTipOpt.map(b => (b, 0))
+      Some((latestTip, 0))
     } else {
       // No. Scanning the blockchain to find the parent.
-      // We don't want to copy the whole headers vector in zipWithIndex, so we warp it into a Stream
-      blockchain.headers.toStream.zipWithIndex.find {
-        case (headerDb, _) =>
-          headerDb.hashBE == header.previousBlockHashBE
-      }
+      blockchain.findHeaderIdx(header.previousBlockHashBE)
     }
   }
 
