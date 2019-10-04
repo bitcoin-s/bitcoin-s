@@ -279,7 +279,12 @@ case class HeadersMessage(count: CompactSizeUInt, headers: Vector[BlockHeader])
   override def bytes: ByteVector = RawHeadersMessageSerializer.write(this)
 
   override def toString(): String = {
-    s"HeadersMessage(${count},${headers.head.hashBE.hex}..${headers.last.hashBE.hex}"
+    if (headers.nonEmpty) {
+      s"HeadersMessage(${count},${headers.head.hashBE.hex}..${headers.last.hashBE.hex}"
+    } else {
+      super.toString
+    }
+
   }
 }
 
