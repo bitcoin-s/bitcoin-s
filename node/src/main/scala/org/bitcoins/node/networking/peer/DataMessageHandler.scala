@@ -225,7 +225,7 @@ case class DataMessageHandler(
       res <- nextRangeOpt match {
         case Some((startHeight, stopHash)) =>
           logger.info(
-            s"Requesting compact filter headers from=$startHeight to=$stopHash")
+            s"Requesting compact filter headers from=$startHeight to=${stopHash.flip}")
           peerMsgSender
             .sendGetCompactFilterHeadersMessage(startHeight, stopHash)
             .map(_ => true)
@@ -259,7 +259,7 @@ case class DataMessageHandler(
       res <- nextRangeOpt match {
         case Some((startHeight, stopHash)) =>
           logger.info(
-            s"Requesting compact filters from=$startHeight to=$stopHash")
+            s"Requesting compact filters from=$startHeight to=${stopHash.flip}")
           peerMsgSender
             .sendGetCompactFiltersMessage(startHeight, stopHash)
             .map(_ => true)

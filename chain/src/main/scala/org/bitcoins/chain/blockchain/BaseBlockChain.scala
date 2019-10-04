@@ -58,11 +58,10 @@ private[blockchain] trait BaseBlockChain {
   /** Splits the blockchain at the header, returning a new blockchain where the best tip is the given header */
   def fromHeader(header: BlockHeaderDb): Option[Blockchain] = {
     val headerIdxOpt = findHeaderIdx(header.hashBE)
-    headerIdxOpt.map {
-      case (header, idx) =>
-        val newChain = this.compObjectfromHeaders(headers.splitAt(idx)._2)
-        require(newChain.tip == header)
-        newChain
+    headerIdxOpt.map { idx =>
+      val newChain = this.compObjectfromHeaders(headers.splitAt(idx)._2)
+      require(newChain.tip == header)
+      newChain
     }
   }
 
@@ -71,18 +70,17 @@ private[blockchain] trait BaseBlockChain {
     fromHeader(header).get
   }
 
-  /** Finds a header by the given hash and returns it along with its index in the headers vector */
-  def findHeaderIdx(
-      hashBE: DoubleSha256DigestBE): Option[(BlockHeaderDb, Int)] = {
+  /** Finds a header index by the given hash */
+  def findHeaderIdx(hashBE: DoubleSha256DigestBE): Option[Int] = {
 
     @tailrec
-    def loop(idx: Int): Option[(BlockHeaderDb, Int)] = {
+    def loop(idx: Int): Option[Int] = {
       if (idx >= headers.size)
         None
       else {
         val header = headers(idx)
         if (header.hashBE == hashBE)
-          Some(header, idx)
+          Some(idx)
         else
           loop(idx + 1)
       }
@@ -117,8 +115,9 @@ private[blockchain] trait BaseBlockChainCompObject
           val failed = ConnectTipResult.BadTip(err)
           failed
 
-        case Some((prevBlockHeader, prevHeaderIdx)) =>
+        case Some(prevHeaderIdx) =>
           //found a header to connect to!
+          val prevBlockHeader = blockchain.headers(prevHeaderIdx)
           logger.debug(
             s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
           val chain = blockchain.fromValidHeader(prevBlockHeader)
@@ -220,16 +219,16 @@ private[blockchain] trait BaseBlockChainCompObject
   }
 
   /**
-    * Finds the parent of the given header
+    * Finds the parent's index of the given header
     */
   private def findPrevBlockHeaderIdx(
       header: BlockHeader,
-      blockchain: Blockchain): Option[(BlockHeaderDb, Int)] = {
+      blockchain: Blockchain): Option[Int] = {
     // Let's see if we are lucky and the latest tip is the parent.
     val latestTip = blockchain.tip
     if (latestTip.hashBE == header.previousBlockHashBE) {
-      // Yes we are. Returning the latest tip.
-      Some((latestTip, 0))
+      // Yes we are.
+      Some(0)
     } else {
       // No. Scanning the blockchain to find the parent.
       blockchain.findHeaderIdx(header.previousBlockHashBE)
