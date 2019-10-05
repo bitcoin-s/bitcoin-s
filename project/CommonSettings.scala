@@ -36,8 +36,18 @@ object CommonSettings {
     apiURL := homepage.value.map(_.toString + "/api").map(url(_)),
     // scaladoc settings end
     ////
+
     scalacOptions in Compile := compilerOpts(scalaVersion.value),
+    //remove annoying import unused things in the scala console
+    //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
+    scalacOptions in (Compile, console) ~= (_ filterNot (s =>
+      s == "-Ywarn-unused-import"
+        || s =="-Ywarn-unused"
+        //for 2.13 -- they use different compiler opts
+        || s == "-Xlint:unused")),
+    scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
     scalacOptions in Test := testCompilerOpts,
+
     Compile / compile / javacOptions ++= {
       if (isCI) {
         //jdk11 is used on CI, we need to use the --release flag to make sure

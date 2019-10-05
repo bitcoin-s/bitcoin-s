@@ -19,7 +19,7 @@ import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.json.{PaymentId, PaymentStatus}
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -628,7 +628,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         uri = new URI("http://localhost:18333"),
         rpcUri = auth.bitcoindRpcUri,
         authCredentials = auth.bitcoinAuthOpt.get,
-        binary = BitcoindRpcTestUtil.newestBitcoindBinary
+        binary = BitcoindRpcTestUtil.getBinary(BitcoindVersion.V17)
       )
       BitcoindRpcClient.withActorSystem(bitcoindInstance)
     }
