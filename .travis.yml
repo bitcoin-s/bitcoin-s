@@ -51,6 +51,8 @@ matrix:
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
       scala:
         - 2.13.0
+    # skip all test tagged as UsesExperimentalBitcoind
+    # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
     - os: osx
       name: "macOS node tests"
       env:
@@ -110,5 +112,4 @@ stages:
 
 script:
   # Modify PATH to include binaries we are about to download
-  - export PATH=$PWD/binaries/bitcoind/bitcoin-0.17.0/bin/:$PATH
   - sbt ++$TRAVIS_SCALA_VERSION downloadBitcoind downloadEclair coverage $TEST_COMMAND
