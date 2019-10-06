@@ -5,6 +5,7 @@ import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.scalatest.{DoNotDiscover, FutureOutcome}
@@ -12,6 +13,7 @@ import org.scalatest.{DoNotDiscover, FutureOutcome}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
+@DoNotDiscover
 class NeutrinoNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
@@ -26,7 +28,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
 
   behavior of "NeutrinoNode"
 
-  it must "receive notification that a block occurred on the p2p network" in {
+  it must "receive notification that a block occurred on the p2p network" taggedAs (UsesExperimentalBitcoind) in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
@@ -54,7 +56,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
       }
   }
 
-  it must "stay in sync with a bitcoind instance" in {
+  it must "stay in sync with a bitcoind instance" taggedAs (UsesExperimentalBitcoind) in {
     nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val bitcoind = nodeConnectedWithBitcoind.bitcoind
