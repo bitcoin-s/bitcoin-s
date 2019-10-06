@@ -59,26 +59,30 @@ case class ChainHandler(
   /** @inheritdoc */
   override def processHeaders(headers: Vector[BlockHeader])(
       implicit ec: ExecutionContext): Future[ChainApi] = {
-    val blockchainUpdates: Vector[BlockchainUpdate] = {
-      Blockchain.connectHeadersToChains(headers, blockchains)
-    }
-
-    val headersToBeCreated = {
-      blockchainUpdates.flatMap(_.successfulHeaders).distinct
-    }
-
-    val chains = blockchainUpdates.map(_.blockchain)
-
-    val createdF = blockHeaderDAO.createAll(headersToBeCreated)
-
-    val newChainHandler = this.copy(blockchains = chains)
-
-    createdF.map { _ =>
-      chains.foreach { c =>
-        logger.info(
-          s"Processed headers from height=${c(headers.length - 1).height} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
+    if (headers.isEmpty) {
+      Future.successful(this)
+    } else {
+      val blockchainUpdates: Vector[BlockchainUpdate] = {
+        Blockchain.connectHeadersToChains(headers, blockchains)
       }
-      newChainHandler
+
+      val headersToBeCreated = {
+        blockchainUpdates.flatMap(_.successfulHeaders).distinct
+      }
+
+      val chains = blockchainUpdates.map(_.blockchain)
+
+      val createdF = blockHeaderDAO.createAll(headersToBeCreated)
+
+      val newChainHandler = this.copy(blockchains = chains)
+
+      createdF.map { _ =>
+        chains.foreach { c =>
+          logger.info(
+            s"Processed headers from height=${c(headers.length - 1).height} to ${c.height}. Best hash=${c.tip.hashBE.hex}")
+        }
+        newChainHandler
+      }
     }
   }
 
