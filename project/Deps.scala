@@ -48,7 +48,7 @@ object Deps {
 
     // CLI deps
     val scoptV = "4.0.0-RC2"
-    val sttpV = "1.6.8"
+    val sttpV = "1.7.0"
   }
 
   object Compile {
