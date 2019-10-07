@@ -21,7 +21,9 @@ trait RawNetworkHeaderSerializer
     * @return the native object for the MessageHeader
     */
   def read(bytes: ByteVector): NetworkHeader = {
-    require(bytes.length == 24, s"Got bytes.length=${bytes.length} when NetworkHeader expects 24 bytes")
+    require(
+      bytes.length == 24,
+      s"Got bytes.length=${bytes.length} when NetworkHeader expects 24 bytes")
     val network = Networks.magicToNetwork(bytes.take(4))
     //.trim removes the null characters appended to the command name
     val commandName = bytes.slice(4, 16).toArray.map(_.toChar).mkString.trim
