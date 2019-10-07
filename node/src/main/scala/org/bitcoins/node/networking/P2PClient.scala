@@ -377,9 +377,8 @@ object P2PClient extends P2PLogger {
         val messageTry = Try(NetworkMessage(remainingBytes))
         messageTry match {
           case Success(message) =>
-            val newRemainingBytes = remainingBytes.slice(
-              message.bytes.length,
-              remainingBytes.length)
+            val newRemainingBytes =
+              remainingBytes.slice(message.bytes.length, remainingBytes.length)
             logger.trace(
               s"Parsed a message=${message.header.commandName} from bytes, continuing with remainingBytes=${newRemainingBytes.length}")
             loop(newRemainingBytes, message :: accum)
