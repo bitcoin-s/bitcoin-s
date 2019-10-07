@@ -84,6 +84,16 @@ case class GolombFilter(
 
     matchesHash(hash)
   }
+
+  def matchesAnyHash(hashes: Vector[UInt64]): Boolean =
+    hashes.exists(matchesHash)
+
+  def matchesAny(data: Vector[ByteVector]): Boolean = {
+    val f = n.num * m
+    val hashes = data.map(GCS.hashToRange(_, f, key))
+    matchesAnyHash(hashes)
+  }
+
 }
 
 object BlockFilter {

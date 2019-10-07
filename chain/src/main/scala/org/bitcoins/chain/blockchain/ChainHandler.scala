@@ -2,14 +2,17 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.api.ChainApi.BlockStamp
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -357,6 +360,60 @@ case class ChainHandler(
   override def getFiltersAtHeight(height: Int)(
       implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]] =
     filterDAO.getAtHeight(height)
+
+  /** @inheritdoc */
+  def getMatchingFilters(
+      addresses: Vector[BitcoinAddress],
+      start: Option[BlockStamp] = None,
+      end: Option[BlockStamp] = None)(
+      implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]] = {
+
+    logger.info(s"Starting looking for a filter for address $addresses")
+
+    val bytes = addresses.map(_.scriptPubKey.asmBytes)
+
+    val startHeightF =
+      Future.successful(start.map(BlockStamp.height).getOrElse(0))
+    val endHeightF = for {
+      filterCount <- getFilterCount
+    } yield end.map(BlockStamp.height).getOrElse(filterCount)
+
+    @tailrec
+    def scanFilters(
+        i: Int,
+        start: Int,
+        acc: Future[Vector[CompactFilterDb]]): Future[Vector[CompactFilterDb]] = {
+      if (i < start) {
+        acc.foreach { xs =>
+          logger.info(s"Done looking for a filter for address $addresses: ${xs
+            .map(_.blockHashBE)}")
+        }
+        acc
+      } else {
+        val newAcc: Future[Vector[CompactFilterDb]] = for {
+          compactFilterDb <- getFiltersAtHeight(i).map(_.head)
+          res <- acc
+        } yield {
+          if (compactFilterDb.golombFilter.matchesAny(bytes)) {
+            res :+ compactFilterDb
+          } else {
+            res
+          }
+        }
+        scanFilters(i - 1, start, newAcc)
+      }
+    }
+
+    val res: Future[Vector[CompactFilterDb]] = (for {
+      startHeight <- startHeightF
+      endHeight <- endHeightF
+    } yield {
+      scanFilters(endHeight, startHeight, Future.successful(Vector.empty))
+    }).flatten
+
+    res
+  }
+
 }
 
 object ChainHandler {
