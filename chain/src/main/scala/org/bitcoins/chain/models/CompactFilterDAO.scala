@@ -71,4 +71,20 @@ case class CompactFilterDAO()(
     val query = table.map(_.height).max.getOrElse(0).result
     query
   }
+
+  /** Gets filters between (inclusive) from and to, could be out of order */
+  def getBetweenHeights(from: Int, to: Int): Future[Vector[CompactFilterDb]] = {
+    val query = getBetweenHeightsQuery(from, to)
+    database.runVec(query)
+  }
+
+  private def getBetweenHeightsQuery(
+      from: Int,
+      to: Int): SQLiteProfile.StreamingProfileAction[
+    Seq[CompactFilterDb],
+    CompactFilterDb,
+    Effect.Read] = {
+    table.filter(header => header.height >= from && header.height <= to).result
+  }
+
 }

@@ -370,6 +370,8 @@ case class ChainHandler(
 
     logger.info(s"Starting looking for a filter for address $addresses")
 
+    val batchSize = chainConfig.filterBatchSize
+
     val bytes = addresses.map(_.scriptPubKey.asmBytes)
 
     val startHeightF =
@@ -383,7 +385,7 @@ case class ChainHandler(
         i: Int,
         start: Int,
         acc: Future[Vector[CompactFilterDb]]): Future[Vector[CompactFilterDb]] = {
-      if (i < start) {
+      if (i <= start) {
         acc.foreach { xs =>
           logger.info(s"Done looking for a filter for address $addresses: ${xs
             .map(_.blockHashBE)}")
@@ -391,16 +393,16 @@ case class ChainHandler(
         acc
       } else {
         val newAcc: Future[Vector[CompactFilterDb]] = for {
-          compactFilterDb <- getFiltersAtHeight(i).map(_.head)
+          compactFilterDbs <- filterDAO.getBetweenHeights(i - (batchSize - 1),
+                                                          i)
           res <- acc
         } yield {
-          if (compactFilterDb.golombFilter.matchesAny(bytes)) {
-            res :+ compactFilterDb
-          } else {
-            res
-          }
+          val filtered =
+            compactFilterDbs.filter(_.golombFilter.matchesAny(bytes))
+          res ++ filtered
         }
-        scanFilters(i - 1, start, newAcc)
+        val nextI = Math.max(start, i - batchSize)
+        scanFilters(nextI, start, newAcc)
       }
     }
 
