@@ -456,13 +456,13 @@ class ChainHandlerTest extends ChainUnitTest {
     )
     for {
       created <- chainHandler.filterDAO.create(compactFilterDb)
-      matched <- chainHandler.getMatchingFilters(
+      matched <- chainHandler.getMatchingBlocks(
         addresses =
           Vector(BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get),
         start = None,
         end = None)
     } yield {
-      assert(Vector(created) == matched)
+      assert(Vector(created.blockHashBE) == matched)
     }
   }
 

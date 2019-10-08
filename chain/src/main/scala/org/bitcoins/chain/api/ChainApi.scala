@@ -176,13 +176,13 @@ trait ChainApi {
     * @param addresses list of addresses
     * @param start start point (if empty it starts with the genesis block)
     * @param end end point (if empty it ends with the best tip)
-    * @return a list of matching filters
+    * @return a list of matching block hashes
     */
-  def getMatchingFilters(
+  def getMatchingBlocks(
       addresses: Vector[BitcoinAddress],
       start: Option[BlockStamp] = None,
       end: Option[BlockStamp] = None)(
-      implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]]
+      implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]]
 
 }
 

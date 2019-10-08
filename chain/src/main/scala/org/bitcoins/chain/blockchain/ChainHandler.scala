@@ -13,7 +13,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent._
 
 /**
   * Chain Handler is meant to be the reference implementation
@@ -362,13 +362,14 @@ case class ChainHandler(
     filterDAO.getAtHeight(height)
 
   /** @inheritdoc */
-  def getMatchingFilters(
+  def getMatchingBlocks(
       addresses: Vector[BitcoinAddress],
       start: Option[BlockStamp] = None,
       end: Option[BlockStamp] = None)(
-      implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]] = {
+      implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
 
-    logger.info(s"Starting looking for a filter for address $addresses")
+    logger.info(
+      s"Starting looking for matching blocks for addresses ${addresses.mkString(",")}")
 
     val batchSize = chainConfig.filterBatchSize
 
@@ -384,29 +385,43 @@ case class ChainHandler(
     def scanFilters(
         i: Int,
         start: Int,
-        acc: Future[Vector[CompactFilterDb]]): Future[Vector[CompactFilterDb]] = {
+        acc: Future[Vector[DoubleSha256DigestBE]]): Future[
+      Vector[DoubleSha256DigestBE]] = {
       if (i <= start) {
-        acc.foreach { xs =>
-          logger.info(s"Done looking for a filter for address $addresses: ${xs
-            .map(_.blockHashBE)}")
+        acc.foreach { blocks =>
+          logger.info(s"Done looking for matching blocks for addresses ${addresses
+            .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
+            .getOrElse("")}")
+        }
+        acc.failed.foreach { e =>
+          logger.error(
+            s"Cannot find matching blocks for addresses ${addresses.mkString(",")}",
+            e)
         }
         acc
       } else {
-        val newAcc: Future[Vector[CompactFilterDb]] = for {
+        val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
           compactFilterDbs <- filterDAO.getBetweenHeights(i - (batchSize - 1),
                                                           i)
+          filtered <- Future.sequence(compactFilterDbs.map { filter =>
+            Future {
+              blocking {
+                if (filter.golombFilter.matchesAny(bytes))
+                  Some(filter.blockHashBE)
+                else None
+              }
+            }
+          })
           res <- acc
         } yield {
-          val filtered =
-            compactFilterDbs.filter(_.golombFilter.matchesAny(bytes))
-          res ++ filtered
+          res ++ filtered.flatten
         }
         val nextI = Math.max(start, i - batchSize)
         scanFilters(nextI, start, newAcc)
       }
     }
 
-    val res: Future[Vector[CompactFilterDb]] = (for {
+    val res: Future[Vector[DoubleSha256DigestBE]] = (for {
       startHeight <- startHeightF
       endHeight <- endHeightF
     } yield {
