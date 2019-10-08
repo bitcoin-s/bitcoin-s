@@ -85,9 +85,13 @@ case class GolombFilter(
     matchesHash(hash)
   }
 
+  /** Checks whether there's a match for at least one of the given hashes
+    * TODO refactor it to implement https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match
+    */
   def matchesAnyHash(hashes: Vector[UInt64]): Boolean =
     hashes.exists(matchesHash)
 
+  /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a match */
   def matchesAny(data: Vector[ByteVector]): Boolean = {
     val f = n.num * m
     val hashes = data.map(GCS.hashToRange(_, f, key))

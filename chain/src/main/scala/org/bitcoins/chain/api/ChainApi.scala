@@ -1,6 +1,5 @@
 package org.bitcoins.chain.api
 
-import org.bitcoins.chain.api.ChainApi.{BlockHeight, BlockStamp}
 import org.bitcoins.chain.models.{
   BlockHeaderDb,
   CompactFilterDb,
@@ -13,11 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.gcs._
-import org.bitcoins.core.number.UInt32
-
-import scala.annotation.tailrec
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockHeight, BlockStamp}
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -174,52 +169,24 @@ trait ChainApi {
     * Iterates over the block filters in order to find filters that match to the given addresses
     *
     * @param addresses list of addresses
-    * @param start start point (if empty it starts with the genesis block)
-    * @param end end point (if empty it ends with the best tip)
+    * @param startOpt start point (if empty it starts with the genesis block)
+    * @param endOpt end point (if empty it ends with the best tip)
+    * @param batchSize number of filters that can be matched in one batch
     * @return a list of matching block hashes
     */
   def getMatchingBlocks(
       addresses: Vector[BitcoinAddress],
-      start: Option[BlockStamp] = None,
-      end: Option[BlockStamp] = None)(
+      startOpt: Option[BlockStamp] = None,
+      endOpt: Option[BlockStamp] = None,
+      batchSize: Int = chainConfig.filterBatchSize)(
       implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]]
 
-}
-
-object ChainApi {
-
-  object BlockStamp {
-    implicit def implicitHeight(height: Int): BlockHeight = BlockHeight(height)
-    implicit def implicitHeader(header: BlockHeaderDb): HeaderBlockStamp =
-      HeaderBlockStamp(header)
-
-    def height(blockStamp: BlockStamp): Int = blockStamp match {
-      case blockHeight: BlockHeight => blockHeight.height
-      case header: HeaderBlockStamp => header.height
+  /** Returns the block height of the given block stamp */
+  def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
+    blockStamp match {
+      case blockHeight: BlockHeight => Future.successful(blockHeight.height)
+      // TODO implement this for the other cases
       case x: BlockStamp =>
-        throw new RuntimeException(s"Invalid block stamp: $x")
+        Future.failed(new RuntimeException(s"Invalid block stamp: $x"))
     }
-  }
-
-  /** This trait represents a point on blockchain, and is used to specify block ranges */
-  sealed trait BlockStamp extends Ordered[BlockStamp]
-
-  case class BlockHeight(height: Int) extends BlockStamp {
-    override def compare(that: BlockStamp): Int = that match {
-      case blockHeight: BlockHeight => height.compareTo(blockHeight.height)
-      case header: HeaderBlockStamp => height.compareTo(header.height)
-      case _: BlockStamp            => 1
-    }
-  }
-
-  case class HeaderBlockStamp(header: BlockHeaderDb) extends BlockStamp {
-    def time: UInt32 = header.time
-    def height: Int = header.height
-    override def compare(that: BlockStamp): Int = that match {
-      case blockHeight: BlockHeight => height.compareTo(blockHeight.height)
-      case header: HeaderBlockStamp => height.compareTo(header.height)
-      case _: BlockStamp            => 1
-    }
-  }
-
 }

@@ -2,13 +2,12 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.chain.api.ChainApi.BlockStamp
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
@@ -361,72 +360,75 @@ case class ChainHandler(
       implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]] =
     filterDAO.getAtHeight(height)
 
-  /** @inheritdoc */
+  /** Implements [[ChainApi.getMatchingBlocks()]].
+    *
+    * I queries the filter database for [[batchSize]] filters a time
+    * and tries to run [[GolombFilter.matchesAny]] for each filter in a separate thread.
+    *
+    * For best results use a separate execution context.
+    */
   def getMatchingBlocks(
       addresses: Vector[BitcoinAddress],
-      start: Option[BlockStamp] = None,
-      end: Option[BlockStamp] = None)(
+      startOpt: Option[BlockStamp] = None,
+      endOpt: Option[BlockStamp] = None,
+      batchSize: Int = chainConfig.filterBatchSize)(
       implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
 
     logger.info(
       s"Starting looking for matching blocks for addresses ${addresses.mkString(",")}")
 
-    val batchSize = chainConfig.filterBatchSize
-
     val bytes = addresses.map(_.scriptPubKey.asmBytes)
 
-    val startHeightF =
-      Future.successful(start.map(BlockStamp.height).getOrElse(0))
-    val endHeightF = for {
-      filterCount <- getFilterCount
-    } yield end.map(BlockStamp.height).getOrElse(filterCount)
-
+    /** Iterates over the filters in the range to find matches */
     @tailrec
-    def scanFilters(
-        i: Int,
+    def loop(
         start: Int,
+        end: Int,
         acc: Future[Vector[DoubleSha256DigestBE]]): Future[
       Vector[DoubleSha256DigestBE]] = {
-      if (i <= start) {
-        acc.foreach { blocks =>
-          logger.info(s"Done looking for matching blocks for addresses ${addresses
-            .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
-            .getOrElse("")}")
-        }
-        acc.failed.foreach { e =>
-          logger.error(
-            s"Cannot find matching blocks for addresses ${addresses.mkString(",")}",
-            e)
-        }
+      if (end <= start) {
         acc
       } else {
+        val startHeight = end - (batchSize - 1)
+        val endHeight = end
         val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
-          compactFilterDbs <- filterDAO.getBetweenHeights(i - (batchSize - 1),
-                                                          i)
+          compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
+                                                          endHeight)
           filtered <- Future.sequence(compactFilterDbs.map { filter =>
             Future {
-              blocking {
-                if (filter.golombFilter.matchesAny(bytes))
-                  Some(filter.blockHashBE)
-                else None
-              }
+              if (filter.golombFilter.matchesAny(bytes))
+                Some(filter.blockHashBE)
+              else None
             }
           })
           res <- acc
         } yield {
           res ++ filtered.flatten
         }
-        val nextI = Math.max(start, i - batchSize)
-        scanFilters(nextI, start, newAcc)
+        val newEnd = Math.max(start, endHeight - batchSize)
+        loop(start, newEnd, newAcc)
       }
     }
 
-    val res: Future[Vector[DoubleSha256DigestBE]] = (for {
-      startHeight <- startHeightF
-      endHeight <- endHeightF
+    val res = (for {
+      startHeight <- startOpt.fold(Future.successful(0))(getHeightByBlockStamp)
+      endHeight <- endOpt.fold(getFilterCount)(getHeightByBlockStamp)
     } yield {
-      scanFilters(endHeight, startHeight, Future.successful(Vector.empty))
+      if (startHeight > endHeight)
+        throw new RuntimeException(
+          s"Invalid block range: end position cannot precede start")
+      loop(startHeight, endHeight, Future.successful(Vector.empty))
     }).flatten
+
+    res.foreach { blocks =>
+      logger.info(s"Done looking for matching blocks for addresses ${addresses
+        .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
+        .getOrElse("")}")
+    }
+
+    res.failed.foreach { e =>
+      logger.error(s"Cannot find matching blocks", e)
+    }
 
     res
   }

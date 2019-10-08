@@ -365,8 +365,6 @@ class ChainHandlerTest extends ChainUnitTest {
         val blockHashBE =
           DoubleSha256DigestBE.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
         val golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
-        val firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
-                                               filter = golombFilter)
         val firstFilterHeader = FilterHeader(filterHash = golombFilter.hash,
                                              prevHeaderHash =
                                                DoubleSha256Digest.empty)
@@ -459,8 +457,8 @@ class ChainHandlerTest extends ChainUnitTest {
       matched <- chainHandler.getMatchingBlocks(
         addresses =
           Vector(BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get),
-        start = None,
-        end = None)
+        startOpt = None,
+        endOpt = None)
     } yield {
       assert(Vector(created.blockHashBE) == matched)
     }
