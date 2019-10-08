@@ -420,6 +420,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
   }
 
+  /** Executes a PreExecutionScriptProgram */
   private def executeProgram(
       program: PreExecutionScriptProgram): ExecutedScriptProgram = {
     logger.trace("Stack: " + program.stack)
@@ -434,17 +435,18 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     }
   }
 
+  /** Finalizes an ExecutesScriptProgram by counting Script Ops
+    * and giving the ScriptProgram an error if there were too many.
+    */
   @tailrec
   private def completeProgramExecution(
-      program: ExecutedScriptProgram,
-      opCount: Int): ExecutedScriptProgram = {
+      program: ExecutedScriptProgram): ExecutedScriptProgram = {
     val countedOps = program.originalScript
       .count(BitcoinScriptUtil.countsTowardsScriptOpLimit)
     logger.trace("Counted ops: " + countedOps)
 
     if (countedOps > MAX_SCRIPT_OPS && program.error.isEmpty) {
-      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount),
-                               opCount)
+      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount))
     } else {
       program
     }
@@ -470,12 +472,10 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
         "We have reached the maximum amount of script operations allowed")
       logger.error(
         "Here are the remaining operations in the script: " + program.script)
-      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount),
-                               opCount)
+      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount))
     } else if (scriptByteVector.length > 10000) {
       logger.error("We cannot run a script that is larger than 10,000 bytes")
-      completeProgramExecution(ScriptProgram(program, ScriptErrorScriptSize),
-                               opCount)
+      completeProgramExecution(ScriptProgram(program, ScriptErrorScriptSize))
     } else {
       val (nextProgram, nextOpCount) = program.script match {
         //if at any time we see that the program is not valid
@@ -1054,7 +1054,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
       nextProgram match {
         case p: ExecutedScriptProgram =>
-          completeProgramExecution(p, nextOpCount)
+          completeProgramExecution(p)
         case p: ExecutionInProgressScriptProgram => loop(p, nextOpCount)
       }
     }
