@@ -16,7 +16,8 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
   "BitwiseInterpreter" must "evaluate OP_EQUAL" in {
     val stack = List(pubKeyHash, pubKeyHash)
     val script = List(OP_EQUAL)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = BI.opEqual(program)
     newProgram.stack.head must be(OP_TRUE)
   }
@@ -24,20 +25,23 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate OP_1 and OP_TRUE to equal" in {
     val stack = List(OP_1, OP_TRUE)
     val script = List(OP_EQUAL)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = BI.opEqual(program)
     newProgram.stack.head must be(OP_TRUE)
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the stack" in {
     intercept[IllegalArgumentException] {
-      BI.opEqual(ScriptProgram(TestUtil.testProgram, List(), List()))
+      BI.opEqual(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, List(), List()))
     }
   }
 
   it must "throw an exception for OP_EQUAL when we don't have enough items on the script stack" in {
     intercept[IllegalArgumentException] {
-      BI.opEqual(ScriptProgram(TestUtil.testProgram, List(), List()))
+      BI.opEqual(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, List(), List()))
     }
   }
 
@@ -64,19 +68,22 @@ class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate a ScriptNumber & ScriptConstant to true if they are the same" in {
     val stack = List(ScriptNumber(2), ScriptConstant("02"))
     val script = List(OP_EQUAL)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     BI.opEqual(program).stack.head must be(OP_TRUE)
 
     val stack1 = List(ScriptConstant("02"), ScriptNumber(2))
     val script1 = List(OP_EQUAL)
-    val program1 = ScriptProgram(TestUtil.testProgram, stack1, script1)
+    val program1 =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1)
     BI.opEqual(program1).stack.head must be(OP_TRUE)
   }
 
   it must "evaluate an OP_0 and ScriptNumberImpl(0) to equal" in {
     val stack = List(OP_0, ScriptNumber.zero)
     val script = List(OP_EQUAL)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     BI.opEqual(program).stack.head must be(OP_TRUE)
   }
 
