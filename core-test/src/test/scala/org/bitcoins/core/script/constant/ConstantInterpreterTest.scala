@@ -68,7 +68,8 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
   it must "push a constant 2 bytes onto the stack" in {
     val stack = List()
     val script = List(BytesToPushOntoStack(2), ScriptNumber.one, OP_0)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = CI.pushScriptNumberBytesToStack(program)
     newProgram.script.isEmpty must be(true)
     newProgram.stack must be(List(ScriptConstant("0100")))
@@ -78,8 +79,9 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
     val stack = List()
     val script = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
     val program =
-      ScriptProgram(ScriptProgram(TestUtil.testProgram, stack, script),
-                    Seq[ScriptFlag]())
+      ScriptProgram(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
+        Seq[ScriptFlag]())
     val newProgram = CI.opPushData1(program)
     newProgram.stackTopIsFalse must be(true)
     newProgram.stack must be(List(ScriptNumber.zero))
@@ -87,16 +89,18 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
     val stack1 = List()
     val script1 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
     val program1 =
-      ScriptProgram(ScriptProgram(TestUtil.testProgram, stack1, script1),
-                    Seq[ScriptFlag]())
+      ScriptProgram(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1),
+        Seq[ScriptFlag]())
     val newProgram1 = CI.opPushData2(program1)
     newProgram1.stack must be(List(ScriptNumber.zero))
 
     val stack2 = List()
     val script2 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
     val program2 =
-      ScriptProgram(ScriptProgram(TestUtil.testProgram, stack2, script2),
-                    Seq[ScriptFlag]())
+      ScriptProgram(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2),
+        Seq[ScriptFlag]())
     val newProgram2 = CI.opPushData4(program2)
     newProgram2.stack must be(List(ScriptNumber.zero))
   }
@@ -117,20 +121,23 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
     val stack1 = List()
     val script1 = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
     val program1 =
-      ScriptProgram(ScriptProgram(TestUtil.testProgram, stack1, script1),
-                    Seq[ScriptFlag]())
+      ScriptProgram(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1),
+        Seq[ScriptFlag]())
 
     val stack2 = List()
     val script2 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
     val program2 =
-      ScriptProgram(ScriptProgram(TestUtil.testProgram, stack2, script2),
-                    Seq[ScriptFlag]())
+      ScriptProgram(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2),
+        Seq[ScriptFlag]())
 
     val stack4 = List()
     val script4 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
     val program4 =
-      ScriptProgram(ScriptProgram(TestUtil.testProgram, stack4, script4),
-                    Seq[ScriptFlag]())
+      ScriptProgram(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack4, script4),
+        Seq[ScriptFlag]())
 
     //purposely call incorrect functions to mismatch opCodes
     intercept[IllegalArgumentException] {
@@ -150,7 +157,8 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
     "BytesToPushOntoStack, ScriptNumber, or ScriptConstant" in {
     val stack = List()
     val script = List(OP_CHECKMULTISIGVERIFY, ScriptNumber.one, OP_0)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
 
     intercept[IllegalArgumentException] {
       CI.pushScriptNumberBytesToStack(program)
@@ -161,8 +169,9 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
     val stack = List()
     val script = List(OP_PUSHDATA4, ScriptNumber.zero)
     val program =
-      ScriptProgram(ScriptProgram(TestUtil.testProgram, stack, script),
-                    Seq[ScriptFlag](ScriptVerifyMinimalData))
+      ScriptProgram(
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
+        Seq[ScriptFlag](ScriptVerifyMinimalData))
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData4(program))
     newProgram.error must be(Some(ScriptErrorMinimalData))
@@ -174,7 +183,8 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
         "ffffffff00ffffffff014a7afa8f7d52fd9e17a914b167f19394cd656c34f843ac2387e602007fd15b8700000000")
     val stack = Nil
     val script = List(OP_PUSHDATA1, OP_3, constant)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = CI.opPushData1(program)
     newProgram.stack must be(Seq(constant))
 

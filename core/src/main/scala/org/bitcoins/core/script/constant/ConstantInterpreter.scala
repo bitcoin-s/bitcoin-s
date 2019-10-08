@@ -1,6 +1,10 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.{
+  ExecutionInProgressScriptProgram,
+  ScriptProgram,
+  StartedScriptProgram
+}
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
@@ -14,28 +18,32 @@ sealed abstract class ConstantInterpreter {
   private def logger = BitcoinSLogger.logger
 
   /** The next byte contains the number of bytes to be pushed onto the stack. */
-  def opPushData1(program: ScriptProgram): ScriptProgram = {
+  def opPushData1(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_PUSHDATA1),
             "Top of script stack must be OP_PUSHDATA1")
     opPushData(program)
   }
 
   /** The next two bytes contain the number of bytes to be pushed onto the stack. */
-  def opPushData2(program: ScriptProgram): ScriptProgram = {
+  def opPushData2(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_PUSHDATA2),
             "Top of script stack must be OP_PUSHDATA2")
     opPushData(program)
   }
 
   /** The next four bytes contain the number of bytes to be pushed onto the stack. */
-  def opPushData4(program: ScriptProgram): ScriptProgram = {
+  def opPushData4(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_PUSHDATA4),
             "Top of script stack must be OP_PUSHDATA4")
     opPushData(program)
   }
 
   /** Pushes the number of bytes onto the stack that is specified by script number on the script stack. */
-  def pushScriptNumberBytesToStack(program: ScriptProgram): ScriptProgram = {
+  def pushScriptNumberBytesToStack(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     val bytesNeeded: Long = program.script.head match {
       case OP_PUSHDATA1 | OP_PUSHDATA2 | OP_PUSHDATA4 =>
         bytesNeededForPushOp(program.script(1))
@@ -108,7 +116,8 @@ sealed abstract class ConstantInterpreter {
     * Checks if the MINIMALDATA script flag is set, if so checks if we are using the minimal push operation
     * if we are, then we push the bytes onto the stack.
     */
-  private def opPushData(program: ScriptProgram): ScriptProgram = {
+  private def opPushData(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     //for the case when we have the minimal data flag and the bytes to push onto stack is represented by the
     //constant telling OP_PUSHDATA how many bytes need to go onto the stack
     //for instance OP_PUSHDATA1 OP_0

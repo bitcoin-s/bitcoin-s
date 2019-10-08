@@ -1,6 +1,9 @@
 package org.bitcoins.core.script.control
 
-import org.bitcoins.core.script.ScriptProgram
+import org.bitcoins.core.script.{
+  ExecutionInProgressScriptProgram,
+  ScriptProgram
+}
 import org.bitcoins.core.script.arithmetic.OP_ADD
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant._
@@ -22,7 +25,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   "ControlOperationsInterpreter" must "have OP_VERIFY evaluate to true with '1' on the stack" in {
     val stack = List(OP_TRUE)
     val script = List(OP_VERIFY)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val result = COI.opVerify(program)
     result.stack.isEmpty must be(true)
     result.script.isEmpty must be(true)
@@ -33,7 +37,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21
     val stack = ScriptParser.fromString("0x09 0x00000000 0x00000000 0x10")
     val script = List(OP_VERIFY)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val result = COI.opVerify(program)
   }
 
@@ -62,7 +67,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
     intercept[IllegalArgumentException] {
       val stack = List(ScriptConstant("1"))
       val script = List()
-      val program = ScriptProgram(TestUtil.testProgram, stack, script)
+      val program =
+        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
       val result = COI.opVerify(program)
     }
   }
@@ -500,7 +506,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_IF correctly" in {
     val stack = List(OP_0)
     val script = List(OP_IF, OP_RESERVED, OP_ENDIF, OP_1)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
     newProgram.stack.isEmpty must be(true)
     newProgram.script must be(List(OP_ENDIF, OP_1))
@@ -509,7 +516,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_IF OP_ELSE OP_ENDIF block" in {
     val stack = List(OP_0)
     val script = List(OP_IF, OP_VER, OP_ELSE, OP_1, OP_ENDIF)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
     newProgram.script must be(List(OP_ELSE, OP_1, OP_ENDIF))
   }
@@ -539,7 +547,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_IF block correctly if the stack top is true" in {
     val stack = List(OP_1)
     val script = List(OP_IF, OP_1, OP_ELSE, OP_0, OP_ENDIF)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
 
     newProgram.stack must be(Nil)
@@ -549,7 +558,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   it must "evalute an OP_IF block with and leave the remaining operations outside of the OP_IF" in {
     val stack = List(OP_TRUE)
     val script = List(OP_IF, OP_ELSE, OP_ENDIF, OP_1)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
     newProgram.stack.isEmpty must be(true)
     newProgram.script must be(List(OP_ENDIF, OP_1))
@@ -558,7 +568,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate a weird case using multiple OP_ELSEs" in {
     val stack = List(ScriptNumber.one)
     val script = List(OP_IF, OP_ELSE, OP_0, OP_ELSE, OP_1, OP_ENDIF)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
 
     newProgram.script must be(List(OP_ELSE, OP_1, OP_ENDIF))
@@ -580,7 +591,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
                       OP_3,
                       OP_ENDIF,
                       OP_ENDIF)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
 
     newProgram.stack.isEmpty must be(true)
@@ -620,7 +632,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
       OP_EQUAL
     )
 
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
 
     newProgram.stack.isEmpty must be(true)
@@ -641,7 +654,10 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
            OP_2,
            OP_EQUAL))
 
-    val newProgram1 = COI.opElse(newProgram)
+    newProgram.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
+
+    val newProgram1 =
+      COI.opElse(newProgram.asInstanceOf[ExecutionInProgressScriptProgram])
     newProgram1.stack.isEmpty must be(true)
     newProgram1.script must be(
       List(OP_1,
@@ -675,7 +691,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
                       OP_2,
                       OP_EQUAL)
 
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opIf(program)
 
     newProgram.stack.isEmpty must be(true)
@@ -696,7 +713,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
     val stack = List(ScriptNumber(1), ScriptNumber(1))
     val script =
       List(OP_ENDIF, OP_ELSE, OP_RETURN, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL)
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opEndIf(program)
 
     newProgram.stack must be(stack)
@@ -744,7 +762,8 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
       OP_EQUAL
     )
 
-    val program = ScriptProgram(TestUtil.testProgram, stack, script)
+    val program =
+      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
     val newProgram = COI.opNotIf(program)
 
     newProgram.stack.isEmpty must be(true)
@@ -765,7 +784,10 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
            OP_2,
            OP_EQUAL))
 
-    val newProgram1 = COI.opElse(newProgram)
+    newProgram.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
+
+    val newProgram1 =
+      COI.opElse(newProgram.asInstanceOf[ExecutionInProgressScriptProgram])
     newProgram1.stack.isEmpty must be(true)
     newProgram1.script must be(
       List(OP_0,
@@ -781,33 +803,47 @@ class ControlOperationsInterpreterTest extends FlatSpec with MustMatchers {
            OP_2,
            OP_EQUAL))
 
+    newProgram1.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
+
     logger.info("newProgram1.script.tail: " + newProgram1.script.tail)
     val tree = COI.parseBinaryTree(newProgram1.script.tail)
 
     tree.toSeq must be(newProgram1.script.tail)
     val newProgram2 = COI.opNotIf(
-      ScriptProgram(newProgram1, List(OP_0), newProgram1.script.tail))
+      ScriptProgram(newProgram1.asInstanceOf[ExecutionInProgressScriptProgram],
+                    List(OP_0),
+                    newProgram1.script.tail))
     newProgram2.stack.isEmpty must be(true)
     newProgram2.script must be(
       List(OP_1, OP_ELSE, OP_1, OP_ENDIF, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL))
 
+    newProgram2.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
+
     val newProgram3 = COI.opElse(
-      ScriptProgram(newProgram2, List(OP_1), newProgram2.script.tail))
+      ScriptProgram(newProgram2.asInstanceOf[ExecutionInProgressScriptProgram],
+                    List(OP_1),
+                    newProgram2.script.tail))
     newProgram3.stack must be(List(OP_1))
     newProgram3.script must be(
       List(OP_1, OP_ENDIF, OP_ENDIF, OP_ADD, OP_2, OP_EQUAL))
 
+    newProgram3.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
+
     val newProgram4 = COI.opEndIf(
-      ScriptProgram(newProgram3,
+      ScriptProgram(newProgram3.asInstanceOf[ExecutionInProgressScriptProgram],
                     newProgram3.script.head :: newProgram3.stack,
                     newProgram3.script.tail))
     newProgram4.stack must be(List(OP_1, OP_1))
     newProgram4.script must be(List(OP_ENDIF, OP_ADD, OP_2, OP_EQUAL))
 
-    val newProgram5 = COI.opEndIf(newProgram4)
+    newProgram4.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
+
+    val newProgram5 =
+      COI.opEndIf(newProgram4.asInstanceOf[ExecutionInProgressScriptProgram])
     newProgram5.stack must be(List(OP_1, OP_1))
     newProgram5.script must be(List(OP_ADD, OP_2, OP_EQUAL))
 
+    newProgram5.isInstanceOf[ExecutionInProgressScriptProgram] must be(true)
   }
 
   it must "mark a transaction as invalid if it is trying to spend an OP_RETURN output" in {

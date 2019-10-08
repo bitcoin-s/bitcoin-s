@@ -146,7 +146,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
                                              txAdjustedSequenceNumber.outputs,
                                              UInt32.zero)
     val t = buildTxSigComponent(adjustedLockTimeTx)
-    val baseProgram = PreExecutionScriptProgram(t)
+    val basePreProgram = PreExecutionScriptProgram(t)
+    val baseProgram = ScriptProgram.toExecutionInProgress(basePreProgram)
     val program = ScriptProgram(baseProgram, stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
@@ -175,7 +176,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
                                              txAdjustedSequenceNumber.outputs,
                                              UInt32.zero)
     val t = buildTxSigComponent(adjustedLockTimeTx)
-    val baseProgram = PreExecutionScriptProgram(t)
+    val basePreProgram = PreExecutionScriptProgram(t)
+    val baseProgram = ScriptProgram.toExecutionInProgress(basePreProgram)
     val program = ScriptProgram(baseProgram, stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
@@ -202,7 +204,8 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
                                              txAdjustedSequenceNumber.outputs,
                                              UInt32(500000000))
     val t = buildTxSigComponent(adjustedLockTimeTx)
-    val baseProgram = PreExecutionScriptProgram(t)
+    val basePreProgram = PreExecutionScriptProgram(t)
+    val baseProgram = ScriptProgram.toExecutionInProgress(basePreProgram)
     val program = ScriptProgram(baseProgram, stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
