@@ -419,15 +419,16 @@ case class ChainHandler(
       }
     }
 
-    val res = (for {
+    val res = for {
       startHeight <- startOpt.fold(Future.successful(0))(getHeightByBlockStamp)
       endHeight <- endOpt.fold(getFilterCount)(getHeightByBlockStamp)
-    } yield {
-      if (startHeight > endHeight)
+      _ = if (startHeight > endHeight)
         throw new RuntimeException(
           s"Invalid block range: end position cannot precede start")
-      loop(startHeight, endHeight, Future.successful(Vector.empty))
-    }).flatten
+      matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
+    } yield {
+      matched
+    }
 
     res.foreach { blocks =>
       logger.info(s"Done looking for matching blocks for addresses ${addresses
