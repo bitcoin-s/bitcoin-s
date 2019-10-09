@@ -371,7 +371,8 @@ case class ChainHandler(
       addresses: Vector[BitcoinAddress],
       startOpt: Option[BlockStamp] = None,
       endOpt: Option[BlockStamp] = None,
-      batchSize: Int = chainConfig.filterBatchSize)(
+      batchSize: Int = chainConfig.filterBatchSize,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
       implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
 
     logger.info(
@@ -394,13 +395,18 @@ case class ChainHandler(
         val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
           compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
                                                           endHeight)
-          filtered <- Future.sequence(compactFilterDbs.map { filter =>
-            Future {
-              if (filter.golombFilter.matchesAny(bytes))
-                Some(filter.blockHashBE)
-              else None
-            }
-          })
+          grouped = compactFilterDbs.grouped(parallelismLevel)
+          filtered <- Future
+            .sequence(grouped.map { filterGroup =>
+              Future {
+                filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
+                  (blocks, filter) =>
+                    if (filter.golombFilter.matchesAny(bytes))
+                      blocks :+ filter.blockHashBE
+                    else blocks
+                }
+              }
+            })
           res <- acc
         } yield {
           res ++ filtered.flatten

@@ -178,7 +178,8 @@ trait ChainApi {
       addresses: Vector[BitcoinAddress],
       startOpt: Option[BlockStamp] = None,
       endOpt: Option[BlockStamp] = None,
-      batchSize: Int = chainConfig.filterBatchSize)(
+      batchSize: Int = chainConfig.filterBatchSize,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
       implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]]
 
   /** Returns the block height of the given block stamp */
