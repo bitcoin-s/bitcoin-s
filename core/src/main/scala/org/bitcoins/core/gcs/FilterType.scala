@@ -41,13 +41,14 @@ object FilterType extends Factory[FilterType] {
     knownFilterTypes.get(filterType) match {
       case Some(code) => code
       case None =>
-        throw new RuntimeException(s"Unknown filter type: ${filterType}")
+        throw new IllegalArgumentException(
+          s"Unknown filter type: ${filterType}")
     }
 
   def byCode(code: Short): FilterType = knownFilterTypeCodes.get(code) match {
     case Some(filterType) => filterType
     case None =>
-      throw new RuntimeException(s"Unknown filter type code: ${code}")
+      throw new IllegalArgumentException(s"Unknown filter type code: ${code}")
   }
 
 }

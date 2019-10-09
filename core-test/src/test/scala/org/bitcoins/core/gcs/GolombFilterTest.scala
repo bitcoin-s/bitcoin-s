@@ -26,6 +26,8 @@ class GolombFilterTest extends BitcoinSUnitTest {
         assert(!filter.matchesHash(rand))
         assert(filter.matchesHash(data1))
         assert(filter.matchesHash(data2))
+        assert(!filter.matchesAnyHash(Vector(rand)))
+        assert(filter.matchesAnyHash(Vector(rand, data1, data2)))
     }
   }
 
@@ -50,6 +52,7 @@ class GolombFilterTest extends BitcoinSUnitTest {
         val hashes = filter.decodedHashes
 
         data.foreach(element => assert(filter.matches(element)))
+        assert(filter.matchesAny(data))
 
         val hashesNotInData: Vector[UInt64] =
           randHashes.filterNot(hashes.contains)
@@ -104,5 +107,6 @@ class GolombFilterTest extends BitcoinSUnitTest {
 
     assert(header.prevHeaderHash == prevHeader.hash)
     assert(header == nextHeader)
+    assert(nextHeader == prevHeader.nextHeader(filter))
   }
 }
