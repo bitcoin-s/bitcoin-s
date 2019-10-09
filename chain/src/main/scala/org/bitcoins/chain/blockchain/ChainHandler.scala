@@ -395,7 +395,10 @@ case class ChainHandler(
         val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
           compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
                                                           endHeight)
-          grouped = compactFilterDbs.grouped(parallelismLevel)
+          groupSize = if (compactFilterDbs.size / parallelismLevel * parallelismLevel < compactFilterDbs.size)
+            compactFilterDbs.size / parallelismLevel + 1
+          else compactFilterDbs.size / parallelismLevel
+          grouped = compactFilterDbs.grouped(groupSize)
           filtered <- Future
             .sequence(grouped.map { filterGroup =>
               Future {
