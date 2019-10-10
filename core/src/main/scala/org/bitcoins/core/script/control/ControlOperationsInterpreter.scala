@@ -31,13 +31,13 @@ sealed abstract class ControlOperationsInterpreter {
     logger.debug("Parsed binary tree: " + binaryTree)
     if (!checkMatchingOpIfOpNotIfOpEndIf(program.originalScript)) {
       logger.error("We do not have a matching OP_ENDIF for every OP_IF we have")
-      ScriptProgram(program, ScriptErrorUnbalancedConditional)
+      program.failExecution(ScriptErrorUnbalancedConditional)
     } else if (program.stack.isEmpty) {
       logger.error("We do not have any stack elements for our OP_IF")
-      ScriptProgram(program, ScriptErrorUnbalancedConditional)
+      program.failExecution(ScriptErrorUnbalancedConditional)
     } else if (isNotMinimalStackTop(stackTop, sigVersion, minimalIfEnabled)) {
       logger.error("OP_IF argument was not minimally encoded, got: " + stackTop)
-      ScriptProgram(program, ScriptErrorMinimalIf)
+      program.failExecution(ScriptErrorMinimalIf)
     } else if (program.stackTopIsTrue) {
       logger.debug("OP_IF stack top was true")
       logger.debug("Stack top: " + program.stack)
@@ -85,7 +85,7 @@ sealed abstract class ControlOperationsInterpreter {
     if (isNotMinimalStackTop(oldStackTop, sigVersion, minimalIfEnabled)) {
       //need to duplicate minimal check, we cannot accurately invert the stack
       //top for OP_IF otherwise
-      ScriptProgram(program, ScriptErrorMinimalIf)
+      program.failExecution(ScriptErrorMinimalIf)
     } else {
       val script = OP_IF :: program.script.tail
       val stackTop =
@@ -105,7 +105,7 @@ sealed abstract class ControlOperationsInterpreter {
             "First script opt must be OP_ELSE")
     if (!program.script.tail.contains(OP_ENDIF)) {
       logger.error("OP_ELSE does not have a OP_ENDIF")
-      ScriptProgram(program, ScriptErrorUnbalancedConditional)
+      program.failExecution(ScriptErrorUnbalancedConditional)
     } else {
       val tree = parseBinaryTree(program.script)
       val treeWithNextOpElseRemoved = tree match {
@@ -129,7 +129,7 @@ sealed abstract class ControlOperationsInterpreter {
       //means we do not have a matching OP_IF for our OP_ENDIF
       logger.error(
         "We do not have a matching OP_IF/OP_NOTIF for every OP_ENDIF we have")
-      ScriptProgram(program, ScriptErrorUnbalancedConditional)
+      program.failExecution(ScriptErrorUnbalancedConditional)
     } else ScriptProgram(program, program.stack, program.script.tail)
   }
 
@@ -146,7 +146,7 @@ sealed abstract class ControlOperationsInterpreter {
   def opReturn(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_RETURN))
-    ScriptProgram(program, ScriptErrorOpReturn)
+    program.failExecution(ScriptErrorOpReturn)
   }
 
   /** Marks [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] as invalid if top stack value is not true. */
@@ -157,11 +157,11 @@ sealed abstract class ControlOperationsInterpreter {
     program.stack.nonEmpty match {
       case true =>
         logger.debug("Stack for OP_VERIFY: " + program.stack)
-        if (program.stackTopIsFalse) ScriptProgram(program, ScriptErrorVerify)
+        if (program.stackTopIsFalse) program.failExecution(ScriptErrorVerify)
         else ScriptProgram(program, program.stack.tail, program.script.tail)
       case false =>
         logger.error("OP_VERIFY requires an element to be on the stack")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
