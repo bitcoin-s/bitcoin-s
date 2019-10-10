@@ -7,8 +7,8 @@ import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
 import scala.annotation.tailrec
@@ -380,7 +380,31 @@ case class ChainHandler(
 
     val bytes = addresses.map(_.scriptPubKey.asmBytes)
 
-    /** Iterates over the filters in the range to find matches */
+    /** Calculates group size to split a filter vector into [[parallelismLevel]] groups */
+    def calcGroupSize(vectorSize: Int): Int =
+      if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
+        vectorSize / parallelismLevel + 1
+      else vectorSize / parallelismLevel
+
+    /** Iterates over the grouped vector of filters to find matches with the given [[bytes]].
+      * Wraps each group into a [[Future]] so that it can be potentially run in a separate thread.
+      */
+    def findMatches(groupedVector: Iterator[Vector[CompactFilterDb]]) = {
+      Future
+        .sequence(groupedVector.map { filterGroup =>
+          Future {
+            filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
+              (blocks, filter) =>
+                if (filter.golombFilter.matchesAny(bytes))
+                  blocks :+ filter.blockHashBE
+                else blocks
+            }
+          }
+        })
+        .map(_.flatten)
+    }
+
+    /** Iterates over all filters in the range to find matches */
     @tailrec
     def loop(
         start: Int,
@@ -395,24 +419,12 @@ case class ChainHandler(
         val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
           compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
                                                           endHeight)
-          groupSize = if (compactFilterDbs.size / parallelismLevel * parallelismLevel < compactFilterDbs.size)
-            compactFilterDbs.size / parallelismLevel + 1
-          else compactFilterDbs.size / parallelismLevel
+          groupSize = calcGroupSize(compactFilterDbs.size)
           grouped = compactFilterDbs.grouped(groupSize)
-          filtered <- Future
-            .sequence(grouped.map { filterGroup =>
-              Future {
-                filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
-                  (blocks, filter) =>
-                    if (filter.golombFilter.matchesAny(bytes))
-                      blocks :+ filter.blockHashBE
-                    else blocks
-                }
-              }
-            })
+          filtered <- findMatches(grouped)
           res <- acc
         } yield {
-          res ++ filtered.flatten
+          res ++ filtered
         }
         val newEnd = Math.max(start, endHeight - batchSize)
         loop(start, newEnd, newAcc)

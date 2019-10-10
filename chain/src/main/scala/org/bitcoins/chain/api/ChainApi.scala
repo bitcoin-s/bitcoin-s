@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockHeight, BlockStamp}
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -185,7 +185,8 @@ trait ChainApi {
   /** Returns the block height of the given block stamp */
   def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
     blockStamp match {
-      case blockHeight: BlockHeight => Future.successful(blockHeight.height)
+      case blockHeight: BlockStamp.BlockHeight =>
+        Future.successful(blockHeight.height)
       // TODO implement this for the other cases
       case x: BlockStamp =>
         Future.failed(new RuntimeException(s"Invalid block stamp: $x"))

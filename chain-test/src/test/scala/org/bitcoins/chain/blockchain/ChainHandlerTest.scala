@@ -415,7 +415,8 @@ class ChainHandlerTest extends ChainUnitTest {
   it must "match block filters" in { chainHandler: ChainHandler =>
     import scodec.bits._
 
-    val bytes: ByteVector =
+    // This is a filter for a random block on testnet
+    val filterBytes: ByteVector =
       hex"fd2701f0ed169ad16107a8a74609b9e4de3c6133c564f79923ca228805d3" ++
         hex"8e3efc796c4b35034cb573b10b759cdda5efd19e1cdb4d343afcb06455fa" ++
         hex"820b06eca828ad61d3377fa464f3bd06ff4432310a363f667e13d09ba993" ++
@@ -444,10 +445,11 @@ class ChainHandlerTest extends ChainUnitTest {
         hex"81502f0883d52c6a3bcc956e0ea1787f0717d0205fecfe55b01edb1ac0"
 
     val compactFilterDb = CompactFilterDb(
-      hashBE = CryptoUtil.doubleSHA256(bytes).flip,
+      hashBE = CryptoUtil.doubleSHA256(filterBytes).flip,
       filterType = FilterType.Basic,
-      bytes = bytes,
+      bytes = filterBytes,
       height = 1,
+      // this is the hash of the random testnet block
       blockHashBE = DoubleSha256DigestBE
         .fromHex(
           "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
@@ -455,10 +457,11 @@ class ChainHandlerTest extends ChainUnitTest {
     for {
       created <- chainHandler.filterDAO.create(compactFilterDb)
       matched <- chainHandler.getMatchingBlocks(
-        addresses =
+        addresses = // this is a random address which is included into the block
           Vector(BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get),
         startOpt = None,
-        endOpt = None)
+        endOpt = None
+      )
     } yield {
       assert(Vector(created.blockHashBE) == matched)
     }
