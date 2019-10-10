@@ -106,13 +106,7 @@ case class ExecutionInProgressScriptProgram(
     lastCodeSeparator: Option[Int])
     extends StartedScriptProgram {
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
-    ExecutedScriptProgram(this.txSignatureComponent,
-                          this.stack,
-                          this.script,
-                          this.originalScript,
-                          this.altStack,
-                          this.flags,
-                          Some(error))
+    ScriptProgram.toExecutedProgram(this).failExecution(error)
   }
 }
 
@@ -134,7 +128,7 @@ case class ExecutedScriptProgram(
     error: Option[ScriptError])
     extends StartedScriptProgram {
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
-    copy(error = Some(error))
+    this.copy(error = Some(error))
   }
 }
 
