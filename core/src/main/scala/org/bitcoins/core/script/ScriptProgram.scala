@@ -61,7 +61,11 @@ case class PreExecutionScriptProgram(
     originalScript: List[ScriptToken],
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag])
-    extends ScriptProgram
+    extends ScriptProgram {
+  def addFlags(newFlags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
+    this.copy(flags = newFlags)
+  }
+}
 
 object PreExecutionScriptProgram {
 
@@ -155,17 +159,6 @@ object ScriptProgram extends BitcoinSLogger {
                             program.altStack,
                             program.flags,
                             Some(error))
-  }
-
-  def apply(
-      oldProgram: PreExecutionScriptProgram,
-      flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
-    PreExecutionScriptProgram(oldProgram.txSignatureComponent,
-                              oldProgram.stack,
-                              oldProgram.script,
-                              oldProgram.originalScript,
-                              oldProgram.altStack,
-                              flags)
   }
 
   def apply(
