@@ -374,85 +374,95 @@ case class ChainHandler(
       batchSize: Int = chainConfig.filterBatchSize,
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
       implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
+    require(batchSize > 0, "batch size must be greater than zero")
+    require(parallelismLevel > 0, "parallelism level must be greater than zero")
 
     logger.info(
       s"Starting looking for matching blocks for addresses ${addresses.mkString(",")}")
 
-    val bytes = addresses.map(_.scriptPubKey.asmBytes)
+    if (addresses.isEmpty) {
+      logger.info(s"No addresses to match")
+      Future.successful(Vector.empty)
+    } else {
+      val bytes = addresses.map(_.scriptPubKey.asmBytes)
 
-    /** Calculates group size to split a filter vector into [[parallelismLevel]] groups */
-    def calcGroupSize(vectorSize: Int): Int =
-      if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
-        vectorSize / parallelismLevel + 1
-      else vectorSize / parallelismLevel
+      /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
+        * It's needed to limit number of threads required to run the matching */
+      def calcGroupSize(vectorSize: Int): Int =
+        if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
+          vectorSize / parallelismLevel + 1
+        else vectorSize / parallelismLevel
 
-    /** Iterates over the grouped vector of filters to find matches with the given [[bytes]].
-      * Wraps each group into a [[Future]] so that it can be potentially run in a separate thread.
-      */
-    def findMatches(groupedVector: Iterator[Vector[CompactFilterDb]]) = {
-      Future
-        .sequence(groupedVector.map { filterGroup =>
-          Future {
-            filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
-              (blocks, filter) =>
-                if (filter.golombFilter.matchesAny(bytes))
-                  blocks :+ filter.blockHashBE
-                else blocks
+      /** Iterates over the grouped vector of filters to find matches with the given [[bytes]].
+        */
+      def findMatches(filterGroups: Iterator[Vector[CompactFilterDb]]): Future[
+        Iterator[DoubleSha256DigestBE]] = {
+        // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
+        Future
+          .sequence(filterGroups.map { filterGroup =>
+            // We need to wrap in a future here to make sure we can
+            // potentially run these matches in parallel
+            Future {
+              // Find any matches in the group add the corresponding block hashes into the result
+              filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
+                (blocks, filter) =>
+                  if (filter.golombFilter.matchesAny(bytes))
+                    blocks :+ filter.blockHashBE
+                  else blocks
+              }
             }
-          }
-        })
-        .map(_.flatten)
-    }
-
-    /** Iterates over all filters in the range to find matches */
-    @tailrec
-    def loop(
-        start: Int,
-        end: Int,
-        acc: Future[Vector[DoubleSha256DigestBE]]): Future[
-      Vector[DoubleSha256DigestBE]] = {
-      if (end <= start) {
-        acc
-      } else {
-        val startHeight = end - (batchSize - 1)
-        val endHeight = end
-        val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
-          compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
-                                                          endHeight)
-          groupSize = calcGroupSize(compactFilterDbs.size)
-          grouped = compactFilterDbs.grouped(groupSize)
-          filtered <- findMatches(grouped)
-          res <- acc
-        } yield {
-          res ++ filtered
-        }
-        val newEnd = Math.max(start, endHeight - batchSize)
-        loop(start, newEnd, newAcc)
+          })
+          .map(_.flatten)
       }
-    }
 
-    val res = for {
-      startHeight <- startOpt.fold(Future.successful(0))(getHeightByBlockStamp)
-      endHeight <- endOpt.fold(getFilterCount)(getHeightByBlockStamp)
-      _ = if (startHeight > endHeight)
-        throw new RuntimeException(
-          s"Invalid block range: end position cannot precede start")
-      matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
-    } yield {
-      matched
-    }
+      /** Iterates over all filters in the range to find matches */
+      @tailrec
+      def loop(
+          start: Int,
+          end: Int,
+          acc: Future[Vector[DoubleSha256DigestBE]]): Future[
+        Vector[DoubleSha256DigestBE]] = {
+        if (end <= start) {
+          acc
+        } else {
+          val startHeight = end - (batchSize - 1)
+          val endHeight = end
+          val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
+            compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
+                                                            endHeight)
+            groupSize = calcGroupSize(compactFilterDbs.size)
+            grouped = compactFilterDbs.grouped(groupSize)
+            filtered <- findMatches(grouped)
+            res <- acc
+          } yield {
+            res ++ filtered
+          }
+          val newEnd = Math.max(start, endHeight - batchSize)
+          loop(start, newEnd, newAcc)
+        }
+      }
 
-    res.foreach { blocks =>
-      logger.info(s"Done looking for matching blocks for addresses ${addresses
-        .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
-        .getOrElse("")}")
+      val res = for {
+        startHeight <- startOpt.fold(Future.successful(0))(
+          getHeightByBlockStamp)
+        endHeight <- endOpt.fold(getFilterCount)(getHeightByBlockStamp)
+        _ = if (startHeight > endHeight)
+          throw new RuntimeException(
+            s"Invalid block range: end position cannot precede start")
+        matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
+      } yield {
+        matched
+      }
+      res.foreach { blocks =>
+        logger.info(s"Done looking for matching blocks for addresses ${addresses
+          .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
+          .getOrElse("")}")
+      }
+      res.failed.foreach { e =>
+        logger.error(s"Cannot find matching blocks", e)
+      }
+      res
     }
-
-    res.failed.foreach { e =>
-      logger.error(s"Cannot find matching blocks", e)
-    }
-
-    res
   }
 
 }
