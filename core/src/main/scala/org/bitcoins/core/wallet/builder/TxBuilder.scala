@@ -458,17 +458,10 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               Future.fromTry(TxBuilderError.WrongWitness)
             } else {
               redeemScript match {
-                case _: P2PKScriptPubKey =>
-                  P2PKSigner.sign(signers,
-                                  output,
-                                  unsignedWTx,
-                                  inputIndex,
-                                  hashType,
-                                  dummySignatures)
-                case _: P2PKHScriptPubKey =>
-                  P2PKHSigner.sign(signers,
+                case _: P2PKScriptPubKey | _: P2PKHScriptPubKey =>
+                  P2WSHSigner.sign(signers,
                                    output,
-                                   unsignedWTx,
+                                   unsignedTx,
                                    inputIndex,
                                    hashType,
                                    dummySignatures)
@@ -485,15 +478,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                   Future.fromTry(TxBuilderError.NestedP2SHSPK)
                 case lock: LockTimeScriptPubKey =>
                   lock.nestedScriptPubKey match {
-                    case _: P2PKScriptPubKey =>
-                      P2PKSigner.sign(signers,
-                                      output,
-                                      unsignedTx,
-                                      inputIndex,
-                                      hashType,
-                                      dummySignatures)
-                    case _: P2PKHScriptPubKey =>
-                      P2PKHSigner.sign(signers,
+                    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey =>
+                      P2WSHSigner.sign(signers,
                                        output,
                                        unsignedTx,
                                        inputIndex,
