@@ -1,19 +1,19 @@
 package org.bitcoins.chain.api
 
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDb,
   CompactFilterDb,
   CompactFilterHeaderDb
 }
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.protocol.blockchain.BlockHeader
-
-import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -187,12 +187,6 @@ trait ChainApi {
       implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]]
 
   /** Returns the block height of the given block stamp */
-  def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-    blockStamp match {
-      case blockHeight: BlockStamp.BlockHeight =>
-        Future.successful(blockHeight.height)
-      // TODO implement this for the other cases
-      case x: BlockStamp =>
-        Future.failed(new RuntimeException(s"Invalid block stamp: $x"))
-    }
+  def getHeightByBlockStamp(blockStamp: BlockStamp)(
+      implicit ec: ExecutionContext): Future[Int]
 }

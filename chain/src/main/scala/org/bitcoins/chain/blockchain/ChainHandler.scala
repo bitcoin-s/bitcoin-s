@@ -7,9 +7,9 @@ import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
 import scala.annotation.tailrec
@@ -364,9 +364,10 @@ case class ChainHandler(
   /** Implements [[ChainApi.getMatchingBlocks()]].
     *
     * I queries the filter database for [[batchSize]] filters a time
-    * and tries to run [[GolombFilter.matchesAny]] for each filter in a separate thread.
+    * and tries to run [[GolombFilter.matchesAny]] for each filter.
     *
-    * For best results use a separate execution context.
+    * It tries to match the filters in parallel using [[parallelismLevel]] threads.
+    * For best results use it with a separate execution context.
     */
   def getMatchingBlocks(
       scripts: Vector[ScriptPubKey],
@@ -404,7 +405,7 @@ case class ChainHandler(
             // We need to wrap in a future here to make sure we can
             // potentially run these matches in parallel
             Future {
-              // Find any matches in the group add the corresponding block hashes into the result
+              // Find any matches in the group and add the corresponding block hashes into the result
               filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
                 (blocks, filter) =>
                   if (filter.golombFilter.matchesAny(bytes))
@@ -446,10 +447,12 @@ case class ChainHandler(
       val res = for {
         startHeight <- startOpt.fold(Future.successful(0))(
           getHeightByBlockStamp)
+        _ = if (startHeight < 0)
+          throw InvalidBlockRange(s"Start position cannot negative")
         endHeight <- endOpt.fold(getFilterCount)(getHeightByBlockStamp)
         _ = if (startHeight > endHeight)
-          throw new RuntimeException(
-            s"Invalid block range: end position cannot precede start")
+          throw InvalidBlockRange(
+            s"End position cannot precede start: $startHeight:$endHeight")
         matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
       } yield {
         matched
@@ -465,6 +468,23 @@ case class ChainHandler(
       res
     }
   }
+
+  /** @inheritdoc */
+  override def getHeightByBlockStamp(blockStamp: BlockStamp)(
+      implicit ec: ExecutionContext): Future[Int] =
+    blockStamp match {
+      case blockHeight: BlockStamp.BlockHeight =>
+        Future.successful(blockHeight.height)
+      case blockHash: BlockStamp.BlockHash =>
+        getHeader(blockHash.hash.flip).map { header =>
+          header
+            .map(_.height)
+            .getOrElse(throw UnknownBlockHash(
+              s"Unknown block hash ${blockHash.hash.flip}"))
+        }
+      case blockTime: BlockStamp.BlockTime =>
+        Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
+    }
 
 }
 
