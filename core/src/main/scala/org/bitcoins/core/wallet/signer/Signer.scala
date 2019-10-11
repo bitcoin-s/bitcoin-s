@@ -312,96 +312,50 @@ object P2PKHSigner extends P2PKHSigner
 sealed abstract class MultiSigSigner extends BitcoinSigner {
 
   override def sign(
-      signersWithPubKeys: Seq[Sign],
+      signers: Seq[Sign],
       output: TransactionOutput,
       unsignedTx: Transaction,
       inputIndex: UInt32,
       hashType: HashType,
       isDummySignature: Boolean)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
-    val spk = output.scriptPubKey
+    sign(signers,
+         output,
+         unsignedTx,
+         inputIndex,
+         hashType,
+         isDummySignature,
+         p2wshOverride = None)
+  }
+
+  def sign(
+      signersWithPubKeys: Seq[Sign],
+      output: TransactionOutput,
+      unsignedTx: Transaction,
+      inputIndex: UInt32,
+      hashType: HashType,
+      isDummySignature: Boolean,
+      p2wshOverride: Option[(TxSigComponent, ScriptPubKey)])(
+      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    val spk = p2wshOverride match {
+      case None                    => output.scriptPubKey
+      case Some((_, redeemScript)) => redeemScript
+    }
     val signers = signersWithPubKeys.map(_.signFunction)
     val unsignedInput = unsignedTx.inputs(inputIndex.toInt)
     val flags = Policy.standardFlags
 
     val signed: Future[TxSigComponent] = spk match {
-      case _: P2WSHWitnessSPKV0 =>
-        val wtx = unsignedTx match {
-          case btx: BaseTransaction =>
-            WitnessTransaction(btx.version,
-                               btx.inputs,
-                               btx.outputs,
-                               btx.lockTime,
-                               EmptyWitness)
-          case wtx: WitnessTransaction => wtx
-        }
-        val witness = wtx.witness.witnesses(inputIndex.toInt)
-
-        //the reason we use (MultiSigSPK,ScriptPubKey) here is
-        //because we need to sign ScriptPubKey which could be
-        //multisig in the case of P2WSH(multisig), but
-        //ScriptPubkey could also be a LockTimeSPK we need to
-        //sign into the digital signature
-        val multiSigSPK: Future[(MultiSignatureScriptPubKey, ScriptPubKey)] =
-          witness match {
-            case _: P2WPKHWitnessV0 =>
-              Future.fromTry(TxBuilderError.WrongSigner)
-            case EmptyScriptWitness => Future.fromTry(TxBuilderError.NoWitness)
-            case p2wsh: P2WSHWitnessV0 =>
-              p2wsh.redeemScript match {
-                case lock: LockTimeScriptPubKey =>
-                  lock.nestedScriptPubKey match {
-                    case m: MultiSignatureScriptPubKey =>
-                      Future.successful((m, lock))
-                    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                        _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
-                        _: P2WSHWitnessSPKV0 | _: WitnessCommitment |
-                        _: CSVScriptPubKey | _: CLTVScriptPubKey |
-                        _: NonStandardScriptPubKey |
-                        _: UnassignedWitnessScriptPubKey |
-                        _: P2WPKHWitnessSPKV0 | EmptyScriptPubKey =>
-                      Future.fromTry(TxBuilderError.WrongSigner)
-                  }
-                case m: MultiSignatureScriptPubKey => Future.successful((m, m))
-                case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                    _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
-                    _: P2WSHWitnessSPKV0 | _: WitnessCommitment |
-                    _: NonStandardScriptPubKey | _: P2WPKHWitnessSPKV0 |
-                    _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey =>
-                  Future.fromTry(TxBuilderError.WrongSigner)
-              }
-          }
-
-        multiSigSPK.flatMap {
-          case (multiSig, spk) =>
-            val requiredSigs = multiSig.requiredSigs
-            val sigComponent =
-              WitnessTxSigComponentRaw(wtx, inputIndex, output, flags)
-            val signaturesNested: Seq[Future[ECDigitalSignature]] =
-              0.until(requiredSigs).map { i =>
-                doSign(sigComponent, signers(i), hashType, isDummySignature)
-              }
-            val signatures = Future.sequence(signaturesNested)
-            signatures.map { sigs =>
-              val multiSigScriptSig = MultiSignatureScriptSignature(sigs)
-              val scriptWit = P2WSHWitnessV0(spk, multiSigScriptSig)
-              val txWit = wtx.witness.updated(inputIndex.toInt, scriptWit)
-              val signedWTx = WitnessTransaction(wtx.version,
-                                                 wtx.inputs,
-                                                 wtx.outputs,
-                                                 wtx.lockTime,
-                                                 txWit)
-              WitnessTxSigComponentRaw(signedWTx, inputIndex, output, flags)
-            }
-        }
-
       case multiSigSPK: MultiSignatureScriptPubKey =>
         val requiredSigs = multiSigSPK.requiredSigs
         if (signers.size < requiredSigs) {
           Future.fromTry(TxBuilderError.WrongSigner)
         } else {
-          val sigComponent =
-            BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
+          val sigComponent = p2wshOverride match {
+            case None =>
+              BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
+            case Some((sigComponent, _)) => sigComponent
+          }
           val signaturesNested = 0
             .until(requiredSigs)
             .map(i =>
@@ -447,8 +401,11 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         }
         multiSigSPK.flatMap { mSPK =>
           val requiredSigs = mSPK.requiredSigs
-          val sigComponent =
-            BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
+          val sigComponent = p2wshOverride match {
+            case None =>
+              BaseTxSigComponent(unsignedTx, inputIndex, output, flags)
+            case Some((sigComponent, _)) => sigComponent
+          }
           val signatures: Future[Seq[ECDigitalSignature]] =
             if (signers.size < requiredSigs) {
               Future.fromTry(TxBuilderError.WrongSigner)
@@ -483,9 +440,9 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
           signedTxSigComp
         }
       case _: P2PKScriptPubKey | _: P2PKHScriptPubKey | _: P2SHScriptPubKey |
-          _: P2WPKHWitnessSPKV0 | _: NonStandardScriptPubKey |
-          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
-          EmptyScriptPubKey =>
+          _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
+          _: NonStandardScriptPubKey | _: WitnessCommitment |
+          _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey =>
         Future.fromTry(TxBuilderError.WrongSigner)
     }
     signed
@@ -625,6 +582,14 @@ sealed abstract class P2WSHSigner extends BitcoinSigner {
                              hashType,
                              isDummySignature,
                              p2wshOverride = Some((sigComponent, p2pkh)))
+          case multiSig: MultiSignatureScriptPubKey =>
+            MultiSigSigner.sign(signers,
+                                output,
+                                wtx,
+                                inputIndex,
+                                hashType,
+                                isDummySignature,
+                                p2wshOverride = Some((sigComponent, multiSig)))
           case lock: LockTimeScriptPubKey =>
             lock.nestedScriptPubKey match {
               case _: P2PKScriptPubKey =>
@@ -643,17 +608,25 @@ sealed abstract class P2WSHSigner extends BitcoinSigner {
                                  hashType,
                                  isDummySignature,
                                  p2wshOverride = Some((sigComponent, lock)))
-              case _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
-                  _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
-                  _: NonStandardScriptPubKey | _: CLTVScriptPubKey |
-                  _: CSVScriptPubKey | _: WitnessCommitment |
-                  EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+              case _: MultiSignatureScriptPubKey =>
+                MultiSigSigner.sign(signers,
+                                    output,
+                                    wtx,
+                                    inputIndex,
+                                    hashType,
+                                    isDummySignature,
+                                    p2wshOverride = Some((sigComponent, lock)))
+              case _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
+                  _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
+                  _: CLTVScriptPubKey | _: CSVScriptPubKey |
+                  _: WitnessCommitment | EmptyScriptPubKey |
+                  _: UnassignedWitnessScriptPubKey =>
                 Future.fromTry(TxBuilderError.WrongSigner)
             }
-          case _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
-              _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
-              _: NonStandardScriptPubKey | _: WitnessCommitment |
-              EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+          case _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
+              _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
+              _: WitnessCommitment | EmptyScriptPubKey |
+              _: UnassignedWitnessScriptPubKey =>
             Future.fromTry(TxBuilderError.WrongSigner)
         }
 

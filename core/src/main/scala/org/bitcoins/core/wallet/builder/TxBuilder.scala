@@ -433,16 +433,6 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                          dummySignatures)
           result.map(_.transaction)
         case p2wshSPK: P2WSHWitnessSPKV0 =>
-          //if we don't have a WitnessTransaction we need to convert our unsignedTx to a WitnessTransaction
-          val unsignedWTx: WitnessTransaction = unsignedTx match {
-            case btx: BaseTransaction =>
-              WitnessTransaction(btx.version,
-                                 btx.inputs,
-                                 btx.outputs,
-                                 btx.lockTime,
-                                 EmptyWitness)
-            case wtx: WitnessTransaction => wtx
-          }
           val p2wshScriptWit = scriptWitnessOpt match {
             case Some(wit) =>
               wit match {
@@ -458,40 +448,28 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               Future.fromTry(TxBuilderError.WrongWitness)
             } else {
               redeemScript match {
-                case _: P2PKScriptPubKey | _: P2PKHScriptPubKey =>
+                case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+                    _: MultiSignatureScriptPubKey =>
                   P2WSHSigner.sign(signers,
                                    output,
                                    unsignedTx,
                                    inputIndex,
                                    hashType,
                                    dummySignatures)
-                case _: MultiSignatureScriptPubKey =>
-                  MultiSigSigner.sign(signers,
-                                      output,
-                                      unsignedWTx,
-                                      inputIndex,
-                                      hashType,
-                                      dummySignatures)
                 case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 =>
                   Future.fromTry(TxBuilderError.NestedWitnessSPK)
                 case _: P2SHScriptPubKey =>
                   Future.fromTry(TxBuilderError.NestedP2SHSPK)
                 case lock: LockTimeScriptPubKey =>
                   lock.nestedScriptPubKey match {
-                    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey =>
+                    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+                        _: MultiSignatureScriptPubKey =>
                       P2WSHSigner.sign(signers,
                                        output,
                                        unsignedTx,
                                        inputIndex,
                                        hashType,
                                        dummySignatures)
-                    case _: MultiSignatureScriptPubKey =>
-                      MultiSigSigner.sign(signers,
-                                          output,
-                                          unsignedTx,
-                                          inputIndex,
-                                          hashType,
-                                          dummySignatures)
                     case _: P2WPKHWitnessSPKV0 =>
                       P2WPKHSigner.sign(signers,
                                         output,
