@@ -7,8 +7,7 @@ import org.bitcoins.testkit.core.gen.CryptoGenerators._
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import scodec.bits.ByteVector
-import scodec.bits._
+import scodec.bits.{ByteVector, _}
 
 class GolombFilterTest extends BitcoinSUnitTest {
   behavior of "GolombFilter"
@@ -26,10 +25,14 @@ class GolombFilterTest extends BitcoinSUnitTest {
         assert(!filter.matchesHash(rand))
         assert(filter.matchesHash(data1))
         assert(filter.matchesHash(data2))
+        assert(!filter.matchesAnyHash(Vector(rand)))
+        assert(filter.matchesAnyHash(Vector(rand, data1, data2)))
     }
   }
 
   it must "match arbitrary encoded data for bip 158 GCS parameters" in {
+    assertThrows[IllegalArgumentException](SipHashKey(ByteVector.empty))
+
     val genKey: Gen[SipHashKey] =
       Gen
         .listOfN(16, NumberGenerator.byte)
@@ -50,6 +53,7 @@ class GolombFilterTest extends BitcoinSUnitTest {
         val hashes = filter.decodedHashes
 
         data.foreach(element => assert(filter.matches(element)))
+        assert(filter.matchesAny(data))
 
         val hashesNotInData: Vector[UInt64] =
           randHashes.filterNot(hashes.contains)
@@ -104,5 +108,6 @@ class GolombFilterTest extends BitcoinSUnitTest {
 
     assert(header.prevHeaderHash == prevHeader.hash)
     assert(header == nextHeader)
+    assert(nextHeader == prevHeader.nextHeader(filter))
   }
 }

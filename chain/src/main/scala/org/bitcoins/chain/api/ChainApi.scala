@@ -1,17 +1,19 @@
 package org.bitcoins.chain.api
 
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDb,
   CompactFilterDb,
   CompactFilterHeaderDb
 }
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.protocol.blockchain.BlockHeader
-
-import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -164,4 +166,27 @@ trait ChainApi {
   def getFiltersAtHeight(height: Int)(
       implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]]
 
+  /**
+    * Iterates over the block filters in order to find filters that match to the given addresses
+    *
+    * @param scripts list of [[ScriptPubKey]]'s to watch
+    * @param startOpt start point (if empty it starts with the genesis block)
+    * @param endOpt end point (if empty it ends with the best tip)
+    * @param batchSize number of filters that can be matched in one batch
+    *                  (default [[ChainConfig.filterBatchSize]]
+    * @param parallelismLevel max number of threads required to perform matching
+    *                         (default [[Runtime.availableProcessors]])
+    * @return a list of matching block hashes
+    */
+  def getMatchingBlocks(
+      scripts: Vector[ScriptPubKey],
+      startOpt: Option[BlockStamp] = None,
+      endOpt: Option[BlockStamp] = None,
+      batchSize: Int = chainConfig.filterBatchSize,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
+      implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]]
+
+  /** Returns the block height of the given block stamp */
+  def getHeightByBlockStamp(blockStamp: BlockStamp)(
+      implicit ec: ExecutionContext): Future[Int]
 }
