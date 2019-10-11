@@ -108,6 +108,19 @@ case class ExecutionInProgressScriptProgram(
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     ScriptProgram.toExecutedProgram(this).failExecution(error)
   }
+
+  def addFlags(newFlags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
+    this.copy(flags = newFlags)
+  }
+
+  def replaceFlags(
+      newFlags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
+    this.copy(flags = newFlags)
+  }
+
+  def removeFlags(): ExecutionInProgressScriptProgram = {
+    this.replaceFlags(Seq.empty)
+  }
 }
 
 /**
