@@ -26,3 +26,8 @@ case class UnknownBlockHeight(message: String) extends ChainException(message)
   * [[org.bitcoins.chain.blockchain.ChainHandler]] tried to process multiple filters for the same block hash
   */
 case class DuplicateFilters(message: String) extends ChainException(message)
+
+/**
+  * The given block range is invalid
+  */
+case class InvalidBlockRange(message: String) extends ChainException(message)

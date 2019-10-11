@@ -7,10 +7,13 @@ import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.annotation.tailrec
+import scala.concurrent._
 
 /**
   * Chain Handler is meant to be the reference implementation
@@ -357,6 +360,132 @@ case class ChainHandler(
   override def getFiltersAtHeight(height: Int)(
       implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]] =
     filterDAO.getAtHeight(height)
+
+  /** Implements [[ChainApi.getMatchingBlocks()]].
+    *
+    * I queries the filter database for [[batchSize]] filters a time
+    * and tries to run [[GolombFilter.matchesAny]] for each filter.
+    *
+    * It tries to match the filters in parallel using [[parallelismLevel]] threads.
+    * For best results use it with a separate execution context.
+    */
+  def getMatchingBlocks(
+      scripts: Vector[ScriptPubKey],
+      startOpt: Option[BlockStamp] = None,
+      endOpt: Option[BlockStamp] = None,
+      batchSize: Int = chainConfig.filterBatchSize,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
+      implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
+    require(batchSize > 0, "batch size must be greater than zero")
+    require(parallelismLevel > 0, "parallelism level must be greater than zero")
+
+    logger.info(
+      s"Starting looking for matching blocks for scripts ${scripts.mkString(",")}")
+
+    if (scripts.isEmpty) {
+      logger.info(s"No scripts to match")
+      Future.successful(Vector.empty)
+    } else {
+      val bytes = scripts.map(_.asmBytes)
+
+      /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
+        * It's needed to limit number of threads required to run the matching */
+      def calcGroupSize(vectorSize: Int): Int =
+        if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
+          vectorSize / parallelismLevel + 1
+        else vectorSize / parallelismLevel
+
+      /** Iterates over the grouped vector of filters to find matches with the given [[bytes]].
+        */
+      def findMatches(filterGroups: Iterator[Vector[CompactFilterDb]]): Future[
+        Iterator[DoubleSha256DigestBE]] = {
+        // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
+        Future
+          .sequence(filterGroups.map { filterGroup =>
+            // We need to wrap in a future here to make sure we can
+            // potentially run these matches in parallel
+            Future {
+              // Find any matches in the group and add the corresponding block hashes into the result
+              filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
+                (blocks, filter) =>
+                  if (filter.golombFilter.matchesAny(bytes))
+                    blocks :+ filter.blockHashBE
+                  else blocks
+              }
+            }
+          })
+          .map(_.flatten)
+      }
+
+      /** Iterates over all filters in the range to find matches */
+      @tailrec
+      def loop(
+          start: Int,
+          end: Int,
+          acc: Future[Vector[DoubleSha256DigestBE]]): Future[
+        Vector[DoubleSha256DigestBE]] = {
+        if (end <= start) {
+          acc
+        } else {
+          val startHeight = end - (batchSize - 1)
+          val endHeight = end
+          val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
+            compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
+                                                            endHeight)
+            groupSize = calcGroupSize(compactFilterDbs.size)
+            grouped = compactFilterDbs.grouped(groupSize)
+            filtered <- findMatches(grouped)
+            res <- acc
+          } yield {
+            res ++ filtered
+          }
+          val newEnd = Math.max(start, endHeight - batchSize)
+          loop(start, newEnd, newAcc)
+        }
+      }
+
+      val res = for {
+        startHeight <- startOpt.fold(Future.successful(0))(
+          getHeightByBlockStamp)
+        _ = if (startHeight < 0)
+          throw InvalidBlockRange(s"Start position cannot negative")
+        endHeight <- endOpt.fold(getFilterCount)(getHeightByBlockStamp)
+        _ = if (startHeight > endHeight)
+          throw InvalidBlockRange(
+            s"End position cannot precede start: $startHeight:$endHeight")
+        matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
+      } yield {
+        matched
+      }
+      res.foreach { blocks =>
+        logger.info(s"Done looking for matching blocks for addresses ${scripts
+          .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
+          .getOrElse("")}")
+      }
+      res.failed.foreach { e =>
+        logger.error(s"Cannot find matching blocks", e)
+      }
+      res
+    }
+  }
+
+  /** @inheritdoc */
+  override def getHeightByBlockStamp(blockStamp: BlockStamp)(
+      implicit ec: ExecutionContext): Future[Int] =
+    blockStamp match {
+      case blockHeight: BlockStamp.BlockHeight =>
+        Future.successful(blockHeight.height)
+      case blockHash: BlockStamp.BlockHash =>
+        getHeader(blockHash.hash.flip).map { header =>
+          header
+            .map(_.height)
+            .getOrElse(throw UnknownBlockHash(
+              s"Unknown block hash ${blockHash.hash.flip}"))
+        }
+      case blockTime: BlockStamp.BlockTime =>
+        Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
+    }
+
 }
 
 object ChainHandler {

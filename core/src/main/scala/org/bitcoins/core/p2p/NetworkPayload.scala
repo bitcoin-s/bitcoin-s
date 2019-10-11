@@ -990,9 +990,6 @@ case class CompactFilterHeadersMessage(
   val commandName: String = NetworkPayload.compactFilterHeadersCommandName
   def bytes: ByteVector = RawCompactFilterHeadersMessageSerializer.write(this)
 
-  override def toString(): String =
-    s"CompactFilterHeadersMessage($filterType, stopHash=$stopHash, previousFilterHeader=$previousFilterHeader, filterHashes=$filterHashes)"
-
   def filterHeaders: Vector[FilterHeader] = {
     val z = FilterHeader(filterHashes.head, previousFilterHeader)
     filterHashes.tail.foldLeft(Vector(z)) { (acc, nextFilterHash) =>

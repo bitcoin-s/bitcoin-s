@@ -2,15 +2,10 @@ package org.bitcoins.core.gcs
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import scodec.bits.{BitVector, ByteVector}
@@ -84,6 +79,20 @@ case class GolombFilter(
 
     matchesHash(hash)
   }
+
+  /** Checks whether there's a match for at least one of the given hashes
+    * TODO refactor it to implement https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match
+    */
+  def matchesAnyHash(hashes: Vector[UInt64]): Boolean =
+    hashes.exists(matchesHash)
+
+  /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a match */
+  def matchesAny(data: Vector[ByteVector]): Boolean = {
+    val f = n.num * m
+    val hashes = data.map(GCS.hashToRange(_, f, key))
+    matchesAnyHash(hashes)
+  }
+
 }
 
 object BlockFilter {
@@ -109,6 +118,8 @@ object BlockFilter {
     * to BIP 158 Basic Block Filters
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#contents]]
     */
+  /*
+  TODO uncomment and add unit tests for this method
   def getInputScriptPubKeysFromBlock(
       block: Block,
       utxoProvider: TempUtxoProvider): Vector[ScriptPubKey] = {
@@ -125,17 +136,21 @@ object BlockFilter {
       .filterNot(_.scriptPubKey == EmptyScriptPubKey)
       .map(_.scriptPubKey)
   }
+   */
 
   /**
     * Given a Block and access to the UTXO set, constructs a Block Filter for that block
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]]
     */
+  /*
+  TODO uncomment and add unit tests for this method
   def apply(block: Block, utxoProvider: TempUtxoProvider): GolombFilter = {
     val prevOutputScripts: Vector[ScriptPubKey] =
       getInputScriptPubKeysFromBlock(block, utxoProvider)
 
     BlockFilter(block, prevOutputScripts)
   }
+   */
 
   /**
     * Given a Block and access to the previous output scripts, constructs a Block Filter for that block
