@@ -67,7 +67,7 @@ sealed abstract class BitwiseInterpreter {
 
       verifiedOrErr match {
         case p: ExecutedScriptProgram =>
-          if (p.error.isDefined) program.failExecution(ScriptErrorEqualVerify)
+          if (p.error.isDefined) p.failExecution(ScriptErrorEqualVerify)
           else p
         case p: ExecutionInProgressScriptProgram => p
       }

@@ -329,7 +329,6 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
                 Success(
                   scriptPubKeyExecutedProgram.failExecution(
                     ScriptErrorWitnessProgramWitnessEmpty))
-
               case UnassignedWitness(_) =>
                 evaluateUnassignedWitness(b)
             }
