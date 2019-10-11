@@ -457,8 +457,9 @@ class ChainHandlerTest extends ChainUnitTest {
     for {
       created <- chainHandler.filterDAO.create(compactFilterDb)
       matched <- chainHandler.getMatchingBlocks(
-        addresses = // this is a random address which is included into the block
-          Vector(BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get),
+        scripts = Vector(
+          // this is a random address which is included into the block
+          BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get.scriptPubKey),
         startOpt = None,
         endOpt = None
       )

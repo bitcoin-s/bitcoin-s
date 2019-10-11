@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 
@@ -368,7 +369,7 @@ case class ChainHandler(
     * For best results use a separate execution context.
     */
   def getMatchingBlocks(
-      addresses: Vector[BitcoinAddress],
+      scripts: Vector[ScriptPubKey],
       startOpt: Option[BlockStamp] = None,
       endOpt: Option[BlockStamp] = None,
       batchSize: Int = chainConfig.filterBatchSize,
@@ -378,13 +379,13 @@ case class ChainHandler(
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
 
     logger.info(
-      s"Starting looking for matching blocks for addresses ${addresses.mkString(",")}")
+      s"Starting looking for matching blocks for scripts ${scripts.mkString(",")}")
 
-    if (addresses.isEmpty) {
-      logger.info(s"No addresses to match")
+    if (scripts.isEmpty) {
+      logger.info(s"No scripts to match")
       Future.successful(Vector.empty)
     } else {
-      val bytes = addresses.map(_.scriptPubKey.asmBytes)
+      val bytes = scripts.map(_.asmBytes)
 
       /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
         * It's needed to limit number of threads required to run the matching */
@@ -454,7 +455,7 @@ case class ChainHandler(
         matched
       }
       res.foreach { blocks =>
-        logger.info(s"Done looking for matching blocks for addresses ${addresses
+        logger.info(s"Done looking for matching blocks for addresses ${scripts
           .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
           .getOrElse("")}")
       }
