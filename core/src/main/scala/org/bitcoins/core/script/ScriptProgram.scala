@@ -61,11 +61,7 @@ case class PreExecutionScriptProgram(
     originalScript: List[ScriptToken],
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag])
-    extends ScriptProgram {
-  def addFlags(newFlags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
-    this.copy(flags = newFlags)
-  }
-}
+    extends ScriptProgram
 
 object PreExecutionScriptProgram {
 
