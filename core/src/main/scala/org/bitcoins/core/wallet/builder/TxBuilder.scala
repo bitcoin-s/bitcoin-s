@@ -433,21 +433,35 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                          dummySignatures)
           result.map(_.transaction)
         case p2wshSPK: P2WSHWitnessSPKV0 =>
-          val p2wshScriptWit = scriptWitnessOpt match {
-            case Some(wit) =>
-              wit match {
-                case EmptyScriptWitness | _: P2WPKHWitnessV0 =>
-                  Future.fromTry(TxBuilderError.WrongWitness)
-                case x: P2WSHWitnessV0 => Future.successful(x)
-              }
-            case None => Future.fromTry(TxBuilderError.NoWitness)
+          val p2wshScriptWitF = scriptWitnessOpt match {
+            case Some(EmptyScriptWitness | _: P2WPKHWitnessV0) =>
+              Future.fromTry(TxBuilderError.WrongWitness)
+            case Some(x: P2WSHWitnessV0) => Future.successful(x)
+            case None                    => Future.fromTry(TxBuilderError.NoWitness)
           }
-          val redeemScriptEither = p2wshScriptWit.map(_.redeemScript)
-          val result = redeemScriptEither.flatMap { redeemScript =>
+          val redeemScriptF = p2wshScriptWitF.map(_.redeemScript)
+          val validatedRedeemScriptF = redeemScriptF.flatMap { redeemScript =>
             if (P2WSHWitnessSPKV0(redeemScript) != p2wshSPK) {
               Future.fromTry(TxBuilderError.WrongWitness)
             } else {
-              redeemScript match {
+              Future.successful(redeemScript)
+            }
+          }
+          val sigComponentF = validatedRedeemScriptF.flatMap {
+            case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+                _: MultiSignatureScriptPubKey =>
+              P2WSHSigner.sign(signers,
+                               output,
+                               unsignedTx,
+                               inputIndex,
+                               hashType,
+                               dummySignatures)
+            case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 =>
+              Future.fromTry(TxBuilderError.NestedWitnessSPK)
+            case _: P2SHScriptPubKey =>
+              Future.fromTry(TxBuilderError.NestedP2SHSPK)
+            case lock: LockTimeScriptPubKey =>
+              lock.nestedScriptPubKey match {
                 case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                     _: MultiSignatureScriptPubKey =>
                   P2WSHSigner.sign(signers,
@@ -456,43 +470,20 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                    inputIndex,
                                    hashType,
                                    dummySignatures)
-                case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 =>
-                  Future.fromTry(TxBuilderError.NestedWitnessSPK)
                 case _: P2SHScriptPubKey =>
                   Future.fromTry(TxBuilderError.NestedP2SHSPK)
-                case lock: LockTimeScriptPubKey =>
-                  lock.nestedScriptPubKey match {
-                    case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                        _: MultiSignatureScriptPubKey =>
-                      P2WSHSigner.sign(signers,
-                                       output,
-                                       unsignedTx,
-                                       inputIndex,
-                                       hashType,
-                                       dummySignatures)
-                    case _: P2WPKHWitnessSPKV0 =>
-                      P2WPKHSigner.sign(signers,
-                                        output,
-                                        unsignedTx,
-                                        inputIndex,
-                                        hashType,
-                                        dummySignatures)
-                    case _: P2SHScriptPubKey =>
-                      Future.fromTry(TxBuilderError.NestedP2SHSPK)
-                    case _: P2WSHWitnessSPKV0 =>
-                      Future.fromTry(TxBuilderError.NestedWitnessSPK)
-                    case _: CSVScriptPubKey | _: CLTVScriptPubKey |
-                        _: NonStandardScriptPubKey | _: WitnessCommitment |
-                        EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
-                      Future.fromTry(TxBuilderError.NoSigner)
-                  }
-                case _: NonStandardScriptPubKey | _: WitnessCommitment |
+                case _: P2WSHWitnessSPKV0 | _: P2WPKHWitnessSPKV0 =>
+                  Future.fromTry(TxBuilderError.NestedWitnessSPK)
+                case _: CSVScriptPubKey | _: CLTVScriptPubKey |
+                    _: NonStandardScriptPubKey | _: WitnessCommitment |
                     EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
                   Future.fromTry(TxBuilderError.NoSigner)
               }
-            }
+            case _: NonStandardScriptPubKey | _: WitnessCommitment |
+                EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+              Future.fromTry(TxBuilderError.NoSigner)
           }
-          result.map(_.transaction)
+          sigComponentF.map(_.transaction)
         case _: NonStandardScriptPubKey | _: WitnessCommitment |
             EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
           Future.fromTry(TxBuilderError.NoSigner)
