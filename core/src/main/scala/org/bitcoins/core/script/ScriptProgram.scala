@@ -108,6 +108,19 @@ case class ExecutionInProgressScriptProgram(
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     ScriptProgram.toExecutedProgram(this).failExecution(error)
   }
+
+  def replaceFlags(
+      newFlags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
+    this.copy(flags = newFlags)
+  }
+
+  /**
+    * Removes the flags on the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+    * @return
+    */
+  def removeFlags(): ExecutionInProgressScriptProgram = {
+    this.replaceFlags(Seq.empty)
+  }
 }
 
 /**
