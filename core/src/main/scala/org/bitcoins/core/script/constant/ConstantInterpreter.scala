@@ -94,7 +94,7 @@ sealed abstract class ConstantInterpreter {
              constant.isInstanceOf[ScriptNumber] && constant.toLong <= 16) {
       logger.error(
         "We can push this constant onto the stack with OP_0 - OP_16 instead of using a script constant")
-      ScriptProgram(program, ScriptErrorMinimalData)
+      program.failExecution(ScriptErrorMinimalData)
     } else if (bytesNeeded != bytesToPushOntoStack.map(_.bytes.size).sum) {
       logger.error("Incorrect amount of bytes being pushed onto the stack")
       logger.error("Bytes needed: " + bytesNeeded)
@@ -102,13 +102,13 @@ sealed abstract class ConstantInterpreter {
         "Number of byte received: " + bytesToPushOntoStack
           .map(_.bytes.size)
           .sum)
-      ScriptProgram(program, ScriptErrorBadOpCode)
+      program.failExecution(ScriptErrorBadOpCode)
     } else if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
                  .isMinimalPush(program.script.head, constant)) {
       logger.debug("Pushing operation: " + program.script.head)
       logger.debug("Constant parsed: " + constant)
       logger.debug("Constant size: " + constant.bytes.size)
-      ScriptProgram(program, ScriptErrorMinimalData)
+      program.failExecution(ScriptErrorMinimalData)
     } else ScriptProgram.apply(program, constant :: program.stack, newScript)
   }
 
@@ -136,20 +136,20 @@ sealed abstract class ConstantInterpreter {
       logger.error(
         "We cannot use an OP_PUSHDATA operation for pushing " +
           "a script number operation onto the stack, scriptNumberOperation: " + scriptNumOp)
-      ScriptProgram(program, ScriptErrorMinimalData)
+      program.failExecution(ScriptErrorMinimalData)
     } else if (ScriptFlagUtil.requireMinimalData(program.flags) && program.script.size > 2 &&
                !BitcoinScriptUtil.isMinimalPush(program.script.head,
                                                 program.script(2))) {
       logger.error(
         "We are not using the minimal push operation to push the bytes onto the stack for the constant")
-      ScriptProgram(program, ScriptErrorMinimalData)
+      program.failExecution(ScriptErrorMinimalData)
     } else {
       //for the case where we have to push 0 bytes onto the stack, which is technically the empty byte vector
       program.script(1) match {
         case OP_0 | BytesToPushOntoStack.zero | ScriptNumber.zero |
             ScriptNumber.negativeZero =>
           if (ScriptFlagUtil.requireMinimalData(program.flags))
-            ScriptProgram(program, ScriptErrorMinimalData)
+            program.failExecution(ScriptErrorMinimalData)
           else
             ScriptProgram(program,
                           ScriptNumber.zero :: program.stack,

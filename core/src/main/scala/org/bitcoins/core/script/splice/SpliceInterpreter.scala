@@ -35,7 +35,7 @@ sealed abstract class SpliceInterpreter {
       }
     } else {
       logger.error("Must have at least 1 element on the stack for OP_SIZE")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 }

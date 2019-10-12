@@ -26,7 +26,7 @@ sealed abstract class BitwiseInterpreter {
     require(program.script.headOption.contains(OP_EQUAL),
             "Script operation must be OP_EQUAL")
     if (program.stack.size < 2) {
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val h = program.stack.head
       val h1 = program.stack.tail.head
@@ -67,13 +67,13 @@ sealed abstract class BitwiseInterpreter {
 
       verifiedOrErr match {
         case p: ExecutedScriptProgram =>
-          if (p.error.isDefined) ScriptProgram(p, ScriptErrorEqualVerify)
+          if (p.error.isDefined) p.failExecution(ScriptErrorEqualVerify)
           else p
         case p: ExecutionInProgressScriptProgram => p
       }
     } else {
       logger.error("OP_EQUALVERIFY requires at least 2 elements on the stack")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 }

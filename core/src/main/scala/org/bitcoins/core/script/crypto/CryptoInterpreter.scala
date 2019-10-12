@@ -74,7 +74,7 @@ sealed abstract class CryptoInterpreter {
             "Script top must be OP_CHECKSIG")
     if (program.stack.size < 2) {
       logger.error("OP_CHECKSIG requires at lest two stack elements")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val pubKey = ECPublicKey(program.stack.head.bytes)
       val signature = ECDigitalSignature(program.stack.tail.head.bytes)
@@ -104,7 +104,7 @@ sealed abstract class CryptoInterpreter {
             "Script top must be OP_CHECKSIGVERIFY")
     if (program.stack.size < 2) {
       logger.error("Stack must contain at least 3 items for OP_CHECKSIGVERIFY")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val newScript = OP_CHECKSIG :: OP_VERIFY :: program.script.tail
       val newProgram = ScriptProgram(program, newScript, ScriptProgram.Script)
@@ -156,7 +156,7 @@ sealed abstract class CryptoInterpreter {
 
     if (program.stack.size < 1) {
       logger.error("OP_CHECKMULTISIG requires at least 1 stack elements")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       //these next lines remove the appropriate stack/script values after the signatures have been checked
       val nPossibleSignatures: ScriptNumber =
@@ -164,14 +164,14 @@ sealed abstract class CryptoInterpreter {
       if (nPossibleSignatures < ScriptNumber.zero) {
         logger.error(
           "We cannot have the number of pubkeys in the script be negative")
-        ScriptProgram(program, ScriptErrorPubKeyCount)
+        program.failExecution(ScriptErrorPubKeyCount)
       } else if (ScriptFlagUtil.requireMinimalData(flags) && !nPossibleSignatures.isShortestEncoding) {
         logger.error(
           "The required signatures and the possible signatures must be encoded as the shortest number possible")
-        ScriptProgram(program, ScriptErrorUnknownError)
+        program.failExecution(ScriptErrorUnknownError)
       } else if (program.stack.size < 2) {
         logger.error("We need at least 2 operations on the stack")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
       } else {
         val mRequiredSignatures: ScriptNumber =
           BitcoinScriptUtil.numRequiredSignaturesOnStack(program)
@@ -179,13 +179,13 @@ sealed abstract class CryptoInterpreter {
         if (ScriptFlagUtil.requireMinimalData(flags) && !mRequiredSignatures.isShortestEncoding) {
           logger.error(
             "The required signatures val must be the shortest encoding as possible")
-          return ScriptProgram(program, ScriptErrorUnknownError)
+          return program.failExecution(ScriptErrorUnknownError)
         }
 
         if (mRequiredSignatures < ScriptNumber.zero) {
           logger.error(
             "We cannot have the number of signatures specified in the script be negative")
-          return ScriptProgram(program, ScriptErrorSigCount)
+          return program.failExecution(ScriptErrorSigCount)
         }
         logger.debug("nPossibleSignatures: " + nPossibleSignatures)
         val (pubKeysScriptTokens, stackWithoutPubKeys) =
@@ -214,22 +214,22 @@ sealed abstract class CryptoInterpreter {
         if (pubKeys.size > Consensus.maxPublicKeysPerMultiSig) {
           logger.error(
             "We have more public keys than the maximum amount of public keys allowed")
-          ScriptProgram(program, ScriptErrorPubKeyCount)
+          program.failExecution(ScriptErrorPubKeyCount)
         } else if (signatures.size > pubKeys.size) {
           logger.error(
             "We have more signatures than public keys inside OP_CHECKMULTISIG")
-          ScriptProgram(program, ScriptErrorSigCount)
+          program.failExecution(ScriptErrorSigCount)
         } else if (stackWithoutPubKeysAndSignatures.size < 1) {
           logger.error(
             "OP_CHECKMULTISIG must have a remaining element on the stack afterk execution")
           //this is because of a bug in bitcoin core for the implementation of OP_CHECKMULTISIG
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L966
-          ScriptProgram(program, ScriptErrorInvalidStackOperation)
+          program.failExecution(ScriptErrorInvalidStackOperation)
         } else if (ScriptFlagUtil.requireNullDummy(flags) &&
                    (stackWithoutPubKeysAndSignatures.nonEmpty && stackWithoutPubKeysAndSignatures.head.bytes.nonEmpty)) {
           logger.error(
             "Script flag null dummy was set however the first element in the script signature was not an OP_0, stackWithoutPubKeysAndSignatures: " + stackWithoutPubKeysAndSignatures)
-          ScriptProgram(program, ScriptErrorSigNullDummy)
+          program.failExecution(ScriptErrorSigNullDummy)
         } else {
           //remove the last OP_CODESEPARATOR
           val removedOpCodeSeparatorsScript =
@@ -261,7 +261,7 @@ sealed abstract class CryptoInterpreter {
     if (program.stack.size < 3) {
       logger.error(
         "Stack must contain at least 3 items for OP_CHECKMULTISIGVERIFY")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
       val newProgram = ScriptProgram(program, newScript, ScriptProgram.Script)
@@ -295,7 +295,7 @@ sealed abstract class CryptoInterpreter {
     } else {
       logger.error(
         "We must have the stack top defined to execute a hash function")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -313,25 +313,25 @@ sealed abstract class CryptoInterpreter {
       //set the valid flag to false on the script
       //see BIP66 for more information on this
       //https://github.com/bitcoin/bips/blob/master/bip-0066.mediawiki#specification
-      ScriptProgram(program, ScriptErrorSigDer)
+      program.failExecution(ScriptErrorSigDer)
     case SignatureValidationErrorIncorrectSignatures =>
       //this means that signature verification failed, however all signatures were encoded correctly
       //just push a OP_FALSE onto the stack
       ScriptProgram(program, OP_FALSE +: restOfStack, program.script.tail)
     case SignatureValidationErrorSignatureCount =>
       //means that we did not have enough signatures for OP_CHECKMULTISIG
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     case SignatureValidationErrorPubKeyEncoding =>
       //means that a public key was not encoded correctly
-      ScriptProgram(program, ScriptErrorPubKeyType)
+      program.failExecution(ScriptErrorPubKeyType)
     case SignatureValidationErrorHighSValue =>
-      ScriptProgram(program, ScriptErrorSigHighS)
+      program.failExecution(ScriptErrorSigHighS)
     case SignatureValidationErrorHashType =>
-      ScriptProgram(program, ScriptErrorSigHashType)
+      program.failExecution(ScriptErrorSigHashType)
     case SignatureValidationErrorWitnessPubKeyType =>
-      ScriptProgram(program, ScriptErrorWitnessPubKeyType)
+      program.failExecution(ScriptErrorWitnessPubKeyType)
     case SignatureValidationErrorNullFail =>
-      ScriptProgram(program, ScriptErrorSigNullFail)
+      program.failExecution(ScriptErrorSigNullFail)
   }
 }
 

@@ -6,8 +6,6 @@ import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
 
-import scala.annotation.tailrec
-
 /**
   * Created by chris on 2/3/16.
   */
@@ -47,6 +45,14 @@ sealed trait ScriptProgram {
 
   /** Returns true if the stack top is false */
   def stackTopIsFalse: Boolean = !stackTopIsTrue
+
+  /**
+    * Sets a [[org.bitcoins.core.script.result.ScriptError ScriptError]] on a given
+    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]].
+    * @param error the error that the program hit while being executed in the script interpreter
+    * @return the ExecutedScriptProgram with the given error set inside of the trait
+    */
+  def failExecution(error: ScriptError): ExecutedScriptProgram
 }
 
 /**
@@ -61,7 +67,11 @@ case class PreExecutionScriptProgram(
     originalScript: List[ScriptToken],
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag])
-    extends ScriptProgram
+    extends ScriptProgram {
+  override def failExecution(error: ScriptError): ExecutedScriptProgram = {
+    ScriptProgram.toExecutionInProgress(this).failExecution(error)
+  }
+}
 
 object PreExecutionScriptProgram {
 
@@ -94,7 +104,11 @@ case class ExecutionInProgressScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int])
-    extends StartedScriptProgram
+    extends StartedScriptProgram {
+  override def failExecution(error: ScriptError): ExecutedScriptProgram = {
+    ScriptProgram.toExecutedProgram(this).failExecution(error)
+  }
+}
 
 /**
   * Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that has been
@@ -112,7 +126,11 @@ case class ExecutedScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     error: Option[ScriptError])
-    extends StartedScriptProgram
+    extends StartedScriptProgram {
+  override def failExecution(error: ScriptError): ExecutedScriptProgram = {
+    this.copy(error = Some(error))
+  }
+}
 
 /**
   * Factory companion object for [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
@@ -125,37 +143,6 @@ object ScriptProgram extends BitcoinSLogger {
   case object Script extends UpdateIndicator
   case object AltStack extends UpdateIndicator
   case object OriginalScript extends UpdateIndicator
-
-  /**
-    * Sets a [[org.bitcoins.core.script.result.ScriptError ScriptError]] on a given
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]].
-    * @param oldProgram the program who has hit an invalid state
-    * @param error the error that the program hit while being executed in the script interpreter
-    * @return the ExecutedScriptProgram with the given error set inside of the trait
-    */
-  @tailrec
-  def apply(
-      oldProgram: ScriptProgram,
-      error: ScriptError): ExecutedScriptProgram = oldProgram match {
-    case program: PreExecutionScriptProgram =>
-      ScriptProgram(ScriptProgram.toExecutionInProgress(program), error)
-    case program: ExecutionInProgressScriptProgram =>
-      ExecutedScriptProgram(program.txSignatureComponent,
-                            program.stack,
-                            program.script,
-                            program.originalScript,
-                            program.altStack,
-                            program.flags,
-                            Some(error))
-    case program: ExecutedScriptProgram =>
-      ExecutedScriptProgram(program.txSignatureComponent,
-                            program.stack,
-                            program.script,
-                            program.originalScript,
-                            program.altStack,
-                            program.flags,
-                            Some(error))
-  }
 
   def apply(
       oldProgram: PreExecutionScriptProgram,
