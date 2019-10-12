@@ -131,7 +131,7 @@ sealed abstract class ArithmeticInterpreter {
             "Script top must be OP_NUMEQUALVERIFY")
     if (program.stack.size < 2) {
       logger.error("OP_NUMEQUALVERIFY requires two stack elements")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val numEqualProgram = ScriptProgram(program,
                                           program.stack,
@@ -199,7 +199,7 @@ sealed abstract class ArithmeticInterpreter {
             "Script top must be OP_MIN")
     if (program.stack.size < 2) {
       logger.error("OP_MAX requires at least two stack elements")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       performComparisonOnTwoStackTopItems(
         program,
@@ -213,7 +213,7 @@ sealed abstract class ArithmeticInterpreter {
             "Script top must be OP_MAX")
     if (program.stack.size < 2) {
       logger.error("OP_MAX requires at least two stack elements")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       performComparisonOnTwoStackTopItems(
         program,
@@ -228,7 +228,7 @@ sealed abstract class ArithmeticInterpreter {
             "Script top must be OP_WITHIN")
     if (program.stack.size < 3) {
       logger.error("OP_WITHIN requires at least 3 elements on the stack")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val c = ScriptNumber(program.stack.head.bytes)
       val b = ScriptNumber(program.stack.tail.head.bytes)
@@ -239,7 +239,7 @@ sealed abstract class ArithmeticInterpreter {
             .isShortestEncoding(a))) {
         logger.error(
           "The constant you gave us is not encoded in the shortest way possible")
-        ScriptProgram(program, ScriptErrorUnknownError)
+        program.failExecution(ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(c) || isLargerThan4Bytes(b) || isLargerThan4Bytes(
                    a)) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
@@ -247,7 +247,7 @@ sealed abstract class ArithmeticInterpreter {
         logger.error(
           "Cannot perform arithmetic operation on a number larger than 4 bytes, one of these three numbers is larger than 4 bytes: "
             + c + " " + b + " " + a)
-        ScriptProgram(program, ScriptErrorUnknownError)
+        program.failExecution(ScriptErrorUnknownError)
       } else {
         val isWithinRange = a >= b && a < c
         val newStackTop = if (isWithinRange) OP_TRUE else OP_FALSE
@@ -280,19 +280,19 @@ sealed abstract class ArithmeticInterpreter {
       case None =>
         logger.error(
           "We need one stack element for performing a unary arithmetic operation")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
       case Some(s: ScriptNumber) =>
         if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
               .isShortestEncoding(s)) {
           logger.error(
             "The number you gave us is not encoded in the shortest way possible")
-          ScriptProgram(program, ScriptErrorMinimalData)
+          program.failExecution(ScriptErrorMinimalData)
         } else if (isLargerThan4Bytes(s)) {
           logger.error(
             "Cannot perform arithmetic operation on a number larger than 4 bytes, here is the number: " + s)
           //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
-          ScriptProgram(program, ScriptErrorUnknownError)
+          program.failExecution(ScriptErrorUnknownError)
         } else {
           val newScriptNumber = op(s)
           ScriptProgram(program,
@@ -304,7 +304,7 @@ sealed abstract class ArithmeticInterpreter {
               .isShortestEncoding(s)) {
           logger.error(
             "The number you gave us is not encoded in the shortest way possible")
-          ScriptProgram(program, ScriptErrorUnknownError)
+          program.failExecution(ScriptErrorUnknownError)
         } else {
           val interpretedNumber = ScriptNumber(ScriptNumberUtil.toLong(s.hex))
           val newProgram = ScriptProgram(
@@ -318,7 +318,7 @@ sealed abstract class ArithmeticInterpreter {
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         logger.error(
           "Stack top must be a script number/script constant to perform an arithmetic operation")
-        ScriptProgram(program, ScriptErrorUnknownError)
+        program.failExecution(ScriptErrorUnknownError)
     }
   }
 
@@ -335,7 +335,7 @@ sealed abstract class ArithmeticInterpreter {
     if (program.stack.size < 2) {
       logger.error(
         "We must have two elements to perform a binary arithmetic operation")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       (program.stack.head, program.stack.tail.head) match {
         case (x: ScriptNumber, y: ScriptNumber) =>
@@ -344,13 +344,13 @@ sealed abstract class ArithmeticInterpreter {
                 y))) {
             logger.error(
               "The constant you gave us is not encoded in the shortest way possible")
-            ScriptProgram(program, ScriptErrorUnknownError)
+            program.failExecution(ScriptErrorUnknownError)
           } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
             //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
             //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
             logger.error(
               "Cannot perform arithmetic operation on a number larger than 4 bytes, one of these two numbers is larger than 4 bytes: " + x + " " + y)
-            ScriptProgram(program, ScriptErrorUnknownError)
+            program.failExecution(ScriptErrorUnknownError)
           } else {
             val newStackTop = op(x, y)
             ScriptProgram(program,
@@ -386,7 +386,7 @@ sealed abstract class ArithmeticInterpreter {
           //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
           logger.error(
             "The top two stack items must be script numbers to perform an arithmetic operation")
-          ScriptProgram(program, ScriptErrorUnknownError)
+          program.failExecution(ScriptErrorUnknownError)
       }
     }
   }
@@ -402,7 +402,7 @@ sealed abstract class ArithmeticInterpreter {
       op: (ScriptNumber, ScriptNumber) => Boolean): StartedScriptProgram = {
     if (program.stack.size < 2) {
       logger.error("We need two stack elements for a binary boolean operation")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val (x, y) = parseTopTwoStackElementsAsScriptNumbers(program)
       if (ScriptFlagUtil.requireMinimalData(program.flags) &&
@@ -410,13 +410,13 @@ sealed abstract class ArithmeticInterpreter {
             .isShortestEncoding(y))) {
         logger.error(
           "The constant you gave us is not encoded in the shortest way possible")
-        ScriptProgram(program, ScriptErrorUnknownError)
+        program.failExecution(ScriptErrorUnknownError)
       } else if (isLargerThan4Bytes(x) || isLargerThan4Bytes(y)) {
         //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
         //https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
         logger.error(
           "Cannot perform boolean operation on a number larger than 4 bytes, one of these two numbers is larger than 4 bytes: " + x + " " + y)
-        ScriptProgram(program, ScriptErrorUnknownError)
+        program.failExecution(ScriptErrorUnknownError)
       } else {
         val newStackTop = if (op(x, y)) OP_TRUE else OP_FALSE
         ScriptProgram(program,

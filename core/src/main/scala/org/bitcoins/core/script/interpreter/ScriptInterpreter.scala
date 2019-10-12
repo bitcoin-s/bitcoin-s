@@ -55,7 +55,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
     val executedProgram: ExecutedScriptProgram =
       programFlagsViolated(program) match {
-        case Some(err) => ScriptProgram(program, err)
+        case Some(err) => program.failExecution(err)
         case None =>
           val scriptSigExecutedProgram = executeProgram(program)
           logger.trace(s"scriptSigExecutedProgram $scriptSigExecutedProgram")
@@ -210,7 +210,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             .isPushOnly(s.asm)) {
         logger.error(
           "p2sh redeem script must be push only operations whe SIGPUSHONLY flag is set")
-        ScriptProgram(p2shRedeemScriptProgram, ScriptErrorSigPushOnly)
+        p2shRedeemScriptProgram.failExecution(ScriptErrorSigPushOnly)
       } else executeProgram(p2shRedeemScriptProgram)
     }
 
@@ -220,7 +220,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     //need to check if the scriptSig is push only as required by bitcoin core
     //https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L1419
     if (!BitcoinScriptUtil.isPushOnly(scriptSigAsm)) {
-      ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorSigPushOnly)
+      scriptPubKeyExecutedProgram.failExecution(ScriptErrorSigPushOnly)
     } else if (scriptPubKeyExecutedProgram.error.isDefined) {
       scriptPubKeyExecutedProgram
     } else {
@@ -256,8 +256,8 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
                 isExpectedScriptBytes) {
               executeSegWitScript(scriptPubKeyExecutedProgram, p2wpkh).get
             } else if (segwitEnabled) {
-              ScriptProgram(oldProgram = scriptPubKeyExecutedProgram,
-                            error = ScriptErrorWitnessMalleatedP2SH)
+              scriptPubKeyExecutedProgram.failExecution(
+                ScriptErrorWitnessMalleatedP2SH)
             } else {
               //segwit not enabled, treat as old spk
               run(scriptPubKeyExecutedProgram, p2wpkh)
@@ -283,8 +283,8 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
               logger.error("ScriptSig bytes: " + scriptSig.hex)
               logger.error(
                 "expected scriptsig bytes: " + expectedScriptBytes.toHex)
-              ScriptProgram(scriptPubKeyExecutedProgram,
-                            ScriptErrorWitnessMalleatedP2SH)
+              scriptPubKeyExecutedProgram.failExecution(
+                ScriptErrorWitnessMalleatedP2SH)
             } else {
               logger.warn(
                 "redeem script was witness script pubkey, segwit was NOT enabled")
@@ -327,15 +327,15 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
                 logger.error(
                   "Cannot verify witness program with a BaseTxSigComponent")
                 Success(
-                  ScriptProgram(scriptPubKeyExecutedProgram,
-                                ScriptErrorWitnessProgramWitnessEmpty))
+                  scriptPubKeyExecutedProgram.failExecution(
+                    ScriptErrorWitnessProgramWitnessEmpty))
               case UnassignedWitness(_) =>
                 evaluateUnassignedWitness(b)
             }
           case (_, _) =>
             Success(
-              ScriptProgram(scriptPubKeyExecutedProgram,
-                            ScriptErrorWitnessMalleated))
+              scriptPubKeyExecutedProgram.failExecution(
+                ScriptErrorWitnessMalleated))
         }
       case w: WitnessTxSigComponent =>
         val scriptSig =
@@ -350,14 +350,16 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           case (EmptyScriptSignature, _) | (_, _: P2SHScriptPubKey) =>
             if (witness.stack.exists(_.size > MAX_PUSH_SIZE)) {
               Success(
-                ScriptProgram(scriptPubKeyExecutedProgram, ScriptErrorPushSize))
+                scriptPubKeyExecutedProgram.failExecution(ScriptErrorPushSize)
+              )
             } else {
               verifyWitnessProgram(witnessVersion, witness, witnessProgram, w)
             }
           case (_, _) =>
             Success(
-              ScriptProgram(scriptPubKeyExecutedProgram,
-                            ScriptErrorWitnessMalleated))
+              scriptPubKeyExecutedProgram.failExecution(
+                ScriptErrorWitnessMalleated)
+            )
         }
       case _: WitnessTxSigComponentRebuilt =>
         Failure(new IllegalArgumentException(
@@ -381,7 +383,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       logger.trace("Stack after evaluating witness: " + evaluated.stack)
       if (evaluated.error.isDefined) evaluated
       else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse)
-        ScriptProgram(evaluated, ScriptErrorEvalFalse)
+        evaluated.failExecution(ScriptErrorEvalFalse)
       else evaluated
     }
 
@@ -428,8 +430,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     val scriptByteVector = BitcoinSUtil.toByteVector(program.script)
     if (scriptByteVector.length > 10000) {
       logger.error("We cannot run a script that is larger than 10,000 bytes")
-      ScriptProgram(ScriptProgram.toExecutionInProgress(program),
-                    ScriptErrorScriptSize)
+      program.failExecution(ScriptErrorScriptSize)
     } else {
       loop(ScriptProgram.toExecutionInProgress(program, Some(program.stack)), 0)
     }
@@ -446,7 +447,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     logger.trace("Counted ops: " + countedOps)
 
     if (countedOps > MAX_SCRIPT_OPS && program.error.isEmpty) {
-      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount))
+      completeProgramExecution(program.failExecution(ScriptErrorOpCount))
     } else {
       program
     }
@@ -472,10 +473,10 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
         "We have reached the maximum amount of script operations allowed")
       logger.error(
         "Here are the remaining operations in the script: " + program.script)
-      completeProgramExecution(ScriptProgram(program, ScriptErrorOpCount))
+      completeProgramExecution(program.failExecution(ScriptErrorOpCount))
     } else if (scriptByteVector.length > 10000) {
       logger.error("We cannot run a script that is larger than 10,000 bytes")
-      completeProgramExecution(ScriptProgram(program, ScriptErrorScriptSize))
+      completeProgramExecution(program.failExecution(ScriptErrorScriptSize))
     } else {
       val (nextProgram, nextOpCount) = program.script match {
         //if at any time we see that the program is not valid
@@ -484,7 +485,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             if program.script.intersect(Seq(OP_VERIF, OP_VERNOTIF)).nonEmpty =>
           logger.error(
             "Script is invalid even when a OP_VERIF or OP_VERNOTIF occurs in an unexecuted OP_IF branch")
-          (ScriptProgram(program, ScriptErrorBadOpCode), opCount)
+          (program.failExecution(ScriptErrorBadOpCode), opCount)
         //disabled splice operation
         case _
             if program.script
@@ -492,7 +493,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
               .nonEmpty =>
           logger.error(
             "Script is invalid because it contains a disabled splice operation")
-          (ScriptProgram(program, ScriptErrorDisabledOpCode), opCount)
+          (program.failExecution(ScriptErrorDisabledOpCode), opCount)
         //disabled bitwise operations
         case _
             if program.script
@@ -500,7 +501,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
               .nonEmpty =>
           logger.error(
             "Script is invalid because it contains a disabled bitwise operation")
-          (ScriptProgram(program, ScriptErrorDisabledOpCode), opCount)
+          (program.failExecution(ScriptErrorDisabledOpCode), opCount)
         //disabled arithmetic operations
         case _
             if program.script
@@ -515,19 +516,19 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
               .nonEmpty =>
           logger.error(
             "Script is invalid because it contains a disabled arithmetic operation")
-          (ScriptProgram(program, ScriptErrorDisabledOpCode), opCount)
+          (program.failExecution(ScriptErrorDisabledOpCode), opCount)
         //program cannot contain a push operation > 520 bytes
         case _
             if program.script.exists(token =>
               token.bytes.size > MAX_PUSH_SIZE) =>
           logger.error(
             "We have a script constant that is larger than 520 bytes, this is illegal: " + program.script)
-          (ScriptProgram(program, ScriptErrorPushSize), opCount)
+          (program.failExecution(ScriptErrorPushSize), opCount)
         //program stack size cannot be greater than 1000 elements
         case _ if (program.stack.size + program.altStack.size) > 1000 =>
           logger.error(
             "We cannot have a stack + alt stack size larger than 1000 elements")
-          (ScriptProgram(program, ScriptErrorStackSize), opCount)
+          (program.failExecution(ScriptErrorStackSize), opCount)
 
         //stack operations
         case OP_DUP :: _ =>
@@ -960,7 +961,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             if ScriptFlagUtil.discourageUpgradableNOPs(program.flags) =>
           logger.error(
             "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-          (ScriptProgram(program, ScriptErrorDiscourageUpgradableNOPs),
+          (program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
            calcOpCount(opCount, nop))
         case (nop: NOP) :: t =>
           val programOrError = ScriptProgram(program, program.stack, t)
@@ -970,25 +971,25 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
         case OP_RESERVED :: _ =>
           logger.error("OP_RESERVED automatically marks transaction invalid")
-          (ScriptProgram(program, ScriptErrorBadOpCode),
+          (program.failExecution(ScriptErrorBadOpCode),
            calcOpCount(opCount, OP_RESERVED))
         case OP_VER :: _ =>
           logger.error("Transaction is invalid when executing OP_VER")
-          (ScriptProgram(program, ScriptErrorBadOpCode),
+          (program.failExecution(ScriptErrorBadOpCode),
            calcOpCount(opCount, OP_VER))
         case OP_RESERVED1 :: _ =>
           logger.error("Transaction is invalid when executing OP_RESERVED1")
-          (ScriptProgram(program, ScriptErrorBadOpCode),
+          (program.failExecution(ScriptErrorBadOpCode),
            calcOpCount(opCount, OP_RESERVED1))
         case OP_RESERVED2 :: _ =>
           logger.error("Transaction is invalid when executing OP_RESERVED2")
-          (ScriptProgram(program, ScriptErrorBadOpCode),
+          (program.failExecution(ScriptErrorBadOpCode),
            calcOpCount(opCount, OP_RESERVED2))
 
         case (reservedOperation: ReservedOperation) :: _ =>
           logger.error(
             "Undefined operation found which automatically fails the script: " + reservedOperation)
-          (ScriptProgram(program, ScriptErrorBadOpCode),
+          (program.failExecution(ScriptErrorBadOpCode),
            calcOpCount(opCount, reservedOperation))
         //splice operations
         case OP_SIZE :: _ =>
@@ -1011,7 +1012,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
             logger.error(
               "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-            (ScriptProgram(program, ScriptErrorDiscourageUpgradableNOPs),
+            (program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
              calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
           } //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
           else {
@@ -1035,7 +1036,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           else if (ScriptFlagUtil.discourageUpgradableNOPs(program.flags)) {
             logger.error(
               "We cannot execute a NOP when the ScriptVerifyDiscourageUpgradableNOPs is set")
-            (ScriptProgram(program, ScriptErrorDiscourageUpgradableNOPs),
+            (program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
              calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
           } //in this case, just read OP_CSV just like a NOP and remove it from the stack
           else {

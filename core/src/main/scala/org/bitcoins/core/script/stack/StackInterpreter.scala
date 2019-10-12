@@ -32,7 +32,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, h :: program.stack, program.script.tail)
       case Nil =>
         logger.error("Cannot duplicate the top element on an empty stack")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -49,7 +49,7 @@ sealed abstract class StackInterpreter {
                     program.script.tail)
     } else {
       logger.error("Cannot duplicate the top element on an empty stack")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -75,7 +75,7 @@ sealed abstract class StackInterpreter {
                     program.stack.head :: program.altStack)
     } else {
       logger.error("OP_TOALTSTACK requires an element to be on the stack")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -92,7 +92,7 @@ sealed abstract class StackInterpreter {
     } else {
       logger.error(
         "Alt Stack must have at least one item on it for OP_FROMALTSTACK")
-      ScriptProgram(program, ScriptErrorInvalidAltStackOperation)
+      program.failExecution(ScriptErrorInvalidAltStackOperation)
     }
   }
 
@@ -105,7 +105,7 @@ sealed abstract class StackInterpreter {
       ScriptProgram(program, program.stack.tail, program.script.tail)
     } else {
       logger.error("Stack must have at least one item on it for OP_DROP")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -117,10 +117,10 @@ sealed abstract class StackInterpreter {
       case h :: _ :: t => ScriptProgram(program, h :: t, program.script.tail)
       case _ :: _ =>
         logger.error("Stack must have at least two items on it for OP_NIP")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
       case Nil =>
         logger.error("Stack must have at least two items on it for OP_NIP")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -134,10 +134,10 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, h1 :: program.stack, program.script.tail)
       case _ :: _ =>
         logger.error("Stack must have at least two items on it for OP_OVER")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
       case Nil =>
         logger.error("Stack must have at least two items on it for OP_OVER")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -150,7 +150,7 @@ sealed abstract class StackInterpreter {
       program, { number: ScriptNumber =>
         //check if n is within the bound of the script
         if (program.stack.size < 2)
-          ScriptProgram(program, ScriptErrorInvalidStackOperation)
+          program.failExecution(ScriptErrorInvalidStackOperation)
         else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
           val newStackTop = program.stack.tail(number.toInt)
           ScriptProgram(program,
@@ -159,7 +159,7 @@ sealed abstract class StackInterpreter {
         } else {
           logger.error(
             "The index for OP_PICK would have caused an index out of bounds exception")
-          ScriptProgram(program, ScriptErrorInvalidStackOperation)
+          program.failExecution(ScriptErrorInvalidStackOperation)
         }
       }
     )
@@ -174,7 +174,7 @@ sealed abstract class StackInterpreter {
       program,
       (number: ScriptNumber) =>
         if (program.stack.size < 2)
-          ScriptProgram(program, ScriptErrorInvalidStackOperation)
+          program.failExecution(ScriptErrorInvalidStackOperation)
         else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
           val newStackTop = program.stack.tail(number.toInt)
           //removes the old instance of the stack top, appends the new index to the head
@@ -184,7 +184,7 @@ sealed abstract class StackInterpreter {
         } else {
           logger.error(
             "The index for OP_ROLL would have caused an index out of bounds exception")
-          ScriptProgram(program, ScriptErrorInvalidStackOperation)
+          program.failExecution(ScriptErrorInvalidStackOperation)
         }
     )
   }
@@ -202,7 +202,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 3 items on it for OP_ROT")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -220,7 +220,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("OP_2ROT requires 6 elements on the stack")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -233,7 +233,7 @@ sealed abstract class StackInterpreter {
       ScriptProgram(program, program.stack.tail.tail, program.script.tail)
     } else {
       logger.error("OP_2DROP requires two elements to be on the stack")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -247,7 +247,7 @@ sealed abstract class StackInterpreter {
       ScriptProgram(program, newStack, program.script.tail)
     } else {
       logger.error("Stack must have at least 2 items on it for OP_SWAP")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -262,7 +262,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 2 items on it for OP_TUCK")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -277,7 +277,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 2 items on it for OP_2DUP")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -292,7 +292,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 3 items on it for OP_3DUP")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -307,7 +307,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 4 items on it for OP_2OVER")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -322,7 +322,7 @@ sealed abstract class StackInterpreter {
         ScriptProgram(program, newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 4 items on it for OP_2SWAP")
-        ScriptProgram(program, ScriptErrorInvalidStackOperation)
+        program.failExecution(ScriptErrorInvalidStackOperation)
     }
   }
 
@@ -346,7 +346,7 @@ sealed abstract class StackInterpreter {
           case Success(n) => op(n)
           case Failure(_) =>
             logger.error("Script number was not minimally encoded")
-            ScriptProgram(program, ScriptErrorUnknownError)
+            program.failExecution(ScriptErrorUnknownError)
         }
     }
   }

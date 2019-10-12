@@ -46,46 +46,46 @@ sealed abstract class LockTimeInterpreter {
     if (program.stack.size == 0) {
       logger.error(
         "Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because we have no stack items")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else if (input.sequence == TransactionConstants.sequence) {
       logger.error(
         "Transaction validation failing in OP_CHECKLOCKTIMEVERIFY because the sequence number is 0xffffffff")
-      ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+      program.failExecution(ScriptErrorUnsatisfiedLocktime)
     } else {
       program.stack.head match {
         case s: ScriptNumber if (s < ScriptNumber.zero) =>
           logger.error(
             "OP_CHECKLOCKTIMEVERIFY marks tx as invalid if the stack top is negative")
-          ScriptProgram(program, ScriptErrorNegativeLockTime)
+          program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
             if (s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(
               500000000)) =>
           logger.error(
             "OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top >= 500000000 & tx locktime < 500000000")
-          ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+          program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber
             if (s < ScriptNumber(500000000) && transaction.lockTime >= UInt32(
               500000000)) =>
           logger.error(
             "OP_CHECKLOCKTIMEVERIFY marks the tx as invalid if stack top < 500000000 & tx locktime >= 500000000")
-          ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+          program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
             //if the number size is larger than 5 bytes the number is invalid
-            ScriptProgram(program, ScriptErrorUnknownError)
+            program.failExecution(ScriptErrorUnknownError)
           } else if (checkLockTime(program, s)) {
             ScriptProgram(program, program.script.tail, ScriptProgram.Script)
           } else {
             logger.error(
               "Stack top locktime and transaction locktime number comparison failed")
-            ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+            program.failExecution(ScriptErrorUnsatisfiedLocktime)
           }
         case s: ScriptConstant =>
           opCheckLockTimeVerify(
             ScriptProgram(program,
                           ScriptNumber(s.hex) :: program.stack.tail,
                           ScriptProgram.Stack))
-        case _: ScriptToken => ScriptProgram(program, ScriptErrorUnknownError)
+        case _: ScriptToken => program.failExecution(ScriptErrorUnknownError)
       }
     }
   }
@@ -107,16 +107,16 @@ sealed abstract class LockTimeInterpreter {
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     if (program.stack.isEmpty) {
       logger.error("Cannot execute OP_CHECKSEQUENCEVERIFY on an empty stack")
-      ScriptProgram(program, ScriptErrorInvalidStackOperation)
+      program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       program.stack.head match {
         case ScriptNumber.negativeOne =>
-          ScriptProgram(program, ScriptErrorNegativeLockTime)
+          program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
             if (ScriptFlagUtil.requireMinimalData(program.flags) && !s.isShortestEncoding) =>
           logger.error(
             "Sequence number is not encoded in the shortest way possible")
-          ScriptProgram(program, ScriptErrorUnknownError)
+          program.failExecution(ScriptErrorUnknownError)
         case s: ScriptNumber if (!isLockTimeBitOff(s)) =>
           //see BIP68 for semantic of locktimeDisableFlag
           logger.info(
@@ -126,17 +126,17 @@ sealed abstract class LockTimeInterpreter {
             if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion) =>
           logger.error(
             "OP_CSV fails if locktime bit is not set and the tx version < 2")
-          ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+          program.failExecution(ScriptErrorUnsatisfiedLocktime)
         case s: ScriptNumber =>
           if (s.bytes.size > 5) {
             //if the number size is larger than 5 bytes the number is invalid
             logger.error(
               "The OP_CSV value in the script was larger than 5 bytes in size.")
-            ScriptProgram(program, ScriptErrorUnknownError)
+            program.failExecution(ScriptErrorUnknownError)
           } else if (checkSequence(program, s)) {
             ScriptProgram(program, program.stack, program.script.tail)
           } else {
-            ScriptProgram(program, ScriptErrorUnsatisfiedLocktime)
+            program.failExecution(ScriptErrorUnsatisfiedLocktime)
           }
         case s: ScriptConstant =>
           opCheckSequenceVerify(
