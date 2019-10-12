@@ -114,6 +114,10 @@ case class ExecutionInProgressScriptProgram(
     this.copy(flags = newFlags)
   }
 
+  /**
+    * Removes the flags on the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+    * @return
+    */
   def removeFlags(): ExecutionInProgressScriptProgram = {
     this.replaceFlags(Seq.empty)
   }
