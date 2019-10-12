@@ -567,8 +567,7 @@ class StackInterpreterTest extends FlatSpec with MustMatchers {
     val altStack = List(OP_0)
     val program =
       ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val programWithAltStack =
-      ScriptProgram(program, altStack, ScriptProgram.AltStack)
+    val programWithAltStack = program.updateAltStack(altStack)
     val executedProgram = SI.opFromAltStack(programWithAltStack)
     executedProgram.stack must be(altStack)
   }

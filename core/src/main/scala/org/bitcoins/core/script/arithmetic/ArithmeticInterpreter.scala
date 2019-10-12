@@ -307,10 +307,8 @@ sealed abstract class ArithmeticInterpreter {
           program.failExecution(ScriptErrorUnknownError)
         } else {
           val interpretedNumber = ScriptNumber(ScriptNumberUtil.toLong(s.hex))
-          val newProgram = ScriptProgram(
-            program,
-            interpretedNumber :: program.stack.tail,
-            ScriptProgram.Stack)
+          val newProgram =
+            program.updateStack(interpretedNumber :: program.stack.tail)
           performUnaryArithmeticOperation(newProgram, op)
         }
       case Some(_: ScriptToken) =>
@@ -360,26 +358,20 @@ sealed abstract class ArithmeticInterpreter {
         case (x: ScriptConstant, _: ScriptNumber) =>
           //interpret x as a number
           val interpretedNumber = ScriptNumber(x.hex)
-          val newProgram = ScriptProgram(
-            program,
-            interpretedNumber :: program.stack.tail,
-            ScriptProgram.Stack)
+          val newProgram =
+            program.updateStack(interpretedNumber :: program.stack.tail)
           performBinaryArithmeticOperation(newProgram, op)
         case (x: ScriptNumber, y: ScriptConstant) =>
           val interpretedNumber = ScriptNumber(y.hex)
-          val newProgram = ScriptProgram(
-            program,
-            x :: interpretedNumber :: program.stack.tail,
-            ScriptProgram.Stack)
+          val newProgram =
+            program.updateStack(x :: interpretedNumber :: program.stack.tail)
           performBinaryArithmeticOperation(newProgram, op)
         case (x: ScriptConstant, y: ScriptConstant) =>
           //interpret x and y as a number
           val interpretedNumberX = ScriptNumber(x.hex)
           val interpretedNumberY = ScriptNumber(y.hex)
-          val newProgram = ScriptProgram(
-            program,
-            interpretedNumberX :: interpretedNumberY :: program.stack.tail.tail,
-            ScriptProgram.Stack)
+          val newProgram = program.updateStack(
+            interpretedNumberX :: interpretedNumberY :: program.stack.tail.tail)
           performBinaryArithmeticOperation(newProgram, op)
         case (_: ScriptToken, _: ScriptToken) =>
           //pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
