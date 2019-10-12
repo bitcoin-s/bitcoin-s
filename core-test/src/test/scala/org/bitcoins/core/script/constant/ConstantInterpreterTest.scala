@@ -148,7 +148,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
   it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is zero" in {
     val stack = List()
     val script = List(OP_PUSHDATA4, ScriptNumber.zero)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).replaceFlags(Seq[ScriptFlag](ScriptVerifyMinimalData))
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData4(program))
     newProgram.error must be(Some(ScriptErrorMinimalData))
