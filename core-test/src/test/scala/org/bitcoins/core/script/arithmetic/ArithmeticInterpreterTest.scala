@@ -514,18 +514,14 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_WITHIN correctly" in {
     val stack = List(ScriptNumber(2), ScriptNumber.one, ScriptNumber.zero)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
-      Seq[ScriptFlag]())
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
     val newProgram = AI.opWithin(program)
     newProgram.stack must be(List(OP_FALSE))
     newProgram.script.isEmpty must be(true)
 
     val stack1 = List(ScriptNumber.one, OP_0, ScriptNumber.zero)
     val script1 = List(OP_WITHIN)
-    val program1 = ScriptProgram(
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1),
-      Seq[ScriptFlag]())
+    val program1 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1).removeFlags()
     val newProgram1 = AI.opWithin(program1)
     newProgram1.stack must be(List(OP_TRUE))
     newProgram1.script.isEmpty must be(true)
@@ -546,9 +542,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
     val stack =
       List(ScriptNumber("0000000000000000"), ScriptNumber.one, ScriptNumber.one)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
-      Seq[ScriptFlag]())
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
     val newProgram = AI.opWithin(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
@@ -558,9 +552,7 @@ class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark the script as invalid for OP_WITHIN if we do not have 3 stack elements" in {
     val stack = List(ScriptNumber("0000000000000000"), ScriptNumber.one)
     val script = List(OP_WITHIN)
-    val program = ScriptProgram(
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
-      Seq[ScriptFlag]())
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
     val newProgram = AI.opWithin(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(

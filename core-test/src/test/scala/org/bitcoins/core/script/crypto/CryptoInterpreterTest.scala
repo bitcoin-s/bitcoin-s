@@ -117,7 +117,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val script = List(OP_CHECKMULTISIG)
     val program =
       ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
+    val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be(List(OP_TRUE))
     newProgram.script.isEmpty must be(true)
@@ -128,7 +128,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val script = List(OP_CHECKMULTISIG, OP_16, OP_16, OP_16, OP_16)
     val program =
       ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
+    val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be(List(OP_TRUE, OP_16, OP_16, OP_16))
     newProgram.script must be(List(OP_16, OP_16, OP_16, OP_16))
@@ -139,7 +139,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val script = List(OP_CHECKMULTISIGVERIFY)
     val program =
       ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
+    val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSigVerify(programNoFlags)
     newProgram.script.isEmpty must be(true)
     newProgram.stack.isEmpty must be(true)
@@ -151,7 +151,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val script = List(OP_CHECKMULTISIGVERIFY, OP_16, OP_16, OP_16, OP_16)
     val program =
       ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
+    val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSigVerify(programNoFlags)
     newProgram.stack must be(List(OP_16, OP_16, OP_16))
     newProgram.script must be(List(OP_16, OP_16, OP_16, OP_16))
@@ -164,7 +164,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val script = List(OP_CHECKMULTISIG)
     val program =
       ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val programNoFlags = ScriptProgram(program, ScriptFlagFactory.empty)
+    val programNoFlags = program.removeFlags()
     val newProgram = CI.opCheckMultiSig(programNoFlags)
     newProgram.stack must be(List(OP_TRUE))
     newProgram.script.isEmpty must be(true)
@@ -207,7 +207,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
     val script = Seq(OP_CHECKSIG)
     val program =
       ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
-    val programWithFlags = ScriptProgram(program, flags)
+    val programWithFlags = program.replaceFlags(flags)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
       CI.opCheckSig(programWithFlags))
     newProgram.error must be(Some(ScriptErrorSigDer))

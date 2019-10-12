@@ -78,29 +78,20 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
   it must "push 0 bytes onto the stack which is OP_0" in {
     val stack = List()
     val script = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
-    val program =
-      ScriptProgram(
-        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
-        Seq[ScriptFlag]())
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
     val newProgram = CI.opPushData1(program)
     newProgram.stackTopIsFalse must be(true)
     newProgram.stack must be(List(ScriptNumber.zero))
 
     val stack1 = List()
     val script1 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
-    val program1 =
-      ScriptProgram(
-        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1),
-        Seq[ScriptFlag]())
+    val program1 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1).removeFlags()
     val newProgram1 = CI.opPushData2(program1)
     newProgram1.stack must be(List(ScriptNumber.zero))
 
     val stack2 = List()
     val script2 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
-    val program2 =
-      ScriptProgram(
-        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2),
-        Seq[ScriptFlag]())
+    val program2 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2).removeFlags()
     val newProgram2 = CI.opPushData4(program2)
     newProgram2.stack must be(List(ScriptNumber.zero))
   }
@@ -108,9 +99,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
   it must "mark a program as invalid if we have do not have enough bytes to be pushed onto the stack by the push operation" in {
     val stack = List()
     val script = List(OP_PUSHDATA1, BytesToPushOntoStack(1))
-    val program = ScriptProgram(
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
-      Seq[ScriptFlag]())
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
 
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData1(program))
@@ -120,24 +109,15 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
   it must "fail the require statement if the first op_code in the program's script doesn't match the OP_PUSHDATA we're looking for" in {
     val stack1 = List()
     val script1 = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
-    val program1 =
-      ScriptProgram(
-        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1),
-        Seq[ScriptFlag]())
+    val program1 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1).removeFlags()
 
     val stack2 = List()
     val script2 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
-    val program2 =
-      ScriptProgram(
-        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2),
-        Seq[ScriptFlag]())
+    val program2 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2).removeFlags()
 
     val stack4 = List()
     val script4 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
-    val program4 =
-      ScriptProgram(
-        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack4, script4),
-        Seq[ScriptFlag]())
+    val program4 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack4, script4).removeFlags()
 
     //purposely call incorrect functions to mismatch opCodes
     intercept[IllegalArgumentException] {
@@ -168,10 +148,7 @@ class ConstantInterpreterTest extends FlatSpec with MustMatchers {
   it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is zero" in {
     val stack = List()
     val script = List(OP_PUSHDATA4, ScriptNumber.zero)
-    val program =
-      ScriptProgram(
-        ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
-        Seq[ScriptFlag](ScriptVerifyMinimalData))
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).replaceFlags(Seq[ScriptFlag](ScriptVerifyMinimalData))
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData4(program))
     newProgram.error must be(Some(ScriptErrorMinimalData))
