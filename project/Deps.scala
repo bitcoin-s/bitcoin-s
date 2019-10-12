@@ -16,7 +16,7 @@ object Deps {
     val scodecV = "1.1.12"
     val junitV = "0.11"
     val nativeLoaderV = "2.3.4"
-    val typesafeConfigV = "1.3.4"
+    val typesafeConfigV = "1.4.0"
 
     // async dropped Scala 2.11 in 0.10.0
     val asyncOldScalaV = "0.9.7"
