@@ -71,6 +71,22 @@ case class PreExecutionScriptProgram(
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     ScriptProgram.toExecutionInProgress(this).failExecution(error)
   }
+
+  def updateStack(tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+    this.copy(stack = tokens.toList)
+  }
+
+  def updateAltStack(tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+    this.copy(altStack = tokens.toList)
+  }
+
+  def updateScript(tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+    this.copy(script = tokens.toList)
+  }
+
+  def updateOriginalScript(tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+    this.copy(originalScript = tokens.toList)
+  }
 }
 
 object PreExecutionScriptProgram {
@@ -170,42 +186,6 @@ object ScriptProgram extends BitcoinSLogger {
   }
 
   def apply(
-      oldProgram: PreExecutionScriptProgram,
-      tokens: Seq[ScriptToken],
-      indicator: UpdateIndicator): PreExecutionScriptProgram = {
-    indicator match {
-      case Stack =>
-        PreExecutionScriptProgram(oldProgram.txSignatureComponent,
-                                  tokens.toList,
-                                  oldProgram.script,
-                                  oldProgram.originalScript,
-                                  oldProgram.altStack,
-                                  oldProgram.flags)
-      case Script =>
-        PreExecutionScriptProgram(oldProgram.txSignatureComponent,
-                                  oldProgram.stack,
-                                  tokens.toList,
-                                  oldProgram.originalScript,
-                                  oldProgram.altStack,
-                                  oldProgram.flags)
-      case AltStack =>
-        PreExecutionScriptProgram(oldProgram.txSignatureComponent,
-                                  oldProgram.stack,
-                                  oldProgram.script,
-                                  oldProgram.originalScript,
-                                  tokens.toList,
-                                  oldProgram.flags)
-      case OriginalScript =>
-        PreExecutionScriptProgram(oldProgram.txSignatureComponent,
-                                  oldProgram.stack,
-                                  oldProgram.script,
-                                  tokens.toList,
-                                  oldProgram.altStack,
-                                  oldProgram.flags)
-    }
-  }
-
-  def apply(
       oldProgram: ExecutionInProgressScriptProgram,
       tokens: Seq[ScriptToken],
       indicator: UpdateIndicator): ExecutionInProgressScriptProgram = {
@@ -255,8 +235,8 @@ object ScriptProgram extends BitcoinSLogger {
       oldProgram: PreExecutionScriptProgram,
       stackTokens: Seq[ScriptToken],
       scriptTokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
-    val updatedStack = ScriptProgram(oldProgram, stackTokens, Stack)
-    val updatedScript = ScriptProgram(updatedStack, scriptTokens, Script)
+    val updatedStack = oldProgram.updateStack(stackTokens)
+    val updatedScript = updatedStack.updateScript(scriptTokens)
     require(updatedStack.stack == stackTokens)
     require(updatedScript.script == scriptTokens)
     updatedScript
@@ -309,11 +289,11 @@ object ScriptProgram extends BitcoinSLogger {
       stack: Seq[ScriptToken],
       script: Seq[ScriptToken],
       altStack: Seq[ScriptToken]): PreExecutionScriptProgram = {
-    val updatedProgramStack = ScriptProgram(oldProgram, stack, Stack)
+    val updatedProgramStack = oldProgram.updateStack(stack)
     val updatedProgramScript =
-      ScriptProgram(updatedProgramStack, script, Script)
+      updatedProgramStack.updateScript(script)
     val updatedProgramAltStack =
-      ScriptProgram(updatedProgramScript, altStack, AltStack)
+      updatedProgramScript.updateAltStack(altStack)
     updatedProgramAltStack
   }
 
