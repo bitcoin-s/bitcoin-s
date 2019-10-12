@@ -84,7 +84,8 @@ case class PreExecutionScriptProgram(
     this.copy(script = tokens.toList)
   }
 
-  def updateOriginalScript(tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+  def updateOriginalScript(
+      tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
     this.copy(originalScript = tokens.toList)
   }
 }
@@ -136,6 +137,11 @@ case class ExecutionInProgressScriptProgram(
     */
   def removeFlags(): ExecutionInProgressScriptProgram = {
     this.replaceFlags(Seq.empty)
+  }
+
+  def updateLastCodeSeparator(
+      newLastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
+    this.copy(lastCodeSeparator = Some(newLastCodeSeparator))
   }
 }
 
@@ -253,21 +259,6 @@ object ScriptProgram extends BitcoinSLogger {
     updatedScript
   }
 
-  /** Updates the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]] index. */
-  def apply(
-      oldProgram: ExecutionInProgressScriptProgram,
-      lastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
-    ExecutionInProgressScriptProgram(
-      oldProgram.txSignatureComponent,
-      oldProgram.stack,
-      oldProgram.script,
-      oldProgram.originalScript,
-      oldProgram.altStack,
-      oldProgram.flags,
-      Some(lastCodeSeparator)
-    )
-  }
-
   /** Updates the [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]s
     * in either the stack or script and the last
     * [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]] index */
@@ -277,7 +268,7 @@ object ScriptProgram extends BitcoinSLogger {
       indicator: UpdateIndicator,
       lastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
     val updatedIndicator = ScriptProgram(oldProgram, tokens, indicator)
-    ScriptProgram(updatedIndicator, lastCodeSeparator)
+    updatedIndicator.updateLastCodeSeparator(lastCodeSeparator)
   }
 
   /** Updates the [[org.bitcoins.core.script.ScriptProgram.Stack Stack]],
