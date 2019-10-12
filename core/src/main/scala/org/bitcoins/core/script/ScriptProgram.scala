@@ -145,17 +145,6 @@ object ScriptProgram extends BitcoinSLogger {
   case object OriginalScript extends UpdateIndicator
 
   def apply(
-      oldProgram: PreExecutionScriptProgram,
-      flags: Seq[ScriptFlag]): PreExecutionScriptProgram = {
-    PreExecutionScriptProgram(oldProgram.txSignatureComponent,
-                              oldProgram.stack,
-                              oldProgram.script,
-                              oldProgram.originalScript,
-                              oldProgram.altStack,
-                              flags)
-  }
-
-  def apply(
       oldProgram: ExecutionInProgressScriptProgram,
       flags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
     ExecutionInProgressScriptProgram(oldProgram.txSignatureComponent,
