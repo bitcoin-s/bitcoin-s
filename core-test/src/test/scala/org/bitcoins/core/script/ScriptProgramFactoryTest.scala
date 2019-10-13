@@ -20,15 +20,11 @@ class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
     val altStack = List(OP_1)
 
     val modifiedStackProgram =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress,
-                    stack,
-                    ScriptProgram.Stack)
+      TestUtil.testProgramExecutionInProgress.updateStack(stack)
     modifiedStackProgram.stack must be(stack)
 
     val modifiedAltStack =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress,
-                    altStack,
-                    ScriptProgram.AltStack)
+      TestUtil.testProgramExecutionInProgress.updateAltStack(altStack)
 
     modifiedAltStack.altStack must be(altStack)
   }

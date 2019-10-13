@@ -1016,8 +1016,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
              calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY))
           } //in this case, just reat OP_CLTV just like a NOP and remove it from the stack
           else {
-            val programOrError =
-              ScriptProgram(program, program.script.tail, ScriptProgram.Script)
+            val programOrError = program.updateScript(program.script.tail)
             val newOpCount =
               calcOpCount(opCount, OP_CHECKLOCKTIMEVERIFY)
             (programOrError, newOpCount)
@@ -1040,8 +1039,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
              calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY))
           } //in this case, just read OP_CSV just like a NOP and remove it from the stack
           else {
-            val programOrError =
-              ScriptProgram(program, program.script.tail, ScriptProgram.Script)
+            val programOrError = program.updateScript(program.script.tail)
             val newOpCount =
               calcOpCount(opCount, OP_CHECKSEQUENCEVERIFY)
             (programOrError, newOpCount)

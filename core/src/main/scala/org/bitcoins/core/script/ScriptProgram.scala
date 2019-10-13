@@ -143,10 +143,31 @@ case class ExecutionInProgressScriptProgram(
 
   /**
     * Removes the flags on the given [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
+    *
     * @return
     */
   def removeFlags(): ExecutionInProgressScriptProgram = {
     this.replaceFlags(Seq.empty)
+  }
+
+  def updateStack(
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+    this.copy(stack = tokens.toList)
+  }
+
+  def updateAltStack(
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+    this.copy(altStack = tokens.toList)
+  }
+
+  def updateScript(
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+    this.copy(script = tokens.toList)
+  }
+
+  def updateOriginalScript(
+      tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+    this.copy(originalScript = tokens.toList)
   }
 
   def updateLastCodeSeparator(
@@ -202,57 +223,22 @@ object ScriptProgram extends BitcoinSLogger {
   }
 
   def apply(
-      oldProgram: ExecutionInProgressScriptProgram,
-      tokens: Seq[ScriptToken],
-      indicator: UpdateIndicator): ExecutionInProgressScriptProgram = {
-    indicator match {
-      case Stack =>
-        ExecutionInProgressScriptProgram(
-          oldProgram.txSignatureComponent,
-          tokens.toList,
-          oldProgram.script,
-          oldProgram.originalScript,
-          oldProgram.altStack,
-          oldProgram.flags,
-          oldProgram.lastCodeSeparator
-        )
-      case Script =>
-        ExecutionInProgressScriptProgram(
-          oldProgram.txSignatureComponent,
-          oldProgram.stack,
-          tokens.toList,
-          oldProgram.originalScript,
-          oldProgram.altStack,
-          oldProgram.flags,
-          oldProgram.lastCodeSeparator
-        )
-      case AltStack =>
-        ExecutionInProgressScriptProgram(
-          oldProgram.txSignatureComponent,
-          oldProgram.stack,
-          oldProgram.script,
-          oldProgram.originalScript,
-          tokens.toList,
-          oldProgram.flags,
-          oldProgram.lastCodeSeparator
-        )
-      case OriginalScript =>
-        ExecutionInProgressScriptProgram(oldProgram.txSignatureComponent,
-                                         oldProgram.stack,
-                                         oldProgram.script,
-                                         tokens.toList,
-                                         oldProgram.altStack,
-                                         oldProgram.flags,
-                                         oldProgram.lastCodeSeparator)
-    }
+      oldProgram: PreExecutionScriptProgram,
+      stackTokens: Seq[ScriptToken],
+      scriptTokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+    val updatedStack = oldProgram.updateStack(stackTokens)
+    val updatedScript = updatedStack.updateScript(scriptTokens)
+    require(updatedStack.stack == stackTokens)
+    require(updatedScript.script == scriptTokens)
+    updatedScript
   }
 
   def apply(
       oldProgram: ExecutionInProgressScriptProgram,
       stackTokens: Seq[ScriptToken],
       scriptTokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
-    val updatedStack = ScriptProgram(oldProgram, stackTokens, Stack)
-    val updatedScript = ScriptProgram(updatedStack, scriptTokens, Script)
+    val updatedStack = oldProgram.updateStack(stackTokens)
+    val updatedScript = updatedStack.updateScript(scriptTokens)
     require(updatedStack.stack == stackTokens)
     require(updatedScript.script == scriptTokens)
     updatedScript
@@ -266,7 +252,16 @@ object ScriptProgram extends BitcoinSLogger {
       tokens: Seq[ScriptToken],
       indicator: UpdateIndicator,
       lastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
-    val updatedIndicator = ScriptProgram(oldProgram, tokens, indicator)
+    val updatedIndicator = indicator match {
+      case Stack =>
+        oldProgram.updateStack(tokens)
+      case AltStack =>
+        oldProgram.updateAltStack(tokens)
+      case Script =>
+        oldProgram.updateScript(tokens)
+      case OriginalScript =>
+        oldProgram.updateOriginalScript(tokens)
+    }
     updatedIndicator.updateLastCodeSeparator(lastCodeSeparator)
   }
 
@@ -296,11 +291,9 @@ object ScriptProgram extends BitcoinSLogger {
       stack: Seq[ScriptToken],
       script: Seq[ScriptToken],
       altStack: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
-    val updatedProgramStack = ScriptProgram(oldProgram, stack, Stack)
-    val updatedProgramScript =
-      ScriptProgram(updatedProgramStack, script, Script)
-    val updatedProgramAltStack =
-      ScriptProgram(updatedProgramScript, altStack, AltStack)
+    val updatedProgramStack = oldProgram.updateStack(stack)
+    val updatedProgramScript = updatedProgramStack.updateScript(script)
+    val updatedProgramAltStack = updatedProgramScript.updateAltStack(altStack)
     updatedProgramAltStack
   }
 

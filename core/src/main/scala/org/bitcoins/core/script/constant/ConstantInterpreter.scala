@@ -155,8 +155,7 @@ sealed abstract class ConstantInterpreter {
                           ScriptNumber.zero :: program.stack,
                           program.script.tail.tail)
         case _: ScriptToken =>
-          pushScriptNumberBytesToStack(
-            ScriptProgram(program, program.script, ScriptProgram.Script))
+          pushScriptNumberBytesToStack(program.updateScript(program.script))
       }
     }
   }

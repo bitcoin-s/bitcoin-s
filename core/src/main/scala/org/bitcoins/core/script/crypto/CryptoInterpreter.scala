@@ -107,7 +107,7 @@ sealed abstract class CryptoInterpreter {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val newScript = OP_CHECKSIG :: OP_VERIFY :: program.script.tail
-      val newProgram = ScriptProgram(program, newScript, ScriptProgram.Script)
+      val newProgram = program.updateScript(newScript)
       val programFromOpCheckSig = opCheckSig(newProgram)
       logger.debug(
         "Stack after OP_CHECKSIG execution: " + programFromOpCheckSig.stack)
@@ -264,7 +264,7 @@ sealed abstract class CryptoInterpreter {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       val newScript = OP_CHECKMULTISIG :: OP_VERIFY :: program.script.tail
-      val newProgram = ScriptProgram(program, newScript, ScriptProgram.Script)
+      val newProgram = program.updateScript(newScript)
       val programFromOpCheckMultiSig = opCheckMultiSig(newProgram)
       logger.debug(
         "Stack after OP_CHECKMULTSIG execution: " + programFromOpCheckMultiSig.stack)
