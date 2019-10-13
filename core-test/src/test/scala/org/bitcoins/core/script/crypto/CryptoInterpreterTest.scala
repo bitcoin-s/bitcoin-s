@@ -217,10 +217,7 @@ class CryptoInterpreterTest extends FlatSpec with MustMatchers {
   it must "evaluate an OP_CODESEPARATOR" in {
     val stack = List()
     val script = Seq(OP_CODESEPARATOR)
-    val program = ScriptProgram(
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script),
-      script,
-      ScriptProgram.OriginalScript)
+    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).updateOriginalScript(script)
     val newProgram = ScriptProgramTestUtil.toExecutionInProgressScriptProgram(
       CI.opCodeSeparator(program))
     newProgram.lastCodeSeparator must be(Some(0))

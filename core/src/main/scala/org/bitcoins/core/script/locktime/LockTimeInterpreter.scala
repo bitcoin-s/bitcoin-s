@@ -74,7 +74,7 @@ sealed abstract class LockTimeInterpreter {
             //if the number size is larger than 5 bytes the number is invalid
             program.failExecution(ScriptErrorUnknownError)
           } else if (checkLockTime(program, s)) {
-            ScriptProgram(program, program.script.tail, ScriptProgram.Script)
+            program.updateScript(program.script.tail)
           } else {
             logger.error(
               "Stack top locktime and transaction locktime number comparison failed")
@@ -82,9 +82,7 @@ sealed abstract class LockTimeInterpreter {
           }
         case s: ScriptConstant =>
           opCheckLockTimeVerify(
-            ScriptProgram(program,
-                          ScriptNumber(s.hex) :: program.stack.tail,
-                          ScriptProgram.Stack))
+            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail))
         case _: ScriptToken => program.failExecution(ScriptErrorUnknownError)
       }
     }
@@ -121,7 +119,7 @@ sealed abstract class LockTimeInterpreter {
           //see BIP68 for semantic of locktimeDisableFlag
           logger.info(
             "Locktime disable flag was set so OP_CHECKSEQUENCEVERIFY is treated as a NOP")
-          ScriptProgram(program, program.script.tail, ScriptProgram.Script)
+          program.updateScript(program.script.tail)
         case s: ScriptNumber
             if (isLockTimeBitOff(s) && program.txSignatureComponent.transaction.version < TransactionConstants.validLockVersion) =>
           logger.error(
@@ -140,9 +138,7 @@ sealed abstract class LockTimeInterpreter {
           }
         case s: ScriptConstant =>
           opCheckSequenceVerify(
-            ScriptProgram(program,
-                          ScriptNumber(s.hex) :: program.stack.tail,
-                          ScriptProgram.Stack))
+            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail))
         case token: ScriptToken =>
           throw new RuntimeException(
             "Stack top must be either a ScriptConstant or a ScriptNumber, we got: " + token)
