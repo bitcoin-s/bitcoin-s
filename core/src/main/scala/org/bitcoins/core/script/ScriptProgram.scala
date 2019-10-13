@@ -88,6 +88,16 @@ case class PreExecutionScriptProgram(
       tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
     this.copy(originalScript = tokens.toList)
   }
+
+  def updateStackAndScript(
+      stackTokens: Seq[ScriptToken],
+      scriptTokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
+    val updatedStack = this.updateStack(stackTokens)
+    val updatedScript = updatedStack.updateScript(scriptTokens)
+    require(updatedStack.stack == stackTokens)
+    require(updatedScript.script == scriptTokens)
+    updatedScript
+  }
 }
 
 object PreExecutionScriptProgram {
@@ -235,17 +245,6 @@ object ScriptProgram extends BitcoinSLogger {
                                          oldProgram.flags,
                                          oldProgram.lastCodeSeparator)
     }
-  }
-
-  def apply(
-      oldProgram: PreExecutionScriptProgram,
-      stackTokens: Seq[ScriptToken],
-      scriptTokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
-    val updatedStack = oldProgram.updateStack(stackTokens)
-    val updatedScript = updatedStack.updateScript(scriptTokens)
-    require(updatedStack.stack == stackTokens)
-    require(updatedScript.script == scriptTokens)
-    updatedScript
   }
 
   def apply(

@@ -67,7 +67,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     )
     val baseProgram = PreExecutionScriptProgram(t)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(
-      ScriptProgram(baseProgram, stack, script))
+      baseProgram.updateStackAndScript(stack, script))
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
       LTI.opCheckLockTimeVerify(ScriptProgram.toExecutionInProgress(program)))
     newProgram.error must be(Some(ScriptErrorNegativeLockTime))
@@ -94,7 +94,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val t = buildTxSigComponent(adjustedLockTimeTx)
     val baseProgram = PreExecutionScriptProgram(t)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(
-      ScriptProgram(baseProgram, stack, script))
+      baseProgram.updateStackAndScript(stack, script))
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
       LTI.opCheckLockTimeVerify(ScriptProgram.toExecutionInProgress(program)))
     newProgram.error must be(Some(ScriptErrorUnsatisfiedLocktime))
@@ -121,7 +121,7 @@ class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
     val t = buildTxSigComponent(adjustedLockTimeTx)
     val baseProgram = PreExecutionScriptProgram(t)
     val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(
-      ScriptProgram(baseProgram, stack, script))
+      baseProgram.updateStackAndScript(stack, script))
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
       LTI.opCheckLockTimeVerify(ScriptProgram.toExecutionInProgress(program)))
     newProgram.error must be(Some(ScriptErrorUnsatisfiedLocktime))
