@@ -1,17 +1,14 @@
 package org.bitcoins.chain.config
 
+import java.nio.file.Path
+
 import com.typesafe.config.Config
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.db._
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.db._
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.Success
-import scala.util.Failure
-import java.nio.file.Path
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S chain verification module
   * @param directory The data directory of the module
@@ -38,20 +35,17 @@ case class ChainAppConfig(
   def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
     val bhDAO =
       BlockHeaderDAO()(ec = implicitly[ExecutionContext], appConfig = this)
-    val p = Promise[Boolean]()
     val isDefinedOptF = {
       bhDAO.read(chain.genesisBlock.blockHeader.hashBE).map(_.isDefined)
     }
-    isDefinedOptF.onComplete {
-      case Success(bool) =>
-        logger.debug(s"Chain project is initialized")
-        p.success(bool)
-      case Failure(_) =>
-        logger.info(s"Chain project is not initialized")
-        p.success(false)
+    isDefinedOptF.foreach { _ =>
+      logger.debug(s"Chain project is initialized")
     }
-
-    p.future
+    isDefinedOptF.recover {
+      case e: Throwable =>
+        logger.info(s"Chain project is not initialized")
+        false
+    }
   }
 
   /** Initializes our chain project if it is needed
@@ -59,12 +53,14 @@ case class ChainAppConfig(
     * and inserts preliminary data like the genesis block header
     * */
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
-    val isInitF = isInitialized()
+    val createdF = ChainDbManagement.createAll()(this, ec)
+    val isInitF = createdF.flatMap { _ =>
+      isInitialized()
+    }
     isInitF.flatMap { isInit =>
       if (isInit) {
         FutureUtil.unit
       } else {
-        val createdF = ChainDbManagement.createAll()(this, ec)
         val genesisHeader =
           BlockHeaderDbHelper.fromBlockHeader(height = 0,
                                               bh =

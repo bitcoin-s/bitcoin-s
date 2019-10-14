@@ -29,7 +29,14 @@ abstract class DbManagement extends DatabaseLogger {
 
     val query = {
       val querySeq =
-        allTables.map(createTableQuery(_, createIfNotExists = true))
+        allTables
+          .map(createTableQuery(_, createIfNotExists = true))
+          .map { query =>
+            // DIRTY HACK. For some reason Slick doesn't know that Sqlite can do CREATE INDEX IF NOT EXISTS
+            val statements = query.statements.map(
+              _.replace("create index", "create index if not exists"))
+            query.overrideStatements(statements)
+          }
       DBIO.seq(querySeq: _*).transactionally
     }
 
