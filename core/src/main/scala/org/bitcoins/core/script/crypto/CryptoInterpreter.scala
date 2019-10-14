@@ -9,7 +9,7 @@ import org.bitcoins.core.script.control.{
 }
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.{ScriptProgram, _}
+import org.bitcoins.core.script._
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, CryptoUtil}
 import scodec.bits.ByteVector
 
@@ -131,10 +131,10 @@ sealed abstract class CryptoInterpreter {
             "Script top must be OP_CODESEPARATOR")
 
     val indexOfOpCodeSeparator = program.originalScript.size - program.script.size
-    ScriptProgram(program,
-                  program.script.tail,
-                  ScriptProgram.Script,
-                  indexOfOpCodeSeparator)
+
+    program
+      .updateScript(program.script.tail)
+      .updateLastCodeSeparator(indexOfOpCodeSeparator)
   }
 
   /**
@@ -291,7 +291,8 @@ sealed abstract class CryptoInterpreter {
     if (program.stack.nonEmpty) {
       val stackTop = program.stack.head
       val hash = ScriptConstant(hashFunction(stackTop.bytes).bytes)
-      ScriptProgram(program, hash :: program.stack.tail, program.script.tail)
+      program.updateStackAndScript(hash :: program.stack.tail,
+                                   program.script.tail)
     } else {
       logger.error(
         "We must have the stack top defined to execute a hash function")
@@ -307,7 +308,7 @@ sealed abstract class CryptoInterpreter {
       //means that all of the signatures were correctly encoded and
       //that all of the signatures were valid signatures for the given
       //public keys
-      ScriptProgram(program, OP_TRUE +: restOfStack, program.script.tail)
+      program.updateStackAndScript(OP_TRUE +: restOfStack, program.script.tail)
     case SignatureValidationErrorNotStrictDerEncoding =>
       //this means the script fails immediately
       //set the valid flag to false on the script
@@ -317,7 +318,7 @@ sealed abstract class CryptoInterpreter {
     case SignatureValidationErrorIncorrectSignatures =>
       //this means that signature verification failed, however all signatures were encoded correctly
       //just push a OP_FALSE onto the stack
-      ScriptProgram(program, OP_FALSE +: restOfStack, program.script.tail)
+      program.updateStackAndScript(OP_FALSE +: restOfStack, program.script.tail)
     case SignatureValidationErrorSignatureCount =>
       //means that we did not have enough signatures for OP_CHECKMULTISIG
       program.failExecution(ScriptErrorInvalidStackOperation)

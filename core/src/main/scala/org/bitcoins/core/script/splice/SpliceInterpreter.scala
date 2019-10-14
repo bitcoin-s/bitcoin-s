@@ -2,7 +2,6 @@ package org.bitcoins.core.script.splice
 
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
-  ScriptProgram,
   StartedScriptProgram
 }
 import org.bitcoins.core.script.constant._
@@ -23,15 +22,14 @@ sealed abstract class SpliceInterpreter {
             "Script top must be OP_SIZE")
     if (program.stack.nonEmpty) {
       if (program.stack.head == OP_0) {
-        ScriptProgram(program, OP_0 :: program.stack, program.script.tail)
+        program.updateStackAndScript(OP_0 :: program.stack, program.script.tail)
       } else {
         val scriptNumber = program.stack.head match {
           case ScriptNumber.zero => ScriptNumber.zero
           case x: ScriptToken    => ScriptNumber(x.bytes.size)
         }
-        ScriptProgram(program,
-                      scriptNumber :: program.stack,
-                      program.script.tail)
+        program.updateStackAndScript(scriptNumber :: program.stack,
+                                     program.script.tail)
       }
     } else {
       logger.error("Must have at least 1 element on the stack for OP_SIZE")

@@ -19,7 +19,7 @@ import org.bitcoins.core.script.crypto.{
   OP_HASH160
 }
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.script.{PreExecutionScriptProgram, ScriptProgram}
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 
@@ -200,7 +200,7 @@ object TestUtil {
     "8b483045022100ad8e961fe3c22b2647d92b078f4c0cf81b3106ea5bf8b900ab8646aa4430216f022071d4edc2b5588be20ac4c2d07edd8ed069e10b2402d3dce2d3b835ccd075f283014104fa79182bbc26c708b5d9f36b8635947d4a834ea356cf612ede08395c295f962e0b1dc2557aba34188640e51a58ed547f2c89c8265cd0c04ff890d8435648746e"
   def scriptSig = ScriptSignature(rawScriptSig)
 
-  def testProgram: ScriptProgram = {
+  def testProgram: PreExecutionScriptProgram = {
     val t = BaseTxSigComponent(
       transaction = TransactionTestUtil.testTransaction,
       inputIndex = UInt32.zero,
@@ -218,7 +218,7 @@ object TestUtil {
   }
 
   def testProgramExecutionInProgress =
-    ScriptProgram.toExecutionInProgress(testProgramPreExecution)
+    testProgramPreExecution.toExecutionInProgress
 
   val rawP2PKScriptSig =
     "4847304402200a5c6163f07b8d3b013c4d1d6dba25e780b39658d79ba37af7057a3b7f15ffa102201fd9b4eaa9943f734928b99a83592c2e7bf342ea2680f6a2bb705167966b742001"

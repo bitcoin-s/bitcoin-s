@@ -432,7 +432,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       logger.error("We cannot run a script that is larger than 10,000 bytes")
       program.failExecution(ScriptErrorScriptSize)
     } else {
-      loop(ScriptProgram.toExecutionInProgress(program, Some(program.stack)), 0)
+      loop(program.toExecutionInProgress, 0)
     }
   }
 
@@ -782,16 +782,16 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
         case OP_0 :: t =>
           val programOrError =
-            ScriptProgram(program, ScriptNumber.zero :: program.stack, t)
+            program.updateStackAndScript(ScriptNumber.zero :: program.stack, t)
           val newOpCount =
             calcOpCount(opCount, OP_0)
           (programOrError, newOpCount)
 
         case (scriptNumberOp: ScriptNumberOperation) :: t =>
           val programOrError =
-            ScriptProgram(program,
-                          ScriptNumber(scriptNumberOp.toLong) :: program.stack,
-                          t)
+            program.updateStackAndScript(
+              ScriptNumber(scriptNumberOp.toLong) :: program.stack,
+              t)
           val newOpCount =
             calcOpCount(opCount, scriptNumberOp)
           (programOrError, newOpCount)
@@ -805,7 +805,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
         case (scriptNumber: ScriptNumber) :: t =>
           val programOrError =
-            ScriptProgram(program, scriptNumber :: program.stack, t)
+            program.updateStackAndScript(scriptNumber :: program.stack, t)
           val newOpCount =
             calcOpCount(opCount, scriptNumber)
           (programOrError, newOpCount)
@@ -829,7 +829,8 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           (programOrError, newOpCount)
 
         case (x: ScriptConstant) :: t =>
-          val programOrError = ScriptProgram(program, x :: program.stack, t)
+          val programOrError =
+            program.updateStackAndScript(x :: program.stack, t)
           val newOpCount =
             calcOpCount(opCount, x)
           (programOrError, newOpCount)
@@ -951,7 +952,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
         //reserved operations
         case OP_NOP :: t =>
           //script discourage upgradeable flag does not apply to a OP_NOP
-          val programOrError = ScriptProgram(program, program.stack, t)
+          val programOrError = program.updateScript(t)
           val newOpCount =
             calcOpCount(opCount, OP_NOP)
           (programOrError, newOpCount)
@@ -964,7 +965,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           (program.failExecution(ScriptErrorDiscourageUpgradableNOPs),
            calcOpCount(opCount, nop))
         case (nop: NOP) :: t =>
-          val programOrError = ScriptProgram(program, program.stack, t)
+          val programOrError = program.updateScript(t)
           val newOpCount =
             calcOpCount(opCount, nop)
           (programOrError, newOpCount)
@@ -1047,7 +1048,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
         //no more script operations to run, return whether the program is valid and the final state of the program
         case Nil =>
-          (ScriptProgram.toExecutedProgram(program), opCount)
+          (program.toExecutedProgram, opCount)
         case h :: _ => throw new RuntimeException(s"$h was unmatched")
       }
 

@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.core.util.BitcoinScriptUtil
 
 /**
   * Created by chris on 2/3/16.
@@ -68,8 +68,21 @@ case class PreExecutionScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag])
     extends ScriptProgram {
+
+  def toExecutionInProgress: ExecutionInProgressScriptProgram = {
+    ExecutionInProgressScriptProgram(
+      txSignatureComponent,
+      stack,
+      script,
+      originalScript,
+      altStack,
+      flags,
+      None
+    )
+  }
+
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
-    ScriptProgram.toExecutionInProgress(this).failExecution(error)
+    this.toExecutionInProgress.failExecution(error)
   }
 
   def updateStack(tokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
@@ -132,8 +145,21 @@ case class ExecutionInProgressScriptProgram(
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int])
     extends StartedScriptProgram {
+
+  def toExecutedProgram: ExecutedScriptProgram = {
+    ExecutedScriptProgram(
+      txSignatureComponent,
+      stack,
+      script,
+      originalScript,
+      altStack,
+      flags,
+      None
+    )
+  }
+
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
-    ScriptProgram.toExecutedProgram(this).failExecution(error)
+    this.toExecutedProgram.failExecution(error)
   }
 
   def replaceFlags(
@@ -163,6 +189,14 @@ case class ExecutionInProgressScriptProgram(
   def updateScript(
       tokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
     this.copy(script = tokens.toList)
+  }
+
+  def updateStackAndScript(
+      stack: Seq[ScriptToken],
+      script: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
+    this
+      .updateStack(stack)
+      .updateScript(script)
   }
 
   def updateOriginalScript(
@@ -195,160 +229,5 @@ case class ExecutedScriptProgram(
     extends StartedScriptProgram {
   override def failExecution(error: ScriptError): ExecutedScriptProgram = {
     this.copy(error = Some(error))
-  }
-}
-
-/**
-  * Factory companion object for [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]
-  */
-object ScriptProgram extends BitcoinSLogger {
-
-  //indicates whether the script or the stack needs to be updated
-  sealed trait UpdateIndicator
-  case object Stack extends UpdateIndicator
-  case object Script extends UpdateIndicator
-  case object AltStack extends UpdateIndicator
-  case object OriginalScript extends UpdateIndicator
-
-  def apply(
-      oldProgram: ExecutionInProgressScriptProgram,
-      flags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
-    ExecutionInProgressScriptProgram(oldProgram.txSignatureComponent,
-                                     oldProgram.stack,
-                                     oldProgram.script,
-                                     oldProgram.originalScript,
-                                     oldProgram.altStack,
-                                     flags,
-                                     oldProgram.lastCodeSeparator)
-  }
-
-  def apply(
-      oldProgram: PreExecutionScriptProgram,
-      stackTokens: Seq[ScriptToken],
-      scriptTokens: Seq[ScriptToken]): PreExecutionScriptProgram = {
-    val updatedStack = oldProgram.updateStack(stackTokens)
-    val updatedScript = updatedStack.updateScript(scriptTokens)
-    require(updatedStack.stack == stackTokens)
-    require(updatedScript.script == scriptTokens)
-    updatedScript
-  }
-
-  def apply(
-      oldProgram: ExecutionInProgressScriptProgram,
-      stackTokens: Seq[ScriptToken],
-      scriptTokens: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
-    val updatedStack = oldProgram.updateStack(stackTokens)
-    val updatedScript = updatedStack.updateScript(scriptTokens)
-    require(updatedStack.stack == stackTokens)
-    require(updatedScript.script == scriptTokens)
-    updatedScript
-  }
-
-  /** Updates the [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]]s
-    * in either the stack or script and the last
-    * [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]] index */
-  def apply(
-      oldProgram: ExecutionInProgressScriptProgram,
-      tokens: Seq[ScriptToken],
-      indicator: UpdateIndicator,
-      lastCodeSeparator: Int): ExecutionInProgressScriptProgram = {
-    val updatedIndicator = indicator match {
-      case Stack =>
-        oldProgram.updateStack(tokens)
-      case AltStack =>
-        oldProgram.updateAltStack(tokens)
-      case Script =>
-        oldProgram.updateScript(tokens)
-      case OriginalScript =>
-        oldProgram.updateOriginalScript(tokens)
-    }
-    updatedIndicator.updateLastCodeSeparator(lastCodeSeparator)
-  }
-
-  /** Updates the [[org.bitcoins.core.script.ScriptProgram.Stack Stack]],
-    * [[org.bitcoins.core.script.ScriptProgram.Script Script]],
-    * [[org.bitcoins.core.script.ScriptProgram.AltStack AltStack]] of the given
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]. */
-  def apply(
-      oldProgram: PreExecutionScriptProgram,
-      stack: Seq[ScriptToken],
-      script: Seq[ScriptToken],
-      altStack: Seq[ScriptToken]): PreExecutionScriptProgram = {
-    val updatedProgramStack = oldProgram.updateStack(stack)
-    val updatedProgramScript =
-      updatedProgramStack.updateScript(script)
-    val updatedProgramAltStack =
-      updatedProgramScript.updateAltStack(altStack)
-    updatedProgramAltStack
-  }
-
-  /** Updates the [[org.bitcoins.core.script.ScriptProgram.Stack Stack]],
-    * [[org.bitcoins.core.script.ScriptProgram.Script Script]],
-    * [[org.bitcoins.core.script.ScriptProgram.AltStack AltStack]] of the given
-    * [[org.bitcoins.core.script.ScriptProgram ScriptProgram]]. */
-  def apply(
-      oldProgram: ExecutionInProgressScriptProgram,
-      stack: Seq[ScriptToken],
-      script: Seq[ScriptToken],
-      altStack: Seq[ScriptToken]): ExecutionInProgressScriptProgram = {
-    val updatedProgramStack = oldProgram.updateStack(stack)
-    val updatedProgramScript = updatedProgramStack.updateScript(script)
-    val updatedProgramAltStack = updatedProgramScript.updateAltStack(altStack)
-    updatedProgramAltStack
-  }
-
-  /** Changes a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is a
-    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]]
-    * and changes it to an [[org.bitcoins.core.script.ExecutedScriptProgram ExecutedScriptProgram]].*/
-  def toExecutedProgram(
-      executionInProgressScriptProgram: ExecutionInProgressScriptProgram): ExecutedScriptProgram = {
-    ExecutedScriptProgram(
-      executionInProgressScriptProgram.txSignatureComponent,
-      executionInProgressScriptProgram.stack,
-      executionInProgressScriptProgram.script,
-      executionInProgressScriptProgram.originalScript,
-      executionInProgressScriptProgram.altStack,
-      executionInProgressScriptProgram.flags,
-      None
-    )
-  }
-
-  /** Changes a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is a
-    * [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and changes it to an
-    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]].*/
-  def toExecutionInProgress(
-      preExecutionScriptProgram: PreExecutionScriptProgram): ExecutionInProgressScriptProgram = {
-    toExecutionInProgress(preExecutionScriptProgram, None)
-  }
-
-  /** Changes a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is a
-    * [[org.bitcoins.core.script.PreExecutionScriptProgram PreExecutionScriptProgram]] and changes it to an
-    * [[org.bitcoins.core.script.ExecutionInProgressScriptProgram ExecutionInProgressScriptProgram]]
-    * given the stack state. */
-  def toExecutionInProgress(
-      preExecutionScriptProgram: PreExecutionScriptProgram,
-      stack: Option[Seq[ScriptToken]]): ExecutionInProgressScriptProgram = {
-    stack match {
-      case Some(stackTokens) =>
-        ExecutionInProgressScriptProgram(
-          preExecutionScriptProgram.txSignatureComponent,
-          stackTokens.toList,
-          preExecutionScriptProgram.script,
-          preExecutionScriptProgram.originalScript,
-          preExecutionScriptProgram.altStack,
-          preExecutionScriptProgram.flags,
-          None
-        )
-      case None =>
-        ExecutionInProgressScriptProgram(
-          preExecutionScriptProgram.txSignatureComponent,
-          preExecutionScriptProgram.stack,
-          preExecutionScriptProgram.script,
-          preExecutionScriptProgram.originalScript,
-          preExecutionScriptProgram.altStack,
-          preExecutionScriptProgram.flags,
-          None
-        )
-    }
   }
 }
