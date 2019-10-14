@@ -9,7 +9,7 @@ import scala.util.Failure
   * 2.12 and 2.13. It is in large parts cribbed from
   * the Scala 2.12 standard library.
   */
-sealed private[bitcoins] trait CompatEither[A, B] {
+sealed private[bitcoins] trait CompatEither[+A, +B] {
 
   protected val underlying: Either[A, B]
 
