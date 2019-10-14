@@ -17,13 +17,10 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 object Main extends App {
-  implicit val conf = {
-    // val custom = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-    BitcoinSAppConfig.fromDefaultDatadir()
-  }
+  implicit val conf = BitcoinSAppConfig.fromDefaultDatadir()
 
   private val logger = HttpLogger.getLogger(
-    conf.walletConf // doesn't matter which one we pass in
+    conf.nodeConf // doesn't matter which one we pass in
   )
 
   implicit val walletConf: WalletAppConfig = conf.walletConf
@@ -130,7 +127,7 @@ object Main extends App {
   }
 
   startFut.failed.foreach { err =>
-    logger.info(s"Error on server startup!", err)
+    logger.error(s"Error on server startup!", err)
   }
 
   private def parseInetSocketAddress(
