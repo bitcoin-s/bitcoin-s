@@ -1,6 +1,9 @@
 package org.bitcoins.core.compat
 
+import org.bitcoins.chain.blockchain.BlockchainUpdate.Successful
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+
+import scala.util.{Failure, Success}
 
 class CompatEitherTest extends BitcoinSUnitTest {
 
@@ -9,12 +12,13 @@ class CompatEitherTest extends BitcoinSUnitTest {
     val right = Right("Right")
     val compatRight = CompatEither(right)
     assert(compatRight.isInstanceOf[CompatRight[Nothing, String]])
-    assert(right.toTry == compatRight.toTry)
+    assert(compatRight.toTry == Success("Right"))
 
-    val left = Left(new RuntimeException("Left"))
+    val exception = new RuntimeException("Left")
+    val left = Left(exception)
     val compatLeft = CompatEither(left)
     assert(compatLeft.isInstanceOf[CompatLeft[RuntimeException, Nothing]])
-    assert(left.toTry == compatLeft.toTry)
+    assert(compatLeft.toTry == Failure(exception))
   }
 
   it should "do traverse operations" in {

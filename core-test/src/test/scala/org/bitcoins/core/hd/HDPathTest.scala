@@ -371,6 +371,7 @@ class HDPathTest extends BitcoinSUnitTest {
     val xpriv = seed.toExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
     val xpub = xpriv.extPublicKey
 
+    assert(ExtPrivateKey.fromString("zprvAWgYBB").isFailure)
     val Success(expectedXpriv) = ExtPrivateKey.fromString(
       "zprvAWgYBBk7JR8Gjrh4UJQ2uJdG1r3WNRRfURiABBE3RvMXYSrRJL62XuezvGdPvG6GFBZduosCc1YP5wixPox7zhZLfiUm8aunE96BBa4Kei5")
     val Success(expectedXpub) = ExtPublicKey.fromString(
