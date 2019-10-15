@@ -1,21 +1,15 @@
 package org.bitcoins.core.script.interpreter
 
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  WitnessTxSigComponentP2SH,
-  WitnessTxSigComponentRaw
-}
+import org.bitcoins.core.crypto.{BaseTxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction.{TransactionOutput, WitnessTransaction}
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.util._
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.{FlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 import spray.json._
@@ -26,27 +20,16 @@ import scala.util.Try
 /**
   * Created by chris on 1/6/16.
   */
-class ScriptInterpreterTest extends FlatSpec with MustMatchers {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+class ScriptInterpreterTest extends BitcoinSUnitTest {
+
   "ScriptInterpreter" must "evaluate all the scripts from the bitcoin core script_tests.json" in {
 
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
     //use this to represent a single test case from script_valid.json
-    /*    val lines =
+/*        val lines =
       """
-          | [[
-          |    [
-          |        "304402200929d11561cd958460371200f82e9cae64c727a495715a31828e27a7ad57b36d0220361732ced04a6f97351ecca21a56d0b8cd4932c1da1f8f569a2b68e5e48aed7801",
-          |        "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
-          |        0.00000001
-          |    ],
-          |    "0x16 0x001491b24bf9f5288532960ac687abb035127b1d28a5",
-          |    "HASH160 0x14 0x17743beb429c55c942d2ec703b98c4d57c2df5c6 EQUAL",
-          |    "P2SH,WITNESS",
-          |    "OK",
-          |    "Basic P2SH(P2WPKH)"
-          |]]
+          | [["0x01 0x80", "DUP BOOLOR", "P2SH,STRICTENC", "EVAL_FALSE", "negative-0 negative-0 BOOLOR"]]
    """.stripMargin*/
     val lines =
       try source.getLines.filterNot(_.isEmpty).map(_.trim) mkString "\n"

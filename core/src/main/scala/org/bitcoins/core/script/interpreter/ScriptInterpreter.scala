@@ -74,7 +74,6 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             executeProgram(scriptPubKeyProgram)
           logger.trace(
             s"scriptPubKeyExecutedProgram $scriptPubKeyExecutedProgram")
-
           if (scriptSigExecutedProgram.error.isDefined) {
             scriptSigExecutedProgram
           } else if (scriptPubKeyExecutedProgram.error.isDefined || scriptPubKeyExecutedProgram.stackTopIsFalse) {
@@ -382,7 +381,11 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
         evaluated: ExecutedScriptProgram): ExecutedScriptProgram = {
       logger.trace("Stack after evaluating witness: " + evaluated.stack)
       if (evaluated.error.isDefined) evaluated
-      else if (evaluated.stack.size != 1 || evaluated.stackTopIsFalse)
+      else if (evaluated.stack.size != 1) {
+        // Scripts inside witness implicitly require cleanstack behaviour
+        //https://github.com/bitcoin/bitcoin/blob/561a7d30478b82f5d46dcf0f16e864a9608004f4/src/script/interpreter.cpp#L1464
+        evaluated.failExecution(ScriptErrorCleanStack)
+      } else if (evaluated.stackTopIsFalse)
         evaluated.failExecution(ScriptErrorEvalFalse)
       else evaluated
     }
