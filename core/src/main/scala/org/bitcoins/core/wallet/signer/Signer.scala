@@ -76,17 +76,28 @@ sealed abstract class Signer {
   }
 }
 
+/** For use when signing nested ScriptPubKeys.
+  *
+  * This will require the hash to be signed to come from some external
+  * (to the Signer being used) TxSigComponent (think P2SH, P2WSH).
+  *
+  * This will also require that the ScriptPubKey that the nested Signer
+  * looks at needs to be overriden (not output.scriptPubKey)
+  */
 sealed abstract class OverridesForNestedSigning {
   def txSigComponentOpt: Option[TxSigComponent]
   def scriptPubKeyOpt: Option[ScriptPubKey]
 }
 
 object NestedSigning {
+
+  /** The NoOverrides case where a Signer is used raw, without nesting */
   case object NoOverrides extends OverridesForNestedSigning {
     override val txSigComponentOpt: Option[TxSigComponent] = None
     override val scriptPubKeyOpt: Option[ScriptPubKey] = None
   }
 
+  /** For P2WSH signing, this will be passed to the nested Signer */
   case class P2WSHOverrides(
       externalSigComponent: TxSigComponent,
       nestedSPK: ScriptPubKey)
