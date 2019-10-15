@@ -98,11 +98,12 @@ sealed abstract class ArithmeticInterpreter {
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
     require(program.script.headOption.contains(OP_BOOLAND),
             "Script top must be OP_BOOLAND")
-    performBinaryBooleanOperation(program, (x, y) => {
-      val xIsFalse = (x == ScriptNumber.zero || x == OP_0)
-      val yIsFalse = (y == ScriptNumber.zero || y == OP_0)
-      if (xIsFalse || yIsFalse) false else true
-    })
+    performBinaryBooleanOperation(
+      program,
+      (x, y) => {
+        !ScriptNumberUtil.isZero(x) && !ScriptNumberUtil.isZero(y)
+      }
+    )
   }
 
   /** If a or b is not 0, the output is 1. Otherwise 0. */
@@ -111,7 +112,7 @@ sealed abstract class ArithmeticInterpreter {
     require(program.script.headOption.contains(OP_BOOLOR),
             "Script top must be OP_BOOLOR")
     performBinaryBooleanOperation(program, (x, y) => {
-      if (x == y && (x == ScriptNumber.zero || x == OP_0)) false else true
+      !ScriptNumberUtil.isZero(x) || !ScriptNumberUtil.isZero(y)
     })
   }
 
