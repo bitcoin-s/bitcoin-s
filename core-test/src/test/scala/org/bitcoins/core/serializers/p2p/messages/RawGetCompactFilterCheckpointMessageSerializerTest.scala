@@ -32,7 +32,6 @@ class RawGetCompactFilterCheckpointMessageSerializerTest
     assert(bytes == message.bytes)
 
     val anotherMessage = GetCompactFilterCheckPointMessage(
-      FilterType.Basic,
       DoubleSha256Digest.fromHex(
         "8000000000000000000000000000000000000000000000000000000000000001"))
 

@@ -1,5 +1,6 @@
 package org.bitcoins.core.p2p
 
+import org.bitcoins.core.config.{MainNet, TestNet3}
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.core.gen.p2p.P2PGenerator
@@ -14,6 +15,11 @@ class NetworkPayloadTest extends BitcoinSUnitTest {
     val payload = NetworkPayload(header, payloadHex)
     payload.isInstanceOf[VersionMessage] must be(true)
     payload.commandName must be(NetworkPayload.versionCommandName)
+    val testVersionMessage = VersionMessage("173.31.39.168", TestNet3)
+    payload.asInstanceOf[VersionMessage].addressReceiveIpAddress must be(
+      testVersionMessage.addressReceiveIpAddress)
+    payload.asInstanceOf[VersionMessage].addressReceivePort must be(
+      testVersionMessage.addressReceivePort)
   }
 
   // this tests has a bunch of messages to choose between, so we set a high config value
