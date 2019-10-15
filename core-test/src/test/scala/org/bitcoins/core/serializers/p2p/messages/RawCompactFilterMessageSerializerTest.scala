@@ -1,7 +1,7 @@
 package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.gcs.FilterType
+import org.bitcoins.core.gcs.{BlockFilter, FilterType, GolombFilter}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
@@ -28,11 +28,20 @@ class RawCompactFilterMessageSerializerTest extends BitcoinSUnitTest {
     val bytes =
       hex"00" ++
         hex"6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000" ++
-        hex"04017fa880"
+        hex"04" ++
+        hex"017fa880"
 
     val message = CompactFilterMessage.fromBytes(bytes)
 
     assert(message.bytes == bytes)
+
+    val blockHash = DoubleSha256Digest.fromHex(
+      "6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000")
+    val fromFilter =
+      CompactFilterMessage(blockHash,
+                           BlockFilter.fromBytes(hex"017fa880", blockHash))
+
+    assert(message.bytes == fromFilter.bytes)
 
     val biggerMessage = CompactFilterMessage(
       filterType = FilterType.Basic,
