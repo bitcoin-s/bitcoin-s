@@ -4,17 +4,18 @@ import org.bitcoins.core.number.{UInt64, UInt8}
 import scodec.bits.BitVector
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 case class GCSHashCache(encodedData: BitVector, p: UInt8) {
-  // TODO: Make this a mutable collection
-  /** Should only be appended to */
-  var decodedHashes: Vector[UInt64] = Vector.empty
+
+  /** Should only be appended to @see [[decodeOneHashIfPossible()]] */
+  private val decodedHashes: mutable.ArrayBuffer[UInt64] = mutable.ArrayBuffer()
 
   /** Should only increase */
-  var encodedIndex: Int = 0
+  private var encodedIndex: Int = 0
 
   /** Should only increase */
-  var lastHash: UInt64 = UInt64.zero
+  private var lastHash: UInt64 = UInt64.zero
 
   private def doneDecoding: Boolean = {
     if (encodedData.length - encodedIndex < p.toInt + 1) {
@@ -53,7 +54,7 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
       val prefixSize = (delta >> p.toInt).toInt + 1
       val newHash = lastHash + delta
 
-      decodedHashes = decodedHashes.:+(newHash)
+      decodedHashes += newHash
       encodedIndex += prefixSize + p.toInt
       lastHash = newHash
     }
@@ -145,6 +146,6 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
 
     decodeRemaining()
 
-    decodedHashes
+    decodedHashes.toVector
   }
 }
