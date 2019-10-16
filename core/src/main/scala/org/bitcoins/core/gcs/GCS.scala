@@ -177,7 +177,7 @@ object GCS {
   }
 
   /** Returns the first hash gcs-encoded at the front of a BitVector, as well as the remaining BitVector */
-  private def golombDecodeItemFromSet(
+  private[gcs] def golombDecodeItemFromSet(
       encodedData: BitVector,
       p: UInt8): (UInt64, BitVector) = {
     val head = golombDecode(encodedData, p)

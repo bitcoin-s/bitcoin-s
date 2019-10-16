@@ -10,8 +10,6 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import scodec.bits.{BitVector, ByteVector}
 
-import scala.annotation.tailrec
-
 /**
   * Represents a GCS encoded set with all parameters specified
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-sets]]
@@ -25,7 +23,9 @@ case class GolombFilter(
     n: CompactSizeUInt,
     encodedData: BitVector)
     extends NetworkElement {
-  lazy val decodedHashes: Vector[UInt64] = GCS.golombDecodeSet(encodedData, p)
+  private val hashCache = GCSHashCache(encodedData, p)
+
+  def decodedHashes: Vector[UInt64] = hashCache.allHashes
 
   /** The hash of this serialized filter */
   lazy val hash: DoubleSha256Digest = {
@@ -46,31 +46,8 @@ case class GolombFilter(
     n.bytes ++ encodedData.bytes
   }
 
-  // TODO: Offer alternative that stops decoding when it finds out if data is there
   def matchesHash(hash: UInt64): Boolean = {
-    @tailrec
-    def binarySearch(
-        from: Int,
-        to: Int,
-        hash: UInt64,
-        set: Vector[UInt64]): Boolean = {
-      if (to < from) {
-        false
-      } else {
-        val index = (to + from) / 2
-        val otherHash = set(index)
-
-        if (hash == otherHash) {
-          true
-        } else if (hash < otherHash) {
-          binarySearch(from, index - 1, hash, set)
-        } else {
-          binarySearch(index + 1, to, hash, set)
-        }
-      }
-    }
-
-    binarySearch(from = 0, to = n.toInt - 1, hash, decodedHashes)
+    hashCache.contains(hash)
   }
 
   def matches(data: ByteVector): Boolean = {
@@ -80,11 +57,10 @@ case class GolombFilter(
     matchesHash(hash)
   }
 
-  /** Checks whether there's a match for at least one of the given hashes
-    * TODO refactor it to implement https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match
-    */
-  def matchesAnyHash(hashes: Vector[UInt64]): Boolean =
-    hashes.exists(matchesHash)
+  /** Checks whether there's a match for at least one of the given hashes */
+  def matchesAnyHash(hashes: Vector[UInt64]): Boolean = {
+    hashCache.containsAny(hashes)
+  }
 
   /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a match */
   def matchesAny(data: Vector[ByteVector]): Boolean = {
