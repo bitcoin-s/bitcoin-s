@@ -6,15 +6,16 @@ import scodec.bits.BitVector
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+/** Handles caching of partial decodings of BIP 158 encodedData */
 case class GCSHashCache(encodedData: BitVector, p: UInt8) {
 
   /** Should only be appended to @see [[decodeOneHashIfPossible()]] */
   private val decodedHashes: mutable.ArrayBuffer[UInt64] = mutable.ArrayBuffer()
 
-  /** Should only increase */
+  /** The index of encodedData where decoding has reached. Should only increase */
   private var encodedIndex: Int = 0
 
-  /** Should only increase */
+  /** The last decoded hash, or UInt64.zero if none have been decoded. Should only increase */
   private var lastHash: UInt64 = UInt64.zero
 
   private def doneDecoding: Boolean = {
@@ -25,6 +26,10 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
     } else {
       false
     }
+  }
+
+  private def startedDecoding: Boolean = {
+    encodedIndex >= p.toInt + 1
   }
 
   /** Async safe because decodedHashes is append-only (and sorted) */
@@ -48,7 +53,8 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
     }
   }
 
-  private def decodeOneHashIfPossible(): Unit = {
+  /** This should be the only method that mutates decodedHashes */
+  private def decodeOneHashIfPossible(): Unit = synchronized {
     if (!doneDecoding) {
       val delta = GCS.golombDecode(encodedData.drop(encodedIndex), p)
       val prefixSize = (delta >> p.toInt).toInt + 1
@@ -60,9 +66,10 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
     }
   }
 
+  /** Matches the hash against decodedHashes, decoding more hashes if needed */
   @tailrec
   final def contains(hash: UInt64): Boolean = {
-    if (encodedIndex < p.toInt + 1 && hash == UInt64.zero) {
+    if (!startedDecoding && hash == UInt64.zero) {
       if (doneDecoding) {
         // empty filter case
         false
@@ -86,11 +93,18 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
     }
   }
 
-  /** Implements https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match */
+  /** Implements https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match
+    * Matches against decodedHashes decoding more hashes if needed
+    */
   def containsAny(hashes: Vector[UInt64], lowerIndex: Int = 0): Boolean = {
     containsAnySorted(hashes.sortBy(_.toLong), lowerIndex)
   }
 
+  /** Implements https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match
+    * but only works if the given hashes are sorted in ascending order
+    *
+    * Matches against decodedHashes decoding more hashes if needed
+    */
   @tailrec
   final def containsAnySorted(
       sortedHashes: Vector[UInt64],
@@ -135,6 +149,7 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
     }
   }
 
+  /** Decodes the remaining hashes and returns all hashes in the filter */
   lazy val allHashes: Vector[UInt64] = {
     @tailrec
     def decodeRemaining(): Unit = {

@@ -9,6 +9,9 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits.{ByteVector, _}
 
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.duration.DurationInt
+
 class GolombFilterTest extends BitcoinSUnitTest {
   behavior of "GolombFilter"
 
@@ -27,6 +30,38 @@ class GolombFilterTest extends BitcoinSUnitTest {
         assert(filter.matchesHash(data2))
         assert(!filter.matchesAnyHash(Vector(rand)))
         assert(filter.matchesAnyHash(Vector(rand, data1, data2)))
+    }
+  }
+
+  it must "be thread-safe" in {
+    implicit val ec: ExecutionContext = ExecutionContext.global
+
+    // Increase locally when paranoid
+    val taskSize: Int = 1000
+
+    forAll(genKey, genPMRand) {
+      case (k, (p, m, rand)) =>
+        val data =
+          (0 until taskSize).toVector.map(num => rand + UInt64(num + 1))
+        val encodedData = GCS.encodeSortedSet(data, p)
+        val filter =
+          GolombFilter(k, m, p, CompactSizeUInt(UInt64(taskSize)), encodedData)
+
+        val trigger = Promise[Unit]()
+
+        val matchFs = (0 until taskSize).toVector.map { num =>
+          trigger.future.map { _ =>
+            filter.matchesHash(rand + UInt64(num + 1))
+          }
+        }
+
+        val allMatchedF =
+          Future.sequence(matchFs).map(_.forall(matched => matched))
+
+        trigger.success(())
+
+        assert(Await.result(allMatchedF, 2.seconds))
+        assert(filter.decodedHashes == data)
     }
   }
 
