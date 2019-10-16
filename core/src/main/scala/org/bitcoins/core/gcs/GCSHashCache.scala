@@ -61,7 +61,15 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
 
   @tailrec
   final def contains(hash: UInt64): Boolean = {
-    if (hash == lastHash) {
+    if (encodedIndex < p.toInt + 1 && hash == UInt64.zero) {
+      if (doneDecoding) {
+        // empty filter case
+        false
+      } else {
+        decodeOneHashIfPossible()
+        contains(hash)
+      }
+    } else if (hash == lastHash) {
       true
     } else if (hash < lastHash) {
       binarySearchDecodedHashes(hash).isDefined
@@ -105,7 +113,7 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
         val nextHash = decodedHashes(indexToCheck)
         if (hash == nextHash) {
           (true, indexToCheck + 1)
-        } else if (hash < nextHash) {
+        } else if (hash > nextHash) {
           matchNext(hash, indexToCheck + 1)
         } else {
           (false, indexToCheck)
@@ -114,7 +122,7 @@ case class GCSHashCache(encodedData: BitVector, p: UInt8) {
     }
 
     if (sortedHashes.isEmpty) {
-      true
+      false
     } else {
       val (matched, newLowerIndex) = matchNext(sortedHashes.head)
 
