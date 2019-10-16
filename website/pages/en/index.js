@@ -150,7 +150,7 @@ class Index extends React.Component {
             content: [
               "We provide solid APIs for constructing and signing transactions.",
               "From small-scale 1-in 2-out transactions, to custom logic powering exchange withdrawals, we've got you covered.",
-              "Check out our [`TxBuilder` example](docs/txbuilder) to see how."
+              "Check out our [`TxBuilder` example](docs/core/txbuilder) to see how."
             ].join(" "),
             image: `${baseUrl}img/undraw_transfer_money_rywa.svg`,
             imageAlign: "right",
