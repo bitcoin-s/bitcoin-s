@@ -4,12 +4,12 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
 import org.bitcoins.core.script.{ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 2/4/16.
   */
-class SpliceInterpreterTest extends FlatSpec with MustMatchers {
+class SpliceInterpreterTest extends BitcoinSUnitTest {
   val SI = SpliceInterpreter
 
   "SpliceInterpreter" must "evaluate an OP_SIZE on OP_0 correctly" in {

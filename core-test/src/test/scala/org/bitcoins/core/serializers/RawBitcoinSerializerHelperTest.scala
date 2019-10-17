@@ -11,10 +11,10 @@ import org.bitcoins.core.serializers.transaction.{
   RawTransactionInputParser,
   RawTransactionOutputParser
 }
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-class RawSerializerHelperTest extends FlatSpec with MustMatchers {
+class RawSerializerHelperTest extends BitcoinSUnitTest {
 
   "RawBitcoinSerializerHelper" must "serialize an empty vector" in {
     val bytes = ByteVector(0.toByte)

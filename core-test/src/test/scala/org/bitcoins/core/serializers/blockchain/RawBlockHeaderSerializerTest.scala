@@ -3,14 +3,14 @@ package org.bitcoins.core.serializers.blockchain
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Values transmitted in the network are big-endian.
   * Created by tom on 6/3/16.
   */
-class RawBlockHeaderSerializerTest extends FlatSpec with MustMatchers {
+class RawBlockHeaderSerializerTest extends BitcoinSUnitTest {
   //genesis block
   //https://en.bitcoin.it/wiki/Genesis_block
   //https://insight.bitpay.com/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f

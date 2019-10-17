@@ -5,12 +5,12 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, ECPublicKey}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 8/9/16.
   */
-class MerkleBlockTests extends FlatSpec with MustMatchers {
+class MerkleBlockTests extends BitcoinSUnitTest {
 
   "MerkleBlocks" must "create merkle block from a block and a bloom filter" in {
     val block = Block(

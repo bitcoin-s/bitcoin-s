@@ -1,8 +1,8 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class RawServiceIdentifierSerializerTest extends FlatSpec with MustMatchers {
+class RawServiceIdentifierSerializerTest extends BitcoinSUnitTest {
 
   "RawServiceIdentifierSerializer" must "read a unnamed service identfier from a hex string" in {
     val hex = "0000000000000000"

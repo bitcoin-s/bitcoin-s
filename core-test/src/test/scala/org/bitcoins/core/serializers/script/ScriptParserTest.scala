@@ -14,13 +14,13 @@ import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.splice.OP_SIZE
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP, OP_PICK, OP_SWAP}
 import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 1/7/16.
   */
-class ScriptParserTest extends FlatSpec with MustMatchers {
+class ScriptParserTest extends BitcoinSUnitTest {
 
   "ScriptParser" must "parse 0x00 to a OP_0" in {
     ScriptParser.fromBytes(ByteVector(List(0.toByte))) must be(List(OP_0))

@@ -1,12 +1,12 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.util.NumberUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/23/16.
   */
-class DERSignatureUtilTest extends FlatSpec with MustMatchers {
+class DERSignatureUtilTest extends BitcoinSUnitTest {
 
   val p2shSignature = ECDigitalSignature(
     "304402205b7d2c2f177ae76cfbbf14d589c113b0b35db753d305d5562dd0b61cbf366cfb02202e56f93c4f08a27f986cd424ffc48a462c3202c4902104d4d0ff98ed28f4bf8001")

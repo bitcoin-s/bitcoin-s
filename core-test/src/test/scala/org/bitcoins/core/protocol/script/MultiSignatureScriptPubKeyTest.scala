@@ -2,12 +2,12 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/8/16.
   */
-class MultiSignatureScriptPubKeyTest extends FlatSpec with MustMatchers {
+class MultiSignatureScriptPubKeyTest extends BitcoinSUnitTest {
 
   "MultiSignatureScriptPubKey" must "derive the amount of required signatures from a multisignature script" in {
     val multiSigRawScriptPubKeyHex = TestUtil.multiSigScriptPubKeyHex

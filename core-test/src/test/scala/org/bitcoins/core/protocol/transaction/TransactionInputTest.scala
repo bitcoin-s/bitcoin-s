@@ -5,12 +5,12 @@ import org.bitcoins.core.protocol.script.{
   P2PKScriptSignature
 }
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/30/16.
   */
-class TransactionInputTest extends FlatSpec with MustMatchers {
+class TransactionInputTest extends BitcoinSUnitTest {
 
   "TransactionInput" must "define an empty transaction input" in {
     EmptyTransactionInput.previousOutput must be(EmptyTransactionOutPoint)

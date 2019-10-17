@@ -8,13 +8,13 @@ import org.bitcoins.core.protocol.blockchain.{
   PartialMerkleTree
 }
 import org.bitcoins.core.util.{BitcoinSUtil, Leaf, Node}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
 /**
   * Created by chris on 8/22/16.
   */
-class RawMerkleBlockSerializerTest extends FlatSpec with MustMatchers {
+class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
 
   "RawMerkleBlockSerializer" must "serialize a merkle block generated inside of scalacheck" in {
 

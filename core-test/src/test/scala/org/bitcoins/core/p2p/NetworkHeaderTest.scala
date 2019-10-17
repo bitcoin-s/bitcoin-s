@@ -4,12 +4,12 @@ import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
 import org.bitcoins.testkit.node.NodeTestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.core.config.MainNet
 import scala.util.Random
 import scodec.bits.ByteVector
 
-class NetworkHeaderTest extends FlatSpec with MustMatchers {
+class NetworkHeaderTest extends BitcoinSUnitTest {
 
   "MessageHeader" must "must create a message header for a message" in {
     val messageHeader = NetworkHeader(TestNet3, NodeTestUtil.versionMessage)

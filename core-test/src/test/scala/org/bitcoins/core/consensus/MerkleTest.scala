@@ -4,14 +4,14 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.{Block, MainNetChainParams}
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Try
 
 /**
   * Created by chris on 5/24/16.
   */
-class MerkleTest extends FlatSpec with MustMatchers {
+class MerkleTest extends BitcoinSUnitTest {
 
   "Merkle" must "compute the merkle root for the genesis block" in {
     Merkle.computeBlockMerkleRoot(MainNetChainParams.genesisBlock).hex must be

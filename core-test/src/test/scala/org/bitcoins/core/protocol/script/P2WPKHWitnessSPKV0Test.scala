@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class P2WPKHWitnessSPKV0Test extends FlatSpec with MustMatchers {
+class P2WPKHWitnessSPKV0Test extends BitcoinSUnitTest {
 
   "P2WPKHWitnessSPKV0" must "fail to be created with an uncompressed public key" in {
     val uncompressed = ECPrivateKey(false).publicKey

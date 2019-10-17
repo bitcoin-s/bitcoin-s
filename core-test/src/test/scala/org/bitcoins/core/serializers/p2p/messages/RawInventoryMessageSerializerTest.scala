@@ -2,12 +2,12 @@ package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 6/1/16.
   */
-class RawInventoryMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawInventoryMessageSerializerTest extends BitcoinSUnitTest {
 
   //from bitcoin developer reference
   //https://bitcoin.org/en/developer-reference#inv

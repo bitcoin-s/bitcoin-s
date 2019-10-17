@@ -2,9 +2,9 @@ package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.testkit.node.NodeTestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class RawTransactionMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawTransactionMessageSerializerTest extends BitcoinSUnitTest {
 
   "RawTransactionMessageSerializer" must "read a TransactionMessage from a sequence of bytes" in {
     val txMessage =

@@ -2,12 +2,12 @@ package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.p2p.PingMessage
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 6/29/16.
   */
-class RawPingMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawPingMessageSerializerTest extends BitcoinSUnitTest {
 
   "RawPingMessageSerializer" must "read and write a uint64 representing the ping" in {
     val hex = "0094102111e2af4d"

@@ -4,12 +4,12 @@ import org.bitcoins.core.crypto.{ECPrivateKey, EmptyDigitalSignature}
 import org.bitcoins.testkit.core.gen.WitnessGenerators
 import org.bitcoins.core.protocol.script._
 import org.scalacheck.Prop
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 11/28/16.
   */
-class TransactionWitnessSpec extends FlatSpec with MustMatchers {
+class TransactionWitnessSpec extends BitcoinSUnitTest {
 
   behavior of "TransactionWitness"
 

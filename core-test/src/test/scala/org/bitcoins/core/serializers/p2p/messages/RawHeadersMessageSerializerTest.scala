@@ -4,14 +4,13 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 7/5/16.
   */
 class RawHeadersMessageSerializerTest
-    extends FlatSpec
-    with MustMatchers
+    extends BitcoinSUnitTest
     with BitcoinSLogger {
 
   //from this example

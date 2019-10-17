@@ -1,12 +1,12 @@
 package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.number.Int64
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/25/16.
   */
-class ScriptNumberTest extends FlatSpec with MustMatchers {
+class ScriptNumberTest extends BitcoinSUnitTest {
 
   val zero = ScriptNumber.zero
   val one = ScriptNumber.one

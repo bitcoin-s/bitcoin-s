@@ -9,13 +9,13 @@ import org.bitcoins.core.script.result.{
   ScriptErrorMinimalData
 }
 import org.bitcoins.core.util.{ScriptProgramTestUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 1/24/16.
   */
-class ConstantInterpreterTest extends FlatSpec with MustMatchers {
+class ConstantInterpreterTest extends BitcoinSUnitTest {
   val CI = ConstantInterpreter
   "ConstantInterpreter" must "interpret OP_PUSHDATA1 correctly" in {
     val byteConstantSize = 76

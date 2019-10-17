@@ -1,12 +1,12 @@
 package org.bitcoins.core.number
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 6/14/16.
   */
-class UInt32Test extends FlatSpec with MustMatchers {
+class UInt32Test extends BitcoinSUnitTest {
 
   "UInt32" must "create the number zero as an unsigned 32 bit integer" in {
     val zero = UInt32(ByteVector(0x0.toByte))

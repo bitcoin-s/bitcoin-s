@@ -2,9 +2,9 @@ package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class RawNotFoundMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawNotFoundMessageSerializerTest extends BitcoinSUnitTest {
 
   //according to the developer reference, the format for inventory messages and
   //not found messages are the same

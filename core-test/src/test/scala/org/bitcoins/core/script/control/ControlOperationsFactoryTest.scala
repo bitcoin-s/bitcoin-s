@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.control
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/8/16.
   */
-class ControlOperationsFactoryTest extends FlatSpec with MustMatchers {
+class ControlOperationsFactoryTest extends BitcoinSUnitTest {
 
   "ControlOperationsFactory" must "match a string with a control operation" in {
     ControlOperations.fromString("OP_ELSE") must be(Some(OP_ELSE))

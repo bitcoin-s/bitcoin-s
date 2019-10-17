@@ -7,9 +7,9 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.util.BitcoinSpvNodeUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class RawVersionMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
 
   //take from the bitcoin developer reference underneath this seciton
   //https://bitcoin.org/en/developer-reference#version

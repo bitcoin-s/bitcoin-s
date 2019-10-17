@@ -1,13 +1,13 @@
 package org.bitcoins.core.script.crypto
 
 import org.bitcoins.core.number.Int32
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 2/27/16.
   */
-class HashTypeTest extends FlatSpec with MustMatchers {
+class HashTypeTest extends BitcoinSUnitTest {
 
   "HashType" must "combine hash types with SIGHASH_ANYONECANPAY" in {
     HashType.sigHashAllAnyoneCanPay.num must be(Int32(0x81))

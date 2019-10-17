@@ -3,11 +3,11 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnParams._
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnits, MilliBitcoins}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Try
 
-class LnHumanReadablePartTest extends FlatSpec with MustMatchers {
+class LnHumanReadablePartTest extends BitcoinSUnitTest {
   val mBtc = MilliBitcoins(1)
   val mBtcOpt = Some(mBtc)
   it must "match the correct hrp with the correct network" in {

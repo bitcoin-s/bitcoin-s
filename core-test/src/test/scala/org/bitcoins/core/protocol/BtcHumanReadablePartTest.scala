@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Success
 
-class BtcHumanReadablePartTest extends FlatSpec with MustMatchers {
+class BtcHumanReadablePartTest extends BitcoinSUnitTest {
   import BtcHumanReadablePart._
 
   "HumanReadablePart" must "match the correct hrp with the correct string" in {

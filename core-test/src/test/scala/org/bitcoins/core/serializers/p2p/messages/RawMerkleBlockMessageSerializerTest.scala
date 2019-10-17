@@ -4,10 +4,10 @@ import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
-class RawMerkleBlockMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawMerkleBlockMessageSerializerTest extends BitcoinSUnitTest {
 
   //from bitcoin developer reference
   //https://bitcoin.org/en/developer-reference#merkleblock

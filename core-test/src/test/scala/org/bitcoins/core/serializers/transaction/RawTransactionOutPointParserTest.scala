@@ -2,13 +2,13 @@ package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 1/11/16.
   */
-class RawTransactionOutPointParserTest extends FlatSpec with MustMatchers {
+class RawTransactionOutPointParserTest extends BitcoinSUnitTest {
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawOutPoint =

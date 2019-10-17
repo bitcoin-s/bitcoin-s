@@ -5,7 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 

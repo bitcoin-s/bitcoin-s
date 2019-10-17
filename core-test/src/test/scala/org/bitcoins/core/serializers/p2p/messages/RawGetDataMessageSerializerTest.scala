@@ -5,12 +5,12 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.p2p.Inventory
 import org.bitcoins.core.p2p.TypeIdentifier.MsgTx
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 7/8/16.
   */
-class RawGetDataMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawGetDataMessageSerializerTest extends BitcoinSUnitTest {
 
   //from bitcoin developer reference
   //a getdata message is essentially an inv message

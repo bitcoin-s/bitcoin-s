@@ -1,12 +1,12 @@
 package org.bitcoins.core.config
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 6/10/16.
   */
-class NetworkParametersTest extends FlatSpec with MustMatchers {
+class NetworkParametersTest extends BitcoinSUnitTest {
 
   //test case answers are from this link
   //https://en.bitcoin.it/wiki/Protocol_documentation#Common_structures
