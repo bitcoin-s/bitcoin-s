@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.flag
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 4/6/16.
   */
-class ScriptFlagUtilTest extends FlatSpec with MustMatchers {
+class ScriptFlagUtilTest extends BitcoinSUnitTest {
 
   "ScriptFlagUtil" must "check if strict der encoding check is required" in {
     ScriptFlagUtil.requiresStrictDerEncoding(Seq(ScriptVerifyDerSig)) must be(

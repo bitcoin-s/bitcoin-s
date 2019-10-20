@@ -1,12 +1,12 @@
 package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.p2p.TypeIdentifier.{MsgBlock, MsgFilteredBlock, MsgTx}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 5/31/16.
   */
-class RawTypeIdentifierSerializerTest extends FlatSpec with MustMatchers {
+class RawTypeIdentifierSerializerTest extends BitcoinSUnitTest {
   val msgTxHex = "01000000"
   val msgBlockHex = "02000000"
   val msgFilteredBlockHex = "03000000"

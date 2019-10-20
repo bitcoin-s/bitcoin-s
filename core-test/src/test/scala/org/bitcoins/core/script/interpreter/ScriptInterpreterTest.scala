@@ -10,7 +10,7 @@ import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCaseProtocol._
 import org.bitcoins.core.util._
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.slf4j.LoggerFactory
 import spray.json._
 

@@ -1,12 +1,12 @@
 package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 4/4/16.
   */
-class ScriptNumberFactoryTest extends FlatSpec with MustMatchers {
+class ScriptNumberFactoryTest extends BitcoinSUnitTest {
 
   "ScriptNumber" must "create the same number using from hex and from bytes" in {
     val hex = "ff7f"

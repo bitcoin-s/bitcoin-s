@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.flag
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/23/16.
   */
-class ScriptFlagFactoryTest extends FlatSpec with MustMatchers {
+class ScriptFlagFactoryTest extends BitcoinSUnitTest {
 
   "ScriptFlagFactory" must "find a NONE script flag" in {
     ScriptFlagFactory.fromString("NONE").get must be(ScriptVerifyNone)

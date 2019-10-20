@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.stack
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/8/16.
   */
-class StackOperationFactoryTest extends FlatSpec with MustMatchers {
+class StackOperationFactoryTest extends BitcoinSUnitTest {
 
   "StackOperationFactory" must "match correct operations with their strings" in {
     StackOperation.fromString("OP_DUP") must be(Some(OP_DUP))

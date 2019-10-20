@@ -3,11 +3,11 @@ package org.bitcoins.core.protocol
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.crypto.Sha256Hash160Digest
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success, Try}
 
-class BitcoinAddressTest extends FlatSpec with MustMatchers {
+class BitcoinAddressTest extends BitcoinSUnitTest {
 
   "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy" must "be a valid bitcoin address" in {
     val address = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy"

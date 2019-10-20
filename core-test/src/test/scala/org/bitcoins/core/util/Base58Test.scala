@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.util.testprotocol._
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import spray.json._
 
 import scala.io.Source
@@ -9,7 +9,7 @@ import scala.io.Source
 /**
   * Created by tom on 5/17/16.
   */
-class Base58Test extends FlatSpec with MustMatchers {
+class Base58Test extends BitcoinSUnitTest {
   "Base58" must "encode byte value of 0 to character of 1" in {
     Base58.encode(0.toByte) must be("1")
   }

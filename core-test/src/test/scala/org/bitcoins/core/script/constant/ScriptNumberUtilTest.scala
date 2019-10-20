@@ -1,12 +1,12 @@
 package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 6/5/16.
   */
-class ScriptNumberUtilTest extends FlatSpec with MustMatchers {
+class ScriptNumberUtilTest extends BitcoinSUnitTest {
   "ScriptNumberUtil" must "convert a positive hex number to its corresponding long number" in {
     val hex = "01"
     val long = ScriptNumberUtil.toLong(hex)

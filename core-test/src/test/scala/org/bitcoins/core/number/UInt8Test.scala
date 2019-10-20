@@ -1,9 +1,9 @@
 package org.bitcoins.core.number
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
-class UInt8Test extends FlatSpec with MustMatchers {
+class UInt8Test extends BitcoinSUnitTest {
 
   "UInt8" must "convert a byte to a UInt8 correctly" in {
     UInt8.toUInt8(0.toByte) must be(UInt8.zero)

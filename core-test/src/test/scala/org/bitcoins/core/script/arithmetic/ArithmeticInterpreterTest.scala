@@ -9,14 +9,14 @@ import org.bitcoins.core.script.{
   ScriptProgram
 }
 import org.bitcoins.core.util.{ScriptProgramTestUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Try
 
 /**
   * Created by chris on 1/25/16.
   */
-class ArithmeticInterpreterTest extends FlatSpec with MustMatchers {
+class ArithmeticInterpreterTest extends BitcoinSUnitTest {
 
   val AI = ArithmeticInterpreter
 

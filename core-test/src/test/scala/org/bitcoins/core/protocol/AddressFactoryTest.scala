@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.util.{Base58, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/30/16.
   */
-class AddressFactoryTest extends FlatSpec with MustMatchers {
+class AddressFactoryTest extends BitcoinSUnitTest {
 
   "AddressFactory" must "create an address from a base58 encoded string" in {
     Address(TestUtil.bitcoinAddress.get.value) must be(TestUtil.bitcoinAddress)

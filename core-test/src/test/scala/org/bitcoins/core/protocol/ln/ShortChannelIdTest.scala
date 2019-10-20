@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.ln
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class ShortChannelIdTest extends FlatSpec with MustMatchers {
+class ShortChannelIdTest extends BitcoinSUnitTest {
 
   it must "convert short channel id to and from human readable form" in {
     // BOLT example

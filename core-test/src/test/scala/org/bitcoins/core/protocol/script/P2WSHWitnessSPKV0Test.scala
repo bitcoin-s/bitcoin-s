@@ -2,9 +2,9 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.script.constant.ScriptNumber
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class P2WSHWitnessSPKV0Test extends FlatSpec with MustMatchers {
+class P2WSHWitnessSPKV0Test extends BitcoinSUnitTest {
   val uncompressed = ECPrivateKey(false).publicKey
   val p2pk = P2PKScriptPubKey(uncompressed)
   val multisig = MultiSignatureScriptPubKey(1, Vector(uncompressed))

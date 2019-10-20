@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.crypto
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/8/16.
   */
-class CryptoOperationsFactoryTest extends FlatSpec with MustMatchers {
+class CryptoOperationsFactoryTest extends BitcoinSUnitTest {
 
   "CryptoOperationsFactory" must "match strings with crypto operations" in {
     CryptoOperation.fromString("OP_CHECKSIG") must be(Some(OP_CHECKSIG))

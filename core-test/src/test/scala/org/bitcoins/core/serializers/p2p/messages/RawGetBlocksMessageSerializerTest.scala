@@ -5,12 +5,12 @@ import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.p2p._
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 6/1/16.
   */
-class RawGetBlocksMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawGetBlocksMessageSerializerTest extends BitcoinSUnitTest {
 
   val hex = "7111010002d39f608a7775b537729884d4e6633bb2105e55a16a14d31b0000000000000000" +
     "5c3e6403d40837110a2e8afb602b1c01714bda7ce23bea0a0000000000000000" +

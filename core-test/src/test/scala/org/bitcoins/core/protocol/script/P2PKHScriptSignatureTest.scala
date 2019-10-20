@@ -3,13 +3,13 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 4/1/16.
   */
-class P2PKHScriptSignatureTest extends FlatSpec with MustMatchers {
+class P2PKHScriptSignatureTest extends BitcoinSUnitTest {
 
   "P2PKHScriptSignature" must "be able to identify it's own hash type" in {
     val p2pkhScriptSig = TestUtil.p2pkhScriptSig match {
