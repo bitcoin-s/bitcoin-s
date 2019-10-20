@@ -3,12 +3,12 @@ package org.bitcoins.core.serializers.p2p.messages
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 8/31/16.
   */
-class RawRejectMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawRejectMessageSerializerTest extends BitcoinSUnitTest {
 
   //https://bitcoin.org/en/developer-reference#reject
   val hex = "02" + "7478" + "12" + "15" + "6261642d74786e732d696e707574732d7370656e74" +

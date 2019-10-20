@@ -12,12 +12,12 @@ import org.bitcoins.core.script.{
   ScriptProgram
 }
 import org.bitcoins.core.util.{ScriptProgramTestUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/30/16.
   */
-class LockTimeInterpreterTest extends FlatSpec with MustMatchers {
+class LockTimeInterpreterTest extends BitcoinSUnitTest {
   val LTI = LockTimeInterpreter
   "LockTimeInterpreter" must "mark the transaction invalid if the stack is empty" in {
     val stack = Seq()

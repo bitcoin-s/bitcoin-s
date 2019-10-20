@@ -1,12 +1,12 @@
 package org.bitcoins.core.number
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 6/15/16.
   */
-class Int64Test extends FlatSpec with MustMatchers {
+class Int64Test extends BitcoinSUnitTest {
 
   "Int64" must "represent the nubmer zero" in {
     val int64 = Int64(ByteVector.low(1))

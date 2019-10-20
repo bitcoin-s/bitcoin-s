@@ -4,13 +4,13 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.{BitcoinSUtil, Leaf, Node}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
 /**
   * Created by chris on 8/9/16.
   */
-class PartialMerkleTreeTests extends FlatSpec with MustMatchers {
+class PartialMerkleTreeTests extends BitcoinSUnitTest {
   "PartialMerkleTree" must "from a list of txs and a bit indicating if the tx matched the filter" in {
     //https://github.com/bitcoin/bitcoin/blob/master/src/test/bloom_tests.cpp#L185
     val block = Block(

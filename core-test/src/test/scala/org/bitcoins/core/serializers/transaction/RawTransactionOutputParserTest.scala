@@ -10,14 +10,14 @@ import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_HASH160
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 1/11/16.
   * https://bitcoin.org/en/developer-reference#txout
   */
-class RawTransactionOutputParserTest extends FlatSpec with MustMatchers {
+class RawTransactionOutputParserTest extends BitcoinSUnitTest {
 
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxOutput =

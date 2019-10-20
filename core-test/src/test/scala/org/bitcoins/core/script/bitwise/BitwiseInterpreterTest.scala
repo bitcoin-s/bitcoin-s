@@ -4,12 +4,12 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result.ScriptErrorInvalidStackOperation
 import org.bitcoins.core.script.{ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/6/16.
   */
-class BitwiseInterpreterTest extends FlatSpec with MustMatchers {
+class BitwiseInterpreterTest extends BitcoinSUnitTest {
   private val pubKeyHash = ScriptConstant(
     "5238C71458E464D9FF90299ABCA4A1D7B9CB76AB".toLowerCase)
   val BI = BitwiseInterpreter

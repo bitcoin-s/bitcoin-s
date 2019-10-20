@@ -1,12 +1,12 @@
 package org.bitcoins.core.util
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
 /**
   * Created by chris on 4/1/16.
   */
-class BitcoinSUtilTest extends FlatSpec with MustMatchers {
+class BitcoinSUtilTest extends BitcoinSUnitTest {
 
   "BitcoinSUtil" must "determine if a string is a hex string" in {
     BitcoinSUtil.isHex("abcdef0123456789") must be(true)

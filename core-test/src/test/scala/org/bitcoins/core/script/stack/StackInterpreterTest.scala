@@ -4,12 +4,12 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{ExecutedScriptProgram, ScriptProgram}
 import org.bitcoins.core.util.{BitcoinSUtil, ScriptProgramTestUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/6/16.
   */
-class StackInterpreterTest extends FlatSpec with MustMatchers {
+class StackInterpreterTest extends BitcoinSUnitTest {
   val element1 = ScriptConstant("1234")
   val element2 = ScriptConstant("abcd")
   val stack = List(element1, element2)

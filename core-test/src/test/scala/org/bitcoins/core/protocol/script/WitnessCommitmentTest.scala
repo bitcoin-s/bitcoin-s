@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.script
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 12/23/16.
   */
-class WitnessCommitmentTest extends FlatSpec with MustMatchers {
+class WitnessCommitmentTest extends BitcoinSUnitTest {
 
   //witness commitment from https://www.blocktrail.com/tBTC/block/00000000000002f59cc8b806b2cf6bbe37a367a085de60f9e5e3386081abbb48
   val hex =

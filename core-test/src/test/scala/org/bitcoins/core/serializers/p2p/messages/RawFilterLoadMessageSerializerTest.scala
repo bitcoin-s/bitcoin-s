@@ -4,12 +4,12 @@ import org.bitcoins.core.bloom.BloomUpdateNone
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 7/20/16.
   */
-class RawFilterLoadMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawFilterLoadMessageSerializerTest extends BitcoinSUnitTest {
 
   "RawFilterLoadMessageSerializer" must "deserialize and serialize a filter load message" in {
     //example from the bitcoin developer reference

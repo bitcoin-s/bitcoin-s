@@ -12,12 +12,12 @@ import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by tom on 9/21/16.
   */
-class CSVScriptPubKeyTest extends FlatSpec with MustMatchers {
+class CSVScriptPubKeyTest extends BitcoinSUnitTest {
 
   val expectedAsm: Seq[ScriptToken] =
     List(OP_DUP,

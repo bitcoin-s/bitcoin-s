@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/2/16.
   */
-class ScriptPubKeyFactoryTest extends FlatSpec with MustMatchers {
+class ScriptPubKeyFactoryTest extends BitcoinSUnitTest {
 
   "ScriptPubKeyFactory" must "create a scriptPubKey from a sequences of bytes and hex and get the same thing" in {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc

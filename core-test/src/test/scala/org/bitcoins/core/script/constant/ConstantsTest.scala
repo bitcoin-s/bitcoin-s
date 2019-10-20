@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 import scala.util.Try
@@ -8,7 +8,7 @@ import scala.util.Try
 /**
   * Created by chris on 1/6/16.
   */
-class ConstantsTest extends FlatSpec with MustMatchers {
+class ConstantsTest extends BitcoinSUnitTest {
 
   "Constants" must "define an OP_FALSE" in {
     OP_FALSE.opCode must be(0)

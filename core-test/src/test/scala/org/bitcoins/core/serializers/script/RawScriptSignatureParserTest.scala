@@ -3,13 +3,13 @@ package org.bitcoins.core.serializers.script
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 1/12/16.
   */
-class RawScriptSignatureParserTest extends FlatSpec with MustMatchers {
+class RawScriptSignatureParserTest extends BitcoinSUnitTest {
 
   //from bitcoin developer examples
   //https://bitcoin.org/en/developer-reference#raw-transaction-format

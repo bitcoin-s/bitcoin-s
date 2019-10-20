@@ -6,13 +6,13 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants
 }
 import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 1/14/16.
   */
-class RawBaseTransactionParserTest extends FlatSpec with MustMatchers {
+class RawBaseTransactionParserTest extends BitcoinSUnitTest {
   val encode = BitcoinSUtil.encodeHex(_: ByteVector)
   "RawBaseTransactionParser" must "parse a raw transaction" in {
     val tx: Transaction = RawBaseTransactionParser.read(TestUtil.rawTransaction)

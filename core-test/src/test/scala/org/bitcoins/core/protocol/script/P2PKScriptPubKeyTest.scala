@@ -2,12 +2,12 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 4/1/16.
   */
-class P2PKScriptPubKeyTest extends FlatSpec with MustMatchers {
+class P2PKScriptPubKeyTest extends BitcoinSUnitTest {
 
   "P2PKScriptPubKeyTest" must "find the public key in a p2pk scriptPubKey" in {
     val p2pkScriptPubKey = TestUtil.p2pkScriptPubKey match {

@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class RawFilterAddMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawFilterAddMessageSerializerTest extends BitcoinSUnitTest {
 
   //https://bitcoin.org/en/developer-reference#filteradd
   val hex = "20" + "fdacf9b3eb077412e7a968d2e4f11b9a9dee312d666187ed77ee7d26af16cb0b"

@@ -7,12 +7,12 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.{OP_0, OP_1}
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.util.TestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 3/31/16.
   */
-class ScriptProgramFactoryTest extends FlatSpec with MustMatchers {
+class ScriptProgramFactoryTest extends BitcoinSUnitTest {
 
   "ScriptProgramFactory" must "update a field depending on its indicator" in {
 

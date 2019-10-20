@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class RawWitnessTransactionParserTest extends FlatSpec with MustMatchers {
+class RawWitnessTransactionParserTest extends BitcoinSUnitTest {
 
   "RawWitnessTransactionParser" must "serialize and deserialize a wtx" in {
     val hex =

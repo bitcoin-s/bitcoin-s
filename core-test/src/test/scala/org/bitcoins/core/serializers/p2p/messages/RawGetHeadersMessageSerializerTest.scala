@@ -5,12 +5,12 @@ import org.bitcoins.core.p2p._
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.testkit.node.NodeTestUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 6/29/16.
   */
-class RawGetHeadersMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawGetHeadersMessageSerializerTest extends BitcoinSUnitTest {
   val hex = NodeTestUtil.rawGetHeadersMsg
 
   "RawGetHeadersMessageSerializer" must "read a hex string representing a GetHeaderMessage" in {

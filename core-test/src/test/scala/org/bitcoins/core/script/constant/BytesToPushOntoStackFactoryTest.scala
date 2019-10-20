@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.constant
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/9/16.
   */
-class BytesToPushOntoStackFactoryTest extends FlatSpec with MustMatchers {
+class BytesToPushOntoStackFactoryTest extends BitcoinSUnitTest {
 
   "ScriptNumberFactory" must "represent the number 1" in {
     BytesToPushOntoStack.operations.exists(_ == BytesToPushOntoStack(1)) must be(

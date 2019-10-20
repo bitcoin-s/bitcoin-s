@@ -2,12 +2,12 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.script.constant.{OP_0, OP_1, OP_2, ScriptToken}
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF}
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/27/16.
   */
-class BinaryTreeTest extends FlatSpec with MustMatchers {
+class BinaryTreeTest extends BitcoinSUnitTest {
 
   "BinaryTree" must "convert a binary tree to a list with only leaf values" in {
     val bTree = Node(-1, Node(-1, Leaf(0), Leaf(1)), Node(-1, Leaf(2), Leaf(3)))

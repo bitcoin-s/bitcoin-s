@@ -2,9 +2,9 @@ package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
-class RawAddrMessageSerializerTest extends FlatSpec with MustMatchers {
+class RawAddrMessageSerializerTest extends BitcoinSUnitTest {
 
   //from this bitcoin developer guide example
   //https://bitcoin.org/en/developer-reference#addr

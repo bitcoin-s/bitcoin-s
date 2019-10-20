@@ -5,13 +5,13 @@ import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.BitcoinSUtil
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by tom on 6/3/16.
   */
-class RawBlockSerializerTest extends FlatSpec with MustMatchers {
+class RawBlockSerializerTest extends BitcoinSUnitTest {
   //genesis block
   //https://en.bitcoin.it/wiki/Genesis_block
   //https://webbtc.com/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f

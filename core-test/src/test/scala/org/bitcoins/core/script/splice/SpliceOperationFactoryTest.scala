@@ -1,11 +1,11 @@
 package org.bitcoins.core.script.splice
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
   * Created by chris on 1/22/16.
   */
-class SpliceOperationFactoryTest extends FlatSpec with MustMatchers {
+class SpliceOperationFactoryTest extends BitcoinSUnitTest {
 
   "SpliceOperationFactory" must "instantiate the splice operations from hex" in {
     SpliceOperation("7e") must be(Some(OP_CAT))
