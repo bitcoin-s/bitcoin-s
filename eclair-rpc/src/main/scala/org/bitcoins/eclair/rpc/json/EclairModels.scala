@@ -13,7 +13,6 @@ import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
-  LnInvoiceSignature,
   PaymentPreimage,
   ShortChannelId
 }
@@ -100,31 +99,39 @@ case class NetworkFeesResult(
     remoteNodeId: NodeId,
     channelId: FundedChannelId,
     txId: DoubleSha256DigestBE,
-    feeSat: Satoshis,
+    fee: Satoshis,
     txType: String,
     timestamp: FiniteDuration
 )
 
 case class ChannelStats(
     channelId: FundedChannelId,
-    avgPaymentAmountSatoshi: Satoshis,
+    avgPaymentAmount: Satoshis,
     paymentCount: Long,
-    relayFeeSatoshi: Satoshis,
-    networkFeeSatoshi: Satoshis
+    relayFee: Satoshis,
+    networkFee: Satoshis
 )
 
 case class UsableBalancesResult(
-    canSendMsat: MilliSatoshis,
-    canReceiveMsat: MilliSatoshis,
+    remoteNodeId: NodeId,
+    shortChannelId: ShortChannelId,
+    canSend: MilliSatoshis,
+    canReceive: MilliSatoshis,
     isPublic: Boolean
 )
 
 case class ReceivedPayment(
-    amount: MilliSatoshis,
     paymentHash: Sha256Digest,
-    fromChannelId: FundedChannelId,
-    timestamp: FiniteDuration
+    parts: Vector[ReceivedPayment.Part]
 )
+
+object ReceivedPayment {
+  case class Part(
+      amount: MilliSatoshis,
+      fromChannelId: FundedChannelId,
+      timestamp: FiniteDuration
+  )
+}
 
 case class RelayedPayment(
     amountIn: MilliSatoshis,
@@ -136,13 +143,19 @@ case class RelayedPayment(
 )
 
 case class SentPayment(
-    amount: MilliSatoshis,
-    feesPaid: MilliSatoshis,
     paymentHash: Sha256Digest,
-    paymentPreimage: String,
-    toChannelId: FundedChannelId,
-    timestamp: FiniteDuration
+    paymentPreimage: String
 )
+
+object SentPayment {
+  case class Part(
+      id: String,
+      amount: MilliSatoshis,
+      feesPaid: MilliSatoshis,
+      toChannelId: FundedChannelId,
+      timestamp: FiniteDuration
+  )
+}
 
 case class ChannelUpdate(
     signature: ECDigitalSignature,
@@ -290,48 +303,63 @@ case class InvoiceResult(
     paymentHash: Sha256Digest,
     expiry: FiniteDuration)
 
-case class PaymentRequest(
-    prefix: LnHumanReadablePart,
-    amount: Option[MilliSatoshis],
-    timestamp: Long,
-    nodeId: NodeId,
-    tags: Vector[JsObject],
-    signature: LnInvoiceSignature)
-
-case class PaymentResult(
-    id: String,
-    paymentHash: Sha256Digest,
-    preimage: Option[PaymentPreimage],
-    amountMsat: MilliSatoshis,
-    createdAt: FiniteDuration,
-    completedAt: Option[FiniteDuration],
-    status: PaymentStatus)
-
-case class ReceivedPaymentResult(
-    paymentHash: Sha256Digest,
-    amountMsat: MilliSatoshis,
-    receivedAt: FiniteDuration)
-
-sealed trait PaymentStatus
-
-object PaymentStatus {
-  case object PENDING extends PaymentStatus
-  case object SUCCEEDED extends PaymentStatus
-  case object FAILED extends PaymentStatus
-
-  def apply(s: String): PaymentStatus = s match {
-    case "PENDING"   => PENDING
-    case "SUCCEEDED" => SUCCEEDED
-    case "FAILED"    => FAILED
-    case err =>
-      throw new IllegalArgumentException(
-        s"Unknown payment status code `${err}`")
-  }
-}
-
 case class PaymentId(value: String) {
   override def toString: String = value
 }
+
+case class PaymentRequest(
+    prefix: LnHumanReadablePart,
+    timestamp: Long,
+    nodeId: NodeId,
+    serialized: String,
+    description: String,
+    paymentHash: Sha256Digest,
+    expiry: FiniteDuration,
+    amount: Option[MilliSatoshis])
+
+case class PaymentResult(
+    id: String,
+    parentId: String,
+    paymentHash: Sha256Digest,
+    amount: MilliSatoshis,
+    targetNodeId: NodeId,
+    createdAt: FiniteDuration,
+    paymentRequest: Option[PaymentRequest],
+    status: PaymentStatus)
+
+case class ReceivedPaymentResult(
+    paymentRequest: Option[PaymentRequest],
+    paymentPreimage: String,
+    createdAt: FiniteDuration,
+    status: PaymentStatus)
+
+sealed trait PaymentStatus
+
+case object PaymentPending extends PaymentStatus
+
+case class PaymentSent(
+    paymentPreimage: PaymentPreimage,
+    feesPaid: MilliSatoshis,
+    route: Seq[Hop],
+    completedAt: FiniteDuration)
+    extends PaymentStatus
+
+case class Hop(
+    nodeId: NodeId,
+    nextNodeId: NodeId,
+    shortChannelId: ShortChannelId)
+
+case class PaymentFailed(failures: Seq[PaymentFailure]) extends PaymentStatus
+
+case class PaymentFailureType(name: String)
+
+case class PaymentFailure(
+    failureType: PaymentFailureType,
+    failureMessage: String,
+    failedRoute: Seq[Hop])
+
+case class PaymentReceived(amount: MilliSatoshis, receivedAt: FiniteDuration)
+    extends PaymentStatus
 
 sealed trait WebSocketEvent
 

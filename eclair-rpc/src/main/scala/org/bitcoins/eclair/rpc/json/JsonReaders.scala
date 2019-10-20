@@ -139,9 +139,9 @@ object JsonReaders {
         .validate[ShortChannelId]
       channelId <- (jsValue \ "channelId").validate[FundedChannelId]
       state <- (jsValue \ "state").validate[ChannelState.NORMAL.type]
-      remoteMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
+      remoteMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toRemote")
         .validate[MilliSatoshis]
-      localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
+      localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocal")
         .validate[MilliSatoshis]
 
     } yield OpenChannelInfo(nodeId = nodeId,
@@ -157,9 +157,9 @@ object JsonReaders {
       nodeId <- (jsValue \ "nodeId").validate[NodeId]
       channelId <- (jsValue \ "channelId").validate[FundedChannelId]
       state <- (jsValue \ "state").validate[ChannelState]
-      remoteMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toRemoteMsat")
+      remoteMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toRemote")
         .validate[MilliSatoshis]
-      localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocalMsat")
+      localMsat <- (jsValue \ "data" \ "commitments" \ "localCommit" \ "spec" \ "toLocal")
         .validate[MilliSatoshis]
 
     } yield BaseChannelInfo(nodeId = nodeId,
@@ -184,22 +184,43 @@ object JsonReaders {
     Json.reads[ChannelUpdate]
   }
 
-  implicit val paymentRequestReads: Reads[PaymentRequest] = {
-    Json.reads[PaymentRequest]
-  }
-
   implicit val paymentIdReads: Reads[PaymentId] = Reads { jsValue =>
     SerializerUtil.processJsString(PaymentId.apply)(jsValue)
-  }
-
-  implicit val paymentStatusReads: Reads[PaymentStatus] = Reads { jsValue =>
-    SerializerUtil.processJsString(PaymentStatus.apply)(jsValue)
   }
 
   implicit val finiteDurationReads: Reads[FiniteDuration] =
     Reads { js =>
       SerializerUtil.processJsNumberBigInt(_.longValue.millis)(js)
     }
+
+  implicit val paymentReceivedReads: Reads[PaymentReceived] =
+    Json.reads[PaymentReceived]
+  implicit val hopReads: Reads[Hop] =
+    Json.reads[Hop]
+//  implicit val paymentPendingReads: Reads[PaymentPending] =
+//    Json.reads[PaymentPending]
+  implicit val paymentSentReads: Reads[PaymentSent] = Json.reads[PaymentSent]
+  implicit val paymentFailureTypeReads: Reads[PaymentFailureType] =
+    Json.reads[PaymentFailureType]
+  implicit val paymentFailureReads: Reads[PaymentFailure] =
+    Json.reads[PaymentFailure]
+  implicit val paymentFailedReads: Reads[PaymentFailed] =
+    Json.reads[PaymentFailed]
+
+  implicit val paymentStatusReads: Reads[PaymentStatus] = Reads { jsValue =>
+    (jsValue \ "type")
+      .validate[String]
+      .flatMap {
+        case "pending"  => JsSuccess(PaymentPending)
+        case "sent"     => jsValue.validate[PaymentSent]
+        case "received" => jsValue.validate[PaymentReceived]
+        case "failed"   => jsValue.validate[PaymentFailed]
+      }
+  }
+
+  implicit val paymentRequestReads: Reads[PaymentRequest] = {
+    Json.reads[PaymentRequest]
+  }
 
   implicit val paymentSucceededReads: Reads[PaymentResult] =
     Json.reads[PaymentResult]
@@ -238,8 +259,12 @@ object JsonReaders {
         JsError(s"Invalid type on refund invoice: $bad, expected JsString")
     }
 
+  implicit val receivedPaymentPartReads: Reads[ReceivedPayment.Part] =
+    Json.reads[ReceivedPayment.Part]
   implicit val receivedPaymentReads: Reads[ReceivedPayment] =
     Json.reads[ReceivedPayment]
+  implicit val sentPaymentPartReads: Reads[SentPayment.Part] =
+    Json.reads[SentPayment.Part]
   implicit val sentPaymentReads: Reads[SentPayment] = Json.reads[SentPayment]
   implicit val relayedPaymentReads: Reads[RelayedPayment] =
     Json.reads[RelayedPayment]
@@ -254,21 +279,21 @@ object JsonReaders {
   implicit val usableBalancesResultReads: Reads[UsableBalancesResult] =
     Json.reads[UsableBalancesResult]
 
-  import WebSocketEvent._
+  implicit val paymentRelayedEventReads: Reads[WebSocketEvent.PaymentRelayed] =
+    Json.reads[WebSocketEvent.PaymentRelayed]
 
-  implicit val paymentRelayedEventReads: Reads[PaymentRelayed] =
-    Json.reads[PaymentRelayed]
+  implicit val paymentReceivedEventReads: Reads[
+    WebSocketEvent.PaymentReceived] =
+    Json.reads[WebSocketEvent.PaymentReceived]
 
-  implicit val paymentReceivedEventReads: Reads[PaymentReceived] =
-    Json.reads[PaymentReceived]
+  implicit val paymentFailedEventReads: Reads[WebSocketEvent.PaymentFailed] =
+    Json.reads[WebSocketEvent.PaymentFailed]
 
-  implicit val paymentFailedEventReads: Reads[PaymentFailed] =
-    Json.reads[PaymentFailed]
+  implicit val paymentSentEventReads: Reads[WebSocketEvent.PaymentSent] =
+    Json.reads[WebSocketEvent.PaymentSent]
 
-  implicit val paymentSentEventReads: Reads[PaymentSent] =
-    Json.reads[PaymentSent]
-
-  implicit val paymentSettlingOnchainEventReads: Reads[PaymentSettlingOnchain] =
-    Json.reads[PaymentSettlingOnchain]
+  implicit val paymentSettlingOnchainEventReads: Reads[
+    WebSocketEvent.PaymentSettlingOnchain] =
+    Json.reads[WebSocketEvent.PaymentSettlingOnchain]
 
 }

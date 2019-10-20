@@ -378,7 +378,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
         //register callback that publishes a payment to our actor system's
         //event stream,
         receivedInfoF.foreach {
-          case None =>
+          case None | Some(ReceivedPaymentResult(_, _, _, PaymentPending)) =>
             if (attempts.incrementAndGet() >= maxAttempts) {
               // too many tries to get info about a payment
               // either Eclair is down or the payment is still in PENDING state for some reason
@@ -779,9 +779,9 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           } yield {
             results.foreach { result =>
               result.status match {
-                case PaymentStatus.PENDING =>
+                case PaymentPending =>
                 //do nothing, while we wait for eclair to attempt to process
-                case PaymentStatus.SUCCEEDED | PaymentStatus.FAILED =>
+                case (_: PaymentSent | _: PaymentFailed) =>
                   // invoice has been succeeded or has failed, let's publish to event stream
                   // so subscribers to the event stream can see that a payment
                   // was received or failed
@@ -832,8 +832,8 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "6906ecb"
+  private[bitcoins] val commit = "5ad3944"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.3.1"
+  private[bitcoins] val version = "0.3.2"
 }

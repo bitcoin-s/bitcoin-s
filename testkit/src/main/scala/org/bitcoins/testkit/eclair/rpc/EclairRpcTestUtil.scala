@@ -18,7 +18,15 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.json.{PaymentId, PaymentStatus}
+import org.bitcoins.eclair.rpc.json.{
+  PaymentFailed,
+  PaymentId,
+  PaymentPending,
+  PaymentReceived,
+  PaymentResult,
+  PaymentSent,
+  PaymentStatus
+}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.util.RpcUtil
@@ -255,7 +263,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
     awaitUntilPaymentStatus(client,
                             paymentId,
-                            PaymentStatus.SUCCEEDED,
+                            "sent",
                             duration,
                             maxTries,
                             failFast)
@@ -269,7 +277,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       failFast: Boolean = false)(implicit system: ActorSystem): Future[Unit] = {
     awaitUntilPaymentStatus(client,
                             paymentId,
-                            PaymentStatus.FAILED,
+                            "failed",
                             duration,
                             maxTries,
                             failFast)
@@ -283,7 +291,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
     awaitUntilPaymentStatus(client,
                             paymentId,
-                            PaymentStatus.PENDING,
+                            "pending",
                             duration,
                             maxTries,
                             failFast)
@@ -292,20 +300,33 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   private def awaitUntilPaymentStatus(
       client: EclairApi,
       paymentId: PaymentId,
-      state: PaymentStatus,
+      state: String,
       duration: FiniteDuration,
       maxTries: Int,
       failFast: Boolean)(implicit system: ActorSystem): Future[Unit] = {
     logger.debug(s"Awaiting payment ${paymentId} to enter ${state} state")
 
+    def isFailed(status: PaymentStatus): Boolean = status match {
+      case _: PaymentFailed => true
+      case _: PaymentStatus => false
+    }
+
+    def matches(status: PaymentStatus, state: String): Boolean = status match {
+      case PaymentPending     => state == "pending"
+      case _: PaymentFailed   => state == "failed"
+      case _: PaymentReceived => state == "received"
+      case _: PaymentSent     => state == "sent"
+    }
+
     def isState(): Future[Boolean] = {
 
-      val sentInfoF = client.getSentInfo(paymentId)
+      val sentInfoF: Future[Vector[PaymentResult]] =
+        client.getSentInfo(paymentId)
       sentInfoF.map { payment =>
-        if (failFast && payment.exists(_.status == PaymentStatus.FAILED)) {
+        if (failFast && payment.exists(result => isFailed(result.status))) {
           throw new RuntimeException(s"Payment ${paymentId} has failed")
         }
-        if (!payment.exists(_.status == state)) {
+        if (!payment.exists(result => matches(result.status, state))) {
           logger.trace(
             s"Payment ${paymentId} has not entered ${state} yet. Currently in ${payment.map(_.status).mkString(",")}")
           false
