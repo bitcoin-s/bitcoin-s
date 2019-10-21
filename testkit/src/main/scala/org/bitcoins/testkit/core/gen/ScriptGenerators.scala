@@ -49,6 +49,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
   }
 
+  def conditionalScriptSignature: Gen[ConditionalScriptSignature] = {
+    ???
+  }
+
   def emptyScriptSignature = p2pkhScriptSignature.map(_ => EmptyScriptSignature)
 
   /**
@@ -290,6 +294,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     case _: P2PKScriptPubKey           => p2pkScriptSignature
     case _: P2PKHScriptPubKey          => p2pkhScriptSignature
     case _: MultiSignatureScriptPubKey => multiSignatureScriptSignature
+    case _: ConditionalScriptPubKey    => conditionalScriptSignature
     case EmptyScriptPubKey             => emptyScriptSignature
     case _: CLTVScriptPubKey           => cltvScriptSignature
     case _: CSVScriptPubKey            => csvScriptSignature
@@ -453,6 +458,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
                                            Some(requiredSigs),
                                            hashType)
         (cltvScriptSig.asInstanceOf[CLTVScriptSignature], cltv, privKeys)
+      case _: ConditionalScriptPubKey =>
+        ???
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey =>
         val cltvScriptSig = lockTimeHelper(Some(lockTime),
                                            sequence,
@@ -499,6 +506,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
                                           Some(requiredSigs),
                                           hashType)
         (csvScriptSig.asInstanceOf[CSVScriptSignature], csv, privKeys)
+      case _: ConditionalScriptPubKey =>
+        ???
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey =>
         val csvScriptSig =
           lockTimeHelper(None, sequence, csv, privKeys, None, hashType)
@@ -684,6 +693,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       case _: P2PKScriptPubKey                                         => P2PKScriptSignature(sigs.head)
       case _: P2PKHScriptPubKey                                        => P2PKHScriptSignature(sigs.head, keys.head)
       case _: MultiSignatureScriptPubKey                               => MultiSignatureScriptSignature(sigs)
+      case _: ConditionalScriptPubKey                                  => ???
       case EmptyScriptPubKey                                           => CSVScriptSignature(EmptyScriptSignature)
       case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         //bare segwit always has an empty script sig, see BIP141

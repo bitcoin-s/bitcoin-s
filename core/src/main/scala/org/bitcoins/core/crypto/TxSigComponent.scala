@@ -106,8 +106,8 @@ sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
           _: CSVScriptPubKey | _: CLTVScriptPubKey |
-          _: NonStandardScriptPubKey | _: WitnessCommitment |
-          EmptyScriptPubKey) =>
+          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | EmptyScriptPubKey) =>
         Failure(new IllegalArgumentException(
           "Must have a witness scriptPubKey as redeemScript for P2SHScriptPubKey in WitnessTxSigComponentP2SH, got: " + x))
 
@@ -180,8 +180,8 @@ object WitnessTxSigComponent {
         WitnessTxSigComponentP2SH(transaction, inputIndex, output, flags)
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-          _: WitnessCommitment | _: NonStandardScriptPubKey |
-          EmptyScriptPubKey) =>
+          _: ConditionalScriptPubKey | _: WitnessCommitment |
+          _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
         throw new IllegalArgumentException(
           s"Cannot create a WitnessTxSigComponent out of $x")
     }
@@ -207,8 +207,9 @@ object WitnessTxSigComponentRaw {
         WitnessTxSigComponentRawImpl(transaction, inputIndex, output, flags)
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
-          _: LockTimeScriptPubKey | _: NonStandardScriptPubKey |
-          _: WitnessCommitment | EmptyScriptPubKey) =>
+          _: LockTimeScriptPubKey | _: ConditionalScriptPubKey |
+          _: NonStandardScriptPubKey | _: WitnessCommitment |
+          EmptyScriptPubKey) =>
         throw new IllegalArgumentException(
           s"Cannot create a WitnessTxSigComponentRaw with a spk of $x")
     }
@@ -235,8 +236,8 @@ object WitnessTxSigComponentP2SH {
         WitnessTxSigComponentP2SHImpl(transaction, inputIndex, output, flags)
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-          _: NonStandardScriptPubKey | _: WitnessCommitment |
-          _: WitnessScriptPubKey | EmptyScriptPubKey) =>
+          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | _: WitnessScriptPubKey | EmptyScriptPubKey) =>
         throw new IllegalArgumentException(
           s"Cannot create a WitnessTxSigComponentP2SH with a spk of $x")
     }

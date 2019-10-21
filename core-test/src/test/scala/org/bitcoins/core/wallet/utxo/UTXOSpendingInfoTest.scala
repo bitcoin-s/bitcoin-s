@@ -38,12 +38,15 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHNoNestSpendingInfo(outPoint = outPoint,
-                             amount = CurrencyUnits.zero,
-                             scriptPubKey = p2sh,
-                             signers = Seq(privKey),
-                             hashType = HashType.sigHashAll,
-                             redeemScript = randomRawSPK)
+      P2SHNoNestSpendingInfo(
+        outPoint = outPoint,
+        amount = CurrencyUnits.zero,
+        scriptPubKey = p2sh,
+        signers = Seq(privKey),
+        hashType = HashType.sigHashAll,
+        redeemScript = randomRawSPK,
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
     }
   }
 
@@ -63,7 +66,8 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
         redeemScript = randomWitnessSPK,
-        scriptWitness = P2WPKHWitnessV0(pubKey)
+        scriptWitness = P2WPKHWitnessV0(pubKey),
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }
@@ -89,7 +93,8 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
         redeemScript = P2WPKHWitnessSPKV0(pubKey),
-        scriptWitness = P2WPKHWitnessV0(ECPrivateKey.freshPrivateKey.publicKey)
+        scriptWitness = P2WPKHWitnessV0(ECPrivateKey.freshPrivateKey.publicKey),
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }
@@ -110,7 +115,8 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
         redeemScript = randomWitnessSPK,
-        scriptWitness = P2WSHWitnessV0(P2PKScriptPubKey(pubKey))
+        scriptWitness = P2WSHWitnessV0(P2PKScriptPubKey(pubKey)),
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }
@@ -131,7 +137,8 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
         redeemScript = P2WSHWitnessSPKV0(P2PKScriptPubKey(pubKey)),
-        scriptWitness = P2WSHWitnessV0(randomSPK)
+        scriptWitness = P2WSHWitnessV0(randomSPK),
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }
@@ -152,7 +159,8 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         scriptPubKey = p2wpkh,
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
-        scriptWitness = P2WPKHWitnessV0(ECPrivateKey.freshPrivateKey.publicKey)
+        scriptWitness = P2WPKHWitnessV0(ECPrivateKey.freshPrivateKey.publicKey),
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }
@@ -173,7 +181,8 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         scriptPubKey = p2wsh,
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
-        scriptWitness = P2WSHWitnessV0(randomSPK)
+        scriptWitness = P2WSHWitnessV0(randomSPK),
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }

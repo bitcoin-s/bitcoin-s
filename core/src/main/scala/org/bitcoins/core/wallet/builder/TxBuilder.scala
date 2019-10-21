@@ -273,6 +273,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               _,
               hashType,
               redeemWitnessScript,
+              _,
               _) =>
           redeemWitnessScript match {
             case _: P2WSHWitnessSPKV0 =>
@@ -337,7 +338,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                                   spendingInfo.signers,
                                                   None,
                                                   spendingInfo.scriptWitnessOpt,
-                                                  spendingInfo.hashType)
+                                                  spendingInfo.hashType,
+                                                  spendingInfo.conditionalPath)
 
     val signedTxEither =
       signAndAddInput(updatedUTXOInfo, updatedTx, dummySignatures)
@@ -407,7 +409,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                    signers,
                                    redeemScriptOpt,
                                    scriptWitOpt,
-                                   hashType) :: t =>
+                                   hashType,
+                                   conditionalPath) :: t =>
         output.scriptPubKey match {
           case cltv: CLTVScriptPubKey =>
             val lockTime =
@@ -434,7 +437,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                               signers,
                                               None,
                                               scriptWitOpt,
-                                              hashType)
+                                              hashType,
+                                              conditionalPath)
               loop(i +: t, currentLockTime)
             } else if (scriptWitOpt.isDefined) {
               scriptWitOpt.get match {
@@ -448,12 +452,14 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                                   signers,
                                                   redeemScriptOpt,
                                                   None,
-                                                  hashType)
+                                                  hashType,
+                                                  conditionalPath)
                   loop(i +: t, currentLockTime)
               }
             } else {
               loop(t, currentLockTime)
             }
+          case _: ConditionalScriptPubKey => ???
           case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
               _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
               _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
@@ -486,7 +492,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                    signers,
                                    redeemScriptOpt,
                                    scriptWitOpt,
-                                   hashType) :: t =>
+                                   hashType,
+                                   conditionalPath) :: t =>
         output.scriptPubKey match {
           case csv: CSVScriptPubKey =>
             val sequence = solveSequenceForCSV(csv.locktime)
@@ -505,7 +512,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                               signers,
                                               None,
                                               scriptWitOpt,
-                                              hashType)
+                                              hashType,
+                                              conditionalPath)
               loop(i +: t, accum)
             } else if (scriptWitOpt.isDefined) {
               scriptWitOpt.get match {
@@ -517,10 +525,12 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                                   signers,
                                                   redeemScriptOpt,
                                                   None,
-                                                  hashType)
+                                                  hashType,
+                                                  conditionalPath)
                   loop(i +: t, accum)
               }
             } else loop(t, accum)
+          case _: ConditionalScriptPubKey => ???
           case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
               _: MultiSignatureScriptPubKey | _: P2WPKHWitnessSPKV0 |
               _: NonStandardScriptPubKey | _: WitnessCommitment |
@@ -766,12 +776,15 @@ object BitcoinTxBuilder {
       utxos match {
         case Nil => accum
         case h +: t =>
-          val u = BitcoinUTXOSpendingInfo(outPoint = h.outPoint,
-                                          output = h.output,
-                                          signers = h.signers,
-                                          redeemScriptOpt = h.redeemScriptOpt,
-                                          scriptWitnessOpt = h.scriptWitnessOpt,
-                                          hashType = h.hashType)
+          val u = BitcoinUTXOSpendingInfo(
+            outPoint = h.outPoint,
+            output = h.output,
+            signers = h.signers,
+            redeemScriptOpt = h.redeemScriptOpt,
+            scriptWitnessOpt = h.scriptWitnessOpt,
+            hashType = h.hashType,
+            conditionalPath = h.conditionalPath
+          )
           val result: BitcoinTxBuilder.UTXOMap = accum.updated(h.outPoint, u)
           loop(t, result)
       }

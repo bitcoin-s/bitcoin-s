@@ -138,12 +138,14 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
     val sign: Sign = Sign(privKey.signFunction, pubAtPath)
 
-    BitcoinUTXOSpendingInfo(outPoint,
-                            output,
-                            List(sign),
-                            redeemScriptOpt,
-                            scriptWitnessOpt,
-                            hashType)
+    BitcoinUTXOSpendingInfo(
+      outPoint,
+      output,
+      List(sign),
+      redeemScriptOpt,
+      scriptWitnessOpt,
+      hashType,
+      ???) // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
   }
 
 }

@@ -74,8 +74,8 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
             case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                 _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey |
                 _: CSVScriptPubKey | _: CLTVScriptPubKey |
-                _: NonStandardScriptPubKey | _: WitnessCommitment |
-                EmptyScriptPubKey) =>
+                _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+                _: WitnessCommitment | EmptyScriptPubKey) =>
               val output = TransactionOutput(amount, x)
               BaseTxSigComponent(transaction = tx,
                                  inputIndex = inputIndex,
