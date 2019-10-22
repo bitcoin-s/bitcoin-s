@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
+import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, Sha256Digest}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
@@ -458,6 +458,8 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
       P2PKHScriptSignature.fromAsm(tokens)
     case _ if P2PKScriptSignature.isP2PKScriptSignature(tokens) =>
       P2PKScriptSignature.fromAsm(tokens)
+    case _ if LightningScriptSig.isValid(tokens) =>
+      LightningScriptSig.fromAsm(tokens)
     case _ => NonStandardScriptSignature.fromAsm(tokens)
   }
 
@@ -494,5 +496,192 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
       tokens: Seq[ScriptToken],
       scriptPubKey: ScriptPubKey): Try[ScriptSignature] = {
     fromScriptPubKey(tokens, scriptPubKey)
+  }
+}
+
+sealed abstract class LightningScriptSig extends ScriptSignature
+
+object LightningScriptSig extends ScriptFactory[LightningScriptSig] {
+
+  def fromAsm(asm: Seq[ScriptToken]): LightningScriptSig = asm match {
+    case _ if RefundHTLCScriptSig.isValid(asm) => RefundHTLCScriptSig.fromAsm(asm)
+    case _ if OfferedHTLCScriptSig.isValid(asm) => OfferedHTLCScriptSig.fromAsm(asm)
+    case _ if ReceivedHTLCScriptSig.isValid(asm) => ReceivedHTLCScriptSig.fromAsm(asm)
+  }
+
+  def isValid(asm: Seq[ScriptToken]): Boolean = {
+    ReceivedHTLCScriptSig.isValid(asm) || RefundHTLCScriptSig.isValid(asm) || OfferedHTLCScriptSig.isValid(asm)
+  }
+}
+/** Spends a [[org.bitcoins.core.protocol.script.RefundHTLC]]
+  * Refund HTLC has two branches:
+  * <revocation_sig> 1  (if branch)
+  * <local_delayedsig> 0  (else branch)
+  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#to_local-output]]
+  * */
+sealed abstract class RefundHTLCScriptSig extends LightningScriptSig {
+  override def signatures = Seq(ECDigitalSignature(asm(1).bytes))
+  def isRevocation: Boolean = BitcoinScriptUtil.castToBool(asm.last)
+  def isDelay: Boolean = !isRevocation
+
+  override def toString = s"RefundHTLCScriptSig($hex)"
+}
+
+object RefundHTLCScriptSig extends ScriptFactory[RefundHTLCScriptSig] {
+  private case class RefundHTLCScriptSigImpl(asm: Vector[ScriptToken]) extends RefundHTLCScriptSig
+
+  def isValid(asm: Seq[ScriptToken]): Boolean = {
+    val result = Try {
+      asm.size == 3 && asm(0).isInstanceOf[BytesToPushOntoStack] &&
+        asm(1).isInstanceOf[ScriptConstant] &&
+        asm(1).bytes.size == asm(0).asInstanceOf[BytesToPushOntoStack].opCode &&
+        Seq(OP_0,OP_1).contains(asm(2))
+    }
+    result.isSuccess && result.get
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): RefundHTLCScriptSig = {
+    buildScript(asm = asm.toVector,
+      constructor = RefundHTLCScriptSigImpl(_),
+      invariant = isValid(_),
+      errorMsg = "Given asm was not RefundHTLCScriptSig, got: " + asm)
+  }
+
+  def createRevocation(sig: ECDigitalSignature): RefundHTLCScriptSig = {
+    val sigConst = ScriptConstant(sig.bytes)
+    val asm = BitcoinScriptUtil.calculatePushOp(sigConst) ++ Seq(sigConst, OP_1)
+    fromAsm(asm)
+  }
+
+  def createDelay(sig: ECDigitalSignature): RefundHTLCScriptSig = {
+    val sigConst = ScriptConstant(sig.bytes)
+    val asm = BitcoinScriptUtil.calculatePushOp(sigConst) ++ Seq(sigConst, OP_0)
+    fromAsm(asm)
+  }
+}
+
+/**
+  * <revocation_sig> <revocationkey> (if branch)
+  * <payment_preimage> <remotesig> (else branch)
+  *
+  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#offered-htlc-outputs]]
+  */
+sealed abstract class OfferedHTLCScriptSig extends LightningScriptSig {
+  override def signatures = revocationOrPayment match {
+    case Left((sig,_)) => Seq(sig)
+    case Right((_,sig)) => Seq(sig)
+  }
+  def isRevocation: Boolean = ECPublicKey.isFullyValid(asm(3).bytes)
+  def isPayment: Boolean = !isRevocation
+  def revocationOrPayment: Either[(ECDigitalSignature,ECPublicKey), (Sha256Digest, ECDigitalSignature)] = {
+    if (isRevocation) {
+      val sig = ECDigitalSignature(asm(1).bytes)
+      val key = ECPublicKey(asm(3).bytes)
+      Left((sig,key))
+    } else {
+      val preImage = Sha256Digest(asm(1).bytes)
+      val sig = ECDigitalSignature(asm(3).bytes)
+      Right((preImage,sig))
+    }
+  }
+
+  override def toString = s"OfferedHTLCScriptSig($hex)"
+}
+
+object OfferedHTLCScriptSig extends ScriptFactory[OfferedHTLCScriptSig] {
+  private case class OfferedHTLCScriptSigImpl(asm: Vector[ScriptToken]) extends OfferedHTLCScriptSig
+
+  override def fromAsm(asm: Seq[ScriptToken]): OfferedHTLCScriptSig = {
+    buildScript(
+      asm = asm.toVector,
+      constructor = OfferedHTLCScriptSigImpl(_),
+      invariant = isValid(_),
+      errorMsg = "Given asm was not a OfferedHTLCScriptSig, got: " + asm)
+  }
+
+  def apply(sig: ECDigitalSignature, key: ECPublicKey): OfferedHTLCScriptSig = {
+    val (sigConst, keyConst) = (ScriptConstant(sig.bytes), ScriptConstant(key.bytes))
+    val sigPushOp = BitcoinScriptUtil.calculatePushOp(sigConst)
+    val keyPushOp = BitcoinScriptUtil.calculatePushOp(keyConst)
+    val asm = sigPushOp ++ Seq(sigConst) ++ keyPushOp ++ Seq(keyConst)
+    fromAsm(asm)
+  }
+
+  def apply(paymentPreImage: Sha256Digest, remoteSig: ECDigitalSignature): OfferedHTLCScriptSig = {
+    val (preImageConst, sigConst) = (ScriptConstant(paymentPreImage.bytes), ScriptConstant(remoteSig.bytes))
+    val preImagePushOp = BitcoinScriptUtil.calculatePushOp(preImageConst)
+    val sigPushOp = BitcoinScriptUtil.calculatePushOp(sigConst)
+    val asm = sigPushOp ++ Seq(sigConst) ++ preImagePushOp ++ Seq(preImageConst)
+    fromAsm(asm)
+  }
+
+  def isValid(asm: Seq[ScriptToken]): Boolean = {
+    val result = Try {
+      asm(0).isInstanceOf[BytesToPushOntoStack] &&
+        asm(1).isInstanceOf[ScriptConstant] &&
+        asm(0).asInstanceOf[BytesToPushOntoStack].opCode == asm(1).bytes.size &&
+        asm(2).isInstanceOf[BytesToPushOntoStack] &&
+        asm(3).isInstanceOf[ScriptConstant] &&
+        asm(2).asInstanceOf[BytesToPushOntoStack].opCode == asm(3).bytes.size
+    }
+    result.isSuccess && result.get
+  }
+}
+
+/**
+  * <revocation_sig> <revocationkey> (if branch)
+  * <remotesig> 0 (else branch)
+  * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/03-transactions.md#received-htlc-outputs]]
+  */
+sealed abstract class ReceivedHTLCScriptSig extends LightningScriptSig {
+  override def signatures = Nil
+  def isTimeout: Boolean = asm.last == OP_0
+  def isRevocation: Boolean = !isTimeout
+
+  def timeoutOrRevocation: Either[ECDigitalSignature, (ECDigitalSignature, ECPublicKey)] = {
+    if (isTimeout) {
+      Left(ECDigitalSignature(asm(1).bytes))
+    } else {
+      val sig = ECDigitalSignature(asm(1).bytes)
+      val key = ECPublicKey(asm(3).bytes)
+      Right((sig,key))
+    }
+  }
+
+  override def toString = s"ReceivedHTLCScriptSig($hex)"
+}
+
+object ReceivedHTLCScriptSig extends ScriptFactory[ReceivedHTLCScriptSig] {
+  private case class ReceivedHTLCScriptSigImpl(asm: Vector[ScriptToken]) extends ReceivedHTLCScriptSig
+
+  override def fromAsm(asm: Seq[ScriptToken]): ReceivedHTLCScriptSig = {
+    buildScript(asm = asm.toVector,
+      constructor = ReceivedHTLCScriptSigImpl(_),
+      invariant = isValid(_),
+      errorMsg = "Given asm was not a ReceivedHTCLScriptSig, got: " + asm)
+  }
+
+  def apply(sig: ECDigitalSignature): ReceivedHTLCScriptSig = {
+    val sigConst = ScriptConstant(sig.bytes)
+    val asm = BitcoinScriptUtil.calculatePushOp(sigConst) ++ Seq(sigConst,OP_0)
+    fromAsm(asm)
+  }
+
+  def apply(sig: ECDigitalSignature, key: ECPublicKey): ReceivedHTLCScriptSig = {
+    val (sigConst, keyConst) = (ScriptConstant(sig.bytes), ScriptConstant(key.bytes))
+    val sigPushOp = BitcoinScriptUtil.calculatePushOp(sigConst)
+    val keyPushOp = BitcoinScriptUtil.calculatePushOp(keyConst)
+    val asm = sigPushOp ++ Seq(sigConst) ++ keyPushOp ++ Seq(keyConst)
+    fromAsm(asm)
+  }
+
+  def isValid(asm: Seq[ScriptToken]): Boolean = {
+    val result = Try {
+      (asm.size == 3 || asm.size == 4) &&
+        asm(0).isInstanceOf[BytesToPushOntoStack] &&
+        asm(1).bytes.size == asm(0).asInstanceOf[BytesToPushOntoStack].opCode &&
+        (asm(2) == OP_0 || asm(2) == BytesToPushOntoStack(33))
+    }
+    result.isSuccess && result.get
   }
 }

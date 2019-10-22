@@ -195,6 +195,12 @@ sealed abstract class CryptoGenerators {
       hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     } yield hash
 
+  def ripeMd160Digest: Gen[RipeMd160Digest] = {
+    for {
+      privKey <- privateKey
+      hash = CryptoUtil.ripeMd160(privKey.bytes)
+    } yield hash
+  }
   /** Generates a random [[org.bitcoins.core.script.crypto.HashType HashType]] */
   def hashType: Gen[HashType] =
     Gen.oneOf(
