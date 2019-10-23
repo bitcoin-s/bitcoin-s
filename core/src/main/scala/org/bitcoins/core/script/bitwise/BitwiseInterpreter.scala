@@ -9,7 +9,6 @@ import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
   ExecutionInProgressScriptProgram,
-  ScriptProgram,
   StartedScriptProgram
 }
 import org.bitcoins.core.util.BitcoinSLogger
@@ -42,9 +41,8 @@ sealed abstract class BitwiseInterpreter {
         case _ => h.bytes == h1.bytes
       }
       val scriptBoolean = if (result) OP_TRUE else OP_FALSE
-      ScriptProgram(program,
-                    scriptBoolean :: program.stack.tail.tail,
-                    program.script.tail)
+      program.updateStackAndScript(scriptBoolean :: program.stack.tail.tail,
+                                   program.script.tail)
     }
   }
 
@@ -57,8 +55,7 @@ sealed abstract class BitwiseInterpreter {
     if (program.stack.size > 1) {
       //first replace OP_EQUALVERIFY with OP_EQUAL and OP_VERIFY
       val simpleScript = OP_EQUAL :: OP_VERIFY :: program.script.tail
-      val newProgram = opEqual(
-        ScriptProgram(program, program.stack, simpleScript))
+      val newProgram = opEqual(program.updateScript(simpleScript))
       val verifiedOrErr = newProgram match {
         case err: ExecutedScriptProgram => err
         case p: ExecutionInProgressScriptProgram =>

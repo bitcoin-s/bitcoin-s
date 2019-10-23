@@ -8,8 +8,7 @@ import org.bitcoins.core.script.constant.{OP_0, ScriptNumber}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
-  PreExecutionScriptProgram,
-  ScriptProgram
+  PreExecutionScriptProgram
 }
 import org.bitcoins.core.util.{ScriptProgramTestUtil, TestUtil}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
@@ -23,7 +22,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val stack = Seq()
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
       LTI.opCheckLockTimeVerify(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
@@ -33,7 +33,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val stack = Seq(OP_0)
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
       LTI.opCheckLockTimeVerify(program))
     newProgram.error must be(Some(ScriptErrorUnsatisfiedLocktime))
@@ -66,10 +67,9 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
       flags = TestUtil.testProgram.flags
     )
     val baseProgram = PreExecutionScriptProgram(t)
-    val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(
-      baseProgram.updateStackAndScript(stack, script))
+    val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
-      LTI.opCheckLockTimeVerify(ScriptProgram.toExecutionInProgress(program)))
+      LTI.opCheckLockTimeVerify(program.toExecutionInProgress))
     newProgram.error must be(Some(ScriptErrorNegativeLockTime))
   }
 
@@ -93,10 +93,9 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
                                              UInt32.zero)
     val t = buildTxSigComponent(adjustedLockTimeTx)
     val baseProgram = PreExecutionScriptProgram(t)
-    val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(
-      baseProgram.updateStackAndScript(stack, script))
+    val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
-      LTI.opCheckLockTimeVerify(ScriptProgram.toExecutionInProgress(program)))
+      LTI.opCheckLockTimeVerify(program.toExecutionInProgress))
     newProgram.error must be(Some(ScriptErrorUnsatisfiedLocktime))
   }
 
@@ -120,10 +119,9 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
                                              UInt32.zero)
     val t = buildTxSigComponent(adjustedLockTimeTx)
     val baseProgram = PreExecutionScriptProgram(t)
-    val program = ScriptProgramTestUtil.toPreExecutionScriptProgram(
-      baseProgram.updateStackAndScript(stack, script))
+    val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = ScriptProgramTestUtil.toExecutedScriptProgram(
-      LTI.opCheckLockTimeVerify(ScriptProgram.toExecutionInProgress(program)))
+      LTI.opCheckLockTimeVerify(program.toExecutionInProgress))
     newProgram.error must be(Some(ScriptErrorUnsatisfiedLocktime))
   }
 
@@ -147,8 +145,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
                                              UInt32.zero)
     val t = buildTxSigComponent(adjustedLockTimeTx)
     val basePreProgram = PreExecutionScriptProgram(t)
-    val baseProgram = ScriptProgram.toExecutionInProgress(basePreProgram)
-    val program = ScriptProgram(baseProgram, stack, script)
+    val baseProgram = basePreProgram.toExecutionInProgress
+    val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
     //if an error is not hit it will still be a ExecutionInProgressScriptProgram
@@ -177,8 +175,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
                                              UInt32.zero)
     val t = buildTxSigComponent(adjustedLockTimeTx)
     val basePreProgram = PreExecutionScriptProgram(t)
-    val baseProgram = ScriptProgram.toExecutionInProgress(basePreProgram)
-    val program = ScriptProgram(baseProgram, stack, script)
+    val baseProgram = basePreProgram.toExecutionInProgress
+    val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
     //if an error is not hit it will still be a ExecutionInProgressScriptProgram
@@ -205,8 +203,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
                                              UInt32(500000000))
     val t = buildTxSigComponent(adjustedLockTimeTx)
     val basePreProgram = PreExecutionScriptProgram(t)
-    val baseProgram = ScriptProgram.toExecutionInProgress(basePreProgram)
-    val program = ScriptProgram(baseProgram, stack, script)
+    val baseProgram = basePreProgram.toExecutionInProgress
+    val program = baseProgram.updateStackAndScript(stack, script)
     val newProgram = LTI.opCheckLockTimeVerify(program)
     //if an error is hit, the newProgram will be an instance of ExecutedScriptProgram
     //if an error is not hit it will still be a ExecutionInProgressScriptProgram
@@ -217,7 +215,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val stack = List()
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = LTI.opCheckSequenceVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
@@ -228,7 +227,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val stack = List(ScriptNumber.negativeOne)
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = LTI.opCheckSequenceVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
@@ -239,7 +239,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val stack = List(ScriptNumber("0100"))
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = LTI.opCheckSequenceVerify(program)
     newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
@@ -251,7 +252,8 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
       List(ScriptNumber(TransactionConstants.locktimeDisabledFlag.toLong))
     val script = List(OP_CHECKSEQUENCEVERIFY)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = LTI.opCheckSequenceVerify(program)
     newProgram.stack must be(stack)
     newProgram.script.isEmpty must be(true)

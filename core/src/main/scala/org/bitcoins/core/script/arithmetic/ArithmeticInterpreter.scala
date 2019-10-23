@@ -10,7 +10,6 @@ import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
   ExecutionInProgressScriptProgram,
-  ScriptProgram,
   StartedScriptProgram
 }
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
@@ -134,15 +133,15 @@ sealed abstract class ArithmeticInterpreter {
       logger.error("OP_NUMEQUALVERIFY requires two stack elements")
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
-      val numEqualProgram = ScriptProgram(program,
-                                          program.stack,
-                                          OP_NUMEQUAL :: program.script.tail)
+      val numEqualProgram = program.updateStackAndScript(
+        program.stack,
+        OP_NUMEQUAL :: program.script.tail)
       val numEqualResultOrError = opNumEqual(numEqualProgram)
       numEqualResultOrError match {
         case numEqualResult: ExecutionInProgressScriptProgram =>
-          val verifyProgram = ScriptProgram(numEqualResult,
-                                            numEqualResult.stack,
-                                            OP_VERIFY :: numEqualResult.script)
+          val verifyProgram = numEqualResult.updateStackAndScript(
+            numEqualResult.stack,
+            OP_VERIFY :: numEqualResult.script)
           val verifyResult =
             ControlOperationsInterpreter.opVerify(verifyProgram)
           verifyResult
@@ -252,9 +251,9 @@ sealed abstract class ArithmeticInterpreter {
       } else {
         val isWithinRange = a >= b && a < c
         val newStackTop = if (isWithinRange) OP_TRUE else OP_FALSE
-        ScriptProgram(program,
-                      newStackTop :: program.stack.tail.tail.tail,
-                      program.script.tail)
+        program.updateStackAndScript(
+          newStackTop :: program.stack.tail.tail.tail,
+          program.script.tail)
       }
     }
   }
@@ -296,9 +295,8 @@ sealed abstract class ArithmeticInterpreter {
           program.failExecution(ScriptErrorUnknownError)
         } else {
           val newScriptNumber = op(s)
-          ScriptProgram(program,
-                        newScriptNumber :: program.stack.tail,
-                        program.script.tail)
+          program.updateStackAndScript(newScriptNumber :: program.stack.tail,
+                                       program.script.tail)
         }
       case Some(s: ScriptConstant) =>
         if (ScriptFlagUtil.requireMinimalData(program.flags) && !BitcoinScriptUtil
@@ -352,9 +350,8 @@ sealed abstract class ArithmeticInterpreter {
             program.failExecution(ScriptErrorUnknownError)
           } else {
             val newStackTop = op(x, y)
-            ScriptProgram(program,
-                          newStackTop :: program.stack.tail.tail,
-                          program.script.tail)
+            program.updateStackAndScript(newStackTop :: program.stack.tail.tail,
+                                         program.script.tail)
           }
         case (x: ScriptConstant, _: ScriptNumber) =>
           //interpret x as a number
@@ -412,9 +409,8 @@ sealed abstract class ArithmeticInterpreter {
         program.failExecution(ScriptErrorUnknownError)
       } else {
         val newStackTop = if (op(x, y)) OP_TRUE else OP_FALSE
-        ScriptProgram(program,
-                      newStackTop :: program.stack.tail.tail,
-                      program.script.tail)
+        program.updateStackAndScript(newStackTop :: program.stack.tail.tail,
+                                     program.script.tail)
       }
     }
   }
@@ -438,7 +434,7 @@ sealed abstract class ArithmeticInterpreter {
     * @return the tuple with the first element being the first stack element, the second element in the tuple being the second stack element
     */
   private def parseTopTwoStackElementsAsScriptNumbers(
-      program: ScriptProgram): (ScriptNumber, ScriptNumber) = {
+      program: ExecutionInProgressScriptProgram): (ScriptNumber, ScriptNumber) = {
     (program.stack.head, program.stack.tail.head) match {
       case (x: ScriptNumber, y: ScriptNumber) => (x, y)
       case (x: ScriptConstant, y: ScriptNumber) =>

@@ -39,10 +39,9 @@ class ScriptProgramFactoryTest extends BitcoinSUnitTest {
   it must "update the OP_CODESEPARATOR index & stack simultaneously" in {
     val index = 999
     val stack = Seq(OP_0)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,
-                                stack,
-                                ScriptProgram.Stack,
-                                index)
+    val program = TestUtil.testProgramExecutionInProgress
+      .updateStack(stack)
+      .updateLastCodeSeparator(index)
     program.stack must be(stack)
     program.lastCodeSeparator must be(Some(index))
   }
@@ -50,10 +49,9 @@ class ScriptProgramFactoryTest extends BitcoinSUnitTest {
   it must "update the OP_CODESEPARATOR index & altStack simultaneously" in {
     val index = 999
     val altStack = Seq(OP_0)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress,
-                                altStack,
-                                ScriptProgram.AltStack,
-                                index)
+    val program = TestUtil.testProgramExecutionInProgress
+      .updateAltStack(altStack)
+      .updateLastCodeSeparator(index)
     program.altStack must be(altStack)
     program.lastCodeSeparator must be(Some(index))
   }

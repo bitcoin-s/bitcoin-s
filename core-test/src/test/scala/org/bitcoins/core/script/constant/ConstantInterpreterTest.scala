@@ -1,6 +1,5 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.script.ScriptProgram
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.crypto.OP_CHECKMULTISIGVERIFY
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptVerifyMinimalData}
@@ -28,7 +27,8 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
                       OP_7,
                       OP_EQUAL)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = CI.opPushData1(program)
     newProgram.stack must be(List(scriptConstant))
     newProgram.script must be(List(OP_7, OP_EQUAL))
@@ -42,7 +42,8 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
     val script =
       List(OP_PUSHDATA2, ScriptNumber(256), scriptConstant, OP_8, OP_EQUAL)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = CI.opPushData2(program)
     newProgram.stack must be(List(scriptConstant))
     newProgram.script must be(List(OP_8, OP_EQUAL))
@@ -59,7 +60,8 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
                       OP_9,
                       OP_EQUAL)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = CI.opPushData4(program)
     newProgram.stack must be(List(scriptConstant))
     newProgram.script must be(List(OP_9, OP_EQUAL))
@@ -69,7 +71,8 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
     val stack = List()
     val script = List(BytesToPushOntoStack(2), ScriptNumber.one, OP_0)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = CI.pushScriptNumberBytesToStack(program)
     newProgram.script.isEmpty must be(true)
     newProgram.stack must be(List(ScriptConstant("0100")))
@@ -78,20 +81,26 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
   it must "push 0 bytes onto the stack which is OP_0" in {
     val stack = List()
     val script = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
+    val program = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack, script)
+      .removeFlags()
     val newProgram = CI.opPushData1(program)
     newProgram.stackTopIsFalse must be(true)
     newProgram.stack must be(List(ScriptNumber.zero))
 
     val stack1 = List()
     val script1 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
-    val program1 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1).removeFlags()
+    val program1 = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack1, script1)
+      .removeFlags()
     val newProgram1 = CI.opPushData2(program1)
     newProgram1.stack must be(List(ScriptNumber.zero))
 
     val stack2 = List()
     val script2 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
-    val program2 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2).removeFlags()
+    val program2 = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack2, script2)
+      .removeFlags()
     val newProgram2 = CI.opPushData4(program2)
     newProgram2.stack must be(List(ScriptNumber.zero))
   }
@@ -99,7 +108,9 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
   it must "mark a program as invalid if we have do not have enough bytes to be pushed onto the stack by the push operation" in {
     val stack = List()
     val script = List(OP_PUSHDATA1, BytesToPushOntoStack(1))
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).removeFlags()
+    val program = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack, script)
+      .removeFlags()
 
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData1(program))
@@ -109,15 +120,21 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
   it must "fail the require statement if the first op_code in the program's script doesn't match the OP_PUSHDATA we're looking for" in {
     val stack1 = List()
     val script1 = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
-    val program1 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack1, script1).removeFlags()
+    val program1 = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack1, script1)
+      .removeFlags()
 
     val stack2 = List()
     val script2 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
-    val program2 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack2, script2).removeFlags()
+    val program2 = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack2, script2)
+      .removeFlags()
 
     val stack4 = List()
     val script4 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
-    val program4 = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack4, script4).removeFlags()
+    val program4 = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack4, script4)
+      .removeFlags()
 
     //purposely call incorrect functions to mismatch opCodes
     intercept[IllegalArgumentException] {
@@ -138,7 +155,8 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
     val stack = List()
     val script = List(OP_CHECKMULTISIGVERIFY, ScriptNumber.one, OP_0)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
 
     intercept[IllegalArgumentException] {
       CI.pushScriptNumberBytesToStack(program)
@@ -148,7 +166,9 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
   it must "return ScriptErrorMinimalData if program contains ScriptVerifyMinimalData flag and 2nd item in script is zero" in {
     val stack = List()
     val script = List(OP_PUSHDATA4, ScriptNumber.zero)
-    val program = ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script).replaceFlags(Seq[ScriptFlag](ScriptVerifyMinimalData))
+    val program = TestUtil.testProgramExecutionInProgress
+      .updateStackAndScript(stack, script)
+      .replaceFlags(Seq[ScriptFlag](ScriptVerifyMinimalData))
     val newProgram =
       ScriptProgramTestUtil.toExecutedScriptProgram(CI.opPushData4(program))
     newProgram.error must be(Some(ScriptErrorMinimalData))
@@ -161,7 +181,8 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
     val stack = Nil
     val script = List(OP_PUSHDATA1, OP_3, constant)
     val program =
-      ScriptProgram(TestUtil.testProgramExecutionInProgress, stack, script)
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(stack,
+                                                                   script)
     val newProgram = CI.opPushData1(program)
     newProgram.stack must be(Seq(constant))
 
