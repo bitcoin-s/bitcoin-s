@@ -2,7 +2,6 @@ package org.bitcoins.core.script.stack
 
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
-  ScriptProgram,
   StartedScriptProgram
 }
 import org.bitcoins.core.script.constant._
@@ -29,7 +28,7 @@ sealed abstract class StackInterpreter {
             "Top of the script stack must be OP_DUP")
     program.stack match {
       case h :: _ =>
-        ScriptProgram(program, h :: program.stack, program.script.tail)
+        program.updateStackAndScript(h :: program.stack, program.script.tail)
       case Nil =>
         logger.error("Cannot duplicate the top element on an empty stack")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -43,10 +42,9 @@ sealed abstract class StackInterpreter {
             "Top of the script stack must be OP_DUP")
     if (program.stack.nonEmpty) {
       if (program.stack.head == ScriptNumber.zero)
-        return ScriptProgram(program, program.stack, program.script.tail)
-      ScriptProgram(program,
-                    program.stack.head :: program.stack,
-                    program.script.tail)
+        return program.updateScript(program.script.tail)
+      program.updateStackAndScript(program.stack.head :: program.stack,
+                                   program.script.tail)
     } else {
       logger.error("Cannot duplicate the top element on an empty stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
@@ -60,7 +58,8 @@ sealed abstract class StackInterpreter {
             "Top of script stack must be OP_DEPTH")
     val stackSize = program.stack.size
     val numberToPush: ScriptNumber = ScriptNumber(stackSize)
-    ScriptProgram(program, numberToPush :: program.stack, program.script.tail)
+    program.updateStackAndScript(numberToPush :: program.stack,
+                                 program.script.tail)
   }
 
   /** Puts the input onto the top of the alt stack. Removes it from the main stack. */
@@ -69,10 +68,10 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_TOALTSTACK),
             "Top of script stack must be OP_TOALTSTACK")
     if (program.stack.nonEmpty) {
-      ScriptProgram(program,
-                    program.stack.tail,
-                    program.script.tail,
-                    program.stack.head :: program.altStack)
+      program
+        .updateStack(program.stack.tail)
+        .updateScript(program.script.tail)
+        .updateAltStack(program.stack.head :: program.altStack)
     } else {
       logger.error("OP_TOALTSTACK requires an element to be on the stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
@@ -85,10 +84,10 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_FROMALTSTACK),
             "Top of script stack must be OP_FROMALTSTACK")
     if (program.altStack.nonEmpty) {
-      ScriptProgram(program,
-                    program.altStack.head :: program.stack,
-                    program.script.tail,
-                    program.altStack.tail)
+      program
+        .updateStack(program.altStack.head :: program.stack)
+        .updateScript(program.script.tail)
+        .updateAltStack(program.altStack.tail)
     } else {
       logger.error(
         "Alt Stack must have at least one item on it for OP_FROMALTSTACK")
@@ -102,7 +101,7 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_DROP),
             "Top of script stack must be OP_DROP")
     if (program.stack.nonEmpty) {
-      ScriptProgram(program, program.stack.tail, program.script.tail)
+      program.updateStackAndScript(program.stack.tail, program.script.tail)
     } else {
       logger.error("Stack must have at least one item on it for OP_DROP")
       program.failExecution(ScriptErrorInvalidStackOperation)
@@ -114,7 +113,8 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_NIP),
             "Top of script stack must be OP_NIP")
     program.stack match {
-      case h :: _ :: t => ScriptProgram(program, h :: t, program.script.tail)
+      case h :: _ :: t =>
+        program.updateStackAndScript(h :: t, program.script.tail)
       case _ :: _ =>
         logger.error("Stack must have at least two items on it for OP_NIP")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -131,7 +131,7 @@ sealed abstract class StackInterpreter {
             "Top of script stack must be OP_OVER")
     program.stack match {
       case _ :: h1 :: _ =>
-        ScriptProgram(program, h1 :: program.stack, program.script.tail)
+        program.updateStackAndScript(h1 :: program.stack, program.script.tail)
       case _ :: _ =>
         logger.error("Stack must have at least two items on it for OP_OVER")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -153,9 +153,8 @@ sealed abstract class StackInterpreter {
           program.failExecution(ScriptErrorInvalidStackOperation)
         else if (number.toLong >= 0 && number.toLong < program.stack.tail.size) {
           val newStackTop = program.stack.tail(number.toInt)
-          ScriptProgram(program,
-                        newStackTop :: program.stack.tail,
-                        program.script.tail)
+          program.updateStackAndScript(newStackTop :: program.stack.tail,
+                                       program.script.tail)
         } else {
           logger.error(
             "The index for OP_PICK would have caused an index out of bounds exception")
@@ -180,7 +179,7 @@ sealed abstract class StackInterpreter {
           //removes the old instance of the stack top, appends the new index to the head
           val newStack = newStackTop :: program.stack.tail
             .diff(List(newStackTop))
-          ScriptProgram(program, newStack, program.script.tail)
+          program.updateStackAndScript(newStack, program.script.tail)
         } else {
           logger.error(
             "The index for OP_ROLL would have caused an index out of bounds exception")
@@ -199,7 +198,7 @@ sealed abstract class StackInterpreter {
     program.stack match {
       case h :: h1 :: h2 :: t =>
         val newStack = h2 :: h :: h1 :: t
-        ScriptProgram(program, newStack, program.script.tail)
+        program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 3 items on it for OP_ROT")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -217,7 +216,7 @@ sealed abstract class StackInterpreter {
     program.stack match {
       case h :: h1 :: h2 :: h3 :: h4 :: h5 :: t =>
         val newStack = h4 :: h5 :: h :: h1 :: h2 :: h3 :: t
-        ScriptProgram(program, newStack, program.script.tail)
+        program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
         logger.error("OP_2ROT requires 6 elements on the stack")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -230,7 +229,7 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_2DROP),
             "Top of script stack must be OP_2DROP")
     if (program.stack.size > 1) {
-      ScriptProgram(program, program.stack.tail.tail, program.script.tail)
+      program.updateStackAndScript(program.stack.tail.tail, program.script.tail)
     } else {
       logger.error("OP_2DROP requires two elements to be on the stack")
       program.failExecution(ScriptErrorInvalidStackOperation)
@@ -244,7 +243,7 @@ sealed abstract class StackInterpreter {
             "Top of script stack must be OP_SWAP")
     if (program.stack.size > 1) {
       val newStack = program.stack.tail.head :: program.stack.head :: program.stack.tail.tail
-      ScriptProgram(program, newStack, program.script.tail)
+      program.updateStackAndScript(newStack, program.script.tail)
     } else {
       logger.error("Stack must have at least 2 items on it for OP_SWAP")
       program.failExecution(ScriptErrorInvalidStackOperation)
@@ -259,7 +258,7 @@ sealed abstract class StackInterpreter {
     program.stack match {
       case h :: h1 :: t =>
         val newStack = h :: h1 :: h :: t
-        ScriptProgram(program, newStack, program.script.tail)
+        program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 2 items on it for OP_TUCK")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -274,7 +273,7 @@ sealed abstract class StackInterpreter {
     program.stack match {
       case h :: h1 :: t =>
         val newStack = h :: h1 :: h :: h1 :: t
-        ScriptProgram(program, newStack, program.script.tail)
+        program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 2 items on it for OP_2DUP")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -289,7 +288,7 @@ sealed abstract class StackInterpreter {
     program.stack match {
       case h :: h1 :: h2 :: t =>
         val newStack = h :: h1 :: h2 :: h :: h1 :: h2 :: t
-        ScriptProgram(program, newStack, program.script.tail)
+        program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 3 items on it for OP_3DUP")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -304,7 +303,7 @@ sealed abstract class StackInterpreter {
     program.stack match {
       case h :: h1 :: h2 :: h3 :: t =>
         val newStack = h2 :: h3 :: h :: h1 :: h2 :: h3 :: t
-        ScriptProgram(program, newStack, program.script.tail)
+        program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 4 items on it for OP_2OVER")
         program.failExecution(ScriptErrorInvalidStackOperation)
@@ -319,7 +318,7 @@ sealed abstract class StackInterpreter {
     program.stack match {
       case h :: h1 :: h2 :: h3 :: t =>
         val newStack = h2 :: h3 :: h :: h1 :: t
-        ScriptProgram(program, newStack, program.script.tail)
+        program.updateStackAndScript(newStack, program.script.tail)
       case _ =>
         logger.error("Stack must have at least 4 items on it for OP_2SWAP")
         program.failExecution(ScriptErrorInvalidStackOperation)

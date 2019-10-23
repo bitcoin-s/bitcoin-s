@@ -23,10 +23,7 @@ import org.bitcoins.core.script.result.{
   ScriptErrorPubKeyType,
   ScriptErrorWitnessPubKeyType
 }
-import org.bitcoins.core.script.{
-  ExecutionInProgressScriptProgram,
-  ScriptProgram
-}
+import org.bitcoins.core.script.ExecutionInProgressScriptProgram
 import org.bitcoins.core.serializers.script.ScriptParser
 import scodec.bits.ByteVector
 
@@ -129,7 +126,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * on the stack
     * For instance if this was a 2/3 multisignature script, it would return the number 3
     */
-  def numPossibleSignaturesOnStack(program: ScriptProgram): ScriptNumber = {
+  def numPossibleSignaturesOnStack(
+      program: ExecutionInProgressScriptProgram): ScriptNumber = {
     require(
       program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(
         OP_CHECKMULTISIGVERIFY),
@@ -149,7 +147,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * Returns the number of required signatures on the stack, for instance if this was a
     * 2/3 multisignature script, it would return the number 2
     */
-  def numRequiredSignaturesOnStack(program: ScriptProgram): ScriptNumber = {
+  def numRequiredSignaturesOnStack(
+      program: ExecutionInProgressScriptProgram): ScriptNumber = {
     require(
       program.script.headOption == Some(OP_CHECKMULTISIG) || program.script.headOption == Some(
         OP_CHECKMULTISIGVERIFY),
@@ -296,7 +295,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * Checks the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] encoding according to bitcoin core's function:
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]].
     */
-  def checkPubKeyEncoding(key: ECPublicKey, program: ScriptProgram): Boolean =
+  def checkPubKeyEncoding(
+      key: ECPublicKey,
+      program: ExecutionInProgressScriptProgram): Boolean =
     checkPubKeyEncoding(key, program.flags)
 
   def checkPubKeyEncoding(key: ECPublicKey, flags: Seq[ScriptFlag]): Boolean = {

@@ -267,7 +267,7 @@ class BitcoinScriptUtilTest
   it must "check a public key's encoding" in {
     //pubkeys must be compressed or uncompressed or else that are not validly encoded
     val key = ECPublicKey("00")
-    val program = TestUtil.testProgram
+    val program = TestUtil.testProgramExecutionInProgress
     BitcoinScriptUtil.checkPubKeyEncoding(key, program) must be(false)
   }
 

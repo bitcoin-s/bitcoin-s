@@ -4,7 +4,6 @@ import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.transaction.TransactionConstants
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
-  ScriptProgram,
   StartedScriptProgram
 }
 import org.bitcoins.core.script.constant.{
@@ -132,7 +131,7 @@ sealed abstract class LockTimeInterpreter {
               "The OP_CSV value in the script was larger than 5 bytes in size.")
             program.failExecution(ScriptErrorUnknownError)
           } else if (checkSequence(program, s)) {
-            ScriptProgram(program, program.stack, program.script.tail)
+            program.updateScript(program.script.tail)
           } else {
             program.failExecution(ScriptErrorUnsatisfiedLocktime)
           }
@@ -159,7 +158,7 @@ sealed abstract class LockTimeInterpreter {
     * @return if the given script number is valid or not
     */
   def checkSequence(
-      program: ScriptProgram,
+      program: ExecutionInProgressScriptProgram,
       nSequence: ScriptNumber): Boolean = {
     val inputIndex = program.txSignatureComponent.inputIndex.toInt
     logger.debug("inputIndex: " + inputIndex)
@@ -280,7 +279,7 @@ sealed abstract class LockTimeInterpreter {
     *     inside of Bitcoin Core
     */
   private def checkLockTime(
-      program: ScriptProgram,
+      program: ExecutionInProgressScriptProgram,
       locktime: ScriptNumber): Boolean = {
     // There are two kinds of nLockTime: lock-by-blockheight
     // and lock-by-blocktime, distinguished by whether

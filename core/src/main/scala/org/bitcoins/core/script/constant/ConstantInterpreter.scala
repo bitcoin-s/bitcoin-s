@@ -2,7 +2,6 @@ package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
-  ScriptProgram,
   StartedScriptProgram
 }
 import org.bitcoins.core.script.flag.ScriptFlagUtil
@@ -89,7 +88,8 @@ sealed abstract class ConstantInterpreter {
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
     //if we do not, mark the program as invalid
     if (bytesNeeded == 0)
-      ScriptProgram(program, ScriptNumber.zero :: program.stack, newScript)
+      program.updateStackAndScript(ScriptNumber.zero :: program.stack,
+                                   newScript)
     else if (ScriptFlagUtil.requireMinimalData(program.flags) && bytesNeeded == 1 &&
              constant.isInstanceOf[ScriptNumber] && constant.toLong <= 16) {
       logger.error(
@@ -109,7 +109,7 @@ sealed abstract class ConstantInterpreter {
       logger.debug("Constant parsed: " + constant)
       logger.debug("Constant size: " + constant.bytes.size)
       program.failExecution(ScriptErrorMinimalData)
-    } else ScriptProgram.apply(program, constant :: program.stack, newScript)
+    } else program.updateStackAndScript(constant :: program.stack, newScript)
   }
 
   /**
@@ -151,9 +151,8 @@ sealed abstract class ConstantInterpreter {
           if (ScriptFlagUtil.requireMinimalData(program.flags))
             program.failExecution(ScriptErrorMinimalData)
           else
-            ScriptProgram(program,
-                          ScriptNumber.zero :: program.stack,
-                          program.script.tail.tail)
+            program.updateStackAndScript(ScriptNumber.zero :: program.stack,
+                                         program.script.tail.tail)
         case _: ScriptToken =>
           pushScriptNumberBytesToStack(program.updateScript(program.script))
       }

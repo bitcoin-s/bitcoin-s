@@ -3,7 +3,6 @@ package org.bitcoins.core.script.control
 import org.bitcoins.core.protocol.script.{SigVersionWitnessV0, SignatureVersion}
 import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
-  ScriptProgram,
   StartedScriptProgram
 }
 import org.bitcoins.core.script.constant._
@@ -48,13 +47,13 @@ sealed abstract class ControlOperationsInterpreter {
       logger.debug("New script after removing OP_ELSE branch " + newScript.tail)
       logger.debug(
         "New stack after removing OP_ELSE branch: " + program.stack.tail)
-      ScriptProgram(program, program.stack.tail, newScript.tail)
+      program.updateStackAndScript(program.stack.tail, newScript.tail)
     } else {
       logger.debug("OP_IF stack top was false")
       //remove the OP_IF
       val scriptWithoutOpIf: BinaryTree[ScriptToken] = removeFirstOpIf(
         binaryTree)
-      ScriptProgram(program, program.stack.tail, scriptWithoutOpIf.toList)
+      program.updateStackAndScript(program.stack.tail, scriptWithoutOpIf.toList)
     }
   }
 
@@ -92,7 +91,7 @@ sealed abstract class ControlOperationsInterpreter {
         if (program.stackTopIsTrue) ScriptNumber.zero else ScriptNumber.one
       val stack =
         if (program.stack.nonEmpty) stackTop :: program.stack.tail else Nil
-      val newProgram = ScriptProgram(program, stack, script)
+      val newProgram = program.updateStackAndScript(stack, script)
       opIf(newProgram)
     }
 
@@ -114,9 +113,7 @@ sealed abstract class ControlOperationsInterpreter {
         case node: Node[ScriptToken] =>
           removeFirstOpElse(node)
       }
-      ScriptProgram(program,
-                    program.stack,
-                    treeWithNextOpElseRemoved.toList.tail)
+      program.updateScript(treeWithNextOpElseRemoved.toList.tail)
     }
   }
 
@@ -130,7 +127,7 @@ sealed abstract class ControlOperationsInterpreter {
       logger.error(
         "We do not have a matching OP_IF/OP_NOTIF for every OP_ENDIF we have")
       program.failExecution(ScriptErrorUnbalancedConditional)
-    } else ScriptProgram(program, program.stack, program.script.tail)
+    } else program.updateScript(program.script.tail)
   }
 
   /**
@@ -158,7 +155,8 @@ sealed abstract class ControlOperationsInterpreter {
       case true =>
         logger.debug("Stack for OP_VERIFY: " + program.stack)
         if (program.stackTopIsFalse) program.failExecution(ScriptErrorVerify)
-        else ScriptProgram(program, program.stack.tail, program.script.tail)
+        else
+          program.updateStackAndScript(program.stack.tail, program.script.tail)
       case false =>
         logger.error("OP_VERIFY requires an element to be on the stack")
         program.failExecution(ScriptErrorInvalidStackOperation)
