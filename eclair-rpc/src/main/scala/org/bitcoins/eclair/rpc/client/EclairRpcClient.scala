@@ -24,9 +24,28 @@ import org.bitcoins.core.protocol.ln.{
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.eclair.rpc.api.EclairApi
+import org.bitcoins.eclair.rpc.api.{
+  AuditResult,
+  ChannelDesc,
+  ChannelInfo,
+  ChannelResult,
+  ChannelStats,
+  ChannelUpdate,
+  EclairApi,
+  GetInfoResult,
+  InvoiceResult,
+  NetworkFeesResult,
+  NodeInfo,
+  PaymentFailed,
+  PaymentId,
+  PaymentPending,
+  PaymentResult,
+  PaymentSent,
+  PeerInfo,
+  ReceivedPaymentResult,
+  UsableBalancesResult
+}
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.{NodeUri, PeerState}
 import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.util.AsyncUtil
@@ -38,6 +57,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
 import java.nio.file.NoSuchFileException
+
 import org.bitcoins.core.util.FutureUtil
 
 /**
@@ -599,7 +619,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
             val errMsg =
               s"Error for command=${commandName} ${datadirMsg}, ${err.value.error}"
             logger.error(errMsg)
-            throw new RuntimeException(errMsg)
+            throw new RuntimeException(err.value.error)
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
@@ -738,7 +758,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
   /**
     * Pings eclair to see if a invoice has been paid
     * If the invoice has been paid or the payment has failed, we publish a
-    * [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
+    * [[PaymentResult]]
     * event to the [[akka.actor.ActorSystem ActorSystem]]'s
     * [[akka.event.EventStream ActorSystem.eventStream]]
     *

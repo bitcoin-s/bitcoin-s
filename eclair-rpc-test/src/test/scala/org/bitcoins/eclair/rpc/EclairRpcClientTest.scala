@@ -12,7 +12,6 @@ import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
-import org.bitcoins.eclair.rpc.json.{PaymentStatus, _}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
@@ -32,7 +31,18 @@ import org.bitcoins.testkit.async.TestAsyncUtil
 import scala.concurrent.duration._
 import java.nio.file.Files
 
+import org.bitcoins.eclair.rpc.api.{
+  ChannelResult,
+  ChannelUpdate,
+  InvoiceResult,
+  OpenChannelInfo,
+  PaymentPending,
+  PaymentReceived,
+  PaymentSent,
+  PaymentStatus
+}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+
 import scala.reflect.ClassTag
 
 class EclairRpcClientTest extends BitcoinSAsyncTest {
@@ -136,22 +146,21 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   it should "wait for all gossip messages get propagated throughout the network and get a route to an invoice" in {
     val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
     val hasRoute = () => {
-      invoiceF.flatMap { invoice =>
-        firstClientF
-          .flatMap(_.findRoute(invoice, None))
-          .map(route => route.length == 4)
-          .recover {
-            case err: RuntimeException
-                if err.getMessage.contains("route not found") =>
-              false
-          }
+      (for {
+        c1 <- firstClientF
+        invoice <- invoiceF
+        route <- c1.findRoute(invoice, None)
+      } yield {
+        route.size == 4
+      }).recover {
+        case err: RuntimeException
+            if err.getMessage.contains("route not found") =>
+          false
       }
-
     }
 
-    // Eclair is a bit slow in propagating channel changes
     AsyncUtil
-      .awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20)
+      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
       .map(_ => succeed)
   }
 
@@ -164,7 +173,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       paymentId <- client1.payInvoice(invoice)
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
                                                         paymentId,
-                                                        duration = 5.seconds)
+                                                        duration = 1.second)
       received <- client4.audit()
       relayed <- client2.audit()
       sent <- client1.audit()
@@ -189,9 +198,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         }
     }
 
-    // Eclair is a bit slow in propagating channel changes
     AsyncUtil
-      .awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20)
+      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
       .map(_ => succeed)
   }
 
@@ -201,7 +209,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         for {
           _ <- openAndConfirmChannel(clientF, otherClientF)
           invoice <- otherClient.createInvoice("abc", 50.msats)
-          paymentResult <- client.payAndMonitorInvoice(invoice, 1.second, 10)
+          paymentResult <- client.payAndMonitorInvoice(invoice, 1.second, 60)
         } yield {
           assert(paymentResult.amount == 50.msats)
         }
@@ -1018,8 +1026,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
           AsyncUtil
             .retryUntilSatisfiedF((() => checkUpdates()),
-                                  duration = 5.seconds,
-                                  maxTries = 15)
+                                  duration = 1.second,
+                                  maxTries = 60)
             .transform(_ => succeed, ex => ex)
         }
     }

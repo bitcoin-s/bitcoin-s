@@ -15,10 +15,8 @@ import org.bitcoins.core.protocol.ln.channel.{
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.eclair.rpc.api.EclairApi
-import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.json.{
+import org.bitcoins.eclair.rpc.api.{
+  EclairApi,
   PaymentFailed,
   PaymentId,
   PaymentPending,
@@ -27,6 +25,8 @@ import org.bitcoins.eclair.rpc.json.{
   PaymentSent,
   PaymentStatus
 }
+import org.bitcoins.eclair.rpc.client.EclairRpcClient
+import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.util.RpcUtil
@@ -39,9 +39,11 @@ import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 import java.nio.file.Files
 
+import scala.reflect.ClassTag
+
 /**
   * @define nodeLinkDoc
-  * Creates two Eclair nodes that are connected in the following manner:
+  * Creates four Eclair nodes that are connected in the following manner:
   * {{{
   *   node1 <-> node2 <-> node3 <-> node4
   * }}}
@@ -127,8 +129,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.api.port" -> apiPort,
         "eclair.mindepth-blocks" -> 2,
         "eclair.max-htlc-value-in-flight-msat" -> 100000000000L,
-        "eclair.router-broadcast-interval" -> "2 second",
+        "eclair.router.broadcast-interval" -> "2 second",
         "eclair.auto-reconnect" -> false,
+        "eclair.to-remote-delay-blocks" -> 144,
         "eclair.db.driver" -> "org.sqlite.JDBC",
         "eclair.db.regtest.url" -> "jdbc:sqlite:regtest/",
         "eclair.max-payment-fee" -> 10, // avoid complaints about too high fees
@@ -259,66 +262,45 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       client: EclairApi,
       paymentId: PaymentId,
       duration: FiniteDuration = 1.second,
-      maxTries: Int = 50,
+      maxTries: Int = 60,
       failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client,
-                            paymentId,
-                            "sent",
-                            duration,
-                            maxTries,
-                            failFast)
+    awaitUntilPaymentStatus[PaymentSent](client,
+                                         paymentId,
+                                         duration,
+                                         maxTries,
+                                         failFast)
   }
 
   def awaitUntilPaymentFailed(
       client: EclairApi,
       paymentId: PaymentId,
       duration: FiniteDuration = 1.second,
-      maxTries: Int = 50,
+      maxTries: Int = 60,
       failFast: Boolean = false)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client,
-                            paymentId,
-                            "failed",
-                            duration,
-                            maxTries,
-                            failFast)
+    awaitUntilPaymentStatus[PaymentFailed](client,
+                                           paymentId,
+                                           duration,
+                                           maxTries,
+                                           failFast)
   }
 
-  def awaitUntilPaymentPending(
+  private def awaitUntilPaymentStatus[T <: PaymentStatus](
       client: EclairApi,
       paymentId: PaymentId,
-      duration: FiniteDuration = 1.second,
-      maxTries: Int = 50,
-      failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client,
-                            paymentId,
-                            "pending",
-                            duration,
-                            maxTries,
-                            failFast)
-  }
-
-  private def awaitUntilPaymentStatus(
-      client: EclairApi,
-      paymentId: PaymentId,
-      state: String,
       duration: FiniteDuration,
       maxTries: Int,
-      failFast: Boolean)(implicit system: ActorSystem): Future[Unit] = {
-    logger.debug(s"Awaiting payment ${paymentId} to enter ${state} state")
+      failFast: Boolean)(
+      implicit system: ActorSystem,
+      tag: ClassTag[T]): Future[Unit] = {
+    logger.debug(
+      s"Awaiting payment ${paymentId} to enter ${tag.runtimeClass.getName} state")
 
     def isFailed(status: PaymentStatus): Boolean = status match {
       case _: PaymentFailed => true
       case _: PaymentStatus => false
     }
 
-    def matches(status: PaymentStatus, state: String): Boolean = status match {
-      case PaymentPending     => state == "pending"
-      case _: PaymentFailed   => state == "failed"
-      case _: PaymentReceived => state == "received"
-      case _: PaymentSent     => state == "sent"
-    }
-
-    def isState(): Future[Boolean] = {
+    def isInState(): Future[Boolean] = {
 
       val sentInfoF: Future[Vector[PaymentResult]] =
         client.getSentInfo(paymentId)
@@ -326,9 +308,10 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         if (failFast && payment.exists(result => isFailed(result.status))) {
           throw new RuntimeException(s"Payment ${paymentId} has failed")
         }
-        if (!payment.exists(result => matches(result.status, state))) {
+        if (!payment.exists(
+              result => tag.runtimeClass == result.status.getClass)) {
           logger.trace(
-            s"Payment ${paymentId} has not entered ${state} yet. Currently in ${payment.map(_.status).mkString(",")}")
+            s"Payment ${paymentId} has not entered ${tag.runtimeClass.getName} yet. Currently in ${payment.map(_.status).mkString(",")}")
           false
         } else {
           true
@@ -336,7 +319,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       }(system.dispatcher)
     }
 
-    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(),
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isInState(),
                                        duration = duration,
                                        maxTries = maxTries)
   }

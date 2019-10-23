@@ -14,7 +14,6 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.NodeUri
 
 import scala.concurrent.duration._
@@ -188,7 +187,7 @@ trait EclairApi {
       maxFeePct: Option[Int]): Future[PaymentId]
 
   /**
-    * Pings eclair to see if a invoice has been paid and returns [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
+    * Pings eclair to see if a invoice has been paid and returns [[PaymentResult PaymentResult]]
     *
     * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
     * @param interval the ping interval

@@ -1,11 +1,44 @@
-package org.bitcoins.eclair.rpc.json
+package org.bitcoins.eclair.rpc.client
+
+import java.util.UUID
 
 import org.bitcoins.core.crypto.Sha256Digest
+import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.protocol.ln._
+import org.bitcoins.eclair.rpc.api.{
+  AuditResult,
+  BaseChannelInfo,
+  ChannelDesc,
+  ChannelInfo,
+  ChannelResult,
+  ChannelStats,
+  ChannelUpdate,
+  GetInfoResult,
+  Hop,
+  InvoiceResult,
+  NetworkFeesResult,
+  NodeInfo,
+  OpenChannelInfo,
+  PaymentFailed,
+  PaymentFailure,
+  PaymentId,
+  PaymentPending,
+  PaymentReceived,
+  PaymentRequest,
+  PaymentResult,
+  PaymentSent,
+  PaymentStatus,
+  PeerInfo,
+  ReceivedPayment,
+  ReceivedPaymentResult,
+  RelayedPayment,
+  SentPayment,
+  UsableBalancesResult,
+  WebSocketEvent
+}
 import org.bitcoins.eclair.rpc.network.PeerState
 import org.bitcoins.rpc.serializers.SerializerUtil
 import play.api.libs.json._
@@ -185,7 +218,7 @@ object JsonReaders {
   }
 
   implicit val paymentIdReads: Reads[PaymentId] = Reads { jsValue =>
-    SerializerUtil.processJsString(PaymentId.apply)(jsValue)
+    SerializerUtil.processJsString(s => PaymentId(UUID.fromString(s)))(jsValue)
   }
 
   implicit val finiteDurationReads: Reads[FiniteDuration] =
@@ -197,11 +230,22 @@ object JsonReaders {
     Json.reads[PaymentReceived]
   implicit val hopReads: Reads[Hop] =
     Json.reads[Hop]
-//  implicit val paymentPendingReads: Reads[PaymentPending] =
-//    Json.reads[PaymentPending]
   implicit val paymentSentReads: Reads[PaymentSent] = Json.reads[PaymentSent]
-  implicit val paymentFailureTypeReads: Reads[PaymentFailureType] =
-    Json.reads[PaymentFailureType]
+  implicit val paymentFailureTypeReads: Reads[PaymentFailure.Type] = Reads {
+    jsValue =>
+      (jsValue \ "type")
+        .validate[String]
+        .flatMap { s =>
+          s.toLowerCase match {
+            case "local"  => JsSuccess(PaymentFailure.Local)
+            case "remote" => JsSuccess(PaymentFailure.Remote)
+            case "unreadableremote" =>
+              JsSuccess(PaymentFailure.UnreadableRemote)
+            case _ =>
+              throw new RuntimeException(s"Unknown payment failure type `$s`")
+          }
+        }
+  }
   implicit val paymentFailureReads: Reads[PaymentFailure] =
     Json.reads[PaymentFailure]
   implicit val paymentFailedReads: Reads[PaymentFailed] =

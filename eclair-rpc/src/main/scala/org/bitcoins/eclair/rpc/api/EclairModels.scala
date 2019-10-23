@@ -1,4 +1,6 @@
-package org.bitcoins.eclair.rpc.json
+package org.bitcoins.eclair.rpc.api
+
+import java.util.UUID
 
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -144,7 +146,7 @@ case class RelayedPayment(
 
 case class SentPayment(
     paymentHash: Sha256Digest,
-    paymentPreimage: String
+    paymentPreimage: PaymentPreimage
 )
 
 object SentPayment {
@@ -287,7 +289,7 @@ case class ChannelResult(
     feeBaseMsat: Option[MilliSatoshis],
     feeProportionalMillionths: Option[FeeProportionalMillionths],
     data: JsObject) {
-  import JsonReaders._
+  import org.bitcoins.eclair.rpc.client.JsonReaders._
   lazy val shortChannelId: Option[ShortChannelId] =
     (data \ "shortChannelId").validate[ShortChannelId].asOpt
 }
@@ -303,8 +305,8 @@ case class InvoiceResult(
     paymentHash: Sha256Digest,
     expiry: FiniteDuration)
 
-case class PaymentId(value: String) {
-  override def toString: String = value
+case class PaymentId(value: UUID) {
+  override def toString: String = value.toString
 }
 
 case class PaymentRequest(
@@ -329,7 +331,7 @@ case class PaymentResult(
 
 case class ReceivedPaymentResult(
     paymentRequest: Option[PaymentRequest],
-    paymentPreimage: String,
+    paymentPreimage: PaymentPreimage,
     createdAt: FiniteDuration,
     status: PaymentStatus)
 
@@ -347,16 +349,21 @@ case class PaymentSent(
 case class Hop(
     nodeId: NodeId,
     nextNodeId: NodeId,
-    shortChannelId: ShortChannelId)
+    shortChannelId: Option[ShortChannelId])
 
 case class PaymentFailed(failures: Seq[PaymentFailure]) extends PaymentStatus
 
-case class PaymentFailureType(name: String)
-
 case class PaymentFailure(
-    failureType: PaymentFailureType,
+    failureType: PaymentFailure.Type,
     failureMessage: String,
     failedRoute: Seq[Hop])
+
+object PaymentFailure {
+  sealed trait Type
+  case object Local extends Type
+  case object Remote extends Type
+  case object UnreadableRemote extends Type
+}
 
 case class PaymentReceived(amount: MilliSatoshis, receivedAt: FiniteDuration)
     extends PaymentStatus
