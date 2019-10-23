@@ -31,7 +31,7 @@ sealed abstract class Signer {
          txSigComponent,
          hashType,
          isDummySignature,
-         overrides = NestedSigning.NoOverrides)
+         nestedSPKToSatisfy = None)
   }
 
   /**
@@ -40,7 +40,7 @@ sealed abstract class Signer {
     * @param txSigComponent The TxSigComponent for the input being signed
     * @param hashType the signature hashing algorithm we should use to sign the utxo
     * @param isDummySignature - do not sign the tx for real, just use a dummy signature this is useful for fee estimation
-    * @param overrides specifies things that should be overriden when signing such as TxSigComponent if this is nested
+    * @param nestedSPKToSatisfy specifies the nested SPK for which a valid ScriptSignature should be produced
     * @return
     */
   def sign(
@@ -48,7 +48,7 @@ sealed abstract class Signer {
       txSigComponent: TxSigComponent,
       hashType: HashType,
       isDummySignature: Boolean,
-      overrides: OverridesForNestedSigning)(
+      nestedSPKToSatisfy: Option[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[TxSigComponent]
 
   def doSign(
@@ -65,81 +65,6 @@ sealed abstract class Signer {
   }
 }
 
-/** For use when signing nested ScriptPubKeys.
-  *
-  * This will require the hash to be signed to come from some external
-  * (to the Signer being used) TxSigComponent (think P2SH, P2WSH).
-  *
-  * This will also require that the ScriptPubKey that the nested Signer
-  * looks at needs to be overriden (not output.scriptPubKey)
-  */
-sealed abstract class OverridesForNestedSigning {
-
-  /** Depending on the external [[ScriptPubKey scriptpubkey]] type, there
-    * are different rules for which script is meant to be signed.
-    *
-    * For instance, if you are spending a [[P2PKHScriptPubKey p2pkh]]
-    * you sign the p2pkh script itself.
-    *
-    * If you are signing a [[P2WPKHWitnessSPKV0 p2wpkh spk]], you sign the
-    * re-constructed [[P2PKHScriptPubKey p2pkh]] that is associated with p2wpkh script.
-    *
-    * If you are signing a [[LockTimeScriptPubKey locktime spk]], you must sign
-    * the entire [[LockTimeScriptPubKey]], not the nested script.
-    */
-  def sigComponentToSignOpt: Option[TxSigComponent]
-
-  /** This represents the [[ScriptPubKey scriptpubkey]] for which a valid ScriptSignature is
-    * being generated. This is usually some nested SPK such as a redeem script in P2SH and P2WSH.
-    */
-  def scriptPubKeyToSatisfyOpt: Option[ScriptPubKey]
-}
-
-object NestedSigning {
-
-  /** The NoOverrides case where a Signer is used raw, without nesting */
-  case object NoOverrides extends OverridesForNestedSigning {
-    override val sigComponentToSignOpt: Option[TxSigComponent] = None
-    override val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = None
-  }
-
-  /** For P2WSH signing, this will be passed to the nested Signer */
-  case class P2WSHOverrides(
-      externalSigComponent: TxSigComponent,
-      redeemScript: ScriptPubKey)
-      extends OverridesForNestedSigning {
-    override val sigComponentToSignOpt: Option[TxSigComponent] = Some(
-      externalSigComponent)
-    override val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = Some(
-      redeemScript)
-  }
-
-  /** For Locktime signing, this will be passed to the nested Signer.
-    *
-    * @param nestedSPK This should be [[LockTimeScriptPubKey.nestedScriptPubKey]]
-    */
-  case class LockTimeOverrides(nestedSPK: ScriptPubKey)
-      extends OverridesForNestedSigning {
-    override val sigComponentToSignOpt: Option[TxSigComponent] = None
-    override val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = Some(
-      nestedSPK)
-  }
-
-  /** For signing when a LockTime script is nested, such as within P2WSH.
-    *
-    * @param nestedSPK This should be [[LockTimeScriptPubKey.nestedScriptPubKey]]
-    */
-  case class NestedLockTimeOverrides(
-      externalSigComponent: TxSigComponent,
-      nestedSPK: ScriptPubKey)
-      extends OverridesForNestedSigning {
-    override val sigComponentToSignOpt: Option[TxSigComponent] = Some(
-      externalSigComponent)
-    override val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = Some(
-      nestedSPK)
-  }
-}
-
 /** Represents all signers for the bitcoin protocol, we could add another network later like litecoin */
 sealed abstract class BitcoinSigner extends Signer
 
@@ -151,9 +76,9 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
       txSigComponent: TxSigComponent,
       hashType: HashType,
       isDummySignature: Boolean,
-      overrides: OverridesForNestedSigning)(
+      nestedSPKToSatisfy: Option[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
-    val spk = overrides.scriptPubKeyToSatisfyOpt match {
+    val spk = nestedSPKToSatisfy match {
       case None               => txSigComponent.output.scriptPubKey
       case Some(nestedScript) => nestedScript
     }
@@ -167,15 +92,8 @@ sealed abstract class P2PKSigner extends BitcoinSigner {
 
       val signed: Future[TxSigComponent] = spk match {
         case _: P2PKScriptPubKey =>
-          val sigComponent = overrides.sigComponentToSignOpt match {
-            case None =>
-              BaseTxSigComponent(txSigComponent.transaction,
-                                 txSigComponent.inputIndex,
-                                 txSigComponent.output,
-                                 flags)
-            case Some(sigComponent) => sigComponent
-          }
-          val signature = doSign(sigComponent, sign, hashType, isDummySignature)
+          val signature =
+            doSign(txSigComponent, sign, hashType, isDummySignature)
           signature.map { sig =>
             val p2pkScriptSig = P2PKScriptSignature(sig)
             val signedInput = TransactionInput(unsignedInput.previousOutput,
@@ -224,9 +142,9 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
       txSigComponent: TxSigComponent,
       hashType: HashType,
       isDummySignature: Boolean,
-      overrides: OverridesForNestedSigning)(
+      nestedSPKToSatisfy: Option[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
-    val spk = overrides.scriptPubKeyToSatisfyOpt match {
+    val spk = nestedSPKToSatisfy match {
       case None               => txSigComponent.output.scriptPubKey
       case Some(nestedScript) => nestedScript
     }
@@ -243,16 +161,8 @@ sealed abstract class P2PKHSigner extends BitcoinSigner {
           if (p2pkh != P2PKHScriptPubKey(pubKey)) {
             Future.fromTry(TxBuilderError.WrongPublicKey)
           } else {
-            val sigComponent = overrides.sigComponentToSignOpt match {
-              case None =>
-                BaseTxSigComponent(txSigComponent.transaction,
-                                   txSigComponent.inputIndex,
-                                   txSigComponent.output,
-                                   flags)
-              case Some(sigComponent) => sigComponent
-            }
             val signature =
-              doSign(sigComponent, sign, hashType, isDummySignature)
+              doSign(txSigComponent, sign, hashType, isDummySignature)
             signature.map { sig =>
               val p2pkhScriptSig = P2PKHScriptSignature(sig, pubKey)
               val signedInput = TransactionInput(unsignedInput.previousOutput,
@@ -301,15 +211,14 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
       txSigComponent: TxSigComponent,
       hashType: HashType,
       isDummySignature: Boolean,
-      overrides: OverridesForNestedSigning)(
+      nestedSPKToSatisfy: Option[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
-    val spk = overrides.scriptPubKeyToSatisfyOpt match {
+    val spk = nestedSPKToSatisfy match {
       case None               => txSigComponent.output.scriptPubKey
       case Some(nestedScript) => nestedScript
     }
     val signers = signersWithPubKeys.map(_.signFunction)
     val unsignedInput = txSigComponent.input
-    val flags = Policy.standardFlags
 
     val signed: Future[TxSigComponent] = spk match {
       case multiSigSPK: MultiSignatureScriptPubKey =>
@@ -317,18 +226,10 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
         if (signers.size < requiredSigs) {
           Future.fromTry(TxBuilderError.WrongSigner)
         } else {
-          val sigComponent = overrides.sigComponentToSignOpt match {
-            case None =>
-              BaseTxSigComponent(txSigComponent.transaction,
-                                 txSigComponent.inputIndex,
-                                 txSigComponent.output,
-                                 flags)
-            case Some(sigComponent) => sigComponent
-          }
           val signaturesNested = 0
             .until(requiredSigs)
             .map(i =>
-              doSign(sigComponent, signers(i), hashType, isDummySignature))
+              doSign(txSigComponent, signers(i), hashType, isDummySignature))
           val signatures = Future.sequence(signaturesNested)
           signatures.map { sigs =>
             val multiSigScriptSig = MultiSignatureScriptSignature(sigs)
@@ -376,9 +277,9 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner {
       txSigComponent: TxSigComponent,
       hashType: HashType,
       isDummySignature: Boolean,
-      overrides: OverridesForNestedSigning)(
+      nestedSPKToSatisfy: Option[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[TxSigComponent] =
-    if (overrides != NestedSigning.NoOverrides) {
+    if (nestedSPKToSatisfy.isDefined) {
       Future.fromTry(TxBuilderError.NestedWitnessSPK)
     } else {
       txSigComponent.transaction match {
@@ -471,9 +372,9 @@ sealed abstract class P2WSHSigner extends BitcoinSigner {
       txSigComponent: TxSigComponent,
       hashType: HashType,
       isDummySignature: Boolean,
-      overrides: OverridesForNestedSigning)(
+      nestedSPKToSatisfy: Option[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
-    if (overrides != NestedSigning.NoOverrides) {
+    if (nestedSPKToSatisfy.isDefined) {
       Future.fromTry(TxBuilderError.NestedWitnessSPK)
     } else {
       val spk = txSigComponent.output.scriptPubKey
@@ -520,18 +421,11 @@ sealed abstract class P2WSHSigner extends BitcoinSigner {
           }
           val signedSigComponentF = signerF.flatMap { signer =>
             redeemScriptF.flatMap { redeemScript =>
-              val fixedTxSigComponent =
-                WitnessTxSigComponent(wtx,
-                                      txSigComponent.inputIndex,
-                                      txSigComponent.output,
-                                      txSigComponent.flags)
-
-              signer.sign(
-                signers,
-                fixedTxSigComponent,
-                hashType,
-                isDummySignature,
-                NestedSigning.P2WSHOverrides(sigComponent, redeemScript))
+              signer.sign(signers,
+                          sigComponent,
+                          hashType,
+                          isDummySignature,
+                          Some(redeemScript))
             }
           }
 
@@ -574,9 +468,9 @@ sealed abstract class LockTimeSigner extends BitcoinSigner {
       txSigComponent: TxSigComponent,
       hashType: HashType,
       isDummySignature: Boolean,
-      overrides: OverridesForNestedSigning)(
+      nestedSPKToSatisfy: Option[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
-    val spk = overrides.scriptPubKeyToSatisfyOpt match {
+    val spk = nestedSPKToSatisfy match {
       case None               => txSigComponent.output.scriptPubKey
       case Some(nestedScript) => nestedScript
     }
@@ -595,21 +489,11 @@ sealed abstract class LockTimeSigner extends BitcoinSigner {
             Future.fromTry(TxBuilderError.WrongSigner)
         }
         signerF.flatMap { signer =>
-          val overridesForNestedSigning =
-            overrides.sigComponentToSignOpt match {
-              case None =>
-                NestedSigning.LockTimeOverrides(lockSPK.nestedScriptPubKey)
-              case Some(sigComponent) =>
-                NestedSigning.NestedLockTimeOverrides(
-                  externalSigComponent = sigComponent,
-                  lockSPK.nestedScriptPubKey)
-            }
-
           signer.sign(signers,
                       txSigComponent,
                       hashType,
                       isDummySignature,
-                      overridesForNestedSigning)
+                      Some(lockSPK.nestedScriptPubKey))
         }
       case _: P2SHScriptPubKey => Future.fromTry(TxBuilderError.NestedP2SHSPK)
       case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 =>

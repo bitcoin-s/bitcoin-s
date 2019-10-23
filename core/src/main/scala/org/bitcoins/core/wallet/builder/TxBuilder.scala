@@ -6,7 +6,6 @@ import org.bitcoins.core.crypto.{
   ECDigitalSignature,
   EmptyDigitalSignature,
   TransactionSignatureSerializer,
-  WitnessTxSigComponent,
   WitnessTxSigComponentP2SH
 }
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
