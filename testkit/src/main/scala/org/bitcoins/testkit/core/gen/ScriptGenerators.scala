@@ -296,13 +296,15 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         scriptSig,
         outputIndex)
-      txSigComponentFuture = P2PKSigner.sign(
-        Seq(privateKey),
-        creditingTx.outputs(outputIndex.toInt),
+      unsignedSigComponent = BaseTxSigComponent(
         spendingTx,
         inputIndex,
-        hashType,
-        false)
+        creditingTx.outputs(outputIndex.toInt),
+        Policy.standardFlags)
+      txSigComponentFuture = P2PKSigner.sign(Seq(privateKey),
+                                             unsignedSigComponent,
+                                             hashType,
+                                             false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       //add the signature to the scriptSig instead of having an empty scriptSig
       signedScriptSig = txSigComponent.scriptSignature
@@ -330,13 +332,15 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         EmptyScriptSignature,
         outputIndex)
-      txSigComponentFuture = P2PKHSigner.sign(
-        Seq(privateKey),
-        creditingTx.outputs(outputIndex.toInt),
+      unsignedSigComponent = BaseTxSigComponent(
         unsignedTx,
         inputIndex,
-        hashType,
-        false)
+        creditingTx.outputs(outputIndex.toInt),
+        Policy.standardFlags)
+      txSigComponentFuture = P2PKHSigner.sign(Seq(privateKey),
+                                              unsignedSigComponent,
+                                              hashType,
+                                              false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       signedScriptSig = txSigComponent.scriptSignature
         .asInstanceOf[P2PKHScriptSignature]
@@ -369,13 +373,15 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         scriptSig,
         outputIndex)
-      txSigComponentFuture = MultiSigSigner.sign(
-        privateKeys,
-        creditingTx.outputs(outputIndex.toInt),
+      unsignedSigComponent = BaseTxSigComponent(
         spendingTx,
         inputIndex,
-        hashType,
-        false)
+        creditingTx.outputs(outputIndex.toInt),
+        Policy.standardFlags)
+      txSigComponentFuture = MultiSigSigner.sign(privateKeys,
+                                                 unsignedSigComponent,
+                                                 hashType,
+                                                 false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       signedScriptSig = txSigComponent.scriptSignature
         .asInstanceOf[MultiSignatureScriptSignature]
