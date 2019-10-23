@@ -119,7 +119,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.api.port" -> apiPort,
         "eclair.mindepth-blocks" -> 2,
         "eclair.max-htlc-value-in-flight-msat" -> 100000000000L,
-        "eclair.router-broadcast-interval" -> "2 second",
+        "eclair.router.broadcast-interval" -> "2 second",
         "eclair.auto-reconnect" -> false,
         "eclair.db.driver" -> "org.sqlite.JDBC",
         "eclair.db.regtest.url" -> "jdbc:sqlite:regtest/",
