@@ -161,6 +161,35 @@ object BitcoinUTXOSpendingInfo {
          info.scriptWitnessOpt,
          info.hashType)
   }
+
+  def validateScriptWitness(
+      spk: WitnessScriptPubKeyV0,
+      scriptWitness: ScriptWitnessV0): Unit = {
+    spk match {
+      case p2wpkh: P2WPKHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WPKHWitnessV0 =>
+            require(CryptoUtil
+                      .sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash,
+                    "P2WPKH witness public key must match SPK hash.")
+          case _: ScriptWitnessV0 =>
+            throw new IllegalArgumentException(
+              "P2WPKH ScriptPubKey must have P2WPKH witness.")
+        }
+      case p2wsh: P2WSHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WSHWitnessV0 =>
+            require(
+              CryptoUtil
+                .sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash,
+              "P2WSH witness script must match SPK hash.")
+          case _: ScriptWitnessV0 =>
+            throw new IllegalArgumentException(
+              "P2WSH ScriptPubKey must have P2WSH witness."
+            )
+        }
+    }
+  }
 }
 
 /** This represents the information needed to be spend scripts like
@@ -187,6 +216,8 @@ case class SegwitV0NativeUTXOSpendingInfo(
     hashType: HashType,
     scriptWitness: ScriptWitnessV0)
     extends BitcoinUTXOSpendingInfo {
+  BitcoinUTXOSpendingInfo.validateScriptWitness(scriptPubKey, scriptWitness)
+
   override def redeemScriptOpt: Option[ScriptPubKey] = None
 
   override def scriptWitnessOpt: Option[ScriptWitnessV0] = Some(scriptWitness)
@@ -215,12 +246,12 @@ case class P2SHSpendingInfo(
     hashType: HashType,
     redeemScript: ScriptPubKey)
     extends BitcoinUTXOSpendingInfo {
-  /*require(
+  require(
     P2SHScriptPubKey(redeemScript) == output.scriptPubKey,
     s"Given redeem script did not match hash in output script, " +
       s"got=${P2SHScriptPubKey(redeemScript).scriptHash.hex}, " +
       s"expected=${scriptPubKey.scriptHash.hex}"
-  )*/
+  )
 
   override def redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
 
@@ -239,35 +270,13 @@ case class P2SHNestedSegwitV0UTXOSpendingInfo(
     redeemScript: WitnessScriptPubKeyV0,
     scriptWitness: ScriptWitnessV0)
     extends BitcoinUTXOSpendingInfo {
-  /*require(
+  require(
     P2SHScriptPubKey(redeemScript) == output.scriptPubKey,
     s"Given redeem script did not match hash in output script, " +
       s"got=${P2SHScriptPubKey(redeemScript).scriptHash.hex}, " +
       s"expected=${scriptPubKey.scriptHash.hex}"
   )
-  redeemScript match {
-    case p2wpkh: P2WPKHWitnessSPKV0 =>
-      scriptWitness match {
-        case witness: P2WPKHWitnessV0 =>
-          require(
-            CryptoUtil.sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash,
-            "P2WPKH witness public key must match SPK hash.")
-        case _: ScriptWitnessV0 =>
-          throw new IllegalArgumentException(
-            "P2WPKH ScriptPubKey must have P2WPKH witness.")
-      }
-    case p2wsh: P2WSHWitnessSPKV0 =>
-      scriptWitness match {
-        case witness: P2WSHWitnessV0 =>
-          require(CryptoUtil
-                    .sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash,
-                  "P2WSH witness script must match SPK hash.")
-        case _: ScriptWitnessV0 =>
-          throw new IllegalArgumentException(
-            "P2WSH ScriptPubKey must have P2WSH witness."
-          )
-      }
-  }*/
+  BitcoinUTXOSpendingInfo.validateScriptWitness(redeemScript, scriptWitness)
 
   override def redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
 
