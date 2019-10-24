@@ -1,37 +1,47 @@
 package org.bitcoins.eclair.rpc
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.testkit.TestKit
-import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
-import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
+import org.bitcoins.core.protocol.ln.channel.{
+  ChannelId,
+  ChannelState,
+  FundedChannelId
+}
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
-import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
-import org.scalatest.{Assertion, AsyncFlatSpec, BeforeAndAfterAll}
-import org.slf4j.Logger
+import org.scalatest.Assertion
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import akka.stream.StreamTcpException
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, PaymentPreimage}
+import org.bitcoins.core.protocol.ln.{
+  LnHumanReadablePart,
+  LnInvoice,
+  PaymentPreimage
+}
 import org.bitcoins.testkit.async.TestAsyncUtil
 
 import scala.concurrent.duration._
 import java.nio.file.Files
 
+import org.bitcoins.eclair.rpc.api.{
+  ChannelResult,
+  ChannelUpdate,
+  IncomingPaymentStatus,
+  InvoiceResult,
+  OpenChannelInfo,
+  OutgoingPaymentStatus
+}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+
+import scala.reflect.ClassTag
 
 class EclairRpcClientTest extends BitcoinSAsyncTest {
 
@@ -52,9 +62,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       msg
     }
   }
-
-
-
 
   lazy val bitcoindRpcClientF: Future[BitcoindRpcClient] = {
     for {
@@ -137,22 +144,21 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   it should "wait for all gossip messages get propagated throughout the network and get a route to an invoice" in {
     val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
     val hasRoute = () => {
-      invoiceF.flatMap { invoice =>
-        firstClientF
-          .flatMap(_.findRoute(invoice, None))
-          .map(route => route.length == 4)
-          .recover {
-            case err: RuntimeException
-                if err.getMessage.contains("route not found") =>
-              false
-          }
+      (for {
+        c1 <- firstClientF
+        invoice <- invoiceF
+        route <- c1.findRoute(invoice, None)
+      } yield {
+        route.size == 4
+      }).recover {
+        case err: RuntimeException
+            if err.getMessage.contains("route not found") =>
+          false
       }
-
     }
 
-    // Eclair is a bit slow in propagating channel changes
     AsyncUtil
-      .awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20)
+      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
       .map(_ => succeed)
   }
 
@@ -165,7 +171,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       paymentId <- client1.payInvoice(invoice)
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
                                                         paymentId,
-                                                        duration = 5.seconds)
+                                                        duration = 1.second)
       received <- client4.audit()
       relayed <- client2.audit()
       sent <- client1.audit()
@@ -190,9 +196,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         }
     }
 
-    // Eclair is a bit slow in propagating channel changes
     AsyncUtil
-      .awaitConditionF(hasRoute, duration = 10.seconds, maxTries = 20)
+      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
       .map(_ => succeed)
   }
 
@@ -202,9 +207,13 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         for {
           _ <- openAndConfirmChannel(clientF, otherClientF)
           invoice <- otherClient.createInvoice("abc", 50.msats)
-          paymentResult <- client.payAndMonitorInvoice(invoice, 1.second, 10)
+          paymentResult <- client.payAndMonitorInvoice(invoice,
+                                                       Some("ext_id"),
+                                                       1.second,
+                                                       60)
         } yield {
-          assert(paymentResult.amountMsat == 50.msats)
+          assert(paymentResult.amount == 50.msats)
+          assert(paymentResult.externalId.contains("ext_id"))
         }
     }
 
@@ -223,7 +232,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
           sentInfo <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
         } yield {
-          assert(sentInfo.head.amountMsat == 50.msats)
+          assert(sentInfo.head.amount == 50.msats)
         }
     }
 
@@ -489,21 +498,28 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         {
           for {
             otherClientNodeId <- otherClient.getInfo.map(_.nodeId)
-            invoice <- otherClient.createInvoice("foo", amt)
+            preimage = PaymentPreimage.random
+            invoice <- otherClient.createInvoice("foo", amt, preimage)
             route <- client.findRoute(otherClientNodeId, amt)
             paymentId <- client.sendToRoute(route,
                                             amt,
                                             invoice.lnTags.paymentHash.hash,
-                                            144)
+                                            144,
+                                            Some("ext_id"))
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
           } yield {
             assert(succeeded.nonEmpty)
 
             val succeededPayment = succeeded.head
-            assert(succeededPayment.status == PaymentStatus.SUCCEEDED)
-            assert(succeededPayment.amountMsat == amt)
-            assert(succeededPayment.preimage.nonEmpty)
+            assert(succeededPayment.amount == amt)
+            assert(succeededPayment.externalId.contains("ext_id"))
+            succeededPayment.status match {
+              case sent: OutgoingPaymentStatus.Succeeded =>
+                assert(sent.paymentPreimage == preimage)
+              case s: OutgoingPaymentStatus =>
+                fail(s"Unexpected payment status ${s}")
+            }
           }
         }
     }
@@ -525,13 +541,15 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             // probably an async issue, this is more elegant than Thread.sleep
             _ = assert(channels.exists(_.state == ChannelState.NORMAL),
                        "Nodes did not have open channel!")
-            invoice <- otherClient.createInvoice("foo", amt)
+            preimage = PaymentPreimage.random
+            invoice <- otherClient.createInvoice("foo", amt, preimage)
             paymentId <- client.sendToNode(otherClientNodeId,
                                            amt,
                                            invoice.lnTags.paymentHash.hash,
                                            None,
                                            None,
-                                           None)
+                                           None,
+                                           Some("ext_id"))
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             _ <- client.close(channelId)
@@ -542,9 +560,14 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             assert(succeeded.nonEmpty)
 
             val succeededPayment = succeeded.head
-            assert(succeededPayment.status == PaymentStatus.SUCCEEDED)
-            assert(succeededPayment.amountMsat == amt)
-            assert(succeededPayment.preimage.nonEmpty)
+            assert(succeededPayment.amount == amt)
+            assert(succeededPayment.externalId.contains("ext_id"))
+            succeededPayment.status match {
+              case sent: OutgoingPaymentStatus.Succeeded =>
+                assert(sent.paymentPreimage == preimage)
+              case s: OutgoingPaymentStatus =>
+                fail(s"Unexpected payment status ${s}")
+            }
           }
         }
     }
@@ -561,7 +584,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         {
           for {
             channelId <- openAndConfirmChannel(clientF, otherClientF)
-            invoice <- otherClient.createInvoice("test", amt)
+            preimage = PaymentPreimage.random
+            invoice <- otherClient.createInvoice("test", amt, preimage)
             paymentId <- client.payInvoice(invoice)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
@@ -576,13 +600,21 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           } yield {
             assert(succeeded.nonEmpty)
 
-            assert(received.get.paymentHash == invoice.lnTags.paymentHash.hash)
-            assert(received.get.amountMsat == amt)
+            assert(
+              received.get.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
+            assert(
+              received.get.status
+                .asInstanceOf[IncomingPaymentStatus.Received]
+                .amount == amt)
 
             val succeededPayment = succeeded.head
-            assert(succeededPayment.status == PaymentStatus.SUCCEEDED)
-            assert(succeededPayment.amountMsat == amt)
-            assert(succeededPayment.preimage.nonEmpty)
+            assert(succeededPayment.amount == amt)
+            succeededPayment.status match {
+              case sent: OutgoingPaymentStatus.Succeeded =>
+                assert(sent.paymentPreimage == preimage)
+              case s: OutgoingPaymentStatus =>
+                fail(s"Unexpected payment status ${s}")
+            }
 
             assert(channel.state == ChannelState.CLOSING)
           }
@@ -602,7 +634,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             invoice <- otherClient.createInvoice("no amount")
             paymentId <- client.payInvoice(invoice, amt)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
-            succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
+            _ <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
+            succeeded <- client.getSentInfo(paymentId)
             _ <- client.close(channelId)
             bitcoind <- bitcoindRpcClientF
             address <- bitcoind.getNewAddress
@@ -611,9 +644,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             assert(succeeded.nonEmpty)
 
             val succeededPayment = succeeded.head
-            assert(succeededPayment.status == PaymentStatus.SUCCEEDED)
-            assert(succeededPayment.amountMsat == amt)
-            assert(succeededPayment.preimage.nonEmpty)
+            assert(succeededPayment.amount == amt)
+            assert(
+              succeededPayment.status
+                .isInstanceOf[OutgoingPaymentStatus.Succeeded])
           }
         }
     }
@@ -720,17 +754,22 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       c2 <- otherClientF
       invoice <- c2.createInvoice(s"invoice-payment")
       receiveOpt <- c2.getReceivedInfo(invoice)
-      _ = assert(receiveOpt.isEmpty)
+      _ = assert(receiveOpt.get.status == IncomingPaymentStatus.Pending)
       _ <- c1.payInvoice(invoice, amt)
       _ <- AsyncUtil.retryUntilSatisfiedF(
-        () => c2.getReceivedInfo(invoice).map(_.isDefined),
+        () =>
+          c2.getReceivedInfo(invoice)
+            .map(_.get.status.isInstanceOf[IncomingPaymentStatus.Received]),
         1.seconds)
       receivedAgainOpt <- c2.getReceivedInfo(invoice)
     } yield {
       assert(receivedAgainOpt.isDefined)
-      assert(receivedAgainOpt.get.amountMsat == amt)
       assert(
-        receivedAgainOpt.get.paymentHash == invoice.lnTags.paymentHash.hash)
+        receivedAgainOpt.get.status
+          .asInstanceOf[IncomingPaymentStatus.Received]
+          .amount == amt)
+      assert(
+        receivedAgainOpt.get.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
     }
   }
 
@@ -740,13 +779,17 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       val invoiceF = otherClient.createInvoice("monitor an invoice", amt)
       val paidF = invoiceF.flatMap(i => client.payInvoice(i))
       for {
-        paid <- paidF
+        _ <- paidF
         invoice <- invoiceF
         //CI is super slow... wait 2 minutes
-        received <- otherClient.monitorInvoice(invoice, maxAttempts = 120)
+        received <- otherClient.monitorInvoice(invoice)
       } yield {
-        assert(received.amountMsat == amt)
-        assert(received.paymentHash == invoice.lnTags.paymentHash.hash)
+        assert(
+          received.status
+            .asInstanceOf[IncomingPaymentStatus.Received]
+            .amount == amt)
+        assert(
+          received.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
       }
     }
     executeWithClientOtherClient(test)
@@ -846,11 +889,13 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     val client1F = connectedClientsF.map(_.c1)
     val client2F = connectedClientsF.map(_.c2)
 
-    sendPaymentsF.flatMap { _ =>
+    // allupdates for a single node is broken in Eclair 0.3.2
+    // TODO remove recoverToPendingIf when https://github.com/ACINQ/eclair/issues/1179 is fixed
+    recoverToPendingIf[RuntimeException](sendPaymentsF.flatMap { _ =>
       executeSpecificClients(clientF = client1F,
                              otherClientF = client2F,
                              test = getChannelUpdates)
-    }
+    })
 
   }
 
@@ -874,8 +919,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                                             paymentId2)
           sentInfo2 <- otherClient.getSentInfo(invoice2.lnTags.paymentHash.hash)
         } yield {
-          assert(sentInfo.head.amountMsat == paymentAmount)
-          assert(sentInfo2.head.amountMsat == paymentAmount2)
+          assert(sentInfo.head.amount == paymentAmount)
+          assert(sentInfo2.head.amount == paymentAmount2)
         }
     }
 
@@ -924,6 +969,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
+  it should "get all nodes" in {
+    clientF.flatMap(_.allNodes().flatMap(nodes => assert(nodes.nonEmpty)))
+  }
+
   it should "get channels" in {
     clientF.flatMap(_.channels().flatMap(channels => assert(channels.nonEmpty)))
   }
@@ -939,18 +988,31 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     })
   }
 
+  def recoverToPendingIf[T <: AnyRef](future: Future[Any])(
+      implicit classTag: ClassTag[T]): Future[Assertion] = {
+
+    val clazz = classTag.runtimeClass
+    future.failed.transform(
+      ex =>
+        if (!clazz.isAssignableFrom(ex.getClass))
+          fail(s"Unknown exception ${ex}")
+        else pending,
+      ex => {
+        fail(s"Unexpected exception ${ex}")
+      }
+    )
+  }
+
   it should "get updates for a single node" in {
-    for {
+    // allupdates for a single node is broken in Eclair 0.3.2
+    // TODO remove recoverToPendingIf when https://github.com/ACINQ/eclair/issues/1179 is fixed
+    recoverToPendingIf[RuntimeException](for {
       client <- clientF
       nodeInfo <- client.getInfo
       updates <- client.allUpdates(nodeInfo.nodeId)
     } yield {
       assert(updates.nonEmpty)
-    }
-  }
-
-  it should "get all nodes" in {
-    clientF.flatMap(_.allNodes().flatMap(nodes => assert(nodes.nonEmpty)))
+    })
   }
 
   it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" in {
@@ -980,27 +1042,24 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
               })
           }
 
-          val checkedUpatesF: Future[Unit] =
-            AsyncUtil.retryUntilSatisfiedF((() => checkUpdates()),
-                                           duration = 5.seconds,
-                                           maxTries = 15)
-
-          val hasUpdateP = Promise[Assertion]()
-          checkedUpatesF.onComplete { t =>
-            hasUpdateP.success(assert(t.isSuccess))
-          }
-
-          hasUpdateP.future
+          AsyncUtil
+            .retryUntilSatisfiedF((() => checkUpdates()),
+                                  duration = 1.second,
+                                  maxTries = 60)
+            .transform(_ => succeed, ex => ex)
         }
     }
 
     //the second client and fourth client aren't directly connected
     //which is why i am choosing to use them for this test
-    executeSpecificClients(
-      clientF = secondClientF,
-      otherClientF = fourthClientF,
-      test = gossipFromPeerWithNoChannel
-    )
+    // allupdates for a single node is broken in Eclair 0.3.2
+    // TODO remove pendingUntilFixed when https://github.com/ACINQ/eclair/issues/1179 is fixed
+    recoverToPendingIf[RuntimeException](
+      executeSpecificClients(
+        clientF = secondClientF,
+        otherClientF = fourthClientF,
+        test = gossipFromPeerWithNoChannel
+      ))
   }
 
   it should "detect what network we are on" in {
