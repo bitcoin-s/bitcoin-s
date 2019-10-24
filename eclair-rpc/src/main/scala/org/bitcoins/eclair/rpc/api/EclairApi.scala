@@ -165,6 +165,7 @@ trait EclairApi {
     * */
   def monitorInvoice(
       lnInvoice: LnInvoice,
+      interval: FiniteDuration,
       maxAttempts: Int): Future[ReceivedPaymentResult]
 
   def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]

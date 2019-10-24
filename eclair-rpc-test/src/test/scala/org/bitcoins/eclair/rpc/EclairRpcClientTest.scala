@@ -34,12 +34,10 @@ import java.nio.file.Files
 import org.bitcoins.eclair.rpc.api.{
   ChannelResult,
   ChannelUpdate,
+  IncomingPaymentStatus,
   InvoiceResult,
   OpenChannelInfo,
-  PaymentPending,
-  PaymentReceived,
-  PaymentSent,
-  PaymentStatus
+  OutgoingPaymentStatus
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
@@ -511,9 +509,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             val succeededPayment = succeeded.head
             assert(succeededPayment.amount == amt)
             succeededPayment.status match {
-              case sent: PaymentSent =>
+              case sent: OutgoingPaymentStatus.Succeeded =>
                 assert(sent.paymentPreimage == preimage)
-              case s: PaymentStatus => fail(s"Unexpected payment status ${s}")
+              case s: OutgoingPaymentStatus =>
+                fail(s"Unexpected payment status ${s}")
             }
           }
         }
@@ -556,9 +555,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             val succeededPayment = succeeded.head
             assert(succeededPayment.amount == amt)
             succeededPayment.status match {
-              case sent: PaymentSent =>
+              case sent: OutgoingPaymentStatus.Succeeded =>
                 assert(sent.paymentPreimage == preimage)
-              case s: PaymentStatus => fail(s"Unexpected payment status ${s}")
+              case s: OutgoingPaymentStatus =>
+                fail(s"Unexpected payment status ${s}")
             }
           }
         }
@@ -593,16 +593,19 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             assert(succeeded.nonEmpty)
 
             assert(
-              received.get.paymentRequest.get.paymentHash == invoice.lnTags.paymentHash.hash)
+              received.get.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
             assert(
-              received.get.status.asInstanceOf[PaymentReceived].amount == amt)
+              received.get.status
+                .asInstanceOf[IncomingPaymentStatus.Received]
+                .amount == amt)
 
             val succeededPayment = succeeded.head
             assert(succeededPayment.amount == amt)
             succeededPayment.status match {
-              case sent: PaymentSent =>
+              case sent: OutgoingPaymentStatus.Succeeded =>
                 assert(sent.paymentPreimage == preimage)
-              case s: PaymentStatus => fail(s"Unexpected payment status ${s}")
+              case s: OutgoingPaymentStatus =>
+                fail(s"Unexpected payment status ${s}")
             }
 
             assert(channel.state == ChannelState.CLOSING)
@@ -634,7 +637,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
             val succeededPayment = succeeded.head
             assert(succeededPayment.amount == amt)
-            assert(succeededPayment.status.isInstanceOf[PaymentSent])
+            assert(
+              succeededPayment.status
+                .isInstanceOf[OutgoingPaymentStatus.Succeeded])
           }
         }
     }
@@ -741,20 +746,22 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       c2 <- otherClientF
       invoice <- c2.createInvoice(s"invoice-payment")
       receiveOpt <- c2.getReceivedInfo(invoice)
-      _ = assert(receiveOpt.get.status == PaymentPending)
+      _ = assert(receiveOpt.get.status == IncomingPaymentStatus.Pending)
       _ <- c1.payInvoice(invoice, amt)
       _ <- AsyncUtil.retryUntilSatisfiedF(
         () =>
           c2.getReceivedInfo(invoice)
-            .map(_.get.status.isInstanceOf[PaymentReceived]),
+            .map(_.get.status.isInstanceOf[IncomingPaymentStatus.Received]),
         1.seconds)
       receivedAgainOpt <- c2.getReceivedInfo(invoice)
     } yield {
       assert(receivedAgainOpt.isDefined)
       assert(
-        receivedAgainOpt.get.status.asInstanceOf[PaymentReceived].amount == amt)
+        receivedAgainOpt.get.status
+          .asInstanceOf[IncomingPaymentStatus.Received]
+          .amount == amt)
       assert(
-        receivedAgainOpt.get.paymentRequest.get.paymentHash == invoice.lnTags.paymentHash.hash)
+        receivedAgainOpt.get.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
     }
   }
 
@@ -767,11 +774,14 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         _ <- paidF
         invoice <- invoiceF
         //CI is super slow... wait 2 minutes
-        received <- otherClient.monitorInvoice(invoice, maxAttempts = 120)
+        received <- otherClient.monitorInvoice(invoice)
       } yield {
-        assert(received.status.asInstanceOf[PaymentReceived].amount == amt)
         assert(
-          received.paymentRequest.get.paymentHash == invoice.lnTags.paymentHash.hash)
+          received.status
+            .asInstanceOf[IncomingPaymentStatus.Received]
+            .amount == amt)
+        assert(
+          received.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
       }
     }
     executeWithClientOtherClient(test)

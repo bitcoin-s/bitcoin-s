@@ -17,13 +17,9 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.api.{
   EclairApi,
-  PaymentFailed,
+  OutgoingPaymentStatus,
   PaymentId,
-  PaymentPending,
-  PaymentReceived,
-  PaymentResult,
-  PaymentSent,
-  PaymentStatus
+  PaymentResult
 }
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
@@ -264,11 +260,11 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       duration: FiniteDuration = 1.second,
       maxTries: Int = 60,
       failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus[PaymentSent](client,
-                                         paymentId,
-                                         duration,
-                                         maxTries,
-                                         failFast)
+    awaitUntilPaymentStatus[OutgoingPaymentStatus.Succeeded](client,
+                                                             paymentId,
+                                                             duration,
+                                                             maxTries,
+                                                             failFast)
   }
 
   def awaitUntilPaymentFailed(
@@ -277,14 +273,14 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       duration: FiniteDuration = 1.second,
       maxTries: Int = 60,
       failFast: Boolean = false)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus[PaymentFailed](client,
-                                           paymentId,
-                                           duration,
-                                           maxTries,
-                                           failFast)
+    awaitUntilPaymentStatus[OutgoingPaymentStatus.Failed](client,
+                                                          paymentId,
+                                                          duration,
+                                                          maxTries,
+                                                          failFast)
   }
 
-  private def awaitUntilPaymentStatus[T <: PaymentStatus](
+  private def awaitUntilPaymentStatus[T <: OutgoingPaymentStatus](
       client: EclairApi,
       paymentId: PaymentId,
       duration: FiniteDuration,
@@ -295,9 +291,9 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     logger.debug(
       s"Awaiting payment ${paymentId} to enter ${tag.runtimeClass.getName} state")
 
-    def isFailed(status: PaymentStatus): Boolean = status match {
-      case _: PaymentFailed => true
-      case _: PaymentStatus => false
+    def isFailed(status: OutgoingPaymentStatus): Boolean = status match {
+      case _: OutgoingPaymentStatus.Failed => true
+      case _: OutgoingPaymentStatus        => false
     }
 
     def isInState(): Future[Boolean] = {

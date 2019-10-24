@@ -18,19 +18,16 @@ import org.bitcoins.eclair.rpc.api.{
   ChannelUpdate,
   GetInfoResult,
   Hop,
+  IncomingPaymentStatus,
   InvoiceResult,
   NetworkFeesResult,
   NodeInfo,
   OpenChannelInfo,
-  PaymentFailed,
+  OutgoingPaymentStatus,
   PaymentFailure,
   PaymentId,
-  PaymentPending,
-  PaymentReceived,
   PaymentRequest,
   PaymentResult,
-  PaymentSent,
-  PaymentStatus,
   PeerInfo,
   ReceivedPayment,
   ReceivedPaymentResult,
@@ -226,11 +223,12 @@ object JsonReaders {
       SerializerUtil.processJsNumberBigInt(_.longValue.millis)(js)
     }
 
-  implicit val paymentReceivedReads: Reads[PaymentReceived] =
-    Json.reads[PaymentReceived]
+  implicit val paymentReceivedReads: Reads[IncomingPaymentStatus.Received] =
+    Json.reads[IncomingPaymentStatus.Received]
   implicit val hopReads: Reads[Hop] =
     Json.reads[Hop]
-  implicit val paymentSentReads: Reads[PaymentSent] = Json.reads[PaymentSent]
+  implicit val paymentSentReads: Reads[OutgoingPaymentStatus.Succeeded] =
+    Json.reads[OutgoingPaymentStatus.Succeeded]
   implicit val paymentFailureTypeReads: Reads[PaymentFailure.Type] = Reads {
     jsValue =>
       (jsValue \ "type")
@@ -248,19 +246,30 @@ object JsonReaders {
   }
   implicit val paymentFailureReads: Reads[PaymentFailure] =
     Json.reads[PaymentFailure]
-  implicit val paymentFailedReads: Reads[PaymentFailed] =
-    Json.reads[PaymentFailed]
+  implicit val paymentFailedReads: Reads[OutgoingPaymentStatus.Failed] =
+    Json.reads[OutgoingPaymentStatus.Failed]
 
-  implicit val paymentStatusReads: Reads[PaymentStatus] = Reads { jsValue =>
-    (jsValue \ "type")
-      .validate[String]
-      .flatMap {
-        case "pending"  => JsSuccess(PaymentPending)
-        case "sent"     => jsValue.validate[PaymentSent]
-        case "received" => jsValue.validate[PaymentReceived]
-        case "failed"   => jsValue.validate[PaymentFailed]
-      }
-  }
+  implicit val outgoingPaymentStatusReads: Reads[OutgoingPaymentStatus] =
+    Reads { jsValue =>
+      (jsValue \ "type")
+        .validate[String]
+        .flatMap {
+          case "pending" => JsSuccess(OutgoingPaymentStatus.Pending)
+          case "sent"    => jsValue.validate[OutgoingPaymentStatus.Succeeded]
+          case "failed"  => jsValue.validate[OutgoingPaymentStatus.Failed]
+        }
+    }
+
+  implicit val incomingPaymentStatusReads: Reads[IncomingPaymentStatus] =
+    Reads { jsValue =>
+      (jsValue \ "type")
+        .validate[String]
+        .flatMap {
+          case "pending"  => JsSuccess(IncomingPaymentStatus.Pending)
+          case "expired"  => JsSuccess(IncomingPaymentStatus.Expired)
+          case "received" => jsValue.validate[IncomingPaymentStatus.Received]
+        }
+    }
 
   implicit val paymentRequestReads: Reads[PaymentRequest] = {
     Json.reads[PaymentRequest]

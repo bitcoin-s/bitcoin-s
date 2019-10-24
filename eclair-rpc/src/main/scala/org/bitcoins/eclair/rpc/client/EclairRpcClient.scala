@@ -33,14 +33,13 @@ import org.bitcoins.eclair.rpc.api.{
   ChannelUpdate,
   EclairApi,
   GetInfoResult,
+  IncomingPaymentStatus,
   InvoiceResult,
   NetworkFeesResult,
   NodeInfo,
-  PaymentFailed,
+  OutgoingPaymentStatus,
   PaymentId,
-  PaymentPending,
   PaymentResult,
-  PaymentSent,
   PeerInfo,
   ReceivedPaymentResult,
   UsableBalancesResult
@@ -387,6 +386,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
   /** @inheritdoc */
   override def monitorInvoice(
       lnInvoice: LnInvoice,
+      interval: FiniteDuration = 1.second,
       maxAttempts: Int = 60): Future[ReceivedPaymentResult] = {
     val p: Promise[ReceivedPaymentResult] = Promise[ReceivedPaymentResult]()
     val attempts = new AtomicInteger(0)
@@ -398,7 +398,11 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
         //register callback that publishes a payment to our actor system's
         //event stream,
         receivedInfoF.foreach {
-          case None | Some(ReceivedPaymentResult(_, _, _, PaymentPending)) =>
+          case None | Some(
+                ReceivedPaymentResult(_,
+                                      _,
+                                      _,
+                                      IncomingPaymentStatus.Pending)) =>
             if (attempts.incrementAndGet() >= maxAttempts) {
               // too many tries to get info about a payment
               // either Eclair is down or the payment is still in PENDING state for some reason
@@ -421,7 +425,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       }
     }
 
-    val cancellable = system.scheduler.schedule(1.seconds, 1.seconds, runnable)
+    val cancellable = system.scheduler.schedule(interval, interval, runnable)
 
     p.future.map(_ => cancellable.cancel())
 
@@ -799,9 +803,10 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           } yield {
             results.foreach { result =>
               result.status match {
-                case PaymentPending =>
+                case OutgoingPaymentStatus.Pending =>
                 //do nothing, while we wait for eclair to attempt to process
-                case (_: PaymentSent | _: PaymentFailed) =>
+                case (_: OutgoingPaymentStatus.Succeeded |
+                    _: OutgoingPaymentStatus.Failed) =>
                   // invoice has been succeeded or has failed, let's publish to event stream
                   // so subscribers to the event stream can see that a payment
                   // was received or failed
