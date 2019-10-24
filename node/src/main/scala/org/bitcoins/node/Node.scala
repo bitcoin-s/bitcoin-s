@@ -52,7 +52,8 @@ trait Node extends P2PLogger {
     * This involves database calls which can be slow and expensive to construct
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     * */
-  def chainApiFromDb(): Future[ChainApi] = {
+  def chainApiFromDb()(
+      implicit executionContext: ExecutionContext): Future[ChainApi] = {
     ChainHandler.fromDatabase(BlockHeaderDAO(),
                               CompactFilterHeaderDAO(),
                               CompactFilterDAO())

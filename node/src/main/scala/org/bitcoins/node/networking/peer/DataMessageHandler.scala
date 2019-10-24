@@ -142,7 +142,8 @@ case class DataMessageHandler(
 
         if (appConfig.isSPVEnabled) {
           logger.trace(s"Requesting data for headers=${headers.length}")
-          peerMsgSender.sendGetDataMessage(headers: _*)
+          peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgFilteredBlock,
+                                           headers.map(_.hash): _*)
         }
 
         val getHeadersF = chainApiF

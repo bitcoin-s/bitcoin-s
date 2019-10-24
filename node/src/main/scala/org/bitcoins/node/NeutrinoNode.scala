@@ -1,11 +1,16 @@
 package org.bitcoins.node
 
+import java.util.concurrent.{Executor, ExecutorService, Executors}
+
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.p2p.TypeIdentifier
+import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 case class NeutrinoNode(
     nodePeer: Peer,
@@ -42,6 +47,26 @@ case class NeutrinoNode(
     res.failed.foreach(logger.error("Cannot start Neutrino node", _))
 
     res
+  }
+
+  def rescan(
+      scriptPubKeysToWatch: Vector[ScriptPubKey],
+      startOpt: Option[BlockStamp] = None,
+      endOpt: Option[BlockStamp] = None): Future[Unit] = {
+    val ec = ExecutionContext.fromExecutor(
+      Executors.newFixedThreadPool(
+        Runtime.getRuntime.availableProcessors() * 2))
+    for {
+      chainApi <- chainApiFromDb()
+      blockHashes <- chainApi.getMatchingBlocks(scriptPubKeysToWatch,
+                                                startOpt,
+                                                endOpt)(ec)
+      peerMsgSender <- peerMsgSenderF
+      _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
+                                            blockHashes.map(_.flip): _*)
+    } yield {
+      ()
+    }
   }
 
 }
