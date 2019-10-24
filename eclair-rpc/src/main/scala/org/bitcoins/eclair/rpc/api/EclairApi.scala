@@ -157,7 +157,7 @@ trait EclairApi {
 
   /**
     * Returns a future that is completed when this invoice has been paid too.
-    * This also publishes the [[ReceivedPaymentResult received payment result]] to the event bush
+    * This also publishes the [[IncomingPayment received payment result]] to the event bush
     * when the payment is received
     *
     * @param lnInvoice the invoice to monitor
@@ -166,7 +166,7 @@ trait EclairApi {
   def monitorInvoice(
       lnInvoice: LnInvoice,
       interval: FiniteDuration,
-      maxAttempts: Int): Future[ReceivedPaymentResult]
+      maxAttempts: Int): Future[IncomingPayment]
 
   def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]
 
@@ -188,7 +188,7 @@ trait EclairApi {
       maxFeePct: Option[Int]): Future[PaymentId]
 
   /**
-    * Pings eclair to see if a invoice has been paid and returns [[PaymentResult PaymentResult]]
+    * Pings eclair to see if a invoice has been paid and returns [[OutgoingPayment PaymentResult]]
     *
     * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
     * @param interval the ping interval
@@ -198,12 +198,12 @@ trait EclairApi {
   def monitorSentPayment(
       paymentId: PaymentId,
       interval: FiniteDuration,
-      maxAttempts: Int): Future[PaymentResult]
+      maxAttempts: Int): Future[OutgoingPayment]
 
   def payAndMonitorInvoice(
       invoice: LnInvoice,
       interval: FiniteDuration,
-      maxAttempts: Int): Future[PaymentResult] =
+      maxAttempts: Int): Future[OutgoingPayment] =
     for {
       paymentId <- payInvoice(invoice)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
@@ -213,21 +213,20 @@ trait EclairApi {
       invoice: LnInvoice,
       amount: MilliSatoshis,
       interval: FiniteDuration,
-      maxAttempts: Int): Future[PaymentResult] =
+      maxAttempts: Int): Future[OutgoingPayment] =
     for {
       paymentId <- payInvoice(invoice, amount)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
     } yield paymentResult
 
-  def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]]
+  def getSentInfo(paymentHash: Sha256Digest): Future[Vector[OutgoingPayment]]
 
-  def getSentInfo(id: PaymentId): Future[Vector[PaymentResult]]
-
-  def getReceivedInfo(
-      paymentHash: Sha256Digest): Future[Option[ReceivedPaymentResult]]
+  def getSentInfo(id: PaymentId): Future[Vector[OutgoingPayment]]
 
   def getReceivedInfo(
-      invoice: LnInvoice): Future[Option[ReceivedPaymentResult]] = {
+      paymentHash: Sha256Digest): Future[Option[IncomingPayment]]
+
+  def getReceivedInfo(invoice: LnInvoice): Future[Option[IncomingPayment]] = {
     getReceivedInfo(invoice.lnTags.paymentHash.hash)
   }
 

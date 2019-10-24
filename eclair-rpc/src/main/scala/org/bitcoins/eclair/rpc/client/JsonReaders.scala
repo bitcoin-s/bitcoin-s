@@ -18,19 +18,19 @@ import org.bitcoins.eclair.rpc.api.{
   ChannelUpdate,
   GetInfoResult,
   Hop,
+  IncomingPayment,
   IncomingPaymentStatus,
   InvoiceResult,
   NetworkFeesResult,
   NodeInfo,
   OpenChannelInfo,
+  OutgoingPayment,
   OutgoingPaymentStatus,
   PaymentFailure,
   PaymentId,
   PaymentRequest,
-  PaymentResult,
   PeerInfo,
   ReceivedPayment,
-  ReceivedPaymentResult,
   RelayedPayment,
   SentPayment,
   UsableBalancesResult,
@@ -275,11 +275,11 @@ object JsonReaders {
     Json.reads[PaymentRequest]
   }
 
-  implicit val paymentSucceededReads: Reads[PaymentResult] =
-    Json.reads[PaymentResult]
+  implicit val paymentSucceededReads: Reads[OutgoingPayment] =
+    Json.reads[OutgoingPayment]
 
-  implicit val receivedPaymentResultReads: Reads[ReceivedPaymentResult] =
-    Json.reads[ReceivedPaymentResult]
+  implicit val receivedPaymentResultReads: Reads[IncomingPayment] =
+    Json.reads[IncomingPayment]
 
   implicit val channelResultReads: Reads[ChannelResult] = Reads { js =>
     for {

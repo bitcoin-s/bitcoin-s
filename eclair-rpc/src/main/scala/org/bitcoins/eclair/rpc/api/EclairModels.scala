@@ -211,7 +211,7 @@ case class PaymentRequest(
     expiry: FiniteDuration,
     amount: Option[MilliSatoshis])
 
-case class PaymentResult(
+case class OutgoingPayment(
     id: PaymentId,
     parentId: PaymentId,
     externalId: Option[String],
@@ -222,7 +222,7 @@ case class PaymentResult(
     paymentRequest: Option[PaymentRequest],
     status: OutgoingPaymentStatus)
 
-case class ReceivedPaymentResult(
+case class IncomingPayment(
     paymentRequest: PaymentRequest,
     paymentPreimage: PaymentPreimage,
     createdAt: FiniteDuration,

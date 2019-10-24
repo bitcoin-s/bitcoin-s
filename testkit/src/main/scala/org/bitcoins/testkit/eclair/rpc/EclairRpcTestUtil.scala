@@ -17,9 +17,9 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.eclair.rpc.api.{
   EclairApi,
+  OutgoingPayment,
   OutgoingPaymentStatus,
-  PaymentId,
-  PaymentResult
+  PaymentId
 }
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
@@ -298,7 +298,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     def isInState(): Future[Boolean] = {
 
-      val sentInfoF: Future[Vector[PaymentResult]] =
+      val sentInfoF: Future[Vector[OutgoingPayment]] =
         client.getSentInfo(paymentId)
       sentInfoF.map { payment =>
         if (failFast && payment.exists(result => isFailed(result.status))) {
