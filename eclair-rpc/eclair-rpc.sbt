@@ -19,8 +19,8 @@ TaskKeys.downloadEclair := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.3.1"
-  val commit = "6906ecb"
+  val version = "0.3.2"
+  val commit = "5ad3944"
 
   logger.debug(s"(Maybe) downloading Eclair binaries for version: $version")
 

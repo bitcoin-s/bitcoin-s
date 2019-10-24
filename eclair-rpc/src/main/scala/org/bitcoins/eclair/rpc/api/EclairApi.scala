@@ -14,7 +14,6 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.eclair.rpc.json._
 import org.bitcoins.eclair.rpc.network.NodeUri
 
 import scala.concurrent.duration._
@@ -158,7 +157,7 @@ trait EclairApi {
 
   /**
     * Returns a future that is completed when this invoice has been paid too.
-    * This also publishes the [[ReceivedPaymentResult received payment result]] to the event bush
+    * This also publishes the [[IncomingPayment received payment result]] to the event bush
     * when the payment is received
     *
     * @param lnInvoice the invoice to monitor
@@ -166,7 +165,8 @@ trait EclairApi {
     * */
   def monitorInvoice(
       lnInvoice: LnInvoice,
-      maxAttempts: Int): Future[ReceivedPaymentResult]
+      interval: FiniteDuration,
+      maxAttempts: Int): Future[IncomingPayment]
 
   def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]
 
@@ -182,13 +182,23 @@ trait EclairApi {
 
   def payInvoice(
       invoice: LnInvoice,
+      externalId: Option[String]): Future[PaymentId]
+
+  def payInvoice(
+      invoice: LnInvoice,
+      amount: MilliSatoshis,
+      externalId: Option[String]): Future[PaymentId]
+
+  def payInvoice(
+      invoice: LnInvoice,
       amountMsat: Option[MilliSatoshis],
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
-      maxFeePct: Option[Int]): Future[PaymentId]
+      maxFeePct: Option[Int],
+      externalId: Option[String]): Future[PaymentId]
 
   /**
-    * Pings eclair to see if a invoice has been paid and returns [[org.bitcoins.eclair.rpc.json.PaymentResult PaymentResult]]
+    * Pings eclair to see if a invoice has been paid and returns [[OutgoingPayment PaymentResult]]
     *
     * @param paymentId the payment id returnned by [[org.bitcoins.eclair.rpc.api.EclairApi.payInvoice payInvoice]]
     * @param interval the ping interval
@@ -198,36 +208,37 @@ trait EclairApi {
   def monitorSentPayment(
       paymentId: PaymentId,
       interval: FiniteDuration,
-      maxAttempts: Int): Future[PaymentResult]
+      maxAttempts: Int): Future[OutgoingPayment]
 
   def payAndMonitorInvoice(
       invoice: LnInvoice,
+      externalId: Option[String],
       interval: FiniteDuration,
-      maxAttempts: Int): Future[PaymentResult] =
+      maxAttempts: Int): Future[OutgoingPayment] =
     for {
-      paymentId <- payInvoice(invoice)
+      paymentId <- payInvoice(invoice, externalId)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
     } yield paymentResult
 
   def payAndMonitorInvoice(
       invoice: LnInvoice,
       amount: MilliSatoshis,
+      externalId: Option[String],
       interval: FiniteDuration,
-      maxAttempts: Int): Future[PaymentResult] =
+      maxAttempts: Int): Future[OutgoingPayment] =
     for {
-      paymentId <- payInvoice(invoice, amount)
+      paymentId <- payInvoice(invoice, amount, externalId)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
     } yield paymentResult
 
-  def getSentInfo(paymentHash: Sha256Digest): Future[Vector[PaymentResult]]
+  def getSentInfo(paymentHash: Sha256Digest): Future[Vector[OutgoingPayment]]
 
-  def getSentInfo(id: PaymentId): Future[Vector[PaymentResult]]
-
-  def getReceivedInfo(
-      paymentHash: Sha256Digest): Future[Option[ReceivedPaymentResult]]
+  def getSentInfo(id: PaymentId): Future[Vector[OutgoingPayment]]
 
   def getReceivedInfo(
-      invoice: LnInvoice): Future[Option[ReceivedPaymentResult]] = {
+      paymentHash: Sha256Digest): Future[Option[IncomingPayment]]
+
+  def getReceivedInfo(invoice: LnInvoice): Future[Option[IncomingPayment]] = {
     getReceivedInfo(invoice.lnTags.paymentHash.hash)
   }
 
@@ -237,7 +248,8 @@ trait EclairApi {
       paymentHash: Sha256Digest,
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
-      maxFeePct: Option[Int]): Future[PaymentId]
+      maxFeePct: Option[Int],
+      externalId: Option[String]): Future[PaymentId]
 
   /**
     * Documented by not implemented in Eclair
@@ -246,7 +258,8 @@ trait EclairApi {
       route: scala.collection.immutable.Seq[NodeId],
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
-      finalCltvExpiry: Long): Future[PaymentId]
+      finalCltvExpiry: Long,
+      externalId: Option[String]): Future[PaymentId]
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
 }

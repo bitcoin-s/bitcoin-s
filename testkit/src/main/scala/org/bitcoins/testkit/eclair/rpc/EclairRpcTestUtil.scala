@@ -15,10 +15,14 @@ import org.bitcoins.core.protocol.ln.channel.{
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.eclair.rpc.api.EclairApi
+import org.bitcoins.eclair.rpc.api.{
+  EclairApi,
+  OutgoingPayment,
+  OutgoingPaymentStatus,
+  PaymentId
+}
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.json.{PaymentId, PaymentStatus}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.util.RpcUtil
@@ -31,9 +35,11 @@ import scala.util.{Failure, Success}
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 import java.nio.file.Files
 
+import scala.reflect.ClassTag
+
 /**
   * @define nodeLinkDoc
-  * Creates two Eclair nodes that are connected in the following manner:
+  * Creates four Eclair nodes that are connected in the following manner:
   * {{{
   *   node1 <-> node2 <-> node3 <-> node4
   * }}}
@@ -121,6 +127,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.max-htlc-value-in-flight-msat" -> 100000000000L,
         "eclair.router.broadcast-interval" -> "2 second",
         "eclair.auto-reconnect" -> false,
+        "eclair.to-remote-delay-blocks" -> 144,
         "eclair.db.driver" -> "org.sqlite.JDBC",
         "eclair.db.regtest.url" -> "jdbc:sqlite:regtest/",
         "eclair.max-payment-fee" -> 10, // avoid complaints about too high fees
@@ -251,63 +258,56 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       client: EclairApi,
       paymentId: PaymentId,
       duration: FiniteDuration = 1.second,
-      maxTries: Int = 50,
+      maxTries: Int = 60,
       failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client,
-                            paymentId,
-                            PaymentStatus.SUCCEEDED,
-                            duration,
-                            maxTries,
-                            failFast)
+    awaitUntilPaymentStatus[OutgoingPaymentStatus.Succeeded](client,
+                                                             paymentId,
+                                                             duration,
+                                                             maxTries,
+                                                             failFast)
   }
 
   def awaitUntilPaymentFailed(
       client: EclairApi,
       paymentId: PaymentId,
       duration: FiniteDuration = 1.second,
-      maxTries: Int = 50,
+      maxTries: Int = 60,
       failFast: Boolean = false)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client,
-                            paymentId,
-                            PaymentStatus.FAILED,
-                            duration,
-                            maxTries,
-                            failFast)
+    awaitUntilPaymentStatus[OutgoingPaymentStatus.Failed](client,
+                                                          paymentId,
+                                                          duration,
+                                                          maxTries,
+                                                          failFast)
   }
 
-  def awaitUntilPaymentPending(
+  private def awaitUntilPaymentStatus[T <: OutgoingPaymentStatus](
       client: EclairApi,
       paymentId: PaymentId,
-      duration: FiniteDuration = 1.second,
-      maxTries: Int = 50,
-      failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus(client,
-                            paymentId,
-                            PaymentStatus.PENDING,
-                            duration,
-                            maxTries,
-                            failFast)
-  }
-
-  private def awaitUntilPaymentStatus(
-      client: EclairApi,
-      paymentId: PaymentId,
-      state: PaymentStatus,
       duration: FiniteDuration,
       maxTries: Int,
-      failFast: Boolean)(implicit system: ActorSystem): Future[Unit] = {
-    logger.debug(s"Awaiting payment ${paymentId} to enter ${state} state")
+      failFast: Boolean)(
+      implicit system: ActorSystem,
+      tag: ClassTag[T]): Future[Unit] = {
+    logger.debug(
+      s"Awaiting payment ${paymentId} to enter ${tag.runtimeClass.getName} state")
 
-    def isState(): Future[Boolean] = {
+    def isFailed(status: OutgoingPaymentStatus): Boolean = status match {
+      case _: OutgoingPaymentStatus.Failed => true
+      case _: OutgoingPaymentStatus        => false
+    }
 
-      val sentInfoF = client.getSentInfo(paymentId)
+    def isInState(): Future[Boolean] = {
+
+      val sentInfoF: Future[Vector[OutgoingPayment]] =
+        client.getSentInfo(paymentId)
       sentInfoF.map { payment =>
-        if (failFast && payment.exists(_.status == PaymentStatus.FAILED)) {
+        if (failFast && payment.exists(result => isFailed(result.status))) {
           throw new RuntimeException(s"Payment ${paymentId} has failed")
         }
-        if (!payment.exists(_.status == state)) {
+        if (!payment.exists(
+              result => tag.runtimeClass == result.status.getClass)) {
           logger.trace(
-            s"Payment ${paymentId} has not entered ${state} yet. Currently in ${payment.map(_.status).mkString(",")}")
+            s"Payment ${paymentId} has not entered ${tag.runtimeClass.getName} yet. Currently in ${payment.map(_.status).mkString(",")}")
           false
         } else {
           true
@@ -315,7 +315,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       }(system.dispatcher)
     }
 
-    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isState(),
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isInState(),
                                        duration = duration,
                                        maxTries = maxTries)
   }

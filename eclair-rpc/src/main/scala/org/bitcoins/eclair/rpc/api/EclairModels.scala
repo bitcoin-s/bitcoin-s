@@ -1,4 +1,6 @@
-package org.bitcoins.eclair.rpc.json
+package org.bitcoins.eclair.rpc.api
+
+import java.util.UUID
 
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
@@ -13,7 +15,6 @@ import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
-  LnInvoiceSignature,
   PaymentPreimage,
   ShortChannelId
 }
@@ -100,31 +101,39 @@ case class NetworkFeesResult(
     remoteNodeId: NodeId,
     channelId: FundedChannelId,
     txId: DoubleSha256DigestBE,
-    feeSat: Satoshis,
+    fee: Satoshis,
     txType: String,
     timestamp: FiniteDuration
 )
 
 case class ChannelStats(
     channelId: FundedChannelId,
-    avgPaymentAmountSatoshi: Satoshis,
+    avgPaymentAmount: Satoshis,
     paymentCount: Long,
-    relayFeeSatoshi: Satoshis,
-    networkFeeSatoshi: Satoshis
+    relayFee: Satoshis,
+    networkFee: Satoshis
 )
 
 case class UsableBalancesResult(
-    canSendMsat: MilliSatoshis,
-    canReceiveMsat: MilliSatoshis,
+    remoteNodeId: NodeId,
+    shortChannelId: ShortChannelId,
+    canSend: MilliSatoshis,
+    canReceive: MilliSatoshis,
     isPublic: Boolean
 )
 
 case class ReceivedPayment(
-    amount: MilliSatoshis,
     paymentHash: Sha256Digest,
-    fromChannelId: FundedChannelId,
-    timestamp: FiniteDuration
+    parts: Vector[ReceivedPayment.Part]
 )
+
+object ReceivedPayment {
+  case class Part(
+      amount: MilliSatoshis,
+      fromChannelId: FundedChannelId,
+      timestamp: FiniteDuration
+  )
+}
 
 case class RelayedPayment(
     amountIn: MilliSatoshis,
@@ -136,13 +145,21 @@ case class RelayedPayment(
 )
 
 case class SentPayment(
-    amount: MilliSatoshis,
-    feesPaid: MilliSatoshis,
+    id: PaymentId,
     paymentHash: Sha256Digest,
-    paymentPreimage: String,
-    toChannelId: FundedChannelId,
-    timestamp: FiniteDuration
+    paymentPreimage: PaymentPreimage,
+    parts: Vector[SentPayment.Part]
 )
+
+object SentPayment {
+  case class Part(
+      id: PaymentId,
+      amount: MilliSatoshis,
+      feesPaid: MilliSatoshis,
+      toChannelId: FundedChannelId,
+      timestamp: FiniteDuration
+  )
+}
 
 case class ChannelUpdate(
     signature: ECDigitalSignature,
@@ -157,116 +174,6 @@ case class ChannelUpdate(
     htlcMaximumMsat: Option[MilliSatoshis],
     feeBaseMsat: MilliSatoshis)
 
-/* ChannelResult starts here, some of this may be useful but it seems that data is different at different times
-
-case class CommitInput(
-  outPoint: String,
-  amountSatoshis: Long)
-implicit val commitInputReads: Reads[CommitInput] =
-  Json.reads[CommitInput]
-
-case class CommitChanges(
-  proposed: Vector[String], // IDK WHAT TYPE THIS SHOULD BE
-  signed: Vector[String], // IDK WHAT TYPE THIS SHOULD BE
-  acked: Vector[String] // IDK WHAT TYPE THIS SHOULD BE
-)
-implicit val commitChangesReads: Reads[CommitChanges] =
-  Json.reads[CommitChanges]
-
-case class CommitSpec(
-  htlcs: Vector[String],
-  feeratePerKw: Long,
-  toLocalMsat: Long,
-  toRemoteMsat: Long)
-implicit val commitSpecReads: Reads[CommitSpec] =
-  Json.reads[CommitSpec]
-
-case class RemoteCommit(
-  index: Int,
-  spec: CommitSpec,
-  txid: String,
-  remotePerCommitmentPoint: String)
-implicit val remoteCommitReads: Reads[RemoteCommit] =
-  Json.reads[RemoteCommit]
-
-case class PublishableTxs(
-  commitTx: String,
-  htlcTxsAndSigs: Vector[String])
-implicit val publishableTxsReads: Reads[PublishableTxs] =
-  Json.reads[PublishableTxs]
-
-case class LocalCommit(
-  index: Int,
-  spec: CommitSpec,
-  publishableTxs: PublishableTxs)
-implicit val localCommitReads: Reads[LocalCommit] =
-  Json.reads[LocalCommit]
-
-case class RemoteParams(
-  nodeId: String,
-  dustLimitSatoshis: Long,
-  maxHtlcValueInFlightMsat: Long,
-  channelReserveSatoshis: Long,
-  htlcMinimumMsat: Long,
-  toSelfDelay: Long,
-  maxAcceptedHtlcs: Long,
-  fundingPubKey: String,
-  revocationBasepoint: String,
-  paymentBasepoint: String,
-  delayedPaymentBasepoint: String,
-  htlcBasepoint: String,
-  globalFeatures: String,
-  localFeatures: String)
-implicit val remoteParamsReads: Reads[RemoteParams] =
-  Json.reads[RemoteParams]
-
-case class ChannelKeyPath(
-  path: Vector[Long])
-implicit val channelKeyPathReads: Reads[ChannelKeyPath] =
-  Json.reads[ChannelKeyPath]
-
-case class LocalParams(
-  nodeId: String,
-  channelKeyPath: ChannelKeyPath,
-  dustLimitSatoshis: Long,
-  maxHtlcValueInFlightMsat: Long,
-  channelReserveSatoshis: Long,
-  htlcMinimumMsat: Long,
-  toSelfDelay: Long,
-  maxAcceptedHtlcs: Long,
-  isFunder: Boolean,
-  defaultFinalScriptPubKey: String,
-  globalFeatures: String,
-  localFeatures: String)
-implicit val localParamsReads: Reads[LocalParams] =
-  Json.reads[LocalParams]
-
-case class ChannelCommitments(
-  localParams: LocalParams,
-  remoteParams: RemoteParams,
-  channelFlags: Int,
-  localCommit: LocalCommit,
-  remoteCommit: RemoteCommit,
-  localChanges: CommitChanges,
-  remoteChanges: CommitChanges,
-  localNextHtlcId: Long,
-  remoteNextHtlcId: Long,
-  originChannels: String, // IDK WHAT TYPE THIS SHOULD BE
-  remoteNextCommitInfo: String,
-  commitInput: CommitInput,
-  remotePerCommitmentSecrets: Option[String], // IDK WHAT TYPE THIS SHOULD BE
-  channelId: String)
-implicit val channelCommitmentsReads: Reads[ChannelCommitments] =
-  Json.reads[ChannelCommitments]
-
-case class ChannelData(
-  commitments: ChannelCommitments,
-  shortChannelId: String,
-  buried: Boolean,
-  channelUpdate: ChannelUpdate)
-implicit val channelDataReads: Reads[ChannelData] =
-  Json.reads[ChannelData]
- */
 case class ChannelResult(
     nodeId: NodeId,
     channelId: FundedChannelId,
@@ -274,7 +181,7 @@ case class ChannelResult(
     feeBaseMsat: Option[MilliSatoshis],
     feeProportionalMillionths: Option[FeeProportionalMillionths],
     data: JsObject) {
-  import JsonReaders._
+  import org.bitcoins.eclair.rpc.client.JsonReaders._
   lazy val shortChannelId: Option[ShortChannelId] =
     (data \ "shortChannelId").validate[ShortChannelId].asOpt
 }
@@ -290,48 +197,80 @@ case class InvoiceResult(
     paymentHash: Sha256Digest,
     expiry: FiniteDuration)
 
+case class PaymentId(value: UUID) {
+  override def toString: String = value.toString
+}
+
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
-    amount: Option[MilliSatoshis],
     timestamp: Long,
     nodeId: NodeId,
-    tags: Vector[JsObject],
-    signature: LnInvoiceSignature)
-
-case class PaymentResult(
-    id: String,
+    serialized: String,
+    description: String,
     paymentHash: Sha256Digest,
-    preimage: Option[PaymentPreimage],
-    amountMsat: MilliSatoshis,
+    expiry: FiniteDuration,
+    amount: Option[MilliSatoshis])
+
+case class OutgoingPayment(
+    id: PaymentId,
+    parentId: PaymentId,
+    externalId: Option[String],
+    paymentHash: Sha256Digest,
+    amount: MilliSatoshis,
+    targetNodeId: NodeId,
     createdAt: FiniteDuration,
-    completedAt: Option[FiniteDuration],
-    status: PaymentStatus)
+    paymentRequest: Option[PaymentRequest],
+    status: OutgoingPaymentStatus)
 
-case class ReceivedPaymentResult(
-    paymentHash: Sha256Digest,
-    amountMsat: MilliSatoshis,
-    receivedAt: FiniteDuration)
+case class IncomingPayment(
+    paymentRequest: PaymentRequest,
+    paymentPreimage: PaymentPreimage,
+    createdAt: FiniteDuration,
+    status: IncomingPaymentStatus)
 
-sealed trait PaymentStatus
+sealed trait IncomingPaymentStatus
 
-object PaymentStatus {
-  case object PENDING extends PaymentStatus
-  case object SUCCEEDED extends PaymentStatus
-  case object FAILED extends PaymentStatus
+object IncomingPaymentStatus {
 
-  def apply(s: String): PaymentStatus = s match {
-    case "PENDING"   => PENDING
-    case "SUCCEEDED" => SUCCEEDED
-    case "FAILED"    => FAILED
-    case err =>
-      throw new IllegalArgumentException(
-        s"Unknown payment status code `${err}`")
-  }
+  case object Pending extends IncomingPaymentStatus
+
+  case object Expired extends IncomingPaymentStatus
+
+  case class Received(amount: MilliSatoshis, receivedAt: Long)
+      extends IncomingPaymentStatus
+
 }
 
-case class PaymentId(value: String) {
-  override def toString: String = value
+sealed trait OutgoingPaymentStatus
+
+object OutgoingPaymentStatus {
+  case object Pending extends OutgoingPaymentStatus
+
+  case class Succeeded(
+      paymentPreimage: PaymentPreimage,
+      feesPaid: MilliSatoshis,
+      route: Seq[Hop],
+      completedAt: FiniteDuration)
+      extends OutgoingPaymentStatus
+
+  case class Failed(failures: Seq[PaymentFailure]) extends OutgoingPaymentStatus
 }
+
+case class PaymentFailure(
+    failureType: PaymentFailure.Type,
+    failureMessage: String,
+    failedRoute: Seq[Hop])
+
+object PaymentFailure {
+  sealed trait Type
+  case object Local extends Type
+  case object Remote extends Type
+  case object UnreadableRemote extends Type
+}
+case class Hop(
+    nodeId: NodeId,
+    nextNodeId: NodeId,
+    shortChannelId: Option[ShortChannelId])
 
 sealed trait WebSocketEvent
 
