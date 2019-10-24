@@ -433,28 +433,39 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     eclairCall[InvoiceResult]("parseinvoice", "invoice" -> invoice.toString)
   }
 
-  override def payInvoice(invoice: LnInvoice): Future[PaymentId] = {
-    payInvoice(invoice, None, None, None, None)
-  }
+  override def payInvoice(invoice: LnInvoice): Future[PaymentId] =
+    payInvoice(invoice, None, None, None, None, None)
 
   override def payInvoice(
       invoice: LnInvoice,
-      amount: MilliSatoshis): Future[PaymentId] = {
-    payInvoice(invoice, Some(amount), None, None, None)
-  }
+      amount: MilliSatoshis): Future[PaymentId] =
+    payInvoice(invoice, Some(amount), None, None, None, None)
+
+  override def payInvoice(
+      invoice: LnInvoice,
+      externalId: Option[String]): Future[PaymentId] =
+    payInvoice(invoice, None, None, None, None, externalId)
+
+  override def payInvoice(
+      invoice: LnInvoice,
+      amount: MilliSatoshis,
+      externalId: Option[String]): Future[PaymentId] =
+    payInvoice(invoice, Some(amount), None, None, None, externalId)
 
   override def payInvoice(
       invoice: LnInvoice,
       amountMsat: Option[MilliSatoshis],
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
-      maxFeePct: Option[Int]): Future[PaymentId] = {
+      maxFeePct: Option[Int],
+      externalId: Option[String]): Future[PaymentId] = {
     val params = Seq(
       Some("invoice" -> invoice.toString),
       amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString),
       maxAttempts.map(x => "maxAttempts" -> x.toString),
       feeThresholdSat.map(x => "feeThresholdSat" -> x.toBigDecimal.toString),
-      maxFeePct.map(x => "maxFeePct" -> x.toString)
+      maxFeePct.map(x => "maxFeePct" -> x.toString),
+      externalId.map(x => "externalId" -> x)
     ).flatten
 
     eclairCall[PaymentId]("payinvoice", params: _*)
@@ -493,13 +504,15 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       paymentHash: Sha256Digest,
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
-      maxFeePct: Option[Int]): Future[PaymentId] = {
+      maxFeePct: Option[Int],
+      externalId: Option[String]): Future[PaymentId] = {
     val params = Seq("nodeId" -> nodeId.toString,
                      "amountMsat" -> amountMsat.toBigDecimal.toString,
                      "paymentHash" -> paymentHash.hex) ++ Seq(
       maxAttempts.map(x => "maxAttempts" -> x.toString),
       feeThresholdSat.map(x => "feeThresholdSat" -> x.toBigDecimal.toString),
-      maxFeePct.map(x => "maxFeePct" -> x.toString)
+      maxFeePct.map(x => "maxFeePct" -> x.toString),
+      externalId.map(x => "externalId" -> x)
     ).flatten
 
     eclairCall[PaymentId]("sendtonode", params: _*)
@@ -509,14 +522,15 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       route: scala.collection.immutable.Seq[NodeId],
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
-      finalCltvExpiry: Long): Future[PaymentId] = {
-    eclairCall[PaymentId](
-      "sendtoroute",
+      finalCltvExpiry: Long,
+      externalId: Option[String]): Future[PaymentId] = {
+    val params = Seq(
       "route" -> route.iterator.mkString(","),
       "amountMsat" -> amountMsat.toBigDecimal.toString,
       "paymentHash" -> paymentHash.hex,
       "finalCltvExpiry" -> finalCltvExpiry.toString
-    )
+    ) ++ Seq(externalId.map(x => "externalId" -> x)).flatten
+    eclairCall[PaymentId]("sendtoroute", params: _*)
   }
 
   override def updateRelayFee(

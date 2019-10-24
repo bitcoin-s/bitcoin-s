@@ -182,10 +182,20 @@ trait EclairApi {
 
   def payInvoice(
       invoice: LnInvoice,
+      externalId: Option[String]): Future[PaymentId]
+
+  def payInvoice(
+      invoice: LnInvoice,
+      amount: MilliSatoshis,
+      externalId: Option[String]): Future[PaymentId]
+
+  def payInvoice(
+      invoice: LnInvoice,
       amountMsat: Option[MilliSatoshis],
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
-      maxFeePct: Option[Int]): Future[PaymentId]
+      maxFeePct: Option[Int],
+      externalId: Option[String]): Future[PaymentId]
 
   /**
     * Pings eclair to see if a invoice has been paid and returns [[OutgoingPayment PaymentResult]]
@@ -202,20 +212,22 @@ trait EclairApi {
 
   def payAndMonitorInvoice(
       invoice: LnInvoice,
+      externalId: Option[String],
       interval: FiniteDuration,
       maxAttempts: Int): Future[OutgoingPayment] =
     for {
-      paymentId <- payInvoice(invoice)
+      paymentId <- payInvoice(invoice, externalId)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
     } yield paymentResult
 
   def payAndMonitorInvoice(
       invoice: LnInvoice,
       amount: MilliSatoshis,
+      externalId: Option[String],
       interval: FiniteDuration,
       maxAttempts: Int): Future[OutgoingPayment] =
     for {
-      paymentId <- payInvoice(invoice, amount)
+      paymentId <- payInvoice(invoice, amount, externalId)
       paymentResult <- monitorSentPayment(paymentId, interval, maxAttempts)
     } yield paymentResult
 
@@ -236,7 +248,8 @@ trait EclairApi {
       paymentHash: Sha256Digest,
       maxAttempts: Option[Int],
       feeThresholdSat: Option[Satoshis],
-      maxFeePct: Option[Int]): Future[PaymentId]
+      maxFeePct: Option[Int],
+      externalId: Option[String]): Future[PaymentId]
 
   /**
     * Documented by not implemented in Eclair
@@ -245,7 +258,8 @@ trait EclairApi {
       route: scala.collection.immutable.Seq[NodeId],
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
-      finalCltvExpiry: Long): Future[PaymentId]
+      finalCltvExpiry: Long,
+      externalId: Option[String]): Future[PaymentId]
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
 }

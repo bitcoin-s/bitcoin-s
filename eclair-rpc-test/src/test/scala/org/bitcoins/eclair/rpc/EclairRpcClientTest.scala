@@ -207,9 +207,13 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         for {
           _ <- openAndConfirmChannel(clientF, otherClientF)
           invoice <- otherClient.createInvoice("abc", 50.msats)
-          paymentResult <- client.payAndMonitorInvoice(invoice, 1.second, 60)
+          paymentResult <- client.payAndMonitorInvoice(invoice,
+                                                       Some("ext_id"),
+                                                       1.second,
+                                                       60)
         } yield {
           assert(paymentResult.amount == 50.msats)
+          assert(paymentResult.externalId.contains("ext_id"))
         }
     }
 
@@ -500,7 +504,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             paymentId <- client.sendToRoute(route,
                                             amt,
                                             invoice.lnTags.paymentHash.hash,
-                                            144)
+                                            144,
+                                            Some("ext_id"))
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
           } yield {
@@ -508,6 +513,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
             val succeededPayment = succeeded.head
             assert(succeededPayment.amount == amt)
+            assert(succeededPayment.externalId.contains("ext_id"))
             succeededPayment.status match {
               case sent: OutgoingPaymentStatus.Succeeded =>
                 assert(sent.paymentPreimage == preimage)
@@ -542,7 +548,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                            invoice.lnTags.paymentHash.hash,
                                            None,
                                            None,
-                                           None)
+                                           None,
+                                           Some("ext_id"))
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             _ <- client.close(channelId)
@@ -554,6 +561,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
             val succeededPayment = succeeded.head
             assert(succeededPayment.amount == amt)
+            assert(succeededPayment.externalId.contains("ext_id"))
             succeededPayment.status match {
               case sent: OutgoingPaymentStatus.Succeeded =>
                 assert(sent.paymentPreimage == preimage)
