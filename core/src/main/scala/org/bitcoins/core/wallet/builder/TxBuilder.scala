@@ -257,42 +257,23 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     } else {
       val inputIndex = UInt32(idx.get._2)
       val oldInput = unsignedTx.inputs(inputIndex.toInt)
+
       output.scriptPubKey match {
         case _: P2PKScriptPubKey =>
           P2PKSigner
-            .sign(signers,
-                  output,
-                  unsignedTx,
-                  inputIndex,
-                  hashType,
-                  dummySignatures)
+            .sign(utxo, unsignedTx, dummySignatures)
             .map(_.transaction)
         case _: P2PKHScriptPubKey =>
           P2PKHSigner
-            .sign(signers,
-                  output,
-                  unsignedTx,
-                  inputIndex,
-                  hashType,
-                  dummySignatures)
+            .sign(utxo, unsignedTx, dummySignatures)
             .map(_.transaction)
         case _: MultiSignatureScriptPubKey =>
           MultiSigSigner
-            .sign(signers,
-                  output,
-                  unsignedTx,
-                  inputIndex,
-                  hashType,
-                  dummySignatures)
+            .sign(utxo, unsignedTx, dummySignatures)
             .map(_.transaction)
         case _: LockTimeScriptPubKey =>
           LockTimeSigner
-            .sign(signers,
-                  output,
-                  unsignedTx,
-                  inputIndex,
-                  hashType,
-                  dummySignatures)
+            .sign(utxo, unsignedTx, dummySignatures)
             .map(_.transaction)
         case p2sh: P2SHScriptPubKey =>
           redeemScriptOpt match {
@@ -387,12 +368,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
 
         case _: P2WPKHWitnessSPKV0 =>
           P2WPKHSigner
-            .sign(signers,
-                  output,
-                  unsignedTx,
-                  inputIndex,
-                  hashType,
-                  dummySignatures)
+            .sign(utxo, unsignedTx, dummySignatures)
             .map(_.transaction)
         case p2wshSPK: P2WSHWitnessSPKV0 =>
           val p2wshScriptWitF = scriptWitnessOpt match {
@@ -412,12 +388,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
           val sigComponentF = validatedRedeemScriptF.flatMap {
             case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
                 _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey =>
-              P2WSHSigner.sign(signers,
-                               output,
-                               unsignedTx,
-                               inputIndex,
-                               hashType,
-                               dummySignatures)
+              P2WSHSigner.sign(utxo, unsignedTx, dummySignatures)
             case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 =>
               Future.fromTry(TxBuilderError.NestedWitnessSPK)
             case _: P2SHScriptPubKey =>
