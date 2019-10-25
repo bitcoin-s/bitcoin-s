@@ -1,17 +1,22 @@
 package org.bitcoins.node
 
+import akka.actor.Cancellable
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
-import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
+import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{DoNotDiscover, FutureOutcome}
 
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Future, Promise}
 
 @DoNotDiscover
 class NeutrinoNodeTest extends NodeUnitTest {
@@ -20,18 +25,44 @@ class NeutrinoNodeTest extends NodeUnitTest {
   implicit override protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
-  override type FixtureParam = NeutrinoNodeConnectedWithBitcoind
+  override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNeutrinoNodeConnectedToBitcoind(test,
-                                        Some(BitcoindVersion.Experimental))
+    withNeutrinoNodeFundedWalletBitcoind(test,
+                                         callbacks,
+                                         Some(BitcoindVersion.Experimental))
+
+  private val testTimeout = 30.seconds
+  private var assertionP: Promise[Boolean] = Promise()
+  after {
+    //reset assertion after a test runs, because we
+    //are doing mutation to work around our callback
+    //limitations, we can't currently modify callbacks
+    //after a SpvNode is constructed :-(
+    assertionP = Promise()
+  }
+  private val addressFromBitcoindP: Promise[BitcoinAddress] = Promise()
+
+  private def blockCallback(block: Block): Unit = {
+    addressFromBitcoindP.future.map { address =>
+      val scriptPubKey = address.scriptPubKey
+      if (block.transactions.exists(tx =>
+            tx.outputs.exists(_.scriptPubKey == scriptPubKey))) {
+        assertionP.success(true)
+      }
+    }
+  }
+
+  def callbacks: SpvNodeCallbacks = {
+    SpvNodeCallbacks(onBlockReceived = Vector(blockCallback))
+  }
 
   behavior of "NeutrinoNode"
 
   it must "receive notification that a block occurred on the p2p network" taggedAs (UsesExperimentalBitcoind) in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+    nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
       val node = nodeConnectedWithBitcoind.node
-      val bitcoind = nodeConnectedWithBitcoind.bitcoind
+      val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
 
       val assert1F = for {
         _ <- node.isConnected.map(assert(_))
@@ -57,9 +88,9 @@ class NeutrinoNodeTest extends NodeUnitTest {
   }
 
   it must "stay in sync with a bitcoind instance" taggedAs (UsesExperimentalBitcoind) in {
-    nodeConnectedWithBitcoind: NeutrinoNodeConnectedWithBitcoind =>
+    nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
       val node = nodeConnectedWithBitcoind.node
-      val bitcoind = nodeConnectedWithBitcoind.bitcoind
+      val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
 
       //we need to generate 1 block for bitcoind to consider
       //itself out of IBD. bitcoind will not sendheaders
@@ -90,33 +121,68 @@ class NeutrinoNodeTest extends NodeUnitTest {
       startGenF.flatMap { _ =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
-        def has6BlocksF =
+        def hasBlocksF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
             node
               .chainApiFromDb()
-              .flatMap(_.getBlockCount.map(_ == 6))
+              .flatMap(_.getBlockCount.map(_ == 113))
           }, duration = 1000.millis)
 
-        def has6FilterHeadersF =
+        def hasFilterHeadersF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
             node
               .chainApiFromDb()
-              .flatMap(_.getFilterHeaderCount.map(_ == 6))
+              .flatMap(_.getFilterHeaderCount.map(_ == 113))
           }, duration = 1000.millis)
 
-        def has6FiltersF =
+        def hasFiltersF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
             node
               .chainApiFromDb()
-              .flatMap(_.getFilterCount.map(_ == 6))
+              .flatMap(_.getFilterCount.map(_ == 113))
           }, duration = 1000.millis)
 
         for {
-          _ <- has6BlocksF
-          _ <- has6FilterHeadersF
-          _ <- has6FiltersF
+          _ <- hasBlocksF
+          _ <- hasFilterHeadersF
+          _ <- hasFiltersF
         } yield succeed
       }
+  }
+
+  it must "download a block that matches a compact block filter" taggedAs (UsesExperimentalBitcoind) in {
+    nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
+      val node = nodeConnectedWithBitcoind.node
+      val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
+
+      var cancelable: Option[Cancellable] = None
+
+      for {
+        addressFromBitcoind <- bitcoind.getNewAddress
+        _ = addressFromBitcoindP.success(addressFromBitcoind)
+        _ <- node.sync()
+        _ <- bitcoind.sendToAddress(addressFromBitcoind, 1.bitcoin)
+        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+        _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
+        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+        _ <- node.rescan(Vector(addressFromBitcoind.scriptPubKey))
+        _ = {
+          cancelable = Some {
+            system.scheduler.scheduleOnce(
+              testTimeout,
+              new Runnable {
+                override def run: Unit = {
+                  if (!assertionP.isCompleted)
+                    assertionP.failure(new TestFailedException(
+                      s"Did not receive a merkle block message after $testTimeout!",
+                      failedCodeStackDepth = 0))
+                }
+              }
+            )
+          }
+        }
+        result <- assertionP.future
+      } yield assert(result)
   }
 
 }

@@ -189,6 +189,8 @@ case class DataMessageHandler(
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
       case msg: BlockMessage =>
+        logger.info(
+          s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
         Future {
           callbacks.onBlockReceived.foreach(_.apply(msg.block))
           this

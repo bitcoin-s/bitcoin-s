@@ -139,6 +139,7 @@ trait Node extends P2PLogger {
   def stop(): Future[Node] = {
     logger.info(s"Stopping node")
     val disconnectF = for {
+      _ <- onStop()
       p <- peerMsgSenderF
       disconnect <- p.disconnect()
     } yield disconnect
@@ -161,6 +162,8 @@ trait Node extends P2PLogger {
     }
   }
 
+  def onStop(): Future[Unit]
+
   /** Starts to sync our node with our peer
     * If our local best block hash is the same as our peers
     * we will not sync, otherwise we will keep syncing
@@ -168,7 +171,7 @@ trait Node extends P2PLogger {
     * @return
     */
   def sync(): Future[Unit] = {
-    for {
+    (for {
       chainApi <- chainApiFromDb()
       hash <- chainApi.getBestBlockHash
       header <- chainApi
@@ -177,8 +180,10 @@ trait Node extends P2PLogger {
     } yield {
       peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
       logger.info(s"Starting sync node, height=${header.height} hash=$hash")
-    }
+    }).flatMap(_ => onSync())
   }
+
+  def onSync(): Future[Unit]
 
   /** Broadcasts the given transaction over the P2P network */
   def broadcastTransaction(transaction: Transaction): Future[Unit] = {

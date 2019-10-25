@@ -76,4 +76,7 @@ case class SpvNode(
     }
   }
 
+  override def onStop(): Future[Unit] = Future.successful(())
+
+  override def onSync(): Future[Unit] = Future.successful(())
 }

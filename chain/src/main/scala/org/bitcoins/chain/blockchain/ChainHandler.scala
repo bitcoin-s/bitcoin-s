@@ -379,7 +379,7 @@ case class ChainHandler(
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
 
-    logger.info(
+    logger.warn(
       s"Starting looking for matching blocks for scripts ${scripts.mkString(",")}")
 
     if (scripts.isEmpty) {
@@ -408,9 +408,11 @@ case class ChainHandler(
               // Find any matches in the group and add the corresponding block hashes into the result
               filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
                 (blocks, filter) =>
-                  if (filter.golombFilter.matchesAny(bytes))
+                  if (filter.golombFilter.matchesAny(bytes)) {
                     blocks :+ filter.blockHashBE
-                  else blocks
+                  } else {
+                    blocks
+                  }
               }
             }
           })
@@ -429,12 +431,16 @@ case class ChainHandler(
         } else {
           val startHeight = end - (batchSize - 1)
           val endHeight = end
-          val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
+          val newAcc = for {
             compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
                                                             endHeight)
-            groupSize = calcGroupSize(compactFilterDbs.size)
-            grouped = compactFilterDbs.grouped(groupSize)
-            filtered <- findMatches(grouped)
+            filtered <- if (compactFilterDbs.isEmpty)
+              Future.successful(Iterator.empty)
+            else {
+              val groupSize = calcGroupSize(compactFilterDbs.size)
+              val grouped = compactFilterDbs.grouped(groupSize)
+              findMatches(grouped)
+            }
             res <- acc
           } yield {
             res ++ filtered
@@ -458,7 +464,7 @@ case class ChainHandler(
         matched
       }
       res.foreach { blocks =>
-        logger.info(s"Done looking for matching blocks for addresses ${scripts
+        logger.warn(s"Done looking for matching blocks for addresses ${scripts
           .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
           .getOrElse("")}")
       }
