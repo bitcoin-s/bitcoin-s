@@ -11,10 +11,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.testkit.core.gen.ScriptGenerators
-import org.scalatest.AsyncFlatSpec
+import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-class UTXOSpendingInfoTest extends AsyncFlatSpec {
+class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
 
   def randomSPK: ScriptPubKey = {
     ScriptGenerators.scriptPubKey.map(_._1).sample.get
@@ -30,12 +30,7 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
     val privKey = ECPrivateKey.freshPrivateKey
     val pubKey = privKey.publicKey
     val p2sh = P2SHScriptPubKey(P2PKScriptPubKey(pubKey))
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Seq(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2sh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
@@ -53,12 +48,7 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
     val pubKey = privKey.publicKey
 
     val p2sh = P2SHScriptPubKey(P2WPKHWitnessSPKV0(pubKey))
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Seq(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2sh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
@@ -69,7 +59,7 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
         redeemScript = randomWitnessSPK,
-        P2WPKHWitnessV0(pubKey)
+        scriptWitness = P2WPKHWitnessV0(pubKey)
       )
     }
   }
@@ -95,7 +85,7 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
         redeemScript = P2WPKHWitnessSPKV0(pubKey),
-        P2WPKHWitnessV0(ECPrivateKey.freshPrivateKey.publicKey)
+        scriptWitness = P2WPKHWitnessV0(ECPrivateKey.freshPrivateKey.publicKey)
       )
     }
   }
@@ -105,12 +95,7 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
     val pubKey = privKey.publicKey
 
     val p2sh = P2SHScriptPubKey(P2WSHWitnessSPKV0(P2PKScriptPubKey(pubKey)))
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Seq(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2sh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
@@ -131,12 +116,7 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
     val pubKey = privKey.publicKey
 
     val p2sh = P2SHScriptPubKey(P2WSHWitnessSPKV0(P2PKScriptPubKey(pubKey)))
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Seq(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2sh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
@@ -157,12 +137,8 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
     val pubKey = privKey.publicKey
 
     val p2wpkh = P2WPKHWitnessSPKV0(pubKey)
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Seq(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val (creditingTx, _) =
+      TransactionGenerators.buildCreditingTransaction(p2wpkh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
@@ -182,12 +158,8 @@ class UTXOSpendingInfoTest extends AsyncFlatSpec {
     val pubKey = privKey.publicKey
 
     val p2wsh = P2WSHWitnessSPKV0(P2PKScriptPubKey(pubKey))
-    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wsh)
-    val creditingTx = BaseTransaction(version =
-                                        TransactionConstants.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Seq(creditingOutput),
-                                      lockTime = TransactionConstants.lockTime)
+    val (creditingTx, _) =
+      TransactionGenerators.buildCreditingTransaction(p2wsh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {

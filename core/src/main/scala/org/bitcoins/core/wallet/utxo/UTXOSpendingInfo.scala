@@ -59,7 +59,26 @@ sealed abstract class UTXOSpendingInfo {
   def scriptWitnessOpt: Option[ScriptWitness]
 }
 
-sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo
+sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
+  protected def isValidScriptWitness(
+      spk: WitnessScriptPubKeyV0,
+      scriptWitness: ScriptWitnessV0): Boolean = {
+    spk match {
+      case p2wpkh: P2WPKHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WPKHWitnessV0 =>
+            CryptoUtil.sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash
+          case _: ScriptWitnessV0 => false
+        }
+      case p2wsh: P2WSHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WSHWitnessV0 =>
+            CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
+          case _: ScriptWitnessV0 => false
+        }
+    }
+  }
+}
 
 object BitcoinUTXOSpendingInfo {
 
@@ -161,35 +180,6 @@ object BitcoinUTXOSpendingInfo {
          info.scriptWitnessOpt,
          info.hashType)
   }
-
-  def validateScriptWitness(
-      spk: WitnessScriptPubKeyV0,
-      scriptWitness: ScriptWitnessV0): Unit = {
-    spk match {
-      case p2wpkh: P2WPKHWitnessSPKV0 =>
-        scriptWitness match {
-          case witness: P2WPKHWitnessV0 =>
-            require(CryptoUtil
-                      .sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash,
-                    "P2WPKH witness public key must match SPK hash.")
-          case _: ScriptWitnessV0 =>
-            throw new IllegalArgumentException(
-              "P2WPKH ScriptPubKey must have P2WPKH witness.")
-        }
-      case p2wsh: P2WSHWitnessSPKV0 =>
-        scriptWitness match {
-          case witness: P2WSHWitnessV0 =>
-            require(
-              CryptoUtil
-                .sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash,
-              "P2WSH witness script must match SPK hash.")
-          case _: ScriptWitnessV0 =>
-            throw new IllegalArgumentException(
-              "P2WSH ScriptPubKey must have P2WSH witness."
-            )
-        }
-    }
-  }
 }
 
 /** This represents the information needed to be spend scripts like
@@ -202,9 +192,9 @@ case class RawScriptUTXOSpendingInfo(
     signers: Seq[Sign],
     hashType: HashType)
     extends BitcoinUTXOSpendingInfo {
-  override def redeemScriptOpt: Option[ScriptPubKey] = None
+  override val redeemScriptOpt: Option[ScriptPubKey] = None
 
-  override def scriptWitnessOpt: Option[ScriptWitnessV0] = None
+  override val scriptWitnessOpt: Option[ScriptWitnessV0] = None
 }
 
 /** This is the case where we are spending a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 witness v0 script]]  */
@@ -216,11 +206,13 @@ case class SegwitV0NativeUTXOSpendingInfo(
     hashType: HashType,
     scriptWitness: ScriptWitnessV0)
     extends BitcoinUTXOSpendingInfo {
-  BitcoinUTXOSpendingInfo.validateScriptWitness(scriptPubKey, scriptWitness)
+  require(
+    isValidScriptWitness(scriptPubKey, scriptWitness),
+    s"Invalid ScriptWitness for ScriptPubKey: $scriptWitness - $scriptPubKey")
 
-  override def redeemScriptOpt: Option[ScriptPubKey] = None
+  override val redeemScriptOpt: Option[ScriptPubKey] = None
 
-  override def scriptWitnessOpt: Option[ScriptWitnessV0] = Some(scriptWitness)
+  override val scriptWitnessOpt: Option[ScriptWitnessV0] = Some(scriptWitness)
 }
 
 /** This is the case where we are spending a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 witness v0 script]]  */
@@ -232,9 +224,9 @@ case class UnassignedSegwitNativeUTXOSpendingInfo(
     hashType: HashType,
     scriptWitness: ScriptWitness)
     extends BitcoinUTXOSpendingInfo {
-  override def redeemScriptOpt: Option[ScriptPubKey] = None
+  override val redeemScriptOpt: Option[ScriptPubKey] = None
 
-  override def scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
+  override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 }
 
 /** This is the case were we are attempting to spend a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey p2sh spk]] */
@@ -253,9 +245,9 @@ case class P2SHSpendingInfo(
       s"expected=${scriptPubKey.scriptHash.hex}"
   )
 
-  override def redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
+  override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
 
-  override def scriptWitnessOpt: Option[ScriptWitnessV0] = None
+  override val scriptWitnessOpt: Option[ScriptWitnessV0] = None
 }
 
 /** This is for the case we are spending a p2sh(p2w{pkh,sh}) script. This means that
@@ -276,9 +268,11 @@ case class P2SHNestedSegwitV0UTXOSpendingInfo(
       s"got=${P2SHScriptPubKey(redeemScript).scriptHash.hex}, " +
       s"expected=${scriptPubKey.scriptHash.hex}"
   )
-  BitcoinUTXOSpendingInfo.validateScriptWitness(redeemScript, scriptWitness)
+  require(
+    isValidScriptWitness(redeemScript, scriptWitness),
+    s"Invalid ScriptWitness for redeem script: $scriptWitness - $redeemScript")
 
-  override def redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
+  override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
 
-  override def scriptWitnessOpt: Option[ScriptWitnessV0] = Some(scriptWitness)
+  override val scriptWitnessOpt: Option[ScriptWitnessV0] = Some(scriptWitness)
 }
