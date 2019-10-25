@@ -81,7 +81,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
         }
     }
   }
-
+  /*
   property("random fuzz test for tx builder") = {
     Prop.forAllNoShrink(CreditingTxGen.randoms) {
       case creditingTxsInfo =>
@@ -106,7 +106,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
         }
     }
   }
-
+   */
   private def buildCreditingTxInfo(
       info: List[BitcoinUTXOSpendingInfo]): BitcoinTxBuilder.UTXOMap = {
     @tailrec

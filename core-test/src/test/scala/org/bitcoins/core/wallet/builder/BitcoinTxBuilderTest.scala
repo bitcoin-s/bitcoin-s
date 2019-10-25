@@ -198,61 +198,38 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
   it must "fail to build a tx if you have the wrong redeemscript" in {
     val p2sh = P2SHScriptPubKey(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
-    val destinations =
-      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(version = tc.validLockVersion,
                                       inputs = Nil,
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(
-      outPoint = outPoint,
-      output = creditingOutput,
-      signers = Seq(privKey),
-      redeemScriptOpt = Some(EmptyScriptPubKey),
-      scriptWitnessOpt = None,
-      hashType = HashType.sigHashAll
-    )
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilderNoRedeem = BitcoinTxBuilder(destinations = destinations,
-                                             utxos = utxoMap,
-                                             feeRate = feeUnit,
-                                             changeSPK = EmptyScriptPubKey,
-                                             network = TestNet3)
-    val resultFuture = txBuilderNoRedeem.flatMap(_.sign)
-    recoverToSucceededIf[IllegalArgumentException] {
-      resultFuture
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfo(
+        outPoint = outPoint,
+        output = creditingOutput,
+        signers = Seq(privKey),
+        redeemScriptOpt = Some(EmptyScriptPubKey),
+        scriptWitnessOpt = None,
+        hashType = HashType.sigHashAll
+      )
     }
   }
 
   it must "fail to build a tx if you have the wrong script witness" in {
     val p2wsh = P2WSHWitnessSPKV0(spk)
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wsh)
-    val destinations =
-      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,
                                       Nil,
                                       Seq(creditingOutput),
                                       tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-                                       HashType.sigHashAll)
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilderWitness = BitcoinTxBuilder(destinations,
-                                            utxoMap,
-                                            feeUnit,
-                                            EmptyScriptPubKey,
-                                            TestNet3)
-    val resultFuture = txBuilderWitness.flatMap(_.sign)
-    recoverToSucceededIf[IllegalArgumentException] {
-      resultFuture
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfo(outPoint,
+                              creditingOutput,
+                              Seq(privKey),
+                              None,
+                              Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+                              HashType.sigHashAll)
     }
   }
 
@@ -324,66 +301,39 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
     val p2wpkh = P2WPKHWitnessSPKV0(pubKey = privKey.publicKey)
     val creditingOutput =
       TransactionOutput(value = CurrencyUnits.zero, scriptPubKey = p2wpkh)
-    val destinations =
-      Seq(
-        TransactionOutput(value = Satoshis.one,
-                          scriptPubKey = EmptyScriptPubKey))
     val creditingTx = BaseTransaction(version = tc.validLockVersion,
                                       inputs = Nil,
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint =
       TransactionOutPoint(txId = creditingTx.txId, vout = UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(
-      outPoint = outPoint,
-      output = creditingOutput,
-      signers = Seq(privKey),
-      redeemScriptOpt = None,
-      scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-      hashType = HashType.sigHashAll
-    )
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilderWitness = BitcoinTxBuilder(destinations,
-                                            utxoMap,
-                                            feeUnit,
-                                            EmptyScriptPubKey,
-                                            TestNet3)
-    val resultFuture = txBuilderWitness.flatMap(_.sign)
-    recoverToSucceededIf[IllegalArgumentException] {
-      resultFuture
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfo(
+        outPoint = outPoint,
+        output = creditingOutput,
+        signers = Seq(privKey),
+        redeemScriptOpt = None,
+        scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+        hashType = HashType.sigHashAll
+      )
     }
   }
 
   it must "fail to sign a p2wpkh if we pass in the wrong public key" in {
     val p2wpkh = P2WPKHWitnessSPKV0(privKey.publicKey)
-    val pubKey2 = ECPrivateKey().publicKey
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
-    val destinations =
-      Seq(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(tc.validLockVersion,
                                       Nil,
                                       Seq(creditingOutput),
                                       tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-                                       HashType.sigHashAll)
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilderWitness = BitcoinTxBuilder(destinations,
-                                            utxoMap,
-                                            feeUnit,
-                                            EmptyScriptPubKey,
-                                            TestNet3)
-    val resultFuture = txBuilderWitness.flatMap(_.sign)
-    recoverToSucceededIf[IllegalArgumentException] {
-      resultFuture
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfo(outPoint,
+                              creditingOutput,
+                              Seq(privKey),
+                              None,
+                              Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+                              HashType.sigHashAll)
     }
   }
 }
