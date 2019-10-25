@@ -379,7 +379,7 @@ case class ChainHandler(
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
 
-    logger.warn(
+    logger.info(
       s"Starting looking for matching blocks for scripts ${scripts.mkString(",")}")
 
     if (scripts.isEmpty) {
@@ -464,7 +464,7 @@ case class ChainHandler(
         matched
       }
       res.foreach { blocks =>
-        logger.warn(s"Done looking for matching blocks for addresses ${scripts
+        logger.info(s"Done looking for matching blocks for addresses ${scripts
           .mkString(",")}: blocks matched ${blocks.size} latest block ${blocks.headOption
           .getOrElse("")}")
       }
