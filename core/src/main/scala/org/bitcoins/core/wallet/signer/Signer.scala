@@ -111,6 +111,10 @@ sealed abstract class Signer {
         }
 
         WitnessTxSigComponent(wtx, index, spendingInfo.output, flags)
+      case _: P2SHScriptPubKey =>
+        throw new IllegalStateException(
+          "Signers do not currently interface with P2SH as this is handled externally in TxBuilder.scala"
+        )
       case _: ScriptPubKey =>
         BaseTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
     }
@@ -310,6 +314,7 @@ sealed abstract class MultiSigSigner extends BitcoinSigner {
 object MultiSigSigner extends MultiSigSigner
 
 sealed abstract class P2WPKHSigner extends BitcoinSigner {
+
   override def sign(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
@@ -397,6 +402,7 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner {
 object P2WPKHSigner extends P2WPKHSigner
 
 sealed abstract class P2WSHSigner extends BitcoinSigner {
+
   override def sign(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
@@ -479,6 +485,7 @@ sealed abstract class P2WSHSigner extends BitcoinSigner {
 object P2WSHSigner extends P2WSHSigner
 
 sealed abstract class LockTimeSigner extends BitcoinSigner {
+
   override def sign(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
