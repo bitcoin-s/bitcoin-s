@@ -25,7 +25,7 @@ case class GolombFilter(
     n: CompactSizeUInt,
     encodedData: BitVector)
     extends NetworkElement {
-  lazy val decodedHashes: Vector[UInt64] = GCS.golombDecodeSet(encodedData, p)
+  lazy val f: UInt64 = n.num * m
 
   /** The hash of this serialized filter */
   lazy val hash: DoubleSha256Digest = {
@@ -46,8 +46,76 @@ case class GolombFilter(
     n.bytes ++ encodedData.bytes
   }
 
-  // TODO: Offer alternative that stops decoding when it finds out if data is there
-  def matchesHash(hash: UInt64): Boolean = {
+}
+
+trait BlockFilterMatcher {
+  def matchesHash(hash: UInt64): Boolean
+  def matches(data: ByteVector): Boolean
+  def matchesAnyHash(hashes: Vector[UInt64]): Boolean
+  def matchesAny(data: Vector[ByteVector]): Boolean
+}
+
+class SimpleFilterMatcher(filter: GolombFilter) extends BlockFilterMatcher {
+
+  override def matchesHash(hash: UInt64): Boolean = {
+    var matches = false
+    GCS.golombDecodeSetsWithPredicate(filter.encodedData, filter.p) {
+      decodedHash =>
+        if (hash > decodedHash) {
+          true
+        } else {
+          if (hash == decodedHash) {
+            matches = true
+          }
+          false
+        }
+    }
+    matches
+  }
+
+  override def matches(data: ByteVector): Boolean = {
+    val hash = GCS.hashToRange(data, filter.f, filter.key)
+    matchesHash(hash)
+  }
+
+  override def matchesAnyHash(hashes: Vector[UInt64]): Boolean = {
+    val sortedHashes = hashes.sorted
+    var matches = false
+    var i = 0
+
+    def predicate(decodedHash: UInt64): Boolean = {
+      while (i < sortedHashes.size) {
+        val hash = sortedHashes(i)
+        if (hash == decodedHash) {
+          matches = true
+          return false
+        } else if (hash > decodedHash) {
+          return true
+        } else {
+          i += 1
+        }
+      }
+      false
+    }
+
+    GCS.golombDecodeSetsWithPredicate(filter.encodedData, filter.p)(predicate)
+
+    matches
+  }
+
+  override def matchesAny(data: Vector[ByteVector]): Boolean = {
+    val hashes = data.map(GCS.hashToRange(_, filter.f, filter.key))
+    matchesAnyHash(hashes)
+  }
+}
+
+class BinarySearchFilterMatcher(filter: GolombFilter)
+    extends BlockFilterMatcher {
+
+  lazy val decodedHashes: Vector[UInt64] =
+    GCS.golombDecodeSet(filter.encodedData, filter.p)
+
+  override def matchesHash(hash: UInt64): Boolean = {
     @tailrec
     def binarySearch(
         from: Int,
@@ -70,12 +138,11 @@ case class GolombFilter(
       }
     }
 
-    binarySearch(from = 0, to = n.toInt - 1, hash, decodedHashes)
+    binarySearch(from = 0, to = filter.n.toInt - 1, hash, decodedHashes)
   }
 
-  def matches(data: ByteVector): Boolean = {
-    val f = n.num * m
-    val hash = GCS.hashToRange(data, f, key)
+  override def matches(data: ByteVector): Boolean = {
+    val hash = GCS.hashToRange(data, filter.f, filter.key)
 
     matchesHash(hash)
   }
@@ -83,16 +150,14 @@ case class GolombFilter(
   /** Checks whether there's a match for at least one of the given hashes
     * TODO refactor it to implement https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-coded-set-multi-match
     */
-  def matchesAnyHash(hashes: Vector[UInt64]): Boolean =
+  override def matchesAnyHash(hashes: Vector[UInt64]): Boolean =
     hashes.exists(matchesHash)
 
   /** Hashes the given vector of data and calls [[matchesAnyHash()]] to find a match */
-  def matchesAny(data: Vector[ByteVector]): Boolean = {
-    val f = n.num * m
-    val hashes = data.map(GCS.hashToRange(_, f, key))
+  override def matchesAny(data: Vector[ByteVector]): Boolean = {
+    val hashes = data.map(GCS.hashToRange(_, filter.f, filter.key))
     matchesAnyHash(hashes)
   }
-
 }
 
 object BlockFilter {

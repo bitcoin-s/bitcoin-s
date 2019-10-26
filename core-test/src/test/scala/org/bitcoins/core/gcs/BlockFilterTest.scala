@@ -28,10 +28,13 @@ class BlockFilterTest extends BitcoinSUnitTest {
     def runTest(): org.scalatest.Assertion = {
       val constructedFilter = BlockFilter(block, prevOutputScripts)
 
-      assert(constructedFilter.decodedHashes == filter.decodedHashes, clue)
-
       assert(constructedFilter.encodedData.bytes == filter.encodedData.bytes,
              clue)
+
+      val matcher = new BinarySearchFilterMatcher(filter)
+      val constructedMatcher = new BinarySearchFilterMatcher(constructedFilter)
+
+      assert(constructedMatcher.decodedHashes == matcher.decodedHashes, clue)
 
       val constructedHeader = constructedFilter.getHeader(prevHeader.flip)
 
