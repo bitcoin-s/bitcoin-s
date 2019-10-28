@@ -21,14 +21,9 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
-  LockTimeSpendingInfo,
-  MultiSignatureSpendingInfo,
-  P2PKHSpendingInfo,
-  P2PKSpendingInfo,
   P2SHNestedSegwitV0UTXOSpendingInfo,
   P2SHNoNestSpendingInfo,
   P2SHSpendingInfo,
-  SegwitV0NativeUTXOSpendingInfo,
   UTXOSpendingInfo,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
@@ -265,38 +260,6 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       val oldInput = unsignedTx.inputs(inputIndex.toInt)
 
       utxo match {
-        case p2pkInfo: P2PKSpendingInfo =>
-          P2PKSigner
-            .sign(p2pkInfo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case p2pkhInfo: P2PKHSpendingInfo =>
-          P2PKHSigner
-            .sign(p2pkhInfo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case multiSigInfo: MultiSignatureSpendingInfo =>
-          MultiSigSigner
-            .sign(multiSigInfo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case lockTimeInfo: LockTimeSpendingInfo =>
-          LockTimeSigner
-            .sign(lockTimeInfo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case segWitInfo @ SegwitV0NativeUTXOSpendingInfo(_,
-                                                         _,
-                                                         witnessSPK,
-                                                         _,
-                                                         _,
-                                                         _) =>
-          witnessSPK match {
-            case _: P2WPKHWitnessSPKV0 =>
-              P2WPKHSigner
-                .sign(segWitInfo, unsignedTx, dummySignatures)
-                .map(_.transaction)
-            case _: P2WSHWitnessSPKV0 =>
-              P2WSHSigner
-                .sign(segWitInfo, unsignedTx, dummySignatures)
-                .map(_.transaction)
-          }
         case p2shInfo: P2SHNoNestSpendingInfo =>
           signAndAddInputForP2SH(p2shInfo,
                                  unsignedTx,
@@ -336,10 +299,17 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
           }
         case _: UnassignedSegwitNativeUTXOSpendingInfo =>
           Future.fromTry(TxBuilderError.NoSigner)
+        case _: BitcoinUTXOSpendingInfo =>
+          BitcoinSigner
+            .sign(utxo, unsignedTx, dummySignatures)
+            .map(_.transaction)
       }
     }
   }
 
+  /** Signs P2SH(P2WSH) and non-segwit P2SH inputs by calling signAndAddInput on the altered
+    * transaction without P2SH nesting and then re-wrapping with the tweaked ScriptSignature
+    */
   private def signAndAddInputForP2SH(
       spendingInfo: P2SHSpendingInfo,
       unsignedTx: Transaction,
