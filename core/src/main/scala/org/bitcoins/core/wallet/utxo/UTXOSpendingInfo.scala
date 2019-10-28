@@ -8,7 +8,6 @@ import org.bitcoins.core.protocol.script.{
   LockTimeScriptPubKey,
   MultiSignatureScriptPubKey,
   NonStandardScriptPubKey,
-  NonWitnessScriptPubKey,
   P2PKHScriptPubKey,
   P2PKScriptPubKey,
   P2SHScriptPubKey,
@@ -16,6 +15,7 @@ import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessV0,
   P2WSHWitnessSPKV0,
   P2WSHWitnessV0,
+  RawScriptPubKey,
   ScriptPubKey,
   ScriptWitness,
   ScriptWitnessV0,
@@ -74,18 +74,7 @@ sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
       case p2wsh: P2WSHWitnessSPKV0 =>
         scriptWitness match {
           case witness: P2WSHWitnessV0 =>
-            val hashMatch = CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
-            val noIllegalNesting = witness.redeemScript match {
-              case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                  _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-                  _: NonStandardScriptPubKey | _: WitnessCommitment |
-                  EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
-                true
-              case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
-                  _: P2SHScriptPubKey =>
-                false
-            }
-            hashMatch && noIllegalNesting
+            CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
           case _: ScriptWitnessV0 => false
         }
     }
@@ -127,13 +116,15 @@ object BitcoinUTXOSpendingInfo {
                   witnessOpt.getOrElse(throw new IllegalArgumentException(
                     "Script Witness must be defined for (nested) Segwit input"))
                 )
-              case nonWitnessSPK: NonWitnessScriptPubKey =>
+              case nonWitnessSPK: RawScriptPubKey =>
                 P2SHNoNestSpendingInfo(outPoint,
                                        output.value,
                                        p2sh,
                                        signers,
                                        hashType,
                                        nonWitnessSPK)
+              case _: P2SHScriptPubKey =>
+                throw new IllegalArgumentException("Cannot have nested P2SH")
               case _: UnassignedWitnessScriptPubKey =>
                 throw new UnsupportedOperationException(
                   s"Unsupported ScriptPubKey ${output.scriptPubKey}")
@@ -212,7 +203,7 @@ object BitcoinUTXOSpendingInfo {
 sealed trait RawScriptUTXOSpendingInfo extends BitcoinUTXOSpendingInfo {
   override def outPoint: TransactionOutPoint
   override def amount: CurrencyUnit
-  override def scriptPubKey: NonWitnessScriptPubKey
+  override def scriptPubKey: RawScriptPubKey
   override def signers: Seq[Sign]
   override def hashType: HashType
 
@@ -226,7 +217,7 @@ object RawScriptUTXOSpendingInfo {
   def apply(
       outPoint: TransactionOutPoint,
       amount: CurrencyUnit,
-      scriptPubKey: NonWitnessScriptPubKey,
+      scriptPubKey: RawScriptPubKey,
       signers: Seq[Sign],
       hashType: HashType): RawScriptUTXOSpendingInfo = {
     scriptPubKey match {
@@ -384,21 +375,6 @@ case class P2WSHV0SpendingInfo(
     CryptoUtil
       .sha256(scriptWitness.redeemScript.asmBytes) == scriptPubKey.scriptHash,
     "Witness has incorrect script")
-  require(
-    {
-      scriptWitness.redeemScript match {
-        case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-            _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-            _: NonStandardScriptPubKey | _: WitnessCommitment |
-            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
-          true
-        case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
-            _: P2SHScriptPubKey =>
-          false
-      }
-    },
-    "No Illegal nesting allowed"
-  )
 
   val nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
     RawScriptUTXOSpendingInfo(outPoint,
@@ -440,7 +416,7 @@ case class P2SHNoNestSpendingInfo(
     scriptPubKey: P2SHScriptPubKey,
     signers: Seq[Sign],
     hashType: HashType,
-    redeemScript: NonWitnessScriptPubKey)
+    redeemScript: RawScriptPubKey)
     extends P2SHSpendingInfo {
   require(
     P2SHScriptPubKey(redeemScript) == output.scriptPubKey,
@@ -448,7 +424,6 @@ case class P2SHNoNestSpendingInfo(
       s"got=${P2SHScriptPubKey(redeemScript).scriptHash.hex}, " +
       s"expected=${scriptPubKey.scriptHash.hex}"
   )
-  require(!redeemScript.isInstanceOf[P2SHScriptPubKey], "Illegal P2SH nesting")
 
   override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
 
