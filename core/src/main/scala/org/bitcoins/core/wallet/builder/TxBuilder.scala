@@ -366,7 +366,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                                   updatedOutput,
                                                   spendingInfo.signers,
                                                   None,
-                                                  None,
+                                                  spendingInfo.scriptWitnessOpt,
                                                   spendingInfo.hashType)
 
     val signedTxEither =

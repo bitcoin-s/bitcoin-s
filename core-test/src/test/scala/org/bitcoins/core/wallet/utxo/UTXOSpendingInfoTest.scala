@@ -21,12 +21,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
   }
 
   def randomNonWitnessSPK: NonWitnessScriptPubKey = {
-    ScriptGenerators.scriptPubKey
-      .map(_._1)
-      .suchThat(_.isInstanceOf[NonWitnessScriptPubKey])
-      .sample
-      .get
-      .asInstanceOf[NonWitnessScriptPubKey]
+    ScriptGenerators.nonWitnessScriptPubKey.map(_._1).sample.get
   }
 
   def randomWitnessSPK: WitnessScriptPubKeyV0 = {

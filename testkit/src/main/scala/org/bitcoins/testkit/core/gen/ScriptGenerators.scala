@@ -139,7 +139,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys)
 
-  def emptyScriptPubKey: Gen[(ScriptPubKey, Seq[ECPrivateKey])] =
+  def emptyScriptPubKey: Gen[(EmptyScriptPubKey.type, Seq[ECPrivateKey])] =
     (EmptyScriptPubKey, Nil)
 
   /** Creates a basic version 0 P2WPKH scriptpubkey */
@@ -234,6 +234,19 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2wpkhSPKV0,
       p2wshSPKV0,
       unassignedWitnessScriptPubKey,
+      p2shScriptPubKey,
+      witnessCommitment
+    )
+  }
+
+  def nonWitnessScriptPubKey: Gen[(NonWitnessScriptPubKey, Seq[ECPrivateKey])] = {
+    Gen.oneOf(
+      p2pkScriptPubKey.map(privKeyToSeq),
+      p2pkhScriptPubKey.map(privKeyToSeq),
+      multiSigScriptPubKey,
+      emptyScriptPubKey,
+      cltvScriptPubKey,
+      csvScriptPubKey,
       p2shScriptPubKey,
       witnessCommitment
     )
@@ -645,9 +658,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (scriptSig, scriptPubKey, Seq(privateKey))
 
   /** Simply converts one private key in the generator to a sequence of private keys */
-  private def privKeyToSeq(tuple: (ScriptPubKey, ECPrivateKey)): (
-      ScriptPubKey,
-      Seq[ECPrivateKey]) = {
+  private def privKeyToSeq[T](
+      tuple: (T, ECPrivateKey)): (T, Seq[ECPrivateKey]) = {
     val (s, key) = tuple
     (s, Seq(key))
   }

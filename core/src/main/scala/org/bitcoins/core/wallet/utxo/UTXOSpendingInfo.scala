@@ -94,7 +94,6 @@ sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
 
 object BitcoinUTXOSpendingInfo {
 
-  // TODO: Get rid of this and force all callers to directly call a subclass apply method
   def apply(
       outPoint: TransactionOutPoint,
       output: TransactionOutput,
@@ -190,7 +189,6 @@ object BitcoinUTXOSpendingInfo {
     }
   }
 
-  // TODO: Get rid of this and force all matches to match on the ADT
   def unapply(info: BitcoinUTXOSpendingInfo): Option[
     (
         TransactionOutPoint,
