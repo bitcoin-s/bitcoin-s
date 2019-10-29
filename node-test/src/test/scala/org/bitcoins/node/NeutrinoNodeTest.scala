@@ -39,12 +39,13 @@ class NeutrinoNodeTest extends NodeUnitTest {
     //after a NeutrinoNode is constructed :-(
     assertionP = Promise()
   }
-  private var utxo: ScriptPubKey = _
+  private var utxos: Set[ScriptPubKey] = _
 
   private def blockCallback(block: Block): Unit = {
     if (!assertionP.isCompleted) {
-      assertionP.success(block.transactions.exists(tx =>
-        tx.outputs.exists(_.scriptPubKey == utxo)))
+      val scriptPubKeys =
+        block.transactions.flatMap(tx => tx.outputs.map(_.scriptPubKey)).toSet
+      assertionP.success(utxos.intersect(scriptPubKeys) == utxos)
     }
   }
 
@@ -154,11 +155,12 @@ class NeutrinoNodeTest extends NodeUnitTest {
       val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
 
       for {
-        utxos <- wallet.listUtxos()
+        walletUtxos <- wallet.listUtxos()
         _ = {
-          assert(utxos.nonEmpty)
-          utxo = utxos.head.output.scriptPubKey
+          assert(walletUtxos.nonEmpty)
+          utxos = walletUtxos.map(_.output.scriptPubKey).toSet
         }
+        walletAddress <- wallet.getNewAddress()
         _ <- node.sync()
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
         _ = system.scheduler.scheduleOnce(testTimeout) {
@@ -168,7 +170,8 @@ class NeutrinoNodeTest extends NodeUnitTest {
                 s"Did not receive a block message after $testTimeout!",
                 failedCodeStackDepth = 0))
         }
-        _ <- node.rescan(utxos.map(_.output.scriptPubKey))
+        _ <- node.rescan(
+          walletUtxos.map(_.output.scriptPubKey) :+ walletAddress.scriptPubKey)
         result <- assertionP.future
       } yield assert(result)
   }
