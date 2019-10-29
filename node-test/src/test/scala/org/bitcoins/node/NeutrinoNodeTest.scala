@@ -1,9 +1,6 @@
 package org.bitcoins.node
 
-import akka.actor.Cancellable
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -39,15 +36,15 @@ class NeutrinoNodeTest extends NodeUnitTest {
     //reset assertion after a test runs, because we
     //are doing mutation to work around our callback
     //limitations, we can't currently modify callbacks
-    //after a SpvNode is constructed :-(
+    //after a NeutrinoNode is constructed :-(
     assertionP = Promise()
   }
   private var utxo: ScriptPubKey = _
 
   private def blockCallback(block: Block): Unit = {
-    if (block.transactions.exists(tx =>
-          tx.outputs.exists(_.scriptPubKey == utxo))) {
-      assertionP.success(true)
+    if (!assertionP.isCompleted) {
+      assertionP.success(block.transactions.exists(tx =>
+        tx.outputs.exists(_.scriptPubKey == utxo)))
     }
   }
 
@@ -156,8 +153,6 @@ class NeutrinoNodeTest extends NodeUnitTest {
       val wallet = nodeConnectedWithBitcoind.wallet
       val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
 
-      var cancelable: Option[Cancellable] = None
-
       for {
         utxos <- wallet.listUtxos()
         _ = {
@@ -166,22 +161,14 @@ class NeutrinoNodeTest extends NodeUnitTest {
         }
         _ <- node.sync()
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ <- node.rescan(utxos.map(_.output.scriptPubKey))
-        _ = {
-          cancelable = Some {
-            system.scheduler.scheduleOnce(
-              testTimeout,
-              new Runnable {
-                override def run: Unit = {
-                  if (!assertionP.isCompleted)
-                    assertionP.failure(new TestFailedException(
-                      s"Did not receive a merkle block message after $testTimeout!",
-                      failedCodeStackDepth = 0))
-                }
-              }
-            )
-          }
+        _ = system.scheduler.scheduleOnce(testTimeout) {
+          if (!assertionP.isCompleted)
+            assertionP.failure(
+              new TestFailedException(
+                s"Did not receive a block message after $testTimeout!",
+                failedCodeStackDepth = 0))
         }
+        _ <- node.rescan(utxos.map(_.output.scriptPubKey))
         result <- assertionP.future
       } yield assert(result)
   }
