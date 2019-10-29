@@ -2,15 +2,9 @@ package org.bitcoins.core.gcs
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.CryptoUtil
 import scodec.bits.{BitVector, ByteVector}
-
-import scala.annotation.tailrec
 
 /**
   * Represents a GCS encoded set with all parameters specified
