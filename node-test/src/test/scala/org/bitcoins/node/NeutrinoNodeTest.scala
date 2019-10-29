@@ -5,6 +5,7 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -41,15 +42,12 @@ class NeutrinoNodeTest extends NodeUnitTest {
     //after a SpvNode is constructed :-(
     assertionP = Promise()
   }
-  private val addressFromBitcoindP: Promise[BitcoinAddress] = Promise()
+  private var utxo: ScriptPubKey = _
 
   private def blockCallback(block: Block): Unit = {
-    addressFromBitcoindP.future.map { address =>
-      val scriptPubKey = address.scriptPubKey
-      if (block.transactions.exists(tx =>
-            tx.outputs.exists(_.scriptPubKey == scriptPubKey))) {
-        assertionP.success(true)
-      }
+    if (block.transactions.exists(tx =>
+          tx.outputs.exists(_.scriptPubKey == utxo))) {
+      assertionP.success(true)
     }
   }
 
@@ -121,25 +119,27 @@ class NeutrinoNodeTest extends NodeUnitTest {
       startGenF.flatMap { _ =>
         //we should expect 5 headers have been announced to us via
         //the send headers message.
+        val ExpectedCount = 113
+
         def hasBlocksF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
             node
               .chainApiFromDb()
-              .flatMap(_.getBlockCount.map(_ == 113))
+              .flatMap(_.getBlockCount.map(_ == ExpectedCount))
           }, duration = 1000.millis)
 
         def hasFilterHeadersF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
             node
               .chainApiFromDb()
-              .flatMap(_.getFilterHeaderCount.map(_ == 113))
+              .flatMap(_.getFilterHeaderCount.map(_ == ExpectedCount))
           }, duration = 1000.millis)
 
         def hasFiltersF =
           RpcUtil.retryUntilSatisfiedF(conditionF = () => {
             node
               .chainApiFromDb()
-              .flatMap(_.getFilterCount.map(_ == 113))
+              .flatMap(_.getFilterCount.map(_ == ExpectedCount))
           }, duration = 1000.millis)
 
         for {
@@ -153,19 +153,20 @@ class NeutrinoNodeTest extends NodeUnitTest {
   it must "download a block that matches a compact block filter" taggedAs (UsesExperimentalBitcoind) in {
     nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
       val node = nodeConnectedWithBitcoind.node
+      val wallet = nodeConnectedWithBitcoind.wallet
       val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
 
       var cancelable: Option[Cancellable] = None
 
       for {
-        addressFromBitcoind <- bitcoind.getNewAddress
-        _ = addressFromBitcoindP.success(addressFromBitcoind)
+        utxos <- wallet.listUtxos()
+        _ = {
+          assert(utxos.nonEmpty)
+          utxo = utxos.head.output.scriptPubKey
+        }
         _ <- node.sync()
-        _ <- bitcoind.sendToAddress(addressFromBitcoind, 1.bitcoin)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ <- node.rescan(Vector(addressFromBitcoind.scriptPubKey))
+        _ <- node.rescan(utxos.map(_.output.scriptPubKey))
         _ = {
           cancelable = Some {
             system.scheduler.scheduleOnce(

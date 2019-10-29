@@ -33,25 +33,22 @@ case class NeutrinoNode(
 
   override val callbacks: SpvNodeCallbacks = nodeCallbacks
 
-  override def onStart(): Future[Unit] = {
+  override def start(): Future[Node] = {
     val res = for {
+      node <- super.start()
       chainApi <- chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash
       peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(
         stopHash = bestHash.flip)
     } yield {
-      ()
+      node
     }
 
     res.failed.foreach(logger.error("Cannot start Neutrino node", _))
 
     res
   }
-
-  override def onStop(): Future[Unit] = Future.successful(())
-
-  override def onSync(): Future[Unit] = Future.successful(())
 
   def rescan(
       scriptPubKeysToWatch: Vector[ScriptPubKey],
