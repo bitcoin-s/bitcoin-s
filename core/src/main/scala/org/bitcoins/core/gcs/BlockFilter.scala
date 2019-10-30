@@ -28,45 +28,6 @@ object BlockFilter {
   }
 
   /**
-    * Returns all ScriptPubKeys from a Block's inputs that are relevant
-    * to BIP 158 Basic Block Filters
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#contents]]
-    */
-  /*
-  TODO uncomment and add unit tests for this method
-  def getInputScriptPubKeysFromBlock(
-      block: Block,
-      utxoProvider: TempUtxoProvider): Vector[ScriptPubKey] = {
-    val transactions: Vector[Transaction] = block.transactions.toVector
-    val noCoinbase: Vector[Transaction] = transactions.tail
-
-    val inputs: Vector[TransactionInput] = noCoinbase.flatMap(_.inputs)
-    val outpointsSpent: Vector[TransactionOutPoint] =
-      inputs.map(_.previousOutput)
-    val prevOutputs: Vector[TransactionOutput] =
-      outpointsSpent.flatMap(utxoProvider.getUtxo)
-
-    prevOutputs
-      .filterNot(_.scriptPubKey == EmptyScriptPubKey)
-      .map(_.scriptPubKey)
-  }
-   */
-
-  /**
-    * Given a Block and access to the UTXO set, constructs a Block Filter for that block
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]]
-    */
-  /*
-  TODO uncomment and add unit tests for this method
-  def apply(block: Block, utxoProvider: TempUtxoProvider): GolombFilter = {
-    val prevOutputScripts: Vector[ScriptPubKey] =
-      getInputScriptPubKeysFromBlock(block, utxoProvider)
-
-    BlockFilter(block, prevOutputScripts)
-  }
-   */
-
-  /**
     * Given a Block and access to the previous output scripts, constructs a Block Filter for that block
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#block-filters]]
     */
