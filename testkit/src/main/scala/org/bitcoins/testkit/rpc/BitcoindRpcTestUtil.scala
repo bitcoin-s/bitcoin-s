@@ -56,6 +56,17 @@ import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
+import org.bitcoins.rpc.config.BitcoindConfig
+import java.io.File
+import java.nio.file.Path
+import org.bitcoins.rpc.client.common.BitcoindVersion.Unknown
+import org.bitcoins.rpc.client.common.BitcoindVersion.V16
+import org.bitcoins.rpc.client.common.BitcoindVersion.V17
+import org.bitcoins.rpc.client.common.BitcoindVersion.V18
+import java.nio.file.Files
+
+import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.rpc.BitcoindException
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
@@ -104,7 +115,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |regtest=1
                   |daemon=1
                   |server=1
-                  |
                   |rpcuser=$username
                   |rpcpassword=$pass
                   |rpcport=${rpcUri.getPort}

@@ -22,7 +22,7 @@ import org.bitcoins.core.protocol.ln.{
   ShortChannelId
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSUtil, FutureUtil, StartStop}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api.{
   AuditResult,
@@ -57,15 +57,14 @@ import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
 import java.nio.file.NoSuchFileException
 
-import org.bitcoins.core.util.FutureUtil
-
 /**
   * @param binary Path to Eclair Jar. If not present, reads
   *               environment variable `ECLAIR_PATH`
   */
 class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)(
     implicit system: ActorSystem)
-    extends EclairApi {
+    extends EclairApi
+    with StartStop[EclairRpcClient] {
   import JsonReaders._
 
   implicit val m = ActorMaterializer.create(system)
@@ -707,11 +706,11 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
   /** Starts eclair on the local system.
     *
-    * @return a future that completes when eclair is fully started.
+    * @return a future of the started EclairRpcClient when eclair is fully started.
     *         If eclair has not successfully started in 60 seconds
     *         the future times out.
     */
-  def start(): Future[Unit] = {
+  override def start(): Future[EclairRpcClient] = {
 
     val _ = {
 
@@ -733,13 +732,20 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       }
     }
 
-    val started = AsyncUtil.retryUntilSatisfiedF(() => isStarted,
-                                                 duration = 1.seconds,
-                                                 maxTries = 60)
-
+    val started: Future[EclairRpcClient] = {
+      for {
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStarted,
+                                            duration = 1.seconds,
+                                            maxTries = 60)
+      } yield this
+    }
     started
   }
 
+  /**
+    * Boolean check to verify the state of the client
+    * @return Future Boolean representing if client has started
+    */
   def isStarted(): Future[Boolean] = {
     val p = Promise[Boolean]()
 
@@ -753,10 +759,12 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     p.future
   }
 
-  /** Returns true if able to shut down
-    * Eclair instance */
-  def stop(): Future[Boolean] = {
-    val res = process.map(_.destroy()) match {
+  /** Returns a Future EclairRpcClient if able to shut down
+    * Eclair instance, inherits from the StartStop trait
+    * @return A future EclairRpcClient that is stopped
+    * */
+  def stop(): Future[EclairRpcClient] = {
+    val _ = process.map(_.destroy()) match {
       case None    => false
       case Some(_) => true
     }
@@ -765,8 +773,15 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     } else {
       FutureUtil.unit
     }
+    actorSystemF.map(_ => this)
+  }
 
-    actorSystemF.map(_ => res)
+  /**
+    * Checks to see if the client stopped successfully
+    * @return
+    */
+  def isStopped: Future[Boolean] = {
+    isStarted.map(started => !started)
   }
 
   /**

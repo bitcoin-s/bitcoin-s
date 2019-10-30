@@ -646,18 +646,22 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     logger.debug(s"shutting down eclair")
     val stopEclairF = eclairRpcClient.stop()
     val killBitcoindF = BitcoindRpcTestUtil.stopServer(bitcoindRpc)
+    val iskilled = eclairRpcClient.isStopped
 
-    for {
+    val shutdownF = for {
       _ <- killBitcoindF
-      stopped <- stopEclairF
+      _ <- stopEclairF
+      _ <- iskilled
     } yield {
-      if (stopped)
-        logger.debug(
-          "Successfully shutdown eclair and it's corresponding bitcoind")
-      else
-        logger.info(
-          s"Killed a bitcoind instance, but could not find an eclair process to kill")
+      logger.debug(
+        "Successfully shutdown eclair and it's corresponding bitcoind")
     }
+    shutdownF.failed.foreach { err: Throwable =>
+      logger.info(
+        s"Killed a bitcoind instance, but could not find an eclair process to kill")
+      throw err
+    }
+    shutdownF
   }
 }
 
