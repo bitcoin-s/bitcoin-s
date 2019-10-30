@@ -7,7 +7,6 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.concurrent.Future
-import org.bitcoins.core.util.FutureUtil
 
 /**
   * RPC calls related to administration of a given node
@@ -70,16 +69,5 @@ trait NodeRpc { self: Client =>
 
   def help(rpcName: String = ""): Future[String] = {
     bitcoindCall[String]("help", List(JsString(rpcName)))
-  }
-
-  def stop(): Future[String] = {
-    for {
-      res <- bitcoindCall[String]("stop")
-      _ <- {
-        if (system.name == BitcoindRpcClient.ActorSystemName) {
-          system.terminate()
-        } else FutureUtil.unit
-      }
-    } yield res
   }
 }
