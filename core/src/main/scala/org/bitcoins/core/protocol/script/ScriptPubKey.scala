@@ -26,19 +26,22 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class ScriptPubKey extends Script
 
+sealed trait NonWitnessScriptPubKey extends ScriptPubKey
+
 /**
   * Represents a
   * [[https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh pay-to-pubkey hash script pubkey]]
   *
   * Format: `OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG`
   */
-sealed trait P2PKHScriptPubKey extends ScriptPubKey {
+sealed trait P2PKHScriptPubKey extends NonWitnessScriptPubKey {
 
   def pubKeyHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 3).bytes)
 }
 
 object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
+
   private case class P2PKHScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends P2PKHScriptPubKey {
@@ -89,7 +92,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
   * https://bitcoin.org/en/developer-guide#multisig
   * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
   */
-sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
+sealed trait MultiSignatureScriptPubKey extends NonWitnessScriptPubKey {
 
   /** Returns the amount of required signatures for this multisignature script pubkey output */
   def requiredSigs: Int = {
@@ -259,7 +262,7 @@ object MultiSignatureScriptPubKey
   * Represents a [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
   * Format: `OP_HASH160 <Hash160(redeemScript)> OP_EQUAL`
   */
-sealed trait P2SHScriptPubKey extends ScriptPubKey {
+sealed trait P2SHScriptPubKey extends NonWitnessScriptPubKey {
 
   /** The hash of the script for which this scriptPubKey is being created from */
   def scriptHash: Sha256Hash160Digest =
@@ -267,6 +270,7 @@ sealed trait P2SHScriptPubKey extends ScriptPubKey {
 }
 
 object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
+
   private case class P2SHScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends P2SHScriptPubKey {
     override def toString = "P2SHScriptPubKeyImpl(" + hex + ")"
@@ -309,7 +313,7 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   * Represents a [[https://bitcoin.org/en/developer-guide#pubkey pay to public key script public key]]
   * Format: `<pubkey> OP_CHECKSIG`
   */
-sealed trait P2PKScriptPubKey extends ScriptPubKey {
+sealed trait P2PKScriptPubKey extends NonWitnessScriptPubKey {
 
   def publicKey: ECPublicKey =
     ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
@@ -346,7 +350,7 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
 }
 
-sealed trait LockTimeScriptPubKey extends ScriptPubKey {
+sealed trait LockTimeScriptPubKey extends NonWitnessScriptPubKey {
 
   /** Determines the nested `ScriptPubKey` inside the `LockTimeScriptPubKey` */
   def nestedScriptPubKey: ScriptPubKey = {
@@ -398,6 +402,7 @@ object LockTimeScriptPubKey extends ScriptFactory[LockTimeScriptPubKey] {
 sealed trait CLTVScriptPubKey extends LockTimeScriptPubKey
 
 object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
+
   private case class CLTVScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends CLTVScriptPubKey {
     override def toString = "CLTVScriptPubKeyImpl(" + hex + ")"
@@ -483,6 +488,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
 sealed trait CSVScriptPubKey extends LockTimeScriptPubKey
 
 object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
+
   private case class CSVScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends CSVScriptPubKey {
     override def toString = "CSVScriptPubKeyImpl(" + hex + ")"
@@ -545,9 +551,10 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 
 }
 
-sealed trait NonStandardScriptPubKey extends ScriptPubKey
+sealed trait NonStandardScriptPubKey extends NonWitnessScriptPubKey
 
 object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
+
   private case class NonStandardScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends NonStandardScriptPubKey {
@@ -565,7 +572,7 @@ object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
 }
 
 /** Represents the empty ScriptPubKey */
-case object EmptyScriptPubKey extends ScriptPubKey {
+case object EmptyScriptPubKey extends NonWitnessScriptPubKey {
   override def asm: Seq[ScriptToken] = Vector.empty
 }
 
@@ -705,6 +712,7 @@ sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
 }
 
 object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
+
   private case class P2WPKHWitnessSPKV0Impl(
       override val asm: Vector[ScriptToken])
       extends P2WPKHWitnessSPKV0
@@ -749,6 +757,7 @@ sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
 }
 
 object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
+
   private case class P2WSHWitnessSPKV0Impl(
       override val asm: Vector[ScriptToken])
       extends P2WSHWitnessSPKV0
@@ -790,6 +799,7 @@ sealed trait UnassignedWitnessScriptPubKey extends WitnessScriptPubKey {
 
 object UnassignedWitnessScriptPubKey
     extends ScriptFactory[UnassignedWitnessScriptPubKey] {
+
   private case class UnassignedWitnessScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends UnassignedWitnessScriptPubKey {
@@ -815,7 +825,7 @@ object UnassignedWitnessScriptPubKey
   * See BIP141 for more info
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]]
   */
-sealed trait WitnessCommitment extends ScriptPubKey {
+sealed trait WitnessCommitment extends NonWitnessScriptPubKey {
 
   /** The commitment to the
     * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]s in the
@@ -825,6 +835,7 @@ sealed trait WitnessCommitment extends ScriptPubKey {
 }
 
 object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
+
   private case class WitnessCommitmentImpl(
       override val asm: Vector[ScriptToken])
       extends WitnessCommitment {

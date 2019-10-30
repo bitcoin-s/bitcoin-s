@@ -3,12 +3,12 @@ package org.bitcoins.core.wallet.utxo
 import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
-  CSVScriptPubKey,
   EmptyScriptPubKey,
   EmptyScriptWitness,
+  LockTimeScriptPubKey,
   MultiSignatureScriptPubKey,
   NonStandardScriptPubKey,
+  NonWitnessScriptPubKey,
   P2PKHScriptPubKey,
   P2PKScriptPubKey,
   P2SHScriptPubKey,
@@ -60,6 +60,7 @@ sealed abstract class UTXOSpendingInfo {
 }
 
 sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
+
   protected def isValidScriptWitness(
       spk: WitnessScriptPubKeyV0,
       scriptWitness: ScriptWitnessV0): Boolean = {
@@ -73,7 +74,18 @@ sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
       case p2wsh: P2WSHWitnessSPKV0 =>
         scriptWitness match {
           case witness: P2WSHWitnessV0 =>
-            CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
+            val hashMatch = CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
+            val noIllegalNesting = witness.redeemScript match {
+              case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+                  _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
+                  _: NonStandardScriptPubKey | _: WitnessCommitment |
+                  EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+                true
+              case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
+                  _: P2SHScriptPubKey =>
+                false
+            }
+            hashMatch && noIllegalNesting
           case _: ScriptWitnessV0 => false
         }
     }
@@ -82,7 +94,6 @@ sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
 
 object BitcoinUTXOSpendingInfo {
 
-  // TODO: Get rid of this and force all callers to directly call a subclass apply method
   def apply(
       outPoint: TransactionOutPoint,
       output: TransactionOutput,
@@ -116,13 +127,16 @@ object BitcoinUTXOSpendingInfo {
                   witnessOpt.getOrElse(throw new IllegalArgumentException(
                     "Script Witness must be defined for (nested) Segwit input"))
                 )
-              case _: ScriptPubKey =>
-                P2SHSpendingInfo(outPoint,
-                                 output.value,
-                                 p2sh,
-                                 signers,
-                                 hashType,
-                                 redeemScript)
+              case nonWitnessSPK: NonWitnessScriptPubKey =>
+                P2SHNoNestSpendingInfo(outPoint,
+                                       output.value,
+                                       p2sh,
+                                       signers,
+                                       hashType,
+                                       nonWitnessSPK)
+              case _: UnassignedWitnessScriptPubKey =>
+                throw new UnsupportedOperationException(
+                  s"Unsupported ScriptPubKey ${output.scriptPubKey}")
             }
         }
       case wspk: WitnessScriptPubKeyV0 =>
@@ -152,19 +166,29 @@ object BitcoinUTXOSpendingInfo {
           signers,
           hashType,
           scriptWitnessOpt.getOrElse(EmptyScriptWitness))
-      case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-          _: MultiSignatureScriptPubKey | _: NonStandardScriptPubKey |
-          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessCommitment |
+      case p2pk: P2PKScriptPubKey =>
+        P2PKSpendingInfo(outPoint, output.value, p2pk, signers.head, hashType)
+      case p2pkh: P2PKHScriptPubKey =>
+        P2PKHSpendingInfo(outPoint, output.value, p2pkh, signers.head, hashType)
+      case multisig: MultiSignatureScriptPubKey =>
+        MultiSignatureSpendingInfo(outPoint,
+                                   output.value,
+                                   multisig,
+                                   signers.toVector,
+                                   hashType)
+      case locktime: LockTimeScriptPubKey =>
+        LockTimeSpendingInfo(outPoint,
+                             output.value,
+                             locktime,
+                             signers.toVector,
+                             hashType)
+      case _: NonStandardScriptPubKey | _: WitnessCommitment |
           EmptyScriptPubKey =>
-        RawScriptUTXOSpendingInfo(outPoint,
-                                  output.value,
-                                  output.scriptPubKey,
-                                  signers,
-                                  hashType)
+        throw new UnsupportedOperationException(
+          s"Currently unsupported ScriptPubKey ${output.scriptPubKey}")
     }
   }
 
-  // TODO: Get rid of this and force all matches to match on the ADT
   def unapply(info: BitcoinUTXOSpendingInfo): Option[
     (
         TransactionOutPoint,
@@ -185,17 +209,59 @@ object BitcoinUTXOSpendingInfo {
 /** This represents the information needed to be spend scripts like
   * [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey p2pkh]] or [[org.bitcoins.core.protocol.script.P2PKScriptPubKey p2pk]]
   * scripts. Basically there is no nesting that requires a redeem script here*/
-case class RawScriptUTXOSpendingInfo(
-    outPoint: TransactionOutPoint,
-    amount: CurrencyUnit,
-    scriptPubKey: ScriptPubKey,
-    signers: Seq[Sign],
-    hashType: HashType)
-    extends BitcoinUTXOSpendingInfo {
+sealed trait RawScriptUTXOSpendingInfo extends BitcoinUTXOSpendingInfo {
+  override val outPoint: TransactionOutPoint
+  override val amount: CurrencyUnit
+  override val scriptPubKey: ScriptPubKey
+  override val signers: Seq[Sign]
+  override val hashType: HashType
+
   override val redeemScriptOpt: Option[ScriptPubKey] = None
 
   override val scriptWitnessOpt: Option[ScriptWitnessV0] = None
 }
+
+case class P2PKSpendingInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    scriptPubKey: P2PKScriptPubKey,
+    signer: Sign,
+    hashType: HashType)
+    extends RawScriptUTXOSpendingInfo {
+  require(scriptPubKey.publicKey == signer.publicKey,
+          "Signer pubkey must match ScriptPubKey")
+
+  override val signers: Vector[Sign] = Vector(signer)
+}
+
+case class P2PKHSpendingInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    scriptPubKey: P2PKHScriptPubKey,
+    signer: Sign,
+    hashType: HashType)
+    extends RawScriptUTXOSpendingInfo {
+  require(scriptPubKey == P2PKHScriptPubKey(signer.publicKey),
+          "Signer pubkey must match ScriptPubKey")
+
+  override val signers: Vector[Sign] = Vector(signer)
+}
+
+case class MultiSignatureSpendingInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    scriptPubKey: MultiSignatureScriptPubKey,
+    signers: Vector[Sign],
+    hashType: HashType
+) extends RawScriptUTXOSpendingInfo
+
+case class LockTimeSpendingInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    scriptPubKey: LockTimeScriptPubKey,
+    signers: Vector[Sign],
+    hashType: HashType
+) extends RawScriptUTXOSpendingInfo
 
 /** This is the case where we are spending a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 witness v0 script]]  */
 case class SegwitV0NativeUTXOSpendingInfo(
@@ -229,21 +295,31 @@ case class UnassignedSegwitNativeUTXOSpendingInfo(
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
 }
 
+sealed trait P2SHSpendingInfo extends BitcoinUTXOSpendingInfo {
+  override def outPoint: TransactionOutPoint
+  override def amount: CurrencyUnit
+  override def scriptPubKey: P2SHScriptPubKey
+  override def signers: Seq[Sign]
+  override def hashType: HashType
+  def redeemScript: ScriptPubKey
+}
+
 /** This is the case were we are attempting to spend a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey p2sh spk]] */
-case class P2SHSpendingInfo(
+case class P2SHNoNestSpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2SHScriptPubKey,
     signers: Seq[Sign],
     hashType: HashType,
-    redeemScript: ScriptPubKey)
-    extends BitcoinUTXOSpendingInfo {
+    redeemScript: NonWitnessScriptPubKey)
+    extends P2SHSpendingInfo {
   require(
     P2SHScriptPubKey(redeemScript) == output.scriptPubKey,
     s"Given redeem script did not match hash in output script, " +
       s"got=${P2SHScriptPubKey(redeemScript).scriptHash.hex}, " +
       s"expected=${scriptPubKey.scriptHash.hex}"
   )
+  require(!redeemScript.isInstanceOf[P2SHScriptPubKey], "Illegal P2SH nesting")
 
   override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
 
@@ -261,7 +337,7 @@ case class P2SHNestedSegwitV0UTXOSpendingInfo(
     hashType: HashType,
     redeemScript: WitnessScriptPubKeyV0,
     scriptWitness: ScriptWitnessV0)
-    extends BitcoinUTXOSpendingInfo {
+    extends P2SHSpendingInfo {
   require(
     P2SHScriptPubKey(redeemScript) == output.scriptPubKey,
     s"Given redeem script did not match hash in output script, " +

@@ -20,6 +20,10 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     ScriptGenerators.scriptPubKey.map(_._1).sample.get
   }
 
+  def randomNonWitnessSPK: NonWitnessScriptPubKey = {
+    ScriptGenerators.nonWitnessScriptPubKey.map(_._1).sample.get
+  }
+
   def randomWitnessSPK: WitnessScriptPubKeyV0 = {
     ScriptGenerators.witnessScriptPubKeyV0.map(_._1).sample.get
   }
@@ -34,12 +38,12 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHSpendingInfo(outPoint = outPoint,
-                       amount = CurrencyUnits.zero,
-                       scriptPubKey = p2sh,
-                       signers = Seq(privKey),
-                       hashType = HashType.sigHashAll,
-                       redeemScript = randomSPK)
+      P2SHNoNestSpendingInfo(outPoint = outPoint,
+                             amount = CurrencyUnits.zero,
+                             scriptPubKey = p2sh,
+                             signers = Seq(privKey),
+                             hashType = HashType.sigHashAll,
+                             redeemScript = randomNonWitnessSPK)
     }
   }
 
