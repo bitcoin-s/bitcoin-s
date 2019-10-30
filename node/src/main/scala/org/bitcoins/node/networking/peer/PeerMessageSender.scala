@@ -121,10 +121,11 @@ case class PeerMessageSender(client: P2PClient)(implicit conf: NodeAppConfig)
   }
 
   /** Sends a request for filtered blocks matching the given headers */
-  def sendGetDataMessage(headers: BlockHeader*): Future[Unit] = {
+  def sendGetDataMessage(
+      typeIdentifier: TypeIdentifier,
+      hashes: DoubleSha256Digest*): Future[Unit] = {
     val inventories =
-      headers.map(header =>
-        Inventory(TypeIdentifier.MsgFilteredBlock, header.hash))
+      hashes.map(hash => Inventory(typeIdentifier, hash))
     val message = GetDataMessage(inventories)
     logger.info(s"Sending getdata=$message to peer=${client.peer}")
     sendMsg(message)
