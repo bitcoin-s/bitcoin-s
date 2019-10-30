@@ -142,7 +142,8 @@ case class DataMessageHandler(
 
         if (appConfig.isSPVEnabled) {
           logger.trace(s"Requesting data for headers=${headers.length}")
-          peerMsgSender.sendGetDataMessage(headers: _*)
+          peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgFilteredBlock,
+                                           headers.map(_.hash): _*)
         }
 
         val getHeadersF = chainApiF
@@ -188,6 +189,8 @@ case class DataMessageHandler(
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
       case msg: BlockMessage =>
+        logger.info(
+          s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
         Future {
           callbacks.onBlockReceived.foreach(_.apply(msg.block))
           this

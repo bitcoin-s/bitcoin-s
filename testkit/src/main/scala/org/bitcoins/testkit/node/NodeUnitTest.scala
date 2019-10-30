@@ -119,14 +119,17 @@ trait NodeUnitTest extends BitcoinSFixture {
 
   def withNeutrinoNodeFundedWalletBitcoind(
       test: OneArgAsyncTest,
-      callbacks: SpvNodeCallbacks)(
+      callbacks: SpvNodeCallbacks,
+      versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): FutureOutcome = {
 
     makeDependentFixture(
       build = () =>
         NodeUnitTest
-          .createNeutrinoNodeFundedWalletBitcoind(callbacks)(system, appConfig),
+          .createNeutrinoNodeFundedWalletBitcoind(callbacks, versionOpt)(
+            system,
+            appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)
@@ -238,12 +241,14 @@ object NodeUnitTest extends P2PLogger {
   }
 
   /** Creates a spv node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
-  def createSpvNodeFundedWalletBitcoind(callbacks: SpvNodeCallbacks)(
+  def createSpvNodeFundedWalletBitcoind(
+      callbacks: SpvNodeCallbacks,
+      versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[SpvNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.isSPVEnabled && !appConfig.isNeutrinoEnabled)
-    val fundedWalletF = BitcoinSWalletTest.fundedWalletAndBitcoind()
+    val fundedWalletF = BitcoinSWalletTest.fundedWalletAndBitcoind(versionOpt)
     for {
       fundedWallet <- fundedWalletF
       node <- createSpvNode(fundedWallet.bitcoind, callbacks)
@@ -255,12 +260,14 @@ object NodeUnitTest extends P2PLogger {
   }
 
   /** Creates a neutrino node, a funded bitcoin-s wallet, all of which are connected to bitcoind */
-  def createNeutrinoNodeFundedWalletBitcoind(callbacks: SpvNodeCallbacks)(
+  def createNeutrinoNodeFundedWalletBitcoind(
+      callbacks: SpvNodeCallbacks,
+      versionOpt: Option[BitcoindVersion])(
       implicit system: ActorSystem,
       appConfig: BitcoinSAppConfig): Future[NeutrinoNodeFundedWalletBitcoind] = {
     import system.dispatcher
     require(appConfig.isNeutrinoEnabled && !appConfig.isSPVEnabled)
-    val fundedWalletF = BitcoinSWalletTest.fundedWalletAndBitcoind()
+    val fundedWalletF = BitcoinSWalletTest.fundedWalletAndBitcoind(versionOpt)
     for {
       fundedWallet <- fundedWalletF
       node <- createNeutrinoNode(fundedWallet.bitcoind, callbacks)
