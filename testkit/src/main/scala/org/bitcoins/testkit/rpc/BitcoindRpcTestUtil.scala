@@ -68,7 +68,6 @@ import java.nio.file.Files
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.rpc.BitcoindException
 
-
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {
   import BitcoindRpcTestUtil.DEFAULT_LONG_DURATION
