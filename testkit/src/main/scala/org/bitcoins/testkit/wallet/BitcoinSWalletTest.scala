@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.currency._
 import org.bitcoins.db.AppConfig
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -127,10 +127,21 @@ object BitcoinSWalletTest extends WalletLogger {
     createNewWallet(None)(config, ec)() // get the standard config
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
-  def createWalletWithBitcoind(wallet: UnlockedWalletApi)(
-      implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+  def createWalletWithBitcoind(
+      wallet: UnlockedWalletApi
+  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
+    bitcoindF.map(WalletWithBitcoind(wallet, _))
+  }
+
+  /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
+  def createWalletWithBitcoind(
+      wallet: UnlockedWalletApi,
+      versionOpt: Option[BitcoindVersion]
+  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+    import system.dispatcher
+    val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(versionOpt)
     bitcoindF.map(WalletWithBitcoind(wallet, _))
   }
 
@@ -144,13 +155,13 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   /** Gives us a funded bitcoin-s wallet and the bitcoind instance that funded that wallet */
-  def fundedWalletAndBitcoind()(
+  def fundedWalletAndBitcoind(versionOpt: Option[BitcoindVersion])(
       implicit config: BitcoinSAppConfig,
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
       wallet <- createDefaultWallet()
-      withBitcoind <- createWalletWithBitcoind(wallet)
+      withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
   }

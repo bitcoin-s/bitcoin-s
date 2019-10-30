@@ -117,6 +117,24 @@ abstract class NodeTestUtil extends P2PLogger {
     }
   }
 
+  def isSameBestFilterHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
+      implicit ec: ExecutionContext): Future[Boolean] = {
+    val rpcCountF = rpc.getBlockCount
+    for {
+      count <- node.chainApiFromDb().flatMap(_.getFilterCount)
+      rpcCount <- rpcCountF
+    } yield rpcCount == count
+  }
+
+  def isSameBestFilterHeaderHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
+      implicit ec: ExecutionContext): Future[Boolean] = {
+    val rpcCountF = rpc.getBlockCount
+    for {
+      count <- node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
+      rpcCount <- rpcCountF
+    } yield rpcCount == count
+  }
+
   /** Checks if the given light client and bitcoind
     * has the same number of blocks in their blockchains
     */
@@ -144,7 +162,8 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
+      .retryUntilSatisfiedF(() => isSameBestFilterHeaderHeight(node, rpc),
+                            1000.milliseconds)
   }
 
   /** Awaits sync between the given node and bitcoind client */
@@ -152,7 +171,8 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit sys: ActorSystem): Future[Unit] = {
     import sys.dispatcher
     TestAsyncUtil
-      .retryUntilSatisfiedF(() => isSameBestHash(node, rpc), 1000.milliseconds)
+      .retryUntilSatisfiedF(() => isSameBestFilterHeight(node, rpc),
+                            1000.milliseconds)
   }
 
   /** The future doesn't complete until the nodes best hash is the given hash */

@@ -395,26 +395,33 @@ case class ChainHandler(
           vectorSize / parallelismLevel + 1
         else vectorSize / parallelismLevel
 
-      /** Iterates over the grouped vector of filters to find matches with the given [[bytes]].
-        */
-      def findMatches(filterGroups: Iterator[Vector[CompactFilterDb]]): Future[
+      def findMatches(filters: Vector[CompactFilterDb]): Future[
         Iterator[DoubleSha256DigestBE]] = {
-        // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
-        Future
-          .sequence(filterGroups.map { filterGroup =>
-            // We need to wrap in a future here to make sure we can
-            // potentially run these matches in parallel
-            Future {
-              // Find any matches in the group and add the corresponding block hashes into the result
-              filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
-                (blocks, filter) =>
-                  if (filter.golombFilter.matchesAny(bytes))
-                    blocks :+ filter.blockHashBE
-                  else blocks
+        if (filters.isEmpty)
+          Future.successful(Iterator.empty)
+        else {
+          /* Iterates over the grouped vector of filters to find matches with the given [[bytes]]. */
+          val groupSize = calcGroupSize(filters.size)
+          val filterGroups = filters.grouped(groupSize)
+          // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
+          Future
+            .sequence(filterGroups.map { filterGroup =>
+              // We need to wrap in a future here to make sure we can
+              // potentially run these matches in parallel
+              Future {
+                // Find any matches in the group and add the corresponding block hashes into the result
+                filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
+                  (blocks, filter) =>
+                    if (filter.golombFilter.matchesAny(bytes)) {
+                      blocks :+ filter.blockHashBE
+                    } else {
+                      blocks
+                    }
+                }
               }
-            }
-          })
-          .map(_.flatten)
+            })
+            .map(_.flatten)
+        }
       }
 
       /** Iterates over all filters in the range to find matches */
@@ -429,12 +436,10 @@ case class ChainHandler(
         } else {
           val startHeight = end - (batchSize - 1)
           val endHeight = end
-          val newAcc: Future[Vector[DoubleSha256DigestBE]] = for {
+          val newAcc = for {
             compactFilterDbs <- filterDAO.getBetweenHeights(startHeight,
                                                             endHeight)
-            groupSize = calcGroupSize(compactFilterDbs.size)
-            grouped = compactFilterDbs.grouped(groupSize)
-            filtered <- findMatches(grouped)
+            filtered <- findMatches(compactFilterDbs)
             res <- acc
           } yield {
             res ++ filtered
