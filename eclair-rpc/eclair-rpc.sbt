@@ -19,14 +19,14 @@ TaskKeys.downloadEclair := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.3.2"
-  val commit = "5ad3944"
+  val version = "0.3.3-SNAPSHOT"
+  val commit = "b9252cd"
 
   logger.debug(s"(Maybe) downloading Eclair binaries for version: $version")
 
   val versionDir = binaryDir resolve version
   val location =
-    s"https://github.com/ACINQ/eclair/releases/download/v$version/eclair-node-$version-$commit.jar"
+    s"https://s3-us-west-1.amazonaws.com/suredbits.com/eclair/eclair-node-$version-$commit.jar"
 
   if (Files.exists(versionDir)) {
     logger.debug(

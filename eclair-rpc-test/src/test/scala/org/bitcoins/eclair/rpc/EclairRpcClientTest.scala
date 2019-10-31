@@ -783,7 +783,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         invoice <- invoiceF
         //CI is super slow... wait 2 minutes
         received <- otherClient.monitorInvoice(invoice,
-                                               interval = 3.seconds,
+                                               interval = 1.seconds,
                                                maxAttempts = 60)
       } yield {
         assert(
