@@ -29,7 +29,7 @@ import org.bitcoins.core.protocol.ln.{
 import org.bitcoins.testkit.async.TestAsyncUtil
 
 import scala.concurrent.duration._
-import java.nio.file.{Files, Path}
+import java.nio.file.{FileSystems, Files, Path}
 
 import org.bitcoins.eclair.rpc.api.{
   ChannelResult,
@@ -797,7 +797,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         def log(instance: EclairInstance): Option[String] = {
           instance.authCredentials.datadir.map { d =>
             val lines =
-              Files.readAllLines(Path.of(d.getAbsolutePath, "eclair.log"))
+              Files.readAllLines(
+                FileSystems
+                  .getDefault()
+                  .getPath(d.getAbsolutePath, "eclair.log"))
             0.until(lines.size())
               .foldLeft("")((acc, i) => acc + lines.get(i) + "\n")
           }

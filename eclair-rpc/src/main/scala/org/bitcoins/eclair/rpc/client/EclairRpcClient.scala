@@ -638,7 +638,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           case _: JsError =>
             logger.error(JsError.toJson(res).toString())
             throw new IllegalArgumentException(
-              s"Could not parse JsResult! JSON: ${json}")
+              s"Could not parse JsResult for $commandName! JSON: ${json}")
         }
     }
   }
