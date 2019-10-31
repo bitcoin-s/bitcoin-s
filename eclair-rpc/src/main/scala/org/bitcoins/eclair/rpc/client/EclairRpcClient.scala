@@ -396,26 +396,29 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
         //register callback that publishes a payment to our actor system's
         //event stream,
-        receivedInfoF.foreach {
-          case None |
-              Some(IncomingPayment(_, _, _, IncomingPaymentStatus.Pending)) =>
-            if (attempts.incrementAndGet() >= maxAttempts) {
-              // too many tries to get info about a payment
-              // either Eclair is down or the payment is still in PENDING state for some reason
-              // complete the promise with an exception so the runnable will be canceled
-              p.failure(new RuntimeException(
-                s"EclairApi.monitorInvoice() [${instance.authCredentials.datadir}] too many attempts: ${attempts
-                  .get()} for invoice=${lnInvoice}"))
-            }
-          case Some(result) =>
-            //invoice has been paid, let's publish to event stream
-            //so subscribers so the even stream can see that a payment
-            //was received
-            //we need to create a `PaymentSucceeded`
-            system.eventStream.publish(result)
+        receivedInfoF.foreach { info =>
+          logger.info(s"EclairApi.monitorInvoice(): ${info}")
+          info match {
+            case None |
+                Some(IncomingPayment(_, _, _, IncomingPaymentStatus.Pending)) =>
+              if (attempts.incrementAndGet() >= maxAttempts) {
+                // too many tries to get info about a payment
+                // either Eclair is down or the payment is still in PENDING state for some reason
+                // complete the promise with an exception so the runnable will be canceled
+                p.failure(new RuntimeException(
+                  s"EclairApi.monitorInvoice() [${instance.authCredentials.datadir}] too many attempts: ${attempts
+                    .get()} for invoice=${lnInvoice}"))
+              }
+            case Some(result) =>
+              //invoice has been paid, let's publish to event stream
+              //so subscribers so the even stream can see that a payment
+              //was received
+              //we need to create a `PaymentSucceeded`
+              system.eventStream.publish(result)
 
-            //complete the promise so the runnable will be canceled
-            p.success(result)
+              //complete the promise so the runnable will be canceled
+              p.success(result)
+          }
         }
       }
     }
