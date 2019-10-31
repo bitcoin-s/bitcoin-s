@@ -209,7 +209,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           invoice <- otherClient.createInvoice("abc", 50.msats)
           paymentResult <- client.payAndMonitorInvoice(invoice,
                                                        Some("ext_id"),
-                                                       1.second,
+                                                       3.second,
                                                        60)
         } yield {
           assert(paymentResult.amount == 50.msats)
@@ -782,7 +782,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         _ <- paidF
         invoice <- invoiceF
         //CI is super slow... wait 2 minutes
-        received <- otherClient.monitorInvoice(invoice)
+        received <- otherClient.monitorInvoice(invoice,
+                                               interval = 3.seconds,
+                                               maxAttempts = 60)
       } yield {
         assert(
           received.status
