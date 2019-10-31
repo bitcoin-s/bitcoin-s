@@ -26,7 +26,11 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class ScriptPubKey extends Script
 
+/** Trait for all Non-SegWit ScriptPubKeys  */
 sealed trait NonWitnessScriptPubKey extends ScriptPubKey
+
+/** Trait for all raw, non-nested ScriptPubKeys (no P2SH) */
+sealed trait RawScriptPubKey extends NonWitnessScriptPubKey
 
 /**
   * Represents a
@@ -34,7 +38,7 @@ sealed trait NonWitnessScriptPubKey extends ScriptPubKey
   *
   * Format: `OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG`
   */
-sealed trait P2PKHScriptPubKey extends NonWitnessScriptPubKey {
+sealed trait P2PKHScriptPubKey extends RawScriptPubKey {
 
   def pubKeyHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 3).bytes)
@@ -92,7 +96,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
   * https://bitcoin.org/en/developer-guide#multisig
   * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
   */
-sealed trait MultiSignatureScriptPubKey extends NonWitnessScriptPubKey {
+sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
 
   /** Returns the amount of required signatures for this multisignature script pubkey output */
   def requiredSigs: Int = {
@@ -313,7 +317,7 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   * Represents a [[https://bitcoin.org/en/developer-guide#pubkey pay to public key script public key]]
   * Format: `<pubkey> OP_CHECKSIG`
   */
-sealed trait P2PKScriptPubKey extends NonWitnessScriptPubKey {
+sealed trait P2PKScriptPubKey extends RawScriptPubKey {
 
   def publicKey: ECPublicKey =
     ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
@@ -350,14 +354,14 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
 }
 
-sealed trait LockTimeScriptPubKey extends NonWitnessScriptPubKey {
+sealed trait LockTimeScriptPubKey extends RawScriptPubKey {
 
   /** Determines the nested `ScriptPubKey` inside the `LockTimeScriptPubKey` */
-  def nestedScriptPubKey: NonWitnessScriptPubKey = {
+  def nestedScriptPubKey: RawScriptPubKey = {
     val bool: Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
     bool match {
-      case true  => NonWitnessScriptPubKey(asm.slice(3, asm.length))
-      case false => NonWitnessScriptPubKey(asm.slice(4, asm.length))
+      case true  => RawScriptPubKey(asm.slice(3, asm.length))
+      case false => RawScriptPubKey(asm.slice(4, asm.length))
     }
   }
 
@@ -551,7 +555,7 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 
 }
 
-sealed trait NonStandardScriptPubKey extends NonWitnessScriptPubKey
+sealed trait NonStandardScriptPubKey extends RawScriptPubKey
 
 object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
 
@@ -572,18 +576,17 @@ object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
 }
 
 /** Represents the empty ScriptPubKey */
-case object EmptyScriptPubKey extends NonWitnessScriptPubKey {
+case object EmptyScriptPubKey extends RawScriptPubKey {
   override def asm: Seq[ScriptToken] = Vector.empty
 }
 
-object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
-  def empty: NonWitnessScriptPubKey = fromAsm(Nil)
+object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
+  val empty: RawScriptPubKey = fromAsm(Nil)
 
-  def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = asm match {
+  def fromAsm(asm: Seq[ScriptToken]): RawScriptPubKey = asm match {
     case Nil => EmptyScriptPubKey
     case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) =>
       P2PKHScriptPubKey(asm)
-    case _ if P2SHScriptPubKey.isP2SHScriptPubKey(asm) => P2SHScriptPubKey(asm)
     case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) => P2PKScriptPubKey(asm)
     case _ if MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm) =>
       MultiSignatureScriptPubKey(asm)
@@ -594,13 +597,27 @@ object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
     case _ => NonStandardScriptPubKey(asm)
   }
 
+  def apply(asm: Seq[ScriptToken]): RawScriptPubKey = fromAsm(asm)
+}
+
+object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
+  val empty: NonWitnessScriptPubKey = fromAsm(Nil)
+
+  def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = {
+    if (P2SHScriptPubKey.isP2SHScriptPubKey(asm)) {
+      P2SHScriptPubKey(asm)
+    } else {
+      RawScriptPubKey.fromAsm(asm)
+    }
+  }
+
   def apply(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = fromAsm(asm)
 }
 
 /** Factory companion object used to create
   * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] objects */
 object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
-  def empty: ScriptPubKey = fromAsm(Nil)
+  val empty: ScriptPubKey = fromAsm(Nil)
 
   /** Creates a `scriptPubKey` from its asm representation */
   def fromAsm(asm: Seq[ScriptToken]): ScriptPubKey = {
@@ -840,7 +857,7 @@ object UnassignedWitnessScriptPubKey
   * See BIP141 for more info
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]]
   */
-sealed trait WitnessCommitment extends NonWitnessScriptPubKey {
+sealed trait WitnessCommitment extends RawScriptPubKey {
 
   /** The commitment to the
     * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]s in the
