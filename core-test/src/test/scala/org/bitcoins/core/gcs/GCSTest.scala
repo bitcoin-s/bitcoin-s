@@ -189,7 +189,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     def items: Gen[(Vector[UInt64], UInt8)] = {
       NumberGenerator.genP.flatMap { p =>
-        Gen.choose(1, 250).flatMap { size =>
+        Gen.choose(10, 50).flatMap { size =>
           // If hash's quotient when divided by 2^p is too large, we hang converting to unary
           val upperBound: Long = 1L << (p.toInt * 1.75).toInt
 
