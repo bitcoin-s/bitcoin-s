@@ -20,8 +20,8 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     ScriptGenerators.scriptPubKey.map(_._1).sample.get
   }
 
-  def randomNonWitnessSPK: NonWitnessScriptPubKey = {
-    ScriptGenerators.nonWitnessScriptPubKey.map(_._1).sample.get
+  def randomRawSPK: RawScriptPubKey = {
+    ScriptGenerators.rawScriptPubKey.map(_._1).sample.get
   }
 
   def randomWitnessSPK: WitnessScriptPubKeyV0 = {
@@ -43,7 +43,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
                              scriptPubKey = p2sh,
                              signers = Seq(privKey),
                              hashType = HashType.sigHashAll,
-                             redeemScript = randomNonWitnessSPK)
+                             redeemScript = randomRawSPK)
     }
   }
 
