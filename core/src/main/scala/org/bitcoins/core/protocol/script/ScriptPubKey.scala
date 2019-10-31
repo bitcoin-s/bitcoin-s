@@ -353,11 +353,11 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 sealed trait LockTimeScriptPubKey extends NonWitnessScriptPubKey {
 
   /** Determines the nested `ScriptPubKey` inside the `LockTimeScriptPubKey` */
-  def nestedScriptPubKey: ScriptPubKey = {
+  def nestedScriptPubKey: NonWitnessScriptPubKey = {
     val bool: Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
     bool match {
-      case true  => ScriptPubKey(asm.slice(3, asm.length))
-      case false => ScriptPubKey(asm.slice(4, asm.length))
+      case true  => NonWitnessScriptPubKey(asm.slice(3, asm.length))
+      case false => NonWitnessScriptPubKey(asm.slice(4, asm.length))
     }
   }
 
@@ -576,13 +576,10 @@ case object EmptyScriptPubKey extends NonWitnessScriptPubKey {
   override def asm: Seq[ScriptToken] = Vector.empty
 }
 
-/** Factory companion object used to create
-  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] objects */
-object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
-  def empty: ScriptPubKey = fromAsm(Nil)
+object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
+  def empty: NonWitnessScriptPubKey = fromAsm(Nil)
 
-  /** Creates a `scriptPubKey` from its asm representation */
-  def fromAsm(asm: Seq[ScriptToken]): ScriptPubKey = asm match {
+  def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = asm match {
     case Nil => EmptyScriptPubKey
     case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) =>
       P2PKHScriptPubKey(asm)
@@ -592,11 +589,29 @@ object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
       MultiSignatureScriptPubKey(asm)
     case _ if CLTVScriptPubKey.isCLTVScriptPubKey(asm) => CLTVScriptPubKey(asm)
     case _ if CSVScriptPubKey.isCSVScriptPubKey(asm)   => CSVScriptPubKey(asm)
-    case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) =>
-      WitnessScriptPubKey(asm).get
     case _ if WitnessCommitment.isWitnessCommitment(asm) =>
       WitnessCommitment(asm)
     case _ => NonStandardScriptPubKey(asm)
+  }
+
+  def apply(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = fromAsm(asm)
+}
+
+/** Factory companion object used to create
+  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] objects */
+object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
+  def empty: ScriptPubKey = fromAsm(Nil)
+
+  /** Creates a `scriptPubKey` from its asm representation */
+  def fromAsm(asm: Seq[ScriptToken]): ScriptPubKey = {
+    val nonWitnessScriptPubKey = NonWitnessScriptPubKey.fromAsm(asm)
+    if (nonWitnessScriptPubKey
+          .isInstanceOf[NonStandardScriptPubKey] && WitnessScriptPubKey
+          .isWitnessScriptPubKey(asm)) {
+      WitnessScriptPubKey(asm).get
+    } else {
+      nonWitnessScriptPubKey
+    }
   }
 
   def apply(asm: Seq[ScriptToken]): ScriptPubKey = fromAsm(asm)

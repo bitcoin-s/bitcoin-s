@@ -86,9 +86,9 @@ object P2WPKHWitnessV0 {
   * Format: <redeem script> <scriptSig data1> <scriptSig data2> ... <scriptSig dataN>
   */
 sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
-  lazy val redeemScript: ScriptPubKey = {
+  lazy val redeemScript: NonWitnessScriptPubKey = {
     val cmpct = CompactSizeUInt.calc(stack.head)
-    ScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
+    NonWitnessScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
   }
   override def toString =
     s"P2WSHWitnessV0(${stack.map(BitcoinSUtil.encodeHex(_)).toString})"
