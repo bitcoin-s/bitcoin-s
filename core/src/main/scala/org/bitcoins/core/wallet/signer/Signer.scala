@@ -322,7 +322,7 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner[P2WPKHV0SpendingInfo] {
       spendingInfoToSatisfy: P2WPKHV0SpendingInfo)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     if (spendingInfoToSatisfy != spendingInfo) {
-      Future.fromTry(TxBuilderError.NestedWitnessSPK)
+      Future.fromTry(TxBuilderError.WrongSigner)
     } else {
       val (_, output, inputIndex, hashType) =
         relevantInfo(spendingInfo, unsignedTx)
@@ -402,7 +402,7 @@ sealed abstract class P2WSHSigner extends BitcoinSigner[P2WSHV0SpendingInfo] {
       spendingInfoToSatisfy: P2WSHV0SpendingInfo)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     if (spendingInfoToSatisfy != spendingInfo) {
-      Future.fromTry(TxBuilderError.NestedWitnessSPK)
+      Future.fromTry(TxBuilderError.WrongSigner)
     } else {
       val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 

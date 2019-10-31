@@ -301,7 +301,7 @@ case class LockTimeSpendingInfo(
     hashType: HashType
 ) extends RawScriptUTXOSpendingInfo {
 
-  def nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
+  val nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
     RawScriptUTXOSpendingInfo(outPoint,
                               amount,
                               scriptPubKey.nestedScriptPubKey,
@@ -400,7 +400,7 @@ case class P2WSHV0SpendingInfo(
     "No Illegal nesting allowed"
   )
 
-  def nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
+  val nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
     RawScriptUTXOSpendingInfo(outPoint,
                               amount,
                               scriptWitness.redeemScript,
@@ -430,7 +430,7 @@ sealed trait P2SHSpendingInfo extends BitcoinUTXOSpendingInfo {
   override def signers: Seq[Sign]
   override def hashType: HashType
   def redeemScript: ScriptPubKey
-  def nestedSpendingInfo: BitcoinUTXOSpendingInfo
+  val nestedSpendingInfo: BitcoinUTXOSpendingInfo
 }
 
 /** This is the case were we are attempting to spend a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey p2sh spk]] */
@@ -454,7 +454,7 @@ case class P2SHNoNestSpendingInfo(
 
   override val scriptWitnessOpt: Option[ScriptWitnessV0] = None
 
-  override def nestedSpendingInfo: RawScriptUTXOSpendingInfo =
+  override val nestedSpendingInfo: RawScriptUTXOSpendingInfo =
     RawScriptUTXOSpendingInfo(outPoint, amount, redeemScript, signers, hashType)
 }
 
@@ -484,7 +484,7 @@ case class P2SHNestedSegwitV0UTXOSpendingInfo(
 
   override val scriptWitnessOpt: Option[ScriptWitnessV0] = Some(scriptWitness)
 
-  override def nestedSpendingInfo: SegwitV0NativeUTXOSpendingInfo =
+  override val nestedSpendingInfo: SegwitV0NativeUTXOSpendingInfo =
     SegwitV0NativeUTXOSpendingInfo(outPoint,
                                    amount,
                                    redeemScript,
