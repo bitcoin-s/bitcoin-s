@@ -29,7 +29,7 @@ import org.bitcoins.core.protocol.ln.{
 import org.bitcoins.testkit.async.TestAsyncUtil
 
 import scala.concurrent.duration._
-import java.nio.file.Files
+import java.nio.file.{Files, Path}
 
 import org.bitcoins.eclair.rpc.api.{
   ChannelResult,
@@ -774,11 +774,11 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "monitor an invoice" in {
-    val amt = 1000.msat
+    val amt = 1234.msat
     val test = (client: EclairRpcClient, otherClient: EclairRpcClient) => {
       val invoiceF = otherClient.createInvoice("monitor an invoice", amt)
       val paidF = invoiceF.flatMap(i => client.payInvoice(i))
-      for {
+      val res = for {
         _ <- paidF
         invoice <- invoiceF
         //CI is super slow... wait 2 minutes
@@ -793,6 +793,23 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         assert(
           received.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
       }
+      res.onComplete { _ =>
+        def log(instance: EclairInstance): Option[String] = {
+          instance.authCredentials.datadir.map { d =>
+            val lines =
+              Files.readAllLines(Path.of(d.getAbsolutePath, "eclair.log"))
+            0.until(lines.size())
+              .foldLeft("")((acc, i) => acc + lines.get(i) + "\n")
+          }
+        }
+        println(
+          client.instance.authCredentials.datadir + "----------------------------------------\n" + log(
+            client.instance))
+        println(
+          otherClient.instance.authCredentials.datadir + "========================================\n" + log(
+            otherClient.instance))
+      }
+      res
     }
     executeWithClientOtherClient(test)
   }

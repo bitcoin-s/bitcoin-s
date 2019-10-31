@@ -403,10 +403,9 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
               // too many tries to get info about a payment
               // either Eclair is down or the payment is still in PENDING state for some reason
               // complete the promise with an exception so the runnable will be canceled
-              p.failure(
-                new RuntimeException(
-                  s"EclairApi.monitorInvoice() too many attempts: ${attempts
-                    .get()} for invoice=${lnInvoice}"))
+              p.failure(new RuntimeException(
+                s"EclairApi.monitorInvoice() [${instance.authCredentials.datadir}] too many attempts: ${attempts
+                  .get()} for invoice=${lnInvoice}"))
             }
           case Some(result) =>
             //invoice has been paid, let's publish to event stream
