@@ -26,8 +26,10 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class ScriptPubKey extends Script
 
+/** Trait for all Non-SegWit ScriptPubKeys  */
 sealed trait NonWitnessScriptPubKey extends ScriptPubKey
 
+/** Trait for all raw, non-nested ScriptPubKeys (no P2SH) */
 sealed trait RawScriptPubKey extends NonWitnessScriptPubKey
 
 /**
@@ -579,7 +581,7 @@ case object EmptyScriptPubKey extends RawScriptPubKey {
 }
 
 object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
-  def empty: RawScriptPubKey = fromAsm(Nil)
+  val empty: RawScriptPubKey = fromAsm(Nil)
 
   def fromAsm(asm: Seq[ScriptToken]): RawScriptPubKey = asm match {
     case Nil => EmptyScriptPubKey
@@ -599,7 +601,7 @@ object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
 }
 
 object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
-  def empty: NonWitnessScriptPubKey = fromAsm(Nil)
+  val empty: NonWitnessScriptPubKey = fromAsm(Nil)
 
   def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = {
     if (P2SHScriptPubKey.isP2SHScriptPubKey(asm)) {
@@ -615,7 +617,7 @@ object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
 /** Factory companion object used to create
   * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] objects */
 object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
-  def empty: ScriptPubKey = fromAsm(Nil)
+  val empty: ScriptPubKey = fromAsm(Nil)
 
   /** Creates a `scriptPubKey` from its asm representation */
   def fromAsm(asm: Seq[ScriptToken]): ScriptPubKey = {
