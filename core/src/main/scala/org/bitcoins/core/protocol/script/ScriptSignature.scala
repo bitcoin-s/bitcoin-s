@@ -231,11 +231,11 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
       case Success(redeemScript) =>
         redeemScript match {
           case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
-              _: P2SHScriptPubKey | _: P2PKScriptPubKey | _: CLTVScriptPubKey |
+              _: P2SHScriptPubKey | _: P2PKScriptPubKey |
+              _: ConditionalScriptPubKey | _: CLTVScriptPubKey |
               _: CSVScriptPubKey | _: WitnessScriptPubKeyV0 |
               _: UnassignedWitnessScriptPubKey =>
             true
-          case _: ConditionalScriptPubKey                        => false
           case _: NonStandardScriptPubKey | _: WitnessCommitment => false
           case EmptyScriptPubKey                                 => false
         }
@@ -504,6 +504,8 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
         if (tokens.size > 1 && P2SHScriptSignature.isRedeemScript(
           tokens.last)) =>
       P2SHScriptSignature.fromAsm(tokens)
+    case _ if ConditionalScriptSignature.isValidConditionalScriptSig(tokens) =>
+      ConditionalScriptSignature.fromAsm(tokens)
     case _
         if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(
           tokens)) =>
@@ -512,8 +514,6 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
       P2PKHScriptSignature.fromAsm(tokens)
     case _ if P2PKScriptSignature.isP2PKScriptSignature(tokens) =>
       P2PKScriptSignature.fromAsm(tokens)
-    case _ if ConditionalScriptSignature.isValidConditionalScriptSig(tokens) =>
-      ConditionalScriptSignature.fromAsm(tokens)
     case _ => NonStandardScriptSignature.fromAsm(tokens)
   }
 

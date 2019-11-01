@@ -349,7 +349,7 @@ case class ConditionalSpendingInfo(
         "This should be covered by invariant above")
   }
 
-  def nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
+  val nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
     val nestedSPK = if (condition) {
       scriptPubKey.trueSPK
     } else {
