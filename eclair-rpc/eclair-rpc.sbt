@@ -20,7 +20,7 @@ TaskKeys.downloadEclair := {
   }
 
   val version = "0.3.3-SNAPSHOT"
-  val commit = "b9252cd"
+  val commit = "fbdb369"
 
   logger.debug(s"(Maybe) downloading Eclair binaries for version: $version")
 
