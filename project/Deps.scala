@@ -7,7 +7,7 @@ object Deps {
     val logback = "1.2.3"
     val scalacheck = "1.14.0"
     val scalaTest = "3.0.8"
-    val slf4j = "1.7.28"
+    val slf4j = "1.7.29"
     val spray = "1.3.5"
     val zeromq = "0.5.1"
     val akkav = "10.1.10"
