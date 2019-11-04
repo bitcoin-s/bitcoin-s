@@ -242,7 +242,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       dummySignatures: Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = remaining match {
     case Nil => Future.successful(txInProgress)
-    case info :: t =>
+    case info +: t =>
       val partiallySigned = signAndAddInput(info, txInProgress, dummySignatures)
       partiallySigned.flatMap(tx => loop(t, tx, dummySignatures))
   }
@@ -411,7 +411,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
         remaining: Seq[BitcoinUTXOSpendingInfo],
         currentLockTime: UInt32): Try[UInt32] = remaining match {
       case Nil => Success(currentLockTime)
-      case spendingInfo :: newRemaining =>
+      case spendingInfo +: newRemaining =>
         spendingInfo match {
           case lockTime: LockTimeSpendingInfo =>
             lockTime.scriptPubKey match {
@@ -465,7 +465,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
         remaining: Seq[UTXOSpendingInfo],
         accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
       case Nil => accum.reverse
-      case spendingInfo :: newRemaining =>
+      case spendingInfo +: newRemaining =>
         spendingInfo match {
           case lockTime: LockTimeSpendingInfo =>
             val sequence = lockTime.scriptPubKey match {

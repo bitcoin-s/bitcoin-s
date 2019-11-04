@@ -462,6 +462,9 @@ sealed abstract class LockTimeSigner
 }
 object LockTimeSigner extends LockTimeSigner
 
+/** Delegates to get a ScriptSignature for the case being
+  * spent and then adds an OP_TRUE or OP_FALSE
+  */
 sealed abstract class ConditionalSigner
     extends BitcoinSigner[ConditionalSpendingInfo] {
 

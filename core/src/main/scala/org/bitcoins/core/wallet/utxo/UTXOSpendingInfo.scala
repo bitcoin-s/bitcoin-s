@@ -62,6 +62,9 @@ sealed abstract class UTXOSpendingInfo {
   def conditionalPath: ConditionalPath
 }
 
+/** Represents the spending branch being taken in a ScriptPubKey's execution
+  *
+  * Note that we do not yet support nested conditionals. */
 sealed trait ConditionalPath
 
 object ConditionalPath {
@@ -328,6 +331,7 @@ case class MultiSignatureSpendingInfo(
     ConditionalPath.NoConditionsLeft
 }
 
+/** Info required for signing a [[ConditionalScriptPubKey]] */
 case class ConditionalSpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,

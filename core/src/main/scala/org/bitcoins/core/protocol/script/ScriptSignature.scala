@@ -445,6 +445,7 @@ sealed trait ConditionalScriptSignature extends ScriptSignature {
     asm.last == OP_FALSE
   }
 
+  /** The ScriptSignature for the nested case being spent */
   def nestedScriptSig: ScriptSignature = {
     ScriptSignature.fromAsm(asm.dropRight(1))
   }
