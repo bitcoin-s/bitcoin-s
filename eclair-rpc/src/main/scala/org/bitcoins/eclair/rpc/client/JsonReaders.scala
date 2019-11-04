@@ -231,7 +231,7 @@ object JsonReaders {
     Json.reads[OutgoingPaymentStatus.Succeeded]
   implicit val paymentFailureTypeReads: Reads[PaymentFailure.Type] = Reads {
     jsValue =>
-      (jsValue \ "type")
+      (jsValue \ "name")
         .validate[String]
         .flatMap { s =>
           s.toLowerCase match {
