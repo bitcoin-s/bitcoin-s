@@ -777,19 +777,15 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       val res = for {
         b <- bitcoindRpcClientF
         bc1 <- b.getBlockCount
-        _ = println(s"b1 ${bc1}")
         invoice: LnInvoice <- otherClient.createInvoice("monitor an invoice",
                                                         amt)
-        _ = println(s"cltvExpiry ${invoice.lnTags.cltvExpiry}")
         _ <- client.payInvoice(invoice)
         bc2 <- b.getBlockCount
-        _ = println(s"b2 ${bc2}")
         //CI is super slow... wait 2 minutes
         received <- otherClient.monitorInvoice(invoice,
                                                interval = 1.seconds,
                                                maxAttempts = 60)
         bc3 <- b.getBlockCount
-        _ = println(s"b3 ${bc3}")
       } yield {
         assert(
           received.status
