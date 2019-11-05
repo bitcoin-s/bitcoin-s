@@ -32,7 +32,7 @@ object Deps {
     val oldMicroPickleV = "0.7.4"
     val oldMicroJsonV = oldMicroPickleV
 
-    val newMicroPickleV = "0.7.5"
+    val newMicroPickleV = "0.8.0"
     val newMicroJsonV = newMicroPickleV
 
     // akka-http-upickle is not yet published
