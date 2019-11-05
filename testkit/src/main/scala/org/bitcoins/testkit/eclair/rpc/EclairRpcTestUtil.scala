@@ -302,7 +302,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         client.getSentInfo(paymentId)
       sentInfoF.map { payment =>
         if (failFast && payment.exists(result => isFailed(result.status))) {
-          throw new RuntimeException(s"Payment ${paymentId} has failed")
+          throw new RuntimeException(
+            s"Payment ${paymentId} has failed: $payment")
         }
         if (!payment.exists(
               result => tag.runtimeClass == result.status.getClass)) {
