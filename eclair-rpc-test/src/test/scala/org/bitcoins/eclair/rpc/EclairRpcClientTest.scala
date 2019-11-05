@@ -163,11 +163,32 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       .map(_ => succeed)
   }
 
+  it should "get a route to a node ID" in {
+    val hasRoute = () => {
+      fourthClientF
+        .flatMap(_.getInfo)
+        .flatMap(info =>
+          firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
+        .map(route => route.length == 4)
+        .recover {
+          case err: RuntimeException
+              if err.getMessage.contains("route not found") =>
+            false
+        }
+    }
+
+    AsyncUtil
+      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
+      .map(_ => succeed)
+  }
+
   it should "send some payments and get the audit info" in {
     for {
       client1 <- firstClientF
       client2 <- secondClientF
       client4 <- fourthClientF
+      bitcoind <- bitcoindRpcClientF
+      _ <- bitcoind.getBlockCount
       invoice <- client4.createInvoice("test", 1000.msats)
       paymentId <- {
         val p = client1.payInvoice(invoice)
@@ -189,25 +210,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       assert(received.received.nonEmpty)
       assert(relayed.relayed.nonEmpty)
     }
-  }
-
-  it should "get a route to a node ID" in {
-    val hasRoute = () => {
-      fourthClientF
-        .flatMap(_.getInfo)
-        .flatMap(info =>
-          firstClientF.flatMap(_.findRoute(info.nodeId, MilliSatoshis(100))))
-        .map(route => route.length == 4)
-        .recover {
-          case err: RuntimeException
-              if err.getMessage.contains("route not found") =>
-            false
-        }
-    }
-
-    AsyncUtil
-      .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
-      .map(_ => succeed)
   }
 
   it should "pay an invoice and monitor the payment" in {
