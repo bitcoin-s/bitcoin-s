@@ -147,6 +147,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     val hasRoute = () => {
       (for {
         c1 <- firstClientF
+        b <- bitcoindRpcClientF
+        _ <- b.getBlockCount
         invoice <- invoiceF
         route <- c1.findRoute(invoice, None)
       } yield {
@@ -188,7 +190,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       client2 <- secondClientF
       client4 <- fourthClientF
       bitcoind <- bitcoindRpcClientF
-      _ <- bitcoind.getBlockCount
+      _ <- EclairRpcTestUtil.awaitEclairInSync(client4, bitcoind)
+      _ <- EclairRpcTestUtil.awaitEclairInSync(client1, bitcoind)
       invoice <- client4.createInvoice("test", 1000.msats)
       paymentId <- {
         val p = client1.payInvoice(invoice)
@@ -216,7 +219,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
+          bitcoind <- bitcoindRpcClientF
           _ <- openAndConfirmChannel(clientF, otherClientF)
+          _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
+          _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
           invoice <- otherClient.createInvoice("abc", 50.msats)
           paymentResult <- client.payAndMonitorInvoice(invoice,
                                                        Some("ext_id"),
@@ -785,17 +791,16 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     val amt = 1234.msat
     val test = (client: EclairRpcClient, otherClient: EclairRpcClient) => {
       val res = for {
-        b <- bitcoindRpcClientF
-        _ <- b.getBlockCount
+        bitcoind <- bitcoindRpcClientF
+        _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
+        _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
         invoice: LnInvoice <- otherClient.createInvoice("monitor an invoice",
                                                         amt)
         _ <- client.payInvoice(invoice)
-        _ <- b.getBlockCount
         //CI is super slow... wait 2 minutes
         received <- otherClient.monitorInvoice(invoice,
                                                interval = 1.seconds,
                                                maxAttempts = 60)
-        _ <- b.getBlockCount
       } yield {
         assert(
           received.status

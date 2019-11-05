@@ -25,7 +25,7 @@ import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 
@@ -634,6 +634,21 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       BitcoindRpcClient.withActorSystem(bitcoindInstance)
     }
     bitcoindRpc
+  }
+
+  def clientInSync(client: EclairRpcClient, bitcoind: BitcoindRpcClient)(
+      implicit ec: ExecutionContext): Future[Boolean] =
+    for {
+      blockCount <- bitcoind.getBlockCount
+      info <- client.getInfo
+    } yield info.blockHeight == blockCount
+
+  def awaitEclairInSync(eclair: EclairRpcClient, bitcoind: BitcoindRpcClient)(
+      implicit system: ActorSystem,
+      ec: ExecutionContext): Future[Unit] = {
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF =
+                                         () => clientInSync(eclair, bitcoind),
+                                       duration = 1.seconds)
   }
 
   /** Shuts down an eclair daemon and the bitcoind daemon it is associated with
