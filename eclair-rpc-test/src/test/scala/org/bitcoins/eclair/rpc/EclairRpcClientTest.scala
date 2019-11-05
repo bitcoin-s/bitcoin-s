@@ -1,7 +1,10 @@
 package org.bitcoins.eclair.rpc
 
+import java.nio.file.Files
+
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
@@ -10,39 +13,25 @@ import org.bitcoins.core.protocol.ln.channel.{
 }
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
-import org.scalatest.Assertion
-
-import scala.concurrent._
-import scala.concurrent.duration.DurationInt
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   LnInvoice,
   PaymentPreimage
 }
+import org.bitcoins.eclair.rpc.api._
+import org.bitcoins.eclair.rpc.client.EclairRpcClient
+import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
-
-import scala.concurrent.duration._
-import java.nio.file.{FileSystems, Files, Path}
-
-import org.bitcoins.eclair.rpc.api.{
-  ChannelResult,
-  ChannelUpdate,
-  IncomingPaymentStatus,
-  InvoiceResult,
-  OpenChannelInfo,
-  OutgoingPaymentStatus
-}
+import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.scalatest.Assertion
 
+import scala.concurrent._
+import scala.concurrent.duration.{DurationInt, _}
 import scala.reflect.ClassTag
-import scala.util.Success
 
 class EclairRpcClientTest extends BitcoinSAsyncTest {
 
@@ -193,15 +182,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       _ <- EclairRpcTestUtil.awaitEclairInSync(client4, bitcoind)
       _ <- EclairRpcTestUtil.awaitEclairInSync(client1, bitcoind)
       invoice <- client4.createInvoice("test", 1000.msats)
-      paymentId <- {
-        val p = client1.payInvoice(invoice)
-        p.failed.foreach { ex =>
-          client1.getSentInfo(invoice.lnTags.paymentHash.hash).map { info =>
-            println(info)
-          }
-        }
-        p
-      }
+      paymentId <- client1.payInvoice(invoice)
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
                                                         paymentId,
                                                         duration = 1.second)
@@ -809,27 +790,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         assert(
           received.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
       }
-      res.failed.foreach { _ =>
-        def log(instance: EclairInstance): Option[String] = {
-          instance.authCredentials.datadir.map { d =>
-            val lines =
-              Files.readAllLines(
-                FileSystems
-                  .getDefault()
-                  .getPath(d.getAbsolutePath, "eclair.log"))
-            0.until(lines.size())
-              .foldLeft("") { (acc, i) =>
-                acc + lines.get(i) + "\n"
-              }
-          }
-        }
-        println(
-          client.instance.authCredentials.datadir + "----------------------------------------\n" + log(
-            client.instance))
-        println(
-          otherClient.instance.authCredentials.datadir + "========================================\n" + log(
-            otherClient.instance))
-      }
       res
     }
     executeWithClientOtherClient(test)
@@ -838,7 +798,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   // We spawn fresh clients in this test because the test
   // needs nodes with activity both related and not related
   // to them
-  it should "get all channel updates for a given node ID" ignore {
+  it should "get all channel updates for a given node ID" in {
     val freshClients1F = bitcoindRpcClientF.flatMap { bitcoindRpcClient =>
       EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
     }
@@ -1043,7 +1003,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     )
   }
 
-  it should "get updates for a single node" ignore {
+  it should "get updates for a single node" in {
     // allupdates for a single node is broken in Eclair 0.3.2
     // TODO remove recoverToPendingIf when https://github.com/ACINQ/eclair/issues/1179 is fixed
     recoverToPendingIf[RuntimeException](for {
@@ -1055,7 +1015,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     })
   }
 
-  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" ignore {
+  it must "receive gossip messages about channel updates for nodes we do not have a direct channel with" in {
     //make sure we see payments outside of our immediate peers
     //this is important because these gossip messages contain
     //information about channel fees, so we need to get updates

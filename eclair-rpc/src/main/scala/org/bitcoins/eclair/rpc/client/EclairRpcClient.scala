@@ -1,6 +1,7 @@
 package org.bitcoins.eclair.rpc.client
 
 import java.io.File
+import java.nio.file.NoSuchFileException
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
@@ -24,26 +25,7 @@ import org.bitcoins.core.protocol.ln.{
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.util.{BitcoinSUtil, FutureUtil, StartStop}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.eclair.rpc.api.{
-  AuditResult,
-  ChannelDesc,
-  ChannelInfo,
-  ChannelResult,
-  ChannelStats,
-  ChannelUpdate,
-  EclairApi,
-  GetInfoResult,
-  IncomingPayment,
-  IncomingPaymentStatus,
-  InvoiceResult,
-  NetworkFeesResult,
-  NodeInfo,
-  OutgoingPayment,
-  OutgoingPaymentStatus,
-  PaymentId,
-  PeerInfo,
-  UsableBalancesResult
-}
+import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.{NodeUri, PeerState}
 import org.bitcoins.rpc.serializers.JsonReaders._
@@ -55,7 +37,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.sys.process._
 import scala.util.{Failure, Properties, Success}
-import java.nio.file.NoSuchFileException
 
 /**
   * @param binary Path to Eclair Jar. If not present, reads
@@ -396,28 +377,27 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
         //register callback that publishes a payment to our actor system's
         //event stream,
-        receivedInfoF.foreach { info =>
-          info match {
-            case None |
-                Some(IncomingPayment(_, _, _, IncomingPaymentStatus.Pending)) =>
-              if (attempts.incrementAndGet() >= maxAttempts) {
-                // too many tries to get info about a payment
-                // either Eclair is down or the payment is still in PENDING state for some reason
-                // complete the promise with an exception so the runnable will be canceled
-                p.failure(new RuntimeException(
-                  s"EclairApi.monitorInvoice() [${instance.authCredentials.datadir}] too many attempts: ${attempts
-                    .get()} for invoice=${lnInvoice}"))
-              }
-            case Some(result) =>
-              //invoice has been paid, let's publish to event stream
-              //so subscribers so the even stream can see that a payment
-              //was received
-              //we need to create a `PaymentSucceeded`
-              system.eventStream.publish(result)
+        receivedInfoF.foreach {
+          case None |
+              Some(IncomingPayment(_, _, _, IncomingPaymentStatus.Pending)) =>
+            if (attempts.incrementAndGet() >= maxAttempts) {
+              // too many tries to get info about a payment
+              // either Eclair is down or the payment is still in PENDING state for some reason
+              // complete the promise with an exception so the runnable will be canceled
+              p.failure(new RuntimeException(
+                s"EclairApi.monitorInvoice() [${instance.authCredentials.datadir}] too many attempts: ${attempts
+                  .get()} for invoice=${lnInvoice}"))
+            }
+          case Some(result) =>
+            //invoice has been paid, let's publish to event stream
+            //so subscribers so the even stream can see that a payment
+            //was received
+            //we need to create a `PaymentSucceeded`
+            system.eventStream.publish(result)
 
-              //complete the promise so the runnable will be canceled
-              p.success(result)
-          }
+            //complete the promise so the runnable will be canceled
+            p.success(result)
+
         }
       }
     }
@@ -886,8 +866,8 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "fbdb369"
+  private[bitcoins] val commit = "5ad3944"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.3.3-SNAPSHOT"
+  private[bitcoins] val version = "0.3.2"
 }

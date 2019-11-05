@@ -2,6 +2,7 @@ package org.bitcoins.testkit.eclair.rpc
 
 import java.io.{File, PrintWriter}
 import java.net.URI
+import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
@@ -24,18 +25,15 @@ import org.bitcoins.eclair.rpc.api.{
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
-import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import java.nio.file.Files
-
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 /**
   * @define nodeLinkDoc
