@@ -397,7 +397,6 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
         //register callback that publishes a payment to our actor system's
         //event stream,
         receivedInfoF.foreach { info =>
-          logger.info(s"EclairApi.monitorInvoice(): ${info}")
           info match {
             case None |
                 Some(IncomingPayment(_, _, _, IncomingPaymentStatus.Pending)) =>

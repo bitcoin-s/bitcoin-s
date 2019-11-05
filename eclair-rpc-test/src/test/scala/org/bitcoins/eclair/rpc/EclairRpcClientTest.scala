@@ -169,7 +169,15 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       client2 <- secondClientF
       client4 <- fourthClientF
       invoice <- client4.createInvoice("test", 1000.msats)
-      paymentId <- client1.payInvoice(invoice)
+      paymentId <- {
+        val p = client1.payInvoice(invoice)
+        p.failed.foreach { ex =>
+          client1.getSentInfo(invoice.lnTags.paymentHash.hash).map { info =>
+            println(info)
+          }
+        }
+        p
+      }
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
                                                         paymentId,
                                                         duration = 1.second)
