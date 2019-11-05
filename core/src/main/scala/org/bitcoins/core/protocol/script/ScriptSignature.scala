@@ -434,15 +434,15 @@ object CSVScriptSignature extends ScriptFactory[CSVScriptSignature] {
 }
 
 sealed trait ConditionalScriptSignature extends ScriptSignature {
-  require(asm.lastOption.contains(OP_TRUE) || asm.lastOption.contains(OP_FALSE),
+  require(ConditionalScriptSignature.isValidConditionalScriptSig(asm),
           "ConditionalScriptSignature must end in true or false")
 
   def isTrue: Boolean = {
-    asm.last == OP_TRUE
+    BitcoinScriptUtil.castToBool(asm.last)
   }
 
   def isFalse: Boolean = {
-    asm.last == OP_FALSE
+    !isTrue
   }
 
   /** The ScriptSignature for the nested case being spent */
@@ -483,7 +483,7 @@ object ConditionalScriptSignature
   }
 
   def isValidConditionalScriptSig(asm: Seq[ScriptToken]): Boolean = {
-    asm.lastOption.contains(OP_TRUE) || asm.lastOption.contains(OP_FALSE)
+    asm.lastOption.exists(_.isInstanceOf[ScriptNumberOperation])
   }
 }
 

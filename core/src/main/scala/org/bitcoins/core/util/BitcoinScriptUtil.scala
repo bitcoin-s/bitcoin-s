@@ -291,6 +291,17 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def isShortestEncoding(hex: String): Boolean =
     isShortestEncoding(BitcoinSUtil.decodeHex(hex))
 
+  /** Checks if the token is minimially encoded */
+  def isMinimalToken(token: ScriptToken): Boolean = {
+    //see: https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L447-L452
+    //https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
+    val tooBig = token.bytes.size > 1
+    val sizeZero = token.bytes.isEmpty
+    lazy val startsWithOne = token.bytes.head == 1
+
+    !tooBig && (sizeZero || startsWithOne)
+  }
+
   /**
     * Checks the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] encoding according to bitcoin core's function:
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]].

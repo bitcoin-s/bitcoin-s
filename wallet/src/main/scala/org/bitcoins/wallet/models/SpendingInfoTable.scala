@@ -8,12 +8,11 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
 import org.bitcoins.db.{DbRowAutoInc, TableAutoInc}
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.ProvenShape
 import org.bitcoins.core.hd.HDPath
-
 import org.bitcoins.core.hd.SegWitHDPath
 import org.bitcoins.core.crypto.BIP39Seed
 import org.bitcoins.core.hd.LegacyHDPath
@@ -145,7 +144,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       redeemScriptOpt,
       scriptWitnessOpt,
       hashType,
-      ???) // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
+      ConditionalPath.NoConditionsLeft) // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
   }
 
 }
