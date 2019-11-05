@@ -10,6 +10,13 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by chris on 12/26/15.
   *
+  * We only give standard types to ScriptSignatures that are Policy
+  * compliant. This is because if we wanted to be closer to Consensus
+  * compliant then it would be near impossible to type things.
+  *
+  * For example almost anything could be a ConditionalScriptSignature
+  * since in consensus logic almost any ScriptToken is interpreted as True,
+  * while under Policy only OP_TRUE is True.
   */
 sealed abstract class ScriptSignature extends Script {
 
@@ -483,7 +490,7 @@ object ConditionalScriptSignature
   }
 
   def isValidConditionalScriptSig(asm: Seq[ScriptToken]): Boolean = {
-    asm.lastOption.exists(_.isInstanceOf[ScriptNumberOperation])
+    asm.lastOption.exists(Vector(OP_0, OP_FALSE, OP_1, OP_TRUE).contains)
   }
 }
 
