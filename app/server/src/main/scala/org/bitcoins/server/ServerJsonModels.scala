@@ -3,7 +3,7 @@ package org.bitcoins.server
 import upickle.default._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.currency.Bitcoins
-import ujson.Value
+import ujson.{Null, Value}
 
 import scala.util.Failure
 import scala.util.Try
@@ -25,20 +25,26 @@ object Rescan {
 
   def fromJsArr(jsArr: ujson.Arr): Try[Rescan] = {
 
-    def parseAddresses(addrsJs: Value) = {
+    def parseAddresses(addrsJs: Value): Vector[BitcoinAddress] = {
       addrsJs.arr.toVector.map(js => BitcoinAddress.fromStringExn(js.str))
     }
+
+    def nullToOpt(value: Value): Option[Value] = value match {
+      case Null => None
+      case _    => Some(value)
+    }
+
+    def parseBlockStamp(value: Value): Option[BlockStamp] =
+      nullToOpt(value).map(js => BlockStamp.fromString(js.str).get)
 
     jsArr.arr.toList match {
       case addrsJs :: startJs :: endJs :: Nil =>
         try {
           val addresses = parseAddresses(addrsJs)
-          val start = BlockStamp.fromString(startJs.str).get
-          val end = BlockStamp.fromString(endJs.str).get
+          val start = parseBlockStamp(startJs)
+          val end = parseBlockStamp(endJs)
           Success(
-            Rescan(addresses = addresses,
-                   startBlock = Option(start),
-                   endBlock = Option(end)))
+            Rescan(addresses = addresses, startBlock = start, endBlock = end))
         } catch {
           case e: Throwable => Failure(e)
         }
