@@ -1,10 +1,9 @@
 package org.bitcoins.cli
 
-import scopt._
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.protocol._
+import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
-import org.bitcoins.core.config.Networks
+import org.bitcoins.core.protocol._
+import scopt._
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {

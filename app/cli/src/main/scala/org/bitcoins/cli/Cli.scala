@@ -95,18 +95,18 @@ object Cli extends App {
               })),
           opt[BlockStamp]("start")
             .optional()
-            .action((addrs, conf) =>
+            .action((start, conf) =>
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
-                  rescan.copy(startBlock = Option(addrs))
+                  rescan.copy(startBlock = Option(start))
                 case other => other
               })),
           opt[BlockStamp]("end")
             .optional()
-            .action((addrs, conf) =>
+            .action((end, conf) =>
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
-                  rescan.copy(endBlock = Option(addrs))
+                  rescan.copy(endBlock = Option(end))
                 case other => other
               }))
         ),

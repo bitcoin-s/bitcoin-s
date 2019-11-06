@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 
 import scala.util.{Failure, Try}
@@ -14,7 +14,7 @@ object BlockStamp {
   case class InvalidBlockStamp(blockStamp: String)
       extends RuntimeException(s"Invalid blockstamp: ${blockStamp}")
 
-  case class BlockHash(hash: DoubleSha256Digest) extends BlockStamp {
+  case class BlockHash(hash: DoubleSha256DigestBE) extends BlockStamp {
     override def mkString: String = hash.hex
   }
   case class BlockHeight(height: Int) extends BlockStamp {
@@ -29,7 +29,7 @@ object BlockStamp {
   def fromString(s: String): Try[BlockStamp] = {
     val blockHeight = Try(s.toInt).map(BlockHeight(_))
 
-    lazy val blockHash = Try(DoubleSha256Digest.fromHex(s)).map(BlockHash(_))
+    lazy val blockHash = Try(DoubleSha256DigestBE.fromHex(s)).map(BlockHash(_))
 
     lazy val error = Failure(InvalidBlockStamp(s))
 

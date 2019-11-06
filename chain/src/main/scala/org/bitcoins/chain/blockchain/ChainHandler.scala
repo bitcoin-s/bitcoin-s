@@ -481,11 +481,11 @@ case class ChainHandler(
       case blockHeight: BlockStamp.BlockHeight =>
         Future.successful(blockHeight.height)
       case blockHash: BlockStamp.BlockHash =>
-        getHeader(blockHash.hash.flip).map { header =>
+        getHeader(blockHash.hash).map { header =>
           header
             .map(_.height)
-            .getOrElse(throw UnknownBlockHash(
-              s"Unknown block hash ${blockHash.hash.flip}"))
+            .getOrElse(
+              throw UnknownBlockHash(s"Unknown block hash ${blockHash.hash}"))
         }
       case blockTime: BlockStamp.BlockTime =>
         Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
