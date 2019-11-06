@@ -634,16 +634,21 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     bitcoindRpc
   }
 
-  def clientInSync(client: EclairRpcClient, bitcoind: BitcoindRpcClient)(
-      implicit ec: ExecutionContext): Future[Boolean] =
-    for {
-      blockCount <- bitcoind.getBlockCount
-      info <- client.getInfo
-    } yield info.blockHeight == blockCount
-
+  /**
+    * Returns a `Future` that is completed when both eclair and bitcoind have the same block height
+    * Fails the future if they are not sychronized within the given timeout.
+    */
   def awaitEclairInSync(eclair: EclairRpcClient, bitcoind: BitcoindRpcClient)(
       implicit system: ActorSystem,
       ec: ExecutionContext): Future[Unit] = {
+
+    def clientInSync(client: EclairRpcClient, bitcoind: BitcoindRpcClient)(
+        implicit ec: ExecutionContext): Future[Boolean] =
+      for {
+        blockCount <- bitcoind.getBlockCount
+        info <- client.getInfo
+      } yield info.blockHeight == blockCount
+
     TestAsyncUtil.retryUntilSatisfiedF(conditionF =
                                          () => clientInSync(eclair, bitcoind),
                                        duration = 1.seconds)

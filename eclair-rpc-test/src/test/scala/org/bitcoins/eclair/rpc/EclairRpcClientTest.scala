@@ -132,14 +132,15 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     * Please keep this test the very first. All other tests rely on the propagated gossip messages.
     */
   it should "wait for all gossip messages get propagated throughout the network and get a route to an invoice" in {
-    val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
     val hasRoute = () => {
       (for {
-        c1 <- firstClientF
-        b <- bitcoindRpcClientF
-        _ <- b.getBlockCount
-        invoice <- invoiceF
-        route <- c1.findRoute(invoice, None)
+        client1 <- firstClientF
+        client4 <- fourthClientF
+        bitcoind <- bitcoindRpcClientF
+        _ <- EclairRpcTestUtil.awaitEclairInSync(client4, bitcoind)
+        _ <- EclairRpcTestUtil.awaitEclairInSync(client1, bitcoind)
+        invoice <- client4.createInvoice("foo", 1000.msats)
+        route <- client1.findRoute(invoice, None)
       } yield {
         route.size == 4
       }).recover {
@@ -778,7 +779,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         invoice: LnInvoice <- otherClient.createInvoice("monitor an invoice",
                                                         amt)
         _ <- client.payInvoice(invoice)
-        //CI is super slow... wait 2 minutes
         received <- otherClient.monitorInvoice(invoice,
                                                interval = 1.seconds,
                                                maxAttempts = 60)
