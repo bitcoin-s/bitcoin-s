@@ -39,4 +39,10 @@ object CliReaders {
       val arity: Int = 1
       val reads: String => Bitcoins = str => Bitcoins(BigDecimal(str))
     }
+
+  implicit val blockStampReads: Read[BlockStamp] =
+    new Read[BlockStamp] {
+      val arity: Int = 1
+      val reads: String => BlockStamp = str => BlockStamp.fromString(str).get
+    }
 }
