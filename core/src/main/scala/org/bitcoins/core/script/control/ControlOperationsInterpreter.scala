@@ -66,8 +66,7 @@ sealed abstract class ControlOperationsInterpreter {
     //https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
     val isNotMinimal = stackTopOpt.map { stackTop =>
       (sigVersion == SigVersionWitnessV0 && minimalIfEnabled
-      && (stackTop.bytes.size > 1 ||
-      (stackTop.bytes.size == 1 && stackTop.bytes.head != 1)))
+      && !BitcoinScriptUtil.isMinimalToken(stackTop))
     }
     isNotMinimal.isDefined && isNotMinimal.get
   }

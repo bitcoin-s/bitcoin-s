@@ -10,6 +10,13 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by chris on 12/26/15.
   *
+  * We only give standard types to ScriptSignatures that are Policy
+  * compliant. This is because if we wanted to be closer to Consensus
+  * compliant then it would be near impossible to type things.
+  *
+  * For example almost anything could be a ConditionalScriptSignature
+  * since in consensus logic almost any ScriptToken is interpreted as True,
+  * while under Policy only OP_TRUE is True.
   */
 sealed abstract class ScriptSignature extends Script {
 
@@ -231,7 +238,8 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
       case Success(redeemScript) =>
         redeemScript match {
           case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
-              _: P2SHScriptPubKey | _: P2PKScriptPubKey | _: CLTVScriptPubKey |
+              _: P2SHScriptPubKey | _: P2PKScriptPubKey |
+              _: ConditionalScriptPubKey | _: CLTVScriptPubKey |
               _: CSVScriptPubKey | _: WitnessScriptPubKeyV0 |
               _: UnassignedWitnessScriptPubKey =>
             true
@@ -432,6 +440,60 @@ object CSVScriptSignature extends ScriptFactory[CSVScriptSignature] {
   }
 }
 
+sealed trait ConditionalScriptSignature extends ScriptSignature {
+  require(ConditionalScriptSignature.isValidConditionalScriptSig(asm),
+          "ConditionalScriptSignature must end in true or false")
+
+  def isTrue: Boolean = {
+    BitcoinScriptUtil.castToBool(asm.last)
+  }
+
+  def isFalse: Boolean = {
+    !isTrue
+  }
+
+  /** The ScriptSignature for the nested case being spent */
+  def nestedScriptSig: ScriptSignature = {
+    ScriptSignature.fromAsm(asm.dropRight(1))
+  }
+
+  override def signatures: Seq[ECDigitalSignature] = {
+    nestedScriptSig.signatures
+  }
+}
+
+object ConditionalScriptSignature
+    extends ScriptFactory[ConditionalScriptSignature] {
+  private case class ConditionalScriptSignatureImpl(
+      override val asm: Vector[ScriptToken])
+      extends ConditionalScriptSignature {
+    override def toString: String = s"ConditionalScriptSignature($hex)"
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): ConditionalScriptSignature = {
+    buildScript(asm.toVector,
+                ConditionalScriptSignatureImpl.apply,
+                isValidConditionalScriptSig,
+                s"Given asm was not a ConditionalScriptSignature: $asm")
+  }
+
+  def apply(
+      nestedScriptSig: ScriptSignature,
+      condition: Boolean): ConditionalScriptSignature = {
+    val conditionAsm = if (condition) {
+      OP_TRUE
+    } else {
+      OP_FALSE
+    }
+
+    fromAsm(nestedScriptSig.asm.:+(conditionAsm))
+  }
+
+  def isValidConditionalScriptSig(asm: Seq[ScriptToken]): Boolean = {
+    asm.lastOption.exists(Vector(OP_0, OP_FALSE, OP_1, OP_TRUE).contains)
+  }
+}
+
 /** Represents the empty script signature */
 case object EmptyScriptSignature extends ScriptSignature {
   override def asm: Seq[ScriptToken] = Vector.empty
@@ -450,6 +512,8 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
         if (tokens.size > 1 && P2SHScriptSignature.isRedeemScript(
           tokens.last)) =>
       P2SHScriptSignature.fromAsm(tokens)
+    case _ if ConditionalScriptSignature.isValidConditionalScriptSig(tokens) =>
+      ConditionalScriptSignature.fromAsm(tokens)
     case _
         if (MultiSignatureScriptSignature.isMultiSignatureScriptSignature(
           tokens)) =>
@@ -479,6 +543,8 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
       Try(NonStandardScriptSignature.fromAsm(tokens))
     case s: CLTVScriptPubKey => fromScriptPubKey(tokens, s.nestedScriptPubKey)
     case s: CSVScriptPubKey  => fromScriptPubKey(tokens, s.nestedScriptPubKey)
+    case _: ConditionalScriptPubKey =>
+      Try(ConditionalScriptSignature.fromAsm(tokens))
     case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
       Success(EmptyScriptSignature)
     case EmptyScriptPubKey =>
