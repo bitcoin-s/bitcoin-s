@@ -1,7 +1,10 @@
 package org.bitcoins.eclair.rpc
 
+import java.nio.file.Files
+
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
@@ -10,37 +13,24 @@ import org.bitcoins.core.protocol.ln.channel.{
 }
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.eclair.rpc.client.EclairRpcClient
-import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.rpc.util.AsyncUtil
-import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
-import org.scalatest.Assertion
-
-import scala.concurrent._
-import scala.concurrent.duration.DurationInt
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   LnInvoice,
   PaymentPreimage
 }
+import org.bitcoins.eclair.rpc.api._
+import org.bitcoins.eclair.rpc.client.EclairRpcClient
+import org.bitcoins.eclair.rpc.config.{EclairAuthCredentials, EclairInstance}
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
-
-import scala.concurrent.duration._
-import java.nio.file.Files
-
-import org.bitcoins.eclair.rpc.api.{
-  ChannelResult,
-  ChannelUpdate,
-  IncomingPaymentStatus,
-  InvoiceResult,
-  OpenChannelInfo,
-  OutgoingPaymentStatus
-}
+import org.bitcoins.testkit.eclair.rpc.{EclairNodes4, EclairRpcTestUtil}
+import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.scalatest.Assertion
 
+import scala.concurrent._
+import scala.concurrent.duration.{DurationInt, _}
 import scala.reflect.ClassTag
 
 class EclairRpcClientTest extends BitcoinSAsyncTest {
@@ -142,12 +132,15 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     * Please keep this test the very first. All other tests rely on the propagated gossip messages.
     */
   it should "wait for all gossip messages get propagated throughout the network and get a route to an invoice" in {
-    val invoiceF = fourthClientF.flatMap(_.createInvoice("foo", 1000.msats))
     val hasRoute = () => {
       (for {
-        c1 <- firstClientF
-        invoice <- invoiceF
-        route <- c1.findRoute(invoice, None)
+        client1 <- firstClientF
+        client4 <- fourthClientF
+        bitcoind <- bitcoindRpcClientF
+        _ <- EclairRpcTestUtil.awaitEclairInSync(client4, bitcoind)
+        _ <- EclairRpcTestUtil.awaitEclairInSync(client1, bitcoind)
+        invoice <- client4.createInvoice("foo", 1000.msats)
+        route <- client1.findRoute(invoice, None)
       } yield {
         route.size == 4
       }).recover {
@@ -160,26 +153,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     AsyncUtil
       .awaitConditionF(hasRoute, duration = 1.second, maxTries = 60)
       .map(_ => succeed)
-  }
-
-  it should "send some payments and get the audit info" in {
-    for {
-      client1 <- firstClientF
-      client2 <- secondClientF
-      client4 <- fourthClientF
-      invoice <- client4.createInvoice("test", 1000.msats)
-      paymentId <- client1.payInvoice(invoice)
-      _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
-                                                        paymentId,
-                                                        duration = 1.second)
-      received <- client4.audit()
-      relayed <- client2.audit()
-      sent <- client1.audit()
-    } yield {
-      assert(sent.sent.nonEmpty)
-      assert(received.received.nonEmpty)
-      assert(relayed.relayed.nonEmpty)
-    }
   }
 
   it should "get a route to a node ID" in {
@@ -201,15 +174,41 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       .map(_ => succeed)
   }
 
+  it should "send some payments and get the audit info" in {
+    for {
+      client1 <- firstClientF
+      client2 <- secondClientF
+      client4 <- fourthClientF
+      bitcoind <- bitcoindRpcClientF
+      _ <- EclairRpcTestUtil.awaitEclairInSync(client4, bitcoind)
+      _ <- EclairRpcTestUtil.awaitEclairInSync(client1, bitcoind)
+      invoice <- client4.createInvoice("test", 1000.msats)
+      paymentId <- client1.payInvoice(invoice)
+      _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
+                                                        paymentId,
+                                                        duration = 1.second)
+      received <- client4.audit()
+      relayed <- client2.audit()
+      sent <- client1.audit()
+    } yield {
+      assert(sent.sent.nonEmpty)
+      assert(received.received.nonEmpty)
+      assert(relayed.relayed.nonEmpty)
+    }
+  }
+
   it should "pay an invoice and monitor the payment" in {
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
+          bitcoind <- bitcoindRpcClientF
           _ <- openAndConfirmChannel(clientF, otherClientF)
+          _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
+          _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
           invoice <- otherClient.createInvoice("abc", 50.msats)
           paymentResult <- client.payAndMonitorInvoice(invoice,
                                                        Some("ext_id"),
-                                                       1.second,
+                                                       3.second,
                                                        60)
         } yield {
           assert(paymentResult.amount == 50.msats)
@@ -637,9 +636,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             _ <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             succeeded <- client.getSentInfo(paymentId)
             _ <- client.close(channelId)
-            bitcoind <- bitcoindRpcClientF
-            address <- bitcoind.getNewAddress
-            _ <- bitcoind.generateToAddress(6, address)
           } yield {
             assert(succeeded.nonEmpty)
 
@@ -774,15 +770,18 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "monitor an invoice" in {
-    val amt = 1000.msat
+    val amt = 1234.msat
     val test = (client: EclairRpcClient, otherClient: EclairRpcClient) => {
-      val invoiceF = otherClient.createInvoice("monitor an invoice", amt)
-      val paidF = invoiceF.flatMap(i => client.payInvoice(i))
-      for {
-        _ <- paidF
-        invoice <- invoiceF
-        //CI is super slow... wait 2 minutes
-        received <- otherClient.monitorInvoice(invoice)
+      val res = for {
+        bitcoind <- bitcoindRpcClientF
+        _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
+        _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
+        invoice: LnInvoice <- otherClient.createInvoice("monitor an invoice",
+                                                        amt)
+        _ <- client.payInvoice(invoice)
+        received <- otherClient.monitorInvoice(invoice,
+                                               interval = 1.seconds,
+                                               maxAttempts = 60)
       } yield {
         assert(
           received.status
@@ -791,6 +790,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         assert(
           received.paymentRequest.paymentHash == invoice.lnTags.paymentHash.hash)
       }
+      res
     }
     executeWithClientOtherClient(test)
   }
