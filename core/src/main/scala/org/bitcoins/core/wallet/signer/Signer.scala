@@ -10,6 +10,7 @@ import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
+  ConditionalSpendingInfo,
   LockTimeSpendingInfo,
   MultiSignatureSpendingInfo,
   P2PKHSpendingInfo,
@@ -198,6 +199,11 @@ object BitcoinSigner {
                             unsignedTx,
                             isDummySignature,
                             lockTime)
+      case conditional: ConditionalSpendingInfo =>
+        ConditionalSigner.sign(spendingInfo,
+                               unsignedTx,
+                               isDummySignature,
+                               conditional)
       case p2wpkh: P2WPKHV0SpendingInfo =>
         P2WPKHSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2wpkh)
       case pw2sh: P2WSHV0SpendingInfo =>
@@ -346,12 +352,9 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner[P2WPKHV0SpendingInfo] {
               if (p2wpkh != P2WPKHWitnessSPKV0(pubKey)) {
                 Future.fromTry(TxBuilderError.WrongPublicKey)
               } else Future.successful(p2wpkh)
-            case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
-                _: P2WSHWitnessSPKV0 | _: NonStandardScriptPubKey |
-                _: CLTVScriptPubKey | _: CSVScriptPubKey |
-                _: WitnessCommitment | EmptyScriptPubKey |
-                _: UnassignedWitnessScriptPubKey =>
+            case _: UnassignedWitnessScriptPubKey | _: P2WSHWitnessSPKV0 =>
+              Future.fromTry(TxBuilderError.WrongSigner)
+            case _: NonWitnessScriptPubKey =>
               Future.fromTry(TxBuilderError.NonWitnessSPK)
           }
 
@@ -458,3 +461,36 @@ sealed abstract class LockTimeSigner
   }
 }
 object LockTimeSigner extends LockTimeSigner
+
+/** Delegates to get a ScriptSignature for the case being
+  * spent and then adds an OP_TRUE or OP_FALSE
+  */
+sealed abstract class ConditionalSigner
+    extends BitcoinSigner[ConditionalSpendingInfo] {
+
+  override def sign(
+      spendingInfo: UTXOSpendingInfo,
+      unsignedTx: Transaction,
+      isDummySignature: Boolean,
+      spendingInfoToSatisfy: ConditionalSpendingInfo)(
+      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
+
+    val missingOpSigComponentF = BitcoinSigner.sign(
+      spendingInfo,
+      unsignedTx,
+      isDummySignature,
+      spendingInfoToSatisfy.nestedSpendingInfo)
+
+    val scriptSigF = missingOpSigComponentF.map { sigComponent =>
+      ConditionalScriptSignature(sigComponent.scriptSignature,
+                                 spendingInfoToSatisfy.condition)
+    }
+
+    updateScriptSigInSigComponent(unsignedTx,
+                                  inputIndex.toInt,
+                                  output,
+                                  scriptSigF)
+  }
+}
+object ConditionalSigner extends ConditionalSigner

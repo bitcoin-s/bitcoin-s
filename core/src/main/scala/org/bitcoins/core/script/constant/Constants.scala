@@ -191,6 +191,18 @@ sealed abstract class ScriptNumberOperation
     extends ScriptNumber
     with ScriptOperation {
   override def hex = opCode.toHexString
+
+  /** This is required so that OP_TRUE == OP_1 and
+    * OP_FALSE == OP_0 will both be true
+    */
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case number: ScriptNumber =>
+        number.toLong == toLong
+      case _ =>
+        super.equals(obj)
+    }
+  }
 }
 
 /** An empty array of bytes is pushed onto the stack. (This is not a no-op: an item is added to the stack.) */

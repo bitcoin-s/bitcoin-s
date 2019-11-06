@@ -291,6 +291,17 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def isShortestEncoding(hex: String): Boolean =
     isShortestEncoding(BitcoinSUtil.decodeHex(hex))
 
+  /** Checks if the token is minimially encoded */
+  def isMinimalToken(token: ScriptToken): Boolean = {
+    //see: https://github.com/bitcoin/bitcoin/blob/528472111b4965b1a99c4bcf08ac5ec93d87f10f/src/script/interpreter.cpp#L447-L452
+    //https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2016-August/013014.html
+    val tooBig = token.bytes.size > 1
+    val sizeZero = token.bytes.isEmpty
+    lazy val startsWithOne = token.bytes.head == 1
+
+    !tooBig && (sizeZero || startsWithOne)
+  }
+
   /**
     * Checks the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] encoding according to bitcoin core's function:
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]].
@@ -440,9 +451,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
             script
         }
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
-          _: MultiSignatureScriptPubKey | _: NonStandardScriptPubKey |
-          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessCommitment |
-          EmptyScriptPubKey =>
+          _: MultiSignatureScriptPubKey | _: ConditionalScriptPubKey |
+          _: NonStandardScriptPubKey | _: CLTVScriptPubKey |
+          _: CSVScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey =>
         script
     }
 
@@ -556,6 +567,9 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         !m.publicKeys.exists(k => !k.isCompressed)
       case l: LockTimeScriptPubKey =>
         isOnlyCompressedPubKey(l.nestedScriptPubKey)
+      case conditional: ConditionalScriptPubKey =>
+        isOnlyCompressedPubKey(conditional.trueSPK) && isOnlyCompressedPubKey(
+          conditional.falseSPK)
       case _: P2PKHScriptPubKey | _: P2SHScriptPubKey | _: P2WPKHWitnessSPKV0 |
           _: P2WSHWitnessSPKV0 | _: UnassignedWitnessScriptPubKey |
           _: NonStandardScriptPubKey | _: WitnessCommitment |

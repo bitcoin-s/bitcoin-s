@@ -5,7 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {
@@ -104,13 +104,15 @@ sealed abstract class CreditingTxGen {
       val redeemScript = o.output.scriptPubKey
       val p2sh = P2SHScriptPubKey(redeemScript)
       val updatedOutput = TransactionOutput(oldOutput.value, p2sh)
-      BitcoinUTXOSpendingInfo(TransactionOutPoint(o.outPoint.txId,
-                                                  o.outPoint.vout),
-                              updatedOutput,
-                              o.signers,
-                              Some(redeemScript),
-                              o.scriptWitnessOpt,
-                              hashType)
+      BitcoinUTXOSpendingInfo(
+        TransactionOutPoint(o.outPoint.txId, o.outPoint.vout),
+        updatedOutput,
+        o.signers,
+        Some(redeemScript),
+        o.scriptWitnessOpt,
+        hashType,
+        ConditionalPath.NoConditionsLeft
+      )
     }
   }
 
@@ -126,13 +128,15 @@ sealed abstract class CreditingTxGen {
             val oldOutput = o.output
             val csvSPK = CLTVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
             val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
-            BitcoinUTXOSpendingInfo(TransactionOutPoint(o.outPoint.txId,
-                                                        o.outPoint.vout),
-                                    updatedOutput,
-                                    o.signers,
-                                    o.redeemScriptOpt,
-                                    o.scriptWitnessOpt,
-                                    hashType)
+            BitcoinUTXOSpendingInfo(
+              TransactionOutPoint(o.outPoint.txId, o.outPoint.vout),
+              updatedOutput,
+              o.signers,
+              o.redeemScriptOpt,
+              o.scriptWitnessOpt,
+              hashType,
+              ConditionalPath.NoConditionsLeft
+            )
           }
         }
     }
@@ -148,13 +152,15 @@ sealed abstract class CreditingTxGen {
             val oldOutput = o.output
             val csvSPK = CSVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
             val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
-            BitcoinUTXOSpendingInfo(TransactionOutPoint(o.outPoint.txId,
-                                                        o.outPoint.vout),
-                                    updatedOutput,
-                                    o.signers,
-                                    o.redeemScriptOpt,
-                                    o.scriptWitnessOpt,
-                                    hashType)
+            BitcoinUTXOSpendingInfo(
+              TransactionOutPoint(o.outPoint.txId, o.outPoint.vout),
+              updatedOutput,
+              o.signers,
+              o.redeemScriptOpt,
+              o.scriptWitnessOpt,
+              hashType,
+              ConditionalPath.NoConditionsLeft
+            )
           }
         }
     }
@@ -172,7 +178,7 @@ sealed abstract class CreditingTxGen {
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2wpkhOutput))
 
   def p2wshOutput: Gen[BitcoinUTXOSpendingInfo] = nonP2WSHOutput.flatMap {
-    case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _) =>
+    case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _, _) =>
       val spk = txOutput.scriptPubKey
       val scriptWit = P2WSHWitnessV0(spk)
       val witSPK = P2WSHWitnessSPKV0(spk)
@@ -212,7 +218,8 @@ sealed abstract class CreditingTxGen {
                   signers,
                   Some(spk),
                   Some(wit),
-                  hashType
+                  hashType,
+                  ConditionalPath.NoConditionsLeft
                 )
               }
             }
@@ -235,13 +242,15 @@ sealed abstract class CreditingTxGen {
           val updated = outputs.updated(idx, TransactionOutput(old.value, spk))
           val tc = TransactionConstants
           val btx = BaseTransaction(tc.version, Nil, updated, tc.lockTime)
-          BitcoinUTXOSpendingInfo(TransactionOutPoint(btx.txId,
-                                                      UInt32.apply(idx)),
-                                  TransactionOutput(old.value, spk),
-                                  signers,
-                                  redeemScript,
-                                  scriptWitness,
-                                  hashType)
+          BitcoinUTXOSpendingInfo(
+            TransactionOutPoint(btx.txId, UInt32.apply(idx)),
+            TransactionOutput(old.value, spk),
+            signers,
+            redeemScript,
+            scriptWitness,
+            hashType,
+            ConditionalPath.NoConditionsLeft
+          )
         }
       }
     }

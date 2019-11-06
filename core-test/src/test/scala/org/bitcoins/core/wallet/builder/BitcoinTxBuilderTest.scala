@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
 import org.scalatest.{AsyncFlatSpec, MustMatchers}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.config.RegTest
@@ -34,12 +34,15 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
-                                       output = creditingOutput,
-                                       signers = Seq(privKey),
-                                       redeemScriptOpt = None,
-                                       scriptWitnessOpt = None,
-                                       hashType = HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = None,
+      scriptWitnessOpt = None,
+      hashType = HashType.sigHashAll,
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
 
     val listF =
       BitcoinTxBuilder(destinations = Seq.empty,
@@ -72,12 +75,15 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
-                                       output = creditingOutput,
-                                       signers = Seq(privKey),
-                                       redeemScriptOpt = None,
-                                       scriptWitnessOpt = None,
-                                       hashType = HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = None,
+      scriptWitnessOpt = None,
+      hashType = HashType.sigHashAll,
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
@@ -100,12 +106,15 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
-                                       output = creditingOutput,
-                                       signers = Seq(privKey),
-                                       redeemScriptOpt = None,
-                                       scriptWitnessOpt = None,
-                                       hashType = HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = None,
+      scriptWitnessOpt = None,
+      hashType = HashType.sigHashAll,
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(-1)))
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
@@ -132,7 +141,9 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                        Seq(privKey),
                                        None,
                                        None,
-                                       HashType.sigHashAll)
+                                       HashType.sigHashAll,
+                                       conditionalPath =
+                                         ConditionalPath.NoConditionsLeft)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(Int64(1)))
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
@@ -161,20 +172,25 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       outputs = Seq(creditingOutput),
                                       lockTime = tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
-                                       output = creditingOutput,
-                                       signers = Seq(privKey),
-                                       redeemScriptOpt = None,
-                                       scriptWitnessOpt = None,
-                                       hashType = HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = None,
+      scriptWitnessOpt = None,
+      hashType = HashType.sigHashAll,
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-    val utxoSpendingInfo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
-                                                   output = creditingOutput,
-                                                   signers = Seq(privKey),
-                                                   redeemScriptOpt = None,
-                                                   scriptWitnessOpt = None,
-                                                   hashType =
-                                                     HashType.sigHashAll)
+    val utxoSpendingInfo = BitcoinUTXOSpendingInfo(
+      outPoint = outPoint,
+      output = creditingOutput,
+      signers = Seq(privKey),
+      redeemScriptOpt = None,
+      scriptWitnessOpt = None,
+      hashType = HashType.sigHashAll,
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderMap = BitcoinTxBuilder(destinations = destinations,
@@ -210,7 +226,8 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
         signers = Seq(privKey),
         redeemScriptOpt = Some(EmptyScriptPubKey),
         scriptWitnessOpt = None,
-        hashType = HashType.sigHashAll
+        hashType = HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }
@@ -224,12 +241,15 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     assertThrows[IllegalArgumentException] {
-      BitcoinUTXOSpendingInfo(outPoint,
-                              creditingOutput,
-                              Seq(privKey),
-                              None,
-                              Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-                              HashType.sigHashAll)
+      BitcoinUTXOSpendingInfo(
+        outPoint,
+        creditingOutput,
+        Seq(privKey),
+        None,
+        Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+        HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
     }
   }
 
@@ -243,12 +263,15 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       Seq(creditingOutput),
                                       tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(outPoint,
-                                       creditingOutput,
-                                       Seq(privKey),
-                                       None,
-                                       Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-                                       HashType.sigHashAll)
+    val utxo = BitcoinUTXOSpendingInfo(
+      outPoint,
+      creditingOutput,
+      Seq(privKey),
+      None,
+      Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+      HashType.sigHashAll,
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
@@ -281,7 +304,8 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
       signers = Seq(privKey),
       redeemScriptOpt = None,
       scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-      hashType = HashType.sigHashAll
+      hashType = HashType.sigHashAll,
+      conditionalPath = ConditionalPath.NoConditionsLeft
     )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
 
@@ -314,7 +338,8 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
         signers = Seq(privKey),
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-        hashType = HashType.sigHashAll
+        hashType = HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
   }
@@ -328,12 +353,15 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                       tc.lockTime)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
     assertThrows[IllegalArgumentException] {
-      BitcoinUTXOSpendingInfo(outPoint,
-                              creditingOutput,
-                              Seq(privKey),
-                              None,
-                              Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-                              HashType.sigHashAll)
+      BitcoinUTXOSpendingInfo(
+        outPoint,
+        creditingOutput,
+        Seq(privKey),
+        None,
+        Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+        HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
     }
   }
 }

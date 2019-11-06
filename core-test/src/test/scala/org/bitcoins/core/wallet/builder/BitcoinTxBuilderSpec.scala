@@ -119,7 +119,8 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
                                    signers,
                                    redeemScriptOpt,
                                    scriptWitOpt,
-                                   hashType) :: t =>
+                                   hashType,
+                                   conditionalPath) :: t =>
         val o = txOutPoint
         val output = txOutput
         val outPointsSpendingInfo = BitcoinUTXOSpendingInfo(o,
@@ -127,7 +128,8 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
                                                             signers,
                                                             redeemScriptOpt,
                                                             scriptWitOpt,
-                                                            hashType)
+                                                            hashType,
+                                                            conditionalPath)
         loop(t, accum.updated(o, outPointsSpendingInfo))
     }
     loop(info, Map.empty)
@@ -157,7 +159,8 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
               _: MultiSignatureScriptPubKey | _: WitnessCommitment |
               _: CSVScriptPubKey | _: CLTVScriptPubKey |
-              _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
+              _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+              EmptyScriptPubKey) =>
             val o = TransactionOutput(CurrencyUnits.zero, x)
             BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
 
