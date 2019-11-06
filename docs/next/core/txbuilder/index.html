@@ -123,7 +123,9 @@ transactions. Here's an example of how to use it</p>
                                                redeemScriptOpt = <span class="hljs-type">None</span>,
                                                scriptWitnessOpt = <span class="hljs-type">None</span>,
                                                hashType =
-                                                <span class="hljs-type">HashType</span>.sigHashAll)
+                                                <span class="hljs-type">HashType</span>.sigHashAll,
+                                               conditionalPath =
+                                                <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoConditionsLeft</span>)
 
 <span class="hljs-comment">// all of the UTXO spending information, since we are only</span>
 <span class="hljs-comment">//spending one UTXO, this is just one element</span>
@@ -174,7 +176,7 @@ signedTx.outputs.length
 
 <span class="hljs-comment">//remember, you can call .hex on any bitcoin-s data structure to get the hex representation!</span>
 signedTx.hex
-<span class="hljs-comment">// res2: String = "0200000001ec3d108be5d2970ac95ca54ccc935400a72454f951cb0707ff7adb6b02b8ccc3000000006a47304402200205ab54665e0d74c6165a707659609813a1f4feb314a615b5065ca8ead14ef0022026d6b65033d8d8274baf534d7a90464376df0cdfc0efddebbfc02f5bd0ff33700121021a7910aa7bf49e23a59e1d60c06db6022c748bfde60e308a0c9b22ec5ef97934000000000288130000000000001976a914147c51de5a2530186e849fdb71fd40afce2b3aad88aca6120000000000001976a91413956695ea0a9af6c607422fd8f6c40cbc13b21988ac00000000"</span>
+<span class="hljs-comment">// res2: String = "020000000166a177babca46aa643ea292677772650f4df2b13a8cb8e112cdd7a8fef35badc000000006a47304402207ae7a0e63a576402dea6905c1ecf05d45bd8bcaf8be6652111ad4b14f52cfb280220666abb29ff042395ffa9e85202eb23505722586a734fd503eb1847d5c2d5fa4d0121024da3af247a223b36018192b6165f3779067c4a65c5c348eb7f420528e9d3ab1e000000000288130000000000001976a9146e2aa0bc5ed6741eef537994231ce98c5b14f1f288aca6120000000000001976a91402519b49c093c9a9a816cebbfcdf935c57abd8fb88ac00000000"</span>
 </code></pre>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/core/hd-keys"><span class="arrow-prev">← </span><span>HD key generation</span></a><a class="docs-next button" href="/docs/next/rpc/rpc-clients-intro"><span>Introduction</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
