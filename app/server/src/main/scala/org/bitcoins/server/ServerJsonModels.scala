@@ -39,14 +39,11 @@ object Rescan {
 
     jsArr.arr.toList match {
       case addrsJs :: startJs :: endJs :: Nil =>
-        try {
+        Try {
           val addresses = parseAddresses(addrsJs)
           val start = parseBlockStamp(startJs)
           val end = parseBlockStamp(endJs)
-          Success(
-            Rescan(addresses = addresses, startBlock = start, endBlock = end))
-        } catch {
-          case e: Throwable => Failure(e)
+          Rescan(addresses = addresses, startBlock = start, endBlock = end)
         }
       case Nil =>
         Failure(
@@ -70,12 +67,10 @@ object SendToAddress {
   def fromJsArr(jsArr: ujson.Arr): Try[SendToAddress] = {
     jsArr.arr.toList match {
       case addrJs :: bitcoinsJs :: Nil =>
-        try {
+        Try {
           val address = BitcoinAddress.fromStringExn(addrJs.str)
           val bitcoins = Bitcoins(bitcoinsJs.num)
-          Success(SendToAddress(address, bitcoins))
-        } catch {
-          case e: Throwable => Failure(e)
+          SendToAddress(address, bitcoins)
         }
       case Nil =>
         Failure(
