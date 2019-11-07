@@ -2,6 +2,7 @@ package org.bitcoins.core.script
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.BitcoinScriptUtil
@@ -77,7 +78,8 @@ case class PreExecutionScriptProgram(
       originalScript,
       altStack,
       flags,
-      None
+      None,
+      Vector.empty
     )
   }
 
@@ -135,6 +137,11 @@ sealed trait StartedScriptProgram extends ScriptProgram
   * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   *
   * @param lastCodeSeparator The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
+  * @param conditions Every time OP_IF is encountered then the condition the operation takes as input is added to this Vector.
+  *                   Every time OP_ELSE is encountered the last element is inverted.
+  *                   Every time OP_ENDIF is encountered the last element is dropped.
+  *                   The last element of this Vector represents whether operations should be executed.
+  *                   The length of this Vector represents the current depth in the conditional tree.
   */
 case class ExecutionInProgressScriptProgram(
     txSignatureComponent: TxSigComponent,
@@ -143,10 +150,17 @@ case class ExecutionInProgressScriptProgram(
     originalScript: List[ScriptToken],
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
-    lastCodeSeparator: Option[Int])
+    lastCodeSeparator: Option[Int],
+    conditions: Vector[Boolean])
     extends StartedScriptProgram {
 
   def toExecutedProgram: ExecutedScriptProgram = {
+    val errorOpt = if (conditions.nonEmpty) {
+      Some(ScriptErrorUnbalancedConditional)
+    } else {
+      None
+    }
+
     ExecutedScriptProgram(
       txSignatureComponent,
       stack,
@@ -154,7 +168,7 @@ case class ExecutionInProgressScriptProgram(
       originalScript,
       altStack,
       flags,
-      None
+      errorOpt
     )
   }
 
@@ -165,6 +179,39 @@ case class ExecutionInProgressScriptProgram(
   def replaceFlags(
       newFlags: Seq[ScriptFlag]): ExecutionInProgressScriptProgram = {
     this.copy(flags = newFlags)
+  }
+
+  def isInExecutionBranch: Boolean = {
+    conditions.forall(_ == true)
+  }
+
+  def shouldExecuteNextOperation: Boolean = {
+    script.headOption match {
+      case None                                        => false
+      case Some(OP_IF | OP_NOTIF | OP_ELSE | OP_ENDIF) => true
+      case Some(_)                                     => isInExecutionBranch
+    }
+  }
+
+  def addCondition(condition: Boolean): ExecutionInProgressScriptProgram = {
+    this.copy(conditions = conditions :+ condition)
+  }
+
+  def invertCondition(): StartedScriptProgram = {
+    if (conditions.isEmpty) {
+      this.failExecution(ScriptErrorUnbalancedConditional)
+    } else {
+      this.copy(conditions =
+        conditions.updated(conditions.length - 1, !conditions.last))
+    }
+  }
+
+  def removeCondition(): StartedScriptProgram = {
+    if (conditions.nonEmpty) {
+      this.copy(conditions = conditions.dropRight(1))
+    } else {
+      this.failExecution(ScriptErrorUnbalancedConditional)
+    }
   }
 
   /**

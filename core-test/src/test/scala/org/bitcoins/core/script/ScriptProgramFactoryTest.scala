@@ -66,7 +66,14 @@ class ScriptProgramFactoryTest extends BitcoinSUnitTest {
       ScriptFlagFactory.empty)
     val program = PreExecutionScriptProgram(t)
     val inProgress =
-      ExecutionInProgressScriptProgram(t, stack, script, Nil, Nil, Nil, None)
+      ExecutionInProgressScriptProgram(t,
+                                       stack,
+                                       script,
+                                       Nil,
+                                       Nil,
+                                       Nil,
+                                       None,
+                                       Vector.empty)
     inProgress.stack must be(stack)
     inProgress.script must be(script)
   }
