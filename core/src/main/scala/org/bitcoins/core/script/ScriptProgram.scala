@@ -140,9 +140,9 @@ sealed trait StartedScriptProgram extends ScriptProgram
   * @param lastCodeSeparator The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
   * @param trueCount The depth of OP_IFs/OP_NOTIFs we've entered on the true condition before the first false.
   * @param falseAndIgnoreCount The depth of OP_IFs/OP_NOTIFs we've entered after and including the first false condition.
-  *                            Every OP_IF/OP_NOTIF adds to this or falseAndIgnoreCount.
+  *                            Every OP_IF/OP_NOTIF adds to trueCount or falseAndIgnoreCount.
   *                            OP_ELSE has an effect only when falseAndIgnoreCount == 0 or 1, in which case it moves
-  *                            1 from trueCount to falseAndIgnoreCount or vice versa
+  *                            1 from trueCount to falseAndIgnoreCount or vice versa.
   *                            OP_ENDIF subtracts one from either falseAndIgnoreCount or trueCount if falseAndIgnoreCount == 0.
   *                            trueCount + falseAndIgnoreCount represents the current depth in the conditional tree.
   *                            falseAndIgnoreCount == 0 represents whether operations should be executed.
@@ -186,10 +186,16 @@ case class ExecutionInProgressScriptProgram(
     this.copy(flags = newFlags)
   }
 
+  /** Non-conditional opcodes should be executed only if this is true */
   def isInExecutionBranch: Boolean = {
     falseAndIgnoreCount == 0
   }
 
+  /** ScriptInterpreter should look at the script head only if this is true.
+    *
+    * Note that OP_IF, OP_NOTIF, OP_ELSE, and OP_ENDIF must be executed even if
+    * isInExecutionBranch is false as they must modify the states of trueCount and falseAndIgnoreCount.
+    */
   def shouldExecuteNextOperation: Boolean = {
     script.headOption match {
       case None                                        => false
@@ -198,6 +204,9 @@ case class ExecutionInProgressScriptProgram(
     }
   }
 
+  /** Should be called for every OP_IF and OP_NOTIF with whether the first (true)
+    * or second (false) branch should be taken.
+    */
   def addCondition(condition: Boolean): ExecutionInProgressScriptProgram = {
     if (!isInExecutionBranch || !condition) {
       this.copy(falseAndIgnoreCount = falseAndIgnoreCount + 1)
@@ -206,6 +215,7 @@ case class ExecutionInProgressScriptProgram(
     }
   }
 
+  /** Should be called on for every OP_ELSE */
   def invertCondition(): StartedScriptProgram = {
     if (trueCount + falseAndIgnoreCount == 0) {
       this.failExecution(ScriptErrorUnbalancedConditional)
@@ -221,6 +231,7 @@ case class ExecutionInProgressScriptProgram(
     }
   }
 
+  /** Should be called on for every OP_ENDIF */
   def removeCondition(): StartedScriptProgram = {
     if (trueCount + falseAndIgnoreCount > 0) {
       if (falseAndIgnoreCount > 0) {
