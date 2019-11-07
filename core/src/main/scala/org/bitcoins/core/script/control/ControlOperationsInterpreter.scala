@@ -10,8 +10,6 @@ import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util._
 
-import scala.annotation.tailrec
-
 /**
   * Created by chris on 1/6/16.
   */

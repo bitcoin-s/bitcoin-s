@@ -73,7 +73,8 @@ class ScriptProgramFactoryTest extends BitcoinSUnitTest {
                                        Nil,
                                        Nil,
                                        None,
-                                       Vector.empty)
+                                       0,
+                                       0)
     inProgress.stack must be(stack)
     inProgress.script must be(script)
   }

@@ -72,14 +72,15 @@ case class PreExecutionScriptProgram(
 
   def toExecutionInProgress: ExecutionInProgressScriptProgram = {
     ExecutionInProgressScriptProgram(
-      txSignatureComponent,
-      stack,
-      script,
-      originalScript,
-      altStack,
-      flags,
-      None,
-      Vector.empty
+      txSignatureComponent = txSignatureComponent,
+      stack = stack,
+      script = script,
+      originalScript = originalScript,
+      altStack = altStack,
+      flags = flags,
+      lastCodeSeparator = None,
+      trueCount = 0,
+      falseAndIgnoreCount = 0
     )
   }
 
@@ -137,11 +138,14 @@ sealed trait StartedScriptProgram extends ScriptProgram
   * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   *
   * @param lastCodeSeparator The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
-  * @param conditions Every time OP_IF is encountered then the condition the operation takes as input is added to this Vector.
-  *                   Every time OP_ELSE is encountered the last element is inverted.
-  *                   Every time OP_ENDIF is encountered the last element is dropped.
-  *                   The last element of this Vector represents whether operations should be executed.
-  *                   The length of this Vector represents the current depth in the conditional tree.
+  * @param trueCount The depth of OP_IFs/OP_NOTIFs we've entered on the true condition before the first false.
+  * @param falseAndIgnoreCount The depth of OP_IFs/OP_NOTIFs we've entered after and including the first false condition.
+  *                            Every OP_IF/OP_NOTIF adds to this or falseAndIgnoreCount.
+  *                            OP_ELSE has an effect only when falseAndIgnoreCount == 0 or 1, in which case it moves
+  *                            1 from trueCount to falseAndIgnoreCount or vice versa
+  *                            OP_ENDIF subtracts one from either falseAndIgnoreCount or trueCount if falseAndIgnoreCount == 0.
+  *                            trueCount + falseAndIgnoreCount represents the current depth in the conditional tree.
+  *                            falseAndIgnoreCount == 0 represents whether operations should be executed.
   */
 case class ExecutionInProgressScriptProgram(
     txSignatureComponent: TxSigComponent,
@@ -151,11 +155,12 @@ case class ExecutionInProgressScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
-    conditions: Vector[Boolean])
+    trueCount: Int,
+    falseAndIgnoreCount: Int)
     extends StartedScriptProgram {
 
   def toExecutedProgram: ExecutedScriptProgram = {
-    val errorOpt = if (conditions.nonEmpty) {
+    val errorOpt = if (trueCount + falseAndIgnoreCount > 0) {
       Some(ScriptErrorUnbalancedConditional)
     } else {
       None
@@ -182,7 +187,7 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def isInExecutionBranch: Boolean = {
-    conditions.forall(_ == true)
+    falseAndIgnoreCount == 0
   }
 
   def shouldExecuteNextOperation: Boolean = {
@@ -194,21 +199,35 @@ case class ExecutionInProgressScriptProgram(
   }
 
   def addCondition(condition: Boolean): ExecutionInProgressScriptProgram = {
-    this.copy(conditions = conditions :+ condition)
+    if (!isInExecutionBranch || !condition) {
+      this.copy(falseAndIgnoreCount = falseAndIgnoreCount + 1)
+    } else {
+      this.copy(trueCount = trueCount + 1)
+    }
   }
 
   def invertCondition(): StartedScriptProgram = {
-    if (conditions.isEmpty) {
+    if (trueCount + falseAndIgnoreCount == 0) {
       this.failExecution(ScriptErrorUnbalancedConditional)
     } else {
-      this.copy(conditions =
-        conditions.updated(conditions.length - 1, !conditions.last))
+      if (falseAndIgnoreCount > 1) {
+        // Do nothing, we aren't in an execution now branch anyway
+        this
+      } else if (falseAndIgnoreCount == 1) {
+        this.copy(trueCount = trueCount + 1, falseAndIgnoreCount = 0)
+      } else { // Case falseAndIgnoreCount = 0, trueCount > 0
+        this.copy(trueCount = trueCount - 1, falseAndIgnoreCount = 1)
+      }
     }
   }
 
   def removeCondition(): StartedScriptProgram = {
-    if (conditions.nonEmpty) {
-      this.copy(conditions = conditions.dropRight(1))
+    if (trueCount + falseAndIgnoreCount > 0) {
+      if (falseAndIgnoreCount > 0) {
+        this.copy(falseAndIgnoreCount = falseAndIgnoreCount - 1)
+      } else {
+        this.copy(trueCount = trueCount - 1)
+      }
     } else {
       this.failExecution(ScriptErrorUnbalancedConditional)
     }
