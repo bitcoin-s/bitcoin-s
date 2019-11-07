@@ -60,7 +60,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
   private case class P2PKHScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends P2PKHScriptPubKey {
-    override def toString = "P2PKHScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"P2PKHScriptPubKeyImpl($pubKeyHash)"
   }
 
   def apply(pubKey: ECPublicKey): P2PKHScriptPubKey = {
@@ -171,7 +171,8 @@ object MultiSignatureScriptPubKey
   private case class MultiSignatureScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends MultiSignatureScriptPubKey {
-    override def toString = "MultiSignatureScriptPubKeyImpl(" + hex + ")"
+    override def toString =
+      s"MultiSignatureScriptPubKey($requiredSigs, $maxSigs, ${publicKeys.mkString(", ")})"
   }
 
   def apply(
@@ -288,7 +289,7 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
 
   private case class P2SHScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends P2SHScriptPubKey {
-    override def toString = "P2SHScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"P2SHScriptPubKey($scriptHash)"
   }
 
   def apply(scriptPubKey: ScriptPubKey): P2SHScriptPubKey = {
@@ -338,7 +339,7 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
   private case class P2PKScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends P2PKScriptPubKey {
-    override def toString = "P2PKScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"P2PKScriptPubKeyImpl($publicKey)"
   }
 
   def apply(pubKey: ECPublicKey): P2PKScriptPubKey = {
@@ -420,7 +421,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
 
   private case class CLTVScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends CLTVScriptPubKey {
-    override def toString = "CLTVScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"CLTVScriptPubKey($locktime, $nestedScriptPubKey)"
   }
 
   def fromAsm(asm: Seq[ScriptToken]): CLTVScriptPubKey = {
@@ -506,7 +507,7 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 
   private case class CSVScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends CSVScriptPubKey {
-    override def toString = "CSVScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"CSVScriptPubKey($locktime, $nestedScriptPubKey)"
   }
 
   def fromAsm(asm: Seq[ScriptToken]): CSVScriptPubKey = {
@@ -774,7 +775,7 @@ object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
   private case class NonStandardScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends NonStandardScriptPubKey {
-    override def toString = "NonStandardScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"NonStandardScriptPubKey($asm)"
   }
 
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
@@ -957,7 +958,7 @@ object WitnessScriptPubKeyV0 {
   */
 sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(2).bytes)
-  override def toString = s"P2WPKHWitnessSPKV0($hex)"
+  override def toString = s"P2WPKHWitnessSPKV0($pubKeyHash)"
 }
 
 object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
@@ -1002,7 +1003,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   */
 sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def scriptHash: Sha256Digest = Sha256Digest(asm(2).bytes)
-  override def toString = s"P2WSHWitnessSPKV0($hex)"
+  override def toString = s"P2WSHWitnessSPKV0($scriptHash)"
 }
 
 object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
@@ -1052,7 +1053,7 @@ object UnassignedWitnessScriptPubKey
   private case class UnassignedWitnessScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends UnassignedWitnessScriptPubKey {
-    override def toString = "UnassignedWitnessScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"UnassignedWitnessScriptPubKey($asm)"
   }
 
   override def fromAsm(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = {
@@ -1088,7 +1089,7 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
   private case class WitnessCommitmentImpl(
       override val asm: Vector[ScriptToken])
       extends WitnessCommitment {
-    override def toString = "WitnessCommitmentImpl(" + hex + ")"
+    override def toString = s"WitnessCommitment(${witnessRootHash.hex})"
   }
 
   /** Every witness commitment must start with this header, see
