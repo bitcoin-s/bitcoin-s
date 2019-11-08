@@ -79,8 +79,7 @@ case class PreExecutionScriptProgram(
       altStack = altStack,
       flags = flags,
       lastCodeSeparator = None,
-      trueCount = 0,
-      falseAndIgnoreCount = 0
+      conditionalCounter = ConditionalCounter.empty
     )
   }
 
@@ -133,19 +132,87 @@ object PreExecutionScriptProgram {
 /** This represents any ScriptProgram that is not PreExecution */
 sealed trait StartedScriptProgram extends ScriptProgram
 
+/** Implements the counting required for O(1) handling of conditionals in Bitcoin Script.
+  * @see [[https://github.com/bitcoin/bitcoin/pull/16902]]
+  *
+  * @param trueCount The depth of OP_IFs/OP_NOTIFs we've entered on the true condition before the first false.
+  * @param falseAndIgnoreCount The depth of OP_IFs/OP_NOTIFs we've entered after and including the first false condition.
+  *                            Every OP_IF/OP_NOTIF adds to trueCount or falseAndIgnoreCount.
+  *                           OP_ELSE has an effect only when falseAndIgnoreCount == 0 or 1, in which case it moves
+  *                           1 from trueCount to falseAndIgnoreCount or vice versa.
+  *                           OP_ENDIF subtracts one from either falseAndIgnoreCount or trueCount if falseAndIgnoreCount == 0.
+  *                           trueCount + falseAndIgnoreCount represents the current depth in the conditional tree.
+  *                           falseAndIgnoreCount == 0 represents whether operations should be executed.
+  */
+case class ConditionalCounter(trueCount: Int, falseAndIgnoreCount: Int) {
+  require(trueCount >= 0, "Should have failed as unbalanced")
+  require(falseAndIgnoreCount >= 0, "Should have failed as unbalanced")
+
+  def noFalseEncountered: Boolean = {
+    falseAndIgnoreCount == 0
+  }
+
+  def noTrueEncountered: Boolean = {
+    trueCount == 0
+  }
+
+  def noConditionEncountered: Boolean = {
+    noTrueEncountered && noFalseEncountered
+  }
+
+  def totalDepth: Int = {
+    trueCount + falseAndIgnoreCount
+  }
+
+  /** Should be called for every OP_IF and OP_NOTIF with whether the first (true)
+    * or second (false) branch should be taken.
+    */
+  def addCondition(condition: Boolean): ConditionalCounter = {
+    if (!noFalseEncountered || !condition) {
+      this.copy(falseAndIgnoreCount = falseAndIgnoreCount + 1)
+    } else {
+      this.copy(trueCount = trueCount + 1)
+    }
+  }
+
+  /** Should be called on for every OP_ELSE.
+    *
+    * It is assumed that !noConditionEncountered */
+  def invertCondition(): ConditionalCounter = {
+    if (falseAndIgnoreCount > 1) {
+      // Do nothing, we aren't in an execution now branch anyway
+      this
+    } else if (falseAndIgnoreCount == 1) {
+      this.copy(trueCount = trueCount + 1, falseAndIgnoreCount = 0)
+    } else { // Case falseAndIgnoreCount = 0, trueCount > 0
+      this.copy(trueCount = trueCount - 1, falseAndIgnoreCount = 1)
+    }
+  }
+
+  /** Should be called on for every OP_ENDIF.
+    *
+    * It is assumed that !noConditionEncountered */
+  def removeCondition(): ConditionalCounter = {
+    if (falseAndIgnoreCount > 0) {
+      this.copy(falseAndIgnoreCount = falseAndIgnoreCount - 1)
+    } else {
+      this.copy(trueCount = trueCount - 1)
+    }
+  }
+}
+
+object ConditionalCounter {
+
+  val empty: ConditionalCounter =
+    ConditionalCounter(trueCount = 0, falseAndIgnoreCount = 0)
+}
+
 /**
   * Type for a [[org.bitcoins.core.script.ScriptProgram ScriptProgram]] that is currently being
   * evaluated by the [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]].
   *
   * @param lastCodeSeparator The index of the last [[org.bitcoins.core.script.crypto.OP_CODESEPARATOR OP_CODESEPARATOR]]
-  * @param trueCount The depth of OP_IFs/OP_NOTIFs we've entered on the true condition before the first false.
-  * @param falseAndIgnoreCount The depth of OP_IFs/OP_NOTIFs we've entered after and including the first false condition.
-  *                            Every OP_IF/OP_NOTIF adds to trueCount or falseAndIgnoreCount.
-  *                            OP_ELSE has an effect only when falseAndIgnoreCount == 0 or 1, in which case it moves
-  *                            1 from trueCount to falseAndIgnoreCount or vice versa.
-  *                            OP_ENDIF subtracts one from either falseAndIgnoreCount or trueCount if falseAndIgnoreCount == 0.
-  *                            trueCount + falseAndIgnoreCount represents the current depth in the conditional tree.
-  *                            falseAndIgnoreCount == 0 represents whether operations should be executed.
+  * @param conditionalCounter Keeps track of where we are within a conditional tree.
   */
 case class ExecutionInProgressScriptProgram(
     txSignatureComponent: TxSigComponent,
@@ -155,12 +222,11 @@ case class ExecutionInProgressScriptProgram(
     altStack: List[ScriptToken],
     flags: Seq[ScriptFlag],
     lastCodeSeparator: Option[Int],
-    trueCount: Int,
-    falseAndIgnoreCount: Int)
+    conditionalCounter: ConditionalCounter)
     extends StartedScriptProgram {
 
   def toExecutedProgram: ExecutedScriptProgram = {
-    val errorOpt = if (trueCount + falseAndIgnoreCount > 0) {
+    val errorOpt = if (conditionalCounter.totalDepth > 0) {
       Some(ScriptErrorUnbalancedConditional)
     } else {
       None
@@ -188,7 +254,7 @@ case class ExecutionInProgressScriptProgram(
 
   /** Non-conditional opcodes should be executed only if this is true */
   def isInExecutionBranch: Boolean = {
-    falseAndIgnoreCount == 0
+    conditionalCounter.noFalseEncountered
   }
 
   /** ScriptInterpreter should look at the script head only if this is true.
@@ -208,39 +274,24 @@ case class ExecutionInProgressScriptProgram(
     * or second (false) branch should be taken.
     */
   def addCondition(condition: Boolean): ExecutionInProgressScriptProgram = {
-    if (!isInExecutionBranch || !condition) {
-      this.copy(falseAndIgnoreCount = falseAndIgnoreCount + 1)
-    } else {
-      this.copy(trueCount = trueCount + 1)
-    }
+    this.copy(conditionalCounter = conditionalCounter.addCondition(condition))
   }
 
   /** Should be called on for every OP_ELSE */
   def invertCondition(): StartedScriptProgram = {
-    if (trueCount + falseAndIgnoreCount == 0) {
+    if (conditionalCounter.noConditionEncountered) {
       this.failExecution(ScriptErrorUnbalancedConditional)
     } else {
-      if (falseAndIgnoreCount > 1) {
-        // Do nothing, we aren't in an execution now branch anyway
-        this
-      } else if (falseAndIgnoreCount == 1) {
-        this.copy(trueCount = trueCount + 1, falseAndIgnoreCount = 0)
-      } else { // Case falseAndIgnoreCount = 0, trueCount > 0
-        this.copy(trueCount = trueCount - 1, falseAndIgnoreCount = 1)
-      }
+      this.copy(conditionalCounter = conditionalCounter.invertCondition())
     }
   }
 
   /** Should be called on for every OP_ENDIF */
   def removeCondition(): StartedScriptProgram = {
-    if (trueCount + falseAndIgnoreCount > 0) {
-      if (falseAndIgnoreCount > 0) {
-        this.copy(falseAndIgnoreCount = falseAndIgnoreCount - 1)
-      } else {
-        this.copy(trueCount = trueCount - 1)
-      }
-    } else {
+    if (conditionalCounter.noConditionEncountered) {
       this.failExecution(ScriptErrorUnbalancedConditional)
+    } else {
+      this.copy(conditionalCounter = conditionalCounter.removeCondition())
     }
   }
 

@@ -16,10 +16,11 @@ import org.bitcoins.core.util._
 sealed abstract class ControlOperationsInterpreter {
   private def logger = BitcoinSLogger.logger
 
-  /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
-  def opIf(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(program.script.headOption.contains(OP_IF),
-            "Script top was not OP_IF")
+  /** Factors out the similarities between OP_IF and OP_NOTIF */
+  private def opConditional(conditional: ConditionalOperation)(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(program.script.headOption.contains(conditional),
+            s"Script top was not $conditional")
 
     if (program.isInExecutionBranch) {
       val sigVersion = program.txSignatureComponent.sigVersion
@@ -29,21 +30,27 @@ sealed abstract class ControlOperationsInterpreter {
 
       stackTopOpt match {
         case None =>
-          logger.error("We do not have any stack elements for our OP_IF")
+          logger.error(
+            s"We do not have any stack elements for our $conditional")
           program.failExecution(ScriptErrorUnbalancedConditional)
         case Some(stackTop) =>
           if (isNotMinimalStackTop(stackTop, sigVersion, minimalIfEnabled)) {
             logger.error(
-              "OP_IF argument was not minimally encoded, got: " + stackTop)
+              s"$conditional argument was not minimally encoded, got: " + stackTop)
             program.failExecution(ScriptErrorMinimalIf)
           } else {
             val stackTopTrue: Boolean = program.stackTopIsTrue
-            logger.debug(s"OP_IF stack top was $stackTopTrue")
+            logger.debug(s"$conditional stack top was $stackTopTrue")
             logger.debug(s"Stack top: ${program.stack}")
+
+            val conditionToAdd = conditional match {
+              case OP_IF    => stackTopTrue
+              case OP_NOTIF => !stackTopTrue
+            }
 
             program
               .updateStackAndScript(program.stack.tail, program.script.tail)
-              .addCondition(stackTopTrue)
+              .addCondition(conditionToAdd)
           }
       }
     } else {
@@ -64,42 +71,15 @@ sealed abstract class ControlOperationsInterpreter {
     && !BitcoinScriptUtil.isMinimalToken(stackTop))
   }
 
+  /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
+  def opIf(program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    opConditional(OP_IF)(program)
+  }
+
   /** If the top stack value is 0, the statements are executed. The top stack value is removed. */
   def opNotIf(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    require(program.script.headOption.contains(OP_NOTIF),
-            "Script top was not OP_NOTIF")
-
-    if (program.isInExecutionBranch) {
-      val sigVersion = program.txSignatureComponent.sigVersion
-      val flags = program.flags
-      val minimalIfEnabled = ScriptFlagUtil.minimalIfEnabled(flags)
-      val stackTopOpt = program.stack.headOption
-
-      stackTopOpt match {
-        case None =>
-          logger.error("We do not have any stack elements for our OP_NOTIF")
-          program.failExecution(ScriptErrorUnbalancedConditional)
-        case Some(stackTop) =>
-          if (isNotMinimalStackTop(stackTop, sigVersion, minimalIfEnabled)) {
-            logger.error(
-              "OP_NOTIF argument was not minimally encoded, got: " + stackTop)
-            program.failExecution(ScriptErrorMinimalIf)
-          } else {
-            val stackTopFalse: Boolean = program.stackTopIsFalse
-            logger.debug(s"OP_IF stack top was $stackTopFalse")
-            logger.debug(s"Stack top: ${program.stack}")
-
-            program
-              .updateStackAndScript(program.stack.tail, program.script.tail)
-              .addCondition(stackTopFalse)
-          }
-      }
-    } else {
-      // Doesn't matter which condition we use here,
-      // just that one gets added to keep track of depth
-      program.updateScript(program.script.tail).addCondition(condition = true)
-    }
+    opConditional(OP_NOTIF)(program)
   }
 
   /** Evaluates the [[org.bitcoins.core.script.control.OP_ELSE OP_ELSE]] operator. */
