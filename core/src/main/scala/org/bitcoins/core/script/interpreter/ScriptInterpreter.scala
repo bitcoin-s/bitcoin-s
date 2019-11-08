@@ -535,6 +535,13 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             "We cannot have a stack + alt stack size larger than 1000 elements")
           (program.failExecution(ScriptErrorStackSize), opCount)
 
+        //no more script operations to run, return whether the program is valid and the final state of the program
+        case Nil =>
+          (program.toExecutedProgram, opCount)
+
+        case _ if !program.shouldExecuteNextOperation =>
+          (program.updateScript(program.script.tail), opCount)
+
         //stack operations
         case OP_DUP :: _ =>
           val programOrError = StackInterpreter.opDup(program)
@@ -1051,9 +1058,6 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             (programOrError, newOpCount)
           }
 
-        //no more script operations to run, return whether the program is valid and the final state of the program
-        case Nil =>
-          (program.toExecutedProgram, opCount)
         case h :: _ => throw new RuntimeException(s"$h was unmatched")
       }
 

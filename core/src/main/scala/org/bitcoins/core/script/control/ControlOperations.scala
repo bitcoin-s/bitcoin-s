@@ -8,13 +8,15 @@ import org.bitcoins.core.script.constant.ScriptOperation
   */
 sealed abstract class ControlOperations extends ScriptOperation
 
+sealed abstract class ConditionalOperation extends ControlOperations
+
 /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
-case object OP_IF extends ControlOperations {
+case object OP_IF extends ConditionalOperation {
   override val opCode: Int = 99
 }
 
 /** If the top stack value is 0, the statements are executed. The top stack value is removed. */
-case object OP_NOTIF extends ControlOperations {
+case object OP_NOTIF extends ConditionalOperation {
   override val opCode: Int = 100
 }
 
