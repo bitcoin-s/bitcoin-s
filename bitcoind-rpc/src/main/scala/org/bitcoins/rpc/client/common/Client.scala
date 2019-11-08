@@ -40,6 +40,7 @@ import org.bitcoins.rpc.BitcoindException
 trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
+  protected var isStarted = false
 
   /**
     * The log file of the Bitcoin Core daemon
@@ -169,6 +170,7 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
           logger.info(s"Dumped bitcoin.conf to $otherTempfile")
         }
     }
+    isStarted = true
     started
   }
 
@@ -206,6 +208,10 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
     }
   }
 
+  def isstarted(): Boolean = {
+    isStarted
+  }
+
   /**
     * Stop method for BitcoindRpcClient that is stopped, inherits from the StartStop trait
     * @return A future stopped bitcoindRPC client
@@ -215,6 +221,7 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
       _ <- bitcoindCall[String]("stop")
       _ <- {
         if (system.name == BitcoindRpcClient.ActorSystemName) {
+          isStarted = false
           system.terminate()
         } else FutureUtil.unit
       }
@@ -227,6 +234,10 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
     */
   def isStoppedF: Future[Boolean] = {
     isStartedF.map(started => !started)
+  }
+
+  def isstopped(): Boolean = {
+    isStarted
   }
 
   // This RPC call is here to avoid circular trait depedency

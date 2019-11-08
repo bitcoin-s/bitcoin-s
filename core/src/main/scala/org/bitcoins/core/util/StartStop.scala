@@ -10,4 +10,7 @@ import scala.concurrent.Future
 trait StartStop[T] {
   def start(): Future[T]
   def stop(): Future[T]
+  def isstarted(): Boolean
+  def isstopped(): Boolean
+  private var isStarted = false
 }

@@ -69,6 +69,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
   implicit val m = ActorMaterializer.create(system)
   private val logger = LoggerFactory.getLogger(this.getClass)
+  private var isStarted = false
 
   def getDaemon: EclairInstance = instance
 
@@ -726,6 +727,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
         process = Some(result)
         ()
+        isStarted = true
       } else {
         logger.info(s"Eclair was already started!")
         ()
@@ -734,7 +736,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
     val started: Future[EclairRpcClient] = {
       for {
-        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStarted,
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
                                             duration = 1.seconds,
                                             maxTries = 60)
       } yield this
@@ -746,7 +748,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     * Boolean check to verify the state of the client
     * @return Future Boolean representing if client has started
     */
-  def isStarted(): Future[Boolean] = {
+  def isStartedF(): Future[Boolean] = {
     val p = Promise[Boolean]()
 
     getInfo.onComplete {
@@ -757,6 +759,10 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     }
 
     p.future
+  }
+
+  def isstarted(): Boolean = {
+    isStarted
   }
 
   /** Returns a Future EclairRpcClient if able to shut down
@@ -773,15 +779,20 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     } else {
       FutureUtil.unit
     }
+    isStarted = false
     actorSystemF.map(_ => this)
+  }
+
+  def isstopped(): Boolean = {
+    isStarted
   }
 
   /**
     * Checks to see if the client stopped successfully
     * @return
     */
-  def isStopped: Future[Boolean] = {
-    isStarted.map(started => !started)
+  def isStoppedF: Future[Boolean] = {
+    isStartedF.map(started => !started)
   }
 
   /**

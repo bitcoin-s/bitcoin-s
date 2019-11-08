@@ -646,7 +646,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     logger.debug(s"shutting down eclair")
     val stopEclairF = eclairRpcClient.stop()
     val killBitcoindF = BitcoindRpcTestUtil.stopServer(bitcoindRpc)
-    val iskilled = eclairRpcClient.isStopped
+    val iskilled = eclairRpcClient.isStoppedF
 
     val shutdownF = for {
       _ <- killBitcoindF
