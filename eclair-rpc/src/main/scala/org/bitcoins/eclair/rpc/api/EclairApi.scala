@@ -3,15 +3,10 @@ package org.bitcoins.eclair.rpc.api
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.Address
-import org.bitcoins.core.protocol.ln.{
-  LnInvoice,
-  LnParams,
-  PaymentPreimage,
-  ShortChannelId
-}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.core.protocol.ln.{LnInvoice, LnParams, PaymentPreimage, ShortChannelId}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.network.NodeUri
@@ -80,6 +75,15 @@ trait EclairApi {
   def findRoute(
       invoice: LnInvoice,
       amountMsat: MilliSatoshis): Future[Vector[NodeId]]
+
+  /** Finds [[ShortChannelId]]s between this node and the given nodeId */
+  def findShortChannelIds(remoteNodeId: NodeId): Future[Vector[ShortChannelId]] = {
+    val channelsF = channels(remoteNodeId)
+    channelsF.map { channels =>
+      val openChannels = channels.collect { case c: OpenChannelInfo => c }
+      openChannels.map(_.shortChannelId)
+    }
+  }
 
   def forceClose(channelId: ChannelId): Future[Unit]
 
@@ -262,4 +266,14 @@ trait EclairApi {
       externalId: Option[String]): Future[PaymentId]
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
+
+  /** Gets the amount of [[MilliSatoshis msat]] you can receive in the given [[ShortChannelId short channelId]] */
+  def getRemoteBalance(shortChannelId: ShortChannelId): Future[Option[MilliSatoshis]] = {
+    usableBalances().map(_.find(_.shortChannelId == shortChannelId).map(_.canReceive))
+  }
+
+  /** Gets the amount of [[MilliSatoshis msat]] you can send in the given [[ShortChannelId short channelId]] */
+  def getLocalBalance(shortChannelId: ShortChannelId): Future[Option[MilliSatoshis]] = {
+    usableBalances().map(_.find(_.shortChannelId == shortChannelId).map(_.canSend))
+  }
 }

@@ -3,11 +3,7 @@ package org.bitcoins.eclair.rpc
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt64}
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
-import org.bitcoins.core.protocol.ln.channel.{
-  ChannelId,
-  ChannelState,
-  FundedChannelId
-}
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency._
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
@@ -21,24 +17,14 @@ import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.ln.{
-  LnHumanReadablePart,
-  LnInvoice,
-  PaymentPreimage
-}
+import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, LnInvoice, PaymentPreimage, ShortChannelId}
 import org.bitcoins.testkit.async.TestAsyncUtil
+import org.bitcoins.core.currency.SatoshisInt
 
 import scala.concurrent.duration._
 import java.nio.file.Files
 
-import org.bitcoins.eclair.rpc.api.{
-  ChannelResult,
-  ChannelUpdate,
-  IncomingPaymentStatus,
-  InvoiceResult,
-  OpenChannelInfo,
-  OutgoingPaymentStatus
-}
+import org.bitcoins.eclair.rpc.api.{ChannelResult, ChannelUpdate, IncomingPaymentStatus, InvoiceResult, OpenChannelInfo, OutgoingPaymentStatus}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.reflect.ClassTag
@@ -1122,6 +1108,47 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     } yield {
       assert(res.nonEmpty)
     }
+  }
+
+  it should "get remote and local balances accurately" in {
+    val f: (EclairRpcClient, EclairRpcClient) => Future[Assertion] = {
+      case (c1, c2) =>
+
+        val initToLocalToRemoteF: Future[(MilliSatoshis, MilliSatoshis, ShortChannelId)] = for {
+          node2Id <- c2.nodeId()
+          shortChannelIds <- c1.findShortChannelIds(node2Id)
+          shortChannelId = shortChannelIds.head
+          toLocalOpt <- c1.getLocalBalance(shortChannelId)
+          toRemoteOpt <- c1.getRemoteBalance(shortChannelId)
+        } yield {
+          (toLocalOpt.get, toRemoteOpt.get, shortChannelId)
+        }
+
+        //if we send a payment for 10 satoshis, to local should go down by 10
+        //and toRemote should go up by 10
+        val tenSat = MilliSatoshis.fromSatoshis(10.satoshis)
+        val c1InvoiceF = c1.createInvoice("c2 -> c1 get remote and local balances accurately test case", tenSat)
+        val c2InvoiceF = c2.createInvoice("c1 -> c2 get remote and local balances accurately test case", tenSat)
+
+        val firstPaymentF = for {
+          (initToLocal, initToRemote, shortChannelId) <- initToLocalToRemoteF
+          c2Invoice <- c2InvoiceF
+          _ <- c1.payInvoice(c2Invoice)
+          _ <- AsyncUtil.retryUntilSatisfiedF(() => c2.getReceivedInfo(c2Invoice).map(_.isDefined))
+          newLocalBalanceOpt <- c1.getLocalBalance(shortChannelId)
+          newRemoteBalanceOpt <- c1.getRemoteBalance(shortChannelId)
+        } yield  {
+          logger.info(s"initLocal=${initToLocal} initRemote=${initToRemote} shortChannelId=${shortChannelId}")
+          val newLocalBalance = newLocalBalanceOpt.get
+          val newRemoteBalance = newRemoteBalanceOpt.get
+
+          assert(newLocalBalance == initToLocal - tenSat, s"Local balance should be decreased after sending payment")
+          assert(newRemoteBalance == initToRemote + tenSat, s"Remote balance should be increased after sending payment")
+        }
+      firstPaymentF
+    }
+        //first let's send a payment for
+    executeWithClientOtherClient(f)
   }
 
   it should "disconnect node" in {
