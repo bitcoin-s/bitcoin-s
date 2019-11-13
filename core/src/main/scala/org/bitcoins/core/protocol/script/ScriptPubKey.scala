@@ -35,7 +35,11 @@ sealed abstract class ScriptPubKey extends Script
 /** Trait for all Non-SegWit ScriptPubKeys  */
 sealed trait NonWitnessScriptPubKey extends ScriptPubKey
 
-/** Trait for all raw, non-nested ScriptPubKeys (no P2SH) */
+/** Trait for all raw, non-nested ScriptPubKeys (no P2SH)
+  *
+  * Note that all WitnessScriptPubKeys including P2WPKH are not
+  * considered to be non-nested and hence not RawScriptPubKeys.
+  */
 sealed trait RawScriptPubKey extends NonWitnessScriptPubKey
 
 /**
@@ -568,11 +572,11 @@ sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
   require(asm.last.equals(OP_ENDIF),
           "ConditionalScriptPubKey must end in OP_ENDIF")
 
-  val (validConditional: Boolean, opElseIndex: Int) = {
+  val (isValidConditional: Boolean, opElseIndex: Int) = {
     ConditionalScriptPubKey.isConditionalScriptPubKeyWithElseIndex(asm)
   }
 
-  require(validConditional, "Must be valid ConditionalScriptPubKey syntax")
+  require(isValidConditional, "Must be valid ConditionalScriptPubKey syntax")
   require(opElseIndex != -1,
           "ConditionalScriptPubKey has to contain OP_ELSE asm token")
 
@@ -623,6 +627,9 @@ object ConditionalScriptPubKey extends ScriptFactory[ConditionalScriptPubKey] {
     fromAsm(asm)
   }
 
+  /** Validates the correctness of the conditional syntax.
+    * If valid, also returns the index of the first outer-most OP_ELSE
+    */
   def isConditionalScriptPubKeyWithElseIndex(
       asm: Seq[ScriptToken]): (Boolean, Int) = {
     val headIsOpIf = asm.headOption.contains(OP_IF)
@@ -637,40 +644,36 @@ object ConditionalScriptPubKey extends ScriptFactory[ConditionalScriptPubKey] {
         .foldLeft[Option[Vector[Boolean]]](Some(Vector(false))) {
           case (None, _) => // Invalid tree case, do no computation
             None
-          case (Some(opElseFoundAtDepth), (token, asmIndex)) =>
-            if (opElseFoundAtDepth.isEmpty) {
-              // Case of additional asm after final OP_ENDIF
-              None
-            } else if (token == OP_IF || token == OP_NOTIF) {
-              // Increase depth by one with OP_ELSE yet to be found for this depth
-              Some(opElseFoundAtDepth :+ false)
-            } else if (token == OP_ELSE) {
-              if (opElseFoundAtDepth == Vector(false)) {
-                // If first OP_ELSE at depth 1, set opElseIndex
-                opElseIndexOpt = Some(asmIndex)
-              }
-
-              if (opElseFoundAtDepth.last) {
-                // If OP_ELSE already found at this depth, invalid
-                None
-              } else {
-                // Otherwise, set to found at this depth
-                Some(
-                  opElseFoundAtDepth.updated(opElseFoundAtDepth.length - 1,
-                                             true))
-              }
-            } else if (token == OP_ENDIF) {
-              if (opElseFoundAtDepth.last) {
-                // If OP_ELSE found at this depth then valid, decrease depth by 1
-                Some(opElseFoundAtDepth.dropRight(1))
-              } else {
-                // Otherwise, invalid
-                None
-              }
-            } else {
-              // Token not related to conditional structure, ignore
-              Some(opElseFoundAtDepth)
+          case (Some(Vector()), _) => // Case of additional asm after final OP_ENDIF
+            None
+          case (Some(opElseFoundAtDepth), (OP_IF | OP_NOTIF, _)) =>
+            // Increase depth by one with OP_ELSE yet to be found for this depth
+            Some(opElseFoundAtDepth :+ false)
+          case (Some(opElseFoundAtDepth), (OP_ELSE, asmIndex)) =>
+            if (opElseFoundAtDepth == Vector(false)) {
+              // If first OP_ELSE at depth 1, set opElseIndex
+              opElseIndexOpt = Some(asmIndex)
             }
+
+            if (opElseFoundAtDepth.last) {
+              // If OP_ELSE already found at this depth, invalid
+              None
+            } else {
+              // Otherwise, set to found at this depth
+              Some(
+                opElseFoundAtDepth.updated(opElseFoundAtDepth.length - 1, true))
+            }
+          case (Some(opElseFoundAtDepth), (OP_ENDIF, _)) =>
+            if (opElseFoundAtDepth.last) {
+              // If OP_ELSE found at this depth then valid, decrease depth by 1
+              Some(opElseFoundAtDepth.dropRight(1))
+            } else {
+              // Otherwise, invalid
+              None
+            }
+          case (Some(opElseFoundAtDepth), (_, _)) =>
+            // Token not related to conditional structure, ignore
+            Some(opElseFoundAtDepth)
         }
 
       // We should end on OP_ENDIF which will take us to depth 0

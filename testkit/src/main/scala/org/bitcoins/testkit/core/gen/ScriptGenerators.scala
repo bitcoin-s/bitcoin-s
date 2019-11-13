@@ -226,23 +226,22 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def emptyScriptPubKey: Gen[(EmptyScriptPubKey.type, Seq[ECPrivateKey])] =
     (EmptyScriptPubKey, Nil)
 
-  /** Creates a ConditionalScriptPubKey with keys for the true case */
+  /** Creates a ConditionalScriptPubKey with keys for the true case
+    *
+    * @param maxDepth The maximum level of nesting allowed within this conditional.
+    */
   def conditionalScriptPubKey(
       maxDepth: Int): Gen[(ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
     if (maxDepth > 0) {
-      rawScriptPubKey(maxDepth - 1).flatMap {
-        case (spk1, keys1) =>
-          rawScriptPubKey(maxDepth - 1).map(_._1).map { spk2 =>
-            (ConditionalScriptPubKey(spk1, spk2), keys1)
-          }
-      }
+      for {
+        (spk1, keys1) <- rawScriptPubKey(maxDepth - 1)
+        (spk2, _) <- rawScriptPubKey(maxDepth - 1)
+      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
     } else {
-      nonConditionalRawScriptPubKey.flatMap {
-        case (spk1, keys1) =>
-          nonConditionalRawScriptPubKey.map(_._1).map { spk2 =>
-            (ConditionalScriptPubKey(spk1, spk2), keys1)
-          }
-      }
+      for {
+        (spk1, keys1) <- nonConditionalRawScriptPubKey
+        (spk2, _) <- nonConditionalRawScriptPubKey
+      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
     }
   }
 
@@ -250,19 +249,15 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def nonLocktimeConditionalScriptPubKey(
       maxDepth: Int): Gen[(ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
     if (maxDepth > 0) {
-      nonLocktimeRawScriptPubKey(maxDepth - 1).flatMap {
-        case (spk1, keys1) =>
-          nonLocktimeRawScriptPubKey(maxDepth - 1).map(_._1).map { spk2 =>
-            (ConditionalScriptPubKey(spk1, spk2), keys1)
-          }
-      }
+      for {
+        (spk1, keys1) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
+        (spk2, _) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
+      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
     } else {
-      nonConditionalNonLocktimeRawScriptPubKey.flatMap {
-        case (spk1, keys1) =>
-          nonConditionalNonLocktimeRawScriptPubKey.map(_._1).map { spk2 =>
-            (ConditionalScriptPubKey(spk1, spk2), keys1)
-          }
-      }
+      for {
+        (spk1, keys1) <- nonConditionalNonLocktimeRawScriptPubKey
+        (spk2, _) <- nonConditionalNonLocktimeRawScriptPubKey
+      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
     }
   }
 

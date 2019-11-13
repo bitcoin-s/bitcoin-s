@@ -69,8 +69,8 @@ sealed abstract class UTXOSpendingInfo {
   *
   * For example, if you wanted to spend a ConditionalScriptPubKey(P2PK1, P2PK2)
   * (which looks like OP_IF <P2PK1> OP_ELSE <P2PK2> OP_ENDIF) with the P2PK1 case,
-  * then you would construct a ConditionalSpendingInfo using conditionTrue as your
-  * ConditionalPath. Otherwise if you wanted to use P2PK2 you would use conditionFalse.
+  * then you would construct a ConditionalSpendingInfo using nonNestedTrue as your
+  * ConditionalPath. Otherwise if you wanted to use P2PK2 you would use nonNestedFalse.
   */
 sealed trait ConditionalPath
 
@@ -81,8 +81,8 @@ object ConditionalPath {
   case class ConditionFalse(nextCondition: ConditionalPath)
       extends ConditionalPath
 
-  val conditionTrue: ConditionalPath = ConditionTrue(NoConditionsLeft)
-  val conditionFalse: ConditionalPath = ConditionFalse(NoConditionsLeft)
+  val nonNestedTrue: ConditionalPath = ConditionTrue(NoConditionsLeft)
+  val nonNestedFalse: ConditionalPath = ConditionFalse(NoConditionsLeft)
 }
 
 sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
