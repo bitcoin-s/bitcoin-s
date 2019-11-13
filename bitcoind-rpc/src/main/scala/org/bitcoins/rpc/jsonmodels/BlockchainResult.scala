@@ -202,3 +202,6 @@ case class GetTxOutSetInfoResult(
     disk_size: Int,
     total_amount: Bitcoins)
     extends BlockchainResult
+
+case class GetBlockFilterResult(filter: String, header: String)
+    extends BlockchainResult
