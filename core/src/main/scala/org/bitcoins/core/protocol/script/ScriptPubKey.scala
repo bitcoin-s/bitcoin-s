@@ -4,7 +4,13 @@ import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
-import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_RETURN}
+import org.bitcoins.core.script.control.{
+  OP_ELSE,
+  OP_ENDIF,
+  OP_IF,
+  OP_NOTIF,
+  OP_RETURN
+}
 import org.bitcoins.core.script.crypto.{
   OP_CHECKMULTISIG,
   OP_CHECKMULTISIGVERIFY,
@@ -29,7 +35,11 @@ sealed abstract class ScriptPubKey extends Script
 /** Trait for all Non-SegWit ScriptPubKeys  */
 sealed trait NonWitnessScriptPubKey extends ScriptPubKey
 
-/** Trait for all raw, non-nested ScriptPubKeys (no P2SH) */
+/** Trait for all raw, non-nested ScriptPubKeys (no P2SH)
+  *
+  * Note that all WitnessScriptPubKeys including P2WPKH are not
+  * considered to be non-nested and hence not RawScriptPubKeys.
+  */
 sealed trait RawScriptPubKey extends NonWitnessScriptPubKey
 
 /**
@@ -557,17 +567,18 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 
 /** Currently only supports a single OP_IF ... OP_ELSE ... OP_ENDIF ScriptPubKey */
 sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
-  require(asm.nonEmpty, "ConditionalScriptPubKey cannot be empty")
-  require(asm.head.equals(OP_IF),
+  require(asm.headOption.contains(OP_IF),
           "ConditionalScriptPubKey must begin with OP_IF")
-  require(opElseIndex != -1,
-          "ConditionalScriptPubKey has to contain OP_ELSE asm token")
   require(asm.last.equals(OP_ENDIF),
           "ConditionalScriptPubKey must end in OP_ENDIF")
-  require(asm.count(_.equals(OP_IF)) == 1,
-          "ConditionalScriptPubKey does not currently support nesting OP_IFs")
-  require(asm.count(_.equals(OP_ELSE)) == 1,
-          "ConditionalScriptPubKey does not currently support nesting OP_ELSEs")
+
+  val (isValidConditional: Boolean, opElseIndex: Int) = {
+    ConditionalScriptPubKey.isConditionalScriptPubKeyWithElseIndex(asm)
+  }
+
+  require(isValidConditional, "Must be valid ConditionalScriptPubKey syntax")
+  require(opElseIndex != -1,
+          "ConditionalScriptPubKey has to contain OP_ELSE asm token")
 
   require(!P2SHScriptPubKey.isP2SHScriptPubKey(trueSPK.asm) && !P2SHScriptPubKey
             .isP2SHScriptPubKey(falseSPK.asm),
@@ -578,10 +589,6 @@ sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
       .isWitnessScriptPubKey(falseSPK.asm),
     "ConditionalScriptPubKey cannot wrap SegWit ScriptPubKey"
   )
-
-  def opElseIndex: Int = {
-    asm.indexOf(OP_ELSE)
-  }
 
   def trueSPK: RawScriptPubKey = {
     RawScriptPubKey
@@ -620,17 +627,66 @@ object ConditionalScriptPubKey extends ScriptFactory[ConditionalScriptPubKey] {
     fromAsm(asm)
   }
 
-  def isConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+  /** Validates the correctness of the conditional syntax.
+    * If valid, also returns the index of the first outer-most OP_ELSE
+    */
+  def isConditionalScriptPubKeyWithElseIndex(
+      asm: Seq[ScriptToken]): (Boolean, Int) = {
     val headIsOpIf = asm.headOption.contains(OP_IF)
-    lazy val containsOpElse = {
-      val opElseIndex = asm.indexOf(OP_ELSE)
-      opElseIndex != -1
-    }
-    lazy val singleOpIf = asm.count(_.equals(OP_IF)) == 1
-    lazy val singleOpElse = asm.count(_.equals(OP_ELSE)) == 1
-    lazy val endsWithEndIF = asm.last == OP_ENDIF
+    lazy val endsWithEndIf = asm.last == OP_ENDIF
 
-    headIsOpIf && containsOpElse && singleOpIf && singleOpElse && endsWithEndIF
+    var opElseIndexOpt: Option[Int] = None
+
+    lazy val validConditionalTree = {
+      // Already validate that the first token is OP_IF, go to tail
+      // and start with depth 1 and no OP_ELSE found for that depth
+      val opElsePendingOpt = asm.zipWithIndex.tail
+        .foldLeft[Option[Vector[Boolean]]](Some(Vector(false))) {
+          case (None, _) => // Invalid tree case, do no computation
+            None
+          case (Some(Vector()), _) => // Case of additional asm after final OP_ENDIF
+            None
+          case (Some(opElseFoundAtDepth), (OP_IF | OP_NOTIF, _)) =>
+            // Increase depth by one with OP_ELSE yet to be found for this depth
+            Some(opElseFoundAtDepth :+ false)
+          case (Some(opElseFoundAtDepth), (OP_ELSE, asmIndex)) =>
+            if (opElseFoundAtDepth == Vector(false)) {
+              // If first OP_ELSE at depth 1, set opElseIndex
+              opElseIndexOpt = Some(asmIndex)
+            }
+
+            if (opElseFoundAtDepth.last) {
+              // If OP_ELSE already found at this depth, invalid
+              None
+            } else {
+              // Otherwise, set to found at this depth
+              Some(
+                opElseFoundAtDepth.updated(opElseFoundAtDepth.length - 1, true))
+            }
+          case (Some(opElseFoundAtDepth), (OP_ENDIF, _)) =>
+            if (opElseFoundAtDepth.last) {
+              // If OP_ELSE found at this depth then valid, decrease depth by 1
+              Some(opElseFoundAtDepth.dropRight(1))
+            } else {
+              // Otherwise, invalid
+              None
+            }
+          case (Some(opElseFoundAtDepth), (_, _)) =>
+            // Token not related to conditional structure, ignore
+            Some(opElseFoundAtDepth)
+        }
+
+      // We should end on OP_ENDIF which will take us to depth 0
+      opElsePendingOpt.contains(Vector.empty)
+    }
+
+    lazy val opElseIndex = opElseIndexOpt.getOrElse(-1)
+
+    (headIsOpIf && endsWithEndIf && validConditionalTree, opElseIndex)
+  }
+
+  def isConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+    isConditionalScriptPubKeyWithElseIndex(asm)._1
   }
 }
 
