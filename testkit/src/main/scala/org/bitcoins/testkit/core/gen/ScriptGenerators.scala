@@ -3,8 +3,9 @@ package org.bitcoins.testkit.core.gen
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
@@ -26,7 +27,7 @@ import scala.concurrent.duration.DurationInt
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 sealed abstract class ScriptGenerators extends BitcoinSLogger {
   val timeout = 5.seconds
-  private val defaultMaxDepth = 2
+  val defaultMaxDepth: Int = 2
 
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
     for {
@@ -219,7 +220,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def p2shScriptPubKey: Gen[(P2SHScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey
+      (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey.suchThat(
+        _._1.compactSizeUInt.toLong + CompactSizeUInt(UInt64(520)).bytes.length < 520L)
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys)
 
@@ -268,9 +270,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (P2WPKHWitnessSPKV0(privKey.publicKey), Seq(privKey))
 
   def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey])] =
-    randomNonP2SHScriptPubKey.map { spk =>
-      (P2WSHWitnessSPKV0(spk._1), spk._2)
-    }
+    randomNonP2SHScriptPubKey
+      .suchThat(
+        _._1.compactSizeUInt.toLong + CompactSizeUInt(UInt64(520)).bytes.length < 520L)
+      .map { spk =>
+        (P2WSHWitnessSPKV0(spk._1), spk._2)
+      }
 
   def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] =
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0)

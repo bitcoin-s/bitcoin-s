@@ -11,6 +11,7 @@ import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalSpendingInfo,
+  EmptySpendingInfo,
   LockTimeSpendingInfo,
   MultiSignatureSpendingInfo,
   P2PKHSpendingInfo,
@@ -185,6 +186,8 @@ object BitcoinSigner {
       spendingInfoToSatisfy: UTXOSpendingInfo)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     spendingInfoToSatisfy match {
+      case empty: EmptySpendingInfo =>
+        EmptySigner.sign(spendingInfo, unsignedTx, isDummySignature, empty)
       case p2pk: P2PKSpendingInfo =>
         P2PKSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2pk)
       case p2pkh: P2PKHSpendingInfo =>
@@ -216,6 +219,30 @@ object BitcoinSigner {
     }
   }
 }
+
+/** For signing EmptyScriptPubKeys in tests, should probably not be used in real life. */
+sealed abstract class EmptySigner extends BitcoinSigner[EmptySpendingInfo] {
+
+  override def sign(
+      spendingInfo: UTXOSpendingInfo,
+      unsignedTx: Transaction,
+      isDummySignature: Boolean,
+      spendingInfoToSatisfy: EmptySpendingInfo)(
+      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
+
+    // This script pushes an OP_TRUE onto the stack, causing a successful spend
+    val satisfyEmptyScriptSig =
+      Future.successful(NonStandardScriptSignature("0151"))
+
+    updateScriptSigInSigComponent(unsignedTx,
+                                  inputIndex.toInt,
+                                  output,
+                                  satisfyEmptyScriptSig)
+  }
+}
+
+object EmptySigner extends EmptySigner
 
 /** Used to sign a [[org.bitcoins.core.protocol.script.P2PKScriptPubKey]] */
 sealed abstract class P2PKSigner extends BitcoinSigner[P2PKSpendingInfo] {
