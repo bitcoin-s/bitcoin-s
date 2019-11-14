@@ -343,6 +343,32 @@ lazy val nodeTest =
     )
     .enablePlugins(FlywayPlugin)
 
+lazy val scripts = project
+  .in(file("scripts"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(libraryDependencies ++= Deps.scripts)
+  .settings(scalacOptions in Compile ~= (_.filterNot {
+    //we do not want fatal warnings in our scripts
+    s => s == "-Xfatal-warnings"
+  }))
+  .settings(
+    sourceGenerators in Test += Def.task {
+      val file = (sourceManaged in Test).value / "amm.scala"
+      IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
+      Seq(file)
+    }.taskValue
+  )
+  .dependsOn(
+    core % testAndCompile,
+    walletServer,
+    chain,
+    bitcoindRpc,
+    eclairRpc,
+    node,
+    wallet,
+    zmq
+  )
+
 lazy val testkit = project
   .in(file("testkit"))
   .settings(CommonSettings.prodSettings: _*)

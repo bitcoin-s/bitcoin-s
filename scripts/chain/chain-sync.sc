@@ -1,22 +1,3 @@
----
-title: Blockchain Verification
-id: chain
----
-
-Bitcoin-S comes bundled with a rudimentary blockchain verification
-module. This module is currently only released as a library, and not as a binary.
-This is because it (nor the documentation) is not deemed production
-ready. Use at your own risk, and without too much money depending on it.
-
-## Syncing and verifying block headers
-
-Using the `chain` module of Bitcoin-S it's possible to
-sync and verify block headers from the Bitcoin blockchain. In this document
-we demonstrate how to do this, while persisting it to disk. We should be
-able to read this chain on subsequent runs, assuming we are connected
-to the same `bitcoind` instance.
-
-```scala mdoc:compile-only
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain._
@@ -114,4 +95,3 @@ syncResultF.onComplete { case result =>
   }
 
 }
-```

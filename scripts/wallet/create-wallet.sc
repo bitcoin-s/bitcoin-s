@@ -1,32 +1,3 @@
----
-title: Wallet
-id: wallet
----
-
-Bitcoin-S comes bundled with a rudimentary Bitcoin wallet. This wallet
-is capable of managing private keys, generating addresses, constructing
-and signing transactions, among other things. It is BIP32/BIP44/BIP49/BIP84
-compatible.
-
-This wallet is currently only released as a library, and not as a binary.
-This is because it (nor the documentation) is not deemed production
-ready. Use at your own risk, and without too much money depending on it.
-
-## Creating a wallet
-
-This guide shows how to create a Bitcoin-S wallet and then
-peer it with a `bitcoind` instance that relays
-information about what is happening on the blockchain
-through the P2P network.
-
-This is useful if you want more flexible signing procedures in
-the JVM ecosystem and more granular control over your
-UTXOs with popular database like Postgres, SQLite, etc.
-
-This code snippet you have a running `bitcoind` instance, locally
-on regtest.
-
-```scala mdoc:compile-only
 import akka.actor.ActorSystem
 
 implicit val system = ActorSystem(s"create-wallet-script-${System.currentTimeMillis()}")
@@ -143,5 +114,3 @@ balanceF.foreach { balance =>
   println(s"bitcoin-s wallet balance: $balance")
   system.terminate()
 }
-
-```

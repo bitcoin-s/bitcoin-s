@@ -49,6 +49,8 @@ object Deps {
     // CLI deps
     val scoptV = "4.0.0-RC2"
     val sttpV = "1.7.2"
+
+    val ammoniteV = "1.8.1"
   }
 
   object Compile {
@@ -96,6 +98,8 @@ object Deps {
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
+
+    val ammonite = "com.lihaoyi" %% "ammonite" % V.ammoniteV withSources() withJavadoc() cross CrossVersion.full
   }
 
   object Test {
@@ -222,6 +226,12 @@ object Deps {
   val nodeTest = List(
     Test.akkaTestkit,
     Test.scalaTest
+  )
+
+  val scripts = List(
+    Compile.slf4j,
+    Compile.logback,
+    Compile.ammonite
   )
 
   val testkit = List(
