@@ -34,6 +34,7 @@ sealed abstract class CreditingTxGen {
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
               multiSigOutput, /*cltvOutput,*/ csvOutput,
+              multiSignatureWithTimeoutOutput,
               conditionalOutput,
               p2wpkhOutput)
   }
@@ -50,6 +51,7 @@ sealed abstract class CreditingTxGen {
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
               multiSigOutput, /*cltvOutput,*/ csvOutput,
+              multiSignatureWithTimeoutOutput,
               conditionalOutput)
   }
 
@@ -59,6 +61,7 @@ sealed abstract class CreditingTxGen {
       .oneOf(p2pkOutput,
              p2pkhOutput,
              multiSigOutput, /*cltvOutput,*/ csvOutput,
+             multiSignatureWithTimeoutOutput,
              conditionalOutput,
              p2wpkhOutput,
              p2wshOutput)
@@ -84,6 +87,7 @@ sealed abstract class CreditingTxGen {
               multiSigOutput,
               p2shOutput,
               csvOutput, /*cltvOutput,*/
+              multiSignatureWithTimeoutOutput,
               conditionalOutput,
               p2wpkhOutput,
               p2wshOutput)
@@ -126,21 +130,22 @@ sealed abstract class CreditingTxGen {
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, multiSigOutput))
   }
 
-  @tailrec
-  private def noRelevantCLTV(spk: RawScriptPubKey): Boolean = {
-    spk match {
-      case _: CLTVScriptPubKey  => false
-      case csv: CSVScriptPubKey => noRelevantCLTV(csv.nestedScriptPubKey)
-      case conditional: ConditionalScriptPubKey =>
-        noRelevantCLTV(conditional.trueSPK)
-      case _: RawScriptPubKey => true
+  def multiSignatureWithTimeoutOutput: Gen[BitcoinUTXOSpendingInfo] = {
+    ScriptGenerators.multiSignatureWithTimeoutScriptPubKey.flatMap {
+      case (conditional, keys) =>
+        build(conditional, keys, None, None)
     }
+  }
+
+  def multiSignatureWithTimeoutOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = {
+    Gen
+      .choose(min, max)
+      .flatMap(n => Gen.listOfN(n, multiSignatureWithTimeoutOutput))
   }
 
   def conditionalOutput: Gen[BitcoinUTXOSpendingInfo] = {
     ScriptGenerators
       .nonLocktimeConditionalScriptPubKey(ScriptGenerators.defaultMaxDepth)
-      //.suchThat { case (spk, _) => noRelevantCLTV(spk) }
       .flatMap {
         case (conditional, keys) =>
           build(conditional, keys, None, None)
