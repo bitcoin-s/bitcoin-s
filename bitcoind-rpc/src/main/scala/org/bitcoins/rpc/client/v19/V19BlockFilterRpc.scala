@@ -17,6 +17,11 @@ import scala.concurrent.Future
 trait V19BlockFilterRpc {
   self: Client =>
 
+  /**
+    * This is needed because we need the block hash to create a GolombFilter.
+    * We use an intermediary data type to hold our data so we can add the block hash
+    * we were given after the RPC call
+    */
   private case class TempBlockFilterResult(
       filter: String,
       header: DoubleSha256DigestBE)
