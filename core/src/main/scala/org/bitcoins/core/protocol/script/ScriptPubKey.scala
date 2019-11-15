@@ -575,14 +575,16 @@ sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
   require(asm.last.equals(OP_ENDIF),
           "ConditionalScriptPubKey must end in OP_ENDIF")
 
-  val (isValidConditional: Boolean, opElseIndex: Int) = {
+  val (isValidConditional: Boolean, opElseIndexOpt: Option[Int]) = {
     ConditionalScriptPubKey.isConditionalScriptPubKeyWithElseIndex(asm,
                                                                    conditional)
   }
 
   require(isValidConditional, "Must be valid ConditionalScriptPubKey syntax")
-  require(opElseIndex != -1,
+  require(opElseIndexOpt.isDefined,
           "ConditionalScriptPubKey has to contain OP_ELSE asm token")
+
+  val opElseIndex: Int = opElseIndexOpt.get
 
   require(!P2SHScriptPubKey.isP2SHScriptPubKey(trueSPK.asm) && !P2SHScriptPubKey
             .isP2SHScriptPubKey(falseSPK.asm),
@@ -626,7 +628,7 @@ object ConditionalScriptPubKey {
     */
   def isConditionalScriptPubKeyWithElseIndex(
       asm: Seq[ScriptToken],
-      conditional: ConditionalOperation): (Boolean, Int) = {
+      conditional: ConditionalOperation): (Boolean, Option[Int]) = {
     val headIsConditional = asm.headOption.contains(conditional)
     lazy val endsWithEndIf = asm.last == OP_ENDIF
 
@@ -675,9 +677,7 @@ object ConditionalScriptPubKey {
       opElsePendingOpt.contains(Vector.empty)
     }
 
-    lazy val opElseIndex = opElseIndexOpt.getOrElse(-1)
-
-    (headIsConditional && endsWithEndIf && validConditionalTree, opElseIndex)
+    (headIsConditional && endsWithEndIf && validConditionalTree, opElseIndexOpt)
   }
 
   def apply(

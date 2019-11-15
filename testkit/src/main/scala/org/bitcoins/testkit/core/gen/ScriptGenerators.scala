@@ -612,9 +612,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         conditionalOperation.flatMap { op =>
           rawScriptPubKey(defaultMaxDepth).map(_._1).map { spk2 =>
             (ConditionalScriptSignature(scriptSig, true),
-             ConditionalScriptPubKey(op,
-                                     spk.asInstanceOf[RawScriptPubKey],
-                                     spk2),
+             ConditionalScriptPubKey(op, spk, spk2),
              keys)
           }
         }
@@ -917,9 +915,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   }
 
   /** Simply converts one private key in the generator to a sequence of private keys */
-  private def packageToSequenceOfPrivateKeys(
-      gen: Gen[(ScriptSignature, ScriptPubKey, ECPrivateKey)]): Gen[
-    (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] =
+  private def packageToSequenceOfPrivateKeys[SPK <: ScriptPubKey](
+      gen: Gen[(ScriptSignature, SPK, ECPrivateKey)]): Gen[
+    (ScriptSignature, SPK, Seq[ECPrivateKey])] =
     for {
       (scriptSig, scriptPubKey, privateKey) <- gen
     } yield (scriptSig, scriptPubKey, Seq(privateKey))
