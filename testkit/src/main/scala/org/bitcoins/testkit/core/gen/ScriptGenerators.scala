@@ -3,12 +3,14 @@ package org.bitcoins.testkit.core.gen
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.signer.{MultiSigSigner, P2PKHSigner, P2PKSigner}
 import org.bitcoins.core.wallet.utxo.{
@@ -26,7 +28,15 @@ import scala.concurrent.duration.DurationInt
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 sealed abstract class ScriptGenerators extends BitcoinSLogger {
   val timeout = 5.seconds
-  private val defaultMaxDepth = 2
+  val defaultMaxDepth: Int = 2
+
+  /** Since redeem scripts are pushed onto the stack, this function
+    * checks that the redeem script is not too large for a push operation.
+    */
+  private[gen] def redeemScriptTooBig(redeemScript: ScriptPubKey): Boolean = {
+    redeemScript.compactSizeUInt.toInt + CompactSizeUInt(UInt64(
+      ScriptInterpreter.MAX_PUSH_SIZE)).bytes.length >= ScriptInterpreter.MAX_PUSH_SIZE
+  }
 
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
     for {
@@ -220,6 +230,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def p2shScriptPubKey: Gen[(P2SHScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey
+        .suchThat {
+          case (spk, _) =>
+            !redeemScriptTooBig(spk)
+        }
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys)
 
@@ -268,9 +282,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (P2WPKHWitnessSPKV0(privKey.publicKey), Seq(privKey))
 
   def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey])] =
-    randomNonP2SHScriptPubKey.map { spk =>
-      (P2WSHWitnessSPKV0(spk._1), spk._2)
-    }
+    randomNonP2SHScriptPubKey
+      .suchThat {
+        case (spk, _) =>
+          !redeemScriptTooBig(spk)
+      }
+      .map { spk =>
+        (P2WSHWitnessSPKV0(spk._1), spk._2)
+      }
 
   def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] =
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0)
