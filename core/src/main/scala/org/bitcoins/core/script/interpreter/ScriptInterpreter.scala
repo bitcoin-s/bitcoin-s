@@ -39,7 +39,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
   private lazy val MAX_SCRIPT_OPS = 201
 
   /** We cannot push an element larger than 520 bytes onto the stack */
-  private lazy val MAX_PUSH_SIZE = 520
+  val MAX_PUSH_SIZE: Int = 520
 
   /**
     * Runs an entire script though our script programming language and

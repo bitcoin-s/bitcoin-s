@@ -292,15 +292,27 @@ object RawScriptUTXOSpendingInfo {
                                 signers.toVector,
                                 hashType,
                                 conditionalPath)
+      case EmptyScriptPubKey => EmptySpendingInfo(outPoint, amount, hashType)
       case _: P2SHScriptPubKey =>
         throw new IllegalArgumentException(
           "RawScriptUTXOSpendingInfo cannot contain a P2SH SPK")
-      case _: NonStandardScriptPubKey | _: WitnessCommitment |
-          EmptyScriptPubKey =>
+      case _: NonStandardScriptPubKey | _: WitnessCommitment =>
         throw new UnsupportedOperationException(
           s"Currently unsupported ScriptPubKey $scriptPubKey")
     }
   }
+}
+
+/** For spending EmptyScriptPubKeys in tests. Probably should not be used in real life */
+case class EmptySpendingInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    hashType: HashType)
+    extends RawScriptUTXOSpendingInfo {
+  override def scriptPubKey: EmptyScriptPubKey.type = EmptyScriptPubKey
+  override def signers: Seq[Sign] = Vector.empty
+  override def conditionalPath: ConditionalPath =
+    ConditionalPath.NoConditionsLeft
 }
 
 case class P2PKSpendingInfo(
