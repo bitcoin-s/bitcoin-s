@@ -29,9 +29,11 @@ trait V19BlockFilterRpc {
     bitcoindCall[TempBlockFilterResult](
       "getblockfilter",
       List(JsString(blockhash.hex), JsString(filtertype.toString.toLowerCase)))
-      .map(t =>
-        GetBlockFilterResult(BlockFilter.fromHex(t.filter, blockhash.flip),
-                             t.header))
+      .map { tempBlockFilterResult =>
+        GetBlockFilterResult(
+          BlockFilter.fromHex(tempBlockFilterResult.filter, blockhash.flip),
+          tempBlockFilterResult.header)
+      }
   }
 
 }
