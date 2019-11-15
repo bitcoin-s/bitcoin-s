@@ -51,8 +51,8 @@ case class GetTransactionResult(
     extends WalletResult
 
 case class SetWalletFlagResult(
-    flag: String,
-    state: Boolean,
+    flag_name: String,
+    flag_state: Boolean,
     warnings: Option[String])
     extends WalletResult
 
@@ -61,7 +61,7 @@ case class GetBalancesResult(mine: BalanceInfo, watchonly: Option[BalanceInfo])
 
 case class BalanceInfo(
     trusted: Bitcoins,
-    untrustedPending: Bitcoins,
+    untrusted_pending: Bitcoins,
     immature: Bitcoins)
 
 case class TransactionDetails(

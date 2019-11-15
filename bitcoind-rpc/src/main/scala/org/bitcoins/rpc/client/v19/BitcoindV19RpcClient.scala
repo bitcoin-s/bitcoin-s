@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.client.v19
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.rpc.client.common.RpcOpts.WalletFlag
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.jsonmodels.{GetBalancesResult, SetWalletFlagResult}
@@ -14,8 +14,6 @@ import scala.util.Try
 
 /**
   * Class for creating a BitcoindV19 instance that can access RPCs
-  * @param instance
-  * @param actorSystem
   */
 class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
     implicit
@@ -26,16 +24,15 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
   override lazy val version: BitcoindVersion = BitcoindVersion.V19
 
   /**
-    * setWalletFlag
-    *
     * Change the state of the given wallet flag for a wallet.
     */
   def setWalletFlag(
-      flag: String,
+      flag: WalletFlag,
       value: Boolean
   ): Future[SetWalletFlagResult] =
-    bitcoindCall[SetWalletFlagResult]("setwalletflag",
-                                      List(JsString(flag), Json.toJson(value)))
+    bitcoindCall[SetWalletFlagResult](
+      "setwalletflag",
+      List(JsString(flag.toString), Json.toJson(value)))
 
   def getBalances: Future[GetBalancesResult] = {
     bitcoindCall[GetBalancesResult]("getbalances")

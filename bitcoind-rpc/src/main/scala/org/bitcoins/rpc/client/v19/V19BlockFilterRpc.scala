@@ -1,11 +1,15 @@
 package org.bitcoins.rpc.client.v19
 
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.rpc.client.common.Client
 import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.rpc.serializers.JsonReaders.DoubleSha256DigestBEReads
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
 
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 /**
   * Gets the BIP158 filter for the specified block.
@@ -15,12 +19,26 @@ import scala.concurrent.Future
 trait V19BlockFilterRpc {
   self: Client =>
 
+  private case class TempBlockFilterResult(
+      filter: String,
+      header: DoubleSha256DigestBE)
+  implicit private val tempBlockFilterResultReads: Reads[
+    TempBlockFilterResult] =
+    ((__ \ "filter").read[String] and
+      (__ \ "header").read[DoubleSha256DigestBE])(TempBlockFilterResult)
+
   def getBlockFilter(
-      blockhash: String,
-      filtertype: String): Future[GetBlockFilterResult] = {
-    bitcoindCall[GetBlockFilterResult](
-      "getblockfilter",
-      List(JsString(blockhash), JsString(filtertype)))
+      blockhash: DoubleSha256DigestBE,
+      filtertype: FilterType): Future[GetBlockFilterResult] = {
+    val temp = Await.result(bitcoindCall[TempBlockFilterResult](
+                              "getblockfilter",
+                              List(JsString(blockhash.hex),
+                                   JsString(filtertype.toString.toLowerCase))),
+                            Duration.Inf)
+    Future {
+      GetBlockFilterResult(BlockFilter.fromHex(temp.filter, blockhash.flip),
+                           temp.header)
+    }
   }
 
 }

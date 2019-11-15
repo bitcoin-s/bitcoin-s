@@ -196,9 +196,6 @@ object JsonSerializers {
 
   implicit val chainTipReads: Reads[ChainTip] = Json.reads[ChainTip]
 
-  implicit val getBlockFilterResultReads: Reads[GetBlockFilterResult] =
-    Json.reads[GetBlockFilterResult]
-
   implicit val getChainTxStatsResultReads: Reads[GetChainTxStatsResult] =
     Json.reads[GetChainTxStatsResult]
 
@@ -233,14 +230,9 @@ object JsonSerializers {
   implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
 
   implicit val setWalletFlagResultReads: Reads[SetWalletFlagResult] =
-    ((__ \ "flag_name").read[String] and
-      (__ \ "flag_state").read[Boolean] and
-      (__ \ "warnings").readNullable[String])(SetWalletFlagResult)
+    Json.reads[SetWalletFlagResult];
 
-  implicit val balanceInfoReads: Reads[BalanceInfo] =
-    ((__ \ "trusted").read[Bitcoins] and
-      (__ \ "untrusted_pending").read[Bitcoins] and
-      (__ \ "immature").read[Bitcoins])(BalanceInfo)
+  implicit val balanceInfoReads: Reads[BalanceInfo] = Json.reads[BalanceInfo];
   implicit val getBalancesResultReads: Reads[GetBalancesResult] =
     Json.reads[GetBalancesResult]
 

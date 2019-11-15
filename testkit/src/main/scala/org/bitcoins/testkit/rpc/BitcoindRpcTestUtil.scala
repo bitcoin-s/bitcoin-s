@@ -230,14 +230,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       versionOpt: Option[BitcoindVersion] = None): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
+    val hasNeutrinoSupport = versionOpt.contains(BitcoindVersion.V19) || versionOpt
+      .contains(BitcoindVersion.Experimental)
     val configFile =
       writtenConfig(uri,
                     rpcUri,
                     zmqPort,
                     pruneMode,
-                    blockFilterIndex = versionOpt.contains(
-                      BitcoindVersion.Experimental) || versionOpt.contains(
-                      BitcoindVersion.V19))
+                    blockFilterIndex = hasNeutrinoSupport)
     val conf = BitcoindConfig(configFile)
     val auth = BitcoindAuthCredentials.fromConfig(conf)
     val binary: File = versionOpt match {

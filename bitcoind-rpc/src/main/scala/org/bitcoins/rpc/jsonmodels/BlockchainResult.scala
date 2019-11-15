@@ -6,6 +6,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.gcs.GolombFilter
 
 sealed abstract class BlockchainResult
 
@@ -203,5 +204,7 @@ case class GetTxOutSetInfoResult(
     total_amount: Bitcoins)
     extends BlockchainResult
 
-case class GetBlockFilterResult(filter: String, header: String)
+case class GetBlockFilterResult(
+    filter: GolombFilter,
+    header: DoubleSha256DigestBE)
     extends BlockchainResult
