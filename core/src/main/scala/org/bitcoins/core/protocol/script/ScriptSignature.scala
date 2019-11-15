@@ -177,15 +177,6 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
     sigs.map(s => ECDigitalSignature(s.hex))
   }
 
-  /**
-    * Splits the given asm into two parts
-    * the first part is the digital signatures
-    * the second part is the redeem script
-    */
-  def splitAtRedeemScript: (Seq[ScriptToken], Seq[ScriptToken]) = {
-    (scriptSignatureNoRedeemScript.asm, redeemScript.asm)
-  }
-
   override def toString = "P2SHScriptSignature(" + hex + ")"
 }
 
@@ -225,10 +216,8 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   }
 
   /** Tests if the given asm tokens are a [[P2SHScriptSignature]] */
-  def isP2SHScriptSig(asm: Seq[ScriptToken]): Boolean = asm match {
-    case _ if asm.size > 1 && isRedeemScript(asm.last)       => true
-    case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) => true
-    case _                                                   => false
+  def isP2SHScriptSig(asm: Seq[ScriptToken]): Boolean = {
+    asm.size > 1 && isRedeemScript(asm.last)
   }
 
   /** Detects if the given script token is a redeem script */
@@ -508,9 +497,7 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
   /** Creates a scriptSignature from the list of script tokens */
   def fromAsm(tokens: Seq[ScriptToken]): ScriptSignature = tokens match {
     case Nil => EmptyScriptSignature
-    case _
-        if (tokens.size > 1 && P2SHScriptSignature.isRedeemScript(
-          tokens.last)) =>
+    case _ if P2SHScriptSignature.isP2SHScriptSig(tokens) =>
       P2SHScriptSignature.fromAsm(tokens)
     case _ if ConditionalScriptSignature.isValidConditionalScriptSig(tokens) =>
       ConditionalScriptSignature.fromAsm(tokens)
@@ -523,42 +510,5 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
     case _ if P2PKScriptSignature.isP2PKScriptSignature(tokens) =>
       P2PKScriptSignature.fromAsm(tokens)
     case _ => NonStandardScriptSignature.fromAsm(tokens)
-  }
-
-  /**
-    * Creates a script signature from the given tokens and scriptPubKey
-    * @param tokens the script signature's tokens
-    * @param scriptPubKey the scriptPubKey which the script signature is trying to spend
-    * @return
-    */
-  def fromScriptPubKey(
-      tokens: Seq[ScriptToken],
-      scriptPubKey: ScriptPubKey): Try[ScriptSignature] = scriptPubKey match {
-    case _: P2SHScriptPubKey  => Try(P2SHScriptSignature.fromAsm(tokens))
-    case _: P2PKHScriptPubKey => Try(P2PKHScriptSignature.fromAsm(tokens))
-    case _: P2PKScriptPubKey  => Try(P2PKScriptSignature.fromAsm(tokens))
-    case _: MultiSignatureScriptPubKey =>
-      Try(MultiSignatureScriptSignature.fromAsm(tokens))
-    case _: NonStandardScriptPubKey =>
-      Try(NonStandardScriptSignature.fromAsm(tokens))
-    case s: CLTVScriptPubKey => fromScriptPubKey(tokens, s.nestedScriptPubKey)
-    case s: CSVScriptPubKey  => fromScriptPubKey(tokens, s.nestedScriptPubKey)
-    case _: ConditionalScriptPubKey =>
-      Try(ConditionalScriptSignature.fromAsm(tokens))
-    case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-      Success(EmptyScriptSignature)
-    case EmptyScriptPubKey =>
-      if (tokens.isEmpty) Success(EmptyScriptSignature)
-      else Try(NonStandardScriptSignature.fromAsm(tokens))
-    case _: WitnessCommitment =>
-      Failure(
-        new IllegalArgumentException(
-          "Cannot spend witness commitment scriptPubKey"))
-  }
-
-  def apply(
-      tokens: Seq[ScriptToken],
-      scriptPubKey: ScriptPubKey): Try[ScriptSignature] = {
-    fromScriptPubKey(tokens, scriptPubKey)
   }
 }

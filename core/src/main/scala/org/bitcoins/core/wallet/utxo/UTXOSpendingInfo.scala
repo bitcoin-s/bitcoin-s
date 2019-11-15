@@ -89,22 +89,8 @@ sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
 
   protected def isValidScriptWitness(
       spk: WitnessScriptPubKeyV0,
-      scriptWitness: ScriptWitnessV0): Boolean = {
-    spk match {
-      case p2wpkh: P2WPKHWitnessSPKV0 =>
-        scriptWitness match {
-          case witness: P2WPKHWitnessV0 =>
-            CryptoUtil.sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash
-          case _: ScriptWitnessV0 => false
-        }
-      case p2wsh: P2WSHWitnessSPKV0 =>
-        scriptWitness match {
-          case witness: P2WSHWitnessV0 =>
-            CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
-          case _: ScriptWitnessV0 => false
-        }
-    }
-  }
+      scriptWitness: ScriptWitnessV0): Boolean =
+    BitcoinUTXOSpendingInfo.isValidScriptWitness(spk, scriptWitness)
 }
 
 object BitcoinUTXOSpendingInfo {
@@ -235,6 +221,25 @@ object BitcoinUTXOSpendingInfo {
          info.scriptWitnessOpt,
          info.hashType,
          info.conditionalPath)
+  }
+
+  private[utxo] def isValidScriptWitness(
+      spk: WitnessScriptPubKeyV0,
+      scriptWitness: ScriptWitnessV0): Boolean = {
+    spk match {
+      case p2wpkh: P2WPKHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WPKHWitnessV0 =>
+            CryptoUtil.sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash
+          case _: ScriptWitnessV0 => false
+        }
+      case p2wsh: P2WSHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WSHWitnessV0 =>
+            CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
+          case _: ScriptWitnessV0 => false
+        }
+    }
   }
 }
 
