@@ -29,6 +29,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   val timeout = 5.seconds
   val defaultMaxDepth: Int = 2
 
+  private[gen] def scriptPubKeyTooBig(spk: ScriptPubKey): Boolean = {
+    spk.compactSizeUInt.toLong + CompactSizeUInt(UInt64(520)).bytes.length >= 520L
+  }
+
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
     for {
       digitalSignature <- CryptoGenerators.digitalSignature
@@ -220,8 +224,11 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def p2shScriptPubKey: Gen[(P2SHScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey.suchThat(
-        _._1.compactSizeUInt.toLong + CompactSizeUInt(UInt64(520)).bytes.length < 520L)
+      (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey
+        .suchThat {
+          case (spk, _) =>
+            !scriptPubKeyTooBig(spk)
+        }
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys)
 
@@ -271,8 +278,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey])] =
     randomNonP2SHScriptPubKey
-      .suchThat(
-        _._1.compactSizeUInt.toLong + CompactSizeUInt(UInt64(520)).bytes.length < 520L)
+      .suchThat {
+        case (spk, _) =>
+          !scriptPubKeyTooBig(spk)
+      }
       .map { spk =>
         (P2WSHWitnessSPKV0(spk._1), spk._2)
       }

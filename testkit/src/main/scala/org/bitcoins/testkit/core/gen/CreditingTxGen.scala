@@ -1,8 +1,7 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto.Sign
-import org.bitcoins.core.number.{UInt32, UInt64}
-import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
@@ -29,6 +28,7 @@ sealed abstract class CreditingTxGen {
       Gen.listOfN(n, TransactionGenerators.realisticOutput)
     }
 
+  /** Generator for non-script hash based output */
   def nonSHOutput: Gen[BitcoinUTXOSpendingInfo] = {
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
@@ -61,8 +61,8 @@ sealed abstract class CreditingTxGen {
              conditionalOutput,
              p2wpkhOutput,
              p2wshOutput)
-      .suchThat(_.scriptPubKey.compactSizeUInt.toLong + CompactSizeUInt(
-        UInt64(520)).bytes.length < 520L)
+      .suchThat(output =>
+        !ScriptGenerators.scriptPubKeyTooBig(output.scriptPubKey))
       .suchThat {
         case P2SHNestedSegwitV0UTXOSpendingInfo(_,
                                                 _,
@@ -72,8 +72,7 @@ sealed abstract class CreditingTxGen {
                                                 _,
                                                 witness: P2WSHWitnessV0,
                                                 _) =>
-          witness.redeemScript.compactSizeUInt.toLong + CompactSizeUInt(
-            UInt64(520)).bytes.length < 520L
+          witness.stack.exists(_.length > 520)
         case _ => true
       }
   }
@@ -232,8 +231,8 @@ sealed abstract class CreditingTxGen {
 
   def p2wshOutput: Gen[BitcoinUTXOSpendingInfo] =
     nonP2WSHOutput
-      .suchThat(_.scriptPubKey.compactSizeUInt.toLong + CompactSizeUInt(
-        UInt64(520)).bytes.length < 520L)
+      .suchThat(output =>
+        !ScriptGenerators.scriptPubKeyTooBig(output.scriptPubKey))
       .flatMap {
         case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _, _) =>
           val spk = txOutput.scriptPubKey
