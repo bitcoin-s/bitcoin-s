@@ -348,10 +348,7 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner[P2WPKHV0SpendingInfo] {
                                                unsignedTxWitness)
 
           val witSPK = output.scriptPubKey match {
-            case p2wpkh: P2WPKHWitnessSPKV0 =>
-              if (p2wpkh != P2WPKHWitnessSPKV0(pubKey)) {
-                Future.fromTry(TxBuilderError.WrongPublicKey)
-              } else Future.successful(p2wpkh)
+            case p2wpkh: P2WPKHWitnessSPKV0 => Future.successful(p2wpkh)
             case _: UnassignedWitnessScriptPubKey | _: P2WSHWitnessSPKV0 =>
               Future.fromTry(TxBuilderError.WrongSigner)
             case _: NonWitnessScriptPubKey =>
