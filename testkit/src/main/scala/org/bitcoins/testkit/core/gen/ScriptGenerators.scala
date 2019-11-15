@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.signer.{MultiSigSigner, P2PKHSigner, P2PKSigner}
 import org.bitcoins.core.wallet.utxo.{
@@ -29,8 +30,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   val timeout = 5.seconds
   val defaultMaxDepth: Int = 2
 
-  private[gen] def scriptPubKeyTooBig(spk: ScriptPubKey): Boolean = {
-    spk.compactSizeUInt.toLong + CompactSizeUInt(UInt64(520)).bytes.length >= 520L
+  /** Since redeem scripts are pushed onto the stack, this function
+    * checks that the redeem script is not too large for a push operation.
+    */
+  private[gen] def redeemScriptTooBig(redeemScript: ScriptPubKey): Boolean = {
+    redeemScript.compactSizeUInt.toInt + CompactSizeUInt(UInt64(
+      ScriptInterpreter.MAX_PUSH_SIZE)).bytes.length >= ScriptInterpreter.MAX_PUSH_SIZE
   }
 
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
@@ -227,7 +232,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey
         .suchThat {
           case (spk, _) =>
-            !scriptPubKeyTooBig(spk)
+            !redeemScriptTooBig(spk)
         }
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys)
@@ -280,7 +285,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     randomNonP2SHScriptPubKey
       .suchThat {
         case (spk, _) =>
-          !scriptPubKeyTooBig(spk)
+          !redeemScriptTooBig(spk)
       }
       .map { spk =>
         (P2WSHWitnessSPKV0(spk._1), spk._2)

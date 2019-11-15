@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalPath,
@@ -62,7 +63,7 @@ sealed abstract class CreditingTxGen {
              p2wpkhOutput,
              p2wshOutput)
       .suchThat(output =>
-        !ScriptGenerators.scriptPubKeyTooBig(output.scriptPubKey))
+        !ScriptGenerators.redeemScriptTooBig(output.scriptPubKey))
       .suchThat {
         case P2SHNestedSegwitV0UTXOSpendingInfo(_,
                                                 _,
@@ -72,7 +73,7 @@ sealed abstract class CreditingTxGen {
                                                 _,
                                                 witness: P2WSHWitnessV0,
                                                 _) =>
-          witness.stack.exists(_.length > 520)
+          witness.stack.exists(_.length > ScriptInterpreter.MAX_PUSH_SIZE)
         case _ => true
       }
   }
@@ -232,7 +233,7 @@ sealed abstract class CreditingTxGen {
   def p2wshOutput: Gen[BitcoinUTXOSpendingInfo] =
     nonP2WSHOutput
       .suchThat(output =>
-        !ScriptGenerators.scriptPubKeyTooBig(output.scriptPubKey))
+        !ScriptGenerators.redeemScriptTooBig(output.scriptPubKey))
       .flatMap {
         case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _, _) =>
           val spk = txOutput.scriptPubKey
