@@ -38,14 +38,15 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
       block <- client.getBlockRaw(blocks.head)
       txs <- Future.sequence(
         block.transactions
-          .filter(!_.isCoinbase)
-          .map(x => client.getTransaction(x.txIdBE)))
+          .filterNot(_.isCoinbase)
+          .map(tx => client.getTransaction(tx.txIdBE)))
 
       prevFilter <- client.getBlockFilter(block.blockHeader.previousBlockHashBE, FilterType.Basic)
     } yield {
       val pubKeys = txs.flatMap(_.hex.outputs.map(_.scriptPubKey)).toVector
-      assert(BlockFilter(block, pubKeys).hash == blockFilter.filter.hash)
-      assert(blockFilter.header == BlockFilter(block, pubKeys).getHeader(prevFilter.header.flip).hash.flip)
+      val filter = BlockFilter(block, pubKeys)
+      assert(filter.hash == blockFilter.filter.hash)
+      assert(blockFilter.header == filter.getHeader(prevFilter.header.flip).hash.flip)
     }
   }
 
@@ -56,9 +57,10 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
       _ <- client.getNewAddress.flatMap(client.generateToAddress(1, _))
       newImmatureBalance <- client.getBalances
     } yield {
+      val blockReward = 12.5
       assert(immatureBalance.mine.immature.toBigDecimal >= 0)
       assert(
-        immatureBalance.mine.immature.toBigDecimal + 12.5 == newImmatureBalance.mine.immature.toBigDecimal)
+        immatureBalance.mine.immature.toBigDecimal + blockReward == newImmatureBalance.mine.immature.toBigDecimal)
     }
   }
 

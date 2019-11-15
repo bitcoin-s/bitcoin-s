@@ -230,9 +230,9 @@ object JsonSerializers {
   implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
 
   implicit val setWalletFlagResultReads: Reads[SetWalletFlagResult] =
-    Json.reads[SetWalletFlagResult];
+    Json.reads[SetWalletFlagResult]
 
-  implicit val balanceInfoReads: Reads[BalanceInfo] = Json.reads[BalanceInfo];
+  implicit val balanceInfoReads: Reads[BalanceInfo] = Json.reads[BalanceInfo]
   implicit val getBalancesResultReads: Reads[GetBalancesResult] =
     Json.reads[GetBalancesResult]
 
