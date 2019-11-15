@@ -688,8 +688,16 @@ object ConditionalScriptPubKey {
       trueSPK: RawScriptPubKey,
       falseSPK: RawScriptPubKey): ConditionalScriptPubKey = {
     conditional match {
-      case OP_IF    => IfConditionalScriptPubKey(trueSPK, falseSPK)
-      case OP_NOTIF => NotIfConditionalScriptPubKey(falseSPK, trueSPK)
+      case OP_IF =>
+        (trueSPK, falseSPK) match {
+          case (multisig: MultiSignatureScriptPubKey,
+                timeout: CLTVScriptPubKey) =>
+            MultiSignatureWithTimeoutScriptPubKey(multisig, timeout)
+          case _ =>
+            NonStandardIfConditionalScriptPubKey(trueSPK, falseSPK)
+        }
+      case OP_NOTIF =>
+        NonStandardNotIfConditionalScriptPubKey(falseSPK, trueSPK)
     }
   }
 }
@@ -698,9 +706,9 @@ sealed trait IfConditionalScriptPubKey extends ConditionalScriptPubKey {
   override def conditional: ConditionalOperation = OP_IF
 }
 
-object IfConditionalScriptPubKey
+object NonStandardIfConditionalScriptPubKey
     extends ScriptFactory[IfConditionalScriptPubKey] {
-  private case class IfConditionalScriptPubKeyImpl(
+  private case class NonStandardIfConditionalScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends IfConditionalScriptPubKey {
     override def toString: String =
@@ -710,9 +718,9 @@ object IfConditionalScriptPubKey
   override def fromAsm(asm: Seq[ScriptToken]): IfConditionalScriptPubKey = {
     buildScript(
       asm = asm.toVector,
-      constructor = IfConditionalScriptPubKeyImpl.apply,
-      invariant = isIfConditionalScriptPubKey,
-      errorMsg = "Given asm was not a IfConditionalScriptPubKey, got: " + asm
+      constructor = NonStandardIfConditionalScriptPubKeyImpl.apply,
+      invariant = isNonStandardIfConditionalScriptPubKey,
+      errorMsg = "Given asm was not a NonStandardIfConditionalScriptPubKey, got: " + asm
     )
   }
 
@@ -725,10 +733,15 @@ object IfConditionalScriptPubKey
     fromAsm(asm)
   }
 
-  def isIfConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
-    ConditionalScriptPubKey
+  def isNonStandardIfConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+    val validIf = ConditionalScriptPubKey
       .isConditionalScriptPubKeyWithElseIndex(asm, OP_IF)
       ._1
+
+    val isMultiSigWithTimeout = MultiSignatureWithTimeoutScriptPubKey
+      .isMultiSignatureWithTimeoutScriptPubKey(asm)
+
+    validIf && !isMultiSigWithTimeout
   }
 }
 
@@ -808,9 +821,9 @@ sealed trait NotIfConditionalScriptPubKey extends ConditionalScriptPubKey {
   override def conditional: ConditionalOperation = OP_NOTIF
 }
 
-object NotIfConditionalScriptPubKey
+object NonStandardNotIfConditionalScriptPubKey
     extends ScriptFactory[NotIfConditionalScriptPubKey] {
-  private case class NotIfConditionalScriptPubKeyImpl(
+  private case class NonStandardNotIfConditionalScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends NotIfConditionalScriptPubKey {
     override def toString: String =
@@ -820,8 +833,8 @@ object NotIfConditionalScriptPubKey
   override def fromAsm(asm: Seq[ScriptToken]): NotIfConditionalScriptPubKey = {
     buildScript(
       asm = asm.toVector,
-      constructor = NotIfConditionalScriptPubKeyImpl.apply,
-      invariant = isNotIfConditionalScriptPubKey,
+      constructor = NonStandardNotIfConditionalScriptPubKeyImpl.apply,
+      invariant = isNonStandardNotIfConditionalScriptPubKey,
       errorMsg = "Given asm was not a NotIfConditionalScriptPubKey, got: " + asm
     )
   }
@@ -835,7 +848,8 @@ object NotIfConditionalScriptPubKey
     fromAsm(asm)
   }
 
-  def isNotIfConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+  def isNonStandardNotIfConditionalScriptPubKey(
+      asm: Seq[ScriptToken]): Boolean = {
     ConditionalScriptPubKey
       .isConditionalScriptPubKeyWithElseIndex(asm, OP_NOTIF)
       ._1
@@ -876,11 +890,14 @@ object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
         if MultiSignatureWithTimeoutScriptPubKey
           .isMultiSignatureWithTimeoutScriptPubKey(asm) =>
       MultiSignatureWithTimeoutScriptPubKey.fromAsm(asm)
-    case _ if IfConditionalScriptPubKey.isIfConditionalScriptPubKey(asm) =>
-      IfConditionalScriptPubKey.fromAsm(asm)
     case _
-        if NotIfConditionalScriptPubKey.isNotIfConditionalScriptPubKey(asm) =>
-      NotIfConditionalScriptPubKey.fromAsm(asm)
+        if NonStandardIfConditionalScriptPubKey
+          .isNonStandardIfConditionalScriptPubKey(asm) =>
+      NonStandardIfConditionalScriptPubKey.fromAsm(asm)
+    case _
+        if NonStandardNotIfConditionalScriptPubKey
+          .isNonStandardNotIfConditionalScriptPubKey(asm) =>
+      NonStandardNotIfConditionalScriptPubKey.fromAsm(asm)
     case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) =>
       P2PKHScriptPubKey(asm)
     case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) => P2PKScriptPubKey(asm)
