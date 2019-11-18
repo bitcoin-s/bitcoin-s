@@ -11,21 +11,25 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
+import org.bitcoins.testkit.core.gen.{
+  GenUtil,
+  ScriptGenerators,
+  TransactionGenerators
+}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
 
   def randomSPK: ScriptPubKey = {
-    ScriptGenerators.scriptPubKey.map(_._1).sample.get
+    GenUtil.sample(ScriptGenerators.scriptPubKey.map(_._1))
   }
 
   def randomRawSPK: RawScriptPubKey = {
-    ScriptGenerators.rawScriptPubKey.map(_._1).sample.get
+    GenUtil.sample(ScriptGenerators.rawScriptPubKey.map(_._1))
   }
 
   def randomWitnessSPK: WitnessScriptPubKeyV0 = {
-    ScriptGenerators.witnessScriptPubKeyV0.map(_._1).sample.get
+    GenUtil.sample(ScriptGenerators.witnessScriptPubKeyV0.map(_._1))
   }
 
   behavior of "UTXOSpendingInfo"
