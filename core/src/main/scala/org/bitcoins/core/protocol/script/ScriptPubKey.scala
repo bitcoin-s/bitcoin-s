@@ -5,6 +5,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
 import org.bitcoins.core.script.control.{
+  ConditionalOperation,
   OP_ELSE,
   OP_ENDIF,
   OP_IF,
@@ -567,18 +568,23 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 
 /** Currently only supports a single OP_IF ... OP_ELSE ... OP_ENDIF ScriptPubKey */
 sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
-  require(asm.headOption.contains(OP_IF),
-          "ConditionalScriptPubKey must begin with OP_IF")
+  def conditional: ConditionalOperation
+
+  require(asm.headOption.contains(conditional),
+          s"ConditionalScriptPubKey must begin with $conditional")
   require(asm.last.equals(OP_ENDIF),
           "ConditionalScriptPubKey must end in OP_ENDIF")
 
-  val (isValidConditional: Boolean, opElseIndex: Int) = {
-    ConditionalScriptPubKey.isConditionalScriptPubKeyWithElseIndex(asm)
+  val (isValidConditional: Boolean, opElseIndexOpt: Option[Int]) = {
+    ConditionalScriptPubKey.isConditionalScriptPubKeyWithElseIndex(asm,
+                                                                   conditional)
   }
 
   require(isValidConditional, "Must be valid ConditionalScriptPubKey syntax")
-  require(opElseIndex != -1,
+  require(opElseIndexOpt.isDefined,
           "ConditionalScriptPubKey has to contain OP_ELSE asm token")
+
+  val opElseIndex: Int = opElseIndexOpt.get
 
   require(!P2SHScriptPubKey.isP2SHScriptPubKey(trueSPK.asm) && !P2SHScriptPubKey
             .isP2SHScriptPubKey(falseSPK.asm),
@@ -590,49 +596,40 @@ sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
     "ConditionalScriptPubKey cannot wrap SegWit ScriptPubKey"
   )
 
-  def trueSPK: RawScriptPubKey = {
+  def firstSPK: RawScriptPubKey = {
     RawScriptPubKey
       .fromAsm(asm.slice(1, opElseIndex))
   }
 
-  def falseSPK: RawScriptPubKey = {
+  def secondSPK: RawScriptPubKey = {
     RawScriptPubKey
       .fromAsm(asm.slice(opElseIndex + 1, asm.length - 1))
   }
+
+  def trueSPK: RawScriptPubKey = {
+    conditional match {
+      case OP_IF    => firstSPK
+      case OP_NOTIF => secondSPK
+    }
+  }
+
+  def falseSPK: RawScriptPubKey = {
+    conditional match {
+      case OP_IF    => secondSPK
+      case OP_NOTIF => firstSPK
+    }
+  }
 }
 
-object ConditionalScriptPubKey extends ScriptFactory[ConditionalScriptPubKey] {
-  private case class ConditionalScriptPubKeyImpl(
-      override val asm: Vector[ScriptToken])
-      extends ConditionalScriptPubKey {
-    override def toString: String =
-      s"ConditionalScriptPubKey($trueSPK, $falseSPK)"
-  }
-
-  override def fromAsm(asm: Seq[ScriptToken]): ConditionalScriptPubKey = {
-    buildScript(
-      asm = asm.toVector,
-      constructor = ConditionalScriptPubKeyImpl.apply,
-      invariant = isConditionalScriptPubKey,
-      errorMsg = "Given asm was not a ConditionalScriptPubKey, got: " + asm
-    )
-  }
-
-  def apply(
-      trueSPK: RawScriptPubKey,
-      falseSPK: RawScriptPubKey): ConditionalScriptPubKey = {
-    val asm = Vector(OP_IF) ++ trueSPK.asm ++ Vector(OP_ELSE) ++ falseSPK.asm ++ Vector(
-      OP_ENDIF)
-
-    fromAsm(asm)
-  }
+object ConditionalScriptPubKey {
 
   /** Validates the correctness of the conditional syntax.
     * If valid, also returns the index of the first outer-most OP_ELSE
     */
   def isConditionalScriptPubKeyWithElseIndex(
-      asm: Seq[ScriptToken]): (Boolean, Int) = {
-    val headIsOpIf = asm.headOption.contains(OP_IF)
+      asm: Seq[ScriptToken],
+      conditional: ConditionalOperation): (Boolean, Option[Int]) = {
+    val headIsConditional = asm.headOption.contains(conditional)
     lazy val endsWithEndIf = asm.last == OP_ENDIF
 
     var opElseIndexOpt: Option[Int] = None
@@ -680,13 +677,93 @@ object ConditionalScriptPubKey extends ScriptFactory[ConditionalScriptPubKey] {
       opElsePendingOpt.contains(Vector.empty)
     }
 
-    lazy val opElseIndex = opElseIndexOpt.getOrElse(-1)
-
-    (headIsOpIf && endsWithEndIf && validConditionalTree, opElseIndex)
+    (headIsConditional && endsWithEndIf && validConditionalTree, opElseIndexOpt)
   }
 
-  def isConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
-    isConditionalScriptPubKeyWithElseIndex(asm)._1
+  def apply(
+      conditional: ConditionalOperation,
+      trueSPK: RawScriptPubKey,
+      falseSPK: RawScriptPubKey): ConditionalScriptPubKey = {
+    conditional match {
+      case OP_IF    => IfConditionalScriptPubKey(trueSPK, falseSPK)
+      case OP_NOTIF => NotIfConditionalScriptPubKey(falseSPK, trueSPK)
+    }
+  }
+}
+
+sealed trait IfConditionalScriptPubKey extends ConditionalScriptPubKey {
+  override def conditional: ConditionalOperation = OP_IF
+}
+
+object IfConditionalScriptPubKey
+    extends ScriptFactory[IfConditionalScriptPubKey] {
+  private case class IfConditionalScriptPubKeyImpl(
+      override val asm: Vector[ScriptToken])
+      extends IfConditionalScriptPubKey {
+    override def toString: String =
+      s"IfConditionalScriptPubKey($trueSPK, $falseSPK)"
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): IfConditionalScriptPubKey = {
+    buildScript(
+      asm = asm.toVector,
+      constructor = IfConditionalScriptPubKeyImpl.apply,
+      invariant = isIfConditionalScriptPubKey,
+      errorMsg = "Given asm was not a IfConditionalScriptPubKey, got: " + asm
+    )
+  }
+
+  def apply(
+      trueSPK: RawScriptPubKey,
+      falseSPK: RawScriptPubKey): IfConditionalScriptPubKey = {
+    val asm = Vector(OP_IF) ++ trueSPK.asm ++ Vector(OP_ELSE) ++ falseSPK.asm ++ Vector(
+      OP_ENDIF)
+
+    fromAsm(asm)
+  }
+
+  def isIfConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+    ConditionalScriptPubKey
+      .isConditionalScriptPubKeyWithElseIndex(asm, OP_IF)
+      ._1
+  }
+}
+
+sealed trait NotIfConditionalScriptPubKey extends ConditionalScriptPubKey {
+  override def conditional: ConditionalOperation = OP_NOTIF
+}
+
+object NotIfConditionalScriptPubKey
+    extends ScriptFactory[NotIfConditionalScriptPubKey] {
+  private case class NotIfConditionalScriptPubKeyImpl(
+      override val asm: Vector[ScriptToken])
+      extends NotIfConditionalScriptPubKey {
+    override def toString: String =
+      s"NotIfConditionalScriptPubKey($falseSPK, $trueSPK)"
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): NotIfConditionalScriptPubKey = {
+    buildScript(
+      asm = asm.toVector,
+      constructor = NotIfConditionalScriptPubKeyImpl.apply,
+      invariant = isNotIfConditionalScriptPubKey,
+      errorMsg = "Given asm was not a NotIfConditionalScriptPubKey, got: " + asm
+    )
+  }
+
+  def apply(
+      falseSPK: RawScriptPubKey,
+      trueSPK: RawScriptPubKey): NotIfConditionalScriptPubKey = {
+    val asm = Vector(OP_NOTIF) ++ falseSPK.asm ++ Vector(OP_ELSE) ++ trueSPK.asm ++ Vector(
+      OP_ENDIF)
+
+    fromAsm(asm)
+  }
+
+  def isNotIfConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+    ConditionalScriptPubKey
+      .isConditionalScriptPubKeyWithElseIndex(asm, OP_NOTIF)
+      ._1
   }
 }
 
@@ -720,8 +797,11 @@ object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
 
   def fromAsm(asm: Seq[ScriptToken]): RawScriptPubKey = asm match {
     case Nil => EmptyScriptPubKey
-    case _ if ConditionalScriptPubKey.isConditionalScriptPubKey(asm) =>
-      ConditionalScriptPubKey.fromAsm(asm)
+    case _ if IfConditionalScriptPubKey.isIfConditionalScriptPubKey(asm) =>
+      IfConditionalScriptPubKey.fromAsm(asm)
+    case _
+        if NotIfConditionalScriptPubKey.isNotIfConditionalScriptPubKey(asm) =>
+      NotIfConditionalScriptPubKey.fromAsm(asm)
     case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) =>
       P2PKHScriptPubKey(asm)
     case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) => P2PKScriptPubKey(asm)

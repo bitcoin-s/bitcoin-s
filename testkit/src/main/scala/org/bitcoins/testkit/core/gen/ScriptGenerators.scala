@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
+import org.bitcoins.core.script.control.{ConditionalOperation, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
@@ -240,38 +241,48 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def emptyScriptPubKey: Gen[(EmptyScriptPubKey.type, Seq[ECPrivateKey])] =
     (EmptyScriptPubKey, Nil)
 
+  private def conditionalOperation: Gen[ConditionalOperation] =
+    NumberGenerator.bool.map {
+      case true  => OP_IF
+      case false => OP_NOTIF
+    }
+
   /** Creates a ConditionalScriptPubKey with keys for the true case
     *
     * @param maxDepth The maximum level of nesting allowed within this conditional.
     */
   def conditionalScriptPubKey(
       maxDepth: Int): Gen[(ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
-    if (maxDepth > 0) {
-      for {
-        (spk1, keys1) <- rawScriptPubKey(maxDepth - 1)
-        (spk2, _) <- rawScriptPubKey(maxDepth - 1)
-      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
-    } else {
-      for {
-        (spk1, keys1) <- nonConditionalRawScriptPubKey
-        (spk2, _) <- nonConditionalRawScriptPubKey
-      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
+    conditionalOperation.flatMap { op =>
+      if (maxDepth > 0) {
+        for {
+          (spk1, keys1) <- rawScriptPubKey(maxDepth - 1)
+          (spk2, _) <- rawScriptPubKey(maxDepth - 1)
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      } else {
+        for {
+          (spk1, keys1) <- nonConditionalRawScriptPubKey
+          (spk2, _) <- nonConditionalRawScriptPubKey
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      }
     }
   }
 
   /** Creates a ConditionalScriptPubKey with keys for the true case */
   def nonLocktimeConditionalScriptPubKey(
       maxDepth: Int): Gen[(ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
-    if (maxDepth > 0) {
-      for {
-        (spk1, keys1) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
-        (spk2, _) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
-      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
-    } else {
-      for {
-        (spk1, keys1) <- nonConditionalNonLocktimeRawScriptPubKey
-        (spk2, _) <- nonConditionalNonLocktimeRawScriptPubKey
-      } yield (ConditionalScriptPubKey(spk1, spk2), keys1)
+    conditionalOperation.flatMap { op =>
+      if (maxDepth > 0) {
+        for {
+          (spk1, keys1) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
+          (spk2, _) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      } else {
+        for {
+          (spk1, keys1) <- nonConditionalNonLocktimeRawScriptPubKey
+          (spk2, _) <- nonConditionalNonLocktimeRawScriptPubKey
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      }
     }
   }
 
@@ -598,10 +609,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
     signed.flatMap {
       case (scriptSig, spk, keys) =>
-        rawScriptPubKey(defaultMaxDepth).map(_._1).map { spk2 =>
-          (ConditionalScriptSignature(scriptSig, true),
-           ConditionalScriptPubKey(spk.asInstanceOf[RawScriptPubKey], spk2),
-           keys)
+        conditionalOperation.flatMap { op =>
+          rawScriptPubKey(defaultMaxDepth).map(_._1).map { spk2 =>
+            (ConditionalScriptSignature(scriptSig, true),
+             ConditionalScriptPubKey(op, spk, spk2),
+             keys)
+          }
         }
     }
   }
@@ -902,9 +915,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   }
 
   /** Simply converts one private key in the generator to a sequence of private keys */
-  private def packageToSequenceOfPrivateKeys(
-      gen: Gen[(ScriptSignature, ScriptPubKey, ECPrivateKey)]): Gen[
-    (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] =
+  private def packageToSequenceOfPrivateKeys[SPK <: ScriptPubKey](
+      gen: Gen[(ScriptSignature, SPK, ECPrivateKey)]): Gen[
+    (ScriptSignature, SPK, Seq[ECPrivateKey])] =
     for {
       (scriptSig, scriptPubKey, privateKey) <- gen
     } yield (scriptSig, scriptPubKey, Seq(privateKey))

@@ -8,6 +8,7 @@ import org.bitcoins.core.script.constant.ScriptOperation
   */
 sealed abstract class ControlOperations extends ScriptOperation
 
+/** Type for { OP_IF, OP_NOTIF } */
 sealed abstract class ConditionalOperation extends ControlOperations
 
 /** If the top stack value is not 0, the statements are executed. The top stack value is removed. */
