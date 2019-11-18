@@ -13,11 +13,9 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
-import org.scalatest.Ignore
 
 import scala.concurrent.Future
 
-@Ignore
 class MempoolRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodePairV18(clientAccum = clientAccum)
@@ -75,7 +73,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
     } yield {
       val txid = mempool.keySet.head
       assert(txid == transaction.txid)
-      assert(mempool(txid).size > 0)
+      assert(mempool(txid).vsize > 0)
     }
   }
 
@@ -139,7 +137,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
           .createRawTransaction(Vector(input), Map(address2 -> Bitcoins.one))
       }
       signedTx <- BitcoindRpcTestUtil.signRawTransaction(client, createdTx)
-      txid2 <- client.sendRawTransaction(signedTx.hex, allowHighFees = true)
+      txid2 <- client.sendRawTransaction(signedTx.hex, 0)
 
       descendantsTxid1 <- client.getMemPoolDescendants(txid1)
       verboseDescendantsTxid1 <- client.getMemPoolDescendantsVerbose(txid1)

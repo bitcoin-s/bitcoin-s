@@ -863,8 +863,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       addr <- sender.getNewAddress
       _ <- sender.generateToAddress(100, addr)
       // Can't spend coinbase until depth 100
-      transactionHash <- sender.sendRawTransaction(signedtx.hex,
-                                                   allowHighFees = true)
+      transactionHash <- sender.sendRawTransaction(signedtx.hex, 0)
       transaction <- sender.getTransaction(transactionHash)
     } yield transaction
   }

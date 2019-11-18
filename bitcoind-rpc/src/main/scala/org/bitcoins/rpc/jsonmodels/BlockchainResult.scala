@@ -146,7 +146,7 @@ case class GetChainTxStatsResult(
     extends BlockchainResult
 
 case class GetMemPoolResult(
-    size: Int,
+    vsize: Int,
     fee: Option[Bitcoins],
     modifiedfee: Option[Bitcoins],
     time: UInt32,
@@ -162,7 +162,7 @@ case class GetMemPoolResult(
     extends BlockchainResult
 
 case class GetMemPoolEntryResult(
-    size: Int,
+    vsize: Int,
     fee: Bitcoins,
     modifiedfee: Bitcoins,
     time: UInt32,
