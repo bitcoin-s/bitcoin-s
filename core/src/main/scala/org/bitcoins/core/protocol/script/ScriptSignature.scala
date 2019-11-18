@@ -33,7 +33,7 @@ sealed abstract class ScriptSignature extends Script {
 
 sealed trait NonStandardScriptSignature extends ScriptSignature {
   def signatures: Seq[ECDigitalSignature] = Nil
-  override def toString = "NonStandardScriptSignature(" + hex + ")"
+  override def toString = s"NonStandardScriptSignature($asm)"
 }
 
 object NonStandardScriptSignature
@@ -70,7 +70,7 @@ sealed trait P2PKHScriptSignature extends ScriptSignature {
     Seq(ECDigitalSignature(asm(1).hex))
   }
 
-  override def toString = "P2PKHScriptSignature(" + hex + ")"
+  override def toString = s"P2PKHScriptSignature($publicKey, $signature)"
 
 }
 
@@ -177,7 +177,8 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
     sigs.map(s => ECDigitalSignature(s.hex))
   }
 
-  override def toString = "P2SHScriptSignature(" + hex + ")"
+  override def toString =
+    s"P2SHScriptSignature($redeemScript, $scriptSignatureNoRedeemScript)"
 }
 
 object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
@@ -262,7 +263,8 @@ sealed trait MultiSignatureScriptSignature extends ScriptSignature {
       .map(sig => ECDigitalSignature(sig.hex))
   }
 
-  override def toString = "MultiSignatureScriptSignature(" + hex + ")"
+  override def toString =
+    s"MultiSignatureScriptSignature(${signatures.mkString(", ")})"
 }
 
 object MultiSignatureScriptSignature
@@ -334,7 +336,7 @@ sealed trait P2PKScriptSignature extends ScriptSignature {
     Seq(ECDigitalSignature(BitcoinScriptUtil.filterPushOps(asm).head.hex))
   }
 
-  override def toString = s"P2PKScriptSignature($hex)"
+  override def toString = s"P2PKScriptSignature($signature)"
 }
 
 object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
@@ -371,7 +373,7 @@ sealed trait LockTimeScriptSignature extends ScriptSignature {
 }
 
 sealed trait CLTVScriptSignature extends LockTimeScriptSignature {
-  override def toString: String = s"CLTVScriptSignature($hex)"
+  override def toString: String = s"CLTVScriptSignature($scriptSig)"
 }
 
 /**
@@ -403,7 +405,7 @@ object CLTVScriptSignature extends ScriptFactory[CLTVScriptSignature] {
 }
 
 sealed trait CSVScriptSignature extends LockTimeScriptSignature {
-  override def toString = s"CSVScriptSignature($hex)"
+  override def toString = s"CSVScriptSignature($scriptSig)"
 }
 
 object CSVScriptSignature extends ScriptFactory[CSVScriptSignature] {
@@ -457,7 +459,8 @@ object ConditionalScriptSignature
   private case class ConditionalScriptSignatureImpl(
       override val asm: Vector[ScriptToken])
       extends ConditionalScriptSignature {
-    override def toString: String = s"ConditionalScriptSignature($hex)"
+    override def toString: String =
+      s"ConditionalScriptSignature($isTrue, $nestedScriptSig)"
   }
 
   override def fromAsm(asm: Seq[ScriptToken]): ConditionalScriptSignature = {
