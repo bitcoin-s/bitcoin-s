@@ -404,7 +404,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
     val cancellable = system.scheduler.schedule(interval, interval, runnable)
 
-    p.future.map(_ => cancellable.cancel())
+    p.future.onComplete(_ => cancellable.cancel())
 
     p.future
   }
