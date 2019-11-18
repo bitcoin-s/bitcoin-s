@@ -31,7 +31,6 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.util.{Failure, Success}
-
 import org.bitcoins.core.config._
 
 object JsonReaders {
