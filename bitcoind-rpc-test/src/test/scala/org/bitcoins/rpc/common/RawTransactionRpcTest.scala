@@ -125,7 +125,7 @@ class RawTransactionRpcTest extends BitcoindRpcTest {
 
       _ <- client.getNewAddress.flatMap(client.generateToAddress(100, _)) // Can't spend coinbase until depth 100
 
-      _ <- client.sendRawTransaction(signedTransaction.hex,0)
+      _ <- client.sendRawTransaction(signedTransaction.hex, maxfeerate = 0)
     } yield succeed
   }
 

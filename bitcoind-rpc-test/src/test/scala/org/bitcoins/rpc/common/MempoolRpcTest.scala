@@ -137,7 +137,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
           .createRawTransaction(Vector(input), Map(address2 -> Bitcoins.one))
       }
       signedTx <- BitcoindRpcTestUtil.signRawTransaction(client, createdTx)
-      txid2 <- client.sendRawTransaction(signedTx.hex, 0)
+      txid2 <- client.sendRawTransaction(signedTx.hex, maxfeerate = 0)
 
       descendantsTxid1 <- client.getMemPoolDescendants(txid1)
       verboseDescendantsTxid1 <- client.getMemPoolDescendantsVerbose(txid1)
