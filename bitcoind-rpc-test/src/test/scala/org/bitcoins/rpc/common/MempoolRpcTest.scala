@@ -13,9 +13,11 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
+import org.scalatest.Ignore
 
 import scala.concurrent.Future
 
+@Ignore
 class MempoolRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodePairV18(clientAccum = clientAccum)
