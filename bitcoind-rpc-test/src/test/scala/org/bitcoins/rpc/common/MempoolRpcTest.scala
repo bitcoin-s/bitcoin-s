@@ -152,9 +152,9 @@ class MempoolRpcTest extends BitcoindRpcTest {
       verboseAncestorsTxid2 <- client.getMemPoolAncestorsVerbose(txid2)
       _ = {
         assert(ancestorsTxid2.head == txid1)
-        val (txid, mempoolreults) = verboseAncestorsTxid2.head
+        val (txid, mempoolresults) = verboseAncestorsTxid2.head
         assert(txid == txid1)
-        assert(mempoolreults.descendantcount == 2)
+        assert(mempoolresults.descendantcount == 2)
       }
 
     } yield {
