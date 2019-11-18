@@ -50,6 +50,20 @@ case class GetTransactionResult(
     hex: Transaction)
     extends WalletResult
 
+case class SetWalletFlagResult(
+    flag_name: String,
+    flag_state: Boolean,
+    warnings: Option[String])
+    extends WalletResult
+
+case class GetBalancesResult(mine: BalanceInfo, watchonly: Option[BalanceInfo])
+    extends WalletResult
+
+case class BalanceInfo(
+    trusted: Bitcoins,
+    untrusted_pending: Bitcoins,
+    immature: Bitcoins)
+
 case class TransactionDetails(
     involvesWatchonly: Option[Boolean],
     account: Option[String],
