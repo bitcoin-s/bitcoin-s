@@ -809,17 +809,20 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         val v16T = BitcoindV16RpcClient.fromUnknownVersion(unknown)
         val v17T = BitcoindV17RpcClient.fromUnknownVersion(unknown)
         val v18T = BitcoindV18RpcClient.fromUnknownVersion(unknown)
-        (v16T, v17T, v18T) match {
-          case (Failure(_), Failure(_), Failure(_)) =>
+        val v19T = BitcoindV19RpcClient.fromUnknownVersion(unknown)
+        (v16T, v17T, v18T, v19T) match {
+          case (Failure(_), Failure(_), Failure(_), Failure(_)) =>
             throw new RuntimeException(
               "Could not figure out version of provided bitcoind RPC client!" +
                 "This should not happen, managed to construct different versioned RPC clients from one single client")
-          case (Success(v16), _, _) =>
+          case (Success(v16), _, _, _) =>
             v16.signRawTransaction(transaction, utxoDeps)
-          case (_, Success(v17), _) =>
+          case (_, Success(v17), _, _) =>
             v17.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, _, Success(v18)) =>
+          case (_, _, Success(v18),_) =>
             v18.signRawTransactionWithWallet(transaction, utxoDeps)
+          case (_, _,_,Success(v19)) =>
+            v19.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
 
