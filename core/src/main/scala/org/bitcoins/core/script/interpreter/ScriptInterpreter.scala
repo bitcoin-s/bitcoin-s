@@ -39,7 +39,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
   private lazy val MAX_SCRIPT_OPS = 201
 
   /** We cannot push an element larger than 520 bytes onto the stack */
-  private lazy val MAX_PUSH_SIZE = 520
+  val MAX_PUSH_SIZE: Int = 520
 
   /**
     * Runs an entire script though our script programming language and
@@ -534,6 +534,13 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           logger.error(
             "We cannot have a stack + alt stack size larger than 1000 elements")
           (program.failExecution(ScriptErrorStackSize), opCount)
+
+        //no more script operations to run, return whether the program is valid and the final state of the program
+        case Nil =>
+          (program.toExecutedProgram, opCount)
+
+        case _ if !program.shouldExecuteNextOperation =>
+          (program.updateScript(program.script.tail), opCount)
 
         //stack operations
         case OP_DUP :: _ =>
@@ -1051,9 +1058,6 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
             (programOrError, newOpCount)
           }
 
-        //no more script operations to run, return whether the program is valid and the final state of the program
-        case Nil =>
-          (program.toExecutedProgram, opCount)
         case h :: _ => throw new RuntimeException(s"$h was unmatched")
       }
 

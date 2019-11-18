@@ -3,12 +3,15 @@ package org.bitcoins.testkit.core.gen
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{TransactionSignatureCreator, _}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{P2SHScriptPubKey, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
+import org.bitcoins.core.script.control.{ConditionalOperation, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.signer.{MultiSigSigner, P2PKHSigner, P2PKSigner}
 import org.bitcoins.core.wallet.utxo.{
@@ -18,6 +21,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.scalacheck.Gen
 
+import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
@@ -25,6 +29,15 @@ import scala.concurrent.duration.DurationInt
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 sealed abstract class ScriptGenerators extends BitcoinSLogger {
   val timeout = 5.seconds
+  val defaultMaxDepth: Int = 2
+
+  /** Since redeem scripts are pushed onto the stack, this function
+    * checks that the redeem script is not too large for a push operation.
+    */
+  private[gen] def redeemScriptTooBig(redeemScript: ScriptPubKey): Boolean = {
+    redeemScript.compactSizeUInt.toInt + CompactSizeUInt(UInt64(
+      ScriptInterpreter.MAX_PUSH_SIZE)).bytes.length >= ScriptInterpreter.MAX_PUSH_SIZE
+  }
 
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
     for {
@@ -54,11 +67,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       .oneOf(
         packageToSequenceOfPrivateKeys(signedP2PKHScriptSignature),
         packageToSequenceOfPrivateKeys(signedP2PKScriptSignature),
-        signedMultiSignatureScriptSignature
-        /* Can't have these since that would create nested Conditional(Timelock(Conditional))
+        signedMultiSignatureScriptSignature,
         signedCLTVScriptSignature,
         signedCSVScriptSignature
-       */
       )
       .map(_._1)
 
@@ -121,36 +132,83 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2pkh = P2PKHScriptPubKey(pubKey)
     } yield (p2pkh, privKey)
 
-  def cltvScriptPubKey: Gen[(CLTVScriptPubKey, Seq[ECPrivateKey])] =
+  def cltvScriptPubKey: Gen[(CLTVScriptPubKey, Seq[ECPrivateKey])] = {
+    cltvScriptPubKey(defaultMaxDepth)
+  }
+
+  def cltvScriptPubKey(
+      maxDepth: Int): Gen[(CLTVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       num <- NumberGenerator.scriptNumbers
-      (cltv, privKeys, num) <- cltvScriptPubKey(num)
+      (cltv, privKeys, num) <- cltvScriptPubKey(num, maxDepth)
     } yield (cltv, privKeys)
 
-  def cltvScriptPubKey(num: ScriptNumber): Gen[
-    (CLTVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] =
+  def cltvScriptPubKey(
+      num: ScriptNumber,
+      maxDepth: Int): Gen[(CLTVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] =
     for {
-      (scriptPubKey, privKeys) <- randomNonLockTimeNonP2SHScriptPubKey
+      (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
     } yield {
       val cltv = CLTVScriptPubKey(num, scriptPubKey)
       (cltv, privKeys, num)
     }
 
-  def csvScriptPubKey(num: ScriptNumber): Gen[
-    (CSVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] =
+  def nonConditionalCltvScriptPubKey: Gen[
+    (CLTVScriptPubKey, Seq[ECPrivateKey])] = {
     for {
-      (scriptPubKey, privKeys) <- randomNonLockTimeNonP2SHScriptPubKey
+      num <- NumberGenerator.scriptNumbers
+      (cltv, privKeys, num) <- nonConditionalCltvScriptPubKey(num)
+    } yield (cltv, privKeys)
+  }
+
+  def nonConditionalCltvScriptPubKey(num: ScriptNumber): Gen[
+    (CLTVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] =
+    for {
+      (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
+    } yield {
+      val cltv = CLTVScriptPubKey(num, scriptPubKey)
+      (cltv, privKeys, num)
+    }
+
+  def csvScriptPubKey: Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] = {
+    csvScriptPubKey(defaultMaxDepth)
+  }
+
+  def csvScriptPubKey(
+      num: ScriptNumber,
+      maxDepth: Int): Gen[(CSVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] =
+    for {
+      (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
     } yield {
       val csv = CSVScriptPubKey(num, scriptPubKey)
       (csv, privKeys, num)
     }
 
-  def csvScriptPubKey: Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] =
+  def csvScriptPubKey(
+      maxDepth: Int): Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (scriptPubKey, privKeys) <- randomNonLockTimeNonP2SHScriptPubKey
+      (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
       num <- NumberGenerator.scriptNumbers
       csv = CSVScriptPubKey(num, scriptPubKey)
     } yield (csv, privKeys)
+
+  def nonConditionalCsvScriptPubKey(num: ScriptNumber): Gen[
+    (CSVScriptPubKey, Seq[ECPrivateKey], ScriptNumber)] = {
+    for {
+      (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
+    } yield {
+      val csv = CSVScriptPubKey(num, scriptPubKey)
+      (csv, privKeys, num)
+    }
+  }
+
+  def nonConditionalCsvScriptPubKey: Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] = {
+    for {
+      (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
+      num <- NumberGenerator.scriptNumbers
+      csv = CSVScriptPubKey(num, scriptPubKey)
+    } yield (csv, privKeys)
+  }
 
   def multiSigScriptPubKey: Gen[
     (MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
@@ -173,35 +231,58 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def p2shScriptPubKey: Gen[(P2SHScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey
+        .suchThat {
+          case (spk, _) =>
+            !redeemScriptTooBig(spk)
+        }
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
     } yield (p2sh, privKeys)
 
   def emptyScriptPubKey: Gen[(EmptyScriptPubKey.type, Seq[ECPrivateKey])] =
     (EmptyScriptPubKey, Nil)
 
-  /* We cannot have this one until there is support for nesting since
-     this allows Conditional(LockTime(Conditional))
+  private def conditionalOperation: Gen[ConditionalOperation] =
+    NumberGenerator.bool.map {
+      case true  => OP_IF
+      case false => OP_NOTIF
+    }
 
-  /** Creates a ConditionalScriptPubKey with keys for the true case */
-  def conditionalScriptPubKey: Gen[
-    (ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
-    nonConditionalRawScriptPubKey.flatMap {
-      case (spk1, keys1) =>
-        nonConditionalRawScriptPubKey.map(_._1).map { spk2 =>
-          (ConditionalScriptPubKey(spk1, spk2), keys1)
-        }
+  /** Creates a ConditionalScriptPubKey with keys for the true case
+    *
+    * @param maxDepth The maximum level of nesting allowed within this conditional.
+    */
+  def conditionalScriptPubKey(
+      maxDepth: Int): Gen[(ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
+    conditionalOperation.flatMap { op =>
+      if (maxDepth > 0) {
+        for {
+          (spk1, keys1) <- rawScriptPubKey(maxDepth - 1)
+          (spk2, _) <- rawScriptPubKey(maxDepth - 1)
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      } else {
+        for {
+          (spk1, keys1) <- nonConditionalRawScriptPubKey
+          (spk2, _) <- nonConditionalRawScriptPubKey
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      }
     }
   }
-   */
 
   /** Creates a ConditionalScriptPubKey with keys for the true case */
-  def nonLocktimeConditionalScriptPubKey: Gen[
-    (ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
-    nonConditionalNonLocktimeRawScriptPubKey.flatMap {
-      case (spk1, keys1) =>
-        nonConditionalNonLocktimeRawScriptPubKey.map(_._1).map { spk2 =>
-          (ConditionalScriptPubKey(spk1, spk2), keys1)
-        }
+  def nonLocktimeConditionalScriptPubKey(
+      maxDepth: Int): Gen[(ConditionalScriptPubKey, Seq[ECPrivateKey])] = {
+    conditionalOperation.flatMap { op =>
+      if (maxDepth > 0) {
+        for {
+          (spk1, keys1) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
+          (spk2, _) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      } else {
+        for {
+          (spk1, keys1) <- nonConditionalNonLocktimeRawScriptPubKey
+          (spk2, _) <- nonConditionalNonLocktimeRawScriptPubKey
+        } yield (ConditionalScriptPubKey(op, spk1, spk2), keys1)
+      }
     }
   }
 
@@ -212,9 +293,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     } yield (P2WPKHWitnessSPKV0(privKey.publicKey), Seq(privKey))
 
   def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey])] =
-    randomNonP2SHScriptPubKey.map { spk =>
-      (P2WSHWitnessSPKV0(spk._1), spk._2)
-    }
+    randomNonP2SHScriptPubKey
+      .suchThat {
+        case (spk, _) =>
+          !redeemScriptTooBig(spk)
+      }
+      .map { spk =>
+        (P2WSHWitnessSPKV0(spk._1), spk._2)
+      }
 
   def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] =
     Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0)
@@ -250,29 +336,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq(_)),
       p2pkhScriptPubKey.map(privKeyToSeq(_)),
-      cltvScriptPubKey.suchThat(
+      cltvScriptPubKey(defaultMaxDepth).suchThat(
         !_._1.nestedScriptPubKey.isInstanceOf[CSVScriptPubKey]),
-      csvScriptPubKey.suchThat(
+      csvScriptPubKey(defaultMaxDepth).suchThat(
         !_._1.nestedScriptPubKey.isInstanceOf[CLTVScriptPubKey]),
       multiSigScriptPubKey,
       p2wpkhSPKV0,
       unassignedWitnessScriptPubKey,
-      nonLocktimeConditionalScriptPubKey
-    )
-  }
-
-  /**
-    * This is used for creating time locked scriptPubKeys, we cannot nest CSV/CLTV/P2SH/Witness
-    * ScriptPubKeys inside of timelock scriptPubKeys
-    */
-  def randomNonLockTimeNonP2SHScriptPubKey: Gen[
-    (ScriptPubKey, Seq[ECPrivateKey])] = {
-    Gen.oneOf(
-      p2pkScriptPubKey.map(privKeyToSeq(_)),
-      p2pkhScriptPubKey.map(privKeyToSeq(_)),
-      multiSigScriptPubKey,
-      nonLocktimeConditionalScriptPubKey,
-      emptyScriptPubKey
+      conditionalScriptPubKey(defaultMaxDepth)
     )
   }
 
@@ -285,8 +356,13 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
               nonLockTimeConditionalScriptSignature)
   }
 
-  def lockTimeScriptPubKey: Gen[(LockTimeScriptPubKey, Seq[ECPrivateKey])] =
-    Gen.oneOf(cltvScriptPubKey, csvScriptPubKey)
+  def lockTimeScriptPubKey(
+      maxDepth: Int): Gen[(LockTimeScriptPubKey, Seq[ECPrivateKey])] =
+    Gen.oneOf(cltvScriptPubKey(maxDepth), csvScriptPubKey(maxDepth))
+
+  def nonConditionalLockTimeScriptPubKey: Gen[
+    (LockTimeScriptPubKey, Seq[ECPrivateKey])] =
+    Gen.oneOf(nonConditionalCltvScriptPubKey, nonConditionalCsvScriptPubKey)
 
   def lockTimeScriptSig: Gen[LockTimeScriptSignature] =
     Gen.oneOf(csvScriptSignature, cltvScriptSignature)
@@ -298,14 +374,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2pkhScriptPubKey.map(privKeyToSeq(_)),
       multiSigScriptPubKey,
       emptyScriptPubKey,
-      cltvScriptPubKey,
-      csvScriptPubKey,
+      cltvScriptPubKey(defaultMaxDepth),
+      csvScriptPubKey(defaultMaxDepth),
       p2wpkhSPKV0,
       p2wshSPKV0,
       unassignedWitnessScriptPubKey,
       p2shScriptPubKey,
       witnessCommitment,
-      nonLocktimeConditionalScriptPubKey
+      conditionalScriptPubKey(defaultMaxDepth)
     )
   }
 
@@ -315,10 +391,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2pkhScriptPubKey.map(privKeyToSeq),
       multiSigScriptPubKey,
       emptyScriptPubKey,
-      lockTimeScriptPubKey,
+      lockTimeScriptPubKey(defaultMaxDepth),
       p2shScriptPubKey,
       witnessCommitment,
-      nonLocktimeConditionalScriptPubKey
+      conditionalScriptPubKey(defaultMaxDepth)
     )
   }
 
@@ -332,25 +408,40 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     )
   }
 
+  def nonLocktimeRawScriptPubKey(
+      maxDepth: Int): Gen[(RawScriptPubKey, Seq[ECPrivateKey])] = {
+    Gen.oneOf(
+      p2pkScriptPubKey.map(privKeyToSeq),
+      p2pkhScriptPubKey.map(privKeyToSeq),
+      multiSigScriptPubKey,
+      emptyScriptPubKey,
+      nonLocktimeConditionalScriptPubKey(maxDepth)
+    )
+  }
+
   def nonConditionalRawScriptPubKey: Gen[(RawScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq),
       p2pkhScriptPubKey.map(privKeyToSeq),
       multiSigScriptPubKey,
       emptyScriptPubKey,
-      lockTimeScriptPubKey
+      nonConditionalLockTimeScriptPubKey
     )
   }
 
   def rawScriptPubKey: Gen[(RawScriptPubKey, Seq[ECPrivateKey])] = {
+    rawScriptPubKey(defaultMaxDepth)
+  }
+
+  def rawScriptPubKey(
+      maxDepth: Int): Gen[(RawScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
       p2pkScriptPubKey.map(privKeyToSeq),
       p2pkhScriptPubKey.map(privKeyToSeq),
       multiSigScriptPubKey,
       emptyScriptPubKey,
-      lockTimeScriptPubKey,
-      witnessCommitment,
-      nonLocktimeConditionalScriptPubKey
+      lockTimeScriptPubKey(maxDepth),
+      conditionalScriptPubKey(maxDepth)
     )
   }
 
@@ -512,15 +603,18 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       packageToSequenceOfPrivateKeys(signedP2PKScriptSignature),
       signedMultiSignatureScriptSignature,
       signedCLTVScriptSignature,
-      signedCSVScriptSignature
+      signedCSVScriptSignature,
+      signedConditionalScriptSignature
     )
 
     signed.flatMap {
       case (scriptSig, spk, keys) =>
-        nonConditionalRawScriptPubKey.map(_._1).map { spk2 =>
-          (ConditionalScriptSignature(scriptSig, true),
-           ConditionalScriptPubKey(spk.asInstanceOf[RawScriptPubKey], spk2),
-           keys)
+        conditionalOperation.flatMap { op =>
+          rawScriptPubKey(defaultMaxDepth).map(_._1).map { spk2 =>
+            (ConditionalScriptSignature(scriptSig, true),
+             ConditionalScriptPubKey(op, spk, spk2),
+             keys)
+          }
         }
     }
   }
@@ -542,6 +636,25 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       p2SHScriptSignature = P2SHScriptSignature(scriptSig, redeemScript)
     } yield (p2SHScriptSignature, p2SHScriptPubKey, privateKeys)
 
+  /** Utility function to compute how many signatures will be required in the inner-most true case.
+    * For use with CLTV and CSV ScriptSignature generation.
+    */
+  @tailrec
+  private def findRequiredSigs(conditional: ConditionalScriptPubKey): Int = {
+    conditional.trueSPK match {
+      case multiSig: MultiSignatureScriptPubKey => multiSig.requiredSigs
+      case nestedConditional: ConditionalScriptPubKey =>
+        findRequiredSigs(nestedConditional)
+      case _: LockTimeScriptPubKey =>
+        throw new IllegalArgumentException(
+          "This shouldn't happen since we are using nonLocktimeRawScriptPubKey")
+      case _: P2PKHScriptPubKey | _: P2PKScriptPubKey => 1
+      case EmptyScriptPubKey | _: WitnessCommitment |
+          _: NonStandardScriptPubKey =>
+        0
+    }
+  }
+
   /**
     * @return the signed `CLTVScriptSignature`, the
     *         `CLTVScriptPubKey` it spends, and the
@@ -554,7 +667,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       sequence: UInt32): Gen[
     (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (scriptPubKey, privKeys) <- randomNonLockTimeNonP2SHScriptPubKey
+      (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(defaultMaxDepth)
       hashType <- CryptoGenerators.hashType
       cltv = CLTVScriptPubKey(cltvLockTime, scriptPubKey)
     } yield scriptPubKey match {
@@ -568,24 +681,11 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
                                            hashType)
         (cltvScriptSig.asInstanceOf[CLTVScriptSignature], cltv, privKeys)
       case conditional: ConditionalScriptPubKey =>
-        val requiredSigs = conditional.trueSPK match {
-          case multiSig: MultiSignatureScriptPubKey => multiSig.requiredSigs
-          case _: ConditionalScriptPubKey =>
-            throw new IllegalStateException(
-              "No nesting of conditionals supported")
-          case _: LockTimeScriptPubKey =>
-            throw new IllegalArgumentException(
-              "This shouldn't happen since we are using randomNonLockTimeNonP2SHScriptPubKey")
-          case _: P2PKHScriptPubKey | _: P2PKScriptPubKey => 1
-          case EmptyScriptPubKey | _: WitnessCommitment |
-              _: NonStandardScriptPubKey =>
-            0
-        }
         val cltvScriptSig = lockTimeHelper(Some(lockTime),
                                            sequence,
                                            cltv,
                                            privKeys,
-                                           Some(requiredSigs),
+                                           Some(findRequiredSigs(conditional)),
                                            hashType)
         (cltvScriptSig.asInstanceOf[CLTVScriptSignature], cltv, privKeys)
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey =>
@@ -628,7 +728,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       sequence: UInt32): Gen[
     (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (scriptPubKey, privKeys) <- randomNonLockTimeNonP2SHScriptPubKey
+      (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(defaultMaxDepth)
       hashType <- CryptoGenerators.hashType
       csv = CSVScriptPubKey(csvScriptNum, scriptPubKey)
     } yield scriptPubKey match {
@@ -642,24 +742,11 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
                                           hashType)
         (csvScriptSig.asInstanceOf[CSVScriptSignature], csv, privKeys)
       case conditional: ConditionalScriptPubKey =>
-        val requiredSigs = conditional.trueSPK match {
-          case multiSig: MultiSignatureScriptPubKey => multiSig.requiredSigs
-          case _: ConditionalScriptPubKey =>
-            throw new IllegalStateException(
-              "No nesting of conditionals supported")
-          case _: LockTimeScriptPubKey =>
-            throw new IllegalArgumentException(
-              "This shouldn't happen since we are using randomNonLockTimeNonP2SHScriptPubKey")
-          case _: P2PKHScriptPubKey | _: P2PKScriptPubKey => 1
-          case EmptyScriptPubKey | _: WitnessCommitment |
-              _: NonStandardScriptPubKey =>
-            0
-        }
         val csvScriptSig = lockTimeHelper(None,
                                           sequence,
                                           csv,
                                           privKeys,
-                                          Some(requiredSigs),
+                                          Some(findRequiredSigs(conditional)),
                                           hashType)
         (csvScriptSig.asInstanceOf[CSVScriptSignature], csv, privKeys)
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey =>
@@ -683,7 +770,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def signedCSVScriptSignature: Gen[
     (CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (csv, privKeys) <- csvScriptPubKey
+      (csv, privKeys) <- csvScriptPubKey(defaultMaxDepth)
       sequence <- NumberGenerator.uInt32s
       scriptSig <- signedCSVScriptSignature(csv.locktime, sequence)
     } yield scriptSig
@@ -691,7 +778,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def signedCLTVScriptSignature: Gen[
     (CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      (cltv, privKeys) <- cltvScriptPubKey
+      (cltv, privKeys) <- cltvScriptPubKey(defaultMaxDepth)
       txLockTime <- NumberGenerator.uInt32s
       sequence <- NumberGenerator.uInt32s
       scriptSig <- signedCLTVScriptSignature(cltv.locktime,
@@ -828,9 +915,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   }
 
   /** Simply converts one private key in the generator to a sequence of private keys */
-  private def packageToSequenceOfPrivateKeys(
-      gen: Gen[(ScriptSignature, ScriptPubKey, ECPrivateKey)]): Gen[
-    (ScriptSignature, ScriptPubKey, Seq[ECPrivateKey])] =
+  private def packageToSequenceOfPrivateKeys[SPK <: ScriptPubKey](
+      gen: Gen[(ScriptSignature, SPK, ECPrivateKey)]): Gen[
+    (ScriptSignature, SPK, Seq[ECPrivateKey])] =
     for {
       (scriptSig, scriptPubKey, privateKey) <- gen
     } yield (scriptSig, scriptPubKey, Seq(privateKey))

@@ -537,13 +537,11 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   /** Since witnesses are not run through the interpreter, replace
     * `OP_0`/`OP_1` with `ScriptNumber.zero`/`ScriptNumber.one` */
   def minimalIfOp(asm: Seq[ScriptToken]): Seq[ScriptToken] = {
-    if (asm == Nil) asm
-    else if (asm.last == OP_0) {
-      asm.dropRight(1) ++ Seq(ScriptNumber.zero)
-    } else if (asm.last == OP_1) {
-      asm.dropRight(1) ++ Seq(ScriptNumber.one)
-    } else asm
-
+    asm.map {
+      case OP_0               => ScriptNumber.zero
+      case OP_1               => ScriptNumber.one
+      case token: ScriptToken => token
+    }
   }
 
   /** Replaces the [[org.bitcoins.core.script.constant.OP_0 OP_0]] dummy for

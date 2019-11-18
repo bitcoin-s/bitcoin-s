@@ -67,41 +67,30 @@ sealed abstract class UTXOSpendingInfo {
   * If you over-specify a path, such as giving a condition where none is needed,
   * then the remaining over-specified path will be ignored.
   *
-  * Note that we do not yet support nested conditionals.
-  *
   * For example, if you wanted to spend a ConditionalScriptPubKey(P2PK1, P2PK2)
   * (which looks like OP_IF <P2PK1> OP_ELSE <P2PK2> OP_ENDIF) with the P2PK1 case,
-  * then you would construct a ConditionalSpendingInfo using ConditionTrue as your
-  * ConditionalPath. Otherwise if you wanted to use P2PK2 you would use ConditionFalse.
+  * then you would construct a ConditionalSpendingInfo using nonNestedTrue as your
+  * ConditionalPath. Otherwise if you wanted to use P2PK2 you would use nonNestedFalse.
   */
 sealed trait ConditionalPath
 
 object ConditionalPath {
   case object NoConditionsLeft extends ConditionalPath
-  case object ConditionTrue extends ConditionalPath
-  case object ConditionFalse extends ConditionalPath
+  case class ConditionTrue(nextCondition: ConditionalPath)
+      extends ConditionalPath
+  case class ConditionFalse(nextCondition: ConditionalPath)
+      extends ConditionalPath
+
+  val nonNestedTrue: ConditionalPath = ConditionTrue(NoConditionsLeft)
+  val nonNestedFalse: ConditionalPath = ConditionFalse(NoConditionsLeft)
 }
 
 sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
 
   protected def isValidScriptWitness(
       spk: WitnessScriptPubKeyV0,
-      scriptWitness: ScriptWitnessV0): Boolean = {
-    spk match {
-      case p2wpkh: P2WPKHWitnessSPKV0 =>
-        scriptWitness match {
-          case witness: P2WPKHWitnessV0 =>
-            CryptoUtil.sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash
-          case _: ScriptWitnessV0 => false
-        }
-      case p2wsh: P2WSHWitnessSPKV0 =>
-        scriptWitness match {
-          case witness: P2WSHWitnessV0 =>
-            CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
-          case _: ScriptWitnessV0 => false
-        }
-    }
-  }
+      scriptWitness: ScriptWitnessV0): Boolean =
+    BitcoinUTXOSpendingInfo.isValidScriptWitness(spk, scriptWitness)
 }
 
 object BitcoinUTXOSpendingInfo {
@@ -233,6 +222,25 @@ object BitcoinUTXOSpendingInfo {
          info.hashType,
          info.conditionalPath)
   }
+
+  private[utxo] def isValidScriptWitness(
+      spk: WitnessScriptPubKeyV0,
+      scriptWitness: ScriptWitnessV0): Boolean = {
+    spk match {
+      case p2wpkh: P2WPKHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WPKHWitnessV0 =>
+            CryptoUtil.sha256Hash160(witness.pubKey.bytes) == p2wpkh.pubKeyHash
+          case _: ScriptWitnessV0 => false
+        }
+      case p2wsh: P2WSHWitnessSPKV0 =>
+        scriptWitness match {
+          case witness: P2WSHWitnessV0 =>
+            CryptoUtil.sha256(witness.redeemScript.asmBytes) == p2wsh.scriptHash
+          case _: ScriptWitnessV0 => false
+        }
+    }
+  }
 }
 
 /** This represents the information needed to be spend scripts like
@@ -284,15 +292,27 @@ object RawScriptUTXOSpendingInfo {
                                 signers.toVector,
                                 hashType,
                                 conditionalPath)
+      case EmptyScriptPubKey => EmptySpendingInfo(outPoint, amount, hashType)
       case _: P2SHScriptPubKey =>
         throw new IllegalArgumentException(
           "RawScriptUTXOSpendingInfo cannot contain a P2SH SPK")
-      case _: NonStandardScriptPubKey | _: WitnessCommitment |
-          EmptyScriptPubKey =>
+      case _: NonStandardScriptPubKey | _: WitnessCommitment =>
         throw new UnsupportedOperationException(
           s"Currently unsupported ScriptPubKey $scriptPubKey")
     }
   }
+}
+
+/** For spending EmptyScriptPubKeys in tests. Probably should not be used in real life */
+case class EmptySpendingInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    hashType: HashType)
+    extends RawScriptUTXOSpendingInfo {
+  override def scriptPubKey: EmptyScriptPubKey.type = EmptyScriptPubKey
+  override def signers: Seq[Sign] = Vector.empty
+  override def conditionalPath: ConditionalPath =
+    ConditionalPath.NoConditionsLeft
 }
 
 case class P2PKSpendingInfo(
@@ -352,15 +372,16 @@ case class ConditionalSpendingInfo(
   require(conditionalPath != ConditionalPath.NoConditionsLeft,
           "Must specify True or False")
 
-  val condition: Boolean = conditionalPath match {
-    case ConditionalPath.ConditionTrue =>
-      true
-    case ConditionalPath.ConditionFalse =>
-      false
-    case ConditionalPath.NoConditionsLeft =>
-      throw new IllegalStateException(
-        "This should be covered by invariant above")
-  }
+  val (condition: Boolean, nextConditionalPath: ConditionalPath) =
+    conditionalPath match {
+      case ConditionalPath.ConditionTrue(nextCondition) =>
+        (true, nextCondition)
+      case ConditionalPath.ConditionFalse(nextCondition) =>
+        (false, nextCondition)
+      case ConditionalPath.NoConditionsLeft =>
+        throw new IllegalStateException(
+          "This should be covered by invariant above")
+    }
 
   val nestedSpendingInfo: RawScriptUTXOSpendingInfo = {
     val nestedSPK = if (condition) {
@@ -374,7 +395,7 @@ case class ConditionalSpendingInfo(
                               nestedSPK,
                               signers,
                               hashType,
-                              ConditionalPath.NoConditionsLeft)
+                              nextConditionalPath)
   }
 }
 

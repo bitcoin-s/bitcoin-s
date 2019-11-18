@@ -22,6 +22,7 @@ import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalSpendingInfo,
+  EmptySpendingInfo,
   LockTimeSpendingInfo,
   MultiSignatureSpendingInfo,
   P2PKHSpendingInfo,
@@ -442,7 +443,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                  currentLockTime)
           case _: P2WPKHV0SpendingInfo |
               _: UnassignedSegwitNativeUTXOSpendingInfo | _: P2PKSpendingInfo |
-              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo =>
+              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo |
+              _: EmptySpendingInfo =>
             // none of these scripts affect the locktime of a tx
             loop(newRemaining, currentLockTime)
         }
@@ -484,7 +486,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
             loop(conditional.nestedSpendingInfo +: newRemaining, accum)
           case _: P2WPKHV0SpendingInfo |
               _: UnassignedSegwitNativeUTXOSpendingInfo | _: P2PKSpendingInfo |
-              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo =>
+              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo |
+              _: EmptySpendingInfo =>
             //none of these script types affect the sequence number of a tx
             //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
             //see BIP125 for more information
