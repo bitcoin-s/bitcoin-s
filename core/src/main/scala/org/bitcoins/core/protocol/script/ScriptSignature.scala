@@ -429,6 +429,7 @@ object CSVScriptSignature extends ScriptFactory[CSVScriptSignature] {
   }
 }
 
+/** ScriptSignature for both OP_IF and OP_NOTIF ScriptPubKeys */
 sealed trait ConditionalScriptSignature extends ScriptSignature {
   require(ConditionalScriptSignature.isValidConditionalScriptSig(asm),
           "ConditionalScriptSignature must end in true or false")
