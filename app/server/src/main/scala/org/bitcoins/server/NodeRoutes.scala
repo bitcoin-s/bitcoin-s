@@ -1,10 +1,10 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
-import org.bitcoins.node.{NeutrinoNode, Node}
+import org.bitcoins.node.Node
 
 import scala.util.{Failure, Success}
 
@@ -24,16 +24,9 @@ case class NodeRoutes(node: Node)(implicit system: ActorSystem)
           reject(ValidationRejection("failure", Some(exception)))
         case Success(Rescan(addresses, startBlock, endBlock)) =>
           complete {
-            node match {
-              case neutrinoNode: NeutrinoNode =>
-                neutrinoNode
-                  .rescan(addresses.map(_.scriptPubKey), startBlock, endBlock)
-                  .map { _ =>
-                    Server.httpSuccess("ok")
-                  }
-              case _: Node =>
-                Server.httpSuccess("ok")
-            }
+            node
+              .rescan(addresses.map(_.scriptPubKey), startBlock, endBlock)
+              .map(_ => Server.httpSuccess("ok"))
           }
       }
   }

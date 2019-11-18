@@ -246,4 +246,11 @@ object Deps {
     Test.scalaTest,
     Test.logback
   )
+
+  val walletServerTest = List(
+    Test.akkaHttp,
+    Test.akkaStream,
+    Test.akkaTestkit
+  )
+
 }

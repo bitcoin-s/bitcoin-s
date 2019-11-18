@@ -1,5 +1,9 @@
 package org.bitcoins.core.protocol
 
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.temporal.{ChronoField, TemporalAccessor}
+
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 
@@ -22,19 +26,32 @@ object BlockStamp {
     override def mkString: String = height.toString
   }
   case class BlockTime(time: UInt32) extends BlockStamp {
-    // TODO implement me
-    override def mkString: String = ???
+    override def mkString: String = {
+      val instant = Instant.ofEpochSecond(time.toLong)
+      DateTimeFormatter.ISO_INSTANT.format(instant)
+    }
+  }
+
+  object BlockTime {
+
+    def apply(temporalAccessor: TemporalAccessor): BlockTime = {
+      val seconds = temporalAccessor.getLong(ChronoField.INSTANT_SECONDS)
+      val time = UInt32(seconds)
+      new BlockTime(time)
+    }
+
   }
 
   def fromString(s: String): Try[BlockStamp] = {
-    val blockHeight = Try(s.toInt).map(BlockHeight(_))
-
     lazy val blockHash = Try(DoubleSha256DigestBE.fromHex(s)).map(BlockHash(_))
+
+    lazy val blockHeight = Try(s.toInt).map(BlockHeight(_))
+
+    lazy val blockTime =
+      Try(DateTimeFormatter.ISO_INSTANT.parse(s)).map(BlockTime(_))
 
     lazy val error = Failure(InvalidBlockStamp(s))
 
-    // TODO implement BlockTime parser
-
-    blockHeight orElse blockHash orElse error
+    blockHash orElse blockHeight orElse blockTime orElse error
   }
 }

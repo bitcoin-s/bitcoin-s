@@ -10,6 +10,8 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.p2p.NetworkPayload
+import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
@@ -46,7 +48,7 @@ trait Node extends P2PLogger {
 
   val callbacks: SpvNodeCallbacks
 
-  val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
+  lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
@@ -63,7 +65,7 @@ trait Node extends P2PLogger {
     * object. Internally in [[org.bitcoins.node.networking.P2PClient p2p client]] you will see that
     * the [[org.bitcoins.chain.api.ChainApi chain api]] is updated inside of the p2p client
     * */
-  val clientF: Future[P2PClient] = {
+  lazy val clientF: Future[P2PClient] = {
     for {
       chainApi <- chainApiFromDb()
     } yield {
@@ -78,7 +80,7 @@ trait Node extends P2PLogger {
     }
   }
 
-  val peerMsgSenderF: Future[PeerMessageSender] = {
+  lazy val peerMsgSenderF: Future[PeerMessageSender] = {
     clientF.map { client =>
       PeerMessageSender(client)
     }
@@ -99,6 +101,7 @@ trait Node extends P2PLogger {
 
   /** Checks if we are fully initialized with our peer and have executed the handshake
     * This means we can now send arbitrary messages to our peer
+    *
     * @return
     */
   def isInitialized: Future[Boolean] = peerMsgSenderF.flatMap(_.isInitialized)
@@ -162,6 +165,7 @@ trait Node extends P2PLogger {
     * If our local best block hash is the same as our peers
     * we will not sync, otherwise we will keep syncing
     * until our best block hashes match up
+    *
     * @return
     */
   def sync(): Future[Unit] = {
@@ -193,4 +197,8 @@ trait Node extends P2PLogger {
     peerMsgSenderF.flatMap(_.sendInventoryMessage(transaction))
   }
 
+  def rescan(
+      scriptPubKeysToWatch: Vector[ScriptPubKey],
+      startOpt: Option[BlockStamp] = None,
+      endOpt: Option[BlockStamp] = None): Future[Unit]
 }

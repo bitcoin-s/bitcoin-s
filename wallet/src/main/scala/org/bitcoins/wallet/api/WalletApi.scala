@@ -1,21 +1,19 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.HDUtil
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.hd.AddressType
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * API for the wallet project.
@@ -118,8 +116,7 @@ trait LockedWalletApi extends WalletApi {
   def getAddressInfo(address: BitcoinAddress): Future[Option[AddressInfo]]
 
   /** Generates a new change address */
-  protected[wallet] def getNewChangeAddress(
-      account: AccountDb): Future[BitcoinAddress]
+  protected def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
 
   /** Generates a new change address for the default account */
   final protected[wallet] def getNewChangeAddress(): Future[BitcoinAddress] = {
@@ -134,12 +131,12 @@ trait LockedWalletApi extends WalletApi {
     * Fetches the default account from the DB
     * @return Future[AccountDb]
     */
-  protected[wallet] def getDefaultAccount(): Future[AccountDb]
+  protected def getDefaultAccount(): Future[AccountDb]
 
   /** Fetches the default account for the given address/account kind
     * @param addressType
     * */
-  protected[wallet] def getDefaultAccountForType(
+  protected def getDefaultAccountForType(
       addressType: AddressType): Future[AccountDb]
 
   /**

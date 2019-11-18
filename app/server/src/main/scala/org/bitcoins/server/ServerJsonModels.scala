@@ -1,13 +1,11 @@
 package org.bitcoins.server
 
-import upickle.default._
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import ujson.{Null, Value}
+import upickle.default._
 
-import scala.util.Failure
-import scala.util.Try
-import scala.util.Success
+import scala.util.{Failure, Try}
 
 // TODO ID?
 case class ServerCommand(method: String, params: ujson.Arr)
@@ -46,8 +44,7 @@ object Rescan {
           Rescan(addresses = addresses, startBlock = start, endBlock = end)
         }
       case Nil =>
-        Failure(
-          new IllegalArgumentException("Missing address and amount argument"))
+        Failure(new IllegalArgumentException("Missing addresses"))
 
       case other =>
         Failure(

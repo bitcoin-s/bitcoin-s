@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait ChainApi {
 
-  implicit private[chain] val chainConfig: ChainAppConfig
+  implicit val chainConfig: ChainAppConfig
 
   /**
     * Adds a block header to our chain project
