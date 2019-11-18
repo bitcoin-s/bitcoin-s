@@ -778,7 +778,7 @@ object MultiSignatureWithTimeoutScriptPubKey
       override val asm: Vector[ScriptToken])
       extends MultiSignatureWithTimeoutScriptPubKey {
     override def toString: String =
-      s"IfConditionalScriptPubKey($trueSPK, $falseSPK)"
+      s"MultiSignatureWithTimeoutScriptPubKey($trueSPK, $falseSPK)"
   }
 
   override def fromAsm(
@@ -787,7 +787,8 @@ object MultiSignatureWithTimeoutScriptPubKey
       asm = asm.toVector,
       constructor = MultiSignatureWithTimeoutScriptPubKeyImpl.apply,
       invariant = isMultiSignatureWithTimeoutScriptPubKey,
-      errorMsg = "Given asm was not a IfConditionalScriptPubKey, got: " + asm
+      errorMsg =
+        s"Given asm was not a MultiSignatureWithTimeoutScriptPubKey, got: $asm"
     )
   }
 
