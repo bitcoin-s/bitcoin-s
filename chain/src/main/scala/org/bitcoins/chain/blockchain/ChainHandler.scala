@@ -33,7 +33,7 @@ case class ChainHandler(
     filterDAO: CompactFilterDAO,
     blockchains: Vector[Blockchain],
     blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
-    implicit private[chain] val chainConfig: ChainAppConfig)
+    implicit val chainConfig: ChainAppConfig)
     extends ChainApi
     with ChainVerificationLogger {
 

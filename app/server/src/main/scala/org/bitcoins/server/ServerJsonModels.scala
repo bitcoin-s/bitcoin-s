@@ -49,7 +49,7 @@ object Rescan {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 
