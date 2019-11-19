@@ -92,8 +92,7 @@ trait LockedWalletApi extends WalletApi {
     *  https://github.com/bitcoin-s/bitcoin-s/issues/628
     *  @param addressType
     */
-  protected[wallet] def getNewAddress(
-      addressType: AddressType): Future[BitcoinAddress]
+  def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
 
   /**
     * Gets a new external address from the default account.
@@ -117,7 +116,8 @@ trait LockedWalletApi extends WalletApi {
   def getAddressInfo(address: BitcoinAddress): Future[Option[AddressInfo]]
 
   /** Generates a new change address */
-  protected def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
+  protected[wallet] def getNewChangeAddress(
+      account: AccountDb): Future[BitcoinAddress]
 
   /** Generates a new change address for the default account */
   final protected[wallet] def getNewChangeAddress(): Future[BitcoinAddress] = {

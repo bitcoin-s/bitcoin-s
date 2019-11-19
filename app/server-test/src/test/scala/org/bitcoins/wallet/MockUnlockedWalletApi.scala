@@ -9,14 +9,11 @@ import scala.concurrent.Future
 
 /**
   * ScalaMock cannot stub traits with protected methods,
-  * so we need to stub the protected methods manually.
+  * so we need to stub them manually.
   */
 abstract class MockUnlockedWalletApi extends UnlockedWalletApi {
 
-  override protected[wallet] def getNewAddress(
-      addressType: AddressType): Future[BitcoinAddress] = stub
-
-  override protected def getNewChangeAddress(
+  override protected[wallet] def getNewChangeAddress(
       account: AccountDb): Future[BitcoinAddress] = stub
 
   override protected[wallet] def getDefaultAccount(): Future[AccountDb] = stub

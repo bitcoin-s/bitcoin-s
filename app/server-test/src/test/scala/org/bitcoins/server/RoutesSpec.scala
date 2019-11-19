@@ -85,7 +85,7 @@ class RoutesSpec
     }
 
     "return a new address" in {
-      (mockWalletApi.getNewAddress _)
+      (mockWalletApi.getNewAddress: () => Future[BitcoinAddress])
         .expects()
         .returning(Future.successful(testAddress))
 

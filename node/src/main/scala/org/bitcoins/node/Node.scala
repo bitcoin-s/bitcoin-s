@@ -1,7 +1,6 @@
 package org.bitcoins.node
 
 import akka.actor.ActorSystem
-import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
@@ -55,7 +54,7 @@ trait Node extends P2PLogger {
     * our [[org.bitcoins.chain.blockchain.Blockchain Blockchain]]
     * */
   def chainApiFromDb()(
-      implicit executionContext: ExecutionContext): Future[ChainApi] = {
+      implicit executionContext: ExecutionContext): Future[ChainHandler] = {
     ChainHandler.fromDatabase(BlockHeaderDAO(),
                               CompactFilterHeaderDAO(),
                               CompactFilterDAO())
