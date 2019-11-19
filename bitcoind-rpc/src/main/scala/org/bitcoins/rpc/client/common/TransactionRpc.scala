@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
+import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.RpcOpts.{AddressType, FeeEstimationMode}
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
@@ -143,14 +144,22 @@ trait TransactionRpc { self: Client =>
         case (addr, curr) => addr -> Bitcoins(curr.satoshis)
       }
     }
-    bitcoindCall[DoubleSha256DigestBE](
-      "sendmany",
-      List(JsString(""),
-           jsonOutputs,
-           JsNumber(minconf),
-           JsString(comment),
-           Json.toJson(subtractFeeFrom))
-    )
+
+    val params = self.version match {
+      case V19 | Experimental | Unknown =>
+        List(JsString(""),
+             jsonOutputs,
+             JsString(comment),
+             Json.toJson(subtractFeeFrom))
+      case V16 | V17 | V18 =>
+        List(JsString(""),
+             jsonOutputs,
+             JsNumber(minconf),
+             JsString(comment),
+             Json.toJson(subtractFeeFrom))
+    }
+
+    bitcoindCall[DoubleSha256DigestBE]("sendmany", params)
   }
 
   def sendToAddress(
