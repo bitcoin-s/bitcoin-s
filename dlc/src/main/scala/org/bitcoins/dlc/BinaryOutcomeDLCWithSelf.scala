@@ -87,14 +87,13 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def createFundingTransaction: Future[Transaction] = {
-    println("CHECKPOINT 0")
     val output: TransactionOutput =
       TransactionOutput(totalInput + (Satoshis.one * 350), fundingSPK)
 
     val outputs: Vector[TransactionOutput] = Vector(output)
     val txBuilderF: Future[BitcoinTxBuilder] =
       BitcoinTxBuilder(outputs, fundingUtxos, feeRate, changeSPK, network)
-    println("CHECKPOINT 1")
+
     txBuilderF.flatMap(_.sign)
   }
 
@@ -110,11 +109,11 @@ case class BinaryOutcomeDLCWithSelf(
     MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
   }
 
-  def createCETLocal(sigPubKey: ECPublicKey,
-                     fundingSpendingInfo: BitcoinUTXOSpendingInfo,
-                     localPayout: CurrencyUnit,
-                     remotePayout: CurrencyUnit): Future[Transaction] = {
-    println("CHECKPOINT 4")
+  def createCETLocal(
+      sigPubKey: ECPublicKey,
+      fundingSpendingInfo: BitcoinUTXOSpendingInfo,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit): Future[Transaction] = {
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
       pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
@@ -138,14 +137,14 @@ case class BinaryOutcomeDLCWithSelf(
                        changeSPK,
                        network)
 
-    println("CHECKPOINT 5")
     txBuilderF.flatMap(_.sign)
   }
 
-  def createCETRemote(sigPubKey: ECPublicKey,
-                      fundingSpendingInfo: BitcoinUTXOSpendingInfo,
-                      localPayout: CurrencyUnit,
-                      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETRemote(
+      sigPubKey: ECPublicKey,
+      fundingSpendingInfo: BitcoinUTXOSpendingInfo,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit): Future[Transaction] = {
 
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
@@ -216,7 +215,6 @@ case class BinaryOutcomeDLCWithSelf(
   def executeDLC(
       oracleSigF: Future[SchnorrDigitalSignature]): Future[Transaction] = {
     createFundingTransaction.flatMap { fundingTx =>
-      println("CHECKPOINT 2")
       println(s"Funding Transaction: ${fundingTx.hex}\n")
 
       val fundingTxId = fundingTx.txIdBE
@@ -230,7 +228,6 @@ case class BinaryOutcomeDLCWithSelf(
         hashType = HashType.sigHashAll
       )
 
-      println("CHECKPOINT 3")
       val cetWinLocalF = createCETWinLocal(fundingSpendingInfo)
       val cetLoseLocalF = createCETLoseLocal(fundingSpendingInfo)
       val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)

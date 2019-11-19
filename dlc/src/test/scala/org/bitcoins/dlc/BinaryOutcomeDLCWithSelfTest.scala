@@ -55,7 +55,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
 
     val remoteFundingUtxos = Vector(
       P2PKHSpendingInfo(
-        outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+        outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.one),
         amount = remoteInput + (Satoshis.one * 375),
         scriptPubKey = P2PKHScriptPubKey(inputPubKeyRemote),
         signer = inputPrivKeyRemote,
@@ -77,28 +77,28 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val oracleSig = Schnorr.sign(outcomeWinHash.bytes, oraclePrivKey)
 
     val dlc = BinaryOutcomeDLCWithSelf(
-      outcomeWin,
-      outcomeLose,
-      oraclePubKey,
-      preCommittedR,
-      fundingLocalPrivKey,
-      fundingRemotePrivKey,
-      cetLocalPrivKey,
-      cetRemotePrivKey,
-      finalLocalPrivKey,
-      finalRemotePrivKey,
-      localInput,
-      remoteInput,
-      localFundingUtxos,
-      remoteFundingUtxos,
-      localWinPayout,
-      remoteWinPayout,
-      localLosePayout,
-      remoteLosePayout,
-      timeout,
-      feeRate,
-      changeSPK,
-      network
+      outcomeWin = outcomeWin,
+      outcomeLose = outcomeLose,
+      oraclePubKey = oraclePubKey,
+      preCommittedR = preCommittedR,
+      fundingLocalPrivKey = fundingLocalPrivKey,
+      fundingRemotePrivKey = fundingRemotePrivKey,
+      cetLocalPrivKey = cetLocalPrivKey,
+      cetRemotePrivKey = cetRemotePrivKey,
+      finalLocalPrivKey = finalLocalPrivKey,
+      finalRemotePrivKey = finalRemotePrivKey,
+      localInput = localInput,
+      remoteInput = remoteInput,
+      localFundingUtxos = localFundingUtxos,
+      remoteFundingUtxos = remoteFundingUtxos,
+      localWinPayout = localWinPayout,
+      remoteWinPayout = remoteWinPayout,
+      localLosePayout = localLosePayout,
+      remoteLosePayout = remoteLosePayout,
+      timeout = timeout,
+      feeRate = feeRate,
+      changeSPK = changeSPK,
+      network = network
     )
 
     dlc.executeDLC(Future.successful(oracleSig)).map(_ => succeed)
