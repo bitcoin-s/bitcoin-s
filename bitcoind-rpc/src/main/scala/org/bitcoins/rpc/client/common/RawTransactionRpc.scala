@@ -90,7 +90,7 @@ trait RawTransactionRpc { self: Client =>
   }
 
   /**
-    * @param maxfeerate On versions before 0.19 set to 0 if you want to enable allowhighfees
+    * @param maxfeerate Set to 0 if you want to enable allowhighfees
     */
   def sendRawTransaction(
       transaction: Transaction,
