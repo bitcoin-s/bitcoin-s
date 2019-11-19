@@ -30,14 +30,14 @@ private[wallet] trait AccountHandling { self: LockedWallet =>
           s"purpose field and ${DEFAULT_HD_COIN.coinType.toInt} coin field"))
 
   /** @inheritdoc */
-  override protected[wallet] def getDefaultAccount(): Future[AccountDb] = {
+  override def getDefaultAccount(): Future[AccountDb] = {
     for {
       account <- accountDAO.read((DEFAULT_HD_COIN, 0))
     } yield getOrThrowAccount(account)
   }
 
   /** @inheritdoc */
-  override protected[wallet] def getDefaultAccountForType(
+  override def getDefaultAccountForType(
       addressType: AddressType): Future[AccountDb] = {
     val hdCoin = addressType match {
       case Legacy       => HDCoin(HDPurposes.Legacy, DEFAULT_HD_COIN_TYPE)

@@ -131,13 +131,12 @@ trait LockedWalletApi extends WalletApi {
     * Fetches the default account from the DB
     * @return Future[AccountDb]
     */
-  protected def getDefaultAccount(): Future[AccountDb]
+  def getDefaultAccount(): Future[AccountDb]
 
   /** Fetches the default account for the given address/account kind
     * @param addressType
     * */
-  protected def getDefaultAccountForType(
-      addressType: AddressType): Future[AccountDb]
+  def getDefaultAccountForType(addressType: AddressType): Future[AccountDb]
 
   /**
     * Unlocks the wallet with the provided passphrase,

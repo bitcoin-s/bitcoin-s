@@ -93,9 +93,9 @@ object MockObjects {
     override protected def getNewChangeAddress(
         account: AccountDb): Future[BitcoinAddress] = ???
 
-    override protected def getDefaultAccount(): Future[AccountDb] = ???
+    override def getDefaultAccount(): Future[AccountDb] = ???
 
-    override protected def getDefaultAccountForType(
+    override def getDefaultAccountForType(
         addressType: AddressType): Future[AccountDb] = ???
 
     override def unlock(passphrase: AesPassword): UnlockWalletResult = ???
