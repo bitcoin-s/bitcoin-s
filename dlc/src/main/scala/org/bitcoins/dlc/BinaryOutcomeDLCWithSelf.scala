@@ -7,7 +7,7 @@ import org.bitcoins.core.crypto.{
   Schnorr,
   SchnorrDigitalSignature
 }
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
@@ -86,15 +86,33 @@ case class BinaryOutcomeDLCWithSelf(
                                Vector(fundingLocalPubKey, fundingRemotePubKey))
   }
 
+  /** Subtracts the estimated fee from the last output's value */
+  private def subtractFeeAndSign(
+      txBuilder: BitcoinTxBuilder): Future[Transaction] = {
+    txBuilder.unsignedTx.flatMap { tx =>
+      val fee = feeRate.calc(tx)
+      val output = txBuilder.destinations.last
+      val newOutput = TransactionOutput(output.value - fee, output.scriptPubKey)
+      val newBuilder =
+        BitcoinTxBuilder(txBuilder.destinations.dropRight(1).:+(newOutput),
+                         txBuilder.utxoMap,
+                         feeRate,
+                         changeSPK,
+                         network)
+
+      newBuilder.flatMap(_.sign)
+    }
+  }
+
   def createFundingTransaction: Future[Transaction] = {
     val output: TransactionOutput =
-      TransactionOutput(totalInput + (Satoshis.one * 350), fundingSPK)
+      TransactionOutput(totalInput, fundingSPK)
 
     val outputs: Vector[TransactionOutput] = Vector(output)
     val txBuilderF: Future[BitcoinTxBuilder] =
       BitcoinTxBuilder(outputs, fundingUtxos, feeRate, changeSPK, network)
 
-    txBuilderF.flatMap(_.sign)
+    txBuilderF.flatMap(subtractFeeAndSign)
   }
 
   def toLocalSPK(
@@ -125,8 +143,9 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocal: TransactionOutput =
       TransactionOutput(localPayout, toLocalSPK)
+    val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
-      TransactionOutput(remotePayout,
+      TransactionOutput(remotePayout - feeSoFar,
                         P2PKHScriptPubKey(cetRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
@@ -137,7 +156,7 @@ case class BinaryOutcomeDLCWithSelf(
                        changeSPK,
                        network)
 
-    txBuilderF.flatMap(_.sign)
+    txBuilderF.flatMap(subtractFeeAndSign)
   }
 
   def createCETRemote(
@@ -157,8 +176,9 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocal: TransactionOutput =
       TransactionOutput(remotePayout, toLocalSPK)
+    val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
-      TransactionOutput(localPayout,
+      TransactionOutput(localPayout - feeSoFar,
                         P2PKHScriptPubKey(cetLocalPrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
@@ -169,7 +189,7 @@ case class BinaryOutcomeDLCWithSelf(
                        changeSPK,
                        network)
 
-    txBuilderF.flatMap(_.sign)
+    txBuilderF.flatMap(subtractFeeAndSign)
   }
 
   def createCETWinLocal(
@@ -264,7 +284,7 @@ case class BinaryOutcomeDLCWithSelf(
           val txBuilder = BitcoinTxBuilder(
             Vector(
               TransactionOutput(
-                localWinPayout - (Satoshis.one * 232),
+                localWinPayout,
                 P2PKHScriptPubKey(finalLocalPrivKey.publicKey))),
             Vector(cetSpendingInfo),
             feeRate,
@@ -272,7 +292,7 @@ case class BinaryOutcomeDLCWithSelf(
             network
           )
 
-          val spendingTxF = txBuilder.flatMap(_.sign)
+          val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
 
           spendingTxF.foreach(tx => println(s"Closing Tx: ${tx.hex}"))
 
