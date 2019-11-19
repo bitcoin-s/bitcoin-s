@@ -212,8 +212,8 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def executeDLC(
-      oracleSigF: Future[SchnorrDigitalSignature]): Future[Transaction] = {
+  def executeDLC(oracleSigF: Future[SchnorrDigitalSignature]): Future[
+    (Transaction, BitcoinUTXOSpendingInfo)] = {
     createFundingTransaction.flatMap { fundingTx =>
       println(s"Funding Transaction: ${fundingTx.hex}\n")
 
@@ -278,7 +278,7 @@ case class BinaryOutcomeDLCWithSelf(
 
           // Publish tx
 
-          spendingTxF
+          spendingTxF.map(tx => (tx, cetSpendingInfo))
         }
       }
     }

@@ -7,7 +7,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2PKHSpendingInfo
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -101,6 +101,11 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       network = network
     )
 
-    dlc.executeDLC(Future.successful(oracleSig)).map(_ => succeed)
+    dlc.executeDLC(Future.successful(oracleSig)).map {
+      case (closingTx, cetSpendingInfo) =>
+        assert(
+          BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
+        )
+    }
   }
 }
