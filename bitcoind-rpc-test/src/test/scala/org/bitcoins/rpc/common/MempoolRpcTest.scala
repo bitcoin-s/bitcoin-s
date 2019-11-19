@@ -5,11 +5,9 @@ import java.io.File
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -31,7 +29,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
 
         val instanceWithoutBroadcast =
           BitcoindInstance.fromConfig(configNoBroadcast,
-                                      BitcoindRpcTestUtil.newestBitcoindBinary)
+                                      BitcoindRpcTestUtil.getBinary(V18))
 
         val clientWithoutBroadcast =
           BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
@@ -73,7 +71,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
     } yield {
       val txid = mempool.keySet.head
       assert(txid == transaction.txid)
-      assert(mempool(txid).vsize > 0)
+      assert(mempool(txid).size > 0)
     }
   }
 

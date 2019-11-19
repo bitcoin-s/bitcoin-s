@@ -819,9 +819,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
             v16.signRawTransaction(transaction, utxoDeps)
           case (_, Success(v17), _, _) =>
             v17.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, _, Success(v18),_) =>
+          case (_, _, Success(v18), _) =>
             v18.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, _,_,Success(v19)) =>
+          case (_, _, _, Success(v19)) =>
             v19.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
