@@ -1,7 +1,12 @@
 package org.bitcoins.dlc
 
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey, Schnorr}
+import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  Schnorr,
+  SchnorrNonce
+}
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
@@ -27,7 +32,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip
     val oraclePrivKey = ECPrivateKey.freshPrivateKey
     val oraclePubKey = oraclePrivKey.publicKey
-    val preCommittedK = ECPrivateKey.freshPrivateKey
+    val preCommittedK = SchnorrNonce.freshNonce
     val preCommittedR = preCommittedK.publicKey
     val fundingLocalPrivKey = ECPrivateKey.freshPrivateKey
     val fundingRemotePrivKey = ECPrivateKey.freshPrivateKey
@@ -74,7 +79,8 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val changeSPK = P2PKHScriptPubKey(changePubKey)
     val network = RegTest
 
-    val oracleSig = Schnorr.sign(outcomeWinHash.bytes, oraclePrivKey)
+    val oracleSig =
+      Schnorr.signWithNonce(outcomeWinHash.bytes, oraclePrivKey, preCommittedK)
 
     val dlc = BinaryOutcomeDLCWithSelf(
       outcomeWin = outcomeWin,
