@@ -89,6 +89,9 @@ trait RawTransactionRpc { self: Client =>
     bitcoindCall[Transaction]("getrawtransaction", params)
   }
 
+  /**
+    * @param maxfeerate On versions before 0.19 set to 0 if you want to enable allowhighfees
+    */
   def sendRawTransaction(
       transaction: Transaction,
       maxfeerate: Double = 0.10): Future[DoubleSha256DigestBE] = {
