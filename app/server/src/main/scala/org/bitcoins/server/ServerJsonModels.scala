@@ -1,8 +1,9 @@
 package org.bitcoins.server
 
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import ujson.{Null, Value}
+import ujson.{Null, Num, Str, Value}
 import upickle.default._
 
 import scala.util.{Failure, Try}
@@ -33,7 +34,13 @@ object Rescan {
     }
 
     def parseBlockStamp(value: Value): Option[BlockStamp] =
-      nullToOpt(value).map(js => BlockStamp.fromString(js.str).get)
+      nullToOpt(value).map {
+        case Str(value) => BlockStamp.fromString(value).get
+        case Num(value) =>
+          if (value >= Int.MinValue && value <= Int.MaxValue)
+            BlockHeight(value.toInt)
+          else throw Value.InvalidData(value, "Expected Int")
+      }
 
     jsArr.arr.toList match {
       case addrsJs :: startJs :: endJs :: Nil =>

@@ -92,7 +92,8 @@ trait LockedWalletApi extends WalletApi {
     *  https://github.com/bitcoin-s/bitcoin-s/issues/628
     *  @param addressType
     */
-  def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
+  protected[wallet] def getNewAddress(
+      addressType: AddressType): Future[BitcoinAddress]
 
   /**
     * Gets a new external address from the default account.
@@ -131,12 +132,13 @@ trait LockedWalletApi extends WalletApi {
     * Fetches the default account from the DB
     * @return Future[AccountDb]
     */
-  def getDefaultAccount(): Future[AccountDb]
+  protected[wallet] def getDefaultAccount(): Future[AccountDb]
 
   /** Fetches the default account for the given address/account kind
     * @param addressType
     * */
-  def getDefaultAccountForType(addressType: AddressType): Future[AccountDb]
+  protected[wallet] def getDefaultAccountForType(
+      addressType: AddressType): Future[AccountDb]
 
   /**
     * Unlocks the wallet with the provided passphrase,
