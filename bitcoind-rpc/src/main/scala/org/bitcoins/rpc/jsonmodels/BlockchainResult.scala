@@ -203,10 +203,10 @@ sealed trait GetMemPoolEntryResult extends BlockchainResult {
   def height: Int
   def descendantcount: Int
   def descendantsize: Int
-  def descendantfees: Bitcoins // Should be BitcoinFeeUnit
+  def descendantfees: BitcoinFeeUnit
   def ancestorcount: Int
   def ancestorsize: Int
-  def ancestorfees: Bitcoins // Should be BitcoinFeeUnit
+  def ancestorfees: BitcoinFeeUnit
   def depends: Option[Vector[DoubleSha256DigestBE]]
 }
 
@@ -218,10 +218,10 @@ case class GetMemPoolEntryResultPreV19(
     height: Int,
     descendantcount: Int,
     descendantsize: Int,
-    descendantfees: Bitcoins,
+    descendantfees: BitcoinFeeUnit,
     ancestorcount: Int,
     ancestorsize: Int,
-    ancestorfees: Bitcoins,
+    ancestorfees: BitcoinFeeUnit,
     depends: Option[Vector[DoubleSha256DigestBE]])
     extends GetMemPoolEntryResult
 
@@ -233,10 +233,10 @@ case class GetMemPoolEntryResultPostV19(
     height: Int,
     descendantcount: Int,
     descendantsize: Int,
-    descendantfees: Bitcoins,
+    descendantfees: BitcoinFeeUnit,
     ancestorcount: Int,
     ancestorsize: Int,
-    ancestorfees: Bitcoins,
+    ancestorfees: BitcoinFeeUnit,
     depends: Option[Vector[DoubleSha256DigestBE]])
     extends GetMemPoolEntryResult {
   override def size: Int = vsize
