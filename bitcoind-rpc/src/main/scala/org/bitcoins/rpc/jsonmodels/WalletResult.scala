@@ -200,7 +200,8 @@ case class UnspentOutput(
     amount: Bitcoins,
     confirmations: Int,
     spendable: Boolean,
-    solvable: Boolean)
+    solvable: Boolean,
+    reused: Option[Boolean])
     extends WalletResult
 
 case class AddressInfoResult(
