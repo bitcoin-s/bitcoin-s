@@ -67,11 +67,14 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
   it should "be able to set the wallet flag 'avoid_reuse'" in {
     for {
       (client, _) <- clientPairF
+      unspentPre <- client.listUnspent
       result <- client.setWalletFlag(WalletFlag.AvoidReuse, value = true)
+      unspentPost <- client.listUnspent
     } yield {
       assert(result.flag_name == "avoid_reuse")
       assert(result.flag_state)
-      // TODO: Add test cases for when updated RPCs are added
+      assert(unspentPre.forall(utxo => utxo.reused.isEmpty))
+      assert(unspentPost.forall(utxo => utxo.reused.isDefined))
     }
   }
 }
