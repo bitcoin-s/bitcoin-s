@@ -3,7 +3,7 @@
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.4.0")
 
 // collect code coverage when executing tests
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
 
 // report code coverage to Coveralls
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
