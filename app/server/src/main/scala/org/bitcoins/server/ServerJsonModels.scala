@@ -37,9 +37,12 @@ object Rescan {
       nullToOpt(value).map {
         case Str(value) => BlockStamp.fromString(value).get
         case Num(value) =>
-          if (value >= Int.MinValue && value <= Int.MaxValue)
-            BlockHeight(value.toInt)
-          else throw Value.InvalidData(value, "Expected Int")
+          val int = value.toInt
+          if (int >= 0 && int <= Int.MaxValue)
+            BlockHeight(int)
+          else throw Value.InvalidData(value, "Expected a positive integer")
+        case _: Value =>
+          throw Value.InvalidData(value, "Expected a Num or a Str")
       }
 
     jsArr.arr.toList match {

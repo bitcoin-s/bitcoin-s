@@ -2,12 +2,19 @@ package org.bitcoins.server
 
 import java.time.{ZoneId, ZonedDateTime}
 
+import akka.http.scaladsl.model.ContentTypes._
+import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.BlockStamp.{BlockHash, BlockHeight, BlockTime}
+import org.bitcoins.core.protocol.BlockStamp.{
+  BlockHash,
+  BlockHeight,
+  BlockTime,
+  InvalidBlockStamp
+}
 import org.bitcoins.core.protocol.transaction.EmptyTransaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -15,6 +22,7 @@ import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
+import ujson.Value.InvalidData
 import ujson.{Arr, Null, Num, Str}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,6 +61,7 @@ class RoutesSpec
         chainRoutes.handleCommand(ServerCommand("getblockcount", Arr()))
 
       Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":1234567890,"error":null}"""
       }
     }
@@ -67,6 +76,7 @@ class RoutesSpec
         chainRoutes.handleCommand(ServerCommand("getbestblockhash", Arr()))
 
       Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
     }
@@ -80,6 +90,7 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getbalance", Arr()))
 
       Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":50,"error":null}"""
       }
     }
@@ -93,6 +104,7 @@ class RoutesSpec
         walletRoutes.handleCommand(ServerCommand("getnewaddress", Arr()))
 
       Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"""" + testAddressStr + """","error":null}"""
       }
     }
@@ -111,7 +123,8 @@ class RoutesSpec
       val route = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Num(100))))
 
-      Get() ~> route ~> check {
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
     }
@@ -121,6 +134,7 @@ class RoutesSpec
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
 
       Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"TODO implement getpeers","error":null}"""
       }
     }
@@ -134,7 +148,8 @@ class RoutesSpec
         nodeRoutes.handleCommand(
           ServerCommand("rescan", Arr(Arr(Str(testAddressStr)), Null, Null)))
 
-      Get() ~> route1 ~> check {
+      Post() ~> route1 ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
 
@@ -152,7 +167,8 @@ class RoutesSpec
             "rescan",
             Arr(Arr(Str(testAddressStr)), Str("2018-10-27T12:34:56Z"), Null)))
 
-      Get() ~> route2 ~> check {
+      Post() ~> route2 ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
 
@@ -169,7 +185,8 @@ class RoutesSpec
                             Null,
                             Str(DoubleSha256DigestBE.empty.hex))))
 
-      Get() ~> route3 ~> check {
+      Post() ~> route3 ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
 
@@ -185,9 +202,45 @@ class RoutesSpec
             "rescan",
             Arr(Arr(Str(testAddressStr)), Str("12345"), Num(67890))))
 
-      Get() ~> route4 ~> check {
+      Post() ~> route4 ~> check {
+        contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
+
+      val route5 =
+        nodeRoutes.handleCommand(
+          ServerCommand(
+            "rescan",
+            Arr(Arr(Str(testAddressStr)), Str("abcd"), Str("efgh"))))
+
+      Post() ~> route5 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidBlockStamp("abcd")))
+      }
+
+      val route6 =
+        nodeRoutes.handleCommand(
+          ServerCommand(
+            "rescan",
+            Arr(Arr(Str(testAddressStr)), Null, Str("2018-10-27T12:34:56"))))
+
+      Post() ~> route6 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidBlockStamp("2018-10-27T12:34:56")))
+      }
+
+      val route7 =
+        nodeRoutes.handleCommand(
+          ServerCommand("rescan", Arr(Arr(Str(testAddressStr)), Num(-1), Null)))
+
+      Post() ~> route7 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Num(-1), "Expected a positive integer")))
+      }
+
     }
 
   }
