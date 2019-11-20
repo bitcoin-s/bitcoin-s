@@ -3,7 +3,7 @@ package org.bitcoins.server
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import ujson.{Null, Num, Str, Value}
+import ujson.{Arr, Null, Num, Str, Value}
 import upickle.default._
 
 import scala.util.{Failure, Try}
@@ -20,17 +20,23 @@ case class Rescan(
     startBlock: Option[BlockStamp],
     endBlock: Option[BlockStamp])
 
-object Rescan {
+object Rescan extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[Rescan] = {
 
-    def parseAddresses(addrsJs: Value): Vector[BitcoinAddress] = {
-      addrsJs.arr.toVector.map(js => BitcoinAddress.fromStringExn(js.str))
+    def parseAddresses(value: Value): Vector[BitcoinAddress] = value match {
+      case Arr(arr) =>
+        if (arr.isEmpty)
+          throw Value.InvalidData(value, "Expected a non-empty address array")
+        else
+          arr.toVector.map(jsToBitcoinAddress)
+      case _: Value =>
+        throw Value.InvalidData(value, "Expected an Arr")
     }
 
     def nullToOpt(value: Value): Option[Value] = value match {
-      case Null => None
-      case _    => Some(value)
+      case Null     => None
+      case _: Value => Some(value)
     }
 
     def parseBlockStamp(value: Value): Option[BlockStamp] =
@@ -67,7 +73,7 @@ object Rescan {
 
 case class SendToAddress(address: BitcoinAddress, amount: Bitcoins)
 
-object SendToAddress {
+object SendToAddress extends ServerJsonModels {
 
   /// TODO do this in a more coherent fashion
   // custom akka-http directive?
@@ -75,7 +81,7 @@ object SendToAddress {
     jsArr.arr.toList match {
       case addrJs :: bitcoinsJs :: Nil =>
         Try {
-          val address = BitcoinAddress.fromStringExn(addrJs.str)
+          val address = jsToBitcoinAddress(addrJs)
           val bitcoins = Bitcoins(bitcoinsJs.num)
           SendToAddress(address, bitcoins)
         }
@@ -87,6 +93,19 @@ object SendToAddress {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+
+}
+
+trait ServerJsonModels {
+
+  def jsToBitcoinAddress(js: Value): BitcoinAddress = {
+    try {
+      BitcoinAddress.fromStringExn(js.str)
+    } catch {
+      case _: IllegalArgumentException =>
+        throw Value.InvalidData(js, "Expected a valid address")
     }
   }
 

@@ -110,6 +110,8 @@ class RoutesSpec
     }
 
     "send to an address" in {
+      // positive cases
+
       (mockWalletApi
         .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: FeeUnit))
         .expects(testAddress, Bitcoins(100), *)
@@ -127,6 +129,45 @@ class RoutesSpec
         contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
       }
+
+      // negative cases
+
+      val route1 = walletRoutes.handleCommand(
+        ServerCommand("sendtoaddress", Arr(Null, Null)))
+
+      Post() ~> route1 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Str")))
+      }
+
+      val route2 = walletRoutes.handleCommand(
+        ServerCommand("sendtoaddress", Arr("Null", Null)))
+
+      Post() ~> route2 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData("Null", "Expected a valid address")))
+      }
+
+      val route3 = walletRoutes.handleCommand(
+        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Null)))
+
+      Post() ~> route3 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Num")))
+      }
+
+      val route4 = walletRoutes.handleCommand(
+        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Str("abc"))))
+
+      Post() ~> route4 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData("abc", "Expected ujson.Num")))
+      }
+
     }
 
     "return the peer list" in {
@@ -140,6 +181,8 @@ class RoutesSpec
     }
 
     "run wallet rescan" in {
+      // positive cases
+
       (mockNode.rescan _)
         .expects(Vector(testAddress.scriptPubKey), None, None)
         .returning(FutureUtil.unit)
@@ -207,6 +250,8 @@ class RoutesSpec
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
 
+      // negative cases
+
       val route5 =
         nodeRoutes.handleCommand(
           ServerCommand(
@@ -239,6 +284,26 @@ class RoutesSpec
         rejection shouldEqual ValidationRejection(
           "failure",
           Some(InvalidData(Num(-1), "Expected a positive integer")))
+      }
+
+      val route8 =
+        nodeRoutes.handleCommand(
+          ServerCommand("rescan", Arr(Arr(), Null, Null)))
+
+      Post() ~> route8 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Arr(), "Expected a non-empty address array")))
+      }
+
+      val route9 =
+        nodeRoutes.handleCommand(
+          ServerCommand("rescan", Arr(Arr("abcdefgh"), Null, Null)))
+
+      Post() ~> route9 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData("abcdefgh", "Expected a valid address")))
       }
 
     }
