@@ -6,6 +6,13 @@ import org.bitcoins.rpc.client.common.{
   DescriptorRpc,
   RpcOpts
 }
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  PsbtRpc,
+  RpcOpts
+}
 import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.util.Try
@@ -29,8 +36,8 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
     implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
-    with V18PsbtRpc
     with DescriptorRpc
+    with PsbtRpc
     with V18AssortedRpc {
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V18
