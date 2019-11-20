@@ -5,14 +5,21 @@ import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.rpc.client.common.RpcOpts.WalletFlag
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion, RpcOpts}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  RpcOpts
+}
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.{GetBalancesResult, SetWalletFlagResult, SignRawTransactionResult}
+import org.bitcoins.rpc.jsonmodels.{
+  GetBalancesResult,
+  SetWalletFlagResult,
+  SignRawTransactionResult
+}
 import play.api.libs.json.Json
 import play.api.libs.json.JsString
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters._
-
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -35,14 +42,14 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
     * the Bitcoin Core wallet.
     */
   def signRawTransactionWithWallet(
-                                    transaction: Transaction,
-                                    utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
-                                    sigHash: HashType = HashType.sigHashAll
-                                  ): Future[SignRawTransactionResult] =
+      transaction: Transaction,
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
+      sigHash: HashType = HashType.sigHashAll
+  ): Future[SignRawTransactionResult] =
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithwallet",
-      List(JsString(transaction.hex),
-        Json.toJson(utxoDeps),
-        Json.toJson(sigHash)))
+                                           List(JsString(transaction.hex),
+                                                Json.toJson(utxoDeps),
+                                                Json.toJson(sigHash)))
 
   /**
     * $signRawTx
@@ -51,16 +58,16 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
     * manually.
     */
   def signRawTransactionWithKey(
-                                 transaction: Transaction,
-                                 keys: Vector[ECPrivateKey],
-                                 utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
-                                 sigHash: HashType = HashType.sigHashAll
-                               ): Future[SignRawTransactionResult] =
+      transaction: Transaction,
+      keys: Vector[ECPrivateKey],
+      utxoDeps: Vector[RpcOpts.SignRawTransactionOutputParameter] = Vector.empty,
+      sigHash: HashType = HashType.sigHashAll
+  ): Future[SignRawTransactionResult] =
     bitcoindCall[SignRawTransactionResult]("signrawtransactionwithkey",
-      List(JsString(transaction.hex),
-        Json.toJson(keys),
-        Json.toJson(utxoDeps),
-        Json.toJson(sigHash)))
+                                           List(JsString(transaction.hex),
+                                                Json.toJson(keys),
+                                                Json.toJson(utxoDeps),
+                                                Json.toJson(sigHash)))
 
   /**
     * Change the state of the given wallet flag for a wallet.

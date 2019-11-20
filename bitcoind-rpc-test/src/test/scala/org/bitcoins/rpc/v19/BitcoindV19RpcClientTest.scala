@@ -41,12 +41,17 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
           .filterNot(_.isCoinbase)
           .map(tx => client.getTransaction(tx.txIdBE)))
 
-      prevFilter <- client.getBlockFilter(block.blockHeader.previousBlockHashBE, FilterType.Basic)
+      prevFilter <- client.getBlockFilter(block.blockHeader.previousBlockHashBE,
+                                          FilterType.Basic)
     } yield {
       val pubKeys = txs.flatMap(_.hex.outputs.map(_.scriptPubKey)).toVector
       val filter = BlockFilter(block, pubKeys)
       assert(filter.hash == blockFilter.filter.hash)
-      assert(blockFilter.header == filter.getHeader(prevFilter.header.flip).hash.flip)
+      assert(
+        blockFilter.header == filter
+          .getHeader(prevFilter.header.flip)
+          .hash
+          .flip)
     }
   }
 

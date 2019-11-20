@@ -116,7 +116,7 @@ case class RescanBlockChainResult(start_height: Int, stop_height: Int)
 case class ReceivedAddress(
     involvesWatchonly: Option[Boolean],
     address: BitcoinAddress,
-    account: String,
+    account: Option[String],
     amount: Bitcoins,
     confirmations: Int,
     label: String,
