@@ -819,9 +819,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
             v16.signRawTransaction(transaction, utxoDeps)
           case (_, Success(v17), _, _) =>
             v17.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, _, Success(v18),_) =>
+          case (_, _, Success(v18), _) =>
             v18.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, _,_,Success(v19)) =>
+          case (_, _, _, Success(v19)) =>
             v19.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
@@ -863,8 +863,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       addr <- sender.getNewAddress
       _ <- sender.generateToAddress(100, addr)
       // Can't spend coinbase until depth 100
-      transactionHash <- sender.sendRawTransaction(signedtx.hex,
-                                                   allowHighFees = true)
+      transactionHash <- sender.sendRawTransaction(signedtx.hex, maxfeerate = 0)
       transaction <- sender.getTransaction(transactionHash)
     } yield transaction
   }
