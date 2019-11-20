@@ -32,6 +32,7 @@ import play.api.libs.json._
 
 import scala.util.{Failure, Success}
 import org.bitcoins.core.config._
+import org.bitcoins.core.p2p.ServiceIdentifier
 
 object JsonReaders {
 
@@ -541,6 +542,17 @@ object JsonReaders {
         case "regtest" => RegTest
         case "main"    => MainNet
         case "test"    => TestNet3
+      }
+  }
+
+  implicit object ServiceIdentifierReads extends Reads[ServiceIdentifier] {
+    override def reads(json: JsValue): JsResult[ServiceIdentifier] =
+      json match {
+        case JsString(s) =>
+          JsSuccess(ServiceIdentifier.fromString(s))
+        case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+            _: JsObject) =>
+          SerializerUtil.buildJsErrorMsg("jsstring", err)
       }
   }
 }
