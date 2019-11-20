@@ -181,6 +181,9 @@ object ServiceIdentifier extends Factory[ServiceIdentifier] {
     case "GETUTXO"         => NODE_GET_UTXO
     case "COMPACT_FILTERS" => NODE_COMPACT_FILTERS
     case "XTHIN"           => NODE_XTHIN
+    case _: String =>
+      throw new IllegalArgumentException(
+        "\"" + string + "\" does not represent a ServiceIdentifier")
   }
 
   def apply(num: BigInt): ServiceIdentifier = ServiceIdentifier(UInt64(num))
