@@ -9,7 +9,7 @@ package org.bitcoins.core.script
   */
 sealed abstract class ScriptType {
   import org.bitcoins.core.script.ScriptType._
-  override def toString = this match {
+  override def toString: String = this match {
     case NONSTANDARD           => "nonstandard"
     case PUBKEY                => "pubkey"
     case PUBKEYHASH            => "pubkeyhash"
@@ -30,15 +30,15 @@ sealed abstract class ScriptType {
   *     from Bitcoin Core
   */
 object ScriptType {
-  private val all: Seq[ScriptType] = Vector(NONSTANDARD,
-                                            PUBKEY,
-                                            PUBKEYHASH,
-                                            SCRIPTHASH,
-                                            MULTISIG,
-                                            NULLDATA,
-                                            WITNESS_V0_KEYHASH,
-                                            WITNESS_V0_SCRIPTHASH,
-                                            WITNESS_UNKNOWN)
+  private[script] val all: Seq[ScriptType] = Vector(NONSTANDARD,
+                                                    PUBKEY,
+                                                    PUBKEYHASH,
+                                                    SCRIPTHASH,
+                                                    MULTISIG,
+                                                    NULLDATA,
+                                                    WITNESS_V0_KEYHASH,
+                                                    WITNESS_V0_SCRIPTHASH,
+                                                    WITNESS_UNKNOWN)
 
   def fromString(string: String): Option[ScriptType] =
     all.find(_.toString == string)

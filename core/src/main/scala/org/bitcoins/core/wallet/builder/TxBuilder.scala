@@ -19,7 +19,22 @@ import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
-import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, UTXOSpendingInfo}
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfo,
+  ConditionalSpendingInfo,
+  EmptySpendingInfo,
+  LockTimeSpendingInfo,
+  MultiSignatureSpendingInfo,
+  P2PKHSpendingInfo,
+  P2PKSpendingInfo,
+  P2SHNestedSegwitV0UTXOSpendingInfo,
+  P2SHNoNestSpendingInfo,
+  P2SHSpendingInfo,
+  P2WPKHV0SpendingInfo,
+  P2WSHV0SpendingInfo,
+  UTXOSpendingInfo,
+  UnassignedSegwitNativeUTXOSpendingInfo
+}
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -228,7 +243,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       dummySignatures: Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = remaining match {
     case Nil => Future.successful(txInProgress)
-    case info :: t =>
+    case info +: t =>
       val partiallySigned = signAndAddInput(info, txInProgress, dummySignatures)
       partiallySigned.flatMap(tx => loop(t, tx, dummySignatures))
   }
@@ -244,163 +259,120 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       unsignedTx: Transaction,
       dummySignatures: Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = {
-    val outpoint = utxo.outPoint
-    val output = utxo.output
-    val signers = utxo.signers
-    val redeemScriptOpt = utxo.redeemScriptOpt
-    val scriptWitnessOpt = utxo.scriptWitnessOpt
-    val hashType = utxo.hashType
     val idx =
-      unsignedTx.inputs.zipWithIndex.find(_._1.previousOutput == outpoint)
+      unsignedTx.inputs.zipWithIndex.find(_._1.previousOutput == utxo.outPoint)
     if (idx.isEmpty) {
       Future.fromTry(TxBuilderError.MissingOutPoint)
     } else {
       val inputIndex = UInt32(idx.get._2)
       val oldInput = unsignedTx.inputs(inputIndex.toInt)
 
-      output.scriptPubKey match {
-        case _: P2PKScriptPubKey =>
-          P2PKSigner
-            .sign(utxo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case _: P2PKHScriptPubKey =>
-          P2PKHSigner
-            .sign(utxo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case _: MultiSignatureScriptPubKey =>
-          MultiSigSigner
-            .sign(utxo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case _: LockTimeScriptPubKey =>
-          LockTimeSigner
-            .sign(utxo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case p2sh: P2SHScriptPubKey =>
-          redeemScriptOpt match {
+      utxo match {
+        case p2shInfo: P2SHNoNestSpendingInfo =>
+          signAndAddInputForP2SH(p2shInfo,
+                                 unsignedTx,
+                                 oldInput.sequence,
+                                 inputIndex.toInt,
+                                 dummySignatures)
+        case p2shNestedSegwitInfo @ P2SHNestedSegwitV0UTXOSpendingInfo(
+              _,
+              amount,
+              scriptPubKey,
+              _,
+              hashType,
+              redeemWitnessScript,
+              _,
+              _) =>
+          redeemWitnessScript match {
+            case _: P2WSHWitnessSPKV0 =>
+              signAndAddInputForP2SH(p2shNestedSegwitInfo,
+                                     unsignedTx,
+                                     oldInput.sequence,
+                                     inputIndex.toInt,
+                                     dummySignatures)
+            case p2wpkh: P2WPKHWitnessSPKV0 =>
+              val uwtx = WitnessTransaction.toWitnessTx(unsignedTx)
 
-            case Some(redeemScript) =>
-              if (p2sh != P2SHScriptPubKey(redeemScript)) {
-
-                Future.fromTry(TxBuilderError.WrongRedeemScript)
-
-              } else {
-
-                val signedTxF: Future[Transaction] = redeemScript match {
-
-                  case p2wpkh: P2WPKHWitnessSPKV0 =>
-                    val uwtx = WitnessTransaction.toWitnessTx(unsignedTx)
-
-                    //breaks an abstraction inside of all of the signers
-                    //won't be able to be handled properly until gemini stuff
-                    //is open sourced
-                    signP2SHP2WPKH(unsignedTx = uwtx,
-                                   inputIndex = inputIndex,
-                                   output = output,
-                                   p2wpkh = p2wpkh,
-                                   utxo = utxo,
-                                   hashType = hashType,
-                                   dummySignatures = dummySignatures)
-
-                  case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                      _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-                      _: NonStandardScriptPubKey | _: WitnessCommitment |
-                      _: UnassignedWitnessScriptPubKey | _: P2WSHWitnessSPKV0 |
-                      EmptyScriptPubKey =>
-                    val input = TransactionInput(outpoint,
-                                                 EmptyScriptSignature,
-                                                 oldInput.sequence)
-
-                    val updatedTx =
-                      unsignedTx.updateInput(inputIndex.toInt, input)
-
-                    val updatedOutput =
-                      TransactionOutput(output.value, redeemScript)
-
-                    val updatedUTXOInfo = BitcoinUTXOSpendingInfo(
-                      outpoint,
-                      updatedOutput,
-                      signers,
-                      None,
-                      scriptWitnessOpt,
-                      hashType)
-
-                    val signedTxEither = signAndAddInput(updatedUTXOInfo,
-                                                         updatedTx,
-                                                         dummySignatures)
-
-                    signedTxEither.map { signedTx =>
-                      val i = signedTx.inputs(inputIndex.toInt)
-
-                      val p2sh =
-                        P2SHScriptSignature(i.scriptSignature, redeemScript)
-
-                      val signedInput =
-                        TransactionInput(i.previousOutput, p2sh, i.sequence)
-
-                      val signedInputs =
-                        signedTx.inputs.updated(inputIndex.toInt, signedInput)
-
-                      signedTx match {
-                        case btx: BaseTransaction =>
-                          BaseTransaction(btx.version,
-                                          signedInputs,
-                                          btx.outputs,
-                                          btx.lockTime)
-                        case wtx: WitnessTransaction =>
-                          WitnessTransaction(wtx.version,
-                                             signedInputs,
-                                             wtx.outputs,
-                                             wtx.lockTime,
-                                             wtx.witness)
-                      }
-
-                    }
-
-                  case _: P2SHScriptPubKey =>
-                    Future.fromTry(TxBuilderError.NestedP2SHSPK)
-                }
-
-                signedTxF
-
-              }
-            case None => Future.fromTry(TxBuilderError.NoRedeemScript)
+              //breaks an abstraction inside of all of the signers
+              //won't be able to be handled properly until gemini stuff
+              //is open sourced
+              signP2SHP2WPKH(
+                unsignedTx = uwtx,
+                inputIndex = inputIndex,
+                output = TransactionOutput(amount, scriptPubKey),
+                p2wpkh = p2wpkh,
+                utxo = utxo,
+                hashType = hashType,
+                dummySignatures = dummySignatures
+              )
           }
-
-        case _: P2WPKHWitnessSPKV0 =>
-          P2WPKHSigner
-            .sign(utxo, unsignedTx, dummySignatures)
-            .map(_.transaction)
-        case p2wshSPK: P2WSHWitnessSPKV0 =>
-          val p2wshScriptWitF = scriptWitnessOpt match {
-            case Some(EmptyScriptWitness | _: P2WPKHWitnessV0) =>
-              Future.fromTry(TxBuilderError.WrongWitness)
-            case Some(x: P2WSHWitnessV0) => Future.successful(x)
-            case None                    => Future.fromTry(TxBuilderError.NoWitness)
-          }
-          val redeemScriptF = p2wshScriptWitF.map(_.redeemScript)
-          val validatedRedeemScriptF = redeemScriptF.flatMap { redeemScript =>
-            if (P2WSHWitnessSPKV0(redeemScript) != p2wshSPK) {
-              Future.fromTry(TxBuilderError.WrongWitness)
-            } else {
-              Future.successful(redeemScript)
-            }
-          }
-          val sigComponentF = validatedRedeemScriptF.flatMap {
-            case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey =>
-              P2WSHSigner.sign(utxo, unsignedTx, dummySignatures)
-            case _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 =>
-              Future.fromTry(TxBuilderError.NestedWitnessSPK)
-            case _: P2SHScriptPubKey =>
-              Future.fromTry(TxBuilderError.NestedP2SHSPK)
-            case _: NonStandardScriptPubKey | _: WitnessCommitment |
-                EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
-              Future.fromTry(TxBuilderError.NoSigner)
-          }
-          sigComponentF.map(_.transaction)
-        case _: NonStandardScriptPubKey | _: WitnessCommitment |
-            EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+        case _: UnassignedSegwitNativeUTXOSpendingInfo =>
           Future.fromTry(TxBuilderError.NoSigner)
+        case _: BitcoinUTXOSpendingInfo =>
+          BitcoinSigner
+            .sign(utxo, unsignedTx, dummySignatures)
+            .map(_.transaction)
+      }
+    }
+  }
+
+  /** Signs P2SH(P2WSH) and non-segwit P2SH inputs by calling signAndAddInput on the altered
+    * transaction without P2SH nesting and then re-wrapping with the tweaked ScriptSignature
+    */
+  private def signAndAddInputForP2SH(
+      spendingInfo: P2SHSpendingInfo,
+      unsignedTx: Transaction,
+      sequence: UInt32,
+      inputIndex: Int,
+      dummySignatures: Boolean)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    require(!spendingInfo.redeemScript.isInstanceOf[P2WPKHWitnessSPKV0],
+            "Should call signP2SHP2WPKH")
+
+    val outpoint = spendingInfo.outPoint
+    val redeemScript = spendingInfo.redeemScript
+
+    val input =
+      TransactionInput(outpoint, EmptyScriptSignature, sequence)
+
+    val updatedTx =
+      unsignedTx.updateInput(inputIndex, input)
+
+    val updatedOutput =
+      TransactionOutput(spendingInfo.amount, redeemScript)
+
+    val updatedUTXOInfo = BitcoinUTXOSpendingInfo(outpoint,
+                                                  updatedOutput,
+                                                  spendingInfo.signers,
+                                                  None,
+                                                  spendingInfo.scriptWitnessOpt,
+                                                  spendingInfo.hashType,
+                                                  spendingInfo.conditionalPath)
+
+    val signedTxEither =
+      signAndAddInput(updatedUTXOInfo, updatedTx, dummySignatures)
+
+    signedTxEither.map { signedTx =>
+      val i = signedTx.inputs(inputIndex.toInt)
+
+      val p2sh =
+        P2SHScriptSignature(i.scriptSignature, redeemScript)
+
+      val signedInput =
+        TransactionInput(i.previousOutput, p2sh, i.sequence)
+
+      val signedInputs =
+        signedTx.inputs.updated(inputIndex.toInt, signedInput)
+
+      signedTx match {
+        case btx: BaseTransaction =>
+          BaseTransaction(btx.version, signedInputs, btx.outputs, btx.lockTime)
+        case wtx: WitnessTransaction =>
+          WitnessTransaction(wtx.version,
+                             signedInputs,
+                             wtx.outputs,
+                             wtx.lockTime,
+                             wtx.witness)
       }
     }
   }
@@ -440,68 +412,44 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
         remaining: Seq[BitcoinUTXOSpendingInfo],
         currentLockTime: UInt32): Try[UInt32] = remaining match {
       case Nil => Success(currentLockTime)
-      case BitcoinUTXOSpendingInfo(outpoint,
-                                   output,
-                                   signers,
-                                   redeemScriptOpt,
-                                   scriptWitOpt,
-                                   hashType) :: t =>
-        output.scriptPubKey match {
-          case cltv: CLTVScriptPubKey =>
-            val lockTime =
-              if (cltv.locktime.toLong > UInt32.max.toLong || cltv.locktime.toLong < 0) {
-                TxBuilderError.IncompatibleLockTimes
-              } else Success(UInt32(cltv.locktime.toLong))
-            val result = lockTime.flatMap { l: UInt32 =>
-              if (currentLockTime < l) {
-                val lockTimeThreshold = tc.locktimeThreshold
-                if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
-                  //means that we spend two different locktime types, one of the outputs spends a
-                  //OP_CLTV script by block height, the other spends one by time stamp
-                  TxBuilderError.IncompatibleLockTimes
-                } else Success(l)
-              } else Success(currentLockTime)
+      case spendingInfo +: newRemaining =>
+        spendingInfo match {
+          case lockTime: LockTimeSpendingInfo =>
+            lockTime.scriptPubKey match {
+              case _: CSVScriptPubKey => loop(newRemaining, currentLockTime)
+              case cltv: CLTVScriptPubKey =>
+                val lockTime =
+                  if (cltv.locktime.toLong > UInt32.max.toLong || cltv.locktime.toLong < 0) {
+                    TxBuilderError.IncompatibleLockTimes
+                  } else Success(UInt32(cltv.locktime.toLong))
+                val result = lockTime.flatMap { l: UInt32 =>
+                  if (currentLockTime < l) {
+                    val lockTimeThreshold = tc.locktimeThreshold
+                    if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
+                      //means that we spend two different locktime types, one of the outputs spends a
+                      //OP_CLTV script by block height, the other spends one by time stamp
+                      TxBuilderError.IncompatibleLockTimes
+                    } else Success(l)
+                  } else Success(currentLockTime)
+                }
+                result
             }
-            result
-          case _: P2SHScriptPubKey | _: P2WSHWitnessSPKV0 =>
-            if (redeemScriptOpt.isDefined) {
-              //recursively call with redeem script as output script
-              val o = TransactionOutput(output.value, redeemScriptOpt.get)
-              val i = BitcoinUTXOSpendingInfo(outpoint,
-                                              o,
-                                              signers,
-                                              None,
-                                              scriptWitOpt,
-                                              hashType)
-              loop(i +: t, currentLockTime)
-            } else if (scriptWitOpt.isDefined) {
-              scriptWitOpt.get match {
-                case EmptyScriptWitness    => loop(t, currentLockTime)
-                case _: P2WPKHWitnessV0    => loop(t, currentLockTime)
-                case p2wsh: P2WSHWitnessV0 =>
-                  //recursively call with the witness redeem script as the script
-                  val o = TransactionOutput(output.value, p2wsh.redeemScript)
-                  val i = BitcoinUTXOSpendingInfo(outpoint,
-                                                  o,
-                                                  signers,
-                                                  redeemScriptOpt,
-                                                  None,
-                                                  hashType)
-                  loop(i +: t, currentLockTime)
-              }
-            } else {
-              loop(t, currentLockTime)
-            }
-          case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-              _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
-              _: P2WPKHWitnessSPKV0 | _: P2WSHWitnessSPKV0 |
-              _: NonStandardScriptPubKey | _: WitnessCommitment |
-              EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey |
-              _: CSVScriptPubKey =>
-            //non of these scripts affect the locktime of a tx
-            loop(t, currentLockTime)
+          case p2sh: P2SHSpendingInfo =>
+            loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTime)
+          case p2wsh: P2WSHV0SpendingInfo =>
+            loop(p2wsh.nestedSpendingInfo +: newRemaining, currentLockTime)
+          case conditional: ConditionalSpendingInfo =>
+            loop(conditional.nestedSpendingInfo +: newRemaining,
+                 currentLockTime)
+          case _: P2WPKHV0SpendingInfo |
+              _: UnassignedSegwitNativeUTXOSpendingInfo | _: P2PKSpendingInfo |
+              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo |
+              _: EmptySpendingInfo =>
+            // none of these scripts affect the locktime of a tx
+            loop(newRemaining, currentLockTime)
         }
     }
+
     loop(utxos, TransactionConstants.lockTime)
   }
 
@@ -519,62 +467,41 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
         remaining: Seq[UTXOSpendingInfo],
         accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
       case Nil => accum.reverse
-      case BitcoinUTXOSpendingInfo(outpoint,
-                                   output,
-                                   signers,
-                                   redeemScriptOpt,
-                                   scriptWitOpt,
-                                   hashType) :: t =>
-        output.scriptPubKey match {
-          case csv: CSVScriptPubKey =>
-            val sequence = solveSequenceForCSV(csv.locktime)
-            val i = TransactionInput(outpoint, EmptyScriptSignature, sequence)
-            loop(t, i +: accum)
-          case _: CLTVScriptPubKey =>
-            val sequence = UInt32.zero
-            val i = TransactionInput(outpoint, EmptyScriptSignature, sequence)
-            loop(t, i +: accum)
-          case _: P2SHScriptPubKey | _: P2WSHWitnessSPKV0 =>
-            if (redeemScriptOpt.isDefined) {
-              //recursively call with the redeem script in the output
-              val o = TransactionOutput(output.value, redeemScriptOpt.get)
-              val i = BitcoinUTXOSpendingInfo(outpoint,
-                                              o,
-                                              signers,
-                                              None,
-                                              scriptWitOpt,
-                                              hashType)
-              loop(i +: t, accum)
-            } else if (scriptWitOpt.isDefined) {
-              scriptWitOpt.get match {
-                case EmptyScriptWitness | _: P2WPKHWitnessV0 => loop(t, accum)
-                case p2wsh: P2WSHWitnessV0 =>
-                  val o = TransactionOutput(output.value, p2wsh.redeemScript)
-                  val i = BitcoinUTXOSpendingInfo(outpoint,
-                                                  o,
-                                                  signers,
-                                                  redeemScriptOpt,
-                                                  None,
-                                                  hashType)
-                  loop(i +: t, accum)
-              }
-            } else loop(t, accum)
-          case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-              _: MultiSignatureScriptPubKey | _: P2WPKHWitnessSPKV0 |
-              _: NonStandardScriptPubKey | _: WitnessCommitment |
-              EmptyScriptPubKey | _: UnassignedWitnessScriptPubKey =>
+      case spendingInfo +: newRemaining =>
+        spendingInfo match {
+          case lockTime: LockTimeSpendingInfo =>
+            val sequence = lockTime.scriptPubKey match {
+              case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
+              case _: CLTVScriptPubKey  => UInt32.zero
+            }
+            val input = TransactionInput(lockTime.outPoint,
+                                         EmptyScriptSignature,
+                                         sequence)
+            loop(newRemaining, input +: accum)
+          case p2sh: P2SHSpendingInfo =>
+            loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
+          case p2wsh: P2WSHV0SpendingInfo =>
+            loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
+          case conditional: ConditionalSpendingInfo =>
+            loop(conditional.nestedSpendingInfo +: newRemaining, accum)
+          case _: P2WPKHV0SpendingInfo |
+              _: UnassignedSegwitNativeUTXOSpendingInfo | _: P2PKSpendingInfo |
+              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo |
+              _: EmptySpendingInfo =>
             //none of these script types affect the sequence number of a tx
             //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
             //see BIP125 for more information
             val sequence =
               if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
             val input =
-              TransactionInput(outpoint, EmptyScriptSignature, sequence)
-            loop(t, input +: accum)
+              TransactionInput(spendingInfo.outPoint,
+                               EmptyScriptSignature,
+                               sequence)
+            loop(newRemaining, input +: accum)
         }
     }
-    val inputs = loop(utxos, Nil)
-    inputs
+
+    loop(utxos, Nil)
   }
 
   def signP2SHP2WPKH(
@@ -804,12 +731,15 @@ object BitcoinTxBuilder {
       utxos match {
         case Nil => accum
         case h +: t =>
-          val u = BitcoinUTXOSpendingInfo(outPoint = h.outPoint,
-                                          output = h.output,
-                                          signers = h.signers,
-                                          redeemScriptOpt = h.redeemScriptOpt,
-                                          scriptWitnessOpt = h.scriptWitnessOpt,
-                                          hashType = h.hashType)
+          val u = BitcoinUTXOSpendingInfo(
+            outPoint = h.outPoint,
+            output = h.output,
+            signers = h.signers,
+            redeemScriptOpt = h.redeemScriptOpt,
+            scriptWitnessOpt = h.scriptWitnessOpt,
+            hashType = h.hashType,
+            conditionalPath = h.conditionalPath
+          )
           val result: BitcoinTxBuilder.UTXOMap = accum.updated(h.outPoint, u)
           loop(t, result)
       }

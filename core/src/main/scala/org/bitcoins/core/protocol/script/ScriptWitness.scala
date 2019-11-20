@@ -72,8 +72,9 @@ object P2WPKHWitnessV0 {
       case p2pkh: P2PKHScriptSignature =>
         P2WPKHWitnessV0(p2pkh.publicKey, p2pkh.signature)
       case x @ (_: LockTimeScriptSignature | _: MultiSignatureScriptSignature |
-          _: NonStandardScriptSignature | _: P2PKScriptSignature |
-          _: P2SHScriptSignature | EmptyScriptSignature) =>
+          _: ConditionalScriptSignature | _: NonStandardScriptSignature |
+          _: P2PKScriptSignature | _: P2SHScriptSignature |
+          EmptyScriptSignature) =>
         throw new IllegalArgumentException(
           s"Expected P2PKHScriptSignature, got $x")
     }
@@ -86,9 +87,9 @@ object P2WPKHWitnessV0 {
   * Format: <redeem script> <scriptSig data1> <scriptSig data2> ... <scriptSig dataN>
   */
 sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
-  lazy val redeemScript: ScriptPubKey = {
+  lazy val redeemScript: RawScriptPubKey = {
     val cmpct = CompactSizeUInt.calc(stack.head)
-    ScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
+    RawScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
   }
   override def toString =
     s"P2WSHWitnessV0(${stack.map(BitcoinSUtil.encodeHex(_)).toString})"

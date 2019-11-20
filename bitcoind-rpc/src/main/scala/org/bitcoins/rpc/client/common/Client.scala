@@ -10,7 +10,7 @@ import akka.stream.{ActorMaterializer, StreamTcpException}
 import akka.util.ByteString
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.util.AsyncUtil
@@ -37,7 +37,7 @@ import org.bitcoins.rpc.BitcoindException
   * client, like data directories, log files
   * and whether or not the client is started.
   */
-trait Client extends BitcoinSLogger {
+trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
   def version: BitcoindVersion
   protected val instance: BitcoindInstance
 
@@ -87,7 +87,7 @@ trait Client extends BitcoinSLogger {
     *         This future times out after 60 seconds if the client
     *         cannot be started
     */
-  def start(): Future[Unit] = {
+  override def start(): Future[BitcoindRpcClient] = {
     if (version != BitcoindVersion.Unknown) {
       val foundVersion = instance.getVersion
       if (foundVersion != version) {
@@ -135,13 +135,13 @@ trait Client extends BitcoinSLogger {
 
     }
 
-    val started = {
+    val started: Future[BitcoindRpcClient] = {
       for {
         _ <- awaitCookie(instance.authCredentials)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => isStartedF,
                                             duration = 1.seconds,
                                             maxTries = 60)
-      } yield ()
+      } yield this.asInstanceOf[BitcoindRpcClient]
     }
 
     started.onComplete {
@@ -169,7 +169,6 @@ trait Client extends BitcoinSLogger {
           logger.info(s"Dumped bitcoin.conf to $otherTempfile")
         }
     }
-
     started
   }
 
@@ -208,7 +207,23 @@ trait Client extends BitcoinSLogger {
   }
 
   /**
+    * Stop method for BitcoindRpcClient that is stopped, inherits from the StartStop trait
+    * @return A future stopped bitcoindRPC client
+    */
+  def stop(): Future[BitcoindRpcClient] = {
+    for {
+      _ <- bitcoindCall[String]("stop")
+      _ <- {
+        if (system.name == BitcoindRpcClient.ActorSystemName) {
+          system.terminate()
+        } else FutureUtil.unit
+      }
+    } yield this.asInstanceOf[BitcoindRpcClient]
+  }
+
+  /**
     * Checks whether the underlyind bitcoind daemon is stopped
+    * @return A future boolean which represents isstopped or not
     */
   def isStoppedF: Future[Boolean] = {
     isStartedF.map(started => !started)

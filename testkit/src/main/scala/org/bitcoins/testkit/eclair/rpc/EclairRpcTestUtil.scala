@@ -2,6 +2,7 @@ package org.bitcoins.testkit.eclair.rpc
 
 import java.io.{File, PrintWriter}
 import java.net.URI
+import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
@@ -24,18 +25,15 @@ import org.bitcoins.eclair.rpc.api.{
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
-import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import java.nio.file.Files
-
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 /**
   * @define nodeLinkDoc
@@ -302,7 +300,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         client.getSentInfo(paymentId)
       sentInfoF.map { payment =>
         if (failFast && payment.exists(result => isFailed(result.status))) {
-          throw new RuntimeException(s"Payment ${paymentId} has failed")
+          throw new RuntimeException(
+            s"Payment ${paymentId} has failed: $payment")
         }
         if (!payment.exists(
               result => tag.runtimeClass == result.status.getClass)) {
@@ -635,6 +634,26 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     bitcoindRpc
   }
 
+  /**
+    * Returns a `Future` that is completed when both eclair and bitcoind have the same block height
+    * Fails the future if they are not sychronized within the given timeout.
+    */
+  def awaitEclairInSync(eclair: EclairRpcClient, bitcoind: BitcoindRpcClient)(
+      implicit system: ActorSystem,
+      ec: ExecutionContext): Future[Unit] = {
+
+    def clientInSync(client: EclairRpcClient, bitcoind: BitcoindRpcClient)(
+        implicit ec: ExecutionContext): Future[Boolean] =
+      for {
+        blockCount <- bitcoind.getBlockCount
+        info <- client.getInfo
+      } yield info.blockHeight == blockCount
+
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF =
+                                         () => clientInSync(eclair, bitcoind),
+                                       duration = 1.seconds)
+  }
+
   /** Shuts down an eclair daemon and the bitcoind daemon it is associated with
     *
     * */
@@ -646,18 +665,22 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     logger.debug(s"shutting down eclair")
     val stopEclairF = eclairRpcClient.stop()
     val killBitcoindF = BitcoindRpcTestUtil.stopServer(bitcoindRpc)
+    val iskilled = eclairRpcClient.isStopped
 
-    for {
+    val shutdownF = for {
       _ <- killBitcoindF
-      stopped <- stopEclairF
+      _ <- stopEclairF
+      _ <- iskilled
     } yield {
-      if (stopped)
-        logger.debug(
-          "Successfully shutdown eclair and it's corresponding bitcoind")
-      else
-        logger.info(
-          s"Killed a bitcoind instance, but could not find an eclair process to kill")
+      logger.debug(
+        "Successfully shutdown eclair and it's corresponding bitcoind")
     }
+    shutdownF.failed.foreach { err: Throwable =>
+      logger.info(
+        s"Killed a bitcoind instance, but could not find an eclair process to kill")
+      throw err
+    }
+    shutdownF
   }
 }
 

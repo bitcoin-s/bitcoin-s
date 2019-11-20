@@ -5,8 +5,15 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfo,
+  ConditionalPath,
+  P2SHNestedSegwitV0UTXOSpendingInfo
+}
 import org.scalacheck.Gen
+
+import scala.annotation.tailrec
 
 sealed abstract class CreditingTxGen {
 
@@ -22,15 +29,18 @@ sealed abstract class CreditingTxGen {
       Gen.listOfN(n, TransactionGenerators.realisticOutput)
     }
 
-  def rawOutput: Gen[BitcoinUTXOSpendingInfo] = {
+  /** Generator for non-script hash based output */
+  def nonSHOutput: Gen[BitcoinUTXOSpendingInfo] = {
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
               multiSigOutput, /*cltvOutput,*/ csvOutput,
+              multiSignatureWithTimeoutOutput,
+              conditionalOutput,
               p2wpkhOutput)
   }
 
-  def rawOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] =
-    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, rawOutput))
+  def nonSHOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] =
+    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, nonSHOutput))
 
   def basicOutput: Gen[BitcoinUTXOSpendingInfo] = {
     Gen.oneOf(p2pkOutput, p2pkhOutput, multiSigOutput)
@@ -40,15 +50,35 @@ sealed abstract class CreditingTxGen {
     //note, cannot put a p2wpkh here
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
-              multiSigOutput, /*cltvOutput,*/ csvOutput)
+              multiSigOutput, /*cltvOutput,*/ csvOutput,
+              multiSignatureWithTimeoutOutput,
+              conditionalOutput)
   }
 
-  def nonP2SHOutput: Gen[BitcoinUTXOSpendingInfo] = {
-    Gen.oneOf(p2pkOutput,
-              p2pkhOutput,
-              multiSigOutput, /*cltvOutput,*/ csvOutput,
-              p2wpkhOutput,
-              p2wshOutput)
+  /** Only for use in constructing P2SH outputs */
+  private def nonP2SHOutput: Gen[BitcoinUTXOSpendingInfo] = {
+    Gen
+      .oneOf(p2pkOutput,
+             p2pkhOutput,
+             multiSigOutput, /*cltvOutput,*/ csvOutput,
+             multiSignatureWithTimeoutOutput,
+             conditionalOutput,
+             p2wpkhOutput,
+             p2wshOutput)
+      .suchThat(output =>
+        !ScriptGenerators.redeemScriptTooBig(output.scriptPubKey))
+      .suchThat {
+        case P2SHNestedSegwitV0UTXOSpendingInfo(_,
+                                                _,
+                                                _,
+                                                _,
+                                                _,
+                                                _,
+                                                witness: P2WSHWitnessV0,
+                                                _) =>
+          witness.stack.exists(_.length > ScriptInterpreter.MAX_PUSH_SIZE)
+        case _ => true
+      }
   }
 
   def output: Gen[BitcoinUTXOSpendingInfo] =
@@ -57,6 +87,8 @@ sealed abstract class CreditingTxGen {
               multiSigOutput,
               p2shOutput,
               csvOutput, /*cltvOutput,*/
+              multiSignatureWithTimeoutOutput,
+              conditionalOutput,
               p2wpkhOutput,
               p2wshOutput)
 
@@ -98,19 +130,47 @@ sealed abstract class CreditingTxGen {
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, multiSigOutput))
   }
 
+  def multiSignatureWithTimeoutOutput: Gen[BitcoinUTXOSpendingInfo] = {
+    ScriptGenerators.multiSignatureWithTimeoutScriptPubKey.flatMap {
+      case (conditional, keys) =>
+        build(conditional, keys, None, None)
+    }
+  }
+
+  def multiSignatureWithTimeoutOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = {
+    Gen
+      .choose(min, max)
+      .flatMap(n => Gen.listOfN(n, multiSignatureWithTimeoutOutput))
+  }
+
+  def conditionalOutput: Gen[BitcoinUTXOSpendingInfo] = {
+    ScriptGenerators
+      .nonLocktimeConditionalScriptPubKey(ScriptGenerators.defaultMaxDepth)
+      .flatMap {
+        case (conditional, keys) =>
+          build(conditional, keys, None, None)
+      }
+  }
+
+  def conditionalOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = {
+    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, conditionalOutput))
+  }
+
   def p2shOutput: Gen[BitcoinUTXOSpendingInfo] = nonP2SHOutput.flatMap { o =>
     CryptoGenerators.hashType.map { hashType =>
       val oldOutput = o.output
       val redeemScript = o.output.scriptPubKey
       val p2sh = P2SHScriptPubKey(redeemScript)
       val updatedOutput = TransactionOutput(oldOutput.value, p2sh)
-      BitcoinUTXOSpendingInfo(TransactionOutPoint(o.outPoint.txId,
-                                                  o.outPoint.vout),
-                              updatedOutput,
-                              o.signers,
-                              Some(redeemScript),
-                              o.scriptWitnessOpt,
-                              hashType)
+      BitcoinUTXOSpendingInfo(
+        TransactionOutPoint(o.outPoint.txId, o.outPoint.vout),
+        updatedOutput,
+        o.signers,
+        Some(redeemScript),
+        o.scriptWitnessOpt,
+        hashType,
+        computeAllTrueConditionalPath(redeemScript, None, o.scriptWitnessOpt)
+      )
     }
   }
 
@@ -126,13 +186,15 @@ sealed abstract class CreditingTxGen {
             val oldOutput = o.output
             val csvSPK = CLTVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
             val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
-            BitcoinUTXOSpendingInfo(TransactionOutPoint(o.outPoint.txId,
-                                                        o.outPoint.vout),
-                                    updatedOutput,
-                                    o.signers,
-                                    o.redeemScriptOpt,
-                                    o.scriptWitnessOpt,
-                                    hashType)
+            BitcoinUTXOSpendingInfo(
+              TransactionOutPoint(o.outPoint.txId, o.outPoint.vout),
+              updatedOutput,
+              o.signers,
+              o.redeemScriptOpt,
+              o.scriptWitnessOpt,
+              hashType,
+              ConditionalPath.NoConditionsLeft
+            )
           }
         }
     }
@@ -148,13 +210,15 @@ sealed abstract class CreditingTxGen {
             val oldOutput = o.output
             val csvSPK = CSVScriptPubKey(scriptNum, oldOutput.scriptPubKey)
             val updatedOutput = TransactionOutput(oldOutput.value, csvSPK)
-            BitcoinUTXOSpendingInfo(TransactionOutPoint(o.outPoint.txId,
-                                                        o.outPoint.vout),
-                                    updatedOutput,
-                                    o.signers,
-                                    o.redeemScriptOpt,
-                                    o.scriptWitnessOpt,
-                                    hashType)
+            BitcoinUTXOSpendingInfo(
+              TransactionOutPoint(o.outPoint.txId, o.outPoint.vout),
+              updatedOutput,
+              o.signers,
+              o.redeemScriptOpt,
+              o.scriptWitnessOpt,
+              hashType,
+              ConditionalPath.NoConditionsLeft
+            )
           }
         }
     }
@@ -171,13 +235,17 @@ sealed abstract class CreditingTxGen {
   def p2wpkhOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] =
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2wpkhOutput))
 
-  def p2wshOutput: Gen[BitcoinUTXOSpendingInfo] = nonP2WSHOutput.flatMap {
-    case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _) =>
-      val spk = txOutput.scriptPubKey
-      val scriptWit = P2WSHWitnessV0(spk)
-      val witSPK = P2WSHWitnessSPKV0(spk)
-      build(witSPK, signer, None, Some(scriptWit))
-  }
+  def p2wshOutput: Gen[BitcoinUTXOSpendingInfo] =
+    nonP2WSHOutput
+      .suchThat(output =>
+        !ScriptGenerators.redeemScriptTooBig(output.scriptPubKey))
+      .flatMap {
+        case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _, _) =>
+          val spk = txOutput.scriptPubKey
+          val scriptWit = P2WSHWitnessV0(spk)
+          val witSPK = P2WSHWitnessSPKV0(spk)
+          build(witSPK, signer, None, Some(scriptWit))
+      }
 
   def p2wshOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] =
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2wshOutput))
@@ -212,7 +280,8 @@ sealed abstract class CreditingTxGen {
                   signers,
                   Some(spk),
                   Some(wit),
-                  hashType
+                  hashType,
+                  ConditionalPath.NoConditionsLeft
                 )
               }
             }
@@ -222,6 +291,42 @@ sealed abstract class CreditingTxGen {
 
   def randoms: Gen[Seq[BitcoinUTXOSpendingInfo]] =
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, random))
+
+  private def computeAllTrueConditionalPath(
+      spk: ScriptPubKey,
+      redeemScript: Option[ScriptPubKey],
+      scriptWitness: Option[ScriptWitness]): ConditionalPath = {
+    spk match {
+      case conditional: ConditionalScriptPubKey =>
+        ConditionalPath.ConditionTrue(
+          computeAllTrueConditionalPath(conditional.trueSPK, None, None))
+      case lockTimeScriptPubKey: LockTimeScriptPubKey =>
+        computeAllTrueConditionalPath(lockTimeScriptPubKey.nestedScriptPubKey,
+                                      None,
+                                      None)
+      case _: RawScriptPubKey | _: P2WPKHWitnessSPKV0 =>
+        ConditionalPath.NoConditionsLeft
+      case _: P2SHScriptPubKey =>
+        redeemScript match {
+          case None =>
+            throw new IllegalArgumentException(
+              "Expected redeem script for P2SH")
+          case Some(script) =>
+            computeAllTrueConditionalPath(script, None, scriptWitness)
+        }
+      case _: P2WSHWitnessSPKV0 =>
+        scriptWitness match {
+          case Some(witness: P2WSHWitnessV0) =>
+            computeAllTrueConditionalPath(witness.redeemScript, None, None)
+          case _ =>
+            throw new IllegalArgumentException(
+              "Expected P2WSHWitness for P2WSH")
+        }
+      case _: UnassignedWitnessScriptPubKey =>
+        throw new IllegalArgumentException(
+          s"Unexpected unassigned witness SPK: $spk")
+    }
+  }
 
   private def build(
       spk: ScriptPubKey,
@@ -235,13 +340,15 @@ sealed abstract class CreditingTxGen {
           val updated = outputs.updated(idx, TransactionOutput(old.value, spk))
           val tc = TransactionConstants
           val btx = BaseTransaction(tc.version, Nil, updated, tc.lockTime)
-          BitcoinUTXOSpendingInfo(TransactionOutPoint(btx.txId,
-                                                      UInt32.apply(idx)),
-                                  TransactionOutput(old.value, spk),
-                                  signers,
-                                  redeemScript,
-                                  scriptWitness,
-                                  hashType)
+          BitcoinUTXOSpendingInfo(
+            TransactionOutPoint(btx.txId, UInt32.apply(idx)),
+            TransactionOutput(old.value, spk),
+            signers,
+            redeemScript,
+            scriptWitness,
+            hashType,
+            computeAllTrueConditionalPath(spk, redeemScript, scriptWitness)
+          )
         }
       }
     }

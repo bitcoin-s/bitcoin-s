@@ -4,7 +4,14 @@ import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
-import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.script.control.{
+  ConditionalOperation,
+  OP_ELSE,
+  OP_ENDIF,
+  OP_IF,
+  OP_NOTIF,
+  OP_RETURN
+}
 import org.bitcoins.core.script.crypto.{
   OP_CHECKMULTISIG,
   OP_CHECKMULTISIGVERIFY,
@@ -26,23 +33,34 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class ScriptPubKey extends Script
 
+/** Trait for all Non-SegWit ScriptPubKeys  */
+sealed trait NonWitnessScriptPubKey extends ScriptPubKey
+
+/** Trait for all raw, non-nested ScriptPubKeys (no P2SH)
+  *
+  * Note that all WitnessScriptPubKeys including P2WPKH are not
+  * considered to be non-nested and hence not RawScriptPubKeys.
+  */
+sealed trait RawScriptPubKey extends NonWitnessScriptPubKey
+
 /**
   * Represents a
   * [[https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh pay-to-pubkey hash script pubkey]]
   *
   * Format: `OP_DUP OP_HASH160 <PubKeyHash> OP_EQUALVERIFY OP_CHECKSIG`
   */
-sealed trait P2PKHScriptPubKey extends ScriptPubKey {
+sealed trait P2PKHScriptPubKey extends RawScriptPubKey {
 
   def pubKeyHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 3).bytes)
 }
 
 object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
+
   private case class P2PKHScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends P2PKHScriptPubKey {
-    override def toString = "P2PKHScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"P2PKHScriptPubKeyImpl($pubKeyHash)"
   }
 
   def apply(pubKey: ECPublicKey): P2PKHScriptPubKey = {
@@ -89,7 +107,7 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
   * https://bitcoin.org/en/developer-guide#multisig
   * Format: <m> <A pubkey> [B pubkey] [C pubkey...] <n> OP_CHECKMULTISIG
   */
-sealed trait MultiSignatureScriptPubKey extends ScriptPubKey {
+sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
 
   /** Returns the amount of required signatures for this multisignature script pubkey output */
   def requiredSigs: Int = {
@@ -153,7 +171,8 @@ object MultiSignatureScriptPubKey
   private case class MultiSignatureScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends MultiSignatureScriptPubKey {
-    override def toString = "MultiSignatureScriptPubKeyImpl(" + hex + ")"
+    override def toString =
+      s"MultiSignatureScriptPubKey($requiredSigs, $maxSigs, ${publicKeys.mkString(", ")})"
   }
 
   def apply(
@@ -259,7 +278,7 @@ object MultiSignatureScriptPubKey
   * Represents a [[https://bitcoin.org/en/developer-guide#pay-to-script-hash-p2sh pay-to-scripthash public key]]
   * Format: `OP_HASH160 <Hash160(redeemScript)> OP_EQUAL`
   */
-sealed trait P2SHScriptPubKey extends ScriptPubKey {
+sealed trait P2SHScriptPubKey extends NonWitnessScriptPubKey {
 
   /** The hash of the script for which this scriptPubKey is being created from */
   def scriptHash: Sha256Hash160Digest =
@@ -267,9 +286,10 @@ sealed trait P2SHScriptPubKey extends ScriptPubKey {
 }
 
 object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
+
   private case class P2SHScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends P2SHScriptPubKey {
-    override def toString = "P2SHScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"P2SHScriptPubKey($scriptHash)"
   }
 
   def apply(scriptPubKey: ScriptPubKey): P2SHScriptPubKey = {
@@ -309,7 +329,7 @@ object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
   * Represents a [[https://bitcoin.org/en/developer-guide#pubkey pay to public key script public key]]
   * Format: `<pubkey> OP_CHECKSIG`
   */
-sealed trait P2PKScriptPubKey extends ScriptPubKey {
+sealed trait P2PKScriptPubKey extends RawScriptPubKey {
 
   def publicKey: ECPublicKey =
     ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
@@ -319,7 +339,7 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
   private case class P2PKScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends P2PKScriptPubKey {
-    override def toString = "P2PKScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"P2PKScriptPubKeyImpl($publicKey)"
   }
 
   def apply(pubKey: ECPublicKey): P2PKScriptPubKey = {
@@ -346,14 +366,14 @@ object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
 
 }
 
-sealed trait LockTimeScriptPubKey extends ScriptPubKey {
+sealed trait LockTimeScriptPubKey extends RawScriptPubKey {
 
   /** Determines the nested `ScriptPubKey` inside the `LockTimeScriptPubKey` */
-  def nestedScriptPubKey: ScriptPubKey = {
+  def nestedScriptPubKey: RawScriptPubKey = {
     val bool: Boolean = asm.head.isInstanceOf[ScriptNumberOperation]
     bool match {
-      case true  => ScriptPubKey(asm.slice(3, asm.length))
-      case false => ScriptPubKey(asm.slice(4, asm.length))
+      case true  => RawScriptPubKey(asm.slice(3, asm.length))
+      case false => RawScriptPubKey(asm.slice(4, asm.length))
     }
   }
 
@@ -398,9 +418,10 @@ object LockTimeScriptPubKey extends ScriptFactory[LockTimeScriptPubKey] {
 sealed trait CLTVScriptPubKey extends LockTimeScriptPubKey
 
 object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
+
   private case class CLTVScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends CLTVScriptPubKey {
-    override def toString = "CLTVScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"CLTVScriptPubKey($locktime, $nestedScriptPubKey)"
   }
 
   def fromAsm(asm: Seq[ScriptToken]): CLTVScriptPubKey = {
@@ -432,7 +453,9 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
   }
 
   def isCLTVScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
+    if (asm.isEmpty) {
+      false
+    } else if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
       val tailTokens = asm.slice(4, asm.length)
       if (P2SHScriptPubKey.isP2SHScriptPubKey(tailTokens) || tailTokens
             .contains(OP_CHECKLOCKTIMEVERIFY)) return false
@@ -483,9 +506,10 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
 sealed trait CSVScriptPubKey extends LockTimeScriptPubKey
 
 object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
+
   private case class CSVScriptPubKeyImpl(override val asm: Vector[ScriptToken])
       extends CSVScriptPubKey {
-    override def toString = "CSVScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"CSVScriptPubKey($locktime, $nestedScriptPubKey)"
   }
 
   def fromAsm(asm: Seq[ScriptToken]): CSVScriptPubKey = {
@@ -545,13 +569,302 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
 
 }
 
-sealed trait NonStandardScriptPubKey extends ScriptPubKey
+/** Currently only supports a single OP_IF ... OP_ELSE ... OP_ENDIF ScriptPubKey */
+sealed trait ConditionalScriptPubKey extends RawScriptPubKey {
+  def conditional: ConditionalOperation
+
+  require(asm.headOption.contains(conditional),
+          s"ConditionalScriptPubKey must begin with $conditional")
+  require(asm.last.equals(OP_ENDIF),
+          "ConditionalScriptPubKey must end in OP_ENDIF")
+
+  val (isValidConditional: Boolean, opElseIndexOpt: Option[Int]) = {
+    ConditionalScriptPubKey.isConditionalScriptPubKeyWithElseIndex(asm,
+                                                                   conditional)
+  }
+
+  require(isValidConditional, "Must be valid ConditionalScriptPubKey syntax")
+  require(opElseIndexOpt.isDefined,
+          "ConditionalScriptPubKey has to contain OP_ELSE asm token")
+
+  val opElseIndex: Int = opElseIndexOpt.get
+
+  require(!P2SHScriptPubKey.isP2SHScriptPubKey(trueSPK.asm) && !P2SHScriptPubKey
+            .isP2SHScriptPubKey(falseSPK.asm),
+          "ConditionalScriptPubKey cannot wrap P2SH")
+  require(
+    !WitnessScriptPubKey
+      .isWitnessScriptPubKey(trueSPK.asm) && !WitnessScriptPubKey
+      .isWitnessScriptPubKey(falseSPK.asm),
+    "ConditionalScriptPubKey cannot wrap SegWit ScriptPubKey"
+  )
+
+  def firstSPK: RawScriptPubKey = {
+    RawScriptPubKey
+      .fromAsm(asm.slice(1, opElseIndex))
+  }
+
+  def secondSPK: RawScriptPubKey = {
+    RawScriptPubKey
+      .fromAsm(asm.slice(opElseIndex + 1, asm.length - 1))
+  }
+
+  def trueSPK: RawScriptPubKey = {
+    conditional match {
+      case OP_IF    => firstSPK
+      case OP_NOTIF => secondSPK
+    }
+  }
+
+  def falseSPK: RawScriptPubKey = {
+    conditional match {
+      case OP_IF    => secondSPK
+      case OP_NOTIF => firstSPK
+    }
+  }
+}
+
+object ConditionalScriptPubKey {
+
+  /** Validates the correctness of the conditional syntax.
+    * If valid, also returns the index of the first outer-most OP_ELSE
+    */
+  def isConditionalScriptPubKeyWithElseIndex(
+      asm: Seq[ScriptToken],
+      conditional: ConditionalOperation): (Boolean, Option[Int]) = {
+    val headIsConditional = asm.headOption.contains(conditional)
+    lazy val endsWithEndIf = asm.last == OP_ENDIF
+
+    var opElseIndexOpt: Option[Int] = None
+
+    lazy val validConditionalTree = {
+      // Already validate that the first token is OP_IF, go to tail
+      // and start with depth 1 and no OP_ELSE found for that depth
+      val opElsePendingOpt = asm.zipWithIndex.tail
+        .foldLeft[Option[Vector[Boolean]]](Some(Vector(false))) {
+          case (None, _) => // Invalid tree case, do no computation
+            None
+          case (Some(Vector()), _) => // Case of additional asm after final OP_ENDIF
+            None
+          case (Some(opElseFoundAtDepth), (OP_IF | OP_NOTIF, _)) =>
+            // Increase depth by one with OP_ELSE yet to be found for this depth
+            Some(opElseFoundAtDepth :+ false)
+          case (Some(opElseFoundAtDepth), (OP_ELSE, asmIndex)) =>
+            if (opElseFoundAtDepth == Vector(false)) {
+              // If first OP_ELSE at depth 1, set opElseIndex
+              opElseIndexOpt = Some(asmIndex)
+            }
+
+            if (opElseFoundAtDepth.last) {
+              // If OP_ELSE already found at this depth, invalid
+              None
+            } else {
+              // Otherwise, set to found at this depth
+              Some(
+                opElseFoundAtDepth.updated(opElseFoundAtDepth.length - 1, true))
+            }
+          case (Some(opElseFoundAtDepth), (OP_ENDIF, _)) =>
+            if (opElseFoundAtDepth.last) {
+              // If OP_ELSE found at this depth then valid, decrease depth by 1
+              Some(opElseFoundAtDepth.dropRight(1))
+            } else {
+              // Otherwise, invalid
+              None
+            }
+          case (Some(opElseFoundAtDepth), (_, _)) =>
+            // Token not related to conditional structure, ignore
+            Some(opElseFoundAtDepth)
+        }
+
+      // We should end on OP_ENDIF which will take us to depth 0
+      opElsePendingOpt.contains(Vector.empty)
+    }
+
+    (headIsConditional && endsWithEndIf && validConditionalTree, opElseIndexOpt)
+  }
+
+  def apply(
+      conditional: ConditionalOperation,
+      trueSPK: RawScriptPubKey,
+      falseSPK: RawScriptPubKey): ConditionalScriptPubKey = {
+    conditional match {
+      case OP_IF =>
+        (trueSPK, falseSPK) match {
+          case (multisig: MultiSignatureScriptPubKey,
+                timeout: CLTVScriptPubKey) =>
+            MultiSignatureWithTimeoutScriptPubKey(multisig, timeout)
+          case _ =>
+            NonStandardIfConditionalScriptPubKey(trueSPK, falseSPK)
+        }
+      case OP_NOTIF =>
+        NonStandardNotIfConditionalScriptPubKey(falseSPK, trueSPK)
+    }
+  }
+}
+
+sealed trait IfConditionalScriptPubKey extends ConditionalScriptPubKey {
+  override def conditional: ConditionalOperation = OP_IF
+}
+
+object NonStandardIfConditionalScriptPubKey
+    extends ScriptFactory[IfConditionalScriptPubKey] {
+  private case class NonStandardIfConditionalScriptPubKeyImpl(
+      override val asm: Vector[ScriptToken])
+      extends IfConditionalScriptPubKey {
+    override def toString: String =
+      s"IfConditionalScriptPubKey($trueSPK, $falseSPK)"
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): IfConditionalScriptPubKey = {
+    buildScript(
+      asm = asm.toVector,
+      constructor = NonStandardIfConditionalScriptPubKeyImpl.apply,
+      invariant = isNonStandardIfConditionalScriptPubKey,
+      errorMsg = "Given asm was not a NonStandardIfConditionalScriptPubKey, got: " + asm
+    )
+  }
+
+  def apply(
+      trueSPK: RawScriptPubKey,
+      falseSPK: RawScriptPubKey): IfConditionalScriptPubKey = {
+    val asm = Vector(OP_IF) ++ trueSPK.asm ++ Vector(OP_ELSE) ++ falseSPK.asm ++ Vector(
+      OP_ENDIF)
+
+    fromAsm(asm)
+  }
+
+  def isNonStandardIfConditionalScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+    val validIf = ConditionalScriptPubKey
+      .isConditionalScriptPubKeyWithElseIndex(asm, OP_IF)
+      ._1
+
+    val isMultiSigWithTimeout = MultiSignatureWithTimeoutScriptPubKey
+      .isMultiSignatureWithTimeoutScriptPubKey(asm)
+
+    validIf && !isMultiSigWithTimeout
+  }
+}
+
+sealed trait MultiSignatureWithTimeoutScriptPubKey
+    extends IfConditionalScriptPubKey {
+  require(
+    MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(super.firstSPK.asm),
+    "True case must be MultiSignatureSPK")
+  require(CLTVScriptPubKey.isCLTVScriptPubKey(super.secondSPK.asm),
+          "False case must be CLTVSPK")
+
+  override def firstSPK: MultiSignatureScriptPubKey = {
+    MultiSignatureScriptPubKey.fromAsm(asm.slice(1, opElseIndex))
+  }
+
+  override def secondSPK: CLTVScriptPubKey = {
+    CLTVScriptPubKey.fromAsm(asm.slice(opElseIndex + 1, asm.length - 1))
+  }
+
+  override def trueSPK: MultiSignatureScriptPubKey = firstSPK
+  override def falseSPK: CLTVScriptPubKey = secondSPK
+
+  def multiSigSPK: MultiSignatureScriptPubKey = firstSPK
+  def timeoutSPK: CLTVScriptPubKey = secondSPK
+
+  def requiredSigs: Int = multiSigSPK.requiredSigs
+  def maxSigs: Int = multiSigSPK.maxSigs
+  def timeout: Int = timeoutSPK.locktime.toInt
+}
+
+object MultiSignatureWithTimeoutScriptPubKey
+    extends ScriptFactory[MultiSignatureWithTimeoutScriptPubKey] {
+  private case class MultiSignatureWithTimeoutScriptPubKeyImpl(
+      override val asm: Vector[ScriptToken])
+      extends MultiSignatureWithTimeoutScriptPubKey {
+    override def toString: String =
+      s"MultiSignatureWithTimeoutScriptPubKey($trueSPK, $falseSPK)"
+  }
+
+  override def fromAsm(
+      asm: Seq[ScriptToken]): MultiSignatureWithTimeoutScriptPubKey = {
+    buildScript(
+      asm = asm.toVector,
+      constructor = MultiSignatureWithTimeoutScriptPubKeyImpl.apply,
+      invariant = isMultiSignatureWithTimeoutScriptPubKey,
+      errorMsg =
+        s"Given asm was not a MultiSignatureWithTimeoutScriptPubKey, got: $asm"
+    )
+  }
+
+  def apply(
+      multiSigSPK: MultiSignatureScriptPubKey,
+      cltvSPK: CLTVScriptPubKey): MultiSignatureWithTimeoutScriptPubKey = {
+    val asm = Vector(OP_IF) ++ multiSigSPK.asm ++ Vector(OP_ELSE) ++ cltvSPK.asm ++ Vector(
+      OP_ENDIF)
+
+    fromAsm(asm)
+  }
+
+  def isMultiSignatureWithTimeoutScriptPubKey(
+      asm: Seq[ScriptToken]): Boolean = {
+    val (validIf, opElseIndexOpt) = ConditionalScriptPubKey
+      .isConditionalScriptPubKeyWithElseIndex(asm, OP_IF)
+
+    lazy val validMultiSigWithCLTV = opElseIndexOpt match {
+      case Some(opElseIndex) =>
+        MultiSignatureScriptPubKey
+          .isMultiSignatureScriptPubKey(asm.slice(1, opElseIndex)) && CLTVScriptPubKey
+          .isCLTVScriptPubKey(asm.slice(opElseIndex + 1, asm.length - 1))
+      case _ => false
+    }
+
+    validIf && validMultiSigWithCLTV
+  }
+}
+
+sealed trait NotIfConditionalScriptPubKey extends ConditionalScriptPubKey {
+  override def conditional: ConditionalOperation = OP_NOTIF
+}
+
+object NonStandardNotIfConditionalScriptPubKey
+    extends ScriptFactory[NotIfConditionalScriptPubKey] {
+  private case class NonStandardNotIfConditionalScriptPubKeyImpl(
+      override val asm: Vector[ScriptToken])
+      extends NotIfConditionalScriptPubKey {
+    override def toString: String =
+      s"NotIfConditionalScriptPubKey($falseSPK, $trueSPK)"
+  }
+
+  override def fromAsm(asm: Seq[ScriptToken]): NotIfConditionalScriptPubKey = {
+    buildScript(
+      asm = asm.toVector,
+      constructor = NonStandardNotIfConditionalScriptPubKeyImpl.apply,
+      invariant = isNonStandardNotIfConditionalScriptPubKey,
+      errorMsg = "Given asm was not a NotIfConditionalScriptPubKey, got: " + asm
+    )
+  }
+
+  def apply(
+      falseSPK: RawScriptPubKey,
+      trueSPK: RawScriptPubKey): NotIfConditionalScriptPubKey = {
+    val asm = Vector(OP_NOTIF) ++ falseSPK.asm ++ Vector(OP_ELSE) ++ trueSPK.asm ++ Vector(
+      OP_ENDIF)
+
+    fromAsm(asm)
+  }
+
+  def isNonStandardNotIfConditionalScriptPubKey(
+      asm: Seq[ScriptToken]): Boolean = {
+    ConditionalScriptPubKey
+      .isConditionalScriptPubKeyWithElseIndex(asm, OP_NOTIF)
+      ._1
+  }
+}
+
+sealed trait NonStandardScriptPubKey extends RawScriptPubKey
 
 object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
+
   private case class NonStandardScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends NonStandardScriptPubKey {
-    override def toString = "NonStandardScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"NonStandardScriptPubKey($asm)"
   }
 
   def fromAsm(asm: Seq[ScriptToken]): NonStandardScriptPubKey = {
@@ -565,31 +878,71 @@ object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
 }
 
 /** Represents the empty ScriptPubKey */
-case object EmptyScriptPubKey extends ScriptPubKey {
+case object EmptyScriptPubKey extends RawScriptPubKey {
   override def asm: Seq[ScriptToken] = Vector.empty
 }
 
-/** Factory companion object used to create
-  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] objects */
-object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
-  def empty: ScriptPubKey = fromAsm(Nil)
+object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
+  val empty: RawScriptPubKey = fromAsm(Nil)
 
-  /** Creates a `scriptPubKey` from its asm representation */
-  def fromAsm(asm: Seq[ScriptToken]): ScriptPubKey = asm match {
+  def fromAsm(asm: Seq[ScriptToken]): RawScriptPubKey = asm match {
     case Nil => EmptyScriptPubKey
+    case _
+        if MultiSignatureWithTimeoutScriptPubKey
+          .isMultiSignatureWithTimeoutScriptPubKey(asm) =>
+      MultiSignatureWithTimeoutScriptPubKey.fromAsm(asm)
+    case _
+        if NonStandardIfConditionalScriptPubKey
+          .isNonStandardIfConditionalScriptPubKey(asm) =>
+      NonStandardIfConditionalScriptPubKey.fromAsm(asm)
+    case _
+        if NonStandardNotIfConditionalScriptPubKey
+          .isNonStandardNotIfConditionalScriptPubKey(asm) =>
+      NonStandardNotIfConditionalScriptPubKey.fromAsm(asm)
     case _ if P2PKHScriptPubKey.isP2PKHScriptPubKey(asm) =>
       P2PKHScriptPubKey(asm)
-    case _ if P2SHScriptPubKey.isP2SHScriptPubKey(asm) => P2SHScriptPubKey(asm)
     case _ if P2PKScriptPubKey.isP2PKScriptPubKey(asm) => P2PKScriptPubKey(asm)
     case _ if MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm) =>
       MultiSignatureScriptPubKey(asm)
     case _ if CLTVScriptPubKey.isCLTVScriptPubKey(asm) => CLTVScriptPubKey(asm)
     case _ if CSVScriptPubKey.isCSVScriptPubKey(asm)   => CSVScriptPubKey(asm)
-    case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) =>
-      WitnessScriptPubKey(asm).get
     case _ if WitnessCommitment.isWitnessCommitment(asm) =>
       WitnessCommitment(asm)
     case _ => NonStandardScriptPubKey(asm)
+  }
+
+  def apply(asm: Seq[ScriptToken]): RawScriptPubKey = fromAsm(asm)
+}
+
+object NonWitnessScriptPubKey extends ScriptFactory[NonWitnessScriptPubKey] {
+  val empty: NonWitnessScriptPubKey = fromAsm(Nil)
+
+  def fromAsm(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = {
+    if (P2SHScriptPubKey.isP2SHScriptPubKey(asm)) {
+      P2SHScriptPubKey(asm)
+    } else {
+      RawScriptPubKey.fromAsm(asm)
+    }
+  }
+
+  def apply(asm: Seq[ScriptToken]): NonWitnessScriptPubKey = fromAsm(asm)
+}
+
+/** Factory companion object used to create
+  * [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]] objects */
+object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
+  val empty: ScriptPubKey = fromAsm(Nil)
+
+  /** Creates a `scriptPubKey` from its asm representation */
+  def fromAsm(asm: Seq[ScriptToken]): ScriptPubKey = {
+    val nonWitnessScriptPubKey = NonWitnessScriptPubKey.fromAsm(asm)
+    if (nonWitnessScriptPubKey
+          .isInstanceOf[NonStandardScriptPubKey] && WitnessScriptPubKey
+          .isWitnessScriptPubKey(asm)) {
+      WitnessScriptPubKey(asm).get
+    } else {
+      nonWitnessScriptPubKey
+    }
   }
 
   def apply(asm: Seq[ScriptToken]): ScriptPubKey = fromAsm(asm)
@@ -657,9 +1010,9 @@ object WitnessScriptPubKey {
 
     //we can also have a LockTimeScriptPubKey with a nested 0 public key multisig script, need to check that as well
     val bytes = BitcoinSUtil.toByteVector(asm)
-    val isMultiSig =
+    lazy val isMultiSig =
       MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm)
-    val isLockTimeSPK = {
+    lazy val isLockTimeSPK = {
       LockTimeScriptPubKey.isValidLockTimeScriptPubKey(asm)
     }
 
@@ -701,10 +1054,11 @@ object WitnessScriptPubKeyV0 {
   */
 sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(2).bytes)
-  override def toString = s"P2WPKHWitnessSPKV0($hex)"
+  override def toString = s"P2WPKHWitnessSPKV0($pubKeyHash)"
 }
 
 object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
+
   private case class P2WPKHWitnessSPKV0Impl(
       override val asm: Vector[ScriptToken])
       extends P2WPKHWitnessSPKV0
@@ -745,10 +1099,11 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   */
 sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def scriptHash: Sha256Digest = Sha256Digest(asm(2).bytes)
-  override def toString = s"P2WSHWitnessSPKV0($hex)"
+  override def toString = s"P2WSHWitnessSPKV0($scriptHash)"
 }
 
 object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
+
   private case class P2WSHWitnessSPKV0Impl(
       override val asm: Vector[ScriptToken])
       extends P2WSHWitnessSPKV0
@@ -790,10 +1145,11 @@ sealed trait UnassignedWitnessScriptPubKey extends WitnessScriptPubKey {
 
 object UnassignedWitnessScriptPubKey
     extends ScriptFactory[UnassignedWitnessScriptPubKey] {
+
   private case class UnassignedWitnessScriptPubKeyImpl(
       override val asm: Vector[ScriptToken])
       extends UnassignedWitnessScriptPubKey {
-    override def toString = "UnassignedWitnessScriptPubKeyImpl(" + hex + ")"
+    override def toString = s"UnassignedWitnessScriptPubKey($asm)"
   }
 
   override def fromAsm(asm: Seq[ScriptToken]): UnassignedWitnessScriptPubKey = {
@@ -815,7 +1171,7 @@ object UnassignedWitnessScriptPubKey
   * See BIP141 for more info
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#commitment-structure]]
   */
-sealed trait WitnessCommitment extends ScriptPubKey {
+sealed trait WitnessCommitment extends RawScriptPubKey {
 
   /** The commitment to the
     * [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]s in the
@@ -825,10 +1181,11 @@ sealed trait WitnessCommitment extends ScriptPubKey {
 }
 
 object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
+
   private case class WitnessCommitmentImpl(
       override val asm: Vector[ScriptToken])
       extends WitnessCommitment {
-    override def toString = "WitnessCommitmentImpl(" + hex + ")"
+    override def toString = s"WitnessCommitment(${witnessRootHash.hex})"
   }
 
   /** Every witness commitment must start with this header, see

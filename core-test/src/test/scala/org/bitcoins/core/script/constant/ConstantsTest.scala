@@ -18,6 +18,11 @@ class ConstantsTest extends BitcoinSUnitTest {
     OP_FALSE.toLong must be(0)
   }
 
+  it must "treat OP_FALSE and OP_0 as equal" in {
+    OP_FALSE must be(OP_0)
+    OP_0 must be(OP_FALSE)
+  }
+
   it must "define an OP_PUSHDATA1" in {
     OP_PUSHDATA1.opCode must be(76)
     OP_PUSHDATA1.hex must be("4c")
@@ -43,6 +48,11 @@ class ConstantsTest extends BitcoinSUnitTest {
   it must "define an OP_TRUE" in {
     OP_TRUE.opCode must be(81)
     OP_TRUE.hex must be("51")
+  }
+
+  it must "treat OP_TRUE and OP_1 as equal" in {
+    OP_TRUE must be(OP_1)
+    OP_1 must be(OP_TRUE)
   }
 
   it must "define an OP_2" in {

@@ -5,9 +5,9 @@ object Deps {
   object V {
     val bouncyCastle = "1.55"
     val logback = "1.2.3"
-    val scalacheck = "1.14.0"
+    val scalacheck = "1.14.2"
     val scalaTest = "3.0.8"
-    val slf4j = "1.7.28"
+    val slf4j = "1.7.29"
     val spray = "1.3.5"
     val zeromq = "0.5.1"
     val akkav = "10.1.10"
@@ -32,7 +32,7 @@ object Deps {
     val oldMicroPickleV = "0.7.4"
     val oldMicroJsonV = oldMicroPickleV
 
-    val newMicroPickleV = "0.7.5"
+    val newMicroPickleV = "0.8.0"
     val newMicroJsonV = newMicroPickleV
 
     // akka-http-upickle is not yet published
