@@ -126,7 +126,18 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  behavior of "RpcClient"
+  behavior of "EclairRpcClient"
+
+  it must "have our EclairRpcClient work with .hashCode() and equals" in {
+    val f = (client1: EclairApi, client2: EclairApi) => {
+      Future {
+        assert(client1 != client2)
+        assert(client1.hashCode() != client2.hashCode())
+      }
+    }
+
+    executeWithClientOtherClient(f)
+  }
 
   /**
     * Please keep this test the very first. All other tests rely on the propagated gossip messages.
