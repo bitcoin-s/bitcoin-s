@@ -30,7 +30,7 @@ import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import org.bitcoins.core.config._
 import org.bitcoins.core.p2p.ServiceIdentifier
 
@@ -549,10 +549,12 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[ServiceIdentifier] =
       json match {
         case JsString(s) =>
-          try JsSuccess(ServiceIdentifier.fromString(s))
-          catch {
-            case _: Throwable =>
-              SerializerUtil.buildErrorMsg("Service Identifier", s)
+          Try(ServiceIdentifier.fromString(s)) match {
+            case Success(serviceIdentifier) => JsSuccess(serviceIdentifier)
+            case Failure(err) =>
+              SerializerUtil.buildJsErrorMsg(
+                s"Unexpected Service Identifier: $err",
+                json)
           }
         case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
             _: JsObject) =>
