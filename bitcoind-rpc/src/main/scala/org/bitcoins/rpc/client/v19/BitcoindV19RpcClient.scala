@@ -8,6 +8,7 @@ import org.bitcoins.rpc.client.common.RpcOpts.WalletFlag
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
+  DescriptorRpc,
   RpcOpts
 }
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -31,6 +32,7 @@ class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
     implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
+    with DescriptorRpc
     with V19BlockFilterRpc {
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V19

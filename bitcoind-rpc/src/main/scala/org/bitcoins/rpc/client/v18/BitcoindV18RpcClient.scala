@@ -1,16 +1,21 @@
 package org.bitcoins.rpc.client.v18
 import akka.actor.ActorSystem
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  DescriptorRpc,
+  RpcOpts
+}
 import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.util.Try
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.rpc.client.common.RpcOpts
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.rpc.jsonmodels.SignRawTransactionResult
 import play.api.libs.json.Json
 import play.api.libs.json.JsString
+
 import scala.concurrent.Future
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters._
@@ -25,7 +30,7 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
     with V18PsbtRpc
-    with V18DescriptorRpc
+    with DescriptorRpc
     with V18AssortedRpc {
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V18
