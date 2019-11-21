@@ -131,7 +131,7 @@ object ReceivedPayment {
   case class Part(
       amount: MilliSatoshis,
       fromChannelId: FundedChannelId,
-      timestamp: FiniteDuration
+      timestamp: FiniteDuration //milliseconds
   )
 }
 
@@ -141,7 +141,7 @@ case class RelayedPayment(
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
     toChannelId: FundedChannelId,
-    timestamp: FiniteDuration
+    timestamp: FiniteDuration //milliseconds
 )
 
 case class SentPayment(
@@ -157,7 +157,7 @@ object SentPayment {
       amount: MilliSatoshis,
       feesPaid: MilliSatoshis,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration
+      timestamp: FiniteDuration //milliseconds
   )
 }
 
@@ -165,7 +165,7 @@ case class ChannelUpdate(
     signature: ECDigitalSignature,
     chainHash: DoubleSha256Digest,
     shortChannelId: ShortChannelId,
-    timestamp: Long,
+    timestamp: Long, //seconds
     messageFlags: Int,
     channelFlags: Int,
     cltvExpiryDelta: Int,
@@ -190,7 +190,7 @@ case class ChannelResult(
 
 case class InvoiceResult(
     prefix: LnHumanReadablePart,
-    timestamp: FiniteDuration,
+    timestamp: FiniteDuration, //seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
@@ -203,7 +203,7 @@ case class PaymentId(value: UUID) {
 
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
-    timestamp: Long,
+    timestamp: Long, //seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
@@ -225,7 +225,7 @@ case class OutgoingPayment(
 case class IncomingPayment(
     paymentRequest: PaymentRequest,
     paymentPreimage: PaymentPreimage,
-    createdAt: FiniteDuration,
+    createdAt: FiniteDuration, //milliseconds
     status: IncomingPaymentStatus)
 
 sealed trait IncomingPaymentStatus
@@ -282,15 +282,15 @@ object WebSocketEvent {
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration)
-      extends WebSocketEvent
+      timestamp: FiniteDuration //milliseconds
+  ) extends WebSocketEvent
 
   case class PaymentReceived(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
-      timestamp: FiniteDuration)
-      extends WebSocketEvent
+      timestamp: FiniteDuration // milliseconds
+  ) extends WebSocketEvent
 
   case class PaymentFailed(paymentHash: Sha256Digest, failures: Vector[String])
       extends WebSocketEvent
@@ -301,13 +301,13 @@ object WebSocketEvent {
       paymentHash: Sha256Digest,
       paymentPreimage: PaymentPreimage,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration)
-      extends WebSocketEvent
+      timestamp: FiniteDuration //milliseconds
+  ) extends WebSocketEvent
 
   case class PaymentSettlingOnchain(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
-      timestamp: FiniteDuration)
-      extends WebSocketEvent
+      timestamp: FiniteDuration //milliseconds
+  ) extends WebSocketEvent
 
 }
