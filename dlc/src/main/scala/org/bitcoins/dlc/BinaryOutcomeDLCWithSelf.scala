@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   MultiSignatureWithTimeoutScriptPubKey,
   P2PKHScriptPubKey,
+  P2PKHScriptSignature,
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{
@@ -268,7 +269,13 @@ case class BinaryOutcomeDLCWithSelf(
     */
   def executeDLC(
       oracleSigF: Future[SchnorrDigitalSignature],
-      local: Boolean): Future[(Transaction, BitcoinUTXOSpendingInfo)] = {
+      local: Boolean): Future[
+    (
+        (Transaction, Transaction, Transaction),
+        (
+            Vector[BitcoinUTXOSpendingInfo],
+            BitcoinUTXOSpendingInfo,
+            BitcoinUTXOSpendingInfo))] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
       logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
@@ -361,7 +368,13 @@ case class BinaryOutcomeDLCWithSelf(
 
           // TODO Publish tx
 
-          spendingTxF.map(tx => (tx, cetSpendingInfo))
+          spendingTxF.map { spendingTx =>
+            val txs = (fundingTx, cet, spendingTx)
+            val spendingInfos =
+              (fundingUtxos, fundingSpendingInfo, cetSpendingInfo)
+
+            (txs, spendingInfos)
+          }
         }
       }
     }
