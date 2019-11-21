@@ -242,6 +242,7 @@ case class GetMemPoolEntryResultPreV19(
 case class GetMemPoolEntryResultPostV19(
     vsize: Int,
     fee: Bitcoins,
+    weight: Int,
     modifiedfee: Bitcoins,
     time: UInt32,
     height: Int,
