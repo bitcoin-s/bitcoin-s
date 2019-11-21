@@ -186,6 +186,12 @@ trait WalletRpc { self: Client =>
       List(JsString(currentPassphrase), JsString(newPassphrase)))
   }
 
+  /**
+    *
+    * @param blank Not available to versions before v19
+    * @param passphrase Not available to versions before v19
+    * @return
+    */
   def createWallet(
       walletName: String,
       disablePrivateKeys: Boolean = false,
@@ -199,6 +205,7 @@ trait WalletRpc { self: Client =>
                                               JsBoolean(blank),
                                               JsString(passphrase)))
       case V16 | V17 | V18 =>
+        require(passphrase.isEmpty)
         bitcoindCall[CreateWalletResult](
           "createwallet",
           List(JsString(walletName), JsBoolean(disablePrivateKeys)))
