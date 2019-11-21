@@ -10,6 +10,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
@@ -187,11 +188,21 @@ trait WalletRpc { self: Client =>
 
   def createWallet(
       walletName: String,
-      disablePrivateKeys: Boolean = false): Future[CreateWalletResult] = {
-    bitcoindCall[CreateWalletResult](
-      "createwallet",
-      List(JsString(walletName), Json.toJson(disablePrivateKeys)))
-  }
+      disablePrivateKeys: Boolean = false,
+      blank: Boolean = false,
+      passphrase: String = ""): Future[CreateWalletResult] =
+    self.version match {
+      case V19 | Experimental | Unknown =>
+        bitcoindCall[CreateWalletResult]("createwallet",
+                                         List(JsString(walletName),
+                                              JsBoolean(disablePrivateKeys),
+                                              JsBoolean(blank),
+                                              JsString(passphrase)))
+      case V16 | V17 | V18 =>
+        bitcoindCall[CreateWalletResult](
+          "createwallet",
+          List(JsString(walletName), JsBoolean(disablePrivateKeys)))
+    }
 
   def getAddressInfo(address: BitcoinAddress): Future[AddressInfoResult] = {
     bitcoindCall[AddressInfoResult]("getaddressinfo",
