@@ -5,7 +5,8 @@ import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey,
   Schnorr,
-  SchnorrNonce
+  SchnorrNonce,
+  Sha256DigestBE
 }
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -16,6 +17,7 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2PKHSpendingInfo
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.scalatest.Assertion
 import scodec.bits.ByteVector
 
 import scala.concurrent.Future
@@ -80,39 +82,49 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val changeSPK = P2PKHScriptPubKey(changePubKey)
     val network = RegTest
 
-    val oracleSig =
-      Schnorr.signWithNonce(outcomeWinHash.bytes, oraclePrivKey, preCommittedK)
+    def executeForCase(outcomeHash: Sha256DigestBE,
+                       local: Boolean): Future[Assertion] = {
+      val oracleSig =
+        Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
-    val dlc = BinaryOutcomeDLCWithSelf(
-      outcomeWin = outcomeWin,
-      outcomeLose = outcomeLose,
-      oraclePubKey = oraclePubKey,
-      preCommittedR = preCommittedR,
-      fundingLocalPrivKey = fundingLocalPrivKey,
-      fundingRemotePrivKey = fundingRemotePrivKey,
-      cetLocalPrivKey = cetLocalPrivKey,
-      cetRemotePrivKey = cetRemotePrivKey,
-      finalLocalPrivKey = finalLocalPrivKey,
-      finalRemotePrivKey = finalRemotePrivKey,
-      localInput = localInput,
-      remoteInput = remoteInput,
-      localFundingUtxos = localFundingUtxos,
-      remoteFundingUtxos = remoteFundingUtxos,
-      localWinPayout = localWinPayout,
-      remoteWinPayout = remoteWinPayout,
-      localLosePayout = localLosePayout,
-      remoteLosePayout = remoteLosePayout,
-      timeout = timeout,
-      feeRate = feeRate,
-      changeSPK = changeSPK,
-      network = network
-    )
+      val dlc = BinaryOutcomeDLCWithSelf(
+        outcomeWin = outcomeWin,
+        outcomeLose = outcomeLose,
+        oraclePubKey = oraclePubKey,
+        preCommittedR = preCommittedR,
+        fundingLocalPrivKey = fundingLocalPrivKey,
+        fundingRemotePrivKey = fundingRemotePrivKey,
+        cetLocalPrivKey = cetLocalPrivKey,
+        cetRemotePrivKey = cetRemotePrivKey,
+        finalLocalPrivKey = finalLocalPrivKey,
+        finalRemotePrivKey = finalRemotePrivKey,
+        localInput = localInput,
+        remoteInput = remoteInput,
+        localFundingUtxos = localFundingUtxos,
+        remoteFundingUtxos = remoteFundingUtxos,
+        localWinPayout = localWinPayout,
+        remoteWinPayout = remoteWinPayout,
+        localLosePayout = localLosePayout,
+        remoteLosePayout = remoteLosePayout,
+        timeout = timeout,
+        feeRate = feeRate,
+        changeSPK = changeSPK,
+        network = network
+      )
 
-    dlc.executeDLC(Future.successful(oracleSig)).map {
-      case (closingTx, cetSpendingInfo) =>
-        assert(
-          BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
-        )
+      dlc.executeDLC(Future.successful(oracleSig), local).map {
+        case (closingTx, cetSpendingInfo) =>
+          assert(
+            BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
+          )
+      }
     }
+
+    for {
+      _ <- executeForCase(outcomeWinHash, local = true)
+      _ <- executeForCase(outcomeLoseHash, local = true)
+      _ <- executeForCase(outcomeWinHash, local = false)
+      _ <- executeForCase(outcomeLoseHash, local = false)
+    } yield succeed
   }
 }

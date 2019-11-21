@@ -232,8 +232,9 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def executeDLC(oracleSigF: Future[SchnorrDigitalSignature]): Future[
-    (Transaction, BitcoinUTXOSpendingInfo)] = {
+  def executeDLC(
+      oracleSigF: Future[SchnorrDigitalSignature],
+      local: Boolean): Future[(Transaction, BitcoinUTXOSpendingInfo)] = {
     createFundingTransaction.flatMap { fundingTx =>
       println(s"Funding Transaction: ${fundingTx.hex}\n")
 
@@ -261,31 +262,50 @@ case class BinaryOutcomeDLCWithSelf(
       // Publish funding tx
 
       oracleSigF.flatMap { oracleSig =>
-        val cetLocalF =
+        val (cetF, payout) =
           if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
-            cetWinLocalF
+            if (local) {
+              (cetWinLocalF, localWinPayout)
+            } else {
+              (cetWinRemoteF, remoteWinPayout)
+            }
           } else if (Schnorr.verify(messageLose, oracleSig, oraclePubKey)) {
-            cetLoseLocalF
+            if (local) {
+              (cetLoseLocalF, localLosePayout)
+            } else {
+              (cetLoseRemoteF, remoteLosePayout)
+            }
           } else {
-            Future.failed(???)
+            (Future.failed(???), ???)
           }
 
-        cetLocalF.flatMap { cet =>
+        cetF.flatMap { cet =>
+          val cetPrivKey = if (local) {
+            cetLocalPrivKey
+          } else {
+            cetRemotePrivKey
+          }
+
           val output = cet.outputs.head
           val cetSpendingInfo = ConditionalSpendingInfo(
             TransactionOutPoint(cet.txIdBE, UInt32.zero),
             output.value,
             output.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
-            Vector(cetLocalPrivKey, ECPrivateKey(oracleSig.s)),
+            Vector(cetPrivKey, ECPrivateKey(oracleSig.s)),
             HashType.sigHashAll,
             ConditionalPath.nonNestedTrue
           )
 
+          val finalPrivKey = if (local) {
+            finalLocalPrivKey
+          } else {
+            finalRemotePrivKey
+          }
+
           val txBuilder = BitcoinTxBuilder(
             Vector(
-              TransactionOutput(
-                localWinPayout,
-                P2PKHScriptPubKey(finalLocalPrivKey.publicKey))),
+              TransactionOutput(payout,
+                                P2PKHScriptPubKey(finalPrivKey.publicKey))),
             Vector(cetSpendingInfo),
             feeRate,
             changeSPK,
