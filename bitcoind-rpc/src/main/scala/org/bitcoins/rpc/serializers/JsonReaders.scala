@@ -549,7 +549,11 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[ServiceIdentifier] =
       json match {
         case JsString(s) =>
-          JsSuccess(ServiceIdentifier.fromString(s))
+          try JsSuccess(ServiceIdentifier.fromString(s))
+          catch {
+            case _: Throwable =>
+              SerializerUtil.buildErrorMsg("Service Identifier", s)
+          }
         case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
             _: JsObject) =>
           SerializerUtil.buildJsErrorMsg("jsstring", err)
