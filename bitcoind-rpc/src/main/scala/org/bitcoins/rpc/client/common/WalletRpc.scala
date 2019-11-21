@@ -205,7 +205,8 @@ trait WalletRpc { self: Client =>
                                               JsBoolean(blank),
                                               JsString(passphrase)))
       case V16 | V17 | V18 =>
-        require(passphrase.isEmpty)
+        require(passphrase.isEmpty,
+                "passphrase should not be set for versions before v19")
         bitcoindCall[CreateWalletResult](
           "createwallet",
           List(JsString(walletName), JsBoolean(disablePrivateKeys)))
