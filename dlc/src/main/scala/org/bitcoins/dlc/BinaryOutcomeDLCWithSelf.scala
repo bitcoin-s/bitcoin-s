@@ -9,6 +9,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   ConditionalScriptPubKey,
@@ -25,7 +26,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
@@ -34,6 +35,7 @@ import org.bitcoins.core.wallet.utxo.{
   ConditionalSpendingInfo,
   MultiSignatureSpendingInfo
 }
+import org.bitcoins.rpc.client.common.{MiningRpc, RawTransactionRpc}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -156,11 +158,10 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETLocal(
-      sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
-      localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETLocal(sigPubKey: ECPublicKey,
+                     fundingSpendingInfo: MultiSignatureSpendingInfo,
+                     localPayout: CurrencyUnit,
+                     remotePayout: CurrencyUnit): Future[Transaction] = {
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
       pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
@@ -189,11 +190,10 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETRemote(
-      sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
-      localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETRemote(sigPubKey: ECPublicKey,
+                      fundingSpendingInfo: MultiSignatureSpendingInfo,
+                      localPayout: CurrencyUnit,
+                      remotePayout: CurrencyUnit): Future[Transaction] = {
 
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
@@ -269,10 +269,13 @@ case class BinaryOutcomeDLCWithSelf(
     */
   def executeDLC(
       oracleSigF: Future[SchnorrDigitalSignature],
-      local: Boolean): Future[DLCOutcome] = {
+      local: Boolean,
+      rpcClientAndAddressOpt: Option[(RawTransactionRpc with MiningRpc,
+                                      BitcoinAddress)] = None)
+    : Future[DLCOutcome] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
-      logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
+      println(s"Funding Transaction: ${fundingTx.hex}\n")
 
       val fundingTxId = fundingTx.txIdBE
       val output = fundingTx.outputs.head
@@ -291,13 +294,18 @@ case class BinaryOutcomeDLCWithSelf(
       val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
       val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
 
-      cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet.hex}\n"))
-      cetLoseLocalF.foreach(cet => logger.info(s"CET Lose Local: ${cet.hex}\n"))
-      cetWinRemoteF.foreach(cet => logger.info(s"CET Win Remote: ${cet.hex}\n"))
-      cetLoseRemoteF.foreach(cet =>
-        logger.info(s"CET Lose Remote: ${cet.hex}\n"))
+      cetWinLocalF.foreach(cet => println(s"CET Win Local: ${cet.hex}\n"))
+      cetLoseLocalF.foreach(cet => println(s"CET Lose Local: ${cet.hex}\n"))
+      cetWinRemoteF.foreach(cet => println(s"CET Win Remote: ${cet.hex}\n"))
+      cetLoseRemoteF.foreach(cet => println(s"CET Lose Remote: ${cet.hex}\n"))
 
-      // TODO Publish funding tx
+      val fundingTxPublishedF = rpcClientAndAddressOpt match {
+        case Some((client, address)) =>
+          client
+            .sendRawTransaction(fundingTx, allowHighFees = true)
+            .flatMap(_ => client.generateToAddress(blocks = 6, address))
+        case None => FutureUtil.unit
+      }
 
       oracleSigF.flatMap { oracleSig =>
         // Pick the CET to use and payout by checking which message was signed
@@ -318,8 +326,16 @@ case class BinaryOutcomeDLCWithSelf(
             (Future.failed(???), ???)
           }
 
-        cetF.flatMap { cet =>
-          // TODO Publish CET
+        val cetReadyForPublish = fundingTxPublishedF.flatMap(_ => cetF)
+
+        cetReadyForPublish.flatMap { cet =>
+          val cetPublishedF = rpcClientAndAddressOpt match {
+            case Some((client, address)) =>
+              client
+                .sendRawTransaction(cet)
+                .flatMap(_ => client.generateToAddress(blocks = 6, address))
+            case None => FutureUtil.unit
+          }
 
           val cetPrivKey = if (local) {
             cetLocalPrivKey
@@ -358,19 +374,31 @@ case class BinaryOutcomeDLCWithSelf(
 
           val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
 
-          spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
+          spendingTxF.foreach(tx => println(s"Closing Tx: ${tx.hex}"))
 
-          // TODO Publish tx
+          val spendingTxPublishedF = spendingTxF.flatMap { spendingTx =>
+            cetPublishedF.flatMap { _ =>
+              rpcClientAndAddressOpt match {
+                case Some((client, address)) =>
+                  client
+                    .sendRawTransaction(spendingTx)
+                    .flatMap(_ => client.generateToAddress(blocks = 6, address))
+                case None => FutureUtil.unit
+              }
+            }
+          }
 
-          spendingTxF.map { spendingTx =>
-            DLCOutcome(
-              fundingTx,
-              cet,
-              spendingTx,
-              fundingUtxos,
-              fundingSpendingInfo,
-              cetSpendingInfo
-            )
+          spendingTxF.flatMap { spendingTx =>
+            spendingTxPublishedF.map { _ =>
+              DLCOutcome(
+                fundingTx,
+                cet,
+                spendingTx,
+                fundingUtxos,
+                fundingSpendingInfo,
+                cetSpendingInfo
+              )
+            }
           }
         }
       }
