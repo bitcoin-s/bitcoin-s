@@ -1,6 +1,6 @@
 package org.bitcoins
 
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.currency.Bitcoins
 import upickle.default._
 
@@ -16,4 +16,6 @@ package object picklers {
   implicit val doubleSha256DigestBEPickler: ReadWriter[DoubleSha256DigestBE] =
     readwriter[String].bimap(_.hex, DoubleSha256DigestBE.fromHex)
 
+  implicit val blockStampPickler: ReadWriter[BlockStamp] =
+    readwriter[String].bimap(_.mkString, BlockStamp.fromString(_).get)
 }

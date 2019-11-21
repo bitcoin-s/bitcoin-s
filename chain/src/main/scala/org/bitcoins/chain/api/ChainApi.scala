@@ -1,6 +1,5 @@
 package org.bitcoins.chain.api
 
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{
   BlockHeaderDb,
   CompactFilterDb,
@@ -19,8 +18,6 @@ import scala.concurrent.{ExecutionContext, Future}
   * Entry api to the chain project for adding new things to our blockchain
   */
 trait ChainApi {
-
-  implicit private[chain] val chainConfig: ChainAppConfig
 
   /**
     * Adds a block header to our chain project
@@ -173,17 +170,17 @@ trait ChainApi {
     * @param startOpt start point (if empty it starts with the genesis block)
     * @param endOpt end point (if empty it ends with the best tip)
     * @param batchSize number of filters that can be matched in one batch
-    *                  (default [[ChainConfig.filterBatchSize]]
+    *
     * @param parallelismLevel max number of threads required to perform matching
-    *                         (default [[Runtime.availableProcessors]])
+    *
     * @return a list of matching block hashes
     */
   def getMatchingBlocks(
       scripts: Vector[ScriptPubKey],
-      startOpt: Option[BlockStamp] = None,
-      endOpt: Option[BlockStamp] = None,
-      batchSize: Int = chainConfig.filterBatchSize,
-      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      batchSize: Int,
+      parallelismLevel: Int)(
       implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]]
 
   /** Returns the block height of the given block stamp */
