@@ -20,9 +20,10 @@ trait DescriptorRpc {
   def deriveAddresses(
       descriptor: String,
       range: Option[Vector[Double]]): Future[DeriveAddressesResult] = {
-    bitcoindCall[DeriveAddressesResult](
-      "deriveaddresses",
-      List(JsString(descriptor), Json.toJson(range)))
+    val params =
+      if (range.isDefined) List(JsString(descriptor), Json.toJson(range))
+      else List(JsString(descriptor))
+    bitcoindCall[DeriveAddressesResult]("deriveaddresses", params)
   }
 
   def getDescriptorInfo(descriptor: String): Future[GetDescriptorInfoResult] = {
