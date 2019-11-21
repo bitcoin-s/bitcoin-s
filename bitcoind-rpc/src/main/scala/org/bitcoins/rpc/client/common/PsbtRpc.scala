@@ -28,12 +28,9 @@ trait PsbtRpc {
     bitcoindCall[String]("utxoupdatepsbt", List(JsString(psbt)))
   }
 
-  def utxoUpdatePsbt(
-      psbt: String,
-      descriptors: Vector[String]): Future[String] = {
-    bitcoindCall[String](
-      "utxoupdatepsbt",
-      List(JsString(psbt)) ++ descriptors.map(Json.toJson(_)).toList)
+  def utxoUpdatePsbt(psbt: String, descriptors: Seq[String]): Future[String] = {
+    bitcoindCall[String]("utxoupdatepsbt",
+                         List(JsString(psbt), Json.toJson(descriptors)))
   }
 
 }
