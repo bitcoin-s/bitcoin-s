@@ -24,7 +24,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
@@ -37,8 +37,41 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-// Two selfs: Local, Remote
-// Two outcomes: Win, Lose
+/** This case class allows for the construction and execution of binary outcome
+  * Discreet Log Contracts between one party and itself. In the future this will
+  * be split amongst two separate parties. This change will likely require that
+  * this class be largely altered.
+  *
+  * The "two parties", which are actually just one node taking both positions, are
+  * referred to as Local and Remote. The two outcomes are called Win and Lose but
+  * note that Win refers to the case where Local wins money and Remote loses money.
+  * Likewise Lose refers to the case where Remote wins and Local loses money.
+  *
+  * TODO: Make timeouts actually work
+  * TODO: Add a time-locked refund transaction.
+  *
+  * @param outcomeWin The String whose hash is signed by the oracle in the Win case
+  * @param outcomeLose The String whose hash is signed by the oracle in the Lose case
+  * @param oraclePubKey The Oracle's permanent public key
+  * @param preCommittedR The Oracle's one-time event-specific public key
+  * @param fundingLocalPrivKey Local's funding private key
+  * @param fundingRemotePrivKey Remote's funding private key
+  * @param cetLocalPrivKey Local's CET private key
+  * @param cetRemotePrivKey Remote's CET private key
+  * @param finalLocalPrivKey Local's closing private key
+  * @param finalRemotePrivKey Remote's closing private key
+  * @param localInput Local's total collateral contribution
+  * @param remoteInput Remote's total collateral contribution
+  * @param localFundingUtxos Local's funding BitcoinUTXOSpendingInfo collection
+  * @param remoteFundingUtxos Remote's funding BitcoinUTXOSpendingInfo collection
+  * @param localWinPayout Local's payout in the Win case
+  * @param remoteWinPayout Remote's payout in the Win case (in which Remote loses)
+  * @param localLosePayout Local's payout in the Lose case
+  * @param remoteLosePayout Remote's payout in the Lose case (in which Remote wins)
+  * @param timeout The CLTV timeout in milliseconds used in all CETs
+  * @param feeRate The predicted fee rate used for all transactions
+  * @param changeSPK The place-holder change ScriptPubKey used for all transactions
+  */
 case class BinaryOutcomeDLCWithSelf(
     outcomeWin: String,
     outcomeLose: String,
@@ -61,20 +94,26 @@ case class BinaryOutcomeDLCWithSelf(
     timeout: Int,
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey,
-    network: BitcoinNetwork)(implicit ec: ExecutionContext) {
+    network: BitcoinNetwork)(implicit ec: ExecutionContext)
+    extends BitcoinSLogger {
 
+  /** Hash signed by oracle in Win case */
   val messageWin: ByteVector =
     CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip.bytes
 
+  /** Hash signed by oracle in Lose case */
   val messageLose: ByteVector =
     CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip.bytes
 
+  /** sig*G in the Win case */
   val sigPubKeyWin: ECPublicKey =
     Schnorr.computePubKey(messageWin, preCommittedR, oraclePubKey)
 
+  /** sig*G in the Lose case */
   val sigPubKeyLose: ECPublicKey =
     Schnorr.computePubKey(messageLose, preCommittedR, oraclePubKey)
 
+  /** Total funding amount */
   private val totalInput = localInput + remoteInput
   private val fundingUtxos = localFundingUtxos ++ remoteFundingUtxos
 
@@ -115,21 +154,10 @@ case class BinaryOutcomeDLCWithSelf(
     txBuilderF.flatMap(subtractFeeAndSign)
   }
 
-  def toLocalSPK(
-      sigPubKey: ECPublicKey): MultiSignatureWithTimeoutScriptPubKey = {
-    val multiSig = MultiSignatureScriptPubKey(
-      requiredSigs = 2,
-      pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
-    val timeoutSPK = CLTVScriptPubKey(
-      locktime = ScriptNumber(timeout),
-      scriptPubKey = P2PKHScriptPubKey(cetRemotePrivKey.publicKey))
-
-    MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
-  }
-
+  /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETLocal(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: BitcoinUTXOSpendingInfo,
+      fundingSpendingInfo: MultiSignatureSpendingInfo,
       localPayout: CurrencyUnit,
       remotePayout: CurrencyUnit): Future[Transaction] = {
     val multiSig = MultiSignatureScriptPubKey(
@@ -159,9 +187,10 @@ case class BinaryOutcomeDLCWithSelf(
     txBuilderF.flatMap(subtractFeeAndSign)
   }
 
+  /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETRemote(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: BitcoinUTXOSpendingInfo,
+      fundingSpendingInfo: MultiSignatureSpendingInfo,
       localPayout: CurrencyUnit,
       remotePayout: CurrencyUnit): Future[Transaction] = {
 
@@ -193,7 +222,7 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def createCETWinLocal(
-      fundingSpendingInfo: BitcoinUTXOSpendingInfo): Future[Transaction] = {
+      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
     createCETLocal(
       sigPubKey = sigPubKeyWin,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -203,7 +232,7 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def createCETLoseLocal(
-      fundingSpendingInfo: BitcoinUTXOSpendingInfo): Future[Transaction] = {
+      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
     createCETLocal(
       sigPubKey = sigPubKeyLose,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -213,7 +242,7 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def createCETWinRemote(
-      fundingSpendingInfo: BitcoinUTXOSpendingInfo): Future[Transaction] = {
+      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
     createCETRemote(
       sigPubKey = sigPubKeyWin,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -223,7 +252,7 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def createCETLoseRemote(
-      fundingSpendingInfo: BitcoinUTXOSpendingInfo): Future[Transaction] = {
+      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
     createCETRemote(
       sigPubKey = sigPubKeyLose,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -232,11 +261,17 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
+  /** Constructs, signs and outputs the funding tx, all four CETs and the closing tx
+    * given the oracle's signature (can be executed for either Local or Remote).
+    *
+    * @return The closing transaction and the UTXOSpendingInfo for the CET it spends.
+    */
   def executeDLC(
       oracleSigF: Future[SchnorrDigitalSignature],
       local: Boolean): Future[(Transaction, BitcoinUTXOSpendingInfo)] = {
+    // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
-      println(s"Funding Transaction: ${fundingTx.hex}\n")
+      logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
 
       val fundingTxId = fundingTx.txIdBE
       val output = fundingTx.outputs.head
@@ -249,19 +284,22 @@ case class BinaryOutcomeDLCWithSelf(
         hashType = HashType.sigHashAll
       )
 
+      // Construct all CETs
       val cetWinLocalF = createCETWinLocal(fundingSpendingInfo)
       val cetLoseLocalF = createCETLoseLocal(fundingSpendingInfo)
       val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
       val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
 
-      cetWinLocalF.foreach(cet => println(s"CET Win Local: ${cet.hex}\n"))
-      cetLoseLocalF.foreach(cet => println(s"CET Lose Local: ${cet.hex}\n"))
-      cetWinRemoteF.foreach(cet => println(s"CET Win Remote: ${cet.hex}\n"))
-      cetLoseRemoteF.foreach(cet => println(s"CET Lose Remote: ${cet.hex}\n"))
+      cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet.hex}\n"))
+      cetLoseLocalF.foreach(cet => logger.info(s"CET Lose Local: ${cet.hex}\n"))
+      cetWinRemoteF.foreach(cet => logger.info(s"CET Win Remote: ${cet.hex}\n"))
+      cetLoseRemoteF.foreach(cet =>
+        logger.info(s"CET Lose Remote: ${cet.hex}\n"))
 
-      // Publish funding tx
+      // TODO Publish funding tx
 
       oracleSigF.flatMap { oracleSig =>
+        // Pick the CET to use and payout by checking which message was signed
         val (cetF, payout) =
           if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
             if (local) {
@@ -280,6 +318,8 @@ case class BinaryOutcomeDLCWithSelf(
           }
 
         cetF.flatMap { cet =>
+          // TODO Publish CET
+
           val cetPrivKey = if (local) {
             cetLocalPrivKey
           } else {
@@ -287,6 +327,8 @@ case class BinaryOutcomeDLCWithSelf(
           }
 
           val output = cet.outputs.head
+
+          // Spend the true case on the correct CET
           val cetSpendingInfo = ConditionalSpendingInfo(
             TransactionOutPoint(cet.txIdBE, UInt32.zero),
             output.value,
@@ -302,6 +344,7 @@ case class BinaryOutcomeDLCWithSelf(
             finalRemotePrivKey
           }
 
+          // Construct Closing Transaction
           val txBuilder = BitcoinTxBuilder(
             Vector(
               TransactionOutput(payout,
@@ -314,9 +357,9 @@ case class BinaryOutcomeDLCWithSelf(
 
           val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
 
-          spendingTxF.foreach(tx => println(s"Closing Tx: ${tx.hex}"))
+          spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
 
-          // Publish tx
+          // TODO Publish tx
 
           spendingTxF.map(tx => (tx, cetSpendingInfo))
         }

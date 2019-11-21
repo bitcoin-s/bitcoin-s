@@ -36,12 +36,6 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val oraclePubKey = oraclePrivKey.publicKey
     val preCommittedK = SchnorrNonce.freshNonce
     val preCommittedR = preCommittedK.publicKey
-    val fundingLocalPrivKey = ECPrivateKey.freshPrivateKey
-    val fundingRemotePrivKey = ECPrivateKey.freshPrivateKey
-    val cetLocalPrivKey = ECPrivateKey.freshPrivateKey
-    val cetRemotePrivKey = ECPrivateKey.freshPrivateKey
-    val finalLocalPrivKey = ECPrivateKey.freshPrivateKey
-    val finalRemotePrivKey = ECPrivateKey.freshPrivateKey
     val localInput = CurrencyUnits.oneBTC
     val remoteInput = CurrencyUnits.oneBTC
 
@@ -49,8 +43,6 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val inputPubKeyLocal = inputPrivKeyLocal.publicKey
     val inputPrivKeyRemote = ECPrivateKey.freshPrivateKey
     val inputPubKeyRemote = inputPrivKeyRemote.publicKey
-
-    val feeRate = SatoshisPerByte(Satoshis.one)
 
     val localFundingUtxos = Vector(
       P2PKHSpendingInfo(
@@ -72,15 +64,9 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       )
     )
 
-    val localWinPayout = localInput + CurrencyUnits.oneMBTC
-    val remoteWinPayout = remoteInput - CurrencyUnits.oneMBTC
-    val localLosePayout = localInput - CurrencyUnits.oneMBTC
-    val remoteLosePayout = remoteInput + CurrencyUnits.oneMBTC
-    val timeout = 1.day.toMillis.toInt
     val changePrivKey = ECPrivateKey.freshPrivateKey
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
-    val network = RegTest
 
     def executeForCase(outcomeHash: Sha256DigestBE,
                        local: Boolean): Future[Assertion] = {
@@ -92,24 +78,24 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
         outcomeLose = outcomeLose,
         oraclePubKey = oraclePubKey,
         preCommittedR = preCommittedR,
-        fundingLocalPrivKey = fundingLocalPrivKey,
-        fundingRemotePrivKey = fundingRemotePrivKey,
-        cetLocalPrivKey = cetLocalPrivKey,
-        cetRemotePrivKey = cetRemotePrivKey,
-        finalLocalPrivKey = finalLocalPrivKey,
-        finalRemotePrivKey = finalRemotePrivKey,
+        fundingLocalPrivKey = ECPrivateKey.freshPrivateKey,
+        fundingRemotePrivKey = ECPrivateKey.freshPrivateKey,
+        cetLocalPrivKey = ECPrivateKey.freshPrivateKey,
+        cetRemotePrivKey = ECPrivateKey.freshPrivateKey,
+        finalLocalPrivKey = ECPrivateKey.freshPrivateKey,
+        finalRemotePrivKey = ECPrivateKey.freshPrivateKey,
         localInput = localInput,
         remoteInput = remoteInput,
         localFundingUtxos = localFundingUtxos,
         remoteFundingUtxos = remoteFundingUtxos,
-        localWinPayout = localWinPayout,
-        remoteWinPayout = remoteWinPayout,
-        localLosePayout = localLosePayout,
-        remoteLosePayout = remoteLosePayout,
-        timeout = timeout,
-        feeRate = feeRate,
+        localWinPayout = localInput + CurrencyUnits.oneMBTC,
+        remoteWinPayout = remoteInput - CurrencyUnits.oneMBTC,
+        localLosePayout = localInput - CurrencyUnits.oneMBTC,
+        remoteLosePayout = remoteInput + CurrencyUnits.oneMBTC,
+        timeout = 1.day.toMillis.toInt,
+        feeRate = SatoshisPerByte(Satoshis.one),
         changeSPK = changeSPK,
-        network = network
+        network = RegTest
       )
 
       dlc.executeDLC(Future.successful(oracleSig), local).map {
