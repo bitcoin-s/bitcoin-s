@@ -236,8 +236,8 @@ object IncomingPaymentStatus {
 
   case object Expired extends IncomingPaymentStatus
 
-  case class Received(amount: MilliSatoshis, receivedAt: Long)
-      extends IncomingPaymentStatus
+  case class Received(amount: MilliSatoshis, receivedAt: Long //milliseconds
+  ) extends IncomingPaymentStatus
 
 }
 
