@@ -3,8 +3,9 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 
@@ -78,4 +79,9 @@ case class SpvNode(
     }
   }
 
+  override def rescan(
+      scriptPubKeysToWatch: Vector[ScriptPubKey],
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp]): Future[Unit] =
+    Future.failed(new RuntimeException("Rescan not implemented"))
 }

@@ -27,6 +27,7 @@ object Deps {
     val slickV = "3.3.2"
     val sqliteV = "3.28.0"
     val scalameterV = "0.17"
+    val scalamockV = "4.4.0"
 
     // Wallet/node/chain server deps
     val oldMicroPickleV = "0.7.4"
@@ -105,6 +106,7 @@ object Deps {
     val logback = Compile.logback % "test"
     val scalacheck = Compile.scalacheck % "test"
     val scalaTest = Compile.scalaTest % "test"
+    val scalaMock = "org.scalamock" %% "scalamock" % V.scalamockV
     val spray = "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
     val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
@@ -246,4 +248,12 @@ object Deps {
     Test.scalaTest,
     Test.logback
   )
+
+  val walletServerTest = List(
+    Test.scalaMock,
+    Test.akkaHttp,
+    Test.akkaStream,
+    Test.akkaTestkit
+  )
+
 }

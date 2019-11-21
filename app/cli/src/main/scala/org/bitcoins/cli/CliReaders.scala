@@ -1,10 +1,12 @@
 package org.bitcoins.cli
 
-import scopt._
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.protocol._
+import java.time.{ZoneId, ZonedDateTime}
+
+import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
-import org.bitcoins.core.config.Networks
+import org.bitcoins.core.protocol.BlockStamp.BlockTime
+import org.bitcoins.core.protocol._
+import scopt._
 
 /** scopt readers for parsing CLI params and options */
 object CliReaders {
@@ -38,5 +40,26 @@ object CliReaders {
     new Read[Bitcoins] {
       val arity: Int = 1
       val reads: String => Bitcoins = str => Bitcoins(BigDecimal(str))
+    }
+
+  implicit val blockStampReads: Read[BlockStamp] =
+    new Read[BlockStamp] {
+      val arity: Int = 1
+      private val dateRe = """(\d4)-(\d2)-(\d2)""".r
+
+      val reads: String => BlockStamp = str =>
+        str match {
+          case dateRe(year, month, day) =>
+            val time = ZonedDateTime.of(year.toInt,
+                                        month.toInt,
+                                        day.toInt,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        ZoneId.of("UTC"))
+            BlockTime(time)
+          case _ => BlockStamp.fromString(str).get
+        }
     }
 }

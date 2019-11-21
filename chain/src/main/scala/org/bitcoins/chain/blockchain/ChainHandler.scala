@@ -33,7 +33,7 @@ case class ChainHandler(
     filterDAO: CompactFilterDAO,
     blockchains: Vector[Blockchain],
     blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
-    implicit private[chain] val chainConfig: ChainAppConfig)
+    implicit val chainConfig: ChainAppConfig)
     extends ChainApi
     with ChainVerificationLogger {
 
@@ -368,6 +368,15 @@ case class ChainHandler(
     *
     * It tries to match the filters in parallel using [[parallelismLevel]] threads.
     * For best results use it with a separate execution context.
+    *
+    * @param scripts list of [[ScriptPubKey]]'s to watch
+    * @param startOpt start point (if empty it starts with the genesis block)
+    * @param endOpt end point (if empty it ends with the best tip)
+    * @param batchSize number of filters that can be matched in one batch
+    *                  (default [[ChainConfig.filterBatchSize]]
+    * @param parallelismLevel max number of threads required to perform matching
+    *                         (default [[Runtime.availableProcessors]])
+    * @return a list of matching block hashes
     */
   def getMatchingBlocks(
       scripts: Vector[ScriptPubKey],
@@ -481,11 +490,11 @@ case class ChainHandler(
       case blockHeight: BlockStamp.BlockHeight =>
         Future.successful(blockHeight.height)
       case blockHash: BlockStamp.BlockHash =>
-        getHeader(blockHash.hash.flip).map { header =>
+        getHeader(blockHash.hash).map { header =>
           header
             .map(_.height)
-            .getOrElse(throw UnknownBlockHash(
-              s"Unknown block hash ${blockHash.hash.flip}"))
+            .getOrElse(
+              throw UnknownBlockHash(s"Unknown block hash ${blockHash.hash}"))
         }
       case blockTime: BlockStamp.BlockTime =>
         Future.failed(new RuntimeException(s"Not implemented: $blockTime"))

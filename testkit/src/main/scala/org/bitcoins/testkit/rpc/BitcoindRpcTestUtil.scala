@@ -6,7 +6,6 @@ import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
@@ -25,7 +24,13 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.common.BitcoindVersion._
+import org.bitcoins.rpc.client.common.BitcoindVersion.{
+  Unknown,
+  V16,
+  V17,
+  V18,
+  _
+}
 import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
@@ -56,17 +61,6 @@ import scala.collection.mutable
 import scala.concurrent._
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.util._
-import org.bitcoins.rpc.config.BitcoindConfig
-import java.io.File
-import java.nio.file.Path
-import org.bitcoins.rpc.client.common.BitcoindVersion.Unknown
-import org.bitcoins.rpc.client.common.BitcoindVersion.V16
-import org.bitcoins.rpc.client.common.BitcoindVersion.V17
-import org.bitcoins.rpc.client.common.BitcoindVersion.V18
-import java.nio.file.Files
-
-import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.rpc.BitcoindException
 
 //noinspection AccessorLikeMethodIsEmptyParen
 trait BitcoindRpcTestUtil extends BitcoinSLogger {

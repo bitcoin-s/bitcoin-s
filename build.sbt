@@ -211,6 +211,7 @@ lazy val walletServer = project
 lazy val walletServerTest = project
   .in(file("app/server-test"))
   .settings(CommonSettings.testSettings)
+  .settings(libraryDependencies ++= Deps.walletServerTest)
   .dependsOn(
     walletServer,
     testkit
