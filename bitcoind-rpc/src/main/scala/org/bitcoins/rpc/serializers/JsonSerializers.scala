@@ -200,6 +200,8 @@ object JsonSerializers {
   implicit val getChainTxStatsResultReads: Reads[GetChainTxStatsResult] =
     Json.reads[GetChainTxStatsResult]
 
+  implicit val feeInfoReads: Reads[FeeInfo] = Json.reads[FeeInfo]
+
   implicit val getMemPoolResultPreV19Reads: Reads[GetMemPoolResultPreV19] =
     Json.reads[GetMemPoolResultPreV19]
 
