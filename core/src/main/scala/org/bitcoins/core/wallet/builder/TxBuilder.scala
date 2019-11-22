@@ -465,41 +465,42 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     @tailrec
     def loop(
         remaining: Seq[UTXOSpendingInfo],
-        accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
-      case Nil => accum.reverse
-      case spendingInfo +: newRemaining =>
-        spendingInfo match {
-          case lockTime: LockTimeSpendingInfo =>
-            val sequence = lockTime.scriptPubKey match {
-              case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
-              case _: CLTVScriptPubKey  => UInt32.zero
-            }
-            val input = TransactionInput(lockTime.outPoint,
-                                         EmptyScriptSignature,
-                                         sequence)
-            loop(newRemaining, input +: accum)
-          case p2sh: P2SHSpendingInfo =>
-            loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
-          case p2wsh: P2WSHV0SpendingInfo =>
-            loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
-          case conditional: ConditionalSpendingInfo =>
-            loop(conditional.nestedSpendingInfo +: newRemaining, accum)
-          case _: P2WPKHV0SpendingInfo |
-              _: UnassignedSegwitNativeUTXOSpendingInfo | _: P2PKSpendingInfo |
-              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo |
-              _: EmptySpendingInfo =>
-            //none of these script types affect the sequence number of a tx
-            //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
-            //see BIP125 for more information
-            val sequence =
-              if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
-            val input =
-              TransactionInput(spendingInfo.outPoint,
-                               EmptyScriptSignature,
-                               sequence)
-            loop(newRemaining, input +: accum)
-        }
-    }
+        accum: Seq[TransactionInput]): Seq[TransactionInput] =
+      remaining match {
+        case Nil => accum.reverse
+        case spendingInfo +: newRemaining =>
+          spendingInfo match {
+            case lockTime: LockTimeSpendingInfo =>
+              val sequence = lockTime.scriptPubKey match {
+                case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
+                case _: CLTVScriptPubKey  => UInt32.zero
+              }
+              val input = TransactionInput(lockTime.outPoint,
+                                           EmptyScriptSignature,
+                                           sequence)
+              loop(newRemaining, input +: accum)
+            case p2sh: P2SHSpendingInfo =>
+              loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
+            case p2wsh: P2WSHV0SpendingInfo =>
+              loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
+            case conditional: ConditionalSpendingInfo =>
+              loop(conditional.nestedSpendingInfo +: newRemaining, accum)
+            case _: P2WPKHV0SpendingInfo |
+                _: UnassignedSegwitNativeUTXOSpendingInfo |
+                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
+                _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
+              //none of these script types affect the sequence number of a tx
+              //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
+              //see BIP125 for more information
+              val sequence =
+                if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+              val input =
+                TransactionInput(spendingInfo.outPoint,
+                                 EmptyScriptSignature,
+                                 sequence)
+              loop(newRemaining, input +: accum)
+          }
+      }
 
     loop(utxos, Nil)
   }
@@ -726,6 +727,8 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+    require(utxos.groupBy(_.outPoint).values.forall(_.length == 1),
+            "Cannot have multiple UTXOSpendingInfos spending the same UTXO")
     @tailrec
     def loop(utxos: Seq[UTXOSpendingInfo], accum: UTXOMap): UTXOMap =
       utxos match {
