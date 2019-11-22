@@ -23,12 +23,20 @@ class BitcoindV18RpcClientTest extends BitcoindRpcTest {
 
   behavior of "BitcoindV18RpcClient"
 
+  it must "have our BitcoindRpcClient work with .hashCode() and equals" in {
+    for {
+      (client1, client2) <- clientPairF
+    } yield {
+      assert(client1 != client2)
+      assert(client1.hashCode() != client2.hashCode())
+    }
+  }
+
   it should "be able to start a V18 bitcoind instance" in {
 
     clientF.map { client =>
       assert(client.version == BitcoindVersion.V18)
     }
-
   }
 
   it should "return active rpc commands" in {
