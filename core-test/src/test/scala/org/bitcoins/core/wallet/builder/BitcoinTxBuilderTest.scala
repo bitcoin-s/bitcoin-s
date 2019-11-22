@@ -1,12 +1,7 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  ECPrivateKey,
-  WitnessTxSigComponentP2SH,
-  WitnessTxSigComponentRaw
-}
+import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.currency._
 import org.bitcoins.testkit.core.gen.{
   ChainParamsGenerator,
@@ -19,22 +14,13 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfo,
-  ConditionalPath,
-  UTXOSpendingInfo
-}
+import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.scalatest.Assertion
-
-import scala.concurrent.Future
 
 class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   val tc = TransactionConstants
@@ -387,60 +373,6 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     }
   }
 
-  def verifyScript(tx: Transaction, utxos: Seq[UTXOSpendingInfo]): Boolean = {
-    val programs: Seq[PreExecutionScriptProgram] = tx.inputs.zipWithIndex.map {
-      case (input: TransactionInput, idx: Int) =>
-        val outpoint = input.previousOutput
-
-        val creditingTx = utxos.find(u => u.outPoint.txId == outpoint.txId).get
-
-        val output = creditingTx.output
-
-        val spk = output.scriptPubKey
-
-        val amount = output.value
-
-        val txSigComponent = spk match {
-          case witSPK: WitnessScriptPubKeyV0 =>
-            val o = TransactionOutput(amount, witSPK)
-            WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
-                                     UInt32(idx),
-                                     o,
-                                     Policy.standardFlags)
-          case _: UnassignedWitnessScriptPubKey => ???
-          case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-              _: MultiSignatureScriptPubKey | _: WitnessCommitment |
-              _: CSVScriptPubKey | _: CLTVScriptPubKey |
-              _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
-              EmptyScriptPubKey) =>
-            val o = TransactionOutput(CurrencyUnits.zero, x)
-            BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
-
-          case p2sh: P2SHScriptPubKey =>
-            val p2shScriptSig =
-              tx.inputs(idx).scriptSignature.asInstanceOf[P2SHScriptSignature]
-            p2shScriptSig.redeemScript match {
-
-              case _: WitnessScriptPubKey =>
-                WitnessTxSigComponentP2SH(transaction =
-                                            tx.asInstanceOf[WitnessTransaction],
-                                          inputIndex = UInt32(idx),
-                                          output = output,
-                                          flags = Policy.standardFlags)
-
-              case _ =>
-                BaseTxSigComponent(tx,
-                                   UInt32(idx),
-                                   output,
-                                   Policy.standardFlags)
-            }
-        }
-
-        PreExecutionScriptProgram(txSigComponent)
-    }
-    ScriptInterpreter.runAllVerify(programs)
-  }
-
   private val outputGen = CreditingTxGen.outputs
     .flatMap { creditingTxsInfo =>
       val creditingOutputs = creditingTxsInfo.map(c => c.output)
@@ -467,7 +399,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         val txF = builder.flatMap(_.sign)
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo))
         }
     }
   }
@@ -486,7 +418,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         val txF = builder.flatMap(_.sign)
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo))
         }
     }
   }
