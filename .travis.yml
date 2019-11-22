@@ -8,6 +8,7 @@ env:
     - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
     - TEST_COMMAND="nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
     - TEST_COMMAND="coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+    - TEST_COMMAND="dlc/test" # In the future this should be removed as the tests will be broken up and put in other projects
 
 os: linux
 scala:
