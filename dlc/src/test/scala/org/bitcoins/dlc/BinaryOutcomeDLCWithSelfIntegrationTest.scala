@@ -10,7 +10,10 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
+import org.bitcoins.core.protocol.script.{
+  P2PKHScriptPubKey,
+  P2PKHScriptSignature
+}
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
@@ -65,34 +68,60 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
       transaction = transactionResult.hex
       signedTxResult <- client.signRawTransactionWithWallet(transaction)
-      address <- client.getNewAddress
-      _ <- client.generateToAddress(blocks = 1, address)
+      localOutputIndex = signedTxResult.hex.outputs.zipWithIndex
+        .find {
+          case (output, _) =>
+            output.scriptPubKey match {
+              case p2pkh: P2PKHScriptPubKey =>
+                p2pkh.pubKeyHash == P2PKHScriptPubKey(inputPubKeyLocal).pubKeyHash
+              case _ => false
+            }
+        }
+        .map(_._2)
+      remoteOutputIndex = signedTxResult.hex.outputs.zipWithIndex
+        .find {
+          case (output, _) =>
+            output.scriptPubKey match {
+              case p2pkh: P2PKHScriptPubKey =>
+                p2pkh.pubKeyHash == P2PKHScriptPubKey(inputPubKeyRemote).pubKeyHash
+              case _ => false
+            }
+        }
+        .map(_._2)
       txid <- client.sendRawTransaction(signedTxResult.hex)
+      address <- client.getNewAddress
       _ <- client.generateToAddress(blocks = 6, address)
-    } yield txid
+    } yield {
+      assert(localOutputIndex.isDefined)
+      assert(remoteOutputIndex.isDefined)
 
-    val localFundingUtxosF = fundedInputsTxidF.map { txid =>
-      Vector(
-        P2PKHSpendingInfo(
-          outPoint = TransactionOutPoint(txid, UInt32.zero),
-          amount = localInput,
-          scriptPubKey = P2PKHScriptPubKey(inputPubKeyLocal),
-          signer = inputPrivKeyLocal,
-          hashType = HashType.sigHashAll
-        )
-      )
+      (txid, localOutputIndex.get, remoteOutputIndex.get)
     }
 
-    val remoteFundingUtxosF = fundedInputsTxidF.map { txid =>
-      Vector(
-        P2PKHSpendingInfo(
-          outPoint = TransactionOutPoint(txid, UInt32.one),
-          amount = remoteInput,
-          scriptPubKey = P2PKHScriptPubKey(inputPubKeyRemote),
-          signer = inputPrivKeyRemote,
-          hashType = HashType.sigHashAll
+    val localFundingUtxosF = fundedInputsTxidF.map {
+      case (txid, localOutputIndex, _) =>
+        Vector(
+          P2PKHSpendingInfo(
+            outPoint = TransactionOutPoint(txid, UInt32(localOutputIndex)),
+            amount = localInput,
+            scriptPubKey = P2PKHScriptPubKey(inputPubKeyLocal),
+            signer = inputPrivKeyLocal,
+            hashType = HashType.sigHashAll
+          )
         )
-      )
+    }
+
+    val remoteFundingUtxosF = fundedInputsTxidF.map {
+      case (txid, _, remoteOutputIndex) =>
+        Vector(
+          P2PKHSpendingInfo(
+            outPoint = TransactionOutPoint(txid, UInt32(remoteOutputIndex)),
+            amount = remoteInput,
+            scriptPubKey = P2PKHScriptPubKey(inputPubKeyRemote),
+            signer = inputPrivKeyRemote,
+            hashType = HashType.sigHashAll
+          )
+        )
     }
 
     val changePrivKey = ECPrivateKey.freshPrivateKey

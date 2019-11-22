@@ -255,8 +255,9 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
         * XPUBs, balances, etc). It's therefore not a good idea to enable
         * this logging in production.
         */
-      println(s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
-      println(s"Payload: \n${Json.prettyPrint(payload)}")
+      // logger.info(
+      // s"Command: $command ${parameters.map(_.toString).mkString(" ")}")
+      // logger.info(s"Payload: \n${Json.prettyPrint(payload)}")
       parseResult(result = (payload \ resultKey).validate[T],
                   json = payload,
                   printError = printError,
