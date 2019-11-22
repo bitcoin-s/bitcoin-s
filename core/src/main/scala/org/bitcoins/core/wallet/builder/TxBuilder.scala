@@ -783,6 +783,8 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+    require(utxos.groupBy(_.outPoint).values.forall(_.length == 1),
+            "Cannot have multiple UTXOSpendingInfos spending the same UTXO")
     @tailrec
     def loop(utxos: Seq[UTXOSpendingInfo], accum: UTXOMap): UTXOMap =
       utxos match {

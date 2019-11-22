@@ -130,6 +130,8 @@ object Deps {
     Compile.slf4j
   )
 
+  val dlc = List()
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface

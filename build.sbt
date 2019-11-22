@@ -46,6 +46,7 @@ lazy val `bitcoin-s` = project
     core,
     coreTest,
     dbCommons,
+    dlc,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -410,6 +411,15 @@ lazy val walletTest = project
   )
   .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
+
+lazy val dlc = project
+  .in(file("dlc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc",
+    libraryDependencies ++= Deps.dlc
+  )
+  .dependsOn(core, testkit)
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet) */
