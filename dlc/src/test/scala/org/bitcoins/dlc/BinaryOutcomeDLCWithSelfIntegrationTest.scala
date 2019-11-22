@@ -10,10 +10,7 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.{
-  P2PKHScriptPubKey,
-  P2PKHScriptSignature
-}
+import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
@@ -59,84 +56,83 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       BitcoinAddress.fromScriptPubKey(P2PKHScriptPubKey(inputPubKeyRemote),
                                       RegTest)
 
-    val fundedInputsTxidF = for {
-      client <- clientF
-      transactionWithoutFunds <- client
-        .createRawTransaction(Vector.empty,
-                              Map(localAddress.get -> Bitcoins(4),
-                                  remoteAddress.get -> Bitcoins(4)))
-      transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
-      transaction = transactionResult.hex
-      signedTxResult <- client.signRawTransactionWithWallet(transaction)
-      localOutputIndex = signedTxResult.hex.outputs.zipWithIndex
-        .find {
-          case (output, _) =>
-            output.scriptPubKey match {
-              case p2pkh: P2PKHScriptPubKey =>
-                p2pkh.pubKeyHash == P2PKHScriptPubKey(inputPubKeyLocal).pubKeyHash
-              case _ => false
-            }
-        }
-        .map(_._2)
-      remoteOutputIndex = signedTxResult.hex.outputs.zipWithIndex
-        .find {
-          case (output, _) =>
-            output.scriptPubKey match {
-              case p2pkh: P2PKHScriptPubKey =>
-                p2pkh.pubKeyHash == P2PKHScriptPubKey(inputPubKeyRemote).pubKeyHash
-              case _ => false
-            }
-        }
-        .map(_._2)
-      txid <- client.sendRawTransaction(signedTxResult.hex)
-      address <- client.getNewAddress
-      _ <- client.generateToAddress(blocks = 6, address)
-    } yield {
-      assert(localOutputIndex.isDefined)
-      assert(remoteOutputIndex.isDefined)
-
-      (txid, localOutputIndex.get, remoteOutputIndex.get)
-    }
-
-    val localFundingUtxosF = fundedInputsTxidF.map {
-      case (txid, localOutputIndex, _) =>
-        Vector(
-          P2PKHSpendingInfo(
-            outPoint = TransactionOutPoint(txid, UInt32(localOutputIndex)),
-            amount = localInput,
-            scriptPubKey = P2PKHScriptPubKey(inputPubKeyLocal),
-            signer = inputPrivKeyLocal,
-            hashType = HashType.sigHashAll
-          )
-        )
-    }
-
-    val remoteFundingUtxosF = fundedInputsTxidF.map {
-      case (txid, _, remoteOutputIndex) =>
-        Vector(
-          P2PKHSpendingInfo(
-            outPoint = TransactionOutPoint(txid, UInt32(remoteOutputIndex)),
-            amount = remoteInput,
-            scriptPubKey = P2PKHScriptPubKey(inputPubKeyRemote),
-            signer = inputPrivKeyRemote,
-            hashType = HashType.sigHashAll
-          )
-        )
-    }
-
     val changePrivKey = ECPrivateKey.freshPrivateKey
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    val feeRateF = clientF
-      .flatMap(_.getNetworkInfo.map(_.relayfee))
-      .map(btc => SatoshisPerByte(btc.satoshis))
-
-    def executeForCase(
-        outcomeHash: Sha256DigestBE,
-        local: Boolean): Future[Assertion] = {
+    def executeForCase(outcomeHash: Sha256DigestBE,
+                       local: Boolean): Future[Assertion] = {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
+
+      val fundedInputsTxidF = for {
+        client <- clientF
+        transactionWithoutFunds <- client
+          .createRawTransaction(Vector.empty,
+                                Map(localAddress.get -> Bitcoins(4),
+                                    remoteAddress.get -> Bitcoins(4)))
+        transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
+        transaction = transactionResult.hex
+        signedTxResult <- client.signRawTransactionWithWallet(transaction)
+        localOutputIndex = signedTxResult.hex.outputs.zipWithIndex
+          .find {
+            case (output, _) =>
+              output.scriptPubKey match {
+                case p2pkh: P2PKHScriptPubKey =>
+                  p2pkh.pubKeyHash == P2PKHScriptPubKey(inputPubKeyLocal).pubKeyHash
+                case _ => false
+              }
+          }
+          .map(_._2)
+        remoteOutputIndex = signedTxResult.hex.outputs.zipWithIndex
+          .find {
+            case (output, _) =>
+              output.scriptPubKey match {
+                case p2pkh: P2PKHScriptPubKey =>
+                  p2pkh.pubKeyHash == P2PKHScriptPubKey(inputPubKeyRemote).pubKeyHash
+                case _ => false
+              }
+          }
+          .map(_._2)
+        txid <- client.sendRawTransaction(signedTxResult.hex)
+        address <- client.getNewAddress
+        _ <- client.generateToAddress(blocks = 6, address)
+      } yield {
+        assert(localOutputIndex.isDefined)
+        assert(remoteOutputIndex.isDefined)
+
+        (txid, localOutputIndex.get, remoteOutputIndex.get)
+      }
+
+      val localFundingUtxosF = fundedInputsTxidF.map {
+        case (txid, localOutputIndex, _) =>
+          Vector(
+            P2PKHSpendingInfo(
+              outPoint = TransactionOutPoint(txid, UInt32(localOutputIndex)),
+              amount = localInput,
+              scriptPubKey = P2PKHScriptPubKey(inputPubKeyLocal),
+              signer = inputPrivKeyLocal,
+              hashType = HashType.sigHashAll
+            )
+          )
+      }
+
+      val remoteFundingUtxosF = fundedInputsTxidF.map {
+        case (txid, _, remoteOutputIndex) =>
+          Vector(
+            P2PKHSpendingInfo(
+              outPoint = TransactionOutPoint(txid, UInt32(remoteOutputIndex)),
+              amount = remoteInput,
+              scriptPubKey = P2PKHScriptPubKey(inputPubKeyRemote),
+              signer = inputPrivKeyRemote,
+              hashType = HashType.sigHashAll
+            )
+          )
+      }
+
+      val feeRateF = clientF
+        .flatMap(_.getNetworkInfo.map(_.relayfee))
+        .map(btc => SatoshisPerByte(btc.satoshis))
 
       val dlcF = for {
         localFundingUtxos <- localFundingUtxosF
@@ -185,9 +181,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
 
     for {
       _ <- executeForCase(outcomeWinHash, local = true)
-      //_ <- executeForCase(outcomeLoseHash, local = true)
-      //_ <- executeForCase(outcomeWinHash, local = false)
-      //_ <- executeForCase(outcomeLoseHash, local = false)
+      _ <- executeForCase(outcomeLoseHash, local = true)
+      _ <- executeForCase(outcomeWinHash, local = false)
+      _ <- executeForCase(outcomeLoseHash, local = false)
     } yield succeed
   }
 }
