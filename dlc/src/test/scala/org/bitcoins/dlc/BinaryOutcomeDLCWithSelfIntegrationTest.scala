@@ -65,8 +65,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
       transaction = transactionResult.hex
       signedTxResult <- client.signRawTransactionWithWallet(transaction)
-      txid <- client.sendRawTransaction(signedTxResult.hex)
       address <- client.getNewAddress
+      _ <- client.generateToAddress(blocks = 1, address)
+      txid <- client.sendRawTransaction(signedTxResult.hex)
       _ <- client.generateToAddress(blocks = 6, address)
     } yield txid
 
@@ -98,14 +99,20 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    def executeForCase(outcomeHash: Sha256DigestBE,
-                       local: Boolean): Future[Assertion] = {
+    val feeRateF = clientF
+      .flatMap(_.getNetworkInfo.map(_.relayfee))
+      .map(btc => SatoshisPerByte(btc.satoshis))
+
+    def executeForCase(
+        outcomeHash: Sha256DigestBE,
+        local: Boolean): Future[Assertion] = {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
       val dlcF = for {
         localFundingUtxos <- localFundingUtxosF
         remoteFundingUtxos <- remoteFundingUtxosF
+        feeRate <- feeRateF
       } yield {
         BinaryOutcomeDLCWithSelf(
           outcomeWin = outcomeWin,
@@ -127,7 +134,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
           localLosePayout = localInput - CurrencyUnits.oneMBTC,
           remoteLosePayout = remoteInput + CurrencyUnits.oneMBTC,
           timeout = 1.day.toMillis.toInt,
-          feeRate = SatoshisPerByte(Satoshis.one),
+          feeRate = feeRate,
           changeSPK = changeSPK,
           network = RegTest
         )

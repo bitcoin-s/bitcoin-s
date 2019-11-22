@@ -275,7 +275,7 @@ case class BinaryOutcomeDLCWithSelf(
     : Future[DLCOutcome] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
-      println(s"Funding Transaction: ${fundingTx.hex}\n")
+      logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
 
       val fundingTxId = fundingTx.txIdBE
       val output = fundingTx.outputs.head
@@ -294,10 +294,11 @@ case class BinaryOutcomeDLCWithSelf(
       val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
       val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
 
-      cetWinLocalF.foreach(cet => println(s"CET Win Local: ${cet.hex}\n"))
-      cetLoseLocalF.foreach(cet => println(s"CET Lose Local: ${cet.hex}\n"))
-      cetWinRemoteF.foreach(cet => println(s"CET Win Remote: ${cet.hex}\n"))
-      cetLoseRemoteF.foreach(cet => println(s"CET Lose Remote: ${cet.hex}\n"))
+      cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet.hex}\n"))
+      cetLoseLocalF.foreach(cet => logger.info(s"CET Lose Local: ${cet.hex}\n"))
+      cetWinRemoteF.foreach(cet => logger.info(s"CET Win Remote: ${cet.hex}\n"))
+      cetLoseRemoteF.foreach(cet =>
+        logger.info(s"CET Lose Remote: ${cet.hex}\n"))
 
       val fundingTxPublishedF = rpcClientAndAddressOpt match {
         case Some((client, address)) =>
@@ -374,7 +375,7 @@ case class BinaryOutcomeDLCWithSelf(
 
           val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
 
-          spendingTxF.foreach(tx => println(s"Closing Tx: ${tx.hex}"))
+          spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
 
           val spendingTxPublishedF = spendingTxF.flatMap { spendingTx =>
             cetPublishedF.flatMap { _ =>
