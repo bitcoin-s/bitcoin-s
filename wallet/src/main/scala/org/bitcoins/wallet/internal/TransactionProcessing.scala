@@ -1,14 +1,14 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.wallet._
-import org.bitcoins.wallet.models._
-import scala.concurrent.Future
-import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.wallet.api.AddUtxoSuccess
-import org.bitcoins.wallet.api.AddUtxoError
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.wallet._
+import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
+import org.bitcoins.wallet.models._
+
+import scala.concurrent.Future
 
 /** Provides functionality for processing transactions. This
   * includes importing UTXOs spent to our wallet, updating
@@ -33,6 +33,31 @@ private[wallet] trait TransactionProcessing extends KeyHandlingLogger {
         this
     }
 
+  }
+
+  /** @inheritdoc */
+  override def processBlock(
+      block: Block,
+      confirmations: Int): Future[LockedWallet] = {
+    logger.info(
+      s"Processing block=${block.blockHeader.hash.flip} with confirmations=$confirmations")
+    val res = block.transactions.foldLeft(Future.successful(this)) {
+      (acc, transaction) =>
+        for {
+          _ <- acc
+          newWallet <- processTransaction(transaction, confirmations)
+        } yield {
+          newWallet
+        }
+    }
+    res.foreach(
+      _ =>
+        logger.info(
+          s"Finished processing of block=${block.blockHeader.hash.flip}."))
+    res.failed.foreach(e =>
+      logger.error(s"Error processing of block=${block.blockHeader.hash.flip}.",
+                   e))
+    res
   }
 
   private[wallet] case class ProcessTxResult(

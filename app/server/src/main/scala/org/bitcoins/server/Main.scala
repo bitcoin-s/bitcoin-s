@@ -77,12 +77,17 @@ object Main extends App {
 
       val callbacks = {
         import DataMessageHandler._
-        val onTX: OnTxReceived = { tx =>
+        val onTx: OnTxReceived = { tx =>
           wallet.processTransaction(tx, confirmations = 0)
           ()
         }
+        val onBlock: OnBlockReceived = { block =>
+          wallet.processBlock(block, 0)
+          ()
+        }
 
-        SpvNodeCallbacks(onTxReceived = Seq(onTX))
+        SpvNodeCallbacks(onTxReceived = Seq(onTx),
+                         onBlockReceived = Seq(onBlock))
       }
       if (nodeConf.isSPVEnabled) {
         for {
