@@ -140,6 +140,7 @@ case class GetChainTxStatsResult(
     time: UInt32,
     txcount: Int,
     window_block_count: Int,
+    window_final_block_height: Option[Int],
     window_tx_count: Option[Int],
     window_interval: Option[UInt32],
     txrate: Option[BigDecimal])
