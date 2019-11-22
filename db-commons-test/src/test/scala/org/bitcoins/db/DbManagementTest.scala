@@ -27,7 +27,7 @@ class DbManagementTest extends BitcoinSUnitTest {
     val walletAppConfig = WalletAppConfig(BitcoinSTestAppConfig.tmpDir(),
                                           dbConfig(ProjectType.Wallet))
     val result = WalletDbManagement.migrate(walletAppConfig)
-    assert(result == 4)
+    assert(result == 6)
   }
 
   it must "run migrations for node db" in {

@@ -86,6 +86,8 @@ sealed abstract class TxBuilder {
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxos.map(_.scriptWitnessOpt)
 
+  def lockTimeOverrideOpt: Option[UInt32]
+
   /**
     * The unsigned version of the tx with dummy signatures instead of real signatures in
     * the [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]]s.
@@ -124,52 +126,72 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       implicit ec: ExecutionContext): Future[Transaction] = {
     val utxos = utxoMap.values.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt.toVector)
-    val lockTime = calcLockTime(utxos)
-    val inputs = calcSequenceForInputs(utxos, Policy.isRBFEnabled)
+    val calculatedLockTime = TxBuilder.calcLockTime(utxos)
+    val inputs = TxBuilder.calcSequenceForInputs(utxos)
     val emptyChangeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
-    val unsignedTxNoFee = lockTime.map { l =>
-      unsignedTxWit match {
-        case _: EmptyWitness =>
-          BaseTransaction(tc.validLockVersion,
-                          inputs,
-                          destinations ++ Seq(emptyChangeOutput),
-                          l)
-        case wit: TransactionWitness =>
-          WitnessTransaction(tc.validLockVersion,
-                             inputs,
-                             destinations ++ Seq(emptyChangeOutput),
-                             l,
-                             wit)
+    val unsignedTxNoFee = calculatedLockTime.map { cLockTime =>
+      val lockTimeF = lockTimeOverrideOpt match {
+        case None => Future.successful(cLockTime)
+        case Some(overrideLockTime) =>
+          if (overrideLockTime >= cLockTime) {
+            Future.successful(overrideLockTime)
+          } else {
+            Future.failed(new IllegalStateException(
+              s"Specified locktime ($overrideLockTime) is smaller than the locktime computed from inputs ($cLockTime)"
+            ))
+          }
+      }
+
+      lockTimeF.map { lockTime =>
+        unsignedTxWit match {
+          case _: EmptyWitness =>
+            BaseTransaction(tc.validLockVersion,
+                            inputs,
+                            destinations ++ Seq(emptyChangeOutput),
+                            lockTime)
+          case wit: TransactionWitness =>
+            WitnessTransaction(tc.validLockVersion,
+                               inputs,
+                               destinations ++ Seq(emptyChangeOutput),
+                               lockTime,
+                               wit)
+        }
       }
     }
     val unsignedTxWithFee: Try[Future[Transaction]] = unsignedTxNoFee.map {
-      utxnf =>
-        val dummySignTx = loop(utxos, utxnf, true)
-        dummySignTx.map { dtx =>
-          logger.debug(s"dummySignTx $dtx")
-          val fee = feeRate.calc(dtx)
-          logger.debug(s"fee $fee")
-          val change = creditingAmount - destinationAmount - fee
-          val newChangeOutput = TransactionOutput(change, changeSPK)
-          logger.debug(s"newChangeOutput $newChangeOutput")
-          //if the change output is below the dust threshold after calculating the fee, don't add it
-          //to the tx
-          val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {
-            logger.debug(
-              "removing change output as value is below the dustThreshold")
-            destinations
-          } else {
-            destinations ++ Seq(newChangeOutput)
-          }
-          dtx match {
-            case btx: BaseTransaction =>
-              BaseTransaction(btx.version, btx.inputs, newOutputs, btx.lockTime)
-            case wtx: WitnessTransaction =>
-              WitnessTransaction(wtx.version,
-                                 wtx.inputs,
-                                 newOutputs,
-                                 wtx.lockTime,
-                                 wtx.witness)
+      utxnfF =>
+        utxnfF.flatMap { utxnf =>
+          val dummySignTx = loop(utxos, utxnf, true)
+          dummySignTx.map { dtx =>
+            logger.debug(s"dummySignTx $dtx")
+            val fee = feeRate.calc(dtx)
+            logger.debug(s"fee $fee")
+            val change = creditingAmount - destinationAmount - fee
+            val newChangeOutput = TransactionOutput(change, changeSPK)
+            logger.debug(s"newChangeOutput $newChangeOutput")
+            //if the change output is below the dust threshold after calculating the fee, don't add it
+            //to the tx
+            val newOutputs =
+              if (newChangeOutput.value <= Policy.dustThreshold) {
+                logger.debug(
+                  "removing change output as value is below the dustThreshold")
+                destinations
+              } else {
+                destinations ++ Seq(newChangeOutput)
+              }
+            dtx match {
+              case btx: BaseTransaction =>
+                BaseTransaction(btx.version,
+                                btx.inputs,
+                                newOutputs,
+                                btx.lockTime)
+              case wtx: WitnessTransaction =>
+                WitnessTransaction(wtx.version,
+                                   wtx.inputs,
+                                   newOutputs,
+                                   wtx.lockTime,
+                                   wtx.witness)
+            }
           }
         }
     }
@@ -247,190 +269,6 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
             .map(_.transaction)
       }
     }
-  }
-
-  /**
-    * Returns a valid sequence number for the given [[ScriptNumber]]
-    * A transaction needs a valid sequence number to spend a OP_CHECKSEQUENCEVERIFY script.
-    * See BIP68/112 for more information
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki]]
-    * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki]]
-    */
-  private def solveSequenceForCSV(scriptNum: ScriptNumber): UInt32 =
-    LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum) match {
-      case true =>
-        //means that we need to have had scriptNum blocks bassed since this tx was included a block to be able to spend this output
-        val blocksPassed = scriptNum.toLong & TransactionConstants.sequenceLockTimeMask.toLong
-        val sequence = UInt32(blocksPassed)
-        sequence
-      case false =>
-        //means that we need to have had 512 * n seconds passed since the tx was included in a block passed
-        val n = scriptNum.toLong
-        val sequence = UInt32(
-          n & TransactionConstants.sequenceLockTimeMask.toLong)
-        //set sequence number to indicate this is relative locktime
-        sequence | TransactionConstants.sequenceLockTimeTypeFlag
-    }
-
-  /**
-    * This helper function calculates the appropriate locktime for a transaction.
-    * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
-    * locktime set to the same value (or higher) than the output it is spending.
-    * See BIP65 for more info
-    */
-  private def calcLockTime(
-      utxos: Seq[BitcoinUTXOSpendingInfoFull]): Try[UInt32] = {
-    def computeNextLockTime(
-        currentLockTimeOpt: Option[UInt32],
-        locktime: Long): Try[UInt32] = {
-      val lockTime =
-        if (locktime > UInt32.max.toLong || locktime < 0) {
-          TxBuilderError.IncompatibleLockTimes
-        } else Success(UInt32(locktime))
-      lockTime.flatMap { l: UInt32 =>
-        currentLockTimeOpt match {
-          case Some(currentLockTime) =>
-            val lockTimeThreshold = tc.locktimeThreshold
-            if (currentLockTime < l) {
-              if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
-                //means that we spend two different locktime types, one of the outputs spends a
-                //OP_CLTV script by block height, the other spends one by time stamp
-                TxBuilderError.IncompatibleLockTimes
-              } else Success(l)
-            } else if (currentLockTime >= lockTimeThreshold && l < lockTimeThreshold) {
-              //means that we spend two different locktime types, one of the outputs spends a
-              //OP_CLTV script by block height, the other spends one by time stamp
-              TxBuilderError.IncompatibleLockTimes
-            } else {
-              Success(currentLockTime)
-            }
-          case None => Success(l)
-        }
-      }
-    }
-
-    @tailrec
-    def loop(
-        remaining: Seq[BitcoinUTXOSpendingInfoFull],
-        currentLockTimeOpt: Option[UInt32]): Try[UInt32] =
-      remaining match {
-        case Nil =>
-          Success(currentLockTimeOpt.getOrElse(TransactionConstants.lockTime))
-        case spendingInfo +: newRemaining =>
-          spendingInfo match {
-            case lockTime: LockTimeSpendingInfoFull =>
-              lockTime.scriptPubKey match {
-                case _: CSVScriptPubKey =>
-                  loop(newRemaining, currentLockTimeOpt)
-                case cltv: CLTVScriptPubKey =>
-                  val result = computeNextLockTime(currentLockTimeOpt,
-                                                   cltv.locktime.toLong)
-
-                  result match {
-                    case Success(newLockTime) =>
-                      loop(newRemaining, Some(newLockTime))
-                    case _: Failure[UInt32] => result
-                  }
-              }
-            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
-              if (p2pkWithTimeout.isBeforeTimeout) {
-                loop(newRemaining, currentLockTimeOpt)
-              } else {
-                val result = computeNextLockTime(
-                  currentLockTimeOpt,
-                  p2pkWithTimeout.scriptPubKey.lockTime.toLong)
-
-                result match {
-                  case Success(newLockTime) =>
-                    loop(newRemaining, Some(newLockTime))
-                  case _: Failure[UInt32] => result
-                }
-              }
-            case p2sh: P2SHSpendingInfoFull =>
-              loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
-            case p2wsh: P2WSHV0SpendingInfoFull =>
-              loop(p2wsh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
-            case conditional: ConditionalSpendingInfoFull =>
-              loop(conditional.nestedSpendingInfo +: newRemaining,
-                   currentLockTimeOpt)
-            case _: P2WPKHV0SpendingInfo |
-                _: UnassignedSegwitNativeUTXOSpendingInfo |
-                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
-                _: MultiSignatureSpendingInfoFull | _: EmptySpendingInfo =>
-              // none of these scripts affect the locktime of a tx
-              loop(newRemaining, currentLockTimeOpt)
-          }
-      }
-
-    loop(utxos, None)
-  }
-
-  /**
-    * This helper function calculates the appropriate sequence number for each transaction input.
-    * [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need certain sequence numbers on the inputs
-    * to make them spendable.
-    * See BIP68/112 and BIP65 for more info
-    */
-  private def calcSequenceForInputs(
-      utxos: Seq[UTXOSpendingInfoFull],
-      isRBFEnabled: Boolean): Seq[TransactionInput] = {
-    @tailrec
-    def loop(
-        remaining: Seq[UTXOSpendingInfoFull],
-        accum: Seq[TransactionInput]): Seq[TransactionInput] =
-      remaining match {
-        case Nil => accum.reverse
-        case spendingInfo +: newRemaining =>
-          spendingInfo match {
-            case lockTime: LockTimeSpendingInfoFull =>
-              val sequence = lockTime.scriptPubKey match {
-                case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
-                case _: CLTVScriptPubKey  => UInt32.zero
-              }
-              val input = TransactionInput(lockTime.outPoint,
-                                           EmptyScriptSignature,
-                                           sequence)
-              loop(newRemaining, input +: accum)
-            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
-              if (p2pkWithTimeout.isBeforeTimeout) {
-                val sequence =
-                  if (isRBFEnabled) UInt32.zero
-                  else TransactionConstants.sequence
-                val input =
-                  TransactionInput(spendingInfo.outPoint,
-                                   EmptyScriptSignature,
-                                   sequence)
-                loop(newRemaining, input +: accum)
-              } else {
-                val input = TransactionInput(p2pkWithTimeout.outPoint,
-                                             EmptyScriptSignature,
-                                             UInt32.zero)
-                loop(newRemaining, input +: accum)
-              }
-            case p2sh: P2SHSpendingInfoFull =>
-              loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
-            case p2wsh: P2WSHV0SpendingInfoFull =>
-              loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
-            case conditional: ConditionalSpendingInfoFull =>
-              loop(conditional.nestedSpendingInfo +: newRemaining, accum)
-            case _: P2WPKHV0SpendingInfo |
-                _: UnassignedSegwitNativeUTXOSpendingInfo |
-                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
-                _: MultiSignatureSpendingInfoFull | _: EmptySpendingInfo =>
-              //none of these script types affect the sequence number of a tx
-              //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
-              //see BIP125 for more information
-              val sequence =
-                if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
-              val input =
-                TransactionInput(spendingInfo.outPoint,
-                                 EmptyScriptSignature,
-                                 sequence)
-              loop(newRemaining, input +: accum)
-          }
-      }
-
-    loop(utxos, Nil)
   }
 }
 
@@ -554,6 +392,170 @@ object TxBuilder {
       Success(())
     }
   }
+
+  /**
+    * This helper function calculates the appropriate locktime for a transaction.
+    * To be able to spend [[CLTVScriptPubKey]]'s you need to have the transaction's
+    * locktime set to the same value (or higher) than the output it is spending.
+    * See BIP65 for more info
+    */
+  def calcLockTime(utxos: Seq[BitcoinUTXOSpendingInfoFull]): Try[UInt32] = {
+    def computeNextLockTime(
+        currentLockTimeOpt: Option[UInt32],
+        locktime: Long): Try[UInt32] = {
+      val lockTimeT =
+        if (locktime > UInt32.max.toLong || locktime < 0) {
+          TxBuilderError.IncompatibleLockTimes
+        } else Success(UInt32(locktime))
+      lockTimeT.flatMap { lockTime: UInt32 =>
+        currentLockTimeOpt match {
+          case Some(currentLockTime) =>
+            val lockTimeThreshold = TransactionConstants.locktimeThreshold
+            if (currentLockTime < lockTime) {
+              if (currentLockTime < lockTimeThreshold && lockTime >= lockTimeThreshold) {
+                //means that we spend two different locktime types, one of the outputs spends a
+                //OP_CLTV script by block height, the other spends one by time stamp
+                TxBuilderError.IncompatibleLockTimes
+              } else Success(lockTime)
+            } else if (currentLockTime >= lockTimeThreshold && lockTime < lockTimeThreshold) {
+              //means that we spend two different locktime types, one of the outputs spends a
+              //OP_CLTV script by block height, the other spends one by time stamp
+              TxBuilderError.IncompatibleLockTimes
+            } else {
+              Success(currentLockTime)
+            }
+          case None => Success(lockTime)
+        }
+      }
+    }
+
+    @tailrec
+    def loop(
+        remaining: Seq[BitcoinUTXOSpendingInfoFull],
+        currentLockTimeOpt: Option[UInt32]): Try[UInt32] =
+      remaining match {
+        case Nil =>
+          Success(currentLockTimeOpt.getOrElse(TransactionConstants.lockTime))
+        case spendingInfo +: newRemaining =>
+          spendingInfo match {
+            case lockTime: LockTimeSpendingInfoFull =>
+              lockTime.scriptPubKey match {
+                case _: CSVScriptPubKey =>
+                  loop(newRemaining, currentLockTimeOpt)
+                case cltv: CLTVScriptPubKey =>
+                  val result = computeNextLockTime(currentLockTimeOpt,
+                                                   cltv.locktime.toLong)
+
+                  result match {
+                    case Success(newLockTime) =>
+                      loop(newRemaining, Some(newLockTime))
+                    case _: Failure[UInt32] => result
+                  }
+              }
+            case p2sh: P2SHSpendingInfoFull =>
+              loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
+            case p2wsh: P2WSHV0SpendingInfoFull =>
+              loop(p2wsh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
+            case conditional: ConditionalSpendingInfoFull =>
+              loop(conditional.nestedSpendingInfo +: newRemaining,
+                   currentLockTimeOpt)
+            case _: P2WPKHV0SpendingInfo | _: P2PKWithTimeoutSpendingInfo |
+                _: UnassignedSegwitNativeUTXOSpendingInfo |
+                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
+                _: MultiSignatureSpendingInfoFull | _: EmptySpendingInfo =>
+              // none of these scripts affect the locktime of a tx
+              loop(newRemaining, currentLockTimeOpt)
+          }
+      }
+
+    loop(utxos, None)
+  }
+
+  /**
+    * This helper function calculates the appropriate sequence number for each transaction input.
+    * [[CLTVScriptPubKey]] and [[CSVScriptPubKey]]'s need certain sequence numbers on the inputs
+    * to make them spendable.
+    * See BIP68/112 and BIP65 for more info
+    */
+  def calcSequenceForInputs(
+      utxos: Seq[UTXOSpendingInfo],
+      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
+    @tailrec
+    def loop(
+        remaining: Seq[UTXOSpendingInfo],
+        accum: Seq[TransactionInput]): Seq[TransactionInput] =
+      remaining match {
+        case Nil => accum.reverse
+        case spendingInfo +: newRemaining =>
+          spendingInfo match {
+            case lockTime: LockTimeSpendingInfo =>
+              val sequence = lockTime.scriptPubKey match {
+                case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
+                case _: CLTVScriptPubKey  => UInt32.zero
+              }
+              val input = TransactionInput(lockTime.outPoint,
+                                           EmptyScriptSignature,
+                                           sequence)
+              loop(newRemaining, input +: accum)
+            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
+              if (p2pkWithTimeout.isBeforeTimeout) {
+                val input =
+                  TransactionInput(spendingInfo.outPoint,
+                                   EmptyScriptSignature,
+                                   defaultSequence)
+                loop(newRemaining, input +: accum)
+              } else {
+                val sequence = solveSequenceForCSV(
+                  p2pkWithTimeout.scriptPubKey.lockTime)
+                val input = TransactionInput(p2pkWithTimeout.outPoint,
+                                             EmptyScriptSignature,
+                                             sequence)
+                loop(newRemaining, input +: accum)
+              }
+            case p2sh: P2SHSpendingInfo =>
+              loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
+            case p2wsh: P2WSHV0SpendingInfo =>
+              loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
+            case conditional: ConditionalSpendingInfo =>
+              loop(conditional.nestedSpendingInfo +: newRemaining, accum)
+            case _: P2WPKHV0SpendingInfo |
+                _: UnassignedSegwitNativeUTXOSpendingInfo |
+                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
+                _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
+              //none of these script types affect the sequence number of a tx so the defaultSequence is used
+              val input =
+                TransactionInput(spendingInfo.outPoint,
+                                 EmptyScriptSignature,
+                                 defaultSequence)
+              loop(newRemaining, input +: accum)
+          }
+      }
+
+    loop(utxos, Nil)
+  }
+
+  /**
+    * Returns a valid sequence number for the given [[ScriptNumber]]
+    * A transaction needs a valid sequence number to spend a OP_CHECKSEQUENCEVERIFY script.
+    * See BIP68/112 for more information
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki]]
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki]]
+    */
+  def solveSequenceForCSV(scriptNum: ScriptNumber): UInt32 =
+    LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum) match {
+      case true =>
+        //means that we need to have had scriptNum blocks bassed since this tx was included a block to be able to spend this output
+        val blocksPassed = scriptNum.toLong & TransactionConstants.sequenceLockTimeMask.toLong
+        val sequence = UInt32(blocksPassed)
+        sequence
+      case false =>
+        //means that we need to have had 512 * n seconds passed since the tx was included in a block passed
+        val n = scriptNum.toLong
+        val sequence = UInt32(
+          n & TransactionConstants.sequenceLockTimeMask.toLong)
+        //set sequence number to indicate this is relative locktime
+        sequence | TransactionConstants.sequenceLockTimeTypeFlag
+    }
 }
 
 object BitcoinTxBuilder {
@@ -564,7 +566,8 @@ object BitcoinTxBuilder {
       utxoMap: UTXOMap,
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
-      network: BitcoinNetwork)
+      network: BitcoinNetwork,
+      lockTimeOverrideOpt: Option[UInt32])
       extends BitcoinTxBuilder
 
   /**
@@ -583,11 +586,46 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     lockTimeOverrideOpt = None)
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: BitcoinTxBuilder.UTXOMap,
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverride: UInt32): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     Some(lockTimeOverride))
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: BitcoinTxBuilder.UTXOMap,
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverrideOpt: Option[UInt32]): Future[BitcoinTxBuilder] = {
     if (feeRate.toLong <= 0) {
       Future.fromTry(TxBuilderError.LowFee)
     } else {
       Future.successful(
-        BitcoinTxBuilderImpl(destinations, utxos, feeRate, changeSPK, network))
+        BitcoinTxBuilderImpl(destinations,
+                             utxos,
+                             feeRate,
+                             changeSPK,
+                             network,
+                             lockTimeOverrideOpt))
     }
   }
 
@@ -597,6 +635,38 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     lockTimeOverrideOpt = None)
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: Seq[BitcoinUTXOSpendingInfoFull],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverride: UInt32): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     Some(lockTimeOverride))
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: Seq[BitcoinUTXOSpendingInfoFull],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverrideOpt: Option[UInt32]): Future[BitcoinTxBuilder] = {
+    require(utxos.groupBy(_.outPoint).values.forall(_.length == 1),
+            "Cannot have multiple UTXOSpendingInfos spending the same UTXO")
     @tailrec
     def loop(utxos: Seq[UTXOSpendingInfoFull], accum: UTXOMap): UTXOMap =
       utxos match {
@@ -615,7 +685,12 @@ object BitcoinTxBuilder {
           loop(t, result)
       }
     val map = loop(utxos, Map.empty)
-    BitcoinTxBuilder(destinations, map, feeRate, changeSPK, network)
+    BitcoinTxBuilder(destinations,
+                     map,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     lockTimeOverrideOpt)
   }
 
   /**

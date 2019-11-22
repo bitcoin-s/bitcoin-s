@@ -4,13 +4,11 @@ import org.bitcoins.core.config.{RegTest, TestNet3}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
@@ -18,7 +16,6 @@ import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoSingle,
   ConditionalPath,
   LockTimeSpendingInfoFull,
-  UTXOSpendingInfo,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
 import org.bitcoins.testkit.Implicits._
@@ -572,64 +569,6 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     }
   }
 
-  def verifyScript(
-      tx: Transaction,
-      utxos: Vector[UTXOSpendingInfo]): Boolean = {
-    val programs: Vector[PreExecutionScriptProgram] =
-      tx.inputs.zipWithIndex.toVector.map {
-        case (input: TransactionInput, idx: Int) =>
-          val outpoint = input.previousOutput
-
-          val creditingTx =
-            utxos.find(u => u.outPoint.txId == outpoint.txId).get
-
-          val output = creditingTx.output
-
-          val spk = output.scriptPubKey
-
-          val amount = output.value
-
-          val txSigComponent = spk match {
-            case witSPK: WitnessScriptPubKeyV0 =>
-              val o = TransactionOutput(amount, witSPK)
-              WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
-                                       UInt32(idx),
-                                       o,
-                                       Policy.standardFlags)
-            case _: UnassignedWitnessScriptPubKey => ???
-            case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-                _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
-                _: WitnessCommitment | _: CSVScriptPubKey |
-                _: CLTVScriptPubKey | _: ConditionalScriptPubKey |
-                _: NonStandardScriptPubKey | EmptyScriptPubKey) =>
-              val o = TransactionOutput(CurrencyUnits.zero, x)
-              BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
-
-            case _: P2SHScriptPubKey =>
-              val p2shScriptSig =
-                tx.inputs(idx).scriptSignature.asInstanceOf[P2SHScriptSignature]
-              p2shScriptSig.redeemScript match {
-
-                case _: WitnessScriptPubKey =>
-                  WitnessTxSigComponentP2SH(
-                    transaction = tx.asInstanceOf[WitnessTransaction],
-                    inputIndex = UInt32(idx),
-                    output = output,
-                    flags = Policy.standardFlags)
-
-                case _ =>
-                  BaseTxSigComponent(tx,
-                                     UInt32(idx),
-                                     output,
-                                     Policy.standardFlags)
-              }
-          }
-
-          PreExecutionScriptProgram(txSigComponent)
-      }
-    ScriptInterpreter.runAllVerify(programs)
-  }
-
   it must "sign a mix of spks in a tx and then have it verified" in {
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
@@ -644,7 +583,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         val txF = builder.flatMap(_.sign)
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo.toVector))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
         }
     }
   }
@@ -663,7 +602,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         val txF = builder.flatMap(_.sign)
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo.toVector))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
         }
     }
   }

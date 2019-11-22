@@ -30,6 +30,11 @@ abstract class LockedWallet
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
+  private[wallet] val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
+  private[wallet] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
+  private[wallet] val dlcDAO: DLCDAO = DLCDAO()
+  private[wallet] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
+  private[wallet] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
   private[wallet] val transactionDAO: TransactionDAO = TransactionDAO()
   private[wallet] val incomingTxDAO: IncomingTransactionDAO =
