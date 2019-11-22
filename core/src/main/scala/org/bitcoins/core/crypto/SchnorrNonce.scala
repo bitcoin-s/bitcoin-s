@@ -47,4 +47,8 @@ object SchnorrNonce {
     val nonceBytes = CryptoUtil.sha256(privateKey.bytes ++ message).bytes
     SchnorrNonce.fromBytes(nonceBytes)
   }
+
+  def freshNonce: SchnorrNonce = {
+    SchnorrNonce.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
+  }
 }

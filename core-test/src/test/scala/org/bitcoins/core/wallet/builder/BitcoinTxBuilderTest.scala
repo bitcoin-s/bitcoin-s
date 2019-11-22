@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
@@ -565,7 +566,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         val txF = builder.flatMap(_.sign)
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo.toVector))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
         }
     }
   }
@@ -584,7 +585,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         val txF = builder.flatMap(_.sign)
 
         txF.map { tx =>
-          assert(verifyScript(tx, creditingTxsInfo.toVector))
+          assert(BitcoinScriptUtil.verifyScript(tx, creditingTxsInfo.toVector))
         }
     }
   }
