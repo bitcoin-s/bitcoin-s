@@ -82,4 +82,15 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
       assert(unspentPost.forall(utxo => utxo.reused.isDefined))
     }
   }
+
+  it should "create a wallet with a passphrase" in {
+    for {
+      (client, _) <- clientPairF
+      _ <- client.createWallet("suredbits", passphrase = "stackingsats")
+      wallets <- client.listWallets
+    } yield {
+      assert(wallets.contains("suredbits"))
+    }
+
+  }
 }
