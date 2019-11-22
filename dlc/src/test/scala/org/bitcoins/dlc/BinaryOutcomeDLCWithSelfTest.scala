@@ -26,7 +26,7 @@ import scala.concurrent.duration.DurationInt
 class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
   behavior of "BinaryOutcomeDLCWithSelf"
 
-  it should "work" in {
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for every case" in {
     val outcomeWin = "WIN"
     val outcomeWinHash = CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip
     val outcomeLose = "LOSE"
