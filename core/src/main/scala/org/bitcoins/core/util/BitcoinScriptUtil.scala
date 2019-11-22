@@ -2,13 +2,21 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   CSVScriptPubKey,
   EmptyScriptPubKey,
   _
+}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionInput,
+  TransactionOutput,
+  WitnessTransaction
 }
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{
@@ -18,13 +26,18 @@ import org.bitcoins.core.script.crypto.{
   OP_CHECKSIGVERIFY
 }
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{
   ScriptError,
   ScriptErrorPubKeyType,
   ScriptErrorWitnessPubKeyType
 }
-import org.bitcoins.core.script.ExecutionInProgressScriptProgram
+import org.bitcoins.core.script.{
+  ExecutionInProgressScriptProgram,
+  PreExecutionScriptProgram
+}
 import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.core.wallet.utxo.UTXOSpendingInfo
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -591,6 +604,60 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       bytes.slice(compactSizeUInt.size.toInt, len + compactSizeUInt.size.toInt)
     val script: List[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
     f(script.toVector)
+  }
+
+  def verifyScript(tx: Transaction, utxos: Seq[UTXOSpendingInfo]): Boolean = {
+    val programs: Seq[PreExecutionScriptProgram] = tx.inputs.zipWithIndex.map {
+      case (input: TransactionInput, idx: Int) =>
+        val outpoint = input.previousOutput
+
+        val creditingTx = utxos.find(u => u.outPoint.txId == outpoint.txId).get
+
+        val output = creditingTx.output
+
+        val spk = output.scriptPubKey
+
+        val amount = output.value
+
+        val txSigComponent = spk match {
+          case witSPK: WitnessScriptPubKeyV0 =>
+            val o = TransactionOutput(amount, witSPK)
+            WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
+                                     UInt32(idx),
+                                     o,
+                                     Policy.standardFlags)
+          case _: UnassignedWitnessScriptPubKey => ???
+          case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+              _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+              _: WitnessCommitment | _: CSVScriptPubKey | _: CLTVScriptPubKey |
+              _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+              EmptyScriptPubKey) =>
+            val o = TransactionOutput(CurrencyUnits.zero, x)
+            BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
+
+          case _: P2SHScriptPubKey =>
+            val p2shScriptSig =
+              tx.inputs(idx).scriptSignature.asInstanceOf[P2SHScriptSignature]
+            p2shScriptSig.redeemScript match {
+
+              case _: WitnessScriptPubKey =>
+                WitnessTxSigComponentP2SH(transaction =
+                                            tx.asInstanceOf[WitnessTransaction],
+                                          inputIndex = UInt32(idx),
+                                          output = output,
+                                          flags = Policy.standardFlags)
+
+              case _ =>
+                BaseTxSigComponent(tx,
+                                   UInt32(idx),
+                                   output,
+                                   Policy.standardFlags)
+            }
+        }
+
+        PreExecutionScriptProgram(txSigComponent)
+    }
+    ScriptInterpreter.runAllVerify(programs)
   }
 }
 
