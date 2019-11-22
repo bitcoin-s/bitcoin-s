@@ -7,7 +7,7 @@ import org.bitcoins.core.crypto.{
   SchnorrNonce,
   Sha256DigestBE
 }
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
@@ -30,7 +30,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
 
   behavior of "BinaryOutcomeDLCWithSelf"
 
-  it should "work with regtest" in {
+  it should "be able to publish all DLC txs to Regtest and have them accepted for all cases" in {
     val outcomeWin = "WIN"
     val outcomeWinHash =
       CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip
