@@ -9,7 +9,6 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   ConditionalScriptPubKey,
@@ -35,7 +34,6 @@ import org.bitcoins.core.wallet.utxo.{
   ConditionalSpendingInfo,
   MultiSignatureSpendingInfo
 }
-import org.bitcoins.rpc.client.common.{MiningRpc, RawTransactionRpc}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -270,9 +268,7 @@ case class BinaryOutcomeDLCWithSelf(
   def executeDLC(
       oracleSigF: Future[SchnorrDigitalSignature],
       local: Boolean,
-      rpcClientAndAddressOpt: Option[(RawTransactionRpc with MiningRpc,
-                                      BitcoinAddress)] = None)
-    : Future[DLCOutcome] = {
+      messengerOpt: Option[BitcoinP2PMessenger] = None): Future[DLCOutcome] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
       logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
@@ -300,11 +296,11 @@ case class BinaryOutcomeDLCWithSelf(
       cetLoseRemoteF.foreach(cet =>
         logger.info(s"CET Lose Remote: ${cet.hex}\n"))
 
-      val fundingTxPublishedF = rpcClientAndAddressOpt match {
-        case Some((client, address)) =>
-          client
-            .sendRawTransaction(fundingTx, allowHighFees = true)
-            .flatMap(_ => client.generateToAddress(blocks = 6, address))
+      val fundingTxPublishedF = messengerOpt match {
+        case Some(messenger) =>
+          messenger
+            .sendTransaction(fundingTx)
+            .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
         case None => FutureUtil.unit
       }
 
@@ -330,11 +326,11 @@ case class BinaryOutcomeDLCWithSelf(
         val cetReadyForPublish = fundingTxPublishedF.flatMap(_ => cetF)
 
         cetReadyForPublish.flatMap { cet =>
-          val cetPublishedF = rpcClientAndAddressOpt match {
-            case Some((client, address)) =>
-              client
-                .sendRawTransaction(cet)
-                .flatMap(_ => client.generateToAddress(blocks = 6, address))
+          val cetPublishedF = messengerOpt match {
+            case Some(messenger) =>
+              messenger
+                .sendTransaction(cet)
+                .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
             case None => FutureUtil.unit
           }
 
@@ -379,11 +375,11 @@ case class BinaryOutcomeDLCWithSelf(
 
           val spendingTxPublishedF = spendingTxF.flatMap { spendingTx =>
             cetPublishedF.flatMap { _ =>
-              rpcClientAndAddressOpt match {
-                case Some((client, address)) =>
-                  client
-                    .sendRawTransaction(spendingTx)
-                    .flatMap(_ => client.generateToAddress(blocks = 6, address))
+              messengerOpt match {
+                case Some(messenger) =>
+                  messenger
+                    .sendTransaction(spendingTx)
+                    .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
                 case None => FutureUtil.unit
               }
             }

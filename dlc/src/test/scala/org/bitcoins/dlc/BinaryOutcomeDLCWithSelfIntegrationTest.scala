@@ -7,8 +7,13 @@ import org.bitcoins.core.crypto.{
   SchnorrNonce,
   Sha256DigestBE
 }
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.currency.{
+  Bitcoins,
+  CurrencyUnit,
+  CurrencyUnits,
+  Satoshis
+}
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
@@ -65,12 +70,17 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
+      def fundingInput(input: CurrencyUnit): Bitcoins = {
+        Bitcoins((input + Satoshis(Int64(200))).satoshis)
+      }
+
       val fundedInputsTxidF = for {
         client <- clientF
         transactionWithoutFunds <- client
-          .createRawTransaction(Vector.empty,
-                                Map(localAddress.get -> Bitcoins(4),
-                                    remoteAddress.get -> Bitcoins(4)))
+          .createRawTransaction(
+            Vector.empty,
+            Map(localAddress.get -> fundingInput(localInput),
+                remoteAddress.get -> fundingInput(remoteInput)))
         transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
         transaction = transactionResult.hex
         signedTxResult <- client.signRawTransactionWithWallet(transaction)
@@ -167,11 +177,11 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
 
       for {
         client <- clientF
-        address <- client.getNewAddress
         dlc <- dlcF
+        messenger = BitcoindRpcMessengerRegtest(client)
         (closingTx, _) <- dlc.executeDLC(Future.successful(oracleSig),
                                          local,
-                                         Some((client, address)))
+                                         Some(messenger))
         regtestClosingTx <- client.getRawTransaction(closingTx.txIdBE)
       } yield {
         assert(regtestClosingTx.hex == closingTx)
