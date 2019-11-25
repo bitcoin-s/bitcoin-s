@@ -68,8 +68,9 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    def executeForCase(outcomeHash: Sha256DigestBE,
-                       local: Boolean): Future[Assertion] = {
+    def executeForCase(
+        outcomeHash: Sha256DigestBE,
+        local: Boolean): Future[Assertion] = {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
@@ -99,7 +100,18 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       )
 
       dlc.executeDLC(Future.successful(oracleSig), local).map {
-        case (closingTx, cetSpendingInfo) =>
+        case DLCOutcome(fundingTx,
+                        cet,
+                        closingTx,
+                        initialSpendingInfos,
+                        fundingSpendingInfo,
+                        cetSpendingInfo) =>
+          assert(
+            BitcoinScriptUtil.verifyScript(fundingTx, initialSpendingInfos)
+          )
+          assert(
+            BitcoinScriptUtil.verifyScript(cet, Vector(fundingSpendingInfo))
+          )
           assert(
             BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
           )
