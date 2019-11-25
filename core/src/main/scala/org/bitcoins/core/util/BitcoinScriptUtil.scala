@@ -611,7 +611,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
       case (input: TransactionInput, idx: Int) =>
         val outpoint = input.previousOutput
 
-        val creditingTx = utxos.find(u => u.outPoint.txId == outpoint.txId).get
+        val creditingTx = utxos.find(u => u.outPoint == outpoint).get
 
         val output = creditingTx.output
 
