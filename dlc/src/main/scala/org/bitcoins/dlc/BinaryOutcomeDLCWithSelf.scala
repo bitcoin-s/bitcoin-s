@@ -125,7 +125,7 @@ case class BinaryOutcomeDLCWithSelf(
                                Vector(fundingLocalPubKey, fundingRemotePubKey))
   }
 
-  /** Subtracts the estimated fee from the last output's value */
+  /** Subtracts the estimated fee by removing from each output evenly */
   private def subtractFeeAndSign(
       txBuilder: BitcoinTxBuilder): Future[Transaction] = {
     txBuilder.unsignedTx.flatMap { tx =>
@@ -167,11 +167,10 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETLocal(
-      sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
-      localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETLocal(sigPubKey: ECPublicKey,
+                     fundingSpendingInfo: MultiSignatureSpendingInfo,
+                     localPayout: CurrencyUnit,
+                     remotePayout: CurrencyUnit): Future[Transaction] = {
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
       pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
@@ -200,11 +199,10 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETRemote(
-      sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
-      localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETRemote(sigPubKey: ECPublicKey,
+                      fundingSpendingInfo: MultiSignatureSpendingInfo,
+                      localPayout: CurrencyUnit,
+                      remotePayout: CurrencyUnit): Future[Transaction] = {
 
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
