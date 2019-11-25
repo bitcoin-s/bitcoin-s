@@ -130,10 +130,21 @@ case class BinaryOutcomeDLCWithSelf(
       txBuilder: BitcoinTxBuilder): Future[Transaction] = {
     txBuilder.unsignedTx.flatMap { tx =>
       val fee = feeRate.calc(tx)
-      val output = txBuilder.destinations.last
-      val newOutput = TransactionOutput(output.value - fee, output.scriptPubKey)
+
+      val outputs = txBuilder.destinations
+
+      val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
+      val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
+
+      val newOutputsWithoutRemainder = outputs.map(output =>
+        TransactionOutput(output.value - feePerOutput, output.scriptPubKey))
+      val lastOutput = newOutputsWithoutRemainder.last
+      val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
+                                            lastOutput.scriptPubKey)
+      val newOutputs = newOutputsWithoutRemainder.dropRight(1).:+(newLastOutput)
+
       val newBuilder =
-        BitcoinTxBuilder(txBuilder.destinations.dropRight(1).:+(newOutput),
+        BitcoinTxBuilder(newOutputs,
                          txBuilder.utxoMap,
                          feeRate,
                          changeSPK,
@@ -340,21 +351,21 @@ case class BinaryOutcomeDLCWithSelf(
 
       oracleSigF.flatMap { oracleSig =>
         // Pick the CET to use and payout by checking which message was signed
-        val (cetF, payout) =
+        val cetF =
           if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
             if (local) {
-              (cetWinLocalF, localWinPayout)
+              cetWinLocalF
             } else {
-              (cetWinRemoteF, remoteWinPayout)
+              cetWinRemoteF
             }
           } else if (Schnorr.verify(messageLose, oracleSig, oraclePubKey)) {
             if (local) {
-              (cetLoseLocalF, localLosePayout)
+              cetLoseLocalF
             } else {
-              (cetLoseRemoteF, remoteLosePayout)
+              cetLoseRemoteF
             }
           } else {
-            (Future.failed(???), ???)
+            Future.failed(???)
           }
 
         val cetReadyForPublish = fundingTxPublishedF.flatMap(_ => cetF)
@@ -395,7 +406,7 @@ case class BinaryOutcomeDLCWithSelf(
           // Construct Closing Transaction
           val txBuilder = BitcoinTxBuilder(
             Vector(
-              TransactionOutput(payout,
+              TransactionOutput(output.value,
                                 P2PKHScriptPubKey(finalPrivKey.publicKey))),
             Vector(cetSpendingInfo),
             feeRate,
