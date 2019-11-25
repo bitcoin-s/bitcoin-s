@@ -269,13 +269,7 @@ case class BinaryOutcomeDLCWithSelf(
     */
   def executeDLC(
       oracleSigF: Future[SchnorrDigitalSignature],
-      local: Boolean): Future[
-    (
-        (Transaction, Transaction, Transaction),
-        (
-            Vector[BitcoinUTXOSpendingInfo],
-            BitcoinUTXOSpendingInfo,
-            BitcoinUTXOSpendingInfo))] = {
+      local: Boolean): Future[DLCOutcome] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
       logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
@@ -369,14 +363,27 @@ case class BinaryOutcomeDLCWithSelf(
           // TODO Publish tx
 
           spendingTxF.map { spendingTx =>
-            val txs = (fundingTx, cet, spendingTx)
-            val spendingInfos =
-              (fundingUtxos, fundingSpendingInfo, cetSpendingInfo)
-
-            (txs, spendingInfos)
+            DLCOutcome(
+              fundingTx,
+              cet,
+              spendingTx,
+              fundingUtxos,
+              fundingSpendingInfo,
+              cetSpendingInfo
+            )
           }
         }
       }
     }
   }
 }
+
+/** Contains all DLC transactions and the BitcoinUTXOSpendingInfos they use. */
+case class DLCOutcome(
+    fundingTx: Transaction,
+    cet: Transaction,
+    closingTx: Transaction,
+    fundingUtxos: Vector[BitcoinUTXOSpendingInfo],
+    fundingSpendingInfo: BitcoinUTXOSpendingInfo,
+    cetSpendingInfo: BitcoinUTXOSpendingInfo
+)

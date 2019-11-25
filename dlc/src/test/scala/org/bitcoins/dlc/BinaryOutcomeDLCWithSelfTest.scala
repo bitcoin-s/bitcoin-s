@@ -100,8 +100,12 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       )
 
       dlc.executeDLC(Future.successful(oracleSig), local).map {
-        case ((fundingTx, cet, closingTx),
-              (initialSpendingInfos, fundingSpendingInfo, cetSpendingInfo)) =>
+        case DLCOutcome(fundingTx,
+                        cet,
+                        closingTx,
+                        initialSpendingInfos,
+                        fundingSpendingInfo,
+                        cetSpendingInfo) =>
           assert(
             BitcoinScriptUtil.verifyScript(fundingTx, initialSpendingInfos)
           )
