@@ -103,7 +103,7 @@ case class NetworkFeesResult(
     txId: DoubleSha256DigestBE,
     fee: Satoshis,
     txType: String,
-    timestamp: FiniteDuration
+    timestamp: FiniteDuration //milliseconds
 )
 
 case class ChannelStats(
@@ -203,12 +203,12 @@ case class PaymentId(value: UUID) {
 
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
-    timestamp: Long, //seconds
+    timestamp: FiniteDuration, //seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
     paymentHash: Sha256Digest,
-    expiry: FiniteDuration,
+    expiry: FiniteDuration, //seconds
     amount: Option[MilliSatoshis])
 
 case class OutgoingPayment(
@@ -218,7 +218,7 @@ case class OutgoingPayment(
     paymentHash: Sha256Digest,
     amount: MilliSatoshis,
     targetNodeId: NodeId,
-    createdAt: FiniteDuration,
+    createdAt: FiniteDuration, //milliseconds
     paymentRequest: Option[PaymentRequest],
     status: OutgoingPaymentStatus)
 
@@ -250,8 +250,8 @@ object OutgoingPaymentStatus {
       paymentPreimage: PaymentPreimage,
       feesPaid: MilliSatoshis,
       route: Seq[Hop],
-      completedAt: FiniteDuration)
-      extends OutgoingPaymentStatus
+      completedAt: FiniteDuration //milliseconds
+  ) extends OutgoingPaymentStatus
 
   case class Failed(failures: Seq[PaymentFailure]) extends OutgoingPaymentStatus
 }
