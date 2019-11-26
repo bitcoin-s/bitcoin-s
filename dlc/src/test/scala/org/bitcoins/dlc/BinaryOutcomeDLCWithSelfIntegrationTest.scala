@@ -65,8 +65,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    def executeForCase(outcomeHash: Sha256DigestBE,
-                       local: Boolean): Future[Assertion] = {
+    def executeForCase(
+        outcomeHash: Sha256DigestBE,
+        local: Boolean): Future[Assertion] = {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
@@ -179,12 +180,12 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         client <- clientF
         dlc <- dlcF
         messenger = BitcoindRpcMessengerRegtest(client)
-        (closingTx, _) <- dlc.executeDLC(Future.successful(oracleSig),
-                                         local,
-                                         Some(messenger))
-        regtestClosingTx <- client.getRawTransaction(closingTx.txIdBE)
+        outcome <- dlc.executeDLC(Future.successful(oracleSig),
+                                  local,
+                                  Some(messenger))
+        regtestClosingTx <- client.getRawTransaction(outcome.closingTx.txIdBE)
       } yield {
-        assert(regtestClosingTx.hex == closingTx)
+        assert(regtestClosingTx.hex == outcome.closingTx)
         assert(regtestClosingTx.confirmations.contains(6))
       }
     }

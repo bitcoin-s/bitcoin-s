@@ -15,7 +15,6 @@ import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   MultiSignatureWithTimeoutScriptPubKey,
   P2PKHScriptPubKey,
-  P2PKHScriptSignature,
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{
@@ -156,10 +155,11 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETLocal(sigPubKey: ECPublicKey,
-                     fundingSpendingInfo: MultiSignatureSpendingInfo,
-                     localPayout: CurrencyUnit,
-                     remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETLocal(
+      sigPubKey: ECPublicKey,
+      fundingSpendingInfo: MultiSignatureSpendingInfo,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit): Future[Transaction] = {
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
       pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
@@ -188,10 +188,11 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETRemote(sigPubKey: ECPublicKey,
-                      fundingSpendingInfo: MultiSignatureSpendingInfo,
-                      localPayout: CurrencyUnit,
-                      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETRemote(
+      sigPubKey: ECPublicKey,
+      fundingSpendingInfo: MultiSignatureSpendingInfo,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit): Future[Transaction] = {
 
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
