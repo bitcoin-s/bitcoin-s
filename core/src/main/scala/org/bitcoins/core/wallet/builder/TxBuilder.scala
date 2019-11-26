@@ -157,59 +157,68 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val inputs = calcSequenceForInputs(utxos, Policy.isRBFEnabled)
     val emptyChangeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
     val unsignedTxNoFee = calculatedLockTime.map { cLockTime =>
-      val lockTime = lockTimeOverrideOpt match {
-        case None => cLockTime
+      val lockTimeF = lockTimeOverrideOpt match {
+        case None => Future.successful(cLockTime)
         case Some(overrideLockTime) =>
           if (overrideLockTime >= cLockTime) {
-            overrideLockTime
+            Future.successful(overrideLockTime)
           } else {
-            throw new IllegalStateException(
-              "Specified locktime is smaller than the locktime computed from inputs")
+            Future.failed(new IllegalStateException(
+              s"Specified locktime ($overrideLockTime) is smaller than the locktime computed from inputs ($cLockTime)"
+            ))
           }
       }
 
-      unsignedTxWit match {
-        case EmptyWitness =>
-          BaseTransaction(tc.validLockVersion,
-                          inputs,
-                          destinations ++ Seq(emptyChangeOutput),
-                          lockTime)
-        case wit: TransactionWitness =>
-          WitnessTransaction(tc.validLockVersion,
-                             inputs,
-                             destinations ++ Seq(emptyChangeOutput),
-                             lockTime,
-                             wit)
+      lockTimeF.map { lockTime =>
+        unsignedTxWit match {
+          case EmptyWitness =>
+            BaseTransaction(tc.validLockVersion,
+                            inputs,
+                            destinations ++ Seq(emptyChangeOutput),
+                            lockTime)
+          case wit: TransactionWitness =>
+            WitnessTransaction(tc.validLockVersion,
+                               inputs,
+                               destinations ++ Seq(emptyChangeOutput),
+                               lockTime,
+                               wit)
+        }
       }
     }
     val unsignedTxWithFee: Try[Future[Transaction]] = unsignedTxNoFee.map {
-      utxnf =>
-        val dummySignTx = loop(utxos, utxnf, true)
-        dummySignTx.map { dtx =>
-          logger.debug(s"dummySignTx $dtx")
-          val fee = feeRate.calc(dtx)
-          logger.debug(s"fee $fee")
-          val change = creditingAmount - destinationAmount - fee
-          val newChangeOutput = TransactionOutput(change, changeSPK)
-          logger.debug(s"newChangeOutput $newChangeOutput")
-          //if the change output is below the dust threshold after calculating the fee, don't add it
-          //to the tx
-          val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {
-            logger.debug(
-              "removing change output as value is below the dustThreshold")
-            destinations
-          } else {
-            destinations ++ Seq(newChangeOutput)
-          }
-          dtx match {
-            case btx: BaseTransaction =>
-              BaseTransaction(btx.version, btx.inputs, newOutputs, btx.lockTime)
-            case wtx: WitnessTransaction =>
-              WitnessTransaction(wtx.version,
-                                 wtx.inputs,
-                                 newOutputs,
-                                 wtx.lockTime,
-                                 wtx.witness)
+      utxnfF =>
+        utxnfF.flatMap { utxnf =>
+          val dummySignTx = loop(utxos, utxnf, true)
+          dummySignTx.map { dtx =>
+            logger.debug(s"dummySignTx $dtx")
+            val fee = feeRate.calc(dtx)
+            logger.debug(s"fee $fee")
+            val change = creditingAmount - destinationAmount - fee
+            val newChangeOutput = TransactionOutput(change, changeSPK)
+            logger.debug(s"newChangeOutput $newChangeOutput")
+            //if the change output is below the dust threshold after calculating the fee, don't add it
+            //to the tx
+            val newOutputs =
+              if (newChangeOutput.value <= Policy.dustThreshold) {
+                logger.debug(
+                  "removing change output as value is below the dustThreshold")
+                destinations
+              } else {
+                destinations ++ Seq(newChangeOutput)
+              }
+            dtx match {
+              case btx: BaseTransaction =>
+                BaseTransaction(btx.version,
+                                btx.inputs,
+                                newOutputs,
+                                btx.lockTime)
+              case wtx: WitnessTransaction =>
+                WitnessTransaction(wtx.version,
+                                   wtx.inputs,
+                                   newOutputs,
+                                   wtx.lockTime,
+                                   wtx.witness)
+            }
           }
         }
     }
