@@ -82,6 +82,11 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       }
 
       for {
+        addresses <- wallet.listAddresses()
+        utxos <- wallet.listUtxos()
+        _ = assert(addresses.size == 1)
+        _ = assert(utxos.size == 1)
+
         _ <- node.sync()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
@@ -90,7 +95,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- bitcoind
           .sendToAddress(address, amountFromBitcoind)
 
+        addresses <- wallet.listAddresses()
+        utxos <- wallet.listUtxos()
+        _ = assert(addresses.size == 2)
+        _ = assert(utxos.size == 1)
+
         _ <- clearSpendingInfoTable()
+
+        addresses <- wallet.listAddresses()
+        utxos <- wallet.listUtxos()
+        _ = assert(addresses.size == 2)
+        _ = assert(utxos.size == 0)
 
         _ <- bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
