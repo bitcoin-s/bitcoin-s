@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
-import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
@@ -155,7 +155,7 @@ abstract class DbCommonsColumnMappers {
 
   implicit val currencyUnitMapper: BaseColumnType[CurrencyUnit] =
     MappedColumnType
-      .base[CurrencyUnit, Long](_.satoshis.toLong, l => Satoshis(Int64(l)))
+      .base[CurrencyUnit, Long](_.satoshis.toLong, l => Satoshis(l))
 
   implicit val filterTypeMapper: BaseColumnType[FilterType] =
     MappedColumnType

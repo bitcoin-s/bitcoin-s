@@ -145,7 +145,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
     val wtx = WitnessTransaction(rawTx)
     val witScriptPubKey =
       P2WPKHWitnessSPKV0("1600144c9c3dfac4207d5d8cb89df5722cb3d712385e3f")
-    val amount = Satoshis(Int64(2000))
+    val amount = Satoshis(2000)
     val txSigComponent =
       WitnessTxSigComponentRaw(wtx,
                                inputIndex,
@@ -358,7 +358,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
 
     val p2wsh = P2WSHWitnessSPKV0.fromAsmHex(
       "00209e1be07558ea5cc8e02ed1d80c0911048afad949affa36d5c3951e3159dbea19")
-    val amount = Satoshis(Int64(200000))
+    val amount = Satoshis(200000)
     val output = TransactionOutput(amount, p2wsh)
 
     //OP_CHECKSIGVERIFY <0x30450220487fb382c4974de3f7d834c1b617fe15860828c7f96454490edd6d891556dcc9022100baf95feb48f845d5bfc9882eb6aeefa1bc3790e39f59eaa46ff7f15ae626c53e01>

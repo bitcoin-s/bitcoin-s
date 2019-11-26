@@ -1,7 +1,6 @@
 package org.bitcoins.core.wallet.fee
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.transaction.Transaction
 
 /**
@@ -11,7 +10,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 sealed abstract class FeeUnit {
   def currencyUnit: CurrencyUnit
   def *(tx: Transaction): CurrencyUnit = calc(tx)
-  def calc(tx: Transaction): CurrencyUnit = Satoshis(Int64(tx.vsize * toLong))
+  def calc(tx: Transaction): CurrencyUnit = Satoshis(tx.vsize * toLong)
   def toLong: Long = currencyUnit.satoshis.toLong
 }
 
@@ -24,7 +23,7 @@ sealed abstract class BitcoinFeeUnit extends FeeUnit
 case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
 
   def toSatPerKb: SatoshisPerKiloByte = {
-    SatoshisPerKiloByte(currencyUnit.satoshis * Satoshis(Int64(1000)))
+    SatoshisPerKiloByte(currencyUnit.satoshis * Satoshis(1000))
   }
 }
 
@@ -35,7 +34,7 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
     val conversionOpt = (currencyUnit.toBigDecimal * 0.001).toBigIntExact
     conversionOpt match {
       case Some(conversion) =>
-        val sat = Satoshis(Int64(conversion))
+        val sat = Satoshis(conversion)
         SatoshisPerByte(sat)
 
       case None =>

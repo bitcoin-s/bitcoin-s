@@ -54,8 +54,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
         //means we have a witness as the first item in our array
         val witnessArray = elements.head.asInstanceOf[JsArray]
         val amount = Satoshis(
-          Int64(
-            (witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
+          (witnessArray.elements.last.convertTo[Double] * 100000000L).toLong)
         val stack = witnessArray.elements
           .slice(0, witnessArray.elements.size - 1)
           .map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
@@ -96,8 +95,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
       } else if (elements.size == 6 && elements.head.isInstanceOf[JsArray]) {
         val witnessArray = elements.head.asInstanceOf[JsArray]
         val amount = Satoshis(
-          Int64(
-            (witnessArray.elements.last.convertTo[Double] * 100000000L).toLong))
+          (witnessArray.elements.last.convertTo[Double] * 100000000L).toLong)
         val stack = witnessArray.elements
           .slice(0, witnessArray.elements.size - 1)
           .map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))

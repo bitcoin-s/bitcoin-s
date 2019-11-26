@@ -12,7 +12,6 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.core.crypto.HashDigest
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.FutureUtil
 
 import scala.concurrent.duration.DurationInt

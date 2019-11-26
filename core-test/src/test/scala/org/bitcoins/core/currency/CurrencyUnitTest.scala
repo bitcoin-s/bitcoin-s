@@ -27,10 +27,10 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
       assert(num.bitcoin == Bitcoins(num))
       assert(num.BTC == Bitcoins(num))
 
-      assert(num.satoshis == Satoshis(Int64(num)))
-      assert(num.satoshi == Satoshis(Int64(num)))
-      assert(num.sats == Satoshis(Int64(num)))
-      assert(num.sat == Satoshis(Int64(num)))
+      assert(num.satoshis == Satoshis(num))
+      assert(num.satoshi == Satoshis(num))
+      assert(num.sats == Satoshis(num))
+      assert(num.sat == Satoshis(num))
     }
   }
 
@@ -42,10 +42,10 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     }
 
     forAll(Gen.choose(0, Satoshis.max.toLong)) { num =>
-      assert(num.satoshis == Satoshis(Int64(num)))
-      assert(num.satoshi == Satoshis(Int64(num)))
-      assert(num.sats == Satoshis(Int64(num)))
-      assert(num.sat == Satoshis(Int64(num)))
+      assert(num.satoshis == Satoshis(num))
+      assert(num.satoshi == Satoshis(num))
+      assert(num.sats == Satoshis(num))
+      assert(num.sat == Satoshis(num))
     }
   }
 
@@ -157,7 +157,7 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.bitcoins) {
       (sats: Satoshis, btc: Bitcoins) =>
         val result =
-          Try(Satoshis(Int64(sats.toBigInt + btc.satoshis.toBigInt)))
+          Try(Satoshis(sats.toBigInt + btc.satoshis.toBigInt))
         val expected = result.map(Bitcoins(_))
         val actual: Try[CurrencyUnit] = Try(sats + btc)
         if (actual.isSuccess && expected.isSuccess) actual.get == expected.get

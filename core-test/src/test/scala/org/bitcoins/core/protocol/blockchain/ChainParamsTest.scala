@@ -31,7 +31,7 @@ class ChainParamsTest extends BitcoinSUnitTest {
     "434104678AFDB0FE5548271967F1A67130B7105CD6A828E03909A67962E0EA1F61DEB649F6BC3F4CEF38C4F35504E51EC112DE5C384DF7BA0B8D578A4C702B6BF11D5FAC".toLowerCase)
 
   val expectedGenesisOutput =
-    TransactionOutput(Satoshis(Int64(5000000000L)), expectedGenesisScriptPubKey)
+    TransactionOutput(Satoshis(5000000000L), expectedGenesisScriptPubKey)
   "ChainParams" must "generate correct block hex for genesis block" in {
     val hex = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e6" +
       "7768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c010100000001000000000000000000000000000" +
@@ -66,7 +66,7 @@ class ChainParamsTest extends BitcoinSUnitTest {
 
   it must "generate the output correctly for the genesis transaction's output" in {
     val output = genesisTransaction.outputs.head
-    output.value must be(Satoshis(Int64(5000000000L)))
+    output.value must be(Satoshis(5000000000L))
     output.scriptPubKey.hex must be(expectedGenesisScriptPubKey.hex)
     output.hex must be(
       "00F2052A01000000".toLowerCase + expectedGenesisScriptPubKey.hex)
