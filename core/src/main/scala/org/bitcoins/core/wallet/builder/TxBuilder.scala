@@ -114,6 +114,8 @@ sealed abstract class TxBuilder {
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxos.map(_.scriptWitnessOpt)
 
+  def lockTimeOverrideOpt: Option[UInt32]
+
   /**
     * The unsigned version of the tx with dummy signatures instead of real signatures in
     * the [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]]s.
@@ -151,21 +153,32 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       implicit ec: ExecutionContext): Future[Transaction] = {
     val utxos = utxoMap.values.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt.toVector)
-    val lockTime = calcLockTime(utxos)
+    val calculatedLockTime = calcLockTime(utxos)
     val inputs = calcSequenceForInputs(utxos, Policy.isRBFEnabled)
     val emptyChangeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
-    val unsignedTxNoFee = lockTime.map { l =>
+    val unsignedTxNoFee = calculatedLockTime.map { cLockTime =>
+      val lockTime = lockTimeOverrideOpt match {
+        case None => cLockTime
+        case Some(overrideLockTime) =>
+          if (overrideLockTime >= cLockTime) {
+            overrideLockTime
+          } else {
+            throw new IllegalStateException(
+              "Specified locktime is smaller than the locktime computed from inputs")
+          }
+      }
+
       unsignedTxWit match {
         case EmptyWitness =>
           BaseTransaction(tc.validLockVersion,
                           inputs,
                           destinations ++ Seq(emptyChangeOutput),
-                          l)
+                          lockTime)
         case wit: TransactionWitness =>
           WitnessTransaction(tc.validLockVersion,
                              inputs,
                              destinations ++ Seq(emptyChangeOutput),
-                             l,
+                             lockTime,
                              wit)
       }
     }
@@ -694,7 +707,8 @@ object BitcoinTxBuilder {
       utxoMap: UTXOMap,
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
-      network: BitcoinNetwork)
+      network: BitcoinNetwork,
+      lockTimeOverrideOpt: Option[UInt32])
       extends BitcoinTxBuilder
 
   /**
@@ -713,11 +727,46 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     lockTimeOverrideOpt = None)
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: BitcoinTxBuilder.UTXOMap,
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverride: UInt32): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     Some(lockTimeOverride))
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: BitcoinTxBuilder.UTXOMap,
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverrideOpt: Option[UInt32]): Future[BitcoinTxBuilder] = {
     if (feeRate.toLong <= 0) {
       Future.fromTry(TxBuilderError.LowFee)
     } else {
       Future.successful(
-        BitcoinTxBuilderImpl(destinations, utxos, feeRate, changeSPK, network))
+        BitcoinTxBuilderImpl(destinations,
+                             utxos,
+                             feeRate,
+                             changeSPK,
+                             network,
+                             lockTimeOverrideOpt))
     }
   }
 
@@ -727,6 +776,36 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     lockTimeOverrideOpt = None)
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: Seq[BitcoinUTXOSpendingInfo],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverride: UInt32): Future[BitcoinTxBuilder] = {
+    BitcoinTxBuilder(destinations,
+                     utxos,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     Some(lockTimeOverride))
+  }
+
+  def apply(
+      destinations: Seq[TransactionOutput],
+      utxos: Seq[BitcoinUTXOSpendingInfo],
+      feeRate: FeeUnit,
+      changeSPK: ScriptPubKey,
+      network: BitcoinNetwork,
+      lockTimeOverrideOpt: Option[UInt32]): Future[BitcoinTxBuilder] = {
     require(utxos.groupBy(_.outPoint).values.forall(_.length == 1),
             "Cannot have multiple UTXOSpendingInfos spending the same UTXO")
     @tailrec
@@ -747,6 +826,11 @@ object BitcoinTxBuilder {
           loop(t, result)
       }
     val map = loop(utxos, Map.empty)
-    BitcoinTxBuilder(destinations, map, feeRate, changeSPK, network)
+    BitcoinTxBuilder(destinations,
+                     map,
+                     feeRate,
+                     changeSPK,
+                     network,
+                     lockTimeOverrideOpt)
   }
 }
