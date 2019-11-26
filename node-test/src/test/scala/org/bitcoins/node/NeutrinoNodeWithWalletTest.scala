@@ -5,12 +5,16 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency._
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.rpc.client.common.BitcoindVersion
+import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
 import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.SpendingInfoTable
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{DoNotDiscover, FutureOutcome}
 
@@ -43,48 +47,38 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     val onBlock: DataMessageHandler.OnBlockReceived = { block =>
       for {
         wallet <- walletF
-      } yield {
-        for {
-          prevBalance <- wallet.getUnconfirmedBalance()
-          _ <- wallet.processBlock(block, confirmations = 0)
-          balance <- wallet.getUnconfirmedBalance()
-        } yield {
-          val result = balance == prevBalance + amountFromBitcoind
-          assertionP.success(result)
-        }
-      }
+        _ <- wallet.processBlock(block, confirmations = 0)
+      } yield ()
     }
     SpvNodeCallbacks(
       onBlockReceived = Seq(onBlock)
     )
   }
 
-  it must "rescan and receive information about received payments" taggedAs (UsesExperimentalBitcoind) in {
+  it must "receive information about received payments" taggedAs (UsesExperimentalBitcoind) in {
     param =>
       val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
 
       walletP.success(wallet)
 
-      var cancellable: Option[Cancellable] = None
+      def clearSpendingInfoTable(): Future[Int] = {
+        import slick.jdbc.SQLiteProfile.api._
 
-      def setTimeout(tx: DoubleSha256DigestBE): DoubleSha256DigestBE = {
-        // how long we're waiting for a tx notify before failing the test
-        val delay = 25.seconds
+        val conf: WalletAppConfig = wallet.walletConfig
+        val table = TableQuery[SpendingInfoTable]
+        conf.database.run(table.delete)
+      }
 
-        val failTest: Runnable = new Runnable {
-          override def run = {
-            if (!assertionP.isCompleted) {
-              val msg =
-                s"Did not receive a block within $delay"
-              logger.error(msg)
-              assertionP.failure(new TestFailedException(msg, 0))
-            }
-          }
+      def condition(): Future[Boolean] = {
+        for {
+          balance <- wallet.getUnconfirmedBalance()
+          addresses <- wallet.listAddresses()
+          utxos <- wallet.listUtxos()
+        } yield {
+          balance == BitcoinSWalletTest.initialFunds + amountFromBitcoind &&
+          utxos.size == 2 &&
+          addresses.map(_.scriptPubKey) == utxos.map(_.output.scriptPubKey)
         }
-
-        logger.debug(s"Setting timeout for receiving TX through node")
-        cancellable = Some(system.scheduler.scheduleOnce(delay, failTest))
-        tx
       }
 
       for {
@@ -95,17 +89,18 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         address <- wallet.getNewAddress()
         _ <- bitcoind
           .sendToAddress(address, amountFromBitcoind)
-          .map(setTimeout)
+
+        _ <- clearSpendingInfoTable()
 
         _ <- bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
-        _ <- node.rescan(Vector(address.scriptPubKey))
+        addresses <- wallet.listAddresses()
+        _ <- node.rescan(addresses.map(_.scriptPubKey))
 
-        result <- assertionP.future
-      } yield assert(result)
-
+        _ <- AsyncUtil.awaitConditionF(condition)
+      } yield succeed
   }
 }
