@@ -15,7 +15,6 @@ import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   MultiSignatureWithTimeoutScriptPubKey,
   P2PKHScriptPubKey,
-  P2PKHScriptSignature,
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{
@@ -25,7 +24,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
@@ -269,7 +268,8 @@ case class BinaryOutcomeDLCWithSelf(
     */
   def executeDLC(
       oracleSigF: Future[SchnorrDigitalSignature],
-      local: Boolean): Future[DLCOutcome] = {
+      local: Boolean,
+      messengerOpt: Option[BitcoinP2PMessenger] = None): Future[DLCOutcome] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
       logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
@@ -297,7 +297,13 @@ case class BinaryOutcomeDLCWithSelf(
       cetLoseRemoteF.foreach(cet =>
         logger.info(s"CET Lose Remote: ${cet.hex}\n"))
 
-      // TODO Publish funding tx
+      val fundingTxPublishedF = messengerOpt match {
+        case Some(messenger) =>
+          messenger
+            .sendTransaction(fundingTx)
+            .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
+        case None => FutureUtil.unit
+      }
 
       oracleSigF.flatMap { oracleSig =>
         // Pick the CET to use and payout by checking which message was signed
@@ -318,8 +324,16 @@ case class BinaryOutcomeDLCWithSelf(
             (Future.failed(???), ???)
           }
 
-        cetF.flatMap { cet =>
-          // TODO Publish CET
+        val cetReadyForPublish = fundingTxPublishedF.flatMap(_ => cetF)
+
+        cetReadyForPublish.flatMap { cet =>
+          val cetPublishedF = messengerOpt match {
+            case Some(messenger) =>
+              messenger
+                .sendTransaction(cet)
+                .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
+            case None => FutureUtil.unit
+          }
 
           val cetPrivKey = if (local) {
             cetLocalPrivKey
@@ -360,17 +374,29 @@ case class BinaryOutcomeDLCWithSelf(
 
           spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
 
-          // TODO Publish tx
+          val spendingTxPublishedF = spendingTxF.flatMap { spendingTx =>
+            cetPublishedF.flatMap { _ =>
+              messengerOpt match {
+                case Some(messenger) =>
+                  messenger
+                    .sendTransaction(spendingTx)
+                    .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
+                case None => FutureUtil.unit
+              }
+            }
+          }
 
-          spendingTxF.map { spendingTx =>
-            DLCOutcome(
-              fundingTx,
-              cet,
-              spendingTx,
-              fundingUtxos,
-              fundingSpendingInfo,
-              cetSpendingInfo
-            )
+          spendingTxF.flatMap { spendingTx =>
+            spendingTxPublishedF.map { _ =>
+              DLCOutcome(
+                fundingTx,
+                cet,
+                spendingTx,
+                fundingUtxos,
+                fundingSpendingInfo,
+                cetSpendingInfo
+              )
+            }
           }
         }
       }
