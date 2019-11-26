@@ -191,23 +191,36 @@ object GCS {
     * Decodes all hashes from golomb-encoded data, reversing [[GCS.encodeSortedSet]]
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#set-queryingdecompression]]
     */
-  def golombDecodeSet(encodedData: BitVector, p: UInt8): Vector[UInt64] = {
+  def golombDecodeSet(encodedData: BitVector, p: UInt8): Vector[UInt64] =
+    golombDecodeSetsWithPredicate(encodedData, p) { _ =>
+      true
+    }
+
+  /**
+    * Decodes all hashes while the given predicate returns true
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#set-queryingdecompression]]
+    */
+  def golombDecodeSetsWithPredicate(encodedData: BitVector, p: UInt8)(
+      predicate: UInt64 => Boolean): Vector[UInt64] = {
     @tailrec
     def loop(
         encoded: BitVector,
-        decoded: Vector[UInt64],
-        lastHash: UInt64): Vector[UInt64] = {
+        lastHash: UInt64,
+        decoded: Vector[UInt64]): Vector[UInt64] = {
       if (encoded.length < p.toInt + 1) { // Only padding left
         decoded
       } else {
         val (delta, encodedLeft) = golombDecodeItemFromSet(encoded, p)
         val hash = lastHash + delta
-
-        loop(encodedLeft, decoded.:+(hash), hash)
+        if (predicate(hash)) {
+          loop(encodedLeft, hash, decoded :+ hash)
+        } else {
+          decoded
+        }
       }
     }
 
-    loop(encoded = encodedData, decoded = Vector.empty, lastHash = UInt64.zero)
+    loop(encoded = encodedData, lastHash = UInt64.zero, Vector.empty)
   }
 
   /**
