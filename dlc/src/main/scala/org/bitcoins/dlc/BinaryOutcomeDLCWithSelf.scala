@@ -7,8 +7,8 @@ import org.bitcoins.core.crypto.{
   Schnorr,
   SchnorrDigitalSignature
 }
-import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   ConditionalScriptPubKey,
@@ -137,7 +137,8 @@ case class BinaryOutcomeDLCWithSelf(
                          txBuilder.utxoMap,
                          feeRate,
                          changeSPK,
-                         network)
+                         network,
+                         txBuilder.lockTimeOverrideOpt)
 
       newBuilder.flatMap(_.sign)
     }
@@ -221,6 +222,35 @@ case class BinaryOutcomeDLCWithSelf(
     txBuilderF.flatMap(subtractFeeAndSign)
   }
 
+  /** Constructs the (time-locked) refund transaction for when the oracle disappears
+    * or signs an unknown message.
+    * Note that both parties have the same refund transaction.
+    */
+  def createRefundTx(
+      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
+    val toLocalValueNotSat =
+      (fundingSpendingInfo.amount * localInput).satoshis.toLong / totalInput.satoshis.toLong
+    val toLocalValue = Satoshis(Int64(toLocalValueNotSat))
+    val toRemoteValue = fundingSpendingInfo.amount - toLocalValue
+
+    val toLocal = TransactionOutput(
+      toLocalValue,
+      P2PKHScriptPubKey(cetLocalPrivKey.publicKey))
+    val toRemote = TransactionOutput(
+      toRemoteValue,
+      P2PKHScriptPubKey(cetRemotePrivKey.publicKey))
+
+    val outputs = Vector(toLocal, toRemote)
+    val txBuilderF = BitcoinTxBuilder(outputs,
+                                      Vector(fundingSpendingInfo),
+                                      feeRate,
+                                      changeSPK,
+                                      network,
+                                      UInt32(timeout))
+
+    txBuilderF.flatMap(subtractFeeAndSign)
+  }
+
   def createCETWinLocal(
       fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
     createCETLocal(
@@ -290,12 +320,15 @@ case class BinaryOutcomeDLCWithSelf(
       val cetLoseLocalF = createCETLoseLocal(fundingSpendingInfo)
       val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
       val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
+      val refundTxF = createRefundTx(fundingSpendingInfo)
 
       cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet.hex}\n"))
       cetLoseLocalF.foreach(cet => logger.info(s"CET Lose Local: ${cet.hex}\n"))
       cetWinRemoteF.foreach(cet => logger.info(s"CET Win Remote: ${cet.hex}\n"))
       cetLoseRemoteF.foreach(cet =>
         logger.info(s"CET Lose Remote: ${cet.hex}\n"))
+      refundTxF.foreach(refundTx =>
+        logger.info(s"Refund Tx: ${refundTx.hex}\n"))
 
       val fundingTxPublishedF = messengerOpt match {
         case Some(messenger) =>
