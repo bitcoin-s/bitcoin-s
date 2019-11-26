@@ -118,44 +118,31 @@ sealed abstract class ConstantInterpreter {
     */
   private def opPushData(
       program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
-    //for the case when we have the minimal data flag and the bytes to push onto stack is represented by the
-    //constant telling OP_PUSHDATA how many bytes need to go onto the stack
-    //for instance OP_PUSHDATA1 OP_0
-    val scriptNumOp = if (program.script(1).bytes.nonEmpty) {
-      val h = program.script(1).bytes.head
-      ScriptNumberOperation.fromNumber(h.toInt)
-    } else {
-      None
+    //for the case where we have to push 0 bytes onto the stack, which is technically the empty byte vector
+    def emptyPush(): StartedScriptProgram = {
+      if (ScriptFlagUtil.requireMinimalData(program.flags)) {
+        program.failExecution(ScriptErrorMinimalData)
+      } else {
+        program.updateStackAndScript(ScriptNumber.zero :: program.stack,
+                                     program.script.tail.tail)
+      }
     }
 
-    if (ScriptFlagUtil.requireMinimalData(program.flags) && program
-          .script(1)
-          .bytes
-          .size == 1 &&
-        scriptNumOp.isDefined) {
-      logger.error(
-        "We cannot use an OP_PUSHDATA operation for pushing " +
-          "a script number operation onto the stack, scriptNumberOperation: " + scriptNumOp)
-      program.failExecution(ScriptErrorMinimalData)
-    } else if (ScriptFlagUtil.requireMinimalData(program.flags) && program.script.size > 2 &&
-               !BitcoinScriptUtil.isMinimalPush(program.script.head,
-                                                program.script(2))) {
-      logger.error(
-        "We are not using the minimal push operation to push the bytes onto the stack for the constant")
-      program.failExecution(ScriptErrorMinimalData)
-    } else {
-      //for the case where we have to push 0 bytes onto the stack, which is technically the empty byte vector
-      program.script(1) match {
-        case OP_0 | BytesToPushOntoStack.zero | ScriptNumber.zero |
-            ScriptNumber.negativeZero =>
-          if (ScriptFlagUtil.requireMinimalData(program.flags))
-            program.failExecution(ScriptErrorMinimalData)
-          else
-            program.updateStackAndScript(ScriptNumber.zero :: program.stack,
-                                         program.script.tail.tail)
-        case _: ScriptToken =>
-          pushScriptNumberBytesToStack(program.updateScript(program.script))
-      }
+    program.script(1) match {
+      case OP_0 | BytesToPushOntoStack.zero | ScriptNumber.zero |
+          ScriptNumber.negativeZero =>
+        emptyPush()
+      case token: ScriptConstant if token.bytes.toSeq.forall(_ == 0.toByte) =>
+        emptyPush()
+      case _: ScriptToken =>
+        if (ScriptFlagUtil.requireMinimalData(program.flags) && program.script.size > 2 && !BitcoinScriptUtil
+              .isMinimalPush(program.script.head, program.script(2))) {
+          logger.error(
+            s"Non-minimal push where minimal push was required: $program")
+          program.failExecution(ScriptErrorMinimalData)
+        } else {
+          pushScriptNumberBytesToStack(program)
+        }
     }
   }
 

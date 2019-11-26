@@ -1,11 +1,13 @@
 package org.bitcoins.testkit.util
 
 import org.bitcoins.core.util.BitcoinSLogger
+import org.scalacheck.Shrink
 import org.scalactic.anyvals.PosInt
 import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import org.scalatest.{FlatSpec, MustMatchers}
+
 import scala.concurrent.duration.DurationInt
 
 /** A wrapper for boiler plate testing procesures in bitcoin-s */
@@ -17,6 +19,14 @@ abstract class BitcoinSUnitTest
     with BitcoinSLogger {
 
   override val timeLimit: Span = 120.seconds
+
+  /** This def ensures that shrinks are disabled for all calls to forAll.
+    *
+    * If you want to enable shrinking for a specific test, introduce an
+    * implicit val into that scope with type Shrink[T] where T is the type
+    * of the generator you want to enable shrinking on.
+    */
+  implicit def noShrink[T]: Shrink[T] = Shrink.shrinkAny[T]
 
   /** The configuration for property based tests in our testing suite
     * @see http://www.scalatest.org/user_guide/writing_scalacheck_style_properties
@@ -52,7 +62,7 @@ abstract class BitcoinSUnitTest
 
 }
 
-private object BitcoinSUnitTest {
+object BitcoinSUnitTest {
 
   /** The number of times new code
     * should be executed in a property based test

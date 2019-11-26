@@ -1,25 +1,47 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.crypto.{
+  BaseTxSigComponent,
+  ECPrivateKey,
+  WitnessTxSigComponentP2SH,
+  WitnessTxSigComponentRaw
+}
 import org.bitcoins.core.currency._
-import org.bitcoins.testkit.core.gen.ScriptGenerators
+import org.bitcoins.testkit.core.gen.{
+  ChainParamsGenerator,
+  CreditingTxGen,
+  ScriptGenerators,
+  TransactionGenerators
+}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
-import org.scalatest.{AsyncFlatSpec, MustMatchers}
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfo,
+  ConditionalPath,
+  UTXOSpendingInfo
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
-  private val logger = BitcoinSLogger.logger
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
+class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   val tc = TransactionConstants
   val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
+
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
 
   behavior of "BitcoinTxBuilder"
 
@@ -84,7 +106,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
+    val utxoMap: UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
@@ -115,7 +137,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
+    val utxoMap: UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
@@ -144,7 +166,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                        HashType.sigHashAll,
                                        conditionalPath =
                                          ConditionalPath.NoConditionsLeft)
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
+    val utxoMap: UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
@@ -181,7 +203,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
+    val utxoMap: UTXOMap = Map(outPoint -> utxo)
     val utxoSpendingInfo = BitcoinUTXOSpendingInfo(
       outPoint = outPoint,
       output = creditingOutput,
@@ -272,7 +294,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
       HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
+    val utxoMap: UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations,
@@ -307,7 +329,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
+    val utxoMap: UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations = destinations,
@@ -362,6 +384,104 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
         HashType.sigHashAll,
         conditionalPath = ConditionalPath.NoConditionsLeft
       )
+    }
+  }
+
+  def verifyScript(tx: Transaction, utxos: Seq[UTXOSpendingInfo]): Boolean = {
+    val programs: Seq[PreExecutionScriptProgram] = tx.inputs.zipWithIndex.map {
+      case (input: TransactionInput, idx: Int) =>
+        val outpoint = input.previousOutput
+
+        val creditingTx = utxos.find(u => u.outPoint.txId == outpoint.txId).get
+
+        val output = creditingTx.output
+
+        val spk = output.scriptPubKey
+
+        val amount = output.value
+
+        val txSigComponent = spk match {
+          case witSPK: WitnessScriptPubKeyV0 =>
+            val o = TransactionOutput(amount, witSPK)
+            WitnessTxSigComponentRaw(tx.asInstanceOf[WitnessTransaction],
+                                     UInt32(idx),
+                                     o,
+                                     Policy.standardFlags)
+          case _: UnassignedWitnessScriptPubKey => ???
+          case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+              _: MultiSignatureScriptPubKey | _: WitnessCommitment |
+              _: CSVScriptPubKey | _: CLTVScriptPubKey |
+              _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+              EmptyScriptPubKey) =>
+            val o = TransactionOutput(CurrencyUnits.zero, x)
+            BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
+
+          case p2sh: P2SHScriptPubKey =>
+            val p2shScriptSig =
+              tx.inputs(idx).scriptSignature.asInstanceOf[P2SHScriptSignature]
+            p2shScriptSig.redeemScript match {
+
+              case _: WitnessScriptPubKey =>
+                WitnessTxSigComponentP2SH(transaction =
+                                            tx.asInstanceOf[WitnessTransaction],
+                                          inputIndex = UInt32(idx),
+                                          output = output,
+                                          flags = Policy.standardFlags)
+
+              case _ =>
+                BaseTxSigComponent(tx,
+                                   UInt32(idx),
+                                   output,
+                                   Policy.standardFlags)
+            }
+        }
+
+        PreExecutionScriptProgram(txSigComponent)
+    }
+    ScriptInterpreter.runAllVerify(programs)
+  }
+
+  private val outputGen = CreditingTxGen.outputs
+    .flatMap { creditingTxsInfo =>
+      val creditingOutputs = creditingTxsInfo.map(c => c.output)
+      val creditingOutputsAmt = creditingOutputs.map(_.value)
+      val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
+
+      TransactionGenerators.smallOutputs(totalAmount).map { destinations =>
+        (creditingTxsInfo, destinations)
+      }
+    }
+    .suchThat(_._1.nonEmpty)
+
+  it must "sign a mix of spks in a tx and then have it verified" in {
+    forAll(outputGen,
+           ScriptGenerators.scriptPubKey,
+           ChainParamsGenerator.bitcoinNetworkParams) {
+      case ((creditingTxsInfo, destinations), changeSPK, network) =>
+        val fee = SatoshisPerVirtualByte(Satoshis(1000))
+        val builder = BitcoinTxBuilder(destinations,
+                                       creditingTxsInfo,
+                                       fee,
+                                       changeSPK._1,
+                                       network)
+        val tx = Await.result(builder.flatMap(_.sign), 10.seconds)
+        assert(verifyScript(tx, creditingTxsInfo))
+    }
+  }
+
+  it must "sign a mix of p2sh/p2wsh in a tx and then have it verified" in {
+    forAll(outputGen,
+           ScriptGenerators.scriptPubKey,
+           ChainParamsGenerator.bitcoinNetworkParams) {
+      case ((creditingTxsInfo, destinations), changeSPK, network) =>
+        val fee = SatoshisPerByte(Satoshis(1000))
+        val builder = BitcoinTxBuilder(destinations,
+                                       creditingTxsInfo,
+                                       fee,
+                                       changeSPK._1,
+                                       network)
+        val tx = Await.result(builder.flatMap(_.sign), 10.seconds)
+        assert(verifyScript(tx, creditingTxsInfo))
     }
   }
 }
