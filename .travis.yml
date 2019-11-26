@@ -99,6 +99,7 @@ before_cache:
 
 before_script:
   - git fetch --tags
+  - git submodule sync 
 
 stages:
   - name: test
