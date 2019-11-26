@@ -116,7 +116,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(Int64(-1)))
+    val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
                                      feeRate = feeUnit,
@@ -145,7 +145,7 @@ class BitcoinTxBuilderTest extends AsyncFlatSpec with MustMatchers {
                                        conditionalPath =
                                          ConditionalPath.NoConditionsLeft)
     val utxoMap: BitcoinTxBuilder.UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(Int64(1)))
+    val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
                                      feeRate = feeUnit,

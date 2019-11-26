@@ -8,7 +8,7 @@ import org.bitcoins.core.crypto.{
   WitnessTxSigComponentP2SH
 }
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -465,41 +465,42 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     @tailrec
     def loop(
         remaining: Seq[UTXOSpendingInfo],
-        accum: Seq[TransactionInput]): Seq[TransactionInput] = remaining match {
-      case Nil => accum.reverse
-      case spendingInfo +: newRemaining =>
-        spendingInfo match {
-          case lockTime: LockTimeSpendingInfo =>
-            val sequence = lockTime.scriptPubKey match {
-              case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
-              case _: CLTVScriptPubKey  => UInt32.zero
-            }
-            val input = TransactionInput(lockTime.outPoint,
-                                         EmptyScriptSignature,
-                                         sequence)
-            loop(newRemaining, input +: accum)
-          case p2sh: P2SHSpendingInfo =>
-            loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
-          case p2wsh: P2WSHV0SpendingInfo =>
-            loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
-          case conditional: ConditionalSpendingInfo =>
-            loop(conditional.nestedSpendingInfo +: newRemaining, accum)
-          case _: P2WPKHV0SpendingInfo |
-              _: UnassignedSegwitNativeUTXOSpendingInfo | _: P2PKSpendingInfo |
-              _: P2PKHSpendingInfo | _: MultiSignatureSpendingInfo |
-              _: EmptySpendingInfo =>
-            //none of these script types affect the sequence number of a tx
-            //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
-            //see BIP125 for more information
-            val sequence =
-              if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
-            val input =
-              TransactionInput(spendingInfo.outPoint,
-                               EmptyScriptSignature,
-                               sequence)
-            loop(newRemaining, input +: accum)
-        }
-    }
+        accum: Seq[TransactionInput]): Seq[TransactionInput] =
+      remaining match {
+        case Nil => accum.reverse
+        case spendingInfo +: newRemaining =>
+          spendingInfo match {
+            case lockTime: LockTimeSpendingInfo =>
+              val sequence = lockTime.scriptPubKey match {
+                case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
+                case _: CLTVScriptPubKey  => UInt32.zero
+              }
+              val input = TransactionInput(lockTime.outPoint,
+                                           EmptyScriptSignature,
+                                           sequence)
+              loop(newRemaining, input +: accum)
+            case p2sh: P2SHSpendingInfo =>
+              loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
+            case p2wsh: P2WSHV0SpendingInfo =>
+              loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
+            case conditional: ConditionalSpendingInfo =>
+              loop(conditional.nestedSpendingInfo +: newRemaining, accum)
+            case _: P2WPKHV0SpendingInfo |
+                _: UnassignedSegwitNativeUTXOSpendingInfo |
+                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
+                _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
+              //none of these script types affect the sequence number of a tx
+              //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
+              //see BIP125 for more information
+              val sequence =
+                if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+              val input =
+                TransactionInput(spendingInfo.outPoint,
+                                 EmptyScriptSignature,
+                                 sequence)
+              loop(newRemaining, input +: accum)
+          }
+      }
 
     loop(utxos, Nil)
   }
@@ -667,8 +668,8 @@ object TxBuilder {
     //https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
     val acceptableVariance = 40 * feeRate.toLong
-    val min = Satoshis(Int64(-acceptableVariance))
-    val max = Satoshis(Int64(acceptableVariance))
+    val min = Satoshis(-acceptableVariance)
+    val max = Satoshis(acceptableVariance)
     val difference = estimatedFee - actualFee
     if (difference <= min) {
       logger.error(

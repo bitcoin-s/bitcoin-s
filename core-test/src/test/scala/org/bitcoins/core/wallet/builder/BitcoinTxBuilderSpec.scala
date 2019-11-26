@@ -44,7 +44,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
                             ScriptGenerators.scriptPubKey,
                             ChainParamsGenerator.bitcoinNetworkParams) {
           case (destinations: Seq[TransactionOutput], changeSPK, network) =>
-            val fee = SatoshisPerVirtualByte(Satoshis(Int64(1000)))
+            val fee = SatoshisPerVirtualByte(Satoshis(1000))
             val outpointsWithKeys =
               buildCreditingTxInfo(creditingTxsInfo.toList)
             val builder = BitcoinTxBuilder(destinations,
@@ -68,7 +68,7 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
                     ScriptGenerators.scriptPubKey,
                     ChainParamsGenerator.bitcoinNetworkParams) {
           case (destinations: Seq[TransactionOutput], changeSPK, network) =>
-            val fee = SatoshisPerByte(Satoshis(Int64(1000)))
+            val fee = SatoshisPerByte(Satoshis(1000))
             val outpointsWithKeys =
               buildCreditingTxInfo(creditingTxsInfo.toList)
             val builder = BitcoinTxBuilder(destinations,
@@ -110,28 +110,28 @@ class BitcoinTxBuilderSpec extends Properties("TxBuilderSpec") {
   private def buildCreditingTxInfo(
       info: List[BitcoinUTXOSpendingInfo]): BitcoinTxBuilder.UTXOMap = {
     @tailrec
-    def loop(
-        rem: List[BitcoinUTXOSpendingInfo],
-        accum: BitcoinTxBuilder.UTXOMap): BitcoinTxBuilder.UTXOMap = rem match {
-      case Nil => accum
-      case BitcoinUTXOSpendingInfo(txOutPoint,
-                                   txOutput,
-                                   signers,
-                                   redeemScriptOpt,
-                                   scriptWitOpt,
-                                   hashType,
-                                   conditionalPath) :: t =>
-        val o = txOutPoint
-        val output = txOutput
-        val outPointsSpendingInfo = BitcoinUTXOSpendingInfo(o,
-                                                            output,
-                                                            signers,
-                                                            redeemScriptOpt,
-                                                            scriptWitOpt,
-                                                            hashType,
-                                                            conditionalPath)
-        loop(t, accum.updated(o, outPointsSpendingInfo))
-    }
+    def loop(rem: List[BitcoinUTXOSpendingInfo],
+             accum: BitcoinTxBuilder.UTXOMap): BitcoinTxBuilder.UTXOMap =
+      rem match {
+        case Nil => accum
+        case BitcoinUTXOSpendingInfo(txOutPoint,
+                                     txOutput,
+                                     signers,
+                                     redeemScriptOpt,
+                                     scriptWitOpt,
+                                     hashType,
+                                     conditionalPath) :: t =>
+          val o = txOutPoint
+          val output = txOutput
+          val outPointsSpendingInfo = BitcoinUTXOSpendingInfo(o,
+                                                              output,
+                                                              signers,
+                                                              redeemScriptOpt,
+                                                              scriptWitOpt,
+                                                              hashType,
+                                                              conditionalPath)
+          loop(t, accum.updated(o, outPointsSpendingInfo))
+      }
     loop(info, Map.empty)
   }
 

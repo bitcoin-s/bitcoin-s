@@ -84,6 +84,8 @@ object Satoshis
   override def fromBytes(bytes: ByteVector): Satoshis =
     RawSatoshisSerializer.read(bytes)
   def apply(int64: Int64): Satoshis = SatoshisImpl(int64)
+  def apply(satoshis: Long): Satoshis = SatoshisImpl(Int64(satoshis))
+  def apply(satoshis: BigInt): Satoshis = SatoshisImpl(Int64(satoshis))
 
   private case class SatoshisImpl(underlying: Int64) extends Satoshis
 }
@@ -99,7 +101,7 @@ sealed abstract class Bitcoins extends CurrencyUnit {
 
   override def satoshis: Satoshis = {
     val sat = underlying * CurrencyUnits.btcToSatoshiScalar
-    Satoshis(Int64(sat.toLongExact))
+    Satoshis(sat.toLongExact)
   }
 }
 
@@ -124,10 +126,10 @@ object CurrencyUnits {
   /** The number you need to multiply BTC by to get it's satoshis */
   val btcToSatoshiScalar: Long = 100000000
   val satoshisToBTCScalar: BigDecimal = BigDecimal(1.0) / btcToSatoshiScalar
-  val oneBTC: CurrencyUnit = Satoshis(Int64(btcToSatoshiScalar))
-  val oneMBTC: CurrencyUnit = Satoshis(Int64(btcToSatoshiScalar / 1000))
+  val oneBTC: CurrencyUnit = Satoshis(btcToSatoshiScalar)
+  val oneMBTC: CurrencyUnit = Satoshis(btcToSatoshiScalar / 1000)
   val zero: CurrencyUnit = Satoshis.zero
-  val negativeSatoshi = Satoshis(Int64(-1))
+  val negativeSatoshi = Satoshis(-1)
 
   def toSatoshis(unit: CurrencyUnit): Satoshis = unit match {
     case b: Bitcoins => b.satoshis

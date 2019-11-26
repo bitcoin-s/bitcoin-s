@@ -12,7 +12,7 @@ import org.bitcoins.core.config.{
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.{Int32, Int64, UInt32}
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
@@ -247,7 +247,7 @@ object MainNetChainParams extends BitcoinChainParams {
                        UInt32(2083236893),
                        UInt32(0x1d00ffff),
                        Int32.one,
-                       Satoshis(Int64(5000000000L)))
+                       Satoshis(5000000000L))
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     Map(
@@ -308,7 +308,7 @@ object TestNetChainParams extends BitcoinChainParams {
                        UInt32(414098458),
                        UInt32(0x1d00ffff),
                        Int32.one,
-                       Satoshis(Int64(5000000000L)))
+                       Satoshis(5000000000L))
 
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     Map(
@@ -359,7 +359,7 @@ object RegTestNetChainParams extends BitcoinChainParams {
                        UInt32(2),
                        UInt32(0x207fffff),
                        Int32.one,
-                       Satoshis(Int64(5000000000L)))
+                       Satoshis(5000000000L))
   override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
     TestNetChainParams.base58Prefixes
 

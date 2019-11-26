@@ -31,8 +31,8 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
 class WalletRpcTest extends BitcoindRpcTest {
-  lazy val clientsF: Future[
-    (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
+  lazy val clientsF
+    : Future[(BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
     BitcoindRpcTestUtil.createNodeTripleV17(clientAccum = clientAccum)
 
   // This client's wallet is encrypted
@@ -487,7 +487,7 @@ class WalletRpcTest extends BitcoindRpcTest {
       info <- client.getWalletInfo
     } yield {
       assert(success)
-      assert(info.paytxfee == SatoshisPerByte(Satoshis(Int64(1000))))
+      assert(info.paytxfee == SatoshisPerByte(Satoshis(1000)))
     }
   }
 
