@@ -5,7 +5,7 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.gcs.{FilterHeader, SimpleFilterMatcher}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -421,7 +421,8 @@ case class ChainHandler(
                 // Find any matches in the group and add the corresponding block hashes into the result
                 filterGroup.foldLeft(Vector.empty[DoubleSha256DigestBE]) {
                   (blocks, filter) =>
-                    if (filter.golombFilter.matchesAny(bytes)) {
+                    val matcher = new SimpleFilterMatcher(filter.golombFilter)
+                    if (matcher.matchesAny(bytes)) {
                       blocks :+ filter.blockHashBE
                     } else {
                       blocks

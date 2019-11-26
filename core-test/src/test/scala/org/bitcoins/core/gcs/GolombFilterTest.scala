@@ -21,12 +21,21 @@ class GolombFilterTest extends BitcoinSUnitTest {
         val encodedData = GCS.encodeSortedSet(data, p)
         val filter =
           GolombFilter(k, m, p, CompactSizeUInt(UInt64(2)), encodedData)
+        val binarySearchMatcher = new BinarySearchFilterMatcher(filter)
 
-        assert(!filter.matchesHash(rand))
-        assert(filter.matchesHash(data1))
-        assert(filter.matchesHash(data2))
-        assert(!filter.matchesAnyHash(Vector(rand)))
-        assert(filter.matchesAnyHash(Vector(rand, data1, data2)))
+        assert(!binarySearchMatcher.matchesHash(rand))
+        assert(binarySearchMatcher.matchesHash(data1))
+        assert(binarySearchMatcher.matchesHash(data2))
+        assert(!binarySearchMatcher.matchesAnyHash(Vector(rand)))
+        assert(binarySearchMatcher.matchesAnyHash(Vector(rand, data1, data2)))
+
+        val simpleMatcher = new SimpleFilterMatcher(filter)
+
+        assert(!simpleMatcher.matchesHash(rand))
+        assert(simpleMatcher.matchesHash(data1))
+        assert(simpleMatcher.matchesHash(data2))
+        assert(!simpleMatcher.matchesAnyHash(Vector(rand)))
+        assert(simpleMatcher.matchesAnyHash(Vector(rand, data1, data2)))
     }
   }
 
@@ -50,15 +59,19 @@ class GolombFilterTest extends BitcoinSUnitTest {
     forAll(genKey, genData, genRandHashes) {
       case (k, data, randHashes) =>
         val filter = GCS.buildBasicBlockFilter(data, k)
-        val hashes = filter.decodedHashes
+        val binarySearchMatcher = new BinarySearchFilterMatcher(filter)
+        val simpleMatcher = new SimpleFilterMatcher(filter)
+        val hashes = binarySearchMatcher.decodedHashes
 
-        data.foreach(element => assert(filter.matches(element)))
-        assert(filter.matchesAny(data))
+        data.foreach(element => assert(binarySearchMatcher.matches(element)))
+        assert(binarySearchMatcher.matchesAny(data))
+        assert(simpleMatcher.matchesAny(data))
 
         val hashesNotInData: Vector[UInt64] =
           randHashes.filterNot(hashes.contains)
 
-        hashesNotInData.foreach(hash => assert(!filter.matchesHash(hash)))
+        hashesNotInData.foreach(hash =>
+          assert(!binarySearchMatcher.matchesHash(hash)))
     }
   }
 
