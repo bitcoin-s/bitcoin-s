@@ -6,7 +6,6 @@ import org.bitcoins.core.currency.{
   CurrencyUnits,
   Satoshis
 }
-import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -58,7 +57,7 @@ trait CurrencyUnitGenerator {
     */
   def positiveRealistic: Gen[Satoshis] =
     Gen.choose(0, Bitcoins(1000000).satoshis.toLong).map { n =>
-      Satoshis(Int64(n))
+      Satoshis(n)
     }
 }
 

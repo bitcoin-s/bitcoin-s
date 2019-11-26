@@ -2,7 +2,7 @@ package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
-import org.bitcoins.core.number.{Int32, Int64, UInt32}
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
@@ -76,7 +76,7 @@ object TransactionGenerators extends BitcoinSLogger {
       } else {
         val amt = Gen
           .choose(100, remainingAmount.toBigDecimal.toLongExact)
-          .map(n => Satoshis(Int64(n)))
+          .map(n => Satoshis(n))
           .sampleSome
         loop(remaining - 1, remainingAmount - amt, amt +: accum)
       }

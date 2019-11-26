@@ -45,11 +45,11 @@ class SignerTest extends BitcoinSAsyncTest {
   }
 
   it should "fail if there are inconsistent P2WPKH spending infos" in {
-    val dumbSpendingInfo = CreditingTxGen.output.sample.get
+    val dumbSpendingInfo = GenUtil.sample(CreditingTxGen.output)
     val p2wpkh = GenUtil
       .sample(CreditingTxGen.p2wpkhOutput)
       .asInstanceOf[P2WPKHV0SpendingInfo]
-    val tx = TransactionGenerators.baseTransaction.sample.get
+    val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     recoverToSucceededIf[IllegalArgumentException] {
       P2WPKHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wpkh)
     }
@@ -60,7 +60,7 @@ class SignerTest extends BitcoinSAsyncTest {
     val p2wsh = GenUtil
       .sample(CreditingTxGen.p2wshOutput)
       .asInstanceOf[P2WSHV0SpendingInfo]
-    val tx = TransactionGenerators.baseTransaction.sample.get
+    val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     recoverToSucceededIf[IllegalArgumentException] {
       P2WSHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wsh)
     }

@@ -6,7 +6,7 @@ import java.net.{InetAddress, URI}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{
@@ -153,7 +153,7 @@ object JsonSerializers {
 
       def reads(json: JsValue): JsResult[SatoshisPerKiloByte] =
         SerializerUtil.processJsNumber(num =>
-          SatoshisPerKiloByte(Satoshis(Int64(num.toBigInt))))(json)
+          SatoshisPerKiloByte(Satoshis(num.toBigInt)))(json)
     }
 
   implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =
@@ -182,7 +182,8 @@ object JsonSerializers {
     Json.reads[GetBlockResult]
 
   implicit val getBlockWithTransactionsResultReads: Reads[
-    GetBlockWithTransactionsResult] = Json.reads[GetBlockWithTransactionsResult]
+    GetBlockWithTransactionsResult] =
+    Json.reads[GetBlockWithTransactionsResult]
 
   implicit val softforkProgressReads: Reads[SoftforkProgress] =
     Json.reads[SoftforkProgress]
@@ -430,7 +431,8 @@ object JsonSerializers {
     Json.reads[GetDescriptorInfoResult]
 
   implicit val walletCreateFundedPsbtResultReads: Reads[
-    WalletCreateFundedPsbtResult] = Json.reads[WalletCreateFundedPsbtResult]
+    WalletCreateFundedPsbtResult] =
+    Json.reads[WalletCreateFundedPsbtResult]
 
   implicit val scriptTypeReads: Reads[ScriptType] = ScriptTypeReads
 
