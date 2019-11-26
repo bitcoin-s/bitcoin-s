@@ -9,6 +9,7 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.scalatest._
 import org.scalatest.concurrent.AsyncTimeLimitedTests
 import org.scalatest.time.Span
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
@@ -22,6 +23,7 @@ trait BaseAsyncTest
     with BeforeAndAfterAll
     with MustMatchers
     with AsyncTimeLimitedTests
+    with ScalaCheckPropertyChecks
     with BitcoinSLogger { this: AsyncTestSuite =>
 
   implicit def np: NetworkParameters = RegTest

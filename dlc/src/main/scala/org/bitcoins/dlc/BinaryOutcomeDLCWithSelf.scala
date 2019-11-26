@@ -96,6 +96,7 @@ case class BinaryOutcomeDLCWithSelf(
     changeSPK: ScriptPubKey,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
+  import BinaryOutcomeDLCWithSelf.subtractFeeAndSign
 
   /** Hash signed by oracle in Win case */
   val messageWin: ByteVector =
@@ -123,36 +124,6 @@ case class BinaryOutcomeDLCWithSelf(
   val fundingSPK: MultiSignatureScriptPubKey = {
     MultiSignatureScriptPubKey(2,
                                Vector(fundingLocalPubKey, fundingRemotePubKey))
-  }
-
-  /** Subtracts the estimated fee by removing from each output evenly */
-  private def subtractFeeAndSign(
-      txBuilder: BitcoinTxBuilder): Future[Transaction] = {
-    txBuilder.unsignedTx.flatMap { tx =>
-      val fee = feeRate.calc(tx)
-
-      val outputs = txBuilder.destinations
-
-      val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
-      val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
-
-      val newOutputsWithoutRemainder = outputs.map(output =>
-        TransactionOutput(output.value - feePerOutput, output.scriptPubKey))
-      val lastOutput = newOutputsWithoutRemainder.last
-      val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
-                                            lastOutput.scriptPubKey)
-      val newOutputs = newOutputsWithoutRemainder.dropRight(1).:+(newLastOutput)
-
-      val newBuilder =
-        BitcoinTxBuilder(newOutputs,
-                         txBuilder.utxoMap,
-                         feeRate,
-                         changeSPK,
-                         network,
-                         txBuilder.lockTimeOverrideOpt)
-
-      newBuilder.flatMap(_.sign)
-    }
   }
 
   def createFundingTransaction: Future[Transaction] = {
@@ -442,6 +413,39 @@ case class BinaryOutcomeDLCWithSelf(
           }
         }
       }
+    }
+  }
+}
+
+object BinaryOutcomeDLCWithSelf {
+
+  /** Subtracts the estimated fee by removing from each output evenly */
+  def subtractFeeAndSign(txBuilder: BitcoinTxBuilder)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    txBuilder.unsignedTx.flatMap { tx =>
+      val fee = txBuilder.feeRate.calc(tx)
+
+      val outputs = txBuilder.destinations
+
+      val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
+      val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
+
+      val newOutputsWithoutRemainder = outputs.map(output =>
+        TransactionOutput(output.value - feePerOutput, output.scriptPubKey))
+      val lastOutput = newOutputsWithoutRemainder.last
+      val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
+                                            lastOutput.scriptPubKey)
+      val newOutputs = newOutputsWithoutRemainder.dropRight(1).:+(newLastOutput)
+
+      val newBuilder =
+        BitcoinTxBuilder(newOutputs,
+                         txBuilder.utxoMap,
+                         txBuilder.feeRate,
+                         txBuilder.changeSPK,
+                         txBuilder.network,
+                         txBuilder.lockTimeOverrideOpt)
+
+      newBuilder.flatMap(_.sign)
     }
   }
 }
