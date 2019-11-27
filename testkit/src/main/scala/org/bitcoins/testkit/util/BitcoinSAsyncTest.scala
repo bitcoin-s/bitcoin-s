@@ -24,8 +24,8 @@ trait BaseAsyncTest
     extends BeforeAndAfter
     with BeforeAndAfterAll
     with MustMatchers
-    with ScalaCheckPropertyChecks
     with AsyncTimeLimitedTests
+    with ScalaCheckPropertyChecks
     with BitcoinSLogger { this: AsyncTestSuite =>
 
   implicit def np: NetworkParameters = RegTest
@@ -92,9 +92,9 @@ trait BaseAsyncTest
   }
 
   def sequenceTestRuns(
-      testRunFs: scala.collection.mutable.Builder[
-        Future[Assertion],
-        Vector[Future[Assertion]]]): Future[Assertion] = {
+      testRunFs: scala.collection.mutable.Builder[Future[Assertion],
+                                                  Vector[Future[Assertion]]])
+    : Future[Assertion] = {
     val testRunsF: Future[Vector[Assertion]] =
       Future.sequence(testRunFs.result())
 
@@ -139,11 +139,10 @@ trait BaseAsyncTest
     sequenceTestRuns(testRunFs)
   }
 
-  def forAllAsync[A, B, C, D](
-      genA: Gen[A],
-      genB: Gen[B],
-      genC: Gen[C],
-      genD: Gen[D])(
+  def forAllAsync[A, B, C, D](genA: Gen[A],
+                              genB: Gen[B],
+                              genC: Gen[C],
+                              genD: Gen[D])(
       func: (A, B, C, D) => Future[Assertion]): Future[Assertion] = {
     val testRunFs = Vector.newBuilder[Future[Assertion]]
 
@@ -156,12 +155,11 @@ trait BaseAsyncTest
     sequenceTestRuns(testRunFs)
   }
 
-  def forAllAsync[A, B, C, D, E](
-      genA: Gen[A],
-      genB: Gen[B],
-      genC: Gen[C],
-      genD: Gen[D],
-      genE: Gen[E])(
+  def forAllAsync[A, B, C, D, E](genA: Gen[A],
+                                 genB: Gen[B],
+                                 genC: Gen[C],
+                                 genD: Gen[D],
+                                 genE: Gen[E])(
       func: (A, B, C, D, E) => Future[Assertion]): Future[Assertion] = {
     val testRunFs = Vector.newBuilder[Future[Assertion]]
 
@@ -174,13 +172,12 @@ trait BaseAsyncTest
     sequenceTestRuns(testRunFs)
   }
 
-  def forAllAsync[A, B, C, D, E, F](
-      genA: Gen[A],
-      genB: Gen[B],
-      genC: Gen[C],
-      genD: Gen[D],
-      genE: Gen[E],
-      genF: Gen[F])(
+  def forAllAsync[A, B, C, D, E, F](genA: Gen[A],
+                                    genB: Gen[B],
+                                    genC: Gen[C],
+                                    genD: Gen[D],
+                                    genE: Gen[E],
+                                    genF: Gen[F])(
       func: (A, B, C, D, E, F) => Future[Assertion]): Future[Assertion] = {
     val testRunFs = Vector.newBuilder[Future[Assertion]]
 
