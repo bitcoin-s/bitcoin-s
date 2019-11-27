@@ -14,7 +14,7 @@ import org.bitcoins.testkit.core.gen.{
   ScriptGenerators,
   TransactionGenerators
 }
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
@@ -32,9 +32,9 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.scalatest.Assertion
 
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.Future
 
 class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   val tc = TransactionConstants
@@ -454,6 +454,8 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     .suchThat(_._1.nonEmpty)
 
   it must "sign a mix of spks in a tx and then have it verified" in {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
     forAll(outputGen,
            ScriptGenerators.scriptPubKey,
            ChainParamsGenerator.bitcoinNetworkParams) {
@@ -464,12 +466,23 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                        fee,
                                        changeSPK._1,
                                        network)
-        val tx = Await.result(builder.flatMap(_.sign), 10.seconds)
-        assert(verifyScript(tx, creditingTxsInfo))
+        val txF = builder.flatMap(_.sign)
+
+        testRunFs += {
+          txF.map { tx =>
+            assert(verifyScript(tx, creditingTxsInfo))
+          }
+        }
+
+        succeed
     }
+
+    Future.sequence(testRunFs.result()).map(_.reduce((_, next) => next))
   }
 
   it must "sign a mix of p2sh/p2wsh in a tx and then have it verified" in {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
     forAll(outputGen,
            ScriptGenerators.scriptPubKey,
            ChainParamsGenerator.bitcoinNetworkParams) {
@@ -480,8 +493,17 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                        fee,
                                        changeSPK._1,
                                        network)
-        val tx = Await.result(builder.flatMap(_.sign), 10.seconds)
-        assert(verifyScript(tx, creditingTxsInfo))
+        val txF = builder.flatMap(_.sign)
+
+        testRunFs += {
+          txF.map { tx =>
+            assert(verifyScript(tx, creditingTxsInfo))
+          }
+        }
+
+        succeed
     }
+
+    Future.sequence(testRunFs.result()).map(_.reduce((_, next) => next))
   }
 }
