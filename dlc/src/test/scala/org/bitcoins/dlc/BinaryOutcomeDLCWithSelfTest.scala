@@ -88,7 +88,8 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
 
           val firstDiff = diffs.head
           // Fee has been evenly distributed (up to some remainder)
-          assert(diffs.forall(diff => diff.compare(firstDiff) < diffs.length))
+          assert(diffs.forall(diff =>
+            diff - firstDiff < Satoshis(Int64(diffs.length))))
         }
 
         Await.result(resultF, 5.seconds)
@@ -137,9 +138,8 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    def executeForCase(
-        outcomeHash: Sha256DigestBE,
-        local: Boolean): Future[Assertion] = {
+    def executeForCase(outcomeHash: Sha256DigestBE,
+                       local: Boolean): Future[Assertion] = {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
