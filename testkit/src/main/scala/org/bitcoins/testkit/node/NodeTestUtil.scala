@@ -121,18 +121,22 @@ abstract class NodeTestUtil extends P2PLogger {
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      count <- node.chainApiFromDb().flatMap(_.getFilterCount)
-      rpcCount <- rpcCountF
-    } yield rpcCount == count
+      filterCount <- node.chainApiFromDb().flatMap(_.getFilterCount)
+      blockCount <- rpcCountF
+    } yield {
+      blockCount == filterCount
+    }
   }
 
   def isSameBestFilterHeaderHeight(node: NeutrinoNode, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val rpcCountF = rpc.getBlockCount
     for {
-      count <- node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
-      rpcCount <- rpcCountF
-    } yield rpcCount == count
+      filterHeaderCount <- node.chainApiFromDb().flatMap(_.getFilterHeaderCount)
+      blockCount <- rpcCountF
+    } yield {
+      blockCount == filterHeaderCount
+    }
   }
 
   /** Checks if the given light client and bitcoind

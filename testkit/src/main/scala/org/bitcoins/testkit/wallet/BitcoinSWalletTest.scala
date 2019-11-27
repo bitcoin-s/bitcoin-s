@@ -83,6 +83,8 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
 object BitcoinSWalletTest extends WalletLogger {
 
+  lazy val initialFunds = 25.bitcoins
+
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,
       bitcoind: BitcoindRpcClient)
@@ -173,7 +175,7 @@ object BitcoinSWalletTest extends WalletLogger {
     for {
       addr <- wallet.getNewAddress()
       tx <- bitcoind
-        .sendToAddress(addr, 25.bitcoins)
+        .sendToAddress(addr, initialFunds)
         .flatMap(bitcoind.getRawTransaction(_))
 
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
@@ -181,7 +183,7 @@ object BitcoinSWalletTest extends WalletLogger {
       balance <- wallet.getBalance()
 
     } yield {
-      assert(balance >= 25.bitcoins)
+      assert(balance >= initialFunds)
       pair
     }
   }
