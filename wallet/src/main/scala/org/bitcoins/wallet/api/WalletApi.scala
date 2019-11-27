@@ -6,7 +6,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.HDUtil
@@ -51,6 +51,12 @@ trait LockedWalletApi extends WalletApi {
   def processTransaction(
       transaction: Transaction,
       confirmations: Int): Future[LockedWalletApi]
+
+  /**
+    * Processes the give block, updating our DB state if it's relevant to us.
+    * @param block The block we're processing
+    */
+  def processBlock(block: Block, confirmations: Int): Future[LockedWalletApi]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance(): Future[CurrencyUnit] = {
