@@ -96,6 +96,7 @@ case class BinaryOutcomeDLCWithSelf(
     changeSPK: ScriptPubKey,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
+  import BinaryOutcomeDLCWithSelf.subtractFeeAndSign
 
   /** Hash signed by oracle in Win case */
   val messageWin: ByteVector =
@@ -125,25 +126,6 @@ case class BinaryOutcomeDLCWithSelf(
                                Vector(fundingLocalPubKey, fundingRemotePubKey))
   }
 
-  /** Subtracts the estimated fee from the last output's value */
-  private def subtractFeeAndSign(
-      txBuilder: BitcoinTxBuilder): Future[Transaction] = {
-    txBuilder.unsignedTx.flatMap { tx =>
-      val fee = feeRate.calc(tx)
-      val output = txBuilder.destinations.last
-      val newOutput = TransactionOutput(output.value - fee, output.scriptPubKey)
-      val newBuilder =
-        BitcoinTxBuilder(txBuilder.destinations.dropRight(1).:+(newOutput),
-                         txBuilder.utxoMap,
-                         feeRate,
-                         changeSPK,
-                         network,
-                         txBuilder.lockTimeOverrideOpt)
-
-      newBuilder.flatMap(_.sign)
-    }
-  }
-
   def createFundingTransaction: Future[Transaction] = {
     val output: TransactionOutput =
       TransactionOutput(totalInput, fundingSPK)
@@ -156,11 +138,10 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETLocal(
-      sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
-      localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETLocal(sigPubKey: ECPublicKey,
+                     fundingSpendingInfo: MultiSignatureSpendingInfo,
+                     localPayout: CurrencyUnit,
+                     remotePayout: CurrencyUnit): Future[Transaction] = {
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
       pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
@@ -189,11 +170,10 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETRemote(
-      sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
-      localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETRemote(sigPubKey: ECPublicKey,
+                      fundingSpendingInfo: MultiSignatureSpendingInfo,
+                      localPayout: CurrencyUnit,
+                      remotePayout: CurrencyUnit): Future[Transaction] = {
 
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
@@ -340,21 +320,21 @@ case class BinaryOutcomeDLCWithSelf(
 
       oracleSigF.flatMap { oracleSig =>
         // Pick the CET to use and payout by checking which message was signed
-        val (cetF, payout) =
+        val cetF =
           if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
             if (local) {
-              (cetWinLocalF, localWinPayout)
+              cetWinLocalF
             } else {
-              (cetWinRemoteF, remoteWinPayout)
+              cetWinRemoteF
             }
           } else if (Schnorr.verify(messageLose, oracleSig, oraclePubKey)) {
             if (local) {
-              (cetLoseLocalF, localLosePayout)
+              cetLoseLocalF
             } else {
-              (cetLoseRemoteF, remoteLosePayout)
+              cetLoseRemoteF
             }
           } else {
-            (Future.failed(???), ???)
+            Future.failed(???)
           }
 
         val cetReadyForPublish = fundingTxPublishedF.flatMap(_ => cetF)
@@ -395,7 +375,7 @@ case class BinaryOutcomeDLCWithSelf(
           // Construct Closing Transaction
           val txBuilder = BitcoinTxBuilder(
             Vector(
-              TransactionOutput(payout,
+              TransactionOutput(output.value,
                                 P2PKHScriptPubKey(finalPrivKey.publicKey))),
             Vector(cetSpendingInfo),
             feeRate,
@@ -433,6 +413,39 @@ case class BinaryOutcomeDLCWithSelf(
           }
         }
       }
+    }
+  }
+}
+
+object BinaryOutcomeDLCWithSelf {
+
+  /** Subtracts the estimated fee by removing from each output evenly */
+  def subtractFeeAndSign(txBuilder: BitcoinTxBuilder)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    txBuilder.unsignedTx.flatMap { tx =>
+      val fee = txBuilder.feeRate.calc(tx)
+
+      val outputs = txBuilder.destinations
+
+      val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
+      val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
+
+      val newOutputsWithoutRemainder = outputs.map(output =>
+        TransactionOutput(output.value - feePerOutput, output.scriptPubKey))
+      val lastOutput = newOutputsWithoutRemainder.last
+      val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
+                                            lastOutput.scriptPubKey)
+      val newOutputs = newOutputsWithoutRemainder.dropRight(1).:+(newLastOutput)
+
+      val newBuilder =
+        BitcoinTxBuilder(newOutputs,
+                         txBuilder.utxoMap,
+                         txBuilder.feeRate,
+                         txBuilder.changeSPK,
+                         txBuilder.network,
+                         txBuilder.lockTimeOverrideOpt)
+
+      newBuilder.flatMap(_.sign)
     }
   }
 }
