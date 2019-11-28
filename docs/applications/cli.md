@@ -6,7 +6,14 @@ create a native executable that circumvents the jvm for fast start up time.
 ### Building the command line
 
 #### Installing graalvm native image
-First to build the command line you need to have the graal jdk installed. This can be installed on graalvm's website.
+First to build the command line you need to have the graal jdk installed. This can be installed on [graalvm's github](https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-19.3.0).
+
+
+If you do not have the `native-image` executable installed, you need to install it with
+
+```bashrc
+./graalvm-ce-java8-19.3.0/bin/gu install native-image
+```
 
 Once you have the graalvm installed you should be able to verify you have the `native-image` exeuctable installed by running
 
@@ -16,21 +23,28 @@ $ native-image --help
 
 #### Building the native image
 
-Now that you have graalvm native image installed, you should be able to build the cli with
+Now that you have graalvm native image installed, you should be able to build the cli with. It is important to note that
+this only works with Scala `2.12.x`. I'm unsure of why the native image build fails with Scala `2.13.x`
 
 ```bashrc
-$ sbt cli/graalvm-native-image:packageBin
+$ sbt ++2.12.10 cli/graalvm-native-image:packageBin
 ```
 
 After running that command you should find the executable here:
 
 ```bash
-???
+bitcoin-s/app/cli/target/graalvm-native-image
 ```
 
 #### Executing commands
 You can ask the client for help with
 
 ```bash
-$ ./bitcoin-s-cli help
+ ./app/cli/target/graalvm-native-image/bitcoin-s-cli --help
+Usage: bitcoin-s-cli [options] [<cmd>]
+
+  -n, --network <value>  Select the active network.
+  --debug                Print debugging information
+  -h, --help             Display this help message and exit
+  <cmd>                  The command and arguments to be executed. Try bitcoin-s-cli help for a list of all commands
 ```
