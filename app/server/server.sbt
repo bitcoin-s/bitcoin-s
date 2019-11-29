@@ -5,3 +5,5 @@ name := "bitcoin-s-server"
 Compile / fork := true
 
 libraryDependencies ++= Deps.server(scalaVersion.value)
+
+enablePlugins(JavaAppPackaging, GraalVMNativeImagePlugin)
