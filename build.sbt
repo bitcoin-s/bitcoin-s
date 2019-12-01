@@ -51,6 +51,8 @@ lazy val `bitcoin-s` = project
     bench,
     eclairRpc,
     eclairRpcTest,
+    keyManager,
+    keyManagerTest,
     node,
     nodeTest,
     picklers,
@@ -370,17 +372,17 @@ lazy val docs = project
     zmq
   )
 
-lazy val keymanager = project
+lazy val keyManager = project
   .in(file("key-manager"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(core)
 
-lazy val keymanagerTest = project
+lazy val keyManagerTest = project
   .in(file("key-manager-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-keymanager-test",
     libraryDependencies ++= Deps.keyManagerTest)
-  .dependsOn(keymanager, testkit)
+  .dependsOn(keyManager, testkit)
 
 lazy val walletDbSettings = dbFlywaySettings("walletdb")
 lazy val wallet = project
@@ -391,7 +393,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(core, dbCommons, keymanager)
+  .dependsOn(core, dbCommons, keyManager)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project

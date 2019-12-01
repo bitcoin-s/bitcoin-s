@@ -10,7 +10,11 @@ import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.wallet.api.{InitializeWalletError, InitializeWalletSuccess, UnlockedWalletApi}
+import org.bitcoins.wallet.api.{
+  InitializeWalletError,
+  InitializeWalletSuccess,
+  UnlockedWalletApi
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -76,7 +80,6 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
-
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {

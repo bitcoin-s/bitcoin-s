@@ -92,7 +92,6 @@ object WalletAppConfig {
   def fromDefaultDatadir(confs: Config*): WalletAppConfig =
     WalletAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 
-
   val ENCRYPTED_SEED_FILE_NAME: String =
     "encrypted-bitcoin-s-seed.json"
 }

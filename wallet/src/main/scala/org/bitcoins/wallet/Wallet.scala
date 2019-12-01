@@ -10,7 +10,11 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
-import org.bitcoins.keymanager.{EncryptedMnemonic, EncryptedMnemonicHelper, WalletStorage}
+import org.bitcoins.keymanager.{
+  EncryptedMnemonic,
+  EncryptedMnemonicHelper,
+  WalletStorage
+}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
@@ -193,7 +197,7 @@ object Wallet extends CreateWalletApi with WalletLogger {
           _ <- config.initialize()
           _ = {
             val mnemonicPath =
-              WalletStorage.writeMnemonicToDisk(seedPath,encrypted)
+              WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
             logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
           }
           _ <- {

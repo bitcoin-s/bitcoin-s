@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
+
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage {
   import scala.jdk.CollectionConverters._
@@ -75,7 +76,8 @@ object WalletStorage {
           //TODO: TEST ME!!!!!!!!!
           logger.warn(
             s"Found mnemonic on disk is not the same as mnemonic we're about to write")
-          throw new RuntimeException(s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
+          throw new RuntimeException(
+            s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
         }
     }
   }
@@ -83,9 +85,8 @@ object WalletStorage {
   /** Reads the raw encrypted mnemonic from disk,
     * performing no decryption
     */
-  private def readEncryptedMnemonicFromDisk(seedPath: Path): CompatEither[
-    ReadMnemonicError,
-    EncryptedMnemonic] = {
+  private def readEncryptedMnemonicFromDisk(
+      seedPath: Path): CompatEither[ReadMnemonicError, EncryptedMnemonic] = {
 
     val jsonE: CompatEither[ReadMnemonicError, ujson.Value] = {
       if (Files.isRegularFile(seedPath)) {
@@ -138,7 +139,8 @@ object WalletStorage {
             cipherText <- ByteVector.fromHex(rawCipherText)
             salt <- ByteVector.fromHex(rawSalt).map(AesSalt(_))
           } yield {
-            logger.debug(s"Parsed contents of $seedPath into an EncryptedMnemonic")
+            logger.debug(
+              s"Parsed contents of $seedPath into an EncryptedMnemonic")
             EncryptedMnemonic(AesEncryptedData(cipherText, iv), salt)
           }
           val toRight: Option[
@@ -155,7 +157,9 @@ object WalletStorage {
     * Reads the wallet mmemonic from disk and tries to parse and
     * decrypt it
     */
-  def decryptMnemonicFromDisk(seedPath: Path, passphrase: AesPassword): ReadMnemonicResult = {
+  def decryptMnemonicFromDisk(
+      seedPath: Path,
+      passphrase: AesPassword): ReadMnemonicResult = {
 
     val encryptedEither = readEncryptedMnemonicFromDisk(seedPath)
 
