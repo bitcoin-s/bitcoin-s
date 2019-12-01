@@ -165,10 +165,10 @@ trait LockedWalletApi extends WalletApi {
 
 trait UnlockedWalletApi extends LockedWalletApi {
 
-  def mnemonicCode: MnemonicCode
+  protected def mnemonicCode: MnemonicCode
 
   /** The wallet seed */
-  lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonicCode)
+  protected lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonicCode)
 
   // TODO: come back to how to handle this
   def passphrase: AesPassword

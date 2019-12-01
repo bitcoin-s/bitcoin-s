@@ -23,23 +23,3 @@ private[bitcoins] object WalletLogger extends AppLoggers {
   def getLogger(implicit conf: WalletAppConfig): Logger =
     getLoggerImpl(LoggerKind.Wallet)
 }
-
-/** Exposes access to the key handling logger */
-private[bitcoins] trait KeyHandlingLogger {
-  private var _logger: Logger = _
-  protected[bitcoins] def logger(implicit config: WalletAppConfig) = {
-    if (_logger == null) {
-      _logger = KeyHandlingLogger.getLogger
-    }
-    _logger
-  }
-}
-
-private[bitcoins] object KeyHandlingLogger extends AppLoggers {
-
-  /**
-    * @return the key handling submobule logger
-    */
-  def getLogger(implicit conf: WalletAppConfig): Logger =
-    getLoggerImpl(LoggerKind.KeyHandling)
-}
