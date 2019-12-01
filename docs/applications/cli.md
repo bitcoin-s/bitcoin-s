@@ -1,6 +1,12 @@
+---
+id: cli
+title: bitcoin-s cli
+---
+
+
 ## Bitcoin-s command line client
 
-The [cli](../../app/cli/) project is meant to be a bitcoin-s command line client. It uses [graalvm native image]() to
+The [cli](../../app/cli/) project is meant to be a bitcoin-s command line client. It uses [graalvm native image](https://www.graalvm.org/docs/reference-manual/native-image/) to
 create a native executable that circumvents the jvm for fast start up time.
 
 ### Building the command line

@@ -11,7 +11,7 @@ All configuration for Bitcoin-S is under the `bitcoin-s` key.
 
 If you have a file `application.conf` anywhere on your classpath when using
 bitcoin-s, the values there take precedence over the ones found in our
-`reference.conf`. We also look for the file `bitcoin-s.conf` in the current
+`reference.conf`. We also look for the file `$HOME/.bitcoin-s/bitcoin-s.conf` in the current
 Bitcoin-S data directory.
 
 The resolved configuration gets parsed by
