@@ -73,7 +73,6 @@ object WalletStorage {
           logger.trace(s"Found and provided mnemonics are the same, skipping")
           seedPath
         } else {
-          //TODO: TEST ME!!!!!!!!!
           logger.warn(
             s"Found mnemonic on disk is not the same as mnemonic we're about to write")
           throw new RuntimeException(

@@ -88,4 +88,24 @@ class WalletStorageTest
       case res: ReadMnemonicResult => fail(res.toString())
     }
   }
+
+  it must "throw an exception if we attempt to overwrrite an existing seed" in { walletConf =>
+
+    assert(!walletConf.seedExists())
+
+    val _ = getAndWriteMnemonic(walletConf)
+
+    // should have been written by now
+    assert(walletConf.seedExists())
+
+    val exn: RuntimeException = intercept[RuntimeException] {
+      //attempt to write another mnemonic
+      getAndWriteMnemonic(walletConf)
+    }
+
+    //need this since we are using async testing suite
+    //and exn is not a Future
+    succeed
+
+  }
 }
