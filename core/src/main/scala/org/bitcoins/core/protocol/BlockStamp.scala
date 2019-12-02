@@ -14,6 +14,11 @@ sealed trait BlockStamp {
   def mkString: String
 }
 
+/** This trait represents a point on the blockchain, including future points */
+sealed trait BlockStampWithFuture extends BlockStamp {
+  def toUInt32: UInt32
+}
+
 object BlockStamp {
   case class InvalidBlockStamp(blockStamp: String)
       extends RuntimeException(s"Invalid blockstamp: ${blockStamp}")
@@ -21,14 +26,30 @@ object BlockStamp {
   case class BlockHash(hash: DoubleSha256DigestBE) extends BlockStamp {
     override def mkString: String = hash.hex
   }
-  case class BlockHeight(height: Int) extends BlockStamp {
+  case class BlockHeight(height: Int) extends BlockStampWithFuture {
     require(height >= 0, "block height must be a positive number")
     override def mkString: String = height.toString
+    override def toUInt32: UInt32 = UInt32(height)
   }
-  case class BlockTime(time: UInt32) extends BlockStamp {
+  case class BlockTime(time: UInt32) extends BlockStampWithFuture {
     override def mkString: String = {
       val instant = Instant.ofEpochSecond(time.toLong)
       DateTimeFormatter.ISO_INSTANT.format(instant)
+    }
+    override def toUInt32: UInt32 = time
+  }
+
+  /** This is Tue Nov  5 00:53:20 1985 UTC
+    * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/script/script.h#L39]]
+    */
+  final val LOCKTIME_THRESHOLD: Int = 500000000
+
+  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]] */
+  def apply(timelockNumber: Int): BlockStampWithFuture = {
+    if (timelockNumber < LOCKTIME_THRESHOLD) {
+      BlockHeight(timelockNumber)
+    } else {
+      BlockTime(UInt32(timelockNumber))
     }
   }
 
