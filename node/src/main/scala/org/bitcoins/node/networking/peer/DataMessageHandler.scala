@@ -2,7 +2,8 @@ package org.bitcoins.node.networking.peer
 
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -94,6 +95,12 @@ case class DataMessageHandler(
             }
           }
           newChainApi <- chainApi.processFilter(filter)
+          _ <- Future {
+            val blockFilter =
+              BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
+            callbacks.onCompactFilterReceived.foreach(
+              _.apply(filter.blockHash, blockFilter))
+          }
         } yield {
           this.copy(chainApi = newChainApi,
                     receivedFilterCount = newCount,
@@ -311,6 +318,9 @@ object DataMessageHandler {
 
   /** Callback for handling a received transaction */
   type OnTxReceived = Transaction => Unit
+
+  /** Callback for handling a received compact block filter */
+  type OnCompactFilterReceived = (DoubleSha256Digest, GolombFilter) => Unit
 
   /** Does nothing */
   def noop[T]: T => Unit = _ => ()

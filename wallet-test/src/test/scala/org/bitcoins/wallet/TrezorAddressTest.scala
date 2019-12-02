@@ -1,11 +1,11 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.crypto.MnemonicCode
+import org.bitcoins.core.crypto.{DoubleSha256Digest, ExtPublicKey, MnemonicCode}
+
 import scala.io.Source
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
-import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd.HDCoinType
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPath
@@ -25,6 +25,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
+
 import scala.concurrent.Future
 import org.bitcoins.wallet.api.InitializeWalletSuccess
 import org.scalatest.AsyncFlatSpec
@@ -37,7 +38,9 @@ import org.bitcoins.core.hd.HDChainType.External
 import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.wallet.models.AccountDb
 import _root_.akka.actor.Address
+import org.bitcoins.core.node.NodeApi
 import org.scalatest.compatible.Assertion
+
 import scala.concurrent.ExecutionContext
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 
@@ -159,7 +162,13 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     Wallet
       .initializeWithMnemonic(mnemonic)(
         config, // to make sure we're not passing in the wrong conf by accident
-        implicitly[ExecutionContext])
+        implicitly[ExecutionContext],
+        new NodeApi {
+          override def fetchBlocks(
+              blockHashes: Vector[DoubleSha256Digest]): Future[Unit] =
+            FutureUtil.unit
+        }
+      )
       .map {
         case InitializeWalletSuccess(wallet: Wallet) =>
           wallet

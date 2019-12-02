@@ -81,7 +81,8 @@ case class P2PClientActor(
   private def awaitNetworkRequest(
       peer: ActorRef,
       unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case message: NetworkMessage => sendNetworkMessage(message, peer)
+    case message: NetworkMessage =>
+      sendNetworkMessage(message, peer)
     case payload: NetworkPayload =>
       val networkMsg = NetworkMessage(network, payload)
       self.forward(networkMsg)

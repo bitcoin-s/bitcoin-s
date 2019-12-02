@@ -12,6 +12,7 @@ import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
+import org.bitcoins.core.node.NodeApi
 import org.bitcoins.wallet.internal._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 
@@ -135,11 +136,13 @@ abstract class LockedWallet
 object LockedWallet {
   private case class LockedWalletImpl()(
       implicit val ec: ExecutionContext,
-      val walletConfig: WalletAppConfig)
-      extends LockedWallet
+      val walletConfig: WalletAppConfig,
+      val node: NodeApi)
+      extends LockedWallet {}
 
   def apply()(
       implicit ec: ExecutionContext,
-      config: WalletAppConfig): LockedWallet = LockedWalletImpl()
+      config: WalletAppConfig,
+      node: NodeApi): LockedWallet = LockedWalletImpl()
 
 }

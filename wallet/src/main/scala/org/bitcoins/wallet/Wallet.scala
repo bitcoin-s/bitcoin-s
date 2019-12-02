@@ -5,6 +5,7 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
+import org.bitcoins.core.node.NodeApi
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
@@ -19,6 +20,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
+
+  implicit val node: NodeApi
 
   /**
     * @inheritdoc
@@ -143,7 +146,8 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
       mnemonicCode: MnemonicCode
   )(
       implicit override val walletConfig: WalletAppConfig,
-      override val ec: ExecutionContext)
+      override val ec: ExecutionContext,
+      override val node: NodeApi)
       extends Wallet {
 
     // todo: until we've figured out a better schem
@@ -152,7 +156,8 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
 
   def apply(mnemonicCode: MnemonicCode)(
       implicit config: WalletAppConfig,
-      ec: ExecutionContext): Wallet =
+      ec: ExecutionContext,
+      node: NodeApi): Wallet =
     WalletImpl(mnemonicCode)
 
   // todo figure out how to handle password part of wallet
@@ -161,7 +166,8 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
   // todo fix signature
   override def initializeWithEntropy(entropy: BitVector)(
       implicit config: WalletAppConfig,
-      ec: ExecutionContext): Future[InitializeWalletResult] = {
+      ec: ExecutionContext,
+      node: NodeApi): Future[InitializeWalletResult] = {
 
     logger.info(s"Initializing wallet on chain ${config.network}")
 

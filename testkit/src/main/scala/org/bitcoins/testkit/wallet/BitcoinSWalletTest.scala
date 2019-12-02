@@ -2,7 +2,10 @@ package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency._
+import org.bitcoins.core.node.NodeApi
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -29,6 +32,12 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
+  }
+
+  implicit def nodeApi: NodeApi = new NodeApi {
+    override def fetchBlocks(
+        blockHashes: Vector[DoubleSha256Digest]): Future[Unit] =
+      FutureUtil.unit
   }
 
   /** Lets you customize the parameters for the created wallet */
@@ -97,7 +106,8 @@ object BitcoinSWalletTest extends WalletLogger {
     */
   private def createNewWallet(extraConfig: Option[Config])(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext): () => Future[UnlockedWalletApi] =
+      ec: ExecutionContext,
+      nodeApi: NodeApi): () => Future[UnlockedWalletApi] =
     () => {
       val defaultConf = config.walletConf
       val walletConfig = extraConfig match {
@@ -111,7 +121,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.initialize().flatMap { _ =>
         Wallet
-          .initialize()(implicitly[ExecutionContext], walletConfig)
+          .initialize()(implicitly[ExecutionContext], walletConfig, nodeApi)
           .map {
             case InitializeWalletSuccess(wallet) => wallet
             case err: InitializeWalletError =>
@@ -125,8 +135,9 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Creates a wallet with the default configuration  */
   private def createDefaultWallet()(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext): Future[UnlockedWalletApi] =
-    createNewWallet(None)(config, ec)() // get the standard config
+      ec: ExecutionContext,
+      nodeApi: NodeApi): Future[UnlockedWalletApi] =
+    createNewWallet(None)(config, ec, nodeApi)() // get the standard config
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
@@ -147,10 +158,18 @@ object BitcoinSWalletTest extends WalletLogger {
     bitcoindF.map(WalletWithBitcoind(wallet, _))
   }
 
+  def createWalletWithBitcoind(
+      wallet: UnlockedWalletApi,
+      bitcoindRpcClient: BitcoindRpcClient
+  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+    Future.successful(WalletWithBitcoind(wallet, bitcoindRpcClient))
+  }
+
   /** Creates a default wallet, and then pairs it with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind()(
       implicit system: ActorSystem,
-      config: BitcoinSAppConfig): Future[WalletWithBitcoind] = {
+      config: BitcoinSAppConfig,
+      nodeApi: NodeApi): Future[WalletWithBitcoind] = {
     import system.dispatcher
     val unlockedWalletApiF = createDefaultWallet()
     unlockedWalletApiF.flatMap(u => createWalletWithBitcoind(u))
@@ -159,11 +178,24 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Gives us a funded bitcoin-s wallet and the bitcoind instance that funded that wallet */
   def fundedWalletAndBitcoind(versionOpt: Option[BitcoindVersion])(
       implicit config: BitcoinSAppConfig,
-      system: ActorSystem): Future[WalletWithBitcoind] = {
+      system: ActorSystem,
+      nodeApi: NodeApi): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
       wallet <- createDefaultWallet()
       withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
+      funded <- fundWalletWithBitcoind(withBitcoind)
+    } yield funded
+  }
+
+  def fundedWalletAndBitcoind(bitcoindRpcClient: BitcoindRpcClient)(
+      implicit config: BitcoinSAppConfig,
+      system: ActorSystem,
+      nodeApi: NodeApi): Future[WalletWithBitcoind] = {
+    import system.dispatcher
+    for {
+      wallet <- createDefaultWallet()
+      withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
   }
