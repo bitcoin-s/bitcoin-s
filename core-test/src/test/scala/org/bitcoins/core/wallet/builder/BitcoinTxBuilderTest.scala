@@ -454,11 +454,9 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     .suchThat(_._1.nonEmpty)
 
   it must "sign a mix of spks in a tx and then have it verified" in {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
-
-    forAll(outputGen,
-           ScriptGenerators.scriptPubKey,
-           ChainParamsGenerator.bitcoinNetworkParams) {
+    forAllAsync(outputGen,
+                ScriptGenerators.scriptPubKey,
+                ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
         val builder = BitcoinTxBuilder(destinations,
@@ -468,24 +466,16 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                        network)
         val txF = builder.flatMap(_.sign)
 
-        testRunFs += {
-          txF.map { tx =>
-            assert(verifyScript(tx, creditingTxsInfo))
-          }
+        txF.map { tx =>
+          assert(verifyScript(tx, creditingTxsInfo))
         }
-
-        succeed
     }
-
-    Future.sequence(testRunFs.result()).map(_.reduce((_, next) => next))
   }
 
   it must "sign a mix of p2sh/p2wsh in a tx and then have it verified" in {
-    val testRunFs = Vector.newBuilder[Future[Assertion]]
-
-    forAll(outputGen,
-           ScriptGenerators.scriptPubKey,
-           ChainParamsGenerator.bitcoinNetworkParams) {
+    forAllAsync(outputGen,
+                ScriptGenerators.scriptPubKey,
+                ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
         val fee = SatoshisPerByte(Satoshis(1000))
         val builder = BitcoinTxBuilder(destinations,
@@ -495,15 +485,9 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                        network)
         val txF = builder.flatMap(_.sign)
 
-        testRunFs += {
-          txF.map { tx =>
-            assert(verifyScript(tx, creditingTxsInfo))
-          }
+        txF.map { tx =>
+          assert(verifyScript(tx, creditingTxsInfo))
         }
-
-        succeed
     }
-
-    Future.sequence(testRunFs.result()).map(_.reduce((_, next) => next))
   }
 }
