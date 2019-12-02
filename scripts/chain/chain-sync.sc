@@ -14,17 +14,18 @@ import scala.concurrent.duration.DurationInt
 implicit val system = ActorSystem(s"chain-sync-script-${System.currentTimeMillis()}")
 implicit val ec = system.dispatcher
 
-// We are assuming that a `bitcoind` regtest node is running the background.
-// You can see our `bitcoind` guides to see how to connect
-// to a local or remote `bitcoind` node.
+//make sure you have `regtest=1` set in your bitcoin.conf so it syncs regtest
+//this reads in your $HOME/bitcoin.conf
 val bitcoindInstance = BitcoindInstance.fromDatadir()
-val rpcCli = BitcoindRpcClient(bitcoindInstance)
+
+//file and starts bitcoind
+val rpcCliF = BitcoindRpcClient(bitcoindInstance).start()
 
 // Next, we need to create a way to monitor the chain:
-val getBestBlockHash = () => rpcCli.getBestBlockHash
+val getBestBlockHash = () => rpcCliF.flatMap(_.getBestBlockHash)
 
 val getBlockHeader = { hash: DoubleSha256DigestBE =>
-  rpcCli.getBlockHeader(hash).map(_.blockHeader)
+  rpcCliF.flatMap(_.getBlockHeader(hash).map(_.blockHeader))
 }
 
 
@@ -82,7 +83,7 @@ val syncResultF = syncedChainApiF.flatMap { chainApi =>
 
   countF.map(count => println(s"chain api blockcount=${count}"))
 
-  rpcCli.getBlockCount.map(count => println(s"bitcoind blockcount=${count}"))
+  rpcCliF.flatMap(_.getBlockCount.map(count => println(s"bitcoind blockcount=${count}")))
 
   countF
 }

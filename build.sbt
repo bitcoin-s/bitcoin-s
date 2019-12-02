@@ -54,6 +54,7 @@ lazy val `bitcoin-s` = project
     node,
     nodeTest,
     picklers,
+    scripts,
     wallet,
     walletTest,
     walletServer,

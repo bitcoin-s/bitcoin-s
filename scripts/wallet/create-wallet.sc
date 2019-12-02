@@ -36,10 +36,15 @@ val configF: Future[Unit] = for {
 } yield ()
 
 import org.bitcoins.rpc.config.BitcoindInstance
+
+//make sure you have `regtest=1` set in your bitcoin.conf so it syncs regtest
+//this reads in your $HOME/bitcoin.conf
 val bitcoindInstance = BitcoindInstance.fromDatadir()
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-val bitcoind = BitcoindRpcClient(bitcoindInstance)
+
+//starts bitcoind
+val bitcoindF = BitcoindRpcClient(bitcoindInstance).start()
 
 // when this future completes, we have
 // synced our chain handler to our bitcoind
@@ -47,12 +52,12 @@ val bitcoind = BitcoindRpcClient(bitcoindInstance)
 import org.bitcoins.chain.api.ChainApi
 val syncF: Future[ChainApi] = configF.flatMap { _ =>
   val getBestBlockHashFunc = { () =>
-    bitcoind.getBestBlockHash
+    bitcoindF.flatMap(_.getBestBlockHash)
   }
 
   import org.bitcoins.core.crypto.DoubleSha256DigestBE
   val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
-    bitcoind.getBlockHeader(hash).map(_.blockHeader)
+    bitcoindF.flatMap(_.getBlockHeader(hash).map(_.blockHeader))
   }
 
 
@@ -90,6 +95,7 @@ val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.currency._
 val transactionF: Future[Transaction] = for {
+  bitcoind <- bitcoindF
   wallet <- walletF
   startBalance <- wallet.getBalance()
   address <- wallet.getNewAddress()
@@ -112,5 +118,6 @@ val balanceF: Future[CurrencyUnit] = for {
 
 balanceF.foreach { balance =>
   println(s"bitcoin-s wallet balance: $balance")
+  bitcoindF.map(_.stop())
   system.terminate()
 }
