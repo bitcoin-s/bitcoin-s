@@ -116,6 +116,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |port=${uri.getPort}
                   |debug=1
                   |walletbroadcast=1
+                  |enablebip61=1
+                  |peerbloomfilters=1
                   |txindex=${if (pruneMode) 0 else 1 /* pruning and txindex are not compatible */}
                   |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
                   |zmqpubhashblock=tcp://127.0.0.1:$zmqPort

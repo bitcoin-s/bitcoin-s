@@ -26,7 +26,8 @@ TaskKeys.downloadBitcoind := {
 
   val experimentalVersion = "0.18.99" // TODO: change this when new version compiled on suredbits server
 
-  val versions = List("0.19.0","0.18.1", "0.17.0.1", "0.16.3", experimentalVersion)
+  val versions =
+    List("0.19.0.1", "0.18.1", "0.17.0.1", "0.16.3", experimentalVersion)
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -44,8 +45,6 @@ TaskKeys.downloadBitcoind := {
     val location =
       if (version == experimentalVersion)
         s"https://s3-us-west-1.amazonaws.com/suredbits.com/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
-      else if (version == "0.19.0") // TODO: Remove when 0.19.0 official binaries released
-        s"https://bitcoincore.org/bin/bitcoin-core-0.19.0/test.rc3/bitcoin-0.19.0rc3-$platform.$suffix"
       else
         s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
 

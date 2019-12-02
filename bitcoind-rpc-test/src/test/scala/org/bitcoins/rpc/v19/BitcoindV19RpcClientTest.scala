@@ -93,4 +93,19 @@ class BitcoindV19RpcClientTest extends BitcoindRpcTest {
     }
 
   }
+
+  it should "check to see if the utxoUpdate input has been updated" in {
+
+    val descriptor =
+      "pk(0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798)"
+
+    val psbt =
+      "cHNidP8BACoCAAAAAAFAQg8AAAAAABepFG6Rty1Vk+fUOR4v9E6R6YXDFkHwhwAAAAAAAA=="
+    val updatedF =
+      clientF.flatMap(client => client.utxoUpdatePsbt(psbt, Seq(descriptor)))
+
+    updatedF.map { result =>
+      assert(result.contains(psbt))
+    }
+  }
 }
