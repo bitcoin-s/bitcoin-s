@@ -1,8 +1,10 @@
 package org.bitcoins.dlc
 
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.crypto.ExtKeyVersion.LegacyTestNet3Priv
 import org.bitcoins.core.crypto.{
   ECPrivateKey,
+  ExtPrivateKey,
   Schnorr,
   SchnorrNonce,
   Sha256DigestBE
@@ -155,20 +157,14 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
           outcomeLose = outcomeLose,
           oraclePubKey = oraclePubKey,
           preCommittedR = preCommittedR,
-          fundingLocalPrivKey = ECPrivateKey.freshPrivateKey,
-          fundingRemotePrivKey = ECPrivateKey.freshPrivateKey,
-          cetLocalPrivKey = ECPrivateKey.freshPrivateKey,
-          cetRemotePrivKey = ECPrivateKey.freshPrivateKey,
-          finalLocalPrivKey = ECPrivateKey.freshPrivateKey,
-          finalRemotePrivKey = ECPrivateKey.freshPrivateKey,
+          localExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv),
+          remoteExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv),
           localInput = localInput,
           remoteInput = remoteInput,
           localFundingUtxos = localFundingUtxos,
           remoteFundingUtxos = remoteFundingUtxos,
           localWinPayout = localInput + CurrencyUnits.oneMBTC,
-          remoteWinPayout = remoteInput - CurrencyUnits.oneMBTC,
           localLosePayout = localInput - CurrencyUnits.oneMBTC,
-          remoteLosePayout = remoteInput + CurrencyUnits.oneMBTC,
           timeout = 1.day.toMillis.toInt,
           feeRate = feeRate,
           changeSPK = changeSPK,
