@@ -116,6 +116,9 @@ case class BinaryOutcomeDLCWithSelf(
   val finalRemotePrivKey: ECPrivateKey =
     remoteExtPrivKey.deriveChildPrivKey(UInt32(2)).key
 
+  /** The derivation index for the win and lose cases respectively.
+    * We assign this index based on lexicographical order to keep things deterministic.
+    */
   private val (winIndex, loseIndex) =
     if (outcomeWin.compareTo(outcomeLose) > 0) {
       (1, 2)
@@ -123,39 +126,25 @@ case class BinaryOutcomeDLCWithSelf(
       (2, 1)
     }
 
-  val cetLocalRefundPrivKey: ECPrivateKey = localExtPrivKey
-    .deriveChildPrivKey(
-      BIP32Path(BIP32Node(1, hardened = false), BIP32Node(0, hardened = false)))
-    .key
+  def cetPrivKey(rootKey: ExtPrivateKey, index: Int): ECPrivateKey = {
+    rootKey
+      .deriveChildPrivKey(
+        BIP32Path(BIP32Node(1, hardened = false),
+                  BIP32Node(index, hardened = false)))
+      .key
+  }
 
-  val cetLocalWinPrivKey: ECPrivateKey = localExtPrivKey
-    .deriveChildPrivKey(
-      BIP32Path(BIP32Node(1, hardened = false),
-                BIP32Node(winIndex, hardened = false)))
-    .key
+  val cetLocalRefundPrivKey: ECPrivateKey =
+    cetPrivKey(localExtPrivKey, index = 0)
+  val cetLocalWinPrivKey: ECPrivateKey = cetPrivKey(localExtPrivKey, winIndex)
+  val cetLocalLosePrivKey: ECPrivateKey = cetPrivKey(localExtPrivKey, loseIndex)
 
-  val cetLocalLosePrivKey: ECPrivateKey = localExtPrivKey
-    .deriveChildPrivKey(
-      BIP32Path(BIP32Node(1, hardened = false),
-                BIP32Node(loseIndex, hardened = false)))
-    .key
+  val cetRemoteRefundPrivKey: ECPrivateKey =
+    cetPrivKey(remoteExtPrivKey, index = 0)
+  val cetRemoteWinPrivKey: ECPrivateKey = cetPrivKey(remoteExtPrivKey, winIndex)
 
-  val cetRemoteRefundPrivKey: ECPrivateKey = remoteExtPrivKey
-    .deriveChildPrivKey(
-      BIP32Path(BIP32Node(1, hardened = false), BIP32Node(0, hardened = false)))
-    .key
-
-  val cetRemoteWinPrivKey: ECPrivateKey = remoteExtPrivKey
-    .deriveChildPrivKey(
-      BIP32Path(BIP32Node(1, hardened = false),
-                BIP32Node(winIndex, hardened = false)))
-    .key
-
-  val cetRemoteLosePrivKey: ECPrivateKey = remoteExtPrivKey
-    .deriveChildPrivKey(
-      BIP32Path(BIP32Node(1, hardened = false),
-                BIP32Node(loseIndex, hardened = false)))
-    .key
+  val cetRemoteLosePrivKey: ECPrivateKey =
+    cetPrivKey(remoteExtPrivKey, loseIndex)
 
   /** Total funding amount */
   private val totalInput = localInput + remoteInput
