@@ -101,11 +101,10 @@ object Main extends App {
     }
   }
 
-  private def createWallet(
-      implicit nodeApi: NodeApi): Future[UnlockedWalletApi] = {
+  private def createWallet(nodeApi: NodeApi): Future[UnlockedWalletApi] = {
     if (hasWallet()) {
       logger.info(s"Using pre-existing wallet")
-      val locked = LockedWallet()
+      val locked = LockedWallet(nodeApi)
 
       // TODO change me when we implement proper password handling
       locked.unlock(Wallet.badPassphrase) match {
@@ -114,7 +113,7 @@ object Main extends App {
       }
     } else {
       logger.info(s"Creating new wallet")
-      Wallet.initialize().map {
+      Wallet.initialize(nodeApi).map {
         case InitializeWalletSuccess(wallet) => wallet
         case err: InitializeWalletError      => error(err)
       }
@@ -122,25 +121,30 @@ object Main extends App {
   }
 
   private def createCallbacks(
-      wallet: UnlockedWalletApi): Future[NodeCallbacks] =
-    Future {
-      import DataMessageHandler._
-      val onTx: OnTxReceived = { tx =>
-        wallet.processTransaction(tx, confirmations = 0)
-        ()
-      }
-      val onCompactFilter: OnCompactFilterReceived = {
-        (blockHash, blockFilter) =>
-          wallet.processCompactFilter(blockHash, blockFilter)
-      }
-      val onBlock: OnBlockReceived = { block =>
-        wallet.processBlock(block, 0)
-        ()
-      }
-      NodeCallbacks(onTxReceived = Seq(onTx),
-                    onBlockReceived = Seq(onBlock),
-                    onCompactFilterReceived = Seq(onCompactFilter))
+      wallet: UnlockedWalletApi): Future[NodeCallbacks] = {
+    import DataMessageHandler._
+    lazy val onTx: OnTxReceived = { tx =>
+      wallet.processTransaction(tx, confirmations = 0)
+      ()
     }
+    lazy val onCompactFilter: OnCompactFilterReceived = {
+      (blockHash, blockFilter) =>
+        wallet.processCompactFilter(blockHash, blockFilter)
+    }
+    lazy val onBlock: OnBlockReceived = { block =>
+      wallet.processBlock(block, 0)
+      ()
+    }
+    if (nodeConf.isSPVEnabled) {
+      Future.successful(NodeCallbacks(onTxReceived = Seq(onTx)))
+    } else if (nodeConf.isNeutrinoEnabled) {
+      Future.successful(
+        NodeCallbacks(onBlockReceived = Seq(onBlock),
+                      onCompactFilterReceived = Seq(onCompactFilter)))
+    } else {
+      Future.failed(new RuntimeException("Unexpected node type"))
+    }
+  }
 
   private def initializeNode(
       node: Node,

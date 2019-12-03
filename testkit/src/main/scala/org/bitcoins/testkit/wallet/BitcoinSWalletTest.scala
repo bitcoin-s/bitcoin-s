@@ -121,7 +121,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.initialize().flatMap { _ =>
         Wallet
-          .initialize()(implicitly[ExecutionContext], walletConfig, nodeApi)
+          .initialize(nodeApi)(implicitly[ExecutionContext], walletConfig)
           .map {
             case InitializeWalletSuccess(wallet) => wallet
             case err: InitializeWalletError =>

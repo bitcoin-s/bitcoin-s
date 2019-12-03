@@ -28,7 +28,8 @@ sealed trait WalletApi {
 
   implicit val walletConfig: WalletAppConfig
   implicit val ec: ExecutionContext
-  implicit val node: NodeApi
+
+  val nodeApi: NodeApi
 
   def chainParams: ChainParams = walletConfig.chain
 
@@ -73,7 +74,7 @@ trait LockedWalletApi extends WalletApi {
       _ <- Future {
         val matcher = SimpleFilterMatcher(blockFilter)
         if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
-          node.fetchBlocks(Vector(blockHash))
+          nodeApi.fetchBlocks(Vector(blockHash))
         }
       }
     } yield {

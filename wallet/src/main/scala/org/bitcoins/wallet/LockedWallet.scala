@@ -85,7 +85,7 @@ abstract class LockedWallet
 
       case ReadMnemonicSuccess(mnemonic) =>
         walletLogger.debug(s"Successfully uunlocked wallet")
-        UnlockWalletSuccess(Wallet(mnemonic))
+        UnlockWalletSuccess(Wallet(mnemonic, nodeApi))
     }
   }
 
@@ -134,15 +134,13 @@ abstract class LockedWallet
 }
 
 object LockedWallet {
-  private case class LockedWalletImpl()(
+  private case class LockedWalletImpl(override val nodeApi: NodeApi)(
       implicit val ec: ExecutionContext,
-      val walletConfig: WalletAppConfig,
-      val node: NodeApi)
+      val walletConfig: WalletAppConfig)
       extends LockedWallet {}
 
-  def apply()(
+  def apply(nodeApi: NodeApi)(
       implicit ec: ExecutionContext,
-      config: WalletAppConfig,
-      node: NodeApi): LockedWallet = LockedWalletImpl()
+      config: WalletAppConfig): LockedWallet = LockedWalletImpl(nodeApi)
 
 }

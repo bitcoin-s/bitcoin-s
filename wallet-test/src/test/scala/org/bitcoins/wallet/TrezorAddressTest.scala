@@ -160,14 +160,9 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
   private def getWallet(config: WalletAppConfig): Future[Wallet] =
     Wallet
-      .initializeWithMnemonic(mnemonic)(
+      .initializeWithMnemonic(mnemonic, NodeApi.NoOp)(
         config, // to make sure we're not passing in the wrong conf by accident
-        implicitly[ExecutionContext],
-        new NodeApi {
-          override def fetchBlocks(
-              blockHashes: Vector[DoubleSha256Digest]): Future[Unit] =
-            FutureUtil.unit
-        }
+        implicitly[ExecutionContext]
       )
       .map {
         case InitializeWalletSuccess(wallet: Wallet) =>
