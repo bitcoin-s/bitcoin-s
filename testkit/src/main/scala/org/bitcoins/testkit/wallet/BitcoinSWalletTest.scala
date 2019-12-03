@@ -3,6 +3,7 @@ package org.bitcoins.testkit.wallet
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.currency._
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -89,7 +90,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
       FileUtil.deleteTmpDir(walletAppConfig.datadir)
-      Future.unit
+      FutureUtil.unit
     }
     makeDependentFixture(builder, destroy = destroy)(test)
   }

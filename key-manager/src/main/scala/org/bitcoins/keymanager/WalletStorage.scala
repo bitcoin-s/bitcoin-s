@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
 
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage {
-  import scala.jdk.CollectionConverters._
+  import org.bitcoins.core.compat.JavaConverters._
 
   private val logger = LoggerFactory.getLogger(getClass)
 
