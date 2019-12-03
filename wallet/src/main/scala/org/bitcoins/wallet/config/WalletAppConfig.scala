@@ -73,7 +73,7 @@ case class WalletAppConfig(
   }
 
   /** The path to our encrypted mnemonic seed */
-  protected[wallet] def seedPath: Path = {
+  private[wallet] def seedPath: Path = {
     datadir.resolve(WalletAppConfig.ENCRYPTED_SEED_FILE_NAME)
   }
 

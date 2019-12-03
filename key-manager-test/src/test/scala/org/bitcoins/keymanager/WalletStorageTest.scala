@@ -55,7 +55,7 @@ class WalletStorageTest
   }
 
   it must "fail to read a mnemonic with bad password" in { walletConf =>
-    val writtenMnemonic = getAndWriteMnemonic(walletConf)
+    val _ = getAndWriteMnemonic(walletConf)
     val seedPath = getSeedPath(walletConf)
     val read = WalletStorage.decryptMnemonicFromDisk(seedPath, badPassphrase)
 
@@ -98,14 +98,10 @@ class WalletStorageTest
     // should have been written by now
     assert(walletConf.seedExists())
 
-    val exn: RuntimeException = intercept[RuntimeException] {
+    assertThrows[RuntimeException] {
       //attempt to write another mnemonic
       getAndWriteMnemonic(walletConf)
     }
-
-    //need this since we are using async testing suite
-    //and exn is not a Future
-    succeed
 
   }
 }
