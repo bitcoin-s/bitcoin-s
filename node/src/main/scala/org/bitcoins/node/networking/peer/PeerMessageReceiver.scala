@@ -11,7 +11,7 @@ import org.bitcoins.chain.models.{
 }
 import org.bitcoins.core.p2p.{NetworkMessage, _}
 import org.bitcoins.node.P2PLogger
-import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
@@ -35,7 +35,7 @@ class PeerMessageReceiver(
     dataMessageHandler: DataMessageHandler,
     val state: PeerMessageReceiverState,
     peer: Peer,
-    callbacks: SpvNodeCallbacks
+    callbacks: NodeCallbacks
 )(
     implicit ref: ActorRefFactory,
     nodeAppConfig: NodeAppConfig,
@@ -244,7 +244,7 @@ object PeerMessageReceiver {
       state: PeerMessageReceiverState,
       chainApi: ChainApi,
       peer: Peer,
-      callbacks: SpvNodeCallbacks)(
+      callbacks: NodeCallbacks)(
       implicit ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
@@ -262,7 +262,7 @@ object PeerMessageReceiver {
     * to be connected to a peer. This can be given to [[org.bitcoins.node.networking.P2PClient.props() P2PClient]]
     * to connect to a peer on the network
     */
-  def preConnection(peer: Peer, callbacks: SpvNodeCallbacks)(
+  def preConnection(peer: Peer, callbacks: NodeCallbacks)(
       implicit ref: ActorRefFactory,
       nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig
@@ -283,7 +283,7 @@ object PeerMessageReceiver {
     }
   }
 
-  def newReceiver(chainApi: ChainApi, peer: Peer, callbacks: SpvNodeCallbacks)(
+  def newReceiver(chainApi: ChainApi, peer: Peer, callbacks: NodeCallbacks)(
       implicit nodeAppConfig: NodeAppConfig,
       chainAppConfig: ChainAppConfig,
       ref: ActorRefFactory): PeerMessageReceiver = {

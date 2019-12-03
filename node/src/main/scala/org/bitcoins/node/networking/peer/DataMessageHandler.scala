@@ -9,10 +9,11 @@ import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
-import org.bitcoins.node.{P2PLogger, SpvNodeCallbacks}
+import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -20,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
-    callbacks: SpvNodeCallbacks,
+    callbacks: NodeCallbacks,
     receivedFilterCount: Int = 0,
     syncing: Boolean = false)(
     implicit ec: ExecutionContext,
@@ -95,13 +96,19 @@ case class DataMessageHandler(
             }
           }
           newChainApi <- chainApi.processFilter(filter)
-          _ <- Future {
+        } yield {
+
+          Try {
             val blockFilter =
               BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
             callbacks.onCompactFilterReceived.foreach(
               _.apply(filter.blockHash, blockFilter))
+          } match {
+            case Failure(ex) =>
+              logger.error("Error processing compact filter", ex)
+            case Success(_) => // ignore
           }
-        } yield {
+
           this.copy(chainApi = newChainApi,
                     receivedFilterCount = newCount,
                     syncing = newSyncing)

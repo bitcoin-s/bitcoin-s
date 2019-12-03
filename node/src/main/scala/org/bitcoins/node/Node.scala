@@ -48,11 +48,9 @@ trait Node extends NodeApi with P2PLogger {
 
   val peer: Peer
 
-  val nodeCallbacks: SpvNodeCallbacks
+  val nodeCallbacks: NodeCallbacks
 
-  def setCallbacks(callbacks: SpvNodeCallbacks): Node
-
-  def setBloomFilter(bloomFilter: BloomFilter): Node
+  def setCallbacks(callbacks: NodeCallbacks): Node
 
   lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 

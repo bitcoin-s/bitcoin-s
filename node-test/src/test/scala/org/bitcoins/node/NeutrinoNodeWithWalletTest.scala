@@ -46,7 +46,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   val amountFromBitcoind = 1.bitcoin
 
-  def callbacks: SpvNodeCallbacks = {
+  def callbacks: NodeCallbacks = {
     val onBlock: DataMessageHandler.OnBlockReceived = { block =>
       for {
         wallet <- walletF
@@ -60,7 +60,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       } yield ()
     }
 
-    SpvNodeCallbacks(
+    NodeCallbacks(
       onBlockReceived = Seq(onBlock),
       onCompactFilterReceived = Seq(onCompactFilter)
     )

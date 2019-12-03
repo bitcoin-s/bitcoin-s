@@ -10,7 +10,7 @@ import org.bitcoins.core.node.NodeApi
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.node.{NeutrinoNode, Node, SpvNode, SpvNodeCallbacks}
+import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{LockedWallet, Wallet, WalletStorage}
@@ -84,14 +84,14 @@ object Main extends App {
       Future.successful(
         SpvNode(peer,
                 bloomFilter = BloomFilter.empty,
-                nodeCallbacks = SpvNodeCallbacks.empty,
+                nodeCallbacks = NodeCallbacks.empty,
                 nodeConf,
                 chainConf,
                 system))
     } else if (nodeConf.isNeutrinoEnabled) {
       Future.successful(
         NeutrinoNode(peer,
-                     nodeCallbacks = SpvNodeCallbacks.empty,
+                     nodeCallbacks = NodeCallbacks.empty,
                      nodeConf,
                      chainConf,
                      system))
@@ -122,7 +122,7 @@ object Main extends App {
   }
 
   private def createCallbacks(
-      wallet: UnlockedWalletApi): Future[SpvNodeCallbacks] =
+      wallet: UnlockedWalletApi): Future[NodeCallbacks] =
     Future {
       import DataMessageHandler._
       val onTx: OnTxReceived = { tx =>
@@ -137,23 +137,24 @@ object Main extends App {
         wallet.processBlock(block, 0)
         ()
       }
-      SpvNodeCallbacks(onTxReceived = Seq(onTx),
-                       onBlockReceived = Seq(onBlock),
-                       onCompactFilterReceived = Seq(onCompactFilter))
+      NodeCallbacks(onTxReceived = Seq(onTx),
+                    onBlockReceived = Seq(onBlock),
+                    onCompactFilterReceived = Seq(onCompactFilter))
     }
 
   private def initializeNode(
       node: Node,
       wallet: UnlockedWalletApi): Future[Node] = {
     for {
-      nodeWithBloomFilter <- if (nodeConf.isSPVEnabled) {
-        for {
-          bloom <- wallet.getBloomFilter()
-          _ = logger.info(
-            s"Got bloom filter with ${bloom.filterSize.toInt} elements")
-        } yield node.setBloomFilter(bloom)
-      } else Future.successful(node)
-
+      nodeWithBloomFilter <- node match {
+        case spvNode: SpvNode =>
+          for {
+            bloom <- wallet.getBloomFilter()
+            _ = logger.info(
+              s"Got bloom filter with ${bloom.filterSize.toInt} elements")
+          } yield spvNode.setBloomFilter(bloom)
+        case _: Node => Future.successful(node)
+      }
       callbacks <- createCallbacks(wallet)
     } yield {
       nodeWithBloomFilter.setCallbacks(callbacks)

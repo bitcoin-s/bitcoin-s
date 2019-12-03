@@ -14,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class NeutrinoNode(
     nodePeer: Peer,
-    nodeCallbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty,
+    nodeCallbacks: NodeCallbacks = NodeCallbacks.empty,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -31,10 +31,8 @@ case class NeutrinoNode(
 
   override val peer: Peer = nodePeer
 
-  override def setCallbacks(callbacks: SpvNodeCallbacks): Node =
+  override def setCallbacks(callbacks: NodeCallbacks): Node =
     copy(nodeCallbacks = callbacks)
-
-  override def setBloomFilter(bloomFilter: BloomFilter): Node = this
 
   override def start(): Future[Node] = {
     val res = for {

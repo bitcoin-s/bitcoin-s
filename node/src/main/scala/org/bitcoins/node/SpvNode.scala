@@ -14,7 +14,7 @@ import scala.concurrent.Future
 case class SpvNode(
     nodePeer: Peer,
     bloomFilter: BloomFilter,
-    nodeCallbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty,
+    nodeCallbacks: NodeCallbacks = NodeCallbacks.empty,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -30,10 +30,10 @@ case class SpvNode(
 
   override val peer: Peer = nodePeer
 
-  override def setCallbacks(callbacks: SpvNodeCallbacks): Node =
+  override def setCallbacks(callbacks: NodeCallbacks): Node =
     copy(nodeCallbacks = callbacks)
 
-  override def setBloomFilter(bloom: BloomFilter): Node =
+  def setBloomFilter(bloom: BloomFilter): SpvNode =
     copy(bloomFilter = bloom)
 
   /** Updates our bloom filter to match the given TX

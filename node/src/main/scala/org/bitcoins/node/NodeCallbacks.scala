@@ -8,34 +8,34 @@ import org.bitcoins.node.networking.peer.DataMessageHandler._
   * a `getdata` message matching it.
   *
   */
-case class SpvNodeCallbacks(
+case class NodeCallbacks(
     onCompactFilterReceived: Seq[OnCompactFilterReceived] = Seq.empty,
     onTxReceived: Seq[OnTxReceived] = Seq.empty,
     onBlockReceived: Seq[OnBlockReceived] = Seq.empty,
     onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty
 )
 
-object SpvNodeCallbacks {
+object NodeCallbacks {
 
   /** Constructs a set of callbacks that only acts on TX received */
-  def onTxReceived(f: OnTxReceived): SpvNodeCallbacks =
-    SpvNodeCallbacks(onTxReceived = Seq(f))
+  def onTxReceived(f: OnTxReceived): NodeCallbacks =
+    NodeCallbacks(onTxReceived = Seq(f))
 
   /** Constructs a set of callbacks that only acts on block received */
-  def onBlockReceived(f: OnBlockReceived): SpvNodeCallbacks =
-    SpvNodeCallbacks(onBlockReceived = Seq(f))
+  def onBlockReceived(f: OnBlockReceived): NodeCallbacks =
+    NodeCallbacks(onBlockReceived = Seq(f))
 
   /** Constructs a set of callbacks that only acts on merkle block received */
-  def onMerkleBlockReceived(f: OnMerkleBlockReceived): SpvNodeCallbacks =
-    SpvNodeCallbacks(onMerkleBlockReceived = Seq(f))
+  def onMerkleBlockReceived(f: OnMerkleBlockReceived): NodeCallbacks =
+    NodeCallbacks(onMerkleBlockReceived = Seq(f))
 
-  /** Constructs a set of callbacks that only acts on block received */
-  def onCompactFilterReceived(f: OnCompactFilterReceived): SpvNodeCallbacks =
-    SpvNodeCallbacks(onCompactFilterReceived = Seq(f))
+  /** Constructs a set of callbacks that only acts on compact filter received */
+  def onCompactFilterReceived(f: OnCompactFilterReceived): NodeCallbacks =
+    NodeCallbacks(onCompactFilterReceived = Seq(f))
 
   /** Empty callbacks that does nothing with the received data */
-  val empty: SpvNodeCallbacks =
-    SpvNodeCallbacks(
+  val empty: NodeCallbacks =
+    NodeCallbacks(
       onTxReceived = Seq.empty,
       onBlockReceived = Seq.empty,
       onMerkleBlockReceived = Seq.empty,
