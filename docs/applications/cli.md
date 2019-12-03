@@ -4,15 +4,15 @@ title: bitcoin-s cli
 ---
 
 
-## Bitcoin-s command line client
+## Bitcoin-s command line interface
 
-The [cli](../../app/cli/) project is meant to be a bitcoin-s command line client. It uses [graalvm native image](https://www.graalvm.org/docs/reference-manual/native-image/) to
+The [cli](../../app/cli/) project is meant to be a bitcoin-s command line interface (cli). It uses [graalvm native image](https://www.graalvm.org/docs/reference-manual/native-image/) to
 create a native executable that circumvents the jvm for fast start up time.
 
-### Building the command line
+### Building the command line interface
 
 #### Installing graalvm native image
-First to build the command line you need to have the graal jdk installed. This can be installed on [graalvm's github](https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-19.3.0).
+First to build the command line interface you need to have the graal jdk installed. This can be installed on [graalvm's github](https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-19.3.0).
 
 
 If you do not have the `native-image` executable installed, you need to install it with
@@ -54,3 +54,6 @@ Usage: bitcoin-s-cli [options] [<cmd>]
   -h, --help             Display this help message and exit
   <cmd>                  The command and arguments to be executed. Try bitcoin-s-cli help for a list of all commands
 ```
+
+
+Now you are are ready to start the server that the cli sends commands to. Take a look at our [server](server.md) documentation on how to build and start the server.
