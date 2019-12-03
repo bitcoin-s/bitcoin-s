@@ -254,6 +254,20 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
             "Fingerprint must be 4 bytes in size, got: " + fingerprint)
   }
 
+  def freshRootKey(version: ExtKeyPrivVersion): ExtPrivateKey = {
+    val privKey = ECPrivateKey.freshPrivateKey
+    val chainCode = ChainCode.fromBytes(ECPrivateKey.freshPrivateKey.bytes)
+
+    ExtPrivateKey(
+      version,
+      UInt8.zero,
+      UInt32.zero.bytes,
+      UInt32.zero,
+      chainCode,
+      privKey
+    )
+  }
+
   /** Takes in a base58 string and tries to convert it to an extended private key */
   def fromString(base58: String): Try[ExtPrivateKey] =
     ExtKey.fromString(base58) match {

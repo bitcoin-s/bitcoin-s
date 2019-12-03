@@ -4,10 +4,12 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   ECPrivateKey,
   ECPublicKey,
+  ExtPrivateKey,
   Schnorr,
   SchnorrDigitalSignature
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
@@ -54,20 +56,14 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param outcomeLose The String whose hash is signed by the oracle in the Lose case
   * @param oraclePubKey The Oracle's permanent public key
   * @param preCommittedR The Oracle's one-time event-specific public key
-  * @param fundingLocalPrivKey Local's funding private key
-  * @param fundingRemotePrivKey Remote's funding private key
-  * @param cetLocalPrivKey Local's CET private key
-  * @param cetRemotePrivKey Remote's CET private key
-  * @param finalLocalPrivKey Local's closing private key
-  * @param finalRemotePrivKey Remote's closing private key
+  * @param localExtPrivKey Local's extended private key for this event
+  * @param remoteExtPrivKey Remote's extended private key for this event
   * @param localInput Local's total collateral contribution
   * @param remoteInput Remote's total collateral contribution
   * @param localFundingUtxos Local's funding BitcoinUTXOSpendingInfo collection
   * @param remoteFundingUtxos Remote's funding BitcoinUTXOSpendingInfo collection
   * @param localWinPayout Local's payout in the Win case
-  * @param remoteWinPayout Remote's payout in the Win case (in which Remote loses)
   * @param localLosePayout Local's payout in the Lose case
-  * @param remoteLosePayout Remote's payout in the Lose case (in which Remote wins)
   * @param timeout The CLTV timeout in milliseconds used in all CETs
   * @param feeRate The predicted fee rate used for all transactions
   * @param changeSPK The place-holder change ScriptPubKey used for all transactions
@@ -77,20 +73,14 @@ case class BinaryOutcomeDLCWithSelf(
     outcomeLose: String,
     oraclePubKey: ECPublicKey,
     preCommittedR: ECPublicKey,
-    fundingLocalPrivKey: ECPrivateKey,
-    fundingRemotePrivKey: ECPrivateKey,
-    cetLocalPrivKey: ECPrivateKey,
-    cetRemotePrivKey: ECPrivateKey,
-    finalLocalPrivKey: ECPrivateKey,
-    finalRemotePrivKey: ECPrivateKey,
+    localExtPrivKey: ExtPrivateKey,
+    remoteExtPrivKey: ExtPrivateKey,
     localInput: CurrencyUnit,
     remoteInput: CurrencyUnit,
     localFundingUtxos: Vector[BitcoinUTXOSpendingInfo],
     remoteFundingUtxos: Vector[BitcoinUTXOSpendingInfo],
     localWinPayout: CurrencyUnit,
-    remoteWinPayout: CurrencyUnit,
     localLosePayout: CurrencyUnit,
-    remoteLosePayout: CurrencyUnit,
     timeout: Int,
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey,
@@ -114,8 +104,57 @@ case class BinaryOutcomeDLCWithSelf(
   val sigPubKeyLose: ECPublicKey =
     Schnorr.computePubKey(messageLose, preCommittedR, oraclePubKey)
 
+  val fundingLocalPrivKey: ECPrivateKey =
+    localExtPrivKey.deriveChildPrivKey(UInt32(0)).key
+
+  val fundingRemotePrivKey: ECPrivateKey =
+    remoteExtPrivKey.deriveChildPrivKey(UInt32(0)).key
+
+  val finalLocalPrivKey: ECPrivateKey =
+    localExtPrivKey.deriveChildPrivKey(UInt32(2)).key
+
+  val finalRemotePrivKey: ECPrivateKey =
+    remoteExtPrivKey.deriveChildPrivKey(UInt32(2)).key
+
+  /** The derivation index for the win and lose cases respectively.
+    * We assign this index based on lexicographical order to keep things deterministic.
+    */
+  private val (winIndex, loseIndex) =
+    if (outcomeWin.compareTo(outcomeLose) > 0) {
+      (1, 2)
+    } else {
+      (2, 1)
+    }
+
+  def cetPrivKey(rootKey: ExtPrivateKey, index: Int): ECPrivateKey = {
+    rootKey
+      .deriveChildPrivKey(
+        BIP32Path(BIP32Node(1, hardened = false),
+                  BIP32Node(index, hardened = false)))
+      .key
+  }
+
+  val cetLocalRefundPrivKey: ECPrivateKey =
+    cetPrivKey(localExtPrivKey, index = 0)
+  val cetLocalWinPrivKey: ECPrivateKey = cetPrivKey(localExtPrivKey, winIndex)
+  val cetLocalLosePrivKey: ECPrivateKey = cetPrivKey(localExtPrivKey, loseIndex)
+
+  val cetRemoteRefundPrivKey: ECPrivateKey =
+    cetPrivKey(remoteExtPrivKey, index = 0)
+  val cetRemoteWinPrivKey: ECPrivateKey = cetPrivKey(remoteExtPrivKey, winIndex)
+
+  val cetRemoteLosePrivKey: ECPrivateKey =
+    cetPrivKey(remoteExtPrivKey, loseIndex)
+
   /** Total funding amount */
   private val totalInput = localInput + remoteInput
+
+  /** Remote's payout in the Win case (in which Remote loses) */
+  val remoteWinPayout: CurrencyUnit = totalInput - localWinPayout
+
+  /** Remote's payout in the Lose case (in which Remote wins) */
+  val remoteLosePayout: CurrencyUnit = totalInput - localLosePayout
+
   private val fundingUtxos = localFundingUtxos ++ remoteFundingUtxos
 
   val fundingLocalPubKey: ECPublicKey = fundingLocalPrivKey.publicKey
@@ -138,10 +177,17 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETLocal(sigPubKey: ECPublicKey,
-                     fundingSpendingInfo: MultiSignatureSpendingInfo,
-                     localPayout: CurrencyUnit,
-                     remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETLocal(
+      sigPubKey: ECPublicKey,
+      fundingSpendingInfo: MultiSignatureSpendingInfo,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit): Future[Transaction] = {
+    val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
+      (cetLocalWinPrivKey, cetRemoteWinPrivKey)
+    } else {
+      (cetLocalLosePrivKey, cetRemoteLosePrivKey)
+    }
+
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
       pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
@@ -170,10 +216,16 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETRemote(sigPubKey: ECPublicKey,
-                      fundingSpendingInfo: MultiSignatureSpendingInfo,
-                      localPayout: CurrencyUnit,
-                      remotePayout: CurrencyUnit): Future[Transaction] = {
+  def createCETRemote(
+      sigPubKey: ECPublicKey,
+      fundingSpendingInfo: MultiSignatureSpendingInfo,
+      localPayout: CurrencyUnit,
+      remotePayout: CurrencyUnit): Future[Transaction] = {
+    val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
+      (cetLocalWinPrivKey, cetRemoteWinPrivKey)
+    } else {
+      (cetLocalLosePrivKey, cetRemoteLosePrivKey)
+    }
 
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
@@ -215,10 +267,10 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocal = TransactionOutput(
       toLocalValue,
-      P2PKHScriptPubKey(cetLocalPrivKey.publicKey))
+      P2PKHScriptPubKey(cetLocalRefundPrivKey.publicKey))
     val toRemote = TransactionOutput(
       toRemoteValue,
-      P2PKHScriptPubKey(cetRemotePrivKey.publicKey))
+      P2PKHScriptPubKey(cetRemoteRefundPrivKey.publicKey))
 
     val outputs = Vector(toLocal, toRemote)
     val txBuilderF = BitcoinTxBuilder(outputs,
@@ -320,97 +372,93 @@ case class BinaryOutcomeDLCWithSelf(
 
       oracleSigF.flatMap { oracleSig =>
         // Pick the CET to use and payout by checking which message was signed
-        val cetF =
+        val cetAndPrivKeyF =
           if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
             if (local) {
-              cetWinLocalF
+              cetWinLocalF.map((_, cetLocalWinPrivKey))
             } else {
-              cetWinRemoteF
+              cetWinRemoteF.map((_, cetRemoteWinPrivKey))
             }
           } else if (Schnorr.verify(messageLose, oracleSig, oraclePubKey)) {
             if (local) {
-              cetLoseLocalF
+              cetLoseLocalF.map((_, cetLocalLosePrivKey))
             } else {
-              cetLoseRemoteF
+              cetLoseRemoteF.map((_, cetRemoteLosePrivKey))
             }
           } else {
             Future.failed(???)
           }
 
-        val cetReadyForPublish = fundingTxPublishedF.flatMap(_ => cetF)
+        val cetReadyForPublish =
+          fundingTxPublishedF.flatMap(_ => cetAndPrivKeyF)
 
-        cetReadyForPublish.flatMap { cet =>
-          val cetPublishedF = messengerOpt match {
-            case Some(messenger) =>
-              messenger
-                .sendTransaction(cet)
-                .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
-            case None => FutureUtil.unit
-          }
+        cetReadyForPublish.flatMap {
+          case (cet, cetPrivKey) =>
+            val cetPublishedF = messengerOpt match {
+              case Some(messenger) =>
+                messenger
+                  .sendTransaction(cet)
+                  .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
+              case None => FutureUtil.unit
+            }
 
-          val cetPrivKey = if (local) {
-            cetLocalPrivKey
-          } else {
-            cetRemotePrivKey
-          }
+            val output = cet.outputs.head
 
-          val output = cet.outputs.head
+            // Spend the true case on the correct CET
+            val cetSpendingInfo = ConditionalSpendingInfo(
+              TransactionOutPoint(cet.txIdBE, UInt32.zero),
+              output.value,
+              output.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
+              Vector(cetPrivKey, ECPrivateKey(oracleSig.s)),
+              HashType.sigHashAll,
+              ConditionalPath.nonNestedTrue
+            )
 
-          // Spend the true case on the correct CET
-          val cetSpendingInfo = ConditionalSpendingInfo(
-            TransactionOutPoint(cet.txIdBE, UInt32.zero),
-            output.value,
-            output.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
-            Vector(cetPrivKey, ECPrivateKey(oracleSig.s)),
-            HashType.sigHashAll,
-            ConditionalPath.nonNestedTrue
-          )
+            val finalPrivKey = if (local) {
+              finalLocalPrivKey
+            } else {
+              finalRemotePrivKey
+            }
 
-          val finalPrivKey = if (local) {
-            finalLocalPrivKey
-          } else {
-            finalRemotePrivKey
-          }
+            // Construct Closing Transaction
+            val txBuilder = BitcoinTxBuilder(
+              Vector(
+                TransactionOutput(output.value,
+                                  P2PKHScriptPubKey(finalPrivKey.publicKey))),
+              Vector(cetSpendingInfo),
+              feeRate,
+              changeSPK,
+              network
+            )
 
-          // Construct Closing Transaction
-          val txBuilder = BitcoinTxBuilder(
-            Vector(
-              TransactionOutput(output.value,
-                                P2PKHScriptPubKey(finalPrivKey.publicKey))),
-            Vector(cetSpendingInfo),
-            feeRate,
-            changeSPK,
-            network
-          )
+            val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
 
-          val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
+            spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
 
-          spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
-
-          val spendingTxPublishedF = spendingTxF.flatMap { spendingTx =>
-            cetPublishedF.flatMap { _ =>
-              messengerOpt match {
-                case Some(messenger) =>
-                  messenger
-                    .sendTransaction(spendingTx)
-                    .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
-                case None => FutureUtil.unit
+            val spendingTxPublishedF = spendingTxF.flatMap { spendingTx =>
+              cetPublishedF.flatMap { _ =>
+                messengerOpt match {
+                  case Some(messenger) =>
+                    messenger
+                      .sendTransaction(spendingTx)
+                      .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
+                  case None => FutureUtil.unit
+                }
               }
             }
-          }
 
-          spendingTxF.flatMap { spendingTx =>
-            spendingTxPublishedF.map { _ =>
-              DLCOutcome(
-                fundingTx,
-                cet,
-                spendingTx,
-                fundingUtxos,
-                fundingSpendingInfo,
-                cetSpendingInfo
-              )
+            spendingTxF.flatMap { spendingTx =>
+              spendingTxPublishedF.map { _ =>
+                DLCOutcome(
+                  fundingTx,
+                  cet,
+                  spendingTx,
+                  fundingUtxos,
+                  fundingSpendingInfo,
+                  cetSpendingInfo
+                )
+              }
             }
-          }
         }
       }
     }
