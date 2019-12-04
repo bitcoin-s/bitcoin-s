@@ -1,46 +1,43 @@
-package org.bitcoins.rpc.client.v18
+package org.bitcoins.rpc.client.v19
+
 import akka.actor.ActorSystem
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.rpc.client.common.RpcOpts.WalletFlag
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
   DescriptorRpc,
-  RpcOpts
-}
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.common.{
-  BitcoindRpcClient,
-  BitcoindVersion,
   PsbtRpc,
   RpcOpts
 }
 import org.bitcoins.rpc.config.BitcoindInstance
-
-import scala.util.Try
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.rpc.jsonmodels.SignRawTransactionResult
+import org.bitcoins.rpc.jsonmodels.{
+  GetBalancesResult,
+  SetWalletFlagResult,
+  SignRawTransactionResult
+}
 import play.api.libs.json.Json
 import play.api.libs.json.JsString
-
-import scala.concurrent.Future
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters._
 
+import scala.concurrent.Future
+import scala.util.Try
+
 /**
-  * Class for creating a BitcoindV18 instance that can access RPCs
-  * @param instance
-  * @param actorSystem
+  * Class for creating a BitcoindV19 instance that can access RPCs
   */
-class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
+class BitcoindV19RpcClient(override val instance: BitcoindInstance)(
     implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
     with DescriptorRpc
     with PsbtRpc
-    with V18AssortedRpc {
+    with V19BlockFilterRpc {
 
-  override lazy val version: BitcoindVersion = BitcoindVersion.V18
+  override lazy val version: BitcoindVersion = BitcoindVersion.V19
 
   /**
     * $signRawTx
@@ -76,9 +73,24 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
                                                 Json.toJson(utxoDeps),
                                                 Json.toJson(sigHash)))
 
+  /**
+    * Change the state of the given wallet flag for a wallet.
+    */
+  def setWalletFlag(
+      flag: WalletFlag,
+      value: Boolean
+  ): Future[SetWalletFlagResult] =
+    bitcoindCall[SetWalletFlagResult](
+      "setwalletflag",
+      List(JsString(flag.toString), Json.toJson(value)))
+
+  def getBalances: Future[GetBalancesResult] = {
+    bitcoindCall[GetBalancesResult]("getbalances")
+  }
+
 }
 
-object BitcoindV18RpcClient {
+object BitcoindV19RpcClient {
 
   /**
     * Creates an RPC client from the given instance.
@@ -87,8 +99,9 @@ object BitcoindV18RpcClient {
     * you. You can use `withActorSystem` if you want to
     * manually specify an actor system for the RPC client.
     */
-  def apply(instance: BitcoindInstance): BitcoindV18RpcClient = {
-    implicit val system = ActorSystem.create(BitcoindRpcClient.ActorSystemName)
+  def apply(instance: BitcoindInstance): BitcoindV19RpcClient = {
+    implicit val system =
+      ActorSystem.create(BitcoindRpcClient.ActorSystemName)
     withActorSystem(instance)
   }
 
@@ -99,13 +112,13 @@ object BitcoindV18RpcClient {
     * over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(
-      implicit system: ActorSystem): BitcoindV18RpcClient =
-    new BitcoindV18RpcClient(instance)(system)
+      implicit system: ActorSystem): BitcoindV19RpcClient =
+    new BitcoindV19RpcClient(instance)(system)
 
   def fromUnknownVersion(
-      rpcClient: BitcoindRpcClient): Try[BitcoindV18RpcClient] =
+      rpcClient: BitcoindRpcClient): Try[BitcoindV19RpcClient] =
     Try {
-      new BitcoindV18RpcClient(rpcClient.instance)(rpcClient.system)
+      new BitcoindV19RpcClient(rpcClient.instance)(rpcClient.system)
     }
 
 }

@@ -50,6 +50,20 @@ case class GetTransactionResult(
     hex: Transaction)
     extends WalletResult
 
+case class SetWalletFlagResult(
+    flag_name: String,
+    flag_state: Boolean,
+    warnings: Option[String])
+    extends WalletResult
+
+case class GetBalancesResult(mine: BalanceInfo, watchonly: Option[BalanceInfo])
+    extends WalletResult
+
+case class BalanceInfo(
+    trusted: Bitcoins,
+    untrusted_pending: Bitcoins,
+    immature: Bitcoins)
+
 case class TransactionDetails(
     involvesWatchonly: Option[Boolean],
     account: Option[String],
@@ -102,7 +116,7 @@ case class RescanBlockChainResult(start_height: Int, stop_height: Int)
 case class ReceivedAddress(
     involvesWatchonly: Option[Boolean],
     address: BitcoinAddress,
-    account: String,
+    account: Option[String],
     amount: Bitcoins,
     confirmations: Int,
     label: String,
@@ -186,7 +200,8 @@ case class UnspentOutput(
     amount: Bitcoins,
     confirmations: Int,
     spendable: Boolean,
-    solvable: Boolean)
+    solvable: Boolean,
+    reused: Option[Boolean])
     extends WalletResult
 
 case class AddressInfoResult(

@@ -1,5 +1,5 @@
-package org.bitcoins.rpc.client.v18
-import org.bitcoins.rpc.client.common.Client
+package org.bitcoins.rpc.client.common
+
 import org.bitcoins.rpc.jsonmodels.{
   DeriveAddressesResult,
   GetDescriptorInfoResult
@@ -14,15 +14,16 @@ import scala.concurrent.Future
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/deriveaddresses/]]
   * @see [[https://bitcoincore.org/en/doc/0.18.0/rpc/util/getdescriptorinfo/]]
   */
-trait V18DescriptorRpc {
+trait DescriptorRpc {
   self: Client =>
 
   def deriveAddresses(
       descriptor: String,
       range: Option[Vector[Double]]): Future[DeriveAddressesResult] = {
-    bitcoindCall[DeriveAddressesResult](
-      "deriveaddresses",
-      List(JsString(descriptor), Json.toJson(range)))
+    val params =
+      if (range.isDefined) List(JsString(descriptor), Json.toJson(range))
+      else List(JsString(descriptor))
+    bitcoindCall[DeriveAddressesResult]("deriveaddresses", params)
   }
 
   def getDescriptorInfo(descriptor: String): Future[GetDescriptorInfoResult] = {

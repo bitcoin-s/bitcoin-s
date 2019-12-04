@@ -24,9 +24,10 @@ TaskKeys.downloadBitcoind := {
     Files.createDirectories(binaryDir)
   }
 
-  val experimentalVersion = "0.18.99"
+  val experimentalVersion = "0.18.99" // TODO: change this when new version compiled on suredbits server
 
-  val versions = List("0.18.1", "0.17.0.1", "0.16.3", experimentalVersion)
+  val versions =
+    List("0.19.0.1", "0.18.1", "0.17.0.1", "0.16.3", experimentalVersion)
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
