@@ -78,6 +78,14 @@ If you want to enable this when you are running a bitcoin-s application, you wil
 
 ## Developer productivity
 
+### sbt
+
+The default scala build tool is [sbt](https://www.scala-sbt.org/).
+
+For the basics of how sbt works see the [sbt guide](https://www.scala-sbt.org/1.x/docs/Getting-Started.html)
+
+One helpful configuration is the env variable `SBT_OPTS` which allows you to pass jvm arguments for sbt.
+
 ### Bloop
 
 If you're tired of waiting around for sbt all day, there's a new,

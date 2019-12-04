@@ -10,7 +10,7 @@ object Deps {
     val slf4j = "1.7.29"
     val spray = "1.3.5"
     val zeromq = "0.5.1"
-    val akkav = "10.1.10"
+    val akkav = "10.1.11"
     val akkaStreamv = "2.5.26"
     val playv = "2.7.4"
     val scodecV = "1.1.12"
@@ -195,6 +195,7 @@ object Deps {
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
     else Compile.newMicroPickle,
     Compile.logback,
+    Compile.akkaActor,
     Compile.akkaHttp
   )
 
@@ -231,6 +232,16 @@ object Deps {
     Compile.scalacheck,
     Compile.scalaTest,
     Test.akkaTestkit
+  )
+
+  def keyManager(scalaVersion: String) = List(
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
+    else Compile.newMicroJson,
+  )
+
+  val keyManagerTest = List(
+    Compile.slf4j,
+    Test.logback
   )
 
   def wallet(scalaVersion: String) = List(

@@ -11,6 +11,11 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.keymanager.{
+  EncryptedMnemonic,
+  EncryptedMnemonicHelper,
+  WalletStorage
+}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
@@ -28,10 +33,6 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     */
   override def lock(): LockedWalletApi = {
     logger.debug(s"Locking wallet")
-    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonicCode, passphrase)
-
-    WalletStorage.writeMnemonicToDisk(encrypted)
-    logger.debug("Locked wallet")
     LockedWallet(nodeApi)
   }
 
@@ -140,7 +141,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
-object Wallet extends CreateWalletApi with KeyHandlingLogger {
+object Wallet extends CreateWalletApi with WalletLogger {
 
   private case class WalletImpl(
       mnemonicCode: MnemonicCode,
@@ -162,12 +163,14 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
   // todo figure out how to handle password part of wallet
   val badPassphrase = AesPassword.fromNonEmptyString("changeMe")
 
-  // todo fix signature
+  /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(entropy: BitVector, nodeApi: NodeApi)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
 
     logger.info(s"Initializing wallet on chain ${config.network}")
+
+    val seedPath = config.seedPath
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: CompatEither[InitializeWalletError, MnemonicCode] =
@@ -198,7 +201,7 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
           _ <- config.initialize()
           _ = {
             val mnemonicPath =
-              WalletStorage.writeMnemonicToDisk(encrypted)
+              WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
             logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
           }
           _ <- {

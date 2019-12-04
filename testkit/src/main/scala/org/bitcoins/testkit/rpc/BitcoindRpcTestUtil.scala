@@ -40,6 +40,7 @@ import org.bitcoins.rpc.client.common.{
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindConfig,
@@ -115,6 +116,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |port=${uri.getPort}
                   |debug=1
                   |walletbroadcast=1
+                  |peerbloomfilters=1
                   |txindex=${if (pruneMode) 0 else 1 /* pruning and txindex are not compatible */}
                   |zmqpubhashtx=tcp://127.0.0.1:$zmqPort
                   |zmqpubhashblock=tcp://127.0.0.1:$zmqPort
@@ -180,7 +182,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def getBinary(version: BitcoindVersion): File = version match {
     // default to newest version
     case Unknown => getBinary(BitcoindVersion.newest)
-    case known @ (Experimental | V16 | V17 | V18) =>
+    case known @ (Experimental | V16 | V17 | V18 | V19) =>
       val fileList = Files
         .list(binaryDirectory)
         .iterator()
@@ -223,12 +225,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       versionOpt: Option[BitcoindVersion] = None): BitcoindInstance = {
     val uri = new URI("http://localhost:" + port)
     val rpcUri = new URI("http://localhost:" + rpcPort)
-    val configFile = writtenConfig(
-      uri,
-      rpcUri,
-      zmqPort,
-      pruneMode,
-      blockFilterIndex = versionOpt.contains(BitcoindVersion.Experimental))
+    val hasNeutrinoSupport = versionOpt.contains(BitcoindVersion.V19) || versionOpt
+      .contains(BitcoindVersion.Experimental)
+    val configFile =
+      writtenConfig(uri,
+                    rpcUri,
+                    zmqPort,
+                    pruneMode,
+                    blockFilterIndex = hasNeutrinoSupport)
     val conf = BitcoindConfig(configFile)
     val auth = BitcoindAuthCredentials.fromConfig(conf)
     val binary: File = versionOpt match {
@@ -291,6 +295,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
              zmqPort = zmqPort,
              pruneMode = pruneMode,
              versionOpt = Some(BitcoindVersion.V18))
+
+  def v19Instance(
+      port: Int = RpcUtil.randomPort,
+      rpcPort: Int = RpcUtil.randomPort,
+      zmqPort: Int = RpcUtil.randomPort,
+      pruneMode: Boolean = false
+  ): BitcoindInstance =
+    instance(port = port,
+             rpcPort = rpcPort,
+             zmqPort = zmqPort,
+             pruneMode = pruneMode,
+             versionOpt = Some(BitcoindVersion.V19))
 
   def vExperimentalInstance(
       port: Int = RpcUtil.randomPort,
@@ -595,8 +611,11 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         case BitcoindVersion.V18 =>
           BitcoindV18RpcClient.withActorSystem(
             BitcoindRpcTestUtil.v18Instance())
+        case BitcoindVersion.V19 =>
+          BitcoindV19RpcClient.withActorSystem(
+            BitcoindRpcTestUtil.v19Instance())
         case BitcoindVersion.Experimental =>
-          BitcoindV18RpcClient.withActorSystem(
+          BitcoindV19RpcClient.withActorSystem(
             BitcoindRpcTestUtil.vExperimentalInstance())
       }
 
@@ -673,6 +692,15 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     createNodePairInternal(BitcoindVersion.V18, clientAccum)
 
   /**
+    * Returns a pair of [[org.bitcoins.rpc.client.v19.BitcoindV19RpcClient BitcoindV19RpcClient]]
+    * that are connected with some blocks in the chain
+    */
+  def createNodePairV19(clientAccum: RpcClientAccum = Vector.newBuilder)(
+      implicit system: ActorSystem): Future[
+    (BitcoindV19RpcClient, BitcoindV19RpcClient)] =
+    createNodePairInternal(BitcoindVersion.V19, clientAccum)
+
+  /**
     * Returns a triple of [[org.bitcoins.rpc.client.common.BitcoindRpcClient BitcoindRpcClient]]
     * that are connected with some blocks in the chain
     */
@@ -716,6 +744,13 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   )(implicit system: ActorSystem): Future[
     (BitcoindV18RpcClient, BitcoindV18RpcClient, BitcoindV18RpcClient)] = {
     createNodeTripleInternal(BitcoindVersion.V18, clientAccum)
+  }
+
+  def createNodeTripleV19(
+      clientAccum: RpcClientAccum = Vector.newBuilder
+  )(implicit system: ActorSystem): Future[
+    (BitcoindV19RpcClient, BitcoindV19RpcClient, BitcoindV19RpcClient)] = {
+    createNodeTripleInternal(BitcoindVersion.V19, clientAccum)
   }
 
   def createRawCoinbaseTransaction(
@@ -769,17 +804,20 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         val v16T = BitcoindV16RpcClient.fromUnknownVersion(unknown)
         val v17T = BitcoindV17RpcClient.fromUnknownVersion(unknown)
         val v18T = BitcoindV18RpcClient.fromUnknownVersion(unknown)
-        (v16T, v17T, v18T) match {
-          case (Failure(_), Failure(_), Failure(_)) =>
+        val v19T = BitcoindV19RpcClient.fromUnknownVersion(unknown)
+        (v16T, v17T, v18T, v19T) match {
+          case (Failure(_), Failure(_), Failure(_), Failure(_)) =>
             throw new RuntimeException(
               "Could not figure out version of provided bitcoind RPC client!" +
                 "This should not happen, managed to construct different versioned RPC clients from one single client")
-          case (Success(v16), _, _) =>
+          case (Success(v16), _, _, _) =>
             v16.signRawTransaction(transaction, utxoDeps)
-          case (_, Success(v17), _) =>
+          case (_, Success(v17), _, _) =>
             v17.signRawTransactionWithWallet(transaction, utxoDeps)
-          case (_, _, Success(v18)) =>
+          case (_, _, Success(v18), _) =>
             v18.signRawTransactionWithWallet(transaction, utxoDeps)
+          case (_, _, _, Success(v19)) =>
+            v19.signRawTransactionWithWallet(transaction, utxoDeps)
         }
     }
 
@@ -820,8 +858,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       addr <- sender.getNewAddress
       _ <- sender.generateToAddress(100, addr)
       // Can't spend coinbase until depth 100
-      transactionHash <- sender.sendRawTransaction(signedtx.hex,
-                                                   allowHighFees = true)
+      transactionHash <- sender.sendRawTransaction(signedtx.hex, maxfeerate = 0)
       transaction <- sender.getTransaction(transactionHash)
     } yield transaction
   }

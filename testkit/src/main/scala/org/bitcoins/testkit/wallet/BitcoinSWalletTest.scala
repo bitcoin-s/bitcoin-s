@@ -12,13 +12,15 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.wallet.api.{
   InitializeWalletError,
   InitializeWalletSuccess,
   UnlockedWalletApi
 }
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,7 +29,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   import BitcoinSWalletTest._
 
   /** Wallet config with data directory set to user temp directory */
-  implicit protected lazy val config: BitcoinSAppConfig =
+  implicit protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
 
   override def beforeAll(): Unit = {
@@ -86,6 +88,19 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
       )
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+  }
+
+  def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
+    val builder: () => Future[WalletAppConfig] = () => {
+      val walletConf = config.walletConf
+      walletConf.initialize().map(_ => walletConf)
+    }
+
+    val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
+      FileUtil.deleteTmpDir(walletAppConfig.datadir)
+      FutureUtil.unit
+    }
+    makeDependentFixture(builder, destroy = destroy)(test)
   }
 
 }

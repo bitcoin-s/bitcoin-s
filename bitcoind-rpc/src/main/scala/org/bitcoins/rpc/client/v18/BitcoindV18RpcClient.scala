@@ -1,16 +1,28 @@
 package org.bitcoins.rpc.client.v18
 import akka.actor.ActorSystem
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  DescriptorRpc,
+  RpcOpts
+}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.common.{
+  BitcoindRpcClient,
+  BitcoindVersion,
+  PsbtRpc,
+  RpcOpts
+}
 import org.bitcoins.rpc.config.BitcoindInstance
 
 import scala.util.Try
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.rpc.client.common.RpcOpts
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.rpc.jsonmodels.SignRawTransactionResult
 import play.api.libs.json.Json
 import play.api.libs.json.JsString
+
 import scala.concurrent.Future
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.rpc.serializers.JsonWriters._
@@ -24,8 +36,8 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
     implicit
     actorSystem: ActorSystem)
     extends BitcoindRpcClient(instance)
-    with V18PsbtRpc
-    with V18DescriptorRpc
+    with DescriptorRpc
+    with PsbtRpc
     with V18AssortedRpc {
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V18
@@ -83,7 +95,7 @@ object BitcoindV18RpcClient {
   /**
     * Creates an RPC client from the given instance,
     * together with the given actor system. This is for
-    * advanced users, wher you need fine grained control
+    * advanced users, where you need fine grained control
     * over the RPC client.
     */
   def withActorSystem(instance: BitcoindInstance)(

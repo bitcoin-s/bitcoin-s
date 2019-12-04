@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.rpc.jsonmodels.{
   FundRawTransactionResult,
   GetRawTransactionResult,
@@ -88,12 +89,23 @@ trait RawTransactionRpc { self: Client =>
     bitcoindCall[Transaction]("getrawtransaction", params)
   }
 
+  /**
+    * @param maxfeerate Set to 0 if you want to enable allowhighfees
+    */
   def sendRawTransaction(
       transaction: Transaction,
-      allowHighFees: Boolean = false): Future[DoubleSha256DigestBE] = {
+      maxfeerate: Double = 0.10): Future[DoubleSha256DigestBE] = {
+
+    val feeParameter = self.version match {
+      case V19 | Experimental | Unknown =>
+        JsNumber(maxfeerate)
+      case V16 | V17 | V18 =>
+        JsBoolean(maxfeerate == 0)
+    }
+
     bitcoindCall[DoubleSha256DigestBE](
       "sendrawtransaction",
-      List(JsString(transaction.hex), JsBoolean(allowHighFees)))
+      List(JsString(transaction.hex), feeParameter))
   }
 
 }

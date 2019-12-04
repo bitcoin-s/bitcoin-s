@@ -200,11 +200,21 @@ object JsonSerializers {
   implicit val getChainTxStatsResultReads: Reads[GetChainTxStatsResult] =
     Json.reads[GetChainTxStatsResult]
 
-  implicit val getMemPoolResultReads: Reads[GetMemPoolResult] =
-    Json.reads[GetMemPoolResult]
+  implicit val feeInfoReads: Reads[FeeInfo] = Json.reads[FeeInfo]
 
-  implicit val getMemPoolEntryResultReads: Reads[GetMemPoolEntryResult] =
-    Json.reads[GetMemPoolEntryResult]
+  implicit val getMemPoolResultPreV19Reads: Reads[GetMemPoolResultPreV19] =
+    Json.reads[GetMemPoolResultPreV19]
+
+  implicit val getMemPoolResultPostV19Reads: Reads[GetMemPoolResultPostV19] =
+    Json.reads[GetMemPoolResultPostV19]
+
+  implicit val getMemPoolEntryResultPreV19Reads: Reads[
+    GetMemPoolEntryResultPreV19] =
+    Json.reads[GetMemPoolEntryResultPreV19]
+
+  implicit val getMemPoolEntryResultPostV19Reads: Reads[
+    GetMemPoolEntryResultPostV19] =
+    Json.reads[GetMemPoolEntryResultPostV19]
 
   implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] =
     Json.reads[GetMemPoolInfoResult]
@@ -229,6 +239,13 @@ object JsonSerializers {
     Json.reads[MultiSigResult]
 
   implicit val bumpFeeReads: Reads[BumpFeeResult] = Json.reads[BumpFeeResult]
+
+  implicit val setWalletFlagResultReads: Reads[SetWalletFlagResult] =
+    Json.reads[SetWalletFlagResult]
+
+  implicit val balanceInfoReads: Reads[BalanceInfo] = Json.reads[BalanceInfo]
+  implicit val getBalancesResultReads: Reads[GetBalancesResult] =
+    Json.reads[GetBalancesResult]
 
   implicit val TransactionDetailsReads: Reads[TransactionDetails] =
     Json.reads[TransactionDetails]
@@ -443,14 +460,24 @@ object JsonSerializers {
     Json.reads[CreateWalletResult]
 
   // Map stuff
-  implicit def mapDoubleSha256DigestReads: Reads[
-    Map[DoubleSha256Digest, GetMemPoolResult]] =
-    Reads.mapReads[DoubleSha256Digest, GetMemPoolResult](s =>
+  implicit def mapDoubleSha256DigestReadsPreV19: Reads[
+    Map[DoubleSha256Digest, GetMemPoolResultPreV19]] =
+    Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPreV19](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
 
-  implicit def mapDoubleSha256DigestBEReads: Reads[
-    Map[DoubleSha256DigestBE, GetMemPoolResult]] =
-    Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResult](s =>
+  implicit def mapDoubleSha256DigestReadsPostV19: Reads[
+    Map[DoubleSha256Digest, GetMemPoolResultPostV19]] =
+    Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPostV19](s =>
+      JsSuccess(DoubleSha256Digest.fromHex(s)))
+
+  implicit def mapDoubleSha256DigestBEReadsPreV19: Reads[
+    Map[DoubleSha256DigestBE, GetMemPoolResultPreV19]] =
+    Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPreV19](s =>
+      JsSuccess(DoubleSha256DigestBE.fromHex(s)))
+
+  implicit def mapDoubleSha256DigestBEReadsPostV19: Reads[
+    Map[DoubleSha256DigestBE, GetMemPoolResultPostV19]] =
+    Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPostV19](s =>
       JsSuccess(DoubleSha256DigestBE.fromHex(s)))
 
   implicit def mapAddressesByLabelReads: Reads[

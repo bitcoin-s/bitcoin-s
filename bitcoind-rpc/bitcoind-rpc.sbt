@@ -1,5 +1,7 @@
 import scala.util.Properties
 import scala.collection.JavaConverters._
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration.DurationInt
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -22,9 +24,10 @@ TaskKeys.downloadBitcoind := {
     Files.createDirectories(binaryDir)
   }
 
-  val experimentalVersion = "0.18.99"
+  val experimentalVersion = "0.18.99" // TODO: change this when new version compiled on suredbits server
 
-  val versions = List("0.18.1", "0.17.0.1", "0.16.3", experimentalVersion)
+  val versions =
+    List("0.19.0.1", "0.18.1", "0.17.0.1", "0.16.3", experimentalVersion)
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -35,7 +38,8 @@ TaskKeys.downloadBitcoind := {
     else if (Properties.isWin) ("win64", "zip")
     else sys.error(s"Unsupported OS: ${Properties.osName}")
 
-  versions.foreach { version =>
+  implicit val ec = scala.concurrent.ExecutionContext.global
+  val downloads = versions.map { version =>
     val versionDir = binaryDir resolve version
     val archiveLocation = binaryDir resolve s"$version.$suffix"
     val location =
@@ -45,6 +49,7 @@ TaskKeys.downloadBitcoind := {
         s"https://bitcoincore.org/bin/bitcoin-core-$version/bitcoin-$version-$platform.$suffix"
 
     val expectedEndLocation = binaryDir resolve s"bitcoin-$version"
+
     if (Files
           .list(binaryDir)
           .iterator
@@ -53,21 +58,28 @@ TaskKeys.downloadBitcoind := {
           .exists(expectedEndLocation.toString.startsWith(_))) {
       logger.debug(
         s"Directory $expectedEndLocation already exists, skipping download of version $version")
+      Future.unit
     } else {
-      logger.info(
-        s"Downloading bitcoind version $version from location: $location")
-      logger.info(s"Placing the file in $archiveLocation")
-      val downloadCommand = url(location) #> archiveLocation.toFile
-      downloadCommand.!!
+      Future {
+        logger.info(
+          s"Downloading bitcoind version $version from location: $location")
+        logger.info(s"Placing the file in $archiveLocation")
+        val downloadCommand = url(location) #> archiveLocation.toFile
+        downloadCommand.!!
 
-      logger.info(s"Download complete, unzipping result")
+        logger.info(s"Download complete, unzipping result")
 
-      val extractCommand = s"tar -xzf $archiveLocation --directory $binaryDir"
-      logger.info(s"Extracting archive with command: $extractCommand")
-      extractCommand.!!
+        val extractCommand = s"tar -xzf $archiveLocation --directory $binaryDir"
+        logger.info(s"Extracting archive with command: $extractCommand")
+        extractCommand.!!
 
-      logger.info(s"Deleting archive")
-      Files.delete(archiveLocation)
+        logger.info(s"Deleting archive")
+        Files.delete(archiveLocation)
+      }
+
     }
   }
+
+  //timeout if we cannot download in 60 seconds
+  Await.result(Future.sequence(downloads), 60.seconds)
 }

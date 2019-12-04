@@ -6,14 +6,14 @@ import akka.util.Timeout
 import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.util.BitcoinSLogger
-import org.scalacheck.Shrink
+import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest._
 import org.scalatest.concurrent.AsyncTimeLimitedTests
 import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 
 /** This is a base trait in bitcoin-s for async tests
@@ -89,6 +89,108 @@ trait BaseAsyncTest
     */
   def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {
     customGenDrivenConfig(BitcoinSUnitTest.NEW_CODE_EXECUTIONS)
+  }
+
+  def sequenceTestRuns(
+      testRunFs: scala.collection.mutable.Builder[
+        Future[Assertion],
+        Vector[Future[Assertion]]]): Future[Assertion] = {
+    val testRunsF: Future[Vector[Assertion]] =
+      Future.sequence(testRunFs.result())
+
+    testRunsF.map(_.reduce((_, testRun) => testRun))
+  }
+
+  def forAllAsync[A](gen: Gen[A])(
+      func: A => Future[Assertion]): Future[Assertion] = {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
+    forAll(gen) { input =>
+      testRunFs.+=(func(input))
+      succeed
+    }
+
+    sequenceTestRuns(testRunFs)
+  }
+
+  def forAllAsync[A, B](genA: Gen[A], genB: Gen[B])(
+      func: (A, B) => Future[Assertion]): Future[Assertion] = {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
+    forAll(genA, genB) {
+      case (inputA, inputB) =>
+        testRunFs.+=(func(inputA, inputB))
+        succeed
+    }
+
+    sequenceTestRuns(testRunFs)
+  }
+
+  def forAllAsync[A, B, C](genA: Gen[A], genB: Gen[B], genC: Gen[C])(
+      func: (A, B, C) => Future[Assertion]): Future[Assertion] = {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
+    forAll(genA, genB, genC) {
+      case (inputA, inputB, inputC) =>
+        testRunFs.+=(func(inputA, inputB, inputC))
+        succeed
+    }
+
+    sequenceTestRuns(testRunFs)
+  }
+
+  def forAllAsync[A, B, C, D](
+      genA: Gen[A],
+      genB: Gen[B],
+      genC: Gen[C],
+      genD: Gen[D])(
+      func: (A, B, C, D) => Future[Assertion]): Future[Assertion] = {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
+    forAll(genA, genB, genC, genD) {
+      case (inputA, inputB, inputC, inputD) =>
+        testRunFs.+=(func(inputA, inputB, inputC, inputD))
+        succeed
+    }
+
+    sequenceTestRuns(testRunFs)
+  }
+
+  def forAllAsync[A, B, C, D, E](
+      genA: Gen[A],
+      genB: Gen[B],
+      genC: Gen[C],
+      genD: Gen[D],
+      genE: Gen[E])(
+      func: (A, B, C, D, E) => Future[Assertion]): Future[Assertion] = {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
+    forAll(genA, genB, genC, genD, genE) {
+      case (inputA, inputB, inputC, inputD, inputE) =>
+        testRunFs.+=(func(inputA, inputB, inputC, inputD, inputE))
+        succeed
+    }
+
+    sequenceTestRuns(testRunFs)
+  }
+
+  def forAllAsync[A, B, C, D, E, F](
+      genA: Gen[A],
+      genB: Gen[B],
+      genC: Gen[C],
+      genD: Gen[D],
+      genE: Gen[E],
+      genF: Gen[F])(
+      func: (A, B, C, D, E, F) => Future[Assertion]): Future[Assertion] = {
+    val testRunFs = Vector.newBuilder[Future[Assertion]]
+
+    forAll(genA, genB, genC, genD, genE, genF) {
+      case (inputA, inputB, inputC, inputD, inputE, inputF) =>
+        testRunFs.+=(func(inputA, inputB, inputC, inputD, inputE, inputF))
+        succeed
+    }
+
+    sequenceTestRuns(testRunFs)
   }
 }
 

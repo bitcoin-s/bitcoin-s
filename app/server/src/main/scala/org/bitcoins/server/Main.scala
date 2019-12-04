@@ -13,7 +13,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.{LockedWallet, Wallet, WalletStorage}
+import org.bitcoins.wallet.{LockedWallet, Wallet}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -76,7 +76,7 @@ object Main extends App {
   /** Checks if the user already has a wallet */
   private def hasWallet(): Boolean = {
     val walletDB = walletConf.dbPath resolve walletConf.dbName
-    Files.exists(walletDB) && WalletStorage.seedExists()
+    Files.exists(walletDB) && walletConf.seedExists()
   }
 
   private def createNode: Future[Node] = {

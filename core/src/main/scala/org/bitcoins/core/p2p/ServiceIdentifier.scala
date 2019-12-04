@@ -173,6 +173,19 @@ object ServiceIdentifier extends Factory[ServiceIdentifier] {
   def fromBytes(bytes: ByteVector): ServiceIdentifier =
     RawServiceIdentifierSerializer.read(bytes)
 
+  def fromString(string: String): ServiceIdentifier = string match {
+    case "NETWORK"         => NODE_NETWORK
+    case "NETWORK_LIMITED" => NODE_NETWORK_LIMITED
+    case "WITNESS"         => NODE_WITNESS
+    case "BLOOM"           => NODE_BLOOM
+    case "GETUTXO"         => NODE_GET_UTXO
+    case "COMPACT_FILTERS" => NODE_COMPACT_FILTERS
+    case "XTHIN"           => NODE_XTHIN
+    case _: String =>
+      throw new IllegalArgumentException(
+        s""""$string" does not represent a ServiceIdentifier""")
+  }
+
   def apply(num: BigInt): ServiceIdentifier = ServiceIdentifier(UInt64(num))
 
   def apply(uInt64: UInt64): ServiceIdentifier = ServiceIdentifierImpl(uInt64)
