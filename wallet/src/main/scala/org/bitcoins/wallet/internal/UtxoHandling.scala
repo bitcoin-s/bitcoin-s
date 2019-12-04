@@ -1,29 +1,21 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.compat._
-import org.bitcoins.wallet.LockedWallet
-import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import scala.concurrent.Future
-import org.bitcoins.wallet.models.AddressDb
-import org.bitcoins.wallet.models.SpendingInfoDb
-import org.bitcoins.wallet.models.SegWitAddressDb
-import org.bitcoins.wallet.models.SegwitV0SpendingInfo
-import org.bitcoins.wallet.models.LegacyAddressDb
-import org.bitcoins.wallet.models.LegacySpendingInfo
-import org.bitcoins.wallet.models.NestedSegWitAddressDb
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.wallet.api.AddUtxoResult
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.wallet.api.AddUtxoError
-import org.bitcoins.wallet.EitherUtil
-import org.bitcoins.wallet.api.AddUtxoSuccess
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.BitcoinAddress
-import scala.util.Success
-import scala.util.Failure
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet.KeyHandlingLogger
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
+import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
+import org.bitcoins.wallet.models._
+import org.bitcoins.wallet.{EitherUtil, LockedWallet, WalletLogger}
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /**
   * Provides functionality related to handling UTXOs in our wallet.
@@ -31,7 +23,7 @@ import org.bitcoins.wallet.KeyHandlingLogger
   * UTXOs in the wallet and importing a UTXO into the wallet for later
   * spending.
   */
-private[wallet] trait UtxoHandling extends KeyHandlingLogger {
+private[wallet] trait UtxoHandling extends WalletLogger {
   self: LockedWallet =>
 
   /** @inheritdoc */

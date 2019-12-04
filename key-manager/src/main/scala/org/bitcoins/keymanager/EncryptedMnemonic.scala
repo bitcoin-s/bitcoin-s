@@ -1,7 +1,7 @@
-package org.bitcoins.wallet
+package org.bitcoins.keymanager
 
-import org.bitcoins.core.crypto._
 import org.bitcoins.core.compat.CompatEither
+import org.bitcoins.core.crypto._
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}

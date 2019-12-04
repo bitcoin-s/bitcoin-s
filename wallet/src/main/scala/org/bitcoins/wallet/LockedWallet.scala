@@ -7,13 +7,18 @@ import org.bitcoins.wallet.models._
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
-import org.bitcoins.wallet.ReadMnemonicError.DecryptionError
-import org.bitcoins.wallet.ReadMnemonicError.JsonParsingError
+import org.bitcoins.keymanager.ReadMnemonicError.DecryptionError
+import org.bitcoins.keymanager.ReadMnemonicError.JsonParsingError
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
 import org.bitcoins.wallet.internal._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.keymanager.{
+  ReadMnemonicError,
+  ReadMnemonicSuccess,
+  WalletStorage
+}
 
 abstract class LockedWallet
     extends LockedWalletApi
@@ -21,12 +26,6 @@ abstract class LockedWallet
     with AddressHandling
     with AccountHandling
     with TransactionProcessing {
-
-  // through trait inheritance we get `logger`
-  // exposed, but this is not the generic wallet
-  // logger we want. Therefore we expose `walletLogger`
-  // as well
-  private val walletLogger = WalletLogger.getLogger
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
@@ -51,14 +50,14 @@ abstract class LockedWallet
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
     val confirmed = filterThenSum(_.confirmations > 0)
     confirmed.foreach(balance =>
-      walletLogger.trace(s"Confirmed balance=${balance.satoshis}"))
+      logger.trace(s"Confirmed balance=${balance.satoshis}"))
     confirmed
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
     val unconfirmed = filterThenSum(_.confirmations == 0)
     unconfirmed.foreach(balance =>
-      walletLogger.trace(s"Unconfirmed balance=${balance.satoshis}"))
+      logger.trace(s"Unconfirmed balance=${balance.satoshis}"))
     unconfirmed
 
   }
@@ -67,23 +66,22 @@ abstract class LockedWallet
     * @inheritdoc
     */
   override def unlock(passphrase: AesPassword): UnlockWalletResult = {
-    walletLogger.debug(s"Trying to unlock wallet")
-    val result = WalletStorage.decryptMnemonicFromDisk(passphrase)
+    logger.debug(s"Trying to unlock wallet")
+    val result =
+      WalletStorage.decryptMnemonicFromDisk(walletConfig.seedPath, passphrase)
     result match {
       case DecryptionError =>
-        walletLogger.error(s"Bad password for unlocking wallet!")
+        logger.error(s"Bad password for unlocking wallet!")
         UnlockWalletError.BadPassword
       case JsonParsingError(message) =>
-        walletLogger.error(
-          s"JSON parsing error when unlocking wallet: $message")
+        logger.error(s"JSON parsing error when unlocking wallet: $message")
         UnlockWalletError.JsonParsingError(message)
       case ReadMnemonicError.NotFoundError =>
-        walletLogger.error(
-          s"Encrypted mnemonic not found when unlocking the wallet!")
+        logger.error(s"Encrypted mnemonic not found when unlocking the wallet!")
         UnlockWalletError.MnemonicNotFound
 
       case ReadMnemonicSuccess(mnemonic) =>
-        walletLogger.debug(s"Successfully uunlocked wallet")
+        logger.debug(s"Successfully uunlocked wallet")
         UnlockWalletSuccess(Wallet(mnemonic))
     }
   }

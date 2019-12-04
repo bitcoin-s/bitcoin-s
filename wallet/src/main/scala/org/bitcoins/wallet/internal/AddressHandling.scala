@@ -27,7 +27,7 @@ import org.bitcoins.core.hd.AddressType
   * Provides functionality related to addresses. This includes
   * enumeratng and creating them, primarily.
   */
-private[wallet] trait AddressHandling extends KeyHandlingLogger {
+private[wallet] trait AddressHandling extends WalletLogger {
   self: LockedWallet =>
 
   override def listAddresses(): Future[Vector[AddressDb]] =

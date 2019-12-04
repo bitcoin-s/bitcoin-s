@@ -234,6 +234,16 @@ object Deps {
     Test.akkaTestkit
   )
 
+  def keyManager(scalaVersion: String) = List(
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
+    else Compile.newMicroJson,
+  )
+
+  val keyManagerTest = List(
+    Compile.slf4j,
+    Test.logback
+  )
+
   def wallet(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
     else Compile.newMicroJson,
