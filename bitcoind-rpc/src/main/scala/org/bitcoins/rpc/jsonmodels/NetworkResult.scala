@@ -4,6 +4,7 @@ import java.net.URI
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
 
 import scala.concurrent.duration.FiniteDuration
@@ -39,6 +40,7 @@ case class GetNetworkInfoResult(
     subversion: String,
     protocolversion: Int,
     localservices: String,
+    localservicesnames: Option[Vector[ServiceIdentifier]],
     localrelay: Boolean,
     timeoffset: Int,
     networkactive: Boolean,
@@ -84,6 +86,7 @@ case class PeerNetworkInfo(
     addrbind: URI,
     addrlocal: Option[URI],
     services: String,
+    servicesnames: Option[Vector[ServiceIdentifier]],
     relaytxes: Boolean,
     lastsend: UInt32,
     lastrecv: UInt32,

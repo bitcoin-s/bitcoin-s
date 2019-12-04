@@ -127,6 +127,14 @@ object RpcOpts {
 
   }
 
+  sealed trait WalletFlag
+
+  object WalletFlag {
+    case object AvoidReuse extends WalletFlag {
+      override def toString: String = "avoid_reuse"
+    }
+  }
+
   sealed trait AddressType
 
   object AddressType {

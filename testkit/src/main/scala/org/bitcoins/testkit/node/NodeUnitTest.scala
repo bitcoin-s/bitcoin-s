@@ -16,6 +16,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiverState,
   PeerMessageSender
 }
+import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
@@ -110,8 +111,9 @@ trait NodeUnitTest extends BitcoinSFixture {
 
     makeDependentFixture(
       build = () =>
-        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks)(system,
-                                                                  appConfig),
+        NodeUnitTest.createSpvNodeFundedWalletBitcoind(callbacks, Option(V18))(
+          system, // Force V18 because Spv is disabled on versions after
+          appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind)(system, appConfig)
     )(test)

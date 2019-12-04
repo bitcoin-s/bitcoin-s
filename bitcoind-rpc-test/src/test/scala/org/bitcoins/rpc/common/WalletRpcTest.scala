@@ -31,9 +31,9 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
 class WalletRpcTest extends BitcoindRpcTest {
-  lazy val clientsF
-    : Future[(BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
-    BitcoindRpcTestUtil.createNodeTripleV17(clientAccum = clientAccum)
+  lazy val clientsF: Future[
+    (BitcoindRpcClient, BitcoindRpcClient, BitcoindRpcClient)] =
+    BitcoindRpcTestUtil.createNodeTripleV19(clientAccum = clientAccum)
 
   // This client's wallet is encrypted
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
@@ -514,7 +514,7 @@ class WalletRpcTest extends BitcoindRpcTest {
         client.createRawTransaction(inputs, outputs)
       }
       stx <- BitcoindRpcTestUtil.signRawTransaction(client, rawTx)
-      txid <- client.sendRawTransaction(stx.hex, allowHighFees = true)
+      txid <- client.sendRawTransaction(stx.hex, 0)
       tx <- client.getTransaction(txid)
       bumpedTx <- client.bumpFee(txid)
     } yield assert(tx.fee.get < bumpedTx.fee)
