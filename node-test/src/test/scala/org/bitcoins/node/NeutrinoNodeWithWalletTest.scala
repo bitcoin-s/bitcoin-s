@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.networking.peer.DataMessageHandler.OnCompactFilterReceived
 import org.bitcoins.rpc.client.common.BitcoindVersion
@@ -44,13 +45,15 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     walletF = walletP.future
   }
 
-  val amountFromBitcoind = 1.bitcoin
+  val OneBitcoin = 1.bitcoin
+  val FeeRate = SatoshisPerByte(10.sats)
+  val Fees = 2240.sats
 
   def callbacks: NodeCallbacks = {
     val onBlock: DataMessageHandler.OnBlockReceived = { block =>
       for {
         wallet <- walletF
-        _ <- wallet.processBlock(block, confirmations = 0)
+        _ <- wallet.processBlock(block, confirmations = 6)
       } yield ()
     }
     val onCompactFilter: OnCompactFilterReceived = { (blockHash, blockFilter) =>
@@ -72,53 +75,64 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
       walletP.success(wallet)
 
-      def condition(): Future[Boolean] = {
+      def condition(
+          expectedConfirmedAmount: CurrencyUnit,
+          expectedUnconfirmedAmount: CurrencyUnit,
+          expectedUtxos: Int,
+          expectedAddresses: Int): Future[Boolean] = {
         for {
-          balance <- wallet.getUnconfirmedBalance()
+          confirmedBalance <- wallet.getConfirmedBalance()
+          unconfirmedBalance <- wallet.getUnconfirmedBalance()
           addresses <- wallet.listAddresses()
           utxos <- wallet.listUtxos()
         } yield {
-          balance == amountFromBitcoind &&
-          utxos.size == 2 &&
-          addresses.map(_.scriptPubKey) == utxos.map(_.output.scriptPubKey)
+          (expectedConfirmedAmount == confirmedBalance) &&
+          (expectedUnconfirmedAmount == unconfirmedBalance) &&
+          (expectedAddresses == addresses.size) &&
+          (expectedUtxos == utxos.size)
         }
       }
 
+      val condition1 = () => {
+        condition(0.sats,
+                  BitcoinSWalletTest.initialFunds - OneBitcoin - Fees,
+                  1,
+                  2)
+      }
+      val condition2 = { () =>
+        condition(OneBitcoin,
+                  BitcoinSWalletTest.initialFunds - OneBitcoin - Fees,
+                  2,
+                  3)
+      }
+
       for {
-        balance <- wallet.getUnconfirmedBalance()
-        _ = println(balance)
-
-        addresses <- wallet.listAddresses()
-        utxos <- wallet.listUtxos()
-        _ = assert(addresses.size == 1)
-        _ = assert(utxos.size == 1)
-
         _ <- node.sync()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
-        address <- wallet.getNewAddress()
-        _ <- bitcoind
-          .sendToAddress(address, amountFromBitcoind)
-
-        addresses <- wallet.listAddresses()
-        utxos <- wallet.listUtxos()
-        _ = assert(addresses.size == 2)
-        _ = assert(utxos.size == 1)
-
-        addresses <- wallet.listAddresses()
-        utxos <- wallet.listUtxos()
-        _ = assert(addresses.size == 2)
-        _ = assert(utxos.size == 1)
+        // send
+        addr <- bitcoind.getNewAddress
+        _ <- wallet.sendToAddress(addr, OneBitcoin, FeeRate)
 
         _ <- bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
-        addresses <- wallet.listAddresses()
+        _ <- AsyncUtil.awaitConditionF(condition1)
 
-        _ <- AsyncUtil.awaitConditionF(condition)
+        // receive
+        address <- wallet.getNewAddress()
+        _ <- bitcoind
+          .sendToAddress(address, OneBitcoin)
+
+        _ <- bitcoind.getNewAddress
+          .flatMap(bitcoind.generateToAddress(1, _))
+        _ <- NodeTestUtil.awaitSync(node, bitcoind)
+        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
+
+        _ <- AsyncUtil.awaitConditionF(condition2)
       } yield succeed
   }
 
@@ -138,11 +152,11 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
       def condition(): Future[Boolean] = {
         for {
-          balance <- wallet.getUnconfirmedBalance()
+          balance <- wallet.getConfirmedBalance()
           addresses <- wallet.listAddresses()
           utxos <- wallet.listUtxos()
         } yield {
-          balance == BitcoinSWalletTest.initialFunds + amountFromBitcoind &&
+          balance == BitcoinSWalletTest.initialFunds + OneBitcoin &&
           utxos.size == 2 &&
           addresses.map(_.scriptPubKey.hex).sorted == utxos
             .map(_.output.scriptPubKey.hex)
@@ -162,7 +176,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         address <- wallet.getNewAddress()
         _ <- bitcoind
-          .sendToAddress(address, amountFromBitcoind)
+          .sendToAddress(address, OneBitcoin)
 
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()
