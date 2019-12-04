@@ -195,6 +195,7 @@ object Deps {
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
     else Compile.newMicroPickle,
     Compile.logback,
+    Compile.akkaActor,
     Compile.akkaHttp
   )
 
