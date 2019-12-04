@@ -1,33 +1,24 @@
-package org.bitcoins.wallet
+package org.bitcoins.keymanager
 
-import org.bitcoins.core.compat.JavaConverters._
+import java.nio.file.{Files, Path, Paths}
 
 import org.bitcoins.core.compat._
-import org.bitcoins.core.crypto.AesPassword
-import java.nio.file.Files
-import org.bitcoins.core.crypto.MnemonicCode
+import org.bitcoins.core.crypto._
+import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
-import org.bitcoins.core.crypto.AesEncryptedData
-import org.bitcoins.core.crypto.AesSalt
-import scala.util.Failure
-import scala.util.Success
-import java.nio.file.Paths
-import java.nio.file.Path
-import scala.util.Try
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.core.crypto.AesIV
+
+import scala.util.{Failure, Success, Try}
 
 // what do we do if seed exists? error if they aren't equal?
-object WalletStorage extends KeyHandlingLogger {
+object WalletStorage {
+  import org.bitcoins.core.compat.JavaConverters._
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Checks if a wallet seed exists in datadir */
-  def seedExists()(implicit config: WalletAppConfig): Boolean = {
-    val seedPath = config.datadir.resolve(ENCRYPTED_SEED_FILE_NAME)
+  def seedExists(seedPath: java.nio.file.Path): Boolean = {
     Files.exists(seedPath)
   }
-
-  private[wallet] val ENCRYPTED_SEED_FILE_NAME: String =
-    "encrypted_bitcoin-s_seed.json"
 
   private object MnemonicJsonKeys {
     val IV = "iv"
@@ -42,10 +33,8 @@ object WalletStorage extends KeyHandlingLogger {
     * with the current epoch timestamp as part of
     * the file name.
     */
-  def writeMnemonicToDisk(mnemonic: EncryptedMnemonic)(
-      implicit config: WalletAppConfig): Path = {
-    import mnemonic.{value => encrypted}
-
+  def writeMnemonicToDisk(seedPath: Path, mnemonic: EncryptedMnemonic): Path = {
+    val encrypted = mnemonic.value
     val jsObject = {
       import MnemonicJsonKeys._
       ujson.Obj(
@@ -55,21 +44,20 @@ object WalletStorage extends KeyHandlingLogger {
       )
     }
 
-    val path = config.datadir.resolve(ENCRYPTED_SEED_FILE_NAME)
-
-    logger.debug(s"Writing mnemonic to $path")
+    logger.debug(s"Writing mnemonic to $seedPath")
 
     val writtenJs = ujson.write(jsObject)
 
     def writeJsToDisk() = {
-      val writtenPath = Files.write(path, writtenJs.getBytes())
-      logger.trace(s"Wrote encrypted mnemonic to $path")
+      val writtenPath = Files.write(seedPath, writtenJs.getBytes())
+      logger.trace(s"Wrote encrypted mnemonic to $seedPath")
 
       writtenPath
     }
 
+    //check to see if a mnemonic exists already...
     val foundMnemonicOpt: Option[EncryptedMnemonic] =
-      readEncryptedMnemonicFromDisk() match {
+      readEncryptedMnemonicFromDisk(seedPath) match {
         case CompatLeft(_) =>
           None
         case CompatRight(mnemonic) => Some(mnemonic)
@@ -77,27 +65,18 @@ object WalletStorage extends KeyHandlingLogger {
 
     foundMnemonicOpt match {
       case None =>
-        logger.trace(s"$path does not exist")
+        logger.trace(s"$seedPath does not exist")
         writeJsToDisk()
       case Some(found) =>
-        logger.trace(s"$path already exists")
+        logger.info(s"$seedPath already exists")
         if (found == mnemonic) {
           logger.trace(s"Found and provided mnemonics are the same, skipping")
-          path
+          seedPath
         } else {
           logger.warn(
             s"Found mnemonic on disk is not the same as mnemonic we're about to write")
-
-          val bakPath = {
-            val epoch = System.currentTimeMillis.toString
-            Paths.get(s"${path.toString()}-$epoch.bak")
-          }
-
-          logger.trace(s"Moving file to $bakPath")
-          Files.move(path, bakPath)
-
-          logger.warn(s"Moved $path to $bakPath")
-          writeJsToDisk()
+          throw new RuntimeException(
+            s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
         }
     }
   }
@@ -105,19 +84,13 @@ object WalletStorage extends KeyHandlingLogger {
   /** Reads the raw encrypted mnemonic from disk,
     * performing no decryption
     */
-  private def readEncryptedMnemonicFromDisk()(
-      implicit config: WalletAppConfig): CompatEither[
-    ReadMnemonicError,
-    EncryptedMnemonic] = {
-
-    val path = {
-      config.datadir.resolve(ENCRYPTED_SEED_FILE_NAME)
-    }
+  private def readEncryptedMnemonicFromDisk(
+      seedPath: Path): CompatEither[ReadMnemonicError, EncryptedMnemonic] = {
 
     val jsonE: CompatEither[ReadMnemonicError, ujson.Value] = {
-      if (Files.isRegularFile(path)) {
-        val rawJson = Files.readAllLines(path).asScala.mkString("\n")
-        logger.debug(s"Read raw encrypted mnemonic from $path")
+      if (Files.isRegularFile(seedPath)) {
+        val rawJson = Files.readAllLines(seedPath).asScala.mkString("\n")
+        logger.debug(s"Read raw encrypted mnemonic from $seedPath")
 
         Try {
           ujson.read(rawJson)
@@ -127,11 +100,11 @@ object WalletStorage extends KeyHandlingLogger {
           case Failure(exception) => throw exception
 
           case Success(value) =>
-            logger.debug(s"Parsed $path into valid json")
+            logger.debug(s"Parsed $seedPath into valid json")
             CompatRight(value)
         }
       } else {
-        logger.error(s"Encrypted mnemonic not found at $path")
+        logger.error(s"Encrypted mnemonic not found at $seedPath")
         CompatLeft(ReadMnemonicError.NotFoundError)
       }
     }
@@ -151,7 +124,7 @@ object WalletStorage extends KeyHandlingLogger {
       } match {
         case Success(value) => CompatRight(value)
         case Failure(value: ujson.Value.InvalidData) =>
-          logger.error(s"Error when parsing JSON file $path: ${value.msg}")
+          logger.error(s"Error when parsing JSON file $seedPath: ${value.msg}")
           CompatLeft(JsonParsingError(value.msg))
         case Failure(exception) => throw exception
       }
@@ -165,7 +138,8 @@ object WalletStorage extends KeyHandlingLogger {
             cipherText <- ByteVector.fromHex(rawCipherText)
             salt <- ByteVector.fromHex(rawSalt).map(AesSalt(_))
           } yield {
-            logger.debug(s"Parsed contents of $path into an EncryptedMnemonic")
+            logger.debug(
+              s"Parsed contents of $seedPath into an EncryptedMnemonic")
             EncryptedMnemonic(AesEncryptedData(cipherText, iv), salt)
           }
           val toRight: Option[
@@ -182,11 +156,11 @@ object WalletStorage extends KeyHandlingLogger {
     * Reads the wallet mmemonic from disk and tries to parse and
     * decrypt it
     */
-  def decryptMnemonicFromDisk(passphrase: AesPassword)(
-      implicit
-      config: WalletAppConfig): ReadMnemonicResult = {
+  def decryptMnemonicFromDisk(
+      seedPath: Path,
+      passphrase: AesPassword): ReadMnemonicResult = {
 
-    val encryptedEither = readEncryptedMnemonicFromDisk()
+    val encryptedEither = readEncryptedMnemonicFromDisk(seedPath)
 
     val decryptedEither: CompatEither[ReadMnemonicError, MnemonicCode] =
       encryptedEither.flatMap { encrypted =>

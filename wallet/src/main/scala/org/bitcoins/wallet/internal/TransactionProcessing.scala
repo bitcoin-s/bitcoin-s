@@ -15,7 +15,7 @@ import scala.concurrent.Future
   * confirmation counts and marking UTXOs as spent when
   * spending from our wallet
   */
-private[wallet] trait TransactionProcessing extends KeyHandlingLogger {
+private[wallet] trait TransactionProcessing extends WalletLogger {
   self: LockedWallet =>
   /////////////////////
   // Public facing API
