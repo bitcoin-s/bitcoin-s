@@ -11,7 +11,6 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
-import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
 import org.bitcoins.core.protocol.BlockStampWithFuture
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
@@ -27,7 +26,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil, FutureUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
@@ -383,12 +382,10 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def publishClosingTx(
-      cetPublishedF: Future[Unit],
       cetOutput: TransactionOutput,
       privKey: ECPrivateKey,
       spendingInfo: BitcoinUTXOSpendingInfo,
-      isLocal: Boolean,
-      messengerOpt: Option[BitcoinP2PMessenger]): Future[Transaction] = {
+      isLocal: Boolean): Future[Transaction] = {
     // Construct Closing Transaction
     val txBuilder = BitcoinTxBuilder(
       Vector(
@@ -407,23 +404,7 @@ case class BinaryOutcomeDLCWithSelf(
         logger.info(
           s"${if (isLocal) "Local" else "Remote"} Closing Tx: ${tx.hex}"))
 
-    val spendingTxPublishedF = spendingTxF.flatMap { spendingTx =>
-      cetPublishedF.flatMap { _ =>
-        messengerOpt match {
-          case Some(messenger) =>
-            messenger
-              .sendTransaction(spendingTx)
-              .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
-          case None => FutureUtil.unit
-        }
-      }
-    }
-
-    spendingTxF.flatMap { spendingTx =>
-      spendingTxPublishedF.map { _ =>
-        spendingTx
-      }
-    }
+    spendingTxF
   }
 
   /** Constructs and executes on the unilateral spending branch of a DLC
@@ -433,8 +414,7 @@ case class BinaryOutcomeDLCWithSelf(
   def executeUnilateralDLC(
       dlcSetup: SetupDLC,
       oracleSigF: Future[SchnorrDigitalSignature],
-      local: Boolean,
-      messengerOpt: Option[BitcoinP2PMessenger] = None): Future[DLCOutcome] = {
+      local: Boolean): Future[DLCOutcome] = {
     val SetupDLC(fundingTx,
                  fundingSpendingInfo,
                  cetWinLocal,
@@ -462,14 +442,6 @@ case class BinaryOutcomeDLCWithSelf(
           throw new IllegalStateException(
             "Signature does not correspond to either possible outcome!")
         }
-
-      val cetPublishedF = messengerOpt match {
-        case Some(messenger) =>
-          messenger
-            .sendTransaction(cet)
-            .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
-        case None => FutureUtil.unit
-      }
 
       // The prefix other refers to remote if local == true and local otherwise
       val output = cet.outputs.head
@@ -502,18 +474,14 @@ case class BinaryOutcomeDLCWithSelf(
         (otherOutput, otherCetSpendingInfo, output, cetSpendingInfo)
       }
 
-      val localSpendingTxF = publishClosingTx(cetPublishedF,
-                                              localOutput,
+      val localSpendingTxF = publishClosingTx(localOutput,
                                               finalLocalPrivKey,
                                               localCetSpendingInfo,
-                                              isLocal = true,
-                                              messengerOpt)
-      val remoteSpendingTxF = publishClosingTx(cetPublishedF,
-                                               remoteOutput,
+                                              isLocal = true)
+      val remoteSpendingTxF = publishClosingTx(remoteOutput,
                                                finalRemotePrivKey,
                                                remoteCetSpendingInfo,
-                                               isLocal = false,
-                                               messengerOpt)
+                                               isLocal = false)
 
       localSpendingTxF.flatMap { localSpendingTx =>
         remoteSpendingTxF.map { remoteSpendingTx =>
@@ -536,80 +504,50 @@ case class BinaryOutcomeDLCWithSelf(
     *
     * @return Each transaction published and its spending info
     */
-  def executeRefundDLC(
-      dlcSetup: SetupDLC,
-      messengerOpt: Option[BitcoinP2PMessenger] = None): Future[DLCOutcome] = {
+  def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcome] = {
     val SetupDLC(fundingTx, fundingSpendingInfo, _, _, _, _, refundTx) =
       dlcSetup
 
-    val waitForRefundF = messengerOpt match {
-      case Some(messenger) =>
-        timeout match {
-          case BlockHeight(height) => messenger.waitUntilBlockHeight(height)
-          case BlockTime(time) =>
-            Future {
-              val timeToWait = System.currentTimeMillis - time.toInt * 1000
+    val localOutput = refundTx.outputs.head
+    val remoteOutput = refundTx.outputs.last
 
-              Thread.sleep(timeToWait)
-            }
-        }
-      case None => FutureUtil.unit
-    }
+    val localRefundSpendingInfo = P2PKHSpendingInfo(
+      TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
+      localOutput.value,
+      localOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      cetLocalRefundPrivKey,
+      HashType.sigHashAll
+    )
 
-    waitForRefundF.flatMap { _ =>
-      val refundTxPublishedF = messengerOpt match {
-        case Some(messenger) =>
-          messenger
-            .sendTransaction(refundTx)
-            .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
-        case None => FutureUtil.unit
-      }
+    val remoteRefundSpendingInfo = P2PKHSpendingInfo(
+      TransactionOutPoint(refundTx.txIdBE, UInt32.one),
+      remoteOutput.value,
+      remoteOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      cetRemoteRefundPrivKey,
+      HashType.sigHashAll
+    )
 
-      val localOutput = refundTx.outputs.head
-      val remoteOutput = refundTx.outputs.last
+    val localSpendingTxF = publishClosingTx(localOutput,
+                                            finalLocalPrivKey,
+                                            localRefundSpendingInfo,
+                                            isLocal = true)
+    val remoteSpendingTxF = publishClosingTx(remoteOutput,
+                                             finalRemotePrivKey,
+                                             remoteRefundSpendingInfo,
+                                             isLocal = false)
 
-      val localRefundSpendingInfo = P2PKHSpendingInfo(
-        TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
-        localOutput.value,
-        localOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
-        cetLocalRefundPrivKey,
-        HashType.sigHashAll
-      )
-
-      val remoteRefundSpendingInfo = P2PKHSpendingInfo(
-        TransactionOutPoint(refundTx.txIdBE, UInt32.one),
-        remoteOutput.value,
-        remoteOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
-        cetRemoteRefundPrivKey,
-        HashType.sigHashAll
-      )
-
-      val localSpendingTxF = publishClosingTx(refundTxPublishedF,
-                                              localOutput,
-                                              finalLocalPrivKey,
-                                              localRefundSpendingInfo,
-                                              isLocal = true,
-                                              messengerOpt)
-      val remoteSpendingTxF = publishClosingTx(refundTxPublishedF,
-                                               remoteOutput,
-                                               finalRemotePrivKey,
-                                               remoteRefundSpendingInfo,
-                                               isLocal = false,
-                                               messengerOpt)
-
-      localSpendingTxF.flatMap { localSpendingTx =>
-        remoteSpendingTxF.map { remoteSpendingTx =>
-          DLCOutcome(
-            fundingTx,
-            refundTx,
-            localSpendingTx,
-            remoteSpendingTx,
-            fundingUtxos,
-            fundingSpendingInfo,
-            localRefundSpendingInfo,
-            remoteRefundSpendingInfo
-          )
-        }
+    localSpendingTxF.flatMap { localSpendingTx =>
+      remoteSpendingTxF.map { remoteSpendingTx =>
+        DLCOutcome(
+          fundingTx,
+          refundTx,
+          localSpendingTx,
+          remoteSpendingTx,
+          fundingUtxos,
+          fundingSpendingInfo,
+          localRefundSpendingInfo,
+          remoteRefundSpendingInfo
+        )
       }
     }
   }
