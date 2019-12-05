@@ -1,9 +1,16 @@
 package org.bitcoins.core.script.interpreter
 
-import org.bitcoins.core.crypto.{BaseTxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw}
+import org.bitcoins.core.crypto.{
+  BaseTxSigComponent,
+  WitnessTxSigComponentP2SH,
+  WitnessTxSigComponentRaw
+}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{TransactionOutput, WitnessTransaction}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutput,
+  WitnessTransaction
+}
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlagFactory
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
@@ -27,7 +34,7 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     val source = Source.fromURL(getClass.getResource("/script_tests.json"))
 
     //use this to represent a single test case from script_valid.json
-/*        val lines =
+    /*        val lines =
       """
           | [["0x01 0x80", "DUP BOOLOR", "P2SH,STRICTENC", "EVAL_FALSE", "negative-0 negative-0 BOOLOR"]]
    """.stripMargin*/

@@ -3,6 +3,7 @@ package org.bitcoins.core.wallet.builder
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
+  DoubleSha256DigestBE,
   ECPrivateKey,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
@@ -22,19 +23,18 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalPath,
+  LockTimeSpendingInfo,
   UTXOSpendingInfo
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.scalatest.Assertion
-
-import scala.concurrent.Future
 
 class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   val tc = TransactionConstants
@@ -385,6 +385,36 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
+  }
+
+  it must "succeed to sign a cltv spk that uses a second-based locktime" in {
+    val fundingPrivKey = ECPrivateKey.freshPrivateKey
+
+    val cltvSPK =
+      CLTVScriptPubKey(ScriptNumber(System.currentTimeMillis / 1000),
+                       P2PKScriptPubKey(fundingPrivKey.publicKey))
+
+    val cltvSpendingInfo = LockTimeSpendingInfo(
+      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+      Bitcoins.one,
+      cltvSPK,
+      Vector(fundingPrivKey),
+      HashType.sigHashAll,
+      ConditionalPath.NoConditionsLeft
+    )
+
+    val txBuilderF =
+      BitcoinTxBuilder(
+        Vector(
+          TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
+                            EmptyScriptPubKey)),
+        Vector(cltvSpendingInfo),
+        SatoshisPerByte(Satoshis.one),
+        EmptyScriptPubKey,
+        RegTest
+      )
+
+    txBuilderF.flatMap(_.sign).map(_ => succeed)
   }
 
   def verifyScript(tx: Transaction, utxos: Seq[UTXOSpendingInfo]): Boolean = {
