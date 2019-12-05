@@ -12,23 +12,18 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil}
-import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
-import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   P2PKHSpendingInfo
 }
-import org.bitcoins.testkit.core.gen.{
-  CurrencyUnitGenerator,
-  TransactionGenerators
-}
+import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 import org.scalatest.Assertion
@@ -116,6 +111,8 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val inputPrivKeyRemote = ECPrivateKey.freshPrivateKey
     val inputPubKeyRemote = inputPrivKeyRemote.publicKey
 
+    val blockTimeToday = BlockTime(UInt32(System.currentTimeMillis() / 1000))
+
     val localFundingUtxos = Vector(
       P2PKHSpendingInfo(
         outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
@@ -140,55 +137,78 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    def executeForCase(
+    val dlc = BinaryOutcomeDLCWithSelf(
+      outcomeWin = outcomeWin,
+      outcomeLose = outcomeLose,
+      oraclePubKey = oraclePubKey,
+      preCommittedR = preCommittedR,
+      localExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv),
+      remoteExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv),
+      localInput = localInput,
+      remoteInput = remoteInput,
+      localFundingUtxos = localFundingUtxos,
+      remoteFundingUtxos = remoteFundingUtxos,
+      localWinPayout = localInput + CurrencyUnits.oneMBTC,
+      localLosePayout = localInput - CurrencyUnits.oneMBTC,
+      timeout = blockTimeToday,
+      feeRate = SatoshisPerByte(Satoshis.one),
+      changeSPK = changeSPK,
+      network = RegTest
+    )
+
+    def validateOutcome(outcome: DLCOutcome): Assertion = {
+      val DLCOutcome(fundingTx,
+                     cet,
+                     localClosingTx,
+                     remoteClosingTx,
+                     initialSpendingInfos,
+                     fundingSpendingInfo,
+                     localCetSpendingInfo,
+                     remoteCetSpendingInfo) = outcome
+
+      assert(
+        BitcoinScriptUtil.verifyScript(fundingTx, initialSpendingInfos)
+      )
+      assert(
+        BitcoinScriptUtil.verifyScript(cet, Vector(fundingSpendingInfo))
+      )
+      assert(
+        BitcoinScriptUtil.verifyScript(localClosingTx,
+                                       Vector(localCetSpendingInfo))
+      )
+      assert(
+        BitcoinScriptUtil.verifyScript(remoteClosingTx,
+                                       Vector(remoteCetSpendingInfo))
+      )
+    }
+
+    def executeUnilateralForCase(
         outcomeHash: Sha256DigestBE,
         local: Boolean): Future[Assertion] = {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
-      val dlc = BinaryOutcomeDLCWithSelf(
-        outcomeWin = outcomeWin,
-        outcomeLose = outcomeLose,
-        oraclePubKey = oraclePubKey,
-        preCommittedR = preCommittedR,
-        localExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv),
-        remoteExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv),
-        localInput = localInput,
-        remoteInput = remoteInput,
-        localFundingUtxos = localFundingUtxos,
-        remoteFundingUtxos = remoteFundingUtxos,
-        localWinPayout = localInput + CurrencyUnits.oneMBTC,
-        localLosePayout = localInput - CurrencyUnits.oneMBTC,
-        timeout = 1.day.toMillis.toInt,
-        feeRate = SatoshisPerByte(Satoshis.one),
-        changeSPK = changeSPK,
-        network = RegTest
-      )
-
-      dlc.executeDLC(Future.successful(oracleSig), local).map {
-        case DLCOutcome(fundingTx,
-                        cet,
-                        closingTx,
-                        initialSpendingInfos,
-                        fundingSpendingInfo,
-                        cetSpendingInfo) =>
-          assert(
-            BitcoinScriptUtil.verifyScript(fundingTx, initialSpendingInfos)
-          )
-          assert(
-            BitcoinScriptUtil.verifyScript(cet, Vector(fundingSpendingInfo))
-          )
-          assert(
-            BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
-          )
+      dlc.setupDLC().flatMap { setup =>
+        dlc
+          .executeUnilateralDLC(setup, Future.successful(oracleSig), local)
+          .map(validateOutcome)
       }
     }
 
+    def executeRefundCase(): Future[Assertion] = {
+      val outcomeF = dlc.setupDLC().flatMap { setup =>
+        dlc.executeRefundDLC(setup)
+      }
+
+      outcomeF.map(validateOutcome)
+    }
+
     for {
-      _ <- executeForCase(outcomeWinHash, local = true)
-      _ <- executeForCase(outcomeLoseHash, local = true)
-      _ <- executeForCase(outcomeWinHash, local = false)
-      _ <- executeForCase(outcomeLoseHash, local = false)
+      _ <- executeUnilateralForCase(outcomeWinHash, local = true)
+      _ <- executeUnilateralForCase(outcomeLoseHash, local = true)
+      _ <- executeUnilateralForCase(outcomeWinHash, local = false)
+      _ <- executeUnilateralForCase(outcomeLoseHash, local = false)
+      _ <- executeRefundCase()
     } yield succeed
   }
 }
