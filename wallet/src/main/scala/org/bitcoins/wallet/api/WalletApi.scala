@@ -74,7 +74,7 @@ trait LockedWalletApi extends WalletApi {
       _ <- Future {
         val matcher = SimpleFilterMatcher(blockFilter)
         if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
-          nodeApi.fetchBlocks(Vector(blockHash))
+          nodeApi.requestBlocks(Vector(blockHash))
         }
       }
     } yield {

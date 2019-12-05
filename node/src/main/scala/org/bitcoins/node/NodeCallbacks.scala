@@ -13,7 +13,15 @@ case class NodeCallbacks(
     onTxReceived: Seq[OnTxReceived] = Seq.empty,
     onBlockReceived: Seq[OnBlockReceived] = Seq.empty,
     onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty
-)
+) {
+
+  def +(other: NodeCallbacks): NodeCallbacks = copy(
+    onCompactFilterReceived = onCompactFilterReceived ++ other.onCompactFilterReceived,
+    onTxReceived = onTxReceived ++ other.onTxReceived,
+    onBlockReceived = onBlockReceived ++ onBlockReceived,
+    onMerkleBlockReceived = onMerkleBlockReceived ++ onMerkleBlockReceived
+  )
+}
 
 object NodeCallbacks {
 

@@ -50,7 +50,7 @@ trait Node extends NodeApi with P2PLogger {
 
   val nodeCallbacks: NodeCallbacks
 
-  def setCallbacks(callbacks: NodeCallbacks): Node
+  def addCallbacks(callbacks: NodeCallbacks): Node
 
   lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
@@ -209,7 +209,8 @@ trait Node extends NodeApi with P2PLogger {
   /**
     * Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
     */
-  def fetchBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+  override def requestBlocks(
+      blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
     for {
       peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,

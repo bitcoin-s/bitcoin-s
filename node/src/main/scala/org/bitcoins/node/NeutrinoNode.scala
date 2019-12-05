@@ -4,7 +4,6 @@ import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.node.config.NodeAppConfig
@@ -31,8 +30,8 @@ case class NeutrinoNode(
 
   override val peer: Peer = nodePeer
 
-  override def setCallbacks(callbacks: NodeCallbacks): Node =
-    copy(nodeCallbacks = callbacks)
+  override def addCallbacks(callbacks: NodeCallbacks): Node =
+    copy(nodeCallbacks = nodeCallbacks + callbacks)
 
   override def start(): Future[Node] = {
     val res = for {
@@ -64,7 +63,7 @@ case class NeutrinoNode(
         scriptPubKeysToWatch,
         startOpt,
         endOpt)(ExecutionContext.fromExecutor(threadPool))
-      res <- fetchBlocks(blockHashes.map(_.flip))
+      res <- requestBlocks(blockHashes.map(_.flip))
     } yield {
       res
     }

@@ -6,7 +6,6 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.node.NodeApi
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -21,7 +20,6 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
-import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.NodeUnitTest.NodeFundedWalletBitcoind
@@ -254,10 +252,7 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createSpvNode(bitcoind, callbacks)
-      fundedWallet <- {
-        implicit val nodeApi: NodeApi = node
-        BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind)
-      }
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind, node)
     } yield {
       SpvNodeFundedWalletBitcoind(node = node,
                                   wallet = fundedWallet.wallet,
@@ -276,10 +271,7 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createNeutrinoNode(bitcoind, callbacks)
-      fundedWallet <- {
-        implicit val nodeApi: NodeApi = node
-        BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind)
-      }
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind, node)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = node,
                                        wallet = fundedWallet.wallet,

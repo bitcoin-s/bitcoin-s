@@ -36,8 +36,8 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
   }
 
-  implicit def nodeApi: NodeApi = new NodeApi {
-    override def fetchBlocks(
+  def nodeApi: NodeApi = new NodeApi {
+    override def requestBlocks(
         blockHashes: Vector[DoubleSha256Digest]): Future[Unit] =
       FutureUtil.unit
   }
@@ -45,7 +45,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome =
     walletConfig =>
-      makeDependentFixture(build = createNewWallet(Some(walletConfig)),
+      makeDependentFixture(build = createNewWallet(Some(walletConfig), nodeApi),
                            destroy = destroyWallet)
 
   /** Fixture for an initialized wallet which produce legacy addresses */
@@ -63,13 +63,18 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   }
 
   def withNewWallet(test: OneArgAsyncTest): FutureOutcome =
-    makeDependentFixture(build = createDefaultWallet _,
-                         destroy = destroyWallet)(test)
+    makeDependentFixture(build = { () =>
+      createDefaultWallet(nodeApi)
+    }, destroy = destroyWallet)(test)
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
-      builder = createDefaultWallet _,
-      dependentBuilder = createWalletWithBitcoind,
+      builder = { () =>
+        createDefaultWallet(nodeApi)
+      },
+      dependentBuilder = { (wallet: UnlockedWalletApi) =>
+        createWalletWithBitcoind(wallet)
+      },
       wrap = (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
         walletWithBitcoind
     )
@@ -81,8 +86,12 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   def withFundedWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] =
       composeBuildersAndWrapFuture(
-        builder = createDefaultWallet _,
-        dependentBuilder = createWalletWithBitcoind,
+        builder = { () =>
+          createDefaultWallet(nodeApi)
+        },
+        dependentBuilder = { (wallet: UnlockedWalletApi) =>
+          createWalletWithBitcoind(wallet)
+        },
         processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoind) =>
           fundWalletWithBitcoind(pair)
       )
@@ -119,10 +128,9 @@ object BitcoinSWalletTest extends WalletLogger {
     * example use this to override the default data directory, network
     * or account type.
     */
-  private def createNewWallet(extraConfig: Option[Config])(
+  private def createNewWallet(extraConfig: Option[Config], nodeApi: NodeApi)(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext,
-      nodeApi: NodeApi): () => Future[UnlockedWalletApi] =
+      ec: ExecutionContext): () => Future[UnlockedWalletApi] =
     () => {
       val defaultConf = config.walletConf
       val walletConfig = extraConfig match {
@@ -148,11 +156,10 @@ object BitcoinSWalletTest extends WalletLogger {
     }
 
   /** Creates a wallet with the default configuration  */
-  private def createDefaultWallet()(
+  private def createDefaultWallet(nodeApi: NodeApi)(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext,
-      nodeApi: NodeApi): Future[UnlockedWalletApi] =
-    createNewWallet(None)(config, ec, nodeApi)() // get the standard config
+      ec: ExecutionContext): Future[UnlockedWalletApi] =
+    createNewWallet(None, nodeApi)(config, ec)() // get the standard config
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
@@ -180,36 +187,28 @@ object BitcoinSWalletTest extends WalletLogger {
     Future.successful(WalletWithBitcoind(wallet, bitcoindRpcClient))
   }
 
-  /** Creates a default wallet, and then pairs it with a bitcoind instance that has money in the bitcoind wallet */
-  def createWalletWithBitcoind()(
-      implicit system: ActorSystem,
-      config: BitcoinSAppConfig,
-      nodeApi: NodeApi): Future[WalletWithBitcoind] = {
-    import system.dispatcher
-    val unlockedWalletApiF = createDefaultWallet()
-    unlockedWalletApiF.flatMap(u => createWalletWithBitcoind(u))
-  }
-
   /** Gives us a funded bitcoin-s wallet and the bitcoind instance that funded that wallet */
-  def fundedWalletAndBitcoind(versionOpt: Option[BitcoindVersion])(
+  def fundedWalletAndBitcoind(
+      versionOpt: Option[BitcoindVersion],
+      nodeApi: NodeApi)(
       implicit config: BitcoinSAppConfig,
-      system: ActorSystem,
-      nodeApi: NodeApi): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
-      wallet <- createDefaultWallet()
+      wallet <- createDefaultWallet(nodeApi)
       withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
   }
 
-  def fundedWalletAndBitcoind(bitcoindRpcClient: BitcoindRpcClient)(
+  def fundedWalletAndBitcoind(
+      bitcoindRpcClient: BitcoindRpcClient,
+      nodeApi: NodeApi)(
       implicit config: BitcoinSAppConfig,
-      system: ActorSystem,
-      nodeApi: NodeApi): Future[WalletWithBitcoind] = {
+      system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
-      wallet <- createDefaultWallet()
+      wallet <- createDefaultWallet(nodeApi)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded

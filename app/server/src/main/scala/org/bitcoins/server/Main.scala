@@ -161,7 +161,7 @@ object Main extends App {
       }
       callbacks <- createCallbacks(wallet)
     } yield {
-      nodeWithBloomFilter.setCallbacks(callbacks)
+      nodeWithBloomFilter.addCallbacks(callbacks)
     }
   }
 

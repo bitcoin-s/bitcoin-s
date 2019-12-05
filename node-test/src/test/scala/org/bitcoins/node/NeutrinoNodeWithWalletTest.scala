@@ -45,9 +45,9 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     walletF = walletP.future
   }
 
-  val OneBitcoin = 1.bitcoin
+  val TestAmount = 1.bitcoin
   val FeeRate = SatoshisPerByte(10.sats)
-  val Fees = 2240.sats
+  val TestFees = 2240.sats
 
   def callbacks: NodeCallbacks = {
     val onBlock: DataMessageHandler.OnBlockReceived = { block =>
@@ -94,16 +94,18 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       }
 
       val condition1 = () => {
-        condition(0.sats,
-                  BitcoinSWalletTest.initialFunds - OneBitcoin - Fees,
-                  1,
-                  2)
+        condition(
+          expectedConfirmedAmount = 0.sats,
+          expectedUnconfirmedAmount = BitcoinSWalletTest.initialFunds - TestAmount - TestFees,
+          expectedUtxos = 1,
+          expectedAddresses = 2)
       }
       val condition2 = { () =>
-        condition(OneBitcoin,
-                  BitcoinSWalletTest.initialFunds - OneBitcoin - Fees,
-                  2,
-                  3)
+        condition(
+          expectedConfirmedAmount = TestAmount,
+          expectedUnconfirmedAmount = BitcoinSWalletTest.initialFunds - TestAmount - TestFees,
+          expectedUtxos = 2,
+          expectedAddresses = 3)
       }
 
       for {
@@ -113,7 +115,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         // send
         addr <- bitcoind.getNewAddress
-        _ <- wallet.sendToAddress(addr, OneBitcoin, FeeRate)
+        _ <- wallet.sendToAddress(addr, TestAmount, FeeRate)
 
         _ <- bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
@@ -125,7 +127,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         // receive
         address <- wallet.getNewAddress()
         _ <- bitcoind
-          .sendToAddress(address, OneBitcoin)
+          .sendToAddress(address, TestAmount)
 
         _ <- bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
@@ -156,7 +158,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
           addresses <- wallet.listAddresses()
           utxos <- wallet.listUtxos()
         } yield {
-          balance == BitcoinSWalletTest.initialFunds + OneBitcoin &&
+          balance == BitcoinSWalletTest.initialFunds + TestAmount &&
           utxos.size == 2 &&
           addresses.map(_.scriptPubKey.hex).sorted == utxos
             .map(_.output.scriptPubKey.hex)
@@ -176,7 +178,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         address <- wallet.getNewAddress()
         _ <- bitcoind
-          .sendToAddress(address, OneBitcoin)
+          .sendToAddress(address, TestAmount)
 
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()

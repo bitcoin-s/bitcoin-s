@@ -30,8 +30,8 @@ case class SpvNode(
 
   override val peer: Peer = nodePeer
 
-  override def setCallbacks(callbacks: NodeCallbacks): Node =
-    copy(nodeCallbacks = callbacks)
+  override def addCallbacks(callbacks: NodeCallbacks): Node =
+    copy(nodeCallbacks = nodeCallbacks + callbacks)
 
   def setBloomFilter(bloom: BloomFilter): SpvNode =
     copy(bloomFilter = bloom)
