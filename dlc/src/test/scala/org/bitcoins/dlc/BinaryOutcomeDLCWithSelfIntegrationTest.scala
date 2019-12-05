@@ -199,7 +199,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         client <- clientF
         dlc <- constructDLC()
         messenger = BitcoindRpcMessengerRegtest(client)
-        setup <- dlc.setupDLC(Some(messenger))
+        setup <- dlc.setupDLC()
+        _ <- client.sendRawTransaction(setup.fundingTx)
+        _ <- messenger.waitForConfirmations(blocks = 6)
         outcome <- dlc.executeUnilateralDLC(setup,
                                             Future.successful(oracleSig),
                                             local,
@@ -213,7 +215,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         client <- clientF
         dlc <- constructDLC()
         messenger = BitcoindRpcMessengerRegtest(client)
-        setup <- dlc.setupDLC(Some(messenger))
+        setup <- dlc.setupDLC()
+        _ <- client.sendRawTransaction(setup.fundingTx)
+        _ <- messenger.waitForConfirmations(blocks = 6)
         outcome <- dlc.executeRefundDLC(setup, Some(messenger))
         assertion <- validateOutcome(outcome)
       } yield assertion

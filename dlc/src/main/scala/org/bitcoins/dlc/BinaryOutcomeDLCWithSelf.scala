@@ -333,8 +333,7 @@ case class BinaryOutcomeDLCWithSelf(
       refundTx: Transaction
   )
 
-  def setupDLC(
-      messengerOpt: Option[BitcoinP2PMessenger] = None): Future[SetupDLC] = {
+  def setupDLC(): Future[SetupDLC] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
       logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
@@ -365,21 +364,12 @@ case class BinaryOutcomeDLCWithSelf(
       refundTxF.foreach(refundTx =>
         logger.info(s"Refund Tx: ${refundTx.hex}\n"))
 
-      val fundingTxPublishedF = messengerOpt match {
-        case Some(messenger) =>
-          messenger
-            .sendTransaction(fundingTx)
-            .flatMap(_ => messenger.waitForConfirmations(blocks = 6))
-        case None => FutureUtil.unit
-      }
-
       for {
         cetWinLocal <- cetWinLocalF
         cetLoseLocal <- cetLoseLocalF
         cetWinRemote <- cetWinRemoteF
         cetLoseRemote <- cetLoseRemoteF
         refundTx <- refundTxF
-        _ <- fundingTxPublishedF
       } yield {
         SetupDLC(fundingTx,
                  fundingSpendingInfo,
