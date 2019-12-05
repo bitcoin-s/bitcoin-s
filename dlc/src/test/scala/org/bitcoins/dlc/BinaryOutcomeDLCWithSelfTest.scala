@@ -188,9 +188,19 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       val oracleSig =
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
-      dlc
-        .executeUnilateralDLC(Future.successful(oracleSig), local)
-        .map(validateOutcome)
+      dlc.setupDLC().flatMap { setup =>
+        dlc
+          .executeUnilateralDLC(setup, Future.successful(oracleSig), local)
+          .map(validateOutcome)
+      }
+    }
+
+    def executeRefundCase(): Future[Assertion] = {
+      val outcomeF = dlc.setupDLC().flatMap { setup =>
+        dlc.executeRefundDLC(setup)
+      }
+
+      outcomeF.map(validateOutcome)
     }
 
     for {
@@ -198,7 +208,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       _ <- executeUnilateralForCase(outcomeLoseHash, local = true)
       _ <- executeUnilateralForCase(outcomeWinHash, local = false)
       _ <- executeUnilateralForCase(outcomeLoseHash, local = false)
-      _ <- dlc.executeRefundDLC().map(validateOutcome)
+      _ <- executeRefundCase()
     } yield succeed
   }
 }

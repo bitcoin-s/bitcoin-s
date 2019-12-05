@@ -67,7 +67,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    def setupDLC(): Future[BinaryOutcomeDLCWithSelf] = {
+    def constructDLC(): Future[BinaryOutcomeDLCWithSelf] = {
       def fundingInput(input: CurrencyUnit): Bitcoins = {
         Bitcoins((input + Satoshis(Int64(200))).satoshis)
       }
@@ -197,9 +197,11 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
 
       for {
         client <- clientF
-        dlc <- setupDLC()
+        dlc <- constructDLC()
         messenger = BitcoindRpcMessengerRegtest(client)
-        outcome <- dlc.executeUnilateralDLC(Future.successful(oracleSig),
+        setup <- dlc.setupDLC(Some(messenger))
+        outcome <- dlc.executeUnilateralDLC(setup,
+                                            Future.successful(oracleSig),
                                             local,
                                             Some(messenger))
         validation <- validateOutcome(outcome)
@@ -209,9 +211,10 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     def executeForRefundCase(): Future[Assertion] = {
       for {
         client <- clientF
-        dlc <- setupDLC()
-        outcome <- dlc.executeRefundDLC(
-          Some(BitcoindRpcMessengerRegtest(client)))
+        dlc <- constructDLC()
+        messenger = BitcoindRpcMessengerRegtest(client)
+        setup <- dlc.setupDLC(Some(messenger))
+        outcome <- dlc.executeRefundDLC(setup, Some(messenger))
         assertion <- validateOutcome(outcome)
       } yield assertion
     }

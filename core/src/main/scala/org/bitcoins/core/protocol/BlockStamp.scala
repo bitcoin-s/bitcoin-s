@@ -6,6 +6,7 @@ import java.time.temporal.{ChronoField, TemporalAccessor}
 
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.script.constant.ScriptNumber
 
 import scala.util.{Failure, Try}
 
@@ -17,6 +18,7 @@ sealed trait BlockStamp {
 /** This trait represents a point on the blockchain, including future points */
 sealed trait BlockStampWithFuture extends BlockStamp {
   def toUInt32: UInt32
+  def toScriptNumber: ScriptNumber
 }
 
 object BlockStamp {
@@ -30,6 +32,7 @@ object BlockStamp {
     require(height >= 0, "block height must be a positive number")
     override def mkString: String = height.toString
     override def toUInt32: UInt32 = UInt32(height)
+    override def toScriptNumber: ScriptNumber = ScriptNumber(height)
   }
   case class BlockTime(time: UInt32) extends BlockStampWithFuture {
     override def mkString: String = {
@@ -37,6 +40,7 @@ object BlockStamp {
       DateTimeFormatter.ISO_INSTANT.format(instant)
     }
     override def toUInt32: UInt32 = time
+    override def toScriptNumber: ScriptNumber = ScriptNumber(time.toLong)
   }
 
   /** This is Tue Nov  5 00:53:20 1985 UTC
