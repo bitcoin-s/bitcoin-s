@@ -381,7 +381,7 @@ case class BinaryOutcomeDLCWithSelf(
     }
   }
 
-  def publishClosingTx(
+  def constructClosingTx(
       cetOutput: TransactionOutput,
       privKey: ECPrivateKey,
       spendingInfo: BitcoinUTXOSpendingInfo,
@@ -474,14 +474,14 @@ case class BinaryOutcomeDLCWithSelf(
         (otherOutput, otherCetSpendingInfo, output, cetSpendingInfo)
       }
 
-      val localSpendingTxF = publishClosingTx(localOutput,
-                                              finalLocalPrivKey,
-                                              localCetSpendingInfo,
-                                              isLocal = true)
-      val remoteSpendingTxF = publishClosingTx(remoteOutput,
-                                               finalRemotePrivKey,
-                                               remoteCetSpendingInfo,
-                                               isLocal = false)
+      val localSpendingTxF = constructClosingTx(localOutput,
+                                                finalLocalPrivKey,
+                                                localCetSpendingInfo,
+                                                isLocal = true)
+      val remoteSpendingTxF = constructClosingTx(remoteOutput,
+                                                 finalRemotePrivKey,
+                                                 remoteCetSpendingInfo,
+                                                 isLocal = false)
 
       localSpendingTxF.flatMap { localSpendingTx =>
         remoteSpendingTxF.map { remoteSpendingTx =>
@@ -527,14 +527,14 @@ case class BinaryOutcomeDLCWithSelf(
       HashType.sigHashAll
     )
 
-    val localSpendingTxF = publishClosingTx(localOutput,
-                                            finalLocalPrivKey,
-                                            localRefundSpendingInfo,
-                                            isLocal = true)
-    val remoteSpendingTxF = publishClosingTx(remoteOutput,
-                                             finalRemotePrivKey,
-                                             remoteRefundSpendingInfo,
-                                             isLocal = false)
+    val localSpendingTxF = constructClosingTx(localOutput,
+                                              finalLocalPrivKey,
+                                              localRefundSpendingInfo,
+                                              isLocal = true)
+    val remoteSpendingTxF = constructClosingTx(remoteOutput,
+                                               finalRemotePrivKey,
+                                               remoteRefundSpendingInfo,
+                                               isLocal = false)
 
     localSpendingTxF.flatMap { localSpendingTx =>
       remoteSpendingTxF.map { remoteSpendingTx =>
