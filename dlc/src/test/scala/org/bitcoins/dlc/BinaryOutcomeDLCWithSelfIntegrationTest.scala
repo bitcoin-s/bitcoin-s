@@ -17,6 +17,7 @@ import org.bitcoins.core.currency.{
 }
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
@@ -29,7 +30,6 @@ import org.scalatest.Assertion
 import scodec.bits.ByteVector
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 
 class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
   private val clientsF = BitcoindRpcTestUtil.createNodePairV18(clientAccum)
@@ -67,12 +67,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     val changePubKey = changePrivKey.publicKey
     val changeSPK = P2PKHScriptPubKey(changePubKey)
 
-    def executeForCase(
-        outcomeHash: Sha256DigestBE,
-        local: Boolean): Future[Assertion] = {
-      val oracleSig =
-        Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
-
+    def constructDLC(): Future[BinaryOutcomeDLCWithSelf] = {
       def fundingInput(input: CurrencyUnit): Bitcoins = {
         Bitcoins((input + Satoshis(Int64(200))).satoshis)
       }
@@ -147,10 +142,13 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         .flatMap(_.getNetworkInfo.map(_.relayfee))
         .map(btc => SatoshisPerByte(btc.satoshis))
 
-      val dlcF = for {
+      for {
         localFundingUtxos <- localFundingUtxosF
         remoteFundingUtxos <- remoteFundingUtxosF
         feeRate <- feeRateF
+        client <- clientF
+        currentHeight <- client.getBlockCount
+        tomorrowInBlocks = BlockHeight(currentHeight + 144)
       } yield {
         BinaryOutcomeDLCWithSelf(
           outcomeWin = outcomeWin,
@@ -165,32 +163,68 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
           remoteFundingUtxos = remoteFundingUtxos,
           localWinPayout = localInput + CurrencyUnits.oneMBTC,
           localLosePayout = localInput - CurrencyUnits.oneMBTC,
-          timeout = 1.day.toMillis.toInt,
+          timeout = tomorrowInBlocks,
           feeRate = feeRate,
           changeSPK = changeSPK,
           network = RegTest
         )
       }
+    }
 
+    def validateOutcome(outcome: DLCOutcome): Future[Assertion] = {
       for {
         client <- clientF
-        dlc <- dlcF
-        messenger = BitcoindRpcMessengerRegtest(client)
-        outcome <- dlc.executeDLC(Future.successful(oracleSig),
-                                  local,
-                                  Some(messenger))
-        regtestClosingTx <- client.getRawTransaction(outcome.closingTx.txIdBE)
+        regtestLocalClosingTx <- client.getRawTransaction(
+          outcome.localClosingTx.txIdBE)
+        regtestRemoteClosingTx <- client.getRawTransaction(
+          outcome.remoteClosingTx.txIdBE)
       } yield {
-        assert(regtestClosingTx.hex == outcome.closingTx)
-        assert(regtestClosingTx.confirmations.contains(6))
+        assert(regtestLocalClosingTx.hex == outcome.localClosingTx)
+        assert(regtestLocalClosingTx.confirmations.isDefined)
+        assert(regtestLocalClosingTx.confirmations.get >= 6)
+
+        assert(regtestRemoteClosingTx.hex == outcome.remoteClosingTx)
+        assert(regtestRemoteClosingTx.confirmations.isDefined)
+        assert(regtestRemoteClosingTx.confirmations.get >= 6)
       }
     }
 
+    def executeForUnilateralCase(
+        outcomeHash: Sha256DigestBE,
+        local: Boolean): Future[Assertion] = {
+      val oracleSig =
+        Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
+
+      for {
+        client <- clientF
+        dlc <- constructDLC()
+        messenger = BitcoindRpcMessengerRegtest(client)
+        setup <- dlc.setupDLC(Some(messenger))
+        outcome <- dlc.executeUnilateralDLC(setup,
+                                            Future.successful(oracleSig),
+                                            local,
+                                            Some(messenger))
+        validation <- validateOutcome(outcome)
+      } yield validation
+    }
+
+    def executeForRefundCase(): Future[Assertion] = {
+      for {
+        client <- clientF
+        dlc <- constructDLC()
+        messenger = BitcoindRpcMessengerRegtest(client)
+        setup <- dlc.setupDLC(Some(messenger))
+        outcome <- dlc.executeRefundDLC(setup, Some(messenger))
+        assertion <- validateOutcome(outcome)
+      } yield assertion
+    }
+
     for {
-      _ <- executeForCase(outcomeWinHash, local = true)
-      _ <- executeForCase(outcomeLoseHash, local = true)
-      _ <- executeForCase(outcomeWinHash, local = false)
-      _ <- executeForCase(outcomeLoseHash, local = false)
+      _ <- executeForUnilateralCase(outcomeWinHash, local = true)
+      _ <- executeForUnilateralCase(outcomeLoseHash, local = true)
+      _ <- executeForUnilateralCase(outcomeWinHash, local = false)
+      _ <- executeForUnilateralCase(outcomeLoseHash, local = false)
+      _ <- executeForRefundCase()
     } yield succeed
   }
 }
