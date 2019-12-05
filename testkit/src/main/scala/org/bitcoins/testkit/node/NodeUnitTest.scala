@@ -343,15 +343,13 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       SpvNode(
         nodePeer = peer,
-        bloomFilter = NodeTestUtil.emptyBloomFilter,
-        nodeCallbacks = callbacks,
         nodeConfig = nodeAppConfig,
         chainConfig = chainAppConfig,
         actorSystem = system
-      )
+      ).setBloomFilter(NodeTestUtil.emptyBloomFilter)
     }
 
-    nodeF.flatMap(_.start()).flatMap(_ => nodeF)
+    nodeF.flatMap(_.addCallbacks(callbacks).start()).flatMap(_ => nodeF)
   }
 
   /** Creates a Neutrino node peered with the given bitcoind client, this method
@@ -374,13 +372,12 @@ object NodeUnitTest extends P2PLogger {
       _ <- chainApiF
     } yield {
       NeutrinoNode(nodePeer = peer,
-                   nodeCallbacks = callbacks,
                    nodeConfig = nodeAppConfig,
                    chainConfig = chainAppConfig,
                    actorSystem = system)
     }
 
-    nodeF.flatMap(_.start()).flatMap(_ => nodeF)
+    nodeF.flatMap(_.addCallbacks(callbacks).start()).flatMap(_ => nodeF)
   }
 
 }

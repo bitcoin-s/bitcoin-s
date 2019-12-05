@@ -18,8 +18,8 @@ case class NodeCallbacks(
   def +(other: NodeCallbacks): NodeCallbacks = copy(
     onCompactFilterReceived = onCompactFilterReceived ++ other.onCompactFilterReceived,
     onTxReceived = onTxReceived ++ other.onTxReceived,
-    onBlockReceived = onBlockReceived ++ onBlockReceived,
-    onMerkleBlockReceived = onMerkleBlockReceived ++ onMerkleBlockReceived
+    onBlockReceived = onBlockReceived ++ other.onBlockReceived,
+    onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived
   )
 }
 

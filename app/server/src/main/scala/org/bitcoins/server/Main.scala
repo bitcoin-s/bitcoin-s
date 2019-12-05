@@ -5,7 +5,6 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.node.NodeApi
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -81,20 +80,9 @@ object Main extends App {
 
   private def createNode: Future[Node] = {
     if (nodeConf.isSPVEnabled) {
-      Future.successful(
-        SpvNode(peer,
-                bloomFilter = BloomFilter.empty,
-                nodeCallbacks = NodeCallbacks.empty,
-                nodeConf,
-                chainConf,
-                system))
+      Future.successful(SpvNode(peer, nodeConf, chainConf, system))
     } else if (nodeConf.isNeutrinoEnabled) {
-      Future.successful(
-        NeutrinoNode(peer,
-                     nodeCallbacks = NodeCallbacks.empty,
-                     nodeConf,
-                     chainConf,
-                     system))
+      Future.successful(NeutrinoNode(peer, nodeConf, chainConf, system))
     } else {
       Future.failed(
         new RuntimeException("Neither Neutrino nor SPV mode is enabled."))

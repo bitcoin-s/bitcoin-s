@@ -8,7 +8,6 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.node.NodeApi
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
@@ -26,6 +25,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageSender
 }
+import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
 import org.bitcoins.rpc.util.AsyncUtil
 import slick.jdbc.SQLiteProfile
 
@@ -48,9 +48,14 @@ trait Node extends NodeApi with P2PLogger {
 
   val peer: Peer
 
-  val nodeCallbacks: NodeCallbacks
+  private val callbacks = new Mutable(NodeCallbacks.empty)
 
-  def addCallbacks(callbacks: NodeCallbacks): Node
+  def nodeCallbacks: NodeCallbacks = callbacks.atomicGet
+
+  def addCallbacks(newCallbacks: NodeCallbacks): Node = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+    this
+  }
 
   lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 

@@ -6,7 +6,6 @@ import org.bitcoins.core.number.{Int32, Int64, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.p2p._
-import org.bitcoins.node.util.BitcoinSpvNodeUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class RawVersionMessageSerializerTest extends BitcoinSUnitTest {
