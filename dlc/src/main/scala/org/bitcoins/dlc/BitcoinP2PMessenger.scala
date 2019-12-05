@@ -14,6 +14,9 @@ trait BitcoinP2PMessenger {
 
   /** Returns a Future that completes when the specified number of blocks have been mined. */
   def waitForConfirmations(blocks: Int): Future[Unit]
+
+  /** Returns a Future that completes once a specified number of blocks have been mined. */
+  def waitUntilBlockHeight(blockHeight: Int): Future[Unit]
 }
 
 /** For use in testing DLC client with Regtest bitcoind node. */
@@ -30,5 +33,14 @@ case class BitcoindRpcMessengerRegtest(client: BitcoindRpcClient)(
     addressForMiningF.flatMap { addressForMining =>
       client.generateToAddress(blocks, addressForMining).map(_ => ())
     }
+  }
+
+  override def waitUntilBlockHeight(blockHeight: Int): Future[Unit] = {
+    for {
+      currentCount <- client.getBlockCount
+      blocksToMine = blockHeight - currentCount
+      addressForMining <- addressForMiningF
+      _ <- client.generateToAddress(blocksToMine, addressForMining)
+    } yield ()
   }
 }
