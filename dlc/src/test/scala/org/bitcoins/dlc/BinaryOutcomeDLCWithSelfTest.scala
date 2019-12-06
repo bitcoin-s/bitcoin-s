@@ -57,12 +57,14 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
 
         val inputKey = ECPrivateKey.freshPrivateKey
         val utxos: Vector[BitcoinUTXOSpendingInfo] = Vector(
-          P2PKHSpendingInfo(TransactionOutPoint(DoubleSha256DigestBE.empty,
-                                                UInt32.zero),
-                            totalInput,
-                            P2PKHScriptPubKey(inputKey.publicKey),
-                            inputKey,
-                            HashType.sigHashAll))
+          P2PKHSpendingInfo(
+            outPoint =
+              TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+            amount = totalInput,
+            scriptPubKey = P2PKHScriptPubKey(inputKey.publicKey),
+            signer = inputKey,
+            hashType = HashType.sigHashAll
+          ))
         val changeSPK = EmptyScriptPubKey
         val network: BitcoinNetwork = RegTest
 
