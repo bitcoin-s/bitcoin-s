@@ -31,8 +31,8 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
 
       if (elements.size < 3) None
       else {
-        val creditingTxsInfo
-          : Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] =
+        val creditingTxsInfo: Seq[
+          (TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] =
           elements.head match {
             case array: JsArray => parseOutPointsScriptPubKeysAmount(array)
             case _: JsValue =>
@@ -58,8 +58,8 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
     * These are in the following format
     * [[prevout hash, prevout index, prevout scriptPubKey, amount], [input 2], ...]
     */
-  def parseOutPointsScriptPubKeysAmount(array: JsArray)
-    : Seq[(TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] = {
+  def parseOutPointsScriptPubKeysAmount(array: JsArray): Seq[
+    (TransactionOutPoint, ScriptPubKey, Option[CurrencyUnit])] = {
     val result = array.elements.map {
       case array: JsArray =>
         val prevoutHashHex =
