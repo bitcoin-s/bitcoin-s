@@ -16,7 +16,7 @@ import org.bitcoins.core.currency.{
   CurrencyUnits,
   Satoshis
 }
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
@@ -44,6 +44,16 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       addressForMining <- addressForMiningF
       _ <- client.generateToAddress(blocks = 6, addressForMining)
     } yield txid
+  }
+
+  def waitUntilBlock(blockHeight: Int): Future[Unit] = {
+    for {
+      client <- clientF
+      addressForMining <- addressForMiningF
+      _ <- BitcoindRpcTestUtil.waitUntilBlock(blockHeight,
+                                              client,
+                                              addressForMining)
+    } yield ()
   }
 
   behavior of "BinaryOutcomeDLCWithSelf"
@@ -220,18 +230,48 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
 
     def executeForRefundCase(): Future[Assertion] = {
       for {
-        client <- clientF
         dlc <- constructDLC()
         setup <- dlc.setupDLC()
         _ <- publishTransaction(setup.fundingTx)
         outcome <- dlc.executeRefundDLC(setup)
-        currentCount <- client.getBlockCount
-        blocksToMine = dlc.timeout.toUInt32.toInt - currentCount
-        addressForMining <- addressForMiningF
-        _ <- client.generateToAddress(blocks = blocksToMine, addressForMining)
+        _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt)
         _ <- publishTransaction(outcome.cet)
         _ <- publishTransaction(outcome.localClosingTx)
         _ <- publishTransaction(outcome.remoteClosingTx)
+        assertion <- validateOutcome(outcome)
+      } yield assertion
+    }
+
+    def executeForJusticeCase(
+        fakeWin: Boolean,
+        local: Boolean): Future[Assertion] = {
+      def chooseCET(setup: SetupDLC): Transaction = {
+        if (fakeWin) {
+          if (local) {
+            setup.cetWinRemote
+          } else {
+            setup.cetWinLocal
+          }
+        } else {
+          if (local) {
+            setup.cetLoseRemote
+          } else {
+            setup.cetLoseLocal
+          }
+        }
+      }
+
+      for {
+        dlc <- constructDLC()
+        setup <- dlc.setupDLC()
+        cetWronglyPublished = chooseCET(setup)
+        _ <- publishTransaction(setup.fundingTx)
+        _ <- publishTransaction(cetWronglyPublished)
+        outcome <- dlc.executeJusticeDLC(setup, cetWronglyPublished, local)
+        _ = assert(outcome.cet == cetWronglyPublished)
+        _ <- publishTransaction(outcome.remoteClosingTx)
+        _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt)
+        _ <- publishTransaction(outcome.localClosingTx)
         assertion <- validateOutcome(outcome)
       } yield assertion
     }
@@ -242,6 +282,10 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       _ <- executeForUnilateralCase(outcomeWinHash, local = false)
       _ <- executeForUnilateralCase(outcomeLoseHash, local = false)
       _ <- executeForRefundCase()
+      _ <- executeForJusticeCase(fakeWin = true, local = true)
+      _ <- executeForJusticeCase(fakeWin = true, local = false)
+      _ <- executeForJusticeCase(fakeWin = false, local = true)
+      _ <- executeForJusticeCase(fakeWin = false, local = false)
     } yield succeed
   }
 }
