@@ -37,7 +37,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
 
   val amountFromBitcoind = 1.bitcoin
 
-  def callbacks: SpvNodeCallbacks = {
+  def callbacks: NodeCallbacks = {
     val onTx: DataMessageHandler.OnTxReceived = { tx =>
       for {
         expectedTxId <- expectedTxIdF
@@ -55,7 +55,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
         }
       }
     }
-    SpvNodeCallbacks(
+    NodeCallbacks(
       onTxReceived = Seq(onTx)
     )
   }

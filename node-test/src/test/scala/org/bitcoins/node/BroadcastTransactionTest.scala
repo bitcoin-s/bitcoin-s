@@ -23,7 +23,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNeutrinoNodeFundedWalletBitcoind(test, SpvNodeCallbacks.empty)
+    withNeutrinoNodeFundedWalletBitcoind(test, NodeCallbacks.empty)
 
   it must "broadcast a transaction" in { param =>
     val NeutrinoNodeFundedWalletBitcoind(node, wallet, rpc) = param

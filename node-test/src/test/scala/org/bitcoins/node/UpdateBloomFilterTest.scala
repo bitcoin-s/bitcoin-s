@@ -73,9 +73,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       }
   }
 
-  def callbacks: SpvNodeCallbacks = {
-    SpvNodeCallbacks(onTxReceived = Vector(addressCallback),
-                     onMerkleBlockReceived = Vector(txCallback))
+  def callbacks: NodeCallbacks = {
+    NodeCallbacks(onTxReceived = Vector(addressCallback),
+                  onMerkleBlockReceived = Vector(txCallback))
   }
 
   it must "update the bloom filter with an address" in { param =>
