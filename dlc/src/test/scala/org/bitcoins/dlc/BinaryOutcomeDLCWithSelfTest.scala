@@ -203,12 +203,39 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
       outcomeF.map(validateOutcome)
     }
 
+    def executeJusticeCase(
+        fakeWin: Boolean,
+        local: Boolean): Future[Assertion] = {
+      dlc.setupDLC().flatMap { setup =>
+        val timedOutCET = if (fakeWin) {
+          if (local) {
+            setup.cetWinRemote
+          } else {
+            setup.cetWinLocal
+          }
+        } else {
+          if (local) {
+            setup.cetLoseRemote
+          } else {
+            setup.cetLoseLocal
+          }
+        }
+        val outcomeF = dlc.executeJusticeDLC(setup, timedOutCET, local)
+
+        outcomeF.map(validateOutcome)
+      }
+    }
+
     for {
       _ <- executeUnilateralForCase(outcomeWinHash, local = true)
       _ <- executeUnilateralForCase(outcomeLoseHash, local = true)
       _ <- executeUnilateralForCase(outcomeWinHash, local = false)
       _ <- executeUnilateralForCase(outcomeLoseHash, local = false)
       _ <- executeRefundCase()
+      _ <- executeJusticeCase(fakeWin = true, local = true)
+      _ <- executeJusticeCase(fakeWin = true, local = false)
+      _ <- executeJusticeCase(fakeWin = false, local = true)
+      _ <- executeJusticeCase(fakeWin = false, local = false)
     } yield succeed
   }
 }
