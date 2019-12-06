@@ -49,10 +49,10 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
   def waitUntilBlock(blockHeight: Int): Future[Unit] = {
     for {
       client <- clientF
-      currentCount <- client.getBlockCount
-      blocksToMine = blockHeight - currentCount
       addressForMining <- addressForMiningF
-      _ <- client.generateToAddress(blocks = blocksToMine, addressForMining)
+      _ <- BitcoindRpcTestUtil.waitUntilBlock(blockHeight,
+                                              client,
+                                              addressForMining)
     } yield ()
   }
 
@@ -264,9 +264,11 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       for {
         dlc <- constructDLC()
         setup <- dlc.setupDLC()
+        cetWronglyPublished = chooseCET(setup)
         _ <- publishTransaction(setup.fundingTx)
-        outcome <- dlc.executeJusticeDLC(setup, chooseCET(setup), local)
-        _ <- publishTransaction(outcome.cet)
+        _ <- publishTransaction(cetWronglyPublished)
+        outcome <- dlc.executeJusticeDLC(setup, cetWronglyPublished, local)
+        _ = assert(outcome.cet == cetWronglyPublished)
         _ <- publishTransaction(outcome.remoteClosingTx)
         _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt)
         _ <- publishTransaction(outcome.localClosingTx)

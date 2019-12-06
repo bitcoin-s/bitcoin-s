@@ -372,14 +372,13 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def constructClosingTx(
-      cetOutput: TransactionOutput,
       privKey: ECPrivateKey,
       spendingInfo: BitcoinUTXOSpendingInfo,
       isLocal: Boolean): Future[Transaction] = {
     // Construct Closing Transaction
     val txBuilder = BitcoinTxBuilder(
       Vector(
-        TransactionOutput(cetOutput.value,
+        TransactionOutput(spendingInfo.output.value,
                           P2PKHScriptPubKey(privKey.publicKey))),
       Vector(spendingInfo),
       feeRate,
@@ -455,21 +454,16 @@ case class BinaryOutcomeDLCWithSelf(
         HashType.sigHashAll
       )
 
-      val (localOutput,
-           localCetSpendingInfo,
-           remoteOutput,
-           remoteCetSpendingInfo) = if (local) {
-        (output, cetSpendingInfo, otherOutput, otherCetSpendingInfo)
+      val (localCetSpendingInfo, remoteCetSpendingInfo) = if (local) {
+        (cetSpendingInfo, otherCetSpendingInfo)
       } else {
-        (otherOutput, otherCetSpendingInfo, output, cetSpendingInfo)
+        (otherCetSpendingInfo, cetSpendingInfo)
       }
 
-      val localSpendingTxF = constructClosingTx(localOutput,
-                                                finalLocalPrivKey,
+      val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
                                                 localCetSpendingInfo,
                                                 isLocal = true)
-      val remoteSpendingTxF = constructClosingTx(remoteOutput,
-                                                 finalRemotePrivKey,
+      val remoteSpendingTxF = constructClosingTx(finalRemotePrivKey,
                                                  remoteCetSpendingInfo,
                                                  isLocal = false)
 
@@ -490,6 +484,11 @@ case class BinaryOutcomeDLCWithSelf(
     }
   }
 
+  /** Constructs and executes on the justice spending branch of a DLC
+    * where a published CET has timed out.
+    *
+    * @return Each transaction published and its spending info
+    */
   def executeJusticeDLC(
       dlcSetup: SetupDLC,
       timedOutCET: Transaction,
@@ -535,12 +534,9 @@ case class BinaryOutcomeDLCWithSelf(
     }
 
     val justiceSpendingTxF =
-      constructClosingTx(justiceOutput,
-                         finalPrivKey,
-                         justiceSpendingInfo,
-                         local)
+      constructClosingTx(finalPrivKey, justiceSpendingInfo, local)
     val normalSpendingTxF =
-      constructClosingTx(normalOutput, finalPrivKey, normalSpendingInfo, local)
+      constructClosingTx(finalPrivKey, normalSpendingInfo, local)
 
     justiceSpendingTxF.flatMap { justiceSpendingTx =>
       normalSpendingTxF.map { normalSpendingTx =>
@@ -586,12 +582,10 @@ case class BinaryOutcomeDLCWithSelf(
       HashType.sigHashAll
     )
 
-    val localSpendingTxF = constructClosingTx(localOutput,
-                                              finalLocalPrivKey,
+    val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
                                               localRefundSpendingInfo,
                                               isLocal = true)
-    val remoteSpendingTxF = constructClosingTx(remoteOutput,
-                                               finalRemotePrivKey,
+    val remoteSpendingTxF = constructClosingTx(finalRemotePrivKey,
                                                remoteRefundSpendingInfo,
                                                isLocal = false)
 
