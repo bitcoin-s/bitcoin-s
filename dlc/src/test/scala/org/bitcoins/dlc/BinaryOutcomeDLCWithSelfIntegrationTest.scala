@@ -25,6 +25,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2PKHSpendingInfo
+import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest.Assertion
@@ -234,6 +235,11 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         setup <- dlc.setupDLC()
         _ <- publishTransaction(setup.fundingTx)
         outcome <- dlc.executeRefundDLC(setup)
+        _ <- recoverToSucceededIf[BitcoindException](
+          publishTransaction(outcome.cet))
+        _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt - 1)
+        _ <- recoverToSucceededIf[BitcoindException](
+          publishTransaction(outcome.cet))
         _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt)
         _ <- publishTransaction(outcome.cet)
         _ <- publishTransaction(outcome.localClosingTx)
@@ -270,6 +276,11 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         outcome <- dlc.executeJusticeDLC(setup, cetWronglyPublished, local)
         _ = assert(outcome.cet == cetWronglyPublished)
         _ <- publishTransaction(outcome.remoteClosingTx)
+        _ <- recoverToSucceededIf[BitcoindException](
+          publishTransaction(outcome.localClosingTx))
+        _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt - 1)
+        _ <- recoverToSucceededIf[BitcoindException](
+          publishTransaction(outcome.localClosingTx))
         _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt)
         _ <- publishTransaction(outcome.localClosingTx)
         assertion <- validateOutcome(outcome)
