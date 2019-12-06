@@ -390,8 +390,10 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   it must "succeed to sign a cltv spk that uses a second-based locktime" in {
     val fundingPrivKey = ECPrivateKey.freshPrivateKey
 
+    val lockTime = System.currentTimeMillis / 1000
+
     val cltvSPK =
-      CLTVScriptPubKey(ScriptNumber(System.currentTimeMillis / 1000),
+      CLTVScriptPubKey(ScriptNumber(lockTime),
                        P2PKScriptPubKey(fundingPrivKey.publicKey))
 
     val cltvSpendingInfo = LockTimeSpendingInfo(
@@ -414,7 +416,91 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         RegTest
       )
 
-    txBuilderF.flatMap(_.sign).map(_ => succeed)
+    txBuilderF
+      .flatMap(_.sign)
+      .map(tx => assert(tx.lockTime == UInt32(lockTime)))
+  }
+
+  it must "succeed to sign a cltv spk that uses a block height locktime" in {
+    val fundingPrivKey = ECPrivateKey.freshPrivateKey
+
+    val lockTime = 1000
+
+    val cltvSPK =
+      CLTVScriptPubKey(ScriptNumber(lockTime),
+                       P2PKScriptPubKey(fundingPrivKey.publicKey))
+
+    val cltvSpendingInfo = LockTimeSpendingInfo(
+      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+      Bitcoins.one,
+      cltvSPK,
+      Vector(fundingPrivKey),
+      HashType.sigHashAll,
+      ConditionalPath.NoConditionsLeft
+    )
+
+    val txBuilderF =
+      BitcoinTxBuilder(
+        Vector(
+          TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
+                            EmptyScriptPubKey)),
+        Vector(cltvSpendingInfo),
+        SatoshisPerByte(Satoshis.one),
+        EmptyScriptPubKey,
+        RegTest
+      )
+
+    txBuilderF
+      .flatMap(_.sign)
+      .map(tx => assert(tx.lockTime == UInt32(lockTime)))
+  }
+
+  it must "fail to sign a cltv spk that uses both a second-based and a block height locktime" in {
+    val fundingPrivKey1 = ECPrivateKey.freshPrivateKey
+    val fundingPrivKey2 = ECPrivateKey.freshPrivateKey
+
+    val lockTime1 = System.currentTimeMillis / 1000
+    val lockTime2 = 1000
+
+    val cltvSPK1 =
+      CLTVScriptPubKey(ScriptNumber(lockTime1),
+                       P2PKScriptPubKey(fundingPrivKey1.publicKey))
+    val cltvSPK2 =
+      CLTVScriptPubKey(ScriptNumber(lockTime2),
+                       P2PKScriptPubKey(fundingPrivKey2.publicKey))
+
+    val cltvSpendingInfo1 = LockTimeSpendingInfo(
+      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+      Bitcoins.one,
+      cltvSPK1,
+      Vector(fundingPrivKey1),
+      HashType.sigHashAll,
+      ConditionalPath.NoConditionsLeft
+    )
+
+    val cltvSpendingInfo2 = LockTimeSpendingInfo(
+      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.one),
+      Bitcoins.one,
+      cltvSPK2,
+      Vector(fundingPrivKey2),
+      HashType.sigHashAll,
+      ConditionalPath.NoConditionsLeft
+    )
+
+    val txBuilderF =
+      BitcoinTxBuilder(
+        Vector(
+          TransactionOutput(Bitcoins.one + Bitcoins.one - CurrencyUnits.oneMBTC,
+                            EmptyScriptPubKey)),
+        Vector(cltvSpendingInfo1, cltvSpendingInfo2),
+        SatoshisPerByte(Satoshis.one),
+        EmptyScriptPubKey,
+        RegTest
+      )
+
+    recoverToSucceededIf[IllegalArgumentException](
+      txBuilderF.flatMap(_.unsignedTx)
+    )
   }
 
   def verifyScript(tx: Transaction, utxos: Seq[UTXOSpendingInfo]): Boolean = {
