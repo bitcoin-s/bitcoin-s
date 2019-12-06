@@ -9,7 +9,7 @@ import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.p2p.{HeadersMessage, NetworkMessage, VersionMessage}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.node.SpvNodeCallbacks
+import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.server.BitcoinSAppConfig
@@ -24,12 +24,10 @@ import scodec.bits._
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class P2PClientTest
-    extends BitcoindRpcTest {
+class P2PClientTest extends BitcoindRpcTest {
 
   implicit private val config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
-
 
   lazy val bitcoindRpcF =
     BitcoindRpcTestUtil.startedBitcoindRpcClient(clientAccum = clientAccum)
@@ -162,7 +160,7 @@ class P2PClientTest
     val probe = TestProbe()
     val remote = peer.socket
     val peerMessageReceiverF =
-      PeerMessageReceiver.preConnection(peer, SpvNodeCallbacks.empty)
+      PeerMessageReceiver.preConnection(peer, NodeCallbacks.empty)
 
     val clientActorF: Future[TestActorRef[P2PClientActor]] =
       peerMessageReceiverF.map { peerMsgRecv =>

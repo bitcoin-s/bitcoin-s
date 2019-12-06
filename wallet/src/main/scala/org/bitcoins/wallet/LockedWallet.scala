@@ -1,24 +1,25 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
-import org.bitcoins.wallet.api._
-import org.bitcoins.wallet.models._
-
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import org.bitcoins.keymanager.ReadMnemonicError.DecryptionError
-import org.bitcoins.keymanager.ReadMnemonicError.JsonParsingError
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.bloom.BloomUpdateAll
-import org.bitcoins.wallet.internal._
+import org.bitcoins.core.node.NodeApi
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.keymanager.ReadMnemonicError.{
+  DecryptionError,
+  JsonParsingError
+}
 import org.bitcoins.keymanager.{
   ReadMnemonicError,
   ReadMnemonicSuccess,
   WalletStorage
 }
+import org.bitcoins.wallet.api._
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.internal._
+import org.bitcoins.wallet.models._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 abstract class LockedWallet
     extends LockedWalletApi
@@ -82,7 +83,7 @@ abstract class LockedWallet
 
       case ReadMnemonicSuccess(mnemonic) =>
         logger.debug(s"Successfully uunlocked wallet")
-        UnlockWalletSuccess(Wallet(mnemonic))
+        UnlockWalletSuccess(Wallet(mnemonic, nodeApi))
     }
   }
 
@@ -131,13 +132,13 @@ abstract class LockedWallet
 }
 
 object LockedWallet {
-  private case class LockedWalletImpl()(
+  private case class LockedWalletImpl(override val nodeApi: NodeApi)(
       implicit val ec: ExecutionContext,
       val walletConfig: WalletAppConfig)
-      extends LockedWallet
+      extends LockedWallet {}
 
-  def apply()(
+  def apply(nodeApi: NodeApi)(
       implicit ec: ExecutionContext,
-      config: WalletAppConfig): LockedWallet = LockedWalletImpl()
+      config: WalletAppConfig): LockedWallet = LockedWalletImpl(nodeApi)
 
 }

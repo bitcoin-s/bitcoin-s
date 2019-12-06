@@ -8,7 +8,9 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.p2p.NetworkPayload
+import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.node.NodeApi
+import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -23,6 +25,7 @@ import org.bitcoins.node.networking.peer.{
   PeerMessageReceiver,
   PeerMessageSender
 }
+import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
 import org.bitcoins.rpc.util.AsyncUtil
 import slick.jdbc.SQLiteProfile
 
@@ -33,7 +36,7 @@ import scala.util.{Failure, Success}
 /**
   This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
-trait Node extends P2PLogger {
+trait Node extends NodeApi with P2PLogger {
 
   implicit def system: ActorSystem
 
@@ -45,7 +48,14 @@ trait Node extends P2PLogger {
 
   val peer: Peer
 
-  val callbacks: SpvNodeCallbacks
+  private val callbacks = new Mutable(NodeCallbacks.empty)
+
+  def nodeCallbacks: NodeCallbacks = callbacks.atomicGet
+
+  def addCallbacks(newCallbacks: NodeCallbacks): Node = {
+    callbacks.atomicUpdate(newCallbacks)(_ + _)
+    this
+  }
 
   lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
 
@@ -71,7 +81,7 @@ trait Node extends P2PLogger {
       val peerMsgRecv: PeerMessageReceiver =
         PeerMessageReceiver.newReceiver(chainApi = chainApi,
                                         peer = peer,
-                                        callbacks = callbacks)
+                                        callbacks = nodeCallbacks)
       val p2p = P2PClient(context = system,
                           peer = peer,
                           peerMessageReceiver = peerMsgRecv)
@@ -200,4 +210,17 @@ trait Node extends P2PLogger {
       scriptPubKeysToWatch: Vector[ScriptPubKey],
       startOpt: Option[BlockStamp] = None,
       endOpt: Option[BlockStamp] = None): Future[Unit]
+
+  /**
+    * Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
+    */
+  override def downloadBlocks(
+      blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+    for {
+      peerMsgSender <- peerMsgSenderF
+      _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
+                                            blockHashes: _*)
+    } yield ()
+  }
+
 }

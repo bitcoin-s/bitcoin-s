@@ -12,7 +12,7 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver
 import org.bitcoins.node.networking.peer.PeerMessageReceiver.NetworkMessageReceived
-import org.bitcoins.node.util.BitcoinSpvNodeUtil
+import org.bitcoins.node.util.BitcoinSNodeUtil
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -81,7 +81,8 @@ case class P2PClientActor(
   private def awaitNetworkRequest(
       peer: ActorRef,
       unalignedBytes: ByteVector): Receive = LoggingReceive {
-    case message: NetworkMessage => sendNetworkMessage(message, peer)
+    case message: NetworkMessage =>
+      sendNetworkMessage(message, peer)
     case payload: NetworkPayload =>
       val networkMsg = NetworkMessage(network, payload)
       self.forward(networkMsg)
@@ -353,7 +354,7 @@ object P2PClient extends P2PLogger {
       implicit config: NodeAppConfig): P2PClient = {
     val actorRef = context.actorOf(
       props = props(peer = peer, peerMsgHandlerReceiver = peerMessageReceiver),
-      name = BitcoinSpvNodeUtil.createActorName(getClass))
+      name = BitcoinSNodeUtil.createActorName(getClass))
 
     P2PClient(actorRef, peer)
   }

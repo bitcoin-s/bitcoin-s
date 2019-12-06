@@ -4,7 +4,6 @@ import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.p2p.TypeIdentifier
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.node.config.NodeAppConfig
@@ -14,7 +13,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class NeutrinoNode(
     nodePeer: Peer,
-    nodeCallbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -30,8 +28,6 @@ case class NeutrinoNode(
   implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
   override val peer: Peer = nodePeer
-
-  override val callbacks: SpvNodeCallbacks = nodeCallbacks
 
   override def start(): Future[Node] = {
     val res = for {
@@ -63,11 +59,9 @@ case class NeutrinoNode(
         scriptPubKeysToWatch,
         startOpt,
         endOpt)(ExecutionContext.fromExecutor(threadPool))
-      peerMsgSender <- peerMsgSenderF
-      _ <- peerMsgSender.sendGetDataMessage(TypeIdentifier.MsgBlock,
-                                            blockHashes.map(_.flip): _*)
+      res <- downloadBlocks(blockHashes.map(_.flip))
     } yield {
-      ()
+      res
     }
 
     res.onComplete(_ => threadPool.shutdown())
