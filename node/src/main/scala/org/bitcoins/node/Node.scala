@@ -214,7 +214,7 @@ trait Node extends NodeApi with P2PLogger {
   /**
     * Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.
     */
-  override def requestBlocks(
+  override def downloadBlocks(
       blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
     for {
       peerMsgSender <- peerMsgSenderF

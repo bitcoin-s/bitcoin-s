@@ -59,7 +59,7 @@ case class NeutrinoNode(
         scriptPubKeysToWatch,
         startOpt,
         endOpt)(ExecutionContext.fromExecutor(threadPool))
-      res <- requestBlocks(blockHashes.map(_.flip))
+      res <- downloadBlocks(blockHashes.map(_.flip))
     } yield {
       res
     }

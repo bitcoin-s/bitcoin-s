@@ -106,7 +106,7 @@ case class DataMessageHandler(
           } match {
             case Failure(ex) =>
               logger.error("Error processing compact filter", ex)
-            case Success(_) => // ignore
+            case Success(_) => ()
           }
 
           this.copy(chainApi = newChainApi,

@@ -37,7 +37,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   }
 
   def nodeApi: NodeApi = new NodeApi {
-    override def requestBlocks(
+    override def downloadBlocks(
         blockHashes: Vector[DoubleSha256Digest]): Future[Unit] =
       FutureUtil.unit
   }
