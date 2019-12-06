@@ -237,10 +237,9 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     signedTxWithFee
   }
 
-  private def loop(
-      remaining: List[BitcoinUTXOSpendingInfo],
-      txInProgress: Transaction,
-      dummySignatures: Boolean)(
+  private def loop(remaining: List[BitcoinUTXOSpendingInfo],
+                   txInProgress: Transaction,
+                   dummySignatures: Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = remaining match {
     case Nil => Future.successful(txInProgress)
     case info +: t =>
@@ -254,10 +253,9 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     * @param unsignedTx - the transaction that we are spending this output in
     * @return either the transaction with the signed input added, or a [[TxBuilderError]]
     */
-  private def signAndAddInput(
-      utxo: BitcoinUTXOSpendingInfo,
-      unsignedTx: Transaction,
-      dummySignatures: Boolean)(
+  private def signAndAddInput(utxo: BitcoinUTXOSpendingInfo,
+                              unsignedTx: Transaction,
+                              dummySignatures: Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = {
     val idx =
       unsignedTx.inputs.zipWithIndex.find(_._1.previousOutput == utxo.outPoint)
@@ -319,12 +317,11 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
   /** Signs P2SH(P2WSH) and non-segwit P2SH inputs by calling signAndAddInput on the altered
     * transaction without P2SH nesting and then re-wrapping with the tweaked ScriptSignature
     */
-  private def signAndAddInputForP2SH(
-      spendingInfo: P2SHSpendingInfo,
-      unsignedTx: Transaction,
-      sequence: UInt32,
-      inputIndex: Int,
-      dummySignatures: Boolean)(
+  private def signAndAddInputForP2SH(spendingInfo: P2SHSpendingInfo,
+                                     unsignedTx: Transaction,
+                                     sequence: UInt32,
+                                     inputIndex: Int,
+                                     dummySignatures: Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = {
     require(!spendingInfo.redeemScript.isInstanceOf[P2WPKHWitnessSPKV0],
             "Should call signP2SHP2WPKH")
@@ -408,9 +405,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     */
   private def calcLockTime(utxos: Seq[BitcoinUTXOSpendingInfo]): Try[UInt32] = {
     @tailrec
-    def loop(
-        remaining: Seq[BitcoinUTXOSpendingInfo],
-        currentLockTimeOpt: Option[UInt32]): Try[UInt32] =
+    def loop(remaining: Seq[BitcoinUTXOSpendingInfo],
+             currentLockTimeOpt: Option[UInt32]): Try[UInt32] =
       remaining match {
         case Nil =>
           Success(currentLockTimeOpt.getOrElse(TransactionConstants.lockTime))
@@ -428,14 +424,20 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                   val result = lockTime.flatMap { l: UInt32 =>
                     currentLockTimeOpt match {
                       case Some(currentLockTime) =>
+                        val lockTimeThreshold = tc.locktimeThreshold
                         if (currentLockTime < l) {
-                          val lockTimeThreshold = tc.locktimeThreshold
                           if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
                             //means that we spend two different locktime types, one of the outputs spends a
                             //OP_CLTV script by block height, the other spends one by time stamp
                             TxBuilderError.IncompatibleLockTimes
                           } else Success(l)
-                        } else Success(currentLockTime)
+                        } else if (currentLockTime >= lockTimeThreshold && l < lockTimeThreshold) {
+                          //means that we spend two different locktime types, one of the outputs spends a
+                          //OP_CLTV script by block height, the other spends one by time stamp
+                          TxBuilderError.IncompatibleLockTimes
+                        } else {
+                          Success(currentLockTime)
+                        }
                       case None => Success(l)
                     }
                   }
@@ -470,9 +472,8 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       utxos: Seq[UTXOSpendingInfo],
       isRBFEnabled: Boolean): Seq[TransactionInput] = {
     @tailrec
-    def loop(
-        remaining: Seq[UTXOSpendingInfo],
-        accum: Seq[TransactionInput]): Seq[TransactionInput] =
+    def loop(remaining: Seq[UTXOSpendingInfo],
+             accum: Seq[TransactionInput]): Seq[TransactionInput] =
       remaining match {
         case Nil => accum.reverse
         case spendingInfo +: newRemaining =>
@@ -512,14 +513,13 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     loop(utxos, Nil)
   }
 
-  def signP2SHP2WPKH(
-      unsignedTx: WitnessTransaction,
-      inputIndex: UInt32,
-      p2wpkh: P2WPKHWitnessSPKV0,
-      output: TransactionOutput,
-      utxo: UTXOSpendingInfo,
-      hashType: HashType,
-      dummySignatures: Boolean): Future[Transaction] = {
+  def signP2SHP2WPKH(unsignedTx: WitnessTransaction,
+                     inputIndex: UInt32,
+                     p2wpkh: P2WPKHWitnessSPKV0,
+                     output: TransactionOutput,
+                     utxo: UTXOSpendingInfo,
+                     hashType: HashType,
+                     dummySignatures: Boolean): Future[Transaction] = {
     //special rule for p2sh(p2wpkh)
     //https://bitcoincore.org/en/segwit_wallet_dev/#signature-generation-and-verification-for-p2sh-p2wpkh
     //we actually sign the fully expanded redeemScript
@@ -590,9 +590,8 @@ object TxBuilder {
 
   /** Checks that we did not lose a [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]]
     * in the signing process of this transaction */
-  def sanityDestinationChecks(
-      txBuilder: TxBuilder,
-      signedTx: Transaction): Try[Unit] = {
+  def sanityDestinationChecks(txBuilder: TxBuilder,
+                              signedTx: Transaction): Try[Unit] = {
     //make sure we send coins to the appropriate destinations
     val isMissingDestination = txBuilder.destinations
       .map(o => signedTx.outputs.contains(o))
@@ -625,9 +624,8 @@ object TxBuilder {
     * >= [[org.bitcoins.core.wallet.builder.TxBuilder.destinationAmount TxBuilder.destinationAmount]]
     * and then does a sanity check on the tx's fee
     */
-  def sanityAmountChecks(
-      txBuilder: TxBuilder,
-      signedTx: Transaction): Try[Unit] = {
+  def sanityAmountChecks(txBuilder: TxBuilder,
+                         signedTx: Transaction): Try[Unit] = {
     val spentAmount: CurrencyUnit =
       signedTx.outputs.map(_.value).fold(CurrencyUnits.zero)(_ + _)
     val creditingAmount = txBuilder.creditingAmount
@@ -656,10 +654,9 @@ object TxBuilder {
     * @param feeRate the fee rate in satoshis/vbyte we paid per byte on this tx
     * @return
     */
-  def isValidFeeRange(
-      estimatedFee: CurrencyUnit,
-      actualFee: CurrencyUnit,
-      feeRate: FeeUnit): Try[Unit] = {
+  def isValidFeeRange(estimatedFee: CurrencyUnit,
+                      actualFee: CurrencyUnit,
+                      feeRate: FeeUnit): Try[Unit] = {
 
     //what the number '40' represents is the allowed variance -- in bytes -- between the size of the two
     //versions of signed tx. I believe the two signed version can vary in size because the digital
@@ -696,12 +693,11 @@ object TxBuilder {
 object BitcoinTxBuilder {
   type UTXOMap = Map[TransactionOutPoint, BitcoinUTXOSpendingInfo]
 
-  private case class BitcoinTxBuilderImpl(
-      destinations: Seq[TransactionOutput],
-      utxoMap: UTXOMap,
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey,
-      network: BitcoinNetwork)
+  private case class BitcoinTxBuilderImpl(destinations: Seq[TransactionOutput],
+                                          utxoMap: UTXOMap,
+                                          feeRate: FeeUnit,
+                                          changeSPK: ScriptPubKey,
+                                          network: BitcoinNetwork)
       extends BitcoinTxBuilder
 
   /**
@@ -714,12 +710,11 @@ object BitcoinTxBuilder {
     *         to generate a signed tx, or a
     *         [[org.bitcoins.core.wallet.builder.TxBuilderError TxBuilderError]]
     */
-  def apply(
-      destinations: Seq[TransactionOutput],
-      utxos: BitcoinTxBuilder.UTXOMap,
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey,
-      network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+  def apply(destinations: Seq[TransactionOutput],
+            utxos: BitcoinTxBuilder.UTXOMap,
+            feeRate: FeeUnit,
+            changeSPK: ScriptPubKey,
+            network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
     if (feeRate.toLong <= 0) {
       Future.fromTry(TxBuilderError.LowFee)
     } else {
@@ -728,12 +723,11 @@ object BitcoinTxBuilder {
     }
   }
 
-  def apply(
-      destinations: Seq[TransactionOutput],
-      utxos: Seq[BitcoinUTXOSpendingInfo],
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey,
-      network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
+  def apply(destinations: Seq[TransactionOutput],
+            utxos: Seq[BitcoinUTXOSpendingInfo],
+            feeRate: FeeUnit,
+            changeSPK: ScriptPubKey,
+            network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
     @tailrec
     def loop(utxos: Seq[UTXOSpendingInfo], accum: UTXOMap): UTXOMap =
       utxos match {
