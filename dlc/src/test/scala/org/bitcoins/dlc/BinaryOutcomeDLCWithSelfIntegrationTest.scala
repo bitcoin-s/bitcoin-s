@@ -3,6 +3,7 @@ package org.bitcoins.dlc
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtKeyVersion.LegacyTestNet3Priv
 import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
   ECPrivateKey,
   ExtPrivateKey,
   Schnorr,
@@ -19,7 +20,7 @@ import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -34,6 +35,16 @@ import scala.concurrent.Future
 class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
   private val clientsF = BitcoindRpcTestUtil.createNodePairV18(clientAccum)
   private val clientF = clientsF.map(_._1)
+  private val addressForMiningF = clientF.flatMap(_.getNewAddress)
+
+  def publishTransaction(tx: Transaction): Future[DoubleSha256DigestBE] = {
+    for {
+      client <- clientF
+      txid <- client.sendRawTransaction(tx)
+      addressForMining <- addressForMiningF
+      _ <- client.generateToAddress(blocks = 6, addressForMining)
+    } yield txid
+  }
 
   behavior of "BinaryOutcomeDLCWithSelf"
 
@@ -69,7 +80,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
 
     def constructDLC(): Future[BinaryOutcomeDLCWithSelf] = {
       def fundingInput(input: CurrencyUnit): Bitcoins = {
-        Bitcoins((input + Satoshis(Int64(200))).satoshis)
+        Bitcoins((input + Satoshis(200)).satoshis)
       }
 
       val fundedInputsTxidF = for {
@@ -102,9 +113,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
               }
           }
           .map(_._2)
-        txid <- client.sendRawTransaction(signedTxResult.hex)
-        address <- client.getNewAddress
-        _ <- client.generateToAddress(blocks = 6, address)
+        txid <- publishTransaction(signedTxResult.hex)
       } yield {
         assert(localOutputIndex.isDefined)
         assert(remoteOutputIndex.isDefined)
@@ -196,14 +205,15 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
       for {
-        client <- clientF
         dlc <- constructDLC()
-        messenger = BitcoindRpcMessengerRegtest(client)
-        setup <- dlc.setupDLC(Some(messenger))
+        setup <- dlc.setupDLC()
+        _ <- publishTransaction(setup.fundingTx)
         outcome <- dlc.executeUnilateralDLC(setup,
                                             Future.successful(oracleSig),
-                                            local,
-                                            Some(messenger))
+                                            local)
+        _ <- publishTransaction(outcome.cet)
+        _ <- publishTransaction(outcome.localClosingTx)
+        _ <- publishTransaction(outcome.remoteClosingTx)
         validation <- validateOutcome(outcome)
       } yield validation
     }
@@ -212,9 +222,16 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       for {
         client <- clientF
         dlc <- constructDLC()
-        messenger = BitcoindRpcMessengerRegtest(client)
-        setup <- dlc.setupDLC(Some(messenger))
-        outcome <- dlc.executeRefundDLC(setup, Some(messenger))
+        setup <- dlc.setupDLC()
+        _ <- publishTransaction(setup.fundingTx)
+        outcome <- dlc.executeRefundDLC(setup)
+        currentCount <- client.getBlockCount
+        blocksToMine = dlc.timeout.toUInt32.toInt - currentCount
+        addressForMining <- addressForMiningF
+        _ <- client.generateToAddress(blocks = blocksToMine, addressForMining)
+        _ <- publishTransaction(outcome.cet)
+        _ <- publishTransaction(outcome.localClosingTx)
+        _ <- publishTransaction(outcome.remoteClosingTx)
         assertion <- validateOutcome(outcome)
       } yield assertion
     }
