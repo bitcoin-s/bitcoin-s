@@ -360,13 +360,15 @@ case class BinaryOutcomeDLCWithSelf(
         cetLoseRemote <- cetLoseRemoteF
         refundTx <- refundTxF
       } yield {
-        SetupDLC(fundingTx,
-                 fundingSpendingInfo,
-                 cetWinLocal,
-                 cetLoseLocal,
-                 cetWinRemote,
-                 cetLoseRemote,
-                 refundTx)
+        SetupDLC(
+          fundingTx = fundingTx,
+          fundingSpendingInfo = fundingSpendingInfo,
+          cetWinLocal = cetWinLocal,
+          cetLoseLocal = cetLoseLocal,
+          cetWinRemote = cetWinRemote,
+          cetLoseRemote = cetLoseRemote,
+          refundTx = refundTx
+        )
       }
     }
   }
@@ -438,20 +440,20 @@ case class BinaryOutcomeDLCWithSelf(
 
       // Spend the true case on the correct CET
       val cetSpendingInfo = ConditionalSpendingInfo(
-        TransactionOutPoint(cet.txIdBE, UInt32.zero),
-        output.value,
-        output.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
-        Vector(cetPrivKey, ECPrivateKey(oracleSig.s)),
-        HashType.sigHashAll,
-        ConditionalPath.nonNestedTrue
+        outPoint = TransactionOutPoint(cet.txIdBE, UInt32.zero),
+        amount = output.value,
+        scriptPubKey = output.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
+        signers = Vector(cetPrivKey, ECPrivateKey(oracleSig.s)),
+        hashType = HashType.sigHashAll,
+        conditionalPath = ConditionalPath.nonNestedTrue
       )
 
       val otherCetSpendingInfo = P2PKHSpendingInfo(
-        TransactionOutPoint(cet.txIdBE, UInt32.one),
-        otherOutput.value,
-        otherOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
-        otherCetPrivKey,
-        HashType.sigHashAll
+        outPoint = TransactionOutPoint(cet.txIdBE, UInt32.one),
+        amount = otherOutput.value,
+        scriptPubKey = otherOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+        signer = otherCetPrivKey,
+        hashType = HashType.sigHashAll
       )
 
       val (localCetSpendingInfo, remoteCetSpendingInfo) = if (local) {
@@ -470,14 +472,14 @@ case class BinaryOutcomeDLCWithSelf(
       localSpendingTxF.flatMap { localSpendingTx =>
         remoteSpendingTxF.map { remoteSpendingTx =>
           DLCOutcome(
-            fundingTx,
-            cet,
-            localSpendingTx,
-            remoteSpendingTx,
-            fundingUtxos,
-            fundingSpendingInfo,
-            localCetSpendingInfo,
-            remoteCetSpendingInfo
+            fundingTx = fundingTx,
+            cet = cet,
+            localClosingTx = localSpendingTx,
+            remoteClosingTx = remoteSpendingTx,
+            fundingUtxos = fundingUtxos,
+            fundingSpendingInfo = fundingSpendingInfo,
+            localCetSpendingInfo = localCetSpendingInfo,
+            remoteCetSpendingInfo = remoteCetSpendingInfo
           )
         }
       }
@@ -511,20 +513,21 @@ case class BinaryOutcomeDLCWithSelf(
     }
 
     val justiceSpendingInfo = ConditionalSpendingInfo(
-      TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
-      justiceOutput.value,
-      justiceOutput.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
-      Vector(cetPrivKey),
-      HashType.sigHashAll,
-      ConditionalPath.nonNestedFalse
+      outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
+      amount = justiceOutput.value,
+      scriptPubKey =
+        justiceOutput.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
+      signers = Vector(cetPrivKey),
+      hashType = HashType.sigHashAll,
+      conditionalPath = ConditionalPath.nonNestedFalse
     )
 
     val normalSpendingInfo = P2PKHSpendingInfo(
-      TransactionOutPoint(timedOutCET.txIdBE, UInt32.one),
-      normalOutput.value,
-      normalOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
-      cetPrivKey,
-      HashType.sigHashAll
+      outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.one),
+      amount = normalOutput.value,
+      scriptPubKey = normalOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      signer = cetPrivKey,
+      hashType = HashType.sigHashAll
     )
 
     val finalPrivKey = if (local) {
@@ -542,14 +545,14 @@ case class BinaryOutcomeDLCWithSelf(
       normalSpendingTxF.map { normalSpendingTx =>
         // Note we misuse DLCOutcome a little here since there is no local and remote
         DLCOutcome(
-          dlcSetup.fundingTx,
-          timedOutCET,
-          justiceSpendingTx,
-          normalSpendingTx,
-          fundingUtxos,
-          dlcSetup.fundingSpendingInfo,
-          justiceSpendingInfo,
-          normalSpendingInfo
+          fundingTx = dlcSetup.fundingTx,
+          cet = timedOutCET,
+          localClosingTx = justiceSpendingTx,
+          remoteClosingTx = normalSpendingTx,
+          fundingUtxos = fundingUtxos,
+          fundingSpendingInfo = dlcSetup.fundingSpendingInfo,
+          localCetSpendingInfo = justiceSpendingInfo,
+          remoteCetSpendingInfo = normalSpendingInfo
         )
       }
     }
@@ -567,19 +570,19 @@ case class BinaryOutcomeDLCWithSelf(
     val remoteOutput = refundTx.outputs.last
 
     val localRefundSpendingInfo = P2PKHSpendingInfo(
-      TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
-      localOutput.value,
-      localOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
-      cetLocalRefundPrivKey,
-      HashType.sigHashAll
+      outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
+      amount = localOutput.value,
+      scriptPubKey = localOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      signer = cetLocalRefundPrivKey,
+      hashType = HashType.sigHashAll
     )
 
     val remoteRefundSpendingInfo = P2PKHSpendingInfo(
-      TransactionOutPoint(refundTx.txIdBE, UInt32.one),
-      remoteOutput.value,
-      remoteOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
-      cetRemoteRefundPrivKey,
-      HashType.sigHashAll
+      outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.one),
+      amount = remoteOutput.value,
+      scriptPubKey = remoteOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      signer = cetRemoteRefundPrivKey,
+      hashType = HashType.sigHashAll
     )
 
     val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
@@ -592,14 +595,14 @@ case class BinaryOutcomeDLCWithSelf(
     localSpendingTxF.flatMap { localSpendingTx =>
       remoteSpendingTxF.map { remoteSpendingTx =>
         DLCOutcome(
-          fundingTx,
-          refundTx,
-          localSpendingTx,
-          remoteSpendingTx,
-          fundingUtxos,
-          fundingSpendingInfo,
-          localRefundSpendingInfo,
-          remoteRefundSpendingInfo
+          fundingTx = fundingTx,
+          cet = refundTx,
+          localClosingTx = localSpendingTx,
+          remoteClosingTx = remoteSpendingTx,
+          fundingUtxos = fundingUtxos,
+          fundingSpendingInfo = fundingSpendingInfo,
+          localCetSpendingInfo = localRefundSpendingInfo,
+          remoteCetSpendingInfo = remoteRefundSpendingInfo
         )
       }
     }
