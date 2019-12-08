@@ -6,7 +6,7 @@ object Deps {
     val bouncyCastle = "1.55"
     val logback = "1.2.3"
     val scalacheck = "1.14.2"
-    val scalaTest = "3.0.8"
+    val scalaTest = "3.1.0"
     val slf4j = "1.7.29"
     val spray = "1.3.5"
     val zeromq = "0.5.1"
