@@ -51,7 +51,7 @@ trait ChainApi extends ChainQueryApi {
   def getBlockCount(implicit ec: ExecutionContext): Future[Int]
 
   /** Gets the hash of the block that is what we consider "best" */
-  def getBestBlockHash(
+  override def getBestBlockHash(
       implicit ec: ExecutionContext): Future[DoubleSha256DigestBE]
 
   /** Gets the best block header we have */
@@ -188,7 +188,8 @@ trait ChainApi extends ChainQueryApi {
   def getHeightByBlockStamp(blockStamp: BlockStamp)(
       implicit ec: ExecutionContext): Future[Int]
 
-  def getBlockHeight(blockHash: DoubleSha256DigestBE)(
+  /** @inheritdoc */
+  override def getBlockHeight(blockHash: DoubleSha256DigestBE)(
       implicit ec: ExecutionContext): Future[Option[Int]] =
     getHeader(blockHash).map(_.map(_.height))
 
