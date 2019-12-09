@@ -1,4 +1,4 @@
-package org.bitcoins.core.node
+package org.bitcoins.core.api
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.util.FutureUtil

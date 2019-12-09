@@ -5,6 +5,7 @@ import org.bitcoins.chain.models.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
+import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -17,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Entry api to the chain project for adding new things to our blockchain
   */
-trait ChainApi {
+trait ChainApi extends ChainQueryApi {
 
   /**
     * Adds a block header to our chain project
@@ -186,4 +187,9 @@ trait ChainApi {
   /** Returns the block height of the given block stamp */
   def getHeightByBlockStamp(blockStamp: BlockStamp)(
       implicit ec: ExecutionContext): Future[Int]
+
+  def getBlockHeight(blockHash: DoubleSha256DigestBE)(
+      implicit ec: ExecutionContext): Future[Option[Int]] =
+    getHeader(blockHash).map(_.map(_.height))
+
 }

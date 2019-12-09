@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.node.NodeApi
 import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}

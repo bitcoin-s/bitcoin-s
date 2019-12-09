@@ -2,9 +2,9 @@ package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency._
-import org.bitcoins.core.node.NodeApi
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
