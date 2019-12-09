@@ -86,9 +86,8 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
   it must "fail to serialize invalid PSBTs" in {
     assert(invalidPsbts.forall(psbt =>
       Try(PSBT.fromBytes(psbt)) match {
-        case Success(x) =>
-          println(x.outputMaps.size)
-          fail(s"The following psbt was able to serialize: ${psbt.take(500)}")
+        case Success(_) =>
+          fail(s"The following psbt was able to serialize: $psbt")
         case Failure(_) => true
       }))
   }
