@@ -8,8 +8,8 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
+import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.node.NodeApi
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.script.ScriptPubKey

@@ -1,12 +1,12 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDPurpose}
-import org.bitcoins.core.node.NodeApi
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.transaction.Transaction
