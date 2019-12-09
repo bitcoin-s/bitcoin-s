@@ -1,11 +1,11 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.compat._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
-import org.bitcoins.core.node.NodeApi
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder

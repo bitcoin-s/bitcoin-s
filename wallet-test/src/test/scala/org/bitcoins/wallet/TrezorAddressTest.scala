@@ -38,7 +38,7 @@ import org.bitcoins.core.hd.HDChainType.External
 import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.wallet.models.AccountDb
 import _root_.akka.actor.Address
-import org.bitcoins.core.node.NodeApi
+import org.bitcoins.core.api.NodeApi
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent.ExecutionContext
