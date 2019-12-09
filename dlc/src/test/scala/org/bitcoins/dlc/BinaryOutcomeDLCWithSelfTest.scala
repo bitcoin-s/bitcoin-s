@@ -78,7 +78,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
         for {
           txBuilder <- txBuilderF
           _ <- badFeeF
-          tx <- BinaryOutcomeDLCWithSelf.subtractFeeAndSign(txBuilder)
+          tx <- BinaryOutcomeDLCWithSelf.subtractFeeEqualAndSign(txBuilder)
         } yield {
           val diffs = outputs.zip(tx.outputs).map {
             case (before, after) =>
@@ -89,6 +89,76 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
           // Fee has been evenly distributed (up to some remainder)
           assert(diffs.forall(diff =>
             diff - firstDiff < Satoshis(Int64(diffs.length))))
+        }
+    }
+  }
+
+  def closeTogether(num1: Double, num2: Double): Boolean = {
+    Math.abs(num1 - num2) < 1.0e-6
+  }
+
+  it should "correctly subtract fees proportionally amongst outputs" in {
+    // Can't use TransactionGenerators.realisiticOutputs as that can return List.empty
+    val nonEmptyRealisticOutputsGen = Gen
+      .choose(1, 5)
+      .flatMap(n => Gen.listOfN(n, TransactionGenerators.realisticOutput))
+      .suchThat(_.nonEmpty)
+
+    // CurrencyUnitGenerator.feeRate gives too high of fees
+    val feeRateGen = Gen.choose(0, CurrencyUnits.oneBTC.satoshis.toLong).map {
+      n =>
+        SatoshisPerByte(Satoshis(Int64(n)))
+    }
+
+    forAllAsync(nonEmptyRealisticOutputsGen, feeRateGen) {
+      case (outputs, feeRate) =>
+        val totalInput = outputs.foldLeft(CurrencyUnits.zero) {
+          case (accum, output) =>
+            accum + output.value
+        }
+
+        val inputKey = ECPrivateKey.freshPrivateKey
+        val utxos: Vector[BitcoinUTXOSpendingInfo] = Vector(
+          P2PKHSpendingInfo(
+            outPoint =
+              TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+            amount = totalInput,
+            scriptPubKey = P2PKHScriptPubKey(inputKey.publicKey),
+            signer = inputKey,
+            hashType = HashType.sigHashAll
+          ))
+        val changeSPK = EmptyScriptPubKey
+        val network: BitcoinNetwork = RegTest
+
+        val txBuilderF =
+          BitcoinTxBuilder(outputs, utxos, feeRate, changeSPK, network)
+
+        val badFeeF = txBuilderF.flatMap { txBuilder =>
+          recoverToSucceededIf[IllegalArgumentException](txBuilder.sign)
+        }
+
+        for {
+          txBuilder <- txBuilderF
+          _ <- badFeeF
+          tx <- BinaryOutcomeDLCWithSelf.subtractFeeProportionalAndSign(
+            txBuilder)
+        } yield {
+          val sizeAndDiffs = outputs.zip(tx.outputs).map {
+            case (before, after) =>
+              (before.value, before.value - after.value)
+          }
+
+          val (firstSize, firstFee) = sizeAndDiffs.head
+          val firstFeeProportion = firstFee.satoshis.toLong.toDouble / firstSize.satoshis.toLong
+          assert {
+            // Fee has been proportionally distributed (up to some remainder)
+            sizeAndDiffs.forall {
+              case (size, fee) =>
+                closeTogether(
+                  (fee.satoshis.toLong.toDouble / size.satoshis.toLong) / firstFeeProportion,
+                  1)
+            }
+          }
         }
     }
   }

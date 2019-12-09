@@ -8,7 +8,7 @@ import org.bitcoins.core.crypto.{
   Schnorr,
   SchnorrDigitalSignature
 }
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStampWithFuture
@@ -85,7 +85,7 @@ case class BinaryOutcomeDLCWithSelf(
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
-  import BinaryOutcomeDLCWithSelf.subtractFeeAndSign
+  import BinaryOutcomeDLCWithSelf.subtractFeeEqualAndSign
 
   /** Hash signed by oracle in Win case */
   val messageWin: ByteVector =
@@ -172,7 +172,7 @@ case class BinaryOutcomeDLCWithSelf(
     val txBuilderF: Future[BitcoinTxBuilder] =
       BitcoinTxBuilder(outputs, fundingUtxos, feeRate, changeSPK, network)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    txBuilderF.flatMap(subtractFeeEqualAndSign)
   }
 
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
@@ -211,7 +211,7 @@ case class BinaryOutcomeDLCWithSelf(
                        changeSPK,
                        network)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    txBuilderF.flatMap(subtractFeeEqualAndSign)
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
@@ -250,7 +250,7 @@ case class BinaryOutcomeDLCWithSelf(
                        changeSPK,
                        network)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    txBuilderF.flatMap(subtractFeeEqualAndSign)
   }
 
   /** Constructs the (time-locked) refund transaction for when the oracle disappears
@@ -279,7 +279,7 @@ case class BinaryOutcomeDLCWithSelf(
                                       network,
                                       timeout.toUInt32)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    txBuilderF.flatMap(subtractFeeEqualAndSign)
   }
 
   def createCETWinLocal(
@@ -388,7 +388,7 @@ case class BinaryOutcomeDLCWithSelf(
       network
     )
 
-    val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
+    val spendingTxF = txBuilder.flatMap(subtractFeeEqualAndSign)
 
     spendingTxF.foreach(
       tx =>
@@ -612,7 +612,7 @@ case class BinaryOutcomeDLCWithSelf(
 object BinaryOutcomeDLCWithSelf {
 
   /** Subtracts the estimated fee by removing from each output evenly */
-  def subtractFeeAndSign(txBuilder: BitcoinTxBuilder)(
+  def subtractFeeEqualAndSign(txBuilder: BitcoinTxBuilder)(
       implicit ec: ExecutionContext): Future[Transaction] = {
     txBuilder.unsignedTx.flatMap { tx =>
       val fee = txBuilder.feeRate.calc(tx)
@@ -624,6 +624,45 @@ object BinaryOutcomeDLCWithSelf {
 
       val newOutputsWithoutRemainder = outputs.map(output =>
         TransactionOutput(output.value - feePerOutput, output.scriptPubKey))
+      val lastOutput = newOutputsWithoutRemainder.last
+      val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
+                                            lastOutput.scriptPubKey)
+      val newOutputs = newOutputsWithoutRemainder.dropRight(1).:+(newLastOutput)
+
+      val newBuilder =
+        BitcoinTxBuilder(newOutputs,
+                         txBuilder.utxoMap,
+                         txBuilder.feeRate,
+                         txBuilder.changeSPK,
+                         txBuilder.network,
+                         txBuilder.lockTimeOverrideOpt)
+
+      newBuilder.flatMap(_.sign)
+    }
+  }
+
+  /** Subtracts the estimated fee by removing from each output proportionally */
+  def subtractFeeProportionalAndSign(txBuilder: BitcoinTxBuilder)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    txBuilder.unsignedTx.flatMap { tx =>
+      val totalFee = txBuilder.feeRate.calc(tx)
+
+      val outputs = txBuilder.destinations
+
+      val totalOutput = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      val proportionFee = totalFee.satoshis.toLong.toDouble / totalOutput.satoshis.toLong
+
+      // What about rounding error?
+      val newOutputsWithoutRemainder = outputs.map { output =>
+        val feeForOutput = (output.value.satoshis.toLong * proportionFee).toLong
+        TransactionOutput(output.value - Satoshis(feeForOutput),
+                          output.scriptPubKey)
+      }
+
+      val newTotalOutputs =
+        newOutputsWithoutRemainder.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      val feeRemainder = totalFee - (totalOutput - newTotalOutputs)
+
       val lastOutput = newOutputsWithoutRemainder.last
       val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
                                             lastOutput.scriptPubKey)
