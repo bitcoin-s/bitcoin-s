@@ -17,27 +17,15 @@ sealed abstract class CurrencyUnit
 
   def satoshis: Satoshis
 
-  override def plus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit =
-    Satoshis(x.satoshis.underlying + y.satoshis.underlying)
+  override def plus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x + y
 
-  override def minus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit =
-    Satoshis(x.satoshis.underlying - y.satoshis.underlying)
+  override def minus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x - y
 
-  override def times(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit =
-    Satoshis(x.satoshis.underlying * y.satoshis.underlying)
+  override def times(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x * y
 
-  override def negate(x: CurrencyUnit): CurrencyUnit =
-    Satoshis(-x.satoshis.underlying)
+  override def negate(x: CurrencyUnit): CurrencyUnit = -x
 
   override def fromInt(x: Int): CurrencyUnit = Satoshis(x.toLong)
-
-  override def parseString(str: String): Option[CurrencyUnit] = {
-    if (str.isEmpty) {
-      None
-    } else {
-      Some(Satoshis(str.toLong))
-    }
-  }
 
   override def toInt(x: CurrencyUnit): Int = x.satoshis.underlying.toInt
 
