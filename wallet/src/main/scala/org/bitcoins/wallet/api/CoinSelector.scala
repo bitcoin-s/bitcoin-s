@@ -4,7 +4,6 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.models.SpendingInfoDb
-import CurrencyUnits.Implicits._
 
 import scala.annotation.tailrec
 

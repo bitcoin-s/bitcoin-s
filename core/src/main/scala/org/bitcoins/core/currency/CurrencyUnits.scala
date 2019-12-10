@@ -183,10 +183,4 @@ object CurrencyUnits {
     case b: Bitcoins => b.satoshis
     case x: Satoshis => x
   }
-
-  object Implicits {
-    implicit val currencyUnitOrdering: Ordering[CurrencyUnit] =
-      (x: CurrencyUnit, y: CurrencyUnit) => x.compare(y)
-  }
-
 }
