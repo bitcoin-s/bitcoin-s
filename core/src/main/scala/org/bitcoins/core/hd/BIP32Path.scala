@@ -2,6 +2,8 @@ package org.bitcoins.core.hd
 
 import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.util.Factory
+import scodec.bits.ByteVector
 
 abstract class BIP32Path {
   def path: Vector[BIP32Node]
@@ -86,9 +88,11 @@ abstract class BIP32Path {
       }
       .fold("m")((accum, curr) => accum + "/" + curr)
 
+  def bytes: ByteVector = path.foldLeft(ByteVector.empty)(_ ++ _.toUInt32.bytes)
+
 }
 
-object BIP32Path {
+object BIP32Path extends Factory[BIP32Path] {
   private case class BIP32PathImpl(path: Vector[BIP32Node]) extends BIP32Path
 
   /**
@@ -143,6 +147,22 @@ object BIP32Path {
     }
 
     BIP32PathImpl(path)
+  }
+
+  def fromBytes(bytes: ByteVector): BIP32Path = {
+    require(bytes.size % 4 == 0,
+            s"ByteVector is not suited for KeyPath, got=${bytes.length}")
+
+    val parts: Vector[ByteVector] = bytes.grouped(4).toVector
+
+    val path = parts.map { part =>
+      val uInt32: UInt32 = UInt32.fromBytes(part)
+      val hardened = uInt32 >= ExtKey.hardenedIdx
+      val index = if (hardened) uInt32 - ExtKey.hardenedIdx else uInt32
+      BIP32Node(index.toInt, hardened)
+    }
+
+    BIP32Path(path)
   }
 }
 

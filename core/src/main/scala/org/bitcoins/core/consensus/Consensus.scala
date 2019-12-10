@@ -1,7 +1,6 @@
 package org.bitcoins.core.consensus
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.Int64
 
 /**
   * Created by chris on 5/13/16.
@@ -20,7 +19,7 @@ sealed abstract class Consensus {
     */
   def maxSigOps = 80000
 
-  def maxMoney: CurrencyUnit = Satoshis(Int64(2100000000000000L))
+  def maxMoney: CurrencyUnit = Satoshis(2100000000000000L)
 
   /**
     * A integer representing the maximum number of public keys you can have in a

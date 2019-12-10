@@ -6,6 +6,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.gcs.GolombFilter
 
 sealed abstract class BlockchainResult
 
@@ -139,12 +140,30 @@ case class GetChainTxStatsResult(
     time: UInt32,
     txcount: Int,
     window_block_count: Int,
+    window_final_block_height: Option[Int],
     window_tx_count: Option[Int],
     window_interval: Option[UInt32],
     txrate: Option[BigDecimal])
     extends BlockchainResult
 
-case class GetMemPoolResult(
+sealed trait GetMemPoolResult extends BlockchainResult {
+  def size: Int
+  def fee: Option[Bitcoins]
+  def modifiedfee: Option[Bitcoins]
+  def time: UInt32
+  def height: Int
+  def descendantcount: Int
+  def descendantsize: Int
+  def descendantfees: Option[Bitcoins]
+  def ancestorcount: Int
+  def ancestorsize: Int
+  def ancestorfees: Option[Bitcoins]
+  def wtxid: DoubleSha256DigestBE
+  def fees: FeeInfo
+  def depends: Vector[DoubleSha256DigestBE]
+}
+
+case class GetMemPoolResultPreV19(
     size: Int,
     fee: Option[Bitcoins],
     modifiedfee: Option[Bitcoins],
@@ -157,10 +176,54 @@ case class GetMemPoolResult(
     ancestorsize: Int,
     ancestorfees: Option[Bitcoins],
     wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
     depends: Vector[DoubleSha256DigestBE])
-    extends BlockchainResult
+    extends GetMemPoolResult
 
-case class GetMemPoolEntryResult(
+case class GetMemPoolResultPostV19(
+    vsize: Int,
+    fee: Option[Bitcoins],
+    modifiedfee: Option[Bitcoins],
+    time: UInt32,
+    height: Int,
+    descendantcount: Int,
+    descendantsize: Int,
+    descendantfees: Option[Bitcoins],
+    ancestorcount: Int,
+    ancestorsize: Int,
+    ancestorfees: Option[Bitcoins],
+    wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
+    depends: Vector[DoubleSha256DigestBE])
+    extends GetMemPoolResult {
+  override def size: Int = vsize
+}
+
+case class FeeInfo(
+    base: BitcoinFeeUnit,
+    modified: BitcoinFeeUnit,
+    ancestor: BitcoinFeeUnit,
+    descendant: BitcoinFeeUnit
+)
+
+sealed trait GetMemPoolEntryResult extends BlockchainResult {
+  def size: Int
+  def fee: Bitcoins
+  def modifiedfee: Bitcoins
+  def time: UInt32
+  def height: Int
+  def descendantcount: Int
+  def descendantsize: Int
+  def descendantfees: BitcoinFeeUnit
+  def ancestorcount: Int
+  def ancestorsize: Int
+  def ancestorfees: BitcoinFeeUnit
+  def wtxid: DoubleSha256DigestBE
+  def fees: FeeInfo
+  def depends: Option[Vector[DoubleSha256DigestBE]]
+}
+
+case class GetMemPoolEntryResultPreV19(
     size: Int,
     fee: Bitcoins,
     modifiedfee: Bitcoins,
@@ -168,12 +231,34 @@ case class GetMemPoolEntryResult(
     height: Int,
     descendantcount: Int,
     descendantsize: Int,
-    descendantfees: Bitcoins, // Should be BitcoinFeeUnit
+    descendantfees: BitcoinFeeUnit,
     ancestorcount: Int,
     ancestorsize: Int,
-    ancestorfees: Bitcoins, // Should be BitcoinFeeUnit
+    ancestorfees: BitcoinFeeUnit,
+    wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
     depends: Option[Vector[DoubleSha256DigestBE]])
-    extends BlockchainResult
+    extends GetMemPoolEntryResult
+
+case class GetMemPoolEntryResultPostV19(
+    vsize: Int,
+    fee: Bitcoins,
+    weight: Int,
+    modifiedfee: Bitcoins,
+    time: UInt32,
+    height: Int,
+    descendantcount: Int,
+    descendantsize: Int,
+    descendantfees: BitcoinFeeUnit,
+    ancestorcount: Int,
+    ancestorsize: Int,
+    ancestorfees: BitcoinFeeUnit,
+    wtxid: DoubleSha256DigestBE,
+    fees: FeeInfo,
+    depends: Option[Vector[DoubleSha256DigestBE]])
+    extends GetMemPoolEntryResult {
+  override def size: Int = vsize
+}
 
 case class GetMemPoolInfoResult(
     size: Int,
@@ -201,4 +286,9 @@ case class GetTxOutSetInfoResult(
     hash_serialized_2: DoubleSha256DigestBE,
     disk_size: Int,
     total_amount: Bitcoins)
+    extends BlockchainResult
+
+case class GetBlockFilterResult(
+    filter: GolombFilter,
+    header: DoubleSha256DigestBE)
     extends BlockchainResult

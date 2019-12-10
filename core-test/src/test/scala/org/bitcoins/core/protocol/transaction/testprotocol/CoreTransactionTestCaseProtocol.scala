@@ -75,7 +75,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
 
         val amount =
           if (array.elements.size == 4)
-            Some(Satoshis(Int64(array.elements(3).convertTo[Long])))
+            Some(Satoshis(array.elements(3).convertTo[Long]))
           else None
 
         //val prevoutIndex = UInt32(array.elements(1).convertTo[Int])

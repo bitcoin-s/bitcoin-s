@@ -53,6 +53,8 @@ sealed trait P2PKHScriptPubKey extends RawScriptPubKey {
 
   def pubKeyHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 3).bytes)
+
+  override def toString = s"pkh($pubKeyHash)"
 }
 
 object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
@@ -163,6 +165,8 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
       .slice(1, maxSigs + 1)
       .map(key => ECPublicKey(key.hex))
   }
+
+  override def toString = s"multi($requiredSigs,${publicKeys.mkString(",")})"
 }
 
 object MultiSignatureScriptPubKey
@@ -283,6 +287,8 @@ sealed trait P2SHScriptPubKey extends NonWitnessScriptPubKey {
   /** The hash of the script for which this scriptPubKey is being created from */
   def scriptHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 2).bytes)
+
+  override def toString = s"sh($scriptHash)"
 }
 
 object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
@@ -333,6 +339,9 @@ sealed trait P2PKScriptPubKey extends RawScriptPubKey {
 
   def publicKey: ECPublicKey =
     ECPublicKey(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
+
+  override def toString = s"pk($publicKey)"
+
 }
 
 object P2PKScriptPubKey extends ScriptFactory[P2PKScriptPubKey] {
@@ -1054,7 +1063,7 @@ object WitnessScriptPubKeyV0 {
   */
 sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(2).bytes)
-  override def toString = s"P2WPKHWitnessSPKV0($pubKeyHash)"
+  override def toString = s"wpkh($pubKeyHash)"
 }
 
 object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
@@ -1099,7 +1108,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   */
 sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def scriptHash: Sha256Digest = Sha256Digest(asm(2).bytes)
-  override def toString = s"P2WSHWitnessSPKV0($scriptHash)"
+  override def toString = s"wsh($scriptHash)"
 }
 
 object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {

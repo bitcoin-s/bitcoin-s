@@ -1,7 +1,6 @@
 package org.bitcoins.core.policy
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.Int64
 import org.bitcoins.core.script.flag._
 
 /**
@@ -59,13 +58,13 @@ sealed abstract class Policy {
   def minChannelAmount: CurrencyUnit = CurrencyUnits.oneMBTC
 
   /** The minimum amount of satoshis we can spend to an output */
-  def dustThreshold: CurrencyUnit = Satoshis(Int64(1000))
+  def dustThreshold: CurrencyUnit = Satoshis(1000)
 
   /** A default fee to use per byte on the bitcoin network */
-  def defaultFee: CurrencyUnit = Satoshis(Int64(50))
+  def defaultFee: CurrencyUnit = Satoshis(50)
 
   /** Max fee for a transaction is set to 10 mBTC right now */
-  def maxFee: CurrencyUnit = Satoshis(Int64(10)) * CurrencyUnits.oneMBTC
+  def maxFee: CurrencyUnit = Satoshis(10) * CurrencyUnits.oneMBTC
 
   def isRBFEnabled: Boolean = true
 }

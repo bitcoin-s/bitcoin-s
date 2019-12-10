@@ -7,7 +7,7 @@ import java.time.ZoneOffset
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number.{Int32, Int64, UInt32, UInt64}
+import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{
   ScriptPubKey,
@@ -30,9 +30,9 @@ import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
-import scala.util.{Failure, Success}
-
+import scala.util.{Failure, Success, Try}
 import org.bitcoins.core.config._
+import org.bitcoins.core.p2p.ServiceIdentifier
 
 object JsonReaders {
 
@@ -115,8 +115,8 @@ object JsonReaders {
 
   implicit object SatoshisReads extends Reads[Satoshis] {
     override def reads(json: JsValue): JsResult[Satoshis] =
-      SerializerUtil.processJsNumber[Satoshis](num =>
-        Satoshis(Int64(num.toBigInt)))(json)
+      SerializerUtil.processJsNumber[Satoshis](num => Satoshis(num.toBigInt))(
+        json)
   }
 
   implicit object BlockHeaderReads extends Reads[BlockHeader] {
@@ -522,7 +522,7 @@ object JsonReaders {
   implicit object BitcoinFeeUnitReads extends Reads[BitcoinFeeUnit] {
     override def reads(json: JsValue): JsResult[BitcoinFeeUnit] =
       SerializerUtil.processJsNumber[BitcoinFeeUnit](num =>
-        SatoshisPerByte(Satoshis(Int64((num * 100000).toBigInt))))(json)
+        SatoshisPerByte(Satoshis((num * 100000).toBigInt)))(json)
   }
 
   implicit object FileReads extends Reads[File] {
@@ -542,6 +542,23 @@ object JsonReaders {
         case "regtest" => RegTest
         case "main"    => MainNet
         case "test"    => TestNet3
+      }
+  }
+
+  implicit object ServiceIdentifierReads extends Reads[ServiceIdentifier] {
+    override def reads(json: JsValue): JsResult[ServiceIdentifier] =
+      json match {
+        case JsString(s) =>
+          Try(ServiceIdentifier.fromString(s)) match {
+            case Success(serviceIdentifier) => JsSuccess(serviceIdentifier)
+            case Failure(err) =>
+              SerializerUtil.buildJsErrorMsg(
+                s"Unexpected Service Identifier: $err",
+                json)
+          }
+        case err @ (JsNull | _: JsBoolean | _: JsNumber | _: JsArray |
+            _: JsObject) =>
+          SerializerUtil.buildJsErrorMsg("jsstring", err)
       }
   }
 }

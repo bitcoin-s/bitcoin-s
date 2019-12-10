@@ -10,7 +10,6 @@ class NetworkMessageTest extends BitcoinSUnitTest {
       NodeTestUtil.rawNetworkMessage)
   }
 
-
   it must "serialize and deserialize a version message example from the bitcoin wiki" in {
     val hex = {
       //taken from here with slight modifications
@@ -24,6 +23,6 @@ class NetworkMessageTest extends BitcoinSUnitTest {
         "00"
     }.toLowerCase
     val networkMsg = NetworkMessage.fromHex(hex)
-    networkMsg.hex must be (hex)
+    networkMsg.hex must be(hex)
   }
 }

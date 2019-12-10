@@ -1,7 +1,5 @@
 package org.bitcoins.core
 
-import org.bitcoins.core.number.Int64
-
 // We extend AnyVal to avoid runtime allocation of new
 // objects. See the Scala documentation on value classes
 // and universal traits for more:
@@ -24,7 +22,7 @@ package object currency {
 
   /** Provides natural language syntax for satoshis */
   implicit class SatoshisInt(private val i: Int) extends AnyVal {
-    def satoshis: Satoshis = Satoshis(Int64(i))
+    def satoshis: Satoshis = Satoshis(i)
     def satoshi: Satoshis = satoshis
     def sats: Satoshis = satoshis
     def sat: Satoshis = satoshis
@@ -32,7 +30,7 @@ package object currency {
 
   /** Provides natural language syntax for satoshis */
   implicit class SatoshisLong(private val i: Long) extends AnyVal {
-    def satoshis: Satoshis = Satoshis(Int64(i))
+    def satoshis: Satoshis = Satoshis(i)
     def satoshi: Satoshis = satoshis
     def sats: Satoshis = satoshis
     def sat: Satoshis = satoshis

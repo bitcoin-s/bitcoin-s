@@ -126,7 +126,18 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  behavior of "RpcClient"
+  behavior of "EclairRpcClient"
+
+  it must "have our EclairRpcClient work with .hashCode() and equals" in {
+    val f = (client1: EclairApi, client2: EclairApi) => {
+      Future {
+        assert(client1 != client2)
+        assert(client1.hashCode() != client2.hashCode())
+      }
+    }
+
+    executeWithClientOtherClient(f)
+  }
 
   /**
     * Please keep this test the very first. All other tests rely on the propagated gossip messages.
@@ -364,7 +375,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         val getChannelId =
           (client: EclairRpcClient, otherClient: EclairRpcClient) => {
             otherClient.getInfo.flatMap { info =>
-              val amt = Satoshis(Int64(100000))
+              val amt = Satoshis(100000)
               val openedChanF = clientF.flatMap(_.open(info.nodeId, amt))
 
               openedChanF.flatMap { channelId =>
@@ -833,11 +844,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       }
     }
 
-    def openChannel(
-        c1: EclairRpcClient,
-        c2: EclairRpcClient): Future[FundedChannelId] = {
+    def openChannel(c1: EclairRpcClient,
+                    c2: EclairRpcClient): Future[FundedChannelId] = {
       EclairRpcTestUtil
-        .openChannel(c1, c2, Satoshis(Int64(500000)), MilliSatoshis(500000))
+        .openChannel(c1, c2, Satoshis(500000), MilliSatoshis(500000))
     }
 
     val openedChannelsF: Future[(ChannelId, ChannelId)] = {
@@ -1039,7 +1049,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             ourUpdates.flatMap(our =>
               allUpdates.map { all =>
                 our != all
-              })
+            })
           }
 
           AsyncUtil
@@ -1135,9 +1145,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  private def hasConnection(
-      client: Future[EclairRpcClient],
-      nodeId: NodeId): Future[Assertion] = {
+  private def hasConnection(client: Future[EclairRpcClient],
+                            nodeId: NodeId): Future[Assertion] = {
 
     val hasPeersF = client.flatMap(_.getPeers.map(_.nonEmpty))
 
@@ -1152,9 +1161,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   /** Checks that the given [[org.bitcoins.eclair.rpc.client.EclairRpcClient]] has the given chanId */
-  private def hasChannel(
-      client: EclairRpcClient,
-      chanId: ChannelId): Future[Assertion] = {
+  private def hasChannel(client: EclairRpcClient,
+                         chanId: ChannelId): Future[Assertion] = {
     val recognizedOpenChannel: Future[Assertion] = {
 
       val chanResultF: Future[ChannelResult] = client.channel(chanId)
@@ -1169,7 +1177,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   private def openAndConfirmChannel(
       client1F: Future[EclairRpcClient],
       client2F: Future[EclairRpcClient],
-      amount: CurrencyUnit = Satoshis(Int64(1000000))): Future[ChannelId] = {
+      amount: CurrencyUnit = Satoshis(1000000)): Future[ChannelId] = {
 
     val bitcoindRpcF = client1F.map(EclairRpcTestUtil.getBitcoindRpc(_))
 

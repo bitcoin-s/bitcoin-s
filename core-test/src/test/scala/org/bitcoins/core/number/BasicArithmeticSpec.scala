@@ -1,7 +1,6 @@
 package org.bitcoins.core.number
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.scalatest.prop.PropertyChecks
 
 class BasicArithmeticSpec extends BitcoinSUnitTest {
 
@@ -30,7 +29,7 @@ class BasicArithmeticSpec extends BitcoinSUnitTest {
   behavior of "BasicArithmetic"
 
   it must "multiply safely and unsafely with an int" in {
-    PropertyChecks.forAll(NumberGenerator.bigInts, numWrapperGen) { (i, num) =>
+    forAll(NumberGenerator.bigInts, numWrapperGen) { (i, num) =>
       val unsafe = num * i
       val safe = num.multiplySafe(i)
       assert(safe.toOption.contains(unsafe))
@@ -38,7 +37,7 @@ class BasicArithmeticSpec extends BitcoinSUnitTest {
   }
 
   it must "multiply safely and unsafely with itself" in {
-    PropertyChecks.forAll(numWrapperGen, numWrapperGen) { (first, second) =>
+    forAll(numWrapperGen, numWrapperGen) { (first, second) =>
       val unsafe = first * second
       val safe = first.multiplySafe(second)
       assert(safe.toOption.contains(unsafe))
@@ -46,7 +45,7 @@ class BasicArithmeticSpec extends BitcoinSUnitTest {
   }
 
   it must "add safely and unsafely" in {
-    PropertyChecks.forAll(numWrapperGen, numWrapperGen) { (first, second) =>
+    forAll(numWrapperGen, numWrapperGen) { (first, second) =>
       val unsafe = first + second
       val safe = first.addSafe(second)
       assert(safe.toOption.contains(unsafe))
@@ -54,7 +53,7 @@ class BasicArithmeticSpec extends BitcoinSUnitTest {
   }
 
   it must "subtract safely and unsafely" in {
-    PropertyChecks.forAll(numWrapperGen, numWrapperGen) { (first, second) =>
+    forAll(numWrapperGen, numWrapperGen) { (first, second) =>
       val unsafe = first - second
       val safe = first.subtractSafe(second)
       assert(safe.toOption.contains(unsafe))

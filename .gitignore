@@ -77,3 +77,8 @@ libsecp256k1.pc
 node_modules
 website/build
 website/static/api
+
+
+#bloop 
+.bloop/
+.metals/

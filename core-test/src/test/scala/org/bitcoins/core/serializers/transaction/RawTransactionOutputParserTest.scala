@@ -27,7 +27,7 @@ class RawTransactionOutputParserTest extends BitcoinSUnitTest {
 
     val txOutput: TransactionOutput =
       RawTransactionOutputParser.read(rawTxOutput)
-    txOutput.value must be(Satoshis(Int64(20000)))
+    txOutput.value must be(Satoshis(20000))
     txOutput.scriptPubKey.asm must be(
       Seq(OP_HASH160,
           BytesToPushOntoStack(20),
@@ -51,7 +51,7 @@ class RawTransactionOutputParserTest extends BitcoinSUnitTest {
     val txOutput =
       "00f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac"
     val output = RawTransactionOutputParser.read(txOutput)
-    output.value must be(Satoshis(Int64(5000000000L)))
+    output.value must be(Satoshis(5000000000L))
   }
 
   it must "serialize the empty transaction output correctly" in {

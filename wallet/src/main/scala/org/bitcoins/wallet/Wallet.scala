@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.compat._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
@@ -10,6 +11,11 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.keymanager.{
+  EncryptedMnemonic,
+  EncryptedMnemonicHelper,
+  WalletStorage
+}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
@@ -20,16 +26,14 @@ import scala.util.{Failure, Success, Try}
 
 sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 
+  val nodeApi: NodeApi
+
   /**
     * @inheritdoc
     */
   override def lock(): LockedWalletApi = {
     logger.debug(s"Locking wallet")
-    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonicCode, passphrase)
-
-    WalletStorage.writeMnemonicToDisk(encrypted)
-    logger.debug("Locked wallet")
-    LockedWallet()
+    LockedWallet(nodeApi)
   }
 
   override def sendToAddress(
@@ -137,33 +141,36 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
-object Wallet extends CreateWalletApi with KeyHandlingLogger {
+object Wallet extends CreateWalletApi with WalletLogger {
 
   private case class WalletImpl(
-      mnemonicCode: MnemonicCode
+      mnemonicCode: MnemonicCode,
+      override val nodeApi: NodeApi
   )(
       implicit override val walletConfig: WalletAppConfig,
-      override val ec: ExecutionContext)
-      extends Wallet {
+      override val ec: ExecutionContext
+  ) extends Wallet {
 
     // todo: until we've figured out a better schem
     override val passphrase: AesPassword = Wallet.badPassphrase
   }
 
-  def apply(mnemonicCode: MnemonicCode)(
+  def apply(mnemonicCode: MnemonicCode, nodeApi: NodeApi)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet =
-    WalletImpl(mnemonicCode)
+    WalletImpl(mnemonicCode, nodeApi)
 
   // todo figure out how to handle password part of wallet
   val badPassphrase = AesPassword.fromNonEmptyString("changeMe")
 
-  // todo fix signature
-  override def initializeWithEntropy(entropy: BitVector)(
+  /** Initializes the mnemonic seed and saves it to file */
+  override def initializeWithEntropy(entropy: BitVector, nodeApi: NodeApi)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
 
     logger.info(s"Initializing wallet on chain ${config.network}")
+
+    val seedPath = config.seedPath
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: CompatEither[InitializeWalletError, MnemonicCode] =
@@ -188,13 +195,13 @@ object Wallet extends CreateWalletApi with KeyHandlingLogger {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
       } yield {
-        val wallet = WalletImpl(mnemonic)
+        val wallet = WalletImpl(mnemonic, nodeApi)
 
         for {
           _ <- config.initialize()
           _ = {
             val mnemonicPath =
-              WalletStorage.writeMnemonicToDisk(encrypted)
+              WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
             logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
           }
           _ <- {

@@ -233,7 +233,7 @@ object LnCurrencyUnits {
   def toSatoshi(lnCurrencyUnits: LnCurrencyUnit): Satoshis = {
     val pico = lnCurrencyUnits.toPicoBitcoins
     val sat = pico.toBigInt / PICO_TO_SATOSHIS
-    Satoshis(Int64(sat))
+    Satoshis(sat)
   }
 
   def fromMSat(msat: MilliSatoshis): PicoBitcoins = {

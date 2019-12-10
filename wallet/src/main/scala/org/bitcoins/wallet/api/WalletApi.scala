@@ -1,12 +1,14 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.wallet.HDUtil
@@ -26,6 +28,8 @@ sealed trait WalletApi {
 
   implicit val walletConfig: WalletAppConfig
   implicit val ec: ExecutionContext
+
+  val nodeApi: NodeApi
 
   def chainParams: ChainParams = walletConfig.chain
 
@@ -51,6 +55,32 @@ trait LockedWalletApi extends WalletApi {
   def processTransaction(
       transaction: Transaction,
       confirmations: Int): Future[LockedWalletApi]
+
+  /**
+    * Processes the give block, updating our DB state if it's relevant to us.
+    * @param block The block we're processing
+    */
+  def processBlock(block: Block, confirmations: Int): Future[LockedWalletApi]
+
+  def processCompactFilter(
+      blockHash: DoubleSha256Digest,
+      blockFilter: GolombFilter): Future[LockedWalletApi] = {
+    for {
+      utxos <- listUtxos()
+      addresses <- listAddresses()
+      scriptPubKeys = utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
+        .map(_.scriptPubKey)
+        .toSet
+      _ <- Future {
+        val matcher = SimpleFilterMatcher(blockFilter)
+        if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
+          nodeApi.downloadBlocks(Vector(blockHash))
+        }
+      }
+    } yield {
+      this
+    }
+  }
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance(): Future[CurrencyUnit] = {
@@ -159,10 +189,10 @@ trait LockedWalletApi extends WalletApi {
 
 trait UnlockedWalletApi extends LockedWalletApi {
 
-  def mnemonicCode: MnemonicCode
+  protected def mnemonicCode: MnemonicCode
 
   /** The wallet seed */
-  lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonicCode)
+  protected lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonicCode)
 
   // TODO: come back to how to handle this
   def passphrase: AesPassword

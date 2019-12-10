@@ -164,6 +164,7 @@ final case class DeriveAddressesResult(addresses: Vector[BitcoinAddress])
 
 final case class GetDescriptorInfoResult(
     descriptor: String,
+    checksum: Option[String],
     isrange: Boolean,
     issolvable: Boolean,
     hasprivatekeys: Boolean

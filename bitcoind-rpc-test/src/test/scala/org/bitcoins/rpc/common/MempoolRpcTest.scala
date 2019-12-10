@@ -5,11 +5,9 @@ import java.io.File
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  TransactionInput,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction.{TransactionInput, TransactionOutPoint}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -31,7 +29,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
 
         val instanceWithoutBroadcast =
           BitcoindInstance.fromConfig(configNoBroadcast,
-                                      BitcoindRpcTestUtil.newestBitcoindBinary)
+                                      BitcoindRpcTestUtil.getBinary(V18))
 
         val clientWithoutBroadcast =
           BitcoindRpcClient.withActorSystem(instanceWithoutBroadcast)
@@ -137,7 +135,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
           .createRawTransaction(Vector(input), Map(address2 -> Bitcoins.one))
       }
       signedTx <- BitcoindRpcTestUtil.signRawTransaction(client, createdTx)
-      txid2 <- client.sendRawTransaction(signedTx.hex, allowHighFees = true)
+      txid2 <- client.sendRawTransaction(signedTx.hex, maxfeerate = 0)
 
       descendantsTxid1 <- client.getMemPoolDescendants(txid1)
       verboseDescendantsTxid1 <- client.getMemPoolDescendantsVerbose(txid1)
@@ -152,9 +150,9 @@ class MempoolRpcTest extends BitcoindRpcTest {
       verboseAncestorsTxid2 <- client.getMemPoolAncestorsVerbose(txid2)
       _ = {
         assert(ancestorsTxid2.head == txid1)
-        val (txid, mempoolreults) = verboseAncestorsTxid2.head
+        val (txid, mempoolresults) = verboseAncestorsTxid2.head
         assert(txid == txid1)
-        assert(mempoolreults.descendantcount == 2)
+        assert(mempoolresults.descendantcount == 2)
       }
 
     } yield {

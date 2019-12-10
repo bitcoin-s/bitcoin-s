@@ -13,8 +13,6 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.scalacheck.Gen
 
-import scala.annotation.tailrec
-
 sealed abstract class CreditingTxGen {
 
   /** Minimum amount of outputs to generate */

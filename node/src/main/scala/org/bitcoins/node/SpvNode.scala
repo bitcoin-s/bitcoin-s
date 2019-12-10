@@ -3,18 +3,18 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.bloom.BloomFilter
+import org.bitcoins.core.crypto.HashDigest
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
+import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
 
 import scala.concurrent.Future
 
 case class SpvNode(
     nodePeer: Peer,
-    bloomFilter: BloomFilter,
-    nodeCallbacks: SpvNodeCallbacks = SpvNodeCallbacks.empty,
     nodeConfig: NodeAppConfig,
     chainConfig: ChainAppConfig,
     actorSystem: ActorSystem)
@@ -30,7 +30,14 @@ case class SpvNode(
 
   override val peer: Peer = nodePeer
 
-  override val callbacks: SpvNodeCallbacks = nodeCallbacks
+  private val _bloomFilter = new Mutable(BloomFilter.empty)
+
+  def bloomFilter: BloomFilter = _bloomFilter.atomicGet
+
+  def setBloomFilter(bloom: BloomFilter): SpvNode = {
+    _bloomFilter.atomicSet(bloom)
+    this
+  }
 
   /** Updates our bloom filter to match the given TX
     *
@@ -38,17 +45,17 @@ case class SpvNode(
     */
   def updateBloomFilter(transaction: Transaction): Future[SpvNode] = {
     logger.info(s"Updating bloom filter with transaction=${transaction.txIdBE}")
-    val newBloom = bloomFilter.update(transaction)
+    val newBloom = _bloomFilter.atomicUpdate(transaction)(_.update(_))
 
     // we could send filteradd messages, but we would
     // then need to calculate all the new elements in
     // the filter. this is easier:-)
-    val newBloomLoadF = peerMsgSenderF.map { p =>
-      p.sendFilterClearMessage()
-      p.sendFilterLoadMessage(newBloom)
-    }
+    for {
+      p <- peerMsgSenderF
+      _ <- p.sendFilterClearMessage()
+      _ <- p.sendFilterLoadMessage(newBloom)
+    } yield this
 
-    newBloomLoadF.map(_ => copy(bloomFilter = newBloom))
   }
 
   /** Updates our bloom filter to match the given address
@@ -58,12 +65,11 @@ case class SpvNode(
   def updateBloomFilter(address: BitcoinAddress): Future[SpvNode] = {
     logger.info(s"Updating bloom filter with address=$address")
     val hash = address.hash
-    val newBloom = bloomFilter.insert(hash)
+    _bloomFilter.atomicUpdate(hash)(_.insert(_))
+
     val sentFilterAddF = peerMsgSenderF.map(_.sendFilterAddMessage(hash))
 
-    sentFilterAddF.map { _ =>
-      copy(bloomFilter = newBloom)
-    }
+    sentFilterAddF.map(_ => this)
   }
 
   override def start(): Future[Node] = {
