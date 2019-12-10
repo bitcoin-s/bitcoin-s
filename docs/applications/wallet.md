@@ -100,9 +100,9 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
 import org.bitcoins.wallet.api.LockedWalletApi
 import org.bitcoins.wallet.api.InitializeWalletSuccess
 import org.bitcoins.wallet.Wallet
-import org.bitcoins.core.api.NodeApi
+import org.bitcoins.core.api._
 val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
-    Wallet.initialize(NodeApi.NoOp).collect {
+    Wallet.initialize(NodeApi.NoOp, ChainQueryApi.NoOp).collect {
         case InitializeWalletSuccess(wallet) => wallet
     }
 }

@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.NodeApi
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -83,7 +83,7 @@ abstract class LockedWallet
 
       case ReadMnemonicSuccess(mnemonic) =>
         logger.debug(s"Successfully uunlocked wallet")
-        UnlockWalletSuccess(Wallet(mnemonic, nodeApi))
+        UnlockWalletSuccess(Wallet(mnemonic, nodeApi, chainQueryApi))
     }
   }
 
@@ -132,13 +132,16 @@ abstract class LockedWallet
 }
 
 object LockedWallet {
-  private case class LockedWalletImpl(override val nodeApi: NodeApi)(
+  private case class LockedWalletImpl(
+      override val nodeApi: NodeApi,
+      override val chainQueryApi: ChainQueryApi)(
       implicit val ec: ExecutionContext,
       val walletConfig: WalletAppConfig)
       extends LockedWallet {}
 
-  def apply(nodeApi: NodeApi)(
+  def apply(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
       implicit ec: ExecutionContext,
-      config: WalletAppConfig): LockedWallet = LockedWalletImpl(nodeApi)
+      config: WalletAppConfig): LockedWallet =
+    LockedWalletImpl(nodeApi, chainQueryApi)
 
 }
