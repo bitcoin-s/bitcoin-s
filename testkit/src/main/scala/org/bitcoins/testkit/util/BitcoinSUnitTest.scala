@@ -6,14 +6,15 @@ import org.scalactic.anyvals.PosInt
 import org.scalatest.concurrent.TimeLimitedTests
 import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.concurrent.duration.DurationInt
 
-/** A wrapper for boiler plate testing procesures in bitcoin-s */
+/** A wrapper for boi ler plate testing procesures in bitcoin-s */
 abstract class BitcoinSUnitTest
-    extends FlatSpec
-    with MustMatchers
+    extends AnyFlatSpec
+    with Matchers
     with ScalaCheckPropertyChecks
     with TimeLimitedTests
     with BitcoinSLogger {
