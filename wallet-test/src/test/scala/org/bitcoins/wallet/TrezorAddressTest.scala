@@ -38,7 +38,7 @@ import org.bitcoins.core.hd.HDChainType.External
 import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.wallet.models.AccountDb
 import _root_.akka.actor.Address
-import org.bitcoins.core.api.NodeApi
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent.ExecutionContext
@@ -160,7 +160,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
   private def getWallet(config: WalletAppConfig): Future[Wallet] =
     Wallet
-      .initializeWithMnemonic(mnemonic, NodeApi.NoOp)(
+      .initializeWithMnemonic(mnemonic, NodeApi.NoOp, ChainQueryApi.NoOp)(
         config, // to make sure we're not passing in the wrong conf by accident
         implicitly[ExecutionContext]
       )

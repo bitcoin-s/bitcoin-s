@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.NodeApi
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.compat._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
@@ -27,13 +27,14 @@ import scala.util.{Failure, Success, Try}
 sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 
   val nodeApi: NodeApi
+  val chainQueryApi: ChainQueryApi
 
   /**
     * @inheritdoc
     */
   override def lock(): LockedWalletApi = {
     logger.debug(s"Locking wallet")
-    LockedWallet(nodeApi)
+    LockedWallet(nodeApi, chainQueryApi)
   }
 
   override def sendToAddress(
@@ -145,7 +146,8 @@ object Wallet extends CreateWalletApi with WalletLogger {
 
   private case class WalletImpl(
       mnemonicCode: MnemonicCode,
-      override val nodeApi: NodeApi
+      override val nodeApi: NodeApi,
+      override val chainQueryApi: ChainQueryApi
   )(
       implicit override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
@@ -155,16 +157,22 @@ object Wallet extends CreateWalletApi with WalletLogger {
     override val passphrase: AesPassword = Wallet.badPassphrase
   }
 
-  def apply(mnemonicCode: MnemonicCode, nodeApi: NodeApi)(
+  def apply(
+      mnemonicCode: MnemonicCode,
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet =
-    WalletImpl(mnemonicCode, nodeApi)
+    WalletImpl(mnemonicCode, nodeApi, chainQueryApi)
 
   // todo figure out how to handle password part of wallet
   val badPassphrase = AesPassword.fromNonEmptyString("changeMe")
 
   /** Initializes the mnemonic seed and saves it to file */
-  override def initializeWithEntropy(entropy: BitVector, nodeApi: NodeApi)(
+  override def initializeWithEntropy(
+      entropy: BitVector,
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Future[InitializeWalletResult] = {
 
@@ -195,7 +203,7 @@ object Wallet extends CreateWalletApi with WalletLogger {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
       } yield {
-        val wallet = WalletImpl(mnemonic, nodeApi)
+        val wallet = WalletImpl(mnemonic, nodeApi, chainQueryApi)
 
         for {
           _ <- config.initialize()

@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.api.NodeApi
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
@@ -30,6 +30,7 @@ sealed trait WalletApi {
   implicit val ec: ExecutionContext
 
   val nodeApi: NodeApi
+  val chainQueryApi: ChainQueryApi
 
   def chainParams: ChainParams = walletConfig.chain
 
