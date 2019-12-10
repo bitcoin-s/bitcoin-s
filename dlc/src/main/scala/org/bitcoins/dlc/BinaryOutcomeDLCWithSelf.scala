@@ -85,7 +85,7 @@ case class BinaryOutcomeDLCWithSelf(
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
-  import BinaryOutcomeDLCWithSelf.subtractFeeEqualAndSign
+  import BinaryOutcomeDLCWithSelf._
 
   /** Hash signed by oracle in Win case */
   val messageWin: ByteVector =
@@ -279,7 +279,7 @@ case class BinaryOutcomeDLCWithSelf(
                                       network,
                                       timeout.toUInt32)
 
-    txBuilderF.flatMap(subtractFeeEqualAndSign)
+    txBuilderF.flatMap(subtractFeeProportionalAndSign)
   }
 
   def createCETWinLocal(
