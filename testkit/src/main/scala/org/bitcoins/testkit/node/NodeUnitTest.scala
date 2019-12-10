@@ -252,7 +252,10 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createSpvNode(bitcoind, callbacks)
-      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind, node)
+      chain <- node.chainApiFromDb()
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind,
+                                                                 node,
+                                                                 chain)
     } yield {
       SpvNodeFundedWalletBitcoind(node = node,
                                   wallet = fundedWallet.wallet,
@@ -271,7 +274,10 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createNeutrinoNode(bitcoind, callbacks)
-      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind, node)
+      chain <- node.chainApiFromDb()
+      fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind,
+                                                                 node,
+                                                                 chain)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = node,
                                        wallet = fundedWallet.wallet,

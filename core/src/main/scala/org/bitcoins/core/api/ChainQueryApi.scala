@@ -18,3 +18,19 @@ trait ChainQueryApi {
       implicit ec: ExecutionContext): Future[DoubleSha256DigestBE]
 
 }
+
+object ChainQueryApi {
+
+  object NoOp extends ChainQueryApi {
+
+    /** Gets the height of the given block */
+    override def getBlockHeight(blockHash: DoubleSha256DigestBE)(
+        implicit ec: ExecutionContext): Future[Option[Int]] =
+      Future.successful(None)
+
+    /** Gets the hash of the block that is what we consider "best" */
+    override def getBestBlockHash(
+        implicit ec: ExecutionContext): Future[DoubleSha256DigestBE] =
+      Future.successful(DoubleSha256DigestBE.empty)
+  }
+}

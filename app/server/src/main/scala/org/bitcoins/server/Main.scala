@@ -5,7 +5,7 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.NodeApi
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
@@ -41,7 +41,8 @@ object Main extends App {
     _ <- conf.initialize()
 
     uninitializedNode <- createNode
-    wallet <- createWallet(uninitializedNode)
+    chainApi <- uninitializedNode.chainApiFromDb()
+    wallet <- createWallet(uninitializedNode, chainApi)
     node <- initializeNode(uninitializedNode, wallet)
 
     _ <- node.start()
@@ -89,10 +90,12 @@ object Main extends App {
     }
   }
 
-  private def createWallet(nodeApi: NodeApi): Future[UnlockedWalletApi] = {
+  private def createWallet(
+      nodeApi: Node,
+      chainQueryApi: ChainQueryApi): Future[UnlockedWalletApi] = {
     if (hasWallet()) {
       logger.info(s"Using pre-existing wallet")
-      val locked = LockedWallet(nodeApi)
+      val locked = LockedWallet(nodeApi, chainQueryApi)
 
       // TODO change me when we implement proper password handling
       locked.unlock(Wallet.badPassphrase) match {
@@ -101,7 +104,7 @@ object Main extends App {
       }
     } else {
       logger.info(s"Creating new wallet")
-      Wallet.initialize(nodeApi).map {
+      Wallet.initialize(nodeApi, chainQueryApi).map {
         case InitializeWalletSuccess(wallet) => wallet
         case err: InitializeWalletError      => error(err)
       }
