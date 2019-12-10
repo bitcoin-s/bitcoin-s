@@ -6,11 +6,12 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
-import scala.math.Numeric
+
+import scala.math.{Numeric, Ordering}
+import scala.util.{Failure, Success, Try}
 
 sealed abstract class CurrencyUnit
     extends NetworkElement
-    with Ordered[CurrencyUnit]
     with BasicArithmetic[CurrencyUnit]
     with Numeric[CurrencyUnit] {
   type A
@@ -40,12 +41,34 @@ sealed abstract class CurrencyUnit
   override def compare(x: CurrencyUnit, y: CurrencyUnit): Int =
     x.satoshis.underlying compare y.satoshis.underlying
 
-  override def compare(c: CurrencyUnit): Int =
-    satoshis.underlying compare c.satoshis.underlying
+  // Cannot use the override modifier because this method was added in scala version 2.13
+  def parseString(str: String): Option[CurrencyUnit] = {
+    if (str.isEmpty) {
+      None
+    } else {
+      Try(str.toLong) match {
+        case Success(num) => Some(Satoshis(num))
+        case Failure(_)   => None
+      }
+    }
+  }
+
+  def compare(c: CurrencyUnit): Int =
+    compare(this, c)
 
   def !=(c: CurrencyUnit): Boolean = !(this == c)
 
   def ==(c: CurrencyUnit): Boolean = satoshis == c.satoshis
+
+  def <(c: CurrencyUnit): Boolean = satoshis.underlying < c.satoshis.underlying
+
+  def <=(c: CurrencyUnit): Boolean =
+    satoshis.underlying <= c.satoshis.underlying
+
+  def >(c: CurrencyUnit): Boolean = satoshis.underlying > c.satoshis.underlying
+
+  def >=(c: CurrencyUnit): Boolean =
+    satoshis.underlying >= c.satoshis.underlying
 
   override def +(c: CurrencyUnit): CurrencyUnit = {
     Satoshis(satoshis.underlying + c.satoshis.underlying)
@@ -160,4 +183,10 @@ object CurrencyUnits {
     case b: Bitcoins => b.satoshis
     case x: Satoshis => x
   }
+
+  object Implicits {
+    implicit val currencyUnitOrdering: Ordering[CurrencyUnit] =
+      (x: CurrencyUnit, y: CurrencyUnit) => x.compare(y)
+  }
+
 }
