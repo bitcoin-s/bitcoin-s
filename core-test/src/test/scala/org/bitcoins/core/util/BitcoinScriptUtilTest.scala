@@ -10,17 +10,13 @@ import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.testkit.core.gen.ScriptGenerators
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 3/2/16.
   */
-class BitcoinScriptUtilTest
-    extends FlatSpec
-    with MustMatchers
-    with PropertyChecks {
+class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
   //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
   val asm = TestUtil.p2pkhScriptPubKey.asm

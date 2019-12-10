@@ -2,7 +2,6 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.scalatest.prop.PropertyChecks
 import scodec.bits._
 
 class ECPublicKeyTest extends BitcoinSUnitTest {
@@ -30,7 +29,7 @@ class ECPublicKeyTest extends BitcoinSUnitTest {
   }
 
   it must "have serialization symmetry from ECPublicKey -> ECPoint -> ECPublicKey" in {
-    PropertyChecks.forAll(CryptoGenerators.publicKey) { pubKey =>
+    forAll(CryptoGenerators.publicKey) { pubKey =>
       val p = pubKey.toPoint
       val pub2 = ECPublicKey.fromPoint(p, pubKey.isCompressed)
       assert(pubKey == pub2)

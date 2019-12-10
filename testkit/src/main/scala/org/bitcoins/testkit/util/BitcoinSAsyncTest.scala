@@ -9,6 +9,9 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
 import org.scalatest._
+import org.scalatest.flatspec.FixtureAsyncFlatSpec
+import org.scalatest.flatspec.AsyncFlatSpec
+import org.scalatest.matchers.must.Matchers
 import org.scalatest.concurrent.AsyncTimeLimitedTests
 import org.scalatest.time.Span
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -23,7 +26,7 @@ import scala.concurrent.duration.DurationInt
 trait BaseAsyncTest
     extends BeforeAndAfter
     with BeforeAndAfterAll
-    with MustMatchers
+    with Matchers
     with ScalaCheckPropertyChecks
     with AsyncTimeLimitedTests
     with BitcoinSLogger { this: AsyncTestSuite =>
@@ -197,16 +200,16 @@ trait BaseAsyncTest
 /** A trait that uses [[AsyncFlatSpec]] to execute tests
   * This is different than [[BitcoinsBaseAsyncTest]] in the sense that
   * it extends [[AsyncFlatSpec]]. Some test cases in bitcoin-s we want
-  * to provide fixtures, which means that suite needs to extend [[org.scalatest.fixture.AsyncFlatSpec fixture.AsyncFlatSpec]]
+  * to provide fixtures, which means that suite needs to extend [[FixtureAsyncFlatSpec FixtureAsyncFlatSpec]]
   * to be able to use that fixture
   *
   * This test trait should be used for async tests that do NOT use a fixture.
   * */
 trait BitcoinSAsyncTest extends AsyncFlatSpec with BaseAsyncTest
 
-/** A trait that uses [[fixture.AsyncFlatSpec fixture.AsyncFlatSpec]] to execute tests
+/** A trait that uses [[FixtureAsyncFlatSpec AsyncFlatSpec]] to execute tests
   * This is different than [[BitcoinSAsyncTest BitcoinSAsyncTest]] as you can use a fixture
   * with this test suite.
   *
   * */
-trait BitcoinSAsyncFixtureTest extends fixture.AsyncFlatSpec with BaseAsyncTest
+trait BitcoinSAsyncFixtureTest extends FixtureAsyncFlatSpec with BaseAsyncTest

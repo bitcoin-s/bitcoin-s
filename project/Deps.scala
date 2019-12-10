@@ -6,7 +6,9 @@ object Deps {
     val bouncyCastle = "1.55"
     val logback = "1.2.3"
     val scalacheck = "1.14.2"
-    val scalaTest = "3.0.8"
+    val scalaTest = "3.1.0"
+
+    val scalaTestPlus = "3.1.0.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.29"
     val spray = "1.3.5"
     val zeromq = "0.5.1"
@@ -97,6 +99,7 @@ object Deps {
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
+    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources() withJavadoc()
   }
 
   object Test {
@@ -231,6 +234,7 @@ object Deps {
     Compile.slf4j,
     Compile.scalacheck,
     Compile.scalaTest,
+    Compile.scalaTestPlus,
     Test.akkaTestkit
   )
 

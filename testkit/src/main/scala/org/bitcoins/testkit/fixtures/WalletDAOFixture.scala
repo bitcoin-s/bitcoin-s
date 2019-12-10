@@ -2,6 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest._
+import org.scalatest.flatspec.FixtureAsyncFlatSpec
 import org.bitcoins.wallet.models._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
@@ -11,7 +12,7 @@ case class WalletDAOs(
     addressDAO: AddressDAO,
     utxoDAO: SpendingInfoDAO)
 
-trait WalletDAOFixture extends fixture.AsyncFlatSpec with BitcoinSWalletTest {
+trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
 
   private lazy val daos: WalletDAOs = {
     val account = AccountDAO()
