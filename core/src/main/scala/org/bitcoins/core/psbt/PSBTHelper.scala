@@ -4,11 +4,7 @@ import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, ExtPublicKey}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script.{
-  ScriptPubKey,
-  ScriptSignature,
-  WitnessScriptPubKey
-}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.psbt.GlobalPSBTRecord._
 import org.bitcoins.core.psbt.InputPSBTRecord._
@@ -16,10 +12,13 @@ import org.bitcoins.core.psbt.PSBTGlobalKey._
 import org.bitcoins.core.psbt.PSBTInputKey._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.BitcoinScriptUtil
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+
+private[psbt] case class PSBTParseResult[T <: PSBTMap](
+    remainingBytes: ByteVector,
+    maps: Vector[T])
 
 object PSBTHelper {
 
@@ -45,18 +44,20 @@ object PSBTHelper {
     }
   }
 
+  def parseGlobalMap(bytes: ByteVector): PSBTParseResult[GlobalPSBTMap] = {
+    val (remainingBytes, records) = parseGlobalMap(bytes, Nil, None)
+    PSBTParseResult[GlobalPSBTMap](remainingBytes,
+                                   Vector(GlobalPSBTMap(records)))
+  }
+
   @tailrec
-  def parseGlobalMap(
+  private def parseGlobalMap(
       remainingBytes: ByteVector,
       accum: Seq[GlobalPSBTRecord],
-      txOpt: Option[Transaction]): (
-      ByteVector,
-      Vector[GlobalPSBTRecord],
-      Option[Transaction]) = {
+      txOpt: Option[Transaction]): (ByteVector, Vector[GlobalPSBTRecord]) = {
     if (remainingBytes.head == terminator) {
-      (remainingBytes.tail, accum.toVector, txOpt)
+      (remainingBytes.tail, accum.toVector)
     } else {
-
       val (totalSize, key, value) = parseKeyAndValue(remainingBytes)
       val next = remainingBytes.drop(totalSize) // Drop the key-value map
 
@@ -64,7 +65,8 @@ object PSBTHelper {
         case UnsignedTransactionKey =>
           txOpt match {
             case Some(_) =>
-              throw new Exception("Duplicate Key, unsigned tx already provided")
+              throw new IllegalArgumentException(
+                "Duplicate Key, unsigned tx already provided")
             case None =>
               require(
                 key.size == 1,
@@ -73,12 +75,12 @@ object PSBTHelper {
               val transaction: Transaction = Transaction.fromBytes(value)
               parseGlobalMap(next,
                              accum :+ UnsignedTransaction(transaction),
-                             Option(transaction))
+                             Some(transaction))
           }
         case XPubKeyKey =>
           val xpub = ExtPublicKey.fromBytes(key.tail.take(78))
           val fingerprint = value.take(4)
-          val path = BIP32Path.fromBytes(value.drop(4))
+          val path = BIP32Path.fromBytesLE(value.drop(4))
           parseGlobalMap(next, accum :+ XPubKey(xpub, fingerprint, path), txOpt)
         case VersionKey =>
           require(
@@ -95,13 +97,19 @@ object PSBTHelper {
     }
   }
 
-  @tailrec
   def parseInputMaps(
+      bytes: ByteVector,
+      numInputs: Int): PSBTParseResult[InputPSBTMap] = {
+    parseInputMaps(bytes, numInputs, Nil)
+  }
+
+  @tailrec
+  private def parseInputMaps(
       remainingBytes: ByteVector,
       remainingInputs: Int,
-      accum: Seq[InputPSBTMap]): (ByteVector, Vector[InputPSBTMap]) = {
+      accum: Seq[InputPSBTMap]): PSBTParseResult[InputPSBTMap] = {
     if (remainingInputs <= 0 || remainingBytes.isEmpty) {
-      (remainingBytes, accum.toVector)
+      PSBTParseResult[InputPSBTMap](remainingBytes, accum.toVector)
     } else {
 
       val (next, map) = PSBTHelper.parseInputMap(remainingBytes, Nil)
@@ -166,7 +174,7 @@ object PSBTHelper {
         case PSBTInputKey.BIP32DerivationPathKey =>
           val pubKey = ECPublicKey(key.tail)
           val fingerprint = value.take(4)
-          val path = BIP32Path(value.drop(4))
+          val path = BIP32Path.fromBytesLE(value.drop(4))
           parseInputMap(
             next,
             accum :+ InputPSBTRecord.BIP32DerivationPath(pubKey,
@@ -195,13 +203,19 @@ object PSBTHelper {
     }
   }
 
-  @tailrec
   def parseOutputMaps(
+      bytes: ByteVector,
+      numOutputs: Int): PSBTParseResult[OutputPSBTMap] = {
+    parseOutputMaps(bytes, numOutputs, Nil)
+  }
+
+  @tailrec
+  private def parseOutputMaps(
       remainingBytes: ByteVector,
       remainingOutputs: Int,
-      accum: Seq[OutputPSBTMap]): (ByteVector, Vector[OutputPSBTMap]) = {
+      accum: Seq[OutputPSBTMap]): PSBTParseResult[OutputPSBTMap] = {
     if (remainingOutputs <= 0 || remainingBytes.isEmpty) {
-      (remainingBytes, accum.toVector)
+      PSBTParseResult[OutputPSBTMap](remainingBytes, accum.toVector)
     } else {
 
       val (next, map) = PSBTHelper.parseOutputMap(remainingBytes, Nil)
@@ -217,7 +231,6 @@ object PSBTHelper {
     if (remainingBytes.isEmpty || remainingBytes.head == terminator) {
       (remainingBytes.tail, accum.toVector)
     } else {
-
       val (totalSize, key, value) = parseKeyAndValue(remainingBytes)
       val next = remainingBytes.drop(totalSize) // Drop the key-value map
 
@@ -241,7 +254,7 @@ object PSBTHelper {
         case PSBTOutputKey.BIP32DerivationPathKey =>
           val pubKey = ECPublicKey(key.tail)
           val fingerprint = value.take(4)
-          val path = BIP32Path(value.drop(4))
+          val path = BIP32Path.fromBytesLE(value.drop(4))
           parseOutputMap(
             next,
             accum :+ OutputPSBTRecord.BIP32DerivationPath(pubKey,

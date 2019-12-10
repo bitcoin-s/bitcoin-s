@@ -8,8 +8,7 @@ import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
   ScriptPubKey,
   ScriptSignature,
-  ScriptWitness,
-  WitnessScriptPubKey
+  ScriptWitness
 }
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
@@ -18,46 +17,11 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput,
   WitnessTransaction
 }
+import org.bitcoins.core.psbt.GlobalPSBTRecord.UnsignedTransaction
+import org.bitcoins.core.psbt.PSBTGlobalKey.UnsignedTransactionKey
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.util.Factory
 import scodec.bits._
-
-object PSBT {
-  final val magicBytes = hex"70736274ff"
-
-  def fromBytes(byteVector: ByteVector): PSBT = {
-    require(
-      byteVector.startsWith(magicBytes),
-      s"A PSBT must start with the magic bytes $magicBytes, got: $byteVector")
-
-    val bytes = byteVector.drop(5)
-
-    val (bytes1: ByteVector,
-         global: Vector[GlobalPSBTRecord],
-         txOpt: Option[Transaction]) =
-      PSBTHelper.parseGlobalMap(bytes, accum = Nil, txOpt = None)
-    if (txOpt.isEmpty)
-      throw new Exception("Invalid PSBT. No global transaction")
-
-    val (bytes2, inputMaps) =
-      PSBTHelper.parseInputMaps(bytes1, txOpt.get.inputs.size, Nil)
-
-    val (bytes3, outputMaps) =
-      PSBTHelper.parseOutputMaps(bytes2, txOpt.get.outputs.size, Nil)
-
-    require(bytes3.isEmpty, s"The PSBT should be empty now, got: $bytes3")
-
-    PSBT(GlobalPSBTMap(global), inputMaps, outputMaps, txOpt.get)
-  }
-
-  def fromBase64(base64: String): PSBT = {
-    ByteVector.fromBase64(base64) match {
-      case None =>
-        throw new IllegalArgumentException(
-          s"String given was not in base64 format, got: $base64")
-      case Some(bytes) => fromBytes(bytes)
-    }
-  }
-}
 
 case class PSBT(
     globalMap: GlobalPSBTMap,
@@ -91,6 +55,56 @@ sealed trait PSBTRecord extends NetworkElement {
     val valueSize = CompactSizeUInt.calc(value)
 
     keySize.bytes ++ key ++ valueSize.bytes ++ value
+  }
+}
+
+object PSBT extends Factory[PSBT] {
+  // The magic bytes and separator defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#specification
+  final val magicBytes = hex"70736274ff"
+
+  def fromBytes(byteVector: ByteVector): PSBT = {
+    require(
+      byteVector.startsWith(magicBytes),
+      s"A PSBT must start with the magic bytes $magicBytes, got: $byteVector")
+
+    val bytes = byteVector.drop(magicBytes.size)
+
+    val globalResult: PSBTParseResult[GlobalPSBTMap] =
+      PSBTHelper.parseGlobalMap(bytes)
+
+    require(globalResult.maps.size == 1, "There should only be one global map")
+
+    val txRecords = globalResult.maps.head
+      .getRecords[UnsignedTransaction](UnsignedTransactionKey)
+
+    if (txRecords.isEmpty)
+      throw new IllegalArgumentException("Invalid PSBT. No global transaction")
+    if (txRecords.size > 1)
+      throw new IllegalArgumentException(
+        s"Invalid PSBT. There can only be one global transaction, got: ${txRecords.size}")
+
+    val tx = txRecords.head.transaction
+
+    val inputsResult: PSBTParseResult[InputPSBTMap] =
+      PSBTHelper.parseInputMaps(globalResult.remainingBytes, tx.inputs.size)
+
+    val outputsResult: PSBTParseResult[OutputPSBTMap] =
+      PSBTHelper.parseOutputMaps(inputsResult.remainingBytes, tx.outputs.size)
+
+    require(
+      outputsResult.remainingBytes.isEmpty,
+      s"The PSBT should be empty now, got: ${outputsResult.remainingBytes}")
+
+    PSBT(globalResult.maps.head, inputsResult.maps, outputsResult.maps, tx)
+  }
+
+  def fromBase64(base64: String): PSBT = {
+    ByteVector.fromBase64(base64) match {
+      case None =>
+        throw new IllegalArgumentException(
+          s"String given was not in base64 format, got: $base64")
+      case Some(bytes) => fromBytes(bytes)
+    }
   }
 }
 
@@ -128,7 +142,7 @@ object GlobalPSBTRecord {
 
     override val key: ByteVector = hex"01" ++ xpub.bytes
     override val value: ByteVector = derivationPath.path
-      .foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytes)
+      .foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
   case class Version(version: UInt32) extends GlobalPSBTRecord {
@@ -190,7 +204,7 @@ object InputPSBTRecord {
 
     override val key: ByteVector = hex"06" ++ pubKey.bytes
     override val value: ByteVector =
-      path.path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytes)
+      path.path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
   case class FinalizedScriptSig(scriptSig: ScriptSignature, extra: ByteVector)
@@ -239,14 +253,14 @@ object OutputPSBTRecord {
 
     override val key: ByteVector = hex"02" ++ pubKey.bytes
     override val value: ByteVector =
-      path.path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytes)
+      path.path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
   case class Unknown(key: ByteVector, value: ByteVector)
       extends OutputPSBTRecord
 }
 
-sealed trait PSBTMap {
+sealed trait PSBTMap extends NetworkElement {
   require(elements.map(_.key).groupBy(identity).values.forall(_.length == 1),
           "All keys must be unique.")
 
@@ -382,6 +396,28 @@ object PSBTOutputKey {
   }
 }
 
-case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap
-case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap
-case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap
+case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
+
+  def getRecords[T <: GlobalPSBTRecord](key: PSBTGlobalKey): Vector[T] = {
+    elements
+      .filter(element => PSBTGlobalKey.fromByte(element.key.head) == key)
+      .asInstanceOf[Vector[T]]
+  }
+}
+case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
+
+  def getRecords[T <: InputPSBTRecord](key: PSBTInputKey): Vector[T] = {
+    elements
+      .filter(element => PSBTInputKey.fromByte(element.key.head) == key)
+      .asInstanceOf[Vector[T]]
+
+  }
+}
+case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
+
+  def getRecords[T <: OutputPSBTRecord](key: PSBTOutputKey): Vector[T] = {
+    elements
+      .filter(element => PSBTOutputKey.fromByte(element.key.head) == key)
+      .asInstanceOf[Vector[T]]
+  }
+}

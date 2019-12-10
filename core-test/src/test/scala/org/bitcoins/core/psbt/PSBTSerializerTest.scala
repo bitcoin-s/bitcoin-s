@@ -1,9 +1,24 @@
 package org.bitcoins.core.psbt
 
+import org.bitcoins.core.crypto.{ECPublicKey, ExtPublicKey}
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.hd.BIP32Path
+import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
+import org.bitcoins.core.psbt.InputPSBTRecord.{
+  BIP32DerivationPath,
+  WitnessScript,
+  WitnessUTXO
+}
+import org.bitcoins.core.psbt.PSBTInputKey.{
+  BIP32DerivationPathKey,
+  WitnessScriptKey,
+  WitnessUTXOKey
+}
+import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
-
-import scala.util.{Failure, Success, Try}
 
 /**
   * Test vectors are taken directly from the BIP 174 reference sheet
@@ -29,6 +44,116 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     // PSBT with `PSBT_GLOBAL_XPUB`.
     hex"70736274ff01009d0100000002710ea76ab45c5cb6438e607e59cc037626981805ae9e0dfd9089012abb0be5350100000000ffffffff190994d6a8b3c8c82ccbcfb2fba4106aa06639b872a8d447465c0d42588d6d670000000000ffffffff0200e1f505000000001976a914b6bc2c0ee5655a843d79afedd0ccc3f7dd64340988ac605af405000000001600141188ef8e4ce0449eaac8fb141cbf5a1176e6a088000000004f010488b21e039e530cac800000003dbc8a5c9769f031b17e77fea1518603221a18fd18f2b9a54c6c8c1ac75cbc3502f230584b155d1c7f1cd45120a653c48d650b431b67c5b2c13f27d7142037c1691027569c503100008000000080000000800001011f00e1f5050000000016001433b982f91b28f160c920b4ab95e58ce50dda3a4a220203309680f33c7de38ea6a47cd4ecd66f1f5a49747c6ffb8808ed09039243e3ad5c47304402202d704ced830c56a909344bd742b6852dccd103e963bae92d38e75254d2bb424502202d86c437195df46c0ceda084f2a291c3da2d64070f76bf9b90b195e7ef28f77201220603309680f33c7de38ea6a47cd4ecd66f1f5a49747c6ffb8808ed09039243e3ad5c1827569c5031000080000000800000008000000000010000000001011f00e1f50500000000160014388fb944307eb77ef45197d0b0b245e079f011de220202c777161f73d0b7c72b9ee7bde650293d13f095bc7656ad1f525da5fd2e10b11047304402204cb1fb5f869c942e0e26100576125439179ae88dca8a9dc3ba08f7953988faa60220521f49ca791c27d70e273c9b14616985909361e25be274ea200d7e08827e514d01220602c777161f73d0b7c72b9ee7bde650293d13f095bc7656ad1f525da5fd2e10b1101827569c5031000080000000800000008000000000000000000000220202d20ca502ee289686d21815bd43a80637b0698e1fbcdbe4caed445f6c1a0a90ef1827569c50310000800000008000000080000000000400000000"
   )
+
+  it must "successfully serialize a PSBT's global data" in {
+    val psbt = PSBT.fromBytes(validPsbts(5))
+    val tx = Transaction.fromBytes(
+      hex"02000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef13357900000000")
+
+    assert(psbt.tx == tx)
+    assert(psbt.inputMaps.size == tx.inputs.size && tx.inputs.size == 1)
+    assert(psbt.outputMaps.size == tx.outputs.size && tx.outputs.size == 1)
+    assert(psbt.globalMap.elements.exists(record =>
+      PSBTGlobalKey.fromByte(record.key.head) == PSBTGlobalKey.XPubKeyKey))
+
+    val globalXPubs =
+      psbt.globalMap
+        .getRecords[XPubKey](PSBTGlobalKey.XPubKeyKey)
+    assert(globalXPubs.size == 2)
+
+    val xpub1 = ExtPublicKey
+      .fromString(
+        "tpubDBkJeJo2X94Yq3RVz65DoUgyLUkaDrkfyrn2VcgyCRSKCRonvKvCF2FpYDGJWDkdRHBajXJGpc63GnumUt63ySvqCu2XaTRGVTKMYGuFk9H")
+      .get
+    val finger1 = hex"d90c6a4f"
+    val path1 = BIP32Path.fromString("m/174'/0'")
+
+    assert(globalXPubs.head == XPubKey(xpub1, finger1, path1))
+
+    val xpub2 = ExtPublicKey
+      .fromString(
+        "tpubDBkJeJo2X94YsvtBEU1eKoibEWiNv51nW5iHhs6VZp59jsE6nen8KZMFyGHuGbCvqjRqirgeMcfpVBkttpUUT6brm4duzSGoZeTbhqCNUu6")
+      .get
+    val finger2 = hex"d90c6a4f"
+    val path2 = BIP32Path.fromString("m/174'/1'")
+
+    assert(globalXPubs.last == XPubKey(xpub2, finger2, path2))
+  }
+
+  it must "successfully serialize a PSBT's input data" in {
+    val psbt = PSBT.fromBytes(validPsbts(5))
+
+    assert(psbt.inputMaps.size == 1)
+    assert(psbt.inputMaps.head.elements.size == 4)
+
+    val witnessUTXO =
+      psbt.inputMaps.head.getRecords[WitnessUTXO](WitnessUTXOKey).head
+    val output = TransactionOutput(
+      Satoshis(500000000),
+      RawScriptPubKeyParser.read(
+        hex"2200202c5486126c4978079a814e13715d65f36459e4d6ccaded266d0508645bafa632"))
+    assert(witnessUTXO.spentWitnessTransaction == output)
+
+    val witnessScript =
+      psbt.inputMaps.head.getRecords[WitnessScript](WitnessScriptKey).head
+    val scriptPubKey = MultiSignatureScriptPubKey(
+      2,
+      Vector(
+        ECPublicKey(
+          "029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c8871"),
+        ECPublicKey(
+          "03372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b")
+      )
+    )
+
+    assert(witnessScript.witnessScript == scriptPubKey)
+
+    val bip32paths = psbt.inputMaps.head
+      .getRecords[BIP32DerivationPath](BIP32DerivationPathKey)
+
+    assert(bip32paths.size == 2)
+
+    assert(bip32paths.exists { path =>
+      path.pubKey == ECPublicKey(
+        "029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c8871") &&
+      path.masterFingerprint == hex"d90c6a4f" &&
+      path.path == BIP32Path.fromString("m/174'/0'/0")
+    })
+
+    assert(bip32paths.exists { path =>
+      path.pubKey == ECPublicKey(
+        "03372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b") &&
+      path.masterFingerprint == hex"d90c6a4f" &&
+      path.path == BIP32Path.fromString("m/174'/1'/0")
+    })
+  }
+
+  it must "successfully serialize a PSBT's output data" in {
+    val psbt = PSBT.fromBytes(validPsbts(5))
+
+    assert(psbt.outputMaps.size == 1)
+    assert(psbt.outputMaps.head.elements.size == 1)
+
+    val bip32path =
+      psbt.outputMaps.head
+        .getRecords[OutputPSBTRecord.BIP32DerivationPath](
+          PSBTOutputKey.BIP32DerivationPathKey)
+        .head
+
+    assert(
+      bip32path.pubKey == ECPublicKey(
+        "039eff1f547a1d5f92dfa2ba7af6ac971a4bd03ba4a734b03156a256b8ad3a1ef9"))
+    assert(bip32path.masterFingerprint == hex"ede45cc5")
+    assert(bip32path.path == BIP32Path.fromString("m/0'/0'/1'"))
+  }
+
+  it must "successfully serialize a PSBT with unknown types" in {
+    val psbtWithUnknowns = PSBT.fromBytes(validPsbts(6))
+    val inputKey = PSBTInputKey.fromByte(
+      psbtWithUnknowns.inputMaps.head.elements.head.key.head)
+
+    assert(inputKey == PSBTInputKey.UnknownKey)
+  }
 
   it must "successfully serialize and deserialize valid PSBTs from bytes" in {
     assert(validPsbts.forall(psbt => PSBT.fromBytes(psbt).bytes == psbt))
@@ -84,11 +209,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
   )
 
   it must "fail to serialize invalid PSBTs" in {
-    assert(invalidPsbts.forall(psbt =>
-      Try(PSBT.fromBytes(psbt)) match {
-        case Success(_) =>
-          fail(s"The following psbt was able to serialize: $psbt")
-        case Failure(_) => true
-      }))
+    invalidPsbts.foreach(invalidPsbt =>
+      assertThrows[Exception](PSBT(invalidPsbt)))
   }
 }
