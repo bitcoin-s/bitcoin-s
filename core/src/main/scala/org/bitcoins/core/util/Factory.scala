@@ -12,8 +12,14 @@ abstract class Factory[+T] {
   /** Creates a T out of a hex string. */
   def fromHex(hex: String): T = fromBytes(BitcoinSUtil.decodeHex(hex))
 
+  /** Creates a T out of a hex string in little endian. */
+  def fromHexLE(hex: String): T = fromBytesLE(BitcoinSUtil.decodeHex(hex))
+
   /** Creates a T out of a sequence of bytes. */
   def fromBytes(bytes: ByteVector): T
+
+  /** Creates a T out of a sequence of bytes in little endian. */
+  def fromBytesLE(bytes: ByteVector): T = fromBytes(bytes.reverse)
 
   /** Creates a T out of a sequence of bytes. */
   def apply(bytes: ByteVector): T = fromBytes(bytes)
