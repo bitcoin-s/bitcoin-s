@@ -16,8 +16,14 @@ trait NetworkElement extends Any {
   /** The hexadecimal representation of the NetworkElement */
   def hex: String = bytes.toHex
 
+  /** The hexadecimal representation of the NetworkElement in little endian */
+  def hexLE: String = bytesLE.toHex
+
   /** The byte representation of the NetworkElement */
   def bytes: ByteVector
+
+  /** The byte representation of the NetworkElement in little endian */
+  def bytesLE: ByteVector = bytes.reverse
 
   def logger = BitcoinSLogger.logger
 }
