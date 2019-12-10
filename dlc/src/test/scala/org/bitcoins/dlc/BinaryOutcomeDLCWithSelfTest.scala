@@ -15,16 +15,22 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   P2PKHSpendingInfo
 }
-import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkit.core.gen.{
+  CurrencyUnitGenerator,
+  TransactionGenerators
+}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 import org.scalatest.Assertion
@@ -35,20 +41,14 @@ import scala.concurrent.Future
 class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
   behavior of "BinaryOutcomeDLCWithSelf"
 
+  // Can't use TransactionGenerators.realisiticOutputs as that can return List.empty
+  val nonEmptyRealisticOutputsGen: Gen[List[TransactionOutput]] = Gen
+    .choose(1, 5)
+    .flatMap(n => Gen.listOfN(n, TransactionGenerators.realisticOutput))
+    .suchThat(_.nonEmpty)
+
   it should "correctly subtract fees evenly amongst outputs" in {
-    // Can't use TransactionGenerators.realisiticOutputs as that can return List.empty
-    val nonEmptyRealisticOutputsGen = Gen
-      .choose(1, 5)
-      .flatMap(n => Gen.listOfN(n, TransactionGenerators.realisticOutput))
-      .suchThat(_.nonEmpty)
-
-    // CurrencyUnitGenerator.feeRate gives too high of fees
-    val feeRateGen = Gen.choose(0, CurrencyUnits.oneBTC.satoshis.toLong).map {
-      n =>
-        SatoshisPerByte(Satoshis(Int64(n)))
-    }
-
-    forAllAsync(nonEmptyRealisticOutputsGen, feeRateGen) {
+    forAllAsync(nonEmptyRealisticOutputsGen, CurrencyUnitGenerator.smallFeeUnit) {
       case (outputs, feeRate) =>
         val totalInput = outputs.foldLeft(CurrencyUnits.zero) {
           case (accum, output) =>
@@ -98,19 +98,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
   }
 
   it should "correctly subtract fees proportionally amongst outputs" in {
-    // Can't use TransactionGenerators.realisiticOutputs as that can return List.empty
-    val nonEmptyRealisticOutputsGen = Gen
-      .choose(1, 5)
-      .flatMap(n => Gen.listOfN(n, TransactionGenerators.realisticOutput))
-      .suchThat(_.nonEmpty)
-
-    // CurrencyUnitGenerator.feeRate gives too high of fees
-    val feeRateGen = Gen.choose(0, CurrencyUnits.oneBTC.satoshis.toLong).map {
-      n =>
-        SatoshisPerByte(Satoshis(Int64(n)))
-    }
-
-    forAllAsync(nonEmptyRealisticOutputsGen, feeRateGen) {
+    forAllAsync(nonEmptyRealisticOutputsGen, CurrencyUnitGenerator.smallFeeUnit) {
       case (outputs, feeRate) =>
         val totalInput = outputs.foldLeft(CurrencyUnits.zero) {
           case (accum, output) =>
@@ -150,15 +138,15 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
 
           val (firstSize, firstFee) = sizeAndDiffs.head
           val firstFeeProportion = firstFee.satoshis.toLong.toDouble / firstSize.satoshis.toLong
-          assert {
-            // Fee has been proportionally distributed (up to some remainder)
-            sizeAndDiffs.forall {
-              case (size, fee) =>
-                closeTogether(
-                  (fee.satoshis.toLong.toDouble / size.satoshis.toLong) / firstFeeProportion,
-                  1)
-            }
+          // Fee has been proportionally distributed (up to some remainder)
+          val closeProportions = sizeAndDiffs.forall {
+            case (size, fee) =>
+              val feeProportion = fee.satoshis.toLong.toDouble / size.satoshis.toLong
+
+              closeTogether(feeProportion / firstFeeProportion, 1)
           }
+
+          assert(closeProportions)
         }
     }
   }
