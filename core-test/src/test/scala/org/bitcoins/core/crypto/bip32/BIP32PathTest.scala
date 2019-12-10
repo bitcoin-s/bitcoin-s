@@ -10,6 +10,7 @@ import org.bitcoins.testkit.core.gen.{
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.path
+import scodec.bits._
 
 import scala.util.{Success, Try}
 import org.bitcoins.core.crypto.ExtPrivateKey
@@ -71,6 +72,11 @@ class BIP32PathTest extends BitcoinSUnitTest {
     assert(fromString == BIP32Path.empty)
   }
 
+  it must "parse the empty path from bytes" in {
+    val fromBytes = BIP32Path.fromBytes(ByteVector.empty)
+    assert(fromBytes == BIP32Path.empty)
+  }
+
   it must "fail to parse a path beginning with the wrong character" in {
     forAll(HDGenerators.bip32Path, Gen.alphaChar.suchThat(_ != 'm')) {
       (path, char) =>
@@ -82,6 +88,12 @@ class BIP32PathTest extends BitcoinSUnitTest {
 
   it must "parse a hardened path" in {
     val fromString = BIP32Path.fromString("m/0'")
+    assert(fromString.path.length == 1)
+    assert(fromString.path.head.toUInt32 == ExtKey.hardenedIdx)
+  }
+
+  it must "parse a hardened path from bytes" in {
+    val fromString = BIP32Path.fromBytes(hex"0x80000000")
     assert(fromString.path.length == 1)
     assert(fromString.path.head.toUInt32 == ExtKey.hardenedIdx)
   }
@@ -100,17 +112,11 @@ class BIP32PathTest extends BitcoinSUnitTest {
     val expected3 = BIP32Path(
       Vector(BIP32Node(0, hardened = true),
              BIP32Node(1, hardened = false),
-             BIP32Node(2, hardened = true)))
-    assert(BIP32Path.fromString("m/0'/1/2'") == expected3)
-
-    val expected4 = BIP32Path(
-      Vector(BIP32Node(0, hardened = true),
-             BIP32Node(1, hardened = false),
              BIP32Node(2, hardened = true),
              BIP32Node(2, hardened = false)))
-    assert(BIP32Path.fromString("m/0'/1/2'/2") == expected4)
+    assert(BIP32Path.fromString("m/0'/1/2'/2") == expected3)
 
-    val expected5 = BIP32Path(
+    val expected4 = BIP32Path(
       Vector(
         BIP32Node(0, hardened = true),
         BIP32Node(1, hardened = false),
@@ -118,7 +124,38 @@ class BIP32PathTest extends BitcoinSUnitTest {
         BIP32Node(2, hardened = false),
         BIP32Node(1000000000, hardened = false)
       ))
-    assert(BIP32Path.fromString("m/0'/1/2'/2/1000000000") == expected5)
+    assert(BIP32Path.fromString("m/0'/1/2'/2/1000000000") == expected4)
+  }
+
+  it must "parse the paths from the BIP32 test vector from bytes" in {
+    val expected1 = BIP32Path(
+      Vector(BIP32Node(0, hardened = true), BIP32Node(1, hardened = false)))
+    assert(BIP32Path.fromBytes(hex"0x8000000000000001") == expected1)
+
+    val expected2 = BIP32Path(
+      Vector(BIP32Node(0, hardened = true),
+             BIP32Node(1, hardened = false),
+             BIP32Node(2, hardened = true)))
+    assert(BIP32Path.fromBytes(hex"0x800000000000000180000002") == expected2)
+
+    val expected3 = BIP32Path(
+      Vector(BIP32Node(0, hardened = true),
+             BIP32Node(1, hardened = false),
+             BIP32Node(2, hardened = true),
+             BIP32Node(2, hardened = false)))
+    assert(
+      BIP32Path.fromBytes(hex"0x80000000000000018000000200000002") == expected3)
+
+    val expected4 = BIP32Path(
+      Vector(
+        BIP32Node(0, hardened = true),
+        BIP32Node(1, hardened = false),
+        BIP32Node(2, hardened = true),
+        BIP32Node(2, hardened = false),
+        BIP32Node(1000000000, hardened = false)
+      ))
+    assert(BIP32Path
+      .fromBytes(hex"0x800000000000000180000002000000023B9ACA00") == expected4)
   }
 
   it must "have fromString and toString symmetry" in {
@@ -126,6 +163,14 @@ class BIP32PathTest extends BitcoinSUnitTest {
     forAll(HDGenerators.bip32Path) { path =>
       val toString = path.toString
       assert(path == BIP32Path.fromString(toString))
+    }
+  }
+
+  it must "have fromBytes and bytes symmetry" in {
+    implicit val noShrink: Shrink[Nothing] = Shrink.shrinkAny
+    forAll(HDGenerators.bip32Path) { path =>
+      val bytes = path.bytes
+      assert(path == BIP32Path.fromBytes(bytes))
     }
   }
 
