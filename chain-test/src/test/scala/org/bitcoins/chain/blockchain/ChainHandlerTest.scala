@@ -462,7 +462,7 @@ class ChainHandlerTest extends ChainUnitTest {
           BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get.scriptPubKey),
         startOpt = None,
         endOpt = None
-      )
+      )(system.dispatcher)
     } yield {
       assert(Vector(created.blockHashBE) == matched)
     }
@@ -524,7 +524,7 @@ class ChainHandlerTest extends ChainUnitTest {
   private def buildChainHandlerCompetingHeaders(
       chainHandler: ChainHandler): Future[ReorgFixture] = {
     for {
-      oldBestTip <- chainHandler.getBestBlockHeader
+      oldBestTip <- chainHandler.getBestBlockHeader()
       (newHeaderB, newHeaderC) = buildCompetingHeaders(oldBestTip)
       newChainApi <- chainHandler.processHeaders(Vector(newHeaderB, newHeaderC))
       newHeaderDbB <- newChainApi.getHeader(newHeaderB.hashBE)

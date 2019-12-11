@@ -78,6 +78,8 @@ object WalletTestUtil {
 
   private def randomTXID = CryptoGenerators.doubleSha256Digest.sampleSome.flip
   private def randomVout = NumberGenerator.uInt32s.sampleSome
+  private def randomBlockHash =
+    CryptoGenerators.doubleSha256Digest.sampleSome.flip
 
   /** Between 0 and 10 confirmations */
   private def randomConfs: Int = Gen.choose(0, 10).sampleSome
@@ -90,13 +92,16 @@ object WalletTestUtil {
       TransactionOutput(1.bitcoin, spk)
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
-    SegwitV0SpendingInfo(confirmations = randomConfs,
-                         spent = randomSpent,
-                         txid = randomTXID,
-                         outPoint = outpoint,
-                         output = output,
-                         privKeyPath = privkeyPath,
-                         scriptWitness = scriptWitness)
+    SegwitV0SpendingInfo(
+      confirmations = randomConfs,
+      spent = randomSpent,
+      txid = randomTXID,
+      outPoint = outpoint,
+      output = output,
+      privKeyPath = privkeyPath,
+      scriptWitness = scriptWitness,
+      blockHash = Some(randomBlockHash)
+    )
   }
 
   def sampleLegacyUTXO(spk: ScriptPubKey): LegacySpendingInfo = {
@@ -110,7 +115,8 @@ object WalletTestUtil {
                        txid = randomTXID,
                        outPoint = outpoint,
                        output = output,
-                       privKeyPath = privKeyPath)
+                       privKeyPath = privKeyPath,
+                       blockHash = Some(randomBlockHash))
   }
 
   /** Given an account returns a sample address */

@@ -4,6 +4,7 @@ import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.BlockStamp.BlockHash
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -52,7 +53,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       spent: Boolean,
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
-      addressDb: AddressDb): Future[SpendingInfoDb] = {
+      addressDb: AddressDb,
+      blockHash: Option[DoubleSha256DigestBE]): Future[SpendingInfoDb] = {
 
     val utxo: SpendingInfoDb = addressDb match {
       case segwitAddr: SegWitAddressDb =>
@@ -63,7 +65,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           outPoint = outPoint,
           output = output,
           privKeyPath = segwitAddr.path,
-          scriptWitness = segwitAddr.witnessScript
+          scriptWitness = segwitAddr.witnessScript,
+          blockHash = blockHash
         )
       case LegacyAddressDb(path, _, _, _, _) =>
         LegacySpendingInfo(confirmations = confirmations,
@@ -71,7 +74,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                            txid = txid,
                            outPoint = outPoint,
                            output = output,
-                           privKeyPath = path)
+                           privKeyPath = path,
+                           blockHash = blockHash)
       case nested: NestedSegWitAddressDb =>
         throw new IllegalArgumentException(
           s"Bad utxo $nested. Note: nested segwit is not implemented")
@@ -94,7 +98,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       transaction: Transaction,
       vout: UInt32,
       confirmations: Int,
-      spent: Boolean): Future[AddUtxoResult] = {
+      spent: Boolean,
+      blockHash: Option[DoubleSha256DigestBE]): Future[AddUtxoResult] = {
     import AddUtxoError._
 
     logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
@@ -131,7 +136,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                           spent = spent,
                           output,
                           outPoint,
-                          addressDb)
+                          addressDb,
+                          blockHash)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {

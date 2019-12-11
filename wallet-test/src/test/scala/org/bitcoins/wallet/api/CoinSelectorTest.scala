@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -37,7 +38,8 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(10.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
+      blockHash = Some(DoubleSha256DigestBE.empty)
     )
     val utxo2 = SegwitV0SpendingInfo(
       confirmations = 0,
@@ -47,7 +49,8 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(90.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
+      blockHash = Some(DoubleSha256DigestBE.empty)
     )
     val utxo3 = SegwitV0SpendingInfo(
       confirmations = 0,
@@ -57,7 +60,8 @@ class CoinSelectorTest extends BitcoinSWalletTest {
       outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(20.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
+      blockHash = Some(DoubleSha256DigestBE.empty)
     )
 
     test(CoinSelectionFixture(output, feeRate, utxo1, utxo2, utxo3))

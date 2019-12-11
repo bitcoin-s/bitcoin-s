@@ -30,7 +30,8 @@ case class SegwitV0SpendingInfo(
     txid: DoubleSha256DigestBE,
     spent: Boolean,
     confirmations: Int,
-    id: Option[Long] = None
+    id: Option[Long] = None,
+    blockHash: Option[DoubleSha256DigestBE]
 ) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
@@ -38,13 +39,19 @@ case class SegwitV0SpendingInfo(
   override type PathType = SegWitHDPath
   override type SpendingInfoType = SegwitV0SpendingInfo
 
-  def copyWithSpent(spent: Boolean): SegwitV0SpendingInfo = copy(spent = spent)
+  override def copyWithSpent(spent: Boolean): SegwitV0SpendingInfo =
+    copy(spent = spent)
 
-  def copyWithConfirmations(confirmations: Int): SegwitV0SpendingInfo =
+  override def copyWithConfirmations(confirmations: Int): SegwitV0SpendingInfo =
     copy(confirmations = confirmations)
 
   override def copyWithId(id: Long): SegwitV0SpendingInfo =
     copy(id = Some(id))
+
+  /** Updates the `blockHash` field */
+  override def copyWithBlockHash(
+      blockHash: DoubleSha256DigestBE): SegwitV0SpendingInfo =
+    copy(blockHash = Some(blockHash))
 }
 
 /**
@@ -57,6 +64,7 @@ case class LegacySpendingInfo(
     confirmations: Int,
     spent: Boolean,
     txid: DoubleSha256DigestBE,
+    blockHash: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
 ) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = None
@@ -68,10 +76,15 @@ case class LegacySpendingInfo(
   override def copyWithId(id: Long): LegacySpendingInfo =
     copy(id = Some(id))
 
-  def copyWithSpent(spent: Boolean): LegacySpendingInfo = copy(spent = spent)
+  override def copyWithSpent(spent: Boolean): LegacySpendingInfo =
+    copy(spent = spent)
 
-  def copyWithConfirmations(confirmations: Int): LegacySpendingInfo =
+  override def copyWithConfirmations(confirmations: Int): LegacySpendingInfo =
     copy(confirmations = confirmations)
+
+  override def copyWithBlockHash(
+      blockHash: DoubleSha256DigestBE): LegacySpendingInfo =
+    copy(blockHash = Some(blockHash))
 }
 
 // TODO add case for nested segwit
@@ -113,6 +126,9 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** The TXID of the transaction this output was received in */
   def txid: DoubleSha256DigestBE
 
+  /** The hash of the block in which the transaction was included */
+  def blockHash: Option[DoubleSha256DigestBE]
+
   /** Converts the UTXO to the canonical `txid:vout` format */
   def toHumanReadableString: String =
     s"${outPoint.txId.flip.hex}:${outPoint.vout.toInt}"
@@ -122,6 +138,9 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
   /** Updates the `confirmations` field */
   def copyWithConfirmations(confirmations: Int): SpendingInfoType
+
+  /** Updates the `blockHash` field */
+  def copyWithBlockHash(blockHash: DoubleSha256DigestBE): SpendingInfoType
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
@@ -180,6 +199,8 @@ case class SpendingInfoTable(tag: Tag)
 
   def scriptWitnessOpt: Rep[Option[ScriptWitness]] = column("script_witness")
 
+  def blockHash: Rep[Option[DoubleSha256DigestBE]] = column("block_hash")
+
   /** All UTXOs must have a SPK in the wallet that gets spent to */
   def fk_scriptPubKey = {
     val addressTable = TableQuery[AddressTable]
@@ -198,7 +219,8 @@ case class SpendingInfoTable(tag: Tag)
       Option[ScriptWitness],
       Int, // confirmations
       Boolean, // spent
-      DoubleSha256DigestBE // TXID
+      DoubleSha256DigestBE, // TXID
+      Option[DoubleSha256DigestBE] // block hash
   )
 
   private val fromTuple: UTXOTuple => SpendingInfoDb = {
@@ -211,7 +233,8 @@ case class SpendingInfoTable(tag: Tag)
           Some(scriptWitness),
           confirmations,
           spent,
-          txid) =>
+          txid,
+          blockHash) =>
       SegwitV0SpendingInfo(
         outPoint = outpoint,
         output = TransactionOutput(value, spk),
@@ -220,7 +243,8 @@ case class SpendingInfoTable(tag: Tag)
         id = id,
         confirmations = confirmations,
         spent = spent,
-        txid = txid
+        txid = txid,
+        blockHash = blockHash
       )
 
     case (id,
@@ -232,18 +256,30 @@ case class SpendingInfoTable(tag: Tag)
           None, // ScriptWitness
           confirmations,
           spent,
-          txid) =>
+          txid,
+          blockHash) =>
       LegacySpendingInfo(outPoint = outpoint,
                          output = TransactionOutput(value, spk),
                          privKeyPath = path,
                          id = id,
                          confirmations = confirmations,
                          spent = spent,
-                         txid = txid)
-    case (id, outpoint, spk, value, path, spkOpt, swOpt, confs, spent, txid) =>
+                         txid = txid,
+                         blockHash = blockHash)
+    case (id,
+          outpoint,
+          spk,
+          value,
+          path,
+          spkOpt,
+          swOpt,
+          confs,
+          spent,
+          txid,
+          blockHash) =>
       throw new IllegalArgumentException(
         "Could not construct UtxoSpendingInfoDb from bad tuple:"
-          + s" ($id, $outpoint, $spk, $value, $path, $spkOpt, $swOpt, $confs, $spent, $txid)."
+          + s" ($id, $outpoint, $spk, $value, $path, $spkOpt, $swOpt, $confs, $spent, $txid, $blockHash)."
           + " Note: Nested Segwit is not implemented")
 
   }
@@ -260,7 +296,8 @@ case class SpendingInfoTable(tag: Tag)
          utxo.scriptWitnessOpt,
          utxo.confirmations,
          utxo.spent,
-         utxo.txid))
+         utxo.txid,
+         utxo.blockHash))
 
   def * : ProvenShape[SpendingInfoDb] =
     (id.?,
@@ -272,5 +309,6 @@ case class SpendingInfoTable(tag: Tag)
      scriptWitnessOpt,
      confirmations,
      spent,
-     txid) <> (fromTuple, toTuple)
+     txid,
+     blockHash) <> (fromTuple, toTuple)
 }

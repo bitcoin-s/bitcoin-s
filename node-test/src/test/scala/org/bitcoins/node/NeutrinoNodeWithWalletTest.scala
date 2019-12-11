@@ -53,7 +53,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     val onBlock: DataMessageHandler.OnBlockReceived = { block =>
       for {
         wallet <- walletF
-        _ <- wallet.processBlock(block, confirmations = 6)
+        _ <- wallet.processBlock(block)
       } yield ()
     }
     val onCompactFilter: OnCompactFilterReceived = { (blockHash, blockFilter) =>
