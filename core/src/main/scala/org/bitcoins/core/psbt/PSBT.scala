@@ -4,21 +4,10 @@ import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, ExtPublicKey}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptSignature,
-  ScriptPubKey,
-  ScriptSignature,
-  ScriptWitness
-}
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  EmptyWitness,
-  Transaction,
-  TransactionOutput,
-  WitnessTransaction
-}
-import org.bitcoins.core.psbt.GlobalPSBTRecord.UnsignedTransaction
-import org.bitcoins.core.psbt.PSBTGlobalKey.UnsignedTransactionKey
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey, ScriptSignature, ScriptWitness}
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, EmptyWitness, Transaction, TransactionOutput, WitnessTransaction}
+import org.bitcoins.core.psbt.GlobalPSBTRecord.{UnsignedTransaction, Version}
+import org.bitcoins.core.psbt.PSBTGlobalKey.{UnsignedTransactionKey, VersionKey}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.Factory
 import scodec.bits._
@@ -42,6 +31,15 @@ case class PSBT(
     globalMap.bytes ++
     inputBytes ++
     outputBytes
+
+  def version: UInt32 = {
+    val vec = globalMap.getRecords[Version](VersionKey)
+    if (vec.isEmpty){
+      UInt32.zero
+    } else {
+      vec.head.version
+    }
+  }
 }
 
 sealed trait PSBTRecord extends NetworkElement {

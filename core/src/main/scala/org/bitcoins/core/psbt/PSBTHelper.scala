@@ -22,6 +22,8 @@ private[psbt] case class PSBTParseResult[T <: PSBTMap](
 
 object PSBTHelper {
 
+  final private val knownVersions: Vector[UInt32] = Vector(UInt32.zero)
+
   final private val terminator: Byte = 0x00.byteValue
 
   private def parseKeyAndValue(
@@ -88,6 +90,9 @@ object PSBTHelper {
             s"The key must only contain the 1 byte type, got: ${key.size}")
 
           val version = UInt32(value)
+
+          require(knownVersions.contains(version), s"Unknown version number given: $version")
+
           parseGlobalMap(next, accum :+ Version(version), txOpt)
         case _ =>
           parseGlobalMap(next,
