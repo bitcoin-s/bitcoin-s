@@ -7,20 +7,68 @@ import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
+import scala.math.Numeric
+import scala.util.{Failure, Success, Try}
+
 sealed abstract class CurrencyUnit
     extends NetworkElement
-    with Ordered[CurrencyUnit]
-    with BasicArithmetic[CurrencyUnit] {
+    with BasicArithmetic[CurrencyUnit]
+    with Numeric[CurrencyUnit] {
   type A
 
   def satoshis: Satoshis
 
-  override def compare(c: CurrencyUnit): Int =
-    satoshis.underlying compare c.satoshis.underlying
+  override def plus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x + y
+
+  override def minus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x - y
+
+  override def times(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x * y
+
+  override def negate(x: CurrencyUnit): CurrencyUnit = -x
+
+  override def fromInt(x: Int): CurrencyUnit = Satoshis(x.toLong)
+
+  override def toInt(x: CurrencyUnit): Int = x.satoshis.underlying.toInt
+
+  override def toLong(x: CurrencyUnit): Long = x.satoshis.underlying.toLong
+
+  override def toFloat(x: CurrencyUnit): Float =
+    x.satoshis.underlying.toBigInt.toFloat
+
+  override def toDouble(x: CurrencyUnit): Double =
+    x.satoshis.underlying.toBigInt.toDouble
+
+  override def compare(x: CurrencyUnit, y: CurrencyUnit): Int =
+    x.satoshis.underlying compare y.satoshis.underlying
+
+  // Cannot use the override modifier because this method was added in scala version 2.13
+  def parseString(str: String): Option[CurrencyUnit] = {
+    if (str.isEmpty) {
+      None
+    } else {
+      Try(str.toLong) match {
+        case Success(num) => Some(Satoshis(num))
+        case Failure(_)   => None
+      }
+    }
+  }
+
+  def compare(c: CurrencyUnit): Int =
+    compare(this, c)
 
   def !=(c: CurrencyUnit): Boolean = !(this == c)
 
   def ==(c: CurrencyUnit): Boolean = satoshis == c.satoshis
+
+  def <(c: CurrencyUnit): Boolean = satoshis.underlying < c.satoshis.underlying
+
+  def <=(c: CurrencyUnit): Boolean =
+    satoshis.underlying <= c.satoshis.underlying
+
+  def >(c: CurrencyUnit): Boolean = satoshis.underlying > c.satoshis.underlying
+
+  def >=(c: CurrencyUnit): Boolean =
+    satoshis.underlying >= c.satoshis.underlying
 
   override def +(c: CurrencyUnit): CurrencyUnit = {
     Satoshis(satoshis.underlying + c.satoshis.underlying)
