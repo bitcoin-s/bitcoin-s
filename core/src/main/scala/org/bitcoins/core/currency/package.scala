@@ -1,5 +1,7 @@
 package org.bitcoins.core
 
+import scala.math.Ordering
+
 // We extend AnyVal to avoid runtime allocation of new
 // objects. See the Scala documentation on value classes
 // and universal traits for more:
@@ -35,4 +37,9 @@ package object currency {
     def sats: Satoshis = satoshis
     def sat: Satoshis = satoshis
   }
+
+  implicit val currencyUnitOrdering: Ordering[CurrencyUnit] =
+    new Ordering[CurrencyUnit] {
+      override def compare(x: CurrencyUnit, y: CurrencyUnit): Int = x.compare(y)
+    }
 }
