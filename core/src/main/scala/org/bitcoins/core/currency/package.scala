@@ -38,6 +38,7 @@ package object currency {
     def sat: Satoshis = satoshis
   }
 
-  implicit val currencyUnitOrdering: Ordering[CurrencyUnit] =
-    (x: CurrencyUnit, y: CurrencyUnit) => x.compare(y)
+  implicit val currencyUnitOrdering: Ordering[CurrencyUnit] = new Ordering[CurrencyUnit] {
+    override def compare(x: CurrencyUnit, y: CurrencyUnit): Int = x.compare(y)
+  }
 }

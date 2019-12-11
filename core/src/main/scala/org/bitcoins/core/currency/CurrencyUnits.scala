@@ -7,7 +7,7 @@ import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
-import scala.math.{Numeric, Ordering}
+import scala.math.Numeric
 import scala.util.{Failure, Success, Try}
 
 sealed abstract class CurrencyUnit
