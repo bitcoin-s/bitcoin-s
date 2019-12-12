@@ -50,7 +50,7 @@ matrix:
       env:
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
       scala:
-        - 2.13.0
+        - 2.13.1
     # skip all test tagged as UsesExperimentalBitcoind
     # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
     - os: osx
