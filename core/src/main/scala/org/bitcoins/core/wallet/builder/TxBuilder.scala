@@ -97,7 +97,8 @@ sealed abstract class TxBuilder {
     * If we don't specify a change output, a large miner fee may be paid as more than likely
     * the difference between  `creditingAmount` and `destinationAmount` is not a market rate miner fee
     */
-  def changeSPK: ScriptPubKey
+  def changeSPKs: Vector[ScriptPubKey]
+  require(changeSPKs.nonEmpty, "Must specify at least one changeSPK")
 
   /**
     * The network that this [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]] is signing a transaction for.
@@ -153,18 +154,19 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt.toVector)
     val lockTime = calcLockTime(utxos)
     val inputs = calcSequenceForInputs(utxos, Policy.isRBFEnabled)
-    val emptyChangeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
+    val emptyChangeOutputs = changeSPKs.map(changeSPK =>
+      TransactionOutput(CurrencyUnits.zero, changeSPK))
     val unsignedTxNoFee = lockTime.map { l =>
       unsignedTxWit match {
         case EmptyWitness =>
           BaseTransaction(tc.validLockVersion,
                           inputs,
-                          destinations ++ Seq(emptyChangeOutput),
+                          destinations ++ emptyChangeOutputs,
                           l)
         case wit: TransactionWitness =>
           WitnessTransaction(tc.validLockVersion,
                              inputs,
-                             destinations ++ Seq(emptyChangeOutput),
+                             destinations ++ emptyChangeOutputs,
                              l,
                              wit)
       }
@@ -177,7 +179,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
           val fee = feeRate.calc(dtx)
           logger.debug(s"fee $fee")
           val change = creditingAmount - destinationAmount - fee
-          val newChangeOutput = TransactionOutput(change, changeSPK)
+          val newChangeOutput = TransactionOutput(change, changeSPKs.head)
           logger.debug(s"newChangeOutput $newChangeOutput")
           //if the change output is below the dust threshold after calculating the fee, don't add it
           //to the tx
@@ -186,7 +188,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               "removing change output as value is below the dustThreshold")
             destinations
           } else {
-            destinations ++ Seq(newChangeOutput)
+            destinations ++ Vector(newChangeOutput)
           }
           dtx match {
             case btx: BaseTransaction =>
@@ -604,30 +606,52 @@ object TxBuilder {
   def sanityDestinationChecks(
       txBuilder: TxBuilder,
       signedTx: Transaction): Try[Unit] = {
-    //make sure we send coins to the appropriate destinations
-    val isMissingDestination = txBuilder.destinations
-      .map(o => signedTx.outputs.contains(o))
-      .exists(_ == false)
-    val hasExtraOutputs =
-      if (signedTx.outputs.size == txBuilder.destinations.size) {
-        false
-      } else {
-        //the extra output should be the changeOutput
-        !(signedTx.outputs.size == (txBuilder.destinations.size + 1) &&
-          signedTx.outputs.map(_.scriptPubKey).contains(txBuilder.changeSPK))
+    val requiredSPKs = txBuilder.destinationSPKs
+    val requiredCounts =
+      requiredSPKs.groupBy(identity).map {
+        case (spk, spks) => spk -> spks.size
       }
-    val spendingTxOutPoints = signedTx.inputs.map(_.previousOutput)
-    val hasExtraOutPoints = txBuilder.outPoints
-      .map(o => spendingTxOutPoints.contains(o))
-      .exists(_ == false)
-    if (isMissingDestination) {
-      TxBuilderError.MissingDestinationOutput
-    } else if (hasExtraOutputs) {
+
+    val allOkaySPKs = requiredSPKs ++ txBuilder.changeSPKs
+    val okaySPKCounts =
+      allOkaySPKs.groupBy(identity).map { case (spk, spks) => spk -> spks.size }
+
+    val usedSPKs = signedTx.outputs.map(_.scriptPubKey)
+    val usedSPKCounts =
+      usedSPKs.groupBy(identity).map { case (spk, spks) => spk -> spks.size }
+
+    // usedSPKs must have all requiredSPKs and no more than okaySPKs
+    val outputSanityCheck = if (usedSPKs.size > allOkaySPKs.size) {
       TxBuilderError.ExtraOutputsAdded
-    } else if (hasExtraOutPoints) {
-      TxBuilderError.ExtraOutPoints
+    } else if (usedSPKs.size < requiredSPKs.size) {
+      TxBuilderError.MissingDestinationOutput
     } else {
-      Success(())
+      usedSPKCounts.foldLeft[Try[Unit]](Success(())) {
+        case (trySoFar, (spk, usedCount)) =>
+          trySoFar.flatMap { _ =>
+            val okayCount = okaySPKCounts.getOrElse(spk, 0)
+            val requiredCount = requiredCounts.getOrElse(spk, 0)
+
+            if (usedCount > okayCount) {
+              TxBuilderError.ExtraOutputsAdded
+            } else if (usedCount < requiredCount) {
+              TxBuilderError.MissingDestinationOutput
+            } else {
+              Success(())
+            }
+          }
+      }
+    }
+
+    outputSanityCheck.flatMap { _ =>
+      val spendingTxOutPoints = signedTx.inputs.map(_.previousOutput)
+      val hasExtraOutPoints =
+        !txBuilder.outPoints.forall(spendingTxOutPoints.contains)
+      if (hasExtraOutPoints) {
+        TxBuilderError.ExtraOutPoints
+      } else {
+        Success(())
+      }
     }
   }
 
@@ -711,7 +735,7 @@ object BitcoinTxBuilder {
       destinations: Seq[TransactionOutput],
       utxoMap: UTXOMap,
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey,
+      changeSPKs: Vector[ScriptPubKey],
       network: BitcoinNetwork)
       extends BitcoinTxBuilder
 
@@ -735,7 +759,11 @@ object BitcoinTxBuilder {
       Future.fromTry(TxBuilderError.LowFee)
     } else {
       Future.successful(
-        BitcoinTxBuilderImpl(destinations, utxos, feeRate, changeSPK, network))
+        BitcoinTxBuilderImpl(destinations,
+                             utxos,
+                             feeRate,
+                             Vector(changeSPK),
+                             network))
     }
   }
 
