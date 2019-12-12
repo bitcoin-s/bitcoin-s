@@ -52,14 +52,17 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class TxBuilder {
 
+  def ownedDestinations: Vector[OwnedTxData[TransactionOutput]]
+
   /** The outputs which we are spending bitcoins to */
-  def destinations: Seq[TransactionOutput]
+  def destinations: Vector[TransactionOutput] =
+    ownedDestinations.map(_.data)
 
   /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]'s we are spending bitcoins to */
-  def destinationSPKs: Seq[ScriptPubKey] = destinations.map(_.scriptPubKey)
+  def destinationSPKs: Vector[ScriptPubKey] = destinations.map(_.scriptPubKey)
 
   /** A sequence of the amounts we are spending in this transaction */
-  def destinationAmounts: Seq[CurrencyUnit] = destinations.map(_.value)
+  def destinationAmounts: Vector[CurrencyUnit] = destinations.map(_.value)
 
   /** The spent amount of bitcoins we are sending in the transaction, this does NOT include the fee */
   def destinationAmount: CurrencyUnit =
@@ -73,10 +76,16 @@ sealed abstract class TxBuilder {
   def largestFee: CurrencyUnit = creditingAmount - destinationAmount
 
   /**
+    * The values of this map are the [[org.bitcoins.core.wallet.utxo.UTXOSpendingInfo UTXOSpendingInfo]]s
+    * we are attempting to spend. The keys are the owners of those utxos.
+    */
+  def ownedUtxos: Vector[OwnedTxData[UTXOSpendingInfo]]
+
+  /**
     * The list of [[org.bitcoins.core.wallet.utxo.UTXOSpendingInfo UTXOSpendingInfo]]s we are
     * attempting to spend.
     */
-  def utxos: Vector[UTXOSpendingInfo]
+  def utxos: Vector[UTXOSpendingInfo] = ownedUtxos.map(_.data)
 
   /** This represents the rate, in [[org.bitcoins.core.wallet.fee.FeeUnit FeeUnit]], we
     * should pay for this transaction */
@@ -126,14 +135,19 @@ sealed abstract class TxBuilder {
   * The [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]] for the
   * bitcoin network(s) [[org.bitcoins.core.config.BitcoinNetwork BitcoinNetwork]]
   */
-sealed abstract class BitcoinTxBuilder extends TxBuilder {
+case class BitcoinTxBuilder(
+    ownedDestinations: Vector[OwnedTxData[TransactionOutput]],
+    ownedUtxos: Vector[OwnedTxData[BitcoinUTXOSpendingInfo]],
+    feeRate: FeeUnit,
+    changeSPKs: Map[Int, ScriptPubKey],
+    network: BitcoinNetwork)
+    extends TxBuilder {
+
+  override val utxos: Vector[BitcoinUTXOSpendingInfo] =
+    ownedUtxos.map(_.data)
 
   private val logger = BitcoinSLogger.logger
   private val tc = TransactionConstants
-
-  override def network: BitcoinNetwork
-
-  override def utxos: Vector[BitcoinUTXOSpendingInfo]
 
   override def sign(implicit ec: ExecutionContext): Future[Transaction] = {
     val f: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean = { (_, _) =>
@@ -718,23 +732,15 @@ object TxBuilder {
 }
 
 object BitcoinTxBuilder {
-  private case class BitcoinTxBuilderImpl(
-      destinations: Seq[TransactionOutput],
-      utxos: Vector[BitcoinUTXOSpendingInfo],
-      feeRate: FeeUnit,
-      changeSPKs: Map[Int, ScriptPubKey],
-      network: BitcoinNetwork)
-      extends BitcoinTxBuilder
 
   /**
     * @param destinations where the money is going in the signed tx
     * @param utxos information needed to spend the outputs in the creditingTxs
     * @param feeRate the desired fee rate for this tx
     * @param changeSPK where we should send the change from the creditingTxs
-    * @return either a instance of a [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]],
+    * @return an instance of a [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]],
     *         from which you can call [[org.bitcoins.core.wallet.builder.TxBuilder.sign TxBuilder.sign]]
-    *         to generate a signed tx, or a
-    *         [[org.bitcoins.core.wallet.builder.TxBuilderError TxBuilderError]]
+    *         to generate a signed tx.
     */
   def apply(
       destinations: Seq[TransactionOutput],
@@ -742,10 +748,12 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): BitcoinTxBuilder = {
-    BitcoinTxBuilderImpl(destinations,
-                         utxos.toVector,
-                         feeRate,
-                         Map(0 -> changeSPK),
-                         network)
+    BitcoinTxBuilder(destinations.map(OwnedTxData(_, 0)).toVector,
+                     utxos.map(OwnedTxData(_, 0)).toVector,
+                     feeRate,
+                     Map(0 -> changeSPK),
+                     network)
   }
 }
+
+case class OwnedTxData[+T](data: T, owner: Int)
