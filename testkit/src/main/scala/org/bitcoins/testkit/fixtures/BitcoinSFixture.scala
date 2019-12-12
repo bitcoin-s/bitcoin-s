@@ -40,6 +40,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
     val result: FutureOutcome = futOutcome.onOutcomeThen { _ =>
       fixtureF.flatMap(f => destroy(f))
+      ()
     }
 
     result
