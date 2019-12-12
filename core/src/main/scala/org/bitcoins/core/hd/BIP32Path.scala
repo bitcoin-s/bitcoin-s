@@ -149,14 +149,15 @@ object BIP32Path extends Factory[BIP32Path] {
     BIP32PathImpl(path)
   }
 
-  def fromBytes(bytes: ByteVector): BIP32Path = {
+  private def fromBytes(bytes: ByteVector, littleEndian: Boolean): BIP32Path = {
     require(bytes.size % 4 == 0,
             s"ByteVector is not suited for KeyPath, got=${bytes.length}")
 
     val parts: Vector[ByteVector] = bytes.grouped(4).toVector
 
     val path = parts.map { part =>
-      val uInt32: UInt32 = UInt32.fromBytes(part)
+      val uInt32: UInt32 =
+        if (littleEndian) UInt32.fromBytesLE(part) else UInt32.fromBytes(part)
       val hardened = uInt32 >= ExtKey.hardenedIdx
       val index = if (hardened) uInt32 - ExtKey.hardenedIdx else uInt32
       BIP32Node(index.toInt, hardened)
@@ -164,6 +165,13 @@ object BIP32Path extends Factory[BIP32Path] {
 
     BIP32Path(path)
   }
+
+  def fromBytes(bytes: ByteVector): BIP32Path =
+    fromBytes(bytes, littleEndian = false)
+
+  override def fromBytesLE(bytes: ByteVector): BIP32Path =
+    fromBytes(bytes, littleEndian = true)
+
 }
 
 case class BIP32Node(index: Int, hardened: Boolean) {
