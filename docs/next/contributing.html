@@ -123,8 +123,8 @@ also get code that's already <a href="https://en.wikipedia.org/wiki/Just-in-time
 for you.</p>
 <p>The documentation on Bloops <a href="https://scalacenter.github.io/bloop/">site</a> is good, but here is the highlights:</p>
 <ol>
-<li><p>Install Bloop by doing step 1 &amp; 2 in the <a href="https://scalacenter.github.io/bloop/setup#universal">official guide</a></p></li>
-<li><p>Enable the Bloop background daemon</p>
+<li>Install Bloop by doing step 1 &amp; 2 in the <a href="https://scalacenter.github.io/bloop/setup#universal">official guide</a></li>
+<li>Enable the Bloop background daemon
 <ol>
 <li>macOS:</li>
 </ol>
@@ -137,7 +137,7 @@ for you.</p>
 $ systemctl --user daemon-reload
 $ systemctl --user start bloop
 </code></pre></li>
-<li><p>Enable shell completion for the Bloop CLI</p>
+<li>Enable shell completion for the Bloop CLI
 <ol>
 <li>Bash:</li>
 </ol>
@@ -155,11 +155,11 @@ $ <span class="hljs-built_in">echo</span> <span class="hljs-string">'compinit'</
 </ol>
 <pre><code class="hljs css language-bash">$ ln -s <span class="hljs-variable">$HOME</span>/.bloop/fish/bloop.fish ~/.config/fish/completions/bloop.fish
 </code></pre></li>
-<li><p>Generate configuration files</p>
+<li>Generate configuration files
 <pre><code class="hljs css language-bash">$ sbt bloopInstall
 </code></pre></li>
-<li><p>Import Bitcoin-S into IntelliJ again, as a bsp (Build Server Protocol) project (instead of a sbt project). Make sure you're running on the most recent IntelliJ and Scala plugin. See <a href="https://scalacenter.github.io/bloop/docs/ides/intellij">official docs</a> for details.</p></li>
-<li><p><em>(Bonus step):</em> Lightning fast recompilations on file save:</p>
+<li>Import Bitcoin-S into IntelliJ again, as a bsp (Build Server Protocol) project (instead of a sbt project). Make sure you're running on the most recent IntelliJ and Scala plugin. See <a href="https://scalacenter.github.io/bloop/docs/ides/intellij">official docs</a> for details.</li>
+<li><em>(Bonus step):</em> Lightning fast recompilations on file save:
 <pre><code class="hljs css language-bash">$ bloop compile --project &lt;name of module your<span class="hljs-string">'re working on&gt; --watch
 </span></code></pre></li>
 </ol>
@@ -171,10 +171,10 @@ testing. At the simplest level, you can think of property based testing as
 specifying a invariant that must always hold true.
 <a href="https://github.com/bitcoin-s/bitcoin-s-core/blob/89fbf35d78046b7ed21fd93fec05bb57cba023bb/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionSpec.scala#L13-L17">Here</a>
 is an example of a property in the bitcoin-s-core test suite</p>
-<pre><code class="hljs css language-scala">property(<span class="hljs-string">"Serialization symmetry"</span>) =
-  <span class="hljs-type">Prop</span>.forAll(<span class="hljs-type">TransactionGenerators</span>.transactions) { tx =&gt;
-    <span class="hljs-type">Transaction</span>(tx.hex) == tx
-}
+<pre><code class="hljs css language-scala">  property(<span class="hljs-string">"Serialization symmetry"</span>) =
+    <span class="hljs-type">Prop</span>.forAll(<span class="hljs-type">TransactionGenerators</span>.transactions) { tx =&gt;
+      <span class="hljs-type">Transaction</span>(tx.hex) == tx
+  }
 </code></pre>
 <p>What this property says is that for every transaction we can generate with
 <a href="/api/org/bitcoins/core/gen/TransactionGenerators"><code>TransactionGenerators.transactions</code></a>
@@ -193,14 +193,14 @@ valid by running it through our <a href="/api/org/bitcoins/core/script/interpret
 If we have built our functionality correctly the <code>ScriptInterpreter</code> should
 always return <a href="/api/org/bitcoins/core/script/result/ScriptResult"><code>ScriptOk</code></a>
 indicating the script was valid.</p>
-<pre><code class="hljs css language-scala">property(<span class="hljs-string">"generate valid signatures for a multisignature transaction"</span>) =
-  <span class="hljs-type">Prop</span>.forAllNoShrink(<span class="hljs-type">TransactionGenerators</span>.signedMultiSigTransaction) {
-    <span class="hljs-keyword">case</span> (txSignatureComponent: <span class="hljs-type">TxSigComponent</span>, _)  =&gt;
-      <span class="hljs-comment">//run it through the interpreter</span>
-      <span class="hljs-keyword">val</span> program = <span class="hljs-type">ScriptProgram</span>(txSignatureComponent)
-      <span class="hljs-keyword">val</span> result = <span class="hljs-type">ScriptInterpreter</span>.run(program)
-      result == <span class="hljs-type">ScriptOk</span>
-}
+<pre><code class="hljs css language-scala">  property(<span class="hljs-string">"generate valid signatures for a multisignature transaction"</span>) =
+    <span class="hljs-type">Prop</span>.forAllNoShrink(<span class="hljs-type">TransactionGenerators</span>.signedMultiSigTransaction) {
+      <span class="hljs-keyword">case</span> (txSignatureComponent: <span class="hljs-type">TxSigComponent</span>, _)  =&gt;
+        <span class="hljs-comment">//run it through the interpreter</span>
+        <span class="hljs-keyword">val</span> program = <span class="hljs-type">ScriptProgram</span>(txSignatureComponent)
+        <span class="hljs-keyword">val</span> result = <span class="hljs-type">ScriptInterpreter</span>.run(program)
+        result == <span class="hljs-type">ScriptOk</span>
+  }
 </code></pre>
 <h3><a class="anchor" aria-hidden="true" id="running-tests"></a><a href="#running-tests" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Running tests</h3>
 <p>To run the entire test suite all you need to do is run the following command:</p>

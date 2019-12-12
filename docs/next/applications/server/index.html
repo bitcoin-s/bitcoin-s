@@ -15,7 +15,7 @@ title: bitcoin-s application server</p>
 <p>You can build the server with the <a href="https://github.com/sbt/sbt-native-packager">sbt native packager</a>.
 The native packager offers <a href="https://github.com/sbt/sbt-native-packager#examples">numerous ways to package the project</a>.</p>
 <p>In this example we are going to use <code>stage</code> which will produce bash scripts we can easily execute. You can stage the server with the following command</p>
-<pre><code class="hljs css language-bash">$ sbt appServer/universal:stage
+<pre><code class="hljs css language-bash"> $ sbt appServer/universal:stage
 </code></pre>
 <p>This will produce a script to execute bitcoin-s which you can start with</p>
 <pre><code class="hljs css language-bash">$ ./app/server/target/universal/stage/bin/bitcoin<span class="hljs-_">-s</span>-server
