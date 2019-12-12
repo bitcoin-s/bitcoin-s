@@ -3,23 +3,35 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, ExtPublicKey}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptSignature,
+  ScriptPubKey,
+  ScriptSignature,
+  ScriptWitness
+}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptPubKey, ScriptSignature, ScriptWitness}
-import org.bitcoins.core.protocol.transaction.{BaseTransaction, EmptyWitness, Transaction, TransactionOutput, WitnessTransaction}
-import org.bitcoins.core.psbt.GlobalPSBTRecord.{UnsignedTransaction, Version}
-import org.bitcoins.core.psbt.PSBTGlobalKey.{UnsignedTransactionKey, VersionKey}
+import org.bitcoins.core.psbt.GlobalPSBTRecord._
+import org.bitcoins.core.psbt.PSBTGlobalKeyId._
+import org.bitcoins.core.psbt.PSBTInputKeyId._
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.Factory
 import scodec.bits._
+
+import scala.annotation.tailrec
 
 case class PSBT(
     globalMap: GlobalPSBTMap,
     inputMaps: Vector[InputPSBTMap],
-    outputMaps: Vector[OutputPSBTMap],
-    tx: Transaction)
+    outputMaps: Vector[OutputPSBTMap])
     extends NetworkElement {
-  require(inputMaps.size == tx.inputs.size)
-  require(outputMaps.size == tx.outputs.size)
+  require(
+    globalMap
+      .getRecords(UnsignedTransactionKeyId)
+      .size == 1)
+  require(inputMaps.size == transaction.inputs.size)
+  require(outputMaps.size == transaction.outputs.size)
 
   private val inputBytes: ByteVector =
     inputMaps.foldLeft(ByteVector.empty)(_ ++ _.bytes)
@@ -32,12 +44,98 @@ case class PSBT(
     inputBytes ++
     outputBytes
 
+  def transaction: Transaction =
+    globalMap
+      .getRecords[UnsignedTransaction](UnsignedTransactionKeyId)
+      .head
+      .transaction
+
   def version: UInt32 = {
-    val vec = globalMap.getRecords[Version](VersionKey)
-    if (vec.isEmpty){
+    val vec = globalMap.getRecords[Version](VersionKeyId)
+    if (vec.isEmpty) { // If there is no version is it assumed 0
       UInt32.zero
     } else {
       vec.head.version
+    }
+  }
+}
+
+object PSBT extends Factory[PSBT] {
+
+  // The known version of PSBTs this library can process define by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#version-numbers
+  final val knownVersions: Vector[UInt32] = Vector(UInt32.zero)
+
+  // The magic bytes and separator defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#specification
+  final val magicBytes = hex"70736274ff"
+
+  def fromBytes(bytes: ByteVector): PSBT = {
+    require(bytes.startsWith(magicBytes),
+            s"A PSBT must start with the magic bytes $magicBytes, got: $bytes")
+
+    val globalBytes = bytes.drop(magicBytes.size)
+
+    val global: GlobalPSBTMap = GlobalPSBTMap.fromBytes(globalBytes)
+
+    val txRecords = global
+      .getRecords[UnsignedTransaction](UnsignedTransactionKeyId)
+
+    if (txRecords.isEmpty)
+      throw new IllegalArgumentException("Invalid PSBT. No global transaction")
+    if (txRecords.size > 1)
+      throw new IllegalArgumentException(
+        s"Invalid PSBT. There can only be one global transaction, got: ${txRecords.size}")
+
+    val tx = txRecords.head.transaction
+    val inputBytes = globalBytes.drop(global.bytes.size)
+
+    @tailrec
+    def inputLoop(
+        bytes: ByteVector,
+        numInputs: Int,
+        accum: Seq[InputPSBTMap]): Vector[InputPSBTMap] = {
+      if (numInputs <= 0 || bytes.isEmpty) {
+        accum.toVector
+      } else {
+        val map = InputPSBTMap.fromBytes(bytes)
+        inputLoop(bytes.drop(map.bytes.size), numInputs - 1, accum :+ map)
+      }
+    }
+
+    val inputMaps = inputLoop(inputBytes, tx.inputs.size, Nil)
+
+    val outputBytes =
+      inputBytes.drop(inputMaps.foldLeft(ByteVector.empty)(_ ++ _.bytes).size)
+
+    @tailrec
+    def outputLoop(
+        bytes: ByteVector,
+        numOutputs: Int,
+        accum: Seq[OutputPSBTMap]): Vector[OutputPSBTMap] = {
+      if (numOutputs <= 0 || bytes.isEmpty) {
+        accum.toVector
+      } else {
+        val map = OutputPSBTMap.fromBytes(bytes)
+        outputLoop(bytes.drop(map.bytes.size), numOutputs - 1, accum :+ map)
+      }
+    }
+
+    val outputMaps = outputLoop(outputBytes, tx.outputs.size, Nil)
+
+    val remainingBytes =
+      outputBytes.drop(outputMaps.foldLeft(ByteVector.empty)(_ ++ _.bytes).size)
+
+    require(remainingBytes.isEmpty,
+            s"The PSBT should be empty now, got: $remainingBytes")
+
+    PSBT(global, inputMaps, outputMaps)
+  }
+
+  def fromBase64(base64: String): PSBT = {
+    ByteVector.fromBase64(base64) match {
+      case None =>
+        throw new IllegalArgumentException(
+          s"String given was not in base64 format, got: $base64")
+      case Some(bytes) => fromBytes(bytes)
     }
   }
 }
@@ -56,52 +154,30 @@ sealed trait PSBTRecord extends NetworkElement {
   }
 }
 
-object PSBT extends Factory[PSBT] {
-  // The magic bytes and separator defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#specification
-  final val magicBytes = hex"70736274ff"
+object PSBTRecord {
 
-  def fromBytes(byteVector: ByteVector): PSBT = {
-    require(
-      byteVector.startsWith(magicBytes),
-      s"A PSBT must start with the magic bytes $magicBytes, got: $byteVector")
+  def fromBytes(bytes: ByteVector): PSBTRecord = {
+    val keyCmpctUInt = CompactSizeUInt.parse(bytes)
 
-    val bytes = byteVector.drop(magicBytes.size)
+    if (keyCmpctUInt.toLong == 0) {
+      new PSBTRecord {
+        override def key: ByteVector = ByteVector.empty
 
-    val globalResult: PSBTParseResult[GlobalPSBTMap] =
-      PSBTHelper.parseGlobalMap(bytes)
+        override def value: ByteVector = ByteVector.empty
+      }
+    } else {
+      val key1 = bytes.drop(keyCmpctUInt.size).take(keyCmpctUInt.toLong)
+      val valueBytes = bytes.drop(keyCmpctUInt.size + keyCmpctUInt.toLong)
+      val valueCmpctUInt = CompactSizeUInt.parse(valueBytes)
+      val value1 = valueBytes
+        .drop(valueCmpctUInt.size)
+        .take(valueCmpctUInt.toLong)
 
-    require(globalResult.maps.size == 1, "There should only be one global map")
+      new PSBTRecord {
+        override def key: ByteVector = key1
 
-    val txRecords = globalResult.maps.head
-      .getRecords[UnsignedTransaction](UnsignedTransactionKey)
-
-    if (txRecords.isEmpty)
-      throw new IllegalArgumentException("Invalid PSBT. No global transaction")
-    if (txRecords.size > 1)
-      throw new IllegalArgumentException(
-        s"Invalid PSBT. There can only be one global transaction, got: ${txRecords.size}")
-
-    val tx = txRecords.head.transaction
-
-    val inputsResult: PSBTParseResult[InputPSBTMap] =
-      PSBTHelper.parseInputMaps(globalResult.remainingBytes, tx.inputs.size)
-
-    val outputsResult: PSBTParseResult[OutputPSBTMap] =
-      PSBTHelper.parseOutputMaps(inputsResult.remainingBytes, tx.outputs.size)
-
-    require(
-      outputsResult.remainingBytes.isEmpty,
-      s"The PSBT should be empty now, got: ${outputsResult.remainingBytes}")
-
-    PSBT(globalResult.maps.head, inputsResult.maps, outputsResult.maps, tx)
-  }
-
-  def fromBase64(base64: String): PSBT = {
-    ByteVector.fromBase64(base64) match {
-      case None =>
-        throw new IllegalArgumentException(
-          s"String given was not in base64 format, got: $base64")
-      case Some(bytes) => fromBytes(bytes)
+        override def value: ByteVector = value1
+      }
     }
   }
 }
@@ -150,6 +226,34 @@ object GlobalPSBTRecord {
 
   case class Unknown(key: ByteVector, value: ByteVector)
       extends GlobalPSBTRecord
+
+  def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
+    val record = PSBTRecord.fromBytes(bytes)
+    PSBTGlobalKeyId.fromByte(record.key.head) match {
+      case UnsignedTransactionKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        UnsignedTransaction(Transaction.fromBytes(record.value))
+      case XPubKeyKeyId =>
+        val xpub = ExtPublicKey.fromBytes(record.key.tail.take(78))
+        val fingerprint = record.value.take(4)
+        val path = BIP32Path.fromBytesLE(record.value.drop(4))
+        XPubKey(xpub, fingerprint, path)
+      case VersionKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        val version = UInt32(record.value)
+
+        require(PSBT.knownVersions.contains(version),
+                s"Unknown version number given: $version")
+        Version(version)
+      case _ => GlobalPSBTRecord.Unknown(record.key, record.value)
+    }
+  }
 }
 
 sealed trait InputPSBTRecord extends PSBTRecord
@@ -224,6 +328,69 @@ object InputPSBTRecord {
   }
 
   case class Unknown(key: ByteVector, value: ByteVector) extends InputPSBTRecord
+
+  def fromBytes(bytes: ByteVector): InputPSBTRecord = {
+    val record = PSBTRecord.fromBytes(bytes)
+    PSBTInputKeyId.fromByte(record.key.head) match {
+      case NonWitnessUTXOKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        NonWitnessOrUnknownUTXO(Transaction(record.value))
+      case WitnessUTXOKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        WitnessUTXO(TransactionOutput.fromBytes(record.value))
+      case PartialSignatureKeyId =>
+        val pubKey = ECPublicKey(record.key.tail)
+        val sig = ECDigitalSignature(record.value)
+        PartialSignature(pubKey, sig)
+      case SighashTypeKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        SigHashType(HashType(record.value))
+      case PSBTInputKeyId.RedeemScriptKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        InputPSBTRecord.RedeemScript(ScriptPubKey.fromAsmBytes(record.value))
+      case PSBTInputKeyId.WitnessScriptKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        InputPSBTRecord.WitnessScript(ScriptPubKey.fromAsmBytes(record.value))
+      case PSBTInputKeyId.BIP32DerivationPathKeyId =>
+        val pubKey = ECPublicKey(record.key.tail)
+        val fingerprint = record.value.take(4)
+        val path = BIP32Path.fromBytesLE(record.value.drop(4))
+        InputPSBTRecord.BIP32DerivationPath(pubKey, fingerprint, path)
+      case FinalizedScriptSigKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        val sig = ScriptSignature(record.value)
+        val extra = record.value.drop(sig.size)
+        FinalizedScriptSig(sig, extra)
+      case FinalizedScriptWitnessKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        FinalizedScriptWitness(RawScriptWitnessParser.read(record.value))
+      case ProofOfReservesCommitmentKeyId =>
+        ProofOfReservesCommitment(record.value)
+      case _ =>
+        InputPSBTRecord.Unknown(record.key, record.value)
+    }
+  }
 }
 
 sealed trait OutputPSBTRecord extends PSBTRecord
@@ -256,6 +423,32 @@ object OutputPSBTRecord {
 
   case class Unknown(key: ByteVector, value: ByteVector)
       extends OutputPSBTRecord
+
+  def fromBytes(bytes: ByteVector): OutputPSBTRecord = {
+    val record = PSBTRecord.fromBytes(bytes)
+    PSBTOutputKeyId.fromByte(record.key.head) match {
+      case PSBTOutputKeyId.RedeemScriptKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        OutputPSBTRecord.RedeemScript(ScriptPubKey.fromAsmBytes(record.value))
+      case PSBTOutputKeyId.WitnessScriptKeyId =>
+        require(
+          record.key.size == 1,
+          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+
+        OutputPSBTRecord.WitnessScript(ScriptPubKey.fromAsmBytes(record.value))
+      case PSBTOutputKeyId.BIP32DerivationPathKeyId =>
+        val pubKey = ECPublicKey(record.key.tail)
+        val fingerprint = record.value.take(4)
+        val path = BIP32Path.fromBytesLE(record.value.drop(4))
+
+        OutputPSBTRecord.BIP32DerivationPath(pubKey, fingerprint, path)
+      case _ =>
+        OutputPSBTRecord.Unknown(record.key, record.value)
+    }
+  }
 }
 
 sealed trait PSBTMap extends NetworkElement {
@@ -268,154 +461,218 @@ sealed trait PSBTMap extends NetworkElement {
     elements.foldLeft(ByteVector.empty)(_ ++ _.bytes) ++ hex"00"
 }
 
-// Key may be confusing because this is just the first byte of the key
-// Maybe change to Identifier, Byte,  or something else
-sealed trait PSBTKey {
+/**
+  * A PSBTKeyId refers to the first byte of a key that signifies which kind of key-value map
+  * is in a given PSBTRecord
+  */
+sealed trait PSBTKeyId {
   def byte: Byte
 }
 
-sealed trait PSBTGlobalKey extends PSBTKey
+sealed trait PSBTGlobalKeyId extends PSBTKeyId
 
-object PSBTGlobalKey {
+object PSBTGlobalKeyId {
 
-  def fromByte(byte: Byte): PSBTGlobalKey = byte match {
-    case UnsignedTransactionKey.byte => UnsignedTransactionKey
-    case XPubKeyKey.byte             => XPubKeyKey
-    case VersionKey.byte             => VersionKey
-    case _: Byte                     => UnknownKey
+  def fromByte(byte: Byte): PSBTGlobalKeyId = byte match {
+    case UnsignedTransactionKeyId.byte => UnsignedTransactionKeyId
+    case XPubKeyKeyId.byte             => XPubKeyKeyId
+    case VersionKeyId.byte             => VersionKeyId
+    case _: Byte                       => UnknownKeyId
   }
 
-  final case object UnsignedTransactionKey extends PSBTGlobalKey {
+  final case object UnsignedTransactionKeyId extends PSBTGlobalKeyId {
     override val byte: Byte = 0x00.byteValue
   }
 
-  final case object XPubKeyKey extends PSBTGlobalKey {
+  final case object XPubKeyKeyId extends PSBTGlobalKeyId {
     override val byte: Byte = 0x01.byteValue
   }
 
-  final case object VersionKey extends PSBTGlobalKey {
+  final case object VersionKeyId extends PSBTGlobalKeyId {
     override val byte: Byte = 0xFB.byteValue
   }
 
-  final case object UnknownKey extends PSBTGlobalKey {
+  final case object UnknownKeyId extends PSBTGlobalKeyId {
     override val byte: Byte = Byte.MaxValue
   }
 }
 
-sealed trait PSBTInputKey extends PSBTKey
+sealed trait PSBTInputKeyId extends PSBTKeyId
 
-object PSBTInputKey {
+object PSBTInputKeyId {
 
-  def fromByte(byte: Byte): PSBTInputKey = byte match {
-    case NonWitnessUTXOKey.byte            => NonWitnessUTXOKey
-    case WitnessUTXOKey.byte               => WitnessUTXOKey
-    case PartialSignatureKey.byte          => PartialSignatureKey
-    case SighashTypeKey.byte               => SighashTypeKey
-    case RedeemScriptKey.byte              => RedeemScriptKey
-    case WitnessScriptKey.byte             => WitnessScriptKey
-    case BIP32DerivationPathKey.byte       => BIP32DerivationPathKey
-    case FinalizedScriptSigKey.byte        => FinalizedScriptSigKey
-    case FinalizedScriptWitnessKey.byte    => FinalizedScriptWitnessKey
-    case ProofOfReservesCommitmentKey.byte => ProofOfReservesCommitmentKey
-    case _: Byte                           => UnknownKey
+  def fromByte(byte: Byte): PSBTInputKeyId = byte match {
+    case NonWitnessUTXOKeyId.byte            => NonWitnessUTXOKeyId
+    case WitnessUTXOKeyId.byte               => WitnessUTXOKeyId
+    case PartialSignatureKeyId.byte          => PartialSignatureKeyId
+    case SighashTypeKeyId.byte               => SighashTypeKeyId
+    case RedeemScriptKeyId.byte              => RedeemScriptKeyId
+    case WitnessScriptKeyId.byte             => WitnessScriptKeyId
+    case BIP32DerivationPathKeyId.byte       => BIP32DerivationPathKeyId
+    case FinalizedScriptSigKeyId.byte        => FinalizedScriptSigKeyId
+    case FinalizedScriptWitnessKeyId.byte    => FinalizedScriptWitnessKeyId
+    case ProofOfReservesCommitmentKeyId.byte => ProofOfReservesCommitmentKeyId
+    case _: Byte                             => UnknownKeyId
 
   }
 
-  final case object NonWitnessUTXOKey extends PSBTInputKey {
+  final case object NonWitnessUTXOKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x00.byteValue
   }
 
-  final case object WitnessUTXOKey extends PSBTInputKey {
+  final case object WitnessUTXOKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x01.byteValue
   }
 
-  final case object PartialSignatureKey extends PSBTInputKey {
+  final case object PartialSignatureKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x02.byteValue
   }
 
-  final case object SighashTypeKey extends PSBTInputKey {
+  final case object SighashTypeKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x03.byteValue
   }
 
-  final case object RedeemScriptKey extends PSBTInputKey {
+  final case object RedeemScriptKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x04.byteValue
   }
 
-  final case object WitnessScriptKey extends PSBTInputKey {
+  final case object WitnessScriptKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x05.byteValue
   }
 
-  final case object BIP32DerivationPathKey extends PSBTInputKey {
+  final case object BIP32DerivationPathKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x06.byteValue
   }
 
-  final case object FinalizedScriptSigKey extends PSBTInputKey {
+  final case object FinalizedScriptSigKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x07.byteValue
   }
 
-  final case object FinalizedScriptWitnessKey extends PSBTInputKey {
+  final case object FinalizedScriptWitnessKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x08.byteValue
   }
 
-  final case object ProofOfReservesCommitmentKey extends PSBTInputKey {
+  final case object ProofOfReservesCommitmentKeyId extends PSBTInputKeyId {
     override val byte: Byte = 0x09.byteValue
   }
 
-  final case object UnknownKey extends PSBTInputKey {
+  final case object UnknownKeyId extends PSBTInputKeyId {
     override val byte: Byte = Byte.MaxValue
   }
 }
 
-sealed trait PSBTOutputKey extends PSBTKey
+sealed trait PSBTOutputKeyId extends PSBTKeyId
 
-object PSBTOutputKey {
+object PSBTOutputKeyId {
 
-  def fromByte(byte: Byte): PSBTOutputKey = byte match {
-    case RedeemScriptKey.byte        => RedeemScriptKey
-    case WitnessScriptKey.byte       => WitnessScriptKey
-    case BIP32DerivationPathKey.byte => BIP32DerivationPathKey
-    case _: Byte                     => UnknownKey
+  def fromByte(byte: Byte): PSBTOutputKeyId = byte match {
+    case RedeemScriptKeyId.byte        => RedeemScriptKeyId
+    case WitnessScriptKeyId.byte       => WitnessScriptKeyId
+    case BIP32DerivationPathKeyId.byte => BIP32DerivationPathKeyId
+    case _: Byte                       => UnknownKeyId
   }
 
-  final case object RedeemScriptKey extends PSBTOutputKey {
+  final case object RedeemScriptKeyId extends PSBTOutputKeyId {
     override val byte: Byte = 0x00.byteValue
   }
 
-  final case object WitnessScriptKey extends PSBTOutputKey {
+  final case object WitnessScriptKeyId extends PSBTOutputKeyId {
     override val byte: Byte = 0x01.byteValue
   }
 
-  final case object BIP32DerivationPathKey extends PSBTOutputKey {
+  final case object BIP32DerivationPathKeyId extends PSBTOutputKeyId {
     override val byte: Byte = 0x02.byteValue
   }
 
-  final case object UnknownKey extends PSBTOutputKey {
+  final case object UnknownKeyId extends PSBTOutputKeyId {
     override val byte: Byte = Byte.MaxValue
   }
 }
 
 case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
 
-  def getRecords[T <: GlobalPSBTRecord](key: PSBTGlobalKey): Vector[T] = {
+  def getRecords[T <: GlobalPSBTRecord](key: PSBTGlobalKeyId): Vector[T] = {
     elements
-      .filter(element => PSBTGlobalKey.fromByte(element.key.head) == key)
+      .filter(element => PSBTGlobalKeyId.fromByte(element.key.head) == key)
       .asInstanceOf[Vector[T]]
   }
 }
+
+object GlobalPSBTMap {
+
+  def fromBytes(bytes: ByteVector): GlobalPSBTMap = {
+    @tailrec
+    def loop(
+        remainingBytes: ByteVector,
+        accum: Seq[GlobalPSBTRecord]): Vector[GlobalPSBTRecord] = {
+      if (remainingBytes.head == 0x00.byteValue) {
+        accum.toVector
+      } else {
+        val record = GlobalPSBTRecord.fromBytes(remainingBytes)
+        val next = remainingBytes.drop(record.bytes.size)
+
+        loop(next, accum :+ record)
+      }
+    }
+    GlobalPSBTMap(loop(bytes, Nil))
+  }
+}
+
 case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
 
-  def getRecords[T <: InputPSBTRecord](key: PSBTInputKey): Vector[T] = {
+  def getRecords[T <: InputPSBTRecord](key: PSBTInputKeyId): Vector[T] = {
     elements
-      .filter(element => PSBTInputKey.fromByte(element.key.head) == key)
+      .filter(element => PSBTInputKeyId.fromByte(element.key.head) == key)
       .asInstanceOf[Vector[T]]
+  }
+}
 
+object InputPSBTMap {
+
+  def fromBytes(bytes: ByteVector): InputPSBTMap = {
+    @tailrec
+    def loop(
+        remainingBytes: ByteVector,
+        accum: Seq[InputPSBTRecord]): Vector[InputPSBTRecord] = {
+      if (remainingBytes.head == 0x00.byteValue) {
+        accum.toVector
+      } else {
+        val record = InputPSBTRecord.fromBytes(remainingBytes)
+        val next = remainingBytes.drop(record.bytes.size)
+
+        loop(next, accum :+ record)
+      }
+    }
+
+    InputPSBTMap(loop(bytes, Nil))
   }
 }
 case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
 
-  def getRecords[T <: OutputPSBTRecord](key: PSBTOutputKey): Vector[T] = {
+  def getRecords[T <: OutputPSBTRecord](key: PSBTOutputKeyId): Vector[T] = {
     elements
-      .filter(element => PSBTOutputKey.fromByte(element.key.head) == key)
+      .filter(element => PSBTOutputKeyId.fromByte(element.key.head) == key)
       .asInstanceOf[Vector[T]]
+  }
+}
+
+object OutputPSBTMap {
+
+  def fromBytes(bytes: ByteVector): OutputPSBTMap = {
+    @tailrec
+    def loop(
+        remainingBytes: ByteVector,
+        accum: Seq[OutputPSBTRecord]): Vector[OutputPSBTRecord] = {
+      if (remainingBytes.head == 0x00.byteValue) {
+        accum.toVector
+      } else {
+        val record = OutputPSBTRecord.fromBytes(remainingBytes)
+        val next = remainingBytes.drop(record.bytes.size)
+
+        loop(next, accum :+ record)
+      }
+    }
+
+    OutputPSBTMap(loop(bytes, Nil))
   }
 }

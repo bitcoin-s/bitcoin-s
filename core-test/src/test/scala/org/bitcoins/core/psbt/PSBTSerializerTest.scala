@@ -11,10 +11,10 @@ import org.bitcoins.core.psbt.InputPSBTRecord.{
   WitnessScript,
   WitnessUTXO
 }
-import org.bitcoins.core.psbt.PSBTInputKey.{
-  BIP32DerivationPathKey,
-  WitnessScriptKey,
-  WitnessUTXOKey
+import org.bitcoins.core.psbt.PSBTInputKeyId.{
+  BIP32DerivationPathKeyId,
+  WitnessScriptKeyId,
+  WitnessUTXOKeyId
 }
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.testkit.util.BitcoinSUnitTest
@@ -50,15 +50,15 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     val tx = Transaction.fromBytes(
       hex"02000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef13357900000000")
 
-    assert(psbt.tx == tx)
+    assert(psbt.transaction == tx)
     assert(psbt.inputMaps.size == tx.inputs.size && tx.inputs.size == 1)
     assert(psbt.outputMaps.size == tx.outputs.size && tx.outputs.size == 1)
     assert(psbt.globalMap.elements.exists(record =>
-      PSBTGlobalKey.fromByte(record.key.head) == PSBTGlobalKey.XPubKeyKey))
+      PSBTGlobalKeyId.fromByte(record.key.head) == PSBTGlobalKeyId.XPubKeyKeyId))
 
     val globalXPubs =
       psbt.globalMap
-        .getRecords[XPubKey](PSBTGlobalKey.XPubKeyKey)
+        .getRecords[XPubKey](PSBTGlobalKeyId.XPubKeyKeyId)
     assert(globalXPubs.size == 2)
 
     val xpub1 = ExtPublicKey
@@ -87,7 +87,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     assert(psbt.inputMaps.head.elements.size == 4)
 
     val witnessUTXO =
-      psbt.inputMaps.head.getRecords[WitnessUTXO](WitnessUTXOKey).head
+      psbt.inputMaps.head.getRecords[WitnessUTXO](WitnessUTXOKeyId).head
     val output = TransactionOutput(
       Satoshis(500000000),
       RawScriptPubKeyParser.read(
@@ -95,7 +95,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     assert(witnessUTXO.spentWitnessTransaction == output)
 
     val witnessScript =
-      psbt.inputMaps.head.getRecords[WitnessScript](WitnessScriptKey).head
+      psbt.inputMaps.head.getRecords[WitnessScript](WitnessScriptKeyId).head
     val scriptPubKey = MultiSignatureScriptPubKey(
       2,
       Vector(
@@ -109,7 +109,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     assert(witnessScript.witnessScript == scriptPubKey)
 
     val bip32paths = psbt.inputMaps.head
-      .getRecords[BIP32DerivationPath](BIP32DerivationPathKey)
+      .getRecords[BIP32DerivationPath](BIP32DerivationPathKeyId)
 
     assert(bip32paths.size == 2)
 
@@ -137,7 +137,7 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
     val bip32path =
       psbt.outputMaps.head
         .getRecords[OutputPSBTRecord.BIP32DerivationPath](
-          PSBTOutputKey.BIP32DerivationPathKey)
+          PSBTOutputKeyId.BIP32DerivationPathKeyId)
         .head
 
     assert(
@@ -149,10 +149,10 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
   it must "successfully serialize a PSBT with unknown types" in {
     val psbtWithUnknowns = PSBT.fromBytes(validPsbts(6))
-    val inputKey = PSBTInputKey.fromByte(
+    val inputKey = PSBTInputKeyId.fromByte(
       psbtWithUnknowns.inputMaps.head.elements.head.key.head)
 
-    assert(inputKey == PSBTInputKey.UnknownKey)
+    assert(inputKey == PSBTInputKeyId.UnknownKeyId)
   }
 
   it must "successfully serialize and deserialize valid PSBTs from bytes" in {
@@ -212,6 +212,6 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
 
   it must "fail to serialize invalid PSBTs" in {
     invalidPsbts.foreach(invalidPsbt =>
-      assertThrows[Exception](PSBT(invalidPsbt)))
+      assertThrows[IllegalArgumentException](PSBT(invalidPsbt)))
   }
 }
