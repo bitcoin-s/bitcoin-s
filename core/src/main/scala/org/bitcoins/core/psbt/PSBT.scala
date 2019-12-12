@@ -104,8 +104,7 @@ object PSBT extends Factory[PSBT] {
     val inputMaps = inputLoop(inputBytes, tx.inputs.size, Nil)
 
     val outputBytes =
-      inputBytes.drop(inputMaps.foldLeft(ByteVector.empty)(_ ++ _.bytes).size)
-
+      inputBytes.drop(inputMaps.foldLeft(0)(_ + _.bytes.size.toInt))
     @tailrec
     def outputLoop(
         bytes: ByteVector,
@@ -122,7 +121,7 @@ object PSBT extends Factory[PSBT] {
     val outputMaps = outputLoop(outputBytes, tx.outputs.size, Nil)
 
     val remainingBytes =
-      outputBytes.drop(outputMaps.foldLeft(ByteVector.empty)(_ ++ _.bytes).size)
+      outputBytes.drop(outputMaps.foldLeft(0)(_ + _.bytes.size.toInt))
 
     require(remainingBytes.isEmpty,
             s"The PSBT should be empty now, got: $remainingBytes")
@@ -156,28 +155,20 @@ sealed trait PSBTRecord extends NetworkElement {
 
 object PSBTRecord {
 
-  def fromBytes(bytes: ByteVector): PSBTRecord = {
+  def fromBytes(bytes: ByteVector): (ByteVector, ByteVector) = {
     val keyCmpctUInt = CompactSizeUInt.parse(bytes)
 
     if (keyCmpctUInt.toLong == 0) {
-      new PSBTRecord {
-        override def key: ByteVector = ByteVector.empty
-
-        override def value: ByteVector = ByteVector.empty
-      }
+      (ByteVector.empty, ByteVector.empty)
     } else {
-      val key1 = bytes.drop(keyCmpctUInt.size).take(keyCmpctUInt.toLong)
+      val key = bytes.drop(keyCmpctUInt.size).take(keyCmpctUInt.toLong)
       val valueBytes = bytes.drop(keyCmpctUInt.size + keyCmpctUInt.toLong)
       val valueCmpctUInt = CompactSizeUInt.parse(valueBytes)
-      val value1 = valueBytes
+      val value = valueBytes
         .drop(valueCmpctUInt.size)
         .take(valueCmpctUInt.toLong)
 
-      new PSBTRecord {
-        override def key: ByteVector = key1
-
-        override def value: ByteVector = value1
-      }
+      (key, value)
     }
   }
 }
@@ -228,30 +219,28 @@ object GlobalPSBTRecord {
       extends GlobalPSBTRecord
 
   def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
-    val record = PSBTRecord.fromBytes(bytes)
-    PSBTGlobalKeyId.fromByte(record.key.head) match {
+    val (key, value) = PSBTRecord.fromBytes(bytes)
+    PSBTGlobalKeyId.fromByte(key.head) match {
       case UnsignedTransactionKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        UnsignedTransaction(Transaction.fromBytes(record.value))
+        UnsignedTransaction(Transaction.fromBytes(value))
       case XPubKeyKeyId =>
-        val xpub = ExtPublicKey.fromBytes(record.key.tail.take(78))
-        val fingerprint = record.value.take(4)
-        val path = BIP32Path.fromBytesLE(record.value.drop(4))
+        val xpub = ExtPublicKey.fromBytes(key.tail.take(78))
+        val fingerprint = value.take(4)
+        val path = BIP32Path.fromBytesLE(value.drop(4))
         XPubKey(xpub, fingerprint, path)
       case VersionKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        val version = UInt32(record.value)
+        val version = UInt32(value)
 
         require(PSBT.knownVersions.contains(version),
                 s"Unknown version number given: $version")
         Version(version)
-      case _ => GlobalPSBTRecord.Unknown(record.key, record.value)
+      case _ => GlobalPSBTRecord.Unknown(key, value)
     }
   }
 }
@@ -330,65 +319,58 @@ object InputPSBTRecord {
   case class Unknown(key: ByteVector, value: ByteVector) extends InputPSBTRecord
 
   def fromBytes(bytes: ByteVector): InputPSBTRecord = {
-    val record = PSBTRecord.fromBytes(bytes)
-    PSBTInputKeyId.fromByte(record.key.head) match {
+    val (key, value) = PSBTRecord.fromBytes(bytes)
+    PSBTInputKeyId.fromByte(key.head) match {
       case NonWitnessUTXOKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        NonWitnessOrUnknownUTXO(Transaction(record.value))
+        NonWitnessOrUnknownUTXO(Transaction(value))
       case WitnessUTXOKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        WitnessUTXO(TransactionOutput.fromBytes(record.value))
+        WitnessUTXO(TransactionOutput.fromBytes(value))
       case PartialSignatureKeyId =>
-        val pubKey = ECPublicKey(record.key.tail)
-        val sig = ECDigitalSignature(record.value)
+        val pubKey = ECPublicKey(key.tail)
+        val sig = ECDigitalSignature(value)
         PartialSignature(pubKey, sig)
       case SighashTypeKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        SigHashType(HashType(record.value))
+        SigHashType(HashType(value))
       case PSBTInputKeyId.RedeemScriptKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        InputPSBTRecord.RedeemScript(ScriptPubKey.fromAsmBytes(record.value))
+        InputPSBTRecord.RedeemScript(ScriptPubKey.fromAsmBytes(value))
       case PSBTInputKeyId.WitnessScriptKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        InputPSBTRecord.WitnessScript(ScriptPubKey.fromAsmBytes(record.value))
+        InputPSBTRecord.WitnessScript(ScriptPubKey.fromAsmBytes(value))
       case PSBTInputKeyId.BIP32DerivationPathKeyId =>
-        val pubKey = ECPublicKey(record.key.tail)
-        val fingerprint = record.value.take(4)
-        val path = BIP32Path.fromBytesLE(record.value.drop(4))
+        val pubKey = ECPublicKey(key.tail)
+        val fingerprint = value.take(4)
+        val path = BIP32Path.fromBytesLE(value.drop(4))
         InputPSBTRecord.BIP32DerivationPath(pubKey, fingerprint, path)
       case FinalizedScriptSigKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        val sig = ScriptSignature(record.value)
-        val extra = record.value.drop(sig.size)
+        val sig = ScriptSignature(value)
+        val extra = value.drop(sig.size)
         FinalizedScriptSig(sig, extra)
       case FinalizedScriptWitnessKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        FinalizedScriptWitness(RawScriptWitnessParser.read(record.value))
+        FinalizedScriptWitness(RawScriptWitnessParser.read(value))
       case ProofOfReservesCommitmentKeyId =>
-        ProofOfReservesCommitment(record.value)
+        ProofOfReservesCommitment(value)
       case _ =>
-        InputPSBTRecord.Unknown(record.key, record.value)
+        InputPSBTRecord.Unknown(key, value)
     }
   }
 }
@@ -425,28 +407,26 @@ object OutputPSBTRecord {
       extends OutputPSBTRecord
 
   def fromBytes(bytes: ByteVector): OutputPSBTRecord = {
-    val record = PSBTRecord.fromBytes(bytes)
-    PSBTOutputKeyId.fromByte(record.key.head) match {
+    val (key, value) = PSBTRecord.fromBytes(bytes)
+    PSBTOutputKeyId.fromByte(key.head) match {
       case PSBTOutputKeyId.RedeemScriptKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        OutputPSBTRecord.RedeemScript(ScriptPubKey.fromAsmBytes(record.value))
+        OutputPSBTRecord.RedeemScript(ScriptPubKey.fromAsmBytes(value))
       case PSBTOutputKeyId.WitnessScriptKeyId =>
-        require(
-          record.key.size == 1,
-          s"The key must only contain the 1 byte type, got: ${record.key.size}")
+        require(key.size == 1,
+                s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        OutputPSBTRecord.WitnessScript(ScriptPubKey.fromAsmBytes(record.value))
+        OutputPSBTRecord.WitnessScript(ScriptPubKey.fromAsmBytes(value))
       case PSBTOutputKeyId.BIP32DerivationPathKeyId =>
-        val pubKey = ECPublicKey(record.key.tail)
-        val fingerprint = record.value.take(4)
-        val path = BIP32Path.fromBytesLE(record.value.drop(4))
+        val pubKey = ECPublicKey(key.tail)
+        val fingerprint = value.take(4)
+        val path = BIP32Path.fromBytesLE(value.drop(4))
 
         OutputPSBTRecord.BIP32DerivationPath(pubKey, fingerprint, path)
       case _ =>
-        OutputPSBTRecord.Unknown(record.key, record.value)
+        OutputPSBTRecord.Unknown(key, value)
     }
   }
 }
