@@ -17,6 +17,7 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.FeeCalcFunction
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{
@@ -52,7 +53,11 @@ import scala.util.{Failure, Success, Try}
   */
 sealed abstract class TxBuilder {
 
+  private def owners: Vector[Int] = changeSPKs.keys.toVector
+
   def ownedDestinations: Vector[OwnedTxData[TransactionOutput]]
+  require(ownedDestinations.map(_.owner).forall(owners.contains),
+          "Unknown owner on destination")
 
   /** The outputs which we are spending bitcoins to */
   def destinations: Vector[TransactionOutput] =
@@ -64,9 +69,27 @@ sealed abstract class TxBuilder {
   /** A sequence of the amounts we are spending in this transaction */
   def destinationAmounts: Vector[CurrencyUnit] = destinations.map(_.value)
 
+  def destinationAmountByOwner: Map[Int, CurrencyUnit] = {
+    ownedDestinations
+      .groupBy(_.owner)
+      .map {
+        case (owner, ownersOutputs) =>
+          owner -> ownersOutputs.foldLeft(CurrencyUnits.zero)(_ + _.data.value)
+      }
+  }
+
   /** The spent amount of bitcoins we are sending in the transaction, this does NOT include the fee */
   def destinationAmount: CurrencyUnit =
     destinationAmounts.fold(CurrencyUnits.zero)(_ + _)
+
+  def creditingAmountByOwner: Map[Int, CurrencyUnit] = {
+    ownedUtxos
+      .groupBy(_.owner)
+      .map {
+        case (owner, ownersUtxos) =>
+          owner -> ownersUtxos.foldLeft(CurrencyUnits.zero)(_ + _.data.amount)
+      }
+  }
 
   /** The total amount of satoshis that are able to be spent by this transaction */
   def creditingAmount: CurrencyUnit =
@@ -80,6 +103,8 @@ sealed abstract class TxBuilder {
     * we are attempting to spend. The keys are the owners of those utxos.
     */
   def ownedUtxos: Vector[OwnedTxData[UTXOSpendingInfo]]
+  require(ownedUtxos.map(_.owner).forall(owners.contains),
+          "Unknown owner found on utxo")
 
   /**
     * The list of [[org.bitcoins.core.wallet.utxo.UTXOSpendingInfo UTXOSpendingInfo]]s we are
@@ -140,7 +165,8 @@ case class BitcoinTxBuilder(
     ownedUtxos: Vector[OwnedTxData[BitcoinUTXOSpendingInfo]],
     feeRate: FeeUnit,
     changeSPKs: Map[Int, ScriptPubKey],
-    network: BitcoinNetwork)
+    network: BitcoinNetwork,
+    feeCalc: FeeCalcFunction)
     extends TxBuilder {
 
   override val utxos: Vector[BitcoinUTXOSpendingInfo] =
@@ -183,21 +209,27 @@ case class BitcoinTxBuilder(
         val dummySignTx = loop(utxos, utxnf, true)
         dummySignTx.map { dtx =>
           logger.debug(s"dummySignTx $dtx")
-          val fee = feeRate.calc(dtx)
-          logger.debug(s"fee $fee")
-          val change = creditingAmount - destinationAmount - fee
-          val newChangeOutput =
-            TransactionOutput(change, changeSPKs.values.head)
-          logger.debug(s"newChangeOutput $newChangeOutput")
+          val totalFee = feeRate.calc(dtx)
+          logger.debug(s"fee $totalFee")
+          val ownedInputs = ownedUtxos.map(_.map(utxo =>
+            dtx.inputs.find(_.previousOutput == utxo.outPoint).get))
+          val feeByOwner =
+            feeCalc(ownedInputs,
+                    ownedDestinations,
+                    changeSPKs.size,
+                    totalFee.satoshis)
+          val newChangeOutputs = feeByOwner.map {
+            case (owner, fee) =>
+              val change = creditingAmountByOwner(owner) - destinationAmountByOwner
+                .getOrElse(owner, CurrencyUnits.zero) - fee
+              TransactionOutput(change, changeSPKs(owner))
+          }
+          logger.debug(s"newChangeOutputs $newChangeOutputs")
           //if the change output is below the dust threshold after calculating the fee, don't add it
           //to the tx
-          val newOutputs = if (newChangeOutput.value <= Policy.dustThreshold) {
-            logger.debug(
-              "removing change output as value is below the dustThreshold")
-            destinations
-          } else {
-            destinations ++ Vector(newChangeOutput)
-          }
+          val newOutputs = destinations ++ newChangeOutputs.filterNot(
+            _.value <= Policy.dustThreshold)
+
           dtx match {
             case btx: BaseTransaction =>
               BaseTransaction(btx.version, btx.inputs, newOutputs, btx.lockTime)
@@ -752,8 +784,95 @@ object BitcoinTxBuilder {
                      utxos.map(OwnedTxData(_, 0)).toVector,
                      feeRate,
                      Map(0 -> changeSPK),
-                     network)
+                     network,
+                     equalDistributionFeeCalc)
+  }
+
+  type FeeCalcFunction = (
+      Vector[OwnedTxData[TransactionInput]],
+      Vector[OwnedTxData[TransactionOutput]],
+      Int,
+      Satoshis) => Map[Int, Satoshis]
+
+  val equalDistributionFeeCalc: FeeCalcFunction = (_, _, owners, totalFee) =>
+    equalFeeDistribution(owners, totalFee)
+
+  val distributeByOutputFeeCalc: FeeCalcFunction =
+    (_, outputs, owners, totalFee) =>
+      distributeByOutputValue(outputs, owners, totalFee)
+
+  val distributeByInputFeeCalc: FeeCalcFunction =
+    (inputs, _, owners, totalFee) =>
+      distributeByInputSize(inputs, owners, totalFee)
+
+  def equalFeeDistribution(
+      owners: Int,
+      totalFee: Satoshis): Map[Int, Satoshis] = {
+    val feePerOwner = totalFee.toLong / owners
+    val remainder = totalFee.toLong % owners
+
+    (0 until owners).map { owner =>
+      val remainderToAdd = if (owner < remainder) 1 else 0
+      owner -> Satoshis(feePerOwner + remainderToAdd)
+    }.toMap
+  }
+
+  private def distributeByMetric(
+      metric: Map[Int, Long],
+      owners: Int,
+      totalFee: Satoshis): Map[Int, Satoshis] = {
+    val metricTotal = metric.values.foldLeft(0L)(_ + _)
+
+    val feesByOwner = metric.map {
+      case (owner, metricForOwner) =>
+        val proportionalBytes = metricForOwner.toDouble / metricTotal
+        val fee = Satoshis((proportionalBytes * totalFee.toLong).toLong)
+        owner -> fee
+    }
+    val feePaidSoFar = feesByOwner.values.foldLeft(CurrencyUnits.zero)(_ + _)
+    val remainder = totalFee - feePaidSoFar
+    val remainderFees = equalFeeDistribution(owners, remainder.satoshis)
+
+    val placeHolderOwnerMap = (0 until owners)
+      .filterNot(feesByOwner.keySet.contains)
+      .map(_ -> Satoshis.zero)
+      .toMap
+    (feesByOwner ++ placeHolderOwnerMap).map {
+      case (owner, ownerFee) =>
+        owner -> (ownerFee + remainderFees(owner)).satoshis
+    }
+  }
+
+  def distributeByOutputValue(
+      outputs: Vector[OwnedTxData[TransactionOutput]],
+      owners: Int,
+      totalFee: Satoshis): Map[Int, Satoshis] = {
+    val outputValueByOwner = outputs.groupBy(_.owner).map {
+      case (owner, ownersData) =>
+        val value = ownersData.foldLeft(0L)(_ + _.data.value.satoshis.toLong)
+        owner -> value
+    }
+
+    distributeByMetric(outputValueByOwner, owners, totalFee)
+  }
+
+  def distributeByInputSize(
+      inputs: Vector[OwnedTxData[TransactionInput]],
+      owners: Int,
+      totalFee: Satoshis): Map[Int, Satoshis] = {
+    val bytesByOwner = inputs.groupBy(_.owner).map {
+      case (owner, ownersData) =>
+        val bytes = ownersData.foldLeft(0L)(_ + _.data.bytes.size)
+        owner -> bytes
+    }
+
+    distributeByMetric(bytesByOwner, owners, totalFee)
   }
 }
 
-case class OwnedTxData[+T](data: T, owner: Int)
+case class OwnedTxData[+T](data: T, owner: Int) {
+
+  def map[U](f: T => U): OwnedTxData[U] = {
+    OwnedTxData(f(data), owner)
+  }
+}
