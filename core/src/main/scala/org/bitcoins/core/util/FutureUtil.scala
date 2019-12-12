@@ -1,7 +1,6 @@
 package org.bitcoins.core.util
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 object FutureUtil {
 
@@ -23,6 +22,8 @@ object FutureUtil {
   }
 
   val unit: Future[Unit] = Future.successful(())
+
+  def none[T]: Future[Option[T]] = Future.successful(Option.empty[T])
 
   /**
     * Folds over the given elements sequentially in a non-blocking async way

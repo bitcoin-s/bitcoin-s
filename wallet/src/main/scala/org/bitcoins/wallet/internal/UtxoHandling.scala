@@ -4,7 +4,6 @@ import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.BlockStamp.BlockHash
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -49,7 +48,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
       txid: DoubleSha256DigestBE,
-      confirmations: Int,
       spent: Boolean,
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
@@ -59,7 +57,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     val utxo: SpendingInfoDb = addressDb match {
       case segwitAddr: SegWitAddressDb =>
         SegwitV0SpendingInfo(
-          confirmations = confirmations,
           spent = spent,
           txid = txid,
           outPoint = outPoint,
@@ -69,8 +66,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           blockHash = blockHash
         )
       case LegacyAddressDb(path, _, _, _, _) =>
-        LegacySpendingInfo(confirmations = confirmations,
-                           spent = spent,
+        LegacySpendingInfo(spent = spent,
                            txid = txid,
                            outPoint = outPoint,
                            output = output,
@@ -97,7 +93,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   protected def addUtxo(
       transaction: Transaction,
       vout: UInt32,
-      confirmations: Int,
       spent: Boolean,
       blockHash: Option[DoubleSha256DigestBE]): Future[AddUtxoResult] = {
     import AddUtxoError._
@@ -132,7 +127,6 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
           addressDb <- addressDbE
         } yield writeUtxo(txid = transaction.txIdBE,
-                          confirmations = confirmations,
                           spent = spent,
                           output,
                           outPoint,

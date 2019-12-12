@@ -21,23 +21,6 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   /////////////////////
   // Public facing API
 
-  def getNumberOfConfirmations(
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Int] =
-    blockHashOpt match {
-      case None => Future.successful(0)
-      case Some(blockHash) =>
-        for {
-          blockHeight <- chainQueryApi.getBlockHeight(blockHash)
-          tipHash <- chainQueryApi.getBestBlockHash()
-          tipHeight <- chainQueryApi.getBlockHeight(tipHash)
-        } yield {
-          println(s"$blockHash $blockHeight $tipHash $tipHeight")
-          tipHeight
-            .flatMap(x => blockHeight.map(y => x - y + 1))
-            .getOrElse(0)
-        }
-    }
-
   /** @inheritdoc */
   override def processTransaction(
       transaction: Transaction,
@@ -115,10 +98,9 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
 
+    logger.info(
+      s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
     for {
-      confirmations <- getNumberOfConfirmations(blockHashOpt)
-      _ = logger.info(
-        s"Processing transaction=${transaction.txIdBE} with confirmations=$confirmations")
       aggregate <- {
 
         val incomingTxoFut: Future[Vector[SpendingInfoDb]] =
@@ -127,17 +109,14 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             .flatMap {
               // no existing elements found
               case Vector() =>
-                processNewIncomingTx(transaction, confirmations, blockHashOpt)
+                processNewIncomingTx(transaction, blockHashOpt)
                   .map(_.toVector)
 
               case txos: Vector[SpendingInfoDb] =>
                 val txoProcessingFutures =
                   txos
                     .map(
-                      processExistingIncomingTxo(transaction,
-                                                 confirmations,
-                                                 blockHashOpt,
-                                                 _))
+                      processExistingIncomingTxo(transaction, blockHashOpt, _))
 
                 Future
                   .sequence(txoProcessingFutures)
@@ -180,7 +159,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private val markAsSpentIfUnspent: SpendingInfoDb => Future[
     Option[SpendingInfoDb]] = { out =>
     if (out.spent) {
-      Future.successful(None)
+      FutureUtil.none
     } else {
       val updatedF =
         spendingInfoDAO.update(out.copyWithSpent(spent = true))
@@ -202,13 +181,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       index: Int,
       spent: Boolean,
-      confirmations: Int,
       blockHash: Option[DoubleSha256DigestBE]): Future[SpendingInfoDb] =
-    addUtxo(transaction,
-            UInt32(index),
-            spent = spent,
-            confirmations = confirmations,
-            blockHash = blockHash)
+    addUtxo(transaction, UInt32(index), spent = spent, blockHash = blockHash)
       .flatMap {
         case AddUtxoSuccess(utxo) => Future.successful(utxo)
         case err: AddUtxoError =>
@@ -225,7 +199,6 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processExistingIncomingTxo(
       transaction: Transaction,
-      confirmations: Int,
       blockHashOpt: Option[DoubleSha256DigestBE],
       foundTxo: SpendingInfoDb): Future[SpendingInfoDb] = {
     if (foundTxo.txid != transaction.txIdBE) {
@@ -244,12 +217,11 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           val updateF =
             spendingInfoDAO.update(
               foundTxo
-                .copyWithConfirmations(confirmations = confirmations)
                 .copyWithBlockHash(blockHash = blockHash))
 
           updateF.foreach(tx =>
             logger.debug(
-              s"Updated confirmation count=${tx.confirmations} of output=${foundTxo}"))
+              s"Updated block_hash of txo=${tx.txid} new block hash=${blockHash}"))
           updateF.failed.foreach(err =>
             logger.error(
               s"Failed to update confirmation count of transaction=${transaction.txIdBE}",
@@ -293,7 +265,6 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processNewIncomingTx(
       transaction: Transaction,
-      confirmations: Int,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[Seq[SpendingInfoDb]] = {
     addressDAO.findAll().flatMap { addrs =>
       val relevantOutsWithIdx: Seq[OutputWithIndex] = {
@@ -330,7 +301,6 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
                   out =>
                     processUtxo(transaction,
                                 out.index,
-                                confirmations = confirmations,
                                 // TODO is this correct?
                                 spent = false,
                                 blockHash = blockHashOpt))

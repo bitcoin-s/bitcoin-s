@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte

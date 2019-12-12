@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.core.currency._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
@@ -45,6 +45,8 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         tx = TransactionGenerators
           .transactionTo(address.scriptPubKey)
           .sampleSome
+        blockHash = DoubleSha256DigestBE.fromBytes(
+          ECPrivateKey.freshPrivateKey.bytes)
 
         _ <- wallet.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()
@@ -55,14 +57,14 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           wallet.processTransaction(tx, None)
         }
 
-        _ <- wallet.processTransaction(tx, None)
+        _ <- wallet.processTransaction(tx, Some(blockHash))
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.listUtxos()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, None)
+          wallet.processTransaction(tx, Some(blockHash))
         }
       } yield {
         val ourOutputs =

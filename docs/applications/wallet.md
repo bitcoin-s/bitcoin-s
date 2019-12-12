@@ -110,22 +110,23 @@ val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
 
 // when this future completes, ww have sent a transaction
 // from bitcoind to the Bitcoin-S wallet
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.currency._
-val transactionF: Future[Transaction] = for {
+val transactionF: Future[(Transaction, Option[DoubleSha256DigestBE])] = for {
     wallet <- walletF
     address <- wallet.getNewAddress()
     txid <- bitcoind.sendToAddress(address, 3.bitcoin)
     transaction <- bitcoind.getRawTransaction(txid)
-} yield transaction.hex
+} yield (transaction.hex, transaction.blockhash)
 
 // when this future completes, we have processed
 // the transaction from bitcoind, and we have
 // queried our balance for the current balance
 val balanceF: Future[CurrencyUnit] = for {
     wallet <- walletF
-    tx <- transactionF
-    _ <- wallet.processTransaction(tx, confirmations = 0)
+    (tx, blockhash) <- transactionF
+    _ <- wallet.processTransaction(tx, blockhash)
     balance <- wallet.getBalance
 } yield balance
 

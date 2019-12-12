@@ -17,7 +17,7 @@ import org.bitcoins.keymanager.{
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
-import org.bitcoins.wallet.models._
+import org.bitcoins.wallet.models.{SpendingInfoDb, _}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -49,14 +49,14 @@ abstract class LockedWallet
   }
 
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
-    val confirmed = filterThenSum(_.confirmations > 0)
+    val confirmed = filterThenSum(_.blockHash.isDefined)
     confirmed.foreach(balance =>
       logger.trace(s"Confirmed balance=${balance.satoshis}"))
     confirmed
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    val unconfirmed = filterThenSum(_.confirmations == 0)
+    val unconfirmed = filterThenSum(_.blockHash.isEmpty)
     unconfirmed.foreach(balance =>
       logger.trace(s"Unconfirmed balance=${balance.satoshis}"))
     unconfirmed

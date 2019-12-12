@@ -232,4 +232,9 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
     chainApiFromDb().flatMap(_.getBestBlockHash())
 
+  /** Gets number of confirmations for the given block hash*/
+  def getNumberOfConfirmations(
+      blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
+    chainApiFromDb().flatMap(_.getNumberOfConfirmations(blockHashOpt))
+
 }
