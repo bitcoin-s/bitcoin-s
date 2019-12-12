@@ -46,7 +46,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     for {
       change <- getNewChangeAddress(fromAccount)
       walletUtxos <- listUtxos()
-      txBuilder <- {
+      txBuilder = {
         val destinations = Vector(
           TransactionOutput(amount, address.scriptPubKey))
 

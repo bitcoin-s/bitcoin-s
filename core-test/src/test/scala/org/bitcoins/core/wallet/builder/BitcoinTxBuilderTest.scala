@@ -32,7 +32,6 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
@@ -66,25 +65,21 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
 
-    val listF =
+    val _ =
       BitcoinTxBuilder(destinations = Seq.empty,
                        utxos = List(utxo),
                        feeRate = SatoshisPerByte(1.sat),
                        changeSPK = EmptyScriptPubKey,
                        network = RegTest)
 
-    val vecF =
+    val _ =
       BitcoinTxBuilder(destinations = Seq.empty,
-                       utxos = List(utxo),
+                       utxos = Vector(utxo),
                        feeRate = SatoshisPerByte(1.sat),
                        changeSPK = EmptyScriptPubKey,
                        network = RegTest)
 
-    for {
-      _ <- listF
-      _ <- vecF
-    } yield succeed
-
+    succeed
   }
 
   it must "failed to build a transaction that mints money out of thin air" in {
@@ -106,14 +101,13 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
-                                     utxos = utxoMap,
+                                     utxos = Vector(utxo),
                                      feeRate = feeUnit,
                                      changeSPK = EmptyScriptPubKey,
                                      network = TestNet3)
-    val resultFuture = txBuilder.flatMap(_.sign)
+    val resultFuture = txBuilder.sign
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
     }
@@ -137,15 +131,13 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
-    val txBuilder = BitcoinTxBuilder(destinations = destinations,
-                                     utxos = utxoMap,
-                                     feeRate = feeUnit,
-                                     changeSPK = EmptyScriptPubKey,
-                                     network = TestNet3)
-    recoverToSucceededIf[IllegalArgumentException] {
-      txBuilder
+    assertThrows[IllegalArgumentException] {
+      BitcoinTxBuilder(destinations = destinations,
+                       utxos = Vector(utxo),
+                       feeRate = feeUnit,
+                       changeSPK = EmptyScriptPubKey,
+                       network = TestNet3)
     }
   }
 
@@ -166,70 +158,17 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                        HashType.sigHashAll,
                                        conditionalPath =
                                          ConditionalPath.NoConditionsLeft)
-    val utxoMap: UTXOMap = Map(outPoint -> utxo)
     val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
-                                     utxos = utxoMap,
+                                     utxos = Vector(utxo),
                                      feeRate = feeUnit,
                                      changeSPK = EmptyScriptPubKey,
                                      network = TestNet3)
     //trivially false
     val f = (_: Seq[BitcoinUTXOSpendingInfo], _: Transaction) => false
-    val resultFuture = txBuilder.flatMap(_.sign(f))
+    val resultFuture = txBuilder.sign(f)
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
-    }
-  }
-
-  it must "be able to create a BitcoinTxBuilder from UTXOTuple and UTXOMap" in {
-    val creditingOutput =
-      TransactionOutput(value = CurrencyUnits.zero, scriptPubKey = spk)
-    val destinations = {
-      Seq(
-        TransactionOutput(value = Satoshis.one,
-                          scriptPubKey = EmptyScriptPubKey))
-    }
-    val creditingTx = BaseTransaction(version = tc.validLockVersion,
-                                      inputs = Nil,
-                                      outputs = Seq(creditingOutput),
-                                      lockTime = tc.lockTime)
-    val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-    val utxo = BitcoinUTXOSpendingInfo(
-      outPoint = outPoint,
-      output = creditingOutput,
-      signers = Seq(privKey),
-      redeemScriptOpt = None,
-      scriptWitnessOpt = None,
-      hashType = HashType.sigHashAll,
-      conditionalPath = ConditionalPath.NoConditionsLeft
-    )
-    val utxoMap: UTXOMap = Map(outPoint -> utxo)
-    val utxoSpendingInfo = BitcoinUTXOSpendingInfo(
-      outPoint = outPoint,
-      output = creditingOutput,
-      signers = Seq(privKey),
-      redeemScriptOpt = None,
-      scriptWitnessOpt = None,
-      hashType = HashType.sigHashAll,
-      conditionalPath = ConditionalPath.NoConditionsLeft
-    )
-
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val txBuilderMap = BitcoinTxBuilder(destinations = destinations,
-                                        utxos = utxoMap,
-                                        feeRate = feeUnit,
-                                        changeSPK = EmptyScriptPubKey,
-                                        network = TestNet3)
-    val txBuilderTuple = BitcoinTxBuilder(destinations = destinations,
-                                          utxos = Seq(utxoSpendingInfo),
-                                          feeRate = feeUnit,
-                                          changeSPK = EmptyScriptPubKey,
-                                          network = TestNet3)
-
-    txBuilderTuple.flatMap { tup =>
-      txBuilderMap.map { map =>
-        assert(map == tup)
-      }
     }
   }
 
@@ -294,15 +233,14 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations,
-                                            utxoMap,
+                                            Vector(utxo),
                                             feeUnit,
                                             EmptyScriptPubKey,
                                             TestNet3)
-    val resultFuture = txBuilderWitness.flatMap(_.sign)
+    val resultFuture = txBuilderWitness.sign
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
     }
@@ -329,15 +267,14 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val utxoMap: UTXOMap = Map(outPoint -> utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
     val txBuilderWitness = BitcoinTxBuilder(destinations = destinations,
-                                            utxos = utxoMap,
+                                            utxos = Vector(utxo),
                                             feeRate = feeUnit,
                                             changeSPK = EmptyScriptPubKey,
                                             network = TestNet3)
-    val resultFuture = txBuilderWitness.flatMap(_.sign)
+    val resultFuture = txBuilderWitness.sign
     recoverToSucceededIf[IllegalArgumentException] {
       resultFuture
     }
@@ -405,7 +342,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       ConditionalPath.NoConditionsLeft
     )
 
-    val txBuilderF =
+    val txBuilder =
       BitcoinTxBuilder(
         Vector(
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
@@ -416,8 +353,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         RegTest
       )
 
-    txBuilderF
-      .flatMap(_.sign)
+    txBuilder.sign
       .map(tx => assert(tx.lockTime == UInt32(lockTime)))
   }
 
@@ -439,7 +375,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       ConditionalPath.NoConditionsLeft
     )
 
-    val txBuilderF =
+    val txBuilder =
       BitcoinTxBuilder(
         Vector(
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
@@ -450,8 +386,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         RegTest
       )
 
-    txBuilderF
-      .flatMap(_.sign)
+    txBuilder.sign
       .map(tx => assert(tx.lockTime == UInt32(lockTime)))
   }
 
@@ -487,7 +422,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       ConditionalPath.NoConditionsLeft
     )
 
-    val txBuilderF =
+    val txBuilder =
       BitcoinTxBuilder(
         Vector(
           TransactionOutput(Bitcoins.one + Bitcoins.one - CurrencyUnits.oneMBTC,
@@ -499,7 +434,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       )
 
     recoverToSucceededIf[IllegalArgumentException](
-      txBuilderF.flatMap(_.unsignedTx)
+      txBuilder.unsignedTx
     )
   }
 
@@ -580,7 +515,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                        fee,
                                        changeSPK._1,
                                        network)
-        val txF = builder.flatMap(_.sign)
+        val txF = builder.sign
 
         txF.map { tx =>
           assert(verifyScript(tx, creditingTxsInfo))
@@ -599,7 +534,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                        fee,
                                        changeSPK._1,
                                        network)
-        val txF = builder.flatMap(_.sign)
+        val txF = builder.sign
 
         txF.map { tx =>
           assert(verifyScript(tx, creditingTxsInfo))
