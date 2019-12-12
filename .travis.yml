@@ -12,7 +12,7 @@ env:
 os: linux
 scala:
   - 2.12.10
-  - 2.13.0
+  - 2.13.1
 
 # Fiddling with Travis config is not fun:-(
 # To avoid spending too much time waiting on Travis, you
@@ -38,19 +38,19 @@ matrix:
       env:
         - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls"
       scala:
-        - 2.13.0
+        - 2.13.1
     - os: osx
       name: "macOS Eclair tests"
       env:
         - TEST_COMMAND="eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
       scala:
-        - 2.13.0
+        - 2.13.1
     - os: osx
       name: "macOS wallet tests"
       env:
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
       scala:
-        - 2.13.0
+        - 2.13.1
     # skip all test tagged as UsesExperimentalBitcoind
     # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
     - os: osx
@@ -58,7 +58,7 @@ matrix:
       env:
         - TEST_COMMAND="nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala:
-        - 2.13.0
+        - 2.13.1
 
     # compile website, to check for documentation regressions
     - stage: test

@@ -3,7 +3,7 @@
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.4.0")
 
 // collect code coverage when executing tests
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
 
 // report code coverage to Coveralls
 addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.2.7")
@@ -25,7 +25,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.3.5")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.4.31")
 
 // write markdown files with type-checked Scala
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "1.3.2")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.0.3")
 
 // SQL migrations
 addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.0.7")
