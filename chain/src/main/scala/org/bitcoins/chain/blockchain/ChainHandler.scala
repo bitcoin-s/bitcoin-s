@@ -514,21 +514,16 @@ case class ChainHandler(
   /** @inheritdoc */
   override def getNumberOfConfirmations(
       blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
-    val res = for {
-      blockHeightOpt <- getBlockHeight(blockHash)
-    } yield {
-      blockHeightOpt match {
-        case None => FutureUtil.none
-        case Some(blockHeight) =>
-          for {
-            tipHash <- getBestBlockHash()
-            tipHeightOpt <- getBlockHeight(tipHash)
-          } yield {
-            tipHeightOpt.map(tipHeight => tipHeight - blockHeight)
-          }
-      }
+    getBlockHeight(blockHash).flatMap {
+      case None => FutureUtil.none
+      case Some(blockHeight) =>
+        for {
+          tipHash <- getBestBlockHash()
+          tipHeightOpt <- getBlockHeight(tipHash)
+        } yield {
+          tipHeightOpt.map(tipHeight => tipHeight - blockHeight + 1)
+        }
     }
-    res.flatten
   }
 }
 

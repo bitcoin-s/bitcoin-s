@@ -15,8 +15,8 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
@@ -400,7 +400,7 @@ class ChainHandlerTest extends ChainUnitTest {
   it must "generate a range for a block filter query" in {
     chainHandler: ChainHandler =>
       for {
-        bestBlock <- chainHandler.getBestBlockHeader
+        bestBlock <- chainHandler.getBestBlockHeader()
         bestBlockHashBE = bestBlock.hashBE
         rangeOpt <- chainHandler.nextHeaderBatchRange(
           DoubleSha256DigestBE.empty,
@@ -410,6 +410,32 @@ class ChainHandlerTest extends ChainUnitTest {
         assert(rangeOpt.get._1 == 0)
         assert(rangeOpt.get._2 == bestBlockHashBE.flip)
       }
+  }
+
+  it must "return the number of confirmations" in {
+    chainHandler: ChainHandler =>
+      for {
+        bestBlockHashBE <- chainHandler.getBestBlockHash()
+        confirmations <- chainHandler.getNumberOfConfirmations(bestBlockHashBE)
+      } yield {
+        assert(confirmations == Some(1))
+      }
+  }
+
+  it must "return the height by block stamp" in { chainHandler: ChainHandler =>
+    for {
+      bestBlock <- chainHandler.getBestBlockHeader()
+      stamp1 = BlockStamp.BlockHash(bestBlock.hashBE)
+      stamp2 = BlockStamp.BlockHeight(bestBlock.height)
+      stamp3 = BlockStamp.BlockTime(bestBlock.time)
+      height1 <- chainHandler.getHeightByBlockStamp(stamp1)
+      height2 <- chainHandler.getHeightByBlockStamp(stamp2)
+      // TODO implement BlockTime
+//      height3 <- chainHandler.getHeightByBlockStamp(stamp3)
+    } yield {
+      assert(height1 == height2)
+//      assert(height1 == height3)
+    }
   }
 
   it must "match block filters" in { chainHandler: ChainHandler =>
