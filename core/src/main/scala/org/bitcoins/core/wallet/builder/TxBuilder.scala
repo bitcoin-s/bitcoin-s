@@ -17,8 +17,7 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.FeeCalcFunction
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeMode, FeeUnit}
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
@@ -166,7 +165,7 @@ case class BitcoinTxBuilder(
     feeRate: FeeUnit,
     changeSPKs: Map[Int, ScriptPubKey],
     network: BitcoinNetwork,
-    feeCalc: FeeCalcFunction)
+    feeMode: FeeMode)
     extends TxBuilder {
 
   override val utxos: Vector[BitcoinUTXOSpendingInfo] =
@@ -214,10 +213,10 @@ case class BitcoinTxBuilder(
           val ownedInputs = ownedUtxos.map(_.map(utxo =>
             dtx.inputs.find(_.previousOutput == utxo.outPoint).get))
           val feeByOwner =
-            feeCalc(ownedInputs,
-                    ownedDestinations,
-                    changeSPKs.size,
-                    totalFee.satoshis)
+            feeMode.distributeFees(ownedInputs,
+                                   ownedDestinations,
+                                   changeSPKs.size,
+                                   totalFee.satoshis)
           val newChangeOutputs = feeByOwner.map {
             case (owner, fee) =>
               val change = creditingAmountByOwner(owner) - destinationAmountByOwner
@@ -785,88 +784,7 @@ object BitcoinTxBuilder {
                      feeRate,
                      Map(0 -> changeSPK),
                      network,
-                     equalDistributionFeeCalc)
-  }
-
-  type FeeCalcFunction = (
-      Vector[OwnedTxData[TransactionInput]],
-      Vector[OwnedTxData[TransactionOutput]],
-      Int,
-      Satoshis) => Map[Int, Satoshis]
-
-  val equalDistributionFeeCalc: FeeCalcFunction = (_, _, owners, totalFee) =>
-    equalFeeDistribution(owners, totalFee)
-
-  val distributeByOutputFeeCalc: FeeCalcFunction =
-    (_, outputs, owners, totalFee) =>
-      distributeByOutputValue(outputs, owners, totalFee)
-
-  val distributeByInputFeeCalc: FeeCalcFunction =
-    (inputs, _, owners, totalFee) =>
-      distributeByInputSize(inputs, owners, totalFee)
-
-  def equalFeeDistribution(
-      owners: Int,
-      totalFee: Satoshis): Map[Int, Satoshis] = {
-    val feePerOwner = totalFee.toLong / owners
-    val remainder = totalFee.toLong % owners
-
-    (0 until owners).map { owner =>
-      val remainderToAdd = if (owner < remainder) 1 else 0
-      owner -> Satoshis(feePerOwner + remainderToAdd)
-    }.toMap
-  }
-
-  private def distributeByMetric(
-      metric: Map[Int, Long],
-      owners: Int,
-      totalFee: Satoshis): Map[Int, Satoshis] = {
-    val metricTotal = metric.values.foldLeft(0L)(_ + _)
-
-    val feesByOwner = metric.map {
-      case (owner, metricForOwner) =>
-        val proportionalBytes = metricForOwner.toDouble / metricTotal
-        val fee = Satoshis((proportionalBytes * totalFee.toLong).toLong)
-        owner -> fee
-    }
-    val feePaidSoFar = feesByOwner.values.foldLeft(CurrencyUnits.zero)(_ + _)
-    val remainder = totalFee - feePaidSoFar
-    val remainderFees = equalFeeDistribution(owners, remainder.satoshis)
-
-    val placeHolderOwnerMap = (0 until owners)
-      .filterNot(feesByOwner.keySet.contains)
-      .map(_ -> Satoshis.zero)
-      .toMap
-    (feesByOwner ++ placeHolderOwnerMap).map {
-      case (owner, ownerFee) =>
-        owner -> (ownerFee + remainderFees(owner)).satoshis
-    }
-  }
-
-  def distributeByOutputValue(
-      outputs: Vector[OwnedTxData[TransactionOutput]],
-      owners: Int,
-      totalFee: Satoshis): Map[Int, Satoshis] = {
-    val outputValueByOwner = outputs.groupBy(_.owner).map {
-      case (owner, ownersData) =>
-        val value = ownersData.foldLeft(0L)(_ + _.data.value.satoshis.toLong)
-        owner -> value
-    }
-
-    distributeByMetric(outputValueByOwner, owners, totalFee)
-  }
-
-  def distributeByInputSize(
-      inputs: Vector[OwnedTxData[TransactionInput]],
-      owners: Int,
-      totalFee: Satoshis): Map[Int, Satoshis] = {
-    val bytesByOwner = inputs.groupBy(_.owner).map {
-      case (owner, ownersData) =>
-        val bytes = ownersData.foldLeft(0L)(_ + _.data.bytes.size)
-        owner -> bytes
-    }
-
-    distributeByMetric(bytesByOwner, owners, totalFee)
+                     FeeMode.EqualDistribution)
   }
 }
 
