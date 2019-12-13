@@ -36,6 +36,11 @@ trait CurrencyUnitGenerator {
   def feeUnit: Gen[FeeUnit] =
     Gen.oneOf(satsPerByte, satsPerKiloByte, satsPerVirtualByte)
 
+  def smallFeeUnit: Gen[FeeUnit] =
+    Gen.choose(0, CurrencyUnits.oneBTC.satoshis.toLong).map { n =>
+      SatoshisPerByte(Satoshis(n))
+    }
+
   def satoshis: Gen[Satoshis] =
     for {
       int64 <- NumberGenerator.int64s
