@@ -1,17 +1,18 @@
 package org.bitcoins.wallet.api
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.number.Int64
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
-import org.bitcoins.testkit.core.gen.{TransactionGenerators, WitnessGenerators}
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
-import org.scalatest.FutureOutcome
-import org.bitcoins.wallet.models.SpendingInfoDb
-import org.bitcoins.wallet.models.SegwitV0SpendingInfo
 import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.core.gen.CryptoGenerators
+import org.bitcoins.testkit.core.gen.{
+  CryptoGenerators,
+  TransactionGenerators,
+  WitnessGenerators
+}
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.wallet.models.{SegwitV0SpendingInfo, SpendingInfoDb}
+import org.scalatest.FutureOutcome
 
 class CoinSelectorTest extends BitcoinSWalletTest {
   case class CoinSelectionFixture(
@@ -30,34 +31,34 @@ class CoinSelectorTest extends BitcoinSWalletTest {
     val feeRate = SatoshisPerByte(CurrencyUnits.zero)
 
     val utxo1 = SegwitV0SpendingInfo(
-      confirmations = 0,
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
       spent = false,
       id = Some(1),
       outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(10.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
+      blockHash = None
     )
     val utxo2 = SegwitV0SpendingInfo(
-      confirmations = 0,
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
       spent = false,
       id = Some(2),
       outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(90.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
+      blockHash = None
     )
     val utxo3 = SegwitV0SpendingInfo(
-      confirmations = 0,
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,
       spent = false,
       id = Some(3),
       outPoint = TransactionGenerators.outPoint.sampleSome,
       output = TransactionOutput(20.sats, ScriptPubKey.empty),
       privKeyPath = WalletTestUtil.sampleSegwitPath,
-      scriptWitness = WitnessGenerators.scriptWitness.sampleSome
+      scriptWitness = WitnessGenerators.scriptWitness.sampleSome,
+      blockHash = None
     )
 
     test(CoinSelectionFixture(output, feeRate, utxo1, utxo2, utxo3))

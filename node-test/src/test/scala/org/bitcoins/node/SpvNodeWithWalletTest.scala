@@ -46,7 +46,7 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
         if (expectedTxId == tx.txId) {
           for {
             prevBalance <- wallet.getUnconfirmedBalance()
-            _ <- wallet.processTransaction(tx, confirmations = 0)
+            _ <- wallet.processTransaction(tx, None)
             balance <- wallet.getUnconfirmedBalance()
           } yield {
             val result = balance == prevBalance + amountFromBitcoind

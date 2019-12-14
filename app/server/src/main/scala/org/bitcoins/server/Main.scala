@@ -5,7 +5,8 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
@@ -115,7 +116,7 @@ object Main extends App {
       wallet: UnlockedWalletApi): Future[NodeCallbacks] = {
     import DataMessageHandler._
     lazy val onTx: OnTxReceived = { tx =>
-      wallet.processTransaction(tx, confirmations = 0)
+      wallet.processTransaction(tx, blockHash = None)
       ()
     }
     lazy val onCompactFilter: OnCompactFilterReceived = {
@@ -123,7 +124,7 @@ object Main extends App {
         wallet.processCompactFilter(blockHash, blockFilter)
     }
     lazy val onBlock: OnBlockReceived = { block =>
-      wallet.processBlock(block, 0)
+      wallet.processBlock(block)
       ()
     }
     if (nodeConf.isSPVEnabled) {

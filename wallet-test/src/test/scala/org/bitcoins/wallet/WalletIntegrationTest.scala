@@ -1,16 +1,11 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess, WalletApi}
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
-
-import scala.concurrent.Future
 import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
+import org.scalatest.FutureOutcome
 
 class WalletIntegrationTest extends BitcoinSWalletTest {
 
@@ -50,10 +45,8 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
     for {
       addr <- wallet.getNewAddress()
-
-      tx <- bitcoind
-        .sendToAddress(addr, valueFromBitcoind)
-        .flatMap(bitcoind.getRawTransactionRaw(_))
+      txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
+      tx <- bitcoind.getRawTransactionRaw(txId)
 
       // before processing TX, wallet should be completely empty
       _ <- wallet.listUtxos().map(utxos => assert(utxos.isEmpty))
@@ -63,7 +56,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
 
       // after this, tx is unconfirmed in wallet
-      _ <- wallet.processTransaction(tx, confirmations = 0)
+      _ <- wallet.processTransaction(tx, None)
 
       // we should now have one UTXO in the wallet
       // it should not be confirmed
@@ -79,8 +72,11 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .getUnconfirmedBalance()
         .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
+      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+      rawTx <- bitcoind.getRawTransaction(txId)
+
       // after this, tx should be confirmed
-      _ <- wallet.processTransaction(tx, confirmations = 6)
+      _ <- wallet.processTransaction(tx, rawTx.blockhash)
       _ <- wallet
         .listUtxos()
         .map { utxos =>

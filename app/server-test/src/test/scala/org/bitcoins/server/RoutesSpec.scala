@@ -25,7 +25,7 @@ import org.scalatest.{Matchers, WordSpec}
 import ujson.Value.InvalidData
 import ujson.{Arr, Null, Num, Str}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 class RoutesSpec
     extends WordSpec
@@ -52,9 +52,8 @@ class RoutesSpec
   "The server" should {
 
     "return the block count" in {
-      (mockChainApi
-        .getBlockCount(_: ExecutionContext))
-        .expects(*)
+      (mockChainApi.getBlockCount: () => Future[Int])
+        .expects()
         .returning(Future.successful(1234567890))
 
       val route =
@@ -67,9 +66,8 @@ class RoutesSpec
     }
 
     "return the best block hash" in {
-      (mockChainApi
-        .getBestBlockHash(_: ExecutionContext))
-        .expects(*)
+      (mockChainApi.getBestBlockHash: () => Future[DoubleSha256DigestBE])
+        .expects()
         .returning(Future.successful(DoubleSha256DigestBE.empty))
 
       val route =

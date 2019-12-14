@@ -51,17 +51,17 @@ trait LockedWalletApi extends WalletApi {
   /**
     * Processes the given transaction, updating our DB state if it's relevant to us.
     * @param transaction The transaction we're processing
-    * @param confirmations How many confirmations the TX has
+    * @param blockHash Containing block hash
     */
   def processTransaction(
       transaction: Transaction,
-      confirmations: Int): Future[LockedWalletApi]
+      blockHash: Option[DoubleSha256DigestBE]): Future[LockedWalletApi]
 
   /**
     * Processes the give block, updating our DB state if it's relevant to us.
     * @param block The block we're processing
     */
-  def processBlock(block: Block, confirmations: Int): Future[LockedWalletApi]
+  def processBlock(block: Block): Future[LockedWalletApi]
 
   def processCompactFilter(
       blockHash: DoubleSha256Digest,

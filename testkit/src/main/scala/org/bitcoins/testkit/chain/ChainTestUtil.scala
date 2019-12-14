@@ -1,8 +1,9 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
   MainNetChainParams,
@@ -20,6 +21,20 @@ sealed abstract class ChainTestUtil {
   lazy val regTestGenesisHeaderDb: BlockHeaderDb = {
     BlockHeaderDbHelper.fromBlockHeader(height = 0, bh = regTestHeader)
   }
+  lazy val regTestGenesisHeaderCompactFilter: GolombFilter =
+    BlockFilter.apply(regTestChainParams.genesisBlock, Vector.empty)
+  lazy val regTestGenesisHeaderCompactFilterDb: CompactFilterDb =
+    CompactFilterDbHelper.fromGolombFilter(regTestGenesisHeaderCompactFilter,
+                                           regTestHeader.hashBE,
+                                           0)
+  lazy val regTestGenesisHeaderCompactFilterHeader: FilterHeader = FilterHeader(
+    regTestGenesisHeaderCompactFilter.hash,
+    DoubleSha256Digest.empty)
+  lazy val regTestGenesisHeaderCompactFilterHeaderDb: CompactFilterHeaderDb =
+    CompactFilterHeaderDbHelper.fromFilterHeader(
+      regTestGenesisHeaderCompactFilterHeader,
+      regTestHeader.hashBE,
+      0)
 
   lazy val mainnetChainParam: MainNetChainParams.type = MainNetChainParams
 

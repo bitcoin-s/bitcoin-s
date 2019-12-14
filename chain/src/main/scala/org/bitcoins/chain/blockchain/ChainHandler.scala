@@ -33,12 +33,13 @@ case class ChainHandler(
     filterDAO: CompactFilterDAO,
     blockchains: Vector[Blockchain],
     blockFilterCheckpoints: Map[DoubleSha256DigestBE, DoubleSha256DigestBE])(
-    implicit val chainConfig: ChainAppConfig)
+    implicit val chainConfig: ChainAppConfig,
+    executionContext: ExecutionContext)
     extends ChainApi
     with ChainVerificationLogger {
 
   /** @inheritdoc */
-  override def getBlockCount(implicit ec: ExecutionContext): Future[Int] = {
+  override def getBlockCount(): Future[Int] = {
     logger.debug(s"Querying for block count")
     blockHeaderDAO.maxHeight.map { height =>
       logger.debug(s"getBlockCount result: count=$height")
@@ -46,9 +47,21 @@ case class ChainHandler(
     }
   }
 
+  override def getBestBlockHeader(): Future[BlockHeaderDb] = {
+    for {
+      hash <- getBestBlockHash()
+      headerOpt <- getHeader(hash)
+    } yield headerOpt match {
+      case None =>
+        throw new RuntimeException(
+          s"We found best hash=${hash.hex} but could not retrieve the full header!!!")
+      case Some(header) => header
+    }
+  }
+
   /** @inheritdoc */
-  override def getHeader(hash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
+  override def getHeader(
+      hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] = {
     blockHeaderDAO.findByHash(hash).map { header =>
       logger.debug(s"Looking for header by hash=$hash")
       val resultStr = header
@@ -60,8 +73,8 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def processHeaders(headers: Vector[BlockHeader])(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
+  override def processHeaders(
+      headers: Vector[BlockHeader]): Future[ChainApi] = {
     if (headers.isEmpty) {
       Future.successful(this)
     } else {
@@ -92,8 +105,7 @@ case class ChainHandler(
   /**
     * @inheritdoc
     */
-  override def getBestBlockHash(
-      implicit ec: ExecutionContext): Future[DoubleSha256DigestBE] = {
+  override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
     logger.debug(s"Querying for best block hash")
     //naive implementation, this is looking for the tip with the _most_ proof of work
     //this does _not_ mean that it is on the chain that has the most work
@@ -121,8 +133,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def nextHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int)(implicit ec: ExecutionContext): Future[
-    Option[(Int, DoubleSha256Digest)]] = {
+      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -151,8 +162,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def nextFilterHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
-      batchSize: Int)(implicit ec: ExecutionContext): Future[
-    Option[(Int, DoubleSha256Digest)]] = {
+      batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -182,8 +192,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def processFilterHeaders(
       filterHeaders: Vector[FilterHeader],
-      stopHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
+      stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
 
     val filterHeadersToCreateF = for {
       blockHeaders <- blockHeaderDAO
@@ -223,8 +232,8 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def processFilters(messages: Vector[CompactFilterMessage])(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
+  override def processFilters(
+      messages: Vector[CompactFilterMessage]): Future[ChainApi] = {
 
     logger.debug(s"processFilters: messages=${messages}")
     val filterHeadersF = filterHeaderDAO
@@ -291,8 +300,7 @@ case class ChainHandler(
   /** @inheritdoc */
   override def processCheckpoints(
       checkpoints: Vector[DoubleSha256DigestBE],
-      blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[ChainApi] = {
+      blockHash: DoubleSha256DigestBE): Future[ChainApi] = {
 
     val blockHeadersF: Future[Seq[BlockHeaderDb]] = Future
       .traverse(checkpoints.indices.toVector) { i =>
@@ -317,19 +325,17 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def getFilter(blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[Option[CompactFilterDb]] = {
+  override def getFilter(
+      blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]] = {
     filterDAO.findByBlockHash(blockHash)
   }
 
   /** @inheritdoc */
-  override def getHeadersAtHeight(height: Int)(
-      implicit ec: ExecutionContext): Future[Vector[BlockHeaderDb]] =
+  override def getHeadersAtHeight(height: Int): Future[Vector[BlockHeaderDb]] =
     blockHeaderDAO.getAtHeight(height)
 
   /** @inheritdoc */
-  override def getFilterHeaderCount(
-      implicit ec: ExecutionContext): Future[Int] = {
+  override def getFilterHeaderCount: Future[Int] = {
     logger.debug(s"Querying for filter header count")
     filterHeaderDAO.maxHeight.map { height =>
       logger.debug(s"getFilterHeaderCount result: count=$height")
@@ -338,17 +344,17 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def getFilterHeadersAtHeight(height: Int)(
-      implicit ec: ExecutionContext): Future[Vector[CompactFilterHeaderDb]] =
+  override def getFilterHeadersAtHeight(
+      height: Int): Future[Vector[CompactFilterHeaderDb]] =
     filterHeaderDAO.getAtHeight(height)
 
   /** @inheritdoc */
-  override def getFilterHeader(blockHash: DoubleSha256DigestBE)(
-      implicit ec: ExecutionContext): Future[Option[CompactFilterHeaderDb]] =
+  override def getFilterHeader(
+      blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
     filterHeaderDAO.findByBlockHash(blockHash)
 
   /** @inheritdoc */
-  override def getFilterCount(implicit ec: ExecutionContext): Future[Int] = {
+  override def getFilterCount: Future[Int] = {
     logger.debug(s"Querying for filter count")
     filterDAO.maxHeight.map { height =>
       logger.debug(s"getFilterCount result: count=$height")
@@ -357,8 +363,8 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def getFiltersAtHeight(height: Int)(
-      implicit ec: ExecutionContext): Future[Vector[CompactFilterDb]] =
+  override def getFiltersAtHeight(
+      height: Int): Future[Vector[CompactFilterDb]] =
     filterDAO.getAtHeight(height)
 
   /** Implements [[ChainApi.getMatchingBlocks()]].
@@ -384,7 +390,7 @@ case class ChainHandler(
       endOpt: Option[BlockStamp] = None,
       batchSize: Int = chainConfig.filterBatchSize,
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
-      implicit ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
+      ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]] = {
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
 
@@ -485,8 +491,7 @@ case class ChainHandler(
   }
 
   /** @inheritdoc */
-  override def getHeightByBlockStamp(blockStamp: BlockStamp)(
-      implicit ec: ExecutionContext): Future[Int] =
+  override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
     blockStamp match {
       case blockHeight: BlockStamp.BlockHeight =>
         Future.successful(blockHeight.height)
@@ -501,6 +506,25 @@ case class ChainHandler(
         Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
     }
 
+  /** @inheritdoc */
+  override def getBlockHeight(
+      blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
+    getHeader(blockHash).map(_.map(_.height))
+
+  /** @inheritdoc */
+  override def getNumberOfConfirmations(
+      blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+    getBlockHeight(blockHash).flatMap {
+      case None => FutureUtil.none
+      case Some(blockHeight) =>
+        for {
+          tipHash <- getBestBlockHash()
+          tipHeightOpt <- getBlockHeight(tipHash)
+        } yield {
+          tipHeightOpt.map(tipHeight => tipHeight - blockHeight + 1)
+        }
+    }
+  }
 }
 
 object ChainHandler {
@@ -530,7 +554,8 @@ object ChainHandler {
       filterHeaderDAO: CompactFilterHeaderDAO,
       filterDAO: CompactFilterDAO,
       blockchains: Blockchain)(
-      implicit chainConfig: ChainAppConfig): ChainHandler = {
+      implicit ec: ExecutionContext,
+      chainConfig: ChainAppConfig): ChainHandler = {
     new ChainHandler(blockHeaderDAO = blockHeaderDAO,
                      filterHeaderDAO = filterHeaderDAO,
                      filterDAO = filterDAO,
