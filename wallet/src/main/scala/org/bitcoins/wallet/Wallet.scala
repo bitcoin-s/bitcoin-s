@@ -84,7 +84,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       signed <- txBuilder.sign
       ourOuts <- findOurOuts(signed)
       // TODO internal
-      _ <- processOurTransaction(signed, confirmations = 0)
+      _ <- processOurTransaction(signed, blockHashOpt = None)
     } yield {
       logger.debug(
         s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")

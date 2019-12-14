@@ -12,10 +12,10 @@ import org.bitcoins.chain.models._
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
+import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest._
 import play.api.libs.json.{JsError, JsSuccess, Json}
@@ -289,6 +289,12 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   val genesisHeaderDb: BlockHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
 
+  val genesisFilterDb: CompactFilterDb =
+    ChainTestUtil.regTestGenesisHeaderCompactFilterDb
+
+  val genesisFilterHeaderDb: CompactFilterHeaderDb =
+    ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb
+
   def createChainHandler()(
       implicit ec: ExecutionContext,
       appConfig: ChainAppConfig): Future[ChainHandler] = {
@@ -449,6 +455,9 @@ object ChainUnitTest extends ChainVerificationLogger {
       for {
         chainHandler <- chainHandlerF
         genHeader <- chainHandler.blockHeaderDAO.create(genesisHeaderDb)
+        genFilterHeader <- chainHandler.filterHeaderDAO.create(
+          genesisFilterHeaderDb)
+        genFilter <- chainHandler.filterDAO.create(genesisFilterDb)
       } yield genHeader
     }
 

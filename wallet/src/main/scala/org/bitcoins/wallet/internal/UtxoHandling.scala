@@ -48,30 +48,30 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
       txid: DoubleSha256DigestBE,
-      confirmations: Int,
       spent: Boolean,
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
-      addressDb: AddressDb): Future[SpendingInfoDb] = {
+      addressDb: AddressDb,
+      blockHash: Option[DoubleSha256DigestBE]): Future[SpendingInfoDb] = {
 
     val utxo: SpendingInfoDb = addressDb match {
       case segwitAddr: SegWitAddressDb =>
         SegwitV0SpendingInfo(
-          confirmations = confirmations,
           spent = spent,
           txid = txid,
           outPoint = outPoint,
           output = output,
           privKeyPath = segwitAddr.path,
-          scriptWitness = segwitAddr.witnessScript
+          scriptWitness = segwitAddr.witnessScript,
+          blockHash = blockHash
         )
       case LegacyAddressDb(path, _, _, _, _) =>
-        LegacySpendingInfo(confirmations = confirmations,
-                           spent = spent,
+        LegacySpendingInfo(spent = spent,
                            txid = txid,
                            outPoint = outPoint,
                            output = output,
-                           privKeyPath = path)
+                           privKeyPath = path,
+                           blockHash = blockHash)
       case nested: NestedSegWitAddressDb =>
         throw new IllegalArgumentException(
           s"Bad utxo $nested. Note: nested segwit is not implemented")
@@ -93,8 +93,8 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   protected def addUtxo(
       transaction: Transaction,
       vout: UInt32,
-      confirmations: Int,
-      spent: Boolean): Future[AddUtxoResult] = {
+      spent: Boolean,
+      blockHash: Option[DoubleSha256DigestBE]): Future[AddUtxoResult] = {
     import AddUtxoError._
 
     logger.info(s"Adding UTXO to wallet: ${transaction.txId.hex}:${vout.toInt}")
@@ -127,11 +127,11 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
           addressDb <- addressDbE
         } yield writeUtxo(txid = transaction.txIdBE,
-                          confirmations = confirmations,
                           spent = spent,
                           output,
                           outPoint,
-                          addressDb)
+                          addressDb,
+                          blockHash)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {

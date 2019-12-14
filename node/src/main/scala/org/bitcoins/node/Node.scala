@@ -8,8 +8,8 @@ import org.bitcoins.chain.models.{
   CompactFilterDAO,
   CompactFilterHeaderDAO
 }
-import org.bitcoins.core.api.NodeApi
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -36,7 +36,7 @@ import scala.util.{Failure, Success}
 /**
   This a base trait for various kinds of nodes. It contains house keeping methods required for all nodes.
   */
-trait Node extends NodeApi with P2PLogger {
+trait Node extends NodeApi with ChainQueryApi with P2PLogger {
 
   implicit def system: ActorSystem
 
@@ -180,7 +180,7 @@ trait Node extends NodeApi with P2PLogger {
   def sync(): Future[Unit] = {
     for {
       chainApi <- chainApiFromDb()
-      hash <- chainApi.getBestBlockHash
+      hash <- chainApi.getBestBlockHash()
       header <- chainApi
         .getHeader(hash)
         .map(_.get) // .get is safe since this is an internal call
@@ -222,5 +222,19 @@ trait Node extends NodeApi with P2PLogger {
                                             blockHashes: _*)
     } yield ()
   }
+
+  /** Gets the height of the given block */
+  override def getBlockHeight(
+      blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
+    chainApiFromDb().flatMap(_.getBlockHeight(blockHash))
+
+  /** Gets the hash of the block that is what we consider "best" */
+  override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
+    chainApiFromDb().flatMap(_.getBestBlockHash())
+
+  /** Gets number of confirmations for the given block hash*/
+  def getNumberOfConfirmations(
+      blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
+    chainApiFromDb().flatMap(_.getNumberOfConfirmations(blockHashOpt))
 
 }

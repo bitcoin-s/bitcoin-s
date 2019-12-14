@@ -3,7 +3,7 @@ package org.bitcoins.testkit.wallet
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency._
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
@@ -227,12 +227,10 @@ object BitcoinSWalletTest extends WalletLogger {
     val WalletWithBitcoind(wallet, bitcoind) = pair
     for {
       addr <- wallet.getNewAddress()
-      tx <- bitcoind
-        .sendToAddress(addr, initialFunds)
-        .flatMap(bitcoind.getRawTransaction(_))
-
+      txId <- bitcoind.sendToAddress(addr, initialFunds)
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
-      _ <- wallet.processTransaction(tx.hex, 6)
+      tx <- bitcoind.getRawTransaction(txId)
+      _ <- wallet.processTransaction(tx.hex, tx.blockhash)
       balance <- wallet.getBalance()
 
     } yield {

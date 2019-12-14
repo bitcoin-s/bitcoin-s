@@ -14,9 +14,10 @@ import org.bitcoins.core.crypto.{
   ECPrivateKey
 }
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
@@ -51,7 +52,9 @@ class ChainHandlerTest extends ChainUnitTest {
   source.close()
 
   import org.bitcoins.rpc.serializers.JsonReaders.BlockHeaderReads
-  val headersResult = Json.parse(arrStr).validate[Vector[BlockHeader]].get
+
+  val headersResult: Vector[BlockHeader] =
+    Json.parse(arrStr).validate[Vector[BlockHeader]].get
 
   override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
 
@@ -268,30 +271,14 @@ class ChainHandlerTest extends ChainUnitTest {
 
   it must "get the highest filter header" in { chainHandler: ChainHandler =>
     {
-      val firstFilterHeader = FilterHeader(
-        filterHash =
-          DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
-        prevHeaderHash = DoubleSha256Digest.empty)
       for {
-        empty <- chainHandler.getFilterHeadersAtHeight(0)
-        block <- chainHandler.getHeadersAtHeight(0)
-        _ <- chainHandler.processFilterHeader(firstFilterHeader,
-                                              block.head.hashBE)
         count <- chainHandler.getFilterHeaderCount
-        first <- chainHandler.getFilterHeader(block.head.hashBE)
-        vec <- chainHandler.getFilterHeadersAtHeight(count)
+        genesisFilterHeader <- chainHandler.getFilterHeadersAtHeight(count)
       } yield {
-        assert(empty.isEmpty)
-        assert(first.nonEmpty)
-        assert(vec.nonEmpty)
-        assert(Vector(first.get) == vec)
-        assert(first.get.hashBE == firstFilterHeader.hash.flip)
-        assert(first.get.filterHashBE == firstFilterHeader.filterHash.flip)
+        assert(genesisFilterHeader.size == 1)
         assert(
-          first.get.previousFilterHeaderBE == firstFilterHeader.prevHeaderHash.flip)
-        assert(first.get.blockHashBE == block.head.hashBE)
-        assert(first.get.height == 0)
-        assert(first.get.filterHeader == firstFilterHeader)
+          genesisFilterHeader.contains(ChainUnitTest.genesisFilterHeaderDb))
+        assert(count == 0)
       }
     }
   }
@@ -313,42 +300,36 @@ class ChainHandlerTest extends ChainUnitTest {
   it must "get the highest filter" in { chainHandler: ChainHandler =>
     {
       for {
-        empty <- chainHandler.getFilterCount
-        blockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
-        golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
-        firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
-                                           filter = golombFilter)
-        firstFilterHeader = FilterHeader(filterHash = golombFilter.hash,
-                                         prevHeaderHash =
-                                           DoubleSha256Digest.empty)
-        newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
-                                                            blockHashBE)
-        _ <- chainHandler.processFilter(firstFilter)
-        count <- newChainHandler.getFilterCount
-        first <- newChainHandler.getFiltersAtHeight(count).map(_.headOption)
+        count <- chainHandler.getFilterCount
+        genesisFilter <- chainHandler.getFiltersAtHeight(count)
       } yield {
-        assert(empty == 0)
-        assert(first.nonEmpty)
-        assert(first.get.hashBE == golombFilter.hash.flip)
-        assert(first.get.height == 0)
-        assert(first.get.blockHashBE == blockHashBE)
-        assert(first.get.filterType == FilterType.Basic)
-        assert(first.get.golombFilter == golombFilter)
+        assert(count == 0)
+        assert(genesisFilter.contains(ChainUnitTest.genesisFilterDb))
       }
     }
   }
 
   it must "NOT create an unknown filter" in { chainHandler: ChainHandler =>
     {
+      val blockHeader =
+        BlockHeader(
+          version = Int32(1),
+          previousBlockHash = ChainUnitTest.genesisHeaderDb.hashBE.flip,
+          merkleRootHash = DoubleSha256Digest.empty,
+          time = UInt32(1231006505),
+          nBits = UInt32(545259519),
+          nonce = UInt32(2083236893)
+        )
       val unknownHashF = for {
-        blockHashBE <- chainHandler.getHeadersAtHeight(0).map(_.head.hashBE)
+        _ <- chainHandler.processHeader(blockHeader)
+        blockHashBE <- chainHandler.getHeadersAtHeight(1).map(_.head.hashBE)
         golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
         firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
                                            filter = golombFilter)
         firstFilterHeader = FilterHeader(
           filterHash =
             DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
-          prevHeaderHash = DoubleSha256Digest.empty)
+          prevHeaderHash = ChainUnitTest.genesisFilterHeaderDb.hashBE.flip)
         newChainHandler <- chainHandler.processFilterHeader(firstFilterHeader,
                                                             blockHashBE)
         process <- newChainHandler.processFilter(firstFilter)
@@ -400,7 +381,7 @@ class ChainHandlerTest extends ChainUnitTest {
   it must "generate a range for a block filter query" in {
     chainHandler: ChainHandler =>
       for {
-        bestBlock <- chainHandler.getBestBlockHeader
+        bestBlock <- chainHandler.getBestBlockHeader()
         bestBlockHashBE = bestBlock.hashBE
         rangeOpt <- chainHandler.nextHeaderBatchRange(
           DoubleSha256DigestBE.empty,
@@ -410,6 +391,47 @@ class ChainHandlerTest extends ChainUnitTest {
         assert(rangeOpt.get._1 == 0)
         assert(rangeOpt.get._2 == bestBlockHashBE.flip)
       }
+  }
+
+  it must "generate a range for a block filter header query" in {
+    chainHandler: ChainHandler =>
+      for {
+        bestBlock <- chainHandler.getBestBlockHeader()
+        bestBlockHashBE = bestBlock.hashBE
+        rangeOpt <- chainHandler.nextFilterHeaderBatchRange(
+          DoubleSha256DigestBE.empty,
+          1)
+      } yield {
+        assert(rangeOpt.nonEmpty)
+        assert(rangeOpt.get._1 == 0)
+        assert(rangeOpt.get._2 == bestBlockHashBE.flip)
+      }
+  }
+
+  it must "return the number of confirmations" in {
+    chainHandler: ChainHandler =>
+      for {
+        bestBlockHashBE <- chainHandler.getBestBlockHash()
+        confirmations <- chainHandler.getNumberOfConfirmations(bestBlockHashBE)
+      } yield {
+        assert(confirmations == Some(1))
+      }
+  }
+
+  it must "return the height by block stamp" in { chainHandler: ChainHandler =>
+    for {
+      bestBlock <- chainHandler.getBestBlockHeader()
+      stamp1 = BlockStamp.BlockHash(bestBlock.hashBE)
+      stamp2 = BlockStamp.BlockHeight(bestBlock.height)
+      stamp3 = BlockStamp.BlockTime(bestBlock.time)
+      height1 <- chainHandler.getHeightByBlockStamp(stamp1)
+      height2 <- chainHandler.getHeightByBlockStamp(stamp2)
+      // TODO implement BlockTime
+//      height3 <- chainHandler.getHeightByBlockStamp(stamp3)
+    } yield {
+      assert(height1 == height2)
+//      assert(height1 == height3)
+    }
   }
 
   it must "match block filters" in { chainHandler: ChainHandler =>
@@ -462,7 +484,7 @@ class ChainHandlerTest extends ChainUnitTest {
           BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get.scriptPubKey),
         startOpt = None,
         endOpt = None
-      )
+      )(system.dispatcher)
     } yield {
       assert(Vector(created.blockHashBE) == matched)
     }
@@ -524,7 +546,7 @@ class ChainHandlerTest extends ChainUnitTest {
   private def buildChainHandlerCompetingHeaders(
       chainHandler: ChainHandler): Future[ReorgFixture] = {
     for {
-      oldBestTip <- chainHandler.getBestBlockHeader
+      oldBestTip <- chainHandler.getBestBlockHeader()
       (newHeaderB, newHeaderC) = buildCompetingHeaders(oldBestTip)
       newChainApi <- chainHandler.processHeaders(Vector(newHeaderB, newHeaderC))
       newHeaderDbB <- newChainApi.getHeader(newHeaderB.hashBE)

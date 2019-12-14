@@ -5,7 +5,9 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
@@ -252,10 +254,9 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createSpvNode(bitcoind, callbacks)
-      chain <- node.chainApiFromDb()
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind,
                                                                  node,
-                                                                 chain)
+                                                                 node)
     } yield {
       SpvNodeFundedWalletBitcoind(node = node,
                                   wallet = fundedWallet.wallet,
@@ -274,10 +275,9 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createNeutrinoNode(bitcoind, callbacks)
-      chain <- node.chainApiFromDb()
       fundedWallet <- BitcoinSWalletTest.fundedWalletAndBitcoind(bitcoind,
                                                                  node,
-                                                                 chain)
+                                                                 node)
     } yield {
       NeutrinoNodeFundedWalletBitcoind(node = node,
                                        wallet = fundedWallet.wallet,

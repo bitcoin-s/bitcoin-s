@@ -1,33 +1,31 @@
 package org.bitcoins.testkit.wallet
 
-import org.bitcoins.testkit.Implicits._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
   RegTestNetChainParams
 }
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.wallet.models.AccountDb
-import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.script.ScriptWitness
-import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
-import org.bitcoins.wallet.models.LegacySpendingInfo
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.wallet.models.SegwitV0SpendingInfo
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.scalacheck.Gen
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.testkit.fixtures.WalletDAOs
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import org.bitcoins.wallet.models.SegWitAddressDb
-import org.bitcoins.core.protocol.Bech32Address
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  ScriptPubKey,
+  ScriptWitness
+}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.util.CryptoUtil
-import org.bitcoins.wallet.models.AddressDb
+import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
+import org.bitcoins.testkit.fixtures.WalletDAOs
+import org.bitcoins.wallet.models._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object WalletTestUtil {
 
@@ -78,9 +76,8 @@ object WalletTestUtil {
 
   private def randomTXID = CryptoGenerators.doubleSha256Digest.sampleSome.flip
   private def randomVout = NumberGenerator.uInt32s.sampleSome
-
-  /** Between 0 and 10 confirmations */
-  private def randomConfs: Int = Gen.choose(0, 10).sampleSome
+  private def randomBlockHash =
+    CryptoGenerators.doubleSha256Digest.sampleSome.flip
 
   private def randomSpent: Boolean = math.random > 0.5
 
@@ -90,13 +87,15 @@ object WalletTestUtil {
       TransactionOutput(1.bitcoin, spk)
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
-    SegwitV0SpendingInfo(confirmations = randomConfs,
-                         spent = randomSpent,
-                         txid = randomTXID,
-                         outPoint = outpoint,
-                         output = output,
-                         privKeyPath = privkeyPath,
-                         scriptWitness = scriptWitness)
+    SegwitV0SpendingInfo(
+      spent = randomSpent,
+      txid = randomTXID,
+      outPoint = outpoint,
+      output = output,
+      privKeyPath = privkeyPath,
+      scriptWitness = scriptWitness,
+      blockHash = Some(randomBlockHash)
+    )
   }
 
   def sampleLegacyUTXO(spk: ScriptPubKey): LegacySpendingInfo = {
@@ -105,12 +104,12 @@ object WalletTestUtil {
     val output =
       TransactionOutput(1.bitcoin, spk)
     val privKeyPath = WalletTestUtil.sampleLegacyPath
-    LegacySpendingInfo(confirmations = randomConfs,
-                       spent = randomSpent,
+    LegacySpendingInfo(spent = randomSpent,
                        txid = randomTXID,
                        outPoint = outpoint,
                        output = output,
-                       privKeyPath = privKeyPath)
+                       privKeyPath = privKeyPath,
+                       blockHash = Some(randomBlockHash))
   }
 
   /** Given an account returns a sample address */

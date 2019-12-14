@@ -1,17 +1,15 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.Implicits._
-import org.scalatest.FutureOutcome
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.core.currency._
-import scala.concurrent.Future
-import org.scalatest.compatible.Assertion
-import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import scala.annotation.tailrec
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.scalatest.FutureOutcome
+import org.scalatest.compatible.Assertion
+
+import scala.concurrent.Future
 
 class ProcessTransactionTest extends BitcoinSWalletTest {
   override type FixtureParam = UnlockedWalletApi
@@ -47,24 +45,26 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         tx = TransactionGenerators
           .transactionTo(address.scriptPubKey)
           .sampleSome
+        blockHash = DoubleSha256DigestBE.fromBytes(
+          ECPrivateKey.freshPrivateKey.bytes)
 
-        _ <- wallet.processTransaction(tx, confirmations = 0)
+        _ <- wallet.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()
         oldUnconfirmed <- wallet.getUnconfirmedBalance()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, confirmations = 0)
+          wallet.processTransaction(tx, None)
         }
 
-        _ <- wallet.processTransaction(tx, confirmations = 3)
+        _ <- wallet.processTransaction(tx, Some(blockHash))
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.listUtxos()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, confirmations = 3)
+          wallet.processTransaction(tx, Some(blockHash))
         }
       } yield {
         val ourOutputs =
@@ -81,7 +81,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       val unrelated = TransactionGenerators.transaction.sampleSome
       for {
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(unrelated, confirmations = 4)
+          wallet.processTransaction(unrelated, None)
         }
 
         balance <- wallet.getBalance()

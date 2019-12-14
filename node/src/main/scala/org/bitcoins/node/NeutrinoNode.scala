@@ -33,7 +33,7 @@ case class NeutrinoNode(
     val res = for {
       node <- super.start()
       chainApi <- chainApiFromDb()
-      bestHash <- chainApi.getBestBlockHash
+      bestHash <- chainApi.getBestBlockHash()
       peerMsgSender <- peerMsgSenderF
       _ <- peerMsgSender.sendGetCompactFilterCheckPointMessage(
         stopHash = bestHash.flip)

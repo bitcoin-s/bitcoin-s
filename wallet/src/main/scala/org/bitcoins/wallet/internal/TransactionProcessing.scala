@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
@@ -23,29 +24,26 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   /** @inheritdoc */
   override def processTransaction(
       transaction: Transaction,
-      confirmations: Int): Future[LockedWallet] = {
-    logger.info(
-      s"Processing transaction=${transaction.txIdBE} with confirmations=$confirmations")
-    processTransactionImpl(transaction, confirmations).map {
-      case ProcessTxResult(incoming, outgoing) =>
-        logger.info(
-          s"Finished processing of transaction=${transaction.txIdBE}. Relevant incomingTXOs=${incoming.length}, outgoingTXOs=${outgoing.length}")
-        this
+      blockHashOpt: Option[DoubleSha256DigestBE]
+  ): Future[LockedWallet] = {
+    for {
+      result <- processTransactionImpl(transaction, blockHashOpt)
+    } yield {
+      logger.info(
+        s"Finished processing of transaction=${transaction.txIdBE}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
+      this
     }
-
   }
 
   /** @inheritdoc */
-  override def processBlock(
-      block: Block,
-      confirmations: Int): Future[LockedWallet] = {
-    logger.info(
-      s"Processing block=${block.blockHeader.hash.flip} with confirmations=$confirmations")
+  override def processBlock(block: Block): Future[LockedWallet] = {
+    logger.info(s"Processing block=${block.blockHeader.hash.flip}")
     val res = block.transactions.foldLeft(Future.successful(this)) {
       (acc, transaction) =>
         for {
           _ <- acc
-          newWallet <- processTransaction(transaction, confirmations)
+          newWallet <- processTransaction(transaction,
+                                          Some(block.blockHeader.hash.flip))
         } yield {
           newWallet
         }
@@ -74,10 +72,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private[wallet] def processOurTransaction(
       transaction: Transaction,
-      confirmations: Int): Future[ProcessTxResult] = {
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
     logger.info(
-      s"Processing TX from our wallet, transaction=${transaction.txIdBE} with confirmations=$confirmations")
-    processTransactionImpl(transaction, confirmations).map { result =>
+      s"Processing TX from our wallet, transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
+    processTransactionImpl(transaction, blockHashOpt).map { result =>
       val txid = transaction.txIdBE
       val changeOutputs = result.updatedIncoming.length
       val spentOutputs = result.updatedOutgoing.length
@@ -98,49 +96,61 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processTransactionImpl(
       transaction: Transaction,
-      confirmations: Int): Future[ProcessTxResult] = {
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
 
-    val incomingTxoFut: Future[Vector[SpendingInfoDb]] =
-      spendingInfoDAO
-        .findTx(transaction)
-        .flatMap {
-          // no existing elements found
-          case Vector() =>
-            processNewIncomingTx(transaction, confirmations).map(_.toVector)
+    logger.info(
+      s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
+    for {
+      aggregate <- {
 
-          case txos: Vector[SpendingInfoDb] =>
-            val txoProcessingFutures =
-              txos
-                .map(processExistingIncomingTxo(transaction, confirmations, _))
+        val incomingTxoFut: Future[Vector[SpendingInfoDb]] =
+          spendingInfoDAO
+            .findTx(transaction)
+            .flatMap {
+              // no existing elements found
+              case Vector() =>
+                processNewIncomingTx(transaction, blockHashOpt)
+                  .map(_.toVector)
 
-            Future
-              .sequence(txoProcessingFutures)
+              case txos: Vector[SpendingInfoDb] =>
+                val txoProcessingFutures =
+                  txos
+                    .map(
+                      processExistingIncomingTxo(transaction, blockHashOpt, _))
+
+                Future
+                  .sequence(txoProcessingFutures)
+
+            }
+
+        val outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
+          for {
+            outputsBeingSpent <- spendingInfoDAO.findOutputsBeingSpent(
+              transaction)
+            processed <- FutureUtil.sequentially(outputsBeingSpent)(
+              markAsSpentIfUnspent)
+          } yield processed.flatten.toVector
 
         }
 
-    val outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
-      for {
-        outputsBeingSpent <- spendingInfoDAO.findOutputsBeingSpent(transaction)
-        processed <- FutureUtil.sequentially(outputsBeingSpent)(
-          markAsSpentIfUnspent)
-      } yield processed.flatten.toVector
+        val aggregateFut =
+          for {
+            incoming <- incomingTxoFut
+            outgoing <- outgoingTxFut
+          } yield {
+            ProcessTxResult(incoming.toList, outgoing.toList)
+          }
 
-    }
+        aggregateFut.failed.foreach { err =>
+          val msg = s"Error when processing transaction=${transaction.txIdBE}"
+          logger.error(msg, err)
+        }
 
-    val aggregateFut =
-      for {
-        incoming <- incomingTxoFut
-        outgoing <- outgoingTxFut
-      } yield {
-        ProcessTxResult(incoming.toList, outgoing.toList)
+        aggregateFut
       }
-
-    aggregateFut.failed.foreach { err =>
-      val msg = s"Error when processing transaction=${transaction.txIdBE}"
-      logger.error(msg, err)
+    } yield {
+      aggregate
     }
-
-    aggregateFut
   }
 
   /** If the given UTXO is marked as unspent, updates
@@ -149,7 +159,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private val markAsSpentIfUnspent: SpendingInfoDb => Future[
     Option[SpendingInfoDb]] = { out =>
     if (out.spent) {
-      Future.successful(None)
+      FutureUtil.none
     } else {
       val updatedF =
         spendingInfoDAO.update(out.copyWithSpent(spent = true))
@@ -171,11 +181,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       index: Int,
       spent: Boolean,
-      confirmations: Int): Future[SpendingInfoDb] =
-    addUtxo(transaction,
-            UInt32(index),
-            spent = spent,
-            confirmations = confirmations)
+      blockHash: Option[DoubleSha256DigestBE]): Future[SpendingInfoDb] =
+    addUtxo(transaction, UInt32(index), spent = spent, blockHash = blockHash)
       .flatMap {
         case AddUtxoSuccess(utxo) => Future.successful(utxo)
         case err: AddUtxoError =>
@@ -192,48 +199,61 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processExistingIncomingTxo(
       transaction: Transaction,
-      confirmations: Int,
+      blockHashOpt: Option[DoubleSha256DigestBE],
       foundTxo: SpendingInfoDb): Future[SpendingInfoDb] = {
-    if (foundTxo.confirmations < confirmations) {
-      // TODO The assumption here is that double-spends never occur. That's not
-      // the case. This must be fixed when double-spend logic is implemented.
-      logger.debug(
-        s"Increasing confirmation count of txo=${transaction.txIdBE}, old=${foundTxo.confirmations} new=${confirmations}")
-      val updateF =
-        spendingInfoDAO.update(
-          foundTxo.copyWithConfirmations(confirmations = confirmations))
-
-      updateF.foreach(tx =>
-        logger.debug(
-          s"Updated confirmation count=${tx.confirmations} of output=${foundTxo}"))
-      updateF.failed.foreach(err =>
-        logger.error(
-          s"Failed to update confirmation count of transaction=${transaction.txIdBE}",
-          err))
-
-      updateF
-    } else if (foundTxo.confirmations > confirmations) {
-      val msg =
-        List(
-          s"Incoming transaction=${transaction.txIdBE} has fewer confirmations=$confirmations",
-          s"than what we already have registered=${foundTxo.confirmations}! I don't know how",
-          s"to handle this."
+    if (foundTxo.txid != transaction.txIdBE) {
+      val errMsg =
+        Seq(
+          s"Found TXO has txid=${foundTxo.txid}, tx we were given has txid=${transaction.txIdBE}.",
+          "This is either a reorg or a double spent, which is not implemented yet"
         ).mkString(" ")
-      logger.warn(msg)
-      Future.failed(new RuntimeException(msg))
+      logger.error(errMsg)
+      Future.failed(new RuntimeException(errMsg))
     } else {
-      if (foundTxo.txid == transaction.txIdBE) {
-        logger.debug(
-          s"Skipping further processing of transaction=${transaction.txIdBE}, already processed.")
-        Future.successful(foundTxo)
-      } else {
-        val errMsg =
-          Seq(
-            s"Found TXO has txid=${foundTxo.txid}, tx we were given has txid=${transaction.txIdBE}.",
-            "This is either a reorg or a double spent, which is not implemented yet"
-          ).mkString(" ")
-        logger.error(errMsg)
-        Future.failed(new RuntimeException(errMsg))
+      (foundTxo.blockHash, blockHashOpt) match {
+        case (None, Some(blockHash)) =>
+          logger.debug(
+            s"Updating block_hash of txo=${transaction.txIdBE}, new block hash=${blockHash}")
+          val updateF =
+            spendingInfoDAO.update(
+              foundTxo
+                .copyWithBlockHash(blockHash = blockHash))
+
+          updateF.foreach(tx =>
+            logger.debug(
+              s"Updated block_hash of txo=${tx.txid} new block hash=${blockHash}"))
+          updateF.failed.foreach(err =>
+            logger.error(
+              s"Failed to update confirmation count of transaction=${transaction.txIdBE}",
+              err))
+
+          updateF
+        case (Some(oldBlockHash), Some(newBlockHash)) =>
+          if (oldBlockHash == newBlockHash) {
+            logger.debug(
+              s"Skipping further processing of transaction=${transaction.txIdBE}, already processed.")
+            Future.successful(foundTxo)
+          } else {
+            val errMsg =
+              Seq(
+                s"Found TXO has block hash=${oldBlockHash}, tx we were given has block hash=${newBlockHash}.",
+                "This is either a reorg or a double spent, which is not implemented yet"
+              ).mkString(" ")
+            logger.error(errMsg)
+            Future.failed(new RuntimeException(errMsg))
+          }
+        case (Some(blockHash), None) =>
+          val msg =
+            List(
+              s"Incoming transaction=${transaction.txIdBE} already has block hash=$blockHash! assigned",
+              s" I don't know how to handle this."
+            ).mkString(" ")
+          logger.warn(msg)
+          Future.failed(new RuntimeException(msg))
+        case (None, None) =>
+          logger.debug(
+            s"Skipping further processing of transaction=${transaction.txIdBE}, already processed.")
+          Future.successful(foundTxo)
       }
     }
   }
@@ -245,7 +265,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processNewIncomingTx(
       transaction: Transaction,
-      confirmations: Int): Future[Seq[SpendingInfoDb]] = {
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Seq[SpendingInfoDb]] = {
     addressDAO.findAll().flatMap { addrs =>
       val relevantOutsWithIdx: Seq[OutputWithIndex] = {
         val withIndex =
@@ -281,9 +301,9 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
                   out =>
                     processUtxo(transaction,
                                 out.index,
-                                confirmations = confirmations,
                                 // TODO is this correct?
-                                spent = false))
+                                spent = false,
+                                blockHash = blockHashOpt))
               }
 
           addUTXOsFut
