@@ -5,14 +5,41 @@
     "previous": "Previous",
     "tagline": "Bitcoin implementation in Scala",
     "docs": {
+      "applications/chain": {
+        "title": "Blockchain Verification"
+      },
+      "applications/cli": {
+        "title": "bitcoin-s cli"
+      },
+      "applications/configuration": {
+        "title": "Application configuration"
+      },
+      "applications/key-manager": {
+        "title": "Key Manager"
+      },
+      "applications/node": {
+        "title": "Light client"
+      },
+      "applications/server": {
+        "title": "applications/server"
+      },
+      "applications/wallet": {
+        "title": "Wallet"
+      },
       "contributing-website": {
         "title": "Contributing to the website"
       },
       "contributing": {
         "title": "Contributing"
       },
+      "core/addresses": {
+        "title": "Generating addresses"
+      },
       "core/core-intro": {
         "title": "Core module"
+      },
+      "core/hd-keys": {
+        "title": "HD key generation"
       },
       "core/txbuilder": {
         "title": "TxBuilder example"
@@ -31,6 +58,42 @@
       },
       "security": {
         "title": "Security"
+      },
+      "windows-users": {
+        "title": "windows-users"
+      },
+      "version-0.1.0/version-0.1.0-contributing-website": {
+        "title": "Contributing to the website"
+      },
+      "version-0.1.0/version-0.1.0-contributing": {
+        "title": "Contributing"
+      },
+      "version-0.1.0/core/version-0.1.0-addresses": {
+        "title": "Generating addresses"
+      },
+      "version-0.1.0/core/version-0.1.0-core-intro": {
+        "title": "Core module"
+      },
+      "version-0.1.0/core/version-0.1.0-hd-keys": {
+        "title": "HD key generation"
+      },
+      "version-0.1.0/core/version-0.1.0-txbuilder": {
+        "title": "TxBuilder example"
+      },
+      "version-0.1.0/version-0.1.0-getting-started": {
+        "title": "Add Bitcoin-S to your project"
+      },
+      "version-0.1.0/rpc/version-0.1.0-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-0.1.0/rpc/version-0.1.0-rpc-eclair": {
+        "title": "Eclair"
+      },
+      "version-0.1.0/rpc/version-0.1.0-rpc-clients-intro": {
+        "title": "Introduction"
+      },
+      "version-0.1.0/version-0.1.0-security": {
+        "title": "Security"
       }
     },
     "links": {
@@ -42,6 +105,7 @@
       "Getting started": "Getting started",
       "Core module": "Core module",
       "RPC clients": "RPC clients",
+      "Applications": "Applications",
       "Contributing": "Contributing",
       "Security": "Security"
     }
