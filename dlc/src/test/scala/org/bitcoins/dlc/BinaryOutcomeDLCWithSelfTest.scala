@@ -119,7 +119,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
   val localFundingUtxos = Vector(
     P2PKHSpendingInfo(
       outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-      amount = localInput,
+      amount = localInput * 2,
       scriptPubKey = P2PKHScriptPubKey(inputPubKeyLocal),
       signer = inputPrivKeyLocal,
       hashType = HashType.sigHashAll
@@ -129,16 +129,18 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
   val remoteFundingUtxos = Vector(
     P2PKHSpendingInfo(
       outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.one),
-      amount = remoteInput,
+      amount = remoteInput * 2,
       scriptPubKey = P2PKHScriptPubKey(inputPubKeyRemote),
       signer = inputPrivKeyRemote,
       hashType = HashType.sigHashAll
     )
   )
 
-  val changePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
-  val changePubKey: ECPublicKey = changePrivKey.publicKey
-  val changeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(changePubKey)
+  val localChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+    ECPublicKey.freshPublicKey)
+
+  val remoteChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+    ECPublicKey.freshPublicKey)
 
   val dlc: BinaryOutcomeDLCWithSelf = BinaryOutcomeDLCWithSelf(
     outcomeWin = outcomeWin,
@@ -155,7 +157,8 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     localLosePayout = localInput - CurrencyUnits.oneMBTC,
     timeout = blockTimeToday,
     feeRate = SatoshisPerByte(Satoshis.one),
-    changeSPK = changeSPK,
+    localChangeSPK = localChangeSPK,
+    remoteChangeSPK = remoteChangeSPK,
     network = RegTest
   )
 

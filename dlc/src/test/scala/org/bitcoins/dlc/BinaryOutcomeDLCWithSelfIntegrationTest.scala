@@ -89,9 +89,11 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     BitcoinAddress.fromScriptPubKey(P2PKHScriptPubKey(inputPubKeyRemote),
                                     RegTest)
 
-  val changePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
-  val changePubKey: ECPublicKey = changePrivKey.publicKey
-  val changeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(changePubKey)
+  val localChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+    ECPublicKey.freshPublicKey)
+
+  val remoteChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+    ECPublicKey.freshPublicKey)
 
   def constructDLC(): Future[BinaryOutcomeDLCWithSelf] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
@@ -103,8 +105,8 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       transactionWithoutFunds <- client
         .createRawTransaction(
           Vector.empty,
-          Map(localAddress.get -> fundingInput(localInput),
-              remoteAddress.get -> fundingInput(remoteInput)))
+          Map(localAddress.get -> fundingInput(localInput * 2),
+              remoteAddress.get -> fundingInput(remoteInput * 2)))
       transactionResult <- client.fundRawTransaction(transactionWithoutFunds)
       transaction = transactionResult.hex
       signedTxResult <- client.signRawTransactionWithWallet(transaction)
@@ -141,7 +143,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         Vector(
           P2PKHSpendingInfo(
             outPoint = TransactionOutPoint(txid, UInt32(localOutputIndex)),
-            amount = localInput,
+            amount = localInput * 2,
             scriptPubKey = P2PKHScriptPubKey(inputPubKeyLocal),
             signer = inputPrivKeyLocal,
             hashType = HashType.sigHashAll
@@ -154,7 +156,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         Vector(
           P2PKHSpendingInfo(
             outPoint = TransactionOutPoint(txid, UInt32(remoteOutputIndex)),
-            amount = remoteInput,
+            amount = remoteInput * 2,
             scriptPubKey = P2PKHScriptPubKey(inputPubKeyRemote),
             signer = inputPrivKeyRemote,
             hashType = HashType.sigHashAll
@@ -189,7 +191,8 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         localLosePayout = localInput - CurrencyUnits.oneMBTC,
         timeout = tomorrowInBlocks,
         feeRate = feeRate,
-        changeSPK = changeSPK,
+        localChangeSPK = localChangeSPK,
+        remoteChangeSPK = remoteChangeSPK,
         network = RegTest
       )
     }
