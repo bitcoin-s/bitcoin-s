@@ -1,0 +1,34 @@
+{
+  "version-0.2.0-docs": {
+    "Getting started": [
+      "version-0.2.0-getting-started"
+    ],
+    "Core module": [
+      "version-0.2.0-core/core-intro",
+      "version-0.2.0-core/addresses",
+      "version-0.2.0-core/hd-keys",
+      "version-0.2.0-core/txbuilder"
+    ],
+    "RPC clients": [
+      "version-0.2.0-rpc/rpc-clients-intro",
+      "version-0.2.0-rpc/rpc-eclair",
+      "version-0.2.0-rpc/rpc-bitcoind"
+    ],
+    "Applications": [
+      "version-0.2.0-applications/chain",
+      "version-0.2.0-applications/cli",
+      "version-0.2.0-applications/configuration",
+      "version-0.2.0-applications/key-manager",
+      "version-0.2.0-applications/node",
+      "version-0.2.0-applications/server",
+      "version-0.2.0-applications/wallet"
+    ],
+    "Contributing": [
+      "version-0.2.0-contributing",
+      "version-0.2.0-contributing-website"
+    ],
+    "Security": [
+      "version-0.2.0-security"
+    ]
+  }
+}
