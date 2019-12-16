@@ -94,6 +94,57 @@
       },
       "version-0.1.0/version-0.1.0-security": {
         "title": "Security"
+      },
+      "version-0.2.0/applications/version-0.2.0-chain": {
+        "title": "Blockchain Verification"
+      },
+      "version-0.2.0/applications/version-0.2.0-cli": {
+        "title": "bitcoin-s cli"
+      },
+      "version-0.2.0/applications/version-0.2.0-configuration": {
+        "title": "Application configuration"
+      },
+      "version-0.2.0/applications/version-0.2.0-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-0.2.0/applications/version-0.2.0-node": {
+        "title": "Light client"
+      },
+      "version-0.2.0/applications/version-0.2.0-wallet": {
+        "title": "Wallet"
+      },
+      "version-0.2.0/version-0.2.0-contributing-website": {
+        "title": "Contributing to the website"
+      },
+      "version-0.2.0/version-0.2.0-contributing": {
+        "title": "Contributing"
+      },
+      "version-0.2.0/core/version-0.2.0-addresses": {
+        "title": "Generating addresses"
+      },
+      "version-0.2.0/core/version-0.2.0-core-intro": {
+        "title": "Core module"
+      },
+      "version-0.2.0/core/version-0.2.0-hd-keys": {
+        "title": "HD key generation"
+      },
+      "version-0.2.0/core/version-0.2.0-txbuilder": {
+        "title": "TxBuilder example"
+      },
+      "version-0.2.0/version-0.2.0-getting-started": {
+        "title": "Add Bitcoin-S to your project"
+      },
+      "version-0.2.0/rpc/version-0.2.0-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-0.2.0/rpc/version-0.2.0-rpc-eclair": {
+        "title": "Eclair"
+      },
+      "version-0.2.0/rpc/version-0.2.0-rpc-clients-intro": {
+        "title": "Introduction"
+      },
+      "version-0.2.0/version-0.2.0-windows-users": {
+        "title": "windows-users"
       }
     },
     "links": {

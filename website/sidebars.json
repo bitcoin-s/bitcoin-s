@@ -13,10 +13,13 @@
       "rpc/rpc-bitcoind"
     ],
     "Applications": [
-      "applications/node",
-      "applications/wallet",
       "applications/chain",
-      "applications/configuration"
+      "applications/cli",
+      "applications/configuration",
+      "applications/key-manager",
+      "applications/node",
+      "applications/server",
+      "applications/wallet"
     ],
     "Contributing": ["contributing", "contributing-website"],
     "Security": ["security"]
