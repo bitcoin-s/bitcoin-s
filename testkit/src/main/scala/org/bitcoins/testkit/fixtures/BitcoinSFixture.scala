@@ -32,33 +32,18 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       throw err
     }
 
-    val outcomeF = fixtureF.flatMap { fixture =>
+    val outcomeF: Future[Outcome] = fixtureF.flatMap { fixture =>
       test(fixture.asInstanceOf[FixtureParam]).toFuture
     }
 
-    outcomeF.failed.foreach(err =>
-      println(s"Failed fixture test execution=${err}"))
+    val futOutcome: FutureOutcome = new FutureOutcome(outcomeF)
 
-    val destroyP = Promise[Unit]()
-    outcomeF.onComplete { _ =>
-      fixtureF.foreach { fixture =>
-        destroy(fixture).onComplete {
-          case Success(_) => destroyP.success(())
-          case Failure(err) =>
-            logger.error(s"Failed to destroy fixture with err=${err}")
-            destroyP.failure(err)
-        }
-      }
+    val result: FutureOutcome = futOutcome.onOutcomeThen { _ =>
+      fixtureF.flatMap(f => destroy(f))
+      ()
     }
 
-    val outcomeAfterDestroyF = destroyP.future.flatMap(_ => outcomeF)
-
-    outcomeAfterDestroyF.failed.foreach { err =>
-      println(s"err creating and destroying fixture")
-      throw err
-
-    }
-    new FutureOutcome(outcomeAfterDestroyF)
+    result
   }
 
   /**
