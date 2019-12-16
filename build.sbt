@@ -365,10 +365,14 @@ lazy val docs = project
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(
     bitcoindRpc,
+    chain,
+    cli,
     core,
     eclairRpc,
+    keyManager,
     secp256k1jni,
     testkit,
+    wallet,
     zmq
   )
 
