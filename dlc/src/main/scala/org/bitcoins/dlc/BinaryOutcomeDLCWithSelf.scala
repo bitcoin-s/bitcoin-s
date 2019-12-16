@@ -2,6 +2,7 @@ package org.bitcoins.dlc
 
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
   ECPrivateKey,
   ECPublicKey,
   ExtPrivateKey,
@@ -188,21 +189,48 @@ case class BinaryOutcomeDLCWithSelf(
   }
 
   def createFundingTransaction: Future[Transaction] = {
-    val output: TransactionOutput =
-      TransactionOutput(totalInput, P2WSHWitnessSPKV0(fundingSPK))
-    val localChange =
-      TransactionOutput(Satoshis(localFunding) - localInput, localChangeSPK)
-    val remoteChange =
-      TransactionOutput(Satoshis(remoteFunding) - remoteInput, remoteChangeSPK)
 
-    val outputs: Vector[TransactionOutput] =
-      Vector(output, localChange, remoteChange)
-    val txBuilderF: Future[BitcoinTxBuilder] =
-      BitcoinTxBuilder(outputs, fundingUtxos, feeRate, emptyChangeSPK, network)
+    val emptyOutPoint =
+      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
+    val dummySpendingInfo = P2WSHV0SpendingInfo(
+      outPoint = emptyOutPoint,
+      amount = totalInput * 2,
+      scriptPubKey = P2WSHWitnessSPKV0(fundingSPK),
+      signers = Vector(fundingLocalPrivKey, fundingRemotePrivKey),
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WSHWitnessV0(fundingSPK),
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
+    val cetWinLocalF = createCETWinLocal(dummySpendingInfo)
+    val cetFeeF = cetWinLocalF.map { tx =>
+      feeRate.calc(tx._1)
+    }
 
-    txBuilderF.flatMap { txBuilder =>
-      subtractFeeFromOutputsAndSign(txBuilder,
-                                    Vector(localChangeSPK, remoteChangeSPK))
+    cetFeeF.flatMap { cetFee =>
+      val halfCetFee = Satoshis(cetFee.satoshis.toLong / 2)
+
+      val output: TransactionOutput =
+        TransactionOutput(totalInput + cetFee, P2WSHWitnessSPKV0(fundingSPK))
+      val localChange =
+        TransactionOutput(Satoshis(localFunding) - localInput - halfCetFee,
+                          localChangeSPK)
+      val remoteChange =
+        TransactionOutput(Satoshis(remoteFunding) - remoteInput - halfCetFee,
+                          remoteChangeSPK)
+
+      val outputs: Vector[TransactionOutput] =
+        Vector(output, localChange, remoteChange)
+      val txBuilderF: Future[BitcoinTxBuilder] =
+        BitcoinTxBuilder(outputs,
+                         fundingUtxos,
+                         feeRate,
+                         emptyChangeSPK,
+                         network)
+
+      txBuilderF.flatMap { txBuilder =>
+        subtractFeeFromOutputsAndSign(txBuilder,
+                                      Vector(localChangeSPK, remoteChangeSPK))
+      }
     }
   }
 
@@ -235,9 +263,8 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocal: TransactionOutput =
       TransactionOutput(localPayout, P2WSHWitnessSPKV0(toLocalSPK))
-    val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
-      TransactionOutput(remotePayout - feeSoFar,
+      TransactionOutput(remotePayout,
                         P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
@@ -248,7 +275,7 @@ case class BinaryOutcomeDLCWithSelf(
                        emptyChangeSPK,
                        network)
 
-    txBuilderF.flatMap(subtractFeeAndSign).map((_, P2WSHWitnessV0(toLocalSPK)))
+    txBuilderF.flatMap(_.sign).map((_, P2WSHWitnessV0(toLocalSPK)))
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
@@ -279,9 +306,8 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocal: TransactionOutput =
       TransactionOutput(remotePayout, P2WSHWitnessSPKV0(toLocalSPK))
-    val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
-      TransactionOutput(localPayout - feeSoFar,
+      TransactionOutput(localPayout,
                         P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
@@ -292,7 +318,7 @@ case class BinaryOutcomeDLCWithSelf(
                        emptyChangeSPK,
                        network)
 
-    txBuilderF.flatMap(subtractFeeAndSign).map((_, P2WSHWitnessV0(toLocalSPK)))
+    txBuilderF.flatMap(_.sign).map((_, P2WSHWitnessV0(toLocalSPK)))
   }
 
   /** Constructs the (time-locked) refund transaction for when the oracle disappears
@@ -303,7 +329,7 @@ case class BinaryOutcomeDLCWithSelf(
       fundingSpendingInfo: P2WSHV0SpendingInfo): Future[Transaction] = {
     val toLocalValueNotSat =
       (fundingSpendingInfo.amount * localInput).satoshis.toLong / totalInput.satoshis.toLong
-    val toLocalValue = Satoshis(Int64(toLocalValueNotSat))
+    val toLocalValue = Satoshis(toLocalValueNotSat)
     val toRemoteValue = fundingSpendingInfo.amount - toLocalValue
 
     val toLocal = TransactionOutput(
