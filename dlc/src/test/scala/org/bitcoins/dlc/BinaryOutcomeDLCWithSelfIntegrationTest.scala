@@ -213,8 +213,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     }
   }
 
-  def executeForUnilateralCase(outcomeHash: Sha256DigestBE,
-                               local: Boolean): Future[Assertion] = {
+  def executeForUnilateralCase(
+      outcomeHash: Sha256DigestBE,
+      local: Boolean): Future[Assertion] = {
     val oracleSig =
       Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
@@ -251,8 +252,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     } yield assertion
   }
 
-  def executeForJusticeCase(fakeWin: Boolean,
-                            local: Boolean): Future[Assertion] = {
+  def executeForJusticeCase(
+      fakeWin: Boolean,
+      local: Boolean): Future[Assertion] = {
     def chooseCET(setup: SetupDLC): Transaction = {
       if (fakeWin) {
         if (local) {

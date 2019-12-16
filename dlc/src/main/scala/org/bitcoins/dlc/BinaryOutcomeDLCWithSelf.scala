@@ -125,25 +125,30 @@ case class BinaryOutcomeDLCWithSelf(
       (2, 1)
     }
 
-  def cetPrivKey(rootKey: ExtPrivateKey, index: Int): ECPrivateKey = {
+  def cetExtPrivKey(rootKey: ExtPrivateKey, eventIndex: Int): ExtPrivateKey = {
     rootKey
       .deriveChildPrivKey(
         BIP32Path(BIP32Node(1, hardened = false),
-                  BIP32Node(index, hardened = false)))
-      .key
+                  BIP32Node(eventIndex, hardened = false)))
   }
 
   val cetLocalRefundPrivKey: ECPrivateKey =
-    cetPrivKey(localExtPrivKey, index = 0)
-  val cetLocalWinPrivKey: ECPrivateKey = cetPrivKey(localExtPrivKey, winIndex)
-  val cetLocalLosePrivKey: ECPrivateKey = cetPrivKey(localExtPrivKey, loseIndex)
+    cetExtPrivKey(localExtPrivKey, eventIndex = 0).key
+
+  val cetLocalWinPrivKey: ExtPrivateKey =
+    cetExtPrivKey(localExtPrivKey, winIndex)
+
+  val cetLocalLosePrivKey: ExtPrivateKey =
+    cetExtPrivKey(localExtPrivKey, loseIndex)
 
   val cetRemoteRefundPrivKey: ECPrivateKey =
-    cetPrivKey(remoteExtPrivKey, index = 0)
-  val cetRemoteWinPrivKey: ECPrivateKey = cetPrivKey(remoteExtPrivKey, winIndex)
+    cetExtPrivKey(remoteExtPrivKey, eventIndex = 0).key
 
-  val cetRemoteLosePrivKey: ECPrivateKey =
-    cetPrivKey(remoteExtPrivKey, loseIndex)
+  val cetRemoteWinPrivKey: ExtPrivateKey =
+    cetExtPrivKey(remoteExtPrivKey, winIndex)
+
+  val cetRemoteLosePrivKey: ExtPrivateKey =
+    cetExtPrivKey(remoteExtPrivKey, loseIndex)
 
   /** Total funding amount */
   private val totalInput = localInput + remoteInput
@@ -187,12 +192,18 @@ case class BinaryOutcomeDLCWithSelf(
       (cetLocalLosePrivKey, cetRemoteLosePrivKey)
     }
 
+    val localToLocalPrivKey =
+      cetLocalPrivKey.deriveChildPrivKey(UInt32.zero).key
+    val remoteToLocalPrivKey =
+      cetRemotePrivKey.deriveChildPrivKey(UInt32.one).key
+    val toRemotePrivKey = cetRemotePrivKey.deriveChildPrivKey(UInt32(2)).key
+
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
-      pubKeys = Vector(cetLocalPrivKey.publicKey, sigPubKey))
+      pubKeys = Vector(localToLocalPrivKey.publicKey, sigPubKey))
     val timeoutSPK = CLTVScriptPubKey(
       locktime = timeout.toScriptNumber,
-      scriptPubKey = P2PKHScriptPubKey(cetRemotePrivKey.publicKey))
+      scriptPubKey = P2PKHScriptPubKey(remoteToLocalPrivKey.publicKey))
 
     val toLocalSPK = MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
 
@@ -201,7 +212,7 @@ case class BinaryOutcomeDLCWithSelf(
     val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
       TransactionOutput(remotePayout - feeSoFar,
-                        P2PKHScriptPubKey(cetRemotePrivKey.publicKey))
+                        P2PKHScriptPubKey(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
     val txBuilderF =
@@ -226,12 +237,17 @@ case class BinaryOutcomeDLCWithSelf(
       (cetLocalLosePrivKey, cetRemoteLosePrivKey)
     }
 
+    val remoteToLocalPrivKey =
+      cetRemotePrivKey.deriveChildPrivKey(UInt32.zero).key
+    val localToLocalPrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32.one).key
+    val toRemotePrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32(2)).key
+
     val multiSig = MultiSignatureScriptPubKey(
       requiredSigs = 2,
-      pubKeys = Vector(cetRemotePrivKey.publicKey, sigPubKey))
+      pubKeys = Vector(remoteToLocalPrivKey.publicKey, sigPubKey))
     val timeoutSPK = CLTVScriptPubKey(
       locktime = timeout.toScriptNumber,
-      scriptPubKey = P2PKHScriptPubKey(cetLocalPrivKey.publicKey))
+      scriptPubKey = P2PKHScriptPubKey(localToLocalPrivKey.publicKey))
 
     val toLocalSPK = MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
 
@@ -240,7 +256,7 @@ case class BinaryOutcomeDLCWithSelf(
     val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
       TransactionOutput(localPayout - feeSoFar,
-                        P2PKHScriptPubKey(cetLocalPrivKey.publicKey))
+                        P2PKHScriptPubKey(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
     val txBuilderF =
@@ -416,7 +432,7 @@ case class BinaryOutcomeDLCWithSelf(
 
     oracleSigF.flatMap { oracleSig =>
       // Pick the CET to use and payout by checking which message was signed
-      val (cet, cetPrivKey, otherCetPrivKey) =
+      val (cet, extCetPrivKey, extOtherCetPrivKey) =
         if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
           if (local) {
             (cetWinLocal, cetLocalWinPrivKey, cetRemoteWinPrivKey)
@@ -433,6 +449,9 @@ case class BinaryOutcomeDLCWithSelf(
           throw new IllegalStateException(
             "Signature does not correspond to either possible outcome!")
         }
+
+      val cetPrivKey = extCetPrivKey.deriveChildPrivKey(UInt32.zero).key
+      val otherCetPrivKey = extOtherCetPrivKey.deriveChildPrivKey(UInt32(2)).key
 
       // The prefix other refers to remote if local == true and local otherwise
       val output = cet.outputs.head
@@ -498,7 +517,7 @@ case class BinaryOutcomeDLCWithSelf(
     val justiceOutput = timedOutCET.outputs.head
     val normalOutput = timedOutCET.outputs.last
 
-    val cetPrivKey = if (local) {
+    val extCetPrivKey = if (local) {
       if (timedOutCET == dlcSetup.cetWinRemote) {
         cetLocalWinPrivKey
       } else {
@@ -512,12 +531,15 @@ case class BinaryOutcomeDLCWithSelf(
       }
     }
 
+    val cetPrivKeyJustice = extCetPrivKey.deriveChildPrivKey(UInt32.one).key
+    val cetPrivKeyToRemote = extCetPrivKey.deriveChildPrivKey(UInt32(2)).key
+
     val justiceSpendingInfo = ConditionalSpendingInfo(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
       amount = justiceOutput.value,
       scriptPubKey =
         justiceOutput.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
-      signers = Vector(cetPrivKey),
+      signers = Vector(cetPrivKeyJustice),
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.nonNestedFalse
     )
@@ -526,7 +548,7 @@ case class BinaryOutcomeDLCWithSelf(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.one),
       amount = normalOutput.value,
       scriptPubKey = normalOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
-      signer = cetPrivKey,
+      signer = cetPrivKeyToRemote,
       hashType = HashType.sigHashAll
     )
 
