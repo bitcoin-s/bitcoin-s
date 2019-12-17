@@ -190,21 +190,18 @@ case class BinaryOutcomeDLCWithSelf(
 
   def createFundingTransaction: Future[Transaction] = {
 
-    val emptyOutPoint =
-      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
-    val dummySpendingInfo = P2WSHV0SpendingInfo(
-      outPoint = emptyOutPoint,
-      amount = totalInput * 2,
-      scriptPubKey = P2WSHWitnessSPKV0(fundingSPK),
-      signers = Vector(fundingLocalPrivKey, fundingRemotePrivKey),
-      hashType = HashType.sigHashAll,
-      scriptWitness = P2WSHWitnessV0(fundingSPK),
-      conditionalPath = ConditionalPath.NoConditionsLeft
-    )
-    val cetWinLocalF = createCETWinLocal(dummySpendingInfo)
-    val cetFeeF = cetWinLocalF.map { tx =>
-      feeRate.calc(tx._1)
-    }
+    /* We need to commit to the CET's fee during the construction of
+     * the funding transaction so that the CET outputs have the expected payouts.
+     *
+     * Our approach at the moment is to estimate CET size and, using feeRate,
+     * approximate how much the fee will be on the cetWinLocal transaction. It
+     * does not matter which CET we use since they are all the same structure/size
+     * other than the refund case which is smaller.
+     *
+     * Once computed, we add that amount to the fundingOutput so it can be used for fees later.
+     */
+    val cetWinLocalF = createMockCET()
+    val cetFeeF = cetWinLocalF.map(feeRate.calc)
 
     cetFeeF.flatMap { cetFee =>
       val halfCetFee = Satoshis(cetFee.satoshis.toLong / 2)
@@ -239,7 +236,9 @@ case class BinaryOutcomeDLCWithSelf(
       sigPubKey: ECPublicKey,
       fundingSpendingInfo: P2WSHV0SpendingInfo,
       localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[(Transaction, P2WSHWitnessV0)] = {
+      remotePayout: CurrencyUnit,
+      invariant: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean =
+        noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
     val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
       (cetLocalWinPrivKey, cetRemoteWinPrivKey)
     } else {
@@ -275,7 +274,9 @@ case class BinaryOutcomeDLCWithSelf(
                        emptyChangeSPK,
                        network)
 
-    txBuilderF.flatMap(_.sign).map((_, P2WSHWitnessV0(toLocalSPK)))
+    txBuilderF
+      .flatMap(_.sign(invariant))
+      .map((_, P2WSHWitnessV0(toLocalSPK)))
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
@@ -283,7 +284,9 @@ case class BinaryOutcomeDLCWithSelf(
       sigPubKey: ECPublicKey,
       fundingSpendingInfo: P2WSHV0SpendingInfo,
       localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[(Transaction, P2WSHWitnessV0)] = {
+      remotePayout: CurrencyUnit,
+      invariant: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean =
+        noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
     val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
       (cetLocalWinPrivKey, cetRemoteWinPrivKey)
     } else {
@@ -318,7 +321,9 @@ case class BinaryOutcomeDLCWithSelf(
                        emptyChangeSPK,
                        network)
 
-    txBuilderF.flatMap(_.sign).map((_, P2WSHWitnessV0(toLocalSPK)))
+    txBuilderF
+      .flatMap(_.sign(invariant))
+      .map((_, P2WSHWitnessV0(toLocalSPK)))
   }
 
   /** Constructs the (time-locked) refund transaction for when the oracle disappears
@@ -348,6 +353,30 @@ case class BinaryOutcomeDLCWithSelf(
                                       timeout.toUInt32)
 
     txBuilderF.flatMap(subtractFeeAndSign)
+  }
+
+  private def createMockCET(): Future[Transaction] = {
+    val emptyOutPoint =
+      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
+    val dummySpendingInfo = P2WSHV0SpendingInfo(
+      outPoint = emptyOutPoint,
+      amount = totalInput * 2, // Any amount significantly > totalInput should be valid
+      scriptPubKey = P2WSHWitnessSPKV0(fundingSPK),
+      signers = Vector(fundingLocalPrivKey, fundingRemotePrivKey),
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WSHWitnessV0(fundingSPK),
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
+
+    val mockCETF = createCETLocal(
+      sigPubKey = sigPubKeyWin,
+      fundingSpendingInfo = dummySpendingInfo,
+      localPayout = localWinPayout,
+      remotePayout = remoteWinPayout,
+      invariant = (_, _) => true
+    )
+
+    mockCETF.map(_._1)
   }
 
   def createCETWinLocal(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
@@ -732,6 +761,12 @@ object BinaryOutcomeDLCWithSelf {
     subtractFeeFromOutputsAndSign(txBuilder, spks)
   }
 
+  // This invariant ensures that emptyChangeSPK is never used above
+  val noEmptyOutputs: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean = {
+    (_, tx) =>
+      tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
+  }
+
   /** Subtracts the estimated fee by removing from each output with a specified spk evenly */
   def subtractFeeFromOutputsAndSign(
       txBuilder: BitcoinTxBuilder,
@@ -772,12 +807,6 @@ object BinaryOutcomeDLCWithSelf {
                          txBuilder.changeSPK,
                          txBuilder.network,
                          txBuilder.lockTimeOverrideOpt)
-
-      // This invariant ensures that emptyChangeSPK is never used above
-      val noEmptyOutputs: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean = {
-        (_, tx) =>
-          tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
-      }
 
       newBuilder.flatMap(_.sign(noEmptyOutputs))
     }
