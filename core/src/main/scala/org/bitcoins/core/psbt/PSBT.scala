@@ -212,7 +212,7 @@ object GlobalPSBTRecord {
 
   case class Version(version: UInt32) extends GlobalPSBTRecord {
     override val key: ByteVector = hex"FB"
-    override val value: ByteVector = version.bytes
+    override val value: ByteVector = version.bytesLE
   }
 
   case class Unknown(key: ByteVector, value: ByteVector)
@@ -235,7 +235,7 @@ object GlobalPSBTRecord {
         require(key.size == 1,
                 s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        val version = UInt32(value)
+        val version = UInt32.fromBytesLE(value)
 
         require(PSBT.knownVersions.contains(version),
                 s"Unknown version number given: $version")
