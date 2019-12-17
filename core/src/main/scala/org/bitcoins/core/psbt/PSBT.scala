@@ -58,6 +58,20 @@ case class PSBT(
       vec.head.version
     }
   }
+
+  def isFinalized: Boolean = inputMaps.forall(_.isFinalized)
+
+  def combinePSBT(other: PSBT): PSBT = {
+    require(other.transaction.txId == this.transaction.txId,
+            "Can only combine PSBTs with the same global transaction.")
+
+    val global = globalMap.combine(other.globalMap)
+    val inputs = inputMaps.zipWithIndex.map(input =>
+      input._1.combine(other.inputMaps(input._2)))
+    val outputs = outputMaps.zipWithIndex.map(output =>
+      output._1.combine(other.outputMaps(output._2)))
+    PSBT(global, inputs, outputs)
+  }
 }
 
 object PSBT extends Factory[PSBT] {
@@ -576,6 +590,13 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
       .filter(element => PSBTGlobalKeyId.fromByte(element.key.head) == key)
       .asInstanceOf[Vector[T]]
   }
+
+  def combine(other: GlobalPSBTMap): GlobalPSBTMap = {
+    val newElements: Vector[GlobalPSBTRecord] =
+      other.elements.filterNot(element =>
+        this.elements.exists(_.key == element.key))
+    GlobalPSBTMap(this.elements ++ newElements)
+  }
 }
 
 object GlobalPSBTMap {
@@ -605,6 +626,17 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       .filter(element => PSBTInputKeyId.fromByte(element.key.head) == key)
       .asInstanceOf[Vector[T]]
   }
+
+  def isFinalized: Boolean =
+    getRecords(FinalizedScriptSigKeyId).nonEmpty || getRecords(
+      FinalizedScriptWitnessKeyId).nonEmpty
+
+  def combine(other: InputPSBTMap): InputPSBTMap = {
+    val newElements: Vector[InputPSBTRecord] =
+      other.elements.filterNot(element =>
+        this.elements.exists(_.key == element.key))
+    InputPSBTMap(this.elements ++ newElements)
+  }
 }
 
 object InputPSBTMap {
@@ -633,6 +665,13 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
     elements
       .filter(element => PSBTOutputKeyId.fromByte(element.key.head) == key)
       .asInstanceOf[Vector[T]]
+  }
+
+  def combine(other: OutputPSBTMap): OutputPSBTMap = {
+    val newElements: Vector[OutputPSBTRecord] =
+      other.elements.filterNot(element =>
+        this.elements.exists(_.key == element.key))
+    OutputPSBTMap(this.elements ++ newElements)
   }
 }
 
