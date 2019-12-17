@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.BlockStampWithFuture
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   ConditionalScriptPubKey,
+  EmptyScriptPubKey,
   MultiSignatureScriptPubKey,
   MultiSignatureWithTimeoutScriptPubKey,
   P2PKHScriptPubKey,
@@ -64,7 +65,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param localLosePayout Local's payout in the Lose case
   * @param timeout The CLTV timeout in milliseconds used in all CETs
   * @param feeRate The predicted fee rate used for all transactions
-  * @param changeSPK The place-holder change ScriptPubKey used for all transactions
+  * @param localChangeSPK Local's change ScriptPubKey used in the funding tx
+  * @param remoteChangeSPK Remote's change ScriptPubKey used in the funding tx
   */
 case class BinaryOutcomeDLCWithSelf(
     outcomeWin: String,
@@ -81,11 +83,12 @@ case class BinaryOutcomeDLCWithSelf(
     localLosePayout: CurrencyUnit,
     timeout: BlockStampWithFuture,
     feeRate: FeeUnit,
-    changeSPK: ScriptPubKey,
+    localChangeSPK: ScriptPubKey,
+    remoteChangeSPK: ScriptPubKey,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
-  import BinaryOutcomeDLCWithSelf.subtractFeeAndSign
+  import BinaryOutcomeDLCWithSelf._
 
   /** Hash signed by oracle in Win case */
   val messageWin: ByteVector =
@@ -150,14 +153,26 @@ case class BinaryOutcomeDLCWithSelf(
   val cetRemoteLosePrivKey: ExtPrivateKey =
     cetExtPrivKey(remoteExtPrivKey, loseIndex)
 
-  /** Total funding amount */
+  /** Total collateral amount */
   private val totalInput = localInput + remoteInput
+
+  private val localFunding =
+    localFundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+  private val remoteFunding =
+    remoteFundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
 
   /** Remote's payout in the Win case (in which Remote loses) */
   val remoteWinPayout: CurrencyUnit = totalInput - localWinPayout
 
   /** Remote's payout in the Lose case (in which Remote wins) */
   val remoteLosePayout: CurrencyUnit = totalInput - localLosePayout
+
+  /** This is only used as a placeholder and we use an invariant
+    * when signing to ensure that this is never used.
+    *
+    * In the future, allowing this behavior should be done in TxBuilder.
+    */
+  private val emptyChangeSPK: ScriptPubKey = EmptyScriptPubKey
 
   private val fundingUtxos = localFundingUtxos ++ remoteFundingUtxos
 
@@ -172,12 +187,20 @@ case class BinaryOutcomeDLCWithSelf(
   def createFundingTransaction: Future[Transaction] = {
     val output: TransactionOutput =
       TransactionOutput(totalInput, fundingSPK)
+    val localChange =
+      TransactionOutput(Satoshis(localFunding) - localInput, localChangeSPK)
+    val remoteChange =
+      TransactionOutput(Satoshis(remoteFunding) - remoteInput, remoteChangeSPK)
 
-    val outputs: Vector[TransactionOutput] = Vector(output)
+    val outputs: Vector[TransactionOutput] =
+      Vector(output, localChange, remoteChange)
     val txBuilderF: Future[BitcoinTxBuilder] =
-      BitcoinTxBuilder(outputs, fundingUtxos, feeRate, changeSPK, network)
+      BitcoinTxBuilder(outputs, fundingUtxos, feeRate, emptyChangeSPK, network)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    txBuilderF.flatMap { txBuilder =>
+      subtractFeeFromOutputsAndSign(txBuilder,
+                                    Vector(localChangeSPK, remoteChangeSPK))
+    }
   }
 
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
@@ -219,7 +242,7 @@ case class BinaryOutcomeDLCWithSelf(
       BitcoinTxBuilder(outputs,
                        Vector(fundingSpendingInfo),
                        feeRate,
-                       changeSPK,
+                       emptyChangeSPK,
                        network)
 
     txBuilderF.flatMap(subtractFeeAndSign)
@@ -263,7 +286,7 @@ case class BinaryOutcomeDLCWithSelf(
       BitcoinTxBuilder(outputs,
                        Vector(fundingSpendingInfo),
                        feeRate,
-                       changeSPK,
+                       emptyChangeSPK,
                        network)
 
     txBuilderF.flatMap(subtractFeeAndSign)
@@ -291,7 +314,7 @@ case class BinaryOutcomeDLCWithSelf(
     val txBuilderF = BitcoinTxBuilder(outputs,
                                       Vector(fundingSpendingInfo),
                                       feeRate,
-                                      changeSPK,
+                                      emptyChangeSPK,
                                       network,
                                       timeout.toUInt32)
 
@@ -400,7 +423,7 @@ case class BinaryOutcomeDLCWithSelf(
                           P2PKHScriptPubKey(privKey.publicKey))),
       Vector(spendingInfo),
       feeRate,
-      changeSPK,
+      emptyChangeSPK,
       network
     )
 
@@ -636,30 +659,59 @@ object BinaryOutcomeDLCWithSelf {
   /** Subtracts the estimated fee by removing from each output evenly */
   def subtractFeeAndSign(txBuilder: BitcoinTxBuilder)(
       implicit ec: ExecutionContext): Future[Transaction] = {
+    val spks = txBuilder.destinations.toVector.map(_.scriptPubKey)
+
+    subtractFeeFromOutputsAndSign(txBuilder, spks)
+  }
+
+  /** Subtracts the estimated fee by removing from each output with a specified spk evenly */
+  def subtractFeeFromOutputsAndSign(
+      txBuilder: BitcoinTxBuilder,
+      spks: Vector[ScriptPubKey])(
+      implicit ec: ExecutionContext): Future[Transaction] = {
     txBuilder.unsignedTx.flatMap { tx =>
       val fee = txBuilder.feeRate.calc(tx)
 
-      val outputs = txBuilder.destinations
+      val outputs = txBuilder.destinations.zipWithIndex.filter {
+        case (output, _) => spks.contains(output.scriptPubKey)
+      }
+      val unchangedOutputs = txBuilder.destinations.zipWithIndex.filterNot {
+        case (output, _) => spks.contains(output.scriptPubKey)
+      }
 
       val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
       val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
 
-      val newOutputsWithoutRemainder = outputs.map(output =>
-        TransactionOutput(output.value - feePerOutput, output.scriptPubKey))
-      val lastOutput = newOutputsWithoutRemainder.last
+      val newOutputsWithoutRemainder = outputs.map {
+        case (output, index) =>
+          (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
+           index)
+      }
+      val (lastOutput, lastOutputIndex) = newOutputsWithoutRemainder.last
       val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
                                             lastOutput.scriptPubKey)
-      val newOutputs = newOutputsWithoutRemainder.dropRight(1).:+(newLastOutput)
+      val newOutputs = newOutputsWithoutRemainder
+        .dropRight(1)
+        .:+((newLastOutput, lastOutputIndex))
+
+      val allOuputsWithNew =
+        (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1)
 
       val newBuilder =
-        BitcoinTxBuilder(newOutputs,
+        BitcoinTxBuilder(allOuputsWithNew,
                          txBuilder.utxoMap,
                          txBuilder.feeRate,
                          txBuilder.changeSPK,
                          txBuilder.network,
                          txBuilder.lockTimeOverrideOpt)
 
-      newBuilder.flatMap(_.sign)
+      // This invariant ensures that emptyChangeSPK is never used above
+      val noEmptyOutputs: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean = {
+        (_, tx) =>
+          tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
+      }
+
+      newBuilder.flatMap(_.sign(noEmptyOutputs))
     }
   }
 }
