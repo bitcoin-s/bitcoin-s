@@ -1,5 +1,6 @@
 package org.bitcoins.dlc
 
+import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
@@ -17,7 +18,7 @@ import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   EmptyScriptPubKey,
   MultiSignatureScriptPubKey,
-  MultiSignatureWithTimeoutScriptPubKey,
+  NonStandardIfConditionalScriptPubKey,
   P2PKHScriptPubKey,
   P2WPKHWitnessSPKV0,
   P2WPKHWitnessV0,
@@ -251,14 +252,18 @@ case class BinaryOutcomeDLCWithSelf(
       cetRemotePrivKey.deriveChildPrivKey(UInt32.one).key
     val toRemotePrivKey = cetRemotePrivKey.deriveChildPrivKey(UInt32(2)).key
 
-    val multiSig = MultiSignatureScriptPubKey(
-      requiredSigs = 2,
-      pubKeys = Vector(localToLocalPrivKey.publicKey, sigPubKey))
+    val pubKeyBytes = NativeSecp256k1.pubKeyTweakAdd(
+      sigPubKey.bytes.toArray,
+      localToLocalPrivKey.bytes.toArray,
+      true)
+    val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
+    val oracleSPK = P2PKHScriptPubKey(pubKey)
+
     val timeoutSPK = CLTVScriptPubKey(
       locktime = timeout.toScriptNumber,
       scriptPubKey = P2PKHScriptPubKey(remoteToLocalPrivKey.publicKey))
 
-    val toLocalSPK = MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
+    val toLocalSPK = NonStandardIfConditionalScriptPubKey(oracleSPK, timeoutSPK)
 
     val toLocal: TransactionOutput =
       TransactionOutput(localPayout, P2WSHWitnessSPKV0(toLocalSPK))
@@ -298,14 +303,18 @@ case class BinaryOutcomeDLCWithSelf(
     val localToLocalPrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32.one).key
     val toRemotePrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32(2)).key
 
-    val multiSig = MultiSignatureScriptPubKey(
-      requiredSigs = 2,
-      pubKeys = Vector(remoteToLocalPrivKey.publicKey, sigPubKey))
+    val pubKeyBytes = NativeSecp256k1.pubKeyTweakAdd(
+      sigPubKey.bytes.toArray,
+      remoteToLocalPrivKey.bytes.toArray,
+      true)
+    val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
+    val oracleSPK = P2PKHScriptPubKey(pubKey)
+
     val timeoutSPK = CLTVScriptPubKey(
       locktime = timeout.toScriptNumber,
       scriptPubKey = P2PKHScriptPubKey(localToLocalPrivKey.publicKey))
 
-    val toLocalSPK = MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
+    val toLocalSPK = NonStandardIfConditionalScriptPubKey(oracleSPK, timeoutSPK)
 
     val toLocal: TransactionOutput =
       TransactionOutput(remotePayout, P2WSHWitnessSPKV0(toLocalSPK))
@@ -562,12 +571,18 @@ case class BinaryOutcomeDLCWithSelf(
       val output = cet.outputs.head
       val otherOutput = cet.outputs.last
 
+      val privKeyBytes = NativeSecp256k1.privKeyTweakAdd(
+        cetPrivKey.bytes.toArray,
+        oracleSig.s.toArray
+      )
+      val privKey = ECPrivateKey.fromBytes(ByteVector(privKeyBytes))
+
       // Spend the true case on the correct CET
       val cetSpendingInfo = P2WSHV0SpendingInfo(
         outPoint = TransactionOutPoint(cet.txIdBE, UInt32.zero),
         amount = output.value,
         scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
-        signers = Vector(cetPrivKey, ECPrivateKey(oracleSig.s)),
+        signers = Vector(privKey),
         hashType = HashType.sigHashAll,
         scriptWitness = cetScriptWitness,
         conditionalPath = ConditionalPath.nonNestedTrue
