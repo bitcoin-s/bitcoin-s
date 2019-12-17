@@ -27,7 +27,12 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by chris on 2/16/16.
   */
-sealed abstract class BaseECKey extends NetworkElement with Sign {
+sealed abstract class BaseECKey extends NetworkElement
+
+/**
+  * Created by chris on 2/16/16.
+  */
+sealed abstract class ECPrivateKey extends BaseECKey with Sign {
 
   override def signFunction: ByteVector => Future[ECDigitalSignature] = {
     bytes =>
@@ -38,25 +43,16 @@ sealed abstract class BaseECKey extends NetworkElement with Sign {
   /**
     * Signs a given sequence of bytes with the signingKey
     * @param dataToSign the bytes to be signed
-    * @param signingKey the key to sign the bytes with
     * @return the digital signature
     */
-  private def sign(
-      dataToSign: ByteVector,
-      signingKey: BaseECKey): ECDigitalSignature = {
-    require(dataToSign.length == 32 && signingKey.bytes.length <= 32)
+  override def sign(dataToSign: ByteVector): ECDigitalSignature = {
+    require(dataToSign.length == 32 && bytes.length <= 32)
     val signature =
-      NativeSecp256k1.sign(dataToSign.toArray, signingKey.bytes.toArray)
+      NativeSecp256k1.sign(dataToSign.toArray, bytes.toArray)
     ECDigitalSignature(ByteVector(signature))
   }
 
-  override def sign(dataToSign: ByteVector): ECDigitalSignature =
-    sign(dataToSign, this)
-
-  def sign(hash: HashDigest, signingKey: BaseECKey): ECDigitalSignature =
-    sign(hash.bytes, signingKey)
-
-  def sign(hash: HashDigest): ECDigitalSignature = sign(hash, this)
+  def sign(hash: HashDigest): ECDigitalSignature = sign(hash.bytes)
 
   def signFuture(hash: HashDigest)(
       implicit ec: ExecutionContext): Future[ECDigitalSignature] =
@@ -83,13 +79,6 @@ sealed abstract class BaseECKey extends NetworkElement with Sign {
       "We must create DER encoded signatures when signing a piece of data, got: " + signatureLowS)
     signatureLowS
   }
-
-}
-
-/**
-  * Created by chris on 2/16/16.
-  */
-sealed abstract class ECPrivateKey extends BaseECKey {
 
   /** Signifies if the this private key corresponds to a compressed public key */
   def isCompressed: Boolean
@@ -122,7 +111,7 @@ sealed abstract class ECPrivateKey extends BaseECKey {
     Base58.encode(encodedPrivKey)
   }
 
-  override def toString = "ECPrivateKey(" + hex + "," + isCompressed + ")"
+  override def toString = s"ECPrivateKey($hex,$isCompressed)"
 }
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
@@ -332,7 +321,6 @@ sealed abstract class ECPublicKey extends BaseECKey {
     }
     resultTry.getOrElse(false)
   }
-  override def publicKey: ECPublicKey = this
 
   /** Checks if the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] is compressed */
   def isCompressed: Boolean = bytes.size == 33
