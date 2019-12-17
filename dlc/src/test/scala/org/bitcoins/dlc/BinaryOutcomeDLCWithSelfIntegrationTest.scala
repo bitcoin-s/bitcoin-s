@@ -20,7 +20,11 @@ import org.bitcoins.core.currency.{
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptPubKey,
+  P2PKHScriptPubKey,
+  P2WPKHWitnessSPKV0
+}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
@@ -89,10 +93,10 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     BitcoinAddress.fromScriptPubKey(P2PKHScriptPubKey(inputPubKeyRemote),
                                     RegTest)
 
-  val localChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+  val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
 
-  val remoteChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+  val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
 
   def constructDLC(): Future[BinaryOutcomeDLCWithSelf] = {
