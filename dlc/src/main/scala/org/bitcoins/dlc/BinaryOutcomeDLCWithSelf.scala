@@ -14,12 +14,16 @@ import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStampWithFuture
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
-  ConditionalScriptPubKey,
   EmptyScriptPubKey,
   MultiSignatureScriptPubKey,
   MultiSignatureWithTimeoutScriptPubKey,
   P2PKHScriptPubKey,
-  ScriptPubKey
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  P2WSHWitnessSPKV0,
+  P2WSHWitnessV0,
+  ScriptPubKey,
+  WitnessScriptPubKeyV0
 }
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -33,9 +37,8 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalPath,
-  ConditionalSpendingInfo,
-  MultiSignatureSpendingInfo,
-  P2PKHSpendingInfo
+  P2WPKHV0SpendingInfo,
+  P2WSHV0SpendingInfo
 }
 import scodec.bits.ByteVector
 
@@ -83,8 +86,8 @@ case class BinaryOutcomeDLCWithSelf(
     localLosePayout: CurrencyUnit,
     timeout: BlockStampWithFuture,
     feeRate: FeeUnit,
-    localChangeSPK: ScriptPubKey,
-    remoteChangeSPK: ScriptPubKey,
+    localChangeSPK: WitnessScriptPubKeyV0,
+    remoteChangeSPK: WitnessScriptPubKeyV0,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
@@ -186,7 +189,7 @@ case class BinaryOutcomeDLCWithSelf(
 
   def createFundingTransaction: Future[Transaction] = {
     val output: TransactionOutput =
-      TransactionOutput(totalInput, fundingSPK)
+      TransactionOutput(totalInput, P2WSHWitnessSPKV0(fundingSPK))
     val localChange =
       TransactionOutput(Satoshis(localFunding) - localInput, localChangeSPK)
     val remoteChange =
@@ -206,9 +209,9 @@ case class BinaryOutcomeDLCWithSelf(
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETLocal(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
+      fundingSpendingInfo: P2WSHV0SpendingInfo,
       localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+      remotePayout: CurrencyUnit): Future[(Transaction, P2WSHWitnessV0)] = {
     val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
       (cetLocalWinPrivKey, cetRemoteWinPrivKey)
     } else {
@@ -231,11 +234,11 @@ case class BinaryOutcomeDLCWithSelf(
     val toLocalSPK = MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
 
     val toLocal: TransactionOutput =
-      TransactionOutput(localPayout, toLocalSPK)
+      TransactionOutput(localPayout, P2WSHWitnessSPKV0(toLocalSPK))
     val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
       TransactionOutput(remotePayout - feeSoFar,
-                        P2PKHScriptPubKey(toRemotePrivKey.publicKey))
+                        P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
     val txBuilderF =
@@ -245,15 +248,15 @@ case class BinaryOutcomeDLCWithSelf(
                        emptyChangeSPK,
                        network)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    txBuilderF.flatMap(subtractFeeAndSign).map((_, P2WSHWitnessV0(toLocalSPK)))
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETRemote(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: MultiSignatureSpendingInfo,
+      fundingSpendingInfo: P2WSHV0SpendingInfo,
       localPayout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+      remotePayout: CurrencyUnit): Future[(Transaction, P2WSHWitnessV0)] = {
     val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
       (cetLocalWinPrivKey, cetRemoteWinPrivKey)
     } else {
@@ -275,11 +278,11 @@ case class BinaryOutcomeDLCWithSelf(
     val toLocalSPK = MultiSignatureWithTimeoutScriptPubKey(multiSig, timeoutSPK)
 
     val toLocal: TransactionOutput =
-      TransactionOutput(remotePayout, toLocalSPK)
+      TransactionOutput(remotePayout, P2WSHWitnessSPKV0(toLocalSPK))
     val feeSoFar = totalInput - fundingSpendingInfo.output.value
     val toRemote: TransactionOutput =
       TransactionOutput(localPayout - feeSoFar,
-                        P2PKHScriptPubKey(toRemotePrivKey.publicKey))
+                        P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
     val txBuilderF =
@@ -289,7 +292,7 @@ case class BinaryOutcomeDLCWithSelf(
                        emptyChangeSPK,
                        network)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    txBuilderF.flatMap(subtractFeeAndSign).map((_, P2WSHWitnessV0(toLocalSPK)))
   }
 
   /** Constructs the (time-locked) refund transaction for when the oracle disappears
@@ -297,7 +300,7 @@ case class BinaryOutcomeDLCWithSelf(
     * Note that both parties have the same refund transaction.
     */
   def createRefundTx(
-      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
+      fundingSpendingInfo: P2WSHV0SpendingInfo): Future[Transaction] = {
     val toLocalValueNotSat =
       (fundingSpendingInfo.amount * localInput).satoshis.toLong / totalInput.satoshis.toLong
     val toLocalValue = Satoshis(Int64(toLocalValueNotSat))
@@ -305,10 +308,10 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocal = TransactionOutput(
       toLocalValue,
-      P2PKHScriptPubKey(cetLocalRefundPrivKey.publicKey))
+      P2WPKHWitnessSPKV0(cetLocalRefundPrivKey.publicKey))
     val toRemote = TransactionOutput(
       toRemoteValue,
-      P2PKHScriptPubKey(cetRemoteRefundPrivKey.publicKey))
+      P2WPKHWitnessSPKV0(cetRemoteRefundPrivKey.publicKey))
 
     val outputs = Vector(toLocal, toRemote)
     val txBuilderF = BitcoinTxBuilder(outputs,
@@ -321,8 +324,8 @@ case class BinaryOutcomeDLCWithSelf(
     txBuilderF.flatMap(subtractFeeAndSign)
   }
 
-  def createCETWinLocal(
-      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
+  def createCETWinLocal(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+    (Transaction, P2WSHWitnessV0)] = {
     createCETLocal(
       sigPubKey = sigPubKeyWin,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -331,8 +334,8 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def createCETLoseLocal(
-      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
+  def createCETLoseLocal(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+    (Transaction, P2WSHWitnessV0)] = {
     createCETLocal(
       sigPubKey = sigPubKeyLose,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -341,8 +344,8 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def createCETWinRemote(
-      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
+  def createCETWinRemote(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+    (Transaction, P2WSHWitnessV0)] = {
     createCETRemote(
       sigPubKey = sigPubKeyWin,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -351,8 +354,8 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def createCETLoseRemote(
-      fundingSpendingInfo: MultiSignatureSpendingInfo): Future[Transaction] = {
+  def createCETLoseRemote(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+    (Transaction, P2WSHWitnessV0)] = {
     createCETRemote(
       sigPubKey = sigPubKeyLose,
       fundingSpendingInfo = fundingSpendingInfo,
@@ -368,13 +371,14 @@ case class BinaryOutcomeDLCWithSelf(
 
       val fundingTxId = fundingTx.txIdBE
       val output = fundingTx.outputs.head
-      val fundingSpendingInfo = MultiSignatureSpendingInfo(
+      val fundingSpendingInfo = P2WSHV0SpendingInfo(
         outPoint = TransactionOutPoint(fundingTxId, UInt32.zero),
         amount = output.value,
-        scriptPubKey =
-          output.scriptPubKey.asInstanceOf[MultiSignatureScriptPubKey],
+        scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
         signers = Vector(fundingLocalPrivKey, fundingRemotePrivKey),
-        hashType = HashType.sigHashAll
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WSHWitnessV0(fundingSPK),
+        conditionalPath = ConditionalPath.NoConditionsLeft
       )
 
       // Construct all CETs
@@ -384,28 +388,35 @@ case class BinaryOutcomeDLCWithSelf(
       val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
       val refundTxF = createRefundTx(fundingSpendingInfo)
 
-      cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet.hex}\n"))
-      cetLoseLocalF.foreach(cet => logger.info(s"CET Lose Local: ${cet.hex}\n"))
-      cetWinRemoteF.foreach(cet => logger.info(s"CET Win Remote: ${cet.hex}\n"))
+      cetWinLocalF.foreach(cet =>
+        logger.info(s"CET Win Local: ${cet._1.hex}\n"))
+      cetLoseLocalF.foreach(cet =>
+        logger.info(s"CET Lose Local: ${cet._1.hex}\n"))
+      cetWinRemoteF.foreach(cet =>
+        logger.info(s"CET Win Remote: ${cet._1.hex}\n"))
       cetLoseRemoteF.foreach(cet =>
-        logger.info(s"CET Lose Remote: ${cet.hex}\n"))
+        logger.info(s"CET Lose Remote: ${cet._1.hex}\n"))
       refundTxF.foreach(refundTx =>
         logger.info(s"Refund Tx: ${refundTx.hex}\n"))
 
       for {
-        cetWinLocal <- cetWinLocalF
-        cetLoseLocal <- cetLoseLocalF
-        cetWinRemote <- cetWinRemoteF
-        cetLoseRemote <- cetLoseRemoteF
+        (cetWinLocal, cetWinLocalWitness) <- cetWinLocalF
+        (cetLoseLocal, cetLoseLocalWitness) <- cetLoseLocalF
+        (cetWinRemote, cetWinRemoteWitness) <- cetWinRemoteF
+        (cetLoseRemote, cetLoseRemoteWitness) <- cetLoseRemoteF
         refundTx <- refundTxF
       } yield {
         SetupDLC(
           fundingTx = fundingTx,
           fundingSpendingInfo = fundingSpendingInfo,
           cetWinLocal = cetWinLocal,
+          cetWinLocalWitness = cetWinLocalWitness,
           cetLoseLocal = cetLoseLocal,
+          cetLoseLocalWitness = cetLoseLocalWitness,
           cetWinRemote = cetWinRemote,
+          cetWinRemoteWitness = cetWinRemoteWitness,
           cetLoseRemote = cetLoseRemote,
+          cetLoseRemoteWitness = cetLoseRemoteWitness,
           refundTx = refundTx
         )
       }
@@ -418,13 +429,13 @@ case class BinaryOutcomeDLCWithSelf(
       isLocal: Boolean): Future[Transaction] = {
     // Construct Closing Transaction
     val txBuilder = BitcoinTxBuilder(
-      Vector(
+      destinations = Vector(
         TransactionOutput(spendingInfo.output.value,
-                          P2PKHScriptPubKey(privKey.publicKey))),
-      Vector(spendingInfo),
-      feeRate,
-      emptyChangeSPK,
-      network
+                          P2WPKHWitnessSPKV0(privKey.publicKey))),
+      utxos = Vector(spendingInfo),
+      feeRate = feeRate,
+      changeSPK = emptyChangeSPK,
+      network = network
     )
 
     val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
@@ -448,25 +459,41 @@ case class BinaryOutcomeDLCWithSelf(
     val SetupDLC(fundingTx,
                  fundingSpendingInfo,
                  cetWinLocal,
+                 cetWinLocalWitness,
                  cetLoseLocal,
+                 cetLoseLocalWitness,
                  cetWinRemote,
+                 cetWinRemoteWitness,
                  cetLoseRemote,
+                 cetLoseRemoteWitness,
                  _) = dlcSetup
 
     oracleSigF.flatMap { oracleSig =>
       // Pick the CET to use and payout by checking which message was signed
-      val (cet, extCetPrivKey, extOtherCetPrivKey) =
+      val (cet, extCetPrivKey, extOtherCetPrivKey, cetScriptWitness) =
         if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
           if (local) {
-            (cetWinLocal, cetLocalWinPrivKey, cetRemoteWinPrivKey)
+            (cetWinLocal,
+             cetLocalWinPrivKey,
+             cetRemoteWinPrivKey,
+             cetWinLocalWitness)
           } else {
-            (cetWinRemote, cetRemoteWinPrivKey, cetLocalWinPrivKey)
+            (cetWinRemote,
+             cetRemoteWinPrivKey,
+             cetLocalWinPrivKey,
+             cetWinRemoteWitness)
           }
         } else if (Schnorr.verify(messageLose, oracleSig, oraclePubKey)) {
           if (local) {
-            (cetLoseLocal, cetLocalLosePrivKey, cetRemoteLosePrivKey)
+            (cetLoseLocal,
+             cetLocalLosePrivKey,
+             cetRemoteLosePrivKey,
+             cetLoseLocalWitness)
           } else {
-            (cetLoseRemote, cetRemoteLosePrivKey, cetLocalLosePrivKey)
+            (cetLoseRemote,
+             cetRemoteLosePrivKey,
+             cetLocalLosePrivKey,
+             cetLoseRemoteWitness)
           }
         } else {
           throw new IllegalStateException(
@@ -481,21 +508,23 @@ case class BinaryOutcomeDLCWithSelf(
       val otherOutput = cet.outputs.last
 
       // Spend the true case on the correct CET
-      val cetSpendingInfo = ConditionalSpendingInfo(
+      val cetSpendingInfo = P2WSHV0SpendingInfo(
         outPoint = TransactionOutPoint(cet.txIdBE, UInt32.zero),
         amount = output.value,
-        scriptPubKey = output.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
+        scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
         signers = Vector(cetPrivKey, ECPrivateKey(oracleSig.s)),
         hashType = HashType.sigHashAll,
+        scriptWitness = cetScriptWitness,
         conditionalPath = ConditionalPath.nonNestedTrue
       )
 
-      val otherCetSpendingInfo = P2PKHSpendingInfo(
+      val otherCetSpendingInfo = P2WPKHV0SpendingInfo(
         outPoint = TransactionOutPoint(cet.txIdBE, UInt32.one),
         amount = otherOutput.value,
-        scriptPubKey = otherOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+        scriptPubKey = otherOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
         signer = otherCetPrivKey,
-        hashType = HashType.sigHashAll
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WPKHWitnessV0(otherCetPrivKey.publicKey)
       )
 
       val (localCetSpendingInfo, remoteCetSpendingInfo) = if (local) {
@@ -540,39 +569,40 @@ case class BinaryOutcomeDLCWithSelf(
     val justiceOutput = timedOutCET.outputs.head
     val normalOutput = timedOutCET.outputs.last
 
-    val extCetPrivKey = if (local) {
+    val (extCetPrivKey, cetScriptWitness) = if (local) {
       if (timedOutCET == dlcSetup.cetWinRemote) {
-        cetLocalWinPrivKey
+        (cetLocalWinPrivKey, dlcSetup.cetWinRemoteWitness)
       } else {
-        cetLocalLosePrivKey
+        (cetLocalLosePrivKey, dlcSetup.cetLoseRemoteWitness)
       }
     } else {
       if (timedOutCET == dlcSetup.cetWinLocal) {
-        cetRemoteWinPrivKey
+        (cetRemoteWinPrivKey, dlcSetup.cetWinLocalWitness)
       } else {
-        cetRemoteLosePrivKey
+        (cetRemoteLosePrivKey, dlcSetup.cetLoseLocalWitness)
       }
     }
 
     val cetPrivKeyJustice = extCetPrivKey.deriveChildPrivKey(UInt32.one).key
     val cetPrivKeyToRemote = extCetPrivKey.deriveChildPrivKey(UInt32(2)).key
 
-    val justiceSpendingInfo = ConditionalSpendingInfo(
+    val justiceSpendingInfo = P2WSHV0SpendingInfo(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
       amount = justiceOutput.value,
-      scriptPubKey =
-        justiceOutput.scriptPubKey.asInstanceOf[ConditionalScriptPubKey],
+      scriptPubKey = justiceOutput.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
       signers = Vector(cetPrivKeyJustice),
       hashType = HashType.sigHashAll,
+      scriptWitness = cetScriptWitness,
       conditionalPath = ConditionalPath.nonNestedFalse
     )
 
-    val normalSpendingInfo = P2PKHSpendingInfo(
+    val normalSpendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.one),
       amount = normalOutput.value,
-      scriptPubKey = normalOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      scriptPubKey = normalOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
       signer = cetPrivKeyToRemote,
-      hashType = HashType.sigHashAll
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WPKHWitnessV0(cetPrivKeyToRemote.publicKey)
     )
 
     val finalPrivKey = if (local) {
@@ -608,26 +638,38 @@ case class BinaryOutcomeDLCWithSelf(
     * @return Each transaction published and its spending info
     */
   def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcome] = {
-    val SetupDLC(fundingTx, fundingSpendingInfo, _, _, _, _, refundTx) =
+    val SetupDLC(fundingTx,
+                 fundingSpendingInfo,
+                 _,
+                 _,
+                 _,
+                 _,
+                 _,
+                 _,
+                 _,
+                 _,
+                 refundTx) =
       dlcSetup
 
     val localOutput = refundTx.outputs.head
     val remoteOutput = refundTx.outputs.last
 
-    val localRefundSpendingInfo = P2PKHSpendingInfo(
+    val localRefundSpendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
       amount = localOutput.value,
-      scriptPubKey = localOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      scriptPubKey = localOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
       signer = cetLocalRefundPrivKey,
-      hashType = HashType.sigHashAll
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WPKHWitnessV0(cetLocalRefundPrivKey.publicKey)
     )
 
-    val remoteRefundSpendingInfo = P2PKHSpendingInfo(
+    val remoteRefundSpendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.one),
       amount = remoteOutput.value,
-      scriptPubKey = remoteOutput.scriptPubKey.asInstanceOf[P2PKHScriptPubKey],
+      scriptPubKey = remoteOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
       signer = cetRemoteRefundPrivKey,
-      hashType = HashType.sigHashAll
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WPKHWitnessV0(cetRemoteRefundPrivKey.publicKey)
     )
 
     val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
@@ -719,11 +761,15 @@ object BinaryOutcomeDLCWithSelf {
 /** Contains all DLC transactions after initial setup. */
 case class SetupDLC(
     fundingTx: Transaction,
-    fundingSpendingInfo: MultiSignatureSpendingInfo,
+    fundingSpendingInfo: P2WSHV0SpendingInfo,
     cetWinLocal: Transaction,
+    cetWinLocalWitness: P2WSHWitnessV0,
     cetLoseLocal: Transaction,
+    cetLoseLocalWitness: P2WSHWitnessV0,
     cetWinRemote: Transaction,
+    cetWinRemoteWitness: P2WSHWitnessV0,
     cetLoseRemote: Transaction,
+    cetLoseRemoteWitness: P2WSHWitnessV0,
     refundTx: Transaction
 )
 
