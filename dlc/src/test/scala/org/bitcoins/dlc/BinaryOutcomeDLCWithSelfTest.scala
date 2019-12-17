@@ -15,7 +15,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
@@ -24,7 +24,7 @@ import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   P2PKHSpendingInfo
 }
-import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 import org.scalatest.Assertion
@@ -36,10 +36,14 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
   behavior of "BinaryOutcomeDLCWithSelf"
 
   it should "correctly subtract fees evenly amongst outputs" in {
+    // subtractFeeAndSign has an invariant that no EmptyScriptPubKeys are allowed
+    val realisticNonEmptyGen = TransactionGenerators.realisticOutput.suchThat(
+      _.scriptPubKey != EmptyScriptPubKey)
+
     // Can't use TransactionGenerators.realisiticOutputs as that can return List.empty
     val nonEmptyRealisticOutputsGen = Gen
       .choose(1, 5)
-      .flatMap(n => Gen.listOfN(n, TransactionGenerators.realisticOutput))
+      .flatMap(n => Gen.listOfN(n, realisticNonEmptyGen))
       .suchThat(_.nonEmpty)
 
     // CurrencyUnitGenerator.feeRate gives too high of fees
@@ -48,8 +52,10 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
         SatoshisPerByte(Satoshis(Int64(n)))
     }
 
-    forAllAsync(nonEmptyRealisticOutputsGen, feeRateGen) {
-      case (outputs, feeRate) =>
+    forAllAsync(nonEmptyRealisticOutputsGen,
+                feeRateGen,
+                ScriptGenerators.p2pkhScriptPubKey) {
+      case (outputs, feeRate, (changeSPK, _)) =>
         val totalInput = outputs.foldLeft(CurrencyUnits.zero) {
           case (accum, output) =>
             accum + output.value
@@ -65,7 +71,6 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
             signer = inputKey,
             hashType = HashType.sigHashAll
           ))
-        val changeSPK = EmptyScriptPubKey
         val network: BitcoinNetwork = RegTest
 
         val txBuilderF =
@@ -162,6 +167,10 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     network = RegTest
   )
 
+  def noEmptySPKOutputs(tx: Transaction): Boolean = {
+    tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
+  }
+
   def validateOutcome(outcome: DLCOutcome): Assertion = {
     val DLCOutcome(fundingTx,
                    cet,
@@ -171,6 +180,11 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
                    fundingSpendingInfo,
                    localCetSpendingInfo,
                    remoteCetSpendingInfo) = outcome
+
+    assert(noEmptySPKOutputs(fundingTx))
+    assert(noEmptySPKOutputs(cet))
+    assert(noEmptySPKOutputs(localClosingTx))
+    assert(noEmptySPKOutputs(remoteClosingTx))
 
     assert(
       BitcoinScriptUtil.verifyScript(fundingTx, initialSpendingInfos)

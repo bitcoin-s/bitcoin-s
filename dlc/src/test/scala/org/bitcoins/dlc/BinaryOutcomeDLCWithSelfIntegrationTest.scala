@@ -20,7 +20,7 @@ import org.bitcoins.core.currency.{
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
@@ -198,6 +198,10 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     }
   }
 
+  def noEmptySPKOutputs(tx: Transaction): Boolean = {
+    tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
+  }
+
   def validateOutcome(outcome: DLCOutcome): Future[Assertion] = {
     for {
       client <- clientF
@@ -213,6 +217,11 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       assert(regtestRemoteClosingTx.hex == outcome.remoteClosingTx)
       assert(regtestRemoteClosingTx.confirmations.isDefined)
       assert(regtestRemoteClosingTx.confirmations.get >= 6)
+
+      assert(noEmptySPKOutputs(outcome.fundingTx))
+      assert(noEmptySPKOutputs(outcome.cet))
+      assert(noEmptySPKOutputs(outcome.localClosingTx))
+      assert(noEmptySPKOutputs(outcome.remoteClosingTx))
     }
   }
 

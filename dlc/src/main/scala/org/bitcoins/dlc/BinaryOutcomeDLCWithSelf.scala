@@ -167,6 +167,11 @@ case class BinaryOutcomeDLCWithSelf(
   /** Remote's payout in the Lose case (in which Remote wins) */
   val remoteLosePayout: CurrencyUnit = totalInput - localLosePayout
 
+  /** This is only used as a placeholder and we use an invariant
+    * when signing to ensure that this is never used.
+    *
+    * In the future, allowing this behavior should be done in TxBuilder.
+    */
   private val emptyChangeSPK: ScriptPubKey = EmptyScriptPubKey
 
   private val fundingUtxos = localFundingUtxos ++ remoteFundingUtxos
@@ -700,7 +705,13 @@ object BinaryOutcomeDLCWithSelf {
                          txBuilder.network,
                          txBuilder.lockTimeOverrideOpt)
 
-      newBuilder.flatMap(_.sign)
+      // This invariant ensures that emptyChangeSPK is never used above
+      val noEmptyOutputs: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean = {
+        (_, tx) =>
+          tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
+      }
+
+      newBuilder.flatMap(_.sign(noEmptyOutputs))
     }
   }
 }
