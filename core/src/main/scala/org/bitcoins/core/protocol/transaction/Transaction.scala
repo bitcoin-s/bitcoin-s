@@ -119,6 +119,10 @@ case object EmptyTransaction extends BaseTransaction {
 }
 
 sealed abstract class WitnessTransaction extends Transaction {
+  require(
+    inputs.length == witness.witnesses.length,
+    s"Must have same amount of inputs and witnesses in witness tx, inputs=${inputs.length} witnesses=${witness.witnesses.length}"
+  )
 
   /** The txId for the witness transaction from satoshi's original serialization */
   override def txId: DoubleSha256Digest = {
@@ -224,7 +228,7 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
                          btx.inputs,
                          btx.outputs,
                          btx.lockTime,
-                         EmptyWitness)
+                         EmptyWitness.fromInputs(btx.inputs))
     case wtx: WitnessTransaction => wtx
   }
 }

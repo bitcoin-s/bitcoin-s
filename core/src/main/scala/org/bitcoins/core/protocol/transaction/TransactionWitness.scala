@@ -55,10 +55,26 @@ sealed abstract class TransactionWitness extends NetworkElement {
   }
 }
 
-/** Used to represent a transaction witness pre segwit, see BIP141 for details */
-case object EmptyWitness extends TransactionWitness {
-  override val bytes: ByteVector = ByteVector.low(1)
-  override val witnesses: Vector[ScriptWitness] = Vector.empty
+/** Each input (even if it does not spend a segwit output) needs to have a witness associated with it
+  * in a [[WitnessTransaction]]. This helper case class is used to "fill in" [[EmptyScriptWitness]] for
+  * the inputs that do not spend a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 WitnessScriptPubKeyV0]]
+  *
+  * @see https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#specification
+  * */
+case class EmptyWitness(witnesses: Vector[EmptyScriptWitness.type])
+    extends TransactionWitness
+
+object EmptyWitness {
+
+  /** Generates an empty witness with n [[EmptyScriptWitness]] inside it */
+  def fromN(n: Int): EmptyWitness = {
+    val wits = Vector.fill(n)(EmptyScriptWitness)
+    new EmptyWitness(wits)
+  }
+
+  def fromInputs(inputs: Seq[TransactionInput]): EmptyWitness = {
+    fromN(inputs.length)
+  }
 }
 
 object TransactionWitness {
@@ -69,7 +85,8 @@ object TransactionWitness {
     if (witnesses.exists(_ != EmptyScriptWitness)) {
       TransactionWitnessImpl(witnesses)
     } else {
-      EmptyWitness
+      //means that everything must be a empty ScriptWitness
+      EmptyWitness.fromN(witnesses.length)
     }
   }
 

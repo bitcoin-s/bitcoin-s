@@ -113,7 +113,8 @@ sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo] {
               spendingInfo.scriptWitnessOpt.map(scriptWit =>
                 TransactionWitness(Vector(scriptWit)))
             val transactionWitness =
-              transactionWitnessOpt.getOrElse(EmptyWitness)
+              transactionWitnessOpt.getOrElse(
+                EmptyWitness.fromInputs(btx.inputs))
 
             WitnessTransaction(btx.version,
                                btx.inputs,
@@ -407,11 +408,7 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner[P2WPKHV0SpendingInfo] {
 
           }
         case btx: BaseTransaction =>
-          val wtx = WitnessTransaction(btx.version,
-                                       btx.inputs,
-                                       btx.outputs,
-                                       btx.lockTime,
-                                       EmptyWitness)
+          val wtx = WitnessTransaction.toWitnessTx(btx)
 
           sign(spendingInfoToSatisfy, wtx, isDummySignature)
       }
@@ -433,15 +430,7 @@ sealed abstract class P2WSHSigner extends BitcoinSigner[P2WSHV0SpendingInfo] {
     } else {
       val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-      val wtx = unsignedTx match {
-        case btx: BaseTransaction =>
-          WitnessTransaction(btx.version,
-                             btx.inputs,
-                             btx.outputs,
-                             btx.lockTime,
-                             EmptyWitness)
-        case wtx: WitnessTransaction => wtx
-      }
+      val wtx = WitnessTransaction.toWitnessTx(unsignedTx)
 
       val signedSigComponentF = BitcoinSigner.sign(
         spendingInfo,
