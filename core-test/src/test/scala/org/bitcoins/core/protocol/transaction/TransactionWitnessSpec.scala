@@ -20,7 +20,7 @@ class TransactionWitnessSpec extends BitcoinSUnitTest {
   }
 
   it must "be able to resize a witness to the given index" in {
-    val empty = EmptyWitness
+    val empty = EmptyWitness.fromN(0)
     val pubKey = ECPrivateKey.freshPrivateKey.publicKey
     val p2pkh = P2PKHScriptSignature(EmptyDigitalSignature, pubKey)
     val scriptWit = P2WPKHWitnessV0.fromP2PKHScriptSig(p2pkh)
@@ -31,7 +31,7 @@ class TransactionWitnessSpec extends BitcoinSUnitTest {
 
   it must "fail to update a negative index witness" in {
     intercept[IndexOutOfBoundsException] {
-      EmptyWitness.updated(-1, EmptyScriptWitness)
+      EmptyWitness.fromN(0).updated(-1, EmptyScriptWitness)
     }
   }
 

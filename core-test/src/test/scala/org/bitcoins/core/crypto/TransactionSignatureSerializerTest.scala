@@ -205,12 +205,13 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
                                         oldInput.sequence)
 
     val updatedInputs = ubtx.inputs.updated(inputIndex.toInt, updatedInput)
+    val witness = EmptyWitness.fromInputs(updatedInputs)
 
-    val uwtx = WitnessTransaction(ubtx.version,
-                                  updatedInputs,
-                                  ubtx.outputs,
-                                  ubtx.lockTime,
-                                  EmptyWitness)
+    val uwtx = WitnessTransaction(version = ubtx.version,
+                                  inputs = updatedInputs,
+                                  outputs = ubtx.outputs,
+                                  lockTime = ubtx.lockTime,
+                                  witness = witness)
 
     val wtxSigComp = {
       WitnessTxSigComponentP2SH(transaction = uwtx,
