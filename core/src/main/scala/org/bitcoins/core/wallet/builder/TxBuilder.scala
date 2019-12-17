@@ -156,7 +156,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val emptyChangeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
     val unsignedTxNoFee = lockTime.map { l =>
       unsignedTxWit match {
-        case EmptyWitness =>
+        case _: EmptyWitness =>
           BaseTransaction(tc.validLockVersion,
                           inputs,
                           destinations ++ Seq(emptyChangeOutput),

@@ -160,7 +160,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       "01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000010000001976a9144c9c3dfac4207d5d8cb89df5722cb3d712385e3f88acd007000000000000ffffffff2d793f9722ac8cbea9b2e0a2929cda4007b8312c6ec3b997088439e48e7aa64e0000000083000000")
   }
 
-  it must "work with the p2sh(p2wpkh) example in BIP143" in {
+    it must "work with the p2sh(p2wpkh) example in BIP143" in {
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#p2sh-p2wpkh
 
     val expected = {
@@ -205,12 +205,13 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
                                         oldInput.sequence)
 
     val updatedInputs = ubtx.inputs.updated(inputIndex.toInt, updatedInput)
-
-    val uwtx = WitnessTransaction(ubtx.version,
-                                  updatedInputs,
-                                  ubtx.outputs,
-                                  ubtx.lockTime,
-                                  EmptyWitness)
+    val witness = TransactionWitness.fromWitOpt(Vector.fill(updatedInputs.length)(None))
+    println(s"witness=${witness}")
+    val uwtx = WitnessTransaction(version = ubtx.version,
+                                  inputs = updatedInputs,
+                                  outputs = ubtx.outputs,
+                                  lockTime = ubtx.lockTime,
+                                  witness = witness)
 
     val wtxSigComp = {
       WitnessTxSigComponentP2SH(transaction = uwtx,
