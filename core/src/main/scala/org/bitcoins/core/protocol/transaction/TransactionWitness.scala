@@ -75,10 +75,6 @@ object EmptyWitness {
   def fromInputs(inputs: Seq[TransactionInput]): EmptyWitness = {
     fromN(inputs.length)
   }
-
-  /** Used in some test cases, this is only safe to use with transactions
-    * if your transaction has 0 inputs */
-  val empty: EmptyWitness = fromN(0)
 }
 
 object TransactionWitness {
@@ -90,7 +86,7 @@ object TransactionWitness {
       TransactionWitnessImpl(witnesses)
     } else {
       //means that everything must be a empty ScriptWitness
-      EmptyWitness(witnesses.map(_.asInstanceOf[EmptyScriptWitness.type]))
+      EmptyWitness.fromN(witnesses.length)
     }
   }
 
