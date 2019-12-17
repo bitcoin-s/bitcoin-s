@@ -14,8 +14,12 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptPubKey,
+  P2PKHScriptPubKey,
+  P2WPKHWitnessSPKV0
+}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
@@ -141,10 +145,10 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     )
   )
 
-  val localChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+  val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
 
-  val remoteChangeSPK: P2PKHScriptPubKey = P2PKHScriptPubKey(
+  val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
 
   val dlc: BinaryOutcomeDLCWithSelf = BinaryOutcomeDLCWithSelf(
