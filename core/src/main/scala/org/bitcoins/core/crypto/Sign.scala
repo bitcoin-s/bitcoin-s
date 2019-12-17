@@ -58,3 +58,12 @@ object Sign {
     }, publicKey)
   }
 }
+
+/** A signing interface for [[ExtKey]] */
+trait ExtSign extends Sign { this: ExtPrivateKey =>
+  override def publicKey: ECPublicKey = key.publicKey
+
+  override def signFunction: ByteVector => Future[ECDigitalSignature] = {
+    key.signFunction
+  }
+}

@@ -29,8 +29,6 @@ class SignTest extends BitcoinSUnitTest {
         val sigF = signTestImpl.signFunction(hash.bytes)
 
         sigF.map(sig => assert(pubKey.verify(hash.hex, sig)))
-
     }
   }
-
 }
