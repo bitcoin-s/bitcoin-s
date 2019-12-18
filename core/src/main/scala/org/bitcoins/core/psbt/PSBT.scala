@@ -129,25 +129,29 @@ case class PSBT(
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    var elements = inputMaps(index).elements
-    val txIn = transaction.inputs(index)
+    val elements = {
+      val previousElements = inputMaps(index).elements
+      val txIn = transaction.inputs(index)
 
-    if (txIn.previousOutput.vout.toInt < tx.outputs.size) {
-      val out = tx.outputs(txIn.previousOutput.vout.toInt)
+      if (txIn.previousOutput.vout.toInt < tx.outputs.size) {
+        val out = tx.outputs(txIn.previousOutput.vout.toInt)
 
-      val outIsWitnessScript =
-        WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
-      val hasWitScript =
-        inputMaps(index)
-          .getRecords[InputPSBTRecord.WitnessScript](WitnessScriptKeyId)
-          .size == 1
+        val outIsWitnessScript =
+          WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
+        val hasWitScript =
+          inputMaps(index)
+            .getRecords[InputPSBTRecord.WitnessScript](WitnessScriptKeyId)
+            .size == 1
 
-      if (outIsWitnessScript || hasWitScript) {
-        elements = elements.filterNot(_.key.head == WitnessUTXOKeyId.byte) :+ WitnessUTXO(
-          out)
+        if (outIsWitnessScript || hasWitScript) {
+          previousElements.filterNot(_.key.head == WitnessUTXOKeyId.byte) :+ WitnessUTXO(
+            out)
+        } else {
+          previousElements.filterNot(_.key.head == NonWitnessUTXOKeyId.byte) :+ NonWitnessOrUnknownUTXO(
+            tx)
+        }
       } else {
-        elements = elements.filterNot(_.key.head == NonWitnessUTXOKeyId.byte) :+ NonWitnessOrUnknownUTXO(
-          tx)
+        previousElements
       }
     }
 
@@ -171,23 +175,25 @@ case class PSBT(
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    var elements = inputMaps(index).elements
+    val elements = {
+      val previousElements = inputMaps(index).elements
 
-    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val redeemScript =
-      inputMaps(index).getRecords[InputPSBTRecord.RedeemScript](
-        PSBTInputKeyId.RedeemScriptKeyId)
-    val hasWitScript = redeemScript.size == 1 && WitnessScriptPubKey
-      .isWitnessScriptPubKey(redeemScript.head.redeemScript.asm)
+      val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+      val redeemScript =
+        inputMaps(index).getRecords[InputPSBTRecord.RedeemScript](
+          PSBTInputKeyId.RedeemScriptKeyId)
+      val hasWitScript = redeemScript.size == 1 && WitnessScriptPubKey
+        .isWitnessScriptPubKey(redeemScript.head.redeemScript.asm)
 
-    if (!isWitScript && hasWitScript) {
-      elements = elements.filterNot(
-        _.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte) :+ InputPSBTRecord
-        .WitnessScript(script.asInstanceOf[RawScriptPubKey])
-    } else {
-      elements = elements.filterNot(
-        _.key.head == PSBTInputKeyId.RedeemScriptKeyId.byte) :+ InputPSBTRecord
-        .RedeemScript(script)
+      if (!isWitScript && hasWitScript) {
+        previousElements.filterNot(
+          _.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte) :+ InputPSBTRecord
+          .WitnessScript(script.asInstanceOf[RawScriptPubKey])
+      } else {
+        previousElements.filterNot(
+          _.key.head == PSBTInputKeyId.RedeemScriptKeyId.byte) :+ InputPSBTRecord
+          .RedeemScript(script)
+      }
     }
 
     val newMap = InputPSBTMap(elements).compressMap(transaction.inputs(index))
@@ -209,23 +215,25 @@ case class PSBT(
       s"i must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
-    var elements = outputMaps(index).elements
+    val elements = {
+      val previousElements = outputMaps(index).elements
 
-    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val redeemScript =
-      outputMaps(index).getRecords[OutputPSBTRecord.RedeemScript](
-        PSBTOutputKeyId.RedeemScriptKeyId)
-    val hasWitScript = redeemScript.size == 1 && WitnessScriptPubKey
-      .isWitnessScriptPubKey(redeemScript.head.redeemScript.asm)
+      val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+      val redeemScript =
+        outputMaps(index).getRecords[OutputPSBTRecord.RedeemScript](
+          PSBTOutputKeyId.RedeemScriptKeyId)
+      val hasWitScript = redeemScript.size == 1 && WitnessScriptPubKey
+        .isWitnessScriptPubKey(redeemScript.head.redeemScript.asm)
 
-    if (!isWitScript && hasWitScript) {
-      elements = elements.filterNot(
-        _.key.head == PSBTOutputKeyId.WitnessScriptKeyId.byte) :+ OutputPSBTRecord
-        .WitnessScript(script)
-    } else {
-      elements = elements.filterNot(
-        _.key.head == PSBTOutputKeyId.RedeemScriptKeyId.byte) :+ OutputPSBTRecord
-        .RedeemScript(script)
+      if (!isWitScript && hasWitScript) {
+        previousElements.filterNot(
+          _.key.head == PSBTOutputKeyId.WitnessScriptKeyId.byte) :+ OutputPSBTRecord
+          .WitnessScript(script)
+      } else {
+        previousElements.filterNot(
+          _.key.head == PSBTOutputKeyId.RedeemScriptKeyId.byte) :+ OutputPSBTRecord
+          .RedeemScript(script)
+      }
     }
 
     val newMap = OutputPSBTMap(elements)
@@ -248,19 +256,22 @@ case class PSBT(
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    val map = inputMaps(index)
-    var elements = map.elements
+    val elements = {
+      val previousElements = inputMaps(index).elements
 
-    val keyOpt = extKey.deriveChildPubKey(path)
-    if (keyOpt.isSuccess && !elements.exists(_.key == keyOpt.get.bytes.+:(
-          PSBTInputKeyId.BIP32DerivationPathKeyId.byte))) {
-      val fp =
-        if (extKey.fingerprint == hex"00000000")
-          extKey.deriveChildPubKey(path.path.head).get.fingerprint
-        else extKey.fingerprint
-      elements = elements :+ InputPSBTRecord.BIP32DerivationPath(keyOpt.get.key,
-                                                                 fp,
-                                                                 path)
+      val keyOpt = extKey.deriveChildPubKey(path)
+      if (keyOpt.isSuccess && !previousElements.exists(_.key == keyOpt.get.bytes
+            .+:(PSBTInputKeyId.BIP32DerivationPathKeyId.byte))) {
+        val fp =
+          if (extKey.fingerprint == hex"00000000")
+            extKey.deriveChildPubKey(path.path.head).get.fingerprint
+          else extKey.fingerprint
+        previousElements :+ InputPSBTRecord.BIP32DerivationPath(keyOpt.get.key,
+                                                                fp,
+                                                                path)
+      } else {
+        previousElements
+      }
     }
 
     val newInputMaps = inputMaps.patch(index, Seq(InputPSBTMap(elements)), 1)
@@ -280,20 +291,22 @@ case class PSBT(
       s"i must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
-    val map = outputMaps(index)
-    var elements = map.elements
+    val elements = {
+      val previousElements = outputMaps(index).elements
 
-    val keyOpt = extKey.deriveChildPubKey(path)
-    if (keyOpt.isSuccess && !elements.exists(_.key == keyOpt.get.bytes.+:(
-          PSBTOutputKeyId.BIP32DerivationPathKeyId.byte))) {
-      val fp =
-        if (extKey.fingerprint == hex"00000000")
-          extKey.deriveChildPubKey(path.path.head).get.fingerprint
-        else extKey.fingerprint
-      elements = elements :+ OutputPSBTRecord.BIP32DerivationPath(
-        keyOpt.get.key,
-        fp,
-        path)
+      val keyOpt = extKey.deriveChildPubKey(path)
+      if (keyOpt.isSuccess && !previousElements.exists(_.key == keyOpt.get.bytes
+            .+:(PSBTOutputKeyId.BIP32DerivationPathKeyId.byte))) {
+        val fp =
+          if (extKey.fingerprint == hex"00000000")
+            extKey.deriveChildPubKey(path.path.head).get.fingerprint
+          else extKey.fingerprint
+        previousElements :+ OutputPSBTRecord.BIP32DerivationPath(keyOpt.get.key,
+                                                                 fp,
+                                                                 path)
+      } else {
+        previousElements
+      }
     }
 
     val newOutputMaps =
@@ -960,21 +973,24 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
     if (isFinalized) {
       this
     } else {
-      var newElements = elements
-      val nonWitUtxoVec =
-        this.getRecords[NonWitnessOrUnknownUTXO](NonWitnessUTXOKeyId)
-      if (nonWitUtxoVec.size == 1) {
+      val newElements = {
+        val nonWitUtxoVec =
+          this.getRecords[NonWitnessOrUnknownUTXO](NonWitnessUTXOKeyId)
         val witScriptVec =
           this.getRecords[InputPSBTRecord.WitnessScript](WitnessScriptKeyId)
-        if (witScriptVec.size == 1) {
+        if (nonWitUtxoVec.size == 1 && witScriptVec.size == 1) {
           val nonWitUtxo = nonWitUtxoVec.head.transactionSpent
-
           if (txIn.previousOutput.vout.toInt < nonWitUtxo.outputs.size) {
             val out = nonWitUtxo.outputs(txIn.previousOutput.vout.toInt)
-            newElements = newElements.filter(!_.key.startsWith(hex"01")) :+ WitnessUTXO(
+            elements
+              .filterNot(_.key.head == NonWitnessUTXOKeyId.byte)
+              .filterNot(_.key.head == WitnessUTXOKeyId.byte) :+ WitnessUTXO(
               out)
+          } else {
+            elements.filterNot(_.key.head == NonWitnessUTXOKeyId.byte)
           }
-          newElements = newElements.filter(!_.key.startsWith(hex"00"))
+        } else {
+          elements
         }
       }
       InputPSBTMap(newElements)
