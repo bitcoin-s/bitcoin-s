@@ -61,15 +61,25 @@ case class PSBT(
 
   def isFinalized: Boolean = inputMaps.forall(_.isFinalized)
 
+  /**
+    * Combiner defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#combiner
+    * Takes another PSBT and adds all records that are not contained in this PSBT
+    * A record's distinctness is determined by its key
+    * @param other PSBT to be combined with
+    * @return A PSBT with the combined data of the two PSBTs
+    */
   def combinePSBT(other: PSBT): PSBT = {
-    require(other.transaction.txId == this.transaction.txId,
+    require(this.transaction.txId == other.transaction.txId,
             "Can only combine PSBTs with the same global transaction.")
 
-    val global = globalMap.combine(other.globalMap)
-    val inputs = inputMaps.zipWithIndex.map(input =>
-      input._1.combine(other.inputMaps(input._2)))
-    val outputs = outputMaps.zipWithIndex.map(output =>
-      output._1.combine(other.outputMaps(output._2)))
+    val global = this.globalMap.combine(other.globalMap)
+    val inputs = this.inputMaps
+      .zip(other.inputMaps)
+      .map(input => input._1.combine(input._2))
+    val outputs = this.outputMaps
+      .zip(other.outputMaps)
+      .map(output => output._1.combine(output._2))
+
     PSBT(global, inputs, outputs)
   }
 }
@@ -591,11 +601,13 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
       .asInstanceOf[Vector[T]]
   }
 
+  /**
+   * Takes another GlobalPSBTMap and adds all records that are not contained in this GlobalPSBTMap
+   * @param other GlobalPSBTMap to be combined with
+   * @return A GlobalPSBTMap with the combined data of the two GlobalPSBTMaps
+   */
   def combine(other: GlobalPSBTMap): GlobalPSBTMap = {
-    val newElements: Vector[GlobalPSBTRecord] =
-      other.elements.filterNot(element =>
-        this.elements.exists(_.key == element.key))
-    GlobalPSBTMap(this.elements ++ newElements)
+    GlobalPSBTMap((this.elements ++ other.elements).distinctBy(_.key))
   }
 }
 
@@ -631,11 +643,14 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
     getRecords(FinalizedScriptSigKeyId).nonEmpty || getRecords(
       FinalizedScriptWitnessKeyId).nonEmpty
 
+  /**
+   * Takes another InputPSBTMap and adds all records that are not contained in this InputPSBTMap
+   * A record's distinctness is determined by its key
+   * @param other InputPSBTMap to be combined with
+   * @return A InputPSBTMap with the combined data of the two InputPSBTMaps
+   */
   def combine(other: InputPSBTMap): InputPSBTMap = {
-    val newElements: Vector[InputPSBTRecord] =
-      other.elements.filterNot(element =>
-        this.elements.exists(_.key == element.key))
-    InputPSBTMap(this.elements ++ newElements)
+    InputPSBTMap((this.elements ++ other.elements).distinctBy(_.key))
   }
 }
 
@@ -667,11 +682,14 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
       .asInstanceOf[Vector[T]]
   }
 
+  /**
+   * Takes another OutputPSBTMap and adds all records that are not contained in this OutputPSBTMap
+   * A record's distinctness is determined by its key
+   * @param other OutputPSBTMap to be combined with
+   * @return A OutputPSBTMap with the combined data of the two OutputPSBTMaps
+   */
   def combine(other: OutputPSBTMap): OutputPSBTMap = {
-    val newElements: Vector[OutputPSBTRecord] =
-      other.elements.filterNot(element =>
-        this.elements.exists(_.key == element.key))
-    OutputPSBTMap(this.elements ++ newElements)
+    OutputPSBTMap((this.elements ++ other.elements).distinctBy(_.key))
   }
 }
 
