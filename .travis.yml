@@ -27,6 +27,14 @@ matrix:
     # this way of including jobs is not ideal... unfortunately it's not
     # possible to nest env.matrix. could a better solution be to write
     # a small script that generates a Travis config for us?
+
+    # compile website, to check for documentation regressions
+    - stage: test
+      name: Compile website and check formatting
+      script:
+        - sbt docs/mdoc
+        - sbt scalafmtCheck
+
     - os: linux
       name: "Linux compile for 2.11"
       env:
@@ -59,13 +67,6 @@ matrix:
         - TEST_COMMAND="nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala:
         - 2.13.1
-
-    # compile website, to check for documentation regressions
-    - stage: test
-      name: Compile website and check formatting
-      script:
-        - sbt docs/mdoc
-        - sbt scalafmtCheck
 
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
