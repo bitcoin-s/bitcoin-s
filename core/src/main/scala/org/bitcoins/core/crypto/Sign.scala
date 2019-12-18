@@ -69,7 +69,7 @@ trait ExtSign extends Sign { this: ExtPrivateKey =>
   }
 
   /** Signs the given bytes with the given [[BIP32Path path]] */
-  def sign(bytes: ByteVector, path: BIP32Path): Future[ECDigitalSignature] = {
-    deriveChildPrivKey(path).signFunction(bytes)
+  def sign(bytes: ByteVector, path: BIP32Path): ECDigitalSignature = {
+    deriveChildPrivKey(path).sign(bytes)
   }
 }
