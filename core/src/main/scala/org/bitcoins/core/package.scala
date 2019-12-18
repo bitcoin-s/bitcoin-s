@@ -9,7 +9,10 @@ package object core {
 
       @tailrec
       override def compare(x: ByteVector, y: ByteVector): Int = {
-        if (x.isEmpty) {
+        if (x == y) {
+          0
+        }
+        else if (x.isEmpty) {
           -1
         } else if (y.isEmpty) {
           1
