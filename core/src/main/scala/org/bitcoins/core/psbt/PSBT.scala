@@ -602,12 +602,12 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
   }
 
   /**
-   * Takes another GlobalPSBTMap and adds all records that are not contained in this GlobalPSBTMap
-   * @param other GlobalPSBTMap to be combined with
-   * @return A GlobalPSBTMap with the combined data of the two GlobalPSBTMaps
-   */
+    * Takes another GlobalPSBTMap and adds all records that are not contained in this GlobalPSBTMap
+    * @param other GlobalPSBTMap to be combined with
+    * @return A GlobalPSBTMap with the combined data of the two GlobalPSBTMaps
+    */
   def combine(other: GlobalPSBTMap): GlobalPSBTMap = {
-    GlobalPSBTMap((this.elements ++ other.elements).distinctBy(_.key))
+    GlobalPSBTMap((this.elements ++ other.elements).distinct)
   }
 }
 
@@ -644,13 +644,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       FinalizedScriptWitnessKeyId).nonEmpty
 
   /**
-   * Takes another InputPSBTMap and adds all records that are not contained in this InputPSBTMap
-   * A record's distinctness is determined by its key
-   * @param other InputPSBTMap to be combined with
-   * @return A InputPSBTMap with the combined data of the two InputPSBTMaps
-   */
+    * Takes another InputPSBTMap and adds all records that are not contained in this InputPSBTMap
+    * A record's distinctness is determined by its key
+    * @param other InputPSBTMap to be combined with
+    * @return A InputPSBTMap with the combined data of the two InputPSBTMaps
+    */
   def combine(other: InputPSBTMap): InputPSBTMap = {
-    InputPSBTMap((this.elements ++ other.elements).distinctBy(_.key))
+    InputPSBTMap((this.elements ++ other.elements).distinct)
   }
 }
 
@@ -683,13 +683,13 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
   }
 
   /**
-   * Takes another OutputPSBTMap and adds all records that are not contained in this OutputPSBTMap
-   * A record's distinctness is determined by its key
-   * @param other OutputPSBTMap to be combined with
-   * @return A OutputPSBTMap with the combined data of the two OutputPSBTMaps
-   */
+    * Takes another OutputPSBTMap and adds all records that are not contained in this OutputPSBTMap
+    * A record's distinctness is determined by its key
+    * @param other OutputPSBTMap to be combined with
+    * @return A OutputPSBTMap with the combined data of the two OutputPSBTMaps
+    */
   def combine(other: OutputPSBTMap): OutputPSBTMap = {
-    OutputPSBTMap((this.elements ++ other.elements).distinctBy(_.key))
+    OutputPSBTMap((this.elements ++ other.elements).distinct)
   }
 }
 
