@@ -87,6 +87,7 @@ trait NumberGenerator {
   def scriptNumbers: Gen[ScriptNumber] =
     Gen.choose(Int64.min.toLong, Int64.max.toLong).map(ScriptNumber(_))
 
+  /** The policy bounds for nTimeLock fields (see TxBuilder) */
   def timeLockScriptNumbers: Gen[ScriptNumber] =
     Gen.choose(1L, UInt32.max.toLong - 1L).map(ScriptNumber(_))
 

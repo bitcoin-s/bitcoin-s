@@ -912,14 +912,14 @@ object P2PKWithTimeoutScriptPubKey
       .calculatePushOp(timeoutPubKey.bytes)
       .toVector ++ Vector(ScriptConstant(timeoutPubKey.bytes))
 
-    P2PKWithTimeoutScriptPubKeyImpl {
+    P2PKWithTimeoutScriptPubKeyImpl(
       Vector(Vector(OP_IF),
              pubKeyAsm,
              Vector(OP_ELSE),
              timeoutAsm,
              timeoutPubKeyAsm,
              Vector(OP_ENDIF, OP_CHECKSIG)).flatten
-    }
+    )
   }
 
   def isP2PKWithTimeoutScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
