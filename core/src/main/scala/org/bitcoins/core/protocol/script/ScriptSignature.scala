@@ -229,9 +229,9 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
         redeemScript match {
           case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
               _: P2SHScriptPubKey | _: P2PKScriptPubKey |
-              _: ConditionalScriptPubKey | _: CLTVScriptPubKey |
-              _: CSVScriptPubKey | _: WitnessScriptPubKeyV0 |
-              _: UnassignedWitnessScriptPubKey =>
+              _: P2PKWithTimeoutScriptPubKey | _: ConditionalScriptPubKey |
+              _: CLTVScriptPubKey | _: CSVScriptPubKey |
+              _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
             true
           case _: NonStandardScriptPubKey | _: WitnessCommitment => false
           case EmptyScriptPubKey                                 => false
@@ -362,6 +362,29 @@ object P2PKScriptSignature extends ScriptFactory[P2PKScriptSignature] {
   def isP2PKScriptSignature(asm: Seq[ScriptToken]): Boolean = asm match {
     case Seq(_: BytesToPushOntoStack, _: ScriptConstant) => true
     case _                                               => false
+  }
+}
+
+object P2PKWithTimeoutScriptSignature
+    extends ScriptFactory[ConditionalScriptSignature] {
+  override def fromAsm(asm: Seq[ScriptToken]): ConditionalScriptSignature = {
+    buildScript(
+      asm.toVector,
+      ConditionalScriptSignature.fromAsm,
+      isP2PKWithTimeoutScriptSignature,
+      s"The given asm tokens were not a P2PKWithTimeoutScriptSignature, got $asm"
+    )
+  }
+
+  def apply(
+      beforeTimeout: Boolean,
+      signature: ECDigitalSignature): ConditionalScriptSignature = {
+    ConditionalScriptSignature(P2PKScriptSignature(signature), beforeTimeout)
+  }
+
+  def isP2PKWithTimeoutScriptSignature(asm: Seq[ScriptToken]): Boolean = {
+    P2PKScriptSignature.isP2PKScriptSignature(asm.dropRight(1)) && ConditionalScriptSignature
+      .isValidConditionalScriptSig(asm)
   }
 }
 
