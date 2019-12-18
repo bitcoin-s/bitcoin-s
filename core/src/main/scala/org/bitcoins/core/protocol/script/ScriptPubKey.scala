@@ -868,12 +868,12 @@ object NonStandardNotIfConditionalScriptPubKey
 
 sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
 
-  val pubKey: ECPublicKey =
+  lazy val pubKey: ECPublicKey =
     ECPublicKey.fromBytes(asm(2).bytes)
 
-  val lockTime: ScriptNumber = ScriptNumber.fromBytes(asm(5).bytes)
+  lazy val lockTime: ScriptNumber = ScriptNumber.fromBytes(asm(5).bytes)
 
-  val timeoutPubKey: ECPublicKey =
+  lazy val timeoutPubKey: ECPublicKey =
     ECPublicKey.fromBytes(asm(9).bytes)
 }
 

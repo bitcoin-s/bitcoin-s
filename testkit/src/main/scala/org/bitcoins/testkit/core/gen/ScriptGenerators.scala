@@ -622,7 +622,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         spk,
         privKey,
         hashType,
-        beforeTimeout = true)
+        isBeforeTimeout = true)
       val txSigComponentF = P2PKWithTimeoutSigner.sign(spendingInfo,
                                                        spendingTx,
                                                        isDummySignature = false)

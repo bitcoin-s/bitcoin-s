@@ -333,7 +333,7 @@ sealed abstract class P2PKWithTimeoutSigner
                             isDummySignature)
 
     val scriptSigF = signatureF.map { signature =>
-      P2PKWithTimeoutScriptSignature(spendingInfoToSatisfy.beforeTimeout,
+      P2PKWithTimeoutScriptSignature(spendingInfoToSatisfy.isBeforeTimeout,
                                      signature)
     }
 

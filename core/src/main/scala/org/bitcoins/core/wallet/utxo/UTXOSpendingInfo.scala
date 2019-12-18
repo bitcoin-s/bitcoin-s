@@ -74,20 +74,20 @@ sealed abstract class UTXOSpendingInfo {
   * ConditionalPath. Otherwise if you wanted to use P2PK2 you would use nonNestedFalse.
   */
 sealed trait ConditionalPath {
-  def head: Option[Boolean]
+  def headOption: Option[Boolean]
 }
 
 object ConditionalPath {
   case object NoConditionsLeft extends ConditionalPath {
-    override def head: Option[Boolean] = None
+    override val headOption: Option[Boolean] = None
   }
   case class ConditionTrue(nextCondition: ConditionalPath)
       extends ConditionalPath {
-    override def head: Option[Boolean] = Some(true)
+    override val headOption: Option[Boolean] = Some(true)
   }
   case class ConditionFalse(nextCondition: ConditionalPath)
       extends ConditionalPath {
-    override def head: Option[Boolean] = Some(false)
+    override val headOption: Option[Boolean] = Some(false)
   }
 
   val nonNestedTrue: ConditionalPath = ConditionTrue(NoConditionsLeft)
@@ -188,7 +188,7 @@ object BitcoinUTXOSpendingInfo {
       case p2pkh: P2PKHScriptPubKey =>
         P2PKHSpendingInfo(outPoint, output.value, p2pkh, signers.head, hashType)
       case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
-        conditionalPath.head match {
+        conditionalPath.headOption match {
           case None =>
             throw new IllegalArgumentException(
               "ConditionalPath must be specified for P2PKWithTimeout")
@@ -295,7 +295,7 @@ object RawScriptUTXOSpendingInfo {
       case p2pkh: P2PKHScriptPubKey =>
         P2PKHSpendingInfo(outPoint, amount, p2pkh, signers.head, hashType)
       case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
-        conditionalPath.head match {
+        conditionalPath.headOption match {
           case None =>
             throw new IllegalArgumentException(
               "ConditionalPath must be specified for P2PKWithTimeout")
@@ -388,7 +388,7 @@ case class P2PKWithTimeoutSpendingInfo(
     scriptPubKey: P2PKWithTimeoutScriptPubKey,
     signer: Sign,
     hashType: HashType,
-    beforeTimeout: Boolean)
+    isBeforeTimeout: Boolean)
     extends RawScriptUTXOSpendingInfo {
   require(
     scriptPubKey.pubKey == signer.publicKey || scriptPubKey.timeoutPubKey == signer.publicKey,
@@ -397,7 +397,7 @@ case class P2PKWithTimeoutSpendingInfo(
   override val signers: Vector[Sign] = Vector(signer)
 
   override def conditionalPath: ConditionalPath =
-    if (beforeTimeout) {
+    if (isBeforeTimeout) {
       ConditionalPath.nonNestedTrue
     } else {
       ConditionalPath.nonNestedFalse
