@@ -103,7 +103,7 @@ case class PSBT(
     * @return A corresponding UTXOSpendingInfo
     */
   def getUTXOSpendingInfo(index: Int, signers: Seq[Sign]): UTXOSpendingInfo = {
-    getUTXOSpendingInfo(index, signers)
+    getUTXOSpendingInfo(index, signers, ConditionalPath.NoConditionsLeft)
   }
 
   /**
