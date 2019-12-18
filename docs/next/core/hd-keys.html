@@ -54,7 +54,7 @@
                 };
               }
             });
-        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/docscore/hd-keys.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">HD key generation</h1></header><article><div><span><p>In modern Bitcoin wallets, users only need to write down
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/core/hd-keys.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">HD key generation</h1></header><article><div><span><p>In modern Bitcoin wallets, users only need to write down
 a sequence of words, and that sequence is a complete backup
 of their wallet. This is thanks to what's called Hierarchical
 Deterministic key generation. In short, every wallet using HD
@@ -78,13 +78,13 @@ use that to generate further private and public keys:</p>
 <span class="hljs-comment">// how long our phrase ends up being</span>
 <span class="hljs-comment">// 256 bits of entropy results in 24 words</span>
 <span class="hljs-keyword">val</span> entropy: <span class="hljs-type">BitVector</span> = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
-<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x03ce81cc7ebd3fa2d42139ac5c6e9cd223ba2b7a88808139b93773ceaac9332c)</span>
+<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x8286d2971b45c83c1146d659f4eee0e9103742fa84371fb009d90bf3009be51f)</span>
 
 <span class="hljs-keyword">val</span> mnemonicCode = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
-<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(adult, inject, indoor, word, stadium, sphere, explain, cheese, proof, toddler, poet, picture, desert, between, tuition, avoid, license, soccer, evidence, travel, turkey, goose, smile, love))</span>
+<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(little, custom, place, custom, frame, bulk, eagle, suspect, fly, polar, return, split, address, pause, tube, manage, cabbage, leopard, iron, blood, copy, evil, nerve, this))</span>
 
 mnemonicCode.words <span class="hljs-comment">// the phrase the user should write down</span>
-<span class="hljs-comment">// res0: Vector[String] = Vector(adult, inject, indoor, word, stadium, sphere, explain, cheese, proof, toddler, poet, picture, desert, between, tuition, avoid, license, soccer, evidence, travel, turkey, goose, smile, love) // the phrase the user should write down</span>
+<span class="hljs-comment">// res0: Vector[String] = Vector(little, custom, place, custom, frame, bulk, eagle, suspect, fly, polar, return, split, address, pause, tube, manage, cabbage, leopard, iron, blood, copy, evil, nerve, this) // the phrase the user should write down</span>
 
 <span class="hljs-comment">// the password argument is an optional, extra security</span>
 <span class="hljs-comment">// measure. all MnemonicCode instances will give you a</span>
@@ -94,13 +94,13 @@ mnemonicCode.words <span class="hljs-comment">// the phrase the user should writ
 <span class="hljs-comment">// different passwords.</span>
 <span class="hljs-keyword">val</span> bip39Seed = <span class="hljs-type">BIP39Seed</span>.fromMnemonic(mnemonicCode,
                                        password = <span class="hljs-string">"secret password"</span>)
-<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xb7d8e8f78ea0e8c492dfb3df6ff5d3b73404d69e0e419294e4cdb09caffb70647fa16b2f185011dffaada9761db7b38816d3c9bd9f38d3c7b3ab3a95a6184a37))</span>
+<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0x2090d30e45fdc68ad27ab6fcd8bebf6ee8f648396f73d240ddbfbd748785ea7c050e17b4c0363bc46a4c8bf6caa6a3e3e3418eb3021dd5c16ded59c06d3da0a6))</span>
 
 <span class="hljs-keyword">val</span> xpriv = <span class="hljs-type">ExtPrivateKey</span>.fromBIP39Seed(<span class="hljs-type">ExtKeyVersion</span>.<span class="hljs-type">SegWitMainNetPriv</span>,
                                         bip39Seed)
-<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8Gm3PEQCCmoeKBTRPC4Ru9a5Zhm7NFUerCSBQNF5vKBwLnpAsiPPaahMHzQd6yqaMBM3wdLYe7KFK7BbS9YeBhfaxwkEfS9PQ</span>
+<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GjfFMfwgy4oztK7UvyZfsy9qTemHT3SHnZWWLdaCv6a1QgXeb6CZJZ7mjouhME3Eu4s7yqfhgqQM72uzYFY9bsHDYFBc1wK5</span>
 <span class="hljs-keyword">val</span> xpub = xpriv.extPublicKey
-<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZyXThWDjnAnFv1TDgTtczwJVJZVms2zPBJyjWndEZjjfGfR31QnaCzaC1WTXxWTz3DKg8JMTNQK7YCtv7VRwyEgqKMSNhcWP</span>
+<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZx9KpmyDyRwwcs9KRP2PjLNm4T9h4bmpmSJqVB7XAeNKtXpa7vwrkkitmBXZwFU2nTx1XBVA3deFUb825kY9pdmGMq1uNbdn</span>
 
 <span class="hljs-comment">// you can now use the generated xpriv to derive further</span>
 <span class="hljs-comment">// private or public keys</span>
@@ -146,7 +146,7 @@ spend or steal any of your money.</p>
     <span class="hljs-comment">// can generate addresses with it!</span>
     accountXpriv.extPublicKey
 }
-<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6qkpWLxR5C7vVUJaUcbu6qs9qxwmKWxP8uZGxEGU5tc8cpdcfLM4BvbRPqZR9qbuXiRkpgmYZrVKc8e3LYXyY96usNSjmgwbXmnoBq8UmVs</span>
+<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6qbas5Vs3tQvErdX7FrQbVuX2szofQkFbWp7D5bRdyjt2RAUQX6SK345STaKZc6ewsLoLz1eQPPsTGcNJuHuvV42pvkzCXSqjvQ7dWyHmvS</span>
 
                               <span class="hljs-comment">// address no. 0 ---------------┐</span>
                               <span class="hljs-comment">// external address ----------┐ |</span>
@@ -169,12 +169,12 @@ spend or steal any of your money.</p>
     <span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">P2WPKHWitnessSPKV0</span>(pubkey)
     <span class="hljs-type">Bech32Address</span>(scriptPubKey, <span class="hljs-type">TestNet3</span>)
 }
-<span class="hljs-comment">// firstAccountAddress: Bech32Address = Bech32Address(tb1q34jxsw6avva2c93l34m8nu2zvxvg90rwjphvs2)</span>
+<span class="hljs-comment">// firstAccountAddress: Bech32Address = Bech32Address(tb1q6g8w7ce8malst8ku4xt39cf0xy6vlx6247vhmw)</span>
 
 <span class="hljs-comment">// tada! We just generated an address you can send money to,</span>
 <span class="hljs-comment">// without having access to the private key!</span>
 firstAccountAddress.value
-<span class="hljs-comment">// res2: String = tb1q34jxsw6avva2c93l34m8nu2zvxvg90rwjphvs2</span>
+<span class="hljs-comment">// res2: String = tb1q6g8w7ce8malst8ku4xt39cf0xy6vlx6247vhmw</span>
 
 <span class="hljs-comment">// you can now continue deriving addresses from the same public</span>
 <span class="hljs-comment">// key, by imitating what we did above. To get the next</span>
