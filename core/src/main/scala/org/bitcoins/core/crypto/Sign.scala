@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.hd.BIP32Path
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
@@ -65,5 +66,10 @@ trait ExtSign extends Sign { this: ExtPrivateKey =>
 
   override def signFunction: ByteVector => Future[ECDigitalSignature] = {
     key.signFunction
+  }
+
+  /** Signs the given bytes with the given [[BIP32Path path]] */
+  def sign(bytes: ByteVector, path: BIP32Path): Future[ECDigitalSignature] = {
+    deriveChildPrivKey(path).signFunction(bytes)
   }
 }
