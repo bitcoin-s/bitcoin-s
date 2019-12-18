@@ -6,7 +6,12 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.ChainQueryApi
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.keymanager.{
+  InitializeKeyManagerError,
+  InitializeKeyManagerResult,
+  InitializeKeyManagerSuccess,
+  KeyManager
+}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
@@ -100,15 +105,24 @@ object Main extends App {
 
       // TODO change me when we implement proper password handling
       locked.unlock(Wallet.badPassphrase) match {
-        case UnlockWalletSuccess(wallet) => Future.successful(wallet)
-        case err: UnlockWalletError      => error(err)
+        case Right(wallet) => Future.successful(wallet)
+        case Left(kmError) => error(kmError)
       }
     } else {
-      logger.info(s"Creating new wallet")
-      Wallet.initialize(nodeApi, chainQueryApi).map {
-        case InitializeWalletSuccess(wallet) => wallet
-        case err: InitializeWalletError      => error(err)
+      logger.info(s"Initializing key manager")
+      val keyManagerInit: InitializeKeyManagerResult =
+        KeyManager.initialize(walletConf.seedPath)
+
+      val keyManager = keyManagerInit match {
+        case InitializeKeyManagerSuccess(keyManager) => keyManager
+        case err: InitializeKeyManagerError =>
+          error(err)
       }
+
+      logger.info(s"Creating new wallet")
+      val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
+
+      Wallet.initialize(wallet = unInitializedWallet)
     }
   }
 

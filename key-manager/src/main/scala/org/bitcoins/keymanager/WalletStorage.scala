@@ -44,7 +44,7 @@ object WalletStorage {
       )
     }
 
-    logger.debug(s"Writing mnemonic to $seedPath")
+    logger.info(s"Writing mnemonic to $seedPath")
 
     val writtenJs = ujson.write(jsObject)
 

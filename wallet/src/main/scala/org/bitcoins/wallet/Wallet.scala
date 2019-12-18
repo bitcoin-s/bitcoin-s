@@ -2,7 +2,7 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.compat._
-import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.config.{BitcoinNetwork, NetworkParameters}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
@@ -12,8 +12,11 @@ import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.bitcoins.keymanager.{
+  CreateKeyManagerApi,
   EncryptedMnemonic,
   EncryptedMnemonicHelper,
+  HDUtil,
+  KeyManager,
   WalletStorage
 }
 import org.bitcoins.wallet.api._
@@ -54,7 +57,10 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
         val utxos: Vector[BitcoinUTXOSpendingInfo] =
           CoinSelector
             .accumulateLargest(walletUtxos, destinations, feeRate)
-            .map(_.toUTXOSpendingInfo(fromAccount, seed))
+            .map(
+              _.toUTXOSpendingInfo(account = fromAccount,
+                                   keyManager = keyManager,
+                                   network = networkParameters))
 
         logger.info({
           val utxosStr = utxos
@@ -97,12 +103,14 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
-  override def createNewAccount(): Future[WalletApi] =
-    createNewAccount(DEFAULT_HD_COIN.purpose)
+  override def createNewAccount(network: NetworkParameters): Future[WalletApi] =
+    createNewAccount(DEFAULT_HD_COIN.purpose, network)
 
   // todo: check if there's addresses in the most recent
   // account before creating new
-  override def createNewAccount(purpose: HDPurpose): Future[Wallet] = {
+  override def createNewAccount(
+      purpose: HDPurpose,
+      network: NetworkParameters): Future[Wallet] = {
 
     accountDAO
       .findAll()
@@ -120,8 +128,8 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
         logger.info(
           s"Creating new account at index $accountIndex for purpose $purpose")
         val newAccount = HDAccount(DEFAULT_HD_COIN, accountIndex)
-        val xpub = {
-          val xpriv = xprivForPurpose(newAccount.purpose)
+        val xpub: ExtPublicKey = {
+          val xpriv = keyManager.xprivForPurpose(newAccount.purpose, network)
           xpriv.deriveChildPubKey(newAccount) match {
             case Failure(exception) =>
               // this won't happen, because we're deriving from a privkey
@@ -142,10 +150,10 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 }
 
 // todo: create multiple wallets, need to maintain multiple databases
-object Wallet extends CreateWalletApi with WalletLogger {
+object Wallet extends WalletLogger {
 
   private case class WalletImpl(
-      mnemonicCode: MnemonicCode,
+      override val keyManager: KeyManager,
       override val nodeApi: NodeApi,
       override val chainQueryApi: ChainQueryApi
   )(
@@ -154,96 +162,19 @@ object Wallet extends CreateWalletApi with WalletLogger {
   ) extends Wallet {
 
     // todo: until we've figured out a better schem
-    override val passphrase: AesPassword = Wallet.badPassphrase
+    //override val passphrase: AesPassword = Wallet.badPassphrase
   }
 
   def apply(
-      mnemonicCode: MnemonicCode,
+      keyManager: KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet =
-    WalletImpl(mnemonicCode, nodeApi, chainQueryApi)
+    WalletImpl(keyManager, nodeApi, chainQueryApi)
 
   // todo figure out how to handle password part of wallet
   val badPassphrase = AesPassword.fromNonEmptyString("changeMe")
-
-  /** Initializes the mnemonic seed and saves it to file */
-  override def initializeWithEntropy(
-      entropy: BitVector,
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi)(
-      implicit config: WalletAppConfig,
-      ec: ExecutionContext): Future[InitializeWalletResult] = {
-
-    logger.info(s"Initializing wallet on chain ${config.network}")
-
-    val seedPath = config.seedPath
-
-    val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
-    val mnemonicE: CompatEither[InitializeWalletError, MnemonicCode] =
-      mnemonicT match {
-        case Success(mnemonic) =>
-          logger.trace(s"Created mnemonic from entropy")
-          CompatEither(Right(mnemonic))
-        case Failure(err) =>
-          logger.error(s"Could not create mnemonic from entropy! $err")
-          CompatEither(Left(InitializeWalletError.BadEntropy))
-      }
-
-    val encryptedMnemonicE: CompatEither[
-      InitializeWalletError,
-      EncryptedMnemonic] =
-      mnemonicE.map { EncryptedMnemonicHelper.encrypt(_, badPassphrase) }
-
-    val biasedFinalEither: CompatEither[
-      InitializeWalletError,
-      Future[WalletImpl]] =
-      for {
-        mnemonic <- mnemonicE
-        encrypted <- encryptedMnemonicE
-      } yield {
-        val wallet = WalletImpl(mnemonic, nodeApi, chainQueryApi)
-
-        for {
-          _ <- config.initialize()
-          _ = {
-            val mnemonicPath =
-              WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
-            logger.debug(s"Saved encrypted wallet mnemonic to $mnemonicPath")
-          }
-          _ <- {
-            // We want to make sure all level 0 accounts are created,
-            // so the user can change the default account kind later
-            // and still have their wallet work
-            val createAccountFutures =
-              HDPurposes.all.map(createRootAccount(wallet, _))
-
-            val accountCreationF = Future.sequence(createAccountFutures)
-
-            accountCreationF.foreach(_ =>
-              logger.debug(s"Created root level accounts for wallet"))
-
-            accountCreationF.failed.foreach { err =>
-              logger.error(s"Failed to create root level accounts: $err")
-            }
-
-            accountCreationF
-          }
-
-        } yield wallet
-      }
-
-    val finalEither: Future[CompatEither[InitializeWalletError, WalletImpl]] =
-      EitherUtil.liftRightBiasedFutureE(biasedFinalEither)
-
-    finalEither.map {
-      case CompatRight(wallet) =>
-        logger.debug(s"Successfully initialized wallet")
-        InitializeWalletSuccess(wallet)
-      case CompatLeft(err) => err
-    }
-  }
 
   /** Creates the level 0 account for the given HD purpose */
   private def createRootAccount(wallet: Wallet, purpose: HDPurpose)(
@@ -253,7 +184,8 @@ object Wallet extends CreateWalletApi with WalletLogger {
     val coin =
       HDCoin(purpose, HDUtil.getCoinType(config.network))
     val account = HDAccount(coin, 0)
-    val xpriv = wallet.xprivForPurpose(purpose)
+    val xpriv = wallet.keyManager
+      .xprivForPurpose(purpose = purpose, network = config.network)
     // safe since we're deriving from a priv
     val xpub = xpriv.deriveChildPubKey(account).get
     val accountDb = AccountDb(xpub, account)
@@ -265,6 +197,31 @@ object Wallet extends CreateWalletApi with WalletLogger {
         logger.debug(s"Saved account with constant prefix $purpose to DB")
         written
       }
-
   }
+
+  def initialize(wallet: Wallet)(
+      implicit walletAppConfig: WalletAppConfig,
+      ec: ExecutionContext): Future[Wallet] = {
+    // We want to make sure all level 0 accounts are created,
+    // so the user can change the default account kind later
+    // and still have their wallet work
+    val initConfigF = walletAppConfig.initialize()
+    val createAccountFutures = for {
+      _ <- initConfigF
+      accounts = HDPurposes.all.map(createRootAccount(wallet, _))
+    } yield accounts
+
+    val accountCreationF =
+      createAccountFutures.flatMap(accounts => Future.sequence(accounts))
+
+    accountCreationF.foreach(_ =>
+      logger.debug(s"Created root level accounts for wallet"))
+
+    accountCreationF.failed.foreach { err =>
+      logger.error(s"Failed to create root level accounts: $err")
+    }
+
+    accountCreationF.map(_ => wallet)
+  }
+
 }

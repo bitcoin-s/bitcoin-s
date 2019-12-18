@@ -1,23 +1,19 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
-import org.bitcoins.wallet.api.UnlockWalletError.BadPassword
-import org.bitcoins.wallet.api.UnlockWalletError.JsonParsingError
-import org.bitcoins.wallet.api.UnlockWalletSuccess
 import org.bitcoins.core.crypto.AesPassword
-import org.bitcoins.wallet.api.UnlockWalletError.MnemonicNotFound
-import scala.concurrent.Future
-import org.bitcoins.core.util.FutureUtil
-import org.scalatest.compatible.Assertion
-import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.hd.HDChainType.Change
-import org.bitcoins.core.hd.HDChainType.External
+import org.bitcoins.core.hd.HDChainType.{Change, External}
+import org.bitcoins.core.hd.{HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.keymanager.UnlockKeyManagerError
+import org.bitcoins.keymanager.UnlockKeyManagerError.{BadPassword, JsonParsingError, MnemonicNotFound}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.models.AddressDb
-import org.bitcoins.core.hd.HDChain
-import org.bitcoins.core.hd.HDPurpose
+import org.scalatest.FutureOutcome
+import org.scalatest.compatible.Assertion
+
+import scala.concurrent.Future
 
 class WalletUnitTest extends BitcoinSWalletTest {
 
@@ -135,13 +131,11 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "fail to unlock the wallet with a bad password" in {
     wallet: UnlockedWalletApi =>
       val badpassphrase = AesPassword.fromNonEmptyString("bad")
-      val locked = wallet.lock()
-      wallet.unlock(badpassphrase) match {
-        case MnemonicNotFound          => fail(MnemonicNotFound)
-        case BadPassword               => succeed
-        case JsonParsingError(message) => fail(message)
-        case UnlockWalletSuccess(_) =>
-          fail("Unlocked wallet with bad password!")
+      val errorType = wallet.unlock(badpassphrase).swap.getOrElse(fail("Unlocked wallet with bad password!"))
+      errorType match {
+        case UnlockKeyManagerError.MnemonicNotFound          => fail(MnemonicNotFound)
+        case UnlockKeyManagerError.BadPassword               => succeed
+        case UnlockKeyManagerError.JsonParsingError(message) => fail(message)
       }
   }
 

@@ -15,7 +15,14 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.wallet.HDUtil
+import org.bitcoins.keymanager.{
+  KeyManager,
+  LockedKeyManager,
+  UnlockKeyManagerError,
+  UnlockKeyManagerResult,
+  UnlockKeyManagerSuccess
+}
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 
@@ -180,7 +187,20 @@ trait LockedWalletApi extends WalletApi {
     * Unlocks the wallet with the provided passphrase,
     * making it possible to send transactions.
     */
-  def unlock(passphrase: AesPassword): UnlockWalletResult
+  def unlock(passphrase: AesPassword): Either[
+    UnlockKeyManagerError,
+    UnlockedWalletApi] = {
+    val unlockedKeyManager =
+      LockedKeyManager.unlock(passphrase, walletConfig.seedPath)
+    unlockedKeyManager match {
+      case UnlockKeyManagerSuccess(km) =>
+        val w = Wallet(keyManager = km,
+                       nodeApi = nodeApi,
+                       chainQueryApi = chainQueryApi)
+        Right(w)
+      case err: UnlockKeyManagerError => Left(err)
+    }
+  }
 
   def listAccounts(): Future[Vector[AccountDb]]
 
@@ -195,21 +215,7 @@ trait LockedWalletApi extends WalletApi {
 
 trait UnlockedWalletApi extends LockedWalletApi {
 
-  protected def mnemonicCode: MnemonicCode
-
-  /** The wallet seed */
-  protected lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonicCode)
-
-  // TODO: come back to how to handle this
-  def passphrase: AesPassword
-
-  /** Derives the relevant xpriv for the given HD purpose */
-  private[wallet] def xprivForPurpose(purpose: HDPurpose): ExtPrivateKey = {
-    val seed = BIP39Seed.fromMnemonic(mnemonicCode, BIP39Seed.EMPTY_PASSWORD) // todo think more about this
-
-    val privVersion = HDUtil.getXprivVersion(purpose)
-    seed.toExtPrivateKey(privVersion)
-  }
+  def keyManager: KeyManager
 
   /**
     * Locks the wallet. After this operation is called,
@@ -253,7 +259,9 @@ trait UnlockedWalletApi extends LockedWalletApi {
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
-  def createNewAccount(purpose: HDPurpose): Future[WalletApi]
+  def createNewAccount(
+      purpose: HDPurpose,
+      network: NetworkParameters): Future[WalletApi]
 
   /**
     * Tries to create a new account in this wallet for the default
@@ -263,7 +271,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
-  def createNewAccount(): Future[WalletApi]
+  def createNewAccount(network: NetworkParameters): Future[WalletApi]
 
   /**
     * Iterates over the block filters in order to find filters that match to the given addresses

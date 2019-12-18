@@ -63,30 +63,6 @@ abstract class LockedWallet
 
   }
 
-  /**
-    * @inheritdoc
-    */
-  override def unlock(passphrase: AesPassword): UnlockWalletResult = {
-    logger.debug(s"Trying to unlock wallet")
-    val result =
-      WalletStorage.decryptMnemonicFromDisk(walletConfig.seedPath, passphrase)
-    result match {
-      case DecryptionError =>
-        logger.error(s"Bad password for unlocking wallet!")
-        UnlockWalletError.BadPassword
-      case JsonParsingError(message) =>
-        logger.error(s"JSON parsing error when unlocking wallet: $message")
-        UnlockWalletError.JsonParsingError(message)
-      case ReadMnemonicError.NotFoundError =>
-        logger.error(s"Encrypted mnemonic not found when unlocking the wallet!")
-        UnlockWalletError.MnemonicNotFound
-
-      case ReadMnemonicSuccess(mnemonic) =>
-        logger.debug(s"Successfully uunlocked wallet")
-        UnlockWalletSuccess(Wallet(mnemonic, nodeApi, chainQueryApi))
-    }
-  }
-
   /** Enumerates all the TX outpoints in the wallet  */
   protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
     spendingInfoDAO.findAllOutpoints()

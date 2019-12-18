@@ -1,48 +1,24 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ExtPublicKey, MnemonicCode}
-
-import scala.io.Source
-import play.api.libs.json.JsValue
-import play.api.libs.json.Json
-import org.bitcoins.core.hd.HDCoinType
-import org.bitcoins.core.hd.HDPurpose
-import org.bitcoins.core.hd.HDPath
-import org.bitcoins.core.hd.HDChain
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import play.api.libs.json.Reads
-import play.api.libs.json.JsResult
-import org.bitcoins.rpc.serializers.SerializerUtil
-import play.api.libs.json.JsError
-import play.api.libs.json.JsSuccess
-import org.bitcoins.core.hd.HDCoin
-import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.hd.HDPurposes
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.server.BitcoinSAppConfig
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
-
-import scala.concurrent.Future
-import org.bitcoins.wallet.api.InitializeWalletSuccess
-import org.scalatest.AsyncFlatSpec
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
-import org.bitcoins.testkit.fixtures.EmptyFixture
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.hd.HDChainType.Change
-import org.bitcoins.core.hd.HDChainType.External
-import org.bitcoins.wallet.models.AddressDb
-import org.bitcoins.wallet.models.AccountDb
-import _root_.akka.actor.Address
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.scalatest.compatible.Assertion
-
-import scala.concurrent.ExecutionContext
+import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
+import org.bitcoins.core.hd.HDChainType.{Change, External}
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.keymanager.KeyManager
+import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.fixtures.EmptyFixture
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.{AccountDb, AddressDb}
+import org.scalatest.compatible.Assertion
+import play.api.libs.json._
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 
 class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
@@ -158,17 +134,13 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     ConfigFactory.parseString(confStr)
   }
 
-  private def getWallet(config: WalletAppConfig): Future[Wallet] =
-    Wallet
-      .initializeWithMnemonic(mnemonic, NodeApi.NoOp, ChainQueryApi.NoOp)(
-        config, // to make sure we're not passing in the wrong conf by accident
-        implicitly[ExecutionContext]
-      )
-      .map {
-        case InitializeWalletSuccess(wallet: Wallet) =>
-          wallet
-        case err => fail(s"didn't get wallet: $err")
-      }
+  private def getWallet(config: WalletAppConfig)(implicit ec: ExecutionContext): Future[Wallet] = {
+    val km = KeyManager(mnemonic)
+    val wallet = Wallet(km, NodeApi.NoOp, ChainQueryApi.NoOp)(config, ec)
+    val walletF = Wallet.initialize(wallet)(config,ec)
+    walletF
+  }
+
 
   private case class AccountAndAddrsAndVector(
       account: AccountDb,
@@ -211,7 +183,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
       FutureUtil
         .sequentially(accountsToCreate) { _ =>
-          wallet.createNewAccount(purpose)
+          wallet.createNewAccount(purpose, conf.network)
         }
         .map(_ => ())
     }
@@ -224,7 +196,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     def getAcccountsWithAddressesAndVectors(
         wallet: Wallet,
         accountsWithVectors: Seq[(AccountDb, TestVector)]): Future[
-      Seq[AccountAndAddrsAndVector]] =
+      Seq[AccountAndAddrsAndVector]] = {
       FutureUtil.sequentially(accountsWithVectors) {
         case (acc, vec) =>
           val addrFutures: Future[Seq[AddressDb]] =
@@ -242,6 +214,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
             }
           addrFutures.map(AccountAndAddrsAndVector(acc, _, vec))
       }
+    }
 
     for {
       wallet <- getWallet(conf)
