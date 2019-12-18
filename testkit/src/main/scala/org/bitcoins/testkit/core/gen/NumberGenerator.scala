@@ -87,6 +87,9 @@ trait NumberGenerator {
   def scriptNumbers: Gen[ScriptNumber] =
     Gen.choose(Int64.min.toLong, Int64.max.toLong).map(ScriptNumber(_))
 
+  def timeLockScriptNumbers: Gen[ScriptNumber] =
+    Gen.choose(1L, UInt32.max.toLong - 1L).map(ScriptNumber(_))
+
   def positiveScriptNumbers: Gen[ScriptNumber] =
     Gen.choose(0L, Int64.max.toLong).map(ScriptNumber(_))
 

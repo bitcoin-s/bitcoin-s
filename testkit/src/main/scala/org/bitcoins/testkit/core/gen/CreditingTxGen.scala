@@ -86,22 +86,47 @@ sealed abstract class CreditingTxGen {
       }
   }
 
-  def output: Gen[BitcoinUTXOSpendingInfo] =
-    Gen.oneOf(
-      p2pkOutput,
-      p2pkhOutput,
-      /*p2pkWithTimeoutOutput,*/
-      multiSigOutput,
-      p2shOutput,
-      csvOutput, /*cltvOutput,*/
-      multiSignatureWithTimeoutOutput,
-      conditionalOutput,
-      p2wpkhOutput,
-      p2wshOutput
-    )
+  private val nonCltvOutputGens = Vector(
+    p2pkOutput,
+    p2pkhOutput,
+    multiSigOutput,
+    p2shOutput,
+    csvOutput,
+    multiSignatureWithTimeoutOutput,
+    conditionalOutput,
+    p2wpkhOutput,
+    p2wshOutput
+  )
 
+  private val cltvOutputGens = Vector(p2pkWithTimeoutOutput, cltvOutput)
+
+  def output: Gen[BitcoinUTXOSpendingInfo] =
+    Gen.oneOf(nonCltvOutputGens.head,
+              nonCltvOutputGens.tail.head,
+              nonCltvOutputGens.drop(2): _*)
+
+  /** Either a list of non-CLTV outputs or a single CLTV output, with proportional probability */
   def outputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = {
-    Gen.choose(min, 5).flatMap(n => Gen.listOfN(n, output))
+    val cltvGen = Gen
+      .oneOf(cltvOutput, p2pkWithTimeoutOutput)
+      .map { output =>
+        Vector(output)
+      }
+    val nonCltvGen = Gen.choose(min, 5).flatMap(n => Gen.listOfN(n, output))
+
+    val cltvSize = cltvOutputGens.length
+    val nonCltvSize = nonCltvOutputGens.length
+    val totalSize = cltvSize + nonCltvSize
+
+    cltvGen.flatMap { cltv =>
+      nonCltvGen.map { nonCltvs =>
+        if (Math.random() < cltvSize.toDouble / totalSize) {
+          cltv
+        } else {
+          nonCltvs
+        }
+      }
+    }
   }
 
   /** Generates a crediting tx with a p2pk spk at the returned index */

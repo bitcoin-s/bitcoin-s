@@ -866,6 +866,15 @@ object NonStandardNotIfConditionalScriptPubKey
   }
 }
 
+/** The type for ScriptPubKeys of the form:
+  * OP_IF
+  *   <Public Key>
+  * OP_ELSE
+  *   <Timeout> OP_CHECKLOCKTIMEVERIFY OP_DROP
+  *   <Timeout Public Key>
+  * OP_ENDIF
+  * OP_CHECKSIG
+  */
 sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
 
   lazy val pubKey: ECPublicKey =

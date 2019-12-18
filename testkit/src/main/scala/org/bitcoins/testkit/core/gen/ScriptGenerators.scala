@@ -152,7 +152,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     for {
       privKey <- CryptoGenerators.privateKey
       timeoutPrivKey <- CryptoGenerators.privateKey
-      lockTime <- NumberGenerator.scriptNumbers
+      lockTime <- NumberGenerator.timeLockScriptNumbers
     } yield {
       (P2PKWithTimeoutScriptPubKey(privKey.publicKey,
                                    lockTime,
@@ -167,7 +167,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def cltvScriptPubKey(
       maxDepth: Int): Gen[(CLTVScriptPubKey, Seq[ECPrivateKey])] =
     for {
-      num <- NumberGenerator.scriptNumbers
+      num <- NumberGenerator.timeLockScriptNumbers
       (cltv, privKeys, num) <- cltvScriptPubKey(num, maxDepth)
     } yield (cltv, privKeys)
 
@@ -184,7 +184,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def nonConditionalCltvScriptPubKey: Gen[
     (CLTVScriptPubKey, Seq[ECPrivateKey])] = {
     for {
-      num <- NumberGenerator.scriptNumbers
+      num <- NumberGenerator.timeLockScriptNumbers
       (cltv, privKeys, num) <- nonConditionalCltvScriptPubKey(num)
     } yield (cltv, privKeys)
   }
@@ -216,7 +216,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       maxDepth: Int): Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(maxDepth - 1)
-      num <- NumberGenerator.scriptNumbers
+      num <- NumberGenerator.timeLockScriptNumbers
       csv = CSVScriptPubKey(num, scriptPubKey)
     } yield (csv, privKeys)
 
@@ -233,7 +233,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   def nonConditionalCsvScriptPubKey: Gen[(CSVScriptPubKey, Seq[ECPrivateKey])] = {
     for {
       (scriptPubKey, privKeys) <- nonConditionalNonLocktimeRawScriptPubKey
-      num <- NumberGenerator.scriptNumbers
+      num <- NumberGenerator.timeLockScriptNumbers
       csv = CSVScriptPubKey(num, scriptPubKey)
     } yield (csv, privKeys)
   }
