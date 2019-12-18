@@ -79,7 +79,7 @@ const siteConfig = {
 
   // URL for editing docs, has to be present for the
   // "Edit this Doc" button to appear
-  editUrl: "https://github.com/bitcoin-s/bitcoin-s/docs",
+  editUrl: "https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/",
 
   // Used for publishing and more
   projectName,

@@ -10,11 +10,14 @@ security reasons.
 ## Disclosure
 
 If you have any security disclosures related to Bitcoin-S, please send an
-email to either [stewart.chris1234@gmail.com](mailto:stewart.chris1234@gmail.com?subject=Bitcoin-S%20Security%20Disclosure)
-or [torkel@rogstad.io](mailto:torkel@rogstad.io?subject=Bitcoin-S%20Security%20Disclosure).
+email to either [stewart.chris1234@gmail.com](mailto:stewart.chris1234@gmail.com?subject=Bitcoin-S%20Security%20Disclosure),
+[nadavk25@gmail.com](mailto:nadavk25@gmail.com?subject=Bitcoin-S%20Security%20Disclosure),
+or [benthecarman@live.com](mailto:benthecarman@live.com?subject=Bitcoin-S%20Security%20Disclosure).
 
-If you want to encrypt said email (which you should), Torkel's key is available on [Keybase](https://keybase.io/torkelrogstad/pgp_keys.asc?fingerprint=c5dc349be6daa834ad9d59d712beee5312accec4), and Chris' is posted here:
+If you want to encrypt said email (which you should), Ben's key is available on [his Keybase](https://keybase.io/benthecarman/pgp_keys.asc?fingerprint=0ad83877c1f0cd1ee9bd660ad7cc770b81fd22a8), and Chris and Nadav's
+are posted below:
 
+Chris:
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1
@@ -67,5 +70,60 @@ Cgvon6XyxrZ4q1tKheAxOmyM0OSuPYyeXSqCYu5bt7MzNEDUChydZM3v1QvEB9iG
 6eLX7fq2ipGGDoVl8y1yVRe4BWa3cJfCPC7jT+9VtD/qdlpHSwotYTWj5metYgqB
 LTIbdd7r9XCGoKIxMJRqNFXc8kylUg==
 =J0NH
+-----END PGP PUBLIC KEY BLOCK-----
+```
+
+Nadav:
+```
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+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
+yCLXAg==
+=fx/l
 -----END PGP PUBLIC KEY BLOCK-----
 ```
