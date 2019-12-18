@@ -207,7 +207,7 @@ object GlobalPSBTRecord {
       "All ScriptSignatures must be empty")
 
     private val witnessIsEmpty = transaction match {
-      case wtx: WitnessTransaction => wtx.witness == EmptyWitness
+      case wtx: WitnessTransaction => wtx.witness.isInstanceOf[EmptyWitness]
       case _: BaseTransaction      => true
     }
     require(witnessIsEmpty, "Witness must be empty")
