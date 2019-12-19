@@ -61,15 +61,12 @@ object Sign {
 }
 
 /** A signing interface for [[ExtKey]] */
-trait ExtSign extends Sign { this: ExtPrivateKey =>
-  override def publicKey: ECPublicKey = key.publicKey
+trait ExtSign extends Sign {
 
-  override def signFunction: ByteVector => Future[ECDigitalSignature] = {
-    key.signFunction
-  }
+  def deriveAndSignFuture: (ByteVector, BIP32Path) => Future[ECDigitalSignature]
 
-  /** Signs the given bytes with the given [[BIP32Path path]] */
+  /** First derives the child key that corresponds to [[BIP32Path path]] and then signs */
   def sign(bytes: ByteVector, path: BIP32Path): ECDigitalSignature = {
-    deriveChildPrivKey(path).sign(bytes)
+    Await.result(deriveAndSignFuture(bytes, path), 30.seconds)
   }
 }
