@@ -125,7 +125,7 @@ case class PSBT(
   def addTransactionToInput(tx: Transaction, index: Int): PSBT = {
     require(
       index < inputMaps.size,
-      s"i must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
@@ -171,7 +171,7 @@ case class PSBT(
   def addScriptToInput(script: ScriptPubKey, index: Int): PSBT = {
     require(
       index < inputMaps.size,
-      s"i must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
@@ -212,7 +212,7 @@ case class PSBT(
   def addScriptToOutput(script: ScriptPubKey, index: Int): PSBT = {
     require(
       index < outputMaps.size,
-      s"i must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
+      s"index must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
     val elements = {
@@ -252,7 +252,7 @@ case class PSBT(
   def addKeyPathToInput(extKey: ExtKey, path: BIP32Path, index: Int): PSBT = {
     require(
       index < inputMaps.size,
-      s"i must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
@@ -288,7 +288,7 @@ case class PSBT(
   def addKeyPathToOutput(extKey: ExtKey, path: BIP32Path, index: Int): PSBT = {
     require(
       index < outputMaps.size,
-      s"i must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
+      s"index must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
     val elements = {
@@ -323,7 +323,7 @@ case class PSBT(
   def addSigHashTypeToInput(hashType: HashType, index: Int): PSBT = {
     require(
       index < inputMaps.size,
-      s"i must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
