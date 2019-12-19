@@ -866,6 +866,79 @@ object NonStandardNotIfConditionalScriptPubKey
   }
 }
 
+/** The type for ScriptPubKeys of the form:
+  * OP_IF
+  *   <Public Key>
+  * OP_ELSE
+  *   <Timeout> OP_CHECKLOCKTIMEVERIFY OP_DROP
+  *   <Timeout Public Key>
+  * OP_ENDIF
+  * OP_CHECKSIG
+  */
+sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
+
+  lazy val pubKey: ECPublicKey =
+    ECPublicKey.fromBytes(asm(2).bytes)
+
+  lazy val lockTime: ScriptNumber = ScriptNumber.fromBytes(asm(5).bytes)
+
+  lazy val timeoutPubKey: ECPublicKey =
+    ECPublicKey.fromBytes(asm(9).bytes)
+}
+
+object P2PKWithTimeoutScriptPubKey
+    extends ScriptFactory[P2PKWithTimeoutScriptPubKey] {
+  private case class P2PKWithTimeoutScriptPubKeyImpl(asm: Vector[ScriptToken])
+      extends P2PKWithTimeoutScriptPubKey
+
+  override def fromAsm(asm: Seq[ScriptToken]): P2PKWithTimeoutScriptPubKey = {
+    buildScript(
+      asm = asm.toVector,
+      constructor = P2PKWithTimeoutScriptPubKeyImpl.apply,
+      invariant = isP2PKWithTimeoutScriptPubKey,
+      errorMsg = s"Given asm was not a P2PKWithTimeoutScriptPubKey, got $asm"
+    )
+  }
+
+  def apply(
+      pubKey: ECPublicKey,
+      lockTime: ScriptNumber,
+      timeoutPubKey: ECPublicKey): P2PKWithTimeoutScriptPubKey = {
+    val timeoutAsm = CLTVScriptPubKey(lockTime, EmptyScriptPubKey).asm.toVector
+    val pubKeyAsm = BitcoinScriptUtil
+      .calculatePushOp(pubKey.bytes)
+      .toVector ++ Vector(ScriptConstant(pubKey.bytes))
+    val timeoutPubKeyAsm = BitcoinScriptUtil
+      .calculatePushOp(timeoutPubKey.bytes)
+      .toVector ++ Vector(ScriptConstant(timeoutPubKey.bytes))
+
+    P2PKWithTimeoutScriptPubKeyImpl(
+      Vector(Vector(OP_IF),
+             pubKeyAsm,
+             Vector(OP_ELSE),
+             timeoutAsm,
+             timeoutPubKeyAsm,
+             Vector(OP_ENDIF, OP_CHECKSIG)).flatten
+    )
+  }
+
+  def isP2PKWithTimeoutScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
+    if (asm.length == 12) {
+      val pubKey = ECPublicKey.fromBytes(asm(2).bytes)
+      val lockTimeTry = Try(ScriptNumber.fromBytes(asm(5).bytes))
+      val timeoutPubKey = ECPublicKey.fromBytes(asm(9).bytes)
+
+      lockTimeTry match {
+        case Success(lockTime) =>
+          asm == P2PKWithTimeoutScriptPubKey(pubKey, lockTime, timeoutPubKey).asm
+        case Failure(_) => false
+      }
+    } else {
+      false
+    }
+  }
+}
+
 sealed trait NonStandardScriptPubKey extends RawScriptPubKey
 
 object NonStandardScriptPubKey extends ScriptFactory[NonStandardScriptPubKey] {
@@ -896,6 +969,8 @@ object RawScriptPubKey extends ScriptFactory[RawScriptPubKey] {
 
   def fromAsm(asm: Seq[ScriptToken]): RawScriptPubKey = asm match {
     case Nil => EmptyScriptPubKey
+    case _ if P2PKWithTimeoutScriptPubKey.isP2PKWithTimeoutScriptPubKey(asm) =>
+      P2PKWithTimeoutScriptPubKey.fromAsm(asm)
     case _
         if MultiSignatureWithTimeoutScriptPubKey
           .isMultiSignatureWithTimeoutScriptPubKey(asm) =>

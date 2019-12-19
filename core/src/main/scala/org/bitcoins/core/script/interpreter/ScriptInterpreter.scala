@@ -88,6 +88,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
                 if (p2shEnabled) executeP2shScript(scriptSigExecutedProgram)
                 else scriptPubKeyExecutedProgram
               case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
+                  _: P2PKWithTimeoutScriptPubKey |
                   _: MultiSignatureScriptPubKey | _: CSVScriptPubKey |
                   _: CLTVScriptPubKey | _: ConditionalScriptPubKey |
                   _: NonStandardScriptPubKey | _: WitnessCommitment |
@@ -292,11 +293,11 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
               run(scriptPubKeyExecutedProgram, p2wsh)
             }
           case s @ (_: P2SHScriptPubKey | _: P2PKHScriptPubKey |
-              _: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
-              _: CLTVScriptPubKey | _: CSVScriptPubKey |
-              _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
-              _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
-              EmptyScriptPubKey) =>
+              _: P2PKWithTimeoutScriptPubKey | _: P2PKScriptPubKey |
+              _: MultiSignatureScriptPubKey | _: CLTVScriptPubKey |
+              _: CSVScriptPubKey | _: ConditionalScriptPubKey |
+              _: NonStandardScriptPubKey | _: WitnessCommitment |
+              _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
             run(scriptPubKeyExecutedProgram, s)
         }
       } else {
