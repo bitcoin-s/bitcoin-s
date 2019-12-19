@@ -461,14 +461,18 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                   }
               }
             case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
-              val result = computeNextLockTime(
-                currentLockTimeOpt,
-                p2pkWithTimeout.scriptPubKey.lockTime.toLong)
+              if (p2pkWithTimeout.isBeforeTimeout) {
+                loop(newRemaining, currentLockTimeOpt)
+              } else {
+                val result = computeNextLockTime(
+                  currentLockTimeOpt,
+                  p2pkWithTimeout.scriptPubKey.lockTime.toLong)
 
-              result match {
-                case Success(newLockTime) =>
-                  loop(newRemaining, Some(newLockTime))
-                case _: Failure[UInt32] => result
+                result match {
+                  case Success(newLockTime) =>
+                    loop(newRemaining, Some(newLockTime))
+                  case _: Failure[UInt32] => result
+                }
               }
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
@@ -516,10 +520,21 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                            sequence)
               loop(newRemaining, input +: accum)
             case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
-              val input = TransactionInput(p2pkWithTimeout.outPoint,
-                                           EmptyScriptSignature,
-                                           UInt32.zero)
-              loop(newRemaining, input +: accum)
+              if (p2pkWithTimeout.isBeforeTimeout) {
+                val sequence =
+                  if (isRBFEnabled) UInt32.zero
+                  else TransactionConstants.sequence
+                val input =
+                  TransactionInput(spendingInfo.outPoint,
+                                   EmptyScriptSignature,
+                                   sequence)
+                loop(newRemaining, input +: accum)
+              } else {
+                val input = TransactionInput(p2pkWithTimeout.outPoint,
+                                             EmptyScriptSignature,
+                                             UInt32.zero)
+                loop(newRemaining, input +: accum)
+              }
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
             case p2wsh: P2WSHV0SpendingInfo =>
