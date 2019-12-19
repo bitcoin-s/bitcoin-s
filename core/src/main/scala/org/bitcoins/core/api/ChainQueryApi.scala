@@ -1,6 +1,8 @@
 package org.bitcoins.core.api
 
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.gcs.GolombFilter
+import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 
 import scala.concurrent.Future
@@ -20,6 +22,15 @@ trait ChainQueryApi {
   def getNumberOfConfirmations(
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]]
 
+  /** Gets the number of compact filters in the database */
+  def getFilterCount: Future[Int]
+
+  /** Returns the block height of the given block stamp */
+  def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int]
+
+  def getFiltersBetweenHeights(
+      startHeight: Int,
+      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]]
 }
 
 object ChainQueryApi {
@@ -39,5 +50,49 @@ object ChainQueryApi {
     override def getNumberOfConfirmations(
         blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
       FutureUtil.none
+
+    /** Returns the block height of the given block stamp */
+    override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
+      Future.successful(0)
+
+    /** Gets the number of compact filters in the database */
+    override def getFilterCount: Future[Int] = Future.successful(0)
+
+    override def getFiltersBetweenHeights(
+        startHeight: Int,
+        endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+      Future.successful(Vector.empty)
   }
+
+  sealed abstract class ChainException(message: String)
+      extends RuntimeException(message)
+
+  /**
+    * [[ChainQueryApi]] cannot find a compact
+    * filter or header by its filter hash
+    */
+  case class UnknownFilterHash(message: String) extends ChainException(message)
+
+  /**
+    * [[ChainQueryApi]] cannot find a blockchain
+    * item by its block hash
+    */
+  case class UnknownBlockHash(message: String) extends ChainException(message)
+
+  /**
+    * [[ChainQueryApi]] cannot find a blockchain
+    * item by its height
+    */
+  case class UnknownBlockHeight(message: String) extends ChainException(message)
+
+  /**
+    * [[ChainQueryApi]] tried to process multiple filters for the same block hash
+    */
+  case class DuplicateFilters(message: String) extends ChainException(message)
+
+  /**
+    * The given block range is invalid
+    */
+  case class InvalidBlockRange(message: String) extends ChainException(message)
+
 }

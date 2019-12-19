@@ -200,7 +200,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
         addresses <- wallet.listAddresses()
-        _ <- node.rescan(addresses.map(_.scriptPubKey))
+        _ <- wallet.rescan(addresses.map(_.scriptPubKey))
 
         _ <- AsyncUtil.awaitConditionF(condition)
       } yield succeed
