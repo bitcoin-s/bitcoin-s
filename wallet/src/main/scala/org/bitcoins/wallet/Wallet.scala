@@ -1,7 +1,6 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.compat._
 import org.bitcoins.core.config.{BitcoinNetwork, NetworkParameters}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -11,21 +10,13 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
-import org.bitcoins.keymanager.{
-  CreateKeyManagerApi,
-  EncryptedMnemonic,
-  EncryptedMnemonicHelper,
-  HDUtil,
-  KeyManager,
-  WalletStorage
-}
+import org.bitcoins.keymanager.{HDUtil, KeyManager}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
-import scodec.bits.BitVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 
