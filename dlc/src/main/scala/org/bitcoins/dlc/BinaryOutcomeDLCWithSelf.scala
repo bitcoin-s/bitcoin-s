@@ -15,11 +15,9 @@ import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStampWithFuture
 import org.bitcoins.core.protocol.script.{
-  CLTVScriptPubKey,
   EmptyScriptPubKey,
   MultiSignatureScriptPubKey,
-  NonStandardIfConditionalScriptPubKey,
-  P2PKHScriptPubKey,
+  P2PKWithTimeoutScriptPubKey,
   P2WPKHWitnessSPKV0,
   P2WPKHWitnessV0,
   P2WSHWitnessSPKV0,
@@ -257,13 +255,12 @@ case class BinaryOutcomeDLCWithSelf(
       localToLocalPrivKey.bytes.toArray,
       true)
     val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
-    val oracleSPK = P2PKHScriptPubKey(pubKey)
 
-    val timeoutSPK = CLTVScriptPubKey(
-      locktime = timeout.toScriptNumber,
-      scriptPubKey = P2PKHScriptPubKey(remoteToLocalPrivKey.publicKey))
-
-    val toLocalSPK = NonStandardIfConditionalScriptPubKey(oracleSPK, timeoutSPK)
+    val toLocalSPK = P2PKWithTimeoutScriptPubKey(
+      pubKey = pubKey,
+      lockTime = timeout.toScriptNumber,
+      timeoutPubKey = remoteToLocalPrivKey.publicKey
+    )
 
     val toLocal: TransactionOutput =
       TransactionOutput(localPayout, P2WSHWitnessSPKV0(toLocalSPK))
@@ -308,13 +305,12 @@ case class BinaryOutcomeDLCWithSelf(
       remoteToLocalPrivKey.bytes.toArray,
       true)
     val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
-    val oracleSPK = P2PKHScriptPubKey(pubKey)
 
-    val timeoutSPK = CLTVScriptPubKey(
-      locktime = timeout.toScriptNumber,
-      scriptPubKey = P2PKHScriptPubKey(localToLocalPrivKey.publicKey))
-
-    val toLocalSPK = NonStandardIfConditionalScriptPubKey(oracleSPK, timeoutSPK)
+    val toLocalSPK = P2PKWithTimeoutScriptPubKey(
+      pubKey = pubKey,
+      lockTime = timeout.toScriptNumber,
+      timeoutPubKey = localToLocalPrivKey.publicKey
+    )
 
     val toLocal: TransactionOutput =
       TransactionOutput(remotePayout, P2WSHWitnessSPKV0(toLocalSPK))
