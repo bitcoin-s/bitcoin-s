@@ -16,6 +16,7 @@ import org.bitcoins.core.wallet.utxo.{
   MultiSignatureSpendingInfo,
   P2PKHSpendingInfo,
   P2PKSpendingInfo,
+  P2PKWithTimeoutSpendingInfo,
   P2SHSpendingInfo,
   P2WPKHV0SpendingInfo,
   P2WSHV0SpendingInfo,
@@ -193,6 +194,11 @@ object BitcoinSigner {
         P2PKSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2pk)
       case p2pkh: P2PKHSpendingInfo =>
         P2PKHSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2pkh)
+      case p2pKWithTimeout: P2PKWithTimeoutSpendingInfo =>
+        P2PKWithTimeoutSigner.sign(spendingInfo,
+                                   unsignedTx,
+                                   isDummySignature,
+                                   p2pKWithTimeout)
       case multiSig: MultiSignatureSpendingInfo =>
         MultiSigSigner.sign(spendingInfo,
                             unsignedTx,
@@ -308,6 +314,38 @@ sealed abstract class P2PKHSigner extends BitcoinSigner[P2PKHSpendingInfo] {
 }
 
 object P2PKHSigner extends P2PKHSigner
+
+sealed abstract class P2PKWithTimeoutSigner
+    extends BitcoinSigner[P2PKWithTimeoutSpendingInfo] {
+  override def sign(
+      spendingInfo: UTXOSpendingInfo,
+      unsignedTx: Transaction,
+      isDummySignature: Boolean,
+      spendingInfoToSatisfy: P2PKWithTimeoutSpendingInfo)(
+      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    val (signers, output, inputIndex, hashType) =
+      relevantInfo(spendingInfo, unsignedTx)
+
+    val sign = signers.head.signFunction
+
+    val signatureF = doSign(sigComponent(spendingInfo, unsignedTx),
+                            sign,
+                            hashType,
+                            isDummySignature)
+
+    val scriptSigF = signatureF.map { signature =>
+      P2PKWithTimeoutScriptSignature(spendingInfoToSatisfy.isBeforeTimeout,
+                                     signature)
+    }
+
+    updateScriptSigInSigComponent(unsignedTx,
+                                  inputIndex.toInt,
+                                  output,
+                                  scriptSigF)
+  }
+}
+
+object P2PKWithTimeoutSigner extends P2PKWithTimeoutSigner
 
 sealed abstract class MultiSigSigner
     extends BitcoinSigner[MultiSignatureSpendingInfo] {

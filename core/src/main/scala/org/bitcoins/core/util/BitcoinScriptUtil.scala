@@ -451,9 +451,10 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
             script
         }
       case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
-          _: MultiSignatureScriptPubKey | _: ConditionalScriptPubKey |
-          _: NonStandardScriptPubKey | _: CLTVScriptPubKey |
-          _: CSVScriptPubKey | _: WitnessCommitment | EmptyScriptPubKey =>
+          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessCommitment |
+          EmptyScriptPubKey =>
         script
     }
 
@@ -561,6 +562,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   def isOnlyCompressedPubKey(spk: ScriptPubKey): Boolean = {
     spk match {
       case p2pk: P2PKScriptPubKey => p2pk.publicKey.isCompressed
+      case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
+        p2pkWithTimeout.pubKey.isCompressed && p2pkWithTimeout.timeoutPubKey.isCompressed
       case m: MultiSignatureScriptPubKey =>
         !m.publicKeys.exists(k => !k.isCompressed)
       case l: LockTimeScriptPubKey =>

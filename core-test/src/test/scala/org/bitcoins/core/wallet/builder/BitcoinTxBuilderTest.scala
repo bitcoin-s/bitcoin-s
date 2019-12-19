@@ -525,8 +525,8 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                      Policy.standardFlags)
           case _: UnassignedWitnessScriptPubKey => ???
           case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-              _: MultiSignatureScriptPubKey | _: WitnessCommitment |
-              _: CSVScriptPubKey | _: CLTVScriptPubKey |
+              _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+              _: WitnessCommitment | _: CSVScriptPubKey | _: CLTVScriptPubKey |
               _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
               EmptyScriptPubKey) =>
             val o = TransactionOutput(CurrencyUnits.zero, x)

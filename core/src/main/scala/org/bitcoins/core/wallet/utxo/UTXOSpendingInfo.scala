@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.script.{
   NonStandardScriptPubKey,
   P2PKHScriptPubKey,
   P2PKScriptPubKey,
+  P2PKWithTimeoutScriptPubKey,
   P2SHScriptPubKey,
   P2WPKHWitnessSPKV0,
   P2WPKHWitnessV0,
@@ -72,14 +73,22 @@ sealed abstract class UTXOSpendingInfo {
   * then you would construct a ConditionalSpendingInfo using nonNestedTrue as your
   * ConditionalPath. Otherwise if you wanted to use P2PK2 you would use nonNestedFalse.
   */
-sealed trait ConditionalPath
+sealed trait ConditionalPath {
+  def headOption: Option[Boolean]
+}
 
 object ConditionalPath {
-  case object NoConditionsLeft extends ConditionalPath
+  case object NoConditionsLeft extends ConditionalPath {
+    override val headOption: Option[Boolean] = None
+  }
   case class ConditionTrue(nextCondition: ConditionalPath)
-      extends ConditionalPath
+      extends ConditionalPath {
+    override val headOption: Option[Boolean] = Some(true)
+  }
   case class ConditionFalse(nextCondition: ConditionalPath)
-      extends ConditionalPath
+      extends ConditionalPath {
+    override val headOption: Option[Boolean] = Some(false)
+  }
 
   val nonNestedTrue: ConditionalPath = ConditionTrue(NoConditionsLeft)
   val nonNestedFalse: ConditionalPath = ConditionFalse(NoConditionsLeft)
@@ -178,6 +187,19 @@ object BitcoinUTXOSpendingInfo {
         P2PKSpendingInfo(outPoint, output.value, p2pk, signers.head, hashType)
       case p2pkh: P2PKHScriptPubKey =>
         P2PKHSpendingInfo(outPoint, output.value, p2pkh, signers.head, hashType)
+      case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
+        conditionalPath.headOption match {
+          case None =>
+            throw new IllegalArgumentException(
+              "ConditionalPath must be specified for P2PKWithTimeout")
+          case Some(beforeTimeout) =>
+            P2PKWithTimeoutSpendingInfo(outPoint,
+                                        output.value,
+                                        p2pkWithTimeout,
+                                        signers.head,
+                                        hashType,
+                                        beforeTimeout)
+        }
       case multisig: MultiSignatureScriptPubKey =>
         MultiSignatureSpendingInfo(outPoint,
                                    output.value,
@@ -272,6 +294,19 @@ object RawScriptUTXOSpendingInfo {
         P2PKSpendingInfo(outPoint, amount, p2pk, signers.head, hashType)
       case p2pkh: P2PKHScriptPubKey =>
         P2PKHSpendingInfo(outPoint, amount, p2pkh, signers.head, hashType)
+      case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
+        conditionalPath.headOption match {
+          case None =>
+            throw new IllegalArgumentException(
+              "ConditionalPath must be specified for P2PKWithTimeout")
+          case Some(beforeTimeout) =>
+            P2PKWithTimeoutSpendingInfo(outPoint,
+                                        amount,
+                                        p2pkWithTimeout,
+                                        signers.head,
+                                        hashType,
+                                        beforeTimeout)
+        }
       case multisig: MultiSignatureScriptPubKey =>
         MultiSignatureSpendingInfo(outPoint,
                                    amount,
@@ -345,6 +380,28 @@ case class P2PKHSpendingInfo(
 
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoConditionsLeft
+}
+
+case class P2PKWithTimeoutSpendingInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    scriptPubKey: P2PKWithTimeoutScriptPubKey,
+    signer: Sign,
+    hashType: HashType,
+    isBeforeTimeout: Boolean)
+    extends RawScriptUTXOSpendingInfo {
+  require(
+    scriptPubKey.pubKey == signer.publicKey || scriptPubKey.timeoutPubKey == signer.publicKey,
+    "Signer pubkey must match ScriptPubKey")
+
+  override val signers: Vector[Sign] = Vector(signer)
+
+  override def conditionalPath: ConditionalPath =
+    if (isBeforeTimeout) {
+      ConditionalPath.nonNestedTrue
+    } else {
+      ConditionalPath.nonNestedFalse
+    }
 }
 
 case class MultiSignatureSpendingInfo(

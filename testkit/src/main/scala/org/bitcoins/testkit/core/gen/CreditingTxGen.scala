@@ -29,12 +29,15 @@ sealed abstract class CreditingTxGen {
 
   /** Generator for non-script hash based output */
   def nonSHOutput: Gen[BitcoinUTXOSpendingInfo] = {
-    Gen.oneOf(p2pkOutput,
-              p2pkhOutput,
-              multiSigOutput, /*cltvOutput,*/ csvOutput,
-              multiSignatureWithTimeoutOutput,
-              conditionalOutput,
-              p2wpkhOutput)
+    Gen.oneOf(
+      p2pkOutput,
+      p2pkhOutput,
+      /*p2pkWithTimeoutOutput,*/
+      multiSigOutput, /*cltvOutput,*/ csvOutput,
+      multiSignatureWithTimeoutOutput,
+      conditionalOutput,
+      p2wpkhOutput
+    )
   }
 
   def nonSHOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] =
@@ -48,6 +51,7 @@ sealed abstract class CreditingTxGen {
     //note, cannot put a p2wpkh here
     Gen.oneOf(p2pkOutput,
               p2pkhOutput,
+              /*p2pkWithTimeoutOutput,*/
               multiSigOutput, /*cltvOutput,*/ csvOutput,
               multiSignatureWithTimeoutOutput,
               conditionalOutput)
@@ -56,13 +60,16 @@ sealed abstract class CreditingTxGen {
   /** Only for use in constructing P2SH outputs */
   private def nonP2SHOutput: Gen[BitcoinUTXOSpendingInfo] = {
     Gen
-      .oneOf(p2pkOutput,
-             p2pkhOutput,
-             multiSigOutput, /*cltvOutput,*/ csvOutput,
-             multiSignatureWithTimeoutOutput,
-             conditionalOutput,
-             p2wpkhOutput,
-             p2wshOutput)
+      .oneOf(
+        p2pkOutput,
+        p2pkhOutput,
+        /*p2pkWithTimeoutOutput,*/
+        multiSigOutput, /*cltvOutput,*/ csvOutput,
+        multiSignatureWithTimeoutOutput,
+        conditionalOutput,
+        p2wpkhOutput,
+        p2wshOutput
+      )
       .suchThat(output =>
         !ScriptGenerators.redeemScriptTooBig(output.scriptPubKey))
       .suchThat {
@@ -79,19 +86,36 @@ sealed abstract class CreditingTxGen {
       }
   }
 
-  def output: Gen[BitcoinUTXOSpendingInfo] =
-    Gen.oneOf(p2pkOutput,
-              p2pkhOutput,
-              multiSigOutput,
-              p2shOutput,
-              csvOutput, /*cltvOutput,*/
-              multiSignatureWithTimeoutOutput,
-              conditionalOutput,
-              p2wpkhOutput,
-              p2wshOutput)
+  private val nonCltvOutputGens = Vector(
+    p2pkOutput,
+    p2pkhOutput,
+    multiSigOutput,
+    p2shOutput,
+    csvOutput,
+    multiSignatureWithTimeoutOutput,
+    conditionalOutput,
+    p2wpkhOutput,
+    p2wshOutput
+  )
 
+  private val cltvOutputGens = Vector(p2pkWithTimeoutOutput, cltvOutput)
+
+  def output: Gen[BitcoinUTXOSpendingInfo] =
+    Gen.oneOf(nonCltvOutputGens).flatMap(identity)
+
+  /** Either a list of non-CLTV outputs or a single CLTV output, with proportional probability */
   def outputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = {
-    Gen.choose(min, 5).flatMap(n => Gen.listOfN(n, output))
+    val cltvGen = Gen
+      .oneOf(cltvOutput, p2pkWithTimeoutOutput)
+      .map { output =>
+        Vector(output)
+      }
+    val nonCltvGen = Gen.choose(min, 5).flatMap(n => Gen.listOfN(n, output))
+
+    val cltvSize = cltvOutputGens.length
+    val nonCltvSize = nonCltvOutputGens.length
+
+    Gen.frequency((cltvSize, cltvGen), (nonCltvSize, nonCltvGen))
   }
 
   /** Generates a crediting tx with a p2pk spk at the returned index */
@@ -103,6 +127,16 @@ sealed abstract class CreditingTxGen {
   /** Generates multiple crediting txs with p2pk spks at the returned index */
   def p2pkOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = {
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2pkOutput))
+  }
+
+  def p2pkWithTimeoutOutput: Gen[BitcoinUTXOSpendingInfo] = {
+    ScriptGenerators.p2pkWithTimeoutScriptPubKey.flatMap { p2pkWithTimeout =>
+      build(p2pkWithTimeout._1, Seq(p2pkWithTimeout._2.head), None, None)
+    }
+  }
+
+  def p2pkWithTimeoutOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] = {
+    Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2pkWithTimeoutOutput))
   }
 
   /**
@@ -298,6 +332,7 @@ sealed abstract class CreditingTxGen {
       case conditional: ConditionalScriptPubKey =>
         ConditionalPath.ConditionTrue(
           computeAllTrueConditionalPath(conditional.trueSPK, None, None))
+      case _: P2PKWithTimeoutScriptPubKey => ConditionalPath.nonNestedTrue
       case lockTimeScriptPubKey: LockTimeScriptPubKey =>
         computeAllTrueConditionalPath(lockTimeScriptPubKey.nestedScriptPubKey,
                                       None,

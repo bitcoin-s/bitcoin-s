@@ -187,19 +187,20 @@ object Bech32Address extends AddressFactory[Bech32Address] {
 
   override def fromScriptPubKey(
       spk: ScriptPubKey,
-      np: NetworkParameters): Try[Bech32Address] = spk match {
-    case witSPK: WitnessScriptPubKey =>
-      Bech32Address.fromScriptPubKey(witSPK, np)
-    case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-        _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
-        _: LockTimeScriptPubKey | _: WitnessScriptPubKey |
-        _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
-        _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
-        EmptyScriptPubKey) =>
-      Failure(
-        new IllegalArgumentException(
-          "Cannot create a address for the scriptPubKey: " + x))
-  }
+      np: NetworkParameters): Try[Bech32Address] =
+    spk match {
+      case witSPK: WitnessScriptPubKey =>
+        Bech32Address.fromScriptPubKey(witSPK, np)
+      case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: P2SHScriptPubKey | _: LockTimeScriptPubKey |
+          _: WitnessScriptPubKey | _: ConditionalScriptPubKey |
+          _: NonStandardScriptPubKey | _: WitnessCommitment |
+          _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
+        Failure(
+          new IllegalArgumentException(
+            "Cannot create a address for the scriptPubKey: " + x))
+    }
 
 }
 
@@ -258,17 +259,19 @@ object P2PKHAddress extends AddressFactory[P2PKHAddress] {
 
   override def fromScriptPubKey(
       spk: ScriptPubKey,
-      np: NetworkParameters): Try[P2PKHAddress] = spk match {
-    case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh, np))
-    case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
-        _: P2SHScriptPubKey | _: LockTimeScriptPubKey |
-        _: ConditionalScriptPubKey | _: WitnessScriptPubKey |
-        _: NonStandardScriptPubKey | _: WitnessCommitment |
-        _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
-      Failure(
-        new IllegalArgumentException(
-          "Cannot create a address for the scriptPubKey: " + x))
-  }
+      np: NetworkParameters): Try[P2PKHAddress] =
+    spk match {
+      case p2pkh: P2PKHScriptPubKey => Success(P2PKHAddress(p2pkh, np))
+      case x @ (_: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+          _: MultiSignatureScriptPubKey | _: P2SHScriptPubKey |
+          _: LockTimeScriptPubKey | _: ConditionalScriptPubKey |
+          _: WitnessScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
+          EmptyScriptPubKey) =>
+        Failure(
+          new IllegalArgumentException(
+            "Cannot create a address for the scriptPubKey: " + x))
+    }
 }
 
 object P2SHAddress extends AddressFactory[P2SHAddress] {
@@ -296,7 +299,8 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
 
   def apply(
       hash: Sha256Hash160Digest,
-      network: NetworkParameters): P2SHAddress = P2SHAddressImpl(hash, network)
+      network: NetworkParameters): P2SHAddress =
+    P2SHAddressImpl(hash, network)
 
   override def fromString(address: String): Try[P2SHAddress] = {
     val decodeCheckP2SH: Try[ByteVector] = Base58.decodeCheck(address)
@@ -329,17 +333,19 @@ object P2SHAddress extends AddressFactory[P2SHAddress] {
 
   override def fromScriptPubKey(
       spk: ScriptPubKey,
-      np: NetworkParameters): Try[P2SHAddress] = spk match {
-    case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh, np))
-    case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-        _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
-        _: ConditionalScriptPubKey | _: WitnessScriptPubKey |
-        _: NonStandardScriptPubKey | _: WitnessCommitment |
-        _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
-      Failure(
-        new IllegalArgumentException(
-          "Cannot create a address for the scriptPubKey: " + x))
-  }
+      np: NetworkParameters): Try[P2SHAddress] =
+    spk match {
+      case p2sh: P2SHScriptPubKey => Success(P2SHAddress(p2sh, np))
+      case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: LockTimeScriptPubKey | _: ConditionalScriptPubKey |
+          _: WitnessScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
+          EmptyScriptPubKey) =>
+        Failure(
+          new IllegalArgumentException(
+            "Cannot create a address for the scriptPubKey: " + x))
+    }
 }
 
 object BitcoinAddress extends AddressFactory[BitcoinAddress] {
@@ -358,18 +364,20 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
 
   override def fromScriptPubKey(
       spk: ScriptPubKey,
-      np: NetworkParameters): Try[BitcoinAddress] = spk match {
-    case p2pkh: P2PKHScriptPubKey    => Success(P2PKHAddress(p2pkh, np))
-    case p2sh: P2SHScriptPubKey      => Success(P2SHAddress(p2sh, np))
-    case witSPK: WitnessScriptPubKey => Success(Bech32Address(witSPK, np))
-    case x @ (_: P2PKScriptPubKey | _: MultiSignatureScriptPubKey |
-        _: LockTimeScriptPubKey | _: ConditionalScriptPubKey |
-        _: NonStandardScriptPubKey | _: WitnessCommitment |
-        _: UnassignedWitnessScriptPubKey | EmptyScriptPubKey) =>
-      Failure(
-        new IllegalArgumentException(
-          "Cannot create a address for the scriptPubKey: " + x))
-  }
+      np: NetworkParameters): Try[BitcoinAddress] =
+    spk match {
+      case p2pkh: P2PKHScriptPubKey    => Success(P2PKHAddress(p2pkh, np))
+      case p2sh: P2SHScriptPubKey      => Success(P2SHAddress(p2sh, np))
+      case witSPK: WitnessScriptPubKey => Success(Bech32Address(witSPK, np))
+      case x @ (_: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
+          _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
+          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
+          _: WitnessCommitment | _: UnassignedWitnessScriptPubKey |
+          EmptyScriptPubKey) =>
+        Failure(
+          new IllegalArgumentException(
+            "Cannot create a address for the scriptPubKey: " + x))
+    }
 
 }
 
@@ -392,9 +400,10 @@ object Address extends AddressFactory[Address] {
   }
   override def fromScriptPubKey(
       spk: ScriptPubKey,
-      network: NetworkParameters): Try[Address] = network match {
-    case _: BitcoinNetwork => BitcoinAddress.fromScriptPubKey(spk, network)
-  }
+      network: NetworkParameters): Try[Address] =
+    network match {
+      case _: BitcoinNetwork => BitcoinAddress.fromScriptPubKey(spk, network)
+    }
 
   def apply(
       spk: ScriptPubKey,

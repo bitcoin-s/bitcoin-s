@@ -27,6 +27,7 @@ import org.bitcoins.core.wallet.utxo.{
   MultiSignatureSpendingInfo,
   P2PKHSpendingInfo,
   P2PKSpendingInfo,
+  P2PKWithTimeoutSpendingInfo,
   P2SHNestedSegwitV0UTXOSpendingInfo,
   P2SHNoNestSpendingInfo,
   P2SHSpendingInfo,
@@ -407,6 +408,35 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     * See BIP65 for more info
     */
   private def calcLockTime(utxos: Seq[BitcoinUTXOSpendingInfo]): Try[UInt32] = {
+    def computeNextLockTime(
+        currentLockTimeOpt: Option[UInt32],
+        locktime: Long): Try[UInt32] = {
+      val lockTime =
+        if (locktime > UInt32.max.toLong || locktime < 0) {
+          TxBuilderError.IncompatibleLockTimes
+        } else Success(UInt32(locktime))
+      lockTime.flatMap { l: UInt32 =>
+        currentLockTimeOpt match {
+          case Some(currentLockTime) =>
+            val lockTimeThreshold = tc.locktimeThreshold
+            if (currentLockTime < l) {
+              if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
+                //means that we spend two different locktime types, one of the outputs spends a
+                //OP_CLTV script by block height, the other spends one by time stamp
+                TxBuilderError.IncompatibleLockTimes
+              } else Success(l)
+            } else if (currentLockTime >= lockTimeThreshold && l < lockTimeThreshold) {
+              //means that we spend two different locktime types, one of the outputs spends a
+              //OP_CLTV script by block height, the other spends one by time stamp
+              TxBuilderError.IncompatibleLockTimes
+            } else {
+              Success(currentLockTime)
+            }
+          case None => Success(l)
+        }
+      }
+    }
+
     @tailrec
     def loop(
         remaining: Seq[BitcoinUTXOSpendingInfo],
@@ -421,36 +451,24 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                 case _: CSVScriptPubKey =>
                   loop(newRemaining, currentLockTimeOpt)
                 case cltv: CLTVScriptPubKey =>
-                  val lockTime =
-                    if (cltv.locktime.toLong > UInt32.max.toLong || cltv.locktime.toLong < 0) {
-                      TxBuilderError.IncompatibleLockTimes
-                    } else Success(UInt32(cltv.locktime.toLong))
-                  val result = lockTime.flatMap { l: UInt32 =>
-                    currentLockTimeOpt match {
-                      case Some(currentLockTime) =>
-                        val lockTimeThreshold = tc.locktimeThreshold
-                        if (currentLockTime < l) {
-                          if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
-                            //means that we spend two different locktime types, one of the outputs spends a
-                            //OP_CLTV script by block height, the other spends one by time stamp
-                            TxBuilderError.IncompatibleLockTimes
-                          } else Success(l)
-                        } else if (currentLockTime >= lockTimeThreshold && l < lockTimeThreshold) {
-                          //means that we spend two different locktime types, one of the outputs spends a
-                          //OP_CLTV script by block height, the other spends one by time stamp
-                          TxBuilderError.IncompatibleLockTimes
-                        } else {
-                          Success(currentLockTime)
-                        }
-                      case None => Success(l)
-                    }
-                  }
+                  val result = computeNextLockTime(currentLockTimeOpt,
+                                                   cltv.locktime.toLong)
 
                   result match {
                     case Success(newLockTime) =>
                       loop(newRemaining, Some(newLockTime))
                     case _: Failure[UInt32] => result
                   }
+              }
+            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
+              val result = computeNextLockTime(
+                currentLockTimeOpt,
+                p2pkWithTimeout.scriptPubKey.lockTime.toLong)
+
+              result match {
+                case Success(newLockTime) =>
+                  loop(newRemaining, Some(newLockTime))
+                case _: Failure[UInt32] => result
               }
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
@@ -496,6 +514,11 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               val input = TransactionInput(lockTime.outPoint,
                                            EmptyScriptSignature,
                                            sequence)
+              loop(newRemaining, input +: accum)
+            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
+              val input = TransactionInput(p2pkWithTimeout.outPoint,
+                                           EmptyScriptSignature,
+                                           UInt32.zero)
               loop(newRemaining, input +: accum)
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
