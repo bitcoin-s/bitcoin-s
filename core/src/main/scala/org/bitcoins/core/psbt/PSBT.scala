@@ -118,6 +118,7 @@ case class PSBT(
       index: Int,
       signers: Seq[Sign],
       conditionalPath: ConditionalPath): UTXOSpendingInfo = {
+    require(index >= 0 && index < inputMaps.size, s"Index must be within 0 and the number of inputs, got: $index")
     inputMaps(index).toUTXOSpendingInfo(transaction.inputs(index),
                                         signers,
                                         conditionalPath)
