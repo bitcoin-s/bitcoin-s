@@ -43,31 +43,17 @@ An [ExtKey](org/bitcoins/core/crypto/ExtKey.scala) is a data structure that can 
 
 You can sign with `ExtPrivateKey` the same way you could with a normal `ECPrivateKey`.
 
-```scala mdoc
-[info] Starting scala interpreter...
-Welcome to Scala 2.13.1 (OpenJDK 64-Bit GraalVM CE 19.3.0, Java 1.8.0_232).
-Type in expressions for evaluation. Or try :help.
-
-scala> import org.bitcoins.core.hd._
+```scala mdoc:to-string
 import org.bitcoins.core.hd._
-
-scala> import org.bitcoins.core.crypto._
 import org.bitcoins.core.crypto._
 
-scala> val extPrivKey = ExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
-SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
-SLF4J: Defaulting to no-operation (NOP) logger implementation
-SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
-extPrivKey: org.bitcoins.core.crypto.ExtPrivateKey = zprvAWgYBBk7JR8GkbLHbSiLjaZ5MrxyErnQaeAMiiTK8BzfFE3r1ECF35GCKr3TSakAfshSGoqKGCz6Lcm567dExL3Hj9nyXm5GpQeq4WrLLhs
+val extPrivKey = ExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
 
-scala> extPrivKey.sign(DoubleSha256Digest.empty.bytes)
-res0: org.bitcoins.core.crypto.ECDigitalSignature = ECDigitalSignature(304402203591cf49b08dae0c9830b0d0f955b329ec8bf033f91fb63b4e33bbaa92d55e3502206e7c498c0362ae1dadf3071eb45c23c77b347b062b1794d036bd63c3d73c13d7)
+extPrivKey.sign(DoubleSha256Digest.empty.bytes)
 
-scala> val path = BIP32Path(Vector(BIP32Node(0,false)))
-path: org.bitcoins.core.hd.BIP32Path = m/0
+val path = BIP32Path(Vector(BIP32Node(0,false)))
 
-scala> extPrivKey.sign(DoubleSha256Digest.empty.bytes,path)
-res4: org.bitcoins.core.crypto.ECDigitalSignature = ECDigitalSignature(304402203784368d19555227bdb9d96360d628f3fdea1e5ca189d125d534c1f0c891f5fb02203c5efd41366045d2f6ce69ccaed706924270cd4fa8bfbf76d29f7bbfecf27eb3)
+extPrivKey.sign(DoubleSha256Digest.empty.bytes,path)
 ```
 
 With `ExtSign`, you can use `ExtPrivateKey` to sign transactions inside of `TxBuilder` since `UTXOSpendingInfo` takes in `Sign` as a parameter. 
