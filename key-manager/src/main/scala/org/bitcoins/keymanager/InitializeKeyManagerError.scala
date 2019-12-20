@@ -1,13 +1,6 @@
 package org.bitcoins.keymanager
 
-sealed trait InitializeKeyManagerResult
-
-final case class InitializeKeyManagerSuccess(keyManager: KeyManager)
-    extends InitializeKeyManagerResult
-
-sealed trait InitializeKeyManagerError
-    extends Error
-    with InitializeKeyManagerResult
+sealed trait InitializeKeyManagerError extends Error
 
 object InitializeKeyManagerError {
   // todo add explanation of what good/bad entropy is

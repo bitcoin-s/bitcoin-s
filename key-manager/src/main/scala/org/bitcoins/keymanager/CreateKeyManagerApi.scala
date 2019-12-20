@@ -21,7 +21,9 @@ trait CreateKeyManagerApi {
   /**
     * $initialize
     */
-  final def initialize(kmParams: KeyManagerParams): InitializeKeyManagerResult =
+  final def initialize(kmParams: KeyManagerParams): Either[
+    InitializeKeyManagerError,
+    KeyManager] =
     initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits, kmParams)
 
   /**
@@ -29,12 +31,14 @@ trait CreateKeyManagerApi {
     */
   def initializeWithEntropy(
       entropy: BitVector,
-      kmParams: KeyManagerParams): InitializeKeyManagerResult
+      kmParams: KeyManagerParams): Either[InitializeKeyManagerError, KeyManager]
 
   // todo: scaladoc
   final def initializeWithMnemonic(
       mnemonicCode: MnemonicCode,
-      kmParams: KeyManagerParams): InitializeKeyManagerResult = {
+      kmParams: KeyManagerParams): Either[
+    InitializeKeyManagerError,
+    KeyManager] = {
     val entropy = mnemonicCode.toEntropy
     initializeWithEntropy(entropy = entropy, kmParams)
   }

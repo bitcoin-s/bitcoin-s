@@ -186,15 +186,15 @@ trait LockedWalletApi extends WalletApi {
     UnlockedWalletApi] = {
     val kmParams = walletConfig.kmParams
 
-    val unlockedKeyManager =
+    val unlockedKeyManagerE =
       LockedKeyManager.unlock(passphrase, kmParams)
-    unlockedKeyManager match {
-      case UnlockKeyManagerSuccess(km) =>
+    unlockedKeyManagerE match {
+      case Right(km) =>
         val w = Wallet(keyManager = km,
                        nodeApi = nodeApi,
                        chainQueryApi = chainQueryApi)
         Right(w)
-      case err: UnlockKeyManagerError => Left(err)
+      case Left(err) => Left(err)
     }
   }
 

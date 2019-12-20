@@ -6,12 +6,7 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.ChainQueryApi
-import org.bitcoins.keymanager.{
-  InitializeKeyManagerError,
-  InitializeKeyManagerResult,
-  InitializeKeyManagerSuccess,
-  KeyManager
-}
+import org.bitcoins.keymanager.{InitializeKeyManagerError, KeyManager}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
@@ -110,12 +105,12 @@ object Main extends App {
       }
     } else {
       logger.info(s"Initializing key manager")
-      val keyManagerInit: InitializeKeyManagerResult =
+      val keyManagerE: Either[InitializeKeyManagerError, KeyManager] =
         KeyManager.initialize(walletConf.kmParams)
 
-      val keyManager = keyManagerInit match {
-        case InitializeKeyManagerSuccess(keyManager) => keyManager
-        case err: InitializeKeyManagerError =>
+      val keyManager = keyManagerE match {
+        case Right(keyManager) => keyManager
+        case Left(err) =>
           error(err)
       }
 

@@ -50,7 +50,9 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
   /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(
       entropy: BitVector,
-      kmParams: KeyManagerParams): InitializeKeyManagerResult = {
+      kmParams: KeyManagerParams): Either[
+    InitializeKeyManagerError,
+    KeyManager] = {
     val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=${seedPath}")
 
@@ -91,30 +93,29 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
     //verify we can unlock it for a sanity check
     val unlocked = LockedKeyManager.unlock(badPassphrase, kmParams)
 
-    val biasedFinalE: CompatEither[
-      InitializeKeyManagerError,
-      InitializeKeyManagerSuccess] = for {
-      kmBeforeWrite <- writeToDiskE
-      invariant <- unlocked match {
-        case UnlockKeyManagerSuccess(unlockedKeyManager) =>
-          require(kmBeforeWrite == unlockedKeyManager,
-                  s"We could not read the key manager we just wrote!")
-          CompatRight(InitializeKeyManagerSuccess(unlockedKeyManager))
+    val biasedFinalE: CompatEither[InitializeKeyManagerError, KeyManager] =
+      for {
+        kmBeforeWrite <- writeToDiskE
+        invariant <- unlocked match {
+          case Right(unlockedKeyManager) =>
+            require(kmBeforeWrite == unlockedKeyManager,
+                    s"We could not read the key manager we just wrote!")
+            CompatRight(unlockedKeyManager)
 
-        case err: UnlockKeyManagerError =>
-          CompatLeft(InitializeKeyManagerError.FailedToReadWrittenSeed(err))
+          case Left(err) =>
+            CompatLeft(InitializeKeyManagerError.FailedToReadWrittenSeed(err))
+        }
+      } yield {
+        invariant
       }
-    } yield {
-      invariant
-    }
 
     biasedFinalE match {
       case CompatRight(initSuccess) =>
         logger.info(s"Successfully initialized wallet")
-        initSuccess
+        Right(initSuccess)
       case CompatLeft(err) =>
         logger.error(s"Failed to initialize key manager with err=${err}")
-        err
+        Left(err)
     }
   }
 
@@ -126,10 +127,8 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
       WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, password)
 
     mnemonicCodeE match {
-      case r: ReadMnemonicSuccess =>
-        Right(new KeyManager(r.mnemonic, kmParams))
-      case e: ReadMnemonicError =>
-        Left(e)
+      case Right(mnemonic) => Right(new KeyManager(mnemonic, kmParams))
+      case Left(v)         => Left(v)
     }
   }
 }

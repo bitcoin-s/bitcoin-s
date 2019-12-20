@@ -8,11 +8,7 @@ import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
-import org.bitcoins.keymanager.{
-  InitializeKeyManagerError,
-  InitializeKeyManagerSuccess,
-  KeyManager
-}
+import org.bitcoins.keymanager.KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
@@ -196,10 +192,10 @@ object BitcoinSWalletTest extends WalletLogger {
 
   private def createNewKeyManager()(
       implicit config: BitcoinSAppConfig): KeyManager = {
-    val km = KeyManager.initialize(config.walletConf.kmParams)
-    km match {
-      case InitializeKeyManagerSuccess(keyManager) => keyManager
-      case err: InitializeKeyManagerError =>
+    val keyManagerE = KeyManager.initialize(config.walletConf.kmParams)
+    keyManagerE match {
+      case Right(keyManager) => keyManager
+      case Left(err) =>
         throw new RuntimeException(s"Cannot initialize key manager err=${err}")
     }
   }

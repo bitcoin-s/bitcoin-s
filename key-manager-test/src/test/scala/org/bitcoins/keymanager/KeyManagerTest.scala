@@ -21,11 +21,11 @@ class KeyManagerTest extends KeyManagerUnitTest {
     //verify we wrote the seed
     assert(WalletStorage.seedExists(seedPath), "KeyManager did not write the seed to disk!")
 
-    val decryptedR: ReadMnemonicResult = WalletStorage.decryptMnemonicFromDisk(seedPath, KeyManagerTestUtil.badPassphrase)
+    val decryptedE = WalletStorage.decryptMnemonicFromDisk(seedPath, KeyManagerTestUtil.badPassphrase)
 
-    val mnemonic = decryptedR match {
-      case ReadMnemonicSuccess(m) => m
-      case err: ReadMnemonicError => fail(s"Failed to read mnemonic that was written by key manager with err=${err}")
+    val mnemonic = decryptedE match {
+      case Right(m) => m
+      case Left(err) => fail(s"Failed to read mnemonic that was written by key manager with err=${err}")
     }
 
     assert(mnemonic.toEntropy == entropy, s"We did not read the same entropy that we wrote!")
@@ -48,8 +48,7 @@ class KeyManagerTest extends KeyManagerUnitTest {
 
     val directXpub = direct.getXPub
 
-    val api = KeyManager.initializeWithEntropy(mnemonic.toEntropy, kmParams)
-      .asInstanceOf[InitializeKeyManagerSuccess].keyManager
+    val api = KeyManager.initializeWithEntropy(mnemonic.toEntropy, kmParams).right.get
 
     val apiXpub = api.getXPub
 

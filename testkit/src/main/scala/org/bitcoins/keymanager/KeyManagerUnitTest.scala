@@ -25,8 +25,8 @@ trait KeyManagerUnitTest extends BitcoinSUnitTest {
     )
 
     val km = kmResult match {
-      case InitializeKeyManagerSuccess(km) => km
-      case err: InitializeKeyManagerError =>
+      case Right(km) => km
+      case Left(err) =>
         fail(s"Failed to initialize key manager with err=${err}")
     }
 

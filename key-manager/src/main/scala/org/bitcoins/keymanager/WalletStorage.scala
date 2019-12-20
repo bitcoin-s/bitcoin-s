@@ -162,7 +162,7 @@ object WalletStorage {
     */
   def decryptMnemonicFromDisk(
       seedPath: Path,
-      passphrase: AesPassword): ReadMnemonicResult = {
+      passphrase: AesPassword): Either[ReadMnemonicError, MnemonicCode] = {
 
     val encryptedEither = readEncryptedMnemonicFromDisk(seedPath)
 
@@ -179,23 +179,13 @@ object WalletStorage {
       }
 
     decryptedEither match {
-      case CompatLeft(value)  => value
-      case CompatRight(value) => ReadMnemonicSuccess(value)
+      case CompatLeft(value)  => Left(value)
+      case CompatRight(value) => Right(value)
     }
   }
 }
 
-/**
-  * Represents the result of reading
-  * an encrypted mnemonic from disk
-  */
-sealed trait ReadMnemonicResult
-
-/** Represents the success case */
-case class ReadMnemonicSuccess(mnemonic: MnemonicCode)
-    extends ReadMnemonicResult
-
-sealed trait ReadMnemonicError extends ReadMnemonicResult { self: Error =>
+sealed trait ReadMnemonicError { self: Error =>
 }
 
 object ReadMnemonicError {

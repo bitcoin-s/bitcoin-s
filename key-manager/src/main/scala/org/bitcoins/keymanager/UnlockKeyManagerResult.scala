@@ -1,11 +1,6 @@
 package org.bitcoins.keymanager
 
-sealed trait UnlockKeyManagerResult
-
-final case class UnlockKeyManagerSuccess(unlockedKeyManager: KeyManager)
-    extends UnlockKeyManagerResult
-
-sealed trait UnlockKeyManagerError extends Error with UnlockKeyManagerResult
+sealed trait UnlockKeyManagerError extends Error
 
 object UnlockKeyManagerError {
 

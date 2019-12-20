@@ -7,8 +7,8 @@ import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.keymanager.{InitializeKeyManagerSuccess, KeyManager, KeyManagerParams}
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.keymanager.{KeyManager, KeyManagerParams}
+import org.bitcoins.rpc.serializers.JsonSerializers._refere
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
@@ -135,11 +135,14 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   private def getWallet(config: WalletAppConfig)(implicit ec: ExecutionContext): Future[Wallet] = {
-    val km = KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
-        .asInstanceOf[InitializeKeyManagerSuccess]
-    val wallet = Wallet(km.keyManager, NodeApi.NoOp, ChainQueryApi.NoOp)(config, ec)
-    val walletF = Wallet.initialize(wallet)(config,ec)
-    walletF
+    val kmE = KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
+    kmE match {
+      case Left(err) => Future.failed(new RuntimeException(s"Failed to initialize km with err=${err}"))
+      case Right(km) =>
+        val wallet = Wallet(km, NodeApi.NoOp, ChainQueryApi.NoOp)(config, ec)
+        val walletF = Wallet.initialize(wallet)(config,ec)
+        walletF
+    }
   }
 
 
