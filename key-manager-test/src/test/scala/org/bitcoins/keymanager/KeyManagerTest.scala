@@ -1,18 +1,19 @@
 package org.bitcoins.keymanager
 
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.hd.{HDAccount, HDCoin, HDCoinType, HDPurposes}
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE, MnemonicCode}
+import org.bitcoins.core.hd.{BIP32Path, HDAccount, HDChainType, HDCoin, HDCoinType, HDPath, HDPurposes, LegacyHDPath, SegWitHDPath}
+import scodec.bits.BitVector
 
 class KeyManagerTest extends KeyManagerUnitTest {
   val purpose = HDPurposes.Legacy
-
   //this is taken from 'trezor-addresses.json' which give us test cases that conform with trezor
   val mnemonicStr ="stage boring net gather radar radio arrest eye ask risk girl country"
   val mnemonic = MnemonicCode.fromWords(mnemonicStr.split(" ").toVector)
 
   val coin = HDCoin(purpose,coinType = HDCoinType.Bitcoin)
   val hdAccount = HDAccount(coin, 0)
+  val path: HDPath  = LegacyHDPath(coin.coinType,coin.purpose.constant,HDChainType.External,0)
 
   it must "initialize the key manager" in {
     val entropy = MnemonicCode.getEntropy256Bits
@@ -64,6 +65,23 @@ class KeyManagerTest extends KeyManagerUnitTest {
     val kmE = KeyManager.fromParams(kmParams, KeyManager.badPassphrase)
 
     assert(kmE == Left(ReadMnemonicError.NotFoundError))
+  }
+
+  it must "sign something with the key manager" in {
+    val keyManager = withInitializedKeyManager()
+    val hash = DoubleSha256DigestBE.empty.bytes
+    val signer = keyManager.toSign(path)
+    val sig = signer.sign(hash)
+    assert(signer.publicKey.verify(hash,sig))
+  }
+
+  it must "throw an exception if entropy is bad" in {
+    val badEntropy = BitVector.empty
+
+
+    val init = KeyManager.initializeWithEntropy(badEntropy, buildParams())
+
+    assert(init == Left(InitializeKeyManagerError.BadEntropy))
   }
 
   private def buildParams(): KeyManagerParams = {

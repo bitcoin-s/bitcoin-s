@@ -1,4 +1,4 @@
-package org.bitcoins.keymanager
+package org.bitcoins.keymanager.util
 
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.{

@@ -73,15 +73,8 @@ object WalletStorage {
         writeJsToDisk()
       case Some(found) =>
         logger.info(s"$seedPath already exists")
-        if (found == mnemonic) {
-          logger.trace(s"Found and provided mnemonics are the same, skipping")
-          seedPath
-        } else {
-          logger.warn(
-            s"Found mnemonic on disk is not the same as mnemonic we're about to write")
-          throw new RuntimeException(
-            s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
-        }
+        throw new RuntimeException(
+          s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
     }
   }
 
@@ -126,10 +119,7 @@ object WalletStorage {
         val rawSaltString = json(SALT).str
         (ivString, cipherTextString, rawSaltString)
       } match {
-        case Success(value) => CompatRight(value)
-        case Failure(value: ujson.Value.InvalidData) =>
-          logger.error(s"Error when parsing JSON file $seedPath: ${value.msg}")
-          CompatLeft(JsonParsingError(value.msg))
+        case Success(value)     => CompatRight(value)
         case Failure(exception) => throw exception
       }
     }

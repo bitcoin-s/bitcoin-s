@@ -102,6 +102,6 @@ class WalletStorageTest
       //attempt to write another mnemonic
       getAndWriteMnemonic(walletConf)
     }
-
   }
+
 }
