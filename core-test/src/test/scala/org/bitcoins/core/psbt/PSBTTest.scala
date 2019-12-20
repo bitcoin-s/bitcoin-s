@@ -1,7 +1,18 @@
 package org.bitcoins.core.psbt
 
+import org.bitcoins.core.crypto.{ECPublicKey, Sha256Digest, Sign}
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.protocol.script.{
+  P2WSHWitnessSPKV0,
+  P2WSHWitnessV0,
+  ScriptPubKey
+}
+import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
+
+import scala.annotation.tailrec
 
 class PSBTTest extends BitcoinSUnitTest {
 
@@ -33,5 +44,53 @@ class PSBTTest extends BitcoinSUnitTest {
       "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a0100000000000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0a0f0102030405060708100f0102030405060708090a0b0c0d0e0f000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0a0f0102030405060708100f0102030405060708090a0b0c0d0e0f000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0a0f0102030405060708100f0102030405060708090a0b0c0d0e0f00")
 
     assert(psbt1.combinePSBT(psbt2) == expected)
+  }
+
+  private def getDummySigners(size: Int): Seq[Sign] = {
+    @tailrec
+    def loop(i: Int, accum: Seq[Sign]): Seq[Sign] = {
+      if (i <= 0) {
+        accum
+      } else {
+        loop(i - 1, accum :+ Sign.dummySign(ECPublicKey.freshPublicKey))
+      }
+    }
+    loop(size, Nil)
+  }
+
+  it must "create a valid UTXOSpendingInfo" in {
+    // PSBT with one P2WSH input of a 2-of-2 multisig. witnessScript, keypaths, and global xpubs are available. Contains no signatures. Outputs filled.
+    val psbt = PSBT(
+      "70736274ff01005202000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef133579000000004f01043587cf02da3fd0088000000097048b1ad0445b1ec8275517727c87b4e4ebc18a203ffa0f94c01566bd38e9000351b743887ee1d40dc32a6043724f2d6459b3b5a4d73daec8fbae0472f3bc43e20cd90c6a4fae000080000000804f01043587cf02da3fd00880000001b90452427139cd78c2cff2444be353cd58605e3e513285e528b407fae3f6173503d30a5e97c8adbc557dac2ad9a7e39c1722ebac69e668b6f2667cc1d671c83cab0cd90c6a4fae000080010000800001012b0065cd1d000000002200202c5486126c4978079a814e13715d65f36459e4d6ccaded266d0508645bafa6320105475221029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c88712103372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b52ae2206029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c887110d90c6a4fae0000800000008000000000220603372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b10d90c6a4fae0000800100008000000000002202039eff1f547a1d5f92dfa2ba7af6ac971a4bd03ba4a734b03156a256b8ad3a1ef910ede45cc500000080000000800100008000")
+    val dummySigners = getDummySigners(2)
+    val spendingInfo = psbt.getUTXOSpendingInfo(index = 0, dummySigners)
+
+    assert(spendingInfo.outPoint == psbt.transaction.inputs.head.previousOutput)
+    assert(spendingInfo.amount == Satoshis(500000000))
+    assert(
+      spendingInfo.scriptPubKey == P2WSHWitnessSPKV0.fromHash(Sha256Digest(
+        "2c5486126c4978079a814e13715d65f36459e4d6ccaded266d0508645bafa632")))
+    assert(spendingInfo.signers == dummySigners)
+    assert(spendingInfo.hashType == HashType.sigHashAll)
+    assert(spendingInfo.redeemScriptOpt.isEmpty)
+    assert(
+      spendingInfo.scriptWitnessOpt.contains(
+        P2WSHWitnessV0(ScriptPubKey.fromAsmHex(
+          "5221029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c88712103372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b52ae"))))
+    assert(spendingInfo.conditionalPath == ConditionalPath.NoConditionsLeft)
+  }
+
+  it must "fail to create a valid UTXOSpendingInfo" in {
+
+    val psbt = PSBT(
+      "70736274ff01005202000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef133579000000004f01043587cf02da3fd0088000000097048b1ad0445b1ec8275517727c87b4e4ebc18a203ffa0f94c01566bd38e9000351b743887ee1d40dc32a6043724f2d6459b3b5a4d73daec8fbae0472f3bc43e20cd90c6a4fae000080000000804f01043587cf02da3fd00880000001b90452427139cd78c2cff2444be353cd58605e3e513285e528b407fae3f6173503d30a5e97c8adbc557dac2ad9a7e39c1722ebac69e668b6f2667cc1d671c83cab0cd90c6a4fae000080010000800001012b0065cd1d000000002200202c5486126c4978079a814e13715d65f36459e4d6ccaded266d0508645bafa6320105475221029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c88712103372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b52ae2206029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c887110d90c6a4fae0000800000008000000000220603372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b10d90c6a4fae0000800100008000000000002202039eff1f547a1d5f92dfa2ba7af6ac971a4bd03ba4a734b03156a256b8ad3a1ef910ede45cc500000080000000800100008000")
+
+    assertThrows[IllegalArgumentException](
+      psbt.getUTXOSpendingInfo(index = -1, getDummySigners(2)))
+
+    val psbt1 = PSBT(
+      "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a010000000000000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0000")
+    assertThrows[UnsupportedOperationException](
+      psbt1.getUTXOSpendingInfo(index = 0, getDummySigners(1)))
   }
 }
