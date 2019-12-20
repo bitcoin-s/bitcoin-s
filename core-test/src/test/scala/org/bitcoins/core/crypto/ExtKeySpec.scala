@@ -3,29 +3,29 @@ package org.bitcoins.core.crypto
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.Success
 
-class ExtKeySpec extends Properties("ExtKeySpec") {
-  private val logger = BitcoinSLogger.logger
-  property("serialization symmetry") = {
+class ExtKeySpec extends BitcoinSUnitTest {
+  private val nonHardened: Gen[UInt32] =
+    Gen.choose(0L, ((1L << 31) - 1)).map(UInt32(_))
+  private val hardened: Gen[UInt32] =
+    Gen.choose(1L << 31, (1L << 32) - 1).map(UInt32(_))
+
+  it must "have serialization symmetry" in {
     Prop.forAll(CryptoGenerators.extKey) { extKey =>
       ExtKey.fromString(extKey.toString) == Success(extKey) &&
-      ExtKey(extKey.bytes) == extKey
+        ExtKey(extKey.bytes) == extKey
     }
   }
 
-  private def nonHardened: Gen[UInt32] =
-    Gen.choose(0L, ((1L << 31) - 1)).map(UInt32(_))
-  private def hardened: Gen[UInt32] =
-    Gen.choose(1L << 31, (1L << 32) - 1).map(UInt32(_))
-
-  property("derivation identity 1") = {
+  it must "have derivation identity 1" in {
     Prop.forAllNoShrink(CryptoGenerators.extPrivateKey,
-                        nonHardened,
-                        nonHardened,
-                        nonHardened) { (m, a, b, c) =>
+      nonHardened,
+      nonHardened,
+      nonHardened) { (m, a, b, c) =>
       //https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#the-key-tree
       //N(m/a/b/c) = N(m/a/b)/c = N(m/a)/b/c = N(m)/a/b/c = M/a/b/c
       val path1 = m
@@ -57,11 +57,11 @@ class ExtKeySpec extends Properties("ExtKeySpec") {
     }
   }
 
-  property("derivation identity 2") = {
+  it must "derivation identity 2" in {
     Prop.forAllNoShrink(CryptoGenerators.extPrivateKey,
-                        hardened,
-                        nonHardened,
-                        nonHardened) { (m, aH, b, c) =>
+      hardened,
+      nonHardened,
+      nonHardened) { (m, aH, b, c) =>
       //https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#the-key-tree
       //N(m/aH/b/c) = N(m/aH/b)/c = N(m/aH)/b/c
       val path1 = m

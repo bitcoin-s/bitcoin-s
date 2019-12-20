@@ -127,3 +127,7 @@ firstAccountAddress.value
 // HD path to generate an address at:
 val nextAddressPath: SegWitHDPath = firstAddressPath.next
 ```
+
+### Signing things with HD keys
+
+Please see [sign.md](sign.md) for information on how to sign things with HD keys.

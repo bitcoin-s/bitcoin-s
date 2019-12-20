@@ -5,6 +5,7 @@
       "core/core-intro",
       "core/addresses",
       "core/hd-keys",
+      "core/sign",
       "core/txbuilder"
     ],
     "RPC clients": [
