@@ -196,7 +196,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   private def createNewKeyManager()(
       implicit config: BitcoinSAppConfig): KeyManager = {
-    val km = KeyManager.initialize(config.walletConf.seedPath)
+    val km = KeyManager.initialize(config.walletConf.kmParams)
     km match {
       case InitializeKeyManagerSuccess(keyManager) => keyManager
       case err: InitializeKeyManagerError =>

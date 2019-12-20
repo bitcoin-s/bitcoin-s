@@ -20,7 +20,7 @@ class WalletStorageTest
     withWalletConfig(test)
 
   def getSeedPath(config: WalletAppConfig): Path = {
-    config.datadir.resolve(WalletAppConfig.ENCRYPTED_SEED_FILE_NAME)
+    config.datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   behavior of "WalletStorage"

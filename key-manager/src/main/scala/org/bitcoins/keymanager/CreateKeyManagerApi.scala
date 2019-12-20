@@ -1,7 +1,5 @@
 package org.bitcoins.keymanager
 
-import java.nio.file.Path
-
 import org.bitcoins.core.crypto.MnemonicCode
 import scodec.bits.BitVector
 
@@ -23,21 +21,21 @@ trait CreateKeyManagerApi {
   /**
     * $initialize
     */
-  final def initialize(seedPath: Path): InitializeKeyManagerResult =
-    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits, seedPath)
+  final def initialize(kmParams: KeyManagerParams): InitializeKeyManagerResult =
+    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits, kmParams)
 
   /**
     * $initializeWithEnt
     */
   def initializeWithEntropy(
       entropy: BitVector,
-      seedPath: Path): InitializeKeyManagerResult
+      kmParams: KeyManagerParams): InitializeKeyManagerResult
 
   // todo: scaladoc
   final def initializeWithMnemonic(
       mnemonicCode: MnemonicCode,
-      seedPath: Path): InitializeKeyManagerResult = {
+      kmParams: KeyManagerParams): InitializeKeyManagerResult = {
     val entropy = mnemonicCode.toEntropy
-    initializeWithEntropy(entropy, seedPath)
+    initializeWithEntropy(entropy = entropy, kmParams)
   }
 }

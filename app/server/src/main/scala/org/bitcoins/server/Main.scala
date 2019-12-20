@@ -104,14 +104,14 @@ object Main extends App {
       val locked = LockedWallet(nodeApi, chainQueryApi)
 
       // TODO change me when we implement proper password handling
-      locked.unlock(Wallet.badPassphrase) match {
+      locked.unlock(KeyManager.badPassphrase) match {
         case Right(wallet) => Future.successful(wallet)
         case Left(kmError) => error(kmError)
       }
     } else {
       logger.info(s"Initializing key manager")
       val keyManagerInit: InitializeKeyManagerResult =
-        KeyManager.initialize(walletConf.seedPath)
+        KeyManager.initialize(walletConf.kmParams)
 
       val keyManager = keyManagerInit match {
         case InitializeKeyManagerSuccess(keyManager) => keyManager

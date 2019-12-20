@@ -15,13 +15,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.keymanager.{
-  KeyManager,
-  LockedKeyManager,
-  UnlockKeyManagerError,
-  UnlockKeyManagerResult,
-  UnlockKeyManagerSuccess
-}
+import org.bitcoins.keymanager._
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
@@ -190,8 +184,10 @@ trait LockedWalletApi extends WalletApi {
   def unlock(passphrase: AesPassword): Either[
     UnlockKeyManagerError,
     UnlockedWalletApi] = {
+    val kmParams = walletConfig.kmParams
+
     val unlockedKeyManager =
-      LockedKeyManager.unlock(passphrase, walletConfig.seedPath)
+      LockedKeyManager.unlock(passphrase, kmParams)
     unlockedKeyManager match {
       case UnlockKeyManagerSuccess(km) =>
         val w = Wallet(keyManager = km,
@@ -259,19 +255,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
-  def createNewAccount(
-      purpose: HDPurpose,
-      network: NetworkParameters): Future[WalletApi]
-
-  /**
-    * Tries to create a new account in this wallet for the default
-    * account type. Fails if the
-    * most recent account has no transaction history, as per
-    * BIP44
-    *
-    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
-    */
-  def createNewAccount(network: NetworkParameters): Future[WalletApi]
+  def createNewAccount(keyManagerParams: KeyManagerParams): Future[WalletApi]
 
   /**
     * Iterates over the block filters in order to find filters that match to the given addresses

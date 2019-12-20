@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path}
 import com.typesafe.config.Config
 import org.bitcoins.core.hd.{AddressType, HDPurpose, HDPurposes}
 import org.bitcoins.db.AppConfig
-import org.bitcoins.keymanager.WalletStorage
+import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -74,13 +74,16 @@ case class WalletAppConfig(
 
   /** The path to our encrypted mnemonic seed */
   private[bitcoins] def seedPath: Path = {
-    datadir.resolve(WalletAppConfig.ENCRYPTED_SEED_FILE_NAME)
+    datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   /** Checks if our wallet as a mnemonic seed associated with it */
   def seedExists(): Boolean = {
     Files.exists(seedPath)
   }
+
+  def kmParams: KeyManagerParams =
+    KeyManagerParams(seedPath, defaultAccountKind, network)
 
 }
 
@@ -91,7 +94,4 @@ object WalletAppConfig {
     */
   def fromDefaultDatadir(confs: Config*): WalletAppConfig =
     WalletAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
-
-  val ENCRYPTED_SEED_FILE_NAME: String =
-    "encrypted-bitcoin-s-seed.json"
 }

@@ -30,4 +30,7 @@ object InitializeKeyManagerError {
       extends Error("Wallet already exists")
       with InitializeKeyManagerError
 
+  final case class FailedToReadWrittenSeed(unlockErr: UnlockKeyManagerError)
+      extends Error(s"We failed to read the mnemonic seed we just wrote")
+      with InitializeKeyManagerError
 }

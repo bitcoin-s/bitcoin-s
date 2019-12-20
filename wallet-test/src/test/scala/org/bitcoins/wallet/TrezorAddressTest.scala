@@ -7,7 +7,7 @@ import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.keymanager.KeyManager
+import org.bitcoins.keymanager.{InitializeKeyManagerSuccess, KeyManager, KeyManagerParams}
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
@@ -87,42 +87,42 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       }
   }
 
-  private case class TestAddress(
+  case class TestAddress(
       path: HDPath,
       chain: HDChainType,
       addressIndex: Int,
       address: BitcoinAddress)
 
-  private object TestAddress {
+  object TestAddress {
     implicit val reads = Json.reads[TestAddress]
   }
 
-  private case class TestVector(
+  case class TestVector(
       xpub: ExtPublicKey,
       coin: HDCoinType,
       account: Int,
       pathType: HDPurpose,
       addresses: Vector[TestAddress])
 
-  private object TestVector {
+  object TestVector {
     implicit val reads = Json.reads[TestVector]
   }
 
-  private lazy val vectors = json.validate[Vector[TestVector]] match {
+  lazy val vectors = json.validate[Vector[TestVector]] match {
     case JsError(errors)     => fail(errors.head.toString)
     case JsSuccess(value, _) => value
   }
 
-  private lazy val legacyVectors =
+  lazy val legacyVectors =
     vectors.filter(_.pathType == HDPurposes.Legacy)
 
-  private lazy val segwitVectors =
+  lazy val segwitVectors =
     vectors.filter(_.pathType == HDPurposes.SegWit)
 
-  private lazy val nestedVectors =
+  lazy val nestedVectors =
     vectors.filter(_.pathType == HDPurposes.NestedSegWit)
 
-  private def configForPurpose(purpose: HDPurpose): Config = {
+  def configForPurpose(purpose: HDPurpose): Config = {
     val purposeStr = purpose match {
       case HDPurposes.Legacy       => "legacy"
       case HDPurposes.SegWit       => "segwit"
@@ -135,14 +135,15 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   private def getWallet(config: WalletAppConfig)(implicit ec: ExecutionContext): Future[Wallet] = {
-    val km = KeyManager(mnemonic)
-    val wallet = Wallet(km, NodeApi.NoOp, ChainQueryApi.NoOp)(config, ec)
+    val km = KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
+        .asInstanceOf[InitializeKeyManagerSuccess]
+    val wallet = Wallet(km.keyManager, NodeApi.NoOp, ChainQueryApi.NoOp)(config, ec)
     val walletF = Wallet.initialize(wallet)(config,ec)
     walletF
   }
 
 
-  private case class AccountAndAddrsAndVector(
+  case class AccountAndAddrsAndVector(
       account: AccountDb,
       addrs: Seq[AddressDb],
       vector: TestVector)
@@ -162,71 +163,71 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
           assert(foundAddress.address == expectedAddress.address)
       }
   }
+  /** Creates the wallet accounts needed for this test */
+  private def createNeededAccounts(
+                            wallet: Wallet,
+                            existing: Vector[AccountDb],
+                            keyManagerParams: KeyManagerParams,
+                            testVectors: Vector[TestVector]): Future[Unit] = {
+    val accountsToCreate = existing.length until testVectors.length
+    FutureUtil
+      .sequentially(accountsToCreate) { _ =>
+        wallet.createNewAccount(keyManagerParams)
+      }
+      .map(_ => ())
+  }
+
+  /**
+    * Iterates over the given list of accounts and test vectors, and
+    * fetches all the
+    * addresses needed to verify the test vector
+    */
+  def getAccountsWithAddressesAndVectors(
+                                          wallet: Wallet,
+                                          accountsWithVectors: Seq[(AccountDb, TestVector)]): Future[
+    Seq[AccountAndAddrsAndVector]] = {
+    FutureUtil.sequentially(accountsWithVectors) {
+      case (acc, vec) =>
+        val addrFutures: Future[Seq[AddressDb]] =
+          FutureUtil.sequentially(vec.addresses) { vector =>
+            val addrFut = vector.chain match {
+              case Change => wallet.getNewChangeAddress(acc)
+              case External =>
+                wallet.getNewAddress(acc)
+            }
+            addrFut.flatMap(wallet.addressDAO.findAddress).map {
+              case Some(addr) => addr
+              case None =>
+                fail(s"Did not find address we just generated in DAO!")
+            }
+          }
+        addrFutures.map(AccountAndAddrsAndVector(acc, _, vec))
+    }
+  }
 
   private def testAccountType(purpose: HDPurpose): Future[Assertion] = {
     val confOverride = configForPurpose(purpose)
     implicit val conf: WalletAppConfig =
       BitcoinSTestAppConfig.getSpvTestConfig(confOverride)
 
-    val vectors = purpose match {
+    val testVectors = purpose match {
       case HDPurposes.Legacy       => legacyVectors
       case HDPurposes.SegWit       => segwitVectors
       case HDPurposes.NestedSegWit => nestedVectors
       case other                   => fail(s"unknown purpose: $other")
     }
 
-    /** Creates the wallet accounts needed for this test */
-    def createNeededAccounts(
-        wallet: Wallet,
-        existing: Vector[AccountDb]): Future[Unit] = {
-      val accountsToCreate = existing.length until vectors.length
-
-      FutureUtil
-        .sequentially(accountsToCreate) { _ =>
-          wallet.createNewAccount(purpose, conf.network)
-        }
-        .map(_ => ())
-    }
-
-    /**
-      * Iterates over the given list of accounts and test vectors, and
-      * fetches all the
-      * addresses needed to verify the test vector
-      */
-    def getAcccountsWithAddressesAndVectors(
-        wallet: Wallet,
-        accountsWithVectors: Seq[(AccountDb, TestVector)]): Future[
-      Seq[AccountAndAddrsAndVector]] = {
-      FutureUtil.sequentially(accountsWithVectors) {
-        case (acc, vec) =>
-          val addrFutures: Future[Seq[AddressDb]] =
-            FutureUtil.sequentially(vec.addresses) { vector =>
-              val addrFut = vector.chain match {
-                case Change => wallet.getNewChangeAddress(acc)
-                case External =>
-                  wallet.getNewAddress(acc)
-              }
-              addrFut.flatMap(wallet.addressDAO.findAddress).map {
-                case Some(addr) => addr
-                case None =>
-                  fail(s"Did not find address we just generated in DAO!")
-              }
-            }
-          addrFutures.map(AccountAndAddrsAndVector(acc, _, vec))
-      }
-    }
-
     for {
       wallet <- getWallet(conf)
       existingAccounts <- wallet.listAccounts(purpose)
-      _ <- createNeededAccounts(wallet, existingAccounts)
+      _ <- createNeededAccounts(wallet, existingAccounts, conf.kmParams, testVectors)
       accounts <- wallet.listAccounts(purpose)
-
       // we want to find all accounts for the given account type,
       // and match it with its corresponding test vector
       accountsWithVectors = {
-        assert(accounts.length == vectors.length)
-        val accountsWithVectors = vectors.map { vec =>
+        assert(accounts.length == testVectors.length)
+        val accountsWithVectors = testVectors.map { vec =>
+          assert(accounts.filter(_.hdAccount.index == vec.account).length == 1)
           accounts.find(_.hdAccount.index == vec.account) match {
             case None =>
               fail(
@@ -242,7 +243,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       // here we generate addresses matching the ones found
       // in the accompanying test vector for each account
       // at the end we group them all together
-      accountsWithAddrsWithVecs <- getAcccountsWithAddressesAndVectors(
+      accountsWithAddrsWithVecs <- getAccountsWithAddressesAndVectors(
         wallet,
         accountsWithVectors)
     } yield {

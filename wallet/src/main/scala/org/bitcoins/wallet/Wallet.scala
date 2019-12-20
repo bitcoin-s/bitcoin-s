@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.config.{BitcoinNetwork, NetworkParameters}
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
-import org.bitcoins.keymanager.{HDUtil, KeyManager}
+import org.bitcoins.keymanager.{HDUtil, KeyManager, KeyManagerParams}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
@@ -94,49 +94,55 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
-  override def createNewAccount(network: NetworkParameters): Future[WalletApi] =
-    createNewAccount(DEFAULT_HD_COIN.purpose, network)
-
   // todo: check if there's addresses in the most recent
   // account before creating new
-  override def createNewAccount(
-      purpose: HDPurpose,
-      network: NetworkParameters): Future[Wallet] = {
+  override def createNewAccount(kmParams: KeyManagerParams): Future[Wallet] = {
+    val keyManagerE = KeyManager.fromParams(kmParams, KeyManager.badPassphrase)
 
-    accountDAO
-      .findAll()
-      .map(_.filter(_.hdAccount.purpose == purpose))
-      .map(_.sortBy(_.hdAccount.index))
-      // we want to the most recently created account,
-      // to know what the index of our new account
-      // should be.
-      .map(_.lastOption)
-      .flatMap { mostRecentOpt =>
-        val accountIndex = mostRecentOpt match {
-          case None          => 0 // no accounts present in wallet
-          case Some(account) => account.hdAccount.index + 1
-        }
-        logger.info(
-          s"Creating new account at index $accountIndex for purpose $purpose")
-        val newAccount = HDAccount(DEFAULT_HD_COIN, accountIndex)
-        val xpub: ExtPublicKey = {
-          val xpriv = keyManager.xprivForPurpose(newAccount.purpose, network)
-          xpriv.deriveChildPubKey(newAccount) match {
-            case Failure(exception) =>
-              // this won't happen, because we're deriving from a privkey
-              // this should really be changed in the method signature
-              logger.error(s"Unexpected error when deriving xpub: $exception")
-              throw exception
-            case Success(xpub) => xpub
+    keyManagerE match {
+      case Left(err) =>
+        Future.failed(
+          new RuntimeException(s"Failed to read key manager ${err}"))
+      case Right(keyManager) =>
+        accountDAO
+          .findAll()
+          .map(_.filter(_.hdAccount.purpose == kmParams.purpose))
+          .map(_.sortBy(_.hdAccount.index))
+          // we want to the most recently created account,
+          // to know what the index of our new account
+          // should be.
+          .map(_.lastOption)
+          .flatMap { mostRecentOpt =>
+            val accountIndex = mostRecentOpt match {
+              case None          => 0 // no accounts present in wallet
+              case Some(account) => account.hdAccount.index + 1
+            }
+            logger.info(
+              s"Creating new account at index $accountIndex for purpose ${kmParams.purpose}")
+            val hdCoin =
+              HDCoin(purpose = keyManager.kmParams.purpose,
+                     coinType = HDUtil.getCoinType(keyManager.kmParams.network))
+            val newAccount = HDAccount(hdCoin, accountIndex)
+            val xpub: ExtPublicKey = {
+              println(s"Deriving xpub for newAccount=${newAccount}")
+              keyManager.deriveXPub(newAccount) match {
+                case Failure(exception) =>
+                  // this won't happen, because we're deriving from a privkey
+                  // this should really be changed in the method signature
+                  logger.error(
+                    s"Unexpected error when deriving xpub: $exception")
+                  throw exception
+                case Success(xpub) => xpub
+              }
+            }
+            val newAccountDb = AccountDb(xpub, newAccount)
+            val accountCreationF = accountDAO.create(newAccountDb)
+            accountCreationF.map(created =>
+              logger.debug(s"Created new account ${created.hdAccount}"))
+            accountCreationF
           }
-        }
-        val newAccountDb = AccountDb(xpub, newAccount)
-        val accountCreationF = accountDAO.create(newAccountDb)
-        accountCreationF.map(created =>
-          logger.debug(s"Created new account ${created.hdAccount}"))
-        accountCreationF
-      }
-      .map(_ => this)
+          .map(_ => Wallet(keyManager, nodeApi, chainQueryApi))
+    }
   }
 }
 
@@ -150,42 +156,33 @@ object Wallet extends WalletLogger {
   )(
       implicit override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
-  ) extends Wallet {
-
-    // todo: until we've figured out a better schem
-    //override val passphrase: AesPassword = Wallet.badPassphrase
-  }
+  ) extends Wallet
 
   def apply(
       keyManager: KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(
       implicit config: WalletAppConfig,
-      ec: ExecutionContext): Wallet =
+      ec: ExecutionContext): Wallet = {
     WalletImpl(keyManager, nodeApi, chainQueryApi)
-
-  // todo figure out how to handle password part of wallet
-  val badPassphrase = AesPassword.fromNonEmptyString("changeMe")
+  }
 
   /** Creates the level 0 account for the given HD purpose */
-  private def createRootAccount(wallet: Wallet, purpose: HDPurpose)(
-      implicit config: WalletAppConfig,
-      ec: ExecutionContext): Future[AccountDb] = {
-
+  private def createRootAccount(wallet: Wallet, keyManager: KeyManager)(
+      implicit ec: ExecutionContext): Future[AccountDb] = {
+    //require(config.kmParams == keyManager.kmParams, s"Key manager parameter have diverged between config and keyManager")
+    val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
-      HDCoin(purpose, HDUtil.getCoinType(config.network))
-    val account = HDAccount(coin, 0)
-    val xpriv = wallet.keyManager
-      .xprivForPurpose(purpose = purpose, network = config.network)
+      HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
+    val account = HDAccount(coin = coin, index = 0)
     // safe since we're deriving from a priv
-    val xpub = xpriv.deriveChildPubKey(account).get
+    val xpub = keyManager.deriveXPub(account).get
     val accountDb = AccountDb(xpub, account)
-
-    logger.debug(s"Creating account with constant prefix $purpose")
+    //logger.debug(s"Creating account with constant prefix ${keyManager.kmParams.purpose}")
     wallet.accountDAO
       .create(accountDb)
       .map { written =>
-        logger.debug(s"Saved account with constant prefix $purpose to DB")
+        //logger.debug(s"Saved account with constant prefix ${keyManager.kmParams.purpose} to DB")
         written
       }
   }
@@ -199,7 +196,21 @@ object Wallet extends WalletLogger {
     val initConfigF = walletAppConfig.initialize()
     val createAccountFutures = for {
       _ <- initConfigF
-      accounts = HDPurposes.all.map(createRootAccount(wallet, _))
+      accounts = HDPurposes.all.map { purpose =>
+        //we need to create key manager params for each purpose
+        //and then initialize a key manager to derive the correct xpub
+        val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
+        val kmE = KeyManager.fromParams(kmParams, KeyManager.badPassphrase)
+        kmE match {
+          case Right(km) => createRootAccount(wallet = wallet, keyManager = km)
+          case Left(err) =>
+            //probably means you haven't initialized the key manager via the
+            //'CreateKeyManagerApi'
+            throw new RuntimeException(
+              s"Failed to create keymanager with params=${kmParams} err=${err}")
+        }
+
+      }
     } yield accounts
 
     val accountCreationF =

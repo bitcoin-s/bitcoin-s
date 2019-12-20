@@ -1,7 +1,5 @@
 package org.bitcoins.keymanager
 
-import java.nio.file.Path
-
 import org.bitcoins.core.crypto.AesPassword
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.keymanager.ReadMnemonicError.{
@@ -15,14 +13,15 @@ object LockedKeyManager extends BitcoinSLogger {
   /**
     * Unlock the wallet by decrypting the [[EncryptedMnemonic]] seed
     * @param passphrase the password to decrypt the wallet
-    * @param seedPath where the seed is located
-    */
+    * @param kmParams parameters needed to create the key manager
+    *
+    * */
   def unlock(
       passphrase: AesPassword,
-      seedPath: Path): UnlockKeyManagerResult = {
-    logger.debug(s"Trying to unlock wallet with seedPath=${seedPath}")
+      kmParams: KeyManagerParams): UnlockKeyManagerResult = {
+    logger.debug(s"Trying to unlock wallet with seedPath=${kmParams.seedPath}")
     val result =
-      WalletStorage.decryptMnemonicFromDisk(seedPath, passphrase)
+      WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, passphrase)
     result match {
       case DecryptionError =>
         logger.error(s"Bad password for unlocking wallet!")
@@ -36,7 +35,7 @@ object LockedKeyManager extends BitcoinSLogger {
 
       case ReadMnemonicSuccess(mnemonic) =>
         logger.debug(s"Successfully unlocked wallet")
-        UnlockKeyManagerSuccess(KeyManager(mnemonic))
+        UnlockKeyManagerSuccess(KeyManager(mnemonic, kmParams))
     }
   }
 }

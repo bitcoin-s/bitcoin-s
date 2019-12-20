@@ -5,15 +5,6 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.keymanager.ReadMnemonicError.{
-  DecryptionError,
-  JsonParsingError
-}
-import org.bitcoins.keymanager.{
-  ReadMnemonicError,
-  ReadMnemonicSuccess,
-  WalletStorage
-}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._

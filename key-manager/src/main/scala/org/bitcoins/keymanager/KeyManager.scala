@@ -1,40 +1,34 @@
 package org.bitcoins.keymanager
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 
 import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.hd.{HDPath, HDPurpose}
+import org.bitcoins.core.hd.{HDAccount, HDPath}
 import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.BitVector
 
 import scala.util.{Failure, Success, Try}
 
-case class KeyManager(private val mnemonic: MnemonicCode) {
+case class KeyManager(
+    private val mnemonic: MnemonicCode,
+    kmParams: KeyManagerParams) {
 
-  /** The wallet seed */
-  private lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonic)
+  private[keymanager] val seed = BIP39Seed.fromMnemonic(
+    mnemonic,
+    BIP39Seed.EMPTY_PASSWORD) // todo think more about this
 
-  /** Derives the relevant xpriv for the given HD purpose */
-  def xprivForPurpose(
-      purpose: HDPurpose,
-      network: NetworkParameters): ExtPrivateKey = {
-    val seed = BIP39Seed.fromMnemonic(mnemonic, BIP39Seed.EMPTY_PASSWORD) // todo think more about this
+  private val privVersion: ExtKeyPrivVersion =
+    HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
 
-    val privVersion = HDUtil.getXprivVersion(purpose, network)
-    seed.toExtPrivateKey(privVersion)
-  }
+  private[keymanager] val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
     */
-  def toSign(
-      privKeyPath: HDPath,
-      purpose: HDPurpose,
-      network: NetworkParameters): Sign = {
+  def toSign(privKeyPath: HDPath): Sign = {
     val xpriv =
-      xprivForPurpose(purpose, network).deriveChildPrivKey(privKeyPath)
+      rootExtPrivKey.deriveChildPrivKey(privKeyPath)
     val privKey = xpriv.key
     val pubAtPath = privKey.publicKey
 
@@ -42,19 +36,22 @@ case class KeyManager(private val mnemonic: MnemonicCode) {
 
     sign
   }
+
+  def deriveXPub(account: HDAccount): Try[ExtPublicKey] = {
+    rootExtPrivKey.deriveChildPubKey(account)
+  }
+
+  def getXPub: ExtPublicKey = { rootExtPrivKey.extPublicKey }
 }
 
 object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
-
-  def fromMnemonic(mnemonicCode: MnemonicCode): KeyManager = {
-    new KeyManager(mnemonicCode)
-  }
+  val badPassphrase = AesPassword.fromString("bad-password").get
 
   /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(
       entropy: BitVector,
-      seedPath: Path): InitializeKeyManagerResult = {
-
+      kmParams: KeyManagerParams): InitializeKeyManagerResult = {
+    val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=${seedPath}")
 
     if (Files.notExists(seedPath)) {
@@ -63,7 +60,6 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
       Files.createDirectories(seedPath.getParent)
     }
 
-    val badPassphrase = AesPassword.fromString("bad-password").get
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
     val mnemonicE: CompatEither[InitializeKeyManagerError, MnemonicCode] =
       mnemonicT match {
@@ -80,7 +76,7 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
       EncryptedMnemonic] =
       mnemonicE.map { EncryptedMnemonicHelper.encrypt(_, badPassphrase) }
 
-    val biasedFinalEither: CompatEither[InitializeKeyManagerError, KeyManager] =
+    val writeToDiskE: CompatEither[InitializeKeyManagerError, KeyManager] =
       for {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
@@ -90,15 +86,50 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
           logger.info(s"Saved encrypted wallet mnemonic to $mnemonicPath")
         }
 
-      } yield KeyManager(mnemonic)
+      } yield KeyManager(mnemonic = mnemonic, kmParams = kmParams)
 
-    biasedFinalEither match {
-      case CompatRight(keyManager) =>
+    //verify we can unlock it for a sanity check
+    val unlocked = LockedKeyManager.unlock(badPassphrase, kmParams)
+
+    val biasedFinalE: CompatEither[
+      InitializeKeyManagerError,
+      InitializeKeyManagerSuccess] = for {
+      kmBeforeWrite <- writeToDiskE
+      invariant <- unlocked match {
+        case UnlockKeyManagerSuccess(unlockedKeyManager) =>
+          require(kmBeforeWrite == unlockedKeyManager,
+                  s"We could not read the key manager we just wrote!")
+          CompatRight(InitializeKeyManagerSuccess(unlockedKeyManager))
+
+        case err: UnlockKeyManagerError =>
+          CompatLeft(InitializeKeyManagerError.FailedToReadWrittenSeed(err))
+      }
+    } yield {
+      invariant
+    }
+
+    biasedFinalE match {
+      case CompatRight(initSuccess) =>
         logger.info(s"Successfully initialized wallet")
-        InitializeKeyManagerSuccess(keyManager = keyManager)
+        initSuccess
       case CompatLeft(err) =>
         logger.error(s"Failed to initialize key manager with err=${err}")
         err
+    }
+  }
+
+  /** Reads the key manager from disk and decrypts it with the given password */
+  def fromParams(
+      kmParams: KeyManagerParams,
+      password: AesPassword): Either[ReadMnemonicError, KeyManager] = {
+    val mnemonicCodeE =
+      WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, password)
+
+    mnemonicCodeE match {
+      case r: ReadMnemonicSuccess =>
+        Right(new KeyManager(r.mnemonic, kmParams))
+      case e: ReadMnemonicError =>
+        Left(e)
     }
   }
 }

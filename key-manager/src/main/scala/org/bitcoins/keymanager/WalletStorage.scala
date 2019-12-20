@@ -1,6 +1,6 @@
 package org.bitcoins.keymanager
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path}
 
 import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto._
@@ -11,6 +11,10 @@ import scala.util.{Failure, Success, Try}
 
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage {
+
+  val ENCRYPTED_SEED_FILE_NAME: String =
+    "encrypted-bitcoin-s-seed.json"
+
   import org.bitcoins.core.compat.JavaConverters._
 
   private val logger = LoggerFactory.getLogger(getClass)
