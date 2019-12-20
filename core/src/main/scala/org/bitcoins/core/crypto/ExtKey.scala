@@ -5,10 +5,10 @@ import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util._
-import scodec.bits.ByteVector
-import scodec.bits.HexStringSyntax
+import scodec.bits.{ByteVector, HexStringSyntax}
 
 import scala.annotation.tailrec
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -157,7 +157,7 @@ object ExtKey extends Factory[ExtKey] {
   }
 }
 
-sealed abstract class ExtPrivateKey extends ExtKey {
+sealed abstract class ExtPrivateKey extends ExtKey with ExtSign {
   import ExtKeyVersion._
 
   override protected type VersionType = ExtKeyPrivVersion
@@ -209,6 +209,20 @@ sealed abstract class ExtPrivateKey extends ExtKey {
 
   def deriveChildPrivKey(idx: Long): Try[ExtPrivateKey] = {
     Try(UInt32(idx)).map(deriveChildPrivKey)
+  }
+
+  override def publicKey: ECPublicKey = key.publicKey
+
+  override def signFunction: ByteVector => Future[ECDigitalSignature] = {
+    key.signFunction
+  }
+
+  /** Signs the given bytes with the given [[BIP32Path path]] */
+  override def deriveAndSignFuture: (
+      ByteVector,
+      BIP32Path) => Future[ECDigitalSignature] = {
+    case (bytes, path) =>
+      deriveChildPrivKey(path).signFunction(bytes)
   }
 }
 
