@@ -47,7 +47,7 @@ object Deps {
     // obviously has to be changed before this is
     // merged.
 
-    val sourcecodeV = "0.1.8"
+    val sourcecodeV = "0.1.9"
 
     // CLI deps
     val scoptV = "4.0.0-RC2"
