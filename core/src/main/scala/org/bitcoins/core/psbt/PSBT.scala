@@ -100,25 +100,15 @@ case class PSBT(
     * that can be used to sign the input
     * @param index index of the InputPSBTMap
     * @param signers Signers that will be used to sign the input
-    * @return A corresponding UTXOSpendingInfo
-    */
-  def getUTXOSpendingInfo(index: Int, signers: Seq[Sign]): UTXOSpendingInfo = {
-    getUTXOSpendingInfo(index, signers, ConditionalPath.NoConditionsLeft)
-  }
-
-  /**
-    * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfo
-    * that can be used to sign the input
-    * @param index index of the InputPSBTMap
-    * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
     * @return A corresponding UTXOSpendingInfo
     */
   def getUTXOSpendingInfo(
       index: Int,
       signers: Seq[Sign],
-      conditionalPath: ConditionalPath): UTXOSpendingInfo = {
-    require(index >= 0 && index < inputMaps.size, s"Index must be within 0 and the number of inputs, got: $index")
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
+    require(index >= 0 && index < inputMaps.size,
+            s"Index must be within 0 and the number of inputs, got: $index")
     inputMaps(index).toUTXOSpendingInfo(transaction.inputs(index),
                                         signers,
                                         conditionalPath)
@@ -345,7 +335,7 @@ object InputPSBTRecord {
     override val value: ByteVector = redeemScript.asmBytes
   }
 
-  case class WitnessScript(witnessScript: ScriptPubKey)
+  case class WitnessScript(witnessScript: RawScriptPubKey)
       extends InputPSBTRecord {
     override val key: ByteVector = hex"05"
     override val value: ByteVector = witnessScript.asmBytes
@@ -414,7 +404,7 @@ object InputPSBTRecord {
         require(key.size == 1,
                 s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        InputPSBTRecord.WitnessScript(ScriptPubKey.fromAsmBytes(value))
+        InputPSBTRecord.WitnessScript(RawScriptPubKey.fromAsmBytes(value))
       case PSBTInputKeyId.BIP32DerivationPathKeyId =>
         val pubKey = ECPublicKey(key.tail)
         val fingerprint = value.take(4)
@@ -699,26 +689,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
     * that can be used to sign the input
     * @param txIn The transaction input that this InputPSBTMap represents
     * @param signers Signers that will be used to sign the input
-    * @return A corresponding UTXOSpendingInfo
-    */
-  def toUTXOSpendingInfo(
-      txIn: TransactionInput,
-      signers: Seq[Sign]): UTXOSpendingInfo = {
-    toUTXOSpendingInfo(txIn, signers, ConditionalPath.NoConditionsLeft)
-  }
-
-  /**
-    * Takes the InputPSBTMap returns a UTXOSpendingInfo
-    * that can be used to sign the input
-    * @param txIn The transaction input that this InputPSBTMap represents
-    * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
     * @return A corresponding UTXOSpendingInfo
     */
   def toUTXOSpendingInfo(
       txIn: TransactionInput,
       signers: Seq[Sign],
-      conditionalPath: ConditionalPath): UTXOSpendingInfo = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
 
     val outPoint = txIn.previousOutput
