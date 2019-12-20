@@ -8,7 +8,7 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.keymanager.{KeyManager, KeyManagerParams}
-import org.bitcoins.rpc.serializers.JsonSerializers._refere
+import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
