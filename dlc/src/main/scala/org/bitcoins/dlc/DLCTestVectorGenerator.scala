@@ -1,18 +1,32 @@
 package org.bitcoins.dlc
 
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.crypto.ExtKeyVersion.LegacyTestNet3Priv
 import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
   ECPrivateKey,
+  ECPublicKey,
   ExtPrivateKey,
   Schnorr,
   SchnorrNonce
 }
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.BlockStampWithFuture
-import org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  WitnessScriptPubKeyV0
+}
+import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.core.wallet.utxo.{
+  P2WPKHV0SpendingInfo,
+  SegwitV0NativeUTXOSpendingInfo
+}
 import play.api.libs.json.{JsString, JsValue, Json}
 import scodec.bits.ByteVector
 
@@ -21,28 +35,84 @@ import scala.concurrent.{ExecutionContext, Future}
 object DLCTestVectorGenerator {
   implicit private val ec: ExecutionContext = ExecutionContext.global
 
+  def doIt(): Future[JsValue] = {
+    val localPayouts = Map(
+      "WIN" -> (CurrencyUnits.oneBTC * 2 - CurrencyUnits.oneMBTC),
+      "LOSE" -> CurrencyUnits.oneMBTC)
+    val realOutcome = "WIN"
+    val oracleKey = ECPrivateKey.freshPrivateKey
+    val oracleKValue = SchnorrNonce.freshNonce
+
+    val localExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
+    val localInput = CurrencyUnits.oneBTC
+    val inputPrivKeyLocal = ECPrivateKey.freshPrivateKey
+    val localFundingUtxos = Vector(
+      P2WPKHV0SpendingInfo(
+        outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+        amount = localInput * 2,
+        scriptPubKey = P2WPKHWitnessSPKV0(inputPrivKeyLocal.publicKey),
+        signer = inputPrivKeyLocal,
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WPKHWitnessV0(inputPrivKeyLocal.publicKey)
+      )
+    )
+    val localChangeSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
+
+    val remoteExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
+    val remoteInput = CurrencyUnits.oneBTC
+    val inputPrivKeyRemote = ECPrivateKey.freshPrivateKey
+    val remoteFundingUtxos = Vector(
+      P2WPKHV0SpendingInfo(
+        outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.one),
+        amount = remoteInput * 2,
+        scriptPubKey = P2WPKHWitnessSPKV0(inputPrivKeyRemote.publicKey),
+        signer = inputPrivKeyRemote,
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
+      )
+    )
+    val remoteChangeSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
+
+    val timeout = BlockTime(UInt32(System.currentTimeMillis() / 1000))
+    val feeRate = SatoshisPerByte(Satoshis.one)
+
+    generateTest(
+      localPayouts = localPayouts,
+      realOutcome = realOutcome,
+      oracleKey = oracleKey,
+      oracleKValue = oracleKValue,
+      localExtPrivKey = localExtPrivKey,
+      localInput = localInput,
+      localFundingUtxos = localFundingUtxos,
+      localChangeSPK = localChangeSPK,
+      remoteExtPrivKey = remoteExtPrivKey,
+      remoteInput = remoteInput,
+      remoteFundingUtxos = remoteFundingUtxos,
+      remoteChangeSPK = remoteChangeSPK,
+      timeout = timeout,
+      feeRate = feeRate
+    )
+  }
+
   def generateTest(
-      possibleOutcomes: Vector[String],
+      localPayouts: Map[String, CurrencyUnit],
       realOutcome: String,
       oracleKey: ECPrivateKey,
       oracleKValue: SchnorrNonce,
-      localPayouts: Map[String, CurrencyUnit],
       localExtPrivKey: ExtPrivateKey,
       localInput: CurrencyUnit,
-      localFundingUtxos: Vector[BitcoinUTXOSpendingInfo],
+      localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
       localChangeSPK: WitnessScriptPubKeyV0,
       remoteExtPrivKey: ExtPrivateKey,
       remoteInput: CurrencyUnit,
-      remoteFundingUtxos: Vector[BitcoinUTXOSpendingInfo],
+      remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
       remoteChangeSPK: WitnessScriptPubKeyV0,
       timeout: BlockStampWithFuture,
       feeRate: SatoshisPerByte): Future[JsValue] = {
-    require(possibleOutcomes.contains(realOutcome), "Outcome must be possible")
-    require(possibleOutcomes.length == 2,
-            "Currently only Binary DLCs are supported")
-    require(localPayouts.keys.toVector == possibleOutcomes,
-            "All outcomes must have specified payouts")
-    require(localPayouts.values.forall(_ < localInput + remoteInput),
+    require(localPayouts.keySet.contains(realOutcome),
+            "Outcome must be possible")
+    require(localPayouts.size == 2, "Currently only Binary DLCs are supported")
+    require(localPayouts.values.forall(_ <= localInput + remoteInput),
             "Payouts must be less than total input")
     require(localFundingUtxos
               .map(_.amount.satoshis.toLong)
@@ -52,6 +122,8 @@ object DLCTestVectorGenerator {
               .map(_.amount.satoshis.toLong)
               .sum > remoteInput.satoshis.toLong,
             "Remote does not have enough to fund")
+
+    val possibleOutcomes = localPayouts.keySet.toVector
 
     val dlc = BinaryOutcomeDLCWithSelf(
       outcomeWin = possibleOutcomes.head,
@@ -73,7 +145,7 @@ object DLCTestVectorGenerator {
       network = RegTest
     )
 
-    val outcomeHash = CryptoUtil.sha256(ByteVector(realOutcome.getBytes))
+    val outcomeHash = CryptoUtil.sha256(ByteVector(realOutcome.getBytes)).flip
     val oracleSig =
       Schnorr.signWithNonce(outcomeHash.bytes, oracleKey, oracleKValue)
 
@@ -84,11 +156,10 @@ object DLCTestVectorGenerator {
                                           local = true)
     } yield {
       val inputs = Vector(
-        possibleOutcomes,
+        localPayouts,
         realOutcome,
         oracleKey.hex,
         oracleKValue.hex,
-        localPayouts.values.map(_.satoshis.toLong),
         localExtPrivKey.hex,
         localInput.satoshis.toLong,
         localFundingUtxos,
@@ -101,36 +172,41 @@ object DLCTestVectorGenerator {
         feeRate.toLong
       )
 
-      val outputs = Vector(
-        setup.fundingTx.hex,
-        setup.cetWinLocal.hex,
-        setup.cetLoseLocal.hex,
-        setup.cetWinRemote.hex,
-        setup.cetLoseRemote.hex,
-        outcome.localClosingTx.hex,
-        outcome.remoteClosingTx.hex
+      val localCets = Vector(setup.cetWinLocal.hex, setup.cetLoseLocal.hex)
+      val remoteCets = Vector(setup.cetWinRemote.hex, setup.cetLoseRemote.hex)
+
+      val jsOutputs = Vector(
+        JsString(setup.fundingTx.hex),
+        Json.toJson(localCets),
+        Json.toJson(remoteCets),
+        JsString(setup.refundTx.hex),
+        JsString(outcome.localClosingTx.hex),
+        JsString(outcome.remoteClosingTx.hex)
       )
 
       val jsInputs: Vector[JsValue] = inputs.map {
-        case vec: Vector[String] => Json.toJson(vec)
-        case vec: Vector[Long]   => Json.toJson(vec)
-        case str: String         => Json.toJson(str)
-        case num: Long           => Json.toJson(num)
-        case utxos: Vector[BitcoinUTXOSpendingInfo] =>
+        case map: Map[_, _] =>
+          val localPayoutsMap = map.asInstanceOf[Map[String, CurrencyUnit]]
+          val underlyingMap = localPayoutsMap.map {
+            case (outcome, payout) => (outcome, payout.satoshis.toLong)
+          }
+          Json.toJson(underlyingMap)
+        case vec: Vector[_] =>
+          val utxos = vec.asInstanceOf[Vector[SegwitV0NativeUTXOSpendingInfo]]
           val jsUtxos = utxos.map { utxo =>
             Vector(
               JsString(utxo.outPoint.hex),
               JsString(utxo.output.hex),
               Json.toJson(utxo.signers.map(_.asInstanceOf[ECPrivateKey].hex)),
               JsString(utxo.hashType.byte.toHexString),
-              Json.toJson(utxo.redeemScriptOpt.map(_.hex)),
-              Json.toJson(utxo.scriptWitnessOpt.map(_.hex))
+              JsString(utxo.scriptWitness.hex)
             )
           }
 
           Json.toJson(jsUtxos)
+        case str: String => Json.toJson(str)
+        case num: Long   => Json.toJson(num)
       }
-      val jsOutputs: Vector[JsValue] = outputs.map(Json.toJson)
 
       Json.toJson(Vector(jsInputs, jsOutputs))
     }
