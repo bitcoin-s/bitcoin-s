@@ -15,14 +15,12 @@ case class KeyManager(
     private val mnemonic: MnemonicCode,
     kmParams: KeyManagerParams) {
 
-  private[keymanager] val seed = BIP39Seed.fromMnemonic(
-    mnemonic,
-    BIP39Seed.EMPTY_PASSWORD) // todo think more about this
+  private val seed = BIP39Seed.fromMnemonic(mnemonic, BIP39Seed.EMPTY_PASSWORD) // todo think more about this
 
   private val privVersion: ExtKeyPrivVersion =
     HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
 
-  private[keymanager] val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
+  private val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
@@ -42,7 +40,10 @@ case class KeyManager(
     rootExtPrivKey.deriveChildPubKey(account)
   }
 
-  def getXPub: ExtPublicKey = { rootExtPrivKey.extPublicKey }
+  /** Returns the root [[ExtPublicKey]] */
+  def getRootXPub: ExtPublicKey = {
+    rootExtPrivKey.extPublicKey
+  }
 }
 
 object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {

@@ -47,11 +47,11 @@ class KeyManagerTest extends KeyManagerUnitTest {
     val kmParams = buildParams()
     val direct = KeyManager(mnemonic, kmParams)
 
-    val directXpub = direct.getXPub
+    val directXpub = direct.getRootXPub
 
     val api = KeyManager.initializeWithEntropy(mnemonic.toEntropy, kmParams).right.get
 
-    val apiXpub = api.getXPub
+    val apiXpub = api.getRootXPub
 
     assert(apiXpub == directXpub, s"We don't have initialization symmetry between our constructors!")
 

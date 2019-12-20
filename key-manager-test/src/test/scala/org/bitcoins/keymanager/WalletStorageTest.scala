@@ -89,7 +89,7 @@ class WalletStorageTest
     }
   }
 
-  it must "throw an exception if we attempt to overwrrite an existing seed" in { walletConf =>
+  it must "throw an exception if we attempt to overwrite an existing seed" in { walletConf =>
 
     assert(!walletConf.seedExists())
 

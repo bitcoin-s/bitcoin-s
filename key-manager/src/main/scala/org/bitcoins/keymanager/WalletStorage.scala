@@ -71,7 +71,7 @@ object WalletStorage {
       case None =>
         logger.trace(s"$seedPath does not exist")
         writeJsToDisk()
-      case Some(found) =>
+      case Some(_) =>
         logger.info(s"$seedPath already exists")
         throw new RuntimeException(
           s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
