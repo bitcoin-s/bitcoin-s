@@ -145,6 +145,13 @@ class ChainHandlerTest extends ChainUnitTest {
       }
   }
 
+  it must "not fail ChainHandler.processHeaders() with empty headers collection" in {
+    chainHandler: ChainHandler =>
+      for {
+        _ <- chainHandler.processHeaders(Vector.empty)
+      } yield succeed
+  }
+
   it must "benchmark ChainHandler.processHeaders()" in {
     chainHandler: ChainHandler =>
       val blockHeaders =
@@ -278,6 +285,8 @@ class ChainHandlerTest extends ChainUnitTest {
         assert(genesisFilterHeader.size == 1)
         assert(
           genesisFilterHeader.contains(ChainUnitTest.genesisFilterHeaderDb))
+        assert(
+          genesisFilterHeader.head.filterHeader == ChainUnitTest.genesisFilterHeaderDb.filterHeader)
         assert(count == 0)
       }
     }
@@ -305,6 +314,8 @@ class ChainHandlerTest extends ChainUnitTest {
       } yield {
         assert(count == 0)
         assert(genesisFilter.contains(ChainUnitTest.genesisFilterDb))
+        assert(
+          genesisFilter.head.golombFilter == ChainUnitTest.genesisFilterDb.golombFilter)
       }
     }
   }
@@ -406,6 +417,18 @@ class ChainHandlerTest extends ChainUnitTest {
         assert(rangeOpt.get._1 == 0)
         assert(rangeOpt.get._2 == bestBlockHashBE.flip)
       }
+  }
+
+  it must "" in { chainHandler: ChainHandler =>
+    for {
+      bestBlock <- chainHandler.getBestBlockHeader()
+      filterHeader <- chainHandler.getFilterHeader(bestBlock.hashBE)
+      filter <- chainHandler.getFilter(bestBlock.hashBE)
+    } yield {
+      assert(filterHeader.isDefined)
+      assert(filter.isDefined)
+      assert(filterHeader.get.filterHashBE == filter.get.hashBE)
+    }
   }
 
   it must "return the number of confirmations" in {

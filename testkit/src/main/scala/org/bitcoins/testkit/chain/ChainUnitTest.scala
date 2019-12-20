@@ -406,19 +406,6 @@ object ChainUnitTest extends ChainVerificationLogger {
     }
   }
 
-  def destroyHeaderTable()(implicit appConfig: ChainAppConfig): Future[Unit] = {
-    ChainDbManagement.dropHeaderTable()
-  }
-
-  def destroyFilterHeaderTable()(
-      implicit appConfig: ChainAppConfig): Future[Unit] = {
-    ChainDbManagement.dropFilterHeaderTable()
-  }
-
-  def destroyFilterTable()(implicit appConfig: ChainAppConfig): Future[Unit] = {
-    ChainDbManagement.dropFilterTable()
-  }
-
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(
       implicit system: ActorSystem): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)

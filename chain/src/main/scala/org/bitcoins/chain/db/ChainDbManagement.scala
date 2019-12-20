@@ -36,29 +36,6 @@ sealed abstract class ChainDbManagement extends DbManagement {
     createTable(chainTable, createIfNotExists)
   }
 
-  def dropHeaderTable()(implicit config: ChainAppConfig): Future[Unit] = {
-    dropTable(chainTable)
-  }
-
-  def createFilterHeaderTable(createIfNotExists: Boolean = true)(
-      implicit config: ChainAppConfig,
-      ec: ExecutionContext): Future[Unit] = {
-    createTable(filterHeaderTable, createIfNotExists)
-  }
-
-  def dropFilterHeaderTable()(implicit config: ChainAppConfig): Future[Unit] = {
-    dropTable(filterHeaderTable)
-  }
-
-  def createFilterTable(createIfNotExists: Boolean = true)(
-      implicit config: ChainAppConfig,
-      ec: ExecutionContext): Future[Unit] = {
-    createTable(filterTable, createIfNotExists)
-  }
-
-  def dropFilterTable()(implicit config: ChainAppConfig): Future[Unit] = {
-    dropTable(filterTable)
-  }
 }
 
 object ChainDbManagement extends ChainDbManagement
