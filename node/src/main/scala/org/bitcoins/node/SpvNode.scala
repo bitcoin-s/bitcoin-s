@@ -85,15 +85,18 @@ case class SpvNode(
     }
   }
 
-  /** Gets the number of compact filters in the database */
-  override def getFilterCount: Future[Int] = Future.successful(0)
-
   /** Returns the block height of the given block stamp */
   override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
-    Future.successful(0)
+    chainApiFromDb().flatMap(_.getHeightByBlockStamp(blockStamp))
+
+  private val cfErrMsg = "Compact filters are not supported in SPV mode"
+
+  /** Gets the number of compact filters in the database */
+  override def getFilterCount: Future[Int] =
+    Future.failed(new RuntimeException(cfErrMsg))
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
       endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
-    Future.successful(Vector.empty)
+    Future.failed(new RuntimeException(cfErrMsg))
 }

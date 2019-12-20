@@ -145,4 +145,18 @@ class WalletUnitTest extends BitcoinSWalletTest {
       }
   }
 
+  it should "match block filters" in { wallet: UnlockedWalletApi =>
+    for {
+      matched <- wallet.getMatchingBlocks(
+        scripts = Vector(
+          // this is a random address which is included into the test block
+          BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get.scriptPubKey),
+        startOpt = None,
+        endOpt = None
+      )(system.dispatcher)
+    } yield {
+      assert(Vector(testBlockHash) == matched)
+    }
+  }
+
 }
