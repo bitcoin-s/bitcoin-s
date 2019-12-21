@@ -80,6 +80,6 @@ TaskKeys.downloadBitcoind := {
     }
   }
 
-  //timeout if we cannot download in 60 seconds
-  Await.result(Future.sequence(downloads), 60.seconds)
+  //timeout if we cannot download in 120 seconds
+  Await.result(Future.sequence(downloads), 120.seconds)
 }
