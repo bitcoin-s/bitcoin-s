@@ -1,6 +1,6 @@
 ---
 id: cli
-title: bitcoin-s cli
+title: cli
 ---
 
 

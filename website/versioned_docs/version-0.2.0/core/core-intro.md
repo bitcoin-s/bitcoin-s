@@ -69,38 +69,6 @@ After providing this information, you can generate a validly signed bitcoin tran
 
 To see a complete example of this, see [our `TxBuilder` example](txbuilder.md)
 
-### The [`Sign` API](/api/org/bitcoins/core/crypto/Sign)
-
-This is the API we define to sign things with. It takes in an arbitrary byte vector and returns a `Future[ECDigitalSignature]`. The reason we incorporate `Future`s here is for extensibility of this API. We would like to provide implementations of this API for hardware devices, which need to be asynchrnous since they may require user input.
-
-From [`core/src/main/scala/org/bitcoins/core/crypto/Sign.scala`](/api/org/bitcoins/core/crypto/Sign):
-
-```scala
-import scodec.bits._
-import org.bitcoins.core.crypto._
-import scala.concurrent._
-import scala.concurrent.duration._
-
-trait Sign {
-  def signFunction: ByteVector => Future[ECDigitalSignature]
-
-  def signFuture(bytes: ByteVector): Future[ECDigitalSignature] =
-    signFunction(bytes)
-
-  def sign(bytes: ByteVector): ECDigitalSignature = {
-    Await.result(signFuture(bytes), 30.seconds)
-  }
-
-  def publicKey: ECPublicKey
-}
-```
-
-The `ByteVector` that is input to the `signFunction` should be the hash that is output from [`TransactionSignatureSerializer`](/api/org/bitcoins/core/crypto/TransactionSignatureSerializer)'s `hashForSignature` method. Our in-memory [`ECKey`](/api/org/bitcoins/core/crypto/ECKey) types implement the `Sign` API.
-
-If you wanted to implement a new `Sign` api for a hardware wallet, you can easily pass it into the `TxBuilder`/`Signer` classes to allow for you to use those devices to sign with Bitcoin-S.
-
-This API is currently used to sign ordinary transactions with our [`Signer`](/api/org/bitcoins/core/wallet/signer/Signer)s. The `Signer` subtypes (i.e. `P2PKHSigner`) implement the specific functionality needed to produce a valid digital signature for their corresponding script type.
-
 ### Verifying a transaction's script is valid (does not check if UTXO is valid)
 
 Transactions are run through the interpreter to check their validity. These are packaged up into an object called `ScriptProgram`, which contains the following:

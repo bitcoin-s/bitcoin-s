@@ -6,7 +6,7 @@ original_id: rpc-bitcoind
 
 > Note: `bitcoin-s-bitcoind-rpc` requires you to have `bitcoind` (Bitcoin Core daemon) installed. Grab this at [bitcoincore.org](https://bitcoincore.org/en/download/)
 
-The Bitcoin Core RPC client in Bitcoin-S currently supports the Bitcoin Core 0.16 and 0.17
+The Bitcoin Core RPC client in Bitcoin-S currently supports the Bitcoin Core 0.16, 0.17, 0.18, and 0.19
 version lines. It can be set up to work with both local and remote Bitcoin Core servers.
 
 ## Connecting to a local `bitcoind` instance

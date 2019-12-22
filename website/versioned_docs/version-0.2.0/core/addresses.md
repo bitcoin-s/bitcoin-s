@@ -36,9 +36,9 @@ import protocol.script._
 
 // this generates a random private key
 val privkey = ECPrivateKey()
-// privkey: ECPrivateKey = ECPrivateKey(7f0fc482719d180ec8281100f977d6ad50ed1971b71d31026d513fb51bb95206,true)
+// privkey: ECPrivateKey = ECPrivateKey(6e7b7ba3c192ca7ecc3681f7eb1e021c9f1333a45c7ff88cace595ee5759aa69,true)
 val pubkey = privkey.publicKey
-// pubkey: crypto.ECPublicKey = ECPublicKey(03c585c7c1cd4e670683ec5f3a043a800f7f84ddf39d04a9fe4364802d85f1c756)
+// pubkey: crypto.ECPublicKey = ECPublicKey(0225ae3b07de8578ba6a9988872028f79d9cb46d703a39491dc8f91a74b93b0a8c)
 
 val segwitAddress = {
     // see https://bitcoin.org/en/glossary/pubkey-script
@@ -47,7 +47,7 @@ val segwitAddress = {
     val scriptPubKey = P2WPKHWitnessSPKV0(pubkey)
     Bech32Address(scriptPubKey, TestNet3)
 }
-// segwitAddress: Bech32Address = Bech32Address(tb1q9vyukq9pt9kw0r70e5zpd06mkyk2m6qukd7uc9)
+// segwitAddress: Bech32Address = Bech32Address(tb1qydaft7sx02025te2e3hu4np87d65xg33ghzcwe)
 ```
 
 ## Generating legacy (base58) addresses
@@ -63,5 +63,5 @@ import org.bitcoins.core.protocol.P2PKHAddress
 // we're reusing the same private/public key pair
 // from before. don't do this in an actual application!
 val legacyAddress = P2PKHAddress(pubkey, TestNet3)
-// legacyAddress: P2PKHAddress = mjSX5jLeUuAsmxLqzFEUMyjCKAKNo5WHJw
+// legacyAddress: P2PKHAddress = mikYoBWXrLKpagxwNLgMUyUVv6TEXvxDgz
 ```
