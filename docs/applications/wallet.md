@@ -3,7 +3,8 @@ title: Wallet
 id: wallet
 ---
 
-Bitcoin-S comes bundled with a rudimentary Bitcoin wallet. This wallet
+## Bitcoin-s wallet
+Bitcoin-s comes bundled with a rudimentary Bitcoin wallet. This wallet
 is capable of managing private keys, generating addresses, constructing
 and signing transactions, among other things. It is BIP32/BIP44/BIP49/BIP84
 compatible.
@@ -12,9 +13,22 @@ This wallet is currently only released as a library, and not as a binary.
 This is because it (nor the documentation) is not deemed production
 ready. Use at your own risk, and without too much money depending on it.
 
-## Creating a wallet
+### How is the bitcoin-s wallet implemented
 
-This guide shows how to create a Bitcoin-S wallet and then
+The bitcoin-s wallet is a scalable way for individuals up to large bitcoin exchanges to safely and securely store their bitcoin in a scalable way.
+
+All key interactions are delegated to the [key-manager](key-manager.md) which is a minimal dependecy library to store and use key material.
+
+By default, we store the encrypted root key in `$HOME/.bitcoin-s/encrypted-bitcoin-s-seed.json`. This is the seed that is used for each the wallet on each cryptocurrency network.
+
+The wallet itself is used to manage the utxo life cycle, create transactions, and update wallet balances to show how much money you have the on a cryptocurrency network.
+
+We use [slick](https://scala-slick.org/doc/3.3.1/) as middleware to support different database types. Depending on your use case, you can use something as simple as sqlite, or something much more scalable like postgres.
+
+
+### Example
+
+This guide shows how to create a Bitcoin-s wallet and then
 peer it with a `bitcoind` instance that relays
 information about what is happening on the blockchain
 through the P2P network.

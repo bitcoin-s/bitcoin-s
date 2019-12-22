@@ -74,7 +74,7 @@ case class WalletAppConfig(
 
   /** The path to our encrypted mnemonic seed */
   private[bitcoins] def seedPath: Path = {
-    datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+    baseDatadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
   }
 
   /** Checks if our wallet as a mnemonic seed associated with it */
