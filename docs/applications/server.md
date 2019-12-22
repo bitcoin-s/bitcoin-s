@@ -1,5 +1,6 @@
+---
 id: server
-title: bitcoin-s application server
+title: application server
 ---
 
 
