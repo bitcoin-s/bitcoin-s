@@ -78,13 +78,13 @@ use that to generate further private and public keys:</p>
 <span class="hljs-comment">// how long our phrase ends up being</span>
 <span class="hljs-comment">// 256 bits of entropy results in 24 words</span>
 <span class="hljs-keyword">val</span> entropy: <span class="hljs-type">BitVector</span> = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
-<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x39f30e63d03882325006e97c5a15e6d471a4c7d35112569d2352b052a091e3cf)</span>
+<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x8c462348afe97eef714535da78e85cba3fea90da954d0b4574f43104b0ded45c)</span>
 
 <span class="hljs-keyword">val</span> mnemonicCode = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
-<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(delay, observe, ocean, parrot, market, bomb, divorce, tag, labor, spawn, keen, pottery, bottom, glue, essence, car, final, trouble, start, gaze, claw, employ, monkey, type))</span>
+<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(middle, country, split, garlic, obey, jeans, shallow, pluck, surprise, shrug, blame, inner, wrong, embody, heart, predict, area, close, dial, ginger, enrich, hunt, fabric, mask))</span>
 
 mnemonicCode.words <span class="hljs-comment">// the phrase the user should write down</span>
-<span class="hljs-comment">// res0: Vector[String] = Vector(delay, observe, ocean, parrot, market, bomb, divorce, tag, labor, spawn, keen, pottery, bottom, glue, essence, car, final, trouble, start, gaze, claw, employ, monkey, type) // the phrase the user should write down</span>
+<span class="hljs-comment">// res0: Vector[String] = Vector(middle, country, split, garlic, obey, jeans, shallow, pluck, surprise, shrug, blame, inner, wrong, embody, heart, predict, area, close, dial, ginger, enrich, hunt, fabric, mask) // the phrase the user should write down</span>
 
 <span class="hljs-comment">// the password argument is an optional, extra security</span>
 <span class="hljs-comment">// measure. all MnemonicCode instances will give you a</span>
@@ -94,13 +94,13 @@ mnemonicCode.words <span class="hljs-comment">// the phrase the user should writ
 <span class="hljs-comment">// different passwords.</span>
 <span class="hljs-keyword">val</span> bip39Seed = <span class="hljs-type">BIP39Seed</span>.fromMnemonic(mnemonicCode,
                                        password = <span class="hljs-string">"secret password"</span>)
-<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xd45cc7ef7aa2aae1a8cd90c91a4f79b866dd00a10cf8cdaae157a822167a4cc740b7364eb43f1474d8c86473db4faf845e6a9e3fd06ee39eeb493c751a0cdfee))</span>
+<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xed5dc8b858bf78427b4fb26645c79e59b777201281549c224b56efbae399846e5b03f284b05bad1499880b10a0592c3ac9a7b01842ced609ec83ccf134e14727))</span>
 
 <span class="hljs-keyword">val</span> xpriv = <span class="hljs-type">ExtPrivateKey</span>.fromBIP39Seed(<span class="hljs-type">ExtKeyVersion</span>.<span class="hljs-type">SegWitMainNetPriv</span>,
                                         bip39Seed)
-<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GjukHugLbrUkjRE3ycvmhRCT4cE2T2qU53j18nUjL4ocaDsXwBWYzU5u88ZFxQ42YWMLAT1S5V2wwcxgogsMrDQtNeLBwr3D</span>
+<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GkeTo5WZtXUmTSjUXxw8kcA5LdBR8ySCKiXrGfLmCgSbdhrr1RtSjHe19Fc7BACFh5qfArFr5nf7WXaqGLgudpAdG7VzkGM5</span>
 <span class="hljs-keyword">val</span> xpub = xpriv.extPublicKey
-<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZxPpm1hscDchTyFtU2PVYnRNfQcS4bB13vXLHL23acbw459g4XxYYHfo44rTmYSXzBQzzBEVqT3PfPcqL69fpdrgkxMHuQCy</span>
+<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZy8YGBY6ttciBzmK2NPrbyNzwRZpkXmjJbLBRCt5TEEv7Z6zRHkkrTR9nYzsUCry97Ru7NVqyMtbRreTo3WWqMdHxzj38dp4</span>
 
 <span class="hljs-comment">// you can now use the generated xpriv to derive further</span>
 <span class="hljs-comment">// private or public keys</span>
@@ -146,7 +146,7 @@ spend or steal any of your money.</p>
     <span class="hljs-comment">// can generate addresses with it!</span>
     accountXpriv.extPublicKey
 }
-<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6qUM2b9Nq9v51X1sPsXpXWznJnBhvhHUfhrXvMFntXQT8ZkK2tizi29cMm2HH3vb1Zz8CHb3933J9tvaH97GS4s6XUZQsrTYf7cWGYtmYLA</span>
+<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6rFK5YgNZ4VPaRxHLRp5sdC3TeWhEUjxuBm38y4tmH8M4RyA3QuxGEJVuq4YnRVxXdcjj4JajgGV787yGTKZM1SBK2Q1z4ZqJrV6uzewamM</span>
 
                               <span class="hljs-comment">// address no. 0 ---------------┐</span>
                               <span class="hljs-comment">// external address ----------┐ |</span>
@@ -169,12 +169,12 @@ spend or steal any of your money.</p>
     <span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">P2WPKHWitnessSPKV0</span>(pubkey)
     <span class="hljs-type">Bech32Address</span>(scriptPubKey, <span class="hljs-type">TestNet3</span>)
 }
-<span class="hljs-comment">// firstAccountAddress: Bech32Address = Bech32Address(tb1quqvdsqdzt2nlszkfqsxndu5pg6ahzyjk2e5qmz)</span>
+<span class="hljs-comment">// firstAccountAddress: Bech32Address = Bech32Address(tb1qypxkhchu805aprywl8e4eezfqkkkwa39gj2qeu)</span>
 
 <span class="hljs-comment">// tada! We just generated an address you can send money to,</span>
 <span class="hljs-comment">// without having access to the private key!</span>
 firstAccountAddress.value
-<span class="hljs-comment">// res2: String = tb1quqvdsqdzt2nlszkfqsxndu5pg6ahzyjk2e5qmz</span>
+<span class="hljs-comment">// res2: String = tb1qypxkhchu805aprywl8e4eezfqkkkwa39gj2qeu</span>
 
 <span class="hljs-comment">// you can now continue deriving addresses from the same public</span>
 <span class="hljs-comment">// key, by imitating what we did above. To get the next</span>
@@ -182,7 +182,9 @@ firstAccountAddress.value
 <span class="hljs-keyword">val</span> nextAddressPath: <span class="hljs-type">SegWitHDPath</span> = firstAddressPath.next
 <span class="hljs-comment">// nextAddressPath: SegWitHDPath = m/84'/0'/0'/0/1</span>
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2019-11-13 by Nadav Kohen</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/core/addresses"><span class="arrow-prev">← </span><span>Generating addresses</span></a><a class="docs-next button" href="/docs/core/txbuilder"><span class="function-name-prevnext">TxBuilder example</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#generating-new-addresses-without-having-access-to-the-private-key">Generating new addresses without having access to the private key</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+<h3><a class="anchor" aria-hidden="true" id="signing-things-with-hd-keys"></a><a href="#signing-things-with-hd-keys" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Signing things with HD keys</h3>
+<p>Please see <a href="sign.md">/docs/core/sign</a> for information on how to sign things with HD keys.</p>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2019-12-22 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/core/addresses"><span class="arrow-prev">← </span><span>Generating addresses</span></a><a class="docs-next button" href="/docs/core/sign"><span>Sign api</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#generating-new-addresses-without-having-access-to-the-private-key">Generating new addresses without having access to the private key</a><ul class="toc-headings"><li><a href="#signing-things-with-hd-keys">Signing things with HD keys</a></li></ul></li></ul></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2019 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
