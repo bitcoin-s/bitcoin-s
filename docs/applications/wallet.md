@@ -95,18 +95,22 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
 }
 
-// once this future completes, we have a initialized
-// wallet
-import org.bitcoins.wallet.api.LockedWalletApi
-import org.bitcoins.wallet.api.InitializeWalletSuccess
-import org.bitcoins.wallet.Wallet
-import org.bitcoins.core.api._
-val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
-    Wallet.initialize(NodeApi.NoOp, ChainQueryApi.NoOp).collect {
-        case InitializeWalletSuccess(wallet) => wallet
-    }
+//initialize our key manager, where we store our keys
+import org.bitcoins.keymanager._
+val keyManager = KeyManager.initialize(walletConfig.kmParams).getOrElse {
+  throw new RuntimeException(s"Failed to initalize key manager")
 }
 
+// once this future completes, we have a initialized
+// wallet
+
+import org.bitcoins.wallet.api.LockedWalletApi
+import org.bitcoins.wallet.Wallet
+import org.bitcoins.core.api._
+val wallet = Wallet(keyManager,NodeApi.NoOp, ChainQueryApi.NoOp)
+val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
+  Wallet.initialize(wallet)
+}
 
 // when this future completes, ww have sent a transaction
 // from bitcoind to the Bitcoin-S wallet
