@@ -30,13 +30,13 @@ import org.bitcoins.core.hd._
 // how long our phrase ends up being
 // 256 bits of entropy results in 24 words
 val entropy: BitVector = MnemonicCode.getEntropy256Bits
-// entropy: BitVector = BitVector(256 bits, 0x39f30e63d03882325006e97c5a15e6d471a4c7d35112569d2352b052a091e3cf)
+// entropy: BitVector = BitVector(256 bits, 0x8c462348afe97eef714535da78e85cba3fea90da954d0b4574f43104b0ded45c)
 
 val mnemonicCode = MnemonicCode.fromEntropy(entropy)
-// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(delay, observe, ocean, parrot, market, bomb, divorce, tag, labor, spawn, keen, pottery, bottom, glue, essence, car, final, trouble, start, gaze, claw, employ, monkey, type))
+// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(middle, country, split, garlic, obey, jeans, shallow, pluck, surprise, shrug, blame, inner, wrong, embody, heart, predict, area, close, dial, ginger, enrich, hunt, fabric, mask))
 
 mnemonicCode.words // the phrase the user should write down
-// res0: Vector[String] = Vector(delay, observe, ocean, parrot, market, bomb, divorce, tag, labor, spawn, keen, pottery, bottom, glue, essence, car, final, trouble, start, gaze, claw, employ, monkey, type) // the phrase the user should write down
+// res0: Vector[String] = Vector(middle, country, split, garlic, obey, jeans, shallow, pluck, surprise, shrug, blame, inner, wrong, embody, heart, predict, area, close, dial, ginger, enrich, hunt, fabric, mask) // the phrase the user should write down
 
 // the password argument is an optional, extra security
 // measure. all MnemonicCode instances will give you a
@@ -46,13 +46,13 @@ mnemonicCode.words // the phrase the user should write down
 // different passwords.
 val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode,
                                        password = "secret password")
-// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xd45cc7ef7aa2aae1a8cd90c91a4f79b866dd00a10cf8cdaae157a822167a4cc740b7364eb43f1474d8c86473db4faf845e6a9e3fd06ee39eeb493c751a0cdfee))
+// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xed5dc8b858bf78427b4fb26645c79e59b777201281549c224b56efbae399846e5b03f284b05bad1499880b10a0592c3ac9a7b01842ced609ec83ccf134e14727))
 
 val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
                                         bip39Seed)
-// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GjukHugLbrUkjRE3ycvmhRCT4cE2T2qU53j18nUjL4ocaDsXwBWYzU5u88ZFxQ42YWMLAT1S5V2wwcxgogsMrDQtNeLBwr3D
+// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GkeTo5WZtXUmTSjUXxw8kcA5LdBR8ySCKiXrGfLmCgSbdhrr1RtSjHe19Fc7BACFh5qfArFr5nf7WXaqGLgudpAdG7VzkGM5
 val xpub = xpriv.extPublicKey
-// xpub: ExtPublicKey = zpub6jftahH18ngZxPpm1hscDchTyFtU2PVYnRNfQcS4bB13vXLHL23acbw459g4XxYYHfo44rTmYSXzBQzzBEVqT3PfPcqL69fpdrgkxMHuQCy
+// xpub: ExtPublicKey = zpub6jftahH18ngZy8YGBY6ttciBzmK2NPrbyNzwRZpkXmjJbLBRCt5TEEv7Z6zRHkkrTR9nYzsUCry97Ru7NVqyMtbRreTo3WWqMdHxzj38dp4
 
 // you can now use the generated xpriv to derive further
 // private or public keys
@@ -103,7 +103,7 @@ val accountXpub = {
     // can generate addresses with it!
     accountXpriv.extPublicKey
 }
-// accountXpub: ExtPublicKey = zpub6qUM2b9Nq9v51X1sPsXpXWznJnBhvhHUfhrXvMFntXQT8ZkK2tizi29cMm2HH3vb1Zz8CHb3933J9tvaH97GS4s6XUZQsrTYf7cWGYtmYLA
+// accountXpub: ExtPublicKey = zpub6rFK5YgNZ4VPaRxHLRp5sdC3TeWhEUjxuBm38y4tmH8M4RyA3QuxGEJVuq4YnRVxXdcjj4JajgGV787yGTKZM1SBK2Q1z4ZqJrV6uzewamM
 
                               // address no. 0 ---------------┐
                               // external address ----------┐ |
@@ -126,12 +126,12 @@ val firstAccountAddress = {
     val scriptPubKey = P2WPKHWitnessSPKV0(pubkey)
     Bech32Address(scriptPubKey, TestNet3)
 }
-// firstAccountAddress: Bech32Address = Bech32Address(tb1quqvdsqdzt2nlszkfqsxndu5pg6ahzyjk2e5qmz)
+// firstAccountAddress: Bech32Address = Bech32Address(tb1qypxkhchu805aprywl8e4eezfqkkkwa39gj2qeu)
 
 // tada! We just generated an address you can send money to,
 // without having access to the private key!
 firstAccountAddress.value
-// res2: String = tb1quqvdsqdzt2nlszkfqsxndu5pg6ahzyjk2e5qmz
+// res2: String = tb1qypxkhchu805aprywl8e4eezfqkkkwa39gj2qeu
 
 // you can now continue deriving addresses from the same public
 // key, by imitating what we did above. To get the next
@@ -139,3 +139,7 @@ firstAccountAddress.value
 val nextAddressPath: SegWitHDPath = firstAddressPath.next
 // nextAddressPath: SegWitHDPath = m/84'/0'/0'/0/1
 ```
+
+### Signing things with HD keys
+
+Please see [sign.md](sign.md) for information on how to sign things with HD keys.

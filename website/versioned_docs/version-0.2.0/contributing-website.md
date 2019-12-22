@@ -23,6 +23,7 @@ To generate Scaladocs:
 ```bash
 $ sbt
 > unidoc
+> docs/mdoc
 ```
 
 This gets placed in `website/static/api`. When viewing the Docusaurus site the generated Scaladocs
