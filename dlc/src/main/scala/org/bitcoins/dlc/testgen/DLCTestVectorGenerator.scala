@@ -1,15 +1,10 @@
-package org.bitcoins.dlc
+package org.bitcoins.dlc.testgen
+
+import java.io.{File, PrintWriter}
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtKeyVersion.LegacyTestNet3Priv
-import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  ECPublicKey,
-  ExtPrivateKey,
-  Schnorr,
-  SchnorrNonce
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
@@ -27,6 +22,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2WPKHV0SpendingInfo,
   SegwitV0NativeUTXOSpendingInfo
 }
+import org.bitcoins.dlc.BinaryOutcomeDLCWithSelf
 import play.api.libs.json.{JsString, JsValue, Json}
 import scodec.bits.ByteVector
 
@@ -35,7 +31,13 @@ import scala.concurrent.{ExecutionContext, Future}
 object DLCTestVectorGenerator {
   implicit private val ec: ExecutionContext = ExecutionContext.global
 
-  def doIt(): Future[JsValue] = {
+  private def writeToFile(json: JsValue, outFile: File): Unit = {
+    val writer = new PrintWriter(outFile)
+    writer.print(json.toString)
+    writer.close()
+  }
+
+  def generateRandomTestVector(): Future[JsValue] = {
     val localPayouts = Map(
       "WIN" -> (CurrencyUnits.oneBTC * 2 - CurrencyUnits.oneMBTC),
       "LOSE" -> CurrencyUnits.oneMBTC)
@@ -94,21 +96,20 @@ object DLCTestVectorGenerator {
     )
   }
 
-  def generateTest(
-      localPayouts: Map[String, CurrencyUnit],
-      realOutcome: String,
-      oracleKey: ECPrivateKey,
-      oracleKValue: SchnorrNonce,
-      localExtPrivKey: ExtPrivateKey,
-      localInput: CurrencyUnit,
-      localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
-      localChangeSPK: WitnessScriptPubKeyV0,
-      remoteExtPrivKey: ExtPrivateKey,
-      remoteInput: CurrencyUnit,
-      remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
-      remoteChangeSPK: WitnessScriptPubKeyV0,
-      timeout: BlockStampWithFuture,
-      feeRate: SatoshisPerByte): Future[JsValue] = {
+  def generateTest(localPayouts: Map[String, CurrencyUnit],
+                   realOutcome: String,
+                   oracleKey: ECPrivateKey,
+                   oracleKValue: SchnorrNonce,
+                   localExtPrivKey: ExtPrivateKey,
+                   localInput: CurrencyUnit,
+                   localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
+                   localChangeSPK: WitnessScriptPubKeyV0,
+                   remoteExtPrivKey: ExtPrivateKey,
+                   remoteInput: CurrencyUnit,
+                   remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
+                   remoteChangeSPK: WitnessScriptPubKeyV0,
+                   timeout: BlockStampWithFuture,
+                   feeRate: SatoshisPerByte): Future[JsValue] = {
     require(localPayouts.keySet.contains(realOutcome),
             "Outcome must be possible")
     require(localPayouts.size == 2, "Currently only Binary DLCs are supported")
