@@ -11,8 +11,7 @@ package object core {
       override def compare(x: ByteVector, y: ByteVector): Int = {
         if (x == y) {
           0
-        }
-        else if (x.isEmpty) {
+        } else if (x.isEmpty) {
           -1
         } else if (y.isEmpty) {
           1
