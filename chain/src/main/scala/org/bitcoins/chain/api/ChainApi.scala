@@ -11,9 +11,8 @@ import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.script.ScriptPubKey
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /**
   * Entry api to the chain project for adding new things to our blockchain
@@ -139,26 +138,6 @@ trait ChainApi extends ChainQueryApi {
     * Looks up a compact filter by its height.
     */
   def getFiltersAtHeight(height: Int): Future[Vector[CompactFilterDb]]
-
-  /**
-    * Iterates over the block filters in order to find filters that match to the given addresses
-    *
-    * @param scripts list of [[ScriptPubKey]]'s to watch
-    * @param startOpt start point (if empty it starts with the genesis block)
-    * @param endOpt end point (if empty it ends with the best tip)
-    * @param batchSize number of filters that can be matched in one batch
-    *
-    * @param parallelismLevel max number of threads required to perform matching
-    *
-    * @return a list of matching block hashes
-    */
-  def getMatchingBlocks(
-      scripts: Vector[ScriptPubKey],
-      startOpt: Option[BlockStamp],
-      endOpt: Option[BlockStamp],
-      batchSize: Int,
-      parallelismLevel: Int)(
-      ec: ExecutionContext): Future[Vector[DoubleSha256DigestBE]]
 
   /** Returns the block height of the given block stamp */
   def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int]

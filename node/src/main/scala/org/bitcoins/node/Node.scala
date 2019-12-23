@@ -11,8 +11,6 @@ import org.bitcoins.chain.models.{
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
-import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
@@ -205,11 +203,6 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     logger.info(s"Sending out inv for tx=${transaction.txIdBE}")
     peerMsgSenderF.flatMap(_.sendInventoryMessage(transaction))
   }
-
-  def rescan(
-      scriptPubKeysToWatch: Vector[ScriptPubKey],
-      startOpt: Option[BlockStamp] = None,
-      endOpt: Option[BlockStamp] = None): Future[Unit]
 
   /**
     * Fetches the given blocks from the peers and calls the appropriate [[callbacks]] when done.

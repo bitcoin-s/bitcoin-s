@@ -1,15 +1,14 @@
 package org.bitcoins.node
 
-import java.util.concurrent.Executors
-
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 case class NeutrinoNode(
     nodePeer: Peer,
@@ -46,29 +45,17 @@ case class NeutrinoNode(
     res
   }
 
-  def rescan(
-      scriptPubKeysToWatch: Vector[ScriptPubKey],
-      startOpt: Option[BlockStamp] = None,
-      endOpt: Option[BlockStamp] = None): Future[Unit] = {
-    val threadPool =
-      Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2)
+  /** Gets the number of compact filters in the database */
+  override def getFilterCount: Future[Int] =
+    chainApiFromDb().flatMap(_.getFilterCount)
 
-    val res = for {
-      chainApi <- chainApiFromDb()
-      blockHashes <- chainApi.getMatchingBlocks(
-        scriptPubKeysToWatch,
-        startOpt,
-        endOpt)(ExecutionContext.fromExecutor(threadPool))
-      res <- downloadBlocks(blockHashes.map(_.flip))
-    } yield {
-      res
-    }
+  /** Returns the block height of the given block stamp */
+  override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
+    chainApiFromDb().flatMap(_.getHeightByBlockStamp(blockStamp))
 
-    res.onComplete(_ => threadPool.shutdown())
-
-    res.failed.foreach(logger.error("Cannot rescan", _))
-
-    res
-  }
+  override def getFiltersBetweenHeights(
+      startHeight: Int,
+      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+    chainApiFromDb().flatMap(_.getFiltersBetweenHeights(startHeight, endHeight))
 
 }

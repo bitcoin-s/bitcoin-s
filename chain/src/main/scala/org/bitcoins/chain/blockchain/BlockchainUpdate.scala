@@ -1,6 +1,5 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.blockchain.BlockchainUpdate.{Failed, Successful}
 import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -21,13 +20,6 @@ sealed abstract class BlockchainUpdate {
   /** Our current blockchain */
   def blockchain: Blockchain
 
-  def withSuccessfulHeaders(headers: Vector[BlockHeaderDb]): BlockchainUpdate =
-    this match {
-      case s: Successful =>
-        s.copy(successfulHeaders = headers)
-      case f: Failed =>
-        f.copy(successfulHeaders = headers)
-    }
 }
 
 object BlockchainUpdate {
