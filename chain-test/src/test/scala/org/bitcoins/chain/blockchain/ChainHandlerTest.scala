@@ -419,16 +419,17 @@ class ChainHandlerTest extends ChainUnitTest {
       }
   }
 
-  it must "" in { chainHandler: ChainHandler =>
-    for {
-      bestBlock <- chainHandler.getBestBlockHeader()
-      filterHeader <- chainHandler.getFilterHeader(bestBlock.hashBE)
-      filter <- chainHandler.getFilter(bestBlock.hashBE)
-    } yield {
-      assert(filterHeader.isDefined)
-      assert(filter.isDefined)
-      assert(filterHeader.get.filterHashBE == filter.get.hashBE)
-    }
+  it must "read compact filters for the database" in {
+    chainHandler: ChainHandler =>
+      for {
+        bestBlock <- chainHandler.getBestBlockHeader()
+        filterHeader <- chainHandler.getFilterHeader(bestBlock.hashBE)
+        filter <- chainHandler.getFilter(bestBlock.hashBE)
+      } yield {
+        assert(filterHeader.isDefined)
+        assert(filter.isDefined)
+        assert(filterHeader.get.filterHashBE == filter.get.hashBE)
+      }
   }
 
   it must "return the number of confirmations" in {
