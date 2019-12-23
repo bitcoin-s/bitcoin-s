@@ -181,12 +181,12 @@ class RoutesSpec
     "run wallet rescan" in {
       // positive cases
 
-      (mockNode.rescan _)
+      (mockWalletApi.rescan _)
         .expects(Vector(testAddress.scriptPubKey), None, None)
         .returning(FutureUtil.unit)
 
       val route1 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand("rescan", Arr(Arr(Str(testAddressStr)), Null, Null)))
 
       Post() ~> route1 ~> check {
@@ -194,7 +194,7 @@ class RoutesSpec
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
 
-      (mockNode.rescan _)
+      (mockWalletApi.rescan _)
         .expects(
           Vector(testAddress.scriptPubKey),
           Some(BlockTime(
@@ -203,7 +203,7 @@ class RoutesSpec
         .returning(FutureUtil.unit)
 
       val route2 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand(
             "rescan",
             Arr(Arr(Str(testAddressStr)), Str("2018-10-27T12:34:56Z"), Null)))
@@ -213,14 +213,14 @@ class RoutesSpec
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
 
-      (mockNode.rescan _)
+      (mockWalletApi.rescan _)
         .expects(Vector(testAddress.scriptPubKey),
                  None,
                  Some(BlockHash(DoubleSha256DigestBE.empty)))
         .returning(FutureUtil.unit)
 
       val route3 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand("rescan",
                         Arr(Arr(Str(testAddressStr)),
                             Null,
@@ -231,14 +231,14 @@ class RoutesSpec
         responseAs[String] shouldEqual """{"result":"ok","error":null}"""
       }
 
-      (mockNode.rescan _)
+      (mockWalletApi.rescan _)
         .expects(Vector(testAddress.scriptPubKey),
                  Some(BlockHeight(12345)),
                  Some(BlockHeight(67890)))
         .returning(FutureUtil.unit)
 
       val route4 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand(
             "rescan",
             Arr(Arr(Str(testAddressStr)), Str("12345"), Num(67890))))
@@ -251,7 +251,7 @@ class RoutesSpec
       // negative cases
 
       val route5 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand(
             "rescan",
             Arr(Arr(Str(testAddressStr)), Str("abcd"), Str("efgh"))))
@@ -263,7 +263,7 @@ class RoutesSpec
       }
 
       val route6 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand(
             "rescan",
             Arr(Arr(Str(testAddressStr)), Null, Str("2018-10-27T12:34:56"))))
@@ -275,7 +275,7 @@ class RoutesSpec
       }
 
       val route7 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand("rescan", Arr(Arr(Str(testAddressStr)), Num(-1), Null)))
 
       Post() ~> route7 ~> check {
@@ -285,7 +285,7 @@ class RoutesSpec
       }
 
       val route8 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand("rescan", Arr(Arr(), Null, Null)))
 
       Post() ~> route8 ~> check {
@@ -295,7 +295,7 @@ class RoutesSpec
       }
 
       val route9 =
-        nodeRoutes.handleCommand(
+        walletRoutes.handleCommand(
           ServerCommand("rescan", Arr(Arr("abcdefgh"), Null, Null)))
 
       Post() ~> route9 ~> check {

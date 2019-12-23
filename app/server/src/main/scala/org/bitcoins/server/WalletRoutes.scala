@@ -50,5 +50,17 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("rescan", arr) =>
+      Rescan.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(Rescan(addresses, startBlock, endBlock)) =>
+          complete {
+            wallet
+              .rescan(addresses.map(_.scriptPubKey), startBlock, endBlock)
+              .map(_ => Server.httpSuccess("ok"))
+          }
+      }
+
   }
 }

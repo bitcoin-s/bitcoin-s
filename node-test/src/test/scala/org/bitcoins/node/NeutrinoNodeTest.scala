@@ -170,7 +170,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
                 s"Did not receive a block message after $testTimeout!",
                 failedCodeStackDepth = 0))
         }
-        _ <- node.rescan(
+        _ <- wallet.rescan(
           walletUtxos.map(_.output.scriptPubKey) :+ walletAddress.scriptPubKey)
         result <- assertionP.future
       } yield assert(result)
