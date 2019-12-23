@@ -12,17 +12,87 @@ import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2WPKHV0SpendingInfo
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsArray, JsError, JsResult, JsSuccess, JsValue, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 
 object DLCTestVectorGenerator {
   implicit private val ec: ExecutionContext = ExecutionContext.global
+
+  val defaultTestFile: File = new File(
+    "dlc/src/main/scala/org/bitcoins/dlc/testgen/dlc_test.json")
 
   private def writeToFile(json: JsValue, outFile: File): Unit = {
     val writer = new PrintWriter(outFile)
     writer.print(json.toString)
     writer.close()
+  }
+
+  def writeRandomTestVectorsToFile(num: Int = 100): Future[Unit] = {
+    generateRandomTestVectors(num).map(writeTestVectorsToFile)
+  }
+
+  def writeTestVectorsToFile(vecs: Vector[DLCTestVector]): Unit = {
+    val arr = JsArray(vecs.map(_.toJson))
+    writeToFile(arr, defaultTestFile)
+  }
+
+  /** Returns true if anything has changed, false otherwise */
+  def regenerateTestFile(): Future[Boolean] = {
+    val testVecResult = readFromDefaultTestFile()
+
+    testVecResult match {
+      case JsSuccess(testVecs, _) =>
+        val newTestVecsF = Future.sequence(testVecs.map(_.regenerate))
+        newTestVecsF.flatMap { newTestVecs =>
+          val noChange = newTestVecs.zip(testVecs).foldLeft(true) {
+            case (sameSoFar, (oldVec, newVec)) =>
+              sameSoFar && (oldVec == newVec)
+          }
+
+          if (noChange) {
+            Future.successful(false)
+          } else {
+            val successfulDelete = defaultTestFile.delete()
+            if (successfulDelete) {
+              writeTestVectorsToFile(newTestVecs)
+              Future.successful(true)
+            } else {
+              Future.failed(
+                new RuntimeException(
+                  s"Was unable to delete ${defaultTestFile.getAbsolutePath}"))
+            }
+          }
+        }
+      case JsError(err) =>
+        Future.failed(
+          new IllegalArgumentException(s"Could not read json from file: $err"))
+    }
+  }
+
+  def readFromDefaultTestFile(): JsResult[Vector[DLCTestVector]] = {
+    val source = Source.fromFile(defaultTestFile)
+    val str = source.getLines().reduce(_ ++ _)
+    source.close()
+
+    Json.parse(str).validate[JsArray].flatMap { arr =>
+      arr.value
+        .foldLeft[JsResult[Vector[DLCTestVector]]](JsSuccess(Vector.empty)) {
+          case (jsResultAccum, json) =>
+            jsResultAccum.flatMap { accum =>
+              DLCTestVector.fromJson(json).map { testVec =>
+                accum :+ testVec
+              }
+            }
+        }
+    }
+  }
+
+  def generateRandomTestVectors(num: Int): Future[Vector[DLCTestVector]] = {
+    val testVecFs = (0 until num).toVector.map(_ => generateRandomTestVector())
+
+    Future.sequence(testVecFs)
   }
 
   def generateRandomTestVector(): Future[DLCTestVector] = {

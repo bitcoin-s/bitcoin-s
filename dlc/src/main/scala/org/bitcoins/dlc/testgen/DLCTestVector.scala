@@ -111,6 +111,30 @@ case class DLCTestVector(
   val oracleSig: SchnorrDigitalSignature =
     Schnorr.signWithNonce(outcomeHash.bytes, oracleKey, oracleKValue)
 
+  def regenerate: Future[DLCTestVector] = {
+    DLCTestVector.fromInputs(
+      localPayouts = localPayouts,
+      realOutcome = realOutcome,
+      oracleKey = oracleKey,
+      oracleKValue = oracleKValue,
+      localExtPrivKey = localExtPrivKey,
+      localInput = localInput,
+      localFundingUtxos = localFundingUtxos,
+      localChangeSPK = localChangeSPK,
+      remoteExtPrivKey = remoteExtPrivKey,
+      remoteInput = remoteInput,
+      remoteFundingUtxos = remoteFundingUtxos,
+      remoteChangeSPK = remoteChangeSPK,
+      timeout = timeout,
+      feeRate = feeRate
+    )
+  }
+
+  /** Tests that regenerating from inputs yields same outputs */
+  def test(): Future[Boolean] = {
+    regenerate.map(_ == this)
+  }
+
   def toJson: JsValue = {
     val inputs = Vector(
       localPayouts,
