@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 /** Configuration for the Bitcoin-S wallet
   * @param directory The data directory of the wallet
-  * @param confs Optional sequence of configuration overrides
+  * @param conf Optional sequence of configuration overrides
   */
 case class WalletAppConfig(
     private val directory: Path,

@@ -7,8 +7,8 @@ import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.keymanager.{UnlockKeyManagerError, WalletStorage}
-import org.bitcoins.keymanager.UnlockKeyManagerError.{BadPassword, JsonParsingError, MnemonicNotFound}
+import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
+import org.bitcoins.keymanager.KeyManagerUnlockError.{BadPassword, JsonParsingError, MnemonicNotFound}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.models.AddressDb
@@ -149,9 +149,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         case Left(err) => err
       }
       errorType match {
-        case UnlockKeyManagerError.MnemonicNotFound          => fail(MnemonicNotFound)
-        case UnlockKeyManagerError.BadPassword               => succeed
-        case UnlockKeyManagerError.JsonParsingError(message) => fail(message)
+        case KeyManagerUnlockError.MnemonicNotFound          => fail(MnemonicNotFound)
+        case KeyManagerUnlockError.BadPassword               => succeed
+        case KeyManagerUnlockError.JsonParsingError(message) => fail(message)
       }
   }
 

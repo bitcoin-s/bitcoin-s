@@ -182,7 +182,7 @@ trait LockedWalletApi extends WalletApi {
     * making it possible to send transactions.
     */
   def unlock(passphrase: AesPassword): Either[
-    UnlockKeyManagerError,
+    KeyManagerUnlockError,
     UnlockedWalletApi] = {
     val kmParams = walletConfig.kmParams
 

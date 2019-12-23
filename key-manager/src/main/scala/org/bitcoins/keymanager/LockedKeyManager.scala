@@ -18,7 +18,7 @@ object LockedKeyManager extends BitcoinSLogger {
     * */
   def unlock(
       passphrase: AesPassword,
-      kmParams: KeyManagerParams): Either[UnlockKeyManagerError, KeyManager] = {
+      kmParams: KeyManagerParams): Either[KeyManagerUnlockError, KeyManager] = {
     logger.debug(s"Trying to unlock wallet with seedPath=${kmParams.seedPath}")
     val resultE =
       WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, passphrase)
@@ -29,14 +29,14 @@ object LockedKeyManager extends BitcoinSLogger {
         result match {
           case DecryptionError =>
             logger.error(s"Bad password for unlocking wallet!")
-            Left(UnlockKeyManagerError.BadPassword)
+            Left(KeyManagerUnlockError.BadPassword)
           case JsonParsingError(message) =>
             logger.error(s"JSON parsing error when unlocking wallet: $message")
-            Left(UnlockKeyManagerError.JsonParsingError(message))
+            Left(KeyManagerUnlockError.JsonParsingError(message))
           case ReadMnemonicError.NotFoundError =>
             logger.error(
               s"Encrypted mnemonic not found when unlocking the wallet!")
-            Left(UnlockKeyManagerError.MnemonicNotFound)
+            Left(KeyManagerUnlockError.MnemonicNotFound)
         }
     }
 

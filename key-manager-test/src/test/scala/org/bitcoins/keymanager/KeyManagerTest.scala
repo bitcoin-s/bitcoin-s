@@ -2,7 +2,7 @@ package org.bitcoins.keymanager
 
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, MnemonicCode}
-import org.bitcoins.core.hd.{BIP32Path, HDAccount, HDChainType, HDCoin, HDCoinType, HDPath, HDPurposes, LegacyHDPath, SegWitHDPath}
+import org.bitcoins.core.hd._
 import scodec.bits.BitVector
 
 class KeyManagerTest extends KeyManagerUnitTest {
@@ -85,7 +85,7 @@ class KeyManagerTest extends KeyManagerUnitTest {
   }
 
   private def buildParams(): KeyManagerParams = {
-    KeyManagerParams(seedPath = KeyManagerTestUtil.seedPath,
+    KeyManagerParams(seedPath = KeyManagerTestUtil.tmpSeedPath,
       purpose = purpose, network = MainNet)
   }
 }

@@ -20,23 +20,23 @@ class LockedKeyManagerTest extends KeyManagerUnitTest {
     val km = withInitializedKeyManager()
     val badPassword = AesPassword.fromString("other bad password").get
     LockedKeyManager.unlock(passphrase = badPassword, kmParams = km.kmParams) match {
-      case Left(UnlockKeyManagerError.BadPassword) => succeed
+      case Left(KeyManagerUnlockError.BadPassword) => succeed
       case result @ (Left(_) | Right(_)) =>
-        fail(s"Expected to fail test with ${UnlockKeyManagerError.BadPassword} got ${result}")
+        fail(s"Expected to fail test with ${KeyManagerUnlockError.BadPassword} got ${result}")
     }
   }
 
 
   it must "fail if the seedPath is not found" in {
-    val badSeedPath = KeyManagerTestUtil.seedPath
+    val badSeedPath = KeyManagerTestUtil.tmpSeedPath
     val km = withInitializedKeyManager()
 
     val badPath = km.kmParams.copy(seedPath = badSeedPath)
     val badPassword = AesPassword.fromString("other bad password").get
     LockedKeyManager.unlock(badPassword, badPath) match {
-      case Left(UnlockKeyManagerError.MnemonicNotFound) => succeed
+      case Left(KeyManagerUnlockError.MnemonicNotFound) => succeed
       case result @ (Left(_) | Right(_)) =>
-        fail(s"Expected to fail test with ${UnlockKeyManagerError.MnemonicNotFound} got ${result}")
+        fail(s"Expected to fail test with ${KeyManagerUnlockError.MnemonicNotFound} got ${result}")
     }
   }
 }

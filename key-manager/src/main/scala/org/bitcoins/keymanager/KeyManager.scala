@@ -46,14 +46,14 @@ case class KeyManager(
   }
 }
 
-object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
+object KeyManager extends KeyManagerCreateApi with BitcoinSLogger {
   val badPassphrase = AesPassword.fromString("bad-password").get
 
   /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(
       entropy: BitVector,
       kmParams: KeyManagerParams): Either[
-    InitializeKeyManagerError,
+    KeyManagerInitializeError,
     KeyManager] = {
     val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=${seedPath}")
@@ -65,7 +65,7 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
     }
 
     val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
-    val mnemonicE: CompatEither[InitializeKeyManagerError, MnemonicCode] =
+    val mnemonicE: CompatEither[KeyManagerInitializeError, MnemonicCode] =
       mnemonicT match {
         case Success(mnemonic) =>
           logger.info(s"Created mnemonic from entropy")
@@ -76,11 +76,11 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
       }
 
     val encryptedMnemonicE: CompatEither[
-      InitializeKeyManagerError,
+      KeyManagerInitializeError,
       EncryptedMnemonic] =
       mnemonicE.map { EncryptedMnemonicHelper.encrypt(_, badPassphrase) }
 
-    val writeToDiskE: CompatEither[InitializeKeyManagerError, KeyManager] =
+    val writeToDiskE: CompatEither[KeyManagerInitializeError, KeyManager] =
       for {
         mnemonic <- mnemonicE
         encrypted <- encryptedMnemonicE
@@ -95,7 +95,7 @@ object KeyManager extends CreateKeyManagerApi with BitcoinSLogger {
     //verify we can unlock it for a sanity check
     val unlocked = LockedKeyManager.unlock(badPassphrase, kmParams)
 
-    val biasedFinalE: CompatEither[InitializeKeyManagerError, KeyManager] =
+    val biasedFinalE: CompatEither[KeyManagerInitializeError, KeyManager] =
       for {
         kmBeforeWrite <- writeToDiskE
         invariant <- unlocked match {

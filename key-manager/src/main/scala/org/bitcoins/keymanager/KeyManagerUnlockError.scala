@@ -1,18 +1,18 @@
 package org.bitcoins.keymanager
 
-sealed trait UnlockKeyManagerError extends Error
+sealed trait KeyManagerUnlockError extends Error
 
-object UnlockKeyManagerError {
+object KeyManagerUnlockError {
 
   final case object MnemonicNotFound
       extends Error("Mnemonic not found")
-      with UnlockKeyManagerError
+      with KeyManagerUnlockError
 
   final case object BadPassword
       extends Error("Bad password for unlocking wallet!")
-      with UnlockKeyManagerError
+      with KeyManagerUnlockError
 
   final case class JsonParsingError(message: String)
       extends Error(message)
-      with UnlockKeyManagerError
+      with KeyManagerUnlockError
 }

@@ -10,7 +10,7 @@ import scodec.bits.BitVector
 trait KeyManagerUnitTest extends BitcoinSUnitTest {
 
   def createKeyManagerParams(): KeyManagerParams = {
-    val seedPath = KeyManagerTestUtil.seedPath
+    val seedPath = KeyManagerTestUtil.tmpSeedPath
     KeyManagerParams(seedPath = seedPath,
                      purpose = Gen.oneOf(HDPurposes.all).sample.get,
                      network = Gen.oneOf(Networks.knownNetworks).sample.get)
