@@ -8,7 +8,7 @@ title: Key Manager
 
 The key manager module's goal is to encapusulate all private key interactions with the [wallet](../applications/wallet.md) project.
 
-As of this writing, the wallet just delegates storage of the encrypted mnemonic seed to the key manager project. Over the log run, we want to make it so that the wallet project needs to communicate with the key-manager to access private keys.
+As of this writing, the wallet just delegates storage of the encrypted mnemonic seed to the key manager project. Over the long run, we want to make it so that the wallet project needs to communicate with the key-manager to access private keys.
 
 This means that ALL SIGNING should be done inside of the key-manager, and private keys should not leave the key manager.
 
@@ -16,7 +16,7 @@ This makes it easier to reason about the security characteristics of our private
 
 #### Creating a key manager
 
-To create a key manager the first thing you need create a key manager is some entropy. 
+The first thing you need create a key manager is some entropy.
 
 A popular way for bitcoin wallet's to represent entropy is [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which you [can use in bitcoin-s](../../core/src/main/scala/org/bitcoins/core/crypto/BIP39Seed.scala)
 
@@ -30,7 +30,7 @@ val entropy = MnemonicCode.getEntropy256Bits
 
 val mnemonic = MnemonicCode.fromEntropy(entropy)
 
-//you can prinhatt the mnemonic seed with this
+//you can print that mnemonic seed with this
 println(mnemonic.words)
 ```
 
@@ -45,7 +45,11 @@ generate specific kinds of addresses for wallets.
 
 
 This controls how the root key is defined. The combination of `purpose` and `network` determine how the root `ExtKey` is serialized. For more information on how this works please see [hd-keys](hd-keys.md)
+
+Now we can construct a native segwit key manager for the regtest network!
+
 ```scala mdoc
+
 import org.bitcoins.core.crypto._
 
 import org.bitcoins.core.config._
@@ -67,11 +71,6 @@ val purpose = HDPurposes.SegWit
 val network = RegTest
 
 val kmParams = KeyManagerParams(seedPath, purpose, network)
-```
-
-Now we can construct a native segwit key manager for the regtest network!
-
-```scala mdoc
 
 val km = KeyManager.initializeWithMnemonic(mnemonic, kmParams)
 
@@ -89,15 +88,7 @@ which is a native segwit `ExtPubKey` for the regtest network!
 You can always change the `network` or `purpose` to support different things. You do _not_ need to initialize the key manager
 again after initializing it once. You can use the same `mnemonic` for different networks, which you control `KeyManagerParams`.
 
-```scala mdoc
-
-import org.bitcoins.core.crypto._
-
-import org.bitcoins.core.config._
-
-import org.bitcoins.core.hd._
-
-import org.bitcoins.keymanager._
+```scala
 
 //let's create a nested segwit key manager for mainnet
 val mainnetKmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, MainNet)

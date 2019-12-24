@@ -28,12 +28,8 @@ case class KeyManager(
   def toSign(privKeyPath: HDPath): Sign = {
     val xpriv =
       rootExtPrivKey.deriveChildPrivKey(privKeyPath)
-    val privKey = xpriv.key
-    val pubAtPath = privKey.publicKey
 
-    val sign: Sign = Sign(privKey.signFunction, pubAtPath)
-
-    sign
+    xpriv
   }
 
   def deriveXPub(account: HDAccount): Try[ExtPublicKey] = {

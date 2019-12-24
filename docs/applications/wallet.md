@@ -19,9 +19,9 @@ The bitcoin-s wallet is a scalable way for individuals up to large bitcoin excha
 
 All key interactions are delegated to the [key-manager](key-manager.md) which is a minimal dependecy library to store and use key material.
 
-By default, we store the encrypted root key in `$HOME/.bitcoin-s/encrypted-bitcoin-s-seed.json`. This is the seed that is used for each the wallet on each cryptocurrency network.
+By default, we store the encrypted root key in `$HOME/.bitcoin-s/encrypted-bitcoin-s-seed.json`. This is the seed that is used for each of the wallets on each bitcoin network.
 
-The wallet itself is used to manage the utxo life cycle, create transactions, and update wallet balances to show how much money you have the on a cryptocurrency network.
+The wallet itself is used to manage the utxo life cycle, create transactions, and update wallet balances to show how much money you have the on a bitcoin network.
 
 We use [slick](https://scala-slick.org/doc/3.3.1/) as middleware to support different database types. Depending on your use case, you can use something as simple as sqlite, or something much more scalable like postgres.
 
