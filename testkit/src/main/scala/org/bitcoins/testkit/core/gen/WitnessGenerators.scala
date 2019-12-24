@@ -211,7 +211,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   /** Generates a random [[org.bitcoins.core.protocol.script.P2WPKHWitnessV0 P2PWPKHWitnessV0]] */
   def p2wshWitnessV0: Gen[P2WSHWitnessV0] =
     for {
-      (redeem, _) <- ScriptGenerators.scriptPubKey
+      (redeem, _) <- ScriptGenerators.rawScriptPubKey
       scriptSig <- ScriptGenerators.scriptSignature
     } yield P2WSHWitnessV0(redeem, scriptSig)
 

@@ -274,9 +274,15 @@ sealed abstract class CreditingTxGen {
       .flatMap {
         case BitcoinUTXOSpendingInfo(_, txOutput, signer, _, _, _, _) =>
           val spk = txOutput.scriptPubKey
-          val scriptWit = P2WSHWitnessV0(spk)
-          val witSPK = P2WSHWitnessSPKV0(spk)
-          build(witSPK, signer, None, Some(scriptWit))
+          spk match {
+            case rspk: RawScriptPubKey =>
+              val scriptWit = P2WSHWitnessV0(rspk)
+              val witSPK = P2WSHWitnessSPKV0(rspk)
+              build(witSPK, signer, None, Some(scriptWit))
+            case _ =>
+              throw new IllegalArgumentException(
+                "nonP2WSHOutput created a non RawScriptPubKey")
+          }
       }
 
   def p2wshOutputs: Gen[Seq[BitcoinUTXOSpendingInfo]] =
