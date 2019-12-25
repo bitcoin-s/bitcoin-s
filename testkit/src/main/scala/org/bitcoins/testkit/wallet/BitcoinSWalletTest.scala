@@ -3,6 +3,7 @@ package org.bitcoins.testkit.wallet
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
