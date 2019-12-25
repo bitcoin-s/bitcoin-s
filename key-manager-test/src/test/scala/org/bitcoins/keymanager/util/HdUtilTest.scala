@@ -15,11 +15,25 @@ class HdUtilTest extends KeyManagerUnitTest {
     assert(HDUtil.getXpubVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Pub)
     assert(HDUtil.getXpubVersion(HDPurposes.NestedSegWit, MainNet) == NestedSegWitMainNetPub)
     assert(HDUtil.getXpubVersion(HDPurposes.NestedSegWit, TestNet3) == NestedSegWitTestNet3Pub)
-    intercept[IllegalArgumentException] {
+
+    assertThrows[IllegalArgumentException] {
       HDUtil.getXpubVersion(HDPurpose(-1), TestNet3)
     }
+  }
 
-    intercept[IllegalArgumentException] {
+  it must "get the correct version for a private key" in {
+    assert(HDUtil.getXprivVersion(HDPurposes.Legacy, MainNet) == LegacyMainNetPriv)
+    assert(HDUtil.getXprivVersion(HDPurposes.Legacy, TestNet3) == LegacyTestNet3Priv)
+    assert(HDUtil.getXprivVersion(HDPurposes.SegWit, MainNet) == SegWitMainNetPriv)
+    assert(HDUtil.getXprivVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Priv)
+    assert(HDUtil.getXprivVersion(HDPurposes.NestedSegWit, MainNet) == NestedSegWitMainNetPriv)
+    assert(HDUtil.getXprivVersion(HDPurposes.NestedSegWit, TestNet3) == NestedSegWitTestNet3Priv)
+
+    assertThrows[IllegalArgumentException] {
+      HDUtil.getXprivVersion(HDPurpose(-1), MainNet)
+    }
+
+    assertThrows[IllegalArgumentException] {
       HDUtil.getXprivVersion(HDPurpose(-1), TestNet3)
     }
   }
