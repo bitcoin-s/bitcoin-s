@@ -85,16 +85,16 @@
 <span class="hljs-keyword">import</span> org.bitcoins.core.crypto._
 
 <span class="hljs-keyword">val</span> extPrivKey = <span class="hljs-type">ExtPrivateKey</span>(<span class="hljs-type">ExtKeyVersion</span>.<span class="hljs-type">SegWitMainNetPriv</span>)
-<span class="hljs-comment">// extPrivKey: ExtPrivateKey = zprvAWgYBBk7JR8GjR6y1MLm3K7ZQt9MNkdCrRaHYDJk9yX3rhTbeyos94x3SSBRkh66zLijfpM9rDeJj3iebAdad7EJy2c6jLCbtPVtbk4NQxa</span>
+<span class="hljs-comment">// extPrivKey: ExtPrivateKey = zprvAWgYBBk7JR8GkcxNpMVo8zp35Ms2c2H8CpZwNLbUov5HyFngNmpzXMx56iKYCrrwSBhATM7dWyEcgqvScYsUVgvGF2fWHMsf44W3B7ic1PN</span>
 
 extPrivKey.sign(<span class="hljs-type">DoubleSha256Digest</span>.empty.bytes)
-<span class="hljs-comment">// res0: ECDigitalSignature = ECDigitalSignature(304502210096fa1b082e8d381db78d1530c677f4a8a027c4b96f438d11a5faf1033aad8521022064f5313e2ef11c6919764c4a9e3811e60e387888f9b9142a5c24b2265d0534b9)</span>
+<span class="hljs-comment">// res0: ECDigitalSignature = ECDigitalSignature(3045022100b93209fcb91193da78e59df627deb9ce5cec1033f0eab2045713238e4fbe0d00022078159746592b3e0bf47fb24c4490c0ede8e87bddaed1e37348c8dd53b13ae235)</span>
 
 <span class="hljs-keyword">val</span> path = <span class="hljs-type">BIP32Path</span>(<span class="hljs-type">Vector</span>(<span class="hljs-type">BIP32Node</span>(<span class="hljs-number">0</span>,<span class="hljs-literal">false</span>)))
 <span class="hljs-comment">// path: BIP32Path = m/0</span>
 
 extPrivKey.sign(<span class="hljs-type">DoubleSha256Digest</span>.empty.bytes,path)
-<span class="hljs-comment">// res1: ECDigitalSignature = ECDigitalSignature(3045022100e4b9fd8bfafb0b2c7b7711b94ba490324ffb0424fb358a895f3147a81c94afeb02204ab1e32788b0ab882e65090715eacf67fd5849da039757e9b5361e768818454a)</span>
+<span class="hljs-comment">// res1: ECDigitalSignature = ECDigitalSignature(3044022013a2bbb0e321205a63f12635b67f98e0ed02e9bc33568f32eb8573e8000acfac02203d1c0503021768665b70a3cab727a66b7aaa68419b84b1883d8f8625677f18ca)</span>
 </code></pre>
 <p>With <code>ExtSign</code>, you can use <code>ExtPrivateKey</code> to sign transactions inside of <code>TxBuilder</code> since <code>UTXOSpendingInfo</code> takes in <code>Sign</code> as a parameter.</p>
 <p>You can also provide a <code>path</code> to use to derive a child <code>ExtPrivateKey</code>, and then sign with that child private key</p>
