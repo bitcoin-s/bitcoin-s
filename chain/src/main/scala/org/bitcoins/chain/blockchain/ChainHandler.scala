@@ -403,10 +403,12 @@ case class ChainHandler(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+      endHeight: Int): Future[
+    Vector[(GolombFilter, DoubleSha256DigestBE, Int)]] =
     filterDAO
       .getBetweenHeights(startHeight, endHeight)
-      .map(dbos => dbos.map(dbo => (dbo.golombFilter, dbo.blockHashBE)))
+      .map(dbos =>
+        dbos.map(dbo => (dbo.golombFilter, dbo.blockHashBE, dbo.height)))
 }
 
 object ChainHandler {

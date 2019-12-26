@@ -10,6 +10,7 @@ import org.bitcoins.node.Node
 import org.bitcoins.picklers._
 import org.bitcoins.wallet.api.UnlockedWalletApi
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
@@ -54,11 +55,14 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       Rescan.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(Rescan(addresses, startBlock, endBlock)) =>
+        case Success(Rescan(batchSize, startBlock, endBlock)) =>
           complete {
-            wallet
-              .rescan(addresses.map(_.scriptPubKey), startBlock, endBlock)
-              .map(_ => Server.httpSuccess("ok"))
+            Future {
+              wallet
+                .rescanNeutrinoWallet(startBlock,
+                                      endBlock,
+                                      batchSize.getOrElse(100))
+            }.map(_ => Server.httpSuccess("scheduled"))
           }
       }
 

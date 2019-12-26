@@ -1,18 +1,17 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.hd.{HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.db.{CRUD, SlickUtil}
+import org.bitcoins.wallet.config.WalletAppConfig
 import slick.dbio.Effect
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.TableQuery
 import slick.sql.SqlAction
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.hd.HDPurpose
 
 case class AddressDAO()(
     implicit ec: ExecutionContext,
@@ -24,6 +23,10 @@ case class AddressDAO()(
 
   override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
     SlickUtil.createAllNoAutoInc(ts, database, table)
+
+  def deleteAll(): Future[Int] = {
+    database.run(table.delete)
+  }
 
   /** Finds the rows that correlate to the given primary keys */
   override def findByPrimaryKeys(

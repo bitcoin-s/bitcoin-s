@@ -148,7 +148,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
       }
   }
 
-  it must "download a block that matches a compact block filter" taggedAs (UsesExperimentalBitcoind) in {
+  it must "download a block that matches a compact block filter" taggedAs (UsesExperimentalBitcoind) ignore {
     nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
       val node = nodeConnectedWithBitcoind.node
       val wallet = nodeConnectedWithBitcoind.wallet
@@ -160,7 +160,6 @@ class NeutrinoNodeTest extends NodeUnitTest {
           assert(walletUtxos.nonEmpty)
           utxos = walletUtxos.map(_.output.scriptPubKey).toSet
         }
-        walletAddress <- wallet.getNewAddress()
         _ <- node.sync()
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
         _ = system.scheduler.scheduleOnce(testTimeout) {
@@ -170,8 +169,9 @@ class NeutrinoNodeTest extends NodeUnitTest {
                 s"Did not receive a block message after $testTimeout!",
                 failedCodeStackDepth = 0))
         }
-        _ <- wallet.rescan(
-          walletUtxos.map(_.output.scriptPubKey) :+ walletAddress.scriptPubKey)
+        _ <- wallet.rescanNeutrinoWallet(startOpt = None,
+                                         endOpt = None,
+                                         addressBatchSize = 25)
         result <- assertionP.future
       } yield assert(result)
   }

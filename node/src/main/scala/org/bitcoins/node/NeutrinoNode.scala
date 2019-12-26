@@ -55,7 +55,8 @@ case class NeutrinoNode(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+      endHeight: Int): Future[
+    Vector[(GolombFilter, DoubleSha256DigestBE, Int)]] =
     chainApiFromDb().flatMap(_.getFiltersBetweenHeights(startHeight, endHeight))
 
 }

@@ -1,7 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.core.crypto.{DoubleSha256Digest, ExtPublicKey, MnemonicCode}
+import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 
 import scala.io.Source
 import play.api.libs.json.JsValue
@@ -9,40 +8,35 @@ import play.api.libs.json.Json
 import org.bitcoins.core.hd.HDCoinType
 import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.hd.HDPath
-import org.bitcoins.core.hd.HDChain
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.Reads
 import play.api.libs.json.JsResult
-import org.bitcoins.rpc.serializers.SerializerUtil
 import play.api.libs.json.JsError
 import play.api.libs.json.JsSuccess
-import org.bitcoins.core.hd.HDCoin
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.server.BitcoinSAppConfig
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
 
 import scala.concurrent.Future
 import org.bitcoins.wallet.api.InitializeWalletSuccess
-import org.scalatest.AsyncFlatSpec
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.scalatest.FutureOutcome
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.hd.HDChainType.Change
 import org.bitcoins.core.hd.HDChainType.External
 import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.wallet.models.AccountDb
-import _root_.akka.actor.Address
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent.ExecutionContext
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  MockChainQueryApi,
+  MockNodeApi
+}
 
 class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
@@ -160,7 +154,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
   private def getWallet(config: WalletAppConfig): Future[Wallet] =
     Wallet
-      .initializeWithMnemonic(mnemonic, NodeApi.NoOp, ChainQueryApi.NoOp)(
+      .initializeWithMnemonic(mnemonic, MockNodeApi, MockChainQueryApi)(
         config, // to make sure we're not passing in the wrong conf by accident
         implicitly[ExecutionContext]
       )

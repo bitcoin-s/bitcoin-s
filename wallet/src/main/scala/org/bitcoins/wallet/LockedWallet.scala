@@ -26,7 +26,8 @@ abstract class LockedWallet
     with UtxoHandling
     with AddressHandling
     with AccountHandling
-    with TransactionProcessing {
+    with TransactionProcessing
+    with RescanHandling {
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()

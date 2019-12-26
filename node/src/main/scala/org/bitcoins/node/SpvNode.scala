@@ -97,6 +97,7 @@ case class SpvNode(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+      endHeight: Int): Future[
+    Vector[(GolombFilter, DoubleSha256DigestBE, Int)]] =
     Future.failed(new RuntimeException(cfErrMsg))
 }

@@ -181,80 +181,69 @@ class RoutesSpec
     "run wallet rescan" in {
       // positive cases
 
-      (mockWalletApi.rescan _)
-        .expects(Vector(testAddress.scriptPubKey), None, None)
+      (mockWalletApi.rescanNeutrinoWallet _)
+        .expects(None, None, 100)
         .returning(FutureUtil.unit)
 
       val route1 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(Str(testAddressStr)), Null, Null)))
+          ServerCommand("rescan", Arr(Arr(), Null, Null)))
 
       Post() ~> route1 ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"ok","error":null}"""
+        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
 
-      (mockWalletApi.rescan _)
+      (mockWalletApi.rescanNeutrinoWallet _)
         .expects(
-          Vector(testAddress.scriptPubKey),
           Some(BlockTime(
             ZonedDateTime.of(2018, 10, 27, 12, 34, 56, 0, ZoneId.of("UTC")))),
-          None)
+          None,
+          100)
         .returning(FutureUtil.unit)
 
       val route2 =
         walletRoutes.handleCommand(
-          ServerCommand(
-            "rescan",
-            Arr(Arr(Str(testAddressStr)), Str("2018-10-27T12:34:56Z"), Null)))
+          ServerCommand("rescan",
+                        Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null)))
 
       Post() ~> route2 ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"ok","error":null}"""
+        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
 
-      (mockWalletApi.rescan _)
-        .expects(Vector(testAddress.scriptPubKey),
-                 None,
-                 Some(BlockHash(DoubleSha256DigestBE.empty)))
+      (mockWalletApi.rescanNeutrinoWallet _)
+        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100)
         .returning(FutureUtil.unit)
 
       val route3 =
         walletRoutes.handleCommand(
           ServerCommand("rescan",
-                        Arr(Arr(Str(testAddressStr)),
-                            Null,
-                            Str(DoubleSha256DigestBE.empty.hex))))
+                        Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex))))
 
       Post() ~> route3 ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"ok","error":null}"""
+        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
 
-      (mockWalletApi.rescan _)
-        .expects(Vector(testAddress.scriptPubKey),
-                 Some(BlockHeight(12345)),
-                 Some(BlockHeight(67890)))
+      (mockWalletApi.rescanNeutrinoWallet _)
+        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100)
         .returning(FutureUtil.unit)
 
       val route4 =
         walletRoutes.handleCommand(
-          ServerCommand(
-            "rescan",
-            Arr(Arr(Str(testAddressStr)), Str("12345"), Num(67890))))
+          ServerCommand("rescan", Arr(Arr(), Str("12345"), Num(67890))))
 
       Post() ~> route4 ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":"ok","error":null}"""
+        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
 
       // negative cases
 
       val route5 =
         walletRoutes.handleCommand(
-          ServerCommand(
-            "rescan",
-            Arr(Arr(Str(testAddressStr)), Str("abcd"), Str("efgh"))))
+          ServerCommand("rescan", Arr(Null, Str("abcd"), Str("efgh"))))
 
       Post() ~> route5 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -264,9 +253,8 @@ class RoutesSpec
 
       val route6 =
         walletRoutes.handleCommand(
-          ServerCommand(
-            "rescan",
-            Arr(Arr(Str(testAddressStr)), Null, Str("2018-10-27T12:34:56"))))
+          ServerCommand("rescan",
+                        Arr(Arr(55), Null, Str("2018-10-27T12:34:56"))))
 
       Post() ~> route6 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -276,7 +264,7 @@ class RoutesSpec
 
       val route7 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(Str(testAddressStr)), Num(-1), Null)))
+          ServerCommand("rescan", Arr(Null, Num(-1), Null)))
 
       Post() ~> route7 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -284,26 +272,18 @@ class RoutesSpec
           Some(InvalidData(Num(-1), "Expected a positive integer")))
       }
 
+      (mockWalletApi.rescanNeutrinoWallet _)
+        .expects(None, None, 55)
+        .returning(FutureUtil.unit)
+
       val route8 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(), Null, Null)))
+          ServerCommand("rescan", Arr(Arr(55), Arr(), Arr())))
 
       Post() ~> route8 ~> check {
-        rejection shouldEqual ValidationRejection(
-          "failure",
-          Some(InvalidData(Arr(), "Expected a non-empty address array")))
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
-
-      val route9 =
-        walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr("abcdefgh"), Null, Null)))
-
-      Post() ~> route9 ~> check {
-        rejection shouldEqual ValidationRejection(
-          "failure",
-          Some(InvalidData("abcdefgh", "Expected a valid address")))
-      }
-
     }
 
   }

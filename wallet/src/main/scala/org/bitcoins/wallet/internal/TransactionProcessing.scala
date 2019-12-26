@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
@@ -9,7 +9,7 @@ import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 /** Provides functionality for processing transactions. This
   * includes importing UTXOs spent to our wallet, updating
@@ -29,13 +29,12 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     for {
       result <- processTransactionImpl(transaction, blockHashOpt)
     } yield {
-      logger.info(
+      logger.debug(
         s"Finished processing of transaction=${transaction.txIdBE}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
       this
     }
   }
 
-  /** @inheritdoc */
   override def processBlock(block: Block): Future[LockedWallet] = {
     logger.info(s"Processing block=${block.blockHeader.hash.flip}")
     val res = block.transactions.foldLeft(Future.successful(this)) {
@@ -48,6 +47,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           newWallet
         }
     }
+    res.onComplete(_ => signalBlockProcessingCompletion(block.blockHeader.hash))
     res.foreach(
       _ =>
         logger.info(
@@ -89,6 +89,27 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   /////////////////////
   // Private methods
 
+  private var blockProcessingSignals =
+    Map.empty[DoubleSha256Digest, Promise[DoubleSha256Digest]]
+
+  private[wallet] def subscribeForBlockProcessingCompletionSignal(
+      blockHash: DoubleSha256Digest): Future[DoubleSha256Digest] =
+    synchronized {
+      val signal = Promise[DoubleSha256Digest]()
+      blockProcessingSignals = blockProcessingSignals.updated(blockHash, signal)
+      signal.future
+    }
+
+  private def signalBlockProcessingCompletion(
+      blockHash: DoubleSha256Digest): Unit =
+    synchronized {
+      blockProcessingSignals.get(blockHash).foreach { signal =>
+        blockProcessingSignals =
+          blockProcessingSignals.filterNot(_._1 == blockHash)
+        signal.success(blockHash)
+      }
+    }
+
   /** Does the grunt work of processing a TX.
     * This is called by either the internal or public TX
     * processing method, which logs and transforms the
@@ -98,7 +119,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
 
-    logger.info(
+    logger.debug(
       s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
     for {
       aggregate <- {

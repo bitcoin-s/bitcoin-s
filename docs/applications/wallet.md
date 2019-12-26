@@ -101,8 +101,20 @@ import org.bitcoins.wallet.api.LockedWalletApi
 import org.bitcoins.wallet.api.InitializeWalletSuccess
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.core.api._
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.protocol._
+import org.bitcoins.core.gcs._
 val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
-    Wallet.initialize(NodeApi.NoOp, ChainQueryApi.NoOp).collect {
+    Wallet.initialize(new NodeApi {
+        override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
+      }, new ChainQueryApi {
+        override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
+        override def getBestBlockHash(): Future[DoubleSha256DigestBE] = Future.successful(DoubleSha256DigestBE.empty)
+        override def getNumberOfConfirmations(blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
+        override def getFilterCount: Future[Int] = Future.successful(0)
+        override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = Future.successful(0)
+        override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE, Int)]] = Future.successful(Vector.empty)
+      }).collect {
         case InitializeWalletSuccess(wallet) => wallet
     }
 }
