@@ -8,7 +8,11 @@ title: Key Manager
 
 The key manager module's goal is to encapusulate all private key interactions with the [wallet](../applications/wallet.md) project.
 
-As of this writing, the wallet just delegates storage of the encrypted mnemonic seed to the key manager project. Over the long run, we want to make it so that the wallet project needs to communicate with the key-manager to access private keys.
+As of this writing, there is only one type of `KeyManager` - [`BIP39KeyManager`](../../key-manager/src/main/scala/org/bitcoins/keymanager/bip39/BIP39KeyManager.scala). 
+
+The [`BIP39KeyManager`](../../key-manager/src/main/scala/org/bitcoins/keymanager/bip39/BIP39KeyManager.scala) stores a [`MnemonicCode`](../../core/src/main/scala/org/bitcoins/core/crypto/MnemonicCode.scala) on disk which can be decrypted and used as a hot wallet.
+ 
+Over the long run, we want to make it so that the wallet project needs to communicate with the key-manager to access private keys.
 
 This means that ALL SIGNING should be done inside of the key-manager, and private keys should not leave the key manager.
 
@@ -58,6 +62,8 @@ import org.bitcoins.core.hd._
 
 import org.bitcoins.keymanager._
 
+import org.bitcoins.keymanager.bip39._
+
 import java.nio.file._
 
 //this will create a temp directory with the prefix 'key-manager-example` that will
@@ -72,7 +78,7 @@ val network = RegTest
 
 val kmParams = KeyManagerParams(seedPath, purpose, network)
 
-val km = KeyManager.initializeWithMnemonic(mnemonic, kmParams)
+val km = BIP39KeyManager.initializeWithMnemonic(mnemonic, kmParams)
 
 val rootXPub = km.right.get.getRootXPub
 

@@ -6,6 +6,7 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.{KeyManager, KeyManagerInitializeError}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -99,14 +100,14 @@ object Main extends App {
       val locked = LockedWallet(nodeApi, chainQueryApi)
 
       // TODO change me when we implement proper password handling
-      locked.unlock(KeyManager.badPassphrase) match {
+      locked.unlock(BIP39KeyManager.badPassphrase) match {
         case Right(wallet) => Future.successful(wallet)
         case Left(kmError) => error(kmError)
       }
     } else {
       logger.info(s"Initializing key manager")
-      val keyManagerE: Either[KeyManagerInitializeError, KeyManager] =
-        KeyManager.initialize(walletConf.kmParams)
+      val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
+        BIP39KeyManager.initialize(walletConf.kmParams)
 
       val keyManager = keyManagerE match {
         case Right(keyManager) => keyManager

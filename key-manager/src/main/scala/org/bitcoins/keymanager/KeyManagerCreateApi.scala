@@ -16,14 +16,13 @@ import scodec.bits.BitVector
   *                           can write it down. They should also be prompted
   *                           to confirm at least parts of the code.
   */
-trait KeyManagerCreateApi {
+trait KeyManagerCreateApi[T <: KeyManager] {
 
   /**
     * $initialize
     */
-  final def initialize(kmParams: KeyManagerParams): Either[
-    KeyManagerInitializeError,
-    KeyManager] =
+  final def initialize(
+      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T] =
     initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits, kmParams)
 
   /**
@@ -31,7 +30,7 @@ trait KeyManagerCreateApi {
     */
   def initializeWithEntropy(
       entropy: BitVector,
-      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, KeyManager]
+      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T]
 
   /**
     * Helper method to initialize a [[KeyManagerCreate$ KeyManager]] with a [[MnemonicCode MnemonicCode]]
@@ -42,9 +41,7 @@ trait KeyManagerCreateApi {
     */
   final def initializeWithMnemonic(
       mnemonicCode: MnemonicCode,
-      kmParams: KeyManagerParams): Either[
-    KeyManagerInitializeError,
-    KeyManager] = {
+      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T] = {
     val entropy = mnemonicCode.toEntropy
     initializeWithEntropy(entropy = entropy, kmParams)
   }

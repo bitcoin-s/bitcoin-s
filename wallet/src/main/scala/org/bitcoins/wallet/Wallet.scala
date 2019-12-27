@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil
 import org.bitcoins.keymanager.{KeyManager, KeyManagerParams}
 import org.bitcoins.wallet.api._
@@ -141,7 +142,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
 object Wallet extends WalletLogger {
 
   private case class WalletImpl(
-      override val keyManager: KeyManager,
+      override val keyManager: BIP39KeyManager,
       override val nodeApi: NodeApi,
       override val chainQueryApi: ChainQueryApi
   )(
@@ -150,7 +151,7 @@ object Wallet extends WalletLogger {
   ) extends Wallet
 
   def apply(
-      keyManager: KeyManager,
+      keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(
       implicit config: WalletAppConfig,
@@ -159,7 +160,7 @@ object Wallet extends WalletLogger {
   }
 
   /** Creates the level 0 account for the given HD purpose */
-  private def createRootAccount(wallet: Wallet, keyManager: KeyManager)(
+  private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
       implicit walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[AccountDb] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
@@ -193,7 +194,8 @@ object Wallet extends WalletLogger {
         //we need to create key manager params for each purpose
         //and then initialize a key manager to derive the correct xpub
         val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
-        val kmE = KeyManager.fromParams(kmParams, KeyManager.badPassphrase)
+        val kmE =
+          BIP39KeyManager.fromParams(kmParams, BIP39KeyManager.badPassphrase)
         kmE match {
           case Right(km) => createRootAccount(wallet = wallet, keyManager = km)
           case Left(err) =>
