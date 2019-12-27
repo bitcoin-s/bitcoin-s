@@ -112,8 +112,4 @@ case class SpendingInfoDAO()(
     database.runVec(query.result).map(_.toVector)
   }
 
-  def deleteAll(): Future[Int] = {
-    database.run(table.delete)
-  }
-
 }

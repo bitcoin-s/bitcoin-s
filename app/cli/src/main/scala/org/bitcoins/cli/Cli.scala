@@ -39,7 +39,8 @@ object CliCommand {
   case class Rescan(
       addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],
-      endBlock: Option[BlockStamp])
+      endBlock: Option[BlockStamp],
+      force: Boolean)
       extends CliCommand
 }
 
@@ -73,9 +74,18 @@ object Cli extends App {
             conf.copy(
               command = Rescan(addressBatchSize = Option.empty,
                                startBlock = Option.empty,
-                               endBlock = Option.empty)))
+                               endBlock = Option.empty,
+                               force = false)))
         .text(s"Rescan UTXOs")
         .children(
+          opt[Unit]("force")
+            .optional()
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case rescan: Rescan =>
+                  rescan.copy(force = true)
+                case other => other
+              })),
           opt[Int]("batch-size")
             .optional()
             .action((batchSize, conf) =>
@@ -189,11 +199,12 @@ object Cli extends App {
       RequestParam("getbalance")
     case GetNewAddress =>
       RequestParam("getnewaddress")
-    case Rescan(addressBatchSize, startBlock, endBlock) =>
+    case Rescan(addressBatchSize, startBlock, endBlock, force) =>
       RequestParam("rescan",
                    Seq(up.writeJs(addressBatchSize),
                        up.writeJs(startBlock),
-                       up.writeJs(endBlock)))
+                       up.writeJs(endBlock),
+                       up.writeJs(force)))
 
     case SendToAddress(address, bitcoins) =>
       RequestParam("sendtoaddress",

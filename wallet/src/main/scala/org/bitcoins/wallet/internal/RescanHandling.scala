@@ -7,16 +7,12 @@ import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.wallet.{LockedWallet, WalletLogger}
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 private[wallet] trait RescanHandling extends WalletLogger {
   self: LockedWallet =>
-
-  val AddressGapLimit = 20
 
   /////////////////////
   // Public facing API
@@ -42,7 +38,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   /** @inheritdoc */
   override def rescanSPVWallet(): Future[Unit] =
-    Future.failed(new RuntimeException("Rescan not implemented"))
+    Future.failed(new RuntimeException("Rescan not implemented for SPV wallet"))
 
   /////////////////////
   // Private methods
@@ -57,7 +53,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       _ <- downloadAndProcessBlocks(blocks)
       externalGap <- calcAddressGap(HDChainType.External)
       changeGap <- calcAddressGap(HDChainType.Change)
-      res <- if (externalGap >= AddressGapLimit && changeGap >= AddressGapLimit)
+      res <- if (externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit)
         pruneUnusedAddresses()
       else doNeutrinoRescan(startOpt, endOpt, addressBatchSize)
     } yield res
@@ -82,6 +78,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
     for {
       addressDbs <- addressDAO.findAll()
       addressGap <- addressDbs
+      //make sure all addressDb are of the correct chainType
+      //and they are sorted according to their index so we can
+      //calculate the gap accurately
         .filter(_.path.chain.chainType == chainType)
         .sortBy(_.path.address.index)
         .foldLeft(Future.successful(0)) { (prevNF, addressDb) =>
@@ -102,7 +101,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   private def downloadAndProcessBlocks(
       blocks: Vector[DoubleSha256Digest]): Future[Unit] = {
     logger.debug(s"Requesting ${blocks.size} block(s)")
-    blocks.foldLeft(Future.successful(())) { (prevF, blockHash) =>
+    blocks.foldLeft(FutureUtil.unit) { (prevF, blockHash) =>
       val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
       for {
         _ <- prevF

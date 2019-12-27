@@ -24,10 +24,6 @@ case class AddressDAO()(
   override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
     SlickUtil.createAllNoAutoInc(ts, database, table)
 
-  def deleteAll(): Future[Int] = {
-    database.run(table.delete)
-  }
-
   /** Finds the rows that correlate to the given primary keys */
   override def findByPrimaryKeys(
       addresses: Vector[BitcoinAddress]): Query[Table[_], AddressDb, Seq] =

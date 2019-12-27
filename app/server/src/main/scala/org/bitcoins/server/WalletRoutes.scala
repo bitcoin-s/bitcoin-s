@@ -55,14 +55,28 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       Rescan.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(Rescan(batchSize, startBlock, endBlock)) =>
+        case Success(Rescan(batchSize, startBlock, endBlock, force)) =>
           complete {
-            Future {
-              wallet
-                .rescanNeutrinoWallet(startBlock,
-                                      endBlock,
-                                      batchSize.getOrElse(100))
-            }.map(_ => Server.httpSuccess("scheduled"))
+            val res = for {
+              empty <- wallet.isEmpty()
+              msg = if (force || empty) {
+                Future {
+                  wallet
+                    .rescanNeutrinoWallet(
+                      startBlock,
+                      endBlock,
+                      batchSize.getOrElse(
+                        wallet.walletConfig.discoveryBatchSize))
+                }
+                "scheduled"
+              } else {
+                "DANGER! The wallet is not empty, however the rescan " +
+                  "process destroys all existing records and creates new ones. " +
+                  "Use force option if you really want to proceed. " +
+                  "Don't forget to backup the wallet database."
+              }
+            } yield msg
+            res.map(msg => Server.httpSuccess(msg))
           }
       }
 

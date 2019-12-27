@@ -10,6 +10,7 @@ import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
 
 import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 /** Provides functionality for processing transactions. This
   * includes importing UTXOs spent to our wallet, updating
@@ -47,7 +48,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           newWallet
         }
     }
-    res.onComplete(_ => signalBlockProcessingCompletion(block.blockHeader.hash))
+    res.onComplete(failure =>
+      signalBlockProcessingCompletion(block.blockHeader.hash, failure))
     res.foreach(
       _ =>
         logger.info(
@@ -95,18 +97,27 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private[wallet] def subscribeForBlockProcessingCompletionSignal(
       blockHash: DoubleSha256Digest): Future[DoubleSha256Digest] =
     synchronized {
-      val signal = Promise[DoubleSha256Digest]()
-      blockProcessingSignals = blockProcessingSignals.updated(blockHash, signal)
-      signal.future
+      blockProcessingSignals.get(blockHash) match {
+        case Some(existingSignal) => existingSignal.future
+        case None =>
+          val newSignal = Promise[DoubleSha256Digest]()
+          blockProcessingSignals =
+            blockProcessingSignals.updated(blockHash, newSignal)
+          newSignal.future
+      }
     }
 
   private def signalBlockProcessingCompletion(
-      blockHash: DoubleSha256Digest): Unit =
+      blockHash: DoubleSha256Digest,
+      failure: Try[_]): Unit =
     synchronized {
       blockProcessingSignals.get(blockHash).foreach { signal =>
         blockProcessingSignals =
           blockProcessingSignals.filterNot(_._1 == blockHash)
-        signal.success(blockHash)
+        failure match {
+          case Success(_)         => signal.success(blockHash)
+          case Failure(exception) => signal.failure(exception)
+        }
       }
     }
 

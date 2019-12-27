@@ -18,7 +18,8 @@ object ServerCommand {
 case class Rescan(
     batchSize: Option[Int],
     startBlock: Option[BlockStamp],
-    endBlock: Option[BlockStamp])
+    endBlock: Option[BlockStamp],
+    force: Boolean)
 
 object Rescan extends ServerJsonModels {
 
@@ -58,13 +59,22 @@ object Rescan extends ServerJsonModels {
           throw Value.InvalidData(value, "Expected a Num or a Str")
       }
 
+    def parseBoolean(value: Value): Boolean = value match {
+      case Bool(bool) => bool
+      case _: Value   => throw Value.InvalidData(value, "Expected a Bool")
+    }
+
     jsArr.arr.toList match {
-      case batchSizeJs :: startJs :: endJs :: Nil =>
+      case batchSizeJs :: startJs :: endJs :: forceJs :: Nil =>
         Try {
           val batchSize = parseInt(batchSizeJs)
           val start = parseBlockStamp(startJs)
           val end = parseBlockStamp(endJs)
-          Rescan(batchSize = batchSize, startBlock = start, endBlock = end)
+          val force = parseBoolean(forceJs)
+          Rescan(batchSize = batchSize,
+                 startBlock = start,
+                 endBlock = end,
+                 force = force)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing addresses"))
@@ -72,7 +82,7 @@ object Rescan extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 3"))
+            s"Bad number of arguments: ${other.length}. Expected: 4"))
     }
   }
 

@@ -5,7 +5,6 @@ import java.nio.file.{Files, Path}
 import com.typesafe.config.Config
 import org.bitcoins.core.hd.{AddressType, HDPurpose, HDPurposes}
 import org.bitcoins.db.AppConfig
-import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.wallet.db.WalletDbManagement
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,6 +50,10 @@ case class WalletAppConfig(
 
   lazy val bloomFalsePositiveRate: Double =
     config.getDouble("wallet.bloomFalsePositiveRate")
+
+  lazy val addressGapLimit: Int = config.getInt("wallet.addressGapLimit")
+
+  lazy val discoveryBatchSize: Int = config.getInt("wallet.discoveryBatchSize")
 
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")

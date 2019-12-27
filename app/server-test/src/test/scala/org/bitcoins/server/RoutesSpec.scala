@@ -23,7 +23,7 @@ import org.bitcoins.wallet.MockUnlockedWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
 import ujson.Value.InvalidData
-import ujson.{Arr, Null, Num, Str}
+import ujson._
 
 import scala.concurrent.Future
 
@@ -182,12 +182,12 @@ class RoutesSpec
       // positive cases
 
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(None, None, 100)
+        .expects(None, None, 100, true)
         .returning(FutureUtil.unit)
 
       val route1 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(), Null, Null)))
+          ServerCommand("rescan", Arr(Arr(), Null, Null, true)))
 
       Post() ~> route1 ~> check {
         contentType shouldEqual `application/json`
@@ -199,13 +199,14 @@ class RoutesSpec
           Some(BlockTime(
             ZonedDateTime.of(2018, 10, 27, 12, 34, 56, 0, ZoneId.of("UTC")))),
           None,
-          100)
+          100,
+          true)
         .returning(FutureUtil.unit)
 
       val route2 =
         walletRoutes.handleCommand(
           ServerCommand("rescan",
-                        Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null)))
+                        Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null, true)))
 
       Post() ~> route2 ~> check {
         contentType shouldEqual `application/json`
@@ -213,13 +214,14 @@ class RoutesSpec
       }
 
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100)
+        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100, true)
         .returning(FutureUtil.unit)
 
       val route3 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan",
-                        Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex))))
+          ServerCommand(
+            "rescan",
+            Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex), true)))
 
       Post() ~> route3 ~> check {
         contentType shouldEqual `application/json`
@@ -227,12 +229,12 @@ class RoutesSpec
       }
 
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100)
+        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100, true)
         .returning(FutureUtil.unit)
 
       val route4 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(), Str("12345"), Num(67890))))
+          ServerCommand("rescan", Arr(Arr(), Str("12345"), Num(67890), true)))
 
       Post() ~> route4 ~> check {
         contentType shouldEqual `application/json`
@@ -243,7 +245,7 @@ class RoutesSpec
 
       val route5 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Null, Str("abcd"), Str("efgh"))))
+          ServerCommand("rescan", Arr(Null, Str("abcd"), Str("efgh"), true)))
 
       Post() ~> route5 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -254,7 +256,7 @@ class RoutesSpec
       val route6 =
         walletRoutes.handleCommand(
           ServerCommand("rescan",
-                        Arr(Arr(55), Null, Str("2018-10-27T12:34:56"))))
+                        Arr(Arr(55), Null, Str("2018-10-27T12:34:56"), true)))
 
       Post() ~> route6 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -264,7 +266,7 @@ class RoutesSpec
 
       val route7 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Null, Num(-1), Null)))
+          ServerCommand("rescan", Arr(Null, Num(-1), Null, true)))
 
       Post() ~> route7 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -273,12 +275,12 @@ class RoutesSpec
       }
 
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(None, None, 55)
+        .expects(None, None, 55, true)
         .returning(FutureUtil.unit)
 
       val route8 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(55), Arr(), Arr())))
+          ServerCommand("rescan", Arr(Arr(55), Arr(), Arr(), Bool(true))))
 
       Post() ~> route8 ~> check {
         contentType shouldEqual `application/json`

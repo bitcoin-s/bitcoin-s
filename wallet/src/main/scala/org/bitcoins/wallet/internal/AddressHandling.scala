@@ -1,27 +1,21 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.wallet._
-import scala.concurrent.Future
-import org.bitcoins.wallet.models.AddressDb
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.wallet.models.AccountDb
-import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.hd.HDPath
-import org.bitcoins.core.hd.HDAddress
-import scala.util.Failure
-import scala.util.Success
-import org.bitcoins.wallet.models.AddressDbHelper
-import org.bitcoins.core.hd.SegWitHDPath
-import org.bitcoins.core.hd.LegacyHDPath
-import org.bitcoins.core.hd.NestedSegWitHDPath
-import org.bitcoins.wallet.api.AddressInfo
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
+import org.bitcoins.wallet._
+import org.bitcoins.wallet.api.AddressInfo
+import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /**
   * Provides functionality related to addresses. This includes

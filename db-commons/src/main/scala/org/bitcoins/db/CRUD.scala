@@ -1,10 +1,11 @@
 package org.bitcoins.db
 
+import java.sql.SQLException
+
+import org.bitcoins.core.config.MainNet
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
-import java.sql.SQLException
-import org.bitcoins.core.config.MainNet
 
 /**
   * Created by chris on 9/8/16.
@@ -85,6 +86,12 @@ abstract class CRUD[T, PrimaryKeyType](
   }
 
   /**
+    * delete all records from the table
+    */
+  def deleteAll(): Future[Int] =
+    database.run(table.delete)
+
+  /**
     * insert the record if it does not exist, update it if it does
     *
     * @param t - the record to inserted / updated
@@ -127,6 +134,8 @@ abstract class CRUD[T, PrimaryKeyType](
   def findAll(): Future[Vector[T]] =
     database.run(table.result).map(_.toVector)
 
+  /** Returns number of rows in the table */
+  def count(): Future[Int] = database.run(table.length.result)
 }
 
 case class SafeDatabase(config: AppConfig) extends DatabaseLogger {
