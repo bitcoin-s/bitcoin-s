@@ -78,13 +78,13 @@ use that to generate further private and public keys:</p>
 <span class="hljs-comment">// how long our phrase ends up being</span>
 <span class="hljs-comment">// 256 bits of entropy results in 24 words</span>
 <span class="hljs-keyword">val</span> entropy: <span class="hljs-type">BitVector</span> = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
-<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x57487ae47f8140314786ea6b79488bb6fd5e3dd5b7f1cfcaab1a313124ef7090)</span>
+<span class="hljs-comment">// entropy: BitVector = BitVector(256 bits, 0x9e666ab36c589f3addcb8b95899002127e665456de98068585951a232de353c4)</span>
 
 <span class="hljs-keyword">val</span> mnemonicCode = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
-<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(firm, duck, ribbon, yellow, beef, board, bulk, tail, hidden, ski, carry, hospital, sting, bus, fine, wreck, sound, fetch, shoot, give, banner, jeans, seat, amused))</span>
+<span class="hljs-comment">// mnemonicCode: MnemonicCode = MnemonicCodeImpl(Vector(oyster, crew, proud, suffer, measure, output, jaguar, imitate, night, erode, above, ceiling, toy, clay, fork, spread, alley, club, grab, crowd, crazy, vast, excuse, ordinary))</span>
 
 mnemonicCode.words <span class="hljs-comment">// the phrase the user should write down</span>
-<span class="hljs-comment">// res0: Vector[String] = Vector(firm, duck, ribbon, yellow, beef, board, bulk, tail, hidden, ski, carry, hospital, sting, bus, fine, wreck, sound, fetch, shoot, give, banner, jeans, seat, amused) // the phrase the user should write down</span>
+<span class="hljs-comment">// res0: Vector[String] = Vector(oyster, crew, proud, suffer, measure, output, jaguar, imitate, night, erode, above, ceiling, toy, clay, fork, spread, alley, club, grab, crowd, crazy, vast, excuse, ordinary) // the phrase the user should write down</span>
 
 <span class="hljs-comment">// the password argument is an optional, extra security</span>
 <span class="hljs-comment">// measure. all MnemonicCode instances will give you a</span>
@@ -94,13 +94,13 @@ mnemonicCode.words <span class="hljs-comment">// the phrase the user should writ
 <span class="hljs-comment">// different passwords.</span>
 <span class="hljs-keyword">val</span> bip39Seed = <span class="hljs-type">BIP39Seed</span>.fromMnemonic(mnemonicCode,
                                        password = <span class="hljs-string">"secret password"</span>)
-<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xfae664e26b8ac04e08f66fb7b5a70f82139ec71c2852307460d1328d660ad189ea77819777f09aae47b10aa89e3d664e26a362ed7462e3e90fd332faf14c6763))</span>
+<span class="hljs-comment">// bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0x96dfa66fa1b0bc89c5825fb45b9bf8915d151c1d3eb9834e8311dbe251d36c1d04f18fbe7c16437ce0aefc4fe15625f0dcaaa74ab05185e67d1b5f6f4a22e039))</span>
 
 <span class="hljs-keyword">val</span> xpriv = <span class="hljs-type">ExtPrivateKey</span>.fromBIP39Seed(<span class="hljs-type">ExtKeyVersion</span>.<span class="hljs-type">SegWitMainNetPriv</span>,
                                         bip39Seed)
-<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GjcQkdY8ncqaH6ANcyPNt53rC9VANse6pREKGDSnPp5J7mYVWUJ358wpzZD4kyrmez6AwY28cZZEDts4xzTAU9mxDEF4uY9E</span>
+<span class="hljs-comment">// xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GkSWTR5xRHj2sj3efLHkSShyDpeEbv26zjaRBNiXZcmcXJksLn2paPLdBzeTG6Z3UE8P9NThBRgdAWVj6rJSNdS57qEzrah6</span>
 <span class="hljs-keyword">val</span> xpub = xpriv.extPublicKey
-<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZx6VDjZfnyyX1eCD7Nr6jSGmnwsZzRydoJ2eQkz6eMscbcpNc16LqPbE2QDhroHiR2RJ7c99vcfvXXibTFxDthoD1kcrV6vu</span>
+<span class="hljs-comment">// xpub: ExtPublicKey = zpub6jftahH18ngZxvavX7VRerycH5V9jkUHovtpd2eDUMdycNkKvFqpAZw1A4at5fjFoD3Fb25f98i5RqmnGThXmdRko2tZWGdNebpPrmnkF4R</span>
 
 <span class="hljs-comment">// you can now use the generated xpriv to derive further</span>
 <span class="hljs-comment">// private or public keys</span>
@@ -146,7 +146,7 @@ spend or steal any of your money.</p>
     <span class="hljs-comment">// can generate addresses with it!</span>
     accountXpriv.extPublicKey
 }
-<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6raduwCzGD4jPw1VYiBSWiLr7jEWEHhzR52QwsM9gtPEebG3iUae33T92yACUAjjxUWqDgDeoR5zHbp3JNeMaJKBBirNUPGPbNS84hiWtBF</span>
+<span class="hljs-comment">// accountXpub: ExtPublicKey = zpub6s3KcJRCoeqzQYE8HKF6tGENdsHaGTW2jG8AG254nRKvcbVTaX55byoYVtvQpfQvy3vkQ7nb4RyxtfTtbUpFA4uTjugeFcZkJZRQS3vR39j</span>
 
                               <span class="hljs-comment">// address no. 0 ---------------┐</span>
                               <span class="hljs-comment">// external address ----------┐ |</span>
@@ -169,12 +169,12 @@ spend or steal any of your money.</p>
     <span class="hljs-keyword">val</span> scriptPubKey = <span class="hljs-type">P2WPKHWitnessSPKV0</span>(pubkey)
     <span class="hljs-type">Bech32Address</span>(scriptPubKey, <span class="hljs-type">TestNet3</span>)
 }
-<span class="hljs-comment">// firstAccountAddress: Bech32Address = Bech32Address(tb1q4gwrszgluqrrt0tkssq9xu65c2j830tanm0040)</span>
+<span class="hljs-comment">// firstAccountAddress: Bech32Address = Bech32Address(tb1qehkdspwkwdypf8rhmngvfpmyne9m5yfu72776a)</span>
 
 <span class="hljs-comment">// tada! We just generated an address you can send money to,</span>
 <span class="hljs-comment">// without having access to the private key!</span>
 firstAccountAddress.value
-<span class="hljs-comment">// res2: String = tb1q4gwrszgluqrrt0tkssq9xu65c2j830tanm0040</span>
+<span class="hljs-comment">// res2: String = tb1qehkdspwkwdypf8rhmngvfpmyne9m5yfu72776a</span>
 
 <span class="hljs-comment">// you can now continue deriving addresses from the same public</span>
 <span class="hljs-comment">// key, by imitating what we did above. To get the next</span>
