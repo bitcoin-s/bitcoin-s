@@ -186,9 +186,15 @@ case class BinaryOutcomeDLCWithSelf(
                                Vector(fundingLocalPubKey, fundingRemotePubKey))
   }
 
-  private val estimatedCETFee: CurrencyUnit = Satoshis(190 * feeRate.toLong)
-  private val estimatedToLocalClosingFee: CurrencyUnit = Satoshis(
-    122 * feeRate.toLong)
+  /** Experimental approx. vbytes for a CET */
+  private val approxCETVBytes = 190
+
+  /** Experimental approx. vbytes for a closing tx spending ToLocalOutput */
+  private val approxToLocalClosingVBytes = 122
+
+  private val cetFee: CurrencyUnit = Satoshis(approxCETVBytes * feeRate.toLong)
+  private val toLocalClosingFee: CurrencyUnit = Satoshis(
+    approxToLocalClosingVBytes * feeRate.toLong)
 
   def createFundingTransaction: Future[Transaction] = {
 
@@ -197,8 +203,7 @@ case class BinaryOutcomeDLCWithSelf(
      *
      * Once computed, we add the estimated amount to the fundingOutput so it can be used for fees later.
      */
-    val halfCetFee = Satoshis(
-      (estimatedCETFee + estimatedToLocalClosingFee).satoshis.toLong / 2)
+    val halfCetFee = Satoshis((cetFee + toLocalClosingFee).satoshis.toLong / 2)
 
     val output: TransactionOutput =
       TransactionOutput(totalInput + halfCetFee + halfCetFee,
@@ -254,7 +259,7 @@ case class BinaryOutcomeDLCWithSelf(
     )
 
     val toLocal: TransactionOutput =
-      TransactionOutput(localPayout + estimatedToLocalClosingFee,
+      TransactionOutput(localPayout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
       TransactionOutput(remotePayout,
@@ -306,7 +311,7 @@ case class BinaryOutcomeDLCWithSelf(
     )
 
     val toLocal: TransactionOutput =
-      TransactionOutput(remotePayout + estimatedToLocalClosingFee,
+      TransactionOutput(remotePayout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
       TransactionOutput(localPayout,
