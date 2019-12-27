@@ -1,21 +1,16 @@
-package org.bitcoins.wallet.api
+package org.bitcoins.keymanager
 
-sealed trait InitializeWalletResult
+sealed trait KeyManagerInitializeError extends Error
 
-final case class InitializeWalletSuccess(wallet: UnlockedWalletApi)
-    extends InitializeWalletResult
-
-sealed trait InitializeWalletError extends Error with InitializeWalletResult
-
-object InitializeWalletError {
+object InitializeKeyManagerError {
   // todo add explanation of what good/bad entropy is
   final case object BadEntropy
       extends Error("Bad Entropy")
-      with InitializeWalletError
+      with KeyManagerInitializeError
 
   final case class EncryptionError(underlying: Throwable)
       extends Error(underlying)
-      with InitializeWalletError
+      with KeyManagerInitializeError
 
   /**
     * Wallet data was found in the
@@ -26,6 +21,9 @@ object InitializeWalletError {
     */
   final case object WalletAlreadyExists
       extends Error("Wallet already exists")
-      with InitializeWalletError
+      with KeyManagerInitializeError
 
+  final case class FailedToReadWrittenSeed(unlockErr: KeyManagerUnlockError)
+      extends Error(s"We failed to read the mnemonic seed we just wrote")
+      with KeyManagerInitializeError
 }

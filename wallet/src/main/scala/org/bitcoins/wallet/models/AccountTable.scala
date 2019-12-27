@@ -5,8 +5,7 @@ import org.bitcoins.core.hd._
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
 import org.bitcoins.core.crypto._
-
-import org.bitcoins.wallet.HDUtil
+import org.bitcoins.keymanager.util.HDUtil
 
 case class AccountDb(xpub: ExtPublicKey, hdAccount: HDAccount) {
   def xpubVersion: ExtKeyPubVersion = xpub.version

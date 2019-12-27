@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.{BIP39Seed, DoubleSha256DigestBE, Sign}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sign}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{HDPath, LegacyHDPath, SegWitHDPath}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
@@ -11,6 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
 import org.bitcoins.db.{DbRowAutoInc, TableAutoInc}
+import org.bitcoins.keymanager.{KeyManager}
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.ProvenShape
 
@@ -126,14 +128,10 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     */
   def toUTXOSpendingInfo(
       account: AccountDb,
-      walletSeed: BIP39Seed): BitcoinUTXOSpendingInfo = {
+      keyManager: KeyManager,
+      network: NetworkParameters): BitcoinUTXOSpendingInfo = {
 
-    val rootXpriv = walletSeed.toExtPrivateKey(account.xprivVersion)
-    val xprivAtPath = rootXpriv.deriveChildPrivKey(privKeyPath)
-    val privKey = xprivAtPath.key
-    val pubAtPath = privKey.publicKey
-
-    val sign: Sign = Sign(privKey.signFunction, pubAtPath)
+    val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
 
     BitcoinUTXOSpendingInfo(
       outPoint,

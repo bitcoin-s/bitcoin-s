@@ -9,17 +9,14 @@ import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
+import org.bitcoins.keymanager.KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.wallet.api.{
-  InitializeWalletError,
-  InitializeWalletSuccess,
-  UnlockedWalletApi
-}
+import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -112,11 +109,13 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   }
 
   /** Lets you customize the parameters for the created wallet */
-  val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome =
+  val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
+      val km = createNewKeyManager()
       makeDependentFixture(
-        build = createNewWallet(Some(walletConfig), nodeApi, chainQueryApi),
+        build = createNewWallet(km, Some(walletConfig), nodeApi, chainQueryApi),
         destroy = destroyWallet)
+  }
 
   /** Fixture for an initialized wallet which produce legacy addresses */
   def withLegacyWallet(test: OneArgAsyncTest): FutureOutcome = {
@@ -192,6 +191,16 @@ object BitcoinSWalletTest extends WalletLogger {
       wallet: UnlockedWalletApi,
       bitcoind: BitcoindRpcClient)
 
+  private def createNewKeyManager()(
+      implicit config: BitcoinSAppConfig): KeyManager = {
+    val keyManagerE = KeyManager.initialize(config.walletConf.kmParams)
+    keyManagerE match {
+      case Right(keyManager) => keyManager
+      case Left(err) =>
+        throw new RuntimeException(s"Cannot initialize key manager err=${err}")
+    }
+  }
+
   /** Returns a function that can be used to create a wallet fixture.
     * If you pass in a configuration to this method that configuration
     * is given to the wallet as user-provided overrides. You could for
@@ -199,6 +208,7 @@ object BitcoinSWalletTest extends WalletLogger {
     * or account type.
     */
   private def createNewWallet(
+      keyManager: KeyManager,
       extraConfig: Option[Config],
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(
@@ -216,16 +226,9 @@ object BitcoinSWalletTest extends WalletLogger {
       AppConfig.throwIfDefaultDatadir(walletConfig)
 
       walletConfig.initialize().flatMap { _ =>
-        Wallet
-          .initialize(nodeApi, chainQueryApi)(implicitly[ExecutionContext],
-                                              walletConfig)
-          .map {
-            case InitializeWalletSuccess(wallet) => wallet
-            case err: InitializeWalletError =>
-              logger.error(s"Could not initialize wallet: $err")
-              throw new RuntimeException(
-                s"Failed to intialize wallet in fixture with err=${err}")
-          }
+        val wallet =
+          Wallet(keyManager, nodeApi, chainQueryApi)(walletConfig, ec)
+        Wallet.initialize(wallet)
       }
     }
 
@@ -234,16 +237,21 @@ object BitcoinSWalletTest extends WalletLogger {
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext): Future[UnlockedWalletApi] =
-    createNewWallet(None, nodeApi, chainQueryApi)(config, ec)() // get the standard config
+      ec: ExecutionContext): Future[UnlockedWalletApi] = {
+    val km = createNewKeyManager()
+    createNewWallet(
+      keyManager = km,
+      extraConfig = None,
+      nodeApi = nodeApi,
+      chainQueryApi = chainQueryApi)(config, ec)() // get the standard config
+  }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
       wallet: UnlockedWalletApi
   )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
-    import system.dispatcher
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
-    bitcoindF.map(WalletWithBitcoind(wallet, _))
+    bitcoindF.map(WalletWithBitcoind(wallet, _))(system.dispatcher)
   }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
@@ -259,7 +267,7 @@ object BitcoinSWalletTest extends WalletLogger {
   def createWalletWithBitcoind(
       wallet: UnlockedWalletApi,
       bitcoindRpcClient: BitcoindRpcClient
-  )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
+  ): Future[WalletWithBitcoind] = {
     Future.successful(WalletWithBitcoind(wallet, bitcoindRpcClient))
   }
 
@@ -323,9 +331,11 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def destroyWallet(wallet: UnlockedWalletApi)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    WalletDbManagement
+    val destroyWalletF = WalletDbManagement
       .dropAll()(config = wallet.walletConfig, ec = ec)
       .map(_ => ())
+
+    destroyWalletF
   }
 
 }

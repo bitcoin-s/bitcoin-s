@@ -5,9 +5,7 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.AppConfig
 import org.bitcoins.node._
 import org.bitcoins.node.config.NodeAppConfig
