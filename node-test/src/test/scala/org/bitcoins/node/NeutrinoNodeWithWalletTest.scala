@@ -201,8 +201,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         _ <- wallet.rescanNeutrinoWallet(startOpt = None,
                                          endOpt = None,
-                                         addressBatchSize = 2,
-                                         force = true)
+                                         addressBatchSize = 2)
 
         _ <- AsyncUtil.awaitConditionF(condition)
       } yield succeed

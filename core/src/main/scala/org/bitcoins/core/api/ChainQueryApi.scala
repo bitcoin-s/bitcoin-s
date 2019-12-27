@@ -11,6 +11,8 @@ import scala.concurrent.Future
   */
 trait ChainQueryApi {
 
+  import org.bitcoins.core.api.ChainQueryApi._
+
   /** Gets the height of the given block */
   def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]]
 
@@ -29,10 +31,15 @@ trait ChainQueryApi {
 
   def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE, Int)]]
+      endHeight: Int): Future[Vector[FilterResponse]]
 }
 
 object ChainQueryApi {
+
+  case class FilterResponse(
+      compactFilter: GolombFilter,
+      blockHash: DoubleSha256DigestBE,
+      blockHeight: Int)
 
   sealed abstract class ChainException(message: String)
       extends RuntimeException(message)

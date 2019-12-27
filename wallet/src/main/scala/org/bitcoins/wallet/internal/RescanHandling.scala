@@ -122,7 +122,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       blocks <- getMatchingBlocks(scriptPubKeys, startOpt, endOpt)(
         ExecutionContext.fromExecutor(threadPool))
     } yield {
-      blocks.sortBy(_._2).map(_._1.flip)
+      blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }
 
     blocksF.onComplete(_ => threadPool.shutdown())

@@ -181,8 +181,15 @@ class RoutesSpec
     "run wallet rescan" in {
       // positive cases
 
+      (mockWalletApi.discoveryBatchSize: () => Int)
+        .expects()
+        .returning(100)
+        .atLeastOnce()
+      (mockWalletApi.isEmpty: () => Future[Boolean])
+        .expects()
+        .returning(Future.successful(false))
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(None, None, 100, true)
+        .expects(None, None, 100)
         .returning(FutureUtil.unit)
 
       val route1 =
@@ -194,13 +201,15 @@ class RoutesSpec
         responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
 
+      (mockWalletApi.isEmpty: () => Future[Boolean])
+        .expects()
+        .returning(Future.successful(false))
       (mockWalletApi.rescanNeutrinoWallet _)
         .expects(
           Some(BlockTime(
             ZonedDateTime.of(2018, 10, 27, 12, 34, 56, 0, ZoneId.of("UTC")))),
           None,
-          100,
-          true)
+          100)
         .returning(FutureUtil.unit)
 
       val route2 =
@@ -213,8 +222,11 @@ class RoutesSpec
         responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
 
+      (mockWalletApi.isEmpty: () => Future[Boolean])
+        .expects()
+        .returning(Future.successful(false))
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100, true)
+        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100)
         .returning(FutureUtil.unit)
 
       val route3 =
@@ -228,8 +240,11 @@ class RoutesSpec
         responseAs[String] shouldEqual """{"result":"scheduled","error":null}"""
       }
 
+      (mockWalletApi.isEmpty: () => Future[Boolean])
+        .expects()
+        .returning(Future.successful(false))
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100, true)
+        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100)
         .returning(FutureUtil.unit)
 
       val route4 =
@@ -274,8 +289,11 @@ class RoutesSpec
           Some(InvalidData(Num(-1), "Expected a positive integer")))
       }
 
+      (mockWalletApi.isEmpty: () => Future[Boolean])
+        .expects()
+        .returning(Future.successful(false))
       (mockWalletApi.rescanNeutrinoWallet _)
-        .expects(None, None, 55, true)
+        .expects(None, None, 55)
         .returning(FutureUtil.unit)
 
       val route8 =

@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.api.ChainQueryApi.InvalidBlockRange
+import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 import org.bitcoins.wallet.{HDUtil, WalletLogger}
@@ -215,8 +216,7 @@ trait LockedWalletApi extends WalletApi {
       endOpt: Option[BlockStamp] = None,
       batchSize: Int = 100,
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
-      implicit ec: ExecutionContext): Future[
-    Vector[(DoubleSha256DigestBE, Int)]] = {
+      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
 
@@ -232,9 +232,8 @@ trait LockedWalletApi extends WalletApi {
           vectorSize / parallelismLevel + 1
         else vectorSize / parallelismLevel
 
-      def findMatches(
-          filters: Vector[(GolombFilter, DoubleSha256DigestBE, Int)]): Future[
-        Iterator[(DoubleSha256DigestBE, Int)]] = {
+      def findMatches(filters: Vector[FilterResponse]): Future[
+        Iterator[BlockMatchingResponse]] = {
         if (filters.isEmpty)
           Future.successful(Iterator.empty)
         else {
@@ -249,11 +248,12 @@ trait LockedWalletApi extends WalletApi {
               Future {
                 // Find any matches in the group and add the corresponding block hashes into the result
                 filterGroup
-                  .foldLeft(Vector.empty[(DoubleSha256DigestBE, Int)]) {
+                  .foldLeft(Vector.empty[BlockMatchingResponse]) {
                     (blocks, filter) =>
-                      val matcher = new SimpleFilterMatcher(filter._1)
+                      val matcher = SimpleFilterMatcher(filter.compactFilter)
                       if (matcher.matchesAny(bytes)) {
-                        blocks :+ (filter._2 -> filter._3)
+                        blocks :+ BlockMatchingResponse(filter.blockHash,
+                                                        filter.blockHeight)
                       } else {
                         blocks
                       }
@@ -269,8 +269,8 @@ trait LockedWalletApi extends WalletApi {
       def loop(
           start: Int,
           end: Int,
-          acc: Future[Vector[(DoubleSha256DigestBE, Int)]]): Future[
-        Vector[(DoubleSha256DigestBE, Int)]] = {
+          acc: Future[Vector[BlockMatchingResponse]]): Future[
+        Vector[BlockMatchingResponse]] = {
         if (end <= start) {
           acc
         } else {
@@ -345,6 +345,8 @@ trait UnlockedWalletApi extends LockedWalletApi with WalletLogger {
 
   protected def mnemonicCode: MnemonicCode
 
+  def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
+
   /** The wallet seed */
   protected lazy val seed: BIP39Seed = BIP39Seed.fromMnemonic(mnemonicCode)
 
@@ -412,5 +414,12 @@ trait UnlockedWalletApi extends LockedWalletApi with WalletLogger {
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
   def createNewAccount(): Future[WalletApi]
+
+}
+
+object LockedWalletApi {
+  case class BlockMatchingResponse(
+      blockHash: DoubleSha256DigestBE,
+      blockHeight: Int)
 
 }

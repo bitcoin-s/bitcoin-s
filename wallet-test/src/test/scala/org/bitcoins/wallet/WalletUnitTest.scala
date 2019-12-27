@@ -6,6 +6,7 @@ import org.bitcoins.core.hd.{HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.api.UnlockWalletError.{
   BadPassword,
   JsonParsingError,
@@ -154,7 +155,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         endOpt = None
       )(system.dispatcher)
     } yield {
-      assert(Vector(testBlockHash -> 1) == matched)
+      assert(
+        Vector(BlockMatchingResponse(blockHash = testBlockHash,
+                                     blockHeight = 1)) == matched)
     }
   }
 
