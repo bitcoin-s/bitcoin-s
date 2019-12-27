@@ -3,7 +3,6 @@ package org.bitcoins.dlc
 import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
   ECPrivateKey,
   ECPublicKey,
   ExtPrivateKey,
@@ -187,46 +186,43 @@ case class BinaryOutcomeDLCWithSelf(
                                Vector(fundingLocalPubKey, fundingRemotePubKey))
   }
 
+  /** Experimental approx. vbytes for a CET */
+  private val approxCETVBytes = 190
+
+  /** Experimental approx. vbytes for a closing tx spending ToLocalOutput */
+  private val approxToLocalClosingVBytes = 122
+
+  private val cetFee: CurrencyUnit = Satoshis(approxCETVBytes * feeRate.toLong)
+  private val toLocalClosingFee: CurrencyUnit = Satoshis(
+    approxToLocalClosingVBytes * feeRate.toLong)
+
   def createFundingTransaction: Future[Transaction] = {
 
-    /* We need to commit to the CET's fee during the construction of
+    /* We need to commit to the CET's and local closing tx's fee during the construction of
      * the funding transaction so that the CET outputs have the expected payouts.
      *
-     * Our approach at the moment is to estimate CET size and, using feeRate,
-     * approximate how much the fee will be on the cetWinLocal transaction. It
-     * does not matter which CET we use since they are all the same structure/size
-     * other than the refund case which is smaller.
-     *
-     * Once computed, we add that amount to the fundingOutput so it can be used for fees later.
+     * Once computed, we add the estimated amount to the fundingOutput so it can be used for fees later.
      */
-    val cetWinLocalF = createMockCET()
-    val cetFeeF = cetWinLocalF.map(feeRate.calc)
+    val halfCetFee = Satoshis((cetFee + toLocalClosingFee).satoshis.toLong / 2)
 
-    cetFeeF.flatMap { cetFee =>
-      val halfCetFee = Satoshis(cetFee.satoshis.toLong / 2)
+    val output: TransactionOutput =
+      TransactionOutput(totalInput + halfCetFee + halfCetFee,
+                        P2WSHWitnessSPKV0(fundingSPK))
+    val localChange =
+      TransactionOutput(Satoshis(localFunding) - localInput - halfCetFee,
+                        localChangeSPK)
+    val remoteChange =
+      TransactionOutput(Satoshis(remoteFunding) - remoteInput - halfCetFee,
+                        remoteChangeSPK)
 
-      val output: TransactionOutput =
-        TransactionOutput(totalInput + cetFee, P2WSHWitnessSPKV0(fundingSPK))
-      val localChange =
-        TransactionOutput(Satoshis(localFunding) - localInput - halfCetFee,
-                          localChangeSPK)
-      val remoteChange =
-        TransactionOutput(Satoshis(remoteFunding) - remoteInput - halfCetFee,
-                          remoteChangeSPK)
+    val outputs: Vector[TransactionOutput] =
+      Vector(output, localChange, remoteChange)
+    val txBuilderF: Future[BitcoinTxBuilder] =
+      BitcoinTxBuilder(outputs, fundingUtxos, feeRate, emptyChangeSPK, network)
 
-      val outputs: Vector[TransactionOutput] =
-        Vector(output, localChange, remoteChange)
-      val txBuilderF: Future[BitcoinTxBuilder] =
-        BitcoinTxBuilder(outputs,
-                         fundingUtxos,
-                         feeRate,
-                         emptyChangeSPK,
-                         network)
-
-      txBuilderF.flatMap { txBuilder =>
-        subtractFeeFromOutputsAndSign(txBuilder,
-                                      Vector(localChangeSPK, remoteChangeSPK))
-      }
+    txBuilderF.flatMap { txBuilder =>
+      subtractFeeFromOutputsAndSign(txBuilder,
+                                    Vector(localChangeSPK, remoteChangeSPK))
     }
   }
 
@@ -263,12 +259,14 @@ case class BinaryOutcomeDLCWithSelf(
     )
 
     val toLocal: TransactionOutput =
-      TransactionOutput(localPayout, P2WSHWitnessSPKV0(toLocalSPK))
+      TransactionOutput(localPayout + toLocalClosingFee,
+                        P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
       TransactionOutput(remotePayout,
                         P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
+
     val txBuilderF =
       BitcoinTxBuilder(outputs,
                        Vector(fundingSpendingInfo),
@@ -313,12 +311,14 @@ case class BinaryOutcomeDLCWithSelf(
     )
 
     val toLocal: TransactionOutput =
-      TransactionOutput(remotePayout, P2WSHWitnessSPKV0(toLocalSPK))
+      TransactionOutput(remotePayout + toLocalClosingFee,
+                        P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
       TransactionOutput(localPayout,
                         P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
+
     val txBuilderF =
       BitcoinTxBuilder(outputs,
                        Vector(fundingSpendingInfo),
@@ -358,30 +358,6 @@ case class BinaryOutcomeDLCWithSelf(
                                       timeout.toUInt32)
 
     txBuilderF.flatMap(subtractFeeAndSign)
-  }
-
-  private def createMockCET(): Future[Transaction] = {
-    val emptyOutPoint =
-      TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
-    val dummySpendingInfo = P2WSHV0SpendingInfo(
-      outPoint = emptyOutPoint,
-      amount = totalInput * 2, // Any amount significantly > totalInput should be valid
-      scriptPubKey = P2WSHWitnessSPKV0(fundingSPK),
-      signers = Vector(fundingLocalPrivKey, fundingRemotePrivKey),
-      hashType = HashType.sigHashAll,
-      scriptWitness = P2WSHWitnessV0(fundingSPK),
-      conditionalPath = ConditionalPath.NoConditionsLeft
-    )
-
-    val mockCETF = createCETLocal(
-      sigPubKey = sigPubKeyWin,
-      fundingSpendingInfo = dummySpendingInfo,
-      localPayout = localWinPayout,
-      remotePayout = remoteWinPayout,
-      invariant = (_, _) => true
-    )
-
-    mockCETF.map(_._1)
   }
 
   def createCETWinLocal(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
