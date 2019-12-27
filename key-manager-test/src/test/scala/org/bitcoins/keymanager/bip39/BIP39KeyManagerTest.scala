@@ -1,11 +1,12 @@
-package org.bitcoins.keymanager
+package org.bitcoins.keymanager.bip39
 
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, MnemonicCode}
 import org.bitcoins.core.hd._
+import org.bitcoins.keymanager._
 import scodec.bits.BitVector
 
-class KeyManagerTest extends KeyManagerUnitTest {
+class BIP39KeyManagerTest extends KeyManagerUnitTest {
   val purpose = HDPurposes.Legacy
   //this is taken from 'trezor-addresses.json' which give us test cases that conform with trezor
   val mnemonicStr ="stage boring net gather radar radio arrest eye ask risk girl country"
@@ -45,11 +46,11 @@ class KeyManagerTest extends KeyManagerUnitTest {
 
   it must "initialize a key manager to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
     val kmParams = buildParams()
-    val direct = KeyManager(mnemonic, kmParams)
+    val direct = BIP39KeyManager(mnemonic, kmParams)
 
     val directXpub = direct.getRootXPub
 
-    val api = KeyManager.initializeWithEntropy(mnemonic.toEntropy, kmParams).right.get
+    val api = BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, kmParams).right.get
 
     val apiXpub = api.getRootXPub
 
@@ -62,7 +63,7 @@ class KeyManagerTest extends KeyManagerUnitTest {
 
   it must "return a mnemonic not found if we have not initialized the key manager" in {
     val kmParams = buildParams()
-    val kmE = KeyManager.fromParams(kmParams, KeyManager.badPassphrase)
+    val kmE = BIP39KeyManager.fromParams(kmParams, BIP39KeyManager.badPassphrase)
 
     assert(kmE == Left(ReadMnemonicError.NotFoundError))
   }
@@ -79,7 +80,7 @@ class KeyManagerTest extends KeyManagerUnitTest {
     val badEntropy = BitVector.empty
 
 
-    val init = KeyManager.initializeWithEntropy(badEntropy, buildParams())
+    val init = BIP39KeyManager.initializeWithEntropy(badEntropy, buildParams())
 
     assert(init == Left(InitializeKeyManagerError.BadEntropy))
   }

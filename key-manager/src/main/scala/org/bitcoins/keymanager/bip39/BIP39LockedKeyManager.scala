@@ -1,4 +1,4 @@
-package org.bitcoins.keymanager
+package org.bitcoins.keymanager.bip39
 
 import org.bitcoins.core.crypto.AesPassword
 import org.bitcoins.core.util.BitcoinSLogger
@@ -6,9 +6,10 @@ import org.bitcoins.keymanager.ReadMnemonicError.{
   DecryptionError,
   JsonParsingError
 }
+import org.bitcoins.keymanager._
 
 /** Represents a  */
-object LockedKeyManager extends BitcoinSLogger {
+object BIP39LockedKeyManager extends BitcoinSLogger {
 
   /**
     * Unlock the wallet by decrypting the [[EncryptedMnemonic]] seed
@@ -16,15 +17,15 @@ object LockedKeyManager extends BitcoinSLogger {
     * @param kmParams parameters needed to create the key manager
     *
     * */
-  def unlock(
-      passphrase: AesPassword,
-      kmParams: KeyManagerParams): Either[KeyManagerUnlockError, KeyManager] = {
+  def unlock(passphrase: AesPassword, kmParams: KeyManagerParams): Either[
+    KeyManagerUnlockError,
+    BIP39KeyManager] = {
     logger.debug(s"Trying to unlock wallet with seedPath=${kmParams.seedPath}")
     val resultE =
       WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, passphrase)
     resultE match {
       case Right(mnemonicCode) =>
-        Right(new KeyManager(mnemonicCode, kmParams))
+        Right(new BIP39KeyManager(mnemonicCode, kmParams))
       case Left(result) =>
         result match {
           case DecryptionError =>
