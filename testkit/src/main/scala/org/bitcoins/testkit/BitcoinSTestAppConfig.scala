@@ -1,12 +1,15 @@
 package org.bitcoins.testkit
 
-import org.bitcoins.server.BitcoinSAppConfig
-import com.typesafe.config._
 import java.nio.file._
 
+import com.typesafe.config._
+import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.FileUtil
 
 object BitcoinSTestAppConfig {
+
+  /** Generates a temp directory with the prefix 'bitcoin-s- */
+  def tmpDir(): Path = Files.createTempDirectory("bitcoin-s-")
 
   /**
     * App configuration suitable for test purposes:
@@ -24,8 +27,7 @@ object BitcoinSTestAppConfig {
         |}
       """.stripMargin
     }
-    val tmpDir = Files.createTempDirectory("bitcoin-s-")
-    BitcoinSAppConfig(tmpDir, (overrideConf +: config): _*)
+    BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
   }
 
   def getNeutrinoTestConfig(config: Config*): BitcoinSAppConfig = {
@@ -38,8 +40,7 @@ object BitcoinSTestAppConfig {
         |}
       """.stripMargin
     }
-    val tmpDir = Files.createTempDirectory("bitcoin-s-")
-    BitcoinSAppConfig(tmpDir, (overrideConf +: config): _*)
+    BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
   }
 
   sealed trait ProjectType

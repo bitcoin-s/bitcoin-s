@@ -20,7 +20,7 @@ class WalletStorageTest
     withWalletConfig(test)
 
   def getSeedPath(config: WalletAppConfig): Path = {
-    config.datadir.resolve(WalletAppConfig.ENCRYPTED_SEED_FILE_NAME)
+    config.seedPath
   }
 
   behavior of "WalletStorage"
@@ -48,9 +48,9 @@ class WalletStorageTest
     val read =
       WalletStorage.decryptMnemonicFromDisk(seedPath,passphrase)
     read match {
-      case ReadMnemonicSuccess(readMnemonic) =>
+      case Right(readMnemonic) =>
         assert(writtenMnemonic == readMnemonic)
-      case err: ReadMnemonicError => fail(err.toString)
+      case Left(err) => fail(err.toString)
     }
   }
 
@@ -60,10 +60,10 @@ class WalletStorageTest
     val read = WalletStorage.decryptMnemonicFromDisk(seedPath, badPassphrase)
 
     read match {
-      case ReadMnemonicSuccess(mnemonic) =>
+      case Right(mnemonic) =>
         fail("Wrote and read with different passwords")
-      case DecryptionError        => succeed
-      case err: ReadMnemonicError => fail(err.toString)
+      case Left(DecryptionError)        => succeed
+      case Left(err) => fail(err.toString)
     }
   }
 
@@ -84,12 +84,12 @@ class WalletStorageTest
       WalletStorage.decryptMnemonicFromDisk(seedPath,passphrase)
 
     read match {
-      case JsonParsingError(_)     => succeed
-      case res: ReadMnemonicResult => fail(res.toString())
+      case Left(JsonParsingError(_))     => succeed
+      case res @ (Left(_) | Right(_)) => fail(res.toString())
     }
   }
 
-  it must "throw an exception if we attempt to overwrrite an existing seed" in { walletConf =>
+  it must "throw an exception if we attempt to overwrite an existing seed" in { walletConf =>
 
     assert(!walletConf.seedExists())
 
@@ -102,6 +102,6 @@ class WalletStorageTest
       //attempt to write another mnemonic
       getAndWriteMnemonic(walletConf)
     }
-
   }
+
 }

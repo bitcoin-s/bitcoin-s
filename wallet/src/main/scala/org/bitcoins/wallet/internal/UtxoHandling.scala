@@ -10,9 +10,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.util.EitherUtil
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
-import org.bitcoins.wallet.{EitherUtil, LockedWallet, WalletLogger}
+import org.bitcoins.wallet.{LockedWallet, WalletLogger}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
