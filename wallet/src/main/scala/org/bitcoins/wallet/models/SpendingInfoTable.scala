@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
 import org.bitcoins.db.{DbRowAutoInc, TableAutoInc}
-import org.bitcoins.keymanager.{KeyManager}
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.ProvenShape
 
@@ -128,7 +128,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     */
   def toUTXOSpendingInfo(
       account: AccountDb,
-      keyManager: KeyManager,
+      keyManager: BIP39KeyManager,
       network: NetworkParameters): BitcoinUTXOSpendingInfo = {
 
     val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)

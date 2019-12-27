@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManager
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
@@ -192,8 +193,8 @@ object BitcoinSWalletTest extends WalletLogger {
       bitcoind: BitcoindRpcClient)
 
   private def createNewKeyManager()(
-      implicit config: BitcoinSAppConfig): KeyManager = {
-    val keyManagerE = KeyManager.initialize(config.walletConf.kmParams)
+      implicit config: BitcoinSAppConfig): BIP39KeyManager = {
+    val keyManagerE = BIP39KeyManager.initialize(config.walletConf.kmParams)
     keyManagerE match {
       case Right(keyManager) => keyManager
       case Left(err) =>
@@ -208,7 +209,7 @@ object BitcoinSWalletTest extends WalletLogger {
     * or account type.
     */
   private def createNewWallet(
-      keyManager: KeyManager,
+      keyManager: BIP39KeyManager,
       extraConfig: Option[Config],
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(

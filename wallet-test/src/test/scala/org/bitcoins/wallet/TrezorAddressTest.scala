@@ -7,6 +7,7 @@ import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.{KeyManager, KeyManagerParams}
 import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -135,7 +136,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   private def getWallet(config: WalletAppConfig)(implicit ec: ExecutionContext): Future[Wallet] = {
-    val kmE = KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
+    val kmE = BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
     kmE match {
       case Left(err) => Future.failed(new RuntimeException(s"Failed to initialize km with err=${err}"))
       case Right(km) =>

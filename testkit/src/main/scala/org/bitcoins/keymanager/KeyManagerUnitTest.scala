@@ -3,6 +3,7 @@ package org.bitcoins.keymanager
 import org.bitcoins.core.config.Networks
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 import scodec.bits.BitVector
@@ -18,8 +19,8 @@ trait KeyManagerUnitTest extends BitcoinSUnitTest {
 
   def withInitializedKeyManager(
       kmParams: KeyManagerParams = createKeyManagerParams(),
-      entropy: BitVector = MnemonicCode.getEntropy256Bits): KeyManager = {
-    val kmResult = KeyManager.initializeWithEntropy(
+      entropy: BitVector = MnemonicCode.getEntropy256Bits): BIP39KeyManager = {
+    val kmResult = BIP39KeyManager.initializeWithEntropy(
       entropy = entropy,
       kmParams = kmParams
     )
