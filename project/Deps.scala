@@ -8,7 +8,7 @@ object Deps {
     val scalacheck = "1.14.3"
     val scalaTest = "3.1.0"
 
-    val scalaTestPlus = "3.1.0.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
+    val scalaTestPlus = "3.1.0.1" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
     val spray = "1.3.5"
     val zeromq = "0.5.1"
@@ -27,7 +27,7 @@ object Deps {
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
-    val sqliteV = "3.28.0"
+    val sqliteV = "3.30.1"
     val scalameterV = "0.17"
     val scalamockV = "4.4.0"
 

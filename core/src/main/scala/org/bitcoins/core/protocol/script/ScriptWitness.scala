@@ -12,7 +12,7 @@ import scodec.bits.ByteVector
 
 /**
   * Created by chris on 11/10/16.
-  * The witness used to evaluate a [[ScriptPubKey]] inside of Bitcoin
+  * The witness used to evaluate a [[RawScriptPubKey]] inside of Bitcoin
   * [[https://github.com/bitcoin/bitcoin/blob/57b34599b2deb179ff1bd97ffeab91ec9f904d85/src/script/script.h#L648-L660]]
   */
 sealed abstract class ScriptWitness extends NetworkElement {
@@ -81,7 +81,7 @@ object P2WPKHWitnessV0 {
 }
 
 /**
-  * Reprsents a [[ScriptWitness]] that is needed to spend a
+  * Represents a [[ScriptWitness]] that is needed to spend a
   * [[P2WSHWitnessV0]] scriptPubKey
   * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh]]
   * Format: <redeem script> <scriptSig data1> <scriptSig data2> ... <scriptSig dataN>
@@ -99,11 +99,13 @@ object P2WSHWitnessV0 {
   private case class P2WSHWitnessV0Impl(stack: Seq[ByteVector])
       extends P2WSHWitnessV0
 
-  def apply(spk: ScriptPubKey): P2WSHWitnessV0 = {
+  def apply(spk: RawScriptPubKey): P2WSHWitnessV0 = {
     P2WSHWitnessV0(spk, EmptyScriptSignature)
   }
 
-  def apply(spk: ScriptPubKey, scriptSig: ScriptSignature): P2WSHWitnessV0 = {
+  def apply(
+      spk: RawScriptPubKey,
+      scriptSig: ScriptSignature): P2WSHWitnessV0 = {
     //need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
     //remove pushops from scriptSig
     val minimalIf = BitcoinScriptUtil.minimalIfOp(scriptSig.asm)
@@ -117,7 +119,7 @@ object P2WSHWitnessV0 {
     P2WSHWitnessV0Impl(stack)
   }
 
-  def apply(spk: ScriptPubKey, stack: Seq[ByteVector]): P2WSHWitnessV0 = {
+  def apply(spk: RawScriptPubKey, stack: Seq[ByteVector]): P2WSHWitnessV0 = {
     val fullStack: Seq[ByteVector] = spk.asmBytes +: stack
     P2WSHWitnessV0(fullStack)
   }
@@ -129,7 +131,7 @@ object ScriptWitness {
     //TODO: eventually only compressed public keys will be allowed in v0 scripts
     //https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
     val isPubKey = {
-      stack.headOption.isDefined &&
+      stack.nonEmpty &&
       ECPublicKey.isFullyValid(stack.head) &&
       (stack.head.size == 33
       || stack.head.size == 65)
@@ -151,7 +153,7 @@ object ScriptWitness {
           EmptyScriptWitness
         case h :: t =>
           val cmpct = CompactSizeUInt.calc(h)
-          val spk = ScriptPubKey(cmpct.bytes ++ h)
+          val spk = RawScriptPubKey(cmpct.bytes ++ h)
           P2WSHWitnessV0(spk, t)
       }
     }

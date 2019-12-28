@@ -1,6 +1,7 @@
-package org.bitcoins.wallet
+package org.bitcoins.core.util
 
-import org.bitcoins.core.compat._
+import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
+
 import scala.concurrent.{ExecutionContext, Future}
 
 /**

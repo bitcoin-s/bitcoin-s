@@ -1,18 +1,17 @@
 package org.bitcoins.wallet
 
+import java.nio.file.Files
+
 import org.bitcoins.core.crypto.AesPassword
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
+import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.api.UnlockWalletError.{
-  BadPassword,
-  JsonParsingError,
-  MnemonicNotFound
-}
-import org.bitcoins.wallet.api.{UnlockWalletSuccess, UnlockedWalletApi}
+import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
@@ -27,6 +26,18 @@ class WalletUnitTest extends BitcoinSWalletTest {
     withNewWallet(test)
 
   behavior of "Wallet - unit test"
+
+  it must "write the mnemonic seed to the root datadir -- NOT A NETWORK sub directory" in {
+    wallet: UnlockedWalletApi =>
+      //since datadir has the path that relates it to a network ('mainnet'/'testnet'/'regtest')
+      //we need to get the parent of that to find where the encrypted seed should be
+      //this is where the bitcoin-s.conf should live too.
+      val datadir = wallet.walletConfig.baseDatadir
+
+      assert(
+        Files.exists(datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)))
+
+  }
 
   it should "create a new wallet" in { wallet: UnlockedWalletApi =>
     for {
@@ -135,13 +146,14 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "fail to unlock the wallet with a bad password" in {
     wallet: UnlockedWalletApi =>
       val badpassphrase = AesPassword.fromNonEmptyString("bad")
-      val locked = wallet.lock()
-      wallet.unlock(badpassphrase) match {
-        case MnemonicNotFound          => fail(MnemonicNotFound)
-        case BadPassword               => succeed
-        case JsonParsingError(message) => fail(message)
-        case UnlockWalletSuccess(_) =>
-          fail("Unlocked wallet with bad password!")
+      val errorType = wallet.unlock(badpassphrase) match {
+        case Right(_)  => fail("Unlocked wallet with bad password!")
+        case Left(err) => err
+      }
+      errorType match {
+        case KeyManagerUnlockError.MnemonicNotFound          => fail(MnemonicNotFound)
+        case KeyManagerUnlockError.BadPassword               => succeed
+        case KeyManagerUnlockError.JsonParsingError(message) => fail(message)
       }
   }
 

@@ -1,6 +1,6 @@
 package org.bitcoins.keymanager
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path}
 
 import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto._
@@ -11,6 +11,10 @@ import scala.util.{Failure, Success, Try}
 
 // what do we do if seed exists? error if they aren't equal?
 object WalletStorage {
+
+  val ENCRYPTED_SEED_FILE_NAME: String =
+    "encrypted-bitcoin-s-seed.json"
+
   import org.bitcoins.core.compat.JavaConverters._
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -44,7 +48,7 @@ object WalletStorage {
       )
     }
 
-    logger.debug(s"Writing mnemonic to $seedPath")
+    logger.info(s"Writing mnemonic to $seedPath")
 
     val writtenJs = ujson.write(jsObject)
 
@@ -67,17 +71,10 @@ object WalletStorage {
       case None =>
         logger.trace(s"$seedPath does not exist")
         writeJsToDisk()
-      case Some(found) =>
+      case Some(_) =>
         logger.info(s"$seedPath already exists")
-        if (found == mnemonic) {
-          logger.trace(s"Found and provided mnemonics are the same, skipping")
-          seedPath
-        } else {
-          logger.warn(
-            s"Found mnemonic on disk is not the same as mnemonic we're about to write")
-          throw new RuntimeException(
-            s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
-        }
+        throw new RuntimeException(
+          s"Attempting to overwrite an existing mnemonic seed, this is dangerous!")
     }
   }
 
@@ -122,10 +119,7 @@ object WalletStorage {
         val rawSaltString = json(SALT).str
         (ivString, cipherTextString, rawSaltString)
       } match {
-        case Success(value) => CompatRight(value)
-        case Failure(value: ujson.Value.InvalidData) =>
-          logger.error(s"Error when parsing JSON file $seedPath: ${value.msg}")
-          CompatLeft(JsonParsingError(value.msg))
+        case Success(value)     => CompatRight(value)
         case Failure(exception) => throw exception
       }
     }
@@ -158,7 +152,7 @@ object WalletStorage {
     */
   def decryptMnemonicFromDisk(
       seedPath: Path,
-      passphrase: AesPassword): ReadMnemonicResult = {
+      passphrase: AesPassword): Either[ReadMnemonicError, MnemonicCode] = {
 
     val encryptedEither = readEncryptedMnemonicFromDisk(seedPath)
 
@@ -175,23 +169,13 @@ object WalletStorage {
       }
 
     decryptedEither match {
-      case CompatLeft(value)  => value
-      case CompatRight(value) => ReadMnemonicSuccess(value)
+      case CompatLeft(value)  => Left(value)
+      case CompatRight(value) => Right(value)
     }
   }
 }
 
-/**
-  * Represents the result of reading
-  * an encrypted mnemonic from disk
-  */
-sealed trait ReadMnemonicResult
-
-/** Represents the success case */
-case class ReadMnemonicSuccess(mnemonic: MnemonicCode)
-    extends ReadMnemonicResult
-
-sealed trait ReadMnemonicError extends ReadMnemonicResult { self: Error =>
+sealed trait ReadMnemonicError { self: Error =>
 }
 
 object ReadMnemonicError {

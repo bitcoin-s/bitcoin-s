@@ -1,18 +1,21 @@
-package org.bitcoins.wallet
+package org.bitcoins.keymanager.util
 
-import org.bitcoins.core.hd._
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.config._
-import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.crypto.{
+  ExtKeyPrivVersion,
+  ExtKeyPubVersion,
+  ExtKeyVersion
+}
+import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 
-private[wallet] object HDUtil {
+object HDUtil {
 
   /** Gets the xpriv version required for the given HD purpose */
-  def getXprivVersion(hdPurpose: HDPurpose)(
-      implicit config: WalletAppConfig): ExtKeyPrivVersion = {
-    import config.network
-    import org.bitcoins.core.hd.HDPurposes._
+  def getXprivVersion(
+      hdPurpose: HDPurpose,
+      network: NetworkParameters): ExtKeyPrivVersion = {
     import ExtKeyVersion._
+    import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
       case (SegWit, MainNet)                  => SegWitMainNetPriv
@@ -27,11 +30,11 @@ private[wallet] object HDUtil {
   }
 
   /** Gets the xpub version required for the given HD purpose */
-  def getXpubVersion(hdPurpose: HDPurpose)(
-      implicit config: WalletAppConfig): ExtKeyPubVersion = {
-    import config.network
-    import org.bitcoins.core.hd.HDPurposes._
+  def getXpubVersion(
+      hdPurpose: HDPurpose,
+      network: NetworkParameters): ExtKeyPubVersion = {
     import ExtKeyVersion._
+    import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
       case (SegWit, MainNet)                  => SegWitMainNetPub

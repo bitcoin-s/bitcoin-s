@@ -141,7 +141,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
         redeemScript = P2WSHWitnessSPKV0(P2PKScriptPubKey(pubKey)),
-        scriptWitness = P2WSHWitnessV0(randomSPK),
+        scriptWitness = P2WSHWitnessV0(randomRawSPK),
         conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
@@ -185,7 +185,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
         scriptPubKey = p2wsh,
         signers = Seq(privKey),
         hashType = HashType.sigHashAll,
-        scriptWitness = P2WSHWitnessV0(randomSPK),
+        scriptWitness = P2WSHWitnessV0(randomRawSPK),
         conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
@@ -194,7 +194,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
   it must "fail validation given invalid witnesses" in {
     val p2wpkh = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
     val p2wsh = P2WSHWitnessSPKV0(randomRawSPK)
-    val p2wshWitness = P2WSHWitnessV0(randomSPK)
+    val p2wshWitness = P2WSHWitnessV0(randomRawSPK)
     val p2WPKHWitness = P2WPKHWitnessV0(ECPublicKey.freshPublicKey)
 
     assert(!BitcoinUTXOSpendingInfo.isValidScriptWitness(p2wpkh, p2wshWitness))
