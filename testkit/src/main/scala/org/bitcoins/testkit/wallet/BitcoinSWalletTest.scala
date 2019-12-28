@@ -10,6 +10,7 @@ import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
+import org.bitcoins.keymanager.KeyManagerTestUtil
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -221,13 +222,16 @@ object BitcoinSWalletTest extends WalletLogger {
       Future.successful(Vector.empty)
   }
 
+
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,
       bitcoind: BitcoindRpcClient)
 
   private def createNewKeyManager()(
       implicit config: BitcoinSAppConfig): BIP39KeyManager = {
-    val keyManagerE = BIP39KeyManager.initialize(config.walletConf.kmParams)
+    val keyManagerE = BIP39KeyManager.initialize(
+      kmParams = config.walletConf.kmParams,
+      bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt)
     keyManagerE match {
       case Right(keyManager) => keyManager
       case Left(err) =>

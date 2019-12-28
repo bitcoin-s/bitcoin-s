@@ -153,8 +153,8 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   private def getWallet(config: WalletAppConfig)(
       implicit ec: ExecutionContext): Future[Wallet] = {
     val kmE =
-      BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
-    kmE match {
+      BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, None, config.kmParams)
+   kmE match {
       case Left(err) =>
         Future.failed(
           new RuntimeException(s"Failed to initialize km with err=${err}"))
