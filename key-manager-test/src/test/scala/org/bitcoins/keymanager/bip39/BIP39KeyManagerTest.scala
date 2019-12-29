@@ -52,9 +52,9 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
     val directXpub = direct.getRootXPub
 
     val api = BIP39KeyManager.initializeWithEntropy(
-      mnemonic.toEntropy,
-      KeyManagerTestUtil.bip39PasswordOpt,
-      kmParams).right.get
+      entropy = mnemonic.toEntropy,
+      bip39PasswordOpt = None,
+      kmParams = kmParams).right.get
 
     val apiXpub = api.getRootXPub
 
