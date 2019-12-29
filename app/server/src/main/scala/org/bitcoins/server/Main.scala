@@ -123,7 +123,8 @@ object Main extends App {
       logger.info(s"Creating new wallet")
       val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
 
-      Wallet.initialize(wallet = unInitializedWallet)
+      Wallet.initialize(wallet = unInitializedWallet,
+                        bip39PasswordOpt = bip39PasswordOpt)
     }
   }
 

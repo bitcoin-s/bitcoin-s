@@ -23,11 +23,16 @@ import scala.util.{Failure, Success, Try}
 case class BIP39KeyManager(
     private val mnemonic: MnemonicCode,
     kmParams: KeyManagerParams,
-    private val bip39Password: String = BIP39Seed.EMPTY_PASSWORD)
+    private val bip39PasswordOpt: Option[String])
     extends KeyManager {
 
-  private val seed =
-    BIP39Seed.fromMnemonic(mnemonic = mnemonic, password = bip39Password)
+  private val seed = bip39PasswordOpt match {
+    case Some(pw) =>
+      BIP39Seed.fromMnemonic(mnemonic = mnemonic, password = pw)
+    case None =>
+      BIP39Seed.fromMnemonic(mnemonic = mnemonic,
+                             password = BIP39Seed.EMPTY_PASSWORD)
+  }
 
   private val privVersion: ExtKeyPrivVersion =
     HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
@@ -100,14 +105,9 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
         }
 
       } yield {
-        bip39PasswordOpt match {
-          case Some(pw) =>
-            BIP39KeyManager(mnemonic = mnemonic,
-                            kmParams = kmParams,
-                            bip39Password = pw)
-          case None => BIP39KeyManager(mnemonic = mnemonic, kmParams = kmParams)
-        }
-
+        BIP39KeyManager(mnemonic = mnemonic,
+                        kmParams = kmParams,
+                        bip39PasswordOpt = bip39PasswordOpt)
       }
 
     //verify we can unlock it for a sanity check
@@ -145,13 +145,17 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
   /** Reads the key manager from disk and decrypts it with the given password */
   def fromParams(
       kmParams: KeyManagerParams,
-      password: AesPassword): Either[ReadMnemonicError, BIP39KeyManager] = {
+      password: AesPassword,
+      bip39PasswordOpt: Option[String]): Either[
+    ReadMnemonicError,
+    BIP39KeyManager] = {
     val mnemonicCodeE =
       WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, password)
 
     mnemonicCodeE match {
-      case Right(mnemonic) => Right(new BIP39KeyManager(mnemonic, kmParams))
-      case Left(v)         => Left(v)
+      case Right(mnemonic) =>
+        Right(new BIP39KeyManager(mnemonic, kmParams, bip39PasswordOpt))
+      case Left(v) => Left(v)
     }
   }
 }

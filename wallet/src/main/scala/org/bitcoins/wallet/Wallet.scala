@@ -181,7 +181,7 @@ object Wallet extends WalletLogger {
       }
   }
 
-  def initialize(wallet: Wallet)(
+  def initialize(wallet: Wallet, bip39PasswordOpt: Option[String])(
       implicit walletAppConfig: WalletAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     // We want to make sure all level 0 accounts are created,
@@ -194,8 +194,11 @@ object Wallet extends WalletLogger {
         //we need to create key manager params for each purpose
         //and then initialize a key manager to derive the correct xpub
         val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
-        val kmE =
-          BIP39KeyManager.fromParams(kmParams, BIP39KeyManager.badPassphrase)
+        val kmE = {
+          BIP39KeyManager.fromParams(kmParams = kmParams,
+                                     password = BIP39KeyManager.badPassphrase,
+                                     bip39PasswordOpt = bip39PasswordOpt)
+        }
         kmE match {
           case Right(km) => createRootAccount(wallet = wallet, keyManager = km)
           case Left(err) =>

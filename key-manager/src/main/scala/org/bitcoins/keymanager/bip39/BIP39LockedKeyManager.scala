@@ -28,12 +28,7 @@ object BIP39LockedKeyManager extends BitcoinSLogger {
       WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, passphrase)
     resultE match {
       case Right(mnemonicCode) =>
-        bip39PasswordOpt match {
-          case Some(pw) =>
-            Right(new BIP39KeyManager(mnemonicCode, kmParams, pw))
-          case None =>
-            Right(new BIP39KeyManager(mnemonicCode, kmParams))
-        }
+        Right(BIP39KeyManager(mnemonicCode, kmParams, bip39PasswordOpt))
 
       case Left(result) =>
         result match {
