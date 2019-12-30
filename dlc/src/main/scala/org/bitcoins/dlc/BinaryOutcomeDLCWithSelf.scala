@@ -462,19 +462,43 @@ case class BinaryOutcomeDLCWithSelf(
   def constructClosingTx(
       privKey: ECPrivateKey,
       spendingInfo: BitcoinUTXOSpendingInfo,
-      isLocal: Boolean): Future[Transaction] = {
-    // Construct Closing Transaction
-    val txBuilder = BitcoinTxBuilder(
-      destinations = Vector(
-        TransactionOutput(spendingInfo.output.value,
-                          P2WPKHWitnessSPKV0(privKey.publicKey))),
-      utxos = Vector(spendingInfo),
-      feeRate = feeRate,
-      changeSPK = emptyChangeSPK,
-      network = network
-    )
+      isLocal: Boolean,
+      isWin: Boolean,
+      isToLocal: Boolean): Future[Transaction] = {
+    // If isToLocal, use payout as value, otherwise subtract fee
+    val spendingTxF = if (isToLocal) {
+      val payoutValue = (isWin, isLocal) match {
+        case (true, true)   => localWinPayout
+        case (true, false)  => remoteWinPayout
+        case (false, true)  => localLosePayout
+        case (false, false) => remoteLosePayout
+      }
 
-    val spendingTxF = txBuilder.flatMap(subtractFeeAndSign)
+      val txBuilder = BitcoinTxBuilder(
+        destinations = Vector(
+          TransactionOutput(payoutValue,
+                            P2WPKHWitnessSPKV0(privKey.publicKey))),
+        utxos = Vector(spendingInfo),
+        feeRate = feeRate,
+        changeSPK = emptyChangeSPK,
+        network = network
+      )
+
+      txBuilder.flatMap(_.sign)
+    } else {
+      // Construct Closing Transaction
+      val txBuilder = BitcoinTxBuilder(
+        destinations = Vector(
+          TransactionOutput(spendingInfo.output.value,
+                            P2WPKHWitnessSPKV0(privKey.publicKey))),
+        utxos = Vector(spendingInfo),
+        feeRate = feeRate,
+        changeSPK = emptyChangeSPK,
+        network = network
+      )
+
+      txBuilder.flatMap(subtractFeeAndSign)
+    }
 
     spendingTxF.foreach(
       tx =>
@@ -505,9 +529,11 @@ case class BinaryOutcomeDLCWithSelf(
                  _) = dlcSetup
 
     oracleSigF.flatMap { oracleSig =>
+      val sigForWin = Schnorr.verify(messageWin, oracleSig, oraclePubKey)
+
       // Pick the CET to use and payout by checking which message was signed
       val (cet, extCetPrivKey, extOtherCetPrivKey, cetScriptWitness) =
-        if (Schnorr.verify(messageWin, oracleSig, oraclePubKey)) {
+        if (sigForWin) {
           if (local) {
             (cetWinLocal,
              cetLocalWinPrivKey,
@@ -577,10 +603,14 @@ case class BinaryOutcomeDLCWithSelf(
 
       val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
                                                 localCetSpendingInfo,
-                                                isLocal = true)
+                                                isLocal = true,
+                                                isWin = sigForWin,
+                                                isToLocal = local)
       val remoteSpendingTxF = constructClosingTx(finalRemotePrivKey,
                                                  remoteCetSpendingInfo,
-                                                 isLocal = false)
+                                                 isLocal = false,
+                                                 isWin = sigForWin,
+                                                 isToLocal = !local)
 
       localSpendingTxF.flatMap { localSpendingTx =>
         remoteSpendingTxF.map { remoteSpendingTx =>
@@ -653,10 +683,20 @@ case class BinaryOutcomeDLCWithSelf(
       finalRemotePrivKey
     }
 
+    val isWin: Boolean = timedOutCET == dlcSetup.cetWinLocal || timedOutCET == dlcSetup.cetWinRemote
+
     val justiceSpendingTxF =
-      constructClosingTx(finalPrivKey, justiceSpendingInfo, local)
+      constructClosingTx(privKey = finalPrivKey,
+                         spendingInfo = justiceSpendingInfo,
+                         isLocal = local,
+                         isWin = isWin,
+                         isToLocal = false)
     val normalSpendingTxF =
-      constructClosingTx(finalPrivKey, normalSpendingInfo, local)
+      constructClosingTx(privKey = finalPrivKey,
+                         spendingInfo = normalSpendingInfo,
+                         isLocal = local,
+                         isWin = isWin,
+                         isToLocal = false)
 
     justiceSpendingTxF.flatMap { justiceSpendingTx =>
       normalSpendingTxF.map { normalSpendingTx =>
@@ -716,10 +756,14 @@ case class BinaryOutcomeDLCWithSelf(
 
     val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
                                               localRefundSpendingInfo,
-                                              isLocal = true)
+                                              isLocal = true,
+                                              isWin = false,
+                                              isToLocal = false)
     val remoteSpendingTxF = constructClosingTx(finalRemotePrivKey,
                                                remoteRefundSpendingInfo,
-                                               isLocal = false)
+                                               isLocal = false,
+                                               isWin = false,
+                                               isToLocal = false)
 
     localSpendingTxF.flatMap { localSpendingTx =>
       remoteSpendingTxF.map { remoteSpendingTx =>
