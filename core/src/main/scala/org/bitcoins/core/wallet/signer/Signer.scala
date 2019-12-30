@@ -20,6 +20,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2SHSpendingInfo,
   P2WPKHV0SpendingInfo,
   P2WSHV0SpendingInfo,
+  SpendingInfoFromSignedInputAndOutput,
   UTXOSpendingInfo,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
@@ -218,6 +219,21 @@ object BitcoinSigner {
         P2WPKHSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2wpkh)
       case pw2sh: P2WSHV0SpendingInfo =>
         P2WSHSigner.sign(spendingInfo, unsignedTx, isDummySignature, pw2sh)
+      case inOutInfo: SpendingInfoFromSignedInputAndOutput =>
+        val inputIndex = unsignedTx.inputs.zipWithIndex
+          .find(_._1.previousOutput == inOutInfo.outPoint) match {
+          case Some((_, index)) => UInt32(index)
+          case None =>
+            throw new IllegalArgumentException(
+              "Transaction did not contain expected input.")
+        }
+
+        Future.successful(
+          BaseTxSigComponent(unsignedTx,
+                             inputIndex,
+                             inOutInfo.output,
+                             Policy.standardFlags)
+        )
       case _: UnassignedSegwitNativeUTXOSpendingInfo =>
         throw new UnsupportedOperationException("Unsupported Segwit version")
       case _: P2SHSpendingInfo =>

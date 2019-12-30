@@ -1,7 +1,8 @@
 package org.bitcoins.core.wallet.utxo
 
-import org.bitcoins.core.crypto.Sign
+import org.bitcoins.core.crypto.{ECPublicKey, Sign}
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   ConditionalScriptPubKey,
   EmptyScriptPubKey,
@@ -27,11 +28,15 @@ import org.bitcoins.core.protocol.script.{
   WitnessScriptPubKeyV0
 }
 import org.bitcoins.core.protocol.transaction.{
+  EmptyTransactionInput,
+  TransactionInput,
   TransactionOutPoint,
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
+
+import scala.concurrent.Future
 
 /**
   * Contains the information required to spend a unspent transaction output (UTXO)
@@ -100,6 +105,26 @@ sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
       spk: WitnessScriptPubKeyV0,
       scriptWitness: ScriptWitnessV0): Boolean =
     BitcoinUTXOSpendingInfo.isValidScriptWitness(spk, scriptWitness)
+}
+
+case class SpendingInfoFromSignedInputAndOutput(
+    input: TransactionInput,
+    override val output: TransactionOutput,
+    hashType: HashType,
+    minTimeLockOpt: Option[UInt32]
+) extends BitcoinUTXOSpendingInfo {
+  require(input != EmptyTransactionInput, "Input must be signed")
+
+  override val conditionalPath: ConditionalPath =
+    ConditionalPath.NoConditionsLeft
+  override val amount: CurrencyUnit = output.value
+  override val scriptPubKey: ScriptPubKey = output.scriptPubKey
+  override val outPoint: TransactionOutPoint = input.previousOutput
+  override val redeemScriptOpt: Option[ScriptPubKey] = None
+  override val scriptWitnessOpt: Option[ScriptWitness] = None
+
+  override val signers: Seq[Sign] = input.scriptSignature.signatures.map(sig =>
+    Sign(_ => Future.successful(sig), ECPublicKey.freshPublicKey))
 }
 
 object BitcoinUTXOSpendingInfo {

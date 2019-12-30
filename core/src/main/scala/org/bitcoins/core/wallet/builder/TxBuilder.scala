@@ -33,6 +33,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2SHSpendingInfo,
   P2WPKHV0SpendingInfo,
   P2WSHV0SpendingInfo,
+  SpendingInfoFromSignedInputAndOutput,
   UTXOSpendingInfo,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
@@ -459,6 +460,19 @@ case class BitcoinTxBuilder(
                   case _: Failure[UInt32] => result
                 }
               }
+            case inOutInfo: SpendingInfoFromSignedInputAndOutput =>
+              inOutInfo.minTimeLockOpt match {
+                case None => loop(newRemaining, currentLockTimeOpt)
+                case Some(locktime) =>
+                  val result =
+                    computeNextLockTime(currentLockTimeOpt, locktime.toLong)
+
+                  result match {
+                    case Success(newLockTime) =>
+                      loop(newRemaining, Some(newLockTime))
+                    case _: Failure[UInt32] => result
+                  }
+              }
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
             case p2wsh: P2WSHV0SpendingInfo =>
@@ -520,6 +534,8 @@ case class BitcoinTxBuilder(
                                              UInt32.zero)
                 loop(newRemaining, input +: accum)
               }
+            case inOutInfo: SpendingInfoFromSignedInputAndOutput =>
+              loop(newRemaining, inOutInfo.input +: accum)
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
             case p2wsh: P2WSHV0SpendingInfo =>
