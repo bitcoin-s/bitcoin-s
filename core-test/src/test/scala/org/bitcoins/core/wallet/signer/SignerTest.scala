@@ -120,13 +120,13 @@ class SignerTest extends BitcoinSAsyncTest {
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfos, destinations), changeSPK, network) =>
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
+        val builder = BitcoinTxBuilder(destinations,
+                                       creditingTxsInfos.toVector,
+                                       fee,
+                                       changeSPK._1,
+                                       network)
 
         for {
-          builder <- BitcoinTxBuilder(destinations,
-                                      creditingTxsInfos,
-                                      fee,
-                                      changeSPK._1,
-                                      network)
           unsignedTx <- builder.unsignedTx
           signedTx <- builder.sign
 
@@ -253,13 +253,13 @@ class SignerTest extends BitcoinSAsyncTest {
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfos, destinations), changeSPK, network) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
+        val builder = BitcoinTxBuilder(destinations,
+                                       creditingTxsInfos.toVector,
+                                       fee,
+                                       changeSPK._1,
+                                       network)
 
         for {
-          builder <- BitcoinTxBuilder(destinations,
-                                      creditingTxsInfos,
-                                      fee,
-                                      changeSPK._1,
-                                      network)
           unsignedTx <- builder.unsignedTx
 
           singleSigs: Vector[Vector[PartialSignature]] <- {

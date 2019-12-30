@@ -195,10 +195,14 @@ object PSBTGenerators {
       network: BitcoinNetwork,
       fee: FeeUnit)(
       implicit ec: ExecutionContext): Future[(PSBT, BitcoinTxBuilder)] = {
-    val builderF =
-      BitcoinTxBuilder(destinations, creditingTxsInfo, fee, changeSPK, network)
+    val builder =
+      BitcoinTxBuilder(destinations,
+                       creditingTxsInfo.toVector,
+                       fee,
+                       changeSPK,
+                       network)
+
     for {
-      builder <- builderF
       unsignedTx <- builder.unsignedTx
 
       orderedTxInfos = spendingInfoAndNonWitnessTxsFromSpendingInfos(

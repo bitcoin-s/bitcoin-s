@@ -95,7 +95,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
 
         }
       }
-      txBuilder <- {
+      txBuilder = {
 
         logger.info({
           val utxosStr = utxoSpendingInfos

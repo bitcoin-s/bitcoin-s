@@ -72,20 +72,10 @@ sealed abstract class TxBuilder {
   def largestFee: CurrencyUnit = creditingAmount - destinationAmount
 
   /**
-    * The list of [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]]s we are
+    * The list of [[org.bitcoins.core.wallet.utxo.UTXOSpendingInfoFull UTXOSpendingInfoFull]]s we are
     * attempting to spend
-    * and the signers, redeem scripts, and script witnesses that might be needed to spend this outpoint.
-    * This information is dependent on what the [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
-    * type is we are spending. For isntance, if we are spending a
-    * regular [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey P2PKHScriptPubKey]], we do not need a
-    * redeem script or script witness.
-    *
-    * If we are spending a [[org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0 P2WPKHWitnessSPKV0]] we do not
-    * need a redeem script, but we need a [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]]
     */
-  def utxoMap: TxBuilder.UTXOMap
-
-  def utxos: Seq[UTXOSpendingInfoFull] = utxoMap.values.toSeq
+  def utxos: Seq[UTXOSpendingInfoFull]
 
   /** This represents the rate, in [[org.bitcoins.core.wallet.fee.FeeUnit FeeUnit]], we
     * should pay for this transaction */
@@ -105,7 +95,7 @@ sealed abstract class TxBuilder {
   def network: NetworkParameters
 
   /** The outpoints that we are using in this transaction */
-  def outPoints: Seq[TransactionOutPoint] = utxoMap.keys.toSeq
+  def outPoints: Seq[TransactionOutPoint] = utxos.map(_.outPoint)
 
   /** The redeem scripts that are needed in this transaction */
   def redeemScriptOpt: Seq[Option[ScriptPubKey]] = utxos.map(_.redeemScriptOpt)
@@ -130,14 +120,14 @@ sealed abstract class TxBuilder {
   * The [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]] for the
   * bitcoin network(s) [[org.bitcoins.core.config.BitcoinNetwork BitcoinNetwork]]
   */
-sealed abstract class BitcoinTxBuilder extends TxBuilder {
-
-  private val logger = BitcoinSLogger.logger
-  private val tc = TransactionConstants
-
-  override def network: BitcoinNetwork
-
-  override def utxoMap: BitcoinTxBuilder.UTXOMap
+case class BitcoinTxBuilder(
+    destinations: Seq[TransactionOutput],
+    utxos: Vector[BitcoinUTXOSpendingInfoFull],
+    feeRate: FeeUnit,
+    changeSPK: ScriptPubKey,
+    network: BitcoinNetwork)
+    extends TxBuilder
+    with BitcoinSLogger {
 
   override def sign(implicit ec: ExecutionContext): Future[Transaction] = {
     val f: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean = {
@@ -149,7 +139,6 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
 
   override def unsignedTx(
       implicit ec: ExecutionContext): Future[Transaction] = {
-    val utxos = utxoMap.values.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt.toVector)
     val lockTime = calcLockTime(utxos)
     val inputs = calcSequenceForInputs(utxos, Policy.isRBFEnabled)
@@ -157,12 +146,12 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val unsignedTxNoFee = lockTime.map { l =>
       unsignedTxWit match {
         case _: EmptyWitness =>
-          BaseTransaction(tc.validLockVersion,
+          BaseTransaction(TransactionConstants.validLockVersion,
                           inputs,
                           destinations ++ Seq(emptyChangeOutput),
                           l)
         case wit: TransactionWitness =>
-          WitnessTransaction(tc.validLockVersion,
+          WitnessTransaction(TransactionConstants.validLockVersion,
                              inputs,
                              destinations ++ Seq(emptyChangeOutput),
                              l,
@@ -171,7 +160,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     }
     val unsignedTxWithFee: Try[Future[Transaction]] = unsignedTxNoFee.map {
       utxnf =>
-        val dummySignTx = loop(utxos, utxnf, true)
+        val dummySignTx = loop(utxos.toList, utxnf, dummySignatures = true)
         dummySignTx.map { dtx =>
           logger.debug(s"dummySignTx $dtx")
           val fee = feeRate.calc(dtx)
@@ -216,10 +205,9 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
   def sign(
       invariants: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = {
-    val utxos = utxoMap.values.toList
     val signedTxWithFee = unsignedTx.flatMap { utx: Transaction =>
       //sign the tx for this time
-      val signedTx = loop(utxos, utx, false)
+      val signedTx = loop(utxos.toList, utx, dummySignatures = false)
       signedTx.flatMap { tx =>
         val t: Try[Transaction] = {
           if (invariants(utxos, tx)) {
@@ -284,19 +272,16 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     * [[https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki]]
     */
   private def solveSequenceForCSV(scriptNum: ScriptNumber): UInt32 =
-    LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum) match {
-      case true =>
-        //means that we need to have had scriptNum blocks bassed since this tx was included a block to be able to spend this output
-        val blocksPassed = scriptNum.toLong & TransactionConstants.sequenceLockTimeMask.toLong
-        val sequence = UInt32(blocksPassed)
-        sequence
-      case false =>
-        //means that we need to have had 512 * n seconds passed since the tx was included in a block passed
-        val n = scriptNum.toLong
-        val sequence = UInt32(
-          n & TransactionConstants.sequenceLockTimeMask.toLong)
-        //set sequence number to indicate this is relative locktime
-        sequence | TransactionConstants.sequenceLockTimeTypeFlag
+    if (LockTimeInterpreter.isCSVLockByBlockHeight(scriptNum)) {
+      val blocksPassed = scriptNum.toLong & TransactionConstants.sequenceLockTimeMask.toLong
+      val sequence = UInt32(blocksPassed)
+      sequence
+    } else {
+      val n = scriptNum.toLong
+      val sequence = UInt32(
+        n & TransactionConstants.sequenceLockTimeMask.toLong)
+      //set sequence number to indicate this is relative locktime
+      sequence | TransactionConstants.sequenceLockTimeTypeFlag
     }
 
   /**
@@ -317,7 +302,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       lockTime.flatMap { l: UInt32 =>
         currentLockTimeOpt match {
           case Some(currentLockTime) =>
-            val lockTimeThreshold = tc.locktimeThreshold
+            val lockTimeThreshold = TransactionConstants.locktimeThreshold
             if (currentLockTime < l) {
               if (currentLockTime < lockTimeThreshold && l >= lockTimeThreshold) {
                 //means that we spend two different locktime types, one of the outputs spends a
@@ -542,9 +527,8 @@ object TxBuilder {
       txBuilder: TxBuilder,
       signedTx: Transaction): Try[Unit] = {
     //make sure we send coins to the appropriate destinations
-    val isMissingDestination = txBuilder.destinations
-      .map(o => signedTx.outputs.contains(o))
-      .exists(_ == false)
+    val isMissingDestination =
+      !txBuilder.destinations.forall(signedTx.outputs.contains)
     val hasExtraOutputs =
       if (signedTx.outputs.size == txBuilder.destinations.size) {
         false
@@ -554,9 +538,8 @@ object TxBuilder {
           signedTx.outputs.map(_.scriptPubKey).contains(txBuilder.changeSPK))
       }
     val spendingTxOutPoints = signedTx.inputs.map(_.previousOutput)
-    val hasExtraOutPoints = txBuilder.outPoints
-      .map(o => spendingTxOutPoints.contains(o))
-      .exists(_ == false)
+    val hasExtraOutPoints =
+      !txBuilder.outPoints.forall(spendingTxOutPoints.contains)
     if (isMissingDestination) {
       TxBuilderError.MissingDestinationOutput
     } else if (hasExtraOutputs) {
@@ -628,11 +611,11 @@ object TxBuilder {
     val difference = estimatedFee - actualFee
     if (difference <= min) {
       logger.error(
-        s"Fee was too high. Estimated fee ${estimatedFee}, actualFee ${actualFee}, difference ${difference}, acceptableVariance ${acceptableVariance}")
+        s"Fee was too high. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
       TxBuilderError.HighFee
     } else if (difference >= max) {
       logger.error(
-        s"Fee was too low. Estimated fee ${estimatedFee}, actualFee ${actualFee}, difference ${difference}, acceptableVariance ${acceptableVariance}")
+        s"Fee was too low. Estimated fee $estimatedFee, actualFee $actualFee, difference $difference, acceptableVariance $acceptableVariance")
 
       TxBuilderError.LowFee
     } else {
@@ -642,66 +625,6 @@ object TxBuilder {
 }
 
 object BitcoinTxBuilder {
-  type UTXOMap = Map[TransactionOutPoint, BitcoinUTXOSpendingInfoFull]
-
-  private case class BitcoinTxBuilderImpl(
-      destinations: Seq[TransactionOutput],
-      utxoMap: UTXOMap,
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey,
-      network: BitcoinNetwork)
-      extends BitcoinTxBuilder
-
-  /**
-    * @param destinations where the money is going in the signed tx
-    * @param utxos extra information needed to spend the outputs in the creditingTxs
-    * @param feeRate the desired fee rate for this tx
-    * @param changeSPK where we should send the change from the creditingTxs
-    * @return either a instance of a [[org.bitcoins.core.wallet.builder.TxBuilder TxBuilder]],
-    *         from which you can call [[org.bitcoins.core.wallet.builder.TxBuilder.sign TxBuilder.sign]]
-    *         to generate a signed tx, or a
-    *         [[org.bitcoins.core.wallet.builder.TxBuilderError TxBuilderError]]
-    */
-  def apply(
-      destinations: Seq[TransactionOutput],
-      utxos: BitcoinTxBuilder.UTXOMap,
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey,
-      network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
-    if (feeRate.toLong <= 0) {
-      Future.fromTry(TxBuilderError.LowFee)
-    } else {
-      Future.successful(
-        BitcoinTxBuilderImpl(destinations, utxos, feeRate, changeSPK, network))
-    }
-  }
-
-  def apply(
-      destinations: Seq[TransactionOutput],
-      utxos: Seq[BitcoinUTXOSpendingInfoFull],
-      feeRate: FeeUnit,
-      changeSPK: ScriptPubKey,
-      network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
-    @tailrec
-    def loop(utxos: Seq[UTXOSpendingInfoFull], accum: UTXOMap): UTXOMap =
-      utxos match {
-        case Nil => accum
-        case h +: t =>
-          val u = BitcoinUTXOSpendingInfoFull(
-            outPoint = h.outPoint,
-            output = h.output,
-            signers = h.signers,
-            redeemScriptOpt = h.redeemScriptOpt,
-            scriptWitnessOpt = h.scriptWitnessOpt,
-            hashType = h.hashType,
-            conditionalPath = h.conditionalPath
-          )
-          val result: BitcoinTxBuilder.UTXOMap = accum.updated(h.outPoint, u)
-          loop(t, result)
-      }
-    val map = loop(utxos, Map.empty)
-    BitcoinTxBuilder(destinations, map, feeRate, changeSPK, network)
-  }
 
   /**
     * Sets the ScriptSignature for every input in the given transaction to an EmptyScriptSignature

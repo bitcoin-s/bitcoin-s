@@ -104,15 +104,14 @@ val networkParams = RegTest
 
 // Yay! Now we have a TxBuilder object that we can use
 // to sign the TX.
-val txBuilder: BitcoinTxBuilder = {
-  val builderF = BitcoinTxBuilder(
+val txBuilder: BitcoinTxBuilder =
+  BitcoinTxBuilder(
     destinations = destinations,
     utxos = utxos,
     feeRate = feeRate,
     changeSPK = changeSPK,
-    network = networkParams)
-  Await.result(builderF, 30.seconds)
-}
+    network = networkParams
+)
 
 // Let's finally produce a validly signed tx!
 // The 'sign' method is going produce a validly signed transaction
