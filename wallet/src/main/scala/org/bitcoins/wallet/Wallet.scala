@@ -33,16 +33,15 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     LockedWallet(nodeApi, chainQueryApi)
   }
 
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] = {
+  override def sendToAddress(address: BitcoinAddress,
+                             amount: CurrencyUnit,
+                             feeRate: FeeUnit,
+                             fromAccount: AccountDb): Future[Transaction] = {
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     for {
       change <- getNewChangeAddress(fromAccount)
       walletUtxos <- listUtxos()
-      txBuilder <- {
+      txBuilder = {
         val destinations = Vector(
           TransactionOutput(amount, address.scriptPubKey))
 
@@ -150,12 +149,10 @@ object Wallet extends WalletLogger {
       override val ec: ExecutionContext
   ) extends Wallet
 
-  def apply(
-      keyManager: BIP39KeyManager,
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi)(
-      implicit config: WalletAppConfig,
-      ec: ExecutionContext): Wallet = {
+  def apply(keyManager: BIP39KeyManager,
+            nodeApi: NodeApi,
+            chainQueryApi: ChainQueryApi)(implicit config: WalletAppConfig,
+                                          ec: ExecutionContext): Wallet = {
     WalletImpl(keyManager, nodeApi, chainQueryApi)
   }
 
@@ -181,9 +178,8 @@ object Wallet extends WalletLogger {
       }
   }
 
-  def initialize(wallet: Wallet)(
-      implicit walletAppConfig: WalletAppConfig,
-      ec: ExecutionContext): Future[Wallet] = {
+  def initialize(wallet: Wallet)(implicit walletAppConfig: WalletAppConfig,
+                                 ec: ExecutionContext): Future[Wallet] = {
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
