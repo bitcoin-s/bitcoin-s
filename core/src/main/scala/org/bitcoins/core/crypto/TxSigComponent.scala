@@ -53,6 +53,20 @@ sealed abstract class BaseTxSigComponent extends TxSigComponent {
   override def sigVersion = SigVersionBase
 }
 
+sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
+  override def scriptPubKey: P2SHScriptPubKey =
+    output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
+
+  override def scriptSignature: P2SHScriptSignature = {
+    val s = transaction.inputs(inputIndex.toInt).scriptSignature
+    require(s.isInstanceOf[P2SHScriptSignature],
+            "Must have P2SHScriptSignature for P2SH, got: " + s)
+    s.asInstanceOf[P2SHScriptSignature]
+  }
+
+  override def amount: CurrencyUnit = output.value
+}
+
 /**
   * The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
   * used to represent all the components necessarily for
@@ -164,6 +178,17 @@ object BaseTxSigComponent {
     BaseTxSigComponentImpl(transaction, inputIndex, output, flags)
   }
 
+}
+
+object P2SHTxSigComponent {
+
+  def apply(
+      transaction: Transaction,
+      inputIndex: UInt32,
+      output: TransactionOutput,
+      flags: Seq[ScriptFlag]): BaseTxSigComponent = {
+    BaseTxSigComponent(transaction, inputIndex, output, flags)
+  }
 }
 
 object WitnessTxSigComponent {
