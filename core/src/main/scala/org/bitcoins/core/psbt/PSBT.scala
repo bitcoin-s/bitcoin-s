@@ -98,13 +98,6 @@ case class PSBT(
     PSBT(global, inputs, outputs)
   }
 
-  /**
-    * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfo
-    * that can be used to sign the input
-    * @param index index of the InputPSBTMap
-    * @param conditionalPath Path that should be used for the script
-    * @return A corresponding UTXOSpendingInfo
-    */
   def getUTXOSpendingInfo(
       index: Int,
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
@@ -112,6 +105,26 @@ case class PSBT(
             s"Index must be within 0 and the number of inputs, got: $index")
     inputMaps(index)
       .toUTXOSpendingInfo(transaction.inputs(index), conditionalPath)
+  }
+
+  /**
+    * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfo
+    * that can be used to sign the input
+    * @param index index of the InputPSBTMap
+    * @param signers Signers that will be used to sign the input
+    * @param conditionalPath Path that should be used for the script
+    * @return A corresponding UTXOSpendingInfo
+    */
+  def getUTXOSpendingInfoUsingSigners(
+      index: Int,
+      signers: Seq[Sign],
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
+    require(index >= 0 && index < inputMaps.size,
+            s"Index must be within 0 and the number of inputs, got: $index")
+    inputMaps(index)
+      .toUTXOSpendingInfoUsingSigners(transaction.inputs(index),
+                                      signers,
+                                      conditionalPath)
   }
 
   /**
@@ -931,15 +944,26 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
     InputPSBTMap((this.elements ++ other.elements).distinct)
   }
 
+  def toUTXOSpendingInfo(
+      txIn: TransactionInput,
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
+    val signersVec = getRecords[PartialSignature](PartialSignatureKeyId)
+    val signers = signersVec.map(sig => Sign.withSig(sig.signature, sig.pubKey))
+
+    toUTXOSpendingInfoUsingSigners(txIn, signers, conditionalPath)
+  }
+
   /**
     * Takes the InputPSBTMap returns a UTXOSpendingInfo
     * that can be used to sign the input
     * @param txIn The transaction input that this InputPSBTMap represents
+    * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
     * @return A corresponding UTXOSpendingInfo
     */
-  def toUTXOSpendingInfo(
+  def toUTXOSpendingInfoUsingSigners(
       txIn: TransactionInput,
+      signers: Seq[Sign],
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
 
@@ -968,9 +992,6 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       if (scriptWitnessVec.size == 1)
         Some(P2WSHWitnessV0(scriptWitnessVec.head.witnessScript))
       else None
-
-    val signersVec = getRecords[PartialSignature](PartialSignatureKeyId)
-    val signers = signersVec.map(sig => Sign.withSig(sig.signature, sig.pubKey))
 
     val hashTypeVec = getRecords[SigHashType](SighashTypeKeyId)
     val hashType =
