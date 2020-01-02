@@ -311,12 +311,7 @@ sealed abstract class P2PKWithTimeoutSigner
 
     val sign = signers.head.signFunction
 
-    val component =
-      if (spendingInfo.isInstanceOf[P2SHSpendingInfo])
-        sigComponent(spendingInfoToSatisfy, unsignedTx)
-      else sigComponent(spendingInfo, unsignedTx)
-
-    val signatureF = doSign(component, sign, hashType, isDummySignature)
+    val signatureF = doSign(sigComponent(spendingInfo, unsignedTx), sign, hashType, isDummySignature)
 
     val scriptSigF = signatureF.map { signature =>
       P2PKWithTimeoutScriptSignature(spendingInfoToSatisfy.isBeforeTimeout,
@@ -346,13 +341,9 @@ sealed abstract class MultiSigSigner
     val signers = signersWithPubKeys.map(_.signFunction)
 
     val requiredSigs = spendingInfoToSatisfy.scriptPubKey.requiredSigs
-    val component =
-      if (spendingInfo.isInstanceOf[P2SHSpendingInfo])
-        sigComponent(spendingInfoToSatisfy, unsignedTx)
-      else sigComponent(spendingInfo, unsignedTx)
     val signatureFs = 0
       .until(requiredSigs)
-      .map(i => doSign(component, signers(i), hashType, isDummySignature))
+      .map(i => doSign(sigComponent(spendingInfo, unsignedTx), signers(i), hashType, isDummySignature))
 
     val signaturesF = Future.sequence(signatureFs)
 
@@ -383,7 +374,7 @@ sealed abstract class P2SHSigner extends BitcoinSigner[P2SHSpendingInfo] {
       val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
       val signedSigComponentF = BitcoinSigner.sign(
-        spendingInfo,
+        spendingInfoToSatisfy.nestedSpendingInfo,
         unsignedTx,
         isDummySignature,
         spendingInfoToSatisfy.nestedSpendingInfo)
