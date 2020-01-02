@@ -311,7 +311,10 @@ sealed abstract class P2PKWithTimeoutSigner
 
     val sign = signers.head.signFunction
 
-    val signatureF = doSign(sigComponent(spendingInfo, unsignedTx), sign, hashType, isDummySignature)
+    val signatureF = doSign(sigComponent(spendingInfo, unsignedTx),
+                            sign,
+                            hashType,
+                            isDummySignature)
 
     val scriptSigF = signatureF.map { signature =>
       P2PKWithTimeoutScriptSignature(spendingInfoToSatisfy.isBeforeTimeout,
@@ -343,7 +346,12 @@ sealed abstract class MultiSigSigner
     val requiredSigs = spendingInfoToSatisfy.scriptPubKey.requiredSigs
     val signatureFs = 0
       .until(requiredSigs)
-      .map(i => doSign(sigComponent(spendingInfo, unsignedTx), signers(i), hashType, isDummySignature))
+      .map(
+        i =>
+          doSign(sigComponent(spendingInfo, unsignedTx),
+                 signers(i),
+                 hashType,
+                 isDummySignature))
 
     val signaturesF = Future.sequence(signatureFs)
 
@@ -371,23 +379,53 @@ sealed abstract class P2SHSigner extends BitcoinSigner[P2SHSpendingInfo] {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
     } else {
-      val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-      val signedSigComponentF = BitcoinSigner.sign(
-        spendingInfoToSatisfy.nestedSpendingInfo,
-        unsignedTx,
-        isDummySignature,
-        spendingInfoToSatisfy.nestedSpendingInfo)
+      val (_, output, inputIndex, _) =
+        relevantInfo(spendingInfo, unsignedTx)
 
-      val scriptSigF = signedSigComponentF.map { signedSigComponent =>
-        P2SHScriptSignature(signedSigComponent.scriptSignature,
-                            spendingInfoToSatisfy.redeemScript)
+      if (spendingInfoToSatisfy
+            .isInstanceOf[P2SHNestedSegwitV0UTXOSpendingInfo] && spendingInfoToSatisfy.redeemScript
+            .isInstanceOf[P2WPKHWitnessSPKV0]) {
+        val p2wpkh =
+          spendingInfoToSatisfy.redeemScript.asInstanceOf[P2WPKHWitnessSPKV0]
+        val pubKey = spendingInfo.signers.head.publicKey
+        if (P2WPKHWitnessSPKV0(pubKey) != p2wpkh) {
+          Future.fromTry(TxBuilderError.WrongPublicKey)
+        } else {
+          val p2shScriptSig = P2SHScriptSignature(p2wpkh)
+          val oldInput = unsignedTx.inputs(inputIndex.toInt)
+          val updatedInput = TransactionInput(oldInput.previousOutput,
+                                              p2shScriptSig,
+                                              oldInput.sequence)
+
+          val uwtx = {
+            val u = unsignedTx.updateInput(inputIndex.toInt, updatedInput)
+            WitnessTransaction.toWitnessTx(u)
+          }
+
+          Future.successful(
+            WitnessTxSigComponentP2SH(transaction = uwtx,
+                                      inputIndex = inputIndex,
+                                      output = output,
+                                      flags = Policy.standardFlags))
+        }
+      } else {
+        val signedSigComponentF = BitcoinSigner.sign(
+          spendingInfoToSatisfy.nestedSpendingInfo,
+          unsignedTx,
+          isDummySignature,
+          spendingInfoToSatisfy.nestedSpendingInfo)
+
+        val scriptSigF = signedSigComponentF.map { signedSigComponent =>
+          P2SHScriptSignature(signedSigComponent.scriptSignature,
+                              spendingInfoToSatisfy.redeemScript)
+        }
+
+        updateScriptSigInSigComponent(unsignedTx,
+                                      inputIndex.toInt,
+                                      output,
+                                      scriptSigF)
       }
-
-      updateScriptSigInSigComponent(unsignedTx,
-                                    inputIndex.toInt,
-                                    output,
-                                    scriptSigF)
     }
   }
 }
