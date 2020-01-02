@@ -346,6 +346,57 @@ case class PSBT(
       inputMaps.patch(index, Seq(InputPSBTMap(newElements)), 1)
     PSBT(globalMap, newInputMaps, outputMaps)
   }
+
+  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#transaction-extractor]] */
+  def extractTransaction: Transaction = {
+    if (isFinalized) {
+      val newInputs = transaction.inputs.zip(inputMaps).map {
+        case (input, inputMap) =>
+          val scriptSigOpt = inputMap
+            .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
+            .headOption
+          val scriptSig =
+            scriptSigOpt.map(_.scriptSig).getOrElse(ScriptSignature.empty)
+          TransactionInput(input.previousOutput, scriptSig, input.sequence)
+      }
+
+      if (inputMaps
+            .flatMap(_.elements)
+            .exists(_.isInstanceOf[FinalizedScriptWitness])) {
+        val witness = inputMaps.zipWithIndex.foldLeft[TransactionWitness](
+          EmptyWitness.fromInputs(transaction.inputs)) {
+          case (witness, (inputMap, index)) =>
+            inputMap
+              .getRecords[FinalizedScriptWitness](FinalizedScriptWitnessKeyId)
+              .headOption match {
+              case None => witness
+              case Some(
+                  InputPSBTRecord.FinalizedScriptWitness(scriptWitness)) =>
+                TransactionWitness(
+                  witness.witnesses.updated(index, scriptWitness))
+            }
+        }
+        WitnessTransaction(transaction.version,
+                           newInputs,
+                           transaction.outputs,
+                           transaction.lockTime,
+                           witness)
+      } else {
+        transaction match {
+          case btx: BaseTransaction =>
+            BaseTransaction(btx.version, newInputs, btx.outputs, btx.lockTime)
+          case wtx: WitnessTransaction =>
+            WitnessTransaction(wtx.version,
+                               newInputs,
+                               wtx.outputs,
+                               wtx.lockTime,
+                               wtx.witness)
+        }
+      }
+    } else {
+      throw new RuntimeException("PSBT must be finalized in order to extract")
+    }
+  }
 }
 
 object PSBT extends Factory[PSBT] {
