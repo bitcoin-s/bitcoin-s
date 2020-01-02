@@ -1,21 +1,18 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.hd._
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
-import org.bitcoins.core.protocol.script.{
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0,
-  ScriptWitness
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
 }
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.script.ScriptType
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.ProvenShape
-import org.bitcoins.core.protocol.P2SHAddress
-import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
-import org.bitcoins.core.protocol.script.ScriptPubKey
 
 sealed trait AddressDb {
   protected type PathType <: HDPath

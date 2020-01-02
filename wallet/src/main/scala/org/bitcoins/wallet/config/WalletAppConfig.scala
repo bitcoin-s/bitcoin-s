@@ -52,6 +52,10 @@ case class WalletAppConfig(
   lazy val bloomFalsePositiveRate: Double =
     config.getDouble("wallet.bloomFalsePositiveRate")
 
+  lazy val addressGapLimit: Int = config.getInt("wallet.addressGapLimit")
+
+  lazy val discoveryBatchSize: Int = config.getInt("wallet.discoveryBatchSize")
+
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
 

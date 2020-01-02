@@ -17,11 +17,18 @@ abstract class LockedWallet
     with UtxoHandling
     with AddressHandling
     with AccountHandling
-    with TransactionProcessing {
+    with TransactionProcessing
+    with RescanHandling {
 
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
+
+  override def isEmpty(): Future[Boolean] =
+    for {
+      addressCount <- addressDAO.count()
+      spendingInfoCount <- spendingInfoDAO.count()
+    } yield addressCount == 0 && spendingInfoCount == 0
 
   /** Sums up the value of all unspent
     * TXOs in the wallet, filtered by the given predicate */

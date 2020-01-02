@@ -2,9 +2,8 @@ package org.bitcoins.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.node.config.NodeAppConfig
@@ -97,6 +96,6 @@ case class SpvNode(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+      endHeight: Int): Future[Vector[FilterResponse]] =
     Future.failed(new RuntimeException(cfErrMsg))
 }

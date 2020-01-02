@@ -10,7 +10,6 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
 import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
-import org.scalatest.exceptions.TestFailedException
 import org.scalatest.{DoNotDiscover, FutureOutcome}
 
 import scala.concurrent.duration.DurationInt
@@ -146,34 +145,6 @@ class NeutrinoNodeTest extends NodeUnitTest {
           _ <- hasFiltersF
         } yield succeed
       }
-  }
-
-  it must "download a block that matches a compact block filter" taggedAs (UsesExperimentalBitcoind) in {
-    nodeConnectedWithBitcoind: NeutrinoNodeFundedWalletBitcoind =>
-      val node = nodeConnectedWithBitcoind.node
-      val wallet = nodeConnectedWithBitcoind.wallet
-      val bitcoind = nodeConnectedWithBitcoind.bitcoindRpc
-
-      for {
-        walletUtxos <- wallet.listUtxos()
-        _ = {
-          assert(walletUtxos.nonEmpty)
-          utxos = walletUtxos.map(_.output.scriptPubKey).toSet
-        }
-        walletAddress <- wallet.getNewAddress()
-        _ <- node.sync()
-        _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
-        _ = system.scheduler.scheduleOnce(testTimeout) {
-          if (!assertionP.isCompleted)
-            assertionP.failure(
-              new TestFailedException(
-                s"Did not receive a block message after $testTimeout!",
-                failedCodeStackDepth = 0))
-        }
-        _ <- wallet.rescan(
-          walletUtxos.map(_.output.scriptPubKey) :+ walletAddress.scriptPubKey)
-        result <- assertionP.future
-      } yield assert(result)
   }
 
 }

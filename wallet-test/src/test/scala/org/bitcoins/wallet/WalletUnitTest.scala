@@ -7,9 +7,10 @@ import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
-import org.bitcoins.keymanager.KeyManagerUnlockError.{BadPassword, JsonParsingError, MnemonicNotFound}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome
@@ -26,16 +27,17 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   behavior of "Wallet - unit test"
 
-  it must "write the mnemonic seed to the root datadir -- NOT A NETWORK sub directory" in { wallet: UnlockedWalletApi =>
-    //since datadir has the path that relates it to a network ('mainnet'/'testnet'/'regtest')
-    //we need to get the parent of that to find where the encrypted seed should be
-    //this is where the bitcoin-s.conf should live too.
-    val datadir = wallet.walletConfig.baseDatadir
+  it must "write the mnemonic seed to the root datadir -- NOT A NETWORK sub directory" in {
+    wallet: UnlockedWalletApi =>
+      //since datadir has the path that relates it to a network ('mainnet'/'testnet'/'regtest')
+      //we need to get the parent of that to find where the encrypted seed should be
+      //this is where the bitcoin-s.conf should live too.
+      val datadir = wallet.walletConfig.baseDatadir
 
-    assert(Files.exists(datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)))
+      assert(
+        Files.exists(datadir.resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)))
 
   }
-
 
   it should "create a new wallet" in { wallet: UnlockedWalletApi =>
     for {
@@ -145,7 +147,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     wallet: UnlockedWalletApi =>
       val badpassphrase = AesPassword.fromNonEmptyString("bad")
       val errorType = wallet.unlock(badpassphrase) match {
-        case Right(_) => fail("Unlocked wallet with bad password!")
+        case Right(_)  => fail("Unlocked wallet with bad password!")
         case Left(err) => err
       }
       errorType match {
@@ -165,7 +167,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         endOpt = None
       )(system.dispatcher)
     } yield {
-      assert(Vector(testBlockHash) == matched)
+      assert(
+        Vector(BlockMatchingResponse(blockHash = testBlockHash,
+                                     blockHeight = 1)) == matched)
     }
   }
 

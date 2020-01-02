@@ -6,8 +6,8 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.keymanager.{KeyManager, KeyManagerInitializeError}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
@@ -101,8 +101,10 @@ object Main extends App {
 
       // TODO change me when we implement proper password handling
       locked.unlock(BIP39KeyManager.badPassphrase) match {
-        case Right(wallet) => Future.successful(wallet)
-        case Left(kmError) => error(kmError)
+        case Right(wallet) =>
+          Future.successful(wallet)
+        case Left(kmError) =>
+          error(kmError)
       }
     } else {
       logger.info(s"Initializing key manager")
@@ -132,6 +134,7 @@ object Main extends App {
     lazy val onCompactFilter: OnCompactFilterReceived = {
       (blockHash, blockFilter) =>
         wallet.processCompactFilter(blockHash, blockFilter)
+        ()
     }
     lazy val onBlock: OnBlockReceived = { block =>
       wallet.processBlock(block)

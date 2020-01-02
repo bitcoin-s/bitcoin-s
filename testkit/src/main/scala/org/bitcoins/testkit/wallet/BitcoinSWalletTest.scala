@@ -2,14 +2,14 @@ package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
-import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
+import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
-import org.bitcoins.keymanager.KeyManager
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -36,7 +36,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
   }
 
-  def nodeApi: NodeApi = NodeApi.NoOp
+  def nodeApi: NodeApi = MockNodeApi
 
   // This is a random block on testnet
   val testBlockHash = DoubleSha256DigestBE.fromHex(
@@ -71,7 +71,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
     override def getFiltersBetweenHeights(
         startHeight: Int,
-        endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+        endHeight: Int): Future[Vector[FilterResponse]] =
       Future.successful({
         import scodec.bits._
 
@@ -104,8 +104,10 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
             hex"c14d41b2d5aefaf539e989f7fa097eac657c70b975c56e26b73fb9401ce3" ++
             hex"81502f0883d52c6a3bcc956e0ea1787f0717d0205fecfe55b01edb1ac0"
         Vector(
-          (BlockFilter.fromBytes(filterBytes, testBlockHash.flip),
-           testBlockHash))
+          FilterResponse(compactFilter = BlockFilter
+                           .fromBytes(filterBytes, testBlockHash.flip),
+                         blockHash = testBlockHash,
+                         blockHeight = 1))
       })
   }
 
@@ -187,6 +189,37 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 object BitcoinSWalletTest extends WalletLogger {
 
   lazy val initialFunds = 25.bitcoins
+
+  object MockNodeApi extends NodeApi {
+
+    override def downloadBlocks(
+        blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = FutureUtil.unit
+
+  }
+
+  object MockChainQueryApi extends ChainQueryApi {
+
+    override def getBlockHeight(
+        blockHash: DoubleSha256DigestBE): Future[Option[Int]] =
+      FutureUtil.none
+
+    override def getBestBlockHash(): Future[DoubleSha256DigestBE] =
+      Future.successful(DoubleSha256DigestBE.empty)
+
+    override def getNumberOfConfirmations(
+        blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
+      FutureUtil.none
+
+    override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] =
+      Future.successful(0)
+
+    override def getFilterCount: Future[Int] = Future.successful(0)
+
+    override def getFiltersBetweenHeights(
+        startHeight: Int,
+        endHeight: Int): Future[Vector[FilterResponse]] =
+      Future.successful(Vector.empty)
+  }
 
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,

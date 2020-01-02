@@ -1,18 +1,33 @@
 package org.bitcoins.wallet
 
-import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
-import org.bitcoins.core.hd.HDChainType.{Change, External}
-import org.bitcoins.core.hd._
+
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
+import org.bitcoins.core.hd.HDCoinType
+import org.bitcoins.core.hd.HDPurpose
+import org.bitcoins.core.hd.HDPath
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.keymanager.{KeyManager, KeyManagerParams}
 import org.bitcoins.rpc.serializers.JsonSerializers._
+import play.api.libs.json.Reads
+import play.api.libs.json.JsResult
+import play.api.libs.json.JsError
+import play.api.libs.json.JsSuccess
+import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.core.hd.HDPurposes
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.keymanager.KeyManagerParams
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  MockChainQueryApi,
+  MockNodeApi
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb}
 import org.scalatest.compatible.Assertion
@@ -135,17 +150,20 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     ConfigFactory.parseString(confStr)
   }
 
-  private def getWallet(config: WalletAppConfig)(implicit ec: ExecutionContext): Future[Wallet] = {
-    val kmE = BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
+  private def getWallet(config: WalletAppConfig)(
+      implicit ec: ExecutionContext): Future[Wallet] = {
+    val kmE =
+      BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
     kmE match {
-      case Left(err) => Future.failed(new RuntimeException(s"Failed to initialize km with err=${err}"))
+      case Left(err) =>
+        Future.failed(
+          new RuntimeException(s"Failed to initialize km with err=${err}"))
       case Right(km) =>
-        val wallet = Wallet(km, NodeApi.NoOp, ChainQueryApi.NoOp)(config, ec)
-        val walletF = Wallet.initialize(wallet)(config,ec)
+        val wallet = Wallet(km, MockNodeApi, MockChainQueryApi)(config, ec)
+        val walletF = Wallet.initialize(wallet)(config, ec)
         walletF
     }
   }
-
 
   case class AccountAndAddrsAndVector(
       account: AccountDb,
@@ -167,12 +185,13 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
           assert(foundAddress.address == expectedAddress.address)
       }
   }
+
   /** Creates the wallet accounts needed for this test */
   private def createNeededAccounts(
-                            wallet: Wallet,
-                            existing: Vector[AccountDb],
-                            keyManagerParams: KeyManagerParams,
-                            testVectors: Vector[TestVector]): Future[Unit] = {
+      wallet: Wallet,
+      existing: Vector[AccountDb],
+      keyManagerParams: KeyManagerParams,
+      testVectors: Vector[TestVector]): Future[Unit] = {
     val accountsToCreate = existing.length until testVectors.length
     FutureUtil
       .sequentially(accountsToCreate) { _ =>
@@ -187,16 +206,16 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     * addresses needed to verify the test vector
     */
   def getAccountsWithAddressesAndVectors(
-                                          wallet: Wallet,
-                                          accountsWithVectors: Seq[(AccountDb, TestVector)]): Future[
+      wallet: Wallet,
+      accountsWithVectors: Seq[(AccountDb, TestVector)]): Future[
     Seq[AccountAndAddrsAndVector]] = {
     FutureUtil.sequentially(accountsWithVectors) {
       case (acc, vec) =>
         val addrFutures: Future[Seq[AddressDb]] =
           FutureUtil.sequentially(vec.addresses) { vector =>
             val addrFut = vector.chain match {
-              case Change => wallet.getNewChangeAddress(acc)
-              case External =>
+              case HDChainType.Change => wallet.getNewChangeAddress(acc)
+              case HDChainType.External =>
                 wallet.getNewAddress(acc)
             }
             addrFut.flatMap(wallet.addressDAO.findAddress).map {
@@ -224,7 +243,10 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     for {
       wallet <- getWallet(conf)
       existingAccounts <- wallet.listAccounts(purpose)
-      _ <- createNeededAccounts(wallet, existingAccounts, conf.kmParams, testVectors)
+      _ <- createNeededAccounts(wallet,
+                                existingAccounts,
+                                conf.kmParams,
+                                testVectors)
       accounts <- wallet.listAccounts(purpose)
       // we want to find all accounts for the given account type,
       // and match it with its corresponding test vector
@@ -256,7 +278,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       val assertions: Seq[Assertion] = {
         val nestedAssertions: Seq[Seq[Assertion]] =
           accountsWithAddrsWithVecs.map {
-            case AccountAndAddrsAndVector(account, addresses, vec) =>
+            case AccountAndAddrsAndVector(account, addresses, _) =>
               val acctIdx = account.hdAccount.index
               val vec = vectors.find(_.xpub == account.xpub) match {
                 case None =>

@@ -110,7 +110,6 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
 }
 
 //initialize our key manager, where we store our keys
-import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39._
 val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams).getOrElse {
   throw new RuntimeException(s"Failed to initalize key manager")
@@ -122,9 +121,21 @@ val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams).getOrElse {
 import org.bitcoins.wallet.api.LockedWalletApi
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.core.api._
-val wallet = Wallet(keyManager,NodeApi.NoOp, ChainQueryApi.NoOp)
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.protocol._
+val wallet = Wallet(keyManager, new NodeApi {
+    override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
+  }, new ChainQueryApi {
+    import org.bitcoins.core.api.ChainQueryApi._
+    override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
+    override def getBestBlockHash(): Future[DoubleSha256DigestBE] = Future.successful(DoubleSha256DigestBE.empty)
+    override def getNumberOfConfirmations(blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
+    override def getFilterCount: Future[Int] = Future.successful(0)
+    override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = Future.successful(0)
+    override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[FilterResponse]] = Future.successful(Vector.empty)
+  })
 val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
-  Wallet.initialize(wallet)
+    Wallet.initialize(wallet)
 }
 
 // when this future completes, ww have sent a transaction

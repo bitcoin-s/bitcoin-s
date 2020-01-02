@@ -3,7 +3,7 @@ package org.bitcoins.server
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import ujson.{Arr, Null, Num, Str, Value}
+import ujson._
 import upickle.default._
 
 import scala.util.{Failure, Try}
@@ -16,27 +16,20 @@ object ServerCommand {
 }
 
 case class Rescan(
-    addresses: Vector[BitcoinAddress],
+    batchSize: Option[Int],
     startBlock: Option[BlockStamp],
-    endBlock: Option[BlockStamp])
+    endBlock: Option[BlockStamp],
+    force: Boolean)
 
 object Rescan extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[Rescan] = {
 
-    def parseAddresses(value: Value): Vector[BitcoinAddress] = value match {
-      case Arr(arr) =>
-        if (arr.isEmpty)
-          throw Value.InvalidData(value, "Expected a non-empty address array")
-        else
-          arr.toVector.map(jsToBitcoinAddress)
-      case _: Value =>
-        throw Value.InvalidData(value, "Expected an Arr")
-    }
-
     def nullToOpt(value: Value): Option[Value] = value match {
-      case Null     => None
-      case _: Value => Some(value)
+      case Null                      => None
+      case Arr(arr) if arr.isEmpty   => None
+      case Arr(arr) if arr.size == 1 => Some(arr.head)
+      case _: Value                  => Some(value)
     }
 
     def parseBlockStamp(value: Value): Option[BlockStamp] =
@@ -51,13 +44,30 @@ object Rescan extends ServerJsonModels {
           throw Value.InvalidData(value, "Expected a Num or a Str")
       }
 
+    def parseInt(value: Value): Option[Int] =
+      nullToOpt(value).map {
+        case Str(value) => value.toInt
+        case Num(value) => value.toInt
+        case _: Value =>
+          throw Value.InvalidData(value, "Expected a Num or a Str")
+      }
+
+    def parseBoolean(value: Value): Boolean = value match {
+      case Bool(bool) => bool
+      case _: Value   => throw Value.InvalidData(value, "Expected a Bool")
+    }
+
     jsArr.arr.toList match {
-      case addrsJs :: startJs :: endJs :: Nil =>
+      case batchSizeJs :: startJs :: endJs :: forceJs :: Nil =>
         Try {
-          val addresses = parseAddresses(addrsJs)
+          val batchSize = parseInt(batchSizeJs)
           val start = parseBlockStamp(startJs)
           val end = parseBlockStamp(endJs)
-          Rescan(addresses = addresses, startBlock = start, endBlock = end)
+          val force = parseBoolean(forceJs)
+          Rescan(batchSize = batchSize,
+                 startBlock = start,
+                 endBlock = end,
+                 force = force)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing addresses"))
@@ -65,7 +75,7 @@ object Rescan extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 3"))
+            s"Bad number of arguments: ${other.length}. Expected: 4"))
     }
   }
 
