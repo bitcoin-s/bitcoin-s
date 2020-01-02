@@ -94,8 +94,8 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       hashType = HashType.sigHashAll,
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
     assertThrows[IllegalArgumentException] {
+      val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
       val _ = BitcoinTxBuilder(destinations = destinations,
                                utxos = Vector(utxo),
                                feeRate = feeUnit,

@@ -83,8 +83,6 @@ sealed abstract class TxBuilder {
     * should pay for this transaction */
   def feeRate: FeeUnit
 
-  require(feeRate.toLong > 0L, "Specified fee was too low")
-
   /**
     * This is where all the money that is NOT sent to destination outputs is spent too.
     * If we don't specify a change output, a large miner fee may be paid as more than likely

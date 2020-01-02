@@ -12,6 +12,8 @@ sealed abstract class FeeUnit {
   def *(tx: Transaction): CurrencyUnit = calc(tx)
   def calc(tx: Transaction): CurrencyUnit = Satoshis(tx.vsize * toLong)
   def toLong: Long = currencyUnit.satoshis.toLong
+
+  require(toLong > 0L, "Fee must be positive")
 }
 
 /**
