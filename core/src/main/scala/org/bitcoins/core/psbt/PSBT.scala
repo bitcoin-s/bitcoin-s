@@ -10,7 +10,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.{P2WSHWitnessV0, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.psbt.GlobalPSBTRecord._
@@ -20,6 +20,7 @@ import org.bitcoins.core.psbt.PSBTInputKeyId._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.Factory
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalPath,
@@ -28,6 +29,7 @@ import org.bitcoins.core.wallet.utxo.{
 import scodec.bits._
 
 import scala.annotation.tailrec
+import scala.concurrent.{ExecutionContext, Future}
 
 case class PSBT(
     globalMap: GlobalPSBTMap,
@@ -100,19 +102,16 @@ case class PSBT(
     * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfo
     * that can be used to sign the input
     * @param index index of the InputPSBTMap
-    * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
     * @return A corresponding UTXOSpendingInfo
     */
   def getUTXOSpendingInfo(
       index: Int,
-      signers: Seq[Sign],
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
     require(index >= 0 && index < inputMaps.size,
             s"Index must be within 0 and the number of inputs, got: $index")
-    inputMaps(index).toUTXOSpendingInfo(transaction.inputs(index),
-                                        signers,
-                                        conditionalPath)
+    inputMaps(index)
+      .toUTXOSpendingInfo(transaction.inputs(index), conditionalPath)
   }
 
   /**
@@ -411,6 +410,32 @@ object PSBT extends Factory[PSBT] {
         throw new IllegalArgumentException(
           s"String given was not in base64 format, got: $base64")
       case Some(bytes) => fromBytes(bytes)
+    }
+  }
+
+  def fromUnsignedTx(unsignedTx: Transaction): PSBT = {
+    val globalMap = GlobalPSBTMap(
+      Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
+    val inputMaps = unsignedTx.inputs.map(_ => InputPSBTMap.empty).toVector
+    val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
+
+    PSBT(globalMap, inputMaps, outputMaps)
+  }
+
+  def fromUnsignedTxAndInputs(
+      unsignedTx: Transaction,
+      spendingInfos: Vector[UTXOSpendingInfo])(
+      implicit ec: ExecutionContext): Future[PSBT] = {
+    require(spendingInfos.length == unsignedTx.inputs.length,
+            "Must have a UTXOSpendingInfo for every input")
+    val globalMap = GlobalPSBTMap(
+      Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
+    val inputMapFs = spendingInfos.map(info =>
+      InputPSBTMap.fromUTXOSpendingInfo(info, unsignedTx))
+    val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
+
+    Future.sequence(inputMapFs).map { inputMaps =>
+      PSBT(globalMap, inputMaps, outputMaps)
     }
   }
 }
@@ -910,13 +935,11 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
     * Takes the InputPSBTMap returns a UTXOSpendingInfo
     * that can be used to sign the input
     * @param txIn The transaction input that this InputPSBTMap represents
-    * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
     * @return A corresponding UTXOSpendingInfo
     */
   def toUTXOSpendingInfo(
       txIn: TransactionInput,
-      signers: Seq[Sign],
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
 
@@ -945,6 +968,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       if (scriptWitnessVec.size == 1)
         Some(P2WSHWitnessV0(scriptWitnessVec.head.witnessScript))
       else None
+
+    val signersVec = getRecords[PartialSignature](PartialSignatureKeyId)
+    val signers = signersVec.map(sig => Sign.withSig(sig.signature, sig.pubKey))
 
     val hashTypeVec = getRecords[SigHashType](SighashTypeKeyId)
     val hashType =
@@ -999,6 +1025,28 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
 
 object InputPSBTMap {
 
+  def fromUTXOSpendingInfo(
+      spendingInfo: UTXOSpendingInfo,
+      unsignedTx: Transaction)(
+      implicit ec: ExecutionContext): Future[InputPSBTMap] = {
+    val sigComponentF = BitcoinSigner
+      .sign(spendingInfo, unsignedTx, isDummySignature = true)
+
+    sigComponentF.map { sigComponent =>
+      val scriptSig =
+        FinalizedScriptSig(sigComponent.scriptSignature, ByteVector.empty)
+      sigComponent.transaction match {
+        case _: BaseTransaction => InputPSBTMap(Vector(scriptSig))
+        case wtx: WitnessTransaction =>
+          val witness = wtx.witness.witnesses(sigComponent.inputIndex.toInt)
+          val scriptWitness = FinalizedScriptWitness(witness)
+          InputPSBTMap(Vector(scriptSig, scriptWitness))
+      }
+    }
+  }
+
+  def empty: InputPSBTMap = InputPSBTMap(Vector.empty)
+
   def fromBytes(bytes: ByteVector): InputPSBTMap = {
     @tailrec
     def loop(
@@ -1037,6 +1085,8 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
 }
 
 object OutputPSBTMap {
+
+  def empty: OutputPSBTMap = OutputPSBTMap(Vector.empty)
 
   def fromBytes(bytes: ByteVector): OutputPSBTMap = {
     @tailrec
