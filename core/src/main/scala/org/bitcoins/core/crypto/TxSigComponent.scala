@@ -54,17 +54,21 @@ sealed abstract class BaseTxSigComponent extends TxSigComponent {
 }
 
 sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
-  override def scriptPubKey: P2SHScriptPubKey =
-    output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
-  override def scriptSignature: P2SHScriptSignature = {
-    val s = transaction.inputs(inputIndex.toInt).scriptSignature
-    require(s.isInstanceOf[P2SHScriptSignature],
-            "Must have P2SHScriptSignature for P2SH, got: " + s)
-    s.asInstanceOf[P2SHScriptSignature]
-  }
+  require(
+    input.scriptSignature
+      .isInstanceOf[P2SHScriptSignature],
+    "Must have P2SHScriptSignature for P2SH, got: " + input.scriptSignature
+  )
+  require(
+    output.scriptPubKey
+      .isInstanceOf[P2SHScriptSignature],
+    "Must have P2SHScriptPubKey for P2SH, got: " + output.scriptPubKey
+  )
 
-  override def amount: CurrencyUnit = output.value
+  override def scriptPubKey: P2SHScriptPubKey = scriptPubKey
+
+  override def scriptSignature: P2SHScriptSignature = scriptSignature
 }
 
 /**
@@ -182,12 +186,19 @@ object BaseTxSigComponent {
 
 object P2SHTxSigComponent {
 
+  private case class P2SHTxSigComponentImpl(
+      transaction: Transaction,
+      inputIndex: UInt32,
+      output: TransactionOutput,
+      flags: Seq[ScriptFlag])
+      extends P2SHTxSigComponent
+
   def apply(
       transaction: Transaction,
       inputIndex: UInt32,
       output: TransactionOutput,
-      flags: Seq[ScriptFlag]): BaseTxSigComponent = {
-    BaseTxSigComponent(transaction, inputIndex, output, flags)
+      flags: Seq[ScriptFlag]): P2SHTxSigComponent = {
+    P2SHTxSigComponentImpl(transaction, inputIndex, output, flags)
   }
 }
 
