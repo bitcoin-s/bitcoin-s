@@ -66,9 +66,11 @@ sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
     "Must have P2SHScriptPubKey for P2SH, got: " + output.scriptPubKey
   )
 
-  override def scriptPubKey: P2SHScriptPubKey = scriptPubKey
+  override def scriptPubKey: P2SHScriptPubKey =
+    output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
-  override def scriptSignature: P2SHScriptSignature = scriptSignature
+  override def scriptSignature: P2SHScriptSignature =
+    input.scriptSignature.asInstanceOf[P2SHScriptSignature]
 }
 
 /**
