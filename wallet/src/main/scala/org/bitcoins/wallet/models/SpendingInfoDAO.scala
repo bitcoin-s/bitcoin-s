@@ -1,15 +1,17 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import scala.concurrent.{ExecutionContext, Future}
 
 case class SpendingInfoDAO()(
     implicit val ec: ExecutionContext,
@@ -91,6 +93,12 @@ case class SpendingInfoDAO()(
     database.runVec(filtered.result)
   }
 
+  def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]] = {
+    val filtered = table.filter(_.scriptPubKey === scriptPubKey)
+    database.runVec(filtered.result)
+  }
+
   /** Enumerates all unspent TX outputs in the wallet */
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
     val query = table.filter(!_.spent)
@@ -103,4 +111,5 @@ case class SpendingInfoDAO()(
     val query = table.map(_.outPoint)
     database.runVec(query.result).map(_.toVector)
   }
+
 }

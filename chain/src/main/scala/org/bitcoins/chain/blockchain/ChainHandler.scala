@@ -4,8 +4,9 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
+import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.{FilterHeader, GolombFilter}
+import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -403,10 +404,12 @@ case class ChainHandler(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+      endHeight: Int): Future[Vector[FilterResponse]] =
     filterDAO
       .getBetweenHeights(startHeight, endHeight)
-      .map(dbos => dbos.map(dbo => (dbo.golombFilter, dbo.blockHashBE)))
+      .map(dbos =>
+        dbos.map(dbo =>
+          FilterResponse(dbo.golombFilter, dbo.blockHashBE, dbo.height)))
 }
 
 object ChainHandler {

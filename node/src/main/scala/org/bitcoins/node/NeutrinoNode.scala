@@ -2,8 +2,7 @@ package org.bitcoins.node
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.gcs.GolombFilter
+import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -55,7 +54,7 @@ case class NeutrinoNode(
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[(GolombFilter, DoubleSha256DigestBE)]] =
+      endHeight: Int): Future[Vector[FilterResponse]] =
     chainApiFromDb().flatMap(_.getFiltersBetweenHeights(startHeight, endHeight))
 
 }

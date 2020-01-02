@@ -10,6 +10,7 @@ import org.bitcoins.node.Node
 import org.bitcoins.picklers._
 import org.bitcoins.wallet.api.UnlockedWalletApi
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
@@ -54,11 +55,26 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       Rescan.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(Rescan(addresses, startBlock, endBlock)) =>
+        case Success(Rescan(batchSize, startBlock, endBlock, force)) =>
           complete {
-            wallet
-              .rescan(addresses.map(_.scriptPubKey), startBlock, endBlock)
-              .map(_ => Server.httpSuccess("ok"))
+            val res = for {
+              empty <- wallet.isEmpty()
+              msg <- if (force || empty) {
+                wallet
+                  .rescanNeutrinoWallet(
+                    startBlock,
+                    endBlock,
+                    batchSize.getOrElse(wallet.discoveryBatchSize))
+                  .map(_ => "scheduled")
+              } else {
+                Future.successful(
+                  "DANGER! The wallet is not empty, however the rescan " +
+                    "process destroys all existing records and creates new ones. " +
+                    "Use force option if you really want to proceed. " +
+                    "Don't forget to backup the wallet database.")
+              }
+            } yield msg
+            res.map(msg => Server.httpSuccess(msg))
           }
       }
 

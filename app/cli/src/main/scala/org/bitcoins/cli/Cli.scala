@@ -1,26 +1,17 @@
 package org.bitcoins.cli
 
-import org.bitcoins.picklers._
-import scopt.OParser
-import org.bitcoins.core.config.NetworkParameters
-import upickle.{default => up}
-import CliReaders._
-import org.bitcoins.core.protocol._
-import org.bitcoins.core.currency._
-import org.bitcoins.cli.CliCommand.{
-  GetBalance,
-  GetBestBlockHash,
-  GetBlockCount,
-  GetNewAddress,
-  GetPeers,
-  NoCommand,
-  Rescan,
-  SendToAddress
-}
 import java.net.ConnectException
 import java.{util => ju}
-import ujson.Num
-import ujson.Str
+
+import org.bitcoins.cli.CliCommand._
+import org.bitcoins.cli.CliReaders._
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol._
+import org.bitcoins.picklers._
+import scopt.OParser
+import ujson.{Num, Str}
+import upickle.{default => up}
 
 case class Config(
     command: CliCommand = CliCommand.NoCommand,
@@ -46,9 +37,10 @@ object CliCommand {
   case object GetBestBlockHash extends CliCommand
   case object GetBlockCount extends CliCommand
   case class Rescan(
-      addresses: Vector[BitcoinAddress],
+      addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],
-      endBlock: Option[BlockStamp])
+      endBlock: Option[BlockStamp],
+      force: Boolean)
       extends CliCommand
 }
 
@@ -80,17 +72,26 @@ object Cli extends App {
         .action(
           (_, conf) =>
             conf.copy(
-              command = Rescan(addresses = Vector.empty,
+              command = Rescan(addressBatchSize = Option.empty,
                                startBlock = Option.empty,
-                               endBlock = Option.empty)))
+                               endBlock = Option.empty,
+                               force = false)))
         .text(s"Rescan UTXOs")
         .children(
-          opt[Seq[BitcoinAddress]]("addresses")
-            .required()
-            .action((addrs, conf) =>
+          opt[Unit]("force")
+            .optional()
+            .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
-                  rescan.copy(addresses = addrs.toVector)
+                  rescan.copy(force = true)
+                case other => other
+              })),
+          opt[Int]("batch-size")
+            .optional()
+            .action((batchSize, conf) =>
+              conf.copy(command = conf.command match {
+                case rescan: Rescan =>
+                  rescan.copy(addressBatchSize = Option(batchSize))
                 case other => other
               })),
           opt[BlockStamp]("start")
@@ -198,11 +199,12 @@ object Cli extends App {
       RequestParam("getbalance")
     case GetNewAddress =>
       RequestParam("getnewaddress")
-    case Rescan(addresses, startBlock, endBlock) =>
+    case Rescan(addressBatchSize, startBlock, endBlock, force) =>
       RequestParam("rescan",
-                   Seq(up.writeJs(addresses),
+                   Seq(up.writeJs(addressBatchSize),
                        up.writeJs(startBlock),
-                       up.writeJs(endBlock)))
+                       up.writeJs(endBlock),
+                       up.writeJs(force)))
 
     case SendToAddress(address, bitcoins) =>
       RequestParam("sendtoaddress",
