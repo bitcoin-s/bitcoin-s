@@ -134,6 +134,7 @@ object Main extends App {
     lazy val onCompactFilter: OnCompactFilterReceived = {
       (blockHash, blockFilter) =>
         wallet.processCompactFilter(blockHash, blockFilter)
+        ()
     }
     lazy val onBlock: OnBlockReceived = { block =>
       wallet.processBlock(block)

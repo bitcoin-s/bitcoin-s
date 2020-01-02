@@ -25,13 +25,6 @@ object Rescan extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[Rescan] = {
 
-    def parseAddresses(value: Value): Vector[BitcoinAddress] = value match {
-      case Arr(arr) =>
-        arr.toVector.map(jsToBitcoinAddress)
-      case _: Value =>
-        throw Value.InvalidData(value, "Expected an Arr")
-    }
-
     def nullToOpt(value: Value): Option[Value] = value match {
       case Null                      => None
       case Arr(arr) if arr.isEmpty   => None
