@@ -574,10 +574,10 @@ object InputPSBTRecord {
       path.path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
-  case class FinalizedScriptSig(scriptSig: ScriptSignature, extra: ByteVector)
+  case class FinalizedScriptSig(scriptSig: ScriptSignature)
       extends InputPSBTRecord {
     override val key: ByteVector = hex"07"
-    override val value: ByteVector = scriptSig.bytes ++ extra
+    override val value: ByteVector = scriptSig.asmBytes
   }
 
   case class FinalizedScriptWitness(scriptWitness: ScriptWitness)
@@ -635,9 +635,8 @@ object InputPSBTRecord {
         require(key.size == 1,
                 s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        val sig = ScriptSignature(value)
-        val extra = value.drop(sig.size)
-        FinalizedScriptSig(sig, extra)
+        val sig = ScriptSignature.fromAsmBytes(value)
+        FinalizedScriptSig(sig)
       case FinalizedScriptWitnessKeyId =>
         require(key.size == 1,
                 s"The key must only contain the 1 byte type, got: ${key.size}")
