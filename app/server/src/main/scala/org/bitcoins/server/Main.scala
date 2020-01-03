@@ -38,13 +38,13 @@ object Main extends App {
   val peerSocket =
     parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
   val peer = Peer.fromSocket(peerSocket)
-
+  val bip39PasswordOpt = None //todo need to prompt user for this
   val startFut = for {
     _ <- conf.initialize()
 
     uninitializedNode <- createNode
     chainApi <- uninitializedNode.chainApiFromDb()
-    wallet <- createWallet(uninitializedNode, chainApi)
+    wallet <- createWallet(uninitializedNode, chainApi, bip39PasswordOpt)
     node <- initializeNode(uninitializedNode, wallet)
 
     _ <- node.start()
@@ -94,13 +94,14 @@ object Main extends App {
 
   private def createWallet(
       nodeApi: Node,
-      chainQueryApi: ChainQueryApi): Future[UnlockedWalletApi] = {
+      chainQueryApi: ChainQueryApi,
+      bip39PasswordOpt: Option[String]): Future[UnlockedWalletApi] = {
     if (hasWallet()) {
       logger.info(s"Using pre-existing wallet")
       val locked = LockedWallet(nodeApi, chainQueryApi)
 
       // TODO change me when we implement proper password handling
-      locked.unlock(BIP39KeyManager.badPassphrase) match {
+      locked.unlock(BIP39KeyManager.badPassphrase, bip39PasswordOpt) match {
         case Right(wallet) =>
           Future.successful(wallet)
         case Left(kmError) =>
@@ -108,8 +109,10 @@ object Main extends App {
       }
     } else {
       logger.info(s"Initializing key manager")
+      val bip39PasswordOpt = None
       val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
-        BIP39KeyManager.initialize(walletConf.kmParams)
+        BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+                                   bip39PasswordOpt = bip39PasswordOpt)
 
       val keyManager = keyManagerE match {
         case Right(keyManager) => keyManager
@@ -120,7 +123,8 @@ object Main extends App {
       logger.info(s"Creating new wallet")
       val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
 
-      Wallet.initialize(wallet = unInitializedWallet)
+      Wallet.initialize(wallet = unInitializedWallet,
+                        bip39PasswordOpt = bip39PasswordOpt)
     }
   }
 

@@ -1,6 +1,7 @@
 package org.bitcoins.keymanager
 
 import org.bitcoins.core.crypto.MnemonicCode
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import scodec.bits.BitVector
 
 /**
@@ -16,21 +17,29 @@ import scodec.bits.BitVector
   *                           can write it down. They should also be prompted
   *                           to confirm at least parts of the code.
   */
-trait KeyManagerCreateApi[T <: KeyManager] {
+trait BIP39KeyManagerCreateApi {
 
   /**
     * $initialize
     */
   final def initialize(
-      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T] =
-    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits, kmParams)
+      kmParams: KeyManagerParams,
+      bip39PasswordOpt: Option[String]): Either[
+    KeyManagerInitializeError,
+    BIP39KeyManager] =
+    initializeWithEntropy(entropy = MnemonicCode.getEntropy256Bits,
+                          bip39PasswordOpt = bip39PasswordOpt,
+                          kmParams = kmParams)
 
   /**
     * $initializeWithEnt
     */
   def initializeWithEntropy(
       entropy: BitVector,
-      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T]
+      bip39PasswordOpt: Option[String],
+      kmParams: KeyManagerParams): Either[
+    KeyManagerInitializeError,
+    BIP39KeyManager]
 
   /**
     * Helper method to initialize a [[KeyManagerCreate$ KeyManager]] with a [[MnemonicCode MnemonicCode]]
@@ -41,8 +50,13 @@ trait KeyManagerCreateApi[T <: KeyManager] {
     */
   final def initializeWithMnemonic(
       mnemonicCode: MnemonicCode,
-      kmParams: KeyManagerParams): Either[KeyManagerInitializeError, T] = {
+      bip39PasswordOpt: Option[String],
+      kmParams: KeyManagerParams): Either[
+    KeyManagerInitializeError,
+    BIP39KeyManager] = {
     val entropy = mnemonicCode.toEntropy
-    initializeWithEntropy(entropy = entropy, kmParams)
+    initializeWithEntropy(entropy = entropy,
+                          bip39PasswordOpt = bip39PasswordOpt,
+                          kmParams = kmParams)
   }
 }

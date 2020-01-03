@@ -1,33 +1,17 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
-
-import play.api.libs.json.JsValue
-import play.api.libs.json.Json
-import org.bitcoins.core.hd.HDCoinType
-import org.bitcoins.core.hd.HDPurpose
-import org.bitcoins.core.hd.HDPath
-import org.bitcoins.core.protocol.BitcoinAddress
+import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.rpc.serializers.JsonSerializers._
-import play.api.libs.json.Reads
-import play.api.libs.json.JsResult
-import play.api.libs.json.JsError
-import play.api.libs.json.JsSuccess
-import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.hd.HDPurposes
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-
+import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
+import org.bitcoins.core.hd._
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
-  MockChainQueryApi,
-  MockNodeApi
-}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{MockChainQueryApi, MockNodeApi}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb}
 import org.scalatest.compatible.Assertion
@@ -150,17 +134,17 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     ConfigFactory.parseString(confStr)
   }
 
-  private def getWallet(config: WalletAppConfig)(
-      implicit ec: ExecutionContext): Future[Wallet] = {
-    val kmE =
-      BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, config.kmParams)
+  private def getWallet(config: WalletAppConfig)(implicit ec: ExecutionContext): Future[Wallet] = {
+    val bip39PasswordOpt = None
+    val kmE = BIP39KeyManager.initializeWithEntropy(entropy = mnemonic.toEntropy,
+      bip39PasswordOpt = bip39PasswordOpt,
+      kmParams = config.kmParams)
     kmE match {
-      case Left(err) =>
-        Future.failed(
-          new RuntimeException(s"Failed to initialize km with err=${err}"))
+      case Left(err) => Future.failed(new RuntimeException(s"Failed to initialize km with err=${err}"))
       case Right(km) =>
         val wallet = Wallet(km, MockNodeApi, MockChainQueryApi)(config, ec)
-        val walletF = Wallet.initialize(wallet)(config, ec)
+        val walletF = Wallet.initialize(wallet = wallet,
+          bip39PasswordOpt = bip39PasswordOpt)(config,ec)
         walletF
     }
   }

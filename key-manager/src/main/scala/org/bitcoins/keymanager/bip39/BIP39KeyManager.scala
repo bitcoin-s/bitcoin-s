@@ -22,11 +22,17 @@ import scala.util.{Failure, Success, Try}
   */
 case class BIP39KeyManager(
     private val mnemonic: MnemonicCode,
-    kmParams: KeyManagerParams)
+    kmParams: KeyManagerParams,
+    private val bip39PasswordOpt: Option[String])
     extends KeyManager {
 
-  private val seed = BIP39Seed.fromMnemonic(mnemonic = mnemonic,
-                                            password = BIP39Seed.EMPTY_PASSWORD)
+  private val seed = bip39PasswordOpt match {
+    case Some(pw) =>
+      BIP39Seed.fromMnemonic(mnemonic = mnemonic, password = pw)
+    case None =>
+      BIP39Seed.fromMnemonic(mnemonic = mnemonic,
+                             password = BIP39Seed.EMPTY_PASSWORD)
+  }
 
   private val privVersion: ExtKeyPrivVersion =
     HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
@@ -53,14 +59,13 @@ case class BIP39KeyManager(
   }
 }
 
-object BIP39KeyManager
-    extends KeyManagerCreateApi[BIP39KeyManager]
-    with BitcoinSLogger {
+object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
   val badPassphrase = AesPassword.fromString("changeMe").get
 
   /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(
       entropy: BitVector,
+      bip39PasswordOpt: Option[String],
       kmParams: KeyManagerParams): Either[
     KeyManagerInitializeError,
     BIP39KeyManager] = {
@@ -99,10 +104,17 @@ object BIP39KeyManager
           logger.info(s"Saved encrypted wallet mnemonic to $mnemonicPath")
         }
 
-      } yield BIP39KeyManager(mnemonic = mnemonic, kmParams = kmParams)
+      } yield {
+        BIP39KeyManager(mnemonic = mnemonic,
+                        kmParams = kmParams,
+                        bip39PasswordOpt = bip39PasswordOpt)
+      }
 
     //verify we can unlock it for a sanity check
-    val unlocked = BIP39LockedKeyManager.unlock(badPassphrase, kmParams)
+    val unlocked = BIP39LockedKeyManager.unlock(passphrase = badPassphrase,
+                                                bip39PasswordOpt =
+                                                  bip39PasswordOpt,
+                                                kmParams = kmParams)
 
     val biasedFinalE: CompatEither[KeyManagerInitializeError, BIP39KeyManager] =
       for {
@@ -133,13 +145,17 @@ object BIP39KeyManager
   /** Reads the key manager from disk and decrypts it with the given password */
   def fromParams(
       kmParams: KeyManagerParams,
-      password: AesPassword): Either[ReadMnemonicError, BIP39KeyManager] = {
+      password: AesPassword,
+      bip39PasswordOpt: Option[String]): Either[
+    ReadMnemonicError,
+    BIP39KeyManager] = {
     val mnemonicCodeE =
       WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, password)
 
     mnemonicCodeE match {
-      case Right(mnemonic) => Right(new BIP39KeyManager(mnemonic, kmParams))
-      case Left(v)         => Left(v)
+      case Right(mnemonic) =>
+        Right(new BIP39KeyManager(mnemonic, kmParams, bip39PasswordOpt))
+      case Left(v) => Left(v)
     }
   }
 }
