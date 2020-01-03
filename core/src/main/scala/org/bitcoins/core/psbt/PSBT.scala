@@ -19,7 +19,6 @@ import org.bitcoins.core.psbt.InputPSBTRecord._
 import org.bitcoins.core.psbt.PSBTGlobalKeyId._
 import org.bitcoins.core.psbt.PSBTInputKeyId._
 import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
@@ -105,6 +104,10 @@ case class PSBT(
     PSBT(global, inputs, outputs)
   }
 
+  /** Finalizes this PSBT if possible
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#input-finalizer]]
+    * @return None if there exists any input which is not ready for signing
+    */
   def finalizePSBT: Option[PSBT] = {
     val finalizedInputOpts = inputMaps.zip(transaction.inputs).map {
       case (inputMap, input) => inputMap.finalize(input)
@@ -1071,6 +1074,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
     getRecords(FinalizedScriptSigKeyId).nonEmpty || getRecords(
       FinalizedScriptWitnessKeyId).nonEmpty
 
+  /** Finalizes this input if possible, returning None if not */
   def finalize(input: TransactionInput): Option[InputPSBTMap] = {
     val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = {
       val witnessUTXOOpt = getRecords[WitnessUTXO](WitnessUTXOKeyId).headOption
@@ -1092,7 +1096,10 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
     scriptPubKeyToSatisfyOpt.flatMap(finalize)
   }
 
+  /** Finalizes this input if possible, returning None if not */
   private def finalize(spkToSatisfy: ScriptPubKey): Option[InputPSBTMap] = {
+
+    /** Removes non-utxo and non-unkown records, replacing them with finalized records */
     def wipeAndAdd(
         scriptSig: ScriptSignature,
         witnessOpt: Option[ScriptWitness] = None): InputPSBTMap = {
@@ -1112,6 +1119,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       InputPSBTMap(records)
     }
 
+    /** Turns the required PartialSignatures into a ScriptSignature and calls wipeAndAdd
+      * @return None if the requirement is not met
+      */
     def collectSigs(
         required: Int,
         constructScriptSig: Seq[(ECDigitalSignature, ECPublicKey)] => ScriptSignature): Option[
@@ -1172,53 +1182,35 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
           wipeAndAdd(scriptSig, Some(witness))
         }
       case conditional: ConditionalScriptPubKey =>
-        // Parse into BinaryTree[Vector[KeyHash]], traverse leaves
         val builder =
           Vector.newBuilder[(
               ConditionalPath,
               Vector[Sha256Hash160Digest],
               RawScriptPubKey)]
 
-        def buildSPK(
-            rawSPK: RawScriptPubKey,
-            cltvNesting: Vector[ScriptNumber]): RawScriptPubKey = {
-          if (cltvNesting.isEmpty) {
-            rawSPK
-          } else {
-            CLTVScriptPubKey(cltvNesting.head,
-                             buildSPK(rawSPK, cltvNesting.tail))
-          }
-        }
-
-        def addLeaves(
-            rawSPK: RawScriptPubKey,
-            path: Vector[Boolean],
-            cltvNesting: Vector[ScriptNumber]): Unit = {
+        /** Traverses the ConditionalScriptPubKey tree for leaves and adds them to builder */
+        def addLeaves(rawSPK: RawScriptPubKey, path: Vector[Boolean]): Unit = {
           rawSPK match {
             case conditional: ConditionalScriptPubKey =>
-              addLeaves(conditional.trueSPK, path :+ true, cltvNesting)
-              addLeaves(conditional.falseSPK, path :+ false, cltvNesting)
+              addLeaves(conditional.trueSPK, path :+ true)
+              addLeaves(conditional.falseSPK, path :+ false)
             case cltv: CLTVScriptPubKey =>
-              addLeaves(cltv.nestedScriptPubKey,
-                        path,
-                        cltvNesting :+ cltv.locktime)
+              addLeaves(cltv.nestedScriptPubKey, path)
             case csv: CSVScriptPubKey =>
-              addLeaves(csv.nestedScriptPubKey, path, cltvNesting)
+              addLeaves(csv.nestedScriptPubKey, path)
             case p2pkh: P2PKHScriptPubKey =>
               builder += ((ConditionalPath.fromBranch(path),
                            Vector(p2pkh.pubKeyHash),
-                           buildSPK(p2pkh, cltvNesting)))
+                           p2pkh))
             case p2pk: P2PKScriptPubKey =>
               val hash = CryptoUtil.sha256Hash160(p2pk.publicKey.bytes)
               builder += ((ConditionalPath.fromBranch(path),
                            Vector(hash),
-                           buildSPK(p2pk, cltvNesting)))
+                           p2pk))
             case multiSig: MultiSignatureScriptPubKey =>
               val hashes = multiSig.publicKeys.toVector.map(pubKey =>
                 CryptoUtil.sha256Hash160(pubKey.bytes))
-              builder += ((ConditionalPath.fromBranch(path),
-                           hashes,
-                           buildSPK(multiSig, cltvNesting)))
+              builder += ((ConditionalPath.fromBranch(path), hashes, multiSig))
             case EmptyScriptPubKey | _: NonStandardScriptPubKey |
                 _: WitnessCommitment =>
               throw new UnsupportedOperationException(
@@ -1226,6 +1218,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
           }
         }
 
+        // Find the conditional leaf with the pubkeys for which sigs are provided
+        // Hashes are used since we only have the pubkey hash in the p2pkh case
         val sigs = getRecords[PartialSignature](PartialSignatureKeyId)
         val hashes = sigs.map(sig => CryptoUtil.sha256Hash160(sig.pubKey.bytes))
         val sortedHashes = hashes.sortBy(_.bytes)
@@ -1233,7 +1227,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
         if (hashes.isEmpty) {
           None
         } else {
-          addLeaves(conditional, Vector.empty, Vector.empty)
+          addLeaves(conditional, Vector.empty)
           val leaves = builder.result().map {
             case (path, hashes, spk) => (path, hashes.sortBy(_.bytes), spk)
           }
@@ -1251,22 +1245,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
           }
         }
       case locktime: LockTimeScriptPubKey =>
-        val nestedFinalizedOpt = finalize(locktime.nestedScriptPubKey)
-
-        nestedFinalizedOpt.map { nestedFinalized =>
-          val nestedScriptSig = nestedFinalized
-            .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
-            .head
-          val otherElements = nestedFinalized.elements.filterNot(
-            _.isInstanceOf[FinalizedScriptSig])
-          val scriptSig = locktime match {
-            case _: CLTVScriptPubKey =>
-              FinalizedScriptSig(CLTVScriptSignature(nestedScriptSig.scriptSig))
-            case _: CSVScriptPubKey =>
-              FinalizedScriptSig(CSVScriptSignature(nestedScriptSig.scriptSig))
-          }
-          InputPSBTMap(otherElements :+ scriptSig)
-        }
+        finalize(locktime.nestedScriptPubKey)
       case _: P2PKHScriptPubKey =>
         collectSigs(required = 1,
                     sigs => P2PKHScriptSignature(sigs.head._1, sigs.head._2))
