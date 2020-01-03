@@ -101,8 +101,8 @@ case class SpendingInfoDAO()(
     database.runVec(filtered.result)
   }
 
-  private val receivedStates: Vector[TxoState] =
-    Vector(TxoState.UnconfirmedReceived, TxoState.ConfirmedReceived)
+  private val receivedStates: Set[TxoState] =
+    Set(TxoState.UnconfirmedReceived, TxoState.ConfirmedReceived)
 
   /** Enumerates all unspent TX outputs in the wallet with the state
     * [[TxoState.UnconfirmedReceived]] or [[TxoState.ConfirmedReceived]] */

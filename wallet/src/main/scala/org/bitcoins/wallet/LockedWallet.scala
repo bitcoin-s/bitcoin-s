@@ -42,10 +42,11 @@ abstract class LockedWallet
           .map {
             case txo: SpendingInfoDb =>
               txo.state match {
-                case TxoState.UnconfirmedReceived | TxoState.ConfirmedReceived =>
+                case TxoState.UnconfirmedReceived |
+                    TxoState.ConfirmedReceived =>
                   txo.output.value
                 case TxoState.UnconfirmedSpent | TxoState.ConfirmedSpent |
-                     TxoState.DoesNotExist =>
+                    TxoState.DoesNotExist =>
                   CurrencyUnits.zero
               }
           }

@@ -203,7 +203,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
         )
         updatedF.map(Some(_))
       case TxoState.ConfirmedSpent | TxoState.UnconfirmedSpent |
-           TxoState.DoesNotExist =>
+          TxoState.DoesNotExist =>
         FutureUtil.none
     }
   }

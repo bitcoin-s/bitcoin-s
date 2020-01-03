@@ -325,7 +325,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
 
   /** Generates a random positive integer */
   def posInt: Int = {
-    Math.abs(scala.util.Random.nextInt())
+    scala.util.Random.between(0, Int.MaxValue)
   }
 }
 
