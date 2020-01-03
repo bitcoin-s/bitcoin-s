@@ -101,7 +101,7 @@ object Main extends App {
       val locked = LockedWallet(nodeApi, chainQueryApi)
 
       // TODO change me when we implement proper password handling
-      locked.unlock(BIP39KeyManager.badPassphrase,bip39PasswordOpt) match {
+      locked.unlock(BIP39KeyManager.badPassphrase, bip39PasswordOpt) match {
         case Right(wallet) =>
           Future.successful(wallet)
         case Left(kmError) =>

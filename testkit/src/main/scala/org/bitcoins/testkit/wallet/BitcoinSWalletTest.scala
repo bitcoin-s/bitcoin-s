@@ -228,7 +228,6 @@ object BitcoinSWalletTest extends WalletLogger {
       Future.successful(Vector.empty)
   }
 
-
   case class WalletWithBitcoind(
       wallet: UnlockedWalletApi,
       bitcoind: BitcoindRpcClient)

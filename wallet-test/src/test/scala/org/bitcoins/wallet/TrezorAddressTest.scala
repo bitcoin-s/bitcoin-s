@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.rpc.serializers.JsonSerializers._
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -11,6 +11,7 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{MockChainQueryApi, MockNodeApi}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb}
 import org.scalatest.compatible.Assertion
@@ -141,7 +142,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     kmE match {
       case Left(err) => Future.failed(new RuntimeException(s"Failed to initialize km with err=${err}"))
       case Right(km) =>
-        val wallet = Wallet(km, NodeApi.NoOp, ChainQueryApi.NoOp)(config, ec)
+        val wallet = Wallet(km, MockNodeApi, MockChainQueryApi)(config, ec)
         val walletF = Wallet.initialize(wallet = wallet,
           bip39PasswordOpt = bip39PasswordOpt)(config,ec)
         walletF
