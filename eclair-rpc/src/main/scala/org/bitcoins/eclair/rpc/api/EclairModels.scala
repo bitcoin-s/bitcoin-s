@@ -286,23 +286,40 @@ object WebSocketEvent {
   ) extends WebSocketEvent
 
   case class PaymentReceived(
-      amount: MilliSatoshis,
       paymentHash: Sha256Digest,
-      fromChannelId: FundedChannelId,
+      parts: Vector[PaymentReceived.Part]
+  ) extends WebSocketEvent
+
+  object PaymentReceived {
+    case class Part(
+        amount: MilliSatoshis,
+        fromChannelId: FundedChannelId,
+        timestamp: FiniteDuration // milliseconds
+    )
+  }
+  case class PaymentFailed(
+      id: PaymentId,
+      paymentHash: Sha256Digest,
+      failures: Vector[String],
       timestamp: FiniteDuration // milliseconds
   ) extends WebSocketEvent
 
-  case class PaymentFailed(paymentHash: Sha256Digest, failures: Vector[String])
-      extends WebSocketEvent
-
   case class PaymentSent(
-      amount: MilliSatoshis,
-      feesPaid: MilliSatoshis,
+      id: PaymentId,
       paymentHash: Sha256Digest,
       paymentPreimage: PaymentPreimage,
-      toChannelId: FundedChannelId,
-      timestamp: FiniteDuration //milliseconds
+      parts: Vector[PaymentSent.Part]
   ) extends WebSocketEvent
+
+  object PaymentSent {
+    case class Part(
+        id: PaymentId,
+        amount: MilliSatoshis,
+        feesPaid: MilliSatoshis,
+        toChannelId: FundedChannelId,
+        timestamp: FiniteDuration // milliseconds
+    )
+  }
 
   case class PaymentSettlingOnchain(
       amount: MilliSatoshis,
