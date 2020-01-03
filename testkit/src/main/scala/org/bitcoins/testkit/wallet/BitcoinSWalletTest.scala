@@ -10,6 +10,7 @@ import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
+import org.bitcoins.keymanager.KeyManagerTestUtil
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -115,9 +116,15 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
       val km = createNewKeyManager()
+      val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
       makeDependentFixture(
-        build = createNewWallet(km, Some(walletConfig), nodeApi, chainQueryApi),
-        destroy = destroyWallet)
+        build = createNewWallet(keyManager = km,
+                                bip39PasswordOpt = bip39PasswordOpt,
+                                extraConfig = Some(walletConfig),
+                                nodeApi = nodeApi,
+                                chainQueryApi = chainQueryApi),
+        destroy = destroyWallet
+      )
   }
 
   /** Fixture for an initialized wallet which produce legacy addresses */
@@ -225,9 +232,12 @@ object BitcoinSWalletTest extends WalletLogger {
       wallet: UnlockedWalletApi,
       bitcoind: BitcoindRpcClient)
 
-  private def createNewKeyManager()(
+  private def createNewKeyManager(
+      bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt)(
       implicit config: BitcoinSAppConfig): BIP39KeyManager = {
-    val keyManagerE = BIP39KeyManager.initialize(config.walletConf.kmParams)
+    val keyManagerE = BIP39KeyManager.initialize(
+      kmParams = config.walletConf.kmParams,
+      bip39PasswordOpt = bip39PasswordOpt)
     keyManagerE match {
       case Right(keyManager) => keyManager
       case Left(err) =>
@@ -243,6 +253,7 @@ object BitcoinSWalletTest extends WalletLogger {
     */
   private def createNewWallet(
       keyManager: BIP39KeyManager,
+      bip39PasswordOpt: Option[String],
       extraConfig: Option[Config],
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(
@@ -262,7 +273,7 @@ object BitcoinSWalletTest extends WalletLogger {
       walletConfig.initialize().flatMap { _ =>
         val wallet =
           Wallet(keyManager, nodeApi, chainQueryApi)(walletConfig, ec)
-        Wallet.initialize(wallet)
+        Wallet.initialize(wallet, bip39PasswordOpt)
       }
     }
 
@@ -272,9 +283,11 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi)(
       implicit config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[UnlockedWalletApi] = {
-    val km = createNewKeyManager()
+    val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
+    val km = createNewKeyManager(bip39PasswordOpt = bip39PasswordOpt)
     createNewWallet(
       keyManager = km,
+      bip39PasswordOpt = bip39PasswordOpt,
       extraConfig = None,
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi)(config, ec)() // get the standard config
