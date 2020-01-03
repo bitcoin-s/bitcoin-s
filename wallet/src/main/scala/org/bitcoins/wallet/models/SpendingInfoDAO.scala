@@ -102,10 +102,10 @@ case class SpendingInfoDAO()(
   }
 
   private val receivedStates: Vector[TxoState] =
-    Vector(TxoState.PendingReceived, TxoState.ConfirmedReceived)
+    Vector(TxoState.UnconfirmedReceived, TxoState.ConfirmedReceived)
 
   /** Enumerates all unspent TX outputs in the wallet with the state
-    * [[TxoState.PendingReceived]] or [[TxoState.ConfirmedReceived]] */
+    * [[TxoState.UnconfirmedReceived]] or [[TxoState.ConfirmedReceived]] */
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
     val query = table.filter(_.state.inSet(receivedStates))
 

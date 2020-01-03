@@ -9,11 +9,11 @@ class TxoStateTest extends BitcoinSUnitTest {
   it must "read from string" in {
     TxoState.fromString("doesnotexist").get must be (TxoState.DoesNotExist)
 
-    TxoState.fromString("PendingReceived").get must be (TxoState.PendingReceived)
+    TxoState.fromString("PendingReceived").get must be (TxoState.UnconfirmedReceived)
 
     TxoState.fromString("ConfirmedReceived").get must be (TxoState.ConfirmedReceived)
 
-    TxoState.fromString("PendingSpent").get must be (TxoState.PendingSpent)
+    TxoState.fromString("PendingSpent").get must be (TxoState.UnconfirmedSpent)
 
     TxoState.fromString("ConfirmedSpent").get must be (TxoState.ConfirmedSpent)
   }

@@ -192,8 +192,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private val markAsPendingSpent: SpendingInfoDb => Future[
     Option[SpendingInfoDb]] = { out: SpendingInfoDb =>
     out.state match {
-      case TxoState.ConfirmedReceived | TxoState.PendingReceived =>
-        val updated = out.copyWithState(state = TxoState.PendingSpent)
+      case TxoState.ConfirmedReceived | TxoState.UnconfirmedReceived =>
+        val updated = out.copyWithState(state = TxoState.UnconfirmedSpent)
         val updatedF =
           spendingInfoDAO.update(updated)
         updatedF.foreach(
@@ -202,8 +202,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
               s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}")
         )
         updatedF.map(Some(_))
-      case TxoState.ConfirmedSpent | TxoState.PendingSpent |
-          TxoState.DoesNotExist =>
+      case TxoState.ConfirmedSpent | TxoState.UnconfirmedSpent |
+           TxoState.DoesNotExist =>
         FutureUtil.none
     }
   }
@@ -345,7 +345,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
                       // TODO is this correct?
                       //we probably need to incorporate what
                       //what our wallet's desired confirmation number is
-                      state = TxoState.PendingReceived,
+                      state = TxoState.UnconfirmedReceived,
                       blockHash = blockHashOpt
                     ))
               }
