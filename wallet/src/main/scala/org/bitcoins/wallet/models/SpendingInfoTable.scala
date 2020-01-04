@@ -133,10 +133,20 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   def toUTXOSpendingInfo(
       account: AccountDb,
       keyManager: BIP39KeyManager,
-      network: NetworkParameters): BitcoinUTXOSpendingInfo = {
+      networkParameters: NetworkParameters): BitcoinUTXOSpendingInfo = {
 
     val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
 
+    toUTXOSpendingInfo(account = account,
+                       sign = sign,
+                       networkParameters = networkParameters)
+  }
+
+  def toUTXOSpendingInfo(
+      account: AccountDb,
+      sign: Sign,
+      networkParameters: NetworkParameters
+  ): BitcoinUTXOSpendingInfo = {
     BitcoinUTXOSpendingInfo(
       outPoint,
       output,

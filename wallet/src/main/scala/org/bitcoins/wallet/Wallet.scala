@@ -1,15 +1,12 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil
@@ -39,50 +36,15 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       feeRate: FeeUnit,
       fromAccount: AccountDb): Future[Transaction] = {
     logger.info(s"Sending $amount to $address at feerate $feeRate")
+    val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
-      change <- getNewChangeAddress(fromAccount)
-      walletUtxos <- listUtxos()
-      txBuilder <- {
-        val destinations = Vector(
-          TransactionOutput(amount, address.scriptPubKey))
-
-        // currencly just grabs the biggest utxos until it finds enough
-        val utxos: Vector[BitcoinUTXOSpendingInfo] =
-          CoinSelector
-            .accumulateLargest(walletUtxos, destinations, feeRate)
-            .map(
-              _.toUTXOSpendingInfo(account = fromAccount,
-                                   keyManager = keyManager,
-                                   network = networkParameters))
-
-        logger.info({
-          val utxosStr = utxos
-            .map { utxo =>
-              import utxo.outPoint
-              s"${outPoint.txId.hex}:${outPoint.vout.toInt}"
-            }
-            .mkString(", ")
-          s"Spending UTXOs: $utxosStr"
-        })
-
-        utxos.zipWithIndex.foreach {
-          case (utxo, index) =>
-            logger.info(s"UTXO $index details: ${utxo.output}")
-        }
-
-        networkParameters match {
-          case b: BitcoinNetwork =>
-            BitcoinTxBuilder(destinations = destinations,
-                             utxos = utxos,
-                             feeRate = feeRate,
-                             changeSPK = change.scriptPubKey,
-                             network = b)
-        }
-
-      }
+      txBuilder <- fundRawTransactionInternal(
+        destinations = Vector(destination),
+        feeRate = feeRate,
+        fromAccount = fromAccount,
+        keyManagerOpt = Some(keyManager))
       signed <- txBuilder.sign
       ourOuts <- findOurOuts(signed)
-      // TODO internal
       _ <- processOurTransaction(signed, blockHashOpt = None)
     } yield {
       logger.debug(

@@ -10,8 +10,9 @@ import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
@@ -22,6 +23,7 @@ import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /**
   * API for the wallet project.
@@ -47,6 +49,14 @@ sealed trait WalletApi {
   * API for a locked wallet
   */
 trait LockedWalletApi extends WalletApi {
+
+  /** Creates a raw UNSIGNED transaction that sends money to the given destination with the desired fee rate and a changeSPk
+    * attached to the unsigned transaction.
+    * */
+  def fundRawTransaction(
+      destinations: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction]
 
   /**
     * Retrieves a bloom filter that that can be sent to a P2P network node
@@ -154,6 +164,19 @@ trait LockedWalletApi extends WalletApi {
     *         is returned, otherwise `None`
     */
   def getAddressInfo(address: BitcoinAddress): Future[Option[AddressInfo]]
+
+  def getAddressInfo(
+      spendingInfoDb: SpendingInfoDb): Future[Option[AddressInfo]] = {
+    val addressT = BitcoinAddress.fromScriptPubKey(
+      spk = spendingInfoDb.output.scriptPubKey,
+      np = networkParameters)
+    addressT match {
+      case Success(addr) =>
+        getAddressInfo(addr)
+      case Failure(_) =>
+        FutureUtil.none
+    }
+  }
 
   /** Generates a new change address */
   protected[wallet] def getNewChangeAddress(
