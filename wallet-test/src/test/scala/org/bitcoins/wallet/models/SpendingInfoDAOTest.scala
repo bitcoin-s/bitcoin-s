@@ -1,18 +1,12 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.transaction.{TransactionOutPoint, TransactionOutput}
-import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.wallet.Wallet
-import org.bitcoins.testkit.wallet.WalletTestUtil
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.fixtures.WalletDAOs
-import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.bitcoins.core.protocol.transaction.TransactionInput
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.BaseTransaction
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, TransactionInput}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkit.fixtures.{WalletDAOFixture, WalletDAOs}
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
 class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "SpendingInfoDAO"
@@ -81,10 +75,10 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val WalletDAOs(_, _, spendingInfoDAO) = daos
     for {
       utxo <- WalletTestUtil.insertSegWitUTXO(daos)
-      updated <- spendingInfoDAO.update(utxo.copy(state = TxoState.UnconfirmedReceived))
+      updated <- spendingInfoDAO.update(utxo.copy(state = TxoState.PendingConfirmationsReceived))
       unspent <- spendingInfoDAO.findAllUnspent()
       updated <- spendingInfoDAO.updateTxoState(outputs = unspent.map(_.output),
-        state = TxoState.UnconfirmedSpent)
+        state = TxoState.PendingConfirmationsSpent)
       unspentPostUpdate <- spendingInfoDAO.findAllUnspent()
     } yield {
       assert(unspent.nonEmpty)
@@ -97,7 +91,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val WalletDAOs(_, _, spendingInfoDAO) = daos
     for {
       utxo <- WalletTestUtil.insertLegacyUTXO(daos)
-      state = utxo.copy(state = TxoState.UnconfirmedReceived)
+      state = utxo.copy(state = TxoState.PendingConfirmationsReceived)
       updated <- spendingInfoDAO.update(state)
       unspent <- spendingInfoDAO.findAllUnspent()
     } yield {
@@ -112,7 +106,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val WalletDAOs(_, _, spendingInfoDAO) = daos
     for {
       utxo <- WalletTestUtil.insertLegacyUTXO(daos)
-      state = utxo.copy(state = TxoState.UnconfirmedSpent)
+      state = utxo.copy(state = TxoState.PendingConfirmationsSpent)
       updated <- spendingInfoDAO.update(state)
       unspent <- spendingInfoDAO.findAllUnspent()
     } yield assert(unspent.isEmpty)

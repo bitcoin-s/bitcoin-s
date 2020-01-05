@@ -13,21 +13,21 @@ object TxoState {
   final case object DoesNotExist extends TxoState
 
   /** Means we have received funds to this utxo, but they are not confirmed */
-  final case object UnconfirmedReceived extends ReceivedState
+  final case object PendingConfirmationsReceived extends ReceivedState
 
   /** Means we have received funds and they are fully confirmed for this utxo */
   final case object ConfirmedReceived extends ReceivedState
 
   /** Means we have spent this utxo, but it is not fully confirmed */
-  final case object UnconfirmedSpent extends SpentState
+  final case object PendingConfirmationsSpent extends SpentState
 
   /** Means we have spent this utxo, and it is fully confirmed */
   final case object ConfirmedSpent extends SpentState
 
   val all: Vector[TxoState] = Vector(DoesNotExist,
-                                     UnconfirmedReceived,
+                                     PendingConfirmationsReceived,
                                      ConfirmedReceived,
-                                     UnconfirmedSpent,
+                                     PendingConfirmationsSpent,
                                      ConfirmedSpent)
 
   def fromString(str: String): Option[TxoState] = {
