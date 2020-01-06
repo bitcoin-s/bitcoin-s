@@ -379,21 +379,15 @@ sealed abstract class P2SHSigner extends BitcoinSigner[P2SHSpendingInfo] {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
     } else {
-
       val (_, output, inputIndex, _) =
         relevantInfo(spendingInfo, unsignedTx)
 
-      if (spendingInfoToSatisfy
-            .isInstanceOf[P2SHNestedSegwitV0UTXOSpendingInfo] && spendingInfoToSatisfy.redeemScript
-            .isInstanceOf[P2WPKHWitnessSPKV0]) {
-        val p2wpkh =
-          spendingInfoToSatisfy.redeemScript.asInstanceOf[P2WPKHWitnessSPKV0]
-        val pubKey = spendingInfo.signers.head.publicKey
-        if (P2WPKHWitnessSPKV0(pubKey) != p2wpkh) {
-          Future.fromTry(TxBuilderError.WrongPublicKey)
-        } else {
+      (spendingInfoToSatisfy, spendingInfoToSatisfy.redeemScript) match {
+        case (_: P2SHNestedSegwitV0UTXOSpendingInfo,
+              p2wpkh: P2WPKHWitnessSPKV0) =>
+          val witTx = WitnessTransaction.toWitnessTx(unsignedTx)
           val p2shScriptSig = P2SHScriptSignature(p2wpkh)
-          val oldInput = unsignedTx.inputs(inputIndex.toInt)
+          val oldInput = witTx.inputs(inputIndex.toInt)
           val updatedInput = TransactionInput(oldInput.previousOutput,
                                               p2shScriptSig,
                                               oldInput.sequence)
@@ -403,28 +397,105 @@ sealed abstract class P2SHSigner extends BitcoinSigner[P2SHSpendingInfo] {
             WitnessTransaction.toWitnessTx(u)
           }
 
+          val wtxSigComp = WitnessTxSigComponentP2SH(transaction = uwtx,
+                                                     inputIndex = inputIndex,
+                                                     output = output,
+                                                     flags =
+                                                       Policy.standardFlags)
+
+          val hashForSig = TransactionSignatureSerializer.hashForSignature(
+            txSigComponent = wtxSigComp,
+            hashType = spendingInfo.hashType)
+
+          //sign the hash
+          val signature: ECDigitalSignature = {
+            if (isDummySignature) {
+              EmptyDigitalSignature
+            } else {
+              val sig = spendingInfo.signers.head.sign(hashForSig.bytes)
+              //append hash type
+              ECDigitalSignature.fromBytes(
+                sig.bytes.:+(spendingInfo.hashType.byte))
+            }
+          }
+          val p2wpkhWit =
+            P2WPKHWitnessV0(spendingInfo.signers.head.publicKey, signature)
+          val updatedWit = uwtx.updateWitness(inputIndex.toInt, p2wpkhWit)
+
           Future.successful(
-            WitnessTxSigComponentP2SH(transaction = uwtx,
-                                      inputIndex = inputIndex,
-                                      output = output,
-                                      flags = Policy.standardFlags))
-        }
-      } else {
-        val signedSigComponentF = BitcoinSigner.sign(
-          spendingInfoToSatisfy.nestedSpendingInfo,
-          unsignedTx,
-          isDummySignature,
-          spendingInfoToSatisfy.nestedSpendingInfo)
+            P2SHTxSigComponent(updatedWit, inputIndex, output, flags))
+        case (nestedSpendingInfo: P2SHNestedSegwitV0UTXOSpendingInfo,
+              _: P2WSHWitnessSPKV0) =>
+          val outpoint = spendingInfo.outPoint
+          val redeemScript = nestedSpendingInfo.redeemScript
+          val oldInput = unsignedTx.inputs(inputIndex.toInt)
 
-        val scriptSigF = signedSigComponentF.map { signedSigComponent =>
-          P2SHScriptSignature(signedSigComponent.scriptSignature,
-                              spendingInfoToSatisfy.redeemScript)
-        }
+          val input =
+            TransactionInput(outpoint, EmptyScriptSignature, oldInput.sequence)
 
-        updateScriptSigInSigComponent(unsignedTx,
-                                      inputIndex.toInt,
-                                      output,
-                                      scriptSigF)
+          val updatedTx =
+            unsignedTx.updateInput(inputIndex.toInt, input)
+
+          val updatedOutput =
+            TransactionOutput(spendingInfo.amount, redeemScript)
+
+          val updatedUTXOInfo = BitcoinUTXOSpendingInfo(
+            outpoint,
+            updatedOutput,
+            spendingInfo.signers,
+            None,
+            spendingInfo.scriptWitnessOpt,
+            spendingInfo.hashType,
+            spendingInfo.conditionalPath)
+
+          val signedTxEither =
+            BitcoinSigner
+              .sign(updatedUTXOInfo, updatedTx, isDummySignature)
+              .map(_.transaction)
+
+          signedTxEither.map { signedTx =>
+            val i = signedTx.inputs(inputIndex.toInt)
+
+            val p2sh =
+              P2SHScriptSignature(i.scriptSignature, redeemScript)
+
+            val signedInput =
+              TransactionInput(i.previousOutput, p2sh, i.sequence)
+
+            val signedInputs =
+              signedTx.inputs.updated(inputIndex.toInt, signedInput)
+
+            val finalTx = signedTx match {
+              case btx: BaseTransaction =>
+                BaseTransaction(btx.version,
+                                signedInputs,
+                                btx.outputs,
+                                btx.lockTime)
+              case wtx: WitnessTransaction =>
+                WitnessTransaction(wtx.version,
+                                   signedInputs,
+                                   wtx.outputs,
+                                   wtx.lockTime,
+                                   wtx.witness)
+            }
+            P2SHTxSigComponent(finalTx, inputIndex, output, flags)
+          }
+        case (_, _) =>
+          val signedSigComponentF = BitcoinSigner.sign(
+            spendingInfoToSatisfy.nestedSpendingInfo,
+            unsignedTx,
+            isDummySignature,
+            spendingInfoToSatisfy.nestedSpendingInfo)
+
+          val scriptSigF = signedSigComponentF.map { signedSigComponent =>
+            P2SHScriptSignature(signedSigComponent.scriptSignature,
+                                spendingInfoToSatisfy.redeemScript)
+          }
+
+          updateScriptSigInSigComponent(unsignedTx,
+                                        inputIndex.toInt,
+                                        output,
+                                        scriptSigF)
       }
     }
   }

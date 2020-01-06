@@ -62,7 +62,7 @@ sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
   )
   require(
     output.scriptPubKey
-      .isInstanceOf[P2SHScriptSignature],
+      .isInstanceOf[P2SHScriptPubKey],
     "Must have P2SHScriptPubKey for P2SH, got: " + output.scriptPubKey
   )
 
