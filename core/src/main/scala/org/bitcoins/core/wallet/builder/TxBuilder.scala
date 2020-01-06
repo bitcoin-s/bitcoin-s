@@ -28,8 +28,6 @@ import org.bitcoins.core.wallet.utxo.{
   P2PKHSpendingInfo,
   P2PKSpendingInfo,
   P2PKWithTimeoutSpendingInfo,
-  P2SHNestedSegwitV0UTXOSpendingInfo,
-  P2SHNoNestSpendingInfo,
   P2SHSpendingInfo,
   P2WPKHV0SpendingInfo,
   P2WSHV0SpendingInfo,

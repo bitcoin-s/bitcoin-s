@@ -50,7 +50,7 @@ sealed abstract class TxSigComponent {
   * P2SH(witness script) [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]
   */
 sealed abstract class BaseTxSigComponent extends TxSigComponent {
-  override def sigVersion = SigVersionBase
+  override def sigVersion: SignatureVersion = SigVersionBase
 }
 
 sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
@@ -84,13 +84,13 @@ sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
   */
 sealed trait WitnessTxSigComponent extends TxSigComponent {
 
-override def transaction: WitnessTransaction
+  override def transaction: WitnessTransaction
 
   def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt)
 
   def witnessVersion: WitnessVersion
 
-  override def sigVersion = SigVersionWitnessV0
+  override def sigVersion: SignatureVersion = SigVersionWitnessV0
 }
 
 /** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
@@ -107,7 +107,9 @@ sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
 
 /** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
   * against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
-sealed abstract class WitnessTxSigComponentP2SH extends P2SHTxSigComponent with WitnessTxSigComponent {
+sealed abstract class WitnessTxSigComponentP2SH
+    extends P2SHTxSigComponent
+    with WitnessTxSigComponent {
   override def scriptPubKey: P2SHScriptPubKey =
     output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
@@ -138,7 +140,7 @@ sealed abstract class WitnessTxSigComponentP2SH extends P2SHTxSigComponent with 
     case Failure(err) => throw err
   }
 
-  override def amount = output.value
+  override def amount: CurrencyUnit = output.value
 
 }
 
@@ -161,9 +163,9 @@ sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
     * rebuild the scriptPubKey above */
   def witnessScriptPubKey: WitnessScriptPubKey
 
-  override def sigVersion = SigVersionWitnessV0
+  override def sigVersion: SignatureVersion = SigVersionWitnessV0
 
-  def witnessVersion = witnessScriptPubKey.witnessVersion
+  def witnessVersion: WitnessVersion = witnessScriptPubKey.witnessVersion
 
 }
 
