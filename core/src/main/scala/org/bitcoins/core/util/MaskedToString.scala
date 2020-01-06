@@ -3,7 +3,7 @@ package org.bitcoins.core.util
 /** Meant to provide a simple trait that
   * masks the default to string for sensitive classes */
 trait MaskedToString {
-  override def toString: String = {
+  final override def toString: String = {
     s"Masked(${getClass.getSimpleName})"
   }
 
