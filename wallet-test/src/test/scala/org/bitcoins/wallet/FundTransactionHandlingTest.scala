@@ -8,7 +8,7 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.FundedWallet
 import org.scalatest.FutureOutcome
 
-class FundTransactionTest extends BitcoinSWalletTest {
+class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
   override type FixtureParam = FundedWallet
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
@@ -98,5 +98,10 @@ class FundTransactionTest extends BitcoinSWalletTest {
     recoverToSucceededIf[RuntimeException] {
       fundedTxF
     }
+  }
+
+  it must "fund from a specific account" ignore { _: FundedWallet =>
+    assert(false)
+
   }
 }

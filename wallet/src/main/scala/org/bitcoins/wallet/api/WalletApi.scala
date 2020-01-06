@@ -50,25 +50,6 @@ sealed trait WalletApi {
   */
 trait LockedWalletApi extends WalletApi {
 
-  def fundRawTransaction(
-      destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit): Future[Transaction] = {
-    for {
-      account <- getDefaultAccount()
-      funded <- fundRawTransaction(destinations = destinations,
-                                   feeRate = feeRate,
-                                   fromAccount = account)
-    } yield funded
-  }
-
-  /** Creates a raw UNSIGNED transaction that sends money to the given destination with the desired fee rate and a changeSPk
-    * attached to the unsigned transaction.
-    * */
-  def fundRawTransaction(
-      destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction]
-
   /**
     * Retrieves a bloom filter that that can be sent to a P2P network node
     * to get information about our transactions, pubkeys and scripts.

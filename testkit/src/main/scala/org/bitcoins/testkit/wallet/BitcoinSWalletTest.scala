@@ -22,7 +22,7 @@ import org.bitcoins.testkit.util.{FileUtil, TransactionTestUtil}
 import org.bitcoins.wallet.api.{LockedWalletApi, UnlockedWalletApi}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.wallet.{LockedWallet, Wallet, WalletLogger}
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -305,7 +305,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** This wallet should have a total of 6 bitcoin in it
     * spread across 3 utxos that have values 1, 2, 3 bitcoins */
-  case class FundedWallet(wallet: LockedWalletApi)
+  case class FundedWallet(wallet: LockedWallet)
 
   /** This creates a wallet that is funded that is not paired to a bitcoind instance. */
   def createFundedWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
@@ -375,8 +375,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
   def fundWallet(wallet: UnlockedWalletApi)(
-      implicit ec: ExecutionContext,
-      config: WalletAppConfig): Future[FundedWallet] = {
+      implicit ec: ExecutionContext): Future[FundedWallet] = {
     //get three addresses
     val addressesF = Future.sequence(Vector.fill(3) {
       //this Thread.sleep is needed because of
@@ -412,7 +411,7 @@ object BitcoinSWalletTest extends WalletLogger {
       _ = require(
         balance == 6.bitcoin,
         s"Funding wallet fixture failed ot fund the wallet, got balance=${balance} expected=${expectedAmt}")
-    } yield FundedWallet(fundedWallet)
+    } yield FundedWallet(fundedWallet.asInstanceOf[LockedWallet])
   }
 
   /** Funds the given wallet with money from the given bitcoind */
