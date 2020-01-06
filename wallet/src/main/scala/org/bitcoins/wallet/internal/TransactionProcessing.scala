@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
@@ -160,7 +161,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             outputsBeingSpent <- spendingInfoDAO.findOutputsBeingSpent(
               transaction)
             processed <- FutureUtil.sequentially(outputsBeingSpent)(
-              markAsSpentIfUnspent)
+              markAsPendingSpent)
           } yield processed.flatten.toVector
 
         }
@@ -188,19 +189,23 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   /** If the given UTXO is marked as unspent, updates
     * its spending status. Otherwise returns `None`.
     */
-  private val markAsSpentIfUnspent: SpendingInfoDb => Future[
-    Option[SpendingInfoDb]] = { out =>
-    if (out.spent) {
-      FutureUtil.none
-    } else {
-      val updatedF =
-        spendingInfoDAO.update(out.copyWithSpent(spent = true))
-      updatedF.foreach(
-        updated =>
-          logger.debug(
-            s"Marked utxo=${updated.toHumanReadableString} as spent=${updated.spent}")
-      )
-      updatedF.map(Some(_))
+  private val markAsPendingSpent: SpendingInfoDb => Future[
+    Option[SpendingInfoDb]] = { out: SpendingInfoDb =>
+    out.state match {
+      case TxoState.ConfirmedReceived | TxoState.PendingConfirmationsReceived =>
+        val updated =
+          out.copyWithState(state = TxoState.PendingConfirmationsSpent)
+        val updatedF =
+          spendingInfoDAO.update(updated)
+        updatedF.foreach(
+          updated =>
+            logger.debug(
+              s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}")
+        )
+        updatedF.map(Some(_))
+      case TxoState.ConfirmedSpent | TxoState.PendingConfirmationsSpent |
+          TxoState.DoesNotExist =>
+        FutureUtil.none
     }
   }
 
@@ -212,15 +217,19 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   private def processUtxo(
       transaction: Transaction,
       index: Int,
-      spent: Boolean,
-      blockHash: Option[DoubleSha256DigestBE]): Future[SpendingInfoDb] =
-    addUtxo(transaction, UInt32(index), spent = spent, blockHash = blockHash)
-      .flatMap {
-        case AddUtxoSuccess(utxo) => Future.successful(utxo)
-        case err: AddUtxoError =>
-          logger.error(s"Could not add UTXO", err)
-          Future.failed(err)
-      }
+      state: TxoState,
+      blockHash: Option[DoubleSha256DigestBE]): Future[SpendingInfoDb] = {
+    val addUtxoF = addUtxo(transaction = transaction,
+                           vout = UInt32(index),
+                           state = state,
+                           blockHash = blockHash)
+    addUtxoF.flatMap {
+      case AddUtxoSuccess(utxo) => Future.successful(utxo)
+      case err: AddUtxoError =>
+        logger.error(s"Could not add UTXO", err)
+        Future.failed(err)
+    }
+  }
 
   private case class OutputWithIndex(output: TransactionOutput, index: Int)
 
@@ -331,11 +340,15 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
               .sequence {
                 xs.map(
                   out =>
-                    processUtxo(transaction,
-                                out.index,
-                                // TODO is this correct?
-                                spent = false,
-                                blockHash = blockHashOpt))
+                    processUtxo(
+                      transaction,
+                      out.index,
+                      // TODO is this correct?
+                      //we probably need to incorporate what
+                      //what our wallet's desired confirmation number is
+                      state = TxoState.PendingConfirmationsReceived,
+                      blockHash = blockHashOpt
+                    ))
               }
 
           addUTXOsFut
