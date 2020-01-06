@@ -492,6 +492,12 @@ object PSBT extends Factory[PSBT] {
       implicit ec: ExecutionContext): Future[PSBT] = {
     require(spendingInfos.length == unsignedTx.inputs.length,
             "Must have a UTXOSpendingInfo for every input")
+    require(
+      spendingInfos
+        .zip(unsignedTx.inputs)
+        .forall { case (info, input) => info.outPoint == input.previousOutput },
+      "UTXOSpendingInfos must correspond to transaction inputs"
+    )
     val globalMap = GlobalPSBTMap(
       Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
     val inputMapFs = spendingInfos.map(info =>
@@ -999,7 +1005,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       txIn: TransactionInput,
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
     val signersVec = getRecords[PartialSignature](PartialSignatureKeyId)
-    val signers = signersVec.map(sig => Sign.withSig(sig.signature, sig.pubKey))
+    val signers =
+      signersVec.map(sig => Sign.constant(sig.signature, sig.pubKey))
 
     toUTXOSpendingInfoUsingSigners(txIn, signers, conditionalPath)
   }
@@ -1117,7 +1124,7 @@ object InputPSBTMap {
     }
   }
 
-  def empty: InputPSBTMap = InputPSBTMap(Vector.empty)
+  val empty: InputPSBTMap = InputPSBTMap(Vector.empty)
 
   def fromBytes(bytes: ByteVector): InputPSBTMap = {
     @tailrec
@@ -1158,7 +1165,7 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
 
 object OutputPSBTMap {
 
-  def empty: OutputPSBTMap = OutputPSBTMap(Vector.empty)
+  val empty: OutputPSBTMap = OutputPSBTMap(Vector.empty)
 
   def fromBytes(bytes: ByteVector): OutputPSBTMap = {
     @tailrec

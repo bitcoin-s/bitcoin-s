@@ -45,7 +45,7 @@ object Sign {
     SignImpl(signFunction, pubKey)
   }
 
-  def withSig(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
+  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
     SignImpl(_ => Future.successful(sig), pubKey)
   }
 
