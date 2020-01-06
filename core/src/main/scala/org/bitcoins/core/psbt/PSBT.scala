@@ -356,7 +356,7 @@ case class PSBT(
             .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
             .headOption
           val scriptSig =
-            scriptSigOpt.map(_.scriptSig).getOrElse(ScriptSignature.empty)
+            scriptSigOpt.map(_.scriptSig).getOrElse(EmptyScriptSignature)
           TransactionInput(input.previousOutput, scriptSig, input.sequence)
       }
 
@@ -1113,7 +1113,7 @@ object InputPSBTMap {
 
     sigComponentF.map { sigComponent =>
       val scriptSig =
-        FinalizedScriptSig(sigComponent.scriptSignature, ByteVector.empty)
+        FinalizedScriptSig(sigComponent.scriptSignature)
       sigComponent.transaction match {
         case _: BaseTransaction => InputPSBTMap(Vector(scriptSig))
         case wtx: WitnessTransaction =>
