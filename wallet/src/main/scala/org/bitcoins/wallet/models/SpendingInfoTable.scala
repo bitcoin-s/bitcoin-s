@@ -10,7 +10,11 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfo, ConditionalPath}
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfo,
+  ConditionalPath,
+  TxoState
+}
 import org.bitcoins.db.{DbRowAutoInc, TableAutoInc}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import slick.jdbc.SQLiteProfile.api._
@@ -26,7 +30,7 @@ case class SegwitV0SpendingInfo(
     privKeyPath: SegWitHDPath,
     scriptWitness: ScriptWitness,
     txid: DoubleSha256DigestBE,
-    spent: Boolean,
+    state: TxoState,
     id: Option[Long] = None,
     blockHash: Option[DoubleSha256DigestBE]
 ) extends SpendingInfoDb {
@@ -36,8 +40,8 @@ case class SegwitV0SpendingInfo(
   override type PathType = SegWitHDPath
   override type SpendingInfoType = SegwitV0SpendingInfo
 
-  override def copyWithSpent(spent: Boolean): SegwitV0SpendingInfo =
-    copy(spent = spent)
+  override def copyWithState(state: TxoState): SegwitV0SpendingInfo =
+    copy(state = state)
 
   override def copyWithId(id: Long): SegwitV0SpendingInfo =
     copy(id = Some(id))
@@ -55,7 +59,7 @@ case class LegacySpendingInfo(
     outPoint: TransactionOutPoint,
     output: TransactionOutput,
     privKeyPath: LegacyHDPath,
-    spent: Boolean,
+    state: TxoState,
     txid: DoubleSha256DigestBE,
     blockHash: Option[DoubleSha256DigestBE],
     id: Option[Long] = None
@@ -69,8 +73,8 @@ case class LegacySpendingInfo(
   override def copyWithId(id: Long): LegacySpendingInfo =
     copy(id = Some(id))
 
-  override def copyWithSpent(spent: Boolean): LegacySpendingInfo =
-    copy(spent = spent)
+  override def copyWithState(state: TxoState): LegacySpendingInfo =
+    copy(state = state)
 
   override def copyWithBlockHash(
       blockHash: DoubleSha256DigestBE): LegacySpendingInfo =
@@ -104,8 +108,8 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
   val hashType: HashType = HashType.sigHashAll
 
-  /** Whether or not this TXO is spent from our wallet */
-  def spent: Boolean
+  /** The current [[org.bitcoins.core.wallet.utxo.TxoState state]] of the utxo */
+  def state: TxoState
 
   /** The TXID of the transaction this output was received in */
   def txid: DoubleSha256DigestBE
@@ -118,7 +122,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     s"${outPoint.txId.flip.hex}:${outPoint.vout.toInt}"
 
   /** Updates the `spent` field */
-  def copyWithSpent(spent: Boolean): SpendingInfoType
+  def copyWithState(state: TxoState): SpendingInfoType
 
   /** Updates the `blockHash` field */
   def copyWithBlockHash(blockHash: DoubleSha256DigestBE): SpendingInfoType
@@ -161,7 +165,7 @@ case class SpendingInfoTable(tag: Tag)
 
   def txid: Rep[DoubleSha256DigestBE] = column("txid")
 
-  def spent: Rep[Boolean] = column("spent")
+  def state: Rep[TxoState] = column("txo_state")
 
   def scriptPubKey: Rep[ScriptPubKey] = column("script_pub_key")
 
@@ -192,7 +196,7 @@ case class SpendingInfoTable(tag: Tag)
       HDPath,
       Option[ScriptPubKey], // ReedemScript
       Option[ScriptWitness],
-      Boolean, // spent
+      TxoState, // state
       DoubleSha256DigestBE, // TXID
       Option[DoubleSha256DigestBE] // block hash
   )
@@ -205,7 +209,7 @@ case class SpendingInfoTable(tag: Tag)
           path: SegWitHDPath,
           None, // ReedemScript
           Some(scriptWitness),
-          spent,
+          state,
           txid,
           blockHash) =>
       SegwitV0SpendingInfo(
@@ -214,7 +218,7 @@ case class SpendingInfoTable(tag: Tag)
         privKeyPath = path,
         scriptWitness = scriptWitness,
         id = id,
-        spent = spent,
+        state = state,
         txid = txid,
         blockHash = blockHash
       )
@@ -226,14 +230,14 @@ case class SpendingInfoTable(tag: Tag)
           path: LegacyHDPath,
           None, // RedeemScript
           None, // ScriptWitness
-          spent,
+          state,
           txid,
           blockHash) =>
       LegacySpendingInfo(outPoint = outpoint,
                          output = TransactionOutput(value, spk),
                          privKeyPath = path,
                          id = id,
-                         spent = spent,
+                         state = state,
                          txid = txid,
                          blockHash = blockHash)
     case (id,
@@ -263,7 +267,7 @@ case class SpendingInfoTable(tag: Tag)
          utxo.privKeyPath,
          utxo.redeemScriptOpt,
          utxo.scriptWitnessOpt,
-         utxo.spent,
+         utxo.state,
          utxo.txid,
          utxo.blockHash))
 
@@ -275,7 +279,7 @@ case class SpendingInfoTable(tag: Tag)
      privKeyPath,
      redeemScriptOpt,
      scriptWitnessOpt,
-     spent,
+     state,
      txid,
      blockHash) <> (fromTuple, toTuple)
 }

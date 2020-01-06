@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.util.EitherUtil
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
 import org.bitcoins.wallet.{LockedWallet, WalletLogger}
@@ -49,7 +50,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
       txid: DoubleSha256DigestBE,
-      spent: Boolean,
+      state: TxoState,
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
       addressDb: AddressDb,
@@ -58,7 +59,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     val utxo: SpendingInfoDb = addressDb match {
       case segwitAddr: SegWitAddressDb =>
         SegwitV0SpendingInfo(
-          spent = spent,
+          state = state,
           txid = txid,
           outPoint = outPoint,
           output = output,
@@ -67,7 +68,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           blockHash = blockHash
         )
       case LegacyAddressDb(path, _, _, _, _) =>
-        LegacySpendingInfo(spent = spent,
+        LegacySpendingInfo(state = state,
                            txid = txid,
                            outPoint = outPoint,
                            output = output,
@@ -88,13 +89,12 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   }
 
   /**
-    * Adds the provided UTXO to the wallet, making it
-    * available for spending.
+    * Adds the provided UTXO to the wallet
     */
   protected def addUtxo(
       transaction: Transaction,
       vout: UInt32,
-      spent: Boolean,
+      state: TxoState,
       blockHash: Option[DoubleSha256DigestBE]): Future[AddUtxoResult] = {
     import AddUtxoError._
 
@@ -128,11 +128,11 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
           addressDb <- addressDbE
         } yield writeUtxo(txid = transaction.txIdBE,
-                          spent = spent,
-                          output,
-                          outPoint,
-                          addressDb,
-                          blockHash)
+                          state = state,
+                          output = output,
+                          outPoint = outPoint,
+                          addressDb = addressDb,
+                          blockHash = blockHash)
 
         EitherUtil.liftRightBiasedFutureE(biasedE)
       } map {
