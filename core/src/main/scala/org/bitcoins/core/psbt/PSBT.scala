@@ -10,6 +10,7 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2WSHWitnessV0, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
@@ -17,7 +18,10 @@ import org.bitcoins.core.psbt.GlobalPSBTRecord._
 import org.bitcoins.core.psbt.InputPSBTRecord._
 import org.bitcoins.core.psbt.PSBTGlobalKeyId._
 import org.bitcoins.core.psbt.PSBTInputKeyId._
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.Factory
 import org.bitcoins.core.wallet.signer.BitcoinSigner
@@ -30,6 +34,7 @@ import scodec.bits._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 case class PSBT(
     globalMap: GlobalPSBTMap,
@@ -345,6 +350,65 @@ case class PSBT(
     val newInputMaps =
       inputMaps.patch(index, Seq(InputPSBTMap(newElements)), 1)
     PSBT(globalMap, newInputMaps, outputMaps)
+  }
+
+  def extractTransactionAndValidate: Try[Transaction] = {
+    inputMaps.zipWithIndex.foldLeft(Try(extractTransaction)) {
+      case (txT, (inputMap, index)) =>
+        txT.flatMap { tx =>
+          val wUtxoOpt =
+            inputMap.getRecords[WitnessUTXO](WitnessUTXOKeyId).headOption
+          val utxoOpt = inputMap
+            .getRecords[NonWitnessOrUnknownUTXO](NonWitnessUTXOKeyId)
+            .headOption
+
+          (wUtxoOpt, tx) match {
+            case (Some(wUtxo), wtx: WitnessTransaction) =>
+              val output = wUtxo.spentWitnessTransaction
+              val txSigComponent = WitnessTxSigComponent(wtx,
+                                                         UInt32(index),
+                                                         output,
+                                                         Policy.standardFlags)
+              val inputResult =
+                ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))
+              if (inputResult == ScriptOk) {
+                Success(tx)
+              } else {
+                Failure(
+                  new RuntimeException(
+                    s"Input $index was invalid: $inputResult"))
+              }
+            case (Some(_), _: BaseTransaction) =>
+              Failure(new RuntimeException(
+                s"Extracted program is not witness transaction, but input $index has WitnessUTXO record"))
+            case (None, _) =>
+              utxoOpt match {
+                case Some(utxo) =>
+                  val input = tx.inputs(index)
+                  val output = utxo.transactionSpent.outputs(
+                    input.previousOutput.vout.toInt)
+                  val txSigComponent = BaseTxSigComponent(tx,
+                                                          UInt32(index),
+                                                          output,
+                                                          Policy.standardFlags)
+                  val inputResult = ScriptInterpreter.run(
+                    PreExecutionScriptProgram(txSigComponent))
+                  if (inputResult == ScriptOk) {
+                    Success(tx)
+                  } else {
+                    Failure(
+                      new RuntimeException(
+                        s"Input $index was invalid: $inputResult"))
+                  }
+                case None =>
+                  logger.info(
+                    s"No UTXO record was provided for input $index, hence no validation was done for this input")
+
+                  Success(tx)
+              }
+          }
+        }
+    }
   }
 
   /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#transaction-extractor]] */
