@@ -303,7 +303,7 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi = chainQueryApi)(config, ec)() // get the standard config
   }
 
-  /** This wallet should have a total of 5 bitcoin in it
+  /** This wallet should have a total of 6 bitcoin in it
     * spread across 3 utxos that have values 1, 2, 3 bitcoins */
   case class FundedWallet(wallet: LockedWalletApi)
 
@@ -375,9 +375,16 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
   def fundWallet(wallet: UnlockedWalletApi)(
-      implicit ec: ExecutionContext): Future[FundedWallet] = {
+      implicit ec: ExecutionContext,
+      config: WalletAppConfig): Future[FundedWallet] = {
     //get three addresses
-    val addressesF = Future.sequence(Vector.fill(3)(wallet.getNewAddress()))
+    val addressesF = Future.sequence(Vector.fill(3) {
+      //this Thread.sleep is needed because of
+      //https://github.com/bitcoin-s/bitcoin-s/issues/1009
+      //once that is resolved we should be able to remove this
+      Thread.sleep(250)
+      wallet.getNewAddress()
+    })
 
     //construct three txs that send money to these addresses
     //these are "fictional" transactions in the sense that the
@@ -403,7 +410,7 @@ object BitcoinSWalletTest extends WalletLogger {
       fundedWallet <- fundedWalletF
       balance <- fundedWallet.getBalance()
       _ = require(
-        balance == 5.bitcoin,
+        balance == 6.bitcoin,
         s"Funding wallet fixture failed ot fund the wallet, got balance=${balance} expected=${expectedAmt}")
     } yield FundedWallet(fundedWallet)
   }
