@@ -109,15 +109,19 @@ case class PSBT(
     * @return None if there exists any input which is not ready for signing
     */
   def finalizePSBT: Option[PSBT] = {
-    val finalizedInputOpts = inputMaps.zip(transaction.inputs).map {
-      case (inputMap, input) => inputMap.finalize(input)
-    }
-    if (finalizedInputOpts.forall(_.isDefined)) {
-      val finalizedInputMaps = finalizedInputOpts.map(_.get)
-      val psbt = this.copy(inputMaps = finalizedInputMaps)
-      Some(psbt)
+    if (isFinalized) {
+      Some(this)
     } else {
-      None
+      val finalizedInputOpts = inputMaps.zip(transaction.inputs).map {
+        case (inputMap, input) => inputMap.finalize(input)
+      }
+      if (finalizedInputOpts.forall(_.isDefined)) {
+        val finalizedInputMaps = finalizedInputOpts.map(_.get)
+        val psbt = this.copy(inputMaps = finalizedInputMaps)
+        Some(psbt)
+      } else {
+        None
+      }
     }
   }
 
@@ -1076,24 +1080,29 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
 
   /** Finalizes this input if possible, returning None if not */
   def finalize(input: TransactionInput): Option[InputPSBTMap] = {
-    val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = {
-      val witnessUTXOOpt = getRecords[WitnessUTXO](WitnessUTXOKeyId).headOption
-      val nonWitnessUTXOOpt =
-        getRecords[NonWitnessOrUnknownUTXO](NonWitnessUTXOKeyId).headOption
+    if (isFinalized) {
+      Some(this)
+    } else {
+      val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = {
+        val witnessUTXOOpt =
+          getRecords[WitnessUTXO](WitnessUTXOKeyId).headOption
+        val nonWitnessUTXOOpt =
+          getRecords[NonWitnessOrUnknownUTXO](NonWitnessUTXOKeyId).headOption
 
-      (witnessUTXOOpt, nonWitnessUTXOOpt) match {
-        case (None, None) => None
-        case (Some(witnessUtxo), _) =>
-          Some(witnessUtxo.spentWitnessTransaction.scriptPubKey)
-        case (_, Some(utxo)) =>
-          val outputs = utxo.transactionSpent.outputs
-          scala.util
-            .Try(outputs(input.previousOutput.vout.toInt).scriptPubKey)
-            .toOption
+        (witnessUTXOOpt, nonWitnessUTXOOpt) match {
+          case (None, None) => None
+          case (Some(witnessUtxo), _) =>
+            Some(witnessUtxo.spentWitnessTransaction.scriptPubKey)
+          case (_, Some(utxo)) =>
+            val outputs = utxo.transactionSpent.outputs
+            scala.util
+              .Try(outputs(input.previousOutput.vout.toInt).scriptPubKey)
+              .toOption
+        }
       }
-    }
 
-    scriptPubKeyToSatisfyOpt.flatMap(finalize)
+      scriptPubKeyToSatisfyOpt.flatMap(finalize)
+    }
   }
 
   /** Finalizes this input if possible, returning None if not */
