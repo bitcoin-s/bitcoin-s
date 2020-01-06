@@ -379,123 +379,54 @@ sealed abstract class P2SHSigner extends BitcoinSigner[P2SHSpendingInfo] {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
     } else {
-      val (_, output, inputIndex, _) =
-        relevantInfo(spendingInfo, unsignedTx)
+      val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-      (spendingInfoToSatisfy, spendingInfoToSatisfy.redeemScript) match {
-        case (_: P2SHNestedSegwitV0UTXOSpendingInfo,
-              p2wpkh: P2WPKHWitnessSPKV0) =>
-          val witTx = WitnessTransaction.toWitnessTx(unsignedTx)
-          val p2shScriptSig = P2SHScriptSignature(p2wpkh)
-          val oldInput = witTx.inputs(inputIndex.toInt)
-          val updatedInput = TransactionInput(oldInput.previousOutput,
-                                              p2shScriptSig,
-                                              oldInput.sequence)
+      val oldInput = unsignedTx.inputs(inputIndex.toInt)
+      val input =
+        TransactionInput(spendingInfo.outPoint,
+                         EmptyScriptSignature,
+                         oldInput.sequence)
 
-          val uwtx = {
-            val u = unsignedTx.updateInput(inputIndex.toInt, updatedInput)
-            WitnessTransaction.toWitnessTx(u)
-          }
+      val updatedTx =
+        unsignedTx.updateInput(inputIndex.toInt, input)
 
-          val wtxSigComp = WitnessTxSigComponentP2SH(transaction = uwtx,
-                                                     inputIndex = inputIndex,
-                                                     output = output,
-                                                     flags =
-                                                       Policy.standardFlags)
+      val signedTxEither =
+        BitcoinSigner
+          .sign(spendingInfoToSatisfy.nestedSpendingInfo,
+                updatedTx,
+                isDummySignature)
+          .map(_.transaction)
 
-          val hashForSig = TransactionSignatureSerializer.hashForSignature(
-            txSigComponent = wtxSigComp,
-            hashType = spendingInfo.hashType)
+      signedTxEither.map { signedTx =>
+        val i = signedTx.inputs(inputIndex.toInt)
 
-          //sign the hash
-          val signature: ECDigitalSignature = {
-            if (isDummySignature) {
-              EmptyDigitalSignature
-            } else {
-              val sig = spendingInfo.signers.head.sign(hashForSig.bytes)
-              //append hash type
-              ECDigitalSignature.fromBytes(
-                sig.bytes.:+(spendingInfo.hashType.byte))
-            }
-          }
-          val p2wpkhWit =
-            P2WPKHWitnessV0(spendingInfo.signers.head.publicKey, signature)
-          val updatedWit = uwtx.updateWitness(inputIndex.toInt, p2wpkhWit)
+        val p2sh =
+          P2SHScriptSignature(i.scriptSignature,
+                              spendingInfoToSatisfy.redeemScript)
 
-          Future.successful(
-            P2SHTxSigComponent(updatedWit, inputIndex, output, flags))
-        case (nestedSpendingInfo: P2SHNestedSegwitV0UTXOSpendingInfo,
-              _: P2WSHWitnessSPKV0) =>
-          val outpoint = spendingInfo.outPoint
-          val redeemScript = nestedSpendingInfo.redeemScript
-          val oldInput = unsignedTx.inputs(inputIndex.toInt)
+        val signedInput =
+          TransactionInput(i.previousOutput, p2sh, i.sequence)
 
-          val input =
-            TransactionInput(outpoint, EmptyScriptSignature, oldInput.sequence)
+        val signedInputs =
+          signedTx.inputs.updated(inputIndex.toInt, signedInput)
 
-          val updatedTx =
-            unsignedTx.updateInput(inputIndex.toInt, input)
-
-          val updatedOutput =
-            TransactionOutput(spendingInfo.amount, redeemScript)
-
-          val updatedUTXOInfo = BitcoinUTXOSpendingInfo(
-            outpoint,
-            updatedOutput,
-            spendingInfo.signers,
-            None,
-            spendingInfo.scriptWitnessOpt,
-            spendingInfo.hashType,
-            spendingInfo.conditionalPath)
-
-          val signedTxEither =
-            BitcoinSigner
-              .sign(updatedUTXOInfo, updatedTx, isDummySignature)
-              .map(_.transaction)
-
-          signedTxEither.map { signedTx =>
-            val i = signedTx.inputs(inputIndex.toInt)
-
-            val p2sh =
-              P2SHScriptSignature(i.scriptSignature, redeemScript)
-
-            val signedInput =
-              TransactionInput(i.previousOutput, p2sh, i.sequence)
-
-            val signedInputs =
-              signedTx.inputs.updated(inputIndex.toInt, signedInput)
-
-            val finalTx = signedTx match {
-              case btx: BaseTransaction =>
-                BaseTransaction(btx.version,
-                                signedInputs,
-                                btx.outputs,
-                                btx.lockTime)
-              case wtx: WitnessTransaction =>
-                WitnessTransaction(wtx.version,
-                                   signedInputs,
-                                   wtx.outputs,
-                                   wtx.lockTime,
-                                   wtx.witness)
-            }
-            P2SHTxSigComponent(finalTx, inputIndex, output, flags)
-          }
-        case (_, _) =>
-          val signedSigComponentF = BitcoinSigner.sign(
-            spendingInfoToSatisfy.nestedSpendingInfo,
-            unsignedTx,
-            isDummySignature,
-            spendingInfoToSatisfy.nestedSpendingInfo)
-
-          val scriptSigF = signedSigComponentF.map { signedSigComponent =>
-            P2SHScriptSignature(signedSigComponent.scriptSignature,
-                                spendingInfoToSatisfy.redeemScript)
-          }
-
-          updateScriptSigInSigComponent(unsignedTx,
-                                        inputIndex.toInt,
-                                        output,
-                                        scriptSigF)
+        val finalTx = signedTx match {
+          case btx: BaseTransaction =>
+            BaseTransaction(version = btx.version,
+                            inputs = signedInputs,
+                            outputs = btx.outputs,
+                            lockTime = btx.lockTime)
+          case wtx: WitnessTransaction =>
+            WitnessTransaction(version = wtx.version,
+                               inputs = signedInputs,
+                               outputs = wtx.outputs,
+                               lockTime = wtx.lockTime,
+                               witness = wtx.witness)
+        }
+        P2SHTxSigComponent(transaction = finalTx,
+                           inputIndex = inputIndex,
+                           output = output,
+                           flags = flags)
       }
     }
   }

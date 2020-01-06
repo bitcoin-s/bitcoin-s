@@ -82,9 +82,9 @@ sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
   * [[org.bitcoins.core.protocol.script.P2WSHWitnessSPKV0  P2WSHWitnessSPKV0]],
   * and P2SH(witness script)
   */
-sealed abstract class WitnessTxSigComponent extends TxSigComponent {
+sealed trait WitnessTxSigComponent extends TxSigComponent {
 
-  override def transaction: WitnessTransaction
+override def transaction: WitnessTransaction
 
   def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt)
 
@@ -107,7 +107,7 @@ sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
 
 /** This represents checking the [[org.bitcoins.core.protocol.transaction.WitnessTransaction WitnessTransaction]]
   * against a P2SH(P2WSH) or P2SH(P2WPKH) scriptPubKey */
-sealed abstract class WitnessTxSigComponentP2SH extends WitnessTxSigComponent {
+sealed abstract class WitnessTxSigComponentP2SH extends P2SHTxSigComponent with WitnessTxSigComponent {
   override def scriptPubKey: P2SHScriptPubKey =
     output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
