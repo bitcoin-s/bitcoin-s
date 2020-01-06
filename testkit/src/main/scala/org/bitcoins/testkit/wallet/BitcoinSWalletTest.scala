@@ -381,8 +381,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
   def fundWallet(wallet: UnlockedWalletApi)(
-      implicit ec: ExecutionContext,
-      config: WalletAppConfig): Future[FundedWallet] = {
+      implicit ec: ExecutionContext): Future[FundedWallet] = {
     //get three addresses
     val addressesF = Future.sequence(Vector.fill(3) {
       //this Thread.sleep is needed because of
