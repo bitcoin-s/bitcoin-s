@@ -128,9 +128,12 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
       )
   }
 
+<<<<<<< HEAD
   /** Creates a wallet that is funded with some bitcoin, this wallet is NOT
     * peered with a bitcoind so the funds in the wallet are not tied to an
     * underlying blockchain */
+=======
+>>>>>>> Move TransactionTestUtil to testkit, begin writing tests for fundrawtransaction
   def withFundedWallet(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
       build = () => createFundedWallet(nodeApi, chainQueryApi),
