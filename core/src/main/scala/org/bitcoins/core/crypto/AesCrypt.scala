@@ -8,7 +8,7 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
+import org.bitcoins.core.util.{Factory, MaskedToString}
 
 /**
   * Represents a encrypted cipher text with it's accompanying
@@ -95,7 +95,7 @@ object AesSalt extends Factory[AesSalt] {
 // we enforce the non-empty password length in the companion object
 // to be able to make this extend AnyVal, and not be boxed at runtime
 final case class AesPassword private (private val value: String)
-    extends AnyVal {
+    extends MaskedToString {
 
   /**
     * Converts this password into an AES key
@@ -126,6 +126,10 @@ final case class AesPassword private (private val value: String)
                                       derivedKeyLength = AesPassword.KEY_SIZE)
     val key = AesKey.fromSecretKey(secretKey)
     key
+  }
+
+  override def toStringSensitive: String = {
+    ByteVector.encodeUtf8(value).toString
   }
 }
 
@@ -159,7 +163,7 @@ object AesPassword {
   * and have certain length requirements.
   */
 final case class AesKey private (bytes: ByteVector)
-    extends AnyVal
+    extends MaskedToString
     with NetworkElement {
 
   /**
@@ -169,6 +173,9 @@ final case class AesKey private (bytes: ByteVector)
   def toSecretKey: SecretKey =
     new SecretKeySpec(bytes.toArray, "AES")
 
+  override def toStringSensitive: String = {
+    s"AesKey(${bytes.toHex})"
+  }
 }
 
 object AesKey {
