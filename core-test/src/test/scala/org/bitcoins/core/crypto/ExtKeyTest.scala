@@ -89,7 +89,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
     val path = BIP32Path.empty
 
     val masterPriv = ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), path)
-    masterPriv.toString must be(
+    masterPriv.toStringSensitive must be(
       "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi")
 
     //master public key
@@ -100,7 +100,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
     //derive child
     val m0hPath = BIP32Path.fromString("m/0'")
     val m0h = masterPriv.deriveChildPrivKey(m0hPath)
-    m0h.toString must be(
+    m0h.toStringSensitive must be(
       "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7")
 
     val m0hPub = m0h.extPublicKey
@@ -109,7 +109,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val m0h1Path = BIP32Path.fromString("m/0'/1")
     val m0h1 = masterPriv.deriveChildPrivKey(m0h1Path)
-    m0h1.toString must be(
+    m0h1.toStringSensitive must be(
       "xprv9wTYmMFdV23N2TdNG573QoEsfRrWKQgWeibmLntzniatZvR9BmLnvSxqu53Kw1UmYPxLgboyZQaXwTCg8MSY3H2EU4pWcQDnRnrVA1xe8fs")
 
     val m0h1Pub = m0h1.extPublicKey
@@ -118,7 +118,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val m0h1P2hath = BIP32Path.fromString("m/0'/1/2'")
     val m0h12h = masterPriv.deriveChildPrivKey(m0h1P2hath)
-    m0h12h.toString must be(
+    m0h12h.toStringSensitive must be(
       "xprv9z4pot5VBttmtdRTWfWQmoH1taj2axGVzFqSb8C9xaxKymcFzXBDptWmT7FwuEzG3ryjH4ktypQSAewRiNMjANTtpgP4mLTj34bhnZX7UiM")
 
     val m0h12hPub = m0h12h.extPublicKey
@@ -127,7 +127,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val m0h12h2Path = BIP32Path.fromString("m/0'/1/2'/2")
     val m0h12h2 = masterPriv.deriveChildPrivKey(m0h12h2Path)
-    m0h12h2.toString must be(
+    m0h12h2.toStringSensitive must be(
       "xprvA2JDeKCSNNZky6uBCviVfJSKyQ1mDYahRjijr5idH2WwLsEd4Hsb2Tyh8RfQMuPh7f7RtyzTtdrbdqqsunu5Mm3wDvUAKRHSC34sJ7in334")
 
     val m0h12h2Pub = m0h12h2.extPublicKey
@@ -136,7 +136,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val m0h12h21000000000Path = BIP32Path.fromString("m/0'/1/2'/2/1000000000")
     val m0h12h21000000000 = masterPriv.deriveChildPrivKey(m0h12h21000000000Path)
-    m0h12h21000000000.toString must be(
+    m0h12h21000000000.toStringSensitive must be(
       "xprvA41z7zogVVwxVSgdKUHDy1SKmdb533PjDz7J6N6mV6uS3ze1ai8FHa8kmHScGpWmj4WggLyQjgPie1rFSruoUihUZREPSL39UNdE3BBDu76")
 
     val m0h12h21000000000Pub = m0h12h21000000000.extPublicKey
@@ -150,7 +150,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val masterPriv =
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
-    masterPriv.toString must be(
+    masterPriv.toStringSensitive must be(
       "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U")
 
     val masterPub = masterPriv.extPublicKey
@@ -159,7 +159,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val m0Path = BIP32Path.fromString("m/0")
     val m0 = masterPriv.deriveChildPrivKey(m0Path)
-    m0.toString must be(
+    m0.toStringSensitive must be(
       "xprv9vHkqa6EV4sPZHYqZznhT2NPtPCjKuDKGY38FBWLvgaDx45zo9WQRUT3dKYnjwih2yJD9mkrocEZXo1ex8G81dwSM1fwqWpWkeS3v86pgKt")
 
     val m0Pub = m0.extPublicKey
@@ -169,7 +169,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
     val m02147483647hPath = BIP32Path.fromString("m/0/2147483647'")
     val m02147483647h =
       masterPriv.deriveChildPrivKey(m02147483647hPath)
-    m02147483647h.toString must be(
+    m02147483647h.toStringSensitive must be(
       "xprv9wSp6B7kry3Vj9m1zSnLvN3xH8RdsPP1Mh7fAaR7aRLcQMKTR2vidYEeEg2mUCTAwCd6vnxVrcjfy2kRgVsFawNzmjuHc2YmYRmagcEPdU9")
 
     val m02147483647hPub = m02147483647h.extPublicKey
@@ -178,7 +178,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val m02147483647h1Path = BIP32Path.fromString("m/0/2147483647'/1")
     val m02147483647h1 = masterPriv.deriveChildPrivKey(m02147483647h1Path)
-    m02147483647h1.toString must be(
+    m02147483647h1.toStringSensitive must be(
       "xprv9zFnWC6h2cLgpmSA46vutJzBcfJ8yaJGg8cX1e5StJh45BBciYTRXSd25UEPVuesF9yog62tGAQtHjXajPPdbRCHuWS6T8XA2ECKADdw4Ef")
 
     val m02147483647h1Pub = m02147483647h1.extPublicKey
@@ -189,7 +189,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
       BIP32Path.fromString("m/0/2147483647'/1/2147483646'")
     val m02147483647h12147483646h =
       masterPriv.deriveChildPrivKey(m02147483647h12147483646hPath)
-    m02147483647h12147483646h.toString must be(
+    m02147483647h12147483646h.toStringSensitive must be(
       "xprvA1RpRA33e1JQ7ifknakTFpgNXPmW2YvmhqLQYMmrj4xJXXWYpDPS3xz7iAxn8L39njGVyuoseXzU6rcxFLJ8HFsTjSyQbLYnMpCqE2VbFWc")
 
     val m02147483647h12147483646hPub = m02147483647h12147483646h.extPublicKey
@@ -200,7 +200,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
       BIP32Path.fromString("m/0/2147483647'/1/2147483646'/2")
     val m02147483647h12147483646h2 =
       masterPriv.deriveChildPrivKey(m02147483647h12147483646h2Path)
-    m02147483647h12147483646h2.toString must be(
+    m02147483647h12147483646h2.toStringSensitive must be(
       "xprvA2nrNbFZABcdryreWet9Ea4LvTJcGsqrMzxHx98MMrotbir7yrKCEXw7nadnHM8Dq38EGfSh6dqA9QWTyefMLEcBYJUuekgW4BYPJcr9E7j")
 
     val m02147483647h12147483646h2Pub = m02147483647h12147483646h2.extPublicKey
@@ -214,7 +214,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val masterPrivKey =
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
-    masterPrivKey.toString must be(
+    masterPrivKey.toStringSensitive must be(
       "xprv9s21ZrQH143K25QhxbucbDDuQ4naNntJRi4KUfWT7xo4EKsHt2QJDu7KXp1A3u7Bi1j8ph3EGsZ9Xvz9dGuVrtHHs7pXeTzjuxBrCmmhgC6")
 
     val masterPubKey = masterPrivKey.extPublicKey
@@ -222,7 +222,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
       "xpub661MyMwAqRbcEZVB4dScxMAdx6d4nFc9nvyvH3v4gJL378CSRZiYmhRoP7mBy6gSPSCYk6SzXPTf3ND1cZAceL7SfJ1Z3GC8vBgp2epUt13")
 
     val m0h = masterPrivKey.deriveChildPrivKey(BIP32Path.fromString("m/0'"))
-    m0h.toString must be(
+    m0h.toStringSensitive must be(
       "xprv9uPDJpEQgRQfDcW7BkF7eTya6RPxXeJCqCJGHuCJ4GiRVLzkTXBAJMu2qaMWPrS7AANYqdq6vcBcBUdJCVVFceUvJFjaPdGZ2y9WACViL4L")
 
     val m0hPub = m0h.extPublicKey
@@ -240,5 +240,14 @@ class ExtKeyTest extends BitcoinSUnitTest {
     val path1 = masterPriv.deriveChildPrivKey(idx).extPublicKey.key
     val path2 = masterPriv.extPublicKey.deriveChildPubKey(idx).get.key
     path1 must be(path2)
+  }
+
+  it must "not serialize a ExtPrivateKey to string" in {
+    val seedBytes =
+      hex"4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be"
+
+    val masterPriv = ExtPrivateKey(LegacyMainNetPriv,
+      Some(seedBytes), BIP32Path.empty)
+    masterPriv.toString must be (s"Masked(ExtPrivateKeyImpl)")
   }
 }
