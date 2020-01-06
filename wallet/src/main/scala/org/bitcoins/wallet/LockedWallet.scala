@@ -9,7 +9,6 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint,
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.keymanager.KeyManager
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig

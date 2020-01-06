@@ -73,6 +73,15 @@ trait LockedWalletApi extends WalletApi {
       transaction: Transaction,
       blockHash: Option[DoubleSha256DigestBE]): Future[LockedWalletApi]
 
+  def processTransactions(
+      transactions: Vector[Transaction],
+      blockHash: Option[DoubleSha256DigestBE]): Future[LockedWalletApi] = {
+    transactions.foldLeft(Future.successful(this)) {
+      case (wallet, tx) =>
+        wallet.flatMap(_.processTransaction(tx, blockHash))
+    }
+  }
+
   /**
     * Processes the give block, updating our DB state if it's relevant to us.
     * @param block The block we're processing
