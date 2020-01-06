@@ -4,18 +4,13 @@ import java.io.File
 import java.nio.file.NoSuchFileException
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.http.scaladsl.model.ws.{
-  Message,
-  TextMessage,
-  WebSocketRequest,
-  WebSocketUpgradeResponse
-}
+import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
@@ -847,7 +842,9 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     f
   }
 
-  def connectToWebSocket[T](f: WebSocketEvent => T): Future[Unit] = {
+  /** @inheritdoc */
+  override def connectToWebSocket(
+      eventHandler: WebSocketEvent => Unit): Future[Unit] = {
     val incoming: Sink[Message, Future[Done]] =
       Sink.foreach[Message] {
         case message: TextMessage.Strict =>
@@ -855,7 +852,8 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           val validated: JsResult[WebSocketEvent] =
             parsed.validate[WebSocketEvent]
           val event = parseResult[WebSocketEvent](validated, parsed, "ws")
-          f(event)
+          eventHandler(event)
+        case _: Message => ()
       }
 
     val flow =
@@ -866,7 +864,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     instance.authCredentials.bitcoinAuthOpt
     val request = WebSocketRequest(
       uri,
-      extraHeaders = Seq(
+      extraHeaders = Vector(
         Authorization(
           BasicHttpCredentials("", instance.authCredentials.password))))
     val (upgradeResponse, _) = Http().singleWebSocketRequest(request, flow)
