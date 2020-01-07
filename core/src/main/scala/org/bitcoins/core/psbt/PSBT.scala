@@ -1190,6 +1190,24 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
           val scriptSig = EmptyScriptSignature
           wipeAndAdd(scriptSig, Some(witness))
         }
+      case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
+        val sigOpt =
+          getRecords[PartialSignature](PartialSignatureKeyId).headOption
+        sigOpt.flatMap { sig =>
+          if (sig.pubKey == p2pkWithTimeout.pubKey) {
+            val scriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
+                                                           signature =
+                                                             sig.signature)
+            Some(wipeAndAdd(scriptSig, None))
+          } else if (sig.pubKey == p2pkWithTimeout.timeoutPubKey) {
+            val scriptSig =
+              P2PKWithTimeoutScriptSignature(beforeTimeout = false,
+                                             signature = sig.signature)
+            Some(wipeAndAdd(scriptSig, None))
+          } else {
+            None
+          }
+        }
       case conditional: ConditionalScriptPubKey =>
         val builder =
           Vector.newBuilder[(
@@ -1203,6 +1221,12 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
             case conditional: ConditionalScriptPubKey =>
               addLeaves(conditional.trueSPK, path :+ true)
               addLeaves(conditional.falseSPK, path :+ false)
+            case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
+              addLeaves(P2PKScriptPubKey(p2pkWithTimeout.pubKey), path :+ true)
+              val timeoutSPK = CLTVScriptPubKey(
+                p2pkWithTimeout.lockTime,
+                P2PKScriptPubKey(p2pkWithTimeout.timeoutPubKey))
+              addLeaves(timeoutSPK, path :+ false)
             case cltv: CLTVScriptPubKey =>
               addLeaves(cltv.nestedScriptPubKey, path)
             case csv: CSVScriptPubKey =>
