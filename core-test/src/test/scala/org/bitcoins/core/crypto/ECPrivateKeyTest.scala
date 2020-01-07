@@ -95,4 +95,8 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
     assert(ECPrivateKey.parseNetworkFromWIF("hello there").isFailure)
   }
 
+  it must "not serialize a ECPrivateKey toString" in {
+    ECPrivateKey().toString must be ("Masked(ECPrivateKeyImpl)")
+  }
+
 }

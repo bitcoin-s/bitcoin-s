@@ -107,11 +107,9 @@ sealed abstract class ExtKey extends NetworkElement {
   }
 
   override def toString: String = {
-    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
-    val encoded = Base58.encode(bytes ++ checksum)
-    require(Base58.decodeCheck(encoded).isSuccess)
-    encoded
+    ExtKey.toString(this)
   }
+
 }
 
 object ExtKey extends Factory[ExtKey] {
@@ -148,6 +146,14 @@ object ExtKey extends Factory[ExtKey] {
     extKey
   }
 
+  def toString(extKey: ExtKey): String = {
+    val bytes = extKey.bytes
+    val checksum = CryptoUtil.doubleSHA256(bytes).bytes.take(4)
+    val encoded = Base58.encode(bytes ++ checksum)
+    require(Base58.decodeCheck(encoded).isSuccess)
+    encoded
+  }
+
   override def fromBytes(bytes: ByteVector): ExtKey = {
     val privTry = Try(ExtPrivateKey(bytes))
     if (privTry.isSuccess) privTry.get
@@ -157,7 +163,10 @@ object ExtKey extends Factory[ExtKey] {
   }
 }
 
-sealed abstract class ExtPrivateKey extends ExtKey with ExtSign {
+sealed abstract class ExtPrivateKey
+    extends ExtKey
+    with ExtSign
+    with MaskedToString {
   import ExtKeyVersion._
 
   override protected type VersionType = ExtKeyPrivVersion
@@ -223,6 +232,10 @@ sealed abstract class ExtPrivateKey extends ExtKey with ExtSign {
       BIP32Path) => Future[ECDigitalSignature] = {
     case (bytes, path) =>
       deriveChildPrivKey(path).signFunction(bytes)
+  }
+
+  override def toStringSensitive: String = {
+    ExtKey.toString(this)
   }
 }
 

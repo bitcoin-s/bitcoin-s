@@ -2,7 +2,7 @@ package org.bitcoins.core.crypto
 
 import java.security.SecureRandom
 
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{CryptoUtil, MaskedToString}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -16,7 +16,7 @@ import scala.io.Source
   * can be the root of a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki  BIP32]]
   * HD wallet.
   */
-sealed abstract class MnemonicCode {
+sealed abstract class MnemonicCode extends MaskedToString {
   require(
     MnemonicCode.VALID_LENGTHS.contains(words.length), {
       val validLengths = MnemonicCode.VALID_LENGTHS.mkString(", ")
@@ -105,6 +105,10 @@ sealed abstract class MnemonicCode {
     val codeInfo = MnemonicCode.getMnemonicCodeInfo(words)
 
     bits.take(codeInfo.entropyAndChecksumBits)
+  }
+
+  override def toStringSensitive: String = {
+    words.mkString(",")
   }
 }
 
