@@ -11,11 +11,20 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.ConditionalPath
+import org.bitcoins.testkit.core.gen.{
+  ChainParamsGenerator,
+  CreditingTxGen,
+  ScriptGenerators
+}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
 
 import scala.annotation.tailrec
+import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.DurationInt
 
 class PSBTTest extends BitcoinSUnitTest {
 
@@ -168,5 +177,45 @@ class PSBTTest extends BitcoinSUnitTest {
       "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a010000000000000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0000")
     assertThrows[UnsupportedOperationException](
       psbt1.getUTXOSpendingInfoUsingSigners(index = 0, getDummySigners(1)))
+  }
+
+  it must "agree with TxBuilder.sign given UTXOSpendingInfos" in {
+    implicit val ec: ExecutionContext = ExecutionContext.global
+
+    forAll(CreditingTxGen.inputsAndOuptuts,
+           ScriptGenerators.scriptPubKey,
+           ChainParamsGenerator.bitcoinNetworkParams) {
+      case ((creditingTxsInfo, destinations), changeSPK, network) =>
+        val fee = SatoshisPerByte(Satoshis(1000))
+        val builder = BitcoinTxBuilder(destinations,
+                                       creditingTxsInfo,
+                                       fee,
+                                       changeSPK._1,
+                                       network)
+        val resultF = for {
+          unsignedTx <- builder.flatMap(_.unsignedTx)
+          signedTx <- builder.flatMap(_.sign)
+
+          orderedTxInfos = {
+            unsignedTx.inputs.toVector.map { input =>
+              val infoOpt =
+                creditingTxsInfo.find(_.outPoint == input.previousOutput)
+              infoOpt match {
+                case Some(info) => info
+                case None       => fail("Could not find UTXOSpendingInfo for input!")
+              }
+            }
+          }
+
+          psbt <- PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
+        } yield {
+          val txT = psbt.extractTransactionAndValidate
+          assert(txT.isSuccess)
+
+          assert(txT.get == signedTx)
+        }
+
+        Await.result(resultF, 5.seconds)
+    }
   }
 }

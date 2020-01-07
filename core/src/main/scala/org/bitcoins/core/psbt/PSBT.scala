@@ -24,6 +24,7 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.Factory
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
@@ -562,8 +563,9 @@ object PSBT extends Factory[PSBT] {
         .forall { case (info, input) => info.outPoint == input.previousOutput },
       "UTXOSpendingInfos must correspond to transaction inputs"
     )
+    val emptySigTx = BitcoinTxBuilder.emptyAllSigs(unsignedTx)
     val globalMap = GlobalPSBTMap(
-      Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
+      Vector(GlobalPSBTRecord.UnsignedTransaction(emptySigTx)))
     val inputMapFs = spendingInfos.map(info =>
       InputPSBTMap.fromUTXOSpendingInfo(info, unsignedTx))
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
@@ -1173,7 +1175,7 @@ object InputPSBTMap {
       unsignedTx: Transaction)(
       implicit ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigComponentF = BitcoinSigner
-      .sign(spendingInfo, unsignedTx, isDummySignature = true)
+      .sign(spendingInfo, unsignedTx, isDummySignature = false)
 
     sigComponentF.map { sigComponent =>
       val scriptSig =

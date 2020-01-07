@@ -557,20 +557,8 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     ScriptInterpreter.runAllVerify(programs)
   }
 
-  private val outputGen = CreditingTxGen.outputs
-    .flatMap { creditingTxsInfo =>
-      val creditingOutputs = creditingTxsInfo.map(c => c.output)
-      val creditingOutputsAmt = creditingOutputs.map(_.value)
-      val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
-
-      TransactionGenerators.smallOutputs(totalAmount).map { destinations =>
-        (creditingTxsInfo, destinations)
-      }
-    }
-    .suchThat(_._1.nonEmpty)
-
   it must "sign a mix of spks in a tx and then have it verified" in {
-    forAllAsync(outputGen,
+    forAllAsync(CreditingTxGen.inputsAndOuptuts,
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
@@ -589,7 +577,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   }
 
   it must "sign a mix of p2sh/p2wsh in a tx and then have it verified" in {
-    forAllAsync(outputGen,
+    forAllAsync(CreditingTxGen.inputsAndOuptuts,
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
