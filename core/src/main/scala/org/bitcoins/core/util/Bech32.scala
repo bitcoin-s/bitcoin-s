@@ -302,7 +302,7 @@ sealed abstract class Bech32 {
       .map(_.toLower)
       .map { char =>
         val index = Bech32.charset.indexOf(char)
-        require(index > 0,
+        require(index >= 0,
                 s"$char (${char.toInt}) is not part of the Bech32 charset!")
         UInt5(index)
       }
