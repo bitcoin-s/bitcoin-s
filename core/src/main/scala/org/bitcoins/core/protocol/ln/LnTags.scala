@@ -128,6 +128,15 @@ object LnTag {
     }
   }
 
+  case class SecretTag(secret: PaymentSecret) extends LnTag {
+
+    override val prefix: LnTagPrefix = LnTagPrefix.Secret
+
+    override val encoded: Vector[UInt5] = {
+      Bech32.from8bitTo5bit(secret.bytes)
+    }
+  }
+
   case class DescriptionTag(string: String) extends LnTag {
     override val prefix: LnTagPrefix = LnTagPrefix.Description
 
@@ -261,6 +270,9 @@ object LnTag {
         val hash = Sha256Digest.fromBytes(bytes)
         LnTag.PaymentHashTag(hash)
 
+      case LnTagPrefix.Secret =>
+        LnTag.SecretTag(PaymentSecret.fromBytes(bytes))
+
       case LnTagPrefix.Description =>
         val description = new String(bytes.toArray, Charset.forName("UTF-8"))
         LnTag.DescriptionTag(description)
@@ -287,13 +299,26 @@ object LnTag {
       case LnTagPrefix.FallbackAddress =>
         val version = payload.head.toUInt8
         val noVersion = payload.tail
-        val noVersionBytes = UInt8.toBytes(Bech32.from5bitTo8bit(noVersion))
+        val noVersionBytes =
+          UInt8.toBytes(Bech32.from5bitTo8bit(noVersion))
         FallbackAddressV.fromU8(version, noVersionBytes, MainNet)
 
       case LnTagPrefix.RoutingInfo =>
         RoutingInfo.fromU5s(payload)
+
+      case LnTagPrefix.Features =>
+        LnTag.FeaturesTag(bytes)
     }
 
     tag
+  }
+
+  case class FeaturesTag(features: ByteVector) extends LnTag {
+    override def prefix: LnTagPrefix = LnTagPrefix.Features
+
+    /** The payload for the tag without any meta information encoded with it */
+    override def encoded: Vector[UInt5] = {
+      Bech32.from8bitTo5bit(features)
+    }
   }
 }
