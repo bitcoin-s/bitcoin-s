@@ -28,6 +28,9 @@ import scala.concurrent.duration.DurationInt
 
 class PSBTTest extends BitcoinSUnitTest {
 
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
+
   it must "correctly update a PSBT" in {
 
     val start = PSBT.fromBytes(
