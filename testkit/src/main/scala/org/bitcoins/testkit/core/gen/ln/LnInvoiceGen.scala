@@ -1,11 +1,11 @@
 package org.bitcoins.testkit.core.gen.ln
 
 import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.testkit.core.gen._
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.ln.LnTag.NodeIdTag
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.node.NodeId
+import org.bitcoins.testkit.core.gen._
 import org.scalacheck.Gen
 
 sealed abstract class LnInvoiceGen {
@@ -45,6 +45,12 @@ sealed abstract class LnInvoiceGen {
   def paymentHashTag: Gen[LnTag.PaymentHashTag] = {
     CryptoGenerators.sha256Digest.map { hash =>
       LnTag.PaymentHashTag(hash)
+    }
+  }
+
+  def secret: Gen[LnTag.SecretTag] = {
+    CryptoGenerators.sha256Digest.map { hash =>
+      LnTag.SecretTag(PaymentSecret.fromBytes(hash.bytes))
     }
   }
 
@@ -103,12 +109,14 @@ sealed abstract class LnInvoiceGen {
       descOrHashTag <- descriptionOrDescriptionHashTag
     } yield LnTaggedFields(
       paymentHash = paymentHash,
+      secret = None,
       descriptionOrHash = descOrHashTag,
       expiryTime = None,
       cltvExpiry = None,
       fallbackAddress = None,
       nodeId = None,
-      routingInfo = None
+      routingInfo = None,
+      features = None
     )
   }
 
@@ -116,7 +124,7 @@ sealed abstract class LnInvoiceGen {
     for {
       paymentHash <- paymentHashTag
       descOrHashTag <- descriptionOrDescriptionHashTag
-
+      secret <- Gen.option(secret)
       //optional fields
       expiryTime <- Gen.option(expiryTime)
       cltvExpiry <- Gen.option(cltvExpiry)
@@ -124,12 +132,14 @@ sealed abstract class LnInvoiceGen {
       routes <- Gen.option(routingInfo)
     } yield LnTaggedFields(
       paymentHash = paymentHash,
+      secret = secret,
       descriptionOrHash = descOrHashTag,
       expiryTime = expiryTime,
       cltvExpiry = cltvExpiry,
       fallbackAddress = fallbackAddress,
       nodeId = nodeIdOpt.map(NodeIdTag(_)),
-      routingInfo = routes
+      routingInfo = routes,
+      features = None
     )
   }
 
@@ -137,7 +147,7 @@ sealed abstract class LnInvoiceGen {
     for {
       paymentHash <- paymentHashTag
       descOrHashTag <- descriptionOrDescriptionHashTag
-
+      secret <- secret
       //optional fields
       expiryTime <- expiryTime
       cltvExpiry <- cltvExpiry
@@ -145,12 +155,14 @@ sealed abstract class LnInvoiceGen {
       routes <- routingInfo
     } yield LnTaggedFields(
       paymentHash = paymentHash,
+      secret = Some(secret),
       descriptionOrHash = descOrHashTag,
       expiryTime = Some(expiryTime),
       cltvExpiry = Some(cltvExpiry),
       fallbackAddress = Some(fallbackAddress),
       nodeId = nodeIdOpt.map(NodeIdTag(_)),
-      routingInfo = Some(routes)
+      routingInfo = Some(routes),
+      features = None
     )
   }
 
