@@ -1,10 +1,10 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
+import org.bitcoins.core.util.{Factory, MaskedToString}
 import scodec.bits.ByteVector
 
-sealed abstract class BIP39Seed extends NetworkElement {
+sealed abstract class BIP39Seed extends NetworkElement with MaskedToString {
   require(
     bytes.length <= MAX_SEED_LENGTH_BYTES && bytes.length >= MIN_SEED_LENGTH_BYTES,
     s"Seed must be between $MIN_SEED_LENGTH_BYTES and $MAX_SEED_LENGTH_BYTES bytes, got ${bytes.length}"
@@ -16,6 +16,10 @@ sealed abstract class BIP39Seed extends NetworkElement {
   /** Generates an extended private key given a version */
   def toExtPrivateKey(keyVersion: ExtKeyPrivVersion): ExtPrivateKey =
     ExtPrivateKey.fromBIP39Seed(keyVersion, this)
+
+  override def toStringSensitive: String = {
+    s"BIP39Seed($hex)"
+  }
 }
 
 /**

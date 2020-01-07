@@ -32,7 +32,10 @@ sealed abstract class BaseECKey extends NetworkElement
 /**
   * Created by chris on 2/16/16.
   */
-sealed abstract class ECPrivateKey extends BaseECKey with Sign {
+sealed abstract class ECPrivateKey
+    extends BaseECKey
+    with Sign
+    with MaskedToString {
 
   override def signFunction: ByteVector => Future[ECDigitalSignature] = {
     bytes =>
@@ -111,7 +114,7 @@ sealed abstract class ECPrivateKey extends BaseECKey with Sign {
     Base58.encode(encodedPrivKey)
   }
 
-  override def toString = s"ECPrivateKey($hex,$isCompressed)"
+  override def toStringSensitive: String = s"ECPrivateKey($hex,$isCompressed)"
 }
 
 object ECPrivateKey extends Factory[ECPrivateKey] {
