@@ -17,7 +17,10 @@ object BIP39LockedKeyManager extends BitcoinSLogger {
     * @param kmParams parameters needed to create the key manager
     *
     * */
-  def unlock(passphrase: AesPassword, kmParams: KeyManagerParams): Either[
+  def unlock(
+      passphrase: AesPassword,
+      bip39PasswordOpt: Option[String],
+      kmParams: KeyManagerParams): Either[
     KeyManagerUnlockError,
     BIP39KeyManager] = {
     logger.debug(s"Trying to unlock wallet with seedPath=${kmParams.seedPath}")
@@ -25,7 +28,8 @@ object BIP39LockedKeyManager extends BitcoinSLogger {
       WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, passphrase)
     resultE match {
       case Right(mnemonicCode) =>
-        Right(new BIP39KeyManager(mnemonicCode, kmParams))
+        Right(BIP39KeyManager(mnemonicCode, kmParams, bip39PasswordOpt))
+
       case Left(result) =>
         result match {
           case DecryptionError =>

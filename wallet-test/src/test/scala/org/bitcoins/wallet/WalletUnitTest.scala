@@ -146,7 +146,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "fail to unlock the wallet with a bad password" in {
     wallet: UnlockedWalletApi =>
       val badpassphrase = AesPassword.fromNonEmptyString("bad")
-      val errorType = wallet.unlock(badpassphrase) match {
+
+      val errorType = wallet.unlock(badpassphrase, None) match {
         case Right(_)  => fail("Unlocked wallet with bad password!")
         case Left(err) => err
       }

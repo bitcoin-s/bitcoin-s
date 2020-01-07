@@ -111,7 +111,10 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
 
 //initialize our key manager, where we store our keys
 import org.bitcoins.keymanager.bip39._
-val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams).getOrElse {
+//you can add a password here if you want
+//val bip39PasswordOpt = Some("my-password-here")
+val bip39PasswordOpt = None
+val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams, bip39PasswordOpt).getOrElse {
   throw new RuntimeException(s"Failed to initalize key manager")
 }
 
@@ -135,7 +138,7 @@ val wallet = Wallet(keyManager, new NodeApi {
     override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[FilterResponse]] = Future.successful(Vector.empty)
   })
 val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
-    Wallet.initialize(wallet)
+  Wallet.initialize(wallet,bip39PasswordOpt)
 }
 
 // when this future completes, ww have sent a transaction

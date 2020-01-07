@@ -5,6 +5,7 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
@@ -37,9 +38,17 @@ abstract class LockedWallet
     for (utxos <- spendingInfoDAO.findAll())
       yield {
         val filtered = utxos
-          .collect {
-            case (txo) if !txo.spent && predicate(txo) =>
-              txo.output.value
+          .filter(predicate)
+          .map {
+            case txo: SpendingInfoDb =>
+              txo.state match {
+                case TxoState.PendingConfirmationsReceived |
+                    TxoState.ConfirmedReceived =>
+                  txo.output.value
+                case TxoState.PendingConfirmationsSpent |
+                    TxoState.ConfirmedSpent | TxoState.DoesNotExist =>
+                  CurrencyUnits.zero
+              }
           }
 
         filtered.fold(0.sats)(_ + _)

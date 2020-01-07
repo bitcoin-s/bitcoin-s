@@ -19,7 +19,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{CryptoUtil, NumberUtil}
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.fixtures.WalletDAOs
@@ -79,7 +80,10 @@ object WalletTestUtil {
   private def randomBlockHash =
     CryptoGenerators.doubleSha256Digest.sampleSome.flip
 
-  private def randomSpent: Boolean = math.random > 0.5
+  private def randomState: TxoState = {
+    val idx = NumberUtil.posInt % TxoState.all.length
+    TxoState.all(idx)
+  }
 
   def sampleSegwitUTXO(spk: ScriptPubKey): SegwitV0SpendingInfo = {
     val outpoint = TransactionOutPoint(randomTXID, randomVout)
@@ -88,7 +92,7 @@ object WalletTestUtil {
     val scriptWitness = randomScriptWitness
     val privkeyPath = WalletTestUtil.sampleSegwitPath
     SegwitV0SpendingInfo(
-      spent = randomSpent,
+      state = randomState,
       txid = randomTXID,
       outPoint = outpoint,
       output = output,
@@ -104,7 +108,7 @@ object WalletTestUtil {
     val output =
       TransactionOutput(1.bitcoin, spk)
     val privKeyPath = WalletTestUtil.sampleLegacyPath
-    LegacySpendingInfo(spent = randomSpent,
+    LegacySpendingInfo(state = randomState,
                        txid = randomTXID,
                        outPoint = outpoint,
                        output = output,

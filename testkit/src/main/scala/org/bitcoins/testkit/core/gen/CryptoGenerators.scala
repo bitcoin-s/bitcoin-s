@@ -99,6 +99,13 @@ sealed abstract class CryptoGenerators {
       code <- mnemonicCode
     } yield BIP39Seed.fromMnemonic(code)
 
+  /** Generates a password that can be used with bip39
+    * @see https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#From_mnemonic_to_seed
+    */
+  def bip39Password: Gen[String] = {
+    Gen.asciiStr
+  }
+
   /**
     * Generates a valid BIP39 seed from
     * an mnemonic with a random password
@@ -106,7 +113,7 @@ sealed abstract class CryptoGenerators {
   def bip39SeedWithPassword: Gen[BIP39Seed] =
     for {
       code <- mnemonicCode
-      pass <- Gen.alphaStr
+      pass <- bip39Password
     } yield BIP39Seed.fromMnemonic(code, pass)
 
   def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
