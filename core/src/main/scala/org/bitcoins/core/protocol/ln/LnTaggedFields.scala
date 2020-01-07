@@ -23,6 +23,8 @@ sealed abstract class LnTaggedFields extends NetworkElement {
 
   def paymentHash: LnTag.PaymentHashTag
 
+  def secret: Option[LnTag.SecretTag]
+
   def description: Option[LnTag.DescriptionTag]
 
   def nodeId: Option[LnTag.NodeIdTag]
@@ -37,14 +39,18 @@ sealed abstract class LnTaggedFields extends NetworkElement {
 
   def routingInfo: Option[LnTag.RoutingInfo]
 
+  def features: Option[LnTag.FeaturesTag]
+
   lazy val data: Vector[UInt5] = Vector(Some(paymentHash),
                                         description,
                                         nodeId,
                                         descriptionHash,
+                                        secret,
                                         expiryTime,
                                         cltvExpiry,
                                         fallbackAddress,
-                                        routingInfo)
+                                        routingInfo,
+                                        features)
     .filter(_.isDefined)
     .flatMap(_.get.data)
 
@@ -70,9 +76,11 @@ object LnTaggedFields {
       nodeId: Option[LnTag.NodeIdTag],
       descriptionHash: Option[LnTag.DescriptionHashTag],
       expiryTime: Option[LnTag.ExpiryTimeTag],
+      secret: Option[LnTag.SecretTag],
       cltvExpiry: Option[LnTag.MinFinalCltvExpiry],
       fallbackAddress: Option[LnTag.FallbackAddressTag],
-      routingInfo: Option[LnTag.RoutingInfo])
+      routingInfo: Option[LnTag.RoutingInfo],
+      features: Option[LnTag.FeaturesTag])
       extends LnTaggedFields
 
   /**
@@ -82,11 +90,13 @@ object LnTaggedFields {
   def apply(
       paymentHash: LnTag.PaymentHashTag,
       descriptionOrHash: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag],
+      secret: Option[LnTag.SecretTag] = None,
       nodeId: Option[LnTag.NodeIdTag] = None,
       expiryTime: Option[LnTag.ExpiryTimeTag] = None,
       cltvExpiry: Option[LnTag.MinFinalCltvExpiry] = None,
       fallbackAddress: Option[LnTag.FallbackAddressTag] = None,
-      routingInfo: Option[LnTag.RoutingInfo] = None): LnTaggedFields = {
+      routingInfo: Option[LnTag.RoutingInfo] = None,
+      features: Option[LnTag.FeaturesTag] = None): LnTaggedFields = {
 
     val (description, descriptionHash): (
         Option[LnTag.DescriptionTag],
@@ -102,13 +112,15 @@ object LnTaggedFields {
 
     InvoiceTagImpl(
       paymentHash = paymentHash,
+      secret = secret,
       description = description,
       nodeId = nodeId,
       descriptionHash = descriptionHash,
       expiryTime = expiryTime,
       cltvExpiry = cltvExpiry,
       fallbackAddress = fallbackAddress,
-      routingInfo = routingInfo
+      routingInfo = routingInfo,
+      features = features
     )
   }
 
@@ -164,6 +176,8 @@ object LnTaggedFields {
         s"Payment hash must be defined in a LnInvoice")
     )
 
+    val secret = getTag[LnTag.SecretTag]
+
     val description = getTag[LnTag.DescriptionTag]
 
     val descriptionHash = getTag[LnTag.DescriptionHashTag]
@@ -177,6 +191,8 @@ object LnTaggedFields {
     val fallbackAddress = getTag[LnTag.FallbackAddressTag]
 
     val routingInfo = getTag[LnTag.RoutingInfo]
+
+    val features = getTag[LnTag.FeaturesTag]
 
     val d: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag] = {
       if (description.isDefined && descriptionHash.isDefined) {
@@ -194,12 +210,14 @@ object LnTaggedFields {
 
     LnTaggedFields(
       paymentHash = paymentHashTag,
+      secret = secret,
       descriptionOrHash = d,
       nodeId = nodeId,
       expiryTime = expiryTime,
       cltvExpiry = cltvExpiry,
       fallbackAddress = fallbackAddress,
-      routingInfo = routingInfo
+      routingInfo = routingInfo,
+      features = features
     )
 
   }
