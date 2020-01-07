@@ -3,7 +3,7 @@ package org.bitcoins.eclair.rpc
 import java.nio.file.Files
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt64}
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
 import org.bitcoins.core.protocol.ln.channel.{
@@ -353,7 +353,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()
       eclair <- {
         val server = EclairRpcTestUtil.eclairInstance(bitcoind)
-        val eclair = new EclairRpcClient(server, EclairRpcTestUtil.binary)
+        val eclair =
+          new EclairRpcClient(server, EclairRpcTestUtil.binary(None, None))
         eclair.start().map(_ => eclair)
       }
       _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF =
@@ -480,7 +481,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     val badClientF =
-      badInstanceF.map(new EclairRpcClient(_, EclairRpcTestUtil.binary))
+      badInstanceF.map(
+        new EclairRpcClient(_, EclairRpcTestUtil.binary(None, None)))
 
     badClientF.flatMap { badClient =>
       recoverToSucceededIf[RuntimeException](badClient.getInfo)
@@ -809,7 +811,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   // We spawn fresh clients in this test because the test
   // needs nodes with activity both related and not related
   // to them
-  it should "get all channel updates for a given node ID" in {
+  it should "get all channel updates for a given node ID" ignore {
     val freshClients1F = bitcoindRpcClientF.flatMap { bitcoindRpcClient =>
       EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
     }
@@ -844,8 +846,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       }
     }
 
-    def openChannel(c1: EclairRpcClient,
-                    c2: EclairRpcClient): Future[FundedChannelId] = {
+    def openChannel(
+        c1: EclairRpcClient,
+        c2: EclairRpcClient): Future[FundedChannelId] = {
       EclairRpcTestUtil
         .openChannel(c1, c2, Satoshis(500000), MilliSatoshis(500000))
     }
@@ -1013,7 +1016,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     )
   }
 
-  it should "get updates for a single node" in {
+  it should "get updates for a single node" ignore {
     // allupdates for a single node is broken in Eclair 0.3.2
     // TODO remove recoverToPendingIf when https://github.com/ACINQ/eclair/issues/1179 is fixed
     recoverToPendingIf[RuntimeException](for {
@@ -1049,7 +1052,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             ourUpdates.flatMap(our =>
               allUpdates.map { all =>
                 our != all
-            })
+              })
           }
 
           AsyncUtil
@@ -1145,8 +1148,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  private def hasConnection(client: Future[EclairRpcClient],
-                            nodeId: NodeId): Future[Assertion] = {
+  private def hasConnection(
+      client: Future[EclairRpcClient],
+      nodeId: NodeId): Future[Assertion] = {
 
     val hasPeersF = client.flatMap(_.getPeers.map(_.nonEmpty))
 
@@ -1161,8 +1165,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   /** Checks that the given [[org.bitcoins.eclair.rpc.client.EclairRpcClient]] has the given chanId */
-  private def hasChannel(client: EclairRpcClient,
-                         chanId: ChannelId): Future[Assertion] = {
+  private def hasChannel(
+      client: EclairRpcClient,
+      chanId: ChannelId): Future[Assertion] = {
     val recognizedOpenChannel: Future[Assertion] = {
 
       val chanResultF: Future[ChannelResult] = client.channel(chanId)

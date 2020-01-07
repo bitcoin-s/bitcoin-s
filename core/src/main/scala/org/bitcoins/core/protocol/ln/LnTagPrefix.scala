@@ -18,6 +18,9 @@ object LnTagPrefix {
   case object PaymentHash extends LnTagPrefix {
     override val value: Char = 'p'
   }
+  case object Secret extends LnTagPrefix {
+    override val value: Char = 's'
+  }
   case object Description extends LnTagPrefix {
     override val value: Char = 'd'
   }
@@ -47,15 +50,21 @@ object LnTagPrefix {
     override val value: Char = 'r'
   }
 
+  case object Features extends LnTagPrefix {
+    override val value: Char = '9'
+  }
+
   private lazy val all: Map[Char, LnTagPrefix] =
     List(PaymentHash,
+         Secret,
          Description,
          NodeId,
          DescriptionHash,
          ExpiryTime,
          CltvExpiry,
          FallbackAddress,
-         RoutingInfo)
+         RoutingInfo,
+         Features)
       .map(prefix => prefix.value -> prefix)
       .toMap
 
