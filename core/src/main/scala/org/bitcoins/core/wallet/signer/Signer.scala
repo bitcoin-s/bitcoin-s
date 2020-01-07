@@ -8,21 +8,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
-import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfo,
-  ConditionalSpendingInfo,
-  EmptySpendingInfo,
-  LockTimeSpendingInfo,
-  MultiSignatureSpendingInfo,
-  P2PKHSpendingInfo,
-  P2PKSpendingInfo,
-  P2PKWithTimeoutSpendingInfo,
-  P2SHSpendingInfo,
-  P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfo,
-  UTXOSpendingInfo,
-  UnassignedSegwitNativeUTXOSpendingInfo
-}
+import org.bitcoins.core.wallet.utxo._
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -127,9 +113,7 @@ sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo] {
 
         WitnessTxSigComponent(wtx, index, spendingInfo.output, flags)
       case _: P2SHScriptPubKey =>
-        throw new IllegalStateException(
-          "Signers do not currently interface with P2SH as this is handled externally in TxBuilder.scala"
-        )
+        P2SHTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
       case _: ScriptPubKey =>
         BaseTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
     }
@@ -199,6 +183,8 @@ object BitcoinSigner {
                                    unsignedTx,
                                    isDummySignature,
                                    p2pKWithTimeout)
+      case p2sh: P2SHSpendingInfo =>
+        P2SHSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2sh)
       case multiSig: MultiSignatureSpendingInfo =>
         MultiSigSigner.sign(spendingInfo,
                             unsignedTx,
@@ -220,9 +206,6 @@ object BitcoinSigner {
         P2WSHSigner.sign(spendingInfo, unsignedTx, isDummySignature, pw2sh)
       case _: UnassignedSegwitNativeUTXOSpendingInfo =>
         throw new UnsupportedOperationException("Unsupported Segwit version")
-      case _: P2SHSpendingInfo =>
-        throw new IllegalArgumentException(
-          "Signers do not currently interface with P2SH as this is handled externally in TxBuilder.scala")
     }
   }
 }
@@ -384,6 +367,72 @@ sealed abstract class MultiSigSigner
 }
 
 object MultiSigSigner extends MultiSigSigner
+
+/** Used to sign a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] */
+sealed abstract class P2SHSigner extends BitcoinSigner[P2SHSpendingInfo] {
+  override def sign(
+      spendingInfo: UTXOSpendingInfo,
+      unsignedTx: Transaction,
+      isDummySignature: Boolean,
+      spendingInfoToSatisfy: P2SHSpendingInfo)(
+      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    if (spendingInfoToSatisfy != spendingInfo) {
+      Future.fromTry(TxBuilderError.WrongSigner)
+    } else {
+      val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
+
+      val oldInput = unsignedTx.inputs(inputIndex.toInt)
+      val input =
+        TransactionInput(spendingInfo.outPoint,
+                         EmptyScriptSignature,
+                         oldInput.sequence)
+
+      val updatedTx =
+        unsignedTx.updateInput(inputIndex.toInt, input)
+
+      val signedTxEither =
+        BitcoinSigner
+          .sign(spendingInfoToSatisfy.nestedSpendingInfo,
+                updatedTx,
+                isDummySignature)
+          .map(_.transaction)
+
+      signedTxEither.map { signedTx =>
+        val i = signedTx.inputs(inputIndex.toInt)
+
+        val p2sh =
+          P2SHScriptSignature(i.scriptSignature,
+                              spendingInfoToSatisfy.redeemScript)
+
+        val signedInput =
+          TransactionInput(i.previousOutput, p2sh, i.sequence)
+
+        val signedInputs =
+          signedTx.inputs.updated(inputIndex.toInt, signedInput)
+
+        val finalTx = signedTx match {
+          case btx: BaseTransaction =>
+            BaseTransaction(version = btx.version,
+                            inputs = signedInputs,
+                            outputs = btx.outputs,
+                            lockTime = btx.lockTime)
+          case wtx: WitnessTransaction =>
+            WitnessTransaction(version = wtx.version,
+                               inputs = signedInputs,
+                               outputs = wtx.outputs,
+                               lockTime = wtx.lockTime,
+                               witness = wtx.witness)
+        }
+        P2SHTxSigComponent(transaction = finalTx,
+                           inputIndex = inputIndex,
+                           output = output,
+                           flags = flags)
+      }
+    }
+  }
+}
+
+object P2SHSigner extends P2SHSigner
 
 sealed abstract class P2WPKHSigner extends BitcoinSigner[P2WPKHV0SpendingInfo] {
 
