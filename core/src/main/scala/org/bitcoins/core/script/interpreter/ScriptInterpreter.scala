@@ -319,26 +319,6 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       scriptPubKeyExecutedProgram: ExecutedScriptProgram,
       witnessScriptPubKey: WitnessScriptPubKey): Try[ExecutedScriptProgram] = {
     scriptPubKeyExecutedProgram.txSignatureComponent match {
-      case b: BaseTxSigComponent =>
-        val scriptSig =
-          scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
-        (scriptSig, b.scriptPubKey) match {
-          case (EmptyScriptSignature, _) | (_, _: P2SHScriptPubKey) =>
-            witnessScriptPubKey.witnessVersion match {
-              case WitnessVersion0 =>
-                logger.error(
-                  "Cannot verify witness program with a BaseTxSigComponent")
-                Success(
-                  scriptPubKeyExecutedProgram.failExecution(
-                    ScriptErrorWitnessProgramWitnessEmpty))
-              case UnassignedWitness(_) =>
-                evaluateUnassignedWitness(b)
-            }
-          case (_, _) =>
-            Success(
-              scriptPubKeyExecutedProgram.failExecution(
-                ScriptErrorWitnessMalleated))
-        }
       case w: WitnessTxSigComponent =>
         val scriptSig =
           scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
@@ -362,6 +342,26 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
               scriptPubKeyExecutedProgram.failExecution(
                 ScriptErrorWitnessMalleated)
             )
+        }
+      case b: BaseTxSigComponent =>
+        val scriptSig =
+          scriptPubKeyExecutedProgram.txSignatureComponent.scriptSignature
+        (scriptSig, b.scriptPubKey) match {
+          case (EmptyScriptSignature, _) | (_, _: P2SHScriptPubKey) =>
+            witnessScriptPubKey.witnessVersion match {
+              case WitnessVersion0 =>
+                logger.error(
+                  "Cannot verify witness program with a BaseTxSigComponent")
+                Success(
+                  scriptPubKeyExecutedProgram.failExecution(
+                    ScriptErrorWitnessProgramWitnessEmpty))
+              case UnassignedWitness(_) =>
+                evaluateUnassignedWitness(b)
+            }
+          case (_, _) =>
+            Success(
+              scriptPubKeyExecutedProgram.failExecution(
+                ScriptErrorWitnessMalleated))
         }
       case _: WitnessTxSigComponentRebuilt =>
         Failure(new IllegalArgumentException(
@@ -1120,6 +1120,12 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
   private def hasUnexpectedWitness(program: ScriptProgram): Boolean = {
     val txSigComponent = program.txSignatureComponent
     val unexpectedWitness = txSigComponent match {
+      case _: WitnessTxSigComponentRaw => false
+      case w: WitnessTxSigComponentP2SH =>
+        w.scriptSignature.redeemScript match {
+          case _: WitnessScriptPubKey => false
+          case _                      => true
+        }
       case b: BaseTxSigComponent =>
         b.transaction match {
           case wtx: WitnessTransaction =>
@@ -1128,12 +1134,6 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
               .stack
               .nonEmpty
           case _: BaseTransaction => false
-        }
-      case _: WitnessTxSigComponentRaw => false
-      case w: WitnessTxSigComponentP2SH =>
-        w.scriptSignature.redeemScript match {
-          case _: WitnessScriptPubKey => false
-          case _                      => true
         }
       case r: WitnessTxSigComponentRebuilt =>
         r.transaction.witness
