@@ -70,43 +70,43 @@
 <span class="hljs-comment">//get 256 bits of random entropy</span>
 <span class="hljs-keyword">val</span> entropy = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
 <span class="hljs-comment">// entropy: scodec.bits.BitVector = Bytes(</span>
-<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@d7dc406, 0L, 32L)),</span>
+<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@489319cf, 0L, 32L)),</span>
 <span class="hljs-comment">//   256L</span>
 <span class="hljs-comment">// )</span>
 
 <span class="hljs-keyword">val</span> mnemonic = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
 <span class="hljs-comment">// mnemonic: MnemonicCode = MnemonicCodeImpl(</span>
 <span class="hljs-comment">//   Vector(</span>
-<span class="hljs-comment">//     "possible",</span>
-<span class="hljs-comment">//     "home",</span>
-<span class="hljs-comment">//     "evidence",</span>
-<span class="hljs-comment">//     "august",</span>
-<span class="hljs-comment">//     "wet",</span>
-<span class="hljs-comment">//     "cricket",</span>
-<span class="hljs-comment">//     "tape",</span>
-<span class="hljs-comment">//     "exchange",</span>
-<span class="hljs-comment">//     "east",</span>
-<span class="hljs-comment">//     "frozen",</span>
-<span class="hljs-comment">//     "chunk",</span>
-<span class="hljs-comment">//     "mystery",</span>
-<span class="hljs-comment">//     "field",</span>
-<span class="hljs-comment">//     "arrange",</span>
-<span class="hljs-comment">//     "balance",</span>
-<span class="hljs-comment">//     "orchard",</span>
-<span class="hljs-comment">//     "soul",</span>
-<span class="hljs-comment">//     "math",</span>
-<span class="hljs-comment">//     "forum",</span>
-<span class="hljs-comment">//     "snack",</span>
-<span class="hljs-comment">//     "awesome",</span>
-<span class="hljs-comment">//     "decide",</span>
-<span class="hljs-comment">//     "funny",</span>
-<span class="hljs-comment">//     "trust"</span>
+<span class="hljs-comment">//     "pottery",</span>
+<span class="hljs-comment">//     "history",</span>
+<span class="hljs-comment">//     "venue",</span>
+<span class="hljs-comment">//     "any",</span>
+<span class="hljs-comment">//     "scrap",</span>
+<span class="hljs-comment">//     "grief",</span>
+<span class="hljs-comment">//     "fiction",</span>
+<span class="hljs-comment">//     "net",</span>
+<span class="hljs-comment">//     "innocent",</span>
+<span class="hljs-comment">//     "myself",</span>
+<span class="hljs-comment">//     "happy",</span>
+<span class="hljs-comment">//     "upset",</span>
+<span class="hljs-comment">//     "habit",</span>
+<span class="hljs-comment">//     "describe",</span>
+<span class="hljs-comment">//     "father",</span>
+<span class="hljs-comment">//     "subway",</span>
+<span class="hljs-comment">//     "ghost",</span>
+<span class="hljs-comment">//     "current",</span>
+<span class="hljs-comment">//     "list",</span>
+<span class="hljs-comment">//     "soldier",</span>
+<span class="hljs-comment">//     "ready",</span>
+<span class="hljs-comment">//     "rebel",</span>
+<span class="hljs-comment">//     "pony",</span>
+<span class="hljs-comment">//     "yard"</span>
 <span class="hljs-comment">//   )</span>
 <span class="hljs-comment">// )</span>
 
 <span class="hljs-comment">//you can print that mnemonic seed with this</span>
 println(mnemonic.words)
-<span class="hljs-comment">// Vector(possible, home, evidence, august, wet, cricket, tape, exchange, east, frozen, chunk, mystery, field, arrange, balance, orchard, soul, math, forum, snack, awesome, decide, funny, trust)</span>
+<span class="hljs-comment">// Vector(pottery, history, venue, any, scrap, grief, fiction, net, innocent, myself, happy, upset, habit, describe, father, subway, ghost, current, list, soldier, ready, rebel, pony, yard)</span>
 </code></pre>
 <p>Now that we have a <code>MnemonicCode</code> that was securely generated, we need to now create <code>KeyManagerParams</code> which tells us how to generate
 generate specific kinds of addresses for wallets.</p>
@@ -133,7 +133,7 @@ generate specific kinds of addresses for wallets.</p>
 <span class="hljs-comment">//this will create a temp directory with the prefix 'key-manager-example` that will</span>
 <span class="hljs-comment">//have a file in it called "encrypted-bitcoin-s-seed.json"</span>
 <span class="hljs-keyword">val</span> seedPath = <span class="hljs-type">Files</span>.createTempDirectory(<span class="hljs-string">"key-manager-example"</span>).resolve(<span class="hljs-type">WalletStorage</span>.<span class="hljs-type">ENCRYPTED_SEED_FILE_NAME</span>)
-<span class="hljs-comment">// seedPath: Path = /tmp/key-manager-example14143721280649608646/encrypted-bitcoin-s-seed.json</span>
+<span class="hljs-comment">// seedPath: Path = /tmp/key-manager-example8067510564379267054/encrypted-bitcoin-s-seed.json</span>
 
 <span class="hljs-comment">//let's create a native segwit key manager</span>
 <span class="hljs-keyword">val</span> purpose = <span class="hljs-type">HDPurposes</span>.<span class="hljs-type">SegWit</span>
@@ -145,7 +145,7 @@ generate specific kinds of addresses for wallets.</p>
 
 <span class="hljs-keyword">val</span> kmParams = <span class="hljs-type">KeyManagerParams</span>(seedPath, purpose, network)
 <span class="hljs-comment">// kmParams: KeyManagerParams = KeyManagerParams(</span>
-<span class="hljs-comment">//   /tmp/key-manager-example14143721280649608646/encrypted-bitcoin-s-seed.json,</span>
+<span class="hljs-comment">//   /tmp/key-manager-example8067510564379267054/encrypted-bitcoin-s-seed.json,</span>
 <span class="hljs-comment">//   HDPurpose(84),</span>
 <span class="hljs-comment">//   RegTest</span>
 <span class="hljs-comment">// )</span>
@@ -155,34 +155,34 @@ generate specific kinds of addresses for wallets.</p>
 <span class="hljs-comment">//   BIP39KeyManager(</span>
 <span class="hljs-comment">//     MnemonicCodeImpl(</span>
 <span class="hljs-comment">//       Vector(</span>
-<span class="hljs-comment">//         "possible",</span>
-<span class="hljs-comment">//         "home",</span>
-<span class="hljs-comment">//         "evidence",</span>
-<span class="hljs-comment">//         "august",</span>
-<span class="hljs-comment">//         "wet",</span>
-<span class="hljs-comment">//         "cricket",</span>
-<span class="hljs-comment">//         "tape",</span>
-<span class="hljs-comment">//         "exchange",</span>
-<span class="hljs-comment">//         "east",</span>
-<span class="hljs-comment">//         "frozen",</span>
-<span class="hljs-comment">//         "chunk",</span>
-<span class="hljs-comment">//         "mystery",</span>
-<span class="hljs-comment">//         "field",</span>
-<span class="hljs-comment">//         "arrange",</span>
-<span class="hljs-comment">//         "balance",</span>
-<span class="hljs-comment">//         "orchard",</span>
-<span class="hljs-comment">//         "soul",</span>
-<span class="hljs-comment">//         "math",</span>
-<span class="hljs-comment">//         "forum",</span>
-<span class="hljs-comment">//         "snack",</span>
-<span class="hljs-comment">//         "awesome",</span>
-<span class="hljs-comment">//         "decide",</span>
-<span class="hljs-comment">//         "funny",</span>
-<span class="hljs-comment">//         "trust"</span>
+<span class="hljs-comment">//         "pottery",</span>
+<span class="hljs-comment">//         "history",</span>
+<span class="hljs-comment">//         "venue",</span>
+<span class="hljs-comment">//         "any",</span>
+<span class="hljs-comment">//         "scrap",</span>
+<span class="hljs-comment">//         "grief",</span>
+<span class="hljs-comment">//         "fiction",</span>
+<span class="hljs-comment">//         "net",</span>
+<span class="hljs-comment">//         "innocent",</span>
+<span class="hljs-comment">//         "myself",</span>
+<span class="hljs-comment">//         "happy",</span>
+<span class="hljs-comment">//         "upset",</span>
+<span class="hljs-comment">//         "habit",</span>
+<span class="hljs-comment">//         "describe",</span>
+<span class="hljs-comment">//         "father",</span>
+<span class="hljs-comment">//         "subway",</span>
+<span class="hljs-comment">//         "ghost",</span>
+<span class="hljs-comment">//         "current",</span>
+<span class="hljs-comment">//         "list",</span>
+<span class="hljs-comment">//         "soldier",</span>
+<span class="hljs-comment">//         "ready",</span>
+<span class="hljs-comment">//         "rebel",</span>
+<span class="hljs-comment">//         "pony",</span>
+<span class="hljs-comment">//         "yard"</span>
 <span class="hljs-comment">//       )</span>
 <span class="hljs-comment">//     ),</span>
 <span class="hljs-comment">//     KeyManagerParams(</span>
-<span class="hljs-comment">//       /tmp/key-manager-example14143721280649608646/encrypted-bitcoin-s-seed.json,</span>
+<span class="hljs-comment">//       /tmp/key-manager-example8067510564379267054/encrypted-bitcoin-s-seed.json,</span>
 <span class="hljs-comment">//       HDPurpose(84),</span>
 <span class="hljs-comment">//       RegTest</span>
 <span class="hljs-comment">//     ),</span>
@@ -194,17 +194,17 @@ generate specific kinds of addresses for wallets.</p>
 <span class="hljs-comment">// rootXPub: ExtPublicKey = ExtPublicKeyImpl(</span>
 <span class="hljs-comment">//   SegWitTestNet3Pub,</span>
 <span class="hljs-comment">//   UInt8Impl(0),</span>
-<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@ac1d722, 0L, 4L)),</span>
+<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@698ed9c9, 0L, 4L)),</span>
 <span class="hljs-comment">//   UInt32Impl(0),</span>
-<span class="hljs-comment">//   ChainCode(Chunk(View(scodec.bits.ByteVector$AtArray@554b9307, 32L, 32L))),</span>
+<span class="hljs-comment">//   ChainCode(Chunk(View(scodec.bits.ByteVector$AtArray@4316fd35, 32L, 32L))),</span>
 <span class="hljs-comment">//   ECPublicKeyImpl(</span>
-<span class="hljs-comment">//     Chunk(View(scodec.bits.ByteVector$AtArray@12011e7, 0L, 33L)),</span>
-<span class="hljs-comment">//     scala.concurrent.impl.ExecutionContextImpl$$anon$3@1ce063f6[Running, parallelism = 2, size = 1, active = 0, running = 0, steals = 9, tasks = 0, submissions = 0]</span>
+<span class="hljs-comment">//     Chunk(View(scodec.bits.ByteVector$AtArray@2e8b002f, 0L, 33L)),</span>
+<span class="hljs-comment">//     scala.concurrent.impl.ExecutionContextImpl$$anon$3@212855ee[Running, parallelism = 2, size = 2, active = 0, running = 0, steals = 5, tasks = 0, submissions = 0]</span>
 <span class="hljs-comment">//   )</span>
 <span class="hljs-comment">// )</span>
 
 println(rootXPub)
-<span class="hljs-comment">// vpub5SLqN2bLY4WeYZnpyRheqhWpwKNEgNsaW3LtZBDrbVv7RBkZduZ6VXuHG292d2XvcMLHweqn8geLEJgKh3V12WZb8tJwaD446mhCySBTebR</span>
+<span class="hljs-comment">// vpub5SLqN2bLY4WeZfy5fPPFy79Uy5e1puFoGY4RmMBXKKqJG7fdATWvz28D94eW1LcRb5bsEuaNKpHupzAXHwteUaa4ZWewiY76mqi8BmqAtRF</span>
 </code></pre>
 <p>Which should print something that looks like this</p>
 <p><code>vpub5SLqN2bLY4WeXxMqwJHJFBEwxSscGB2uDUnsTS3edVjZEwTrQDFDNqoR2xLqARQPabGaXsHSTenTRcqm2EnB9MpuC4vSk3LqSgNmGGZtuq7</code></p>
