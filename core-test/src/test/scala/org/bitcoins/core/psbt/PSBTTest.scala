@@ -6,6 +6,7 @@ import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.script.{
   P2WSHWitnessSPKV0,
   P2WSHWitnessV0,
+  RawScriptPubKey,
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -134,7 +135,7 @@ class PSBTTest extends BitcoinSUnitTest {
     assert(spendingInfo.redeemScriptOpt.isEmpty)
     assert(
       spendingInfo.scriptWitnessOpt.contains(
-        P2WSHWitnessV0(ScriptPubKey.fromAsmHex(
+        P2WSHWitnessV0(RawScriptPubKey.fromAsmHex(
           "5221029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c88712103372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b52ae"))))
     assert(spendingInfo.conditionalPath == ConditionalPath.NoConditionsLeft)
   }
