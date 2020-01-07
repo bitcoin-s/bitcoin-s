@@ -3,13 +3,14 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.crypto.{ECPublicKey, ExtKey, Sha256Digest, Sign}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.hd.BIP32Path
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{
   P2WSHWitnessSPKV0,
   P2WSHWitnessV0,
   RawScriptPubKey,
   ScriptPubKey
 }
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -214,8 +215,13 @@ class PSBTTest extends BitcoinSUnitTest {
               val infoOpt =
                 creditingTxsInfo.find(_.outPoint == input.previousOutput)
               infoOpt match {
-                case Some(info) => info
-                case None       => fail("Could not find UTXOSpendingInfo for input!")
+                case Some(info) =>
+                  val tx = BaseTransaction(Int32.zero,
+                                           Vector.empty,
+                                           Vector(info.output),
+                                           UInt32.zero)
+                  (info, Some(tx))
+                case None => fail("Could not find UTXOSpendingInfo for input!")
               }
             }
           }
