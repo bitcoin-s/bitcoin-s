@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
+import org.bitcoins.core.wallet.utxo.TxoState
 import scodec.bits.ByteVector
 import slick.jdbc.GetResult
 import slick.jdbc.SQLiteProfile.api._
@@ -160,6 +161,11 @@ abstract class DbCommonsColumnMappers {
   implicit val filterTypeMapper: BaseColumnType[FilterType] =
     MappedColumnType
       .base[FilterType, Short](FilterType.getCode, FilterType.byCode)
+
+  implicit val txoStateMapper: BaseColumnType[TxoState] = {
+    MappedColumnType
+      .base[TxoState, String](_.toString, TxoState.fromString(_).get)
+  }
 }
 
 object DbCommonsColumnMappers extends DbCommonsColumnMappers

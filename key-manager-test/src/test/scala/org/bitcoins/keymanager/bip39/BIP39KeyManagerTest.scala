@@ -38,7 +38,8 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
     val kmParams = buildParams()
 
     val keyManager = withInitializedKeyManager(kmParams = kmParams,
-      entropy = mnemonic.toEntropy)
+      entropy = mnemonic.toEntropy,
+      bip39PasswordOpt = None)
 
 
     keyManager.deriveXPub(hdAccount).get.toString must be ("xpub6D36zpm3tLPy3dBCpiScEpmmgsivFBcHxX5oXmPBW982BmLiEkjBEDdswxFUoeXpp272QuSpNKZ3f2TdEMkAHyCz1M7P3gFkYJJVEsM66SE")
@@ -46,11 +47,14 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
 
   it must "initialize a key manager to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
     val kmParams = buildParams()
-    val direct = BIP39KeyManager(mnemonic, kmParams)
+    val direct = BIP39KeyManager(mnemonic, kmParams, None)
 
     val directXpub = direct.getRootXPub
 
-    val api = BIP39KeyManager.initializeWithEntropy(mnemonic.toEntropy, kmParams).right.get
+    val api = BIP39KeyManager.initializeWithEntropy(
+      entropy = mnemonic.toEntropy,
+      bip39PasswordOpt = None,
+      kmParams = kmParams).right.get
 
     val apiXpub = api.getRootXPub
 
@@ -61,9 +65,48 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
     assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
   }
 
+  it must "initialize a key manager with a bip39 password to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
+    val kmParams = buildParams()
+    val bip39Pw = KeyManagerTestUtil.bip39Password
+    val direct = BIP39KeyManager(mnemonic, kmParams,Some(bip39Pw))
+
+    val directXpub = direct.getRootXPub
+
+    val api = BIP39KeyManager.initializeWithEntropy(
+      mnemonic.toEntropy,
+      Some(bip39Pw),
+      kmParams).right.get
+
+    val apiXpub = api.getRootXPub
+
+    assert(apiXpub == directXpub, s"We don't have initialization symmetry between our constructors!")
+
+
+    //we should be able to derive the same child xpub
+    assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
+  }
+
+  it must "NOT initialize a key manager to the same xpub if one has a password and one does not" in {
+    val kmParams = buildParams()
+    val bip39Pw = KeyManagerTestUtil.bip39Password
+
+    val withPassword = BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw))
+    val withPasswordXpub = withPassword.getRootXPub
+
+    val noPassword = BIP39KeyManager(mnemonic, kmParams, None)
+
+    val noPwXpub = noPassword.getRootXPub
+
+    assert(withPasswordXpub != noPwXpub, s"A key manager with a BIP39 passwrod should not generate the same xpub as a key manager without a password!")
+
+  }
+
+
   it must "return a mnemonic not found if we have not initialized the key manager" in {
     val kmParams = buildParams()
-    val kmE = BIP39KeyManager.fromParams(kmParams, BIP39KeyManager.badPassphrase)
+    val kmE = BIP39KeyManager.fromParams(kmParams = kmParams,
+      password = BIP39KeyManager.badPassphrase,
+      bip39PasswordOpt = None)
 
     assert(kmE == Left(ReadMnemonicError.NotFoundError))
   }
@@ -80,7 +123,10 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
     val badEntropy = BitVector.empty
 
 
-    val init = BIP39KeyManager.initializeWithEntropy(badEntropy, buildParams())
+    val init = BIP39KeyManager.initializeWithEntropy(
+      entropy = badEntropy,
+      bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt,
+      kmParams = buildParams())
 
     assert(init == Left(InitializeKeyManagerError.BadEntropy))
   }

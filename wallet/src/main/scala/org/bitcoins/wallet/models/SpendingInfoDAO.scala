@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
@@ -59,25 +60,26 @@ case class SpendingInfoDAO()(
     database.runVec(query.result)
   }
 
-  /** Marks the given outputs as spent. Assumes that all the
-    * given outputs are ours, throwing if numbers aren't
-    * confirming that.
+  /** Updates the [[org.bitcoins.core.wallet.utxo.TxoState TxoState]] of all of the given
+    * outputs in our database to be the state
     */
-  def markAsSpent(
-      outputs: Seq[TransactionOutput]): Future[Vector[SpendingInfoDb]] = {
+  def updateTxoState(
+      outputs: Seq[TransactionOutput],
+      state: TxoState): Future[Vector[SpendingInfoDb]] = {
     val spks = outputs.map(_.scriptPubKey)
     val filtered = table.filter(_.scriptPubKey.inSet(spks))
 
     for {
       utxos <- database.run(filtered.result)
-      _ = assert(
+      _ = require(
         utxos.length == outputs.length,
         s"Was given ${outputs.length} outputs, found ${utxos.length} in DB")
-      updated <- updateAll(utxos.map(_.copyWithSpent(spent = true)).toVector)
+      newStates = utxos.map(_.copyWithState(state = state)).toVector
+      updated <- updateAll(newStates)
     } yield {
-      assert(utxos.length == updated.length,
-             "Updated a different number of UTXOs than what we found!")
-      logger.debug(s"Marked ${updated.length} UTXO(s) as spent")
+      require(utxos.length == updated.length,
+              "Updated a different number of UTXOs than what we found!")
+      logger.debug(s"Updated ${updated.length} UTXO(s) to state=${state}")
       updated
 
     }
@@ -99,9 +101,13 @@ case class SpendingInfoDAO()(
     database.runVec(filtered.result)
   }
 
-  /** Enumerates all unspent TX outputs in the wallet */
+  private val receivedStates: Set[TxoState] =
+    Set(TxoState.PendingConfirmationsReceived, TxoState.ConfirmedReceived)
+
+  /** Enumerates all unspent TX outputs in the wallet with the state
+    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]] */
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
-    val query = table.filter(!_.spent)
+    val query = table.filter(_.state.inSet(receivedStates))
 
     database.run(query.result).map(_.toVector)
   }

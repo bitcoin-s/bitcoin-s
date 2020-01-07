@@ -78,7 +78,7 @@ val network = RegTest
 
 val kmParams = KeyManagerParams(seedPath, purpose, network)
 
-val km = BIP39KeyManager.initializeWithMnemonic(mnemonic, kmParams)
+val km = BIP39KeyManager.initializeWithMnemonic(mnemonic, None, kmParams)
 
 val rootXPub = km.right.get.getRootXPub
 
