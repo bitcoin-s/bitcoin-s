@@ -699,4 +699,26 @@ object BitcoinTxBuilder {
     val map = loop(utxos, Map.empty)
     BitcoinTxBuilder(destinations, map, feeRate, changeSPK, network)
   }
+
+  def emptyAllSigs(tx: Transaction): Transaction = {
+    val newInputs = tx.inputs.map { input =>
+      TransactionInput(input.previousOutput,
+                       EmptyScriptSignature,
+                       input.sequence)
+    }
+
+    tx match {
+      case btx: BaseTransaction =>
+        BaseTransaction(version = btx.version,
+                        inputs = newInputs,
+                        outputs = btx.outputs,
+                        lockTime = btx.lockTime)
+      case wtx: WitnessTransaction =>
+        WitnessTransaction(version = wtx.version,
+                           inputs = newInputs,
+                           outputs = wtx.outputs,
+                           lockTime = wtx.lockTime,
+                           witness = EmptyWitness.fromInputs(newInputs))
+    }
+  }
 }

@@ -45,6 +45,10 @@ object Sign {
     SignImpl(signFunction, pubKey)
   }
 
+  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
+    SignImpl(_ => Future.successful(sig), pubKey)
+  }
+
   /**
     * This dummySign function is useful for the case where we do not have the
     * signFunction available on the same jvm as the place where we are creating the
