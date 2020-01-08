@@ -16,7 +16,6 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
 import org.bitcoins.core.util.{CryptoUtil, TestUtil}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.slf4j.LoggerFactory
 import spray.json._
 import scodec.bits._
 
@@ -71,10 +70,11 @@ class TransactionTest extends BitcoinSUnitTest {
       "0000000000000000000000000000000000000000000000000000000000000000")
   }
 
-  it must "calculate the size of a tranaction correctly" in {
+  it must "calculate the size of a transaction correctly" in {
     val rawTx = TestUtil.rawTransaction
     val tx = Transaction(rawTx)
     //size is in bytes so divide by 2
+    assert(tx.size == tx.totalSize)
     tx.size must be(rawTx.size / 2)
   }
 
@@ -135,7 +135,7 @@ class TransactionTest extends BitcoinSUnitTest {
     tx2.size must be(216)
     tx2.weight must be(534)
     tx2.vsize must be(134)
-
+    tx2.baseSize must be(106)
   }
 
   it must "parse a transaction with an OP_PUSHDATA4 op code but not enough data to push" in {
