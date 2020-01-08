@@ -4,11 +4,15 @@ import java.io.File
 import java.nio.file.NoSuchFileException
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
+import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -836,6 +840,48 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     f.foreach(system.eventStream.publish)
 
     f
+  }
+
+  /** @inheritdoc */
+  override def connectToWebSocket(
+      eventHandler: WebSocketEvent => Unit): Future[Unit] = {
+    val incoming: Sink[Message, Future[Done]] =
+      Sink.foreach[Message] {
+        case message: TextMessage.Strict =>
+          val parsed: JsValue = Json.parse(message.text)
+          val validated: JsResult[WebSocketEvent] =
+            parsed.validate[WebSocketEvent]
+          val event = parseResult[WebSocketEvent](validated, parsed, "ws")
+          eventHandler(event)
+        case _: Message => ()
+      }
+
+    val flow =
+      Flow.fromSinkAndSource(incoming, Source.maybe)
+
+    val uri =
+      instance.rpcUri.resolve("/ws").toString.replace("http://", "ws://")
+    instance.authCredentials.bitcoinAuthOpt
+    val request = WebSocketRequest(
+      uri,
+      extraHeaders = Vector(
+        Authorization(
+          BasicHttpCredentials("", instance.authCredentials.password))))
+    val (upgradeResponse, _) = Http().singleWebSocketRequest(request, flow)
+
+    val connected = upgradeResponse.map { upgrade =>
+      if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
+        Done
+      } else {
+        throw new RuntimeException(
+          s"Connection failed: ${upgrade.response.status}")
+      }
+    }
+
+    connected.failed.foreach(ex =>
+      logger.error(s"Cannot connect to web socket $uri ", ex))
+
+    connected.map(_ => ())
   }
 }
 
