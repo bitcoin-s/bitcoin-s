@@ -1437,8 +1437,10 @@ object InputPSBTMap {
 
     val sideEffectSigners = spendingInfo.signers.map { signer =>
       val signFunction = { bytes: ByteVector =>
-        signer.signFunction(bytes).map { sig =>
-          sigPs(signer.publicKey).success(sig)
+        signer.signFunction(bytes).map { sig: ECDigitalSignature =>
+          val sigWithHashType = ECDigitalSignature(
+            sig.bytes ++ ByteVector.fromByte(spendingInfo.hashType.byte))
+          sigPs(signer.publicKey).success(sigWithHashType)
 
           sig
         }
@@ -1461,14 +1463,27 @@ object InputPSBTMap {
 
     if (finalized) {
       sigComponentF.map { sigComponent =>
+        val utxos = spendingInfo match {
+          case _: SegwitV0NativeUTXOSpendingInfo |
+              _: P2SHNestedSegwitV0UTXOSpendingInfo =>
+            Vector(WitnessUTXO(spendingInfo.output))
+          case _: RawScriptUTXOSpendingInfo | _: P2SHNoNestSpendingInfo |
+              _: UnassignedSegwitNativeUTXOSpendingInfo =>
+            nonWitnessTxOpt match {
+              case None => Vector.empty
+              case Some(nonWitnessTx) =>
+                Vector(NonWitnessOrUnknownUTXO(nonWitnessTx))
+            }
+        }
+
         val scriptSig =
           FinalizedScriptSig(sigComponent.scriptSignature)
         sigComponent.transaction match {
-          case _: BaseTransaction => InputPSBTMap(Vector(scriptSig))
+          case _: BaseTransaction => InputPSBTMap(utxos ++ Vector(scriptSig))
           case wtx: WitnessTransaction =>
             val witness = wtx.witness.witnesses(sigComponent.inputIndex.toInt)
             val scriptWitness = FinalizedScriptWitness(witness)
-            InputPSBTMap(Vector(scriptSig, scriptWitness))
+            InputPSBTMap(utxos ++ Vector(scriptSig, scriptWitness))
         }
       }
     } else {

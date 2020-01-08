@@ -420,10 +420,14 @@ case class MultiSignatureSpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: MultiSignatureScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType
 ) extends RawScriptUTXOSpendingInfo {
-  require(signers.length >= scriptPubKey.requiredSigs, "Not enough signers!")
+  require(signersWithPossibleExtra.length >= scriptPubKey.requiredSigs,
+          "Not enough signers!")
+
+  override val signers: Seq[Sign] =
+    signersWithPossibleExtra.take(scriptPubKey.requiredSigs)
 
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoConditionsLeft
@@ -434,7 +438,7 @@ case class ConditionalSpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: ConditionalScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     conditionalPath: ConditionalPath)
     extends RawScriptUTXOSpendingInfo {
@@ -462,17 +466,19 @@ case class ConditionalSpendingInfo(
     RawScriptUTXOSpendingInfo(outPoint,
                               amount,
                               nestedSPK,
-                              signers,
+                              signersWithPossibleExtra,
                               hashType,
                               nextConditionalPath)
   }
+
+  override val signers: Seq[Sign] = nestedSpendingInfo.signers
 }
 
 case class LockTimeSpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: LockTimeScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     conditionalPath: ConditionalPath
 ) extends RawScriptUTXOSpendingInfo {
@@ -481,10 +487,12 @@ case class LockTimeSpendingInfo(
     RawScriptUTXOSpendingInfo(outPoint,
                               amount,
                               scriptPubKey.nestedScriptPubKey,
-                              signers,
+                              signersWithPossibleExtra,
                               hashType,
                               conditionalPath)
   }
+
+  override val signers: Seq[Sign] = nestedSpendingInfo.signers
 }
 
 /** This is the case where we are spending a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 witness v0 script]]  */
@@ -557,7 +565,7 @@ case class P2WSHV0SpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2WSHWitnessSPKV0,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     scriptWitness: P2WSHWitnessV0,
     conditionalPath: ConditionalPath)
@@ -571,10 +579,12 @@ case class P2WSHV0SpendingInfo(
     RawScriptUTXOSpendingInfo(outPoint,
                               amount,
                               scriptWitness.redeemScript,
-                              signers,
+                              signersWithPossibleExtra,
                               hashType,
                               conditionalPath)
   }
+
+  override val signers: Seq[Sign] = nestedSpendingInfo.signers
 }
 
 /** This is the case where we are spending a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 witness v0 script]]  */
@@ -607,7 +617,7 @@ case class P2SHNoNestSpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2SHScriptPubKey,
-    signers: Seq[Sign],
+    private val signersWithPossibleExtra: Seq[Sign],
     hashType: HashType,
     redeemScript: RawScriptPubKey,
     conditionalPath: ConditionalPath)
@@ -627,9 +637,11 @@ case class P2SHNoNestSpendingInfo(
     RawScriptUTXOSpendingInfo(outPoint,
                               amount,
                               redeemScript,
-                              signers,
+                              signersWithPossibleExtra,
                               hashType,
                               conditionalPath)
+
+  override val signers: Seq[Sign] = nestedSpendingInfo.signers
 }
 
 /** This is for the case we are spending a p2sh(p2w{pkh,sh}) script. This means that
@@ -639,7 +651,7 @@ case class P2SHNestedSegwitV0UTXOSpendingInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2SHScriptPubKey,
-    signers: Seq[Sign],
+    private val signersWithPossibleExtra: Seq[Sign],
     hashType: HashType,
     redeemScript: WitnessScriptPubKeyV0,
     scriptWitness: ScriptWitnessV0,
@@ -663,8 +675,10 @@ case class P2SHNestedSegwitV0UTXOSpendingInfo(
     SegwitV0NativeUTXOSpendingInfo(outPoint,
                                    amount,
                                    redeemScript,
-                                   signers,
+                                   signersWithPossibleExtra,
                                    hashType,
                                    scriptWitness,
                                    conditionalPath)
+
+  override val signers: Seq[Sign] = nestedSpendingInfo.signers
 }
