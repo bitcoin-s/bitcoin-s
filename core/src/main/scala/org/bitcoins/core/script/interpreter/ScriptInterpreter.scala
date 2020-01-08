@@ -1078,6 +1078,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     val inputOutputsNotZero =
       !(transaction.inputs.isEmpty || transaction.outputs.isEmpty)
     val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
+    val txNotHeavierThanBlock = transaction.weight < Consensus.maxBlockWeight
     val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
       o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney)
 
@@ -1094,7 +1095,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     } else {
       !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
     }
-    inputOutputsNotZero && txNotLargerThanBlock && outputsSpendValidAmountsOfMoney &&
+    inputOutputsNotZero && txNotLargerThanBlock && txNotHeavierThanBlock && outputsSpendValidAmountsOfMoney &&
     allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
   }
 

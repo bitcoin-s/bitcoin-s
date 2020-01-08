@@ -72,7 +72,7 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "subtract satoshis " in {
+  it must "subtract satoshis" in {
     forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) {
       (num1: Satoshis, num2: Satoshis) =>
         val result: Try[Int64] = Try(Int64(num1.toBigInt - num2.toBigInt))
@@ -150,6 +150,7 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
     forAll(CurrencyUnitGenerator.satoshis) { satoshis =>
       val b = Bitcoins(satoshis)
       assert(b.satoshis == satoshis)
+      assert(CurrencyUnits.toSatoshis(b) == satoshis)
     }
   }
 
@@ -162,6 +163,18 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
         val actual: Try[CurrencyUnit] = Try(sats + btc)
         if (actual.isSuccess && expected.isSuccess) actual.get == expected.get
         else actual.isFailure && expected.isFailure
+    }
+  }
+
+  it must "correctly compare two currency units" in {
+    forAll(CurrencyUnitGenerator.satoshis, CurrencyUnitGenerator.satoshis) {
+      (num1, num2) =>
+        if (num1 > num2)
+          assert(num1.compare(num2) == 1)
+        else if (num1 < num2)
+          assert(num1.compare(num2) == -1)
+        else
+          assert(num1.compare(num2) == 0)
     }
   }
 }

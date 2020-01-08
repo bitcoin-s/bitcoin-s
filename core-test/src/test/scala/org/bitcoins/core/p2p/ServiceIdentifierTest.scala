@@ -37,4 +37,15 @@ class ServiceIdentifierTest extends BitcoinSUnitTest {
   it must "parse NODE_NETWORK_LIMITED" in {
     assert(ServiceIdentifier.NODE_NETWORK_LIMITED.nodeNetworkLimited)
   }
+
+  it must "correctly get a ServiceIdentifier from string" in {
+    assert(ServiceIdentifier.fromString("NETWORK") == ServiceIdentifier.NODE_NETWORK)
+    assert(ServiceIdentifier.fromString("NETWORK_LIMITED") == ServiceIdentifier.NODE_NETWORK_LIMITED)
+    assert(ServiceIdentifier.fromString("WITNESS") == ServiceIdentifier.NODE_WITNESS)
+    assert(ServiceIdentifier.fromString("BLOOM") == ServiceIdentifier.NODE_BLOOM)
+    assert(ServiceIdentifier.fromString("GETUTXO") == ServiceIdentifier.NODE_GET_UTXO)
+    assert(ServiceIdentifier.fromString("COMPACT_FILTERS") == ServiceIdentifier.NODE_COMPACT_FILTERS)
+    assert(ServiceIdentifier.fromString("XTHIN") == ServiceIdentifier.NODE_XTHIN)
+    assertThrows[IllegalArgumentException](ServiceIdentifier.fromString("this is invalid"))
+  }
 }

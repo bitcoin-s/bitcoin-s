@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.crypto.Sha256Hash160Digest
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey, P2SHScriptPubKey, P2WPKHWitnessSPKV0, ScriptPubKey, WitnessScriptPubKeyV0}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success, Try}
@@ -89,5 +89,37 @@ class BitcoinAddressTest extends BitcoinSUnitTest {
     val scriptPubKey = ScriptPubKey(hex)
     val addr = P2SHAddress(scriptPubKey, MainNet)
     addr must be(BitcoinAddress("3P14159f73E4gFr7JterCCQh9QjiTjiZrG").get)
+  }
+
+  it must "create a bech32 address from a WitnessScriptPubKey" in {
+    val scriptPubKey = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
+    assert(Bech32Address.fromScriptPubKey(scriptPubKey, RegTest).isSuccess)
+  }
+
+  it must "fail to create a bech32 address from an invalid ScriptPubKey" in {
+    assert(Bech32Address.fromScriptPubKey(EmptyScriptPubKey, RegTest).isFailure)
+  }
+
+  it must "create an address from a P2PKHScriptPubKey" in {
+    val scriptPubKey = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
+    assert(P2PKHAddress.fromScriptPubKey(scriptPubKey, RegTest).isSuccess)
+  }
+
+  it must "fail to create a P2PKHAddress address from an invalid ScriptPubKey" in {
+    assert(P2PKHAddress.fromScriptPubKey(EmptyScriptPubKey, RegTest).isFailure)
+  }
+
+  it must "create an address from a P2SHScriptPubKey" in {
+    val scriptPubKey = P2SHScriptPubKey(EmptyScriptPubKey)
+    assert(P2SHAddress.fromScriptPubKey(scriptPubKey, RegTest).isSuccess)
+  }
+
+  it must "fail to create a P2SHScriptPubKey address from an invalid ScriptPubKey" in {
+    assert(P2SHAddress.fromScriptPubKey(EmptyScriptPubKey, RegTest).isFailure)
+  }
+
+  it must "create an address from a ScriptPubKey" in {
+    val scriptPubKey = P2SHScriptPubKey(EmptyScriptPubKey)
+    assert(Address.fromScriptPubKey(scriptPubKey, RegTest).isSuccess)
   }
 }
