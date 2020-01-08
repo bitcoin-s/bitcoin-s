@@ -842,7 +842,9 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     f
   }
 
-  def connectToWebSocket[T](f: WebSocketEvent => T): Future[Unit] = {
+  /** @inheritdoc */
+  override def connectToWebSocket(
+      eventHandler: WebSocketEvent => Unit): Future[Unit] = {
     val incoming: Sink[Message, Future[Done]] =
       Sink.foreach[Message] {
         case message: TextMessage.Strict =>
@@ -850,7 +852,8 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           val validated: JsResult[WebSocketEvent] =
             parsed.validate[WebSocketEvent]
           val event = parseResult[WebSocketEvent](validated, parsed, "ws")
-          f(event)
+          eventHandler(event)
+        case _: Message => ()
       }
 
     val flow =
@@ -861,7 +864,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     instance.authCredentials.bitcoinAuthOpt
     val request = WebSocketRequest(
       uri,
-      extraHeaders = Seq(
+      extraHeaders = Vector(
         Authorization(
           BasicHttpCredentials("", instance.authCredentials.password))))
     val (upgradeResponse, _) = Http().singleWebSocketRequest(request, flow)
