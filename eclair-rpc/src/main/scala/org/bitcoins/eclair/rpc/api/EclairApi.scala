@@ -262,4 +262,7 @@ trait EclairApi {
       externalId: Option[String]): Future[PaymentId]
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
+
+  /** Connects to the Eclair web socket end point and passes [[WebSocketEvent]]s to the given [[eventHandler]] */
+  def connectToWebSocket(eventHandler: WebSocketEvent => Unit): Future[Unit]
 }

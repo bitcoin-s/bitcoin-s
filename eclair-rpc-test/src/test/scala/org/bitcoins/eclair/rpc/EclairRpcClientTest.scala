@@ -3,7 +3,7 @@ package org.bitcoins.eclair.rpc
 import java.nio.file.Files
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt64}
+import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
 import org.bitcoins.core.protocol.ln.channel.{
@@ -552,6 +552,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             _ = assert(channels.exists(_.state == ChannelState.NORMAL),
                        "Nodes did not have open channel!")
             preimage = PaymentPreimage.random
+            wsEventP = Promise[WebSocketEvent]
+            _ <- client.connectToWebSocket({ event =>
+              if (!wsEventP.isCompleted) {
+                wsEventP.success(event)
+              }
+            })
             invoice <- otherClient.createInvoice("foo", amt, preimage)
             paymentId <- client.sendToNode(otherClientNodeId,
                                            amt,
@@ -560,13 +566,19 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                            None,
                                            None,
                                            Some("ext_id"))
-            _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
+            wsEvent <- wsEventP.future
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             _ <- client.close(channelId)
             bitcoind <- bitcoindRpcClientF
             address <- bitcoind.getNewAddress
             _ <- bitcoind.generateToAddress(6, address)
           } yield {
+            assert(wsEvent.isInstanceOf[WebSocketEvent.PaymentSent])
+            val paymentSent = wsEvent.asInstanceOf[WebSocketEvent.PaymentSent]
+            assert(paymentSent.parts.nonEmpty)
+            assert(paymentSent.id == paymentId)
+            assert(paymentSent.parts.head.amount == amt)
+            assert(paymentSent.parts.head.id == paymentId)
             assert(succeeded.nonEmpty)
 
             val succeededPayment = succeeded.head
@@ -844,8 +856,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       }
     }
 
-    def openChannel(c1: EclairRpcClient,
-                    c2: EclairRpcClient): Future[FundedChannelId] = {
+    def openChannel(
+        c1: EclairRpcClient,
+        c2: EclairRpcClient): Future[FundedChannelId] = {
       EclairRpcTestUtil
         .openChannel(c1, c2, Satoshis(500000), MilliSatoshis(500000))
     }
@@ -1049,7 +1062,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             ourUpdates.flatMap(our =>
               allUpdates.map { all =>
                 our != all
-            })
+              })
           }
 
           AsyncUtil
@@ -1145,8 +1158,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  private def hasConnection(client: Future[EclairRpcClient],
-                            nodeId: NodeId): Future[Assertion] = {
+  private def hasConnection(
+      client: Future[EclairRpcClient],
+      nodeId: NodeId): Future[Assertion] = {
 
     val hasPeersF = client.flatMap(_.getPeers.map(_.nonEmpty))
 
@@ -1161,8 +1175,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   /** Checks that the given [[org.bitcoins.eclair.rpc.client.EclairRpcClient]] has the given chanId */
-  private def hasChannel(client: EclairRpcClient,
-                         chanId: ChannelId): Future[Assertion] = {
+  private def hasChannel(
+      client: EclairRpcClient,
+      chanId: ChannelId): Future[Assertion] = {
     val recognizedOpenChannel: Future[Assertion] = {
 
       val chanResultF: Future[ChannelResult] = client.channel(chanId)

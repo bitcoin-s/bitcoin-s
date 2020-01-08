@@ -465,39 +465,66 @@ object JsonReaders {
                                             timestamp)
     }
 
-  implicit val paymentReceivedEventReads: Reads[
-    WebSocketEvent.PaymentReceived] = Reads { js =>
+  implicit val paymentReceivedEventPartReads: Reads[
+    WebSocketEvent.PaymentReceived.Part] = Reads { js =>
     for {
       amount <- (js \ "amount").validate[MilliSatoshis]
-      paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
       fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
       timestamp <- (js \ "timestamp")
         .validate[FiniteDuration](finiteDurationReadsMilliseconds)
-    } yield WebSocketEvent.PaymentReceived(amount,
-                                           paymentHash,
-                                           fromChannelId,
-                                           timestamp)
+    } yield WebSocketEvent.PaymentReceived.Part(amount,
+                                                fromChannelId,
+                                                timestamp)
+  }
+
+  implicit val paymentReceivedEventReads: Reads[
+    WebSocketEvent.PaymentReceived] = Reads { js =>
+    for {
+      paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
+      parts <- (js \ "parts")
+        .validate[Vector[WebSocketEvent.PaymentReceived.Part]]
+    } yield WebSocketEvent.PaymentReceived(paymentHash, parts)
   }
 
   implicit val paymentFailedEventReads: Reads[WebSocketEvent.PaymentFailed] =
-    Json.reads[WebSocketEvent.PaymentFailed]
+    Reads { js =>
+      for {
+        id <- (js \ "id").validate[PaymentId]
+        paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
+        failures <- (js \ "failures").validate[Vector[String]]
+        timestamp <- (js \ "timestamp")
+          .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+      } yield WebSocketEvent.PaymentFailed(id, paymentHash, failures, timestamp)
+    }
+
+  implicit val paymentSentEventPartReads: Reads[
+    WebSocketEvent.PaymentSent.Part] = Reads { js =>
+    for {
+      id <- (js \ "id").validate[PaymentId]
+      amount <- (js \ "amount").validate[MilliSatoshis]
+      feesPaid <- (js \ "feesPaid").validate[MilliSatoshis]
+      toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
+      timestamp <- (js \ "timestamp")
+        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+    } yield WebSocketEvent.PaymentSent.Part(id,
+                                            amount,
+                                            feesPaid,
+                                            toChannelId,
+                                            timestamp)
+  }
 
   implicit val paymentSentEventReads: Reads[WebSocketEvent.PaymentSent] =
     Reads { js =>
       for {
-        amount <- (js \ "amount").validate[MilliSatoshis]
-        feesPaid <- (js \ "feesPaid").validate[MilliSatoshis]
+        id <- (js \ "id").validate[PaymentId]
         paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
         paymentPreimage <- (js \ "paymentPreimage").validate[PaymentPreimage]
-        toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
-        timestamp <- (js \ "timestamp")
-          .validate[FiniteDuration](finiteDurationReadsMilliseconds)
-      } yield WebSocketEvent.PaymentSent(amount,
-                                         feesPaid,
+        parts <- (js \ "parts")
+          .validate[Vector[WebSocketEvent.PaymentSent.Part]]
+      } yield WebSocketEvent.PaymentSent(id,
                                          paymentHash,
                                          paymentPreimage,
-                                         toChannelId,
-                                         timestamp)
+                                         parts)
     }
 
   implicit val paymentSettlingOnchainEventReads: Reads[
@@ -511,5 +538,21 @@ object JsonReaders {
                                                   paymentHash,
                                                   timestamp)
   }
+
+  implicit val webSocketEventReads: Reads[WebSocketEvent] =
+    Reads { js =>
+      (js \ "type")
+        .validate[String]
+        .flatMap {
+          case "payment-relayed"  => js.validate[WebSocketEvent.PaymentRelayed]
+          case "payment-received" => js.validate[WebSocketEvent.PaymentReceived]
+          case "payment-failed" =>
+            js.validate[WebSocketEvent.PaymentFailed]
+          case "payment-sent" =>
+            js.validate[WebSocketEvent.PaymentSent]
+          case "payment-settling-onchain" =>
+            js.validate[WebSocketEvent.PaymentSettlingOnchain]
+        }
+    }
 
 }
