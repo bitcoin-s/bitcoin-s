@@ -1256,8 +1256,11 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
               val hashes = multiSig.publicKeys.toVector.map(pubKey =>
                 CryptoUtil.sha256Hash160(pubKey.bytes))
               builder += ((ConditionalPath.fromBranch(path), hashes, multiSig))
-            case EmptyScriptPubKey | _: NonStandardScriptPubKey |
-                _: WitnessCommitment =>
+            case EmptyScriptPubKey =>
+              builder += ((ConditionalPath.fromBranch(path),
+                           Vector.empty,
+                           EmptyScriptPubKey))
+            case _: NonStandardScriptPubKey | _: WitnessCommitment =>
               throw new UnsupportedOperationException(
                 s"$rawSPK is not yet supported")
           }
@@ -1299,8 +1302,12 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       case multiSig: MultiSignatureScriptPubKey =>
         collectSigs(required = multiSig.requiredSigs,
                     sigs => MultiSignatureScriptSignature(sigs.map(_._1)))
-      case EmptyScriptPubKey | _: NonStandardScriptPubKey |
-          _: UnassignedWitnessScriptPubKey | _: WitnessCommitment =>
+      case EmptyScriptPubKey =>
+        // This script pushes an OP_TRUE onto the stack, causing a successful spend
+        val scriptSig = NonStandardScriptSignature("0151")
+        Some(wipeAndAdd(scriptSig))
+      case _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey |
+          _: WitnessCommitment =>
         throw new UnsupportedOperationException(
           s"$spkToSatisfy is not yet supported")
     }
@@ -1483,7 +1490,13 @@ object InputPSBTMap {
           case wtx: WitnessTransaction =>
             val witness = wtx.witness.witnesses(sigComponent.inputIndex.toInt)
             val scriptWitness = FinalizedScriptWitness(witness)
-            InputPSBTMap(utxos ++ Vector(scriptSig, scriptWitness))
+            val finalizedSigs =
+              if (witness != EmptyScriptWitness) {
+                Vector(scriptSig, scriptWitness)
+              } else {
+                Vector(scriptSig)
+              }
+            InputPSBTMap(utxos ++ finalizedSigs)
         }
       }
     } else {
