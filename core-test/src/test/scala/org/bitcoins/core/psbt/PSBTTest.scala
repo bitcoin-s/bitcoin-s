@@ -191,6 +191,47 @@ class PSBTTest extends BitcoinSAsyncTest {
       psbt1.getUTXOSpendingInfoUsingSigners(index = 0, getDummySigners(1)))
   }
 
+  it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
+    forAllAsync(CreditingTxGen.inputsAndOuptuts,
+                ScriptGenerators.scriptPubKey,
+                ChainParamsGenerator.bitcoinNetworkParams) {
+      case ((creditingTxsInfo, destinations), changeSPK, network) =>
+        val fee = SatoshisPerByte(Satoshis(1000))
+        val builder = BitcoinTxBuilder(destinations,
+                                       creditingTxsInfo,
+                                       fee,
+                                       changeSPK._1,
+                                       network)
+        for {
+          unsignedTx <- builder.flatMap(_.unsignedTx)
+
+          orderedTxInfos = {
+            unsignedTx.inputs.toVector.map { input =>
+              val infoOpt =
+                creditingTxsInfo.find(_.outPoint == input.previousOutput)
+              infoOpt match {
+                case Some(info) =>
+                  val tx = BaseTransaction(Int32.zero,
+                                           Vector.empty,
+                                           Vector.fill(5)(info.output),
+                                           UInt32.zero)
+                  (info, Some(tx))
+                case None => fail("Could not find UTXOSpendingInfo for input!")
+              }
+            }
+          }
+
+          psbt <- PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
+          expected <- PSBT.finalizedFromUnsignedTxAndInputs(unsignedTx,
+                                                            orderedTxInfos)
+        } yield {
+          val finalizedPsbtOpt = psbt.finalizePSBT
+          assert(finalizedPsbtOpt.isDefined, psbt.hex)
+          assert(finalizedPsbtOpt.contains(expected))
+        }
+    }
+  }
+
   it must "agree with TxBuilder.sign given UTXOSpendingInfos" in {
     forAllAsync(CreditingTxGen.inputsAndOuptuts,
                 ScriptGenerators.scriptPubKey,
@@ -222,54 +263,13 @@ class PSBTTest extends BitcoinSAsyncTest {
             }
           }
 
-          psbt <- PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
+          psbt <- PSBT.finalizedFromUnsignedTxAndInputs(unsignedTx,
+                                                        orderedTxInfos)
         } yield {
           val txT = psbt.extractTransactionAndValidate
           assert(txT.isSuccess, txT.failed)
 
           assert(txT.get == signedTx)
-        }
-    }
-  }
-
-  it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
-    forAllAsync(CreditingTxGen.inputsAndOuptuts,
-                ScriptGenerators.scriptPubKey,
-                ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfo, destinations), changeSPK, network) =>
-        val fee = SatoshisPerByte(Satoshis(1000))
-        val builder = BitcoinTxBuilder(destinations,
-                                       creditingTxsInfo,
-                                       fee,
-                                       changeSPK._1,
-                                       network)
-        for {
-          unsignedTx <- builder.flatMap(_.unsignedTx)
-
-          orderedTxInfos = {
-            unsignedTx.inputs.toVector.map { input =>
-              val infoOpt =
-                creditingTxsInfo.find(_.outPoint == input.previousOutput)
-              infoOpt match {
-                case Some(info) =>
-                  val tx = BaseTransaction(Int32.zero,
-                                           Vector.empty,
-                                           Vector.fill(5)(info.output),
-                                           UInt32.zero)
-                  (info, Some(tx))
-                case None => fail("Could not find UTXOSpendingInfo for input!")
-              }
-            }
-          }
-
-          psbt <- PSBT.fromUnsignedTxAndInputs(unsignedTx,
-                                               orderedTxInfos,
-                                               finalized = false)
-          expected <- PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
-        } yield {
-          val finalizedPsbtOpt = psbt.finalizePSBT
-          assert(finalizedPsbtOpt.isDefined, psbt.hex)
-          assert(finalizedPsbtOpt.contains(expected))
         }
     }
   }
