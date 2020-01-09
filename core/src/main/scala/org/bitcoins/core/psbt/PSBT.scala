@@ -1253,9 +1253,18 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
                            Vector(hash),
                            p2pk))
             case multiSig: MultiSignatureScriptPubKey =>
-              val hashes = multiSig.publicKeys.toVector.map(pubKey =>
-                CryptoUtil.sha256Hash160(pubKey.bytes))
-              builder += ((ConditionalPath.fromBranch(path), hashes, multiSig))
+              // If no sigs are required we handle in a special way below
+              if (multiSig.requiredSigs == 0) {
+                builder += ((ConditionalPath.fromBranch(path),
+                             Vector.empty,
+                             multiSig))
+              } else {
+                val hashes = multiSig.publicKeys.toVector.map(pubKey =>
+                  CryptoUtil.sha256Hash160(pubKey.bytes))
+                builder += ((ConditionalPath.fromBranch(path),
+                             hashes,
+                             multiSig))
+              }
             case EmptyScriptPubKey =>
               builder += ((ConditionalPath.fromBranch(path),
                            Vector.empty,
@@ -1270,27 +1279,26 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
         // Hashes are used since we only have the pubkey hash in the p2pkh case
         val sigs = getRecords[PartialSignature](PartialSignatureKeyId)
         val hashes = sigs.map(sig => CryptoUtil.sha256Hash160(sig.pubKey.bytes))
-        val sortedHashes = hashes.sortBy(_.bytes)
+        addLeaves(conditional, Vector.empty)
+        val leaves = builder.result()
 
-        if (hashes.isEmpty) {
-          None
+        val leafOpt = if (hashes.isEmpty) {
+          leaves.find(leaf => leaf._2.isEmpty)
         } else {
-          addLeaves(conditional, Vector.empty)
-          val leaves = builder.result().map {
-            case (path, hashes, spk) => (path, hashes.sortBy(_.bytes), spk)
-          }
-          leaves.find(_._2 == sortedHashes).flatMap {
-            case (path, _, spk) =>
-              val finalizedOpt = finalize(spk)
-              finalizedOpt.map { finalized =>
-                val nestedScriptSig = finalized
-                  .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
-                  .head
-                val scriptSig =
-                  ConditionalScriptSignature(nestedScriptSig.scriptSig, path)
-                wipeAndAdd(scriptSig)
-              }
-          }
+          leaves.find(leaf => hashes.forall(leaf._2.contains))
+        }
+
+        leafOpt.flatMap {
+          case (path, _, spk) =>
+            val finalizedOpt = finalize(spk)
+            finalizedOpt.map { finalized =>
+              val nestedScriptSig = finalized
+                .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
+                .head
+              val scriptSig =
+                ConditionalScriptSignature(nestedScriptSig.scriptSig, path)
+              wipeAndAdd(scriptSig)
+            }
         }
       case locktime: LockTimeScriptPubKey =>
         finalize(locktime.nestedScriptPubKey)
@@ -1300,8 +1308,20 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       case _: P2PKScriptPubKey =>
         collectSigs(required = 1, sigs => P2PKScriptSignature(sigs.head._1))
       case multiSig: MultiSignatureScriptPubKey =>
-        collectSigs(required = multiSig.requiredSigs,
-                    sigs => MultiSignatureScriptSignature(sigs.map(_._1)))
+        def generateScriptSig(
+            sigs: Seq[(ECDigitalSignature, ECPublicKey)]): MultiSignatureScriptSignature = {
+          val sortedSigs = sigs
+            .map {
+              case (sig, pubKey) =>
+                (sig, pubKey, multiSig.publicKeys.indexOf(pubKey))
+            }
+            .sortBy(_._3)
+            .map(_._1)
+
+          MultiSignatureScriptSignature(sortedSigs)
+        }
+
+        collectSigs(required = multiSig.requiredSigs, generateScriptSig)
       case EmptyScriptPubKey =>
         // This script pushes an OP_TRUE onto the stack, causing a successful spend
         val scriptSig = NonStandardScriptSignature("0151")
