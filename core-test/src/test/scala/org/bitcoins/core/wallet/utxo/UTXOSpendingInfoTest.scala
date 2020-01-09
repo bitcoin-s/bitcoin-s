@@ -42,7 +42,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHNoNestSpendingInfo(
+      P2SHNoNestSpendingInfoFull(
         outPoint = outPoint,
         amount = CurrencyUnits.zero,
         scriptPubKey = p2sh,
@@ -63,7 +63,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHNestedSegwitV0UTXOSpendingInfo(
+      P2SHNestedSegwitV0UTXOSpendingInfoFull(
         outPoint = outPoint,
         amount = CurrencyUnits.zero,
         scriptPubKey = p2sh,
@@ -90,7 +90,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHNestedSegwitV0UTXOSpendingInfo(
+      P2SHNestedSegwitV0UTXOSpendingInfoFull(
         outPoint = outPoint,
         amount = CurrencyUnits.zero,
         scriptPubKey = p2sh,
@@ -112,7 +112,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHNestedSegwitV0UTXOSpendingInfo(
+      P2SHNestedSegwitV0UTXOSpendingInfoFull(
         outPoint = outPoint,
         amount = CurrencyUnits.zero,
         scriptPubKey = p2sh,
@@ -134,7 +134,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHNestedSegwitV0UTXOSpendingInfo(
+      P2SHNestedSegwitV0UTXOSpendingInfoFull(
         outPoint = outPoint,
         amount = CurrencyUnits.zero,
         scriptPubKey = p2sh,

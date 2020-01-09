@@ -3,7 +3,7 @@ package org.bitcoins.core.wallet.signer
 import org.bitcoins.core.protocol.script.WitnessScriptPubKey
 import org.bitcoins.core.wallet.utxo.{
   P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfo,
+  P2WSHV0SpendingInfoFull,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
 import org.bitcoins.testkit.core.gen.{
@@ -59,7 +59,7 @@ class SignerTest extends BitcoinSAsyncTest {
     val dumbSpendingInfo = GenUtil.sample(CreditingTxGen.output)
     val p2wsh = GenUtil
       .sample(CreditingTxGen.p2wshOutput)
-      .asInstanceOf[P2WSHV0SpendingInfo]
+      .asInstanceOf[P2WSHV0SpendingInfoFull]
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     recoverToSucceededIf[IllegalArgumentException] {
       P2WSHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wsh)

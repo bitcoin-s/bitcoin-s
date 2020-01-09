@@ -185,24 +185,24 @@ object BitcoinSigner {
                                    p2pKWithTimeout)
       case p2sh: P2SHSpendingInfo =>
         P2SHSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2sh)
-      case multiSig: MultiSignatureSpendingInfo =>
+      case multiSig: MultiSignatureSpendingInfoFull =>
         MultiSigSigner.sign(spendingInfo,
                             unsignedTx,
                             isDummySignature,
                             multiSig)
-      case lockTime: LockTimeSpendingInfo =>
+      case lockTime: LockTimeSpendingInfoFull =>
         LockTimeSigner.sign(spendingInfo,
                             unsignedTx,
                             isDummySignature,
                             lockTime)
-      case conditional: ConditionalSpendingInfo =>
+      case conditional: ConditionalSpendingInfoFull =>
         ConditionalSigner.sign(spendingInfo,
                                unsignedTx,
                                isDummySignature,
                                conditional)
       case p2wpkh: P2WPKHV0SpendingInfo =>
         P2WPKHSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2wpkh)
-      case pw2sh: P2WSHV0SpendingInfo =>
+      case pw2sh: P2WSHV0SpendingInfoFull =>
         P2WSHSigner.sign(spendingInfo, unsignedTx, isDummySignature, pw2sh)
       case _: UnassignedSegwitNativeUTXOSpendingInfo =>
         throw new UnsupportedOperationException("Unsupported Segwit version")
@@ -331,13 +331,13 @@ sealed abstract class P2PKWithTimeoutSigner
 object P2PKWithTimeoutSigner extends P2PKWithTimeoutSigner
 
 sealed abstract class MultiSigSigner
-    extends BitcoinSigner[MultiSignatureSpendingInfo] {
+    extends BitcoinSigner[MultiSignatureSpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: MultiSignatureSpendingInfo)(
+      spendingInfoToSatisfy: MultiSignatureSpendingInfoFull)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (signersWithPubKeys, output, inputIndex, hashType) =
       relevantInfo(spendingInfo, unsignedTx)
@@ -504,13 +504,14 @@ sealed abstract class P2WPKHSigner extends BitcoinSigner[P2WPKHV0SpendingInfo] {
 }
 object P2WPKHSigner extends P2WPKHSigner
 
-sealed abstract class P2WSHSigner extends BitcoinSigner[P2WSHV0SpendingInfo] {
+sealed abstract class P2WSHSigner
+    extends BitcoinSigner[P2WSHV0SpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: P2WSHV0SpendingInfo)(
+      spendingInfoToSatisfy: P2WSHV0SpendingInfoFull)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
@@ -546,13 +547,13 @@ sealed abstract class P2WSHSigner extends BitcoinSigner[P2WSHV0SpendingInfo] {
 object P2WSHSigner extends P2WSHSigner
 
 sealed abstract class LockTimeSigner
-    extends BitcoinSigner[LockTimeSpendingInfo] {
+    extends BitcoinSigner[LockTimeSpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: LockTimeSpendingInfo)(
+      spendingInfoToSatisfy: LockTimeSpendingInfoFull)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     BitcoinSigner.sign(spendingInfo,
                        unsignedTx,
@@ -566,13 +567,13 @@ object LockTimeSigner extends LockTimeSigner
   * spent and then adds an OP_TRUE or OP_FALSE
   */
 sealed abstract class ConditionalSigner
-    extends BitcoinSigner[ConditionalSpendingInfo] {
+    extends BitcoinSigner[ConditionalSpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ConditionalSpendingInfo)(
+      spendingInfoToSatisfy: ConditionalSpendingInfoFull)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 

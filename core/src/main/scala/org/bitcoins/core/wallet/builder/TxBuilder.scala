@@ -21,16 +21,16 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
-  ConditionalSpendingInfo,
+  ConditionalSpendingInfoFull,
   EmptySpendingInfo,
-  LockTimeSpendingInfo,
-  MultiSignatureSpendingInfo,
+  LockTimeSpendingInfoFull,
+  MultiSignatureSpendingInfoFull,
   P2PKHSpendingInfo,
   P2PKSpendingInfo,
   P2PKWithTimeoutSpendingInfo,
   P2SHSpendingInfo,
   P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfo,
+  P2WSHV0SpendingInfoFull,
   UTXOSpendingInfo,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
@@ -342,7 +342,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
           Success(currentLockTimeOpt.getOrElse(TransactionConstants.lockTime))
         case spendingInfo +: newRemaining =>
           spendingInfo match {
-            case lockTime: LockTimeSpendingInfo =>
+            case lockTime: LockTimeSpendingInfoFull =>
               lockTime.scriptPubKey match {
                 case _: CSVScriptPubKey =>
                   loop(newRemaining, currentLockTimeOpt)
@@ -372,15 +372,15 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               }
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
-            case p2wsh: P2WSHV0SpendingInfo =>
+            case p2wsh: P2WSHV0SpendingInfoFull =>
               loop(p2wsh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
-            case conditional: ConditionalSpendingInfo =>
+            case conditional: ConditionalSpendingInfoFull =>
               loop(conditional.nestedSpendingInfo +: newRemaining,
                    currentLockTimeOpt)
             case _: P2WPKHV0SpendingInfo |
                 _: UnassignedSegwitNativeUTXOSpendingInfo |
                 _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
-                _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
+                _: MultiSignatureSpendingInfoFull | _: EmptySpendingInfo =>
               // none of these scripts affect the locktime of a tx
               loop(newRemaining, currentLockTimeOpt)
           }
@@ -406,7 +406,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
         case Nil => accum.reverse
         case spendingInfo +: newRemaining =>
           spendingInfo match {
-            case lockTime: LockTimeSpendingInfo =>
+            case lockTime: LockTimeSpendingInfoFull =>
               val sequence = lockTime.scriptPubKey match {
                 case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
                 case _: CLTVScriptPubKey  => UInt32.zero
@@ -433,14 +433,14 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
               }
             case p2sh: P2SHSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
-            case p2wsh: P2WSHV0SpendingInfo =>
+            case p2wsh: P2WSHV0SpendingInfoFull =>
               loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
-            case conditional: ConditionalSpendingInfo =>
+            case conditional: ConditionalSpendingInfoFull =>
               loop(conditional.nestedSpendingInfo +: newRemaining, accum)
             case _: P2WPKHV0SpendingInfo |
                 _: UnassignedSegwitNativeUTXOSpendingInfo |
                 _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
-                _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
+                _: MultiSignatureSpendingInfoFull | _: EmptySpendingInfo =>
               //none of these script types affect the sequence number of a tx
               //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
               //see BIP125 for more information

@@ -9,7 +9,7 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalPath,
-  P2SHNestedSegwitV0UTXOSpendingInfo
+  P2SHNestedSegwitV0UTXOSpendingInfoFull
 }
 import org.scalacheck.Gen
 
@@ -73,14 +73,14 @@ sealed abstract class CreditingTxGen {
       .suchThat(output =>
         !ScriptGenerators.redeemScriptTooBig(output.scriptPubKey))
       .suchThat {
-        case P2SHNestedSegwitV0UTXOSpendingInfo(_,
-                                                _,
-                                                _,
-                                                _,
-                                                _,
-                                                _,
-                                                witness: P2WSHWitnessV0,
-                                                _) =>
+        case P2SHNestedSegwitV0UTXOSpendingInfoFull(_,
+                                                    _,
+                                                    _,
+                                                    _,
+                                                    _,
+                                                    _,
+                                                    witness: P2WSHWitnessV0,
+                                                    _) =>
           witness.stack.exists(_.length > ScriptInterpreter.MAX_PUSH_SIZE)
         case _ => true
       }
