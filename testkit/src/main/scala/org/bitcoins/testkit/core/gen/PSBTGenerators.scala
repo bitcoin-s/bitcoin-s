@@ -23,13 +23,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object PSBTGenerators {
 
-  def psbtAndBuilderFromInputs(
-      finalized: Boolean,
-      creditingTxsInfo: Seq[BitcoinUTXOSpendingInfo],
-      destinations: Seq[TransactionOutput],
-      changeSPK: ScriptPubKey,
-      network: BitcoinNetwork,
-      fee: FeeUnit)(
+  def psbtAndBuilderFromInputs(finalized: Boolean,
+                               creditingTxsInfo: Seq[BitcoinUTXOSpendingInfo],
+                               destinations: Seq[TransactionOutput],
+                               changeSPK: ScriptPubKey,
+                               network: BitcoinNetwork,
+                               fee: FeeUnit)(
       implicit ec: ExecutionContext): Future[(PSBT, BitcoinTxBuilder)] = {
     val builderF =
       BitcoinTxBuilder(destinations, creditingTxsInfo, fee, changeSPK, network)
@@ -71,7 +70,13 @@ object PSBTGenerators {
       (creditingTxsInfo, destinations) <- CreditingTxGen.inputsAndOuptuts
       changeSPK <- ScriptGenerators.scriptPubKey
       network <- ChainParamsGenerator.bitcoinNetworkParams
-      fee <- CurrencyUnitGenerator.realisticFeeUnit
+      maxFee = {
+        val crediting =
+          creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+        val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
+        crediting - spending
+      }
+      fee <- CurrencyUnitGenerator.feeUnit(maxFee)
     } yield {
       psbtAndBuilderFromInputs(finalized = finalized,
                                creditingTxsInfo = creditingTxsInfo,

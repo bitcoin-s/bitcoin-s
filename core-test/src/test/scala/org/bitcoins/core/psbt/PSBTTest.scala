@@ -16,6 +16,7 @@ import org.bitcoins.testkit.core.gen.{
   ChainParamsGenerator,
   CreditingTxGen,
   CurrencyUnitGenerator,
+  GenUtil,
   PSBTGenerators,
   ScriptGenerators
 }
@@ -201,9 +202,13 @@ class PSBTTest extends BitcoinSAsyncTest {
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
     forAllAsync(CreditingTxGen.inputsAndOuptuts,
                 ScriptGenerators.scriptPubKey,
-                ChainParamsGenerator.bitcoinNetworkParams,
-                CurrencyUnitGenerator.realisticFeeUnit) {
-      case ((creditingTxsInfo, destinations), (changeSPK, _), network, fee) =>
+                ChainParamsGenerator.bitcoinNetworkParams) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _), network) =>
+        val crediting =
+          creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+        val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
+        val maxFee = crediting - spending
+        val fee = GenUtil.sample(CurrencyUnitGenerator.feeUnit(maxFee))
         for {
           (psbt, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
             finalized = false,
