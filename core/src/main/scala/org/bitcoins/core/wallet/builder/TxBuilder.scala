@@ -21,16 +21,16 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
-  ConditionalSpendingInfo,
-  EmptySpendingInfo,
-  LockTimeSpendingInfo,
-  MultiSignatureSpendingInfo,
-  P2PKHSpendingInfo,
-  P2PKSpendingInfo,
-  P2PKWithTimeoutSpendingInfo,
-  P2SHSpendingInfo,
-  P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfo,
+  ConditionalUTXOSpendingInfo,
+  EmptyUTXOSpendingInfo,
+  LockTimeUTXOSpendingInfo,
+  MultiSignatureUTXOSpendingInfo,
+  P2PKHUTXOSpendingInfo,
+  P2PKUTXOSpendingInfo,
+  P2PKWithTimeoutUTXOSpendingInfo,
+  P2SHUTXOSpendingInfo,
+  P2WPKHV0UTXOSpendingInfo,
+  P2WSHV0UTXOSpendingInfo,
   UTXOSpendingInfo,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
@@ -267,7 +267,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
         case _: UnassignedSegwitNativeUTXOSpendingInfo =>
           Future.fromTry(TxBuilderError.NoSigner)
         case _: BitcoinUTXOSpendingInfo =>
-          BitcoinSigner
+          BitcoinUTXOSigner
             .sign(utxo, unsignedTx, dummySignatures)
             .map(_.transaction)
       }
@@ -342,7 +342,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
           Success(currentLockTimeOpt.getOrElse(TransactionConstants.lockTime))
         case spendingInfo +: newRemaining =>
           spendingInfo match {
-            case lockTime: LockTimeSpendingInfo =>
+            case lockTime: LockTimeUTXOSpendingInfo =>
               lockTime.scriptPubKey match {
                 case _: CSVScriptPubKey =>
                   loop(newRemaining, currentLockTimeOpt)
@@ -356,7 +356,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                     case _: Failure[UInt32] => result
                   }
               }
-            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
+            case p2pkWithTimeout: P2PKWithTimeoutUTXOSpendingInfo =>
               if (p2pkWithTimeout.isBeforeTimeout) {
                 loop(newRemaining, currentLockTimeOpt)
               } else {
@@ -370,17 +370,17 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                   case _: Failure[UInt32] => result
                 }
               }
-            case p2sh: P2SHSpendingInfo =>
+            case p2sh: P2SHUTXOSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
-            case p2wsh: P2WSHV0SpendingInfo =>
+            case p2wsh: P2WSHV0UTXOSpendingInfo =>
               loop(p2wsh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
-            case conditional: ConditionalSpendingInfo =>
+            case conditional: ConditionalUTXOSpendingInfo =>
               loop(conditional.nestedSpendingInfo +: newRemaining,
                    currentLockTimeOpt)
-            case _: P2WPKHV0SpendingInfo |
-                _: UnassignedSegwitNativeUTXOSpendingInfo |
-                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
-                _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
+            case _: P2WPKHV0UTXOSpendingInfo |
+                 _: UnassignedSegwitNativeUTXOSpendingInfo |
+                 _: P2PKUTXOSpendingInfo | _: P2PKHUTXOSpendingInfo |
+                 _: MultiSignatureUTXOSpendingInfo | _: EmptyUTXOSpendingInfo =>
               // none of these scripts affect the locktime of a tx
               loop(newRemaining, currentLockTimeOpt)
           }
@@ -406,7 +406,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
         case Nil => accum.reverse
         case spendingInfo +: newRemaining =>
           spendingInfo match {
-            case lockTime: LockTimeSpendingInfo =>
+            case lockTime: LockTimeUTXOSpendingInfo =>
               val sequence = lockTime.scriptPubKey match {
                 case csv: CSVScriptPubKey => solveSequenceForCSV(csv.locktime)
                 case _: CLTVScriptPubKey  => UInt32.zero
@@ -415,7 +415,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                            EmptyScriptSignature,
                                            sequence)
               loop(newRemaining, input +: accum)
-            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
+            case p2pkWithTimeout: P2PKWithTimeoutUTXOSpendingInfo =>
               if (p2pkWithTimeout.isBeforeTimeout) {
                 val sequence =
                   if (isRBFEnabled) UInt32.zero
@@ -431,16 +431,16 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                              UInt32.zero)
                 loop(newRemaining, input +: accum)
               }
-            case p2sh: P2SHSpendingInfo =>
+            case p2sh: P2SHUTXOSpendingInfo =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, accum)
-            case p2wsh: P2WSHV0SpendingInfo =>
+            case p2wsh: P2WSHV0UTXOSpendingInfo =>
               loop(p2wsh.nestedSpendingInfo +: newRemaining, accum)
-            case conditional: ConditionalSpendingInfo =>
+            case conditional: ConditionalUTXOSpendingInfo =>
               loop(conditional.nestedSpendingInfo +: newRemaining, accum)
-            case _: P2WPKHV0SpendingInfo |
-                _: UnassignedSegwitNativeUTXOSpendingInfo |
-                _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
-                _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
+            case _: P2WPKHV0UTXOSpendingInfo |
+                 _: UnassignedSegwitNativeUTXOSpendingInfo |
+                 _: P2PKUTXOSpendingInfo | _: P2PKHUTXOSpendingInfo |
+                 _: MultiSignatureUTXOSpendingInfo | _: EmptyUTXOSpendingInfo =>
               //none of these script types affect the sequence number of a tx
               //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
               //see BIP125 for more information

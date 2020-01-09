@@ -14,16 +14,16 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.signer.{
-  MultiSigSigner,
-  P2PKHSigner,
-  P2PKSigner,
-  P2PKWithTimeoutSigner
+  MultiSigUTXOSigner,
+  P2PKHUTXOSigner,
+  P2PKUTXOSigner,
+  P2PKWithTimeoutUTXOSigner
 }
 import org.bitcoins.core.wallet.utxo.{
-  MultiSignatureSpendingInfo,
-  P2PKHSpendingInfo,
-  P2PKSpendingInfo,
-  P2PKWithTimeoutSpendingInfo
+  MultiSignatureUTXOSpendingInfo,
+  P2PKHUTXOSpendingInfo,
+  P2PKUTXOSpendingInfo,
+  P2PKWithTimeoutUTXOSpendingInfo
 }
 import org.scalacheck.Gen
 
@@ -557,13 +557,16 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         scriptSig,
         outputIndex)
-      spendingInfo = P2PKSpendingInfo(
+      spendingInfo = P2PKUTXOSpendingInfo(
         TransactionOutPoint(creditingTx.txIdBE, inputIndex),
         creditingTx.outputs(outputIndex.toInt).value,
         scriptPubKey,
         privateKey,
         hashType)
-      txSigComponentFuture = P2PKSigner.sign(spendingInfo, spendingTx, false)
+      txSigComponentFuture = P2PKUTXOSigner.sign(spendingInfo,
+                                                 spendingTx,
+                                                 false,
+                                                 spendingInfo)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       //add the signature to the scriptSig instead of having an empty scriptSig
       signedScriptSig = txSigComponent.scriptSignature
@@ -591,13 +594,16 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         EmptyScriptSignature,
         outputIndex)
-      spendingInfo = P2PKHSpendingInfo(
+      spendingInfo = P2PKHUTXOSpendingInfo(
         TransactionOutPoint(creditingTx.txIdBE, inputIndex),
         creditingTx.outputs(outputIndex.toInt).value,
         scriptPubKey,
         privateKey,
         hashType)
-      txSigComponentFuture = P2PKHSigner.sign(spendingInfo, unsignedTx, false)
+      txSigComponentFuture = P2PKHUTXOSigner.sign(spendingInfo,
+                                                  unsignedTx,
+                                                  false,
+                                                  spendingInfo)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       signedScriptSig = txSigComponent.scriptSignature
         .asInstanceOf[P2PKHScriptSignature]
@@ -616,16 +622,18 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         TransactionGenerators.buildCreditingTransaction(spk)
       val (spendingTx, inputIndex) = TransactionGenerators
         .buildSpendingTransaction(creditingTx, emptyScriptSig, outputIndex)
-      val spendingInfo = P2PKWithTimeoutSpendingInfo(
+      val spendingInfo = P2PKWithTimeoutUTXOSpendingInfo(
         TransactionOutPoint(creditingTx.txIdBE, inputIndex),
         creditingTx.outputs(outputIndex.toInt).value,
         spk,
         privKey,
         hashType,
         isBeforeTimeout = true)
-      val txSigComponentF = P2PKWithTimeoutSigner.sign(spendingInfo,
-                                                       spendingTx,
-                                                       isDummySignature = false)
+      val txSigComponentF = P2PKWithTimeoutUTXOSigner.sign(spendingInfo,
+                                                           spendingTx,
+                                                           isDummySignature =
+                                                             false,
+                                                           spendingInfo)
       val txSigComponent = Await.result(txSigComponentF, timeout)
       val signedScriptSig =
         txSigComponent.scriptSignature.asInstanceOf[ConditionalScriptSignature]
@@ -660,15 +668,16 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         scriptSig,
         outputIndex)
-      spendingInfo = MultiSignatureSpendingInfo(
+      spendingInfo = MultiSignatureUTXOSpendingInfo(
         TransactionOutPoint(creditingTx.txIdBE, inputIndex),
         creditingTx.outputs(outputIndex.toInt).value,
         multiSigScriptPubKey,
         privateKeys.toVector,
         hashType)
-      txSigComponentFuture = MultiSigSigner.sign(spendingInfo,
-                                                 spendingTx,
-                                                 false)
+      txSigComponentFuture = MultiSigUTXOSigner.sign(spendingInfo,
+                                                     spendingTx,
+                                                     false,
+                                                     spendingInfo)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       signedScriptSig = txSigComponent.scriptSignature
         .asInstanceOf[MultiSignatureScriptSignature]

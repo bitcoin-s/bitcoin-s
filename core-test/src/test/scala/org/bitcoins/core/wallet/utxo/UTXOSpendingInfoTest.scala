@@ -42,7 +42,7 @@ class UTXOSpendingInfoTest extends BitcoinSAsyncTest {
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
     assertThrows[IllegalArgumentException] {
-      P2SHNoNestSpendingInfo(
+      P2SHNoNestUTXOSpendingInfo(
         outPoint = outPoint,
         amount = CurrencyUnits.zero,
         scriptPubKey = p2sh,

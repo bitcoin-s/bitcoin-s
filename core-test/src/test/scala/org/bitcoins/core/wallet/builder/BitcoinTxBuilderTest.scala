@@ -23,7 +23,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfo,
   ConditionalPath,
-  LockTimeSpendingInfo,
+  LockTimeUTXOSpendingInfo,
   UTXOSpendingInfo
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -396,7 +396,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       CLTVScriptPubKey(ScriptNumber(lockTime),
                        P2PKScriptPubKey(fundingPrivKey.publicKey))
 
-    val cltvSpendingInfo = LockTimeSpendingInfo(
+    val cltvSpendingInfo = LockTimeUTXOSpendingInfo(
       TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
       Bitcoins.one,
       cltvSPK,
@@ -430,7 +430,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       CLTVScriptPubKey(ScriptNumber(lockTime),
                        P2PKScriptPubKey(fundingPrivKey.publicKey))
 
-    val cltvSpendingInfo = LockTimeSpendingInfo(
+    val cltvSpendingInfo = LockTimeUTXOSpendingInfo(
       TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
       Bitcoins.one,
       cltvSPK,
@@ -469,7 +469,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       CLTVScriptPubKey(ScriptNumber(lockTime2),
                        P2PKScriptPubKey(fundingPrivKey2.publicKey))
 
-    val cltvSpendingInfo1 = LockTimeSpendingInfo(
+    val cltvSpendingInfo1 = LockTimeUTXOSpendingInfo(
       TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
       Bitcoins.one,
       cltvSPK1,
@@ -478,7 +478,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       ConditionalPath.NoConditionsLeft
     )
 
-    val cltvSpendingInfo2 = LockTimeSpendingInfo(
+    val cltvSpendingInfo2 = LockTimeUTXOSpendingInfo(
       TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.one),
       Bitcoins.one,
       cltvSPK2,
@@ -554,7 +554,11 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
 
         PreExecutionScriptProgram(txSigComponent)
     }
-    ScriptInterpreter.runAllVerify(programs)
+    val x = ScriptInterpreter.runAllVerify(programs)
+    if (!x) {
+      println(utxos)
+    }
+    x
   }
 
   private val outputGen = CreditingTxGen.outputs
@@ -605,5 +609,9 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
           assert(verifyScript(tx, creditingTxsInfo))
         }
     }
+  }
+
+  it must "test" in {
+
   }
 }
