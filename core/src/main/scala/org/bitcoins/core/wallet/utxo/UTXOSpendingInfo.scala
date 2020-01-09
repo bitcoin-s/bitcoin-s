@@ -92,6 +92,18 @@ object ConditionalPath {
 
   val nonNestedTrue: ConditionalPath = ConditionTrue(NoConditionsLeft)
   val nonNestedFalse: ConditionalPath = ConditionFalse(NoConditionsLeft)
+
+  def fromBranch(branch: Vector[Boolean]): ConditionalPath = {
+    if (branch.isEmpty) {
+      NoConditionsLeft
+    } else {
+      if (branch.head) {
+        ConditionTrue(fromBranch(branch.tail))
+      } else {
+        ConditionFalse(fromBranch(branch.tail))
+      }
+    }
+  }
 }
 
 sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {

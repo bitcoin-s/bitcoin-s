@@ -23,7 +23,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.Factory
+import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
@@ -102,6 +102,27 @@ case class PSBT(
       .map(output => output._1.combine(output._2))
 
     PSBT(global, inputs, outputs)
+  }
+
+  /** Finalizes this PSBT if possible
+    * @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#input-finalizer]]
+    * @return None if there exists any input which is not ready for signing
+    */
+  def finalizePSBT: Option[PSBT] = {
+    if (isFinalized) {
+      Some(this)
+    } else {
+      val finalizedInputOpts = inputMaps.zip(transaction.inputs).map {
+        case (inputMap, input) => inputMap.finalize(input)
+      }
+      if (finalizedInputOpts.forall(_.isDefined)) {
+        val finalizedInputMaps = finalizedInputOpts.map(_.get)
+        val psbt = this.copy(inputMaps = finalizedInputMaps)
+        Some(psbt)
+      } else {
+        None
+      }
+    }
   }
 
   def getUTXOSpendingInfo(
@@ -1056,6 +1077,222 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
   def isFinalized: Boolean =
     getRecords(FinalizedScriptSigKeyId).nonEmpty || getRecords(
       FinalizedScriptWitnessKeyId).nonEmpty
+
+  /** Finalizes this input if possible, returning None if not */
+  def finalize(input: TransactionInput): Option[InputPSBTMap] = {
+    if (isFinalized) {
+      Some(this)
+    } else {
+      val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = {
+        val witnessUTXOOpt =
+          getRecords[WitnessUTXO](WitnessUTXOKeyId).headOption
+        val nonWitnessUTXOOpt =
+          getRecords[NonWitnessOrUnknownUTXO](NonWitnessUTXOKeyId).headOption
+
+        (witnessUTXOOpt, nonWitnessUTXOOpt) match {
+          case (None, None) => None
+          case (Some(witnessUtxo), _) =>
+            Some(witnessUtxo.spentWitnessTransaction.scriptPubKey)
+          case (_, Some(utxo)) =>
+            val outputs = utxo.transactionSpent.outputs
+            scala.util
+              .Try(outputs(input.previousOutput.vout.toInt).scriptPubKey)
+              .toOption
+        }
+      }
+
+      scriptPubKeyToSatisfyOpt.flatMap(finalize)
+    }
+  }
+
+  /** Finalizes this input if possible, returning None if not */
+  private def finalize(spkToSatisfy: ScriptPubKey): Option[InputPSBTMap] = {
+
+    /** Removes non-utxo and non-unkown records, replacing them with finalized records */
+    def wipeAndAdd(
+        scriptSig: ScriptSignature,
+        witnessOpt: Option[ScriptWitness] = None): InputPSBTMap = {
+      val utxos = getRecords[WitnessUTXO](WitnessUTXOKeyId) ++ getRecords[
+        NonWitnessOrUnknownUTXO](NonWitnessUTXOKeyId)
+      val unknowns =
+        elements.filter(_.isInstanceOf[InputPSBTRecord.Unknown])
+
+      val finalizedScriptSig = FinalizedScriptSig(scriptSig)
+      val recordsToAdd = witnessOpt match {
+        case None => Vector(finalizedScriptSig)
+        case Some(scriptWitness) =>
+          Vector(finalizedScriptSig, FinalizedScriptWitness(scriptWitness))
+      }
+
+      val records = utxos ++ recordsToAdd ++ unknowns
+      InputPSBTMap(records)
+    }
+
+    /** Turns the required PartialSignatures into a ScriptSignature and calls wipeAndAdd
+      * @return None if the requirement is not met
+      */
+    def collectSigs(
+        required: Int,
+        constructScriptSig: Seq[(ECDigitalSignature, ECPublicKey)] => ScriptSignature): Option[
+      InputPSBTMap] = {
+      val sigs = getRecords[PartialSignature](PartialSignatureKeyId)
+      if (sigs.length != required) {
+        None
+      } else {
+        val scriptSig = constructScriptSig(
+          sigs.map(sig => (sig.signature, sig.pubKey)))
+
+        val newInputMap = wipeAndAdd(scriptSig)
+
+        Some(newInputMap)
+      }
+    }
+
+    spkToSatisfy match {
+      case _: P2SHScriptPubKey =>
+        val redeemScriptOpt =
+          getRecords[RedeemScript](RedeemScriptKeyId).headOption
+        redeemScriptOpt.flatMap {
+          case InputPSBTRecord.RedeemScript(redeemScript) =>
+            finalize(redeemScript).map { inputMap =>
+              val nestedScriptSig = inputMap
+                .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
+                .head
+              val witnessOpt = inputMap
+                .getRecords[FinalizedScriptWitness](FinalizedScriptWitnessKeyId)
+                .headOption
+
+              val scriptSig =
+                P2SHScriptSignature(nestedScriptSig.scriptSig, redeemScript)
+              wipeAndAdd(scriptSig, witnessOpt.map(_.scriptWitness))
+            }
+        }
+      case _: P2WSHWitnessSPKV0 =>
+        val redeemScriptOpt =
+          getRecords[WitnessScript](WitnessScriptKeyId).headOption
+        redeemScriptOpt.flatMap {
+          case WitnessScript(redeemScript) =>
+            finalize(redeemScript).map { inputMap =>
+              val nestedScriptSig = inputMap
+                .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
+                .head
+              val scriptSig = EmptyScriptSignature
+              wipeAndAdd(
+                scriptSig,
+                Some(P2WSHWitnessV0(redeemScript, nestedScriptSig.scriptSig)))
+            }
+        }
+      case _: P2WPKHWitnessSPKV0 =>
+        val sigOpt =
+          getRecords[PartialSignature](PartialSignatureKeyId).headOption
+        sigOpt.map { sig =>
+          val witness = P2WPKHWitnessV0(sig.pubKey, sig.signature)
+          val scriptSig = EmptyScriptSignature
+          wipeAndAdd(scriptSig, Some(witness))
+        }
+      case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
+        val sigOpt =
+          getRecords[PartialSignature](PartialSignatureKeyId).headOption
+        sigOpt.flatMap { sig =>
+          if (sig.pubKey == p2pkWithTimeout.pubKey) {
+            val scriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
+                                                           signature =
+                                                             sig.signature)
+            Some(wipeAndAdd(scriptSig, None))
+          } else if (sig.pubKey == p2pkWithTimeout.timeoutPubKey) {
+            val scriptSig =
+              P2PKWithTimeoutScriptSignature(beforeTimeout = false,
+                                             signature = sig.signature)
+            Some(wipeAndAdd(scriptSig, None))
+          } else {
+            None
+          }
+        }
+      case conditional: ConditionalScriptPubKey =>
+        val builder =
+          Vector.newBuilder[(
+              ConditionalPath,
+              Vector[Sha256Hash160Digest],
+              RawScriptPubKey)]
+
+        /** Traverses the ConditionalScriptPubKey tree for leaves and adds them to builder */
+        def addLeaves(rawSPK: RawScriptPubKey, path: Vector[Boolean]): Unit = {
+          rawSPK match {
+            case conditional: ConditionalScriptPubKey =>
+              addLeaves(conditional.trueSPK, path :+ true)
+              addLeaves(conditional.falseSPK, path :+ false)
+            case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
+              addLeaves(P2PKScriptPubKey(p2pkWithTimeout.pubKey), path :+ true)
+              val timeoutSPK = CLTVScriptPubKey(
+                p2pkWithTimeout.lockTime,
+                P2PKScriptPubKey(p2pkWithTimeout.timeoutPubKey))
+              addLeaves(timeoutSPK, path :+ false)
+            case cltv: CLTVScriptPubKey =>
+              addLeaves(cltv.nestedScriptPubKey, path)
+            case csv: CSVScriptPubKey =>
+              addLeaves(csv.nestedScriptPubKey, path)
+            case p2pkh: P2PKHScriptPubKey =>
+              builder += ((ConditionalPath.fromBranch(path),
+                           Vector(p2pkh.pubKeyHash),
+                           p2pkh))
+            case p2pk: P2PKScriptPubKey =>
+              val hash = CryptoUtil.sha256Hash160(p2pk.publicKey.bytes)
+              builder += ((ConditionalPath.fromBranch(path),
+                           Vector(hash),
+                           p2pk))
+            case multiSig: MultiSignatureScriptPubKey =>
+              val hashes = multiSig.publicKeys.toVector.map(pubKey =>
+                CryptoUtil.sha256Hash160(pubKey.bytes))
+              builder += ((ConditionalPath.fromBranch(path), hashes, multiSig))
+            case EmptyScriptPubKey | _: NonStandardScriptPubKey |
+                _: WitnessCommitment =>
+              throw new UnsupportedOperationException(
+                s"$rawSPK is not yet supported")
+          }
+        }
+
+        // Find the conditional leaf with the pubkeys for which sigs are provided
+        // Hashes are used since we only have the pubkey hash in the p2pkh case
+        val sigs = getRecords[PartialSignature](PartialSignatureKeyId)
+        val hashes = sigs.map(sig => CryptoUtil.sha256Hash160(sig.pubKey.bytes))
+        val sortedHashes = hashes.sortBy(_.bytes)
+
+        if (hashes.isEmpty) {
+          None
+        } else {
+          addLeaves(conditional, Vector.empty)
+          val leaves = builder.result().map {
+            case (path, hashes, spk) => (path, hashes.sortBy(_.bytes), spk)
+          }
+          leaves.find(_._2 == sortedHashes).flatMap {
+            case (path, _, spk) =>
+              val finalizedOpt = finalize(spk)
+              finalizedOpt.map { finalized =>
+                val nestedScriptSig = finalized
+                  .getRecords[FinalizedScriptSig](FinalizedScriptSigKeyId)
+                  .head
+                val scriptSig =
+                  ConditionalScriptSignature(nestedScriptSig.scriptSig, path)
+                wipeAndAdd(scriptSig)
+              }
+          }
+        }
+      case locktime: LockTimeScriptPubKey =>
+        finalize(locktime.nestedScriptPubKey)
+      case _: P2PKHScriptPubKey =>
+        collectSigs(required = 1,
+                    sigs => P2PKHScriptSignature(sigs.head._1, sigs.head._2))
+      case _: P2PKScriptPubKey =>
+        collectSigs(required = 1, sigs => P2PKScriptSignature(sigs.head._1))
+      case multiSig: MultiSignatureScriptPubKey =>
+        collectSigs(required = multiSig.requiredSigs,
+                    sigs => MultiSignatureScriptSignature(sigs.map(_._1)))
+      case EmptyScriptPubKey | _: NonStandardScriptPubKey |
+          _: UnassignedWitnessScriptPubKey | _: WitnessCommitment =>
+        throw new UnsupportedOperationException(
+          s"$spkToSatisfy is not yet supported")
+    }
+  }
 
   /**
     * Takes another InputPSBTMap and adds all records that are not contained in this InputPSBTMap
