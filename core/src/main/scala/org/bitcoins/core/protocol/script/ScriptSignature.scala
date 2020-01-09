@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
+import org.bitcoins.core.wallet.utxo.ConditionalPath
 
 import scala.util.{Failure, Success, Try}
 
@@ -503,6 +504,28 @@ object ConditionalScriptSignature
     }
 
     fromAsm(nestedScriptSig.asm.:+(conditionAsm))
+  }
+
+  @scala.annotation.tailrec
+  def apply(
+      nestedScriptSig: ScriptSignature,
+      conditionalPath: ConditionalPath): ConditionalScriptSignature = {
+    conditionalPath match {
+      case ConditionalPath.NoConditionsLeft =>
+        throw new IllegalArgumentException("ConditionalPath cannot be empty")
+      case ConditionalPath.nonNestedTrue =>
+        ConditionalScriptSignature(nestedScriptSig, condition = true)
+      case ConditionalPath.nonNestedFalse =>
+        ConditionalScriptSignature(nestedScriptSig, condition = false)
+      case ConditionalPath.ConditionTrue(nextCondition) =>
+        ConditionalScriptSignature(
+          ConditionalScriptSignature(nestedScriptSig, condition = true),
+          nextCondition)
+      case ConditionalPath.ConditionFalse(nextCondition) =>
+        ConditionalScriptSignature(
+          ConditionalScriptSignature(nestedScriptSig, condition = false),
+          nextCondition)
+    }
   }
 
   def isValidConditionalScriptSig(asm: Seq[ScriptToken]): Boolean = {
