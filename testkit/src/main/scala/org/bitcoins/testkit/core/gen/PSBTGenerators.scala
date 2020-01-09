@@ -7,7 +7,13 @@ import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   TransactionOutput
 }
-import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.psbt.{
+  GlobalPSBTMap,
+  GlobalPSBTRecord,
+  InputPSBTMap,
+  OutputPSBTMap,
+  PSBT
+}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfo
@@ -87,5 +93,37 @@ object PSBTGenerators {
 
   def fullNonFinalizedPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
     psbtWithBuilder(finalized = false).map(_.map(_._1))
+  }
+
+  def arbitraryPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
+    Gen.frequency((6, fullNonFinalizedPSBT), (1, finalizedPSBT)).map { psbtF =>
+      psbtF.map { psbt =>
+        val global = psbt.globalMap.elements
+        val inputs = psbt.inputMaps
+        val outputs = psbt.outputMaps
+
+        def pruneVec[T](vec: Vector[T]): Vector[T] = {
+          if (vec.isEmpty) {
+            vec
+          } else {
+            val numKeep = scala.util.Random.nextInt(vec.length)
+            vec
+              .sortBy(_ => scala.util.Random.nextDouble())(
+                Ordering.Double.TotalOrdering)
+              .take(numKeep)
+          }
+        }
+
+        val newGlobalElements = pruneVec(global) :+ GlobalPSBTRecord
+          .UnsignedTransaction(psbt.transaction)
+        val newGlobal = GlobalPSBTMap(newGlobalElements.distinct)
+        val newInputs =
+          inputs.map(input => InputPSBTMap(pruneVec(input.elements)))
+        val newOutputs =
+          outputs.map(output => OutputPSBTMap(pruneVec(output.elements)))
+
+        PSBT(newGlobal, newInputs, newOutputs)
+      }
+    }
   }
 }
