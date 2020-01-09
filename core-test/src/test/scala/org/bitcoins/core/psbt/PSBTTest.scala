@@ -3,21 +3,20 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.crypto.{ECPublicKey, ExtKey, Sha256Digest, Sign}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{
   P2WSHWitnessSPKV0,
   P2WSHWitnessV0,
   RawScriptPubKey,
   ScriptPubKey
 }
-import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.testkit.core.gen.{
   ChainParamsGenerator,
   CreditingTxGen,
+  CurrencyUnitGenerator,
+  PSBTGenerators,
   ScriptGenerators
 }
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -194,36 +193,24 @@ class PSBTTest extends BitcoinSAsyncTest {
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
     forAllAsync(CreditingTxGen.inputsAndOuptuts,
                 ScriptGenerators.scriptPubKey,
-                ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfo, destinations), changeSPK, network) =>
-        val fee = SatoshisPerByte(Satoshis(1000))
-        val builder = BitcoinTxBuilder(destinations,
-                                       creditingTxsInfo,
-                                       fee,
-                                       changeSPK._1,
-                                       network)
+                ChainParamsGenerator.bitcoinNetworkParams,
+                CurrencyUnitGenerator.realisticFeeUnit) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _), network, fee) =>
         for {
-          unsignedTx <- builder.flatMap(_.unsignedTx)
-
-          orderedTxInfos = {
-            unsignedTx.inputs.toVector.map { input =>
-              val infoOpt =
-                creditingTxsInfo.find(_.outPoint == input.previousOutput)
-              infoOpt match {
-                case Some(info) =>
-                  val tx = BaseTransaction(Int32.zero,
-                                           Vector.empty,
-                                           Vector.fill(5)(info.output),
-                                           UInt32.zero)
-                  (info, Some(tx))
-                case None => fail("Could not find UTXOSpendingInfo for input!")
-              }
-            }
-          }
-
-          psbt <- PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
-          expected <- PSBT.finalizedFromUnsignedTxAndInputs(unsignedTx,
-                                                            orderedTxInfos)
+          (psbt, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
+            finalized = false,
+            creditingTxsInfo = creditingTxsInfo,
+            destinations = destinations,
+            changeSPK = changeSPK,
+            network = network,
+            fee = fee)
+          (expected, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
+            finalized = true,
+            creditingTxsInfo = creditingTxsInfo,
+            destinations = destinations,
+            changeSPK = changeSPK,
+            network = network,
+            fee = fee)
         } yield {
           val finalizedPsbtOpt = psbt.finalizePSBT
           assert(finalizedPsbtOpt.isDefined, psbt.hex)
@@ -233,44 +220,16 @@ class PSBTTest extends BitcoinSAsyncTest {
   }
 
   it must "agree with TxBuilder.sign given UTXOSpendingInfos" in {
-    forAllAsync(CreditingTxGen.inputsAndOuptuts,
-                ScriptGenerators.scriptPubKey,
-                ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfo, destinations), changeSPK, network) =>
-        val fee = SatoshisPerByte(Satoshis(1000))
-        val builder = BitcoinTxBuilder(destinations,
-                                       creditingTxsInfo,
-                                       fee,
-                                       changeSPK._1,
-                                       network)
-        for {
-          unsignedTx <- builder.flatMap(_.unsignedTx)
-          signedTx <- builder.flatMap(_.sign)
+    forAllAsync(PSBTGenerators.finalizedPSBTWithBuilder) { psbtAndBuilderF =>
+      for {
+        (psbt, builder) <- psbtAndBuilderF
+        signedTx <- builder.sign
+      } yield {
+        val txT = psbt.extractTransactionAndValidate
+        assert(txT.isSuccess, txT.failed)
 
-          orderedTxInfos = {
-            unsignedTx.inputs.toVector.map { input =>
-              val infoOpt =
-                creditingTxsInfo.find(_.outPoint == input.previousOutput)
-              infoOpt match {
-                case Some(info) =>
-                  val tx = BaseTransaction(Int32.zero,
-                                           Vector.empty,
-                                           Vector.fill(5)(info.output),
-                                           UInt32.zero)
-                  (info, Some(tx))
-                case None => fail("Could not find UTXOSpendingInfo for input!")
-              }
-            }
-          }
-
-          psbt <- PSBT.finalizedFromUnsignedTxAndInputs(unsignedTx,
-                                                        orderedTxInfos)
-        } yield {
-          val txT = psbt.extractTransactionAndValidate
-          assert(txT.isSuccess, txT.failed)
-
-          assert(txT.get == signedTx)
-        }
+        assert(txT.get == signedTx)
+      }
     }
   }
 }
