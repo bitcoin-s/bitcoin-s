@@ -79,6 +79,12 @@ sealed abstract class UTXOSpendingInfo extends UTXOSpendingInfoSingle {
     * where full signing and single key singing happen.
     */
   override def signer: Sign = signers.head
+
+  def toSingle(signerIndex: Int): UTXOSpendingInfoSingle
+
+  def toSingles: Vector[UTXOSpendingInfoSingle] = {
+    signers.indices.toVector.map(toSingle)
+  }
 }
 
 /** Represents the spending branch being taken in a ScriptPubKey's execution
@@ -216,7 +222,7 @@ sealed trait BitcoinUTXOSpendingInfo
     extends UTXOSpendingInfo
     with BitcoinUTXOSpendingInfoSingle {
 
-  def toSingle(signerIndex: Int): BitcoinUTXOSpendingInfoSingle = {
+  override def toSingle(signerIndex: Int): BitcoinUTXOSpendingInfoSingle = {
     BitcoinUTXOSpendingInfoSingle(outPoint,
                                   output,
                                   signers(signerIndex),
@@ -611,7 +617,7 @@ case class MultiSignatureSpendingInfoFull(
                                      hashType)
   }
 
-  def toSingles: Vector[MultiSignatureSpendingInfoSingle] = {
+  override def toSingles: Vector[MultiSignatureSpendingInfoSingle] = {
     signers.map { signer =>
       MultiSignatureSpendingInfoSingle(outPoint,
                                        amount,
