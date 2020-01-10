@@ -3,6 +3,7 @@ package org.bitcoins.core.wallet.signer
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.script
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
@@ -596,7 +597,11 @@ sealed abstract class P2WPKHSigner
                              unsignedTx,
                              isDummySignature,
                              spendingInfoToSatisfy)
-        sig = sigComponent.scriptSignature.signatures.head
+        sig = sigComponent
+          .asInstanceOf[WitnessTxSigComponent]
+          .witness
+          .asInstanceOf[script.P2WPKHWitnessV0]
+          .signature
       } yield {
         (spendingInfoToSatisfy.signer.publicKey, sig)
       }

@@ -91,6 +91,17 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
     val cmpct = CompactSizeUInt.calc(stack.head)
     RawScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
   }
+
+  lazy val signatures: Vector[ECDigitalSignature] = {
+    // ECDigital signatures are between 71 and 73 bytes long
+    // with a exponential decay on the probability of smaller sigs
+    // [[https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm]]
+    val relevantStack = stack.toVector.tail.filter(bytes =>
+      bytes.length >= 67 && bytes.length <= 73)
+
+    relevantStack.map(ECDigitalSignature.fromBytes)
+  }
+
   override def toString =
     s"P2WSHWitnessV0(${stack.map(BitcoinSUtil.encodeHex(_)).toString})"
 }

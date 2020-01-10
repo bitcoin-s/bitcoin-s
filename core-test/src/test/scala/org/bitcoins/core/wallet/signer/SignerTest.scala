@@ -1,7 +1,16 @@
 package org.bitcoins.core.wallet.signer
 
+import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
-import org.bitcoins.core.protocol.script.WitnessScriptPubKey
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptWitness,
+  P2WPKHWitnessV0,
+  P2WSHWitnessV0,
+  ScriptSignature,
+  WitnessScriptPubKey
+}
+import org.bitcoins.core.protocol.transaction.WitnessTransaction
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
@@ -24,6 +33,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class SignerTest extends BitcoinSAsyncTest {
 
   implicit val ec: ExecutionContext = ExecutionContext.global
+
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
 
   behavior of "Signer"
 
@@ -100,7 +112,7 @@ class SignerTest extends BitcoinSAsyncTest {
           unsignedTx <- builder.unsignedTx
           signedTx <- builder.sign
 
-          singleSigs <- {
+          singleSigs: Vector[Vector[ECDigitalSignature]] <- {
             val singleInfosVec: Vector[Vector[UTXOSpendingInfoSingle]] =
               creditingTxsInfos.toVector.map(_.toSingles)
             val sigVecFs = singleInfosVec.map { singleInfos =>
@@ -119,17 +131,29 @@ class SignerTest extends BitcoinSAsyncTest {
             Future.sequence(sigVecFs)
           }
         } yield {
-          signedTx.inputs.foreach { input =>
-            val indexOpt = creditingTxsInfos.zipWithIndex
-              .find(_._1.outPoint == input.previousOutput)
-              .map(_._2)
-            assert(indexOpt.isDefined)
-            val index = indexOpt.get
-            val sigs = singleSigs(index)
-            val expectedSigs = input.scriptSignature.signatures
+          signedTx.inputs.zipWithIndex.foreach {
+            case (input, inputIndex) =>
+              val infoAndIndexOpt = creditingTxsInfos.zipWithIndex
+                .find(_._1.outPoint == input.previousOutput)
+              assert(infoAndIndexOpt.isDefined)
+              val (info, index) = infoAndIndexOpt.get
+              val sigs = singleSigs(index)
 
-            assert(sigs.length == expectedSigs.length)
-            assert(sigs.forall(expectedSigs.contains))
+              val expectedSigs = if (info.scriptWitnessOpt.isEmpty) {
+                input.scriptSignature.signatures
+              } else {
+                signedTx
+                  .asInstanceOf[WitnessTransaction]
+                  .witness
+                  .witnesses(inputIndex) match {
+                  case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
+                  case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
+                  case EmptyScriptWitness      => Vector.empty
+                }
+              }
+
+              assert(sigs.length == expectedSigs.length)
+              assert(sigs.forall(expectedSigs.contains))
           }
 
           succeed

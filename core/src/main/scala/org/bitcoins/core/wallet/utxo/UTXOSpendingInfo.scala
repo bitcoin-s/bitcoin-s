@@ -33,8 +33,6 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.CryptoUtil
 
-import scala.util.{Failure, Success, Try}
-
 /**
   * Contains the information required to sign an unspent transaction output (UTXO) for a single key
   */
@@ -80,10 +78,12 @@ sealed abstract class UTXOSpendingInfo extends UTXOSpendingInfoSingle {
     */
   override def signer: Sign = signers.head
 
+  def requiredSigs: Int
+
   def toSingle(signerIndex: Int): UTXOSpendingInfoSingle
 
   def toSingles: Vector[UTXOSpendingInfoSingle] = {
-    signers.indices.toVector.map(toSingle)
+    signers.indices.take(requiredSigs).toVector.map(toSingle)
   }
 }
 
@@ -152,7 +152,7 @@ object BitcoinUTXOSpendingInfoSingle {
                     throw new UnsupportedOperationException(
                       "Only v0 Segwit is currently supported")
                 }
-                P2SHNestedSegwitV0UTXOSpendingInfo(
+                P2SHNestedSegwitV0UTXOSpendingInfoSingle(
                   outPoint,
                   output.value,
                   p2sh,
@@ -164,13 +164,13 @@ object BitcoinUTXOSpendingInfoSingle {
                   conditionalPath
                 )
               case nonWitnessSPK: RawScriptPubKey =>
-                P2SHNoNestSpendingInfo(outPoint,
-                                       output.value,
-                                       p2sh,
-                                       signer,
-                                       hashType,
-                                       nonWitnessSPK,
-                                       conditionalPath)
+                P2SHNoNestSpendingInfoSingle(outPoint,
+                                             output.value,
+                                             p2sh,
+                                             signer,
+                                             hashType,
+                                             nonWitnessSPK,
+                                             conditionalPath)
               case _: P2SHScriptPubKey =>
                 throw new IllegalArgumentException("Cannot have nested P2SH")
               case _: UnassignedWitnessScriptPubKey =>
@@ -373,18 +373,6 @@ sealed trait RawScriptUTXOSpendingInfoSingle
 
 object RawScriptUTXOSpendingInfoSingle {
 
-  private[utxo] def shouldBeFull(
-      spendingInfo: RawScriptUTXOSpendingInfoSingle): Boolean = {
-    spendingInfo match {
-      case _: RawScriptUTXOSpendingInfo        => true
-      case _: MultiSignatureSpendingInfoSingle => false
-      case conditional: ConditionalSpendingInfoSingle =>
-        conditional.shouldBeFull
-      case lockTime: LockTimeSpendingInfoSingle =>
-        lockTime.shouldBeFull
-    }
-  }
-
   def apply(
       outPoint: TransactionOutPoint,
       amount: CurrencyUnit,
@@ -400,19 +388,19 @@ object RawScriptUTXOSpendingInfoSingle {
                                          signer,
                                          hashType)
       case locktime: LockTimeScriptPubKey =>
-        LockTimeSpendingInfo(outPoint,
-                             amount,
-                             locktime,
-                             signer,
-                             hashType,
-                             conditionalPath)
+        LockTimeSpendingInfoSingle(outPoint,
+                                   amount,
+                                   locktime,
+                                   signer,
+                                   hashType,
+                                   conditionalPath)
       case conditional: ConditionalScriptPubKey =>
-        ConditionalSpendingInfo(outPoint,
-                                amount,
-                                conditional,
-                                signer,
-                                hashType,
-                                conditionalPath)
+        ConditionalSpendingInfoSingle(outPoint,
+                                      amount,
+                                      conditional,
+                                      signer,
+                                      hashType,
+                                      conditionalPath)
       case _: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | EmptyScriptPubKey |
           _: NonStandardScriptPubKey | _: WitnessCommitment =>
@@ -500,6 +488,7 @@ case class EmptySpendingInfo(
   override def signers: Seq[Sign] = Vector.empty
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoConditionsLeft
+  override def requiredSigs: Int = 0
 }
 
 case class P2PKSpendingInfo(
@@ -513,6 +502,8 @@ case class P2PKSpendingInfo(
           "Signer pubkey must match ScriptPubKey")
 
   override val signers: Vector[Sign] = Vector(signer)
+
+  override val requiredSigs: Int = 1
 
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoConditionsLeft
@@ -529,6 +520,8 @@ case class P2PKHSpendingInfo(
           "Signer pubkey must match ScriptPubKey")
 
   override val signers: Vector[Sign] = Vector(signer)
+
+  override val requiredSigs: Int = 1
 
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoConditionsLeft
@@ -548,6 +541,8 @@ case class P2PKWithTimeoutSpendingInfo(
 
   override val signers: Vector[Sign] = Vector(signer)
 
+  override val requiredSigs: Int = 1
+
   override def conditionalPath: ConditionalPath =
     if (isBeforeTimeout) {
       ConditionalPath.nonNestedTrue
@@ -561,32 +556,6 @@ sealed trait MultiSignatureSpendingInfo
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoConditionsLeft
   override def scriptPubKey: MultiSignatureScriptPubKey
-}
-
-object MultiSignatureSpendingInfo {
-
-  def apply(
-      outPoint: TransactionOutPoint,
-      amount: CurrencyUnit,
-      scriptPubKey: MultiSignatureScriptPubKey,
-      signer: Sign,
-      hashType: HashType
-  ): MultiSignatureSpendingInfo = {
-    Try(
-      MultiSignatureSpendingInfoFull(outPoint,
-                                     amount,
-                                     scriptPubKey,
-                                     Vector(signer),
-                                     hashType)) match {
-      case Success(info) => info
-      case Failure(_) =>
-        MultiSignatureSpendingInfoSingle(outPoint,
-                                         amount,
-                                         scriptPubKey,
-                                         signer,
-                                         hashType)
-    }
-  }
 }
 
 case class MultiSignatureSpendingInfoSingle(
@@ -605,9 +574,10 @@ case class MultiSignatureSpendingInfoFull(
     hashType: HashType
 ) extends RawScriptUTXOSpendingInfo
     with MultiSignatureSpendingInfo {
-  require(signers.length >= scriptPubKey.requiredSigs, "Not enough signers!")
+  require(signers.length >= scriptPubKey.requiredSigs,
+          s"Not enough signers!: $this")
 
-  val requiredSigs: Int = scriptPubKey.requiredSigs
+  override val requiredSigs: Int = scriptPubKey.requiredSigs
 
   override def toSingle(signerIndex: Int): MultiSignatureSpendingInfoSingle = {
     MultiSignatureSpendingInfoSingle(outPoint,
@@ -618,7 +588,7 @@ case class MultiSignatureSpendingInfoFull(
   }
 
   override def toSingles: Vector[MultiSignatureSpendingInfoSingle] = {
-    signers.map { signer =>
+    signers.take(requiredSigs).map { signer =>
       MultiSignatureSpendingInfoSingle(outPoint,
                                        amount,
                                        scriptPubKey,
@@ -648,34 +618,6 @@ sealed trait ConditionalSpendingInfo extends RawScriptUTXOSpendingInfoSingle {
     }
 }
 
-object ConditionalSpendingInfo {
-
-  def apply(
-      outPoint: TransactionOutPoint,
-      amount: CurrencyUnit,
-      scriptPubKey: ConditionalScriptPubKey,
-      signer: Sign,
-      hashType: HashType,
-      conditionalPath: ConditionalPath): ConditionalSpendingInfo = {
-    Try(
-      ConditionalSpendingInfoSingle(outPoint,
-                                    amount,
-                                    scriptPubKey,
-                                    signer,
-                                    hashType,
-                                    conditionalPath)) match {
-      case Success(info) => info
-      case Failure(_) =>
-        ConditionalSpendingInfoFull(outPoint,
-                                    amount,
-                                    scriptPubKey,
-                                    Vector(signer),
-                                    hashType,
-                                    conditionalPath)
-    }
-  }
-}
-
 case class ConditionalSpendingInfoSingle(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
@@ -698,12 +640,6 @@ case class ConditionalSpendingInfoSingle(
                                     hashType,
                                     nextConditionalPath)
   }
-
-  private[utxo] val shouldBeFull: Boolean = {
-    RawScriptUTXOSpendingInfoSingle.shouldBeFull(nestedSpendingInfo)
-  }
-
-  require(shouldBeFull, "You must use ConditionalSpendingInfoFull")
 }
 
 /** Info required for signing a [[ConditionalScriptPubKey]] */
@@ -730,41 +666,14 @@ case class ConditionalSpendingInfoFull(
                               hashType,
                               nextConditionalPath)
   }
+
+  override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
 
 sealed trait LockTimeSpendingInfo extends RawScriptUTXOSpendingInfoSingle {
   override def scriptPubKey: LockTimeScriptPubKey
 
   def nestedSpendingInfo: RawScriptUTXOSpendingInfoSingle
-}
-
-object LockTimeSpendingInfo {
-
-  def apply(
-      outPoint: TransactionOutPoint,
-      amount: CurrencyUnit,
-      scriptPubKey: LockTimeScriptPubKey,
-      signer: Sign,
-      hashType: HashType,
-      conditionalPath: ConditionalPath
-  ): LockTimeSpendingInfo = {
-    Try(
-      LockTimeSpendingInfoSingle(outPoint,
-                                 amount,
-                                 scriptPubKey,
-                                 signer,
-                                 hashType,
-                                 conditionalPath)) match {
-      case Success(info) => info
-      case Failure(_) =>
-        LockTimeSpendingInfoFull(outPoint,
-                                 amount,
-                                 scriptPubKey,
-                                 Vector(signer),
-                                 hashType,
-                                 conditionalPath)
-    }
-  }
 }
 
 case class LockTimeSpendingInfoSingle(
@@ -783,12 +692,6 @@ case class LockTimeSpendingInfoSingle(
                                     hashType,
                                     conditionalPath)
   }
-
-  private[utxo] val shouldBeFull: Boolean = {
-    RawScriptUTXOSpendingInfoSingle.shouldBeFull(nestedSpendingInfo)
-  }
-
-  require(shouldBeFull, "You must use LockTimeSpendingInfoFull")
 }
 
 case class LockTimeSpendingInfoFull(
@@ -809,6 +712,8 @@ case class LockTimeSpendingInfoFull(
                               hashType,
                               conditionalPath)
   }
+
+  override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
 
 sealed trait SegwitV0NativeUTXOSpendingInfoSingle
@@ -834,13 +739,13 @@ object SegwitV0NativeUTXOSpendingInfoSingle {
       case p2wsh: P2WSHWitnessSPKV0 =>
         scriptWitness match {
           case witness: P2WSHWitnessV0 =>
-            P2WSHV0SpendingInfo(outPoint,
-                                amount,
-                                p2wsh,
-                                signer,
-                                hashType,
-                                witness,
-                                conditionalPath)
+            P2WSHV0SpendingInfoSingle(outPoint,
+                                      amount,
+                                      p2wsh,
+                                      signer,
+                                      hashType,
+                                      witness,
+                                      conditionalPath)
           case _: ScriptWitnessV0 =>
             throw new IllegalArgumentException("Script witness must be P2WSH")
         }
@@ -914,6 +819,8 @@ case class P2WPKHV0SpendingInfo(
   require(scriptWitness.pubKey == signer.publicKey,
           "Witness has incorrect public key")
 
+  override val requiredSigs: Int = 1
+
   override def signers: Seq[Sign] = Vector(signer)
   override def conditionalPath: ConditionalPath =
     ConditionalPath.NoConditionsLeft
@@ -929,37 +836,6 @@ sealed trait P2WSHV0SpendingInfo extends SegwitV0NativeUTXOSpendingInfoSingle {
   override def scriptWitness: P2WSHWitnessV0
 
   def nestedSpendingInfo: RawScriptUTXOSpendingInfoSingle
-}
-
-object P2WSHV0SpendingInfo {
-
-  def apply(
-      outPoint: TransactionOutPoint,
-      amount: CurrencyUnit,
-      scriptPubKey: P2WSHWitnessSPKV0,
-      signer: Sign,
-      hashType: HashType,
-      scriptWitness: P2WSHWitnessV0,
-      conditionalPath: ConditionalPath): P2WSHV0SpendingInfo = {
-    Try(
-      P2WSHV0SpendingInfoSingle(outPoint,
-                                amount,
-                                scriptPubKey,
-                                signer,
-                                hashType,
-                                scriptWitness,
-                                conditionalPath)) match {
-      case Success(info) => info
-      case Failure(_) =>
-        P2WSHV0SpendingInfoFull(outPoint,
-                                amount,
-                                scriptPubKey,
-                                Vector(signer),
-                                hashType,
-                                scriptWitness,
-                                conditionalPath)
-    }
-  }
 }
 
 case class P2WSHV0SpendingInfoSingle(
@@ -979,12 +855,6 @@ case class P2WSHV0SpendingInfoSingle(
                                     hashType,
                                     conditionalPath)
   }
-
-  private[utxo] val shouldBeFull: Boolean = {
-    RawScriptUTXOSpendingInfoSingle.shouldBeFull(nestedSpendingInfo)
-  }
-
-  require(shouldBeFull, "You must use P2WSHV0SpendingInfoFull")
 }
 
 case class P2WSHV0SpendingInfoFull(
@@ -1006,6 +876,8 @@ case class P2WSHV0SpendingInfoFull(
                               hashType,
                               conditionalPath)
   }
+
+  override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
 
 /** This is the case where we are spending a [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 witness v0 script]]  */
@@ -1021,6 +893,8 @@ case class UnassignedSegwitNativeUTXOSpendingInfo(
   override val redeemScriptOpt: Option[ScriptPubKey] = None
 
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
+
+  override val requiredSigs: Int = signers.length
 }
 
 sealed trait P2SHSpendingInfoSingle extends BitcoinUTXOSpendingInfoSingle {
@@ -1051,37 +925,6 @@ sealed trait P2SHNoNestSpendingInfo extends P2SHSpendingInfoSingle {
   def nestedSpendingInfo: RawScriptUTXOSpendingInfoSingle
 }
 
-object P2SHNoNestSpendingInfo {
-
-  def apply(
-      outPoint: TransactionOutPoint,
-      amount: CurrencyUnit,
-      scriptPubKey: P2SHScriptPubKey,
-      signer: Sign,
-      hashType: HashType,
-      redeemScript: RawScriptPubKey,
-      conditionalPath: ConditionalPath): P2SHNoNestSpendingInfo = {
-    Try(
-      P2SHNoNestSpendingInfoSingle(outPoint,
-                                   amount,
-                                   scriptPubKey,
-                                   signer,
-                                   hashType,
-                                   redeemScript,
-                                   conditionalPath)) match {
-      case Success(info) => info
-      case Failure(_) =>
-        P2SHNoNestSpendingInfoFull(outPoint,
-                                   amount,
-                                   scriptPubKey,
-                                   Vector(signer),
-                                   hashType,
-                                   redeemScript,
-                                   conditionalPath)
-    }
-  }
-}
-
 case class P2SHNoNestSpendingInfoSingle(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
@@ -1099,9 +942,6 @@ case class P2SHNoNestSpendingInfoSingle(
                                     hashType,
                                     conditionalPath)
   }
-
-  require(RawScriptUTXOSpendingInfoSingle.shouldBeFull(nestedSpendingInfo),
-          "You must use P2SHNoNestSpendingInfoFull")
 }
 
 /** This is the case were we are attempting to spend a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey p2sh spk]] */
@@ -1122,6 +962,8 @@ case class P2SHNoNestSpendingInfoFull(
                               signers,
                               hashType,
                               conditionalPath)
+
+  override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
 
 sealed trait P2SHNestedSegwitV0UTXOSpendingInfo extends P2SHSpendingInfoSingle {
@@ -1134,40 +976,6 @@ sealed trait P2SHNestedSegwitV0UTXOSpendingInfo extends P2SHSpendingInfoSingle {
   def nestedSpendingInfo: SegwitV0NativeUTXOSpendingInfoSingle
 
   override val scriptWitnessOpt: Option[ScriptWitnessV0] = Some(scriptWitness)
-}
-
-object P2SHNestedSegwitV0UTXOSpendingInfo {
-
-  def apply(
-      outPoint: TransactionOutPoint,
-      amount: CurrencyUnit,
-      scriptPubKey: P2SHScriptPubKey,
-      signer: Sign,
-      hashType: HashType,
-      redeemScript: WitnessScriptPubKeyV0,
-      scriptWitness: ScriptWitnessV0,
-      conditionalPath: ConditionalPath): P2SHNestedSegwitV0UTXOSpendingInfo = {
-    Try(
-      P2SHNestedSegwitV0UTXOSpendingInfoSingle(outPoint,
-                                               amount,
-                                               scriptPubKey,
-                                               signer,
-                                               hashType,
-                                               redeemScript,
-                                               scriptWitness,
-                                               conditionalPath)) match {
-      case Success(info) => info
-      case Failure(_) =>
-        P2SHNestedSegwitV0UTXOSpendingInfoFull(outPoint,
-                                               amount,
-                                               scriptPubKey,
-                                               Vector(signer),
-                                               hashType,
-                                               redeemScript,
-                                               scriptWitness,
-                                               conditionalPath)
-    }
-  }
 }
 
 case class P2SHNestedSegwitV0UTXOSpendingInfoSingle(
@@ -1188,15 +996,6 @@ case class P2SHNestedSegwitV0UTXOSpendingInfoSingle(
                                          hashType,
                                          scriptWitness,
                                          conditionalPath)
-
-  private val shouldBeFull: Boolean = {
-    nestedSpendingInfo match {
-      case p2wsh: P2WSHV0SpendingInfoSingle        => p2wsh.shouldBeFull
-      case _: SegwitV0NativeUTXOSpendingInfoSingle => true
-    }
-  }
-
-  require(shouldBeFull, "You must use P2SHNestedSegwitV0UTXOSpendingFull")
 }
 
 /** This is for the case we are spending a p2sh(p2w{pkh,sh}) script. This means that
@@ -1221,4 +1020,6 @@ case class P2SHNestedSegwitV0UTXOSpendingInfoFull(
                                    hashType,
                                    scriptWitness,
                                    conditionalPath)
+
+  override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
