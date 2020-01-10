@@ -13,43 +13,19 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** The class used to represent a signing process for a specific [[org.bitcoins.core.protocol.script.ScriptPubKey]] type */
-sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo] {
+sealed abstract class SingleSigner[-SpendingInfo <: UTXOSpendingInfoSingle] {
 
-  /**
-    * The method used to sign a bitcoin unspent transaction output
-    * @param spendingInfo - The information required for signing
-    * @param unsignedTx the external Transaction that needs an input signed
-    * @param isDummySignature - do not sign the tx for real, just use a dummy signature this is useful for fee estimation
-    * @return
-    */
-  def sign(
-      spendingInfo: SpendingInfo,
-      unsignedTx: Transaction,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
-    sign(
-      spendingInfo,
-      unsignedTx,
-      isDummySignature,
-      spendingInfoToSatisfy = spendingInfo
-    )
+  def signSingle(spendingInfo: SpendingInfo, unsignedTx: Transaction)(
+      implicit ec: ExecutionContext): Future[
+    (ECPublicKey, ECDigitalSignature)] = {
+    signSingle(spendingInfo, unsignedTx, spendingInfoToSatisfy = spendingInfo)
   }
 
-  /**
-    * The method used to sign a bitcoin unspent transaction output that is potentially nested
-    * @param spendingInfo - The information required for signing
-    * @param unsignedTx the external Transaction that needs an input signed
-    * @param isDummySignature - do not sign the tx for real, just use a dummy signature this is useful for fee estimation
-    * @param spendingInfoToSatisfy - specifies the UTXOSpendingInfo whose ScriptPubKey needs a ScriptSignature to be generated
-    * @return
-    */
-  def sign(
-      spendingInfo: UTXOSpendingInfo,
+  def signSingle(
+      spendingInfo: UTXOSpendingInfoSingle,
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
-      spendingInfoToSatisfy: SpendingInfo)(
-      implicit ec: ExecutionContext): Future[TxSigComponent]
+      spendingInfoToSatisfy: SpendingInfo): Future[
+    (ECPublicKey, ECDigitalSignature)]
 
   def doSign(
       sigComponent: TxSigComponent,
@@ -86,6 +62,46 @@ sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo] {
           "Transaction did not contain expected input.")
     }
   }
+}
+
+/** The class used to represent a signing process for a specific [[org.bitcoins.core.protocol.script.ScriptPubKey]] type */
+sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo]
+    extends SingleSigner {
+
+  /**
+    * The method used to sign a bitcoin unspent transaction output
+    * @param spendingInfo - The information required for signing
+    * @param unsignedTx the external Transaction that needs an input signed
+    * @param isDummySignature - do not sign the tx for real, just use a dummy signature this is useful for fee estimation
+    * @return
+    */
+  def sign(
+      spendingInfo: SpendingInfo,
+      unsignedTx: Transaction,
+      isDummySignature: Boolean)(
+      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    sign(
+      spendingInfo,
+      unsignedTx,
+      isDummySignature,
+      spendingInfoToSatisfy = spendingInfo
+    )
+  }
+
+  /**
+    * The method used to sign a bitcoin unspent transaction output that is potentially nested
+    * @param spendingInfo - The information required for signing
+    * @param unsignedTx the external Transaction that needs an input signed
+    * @param isDummySignature - do not sign the tx for real, just use a dummy signature this is useful for fee estimation
+    * @param spendingInfoToSatisfy - specifies the UTXOSpendingInfo whose ScriptPubKey needs a ScriptSignature to be generated
+    * @return
+    */
+  def sign(
+      spendingInfo: UTXOSpendingInfo,
+      unsignedTx: Transaction,
+      isDummySignature: Boolean,
+      spendingInfoToSatisfy: SpendingInfo)(
+      implicit ec: ExecutionContext): Future[TxSigComponent]
 
   protected def sigComponent(
       spendingInfo: UTXOSpendingInfo,
@@ -151,9 +167,12 @@ sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo] {
   }
 }
 
+sealed trait BitcoinSignerSingle[-SpendingInfo <: BitcoinUTXOSpendingInfoSingle]
+
 /** Represents all signers for the bitcoin protocol, we could add another network later like litecoin */
 sealed abstract class BitcoinSigner[-SpendingInfo <: BitcoinUTXOSpendingInfo]
     extends Signer[SpendingInfo]
+    with BitcoinSignerSingle[SpendingInfo]
 
 object BitcoinSigner {
 

@@ -214,7 +214,18 @@ object BitcoinUTXOSpendingInfoSingle {
 
 sealed trait BitcoinUTXOSpendingInfo
     extends UTXOSpendingInfo
-    with BitcoinUTXOSpendingInfoSingle
+    with BitcoinUTXOSpendingInfoSingle {
+
+  def toSingle(signerIndex: Int): BitcoinUTXOSpendingInfoSingle = {
+    BitcoinUTXOSpendingInfoSingle(outPoint,
+                                  output,
+                                  signers(signerIndex),
+                                  redeemScriptOpt,
+                                  scriptWitnessOpt,
+                                  hashType,
+                                  conditionalPath)
+  }
+}
 
 object BitcoinUTXOSpendingInfo {
 
