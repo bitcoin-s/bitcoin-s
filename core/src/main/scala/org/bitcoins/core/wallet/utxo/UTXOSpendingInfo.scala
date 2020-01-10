@@ -600,6 +600,26 @@ case class MultiSignatureSpendingInfoFull(
 ) extends RawScriptUTXOSpendingInfo
     with MultiSignatureSpendingInfo {
   require(signers.length >= scriptPubKey.requiredSigs, "Not enough signers!")
+
+  val requiredSigs: Int = scriptPubKey.requiredSigs
+
+  override def toSingle(signerIndex: Int): MultiSignatureSpendingInfoSingle = {
+    MultiSignatureSpendingInfoSingle(outPoint,
+                                     amount,
+                                     scriptPubKey,
+                                     signers(signerIndex),
+                                     hashType)
+  }
+
+  def toSingles: Vector[MultiSignatureSpendingInfoSingle] = {
+    signers.map { signer =>
+      MultiSignatureSpendingInfoSingle(outPoint,
+                                       amount,
+                                       scriptPubKey,
+                                       signer,
+                                       hashType)
+    }
+  }
 }
 
 sealed trait ConditionalSpendingInfo extends RawScriptUTXOSpendingInfoSingle {
