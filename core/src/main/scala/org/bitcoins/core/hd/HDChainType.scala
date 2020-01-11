@@ -2,6 +2,10 @@ package org.bitcoins.core.hd
 
 /**
   * Address chain (external vs. change) used by
+  *
+  * Format:
+  * m / purpose' / coin_type' / account' / change
+  *
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#change BIP44]],
   * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
   * and

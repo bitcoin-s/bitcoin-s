@@ -2,6 +2,7 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -29,8 +30,14 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   self: LockedWallet =>
 
   /** @inheritdoc */
-  override def listUtxos(): Future[Vector[SpendingInfoDb]] =
-    spendingInfoDAO.findAllUnspent()
+  override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
+    listUtxos(walletConfig.defaultAccount)
+  }
+
+  override def listUtxos(
+      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findAllUnspentForAccount(hdAccount)
+  }
 
   /**
     * Tries to convert the provided spk to an address, and then checks if we have

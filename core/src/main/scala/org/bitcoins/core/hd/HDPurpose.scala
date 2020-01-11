@@ -5,6 +5,10 @@ package org.bitcoins.core.hd
   *
   * This has been used for deploying keychains that are compatible with
   * raw segwit, p2sh wrapped segwit, and raw scripts.
+  *
+  * Format:
+  * m / purpose'
+  *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki BIP43]]
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Purpose BIP44]]
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]

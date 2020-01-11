@@ -1,13 +1,11 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.hd._
+import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
 
-import scala.concurrent.{Future}
-import org.bitcoins.db.CRUD
-import org.bitcoins.db.SlickUtil
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 case class AccountDAO()(
     implicit val ec: ExecutionContext,
@@ -38,4 +36,21 @@ case class AccountDAO()(
     findByPrimaryKeys(
       accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index)))
 
+  def findByAccount(account: HDAccount): Future[Option[AccountDb]] = {
+    val q = table
+      .filter(_.coinType === account.coin.coinType)
+      .filter(_.purpose === account.purpose)
+      .filter(_.index === account.index)
+
+    database.run(q.result).map {
+      case h +: Vector() =>
+        Some(h)
+      case Vector() =>
+        None
+      case accounts: Vector[AccountDb] =>
+        //yikes, we should not have more the one account per coin type/purpose
+        throw new RuntimeException(
+          s"More than one account per account=${account}, got=${accounts}")
+    }
+  }
 }

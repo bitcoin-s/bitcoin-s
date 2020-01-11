@@ -3,7 +3,14 @@ package org.bitcoins.wallet.config
 import java.nio.file.{Files, Path}
 
 import com.typesafe.config.Config
-import org.bitcoins.core.hd.{AddressType, HDPurpose, HDPurposes}
+import org.bitcoins.core.hd.{
+  AddressType,
+  HDAccount,
+  HDCoin,
+  HDCoinType,
+  HDPurpose,
+  HDPurposes
+}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
@@ -47,6 +54,11 @@ case class WalletAppConfig(
       case other =>
         throw new RuntimeException(s"$other is not a valid account type!")
     }
+  }
+
+  lazy val defaultAccount: HDAccount = {
+    val purpose = defaultAccountKind
+    HDAccount(coin = HDCoin(purpose, HDCoinType.Testnet), index = 0)
   }
 
   lazy val bloomFalsePositiveRate: Double =
