@@ -11,12 +11,12 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
 import org.bitcoins.core.util.CryptoUtil
-import spray.json._
-import scodec.bits._
-
-import scala.io.Source
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
+import scodec.bits._
+import spray.json._
+
+import scala.io.Source
 
 class TransactionTest extends BitcoinSUnitTest {
   behavior of "Transaction"

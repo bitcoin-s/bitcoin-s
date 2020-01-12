@@ -42,9 +42,11 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
     * of [[BitcoinTxBuilder]]
     *
     * If you pass in a [[org.bitcoins.keymanager.KeyManager]], the [[org.bitcoins.core.wallet.utxo.UTXOSpendingInfo.signers signers]]
-    * will be populated with really signers that can be used to produce valid [[org.bitcoins.core.crypto.ECDigitalSignature signatures]]
+    * will be populated with valid signers that can be used to produce valid [[org.bitcoins.core.crypto.ECDigitalSignature signatures]]
     *
-    * If you do not pass in a key manager, the transaction will contain [[org.bitcoins.core.protocol.script.EmptyScriptSignature EmptyScriptSignature]]
+    * If you do not pass in a key manager, the transaction built by [[BitcoinTxBuilder txbuilder]] will contain [[org.bitcoins.core.protocol.script.EmptyScriptSignature EmptyScriptSignature]]
+    *
+    * Currently utxos are funded with [[CoinSelector.accumulateLargest() accumulateLargest]] coin seleciton algorithm
     * */
   private[wallet] def fundRawTransactionInternal(
       destinations: Vector[TransactionOutput],

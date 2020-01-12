@@ -128,6 +128,9 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
       )
   }
 
+  /** Creates a wallet that is funded with some bitcoin, this wallet is NOT
+    * peered with a bitcoind so the funds in the wallet are not tied to an
+    * underlying blockchain */
   def withFundedWallet(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
       build = () => createFundedWallet(nodeApi, chainQueryApi),
@@ -402,7 +405,9 @@ object BitcoinSWalletTest extends WalletLogger {
     }
 
     val fundedWalletF =
-      txsF.flatMap(txs => wallet.processTransactions(txs, None))
+      txsF.flatMap(txs => wallet.processTransactions(
+        transactions = txs,
+        blockHash = None))
 
     //sanity check to make sure we have money
     for {
