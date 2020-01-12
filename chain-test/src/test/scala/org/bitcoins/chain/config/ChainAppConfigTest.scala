@@ -17,7 +17,8 @@ class ChainAppConfigTest extends ChainUnitTest {
   //if we don't turn off logging here, isInitF a few lines down will
   //produce some nasty error logs since we are testing initialization
   //of the chain project
-  val chainAppConfig = appConfig.withOverrides(ConfigFactory.parseString("bitcoin-s.logging.level=OFF"))
+  val chainAppConfig = appConfig.withOverrides(
+    ConfigFactory.parseString("bitcoin-s.logging.level=OFF"))
 
   behavior of "ChainAppConfig"
 
