@@ -1,8 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.util.TestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**
   * Created by chris on 4/1/16.

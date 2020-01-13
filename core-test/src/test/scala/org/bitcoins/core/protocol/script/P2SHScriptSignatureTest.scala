@@ -1,12 +1,9 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.script.constant.{
-  BytesToPushOntoStack,
-  OP_0,
-  ScriptConstant
-}
-import org.bitcoins.core.util.{BitcoinSLogger, TestUtil}
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, OP_0, ScriptConstant}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.testkit.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 
 /**

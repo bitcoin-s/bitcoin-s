@@ -4,17 +4,13 @@ import org.bitcoins.core.script.arithmetic.OP_1ADD
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
-import org.bitcoins.core.script.crypto.{
-  OP_CHECKMULTISIG,
-  OP_CHECKSIG,
-  OP_HASH160
-}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.splice.OP_SIZE
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP, OP_PICK, OP_SWAP}
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
 /**

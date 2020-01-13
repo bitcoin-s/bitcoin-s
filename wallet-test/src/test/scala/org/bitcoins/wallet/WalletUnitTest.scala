@@ -173,5 +173,4 @@ class WalletUnitTest extends BitcoinSWalletTest {
                                      blockHeight = 1)) == matched)
     }
   }
-
 }

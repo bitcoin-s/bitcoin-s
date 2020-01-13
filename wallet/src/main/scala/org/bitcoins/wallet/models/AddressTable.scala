@@ -135,9 +135,9 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
 
   def purpose: Rep[HDPurpose] = column("hd_purpose")
 
-  def accountIndex: Rep[Int] = column("account_index")
-
   def accountCoin: Rep[HDCoinType] = column("hd_coin")
+
+  def accountIndex: Rep[Int] = column("account_index")
 
   def accountChainType: Rep[HDChainType] = column("hd_chain_type")
 

@@ -1,11 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptSignature,
-  P2PKScriptSignature
-}
-import org.bitcoins.core.util.TestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, P2PKScriptSignature}
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**
   * Created by chris on 3/30/16.

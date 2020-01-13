@@ -1,7 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.util.TransactionTestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TransactionTestUtil}
 
 /**
   * Created by chris on 3/8/16.
