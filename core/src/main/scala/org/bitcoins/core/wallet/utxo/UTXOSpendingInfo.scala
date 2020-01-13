@@ -63,8 +63,10 @@ sealed abstract class UTXOSpendingInfoSingle {
 }
 
 /**
-  * Contains the information required to spend an unspent transaction output (UTXO)
+  * Contains the information required to fully sign an unspent transaction output (UTXO)
   * on a blockchain.
+  *
+  * If you want to partially sign a UTXO you will likely need to use UTXOSpendingInfoSingle.
   */
 sealed abstract class UTXOSpendingInfo extends UTXOSpendingInfoSingle {
 
@@ -366,6 +368,11 @@ object BitcoinUTXOSpendingInfo {
   }
 }
 
+/** This represents the information needed to be sign, with a single key, scripts like
+  * [[org.bitcoins.core.protocol.script.P2PKHScriptPubKey p2pkh]] or
+  * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey multisig]] scripts.
+  * Basically this is for ScriptPubKeys where there is no nesting that requires a redeem script
+  */
 sealed trait RawScriptUTXOSpendingInfoSingle
     extends BitcoinUTXOSpendingInfoSingle {
   override def scriptPubKey: RawScriptPubKey
@@ -734,6 +741,9 @@ case class LockTimeSpendingInfoFull(
   override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
 
+/** This is the case where we are signing a
+  * [[org.bitcoins.core.protocol.script.WitnessScriptPubKeyV0 witness v0 script]]
+  */
 sealed trait SegwitV0NativeUTXOSpendingInfoSingle
     extends BitcoinUTXOSpendingInfoSingle {
   override def scriptPubKey: WitnessScriptPubKeyV0

@@ -89,9 +89,17 @@ abstract private[signer] class SignerUtils {
   }
 }
 
+/** The class used to represent a single key's signing process for a
+  * specific [[org.bitcoins.core.protocol.script.ScriptPubKey]] type */
 sealed trait SingleSigner[-SpendingInfo <: UTXOSpendingInfoSingle]
     extends SignerUtils {
 
+  /**
+    * The method used to sign a bitcoin unspent transaction output with a single key
+    * @param spendingInfo The information required for creating the signature
+    * @param unsignedTx the external Transaction that needs an input signed
+    * @param isDummySignature generates a dummy signature if true, useful for fee estimation
+    */
   def signSingle(
       spendingInfo: SpendingInfo,
       unsignedTx: Transaction,
@@ -103,6 +111,13 @@ sealed trait SingleSigner[-SpendingInfo <: UTXOSpendingInfoSingle]
                spendingInfoToSatisfy = spendingInfo)
   }
 
+  /**
+    * The method used to sign, with a single key, a bitcoin unspent transaction output that is potentially nested
+    * @param spendingInfo The information required for creating the signature
+    * @param unsignedTx the external Transaction that needs an input signed
+    * @param isDummySignature generates a dummy signature if true, useful for fee estimation
+    * @param spendingInfoToSatisfy - specifies the UTXOSpendingInfoSingle whose ScriptPubKey needs an ECDigitalSignature to be generated
+    */
   def signSingle(
       spendingInfo: UTXOSpendingInfoSingle,
       unsignedTx: Transaction,
@@ -182,6 +197,9 @@ sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo]
   }
 }
 
+/** Represents all signers (for single keys) for the bitcoin protocol,
+  * we could add another network later like litecoin
+  */
 sealed trait BitcoinSignerSingle[-SpendingInfo <: BitcoinUTXOSpendingInfoSingle]
     extends SingleSigner[SpendingInfo] {
   override def signSingle(
@@ -334,11 +352,13 @@ object BitcoinSigner {
   }
 }
 
+/** Represents a BitcoinSigner for which only a single signature is required */
 sealed abstract class SingleKeyBitcoinSigner[
     -SpendingInfo <: BitcoinUTXOSpendingInfo]
     extends BitcoinSigner[SpendingInfo]
     with BitcoinSignerSingle[SpendingInfo]
 
+/** Represents a SingleKeyBitcoinSigner which signs a RawScriptPubKey */
 sealed abstract class RawSingleKeyBitcoinSigner[
     -SpendingInfo <: RawScriptUTXOSpendingInfo]
     extends SingleKeyBitcoinSigner[SpendingInfo] {
