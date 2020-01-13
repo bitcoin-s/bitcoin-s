@@ -3,7 +3,6 @@ package org.bitcoins.core.wallet.signer
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
@@ -597,12 +596,20 @@ sealed abstract class P2WPKHSigner
                              unsignedTx,
                              isDummySignature,
                              spendingInfoToSatisfy)
-        sig = sigComponent
-          .asInstanceOf[WitnessTxSigComponent]
-          .witness
-          .asInstanceOf[script.P2WPKHWitnessV0]
-          .signature
       } yield {
+        val sig = sigComponent match {
+          case witnessSigComp: WitnessTxSigComponent =>
+            witnessSigComp.witness match {
+              case p2wpkhWit: P2WPKHWitnessV0 => p2wpkhWit.signature
+              case _: ScriptWitness =>
+                throw new RuntimeException(
+                  "P2WPKHSigner.sign must generate a P2WPKHWitness")
+            }
+          case _: TxSigComponent =>
+            throw new RuntimeException(
+              "P2WPKHSigner.sign must return a WitnessTxSigComponent")
+        }
+
         (spendingInfoToSatisfy.signer.publicKey, sig)
       }
     }

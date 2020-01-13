@@ -6,11 +6,9 @@ import org.bitcoins.core.protocol.script.{
   EmptyScriptWitness,
   P2WPKHWitnessV0,
   P2WSHWitnessV0,
-  ScriptSignature,
   WitnessScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.WitnessTransaction
-import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
