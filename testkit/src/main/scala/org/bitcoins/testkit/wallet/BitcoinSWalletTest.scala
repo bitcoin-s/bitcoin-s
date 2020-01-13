@@ -405,9 +405,8 @@ object BitcoinSWalletTest extends WalletLogger {
     }
 
     val fundedWalletF =
-      txsF.flatMap(txs => wallet.processTransactions(
-        transactions = txs,
-        blockHash = None))
+      txsF.flatMap(txs =>
+        wallet.processTransactions(transactions = txs, blockHash = None))
 
     //sanity check to make sure we have money
     for {
