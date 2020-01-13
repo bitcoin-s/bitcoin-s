@@ -82,7 +82,26 @@ abstract private[signer] class SignerUtils {
 
         WitnessTxSigComponent(wtx, index, spendingInfo.output, flags)
       case _: P2SHScriptPubKey =>
-        P2SHTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
+        val emptyInput = unsignedTx.inputs(index.toInt)
+        val newInput = TransactionInput(
+          emptyInput.previousOutput,
+          P2SHScriptSignature(EmptyScriptSignature,
+                              spendingInfo.redeemScriptOpt.get),
+          emptyInput.sequence)
+        val updatedTx = unsignedTx.updateInput(index.toInt, newInput)
+        spendingInfo.redeemScriptOpt.get match {
+          case _: WitnessScriptPubKey =>
+            val wtx = WitnessTransaction.toWitnessTx(updatedTx)
+            val updatedWtx =
+              wtx.updateWitness(index.toInt, spendingInfo.scriptWitnessOpt.get)
+
+            WitnessTxSigComponentP2SH(updatedWtx,
+                                      index,
+                                      spendingInfo.output,
+                                      flags)
+          case _: ScriptPubKey =>
+            P2SHTxSigComponent(updatedTx, index, spendingInfo.output, flags)
+        }
       case _: ScriptPubKey =>
         BaseTxSigComponent(unsignedTx, index, spendingInfo.output, flags)
     }
@@ -523,9 +542,10 @@ sealed abstract class P2SHSignerSingle
         unsignedTx.updateInput(inputIndex.toInt, input)
 
       BitcoinSignerSingle
-        .signSingle(spendingInfoToSatisfy.nestedSpendingInfo,
+        .signSingle(spendingInfo,
                     updatedTx,
-                    isDummySignature)
+                    isDummySignature,
+                    spendingInfoToSatisfy.nestedSpendingInfo)
     }
   }
 }
@@ -608,30 +628,26 @@ sealed abstract class P2WPKHSigner
       spendingInfoToSatisfy: P2WPKHV0SpendingInfo)(
       implicit ec: ExecutionContext): Future[
     (ECPublicKey, ECDigitalSignature)] = {
-    if (spendingInfoToSatisfy != spendingInfo) {
-      Future.fromTry(TxBuilderError.WrongSigner)
-    } else {
-      for {
-        sigComponent <- sign(spendingInfoToSatisfy,
-                             unsignedTx,
-                             isDummySignature,
-                             spendingInfoToSatisfy)
-      } yield {
-        val sig = sigComponent match {
-          case witnessSigComp: WitnessTxSigComponent =>
-            witnessSigComp.witness match {
-              case p2wpkhWit: P2WPKHWitnessV0 => p2wpkhWit.signature
-              case _: ScriptWitness =>
-                throw new RuntimeException(
-                  "P2WPKHSigner.sign must generate a P2WPKHWitness")
-            }
-          case _: TxSigComponent =>
-            throw new RuntimeException(
-              "P2WPKHSigner.sign must return a WitnessTxSigComponent")
-        }
-
-        (spendingInfoToSatisfy.signer.publicKey, sig)
+    for {
+      sigComponent <- sign(spendingInfoToSatisfy,
+                           unsignedTx,
+                           isDummySignature,
+                           spendingInfoToSatisfy)
+    } yield {
+      val sig = sigComponent match {
+        case witnessSigComp: WitnessTxSigComponent =>
+          witnessSigComp.witness match {
+            case p2wpkhWit: P2WPKHWitnessV0 => p2wpkhWit.signature
+            case _: ScriptWitness =>
+              throw new RuntimeException(
+                "P2WPKHSigner.sign must generate a P2WPKHWitness")
+          }
+        case _: TxSigComponent =>
+          throw new RuntimeException(
+            "P2WPKHSigner.sign must return a WitnessTxSigComponent")
       }
+
+      (spendingInfoToSatisfy.signer.publicKey, sig)
     }
   }
 
@@ -712,16 +728,12 @@ sealed abstract class P2WSHSignerSingle
       spendingInfoToSatisfy: P2WSHV0SpendingInfoSingle)(
       implicit ec: ExecutionContext): Future[
     (ECPublicKey, ECDigitalSignature)] = {
-    if (spendingInfoToSatisfy != spendingInfo) {
-      Future.fromTry(TxBuilderError.WrongSigner)
-    } else {
-      val wtx = WitnessTransaction.toWitnessTx(unsignedTx)
+    val wtx = WitnessTransaction.toWitnessTx(unsignedTx)
 
-      BitcoinSignerSingle.signSingle(spendingInfo,
-                                     wtx,
-                                     isDummySignature,
-                                     spendingInfoToSatisfy.nestedSpendingInfo)
-    }
+    BitcoinSignerSingle.signSingle(spendingInfo,
+                                   wtx,
+                                   isDummySignature,
+                                   spendingInfoToSatisfy.nestedSpendingInfo)
   }
 }
 
