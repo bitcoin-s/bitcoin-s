@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**
   * Created by chris on 3/2/16.

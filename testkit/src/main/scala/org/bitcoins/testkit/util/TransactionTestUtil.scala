@@ -1,10 +1,11 @@
-package org.bitcoins.core.util
+package org.bitcoins.testkit.util
 
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.util.BitcoinSLogger
 
 /**
   * Created by chris on 2/12/16.
@@ -239,6 +240,14 @@ trait TransactionTestUtil extends BitcoinSLogger {
                     Seq(EmptyTransactionInput),
                     Nil,
                     EmptyTransaction.lockTime)
+
+  /** Builds a dummy transaction that sends money to the given output */
+  def buildTransactionTo(output: TransactionOutput): Transaction = {
+    BaseTransaction(version = Int32.one,
+                    inputs = Vector(EmptyTransactionInput),
+                    outputs = Vector(output),
+                    lockTime = TransactionConstants.lockTime)
+  }
 }
 
 object TransactionTestUtil extends TransactionTestUtil

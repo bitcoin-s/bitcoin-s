@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
 /**

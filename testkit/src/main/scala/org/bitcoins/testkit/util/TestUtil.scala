@@ -1,16 +1,22 @@
-package org.bitcoins.core.util
+package org.bitcoins.testkit.util
 
 import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptPubKey,
+  P2SHScriptSignature,
+  ScriptPubKey,
+  ScriptSignature
+}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionInput,
   TransactionOutput
 }
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{
@@ -19,7 +25,6 @@ import org.bitcoins.core.script.crypto.{
   OP_HASH160
 }
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
 

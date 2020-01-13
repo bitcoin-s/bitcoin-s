@@ -1,10 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  WitnessTxSigComponentP2SH,
-  WitnessTxSigComponentRaw
-}
+import org.bitcoins.core.crypto.{BaseTxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -14,13 +10,13 @@ import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
-import org.bitcoins.core.util.{CryptoUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import spray.json._
+import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits._
+import spray.json._
 
 import scala.io.Source
-import org.bitcoins.testkit.core.gen.TransactionGenerators
 
 class TransactionTest extends BitcoinSUnitTest {
   behavior of "Transaction"
