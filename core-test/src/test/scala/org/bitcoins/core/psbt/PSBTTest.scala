@@ -191,14 +191,6 @@ class PSBTTest extends BitcoinSAsyncTest {
       psbt1.getUTXOSpendingInfoUsingSigners(index = 0, getDummySigners(1)))
   }
 
-  it must "have serialization symmetry" in {
-    forAllAsync(PSBTGenerators.arbitraryPSBT) { psbtF =>
-      psbtF.map { psbt =>
-        assert(PSBT.fromBytes(psbt.bytes) == psbt)
-      }
-    }
-  }
-
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
     forAllAsync(CreditingTxGen.inputsAndOuptuts,
                 ScriptGenerators.scriptPubKey,

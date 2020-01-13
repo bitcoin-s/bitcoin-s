@@ -221,9 +221,8 @@ sealed abstract class EmptySigner extends BitcoinSigner[EmptySpendingInfo] {
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-    // This script pushes an OP_TRUE onto the stack, causing a successful spend
     val satisfyEmptyScriptSig =
-      Future.successful(NonStandardScriptSignature("0151"))
+      Future.successful(NonStandardScriptSignature.trivalTrue)
 
     updateScriptSigInSigComponent(unsignedTx,
                                   inputIndex.toInt,

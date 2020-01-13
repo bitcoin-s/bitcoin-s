@@ -51,6 +51,11 @@ object NonStandardScriptSignature
                 },
                 errorMsg = "")
   }
+
+  /** A script signature to be used in tests for signing EmptyScriptPubKey.
+    * This script pushes an OP_TRUE onto the stack, causing a successful spend.
+    */
+  val trivalTrue: NonStandardScriptSignature = fromAsmHex("0151")
 }
 
 /**
