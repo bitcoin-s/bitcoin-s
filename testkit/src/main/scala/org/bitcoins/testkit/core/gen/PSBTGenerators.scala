@@ -78,10 +78,14 @@ object PSBTGenerators {
     finalizedPSBTWithBuilder.map(_.map(_._1))
   }
 
+  /** Generates a PSBT that is ready to be finalized but where no input map has been finalized */
   def fullNonFinalizedPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
     psbtWithBuilder(finalized = false).map(_.map(_._1))
   }
 
+  /** Generates an arbitrary unfinalized PSBT by generating a full unfinalized PSBT
+    * and randomly removing records
+    */
   def arbitraryPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
     Gen.frequency((6, fullNonFinalizedPSBT), (1, finalizedPSBT)).map { psbtF =>
       psbtF.map { psbt =>

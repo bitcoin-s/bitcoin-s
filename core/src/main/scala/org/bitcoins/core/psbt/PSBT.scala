@@ -579,6 +579,10 @@ object PSBT extends Factory[PSBT] {
     PSBT(globalMap, inputMaps, outputMaps)
   }
 
+  /**
+    * Wraps a Vector of pairs of UTXOSpendingInfos and the Transactions whose outputs are spent.
+    * Note that this Transaction is only necessary when the output is non-segwit.
+    */
   case class SpendingInfoAndNonWitnessTxs(
       infoAndTxOpts: Vector[(UTXOSpendingInfo, Option[Transaction])]) {
     val length: Int = infoAndTxOpts.length
@@ -623,6 +627,9 @@ object PSBT extends Factory[PSBT] {
     }
   }
 
+  /** Constructs a full (ready to be finalized) but unfinalized PSBT from an
+    * unsigned transaction and a SpendingInfoAndNonWitnessTxs
+    */
   def fromUnsignedTxAndInputs(
       unsignedTx: Transaction,
       spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(
@@ -632,6 +639,9 @@ object PSBT extends Factory[PSBT] {
                             finalized = false)
   }
 
+  /** Constructs a finalized PSBT from an
+    * unsigned transaction and a SpendingInfoAndNonWitnessTxs
+    */
   def finalizedFromUnsignedTxAndInputs(
       unsignedTx: Transaction,
       spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs)(
@@ -1506,6 +1516,10 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
 
 object InputPSBTMap {
 
+  /** Constructs a finalized InputPSBTMap from a UTXOSpendingInfo,
+    * the corresponding PSBT's unsigned transaction, and if this is
+    * a non-witness spend, the transaction being spent
+    */
   def finalizedFromUTXOSpendingInfo(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
@@ -1546,6 +1560,10 @@ object InputPSBTMap {
     }
   }
 
+  /** Constructs a full (ready to be finalized) but unfinalized InputPSBTMap
+    * from a UTXOSpendingInfo, the corresponding PSBT's unsigned transaction,
+    * and if this is a non-witness spend, the transaction being spent
+    */
   def fromUTXOSpendingInfo(
       spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction,
