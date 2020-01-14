@@ -21,28 +21,47 @@ object EclairBench extends App with EclairRpcTestUtil {
   implicit val system = ActorSystem()
   import system.dispatcher
 
-  val networkSize = 1
-  val paymentCount = 10
-  val channelAmount = 10000000000L.msats
-  val outputFileName = "test.csv"
+  // put compiled test jar files into binaries/eclair/${version} directory
 
-  // release
-  val EclairVersion = Option.empty[String]
-  val EclairCommit = Option.empty[String]
+  // None means current release
+  val TestEclairVersion = Option.empty[String]
+  val TestEclairCommit = Option.empty[String]
+  //  val TestEclairVersion = Option("0.3.3-SNAPSHOT")
+  //  val TestEclairCommit = Option("84825ff")
+  val SenderEclairVersion = Option.empty[String]
+  val SenderEclairCommit = Option.empty[String]
 
-  // psql
-  // compiled binary can be found here:
-  // https://s3-us-west-1.amazonaws.com/suredbits.com/eclair/eclair-node-0.3.3-SNAPSHOT-949f1ec-psql.jar
-  // put it into binaries/eclair/0.3.3-SNAPSHOT directory
-//  val EclairVersion = Option("0.3.3-SNAPSHOT")
-//  val EclairCommit = Option("949f1ec-psql")
+  val NetworkSize = 10
+  val PaymentCount = 2000
+  val ChannelAmount = 10000000000L.msats
+  val PaymentAmount = 10.msats
+  val OutputFileName = "test.csv"
+  val LogbackXml = None // Some("~/logback.xml")
 
   // don't forget to recreate `eclair` Postgres database before starting a new test
   EclairRpcTestUtil.customConfigMap = Map(
-    "eclair.db.driver" -> "psql"
+    "eclair.db.driver" -> "psql",
+//    "eclair.db.psql.pool.max-size" -> 12,
+    "eclair.db.psql.lock-type" -> "none"
+//    "eclair.db.psql.lock-type" -> "optimistic"
+//    "eclair.db.psql.lock-type" -> "exclusive"
   )
 
-  def sendPayments(network: Network, amount: MilliSatoshis, count: Int)(
+  object Progress {
+    private var count = 0
+    private var percentage = 0
+
+    def inc(): Unit = synchronized {
+      count += 1
+      val newPercentage = count * 100 / (NetworkSize * PaymentCount)
+      if (newPercentage % 10 == 0 && newPercentage != percentage) {
+        percentage = newPercentage
+        print(s"$percentage% ")
+      }
+    }
+  }
+
+  def sendPayments(network: EclairNetwork, amount: MilliSatoshis, count: Int)(
       implicit ec: ExecutionContext): Future[Vector[PaymentId]] =
     for {
       testNodeInfo <- network.testEclairNode.getInfo
@@ -64,25 +83,26 @@ object EclairBench extends App with EclairRpcTestUtil {
                                     None)
             } yield {
               logPaymentId(paymentHash, id)
+              Progress.inc()
               acc :+ id
             }
         }
       })
     } yield paymentIds.flatten
 
-  def runTests(network: Network): Future[Vector[PaymentLogEntry]] = {
+  def runTests(network: EclairNetwork): Future[Vector[PaymentLogEntry]] = {
     println("Setting up the test network")
     for {
       _ <- network.testEclairNode.connectToWebSocket(logEvent)
       _ = println(
-        s"Set up ${networkSize} nodes, that will send $paymentCount paments to the test node each")
+        s"Set up ${NetworkSize} nodes, that will send $PaymentCount payments to the test node each")
       _ = println(
         s"Test node data directory: ${network.testEclairNode.instance.authCredentials.datadir
           .getOrElse("")}")
       _ = println("Testing...")
-      _ <- sendPayments(network, 1000.msats, paymentCount)
+      _ <- sendPayments(network, PaymentAmount, PaymentCount)
       _ <- TestAsyncUtil.retryUntilSatisfied(
-        condition = paymentLog.size() == networkSize * paymentCount,
+        condition = paymentLog.size() == NetworkSize * PaymentCount,
         duration = 1.second,
         maxTries = 100)
       _ <- TestAsyncUtil
@@ -90,7 +110,7 @@ object EclairBench extends App with EclairRpcTestUtil {
                                paymentLog.values().asScala.forall(_.completed),
                              duration = 1.second,
                              maxTries = 100)
-      _ = println("Done!")
+      _ = println("\nDone!")
     } yield {
       paymentLog
         .values()
@@ -101,10 +121,13 @@ object EclairBench extends App with EclairRpcTestUtil {
   }
 
   val res: Future[Unit] = for {
-    network <- Network.start(EclairVersion,
-                             EclairCommit,
-                             networkSize,
-                             channelAmount)
+    network <- EclairNetwork.start(TestEclairVersion,
+                                   TestEclairCommit,
+                                   SenderEclairVersion,
+                                   SenderEclairCommit,
+                                   NetworkSize,
+                                   ChannelAmount,
+                                   LogbackXml)
     log <- runTests(network).recoverWith {
       case e: Throwable =>
         e.printStackTrace()
@@ -122,7 +145,7 @@ object EclairBench extends App with EclairRpcTestUtil {
               case (x, i) =>
                 s"${x.paymentSentAt - first.paymentSentAt},${i + 1},${x.toCSV}"
             }
-      val outputFile = new File(outputFileName)
+      val outputFile = new File(OutputFileName)
       Files.write(outputFile.toPath,
                   csv.asJava,
                   StandardOpenOption.CREATE,
