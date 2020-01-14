@@ -1,38 +1,30 @@
 package org.bitcoins.core.wallet.builder
 
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  WitnessTxSigComponentP2SH,
-  WitnessTxSigComponentRaw
-}
+import org.bitcoins.core.config.{RegTest, TestNet3}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
-import org.bitcoins.testkit.core.gen.{
-  ChainParamsGenerator,
-  CreditingTxGen,
-  ScriptGenerators
-}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
   ConditionalPath,
   LockTimeSpendingInfoFull,
   UTXOSpendingInfo
 }
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.constant.ScriptNumber
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkit.core.gen.{
+  ChainParamsGenerator,
+  CreditingTxGen,
+  ScriptGenerators
+}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
