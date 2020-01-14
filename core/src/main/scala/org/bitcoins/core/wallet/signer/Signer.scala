@@ -5,6 +5,9 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.psbt.{InputPSBTMap, PSBT}
+import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
@@ -240,6 +243,46 @@ sealed trait BitcoinSignerSingle[-SpendingInfo <: BitcoinUTXOSpendingInfoSingle]
 }
 
 object BitcoinSignerSingle {
+
+  def sign(
+      psbt: PSBT,
+      inputIndex: Int,
+      signer: Sign,
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
+      isDummySignature: Boolean)(
+      implicit ec: ExecutionContext): Future[PSBT] = {
+    // if already signed by this signer
+    if (psbt
+          .inputMaps(inputIndex)
+          .getRecords[PartialSignature](PartialSignatureKeyId)
+          .exists(_.pubKey == signer.publicKey)) {
+      throw new IllegalArgumentException(
+        "Input has already been signed with this key")
+    }
+
+    val tx = psbt.transaction
+    val spendingInfo =
+      psbt
+        .inputMaps(inputIndex)
+        .toUTXOSpendingInfoSingle(tx.inputs(inputIndex),
+                                  signer,
+                                  conditionalPath)
+
+    val sigAndPubKeyF =
+      signSingle(spendingInfo, tx, isDummySignature)
+
+    sigAndPubKeyF.map { sigAndPubKey =>
+      val pubKey = sigAndPubKey._1
+      val signature = sigAndPubKey._2
+
+      val map = psbt.inputMaps(inputIndex)
+      val newElements = map.elements :+ PartialSignature(pubKey, signature)
+
+      val newInputMaps =
+        psbt.inputMaps.updated(inputIndex, InputPSBTMap(newElements))
+      PSBT(psbt.globalMap, newInputMaps, psbt.outputMaps)
+    }
+  }
 
   def signSingle(
       spendingInfo: UTXOSpendingInfoSingle,

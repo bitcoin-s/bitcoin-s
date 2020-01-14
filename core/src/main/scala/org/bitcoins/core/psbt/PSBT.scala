@@ -1,13 +1,7 @@
 package org.bitcoins.core.psbt
 
 import org.bitcoins.core.byteVectorOrdering
-import org.bitcoins.core.crypto.{
-  ECDigitalSignature,
-  ECPublicKey,
-  ExtKey,
-  ExtPublicKey,
-  _
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.policy.Policy
@@ -26,18 +20,7 @@ import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfoFull,
-  ConditionalPath,
-  P2SHNestedSegwitV0UTXOSpendingInfoFull,
-  P2SHNoNestSpendingInfo,
-  P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfo,
-  RawScriptUTXOSpendingInfoFull,
-  SegwitV0NativeUTXOSpendingInfoFull,
-  UTXOSpendingInfoFull,
-  UnassignedSegwitNativeUTXOSpendingInfo
-}
+import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
 
 import scala.annotation.tailrec
@@ -1436,7 +1419,25 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       signers: Vector[Sign],
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
+    val spendingInfoSingle =
+      toUTXOSpendingInfoSingle(txIn, signers.head, conditionalPath)
 
+    BitcoinUTXOSpendingInfoFull(
+      outPoint = spendingInfoSingle.outPoint,
+      output = spendingInfoSingle.output,
+      signers = signers,
+      redeemScriptOpt = spendingInfoSingle.redeemScriptOpt,
+      scriptWitnessOpt = spendingInfoSingle.scriptWitnessOpt,
+      hashType = spendingInfoSingle.hashType,
+      conditionalPath = conditionalPath
+    )
+  }
+
+  def toUTXOSpendingInfoSingle(
+      txIn: TransactionInput,
+      signer: Sign,
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoSingle = {
+    require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
     val outPoint = txIn.previousOutput
 
     val witVec = getRecords[WitnessUTXO](WitnessUTXOKeyId)
@@ -1468,13 +1469,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       if (hashTypeVec.size == 1) hashTypeVec.head.hashType
       else HashType.sigHashAll
 
-    BitcoinUTXOSpendingInfoFull(outPoint,
-                                output,
-                                signers,
-                                redeemScriptOpt,
-                                scriptWitnessOpt,
-                                hashType,
-                                conditionalPath)
+    BitcoinUTXOSpendingInfoSingle(outPoint,
+                                  output,
+                                  signer,
+                                  redeemScriptOpt,
+                                  scriptWitnessOpt,
+                                  hashType,
+                                  conditionalPath)
   }
 
   /**
