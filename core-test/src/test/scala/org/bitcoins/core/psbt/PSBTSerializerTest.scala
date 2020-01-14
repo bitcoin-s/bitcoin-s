@@ -8,11 +8,13 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
 import org.bitcoins.core.psbt.InputPSBTRecord.{
   BIP32DerivationPath,
+  ProofOfReservesCommitment,
   WitnessScript,
   WitnessUTXO
 }
 import org.bitcoins.core.psbt.PSBTInputKeyId.{
   BIP32DerivationPathKeyId,
+  ProofOfReservesCommitmentKeyId,
   WitnessScriptKeyId,
   WitnessUTXOKeyId
 }
@@ -156,6 +158,24 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
       psbtWithUnknowns.inputMaps.head.elements.head.key.head)
 
     assert(inputKey == PSBTInputKeyId.UnknownKeyId)
+  }
+
+  it must "successfully serialize a PSBT with a ProofOfReservesCommitment" in {
+    val psbt = PSBT(validPsbts.head)
+
+    val inputElements = psbt.inputMaps.head.elements :+
+      ProofOfReservesCommitment(
+        hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+
+    val psbtWithPoRC =
+      PSBT(psbt.globalMap,
+           psbt.inputMaps.updated(0, InputPSBTMap(inputElements)),
+           psbt.outputMaps)
+
+    assert(
+      psbtWithPoRC.inputMaps.head
+        .getRecords(ProofOfReservesCommitmentKeyId)
+        .size == 1)
   }
 
   it must "successfully serialize and deserialize valid PSBTs from bytes" in {
