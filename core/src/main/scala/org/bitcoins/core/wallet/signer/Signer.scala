@@ -13,7 +13,7 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract private[signer] class SignerUtils {
+sealed abstract class SignerUtils {
 
   def doSign(
       sigComponent: TxSigComponent,
@@ -31,21 +31,16 @@ abstract private[signer] class SignerUtils {
   protected val flags: Seq[ScriptFlag] = Policy.standardFlags
 
   protected def relevantInfo(
-      spendingInfo: UTXOSpendingInfoSingle,
+      spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction): (Seq[Sign], TransactionOutput, UInt32, HashType) = {
-    val signers = spendingInfo match {
-      case info: UTXOSpendingInfo    => info.signers
-      case _: UTXOSpendingInfoSingle => Vector(spendingInfo.signer)
-    }
-
-    (signers,
+    (spendingInfo.signers,
      spendingInfo.output,
      inputIndex(spendingInfo, unsignedTx),
      spendingInfo.hashType)
   }
 
   protected def inputIndex(
-      spendingInfo: UTXOSpendingInfoSingle,
+      spendingInfo: UTXOSpendingInfo,
       tx: Transaction): UInt32 = {
     tx.inputs.zipWithIndex
       .find(_._1.previousOutput == spendingInfo.outPoint) match {
@@ -57,7 +52,7 @@ abstract private[signer] class SignerUtils {
   }
 
   protected def sigComponent(
-      spendingInfo: UTXOSpendingInfoSingle,
+      spendingInfo: UTXOSpendingInfo,
       unsignedTx: Transaction): TxSigComponent = {
     val index = inputIndex(spendingInfo, unsignedTx)
 
@@ -146,7 +141,7 @@ sealed trait SingleSigner[-SpendingInfo <: UTXOSpendingInfoSingle]
 }
 
 /** The class used to represent a signing process for a specific [[org.bitcoins.core.protocol.script.ScriptPubKey]] type */
-sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo]
+sealed abstract class FullSigner[-SpendingInfo <: UTXOSpendingInfoFull]
     extends SignerUtils {
 
   /**
@@ -178,7 +173,7 @@ sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo]
     * @return
     */
   def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: SpendingInfo)(
@@ -215,6 +210,9 @@ sealed abstract class Signer[-SpendingInfo <: UTXOSpendingInfo]
     }
   }
 }
+
+sealed trait SingleAndFullSigner[
+    -SpendingInfo <: UTXOSpendingInfoFull with UTXOSpendingInfoSingle]
 
 /** Represents all signers (for single keys) for the bitcoin protocol,
   * we could add another network later like litecoin
@@ -303,23 +301,19 @@ object BitcoinSignerSingle {
                                      p2wsh)
       case _: UnassignedSegwitNativeUTXOSpendingInfo =>
         throw new UnsupportedOperationException("Unsupported Segwit version")
-      case _: MultiSignatureSpendingInfoFull | _: P2SHSpendingInfo |
-          _: LockTimeSpendingInfoFull | _: ConditionalSpendingInfoFull |
-          _: P2WSHV0SpendingInfoFull | _: EmptySpendingInfo =>
-        throw new IllegalArgumentException(
-          s"You should not be using signSingle with $spendingInfoToSatisfy. If you really just want one signature, call toSingle first.")
     }
   }
 }
 
 /** Represents all signers for the bitcoin protocol, we could add another network later like litecoin */
-sealed abstract class BitcoinSigner[-SpendingInfo <: BitcoinUTXOSpendingInfo]
-    extends Signer[SpendingInfo]
+sealed abstract class BitcoinSignerFull[
+    -SpendingInfo <: BitcoinUTXOSpendingInfoFull]
+    extends FullSigner[SpendingInfo]
 
 object BitcoinSigner {
 
   def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
@@ -327,10 +321,10 @@ object BitcoinSigner {
   }
 
   def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: UTXOSpendingInfo)(
+      spendingInfoToSatisfy: UTXOSpendingInfoFull)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     spendingInfoToSatisfy match {
       case empty: EmptySpendingInfo =>
@@ -344,7 +338,7 @@ object BitcoinSigner {
                                    unsignedTx,
                                    isDummySignature,
                                    p2pKWithTimeout)
-      case p2sh: P2SHSpendingInfo =>
+      case p2sh: P2SHSpendingInfoFull =>
         P2SHSigner.sign(spendingInfo, unsignedTx, isDummySignature, p2sh)
       case multiSig: MultiSignatureSpendingInfoFull =>
         MultiSigSigner.sign(spendingInfo,
@@ -373,13 +367,13 @@ object BitcoinSigner {
 
 /** Represents a BitcoinSigner for which only a single signature is required */
 sealed abstract class SingleKeyBitcoinSigner[
-    -SpendingInfo <: BitcoinUTXOSpendingInfo]
-    extends BitcoinSigner[SpendingInfo]
+    -SpendingInfo <: BitcoinUTXOSpendingInfoFull with BitcoinUTXOSpendingInfoSingle]
+    extends BitcoinSignerFull[SpendingInfo]
     with BitcoinSignerSingle[SpendingInfo]
 
 /** Represents a SingleKeyBitcoinSigner which signs a RawScriptPubKey */
 sealed abstract class RawSingleKeyBitcoinSigner[
-    -SpendingInfo <: RawScriptUTXOSpendingInfo]
+    -SpendingInfo <: RawScriptUTXOSpendingInfoFull with RawScriptUTXOSpendingInfoSingle]
     extends SingleKeyBitcoinSigner[SpendingInfo] {
 
   def keyAndSigToScriptSig(
@@ -388,7 +382,7 @@ sealed abstract class RawSingleKeyBitcoinSigner[
       spendingInfo: SpendingInfo): ScriptSignature
 
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: SpendingInfo)(
@@ -396,7 +390,7 @@ sealed abstract class RawSingleKeyBitcoinSigner[
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
-    val keyAndSigF = signSingle(spendingInfo,
+    val keyAndSigF = signSingle(spendingInfo.toSingle(0),
                                 unsignedTx,
                                 isDummySignature,
                                 spendingInfoToSatisfy)
@@ -414,10 +408,10 @@ sealed abstract class RawSingleKeyBitcoinSigner[
 }
 
 /** For signing EmptyScriptPubKeys in tests, should probably not be used in real life. */
-sealed abstract class EmptySigner extends BitcoinSigner[EmptySpendingInfo] {
+sealed abstract class EmptySigner extends BitcoinSignerFull[EmptySpendingInfo] {
 
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: EmptySpendingInfo)(
@@ -484,10 +478,10 @@ sealed abstract class MultiSigSignerSingle
 object MultiSigSignerSingle extends MultiSigSignerSingle
 
 sealed abstract class MultiSigSigner
-    extends BitcoinSigner[MultiSignatureSpendingInfoFull] {
+    extends BitcoinSignerFull[MultiSignatureSpendingInfoFull] {
 
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: MultiSignatureSpendingInfoFull)(
@@ -495,11 +489,13 @@ sealed abstract class MultiSigSigner
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
-    val requiredSigs = spendingInfoToSatisfy.requiredSigs
-    val keysAndSigsF = spendingInfoToSatisfy.toSingles.take(requiredSigs).map {
-      infoSingle =>
+    val keysAndSigsF = spendingInfoToSatisfy.toSingles.zipWithIndex.map {
+      case (infoSingle, index) =>
         MultiSigSignerSingle
-          .signSingle(spendingInfo, unsignedTx, isDummySignature, infoSingle)
+          .signSingle(spendingInfo.toSingle(index),
+                      unsignedTx,
+                      isDummySignature,
+                      infoSingle)
     }
 
     val signaturesF = Future.sequence(keysAndSigsF).map(_.map(_._2))
@@ -553,12 +549,13 @@ sealed abstract class P2SHSignerSingle
 object P2SHSignerSingle extends P2SHSignerSingle
 
 /** Used to sign a [[org.bitcoins.core.protocol.script.P2SHScriptPubKey]] */
-sealed abstract class P2SHSigner extends BitcoinSigner[P2SHSpendingInfo] {
+sealed abstract class P2SHSigner
+    extends BitcoinSignerFull[P2SHSpendingInfoFull] {
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: P2SHSpendingInfo)(
+      spendingInfoToSatisfy: P2SHSpendingInfoFull)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
@@ -652,7 +649,7 @@ sealed abstract class P2WPKHSigner
   }
 
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: P2WPKHV0SpendingInfo)(
@@ -740,10 +737,10 @@ sealed abstract class P2WSHSignerSingle
 object P2WSHSignerSingle extends P2WSHSignerSingle
 
 sealed abstract class P2WSHSigner
-    extends BitcoinSigner[P2WSHV0SpendingInfoFull] {
+    extends BitcoinSignerFull[P2WSHV0SpendingInfoFull] {
 
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: P2WSHV0SpendingInfoFull)(
@@ -801,10 +798,10 @@ sealed abstract class LockTimeSignerSingle
 object LockTimeSignerSingle extends LockTimeSignerSingle
 
 sealed abstract class LockTimeSigner
-    extends BitcoinSigner[LockTimeSpendingInfoFull] {
+    extends BitcoinSignerFull[LockTimeSpendingInfoFull] {
 
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: LockTimeSpendingInfoFull)(
@@ -840,10 +837,10 @@ object ConditionalSignerSingle extends ConditionalSignerSingle
   * spent and then adds an OP_TRUE or OP_FALSE
   */
 sealed abstract class ConditionalSigner
-    extends BitcoinSigner[ConditionalSpendingInfoFull] {
+    extends BitcoinSignerFull[ConditionalSpendingInfoFull] {
 
   override def sign(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: ConditionalSpendingInfoFull)(
