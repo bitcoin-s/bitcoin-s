@@ -561,7 +561,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     ScriptInterpreter.runAllVerify(programs)
   }
 
-  private def outputGen(outputs: Gen[Seq[BitcoinUTXOSpendingInfo]]) = {
+  private def outputGen(outputs: Gen[Seq[BitcoinUTXOSpendingInfoFull]]) = {
     outputs
       .flatMap { creditingTxsInfo =>
         val creditingOutputs = creditingTxsInfo.map(c => c.output)
