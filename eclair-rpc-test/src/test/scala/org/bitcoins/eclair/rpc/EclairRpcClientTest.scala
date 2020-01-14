@@ -823,7 +823,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   // We spawn fresh clients in this test because the test
   // needs nodes with activity both related and not related
   // to them
-  it should "get all channel updates for a given node ID" ignore {
+  it should "get all channel updates for a given node ID" in {
     val freshClients1F = bitcoindRpcClientF.flatMap { bitcoindRpcClient =>
       EclairRpcTestUtil.createNodePair(Some(bitcoindRpcClient))
     }
@@ -1028,7 +1028,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     )
   }
 
-  it should "get updates for a single node" ignore {
+  it should "get updates for a single node" in {
     // allupdates for a single node is broken in Eclair 0.3.2
     // TODO remove recoverToPendingIf when https://github.com/ACINQ/eclair/issues/1179 is fixed
     recoverToPendingIf[RuntimeException](for {
