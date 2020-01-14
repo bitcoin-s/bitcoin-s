@@ -163,9 +163,10 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
   it must "successfully serialize a PSBT with a ProofOfReservesCommitment" in {
     val psbt = PSBT(validPsbts.head)
 
-    val inputElements = psbt.inputMaps.head.elements :+
-      ProofOfReservesCommitment(
-        hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+    val proofOfReservesCommitment = ProofOfReservesCommitment(
+      hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f")
+
+    val inputElements = psbt.inputMaps.head.elements :+ proofOfReservesCommitment
 
     val psbtWithPoRC =
       PSBT(psbt.globalMap,
@@ -175,7 +176,8 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(
       psbtWithPoRC.inputMaps.head
         .getRecords(ProofOfReservesCommitmentKeyId)
-        .size == 1)
+        .headOption
+        .contains(proofOfReservesCommitment))
   }
 
   it must "successfully serialize and deserialize valid PSBTs from bytes" in {
