@@ -99,8 +99,7 @@ object PSBTGenerators {
           } else {
             val numKeep = scala.util.Random.nextInt(vec.length)
             vec
-              .sortBy(_ => scala.util.Random.nextDouble())(
-                Ordering.Double.TotalOrdering)
+              .sortBy(_ => scala.util.Random.nextLong())
               .take(numKeep)
           }
         }
