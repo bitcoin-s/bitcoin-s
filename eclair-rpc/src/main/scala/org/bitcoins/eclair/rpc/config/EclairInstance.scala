@@ -15,6 +15,7 @@ sealed trait EclairInstance {
   def uri: URI
   def rpcUri: URI
   def authCredentials: EclairAuthCredentials
+  def logbackXmlPath: Option[String]
 }
 
 /**
@@ -29,57 +30,67 @@ object EclairInstance {
       network: NetworkParameters,
       uri: URI,
       rpcUri: URI,
-      authCredentials: EclairAuthCredentials)
+      authCredentials: EclairAuthCredentials,
+      logbackXmlPath: Option[String])
       extends EclairInstance
 
   def apply(
       network: NetworkParameters,
       uri: URI,
       rpcUri: URI,
-      authCredentials: EclairAuthCredentials): EclairInstance = {
-    EclairInstanceImpl(network, uri, rpcUri, authCredentials)
+      authCredentials: EclairAuthCredentials,
+      logbackXmlPath: Option[String]): EclairInstance = {
+    EclairInstanceImpl(network, uri, rpcUri, authCredentials, logbackXmlPath)
   }
 
   private val DEFAULT_DATADIR = Paths.get(Properties.userHome, ".eclair")
 
   private val DEFAULT_CONF_FILE = DEFAULT_DATADIR.resolve("eclair.conf")
 
-  def fromDatadir(datadir: File = DEFAULT_DATADIR.toFile): EclairInstance = {
+  def fromDatadir(
+      datadir: File = DEFAULT_DATADIR.toFile,
+      logbackXml: Option[String]): EclairInstance = {
     require(datadir.exists, s"${datadir.getPath} does not exist!")
     require(datadir.isDirectory, s"${datadir.getPath} is not a directory!")
 
     val eclairConf = new File(datadir.getAbsolutePath + "/eclair.conf")
 
-    fromConfigFile(eclairConf)
+    fromConfigFile(eclairConf, logbackXml)
 
   }
 
-  def fromConfigFile(file: File = DEFAULT_CONF_FILE.toFile): EclairInstance = {
+  def fromConfigFile(
+      file: File = DEFAULT_CONF_FILE.toFile,
+      logbackXml: Option[String]): EclairInstance = {
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
     val config = ConfigFactory.parseFile(file)
 
-    fromConfig(config, file.getParentFile)
+    fromConfig(config, file.getParentFile, logbackXml)
   }
 
   /**
     * $fromConfigDoc
     */
-  def fromConfig(config: Config, datadir: File): EclairInstance = {
-    fromConfig(config, Some(datadir))
+  def fromConfig(
+      config: Config,
+      datadir: File,
+      logbackXml: Option[String]): EclairInstance = {
+    fromConfig(config, Some(datadir), logbackXml)
   }
 
   /**
     * $fromConfigDoc
     */
   def fromConfig(config: Config): EclairInstance = {
-    fromConfig(config, None)
+    fromConfig(config, None, None)
   }
 
   private def fromConfig(
       config: Config,
-      datadir: Option[File]): EclairInstance = {
+      datadir: Option[File],
+      logbackXml: Option[String]): EclairInstance = {
     val chain = ConfigUtil.getStringOrElse(config, "eclair.chain", "testnet")
 
     //  default conf: https://github.com/ACINQ/eclair/blob/master/eclair-core/src/main/resources/reference.conf
@@ -116,7 +127,8 @@ object EclairInstance {
     val instance = EclairInstance(network = np,
                                   uri = uri,
                                   rpcUri = rpcUri,
-                                  authCredentials = eclairAuth)
+                                  authCredentials = eclairAuth,
+                                  logbackXml)
 
     instance
   }

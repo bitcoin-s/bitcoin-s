@@ -163,25 +163,32 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   /** Assumes bitcoind is running already and you have specified correct bindings in eclair.conf */
-  def cannonicalEclairInstance(): EclairInstance = {
+  def cannonicalEclairInstance(
+      logbackXml: Option[String] = None): EclairInstance = {
     val datadir = cannonicalDatadir
-    eclairInstance(datadir)
+    eclairInstance(datadir, logbackXml)
   }
 
-  def eclairInstance(datadir: File): EclairInstance = {
-    val instance = EclairInstance.fromDatadir(datadir)
+  def eclairInstance(
+      datadir: File,
+      logbackXml: Option[String]): EclairInstance = {
+    val instance = EclairInstance.fromDatadir(datadir, logbackXml)
     instance
   }
 
   /** Starts the given bitcoind instance and then starts the eclair instance */
-  def eclairInstance(bitcoindRpc: BitcoindRpcClient): EclairInstance = {
+  def eclairInstance(
+      bitcoindRpc: BitcoindRpcClient,
+      logbackXml: Option[String] = None): EclairInstance = {
     val datadir = eclairDataDir(bitcoindRpc, false)
-    eclairInstance(datadir)
+    eclairInstance(datadir, logbackXml)
   }
 
-  def randomEclairInstance(bitcoindRpc: BitcoindRpcClient): EclairInstance = {
+  def randomEclairInstance(
+      bitcoindRpc: BitcoindRpcClient,
+      logbackXml: Option[String] = None): EclairInstance = {
     val datadir = eclairDataDir(bitcoindRpc, false)
-    eclairInstance(datadir)
+    eclairInstance(datadir, logbackXml)
   }
 
   def randomEclairClient(
@@ -699,7 +706,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     shutdownF
   }
 
-  case class Network(
+  case class EclairNetwork(
       bitcoind: BitcoindRpcClient,
       testEclairNode: EclairRpcClient,
       networkEclairNodes: Vector[EclairRpcClient],
@@ -713,31 +720,36 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       } yield ()
   }
 
-  object Network {
+  object EclairNetwork {
 
     def start(
-        eclairVersion: Option[String],
-        eclairCommit: Option[String],
+        testEclairVersion: Option[String],
+        testEclairCommit: Option[String],
+        senderEclairVersion: Option[String],
+        senderEclairCommit: Option[String],
         networkSize: Int,
-        channelAmount: MilliSatoshis)(
-        implicit system: ActorSystem): Future[Network] = {
+        channelAmount: MilliSatoshis,
+        logbackXml: Option[String])(
+        implicit system: ActorSystem): Future[EclairNetwork] = {
       import system.dispatcher
       for {
         bitcoind <- startedBitcoindRpcClient()
-        testEclairInstance = EclairRpcTestUtil.eclairInstance(bitcoind)
+        testEclairInstance = EclairRpcTestUtil.eclairInstance(bitcoind,
+                                                              logbackXml =
+                                                                logbackXml)
         testEclairNode = new EclairRpcClient(
           testEclairInstance,
-          binary(eclairVersion, eclairCommit))
+          binary(testEclairVersion, testEclairCommit))
         _ <- testEclairNode.start()
         _ <- awaitEclairInSync(testEclairNode, bitcoind)
         networkEclairInstances = 1
           .to(networkSize)
           .toVector
-          .map(_ => EclairRpcTestUtil.eclairInstance(bitcoind))
+          .map(_ =>
+            EclairRpcTestUtil.eclairInstance(bitcoind, logbackXml = logbackXml))
         networkEclairNodes = networkEclairInstances.map(
           new EclairRpcClient(_,
-                              binary(Some(EclairRpcClient.version),
-                                     Some(EclairRpcClient.commit))))
+                              binary(senderEclairVersion, senderEclairCommit)))
         _ <- Future.sequence(networkEclairNodes.map(_.start()))
         _ <- Future.sequence(
           networkEclairNodes.map(awaitEclairInSync(_, bitcoind)))
@@ -756,7 +768,10 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         }
         _ <- Future.sequence(
           channelIds.map(awaitChannelOpened(testEclairNode, _)))
-      } yield Network(bitcoind, testEclairNode, networkEclairNodes, channelIds)
+      } yield EclairNetwork(bitcoind,
+                            testEclairNode,
+                            networkEclairNodes,
+                            channelIds)
     }
 
   }
