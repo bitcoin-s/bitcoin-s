@@ -143,16 +143,16 @@ class PSBTTest extends BitcoinSAsyncTest {
     assert(psbt.finalizePSBT.contains(expected))
   }
 
-  private def getDummySigners(size: Int): Seq[Sign] = {
+  private def getDummySigners(size: Int): Vector[Sign] = {
     @tailrec
-    def loop(i: Int, accum: Seq[Sign]): Seq[Sign] = {
+    def loop(i: Int, accum: Vector[Sign]): Vector[Sign] = {
       if (i <= 0) {
         accum
       } else {
         loop(i - 1, accum :+ Sign.dummySign(ECPublicKey.freshPublicKey))
       }
     }
-    loop(size, Nil)
+    loop(size, Vector.empty)
   }
 
   it must "create a valid UTXOSpendingInfo" in {

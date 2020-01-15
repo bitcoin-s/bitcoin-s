@@ -27,15 +27,15 @@ import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfo,
+  BitcoinUTXOSpendingInfoFull,
   ConditionalPath,
-  P2SHNestedSegwitV0UTXOSpendingInfo,
+  P2SHNestedSegwitV0UTXOSpendingInfoFull,
   P2SHNoNestSpendingInfo,
   P2WPKHV0SpendingInfo,
   P2WSHV0SpendingInfo,
-  RawScriptUTXOSpendingInfo,
-  SegwitV0NativeUTXOSpendingInfo,
-  UTXOSpendingInfo,
+  RawScriptUTXOSpendingInfoFull,
+  SegwitV0NativeUTXOSpendingInfoFull,
+  UTXOSpendingInfoFull,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
 import scodec.bits._
@@ -134,7 +134,7 @@ case class PSBT(
 
   def getUTXOSpendingInfo(
       index: Int,
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
     require(index >= 0 && index < inputMaps.size,
             s"Index must be within 0 and the number of inputs, got: $index")
     inputMaps(index)
@@ -142,17 +142,17 @@ case class PSBT(
   }
 
   /**
-    * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfo
+    * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfoFull
     * that can be used to sign the input
     * @param index index of the InputPSBTMap
     * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
-    * @return A corresponding UTXOSpendingInfo
+    * @return A corresponding UTXOSpendingInfoFull
     */
   def getUTXOSpendingInfoUsingSigners(
       index: Int,
-      signers: Seq[Sign],
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
+      signers: Vector[Sign],
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
     require(index >= 0 && index < inputMaps.size,
             s"Index must be within 0 and the number of inputs, got: $index")
     inputMaps(index)
@@ -584,7 +584,7 @@ object PSBT extends Factory[PSBT] {
     * Note that this Transaction is only necessary when the output is non-segwit.
     */
   case class SpendingInfoAndNonWitnessTxs(
-      infoAndTxOpts: Vector[(UTXOSpendingInfo, Option[Transaction])]) {
+      infoAndTxOpts: Vector[(UTXOSpendingInfoFull, Option[Transaction])]) {
     val length: Int = infoAndTxOpts.length
 
     def matchesInputs(inputs: Seq[TransactionInput]): Boolean = {
@@ -596,7 +596,7 @@ object PSBT extends Factory[PSBT] {
     }
 
     def map[T](
-        func: (UTXOSpendingInfo, Option[Transaction]) => T): Vector[T] = {
+        func: (UTXOSpendingInfoFull, Option[Transaction]) => T): Vector[T] = {
       infoAndTxOpts.map { case (info, txOpt) => func(info, txOpt) }
     }
   }
@@ -606,7 +606,7 @@ object PSBT extends Factory[PSBT] {
     /** For use in tests, makes dummy transactions with the correct output for the PSBT */
     def fromUnsignedTxAndInputs(
         unsignedTx: Transaction,
-        creditingTxsInfo: Vector[UTXOSpendingInfo]): SpendingInfoAndNonWitnessTxs = {
+        creditingTxsInfo: Vector[UTXOSpendingInfoFull]): SpendingInfoAndNonWitnessTxs = {
       val elements = unsignedTx.inputs.toVector.map { input =>
         val infoOpt =
           creditingTxsInfo.find(_.outPoint == input.previousOutput)
@@ -1415,7 +1415,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
 
   def toUTXOSpendingInfo(
       txIn: TransactionInput,
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
     val signersVec = getRecords[PartialSignature](PartialSignatureKeyId)
     val signers =
       signersVec.map(sig => Sign.constant(sig.signature, sig.pubKey))
@@ -1424,17 +1424,17 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
   }
 
   /**
-    * Takes the InputPSBTMap returns a UTXOSpendingInfo
+    * Takes the InputPSBTMap returns a UTXOSpendingInfoFull
     * that can be used to sign the input
     * @param txIn The transaction input that this InputPSBTMap represents
     * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
-    * @return A corresponding UTXOSpendingInfo
+    * @return A corresponding UTXOSpendingInfoFull
     */
   def toUTXOSpendingInfoUsingSigners(
       txIn: TransactionInput,
-      signers: Seq[Sign],
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfo = {
+      signers: Vector[Sign],
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
 
     val outPoint = txIn.previousOutput
@@ -1468,13 +1468,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       if (hashTypeVec.size == 1) hashTypeVec.head.hashType
       else HashType.sigHashAll
 
-    BitcoinUTXOSpendingInfo(outPoint,
-                            output,
-                            signers,
-                            redeemScriptOpt,
-                            scriptWitnessOpt,
-                            hashType,
-                            conditionalPath)
+    BitcoinUTXOSpendingInfoFull(outPoint,
+                                output,
+                                signers,
+                                redeemScriptOpt,
+                                scriptWitnessOpt,
+                                hashType,
+                                conditionalPath)
   }
 
   /**
@@ -1516,12 +1516,12 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
 
 object InputPSBTMap {
 
-  /** Constructs a finalized InputPSBTMap from a UTXOSpendingInfo,
+  /** Constructs a finalized InputPSBTMap from a UTXOSpendingInfoFull,
     * the corresponding PSBT's unsigned transaction, and if this is
     * a non-witness spend, the transaction being spent
     */
   def finalizedFromUTXOSpendingInfo(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       nonWitnessTxOpt: Option[Transaction])(
       implicit ec: ExecutionContext): Future[InputPSBTMap] = {
@@ -1530,10 +1530,10 @@ object InputPSBTMap {
 
     sigComponentF.map { sigComponent =>
       val utxos = spendingInfo match {
-        case _: SegwitV0NativeUTXOSpendingInfo |
-            _: P2SHNestedSegwitV0UTXOSpendingInfo =>
+        case _: SegwitV0NativeUTXOSpendingInfoFull |
+            _: P2SHNestedSegwitV0UTXOSpendingInfoFull =>
           Vector(WitnessUTXO(spendingInfo.output))
-        case _: RawScriptUTXOSpendingInfo | _: P2SHNoNestSpendingInfo |
+        case _: RawScriptUTXOSpendingInfoFull | _: P2SHNoNestSpendingInfo |
             _: UnassignedSegwitNativeUTXOSpendingInfo =>
           nonWitnessTxOpt match {
             case None => Vector.empty
@@ -1561,11 +1561,11 @@ object InputPSBTMap {
   }
 
   /** Constructs a full (ready to be finalized) but unfinalized InputPSBTMap
-    * from a UTXOSpendingInfo, the corresponding PSBT's unsigned transaction,
+    * from a UTXOSpendingInfoFull, the corresponding PSBT's unsigned transaction,
     * and if this is a non-witness spend, the transaction being spent
     */
   def fromUTXOSpendingInfo(
-      spendingInfo: UTXOSpendingInfo,
+      spendingInfo: UTXOSpendingInfoFull,
       unsignedTx: Transaction,
       nonWitnessTxOpt: Option[Transaction])(
       implicit ec: ExecutionContext): Future[InputPSBTMap] = {
@@ -1592,7 +1592,7 @@ object InputPSBTMap {
 
       Sign(signFunction, signer.publicKey)
     }
-    val sideEffectSpendingInfo = BitcoinUTXOSpendingInfo(
+    val sideEffectSpendingInfo = BitcoinUTXOSpendingInfoFull(
       outPoint = spendingInfo.outPoint,
       output = spendingInfo.output,
       signers = sideEffectSigners,
@@ -1610,10 +1610,10 @@ object InputPSBTMap {
       val builder = Vector.newBuilder[InputPSBTRecord]
 
       spendingInfo match {
-        case _: SegwitV0NativeUTXOSpendingInfo |
-            _: P2SHNestedSegwitV0UTXOSpendingInfo =>
+        case _: SegwitV0NativeUTXOSpendingInfoFull |
+            _: P2SHNestedSegwitV0UTXOSpendingInfoFull =>
           builder.+=(WitnessUTXO(spendingInfo.output))
-        case _: RawScriptUTXOSpendingInfo | _: P2SHNoNestSpendingInfo |
+        case _: RawScriptUTXOSpendingInfoFull | _: P2SHNoNestSpendingInfo |
             _: UnassignedSegwitNativeUTXOSpendingInfo =>
           nonWitnessTxOpt match {
             case None => ()
@@ -1633,7 +1633,7 @@ object InputPSBTMap {
       spendingInfo match {
         case p2sh: P2SHNoNestSpendingInfo =>
           builder.+=(RedeemScript(p2sh.redeemScript))
-        case p2sh: P2SHNestedSegwitV0UTXOSpendingInfo =>
+        case p2sh: P2SHNestedSegwitV0UTXOSpendingInfoFull =>
           builder.+=(RedeemScript(p2sh.redeemScript))
           p2sh.scriptWitness match {
             case p2wsh: P2WSHWitnessV0 =>
@@ -1642,7 +1642,7 @@ object InputPSBTMap {
           }
         case p2wsh: P2WSHV0SpendingInfo =>
           builder.+=(WitnessScript(p2wsh.scriptWitness.redeemScript))
-        case _: RawScriptUTXOSpendingInfo | _: P2WPKHV0SpendingInfo |
+        case _: RawScriptUTXOSpendingInfoFull | _: P2WPKHV0SpendingInfo |
             _: UnassignedSegwitNativeUTXOSpendingInfo =>
           ()
       }
