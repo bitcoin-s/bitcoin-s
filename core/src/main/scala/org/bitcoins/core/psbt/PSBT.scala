@@ -1,13 +1,7 @@
 package org.bitcoins.core.psbt
 
 import org.bitcoins.core.byteVectorOrdering
-import org.bitcoins.core.crypto.{
-  ECDigitalSignature,
-  ECPublicKey,
-  ExtKey,
-  ExtPublicKey,
-  _
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.policy.Policy
@@ -26,6 +20,7 @@ import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.signer.BitcoinSigner
+import org.bitcoins.core.wallet.signer.{BitcoinSigner, BitcoinSignerSingle}
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
 
@@ -120,6 +115,27 @@ case class PSBT(
       }
     }
   }
+
+  /**
+   * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
+   * in a PartialSignature record
+   * @param inputIndex Index of input to sign
+   * @param signer Function or private key used to sign the PSBT
+   * @param conditionalPath Represents the spending branch being taken in a ScriptPubKey's execution
+   * @param isDummySignature Do not sign the tx for real, just use a dummy signature, this is useful for fee estimation
+   * @return
+   */
+  def sign(
+      inputIndex: Int,
+      signer: Sign,
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
+      isDummySignature: Boolean = false)(
+      implicit ec: ExecutionContext): Future[PSBT] =
+    BitcoinSignerSingle.sign(psbt = this,
+                             inputIndex = inputIndex,
+                             signer = signer,
+                             conditionalPath = conditionalPath,
+                             isDummySignature = isDummySignature)
 
   def getUTXOSpendingInfo(
       index: Int,
@@ -370,6 +386,36 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
+  def addSignature(
+      pubKey: ECPublicKey,
+      sig: ECDigitalSignature,
+      inputIndex: Int): PSBT =
+    addSignature(PartialSignature(pubKey, sig), inputIndex)
+
+  def addSignature(
+      partialSignature: PartialSignature,
+      inputIndex: Int): PSBT = {
+    require(
+      inputIndex < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $inputIndex >= ${inputMaps.size}")
+    require(
+      !inputMaps(inputIndex).isFinalized,
+      s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
+    require(
+      !inputMaps(inputIndex)
+        .getRecords[PartialSignature](PartialSignatureKeyId)
+        .exists(_.pubKey == partialSignature.pubKey),
+      s"Input has already been signed by ${partialSignature.pubKey}"
+    )
+
+    val newElements = inputMaps(inputIndex).elements :+ partialSignature
+
+    val newInputMaps =
+      inputMaps.updated(inputIndex, InputPSBTMap(newElements))
+
+    PSBT(globalMap, newInputMaps, outputMaps)
+  }
+
   def extractTransactionAndValidate: Try[Transaction] = {
     inputMaps.zipWithIndex.foldLeft(Try(extractTransaction)) {
       case (txT, (inputMap, index)) =>
@@ -476,7 +522,8 @@ case class PSBT(
         }
       }
     } else {
-      throw new RuntimeException("PSBT must be finalized in order to extract")
+      throw new IllegalStateException(
+        "PSBT must be finalized in order to extract")
     }
   }
 }
@@ -1462,7 +1509,17 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       signers: Vector[Sign],
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
+    BitcoinUTXOSpendingInfoFull(
+      toUTXOSpendingInfoSingle(txIn, signers.head, conditionalPath),
+      signers
+    )
+  }
 
+  def toUTXOSpendingInfoSingle(
+      txIn: TransactionInput,
+      signer: Sign,
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoSingle = {
+    require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
     val outPoint = txIn.previousOutput
 
     val witVec = getRecords[WitnessUTXO](WitnessUTXOKeyId)
@@ -1494,13 +1551,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       if (hashTypeVec.size == 1) hashTypeVec.head.hashType
       else HashType.sigHashAll
 
-    BitcoinUTXOSpendingInfoFull(outPoint,
-                                output,
-                                signers,
-                                redeemScriptOpt,
-                                scriptWitnessOpt,
-                                hashType,
-                                conditionalPath)
+    BitcoinUTXOSpendingInfoSingle(outPoint,
+                                  output,
+                                  signer,
+                                  redeemScriptOpt,
+                                  scriptWitnessOpt,
+                                  hashType,
+                                  conditionalPath)
   }
 
   /**
