@@ -487,7 +487,8 @@ case class PSBT(
         }
       }
     } else {
-      throw new IllegalStateException("PSBT must be finalized in order to extract")
+      throw new IllegalStateException(
+        "PSBT must be finalized in order to extract")
     }
   }
 }
