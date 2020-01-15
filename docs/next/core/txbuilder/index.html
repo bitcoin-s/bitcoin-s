@@ -104,15 +104,15 @@ transactions. Here's an example of how to use it</p>
     <span class="hljs-keyword">val</span> destination1 = <span class="hljs-type">TransactionOutput</span>(value = destinationAmount,
                                          scriptPubKey = destinationSPK)
 
-    <span class="hljs-type">List</span>(destination1)
+    <span class="hljs-type">Vector</span>(destination1)
 }
 
 <span class="hljs-comment">// we have to fabricate a transaction that contains the</span>
 <span class="hljs-comment">// UTXO we are trying to spend. If this were a real blockchain</span>
 <span class="hljs-comment">// we would need to reference the UTXO set</span>
 <span class="hljs-keyword">val</span> creditingTx = <span class="hljs-type">BaseTransaction</span>(version = <span class="hljs-type">Int32</span>.one,
-                                  inputs = <span class="hljs-type">List</span>.empty,
-                                  outputs = <span class="hljs-type">List</span>(utxo),
+                                  inputs = <span class="hljs-type">Vector</span>.empty,
+                                  outputs = <span class="hljs-type">Vector</span>(utxo),
                                   lockTime = <span class="hljs-type">UInt32</span>.zero)
 
 <span class="hljs-comment">// this is the information we need from the crediting TX</span>
@@ -121,19 +121,19 @@ transactions. Here's an example of how to use it</p>
 
 <span class="hljs-comment">// this contains all the information we need to</span>
 <span class="hljs-comment">// validly sign the UTXO above</span>
-<span class="hljs-keyword">val</span> utxoSpendingInfo = <span class="hljs-type">BitcoinUTXOSpendingInfo</span>(outPoint = outPoint,
-                                               output = utxo,
-                                               signers = <span class="hljs-type">List</span>(privKey),
-                                               redeemScriptOpt = <span class="hljs-type">None</span>,
-                                               scriptWitnessOpt = <span class="hljs-type">None</span>,
-                                               hashType =
-                                                <span class="hljs-type">HashType</span>.sigHashAll,
-                                               conditionalPath =
-                                                <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoConditionsLeft</span>)
+<span class="hljs-keyword">val</span> utxoSpendingInfo = <span class="hljs-type">BitcoinUTXOSpendingInfoFull</span>(outPoint = outPoint,
+                                                   output = utxo,
+                                                   signers = <span class="hljs-type">Vector</span>(privKey),
+                                                   redeemScriptOpt = <span class="hljs-type">None</span>,
+                                                   scriptWitnessOpt = <span class="hljs-type">None</span>,
+                                                   hashType =
+                                                       <span class="hljs-type">HashType</span>.sigHashAll,
+                                                   conditionalPath =
+                                                       <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoConditionsLeft</span>)
 
 <span class="hljs-comment">// all of the UTXO spending information, since we are only</span>
 <span class="hljs-comment">//spending one UTXO, this is just one element</span>
-<span class="hljs-keyword">val</span> utxos: <span class="hljs-type">List</span>[<span class="hljs-type">BitcoinUTXOSpendingInfo</span>] = <span class="hljs-type">List</span>(utxoSpendingInfo)
+<span class="hljs-keyword">val</span> utxos: <span class="hljs-type">Vector</span>[<span class="hljs-type">BitcoinUTXOSpendingInfoFull</span>] = <span class="hljs-type">Vector</span>(utxoSpendingInfo)
 
 <span class="hljs-comment">// this is how much we are going to pay as a fee to the network</span>
 <span class="hljs-comment">// for this example, we are going to pay 1 satoshi per byte</span>
@@ -180,7 +180,7 @@ signedTx.outputs.length
 
 <span class="hljs-comment">//remember, you can call .hex on any bitcoin-s data structure to get the hex representation!</span>
 signedTx.hex
-<span class="hljs-comment">// res2: String = "0200000001f1330f0fdfac6b0f8362f7a45fb47638523c0e80459a1c4cd9e82b4573de2722000000006b483045022100f3223e824dec20023834df36b73cdd992a21a4aa9692310efcf08e53812353e1022049e78509bda7dd740f928c35b84178aa4f49c66c79e67abc57daa8976a3d68fc0121035a82e22b23f00031dda8b0377925c31212d3580dc16d54f29ee41180a41fc33a000000000288130000000000001976a9149883fb2c6ea3d9fce4c6164ca09c7e1e4799634e88aca6120000000000001976a91463ef3bdd9f605c519ce17727507b3348a798795088ac00000000"</span>
+<span class="hljs-comment">// res2: String = "02000000015a0468d2a82efa077c5fa3d2e1280b77c0ffaf0e5e5ea29343d97f9c5ebcd400000000006b483045022100b640b0f8fbb2710e646ce554e027a757c9fb2a21834183599aff35c83b049f1b02206be2c24dbd116f0fe94c18c9f562a1d824f73bdff4f74c3d60ac6dbaa9180fd60121025976ac5f86ee07619ede53efc5659f9ef7ee3a6104ffe74e13612f2c34f2660d000000000288130000000000001976a9141a0bfe4d46646628e5c08c1b5327e614d8f2756688aca6120000000000001976a914872049a9be280e89181acb5f368154e68324f33388ac00000000"</span>
 </code></pre>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/next/core/sign"><span class="arrow-prev">← </span><span>Sign api</span></a><a class="docs-next button" href="/docs/next/key-manager/key-manager"><span>Key Manager</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
