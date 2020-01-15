@@ -11,14 +11,12 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
 import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.testkit.core.gen._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
 
 import scala.annotation.tailrec
-import scala.concurrent.{Await, ExecutionContext}
 
 class PSBTTest extends BitcoinSAsyncTest {
 
@@ -256,30 +254,11 @@ class PSBTTest extends BitcoinSAsyncTest {
       "cNBc3SWUip9PPm1GjRoLEJT6T41iNzCYtD7qro84FMnM5zEqeJsE")
 
     for {
-      firstSig0 <- BitcoinSignerSingle
-        .sign(psbt = unsignedPsbt,
-              inputIndex = 0,
-              signer = privKey0,
-              isDummySignature = false)
+      firstSig0 <- unsignedPsbt.sign(inputIndex = 0, signer = privKey0)
+      signedPsbt0 <- firstSig0.sign(inputIndex = 1, signer = privKey1)
 
-      signedPsbt0 <- BitcoinSignerSingle
-        .sign(psbt = firstSig0,
-              inputIndex = 1,
-              signer = privKey1,
-              isDummySignature = false)
-
-      firstSig1 <- BitcoinSignerSingle
-        .sign(psbt = unsignedPsbt,
-              inputIndex = 0,
-              signer = privKey2,
-              isDummySignature = false)
-
-      signedPsbt1 <- BitcoinSignerSingle
-        .sign(psbt = firstSig1,
-              inputIndex = 1,
-              signer = privKey3,
-              isDummySignature = false)
-
+      firstSig1 <- unsignedPsbt.sign(inputIndex = 0, signer = privKey2)
+      signedPsbt1 <- firstSig1.sign(inputIndex = 1, signer = privKey3)
     } yield {
       assert(signedPsbt0.bytes == expectedPsbt0.bytes)
       assert(signedPsbt1.bytes == expectedPsbt1.bytes)

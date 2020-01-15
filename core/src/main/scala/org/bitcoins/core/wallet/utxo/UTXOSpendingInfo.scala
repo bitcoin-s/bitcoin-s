@@ -365,6 +365,19 @@ object BitcoinUTXOSpendingInfoFull {
     }
   }
 
+  def apply(
+      spendingInfoSingle: UTXOSpendingInfoSingle,
+      signers: Vector[Sign]): BitcoinUTXOSpendingInfoFull =
+    BitcoinUTXOSpendingInfoFull(
+      outPoint = spendingInfoSingle.outPoint,
+      output = spendingInfoSingle.output,
+      signers = signers,
+      redeemScriptOpt = spendingInfoSingle.redeemScriptOpt,
+      scriptWitnessOpt = spendingInfoSingle.scriptWitnessOpt,
+      hashType = spendingInfoSingle.hashType,
+      conditionalPath = spendingInfoSingle.conditionalPath
+    )
+
   def unapply(info: BitcoinUTXOSpendingInfoFull): Option[
     (
         TransactionOutPoint,

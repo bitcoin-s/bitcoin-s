@@ -19,7 +19,7 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.signer.BitcoinSigner
+import org.bitcoins.core.wallet.signer.{BitcoinSigner, BitcoinSignerSingle}
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
 
@@ -114,6 +114,18 @@ case class PSBT(
       }
     }
   }
+
+  def sign(
+      inputIndex: Int,
+      signer: Sign,
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
+      isDummySignature: Boolean = false)(
+      implicit ec: ExecutionContext): Future[PSBT] =
+    BitcoinSignerSingle.sign(psbt = this,
+                             inputIndex = inputIndex,
+                             signer = signer,
+                             conditionalPath = conditionalPath,
+                             isDummySignature = isDummySignature)
 
   def getUTXOSpendingInfo(
       index: Int,
@@ -1449,17 +1461,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
       signers: Vector[Sign],
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
-    val spendingInfoSingle =
-      toUTXOSpendingInfoSingle(txIn, signers.head, conditionalPath)
-
     BitcoinUTXOSpendingInfoFull(
-      outPoint = spendingInfoSingle.outPoint,
-      output = spendingInfoSingle.output,
-      signers = signers,
-      redeemScriptOpt = spendingInfoSingle.redeemScriptOpt,
-      scriptWitnessOpt = spendingInfoSingle.scriptWitnessOpt,
-      hashType = spendingInfoSingle.hashType,
-      conditionalPath = conditionalPath
+      toUTXOSpendingInfoSingle(txIn, signers.head, conditionalPath),
+      signers
     )
   }
 
