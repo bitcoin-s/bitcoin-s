@@ -747,7 +747,9 @@ object GlobalPSBTRecord {
 
   case class Unknown(key: ByteVector, value: ByteVector)
       extends GlobalPSBTRecord {
-    require(PSBTGlobalKeyId.fromKey(key) == PSBTGlobalKeyId.UnknownKeyId)
+    private val keyId = PSBTGlobalKeyId.fromBytes(key)
+    require(keyId == PSBTGlobalKeyId.UnknownKeyId,
+            s"Cannot make an Unknown record with a $keyId")
   }
 
   def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
@@ -850,8 +852,9 @@ object InputPSBTRecord {
 
   case class Unknown(key: ByteVector, value: ByteVector)
       extends InputPSBTRecord {
-    require(key.size > 1)
-    require(PSBTInputKeyId.fromKey(key) == PSBTInputKeyId.UnknownKeyId)
+    private val keyId = PSBTInputKeyId.fromBytes(key)
+    require(keyId == PSBTInputKeyId.UnknownKeyId,
+            s"Cannot make an Unknown record with a $keyId")
   }
 
   def fromBytes(bytes: ByteVector): InputPSBTRecord = {
@@ -940,7 +943,9 @@ object OutputPSBTRecord {
 
   case class Unknown(key: ByteVector, value: ByteVector)
       extends OutputPSBTRecord {
-    require(PSBTOutputKeyId.fromKey(key) == PSBTOutputKeyId.UnknownKeyId)
+    private val keyId = PSBTOutputKeyId.fromBytes(key)
+    require(keyId == PSBTOutputKeyId.UnknownKeyId,
+            s"Cannot make an Unknown record with a $keyId")
   }
 
   def fromBytes(bytes: ByteVector): OutputPSBTRecord = {
@@ -987,7 +992,7 @@ object PSBTGlobalKeyId {
     case _: Byte                       => UnknownKeyId
   }
 
-  def fromKey(key: ByteVector): PSBTGlobalKeyId = {
+  def fromBytes(key: ByteVector): PSBTGlobalKeyId = {
     if (key.isEmpty) {
       UnknownKeyId
     } else {
@@ -1031,7 +1036,7 @@ object PSBTInputKeyId {
 
   }
 
-  def fromKey(key: ByteVector): PSBTInputKeyId = {
+  def fromBytes(key: ByteVector): PSBTInputKeyId = {
     if (key.isEmpty) {
       UnknownKeyId
     } else {
@@ -1095,7 +1100,7 @@ object PSBTOutputKeyId {
     case _: Byte                       => UnknownKeyId
   }
 
-  def fromKey(key: ByteVector): PSBTOutputKeyId = {
+  def fromBytes(key: ByteVector): PSBTOutputKeyId = {
     if (key.isEmpty) {
       UnknownKeyId
     } else {
