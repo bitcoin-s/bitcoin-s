@@ -281,6 +281,16 @@ class PSBTTest extends BitcoinSAsyncTest {
     }
   }
 
+  it must "fail to create an Unknown PSBTRecord from with a known KeyId" in {
+    // Key 0x00 is used for all types of records
+    val key = hex"00"
+    val value =
+      hex"000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+    assertThrows[IllegalArgumentException](GlobalPSBTRecord.Unknown(key, value))
+    assertThrows[IllegalArgumentException](InputPSBTRecord.Unknown(key, value))
+    assertThrows[IllegalArgumentException](OutputPSBTRecord.Unknown(key, value))
+  }
+
   // Test case given in https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   it must "sign a PSBT" in {
     val unsignedPsbt = PSBT(

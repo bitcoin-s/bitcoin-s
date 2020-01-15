@@ -19,6 +19,7 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.signer.{BitcoinSigner, BitcoinSignerSingle}
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
@@ -792,7 +793,11 @@ object GlobalPSBTRecord {
   }
 
   case class Unknown(key: ByteVector, value: ByteVector)
-      extends GlobalPSBTRecord
+      extends GlobalPSBTRecord {
+    private val keyId = PSBTGlobalKeyId.fromBytes(key)
+    require(keyId == PSBTGlobalKeyId.UnknownKeyId,
+            s"Cannot make an Unknown record with a $keyId")
+  }
 
   def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
     val (key, value) = PSBTRecord.fromBytes(bytes)
@@ -892,7 +897,12 @@ object InputPSBTRecord {
     override val value: ByteVector = porCommitment
   }
 
-  case class Unknown(key: ByteVector, value: ByteVector) extends InputPSBTRecord
+  case class Unknown(key: ByteVector, value: ByteVector)
+      extends InputPSBTRecord {
+    private val keyId = PSBTInputKeyId.fromBytes(key)
+    require(keyId == PSBTInputKeyId.UnknownKeyId,
+            s"Cannot make an Unknown record with a $keyId")
+  }
 
   def fromBytes(bytes: ByteVector): InputPSBTRecord = {
     val (key, value) = PSBTRecord.fromBytes(bytes)
@@ -979,7 +989,11 @@ object OutputPSBTRecord {
   }
 
   case class Unknown(key: ByteVector, value: ByteVector)
-      extends OutputPSBTRecord
+      extends OutputPSBTRecord {
+    private val keyId = PSBTOutputKeyId.fromBytes(key)
+    require(keyId == PSBTOutputKeyId.UnknownKeyId,
+            s"Cannot make an Unknown record with a $keyId")
+  }
 
   def fromBytes(bytes: ByteVector): OutputPSBTRecord = {
     val (key, value) = PSBTRecord.fromBytes(bytes)
@@ -1025,6 +1039,14 @@ object PSBTGlobalKeyId {
     case _: Byte                       => UnknownKeyId
   }
 
+  def fromBytes(key: ByteVector): PSBTGlobalKeyId = {
+    if (key.isEmpty) {
+      UnknownKeyId
+    } else {
+      fromByte(key.head)
+    }
+  }
+
   final case object UnsignedTransactionKeyId extends PSBTGlobalKeyId {
     override val byte: Byte = 0x00.byteValue
   }
@@ -1059,6 +1081,14 @@ object PSBTInputKeyId {
     case ProofOfReservesCommitmentKeyId.byte => ProofOfReservesCommitmentKeyId
     case _: Byte                             => UnknownKeyId
 
+  }
+
+  def fromBytes(key: ByteVector): PSBTInputKeyId = {
+    if (key.isEmpty) {
+      UnknownKeyId
+    } else {
+      fromByte(key.head)
+    }
   }
 
   final case object NonWitnessUTXOKeyId extends PSBTInputKeyId {
@@ -1115,6 +1145,14 @@ object PSBTOutputKeyId {
     case WitnessScriptKeyId.byte       => WitnessScriptKeyId
     case BIP32DerivationPathKeyId.byte => BIP32DerivationPathKeyId
     case _: Byte                       => UnknownKeyId
+  }
+
+  def fromBytes(key: ByteVector): PSBTOutputKeyId = {
+    if (key.isEmpty) {
+      UnknownKeyId
+    } else {
+      fromByte(key.head)
+    }
   }
 
   final case object RedeemScriptKeyId extends PSBTOutputKeyId {
