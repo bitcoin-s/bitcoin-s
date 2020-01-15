@@ -37,7 +37,7 @@ class HDAccountTest extends BitcoinSUnitTest {
   }
 
   it must "succeed if we add an arbitrary element onto the end of the path" in {
-    val extraNode = defaultPath.appended(BIP32Node(0, true))
+    val extraNode = defaultPath.:+(BIP32Node(0, true))
 
     val isSame = HDAccount.isSameAccount(extraNode, defaultAcct)
 
