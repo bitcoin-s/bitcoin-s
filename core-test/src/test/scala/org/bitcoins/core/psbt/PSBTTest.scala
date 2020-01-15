@@ -11,22 +11,21 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.testkit.core.gen.{
   ChainParamsGenerator,
   CreditingTxGen,
+  CurrencyUnitGenerator,
+  GenUtil,
+  PSBTGenerators,
   ScriptGenerators
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
 
 import scala.annotation.tailrec
-import scala.concurrent.{Await, ExecutionContext}
-import scala.concurrent.duration.DurationInt
 
-class PSBTTest extends BitcoinSUnitTest {
+class PSBTTest extends BitcoinSAsyncTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -192,43 +191,50 @@ class PSBTTest extends BitcoinSUnitTest {
       psbt1.getUTXOSpendingInfoUsingSigners(index = 0, getDummySigners(1)))
   }
 
-  it must "agree with TxBuilder.sign given UTXOSpendingInfos" in {
-    implicit val ec: ExecutionContext = ExecutionContext.global
-
-    forAll(CreditingTxGen.inputsAndOuptuts(),
-           ScriptGenerators.scriptPubKey,
-           ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfo, destinations), changeSPK, network) =>
-        val fee = SatoshisPerByte(Satoshis(1000))
-        val builder = BitcoinTxBuilder(destinations,
-                                       creditingTxsInfo,
-                                       fee,
-                                       changeSPK._1,
-                                       network)
-        val resultF = for {
-          unsignedTx <- builder.flatMap(_.unsignedTx)
-          signedTx <- builder.flatMap(_.sign)
-
-          orderedTxInfos = {
-            unsignedTx.inputs.toVector.map { input =>
-              val infoOpt =
-                creditingTxsInfo.find(_.outPoint == input.previousOutput)
-              infoOpt match {
-                case Some(info) => info
-                case None       => fail("Could not find UTXOSpendingInfo for input!")
-              }
-            }
-          }
-
-          psbt <- PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
+  it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
+    forAllAsync(CreditingTxGen.inputsAndOuptuts(),
+                ScriptGenerators.scriptPubKey,
+                ChainParamsGenerator.bitcoinNetworkParams) {
+      case ((creditingTxsInfo, destinations), (changeSPK, _), network) =>
+        val crediting =
+          creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+        val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
+        val maxFee = crediting - spending
+        val fee = GenUtil.sample(CurrencyUnitGenerator.feeUnit(maxFee))
+        for {
+          (psbt, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
+            finalized = false,
+            creditingTxsInfo = creditingTxsInfo,
+            destinations = destinations,
+            changeSPK = changeSPK,
+            network = network,
+            fee = fee)
+          (expected, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
+            finalized = true,
+            creditingTxsInfo = creditingTxsInfo,
+            destinations = destinations,
+            changeSPK = changeSPK,
+            network = network,
+            fee = fee)
         } yield {
-          val txT = psbt.extractTransactionAndValidate
-          assert(txT.isSuccess)
-
-          assert(txT.get == signedTx)
+          val finalizedPsbtOpt = psbt.finalizePSBT
+          assert(finalizedPsbtOpt.isDefined, psbt.hex)
+          assert(finalizedPsbtOpt.contains(expected))
         }
+    }
+  }
 
-        Await.result(resultF, 5.seconds)
+  it must "agree with TxBuilder.sign given UTXOSpendingInfos" in {
+    forAllAsync(PSBTGenerators.finalizedPSBTWithBuilder) { psbtAndBuilderF =>
+      for {
+        (psbt, builder) <- psbtAndBuilderF
+        signedTx <- builder.sign
+      } yield {
+        val txT = psbt.extractTransactionAndValidate
+        assert(txT.isSuccess, txT.failed)
+
+        assert(txT.get == signedTx)
+      }
     }
   }
 }

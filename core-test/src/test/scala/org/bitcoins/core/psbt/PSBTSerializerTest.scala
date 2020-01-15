@@ -17,14 +17,15 @@ import org.bitcoins.core.psbt.PSBTInputKeyId.{
   WitnessUTXOKeyId
 }
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.core.gen.PSBTGenerators
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
 
 /**
   * Test vectors are taken directly from the BIP 174 reference sheet
   * https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#test-vectors
   */
-class PSBTSerializerTest extends BitcoinSUnitTest {
+class PSBTSerializerTest extends BitcoinSAsyncTest {
 
   val validPsbts: Vector[ByteVector] = Vector(
     // PSBT with one P2PKH input. Outputs are empty
@@ -215,5 +216,15 @@ class PSBTSerializerTest extends BitcoinSUnitTest {
   it must "fail to serialize invalid PSBTs" in {
     invalidPsbts.foreach(invalidPsbt =>
       assertThrows[IllegalArgumentException](PSBT(invalidPsbt)))
+
+    succeed
+  }
+
+  it must "have serialization symmetry" in {
+    forAllAsync(PSBTGenerators.arbitraryPSBT) { psbtF =>
+      psbtF.map { psbt =>
+        assert(PSBT.fromBytes(psbt.bytes) == psbt)
+      }
+    }
   }
 }
