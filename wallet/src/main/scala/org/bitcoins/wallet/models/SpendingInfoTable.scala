@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfo,
+  BitcoinUTXOSpendingInfoFull,
   ConditionalPath,
   TxoState
 }
@@ -133,7 +133,7 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   def toUTXOSpendingInfo(
       account: AccountDb,
       keyManager: BIP39KeyManager,
-      networkParameters: NetworkParameters): BitcoinUTXOSpendingInfo = {
+      networkParameters: NetworkParameters): BitcoinUTXOSpendingInfoFull = {
 
     val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
 
@@ -146,11 +146,11 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       account: AccountDb,
       sign: Sign,
       networkParameters: NetworkParameters
-  ): BitcoinUTXOSpendingInfo = {
-    BitcoinUTXOSpendingInfo(
+  ): BitcoinUTXOSpendingInfoFull = {
+    BitcoinUTXOSpendingInfoFull(
       outPoint,
       output,
-      List(sign),
+      Vector(sign),
       redeemScriptOpt,
       scriptWitnessOpt,
       hashType,
