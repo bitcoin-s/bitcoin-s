@@ -117,14 +117,14 @@ case class PSBT(
   }
 
   /**
-   * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
-   * in a PartialSignature record
-   * @param inputIndex Index of input to sign
-   * @param signer Function or private key used to sign the PSBT
-   * @param conditionalPath Represents the spending branch being taken in a ScriptPubKey's execution
-   * @param isDummySignature Do not sign the tx for real, just use a dummy signature, this is useful for fee estimation
-   * @return
-   */
+    * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
+    * in a PartialSignature record
+    * @param inputIndex Index of input to sign
+    * @param signer Function or private key used to sign the PSBT
+    * @param conditionalPath Represents the spending branch being taken in a ScriptPubKey's execution
+    * @param isDummySignature Do not sign the tx for real, just use a dummy signature, this is useful for fee estimation
+    * @return
+    */
   def sign(
       inputIndex: Int,
       signer: Sign,

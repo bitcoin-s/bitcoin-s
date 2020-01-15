@@ -244,15 +244,15 @@ sealed trait BitcoinSignerSingle[-SpendingInfo <: BitcoinUTXOSpendingInfoSingle]
 object BitcoinSignerSingle {
 
   /**
-   * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
-   * in a PartialSignature record
-   * @param psbt The PSBT to sign
-   * @param inputIndex Index of input to sign
-   * @param signer Function or private key used to sign the PSBT
-   * @param isDummySignature Do not sign the tx for real, just use a dummy signature, this is useful for fee estimation
-   * @param conditionalPath Represents the spending branch being taken in a ScriptPubKey's execution
-   * @return
-   */
+    * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
+    * in a PartialSignature record
+    * @param psbt The PSBT to sign
+    * @param inputIndex Index of input to sign
+    * @param signer Function or private key used to sign the PSBT
+    * @param isDummySignature Do not sign the tx for real, just use a dummy signature, this is useful for fee estimation
+    * @param conditionalPath Represents the spending branch being taken in a ScriptPubKey's execution
+    * @return
+    */
   def sign(
       psbt: PSBT,
       inputIndex: Int,
