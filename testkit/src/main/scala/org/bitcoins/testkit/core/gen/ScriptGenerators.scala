@@ -1060,7 +1060,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         val scriptSig = lockTimeHelperScriptSig(spk, sigs, keys).scriptSig
         ConditionalScriptSignature(scriptSig, true)
       case EmptyScriptPubKey =>
-        CSVScriptSignature(NonStandardScriptSignature.trivalTrue)
+        CSVScriptSignature(TrivialTrueScriptSignature)
       case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         //bare segwit always has an empty script sig, see BIP141
         CSVScriptSignature(EmptyScriptSignature)

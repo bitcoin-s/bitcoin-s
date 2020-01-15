@@ -1394,7 +1394,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
 
         collectSigs(required = multiSig.requiredSigs, generateScriptSig)
       case EmptyScriptPubKey =>
-        val scriptSig = NonStandardScriptSignature.trivalTrue
+        val scriptSig = TrivialTrueScriptSignature
         Some(wipeAndAdd(scriptSig))
       case _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey |
           _: WitnessCommitment =>

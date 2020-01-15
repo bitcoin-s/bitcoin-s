@@ -58,6 +58,16 @@ object NonStandardScriptSignature
   val trivalTrue: NonStandardScriptSignature = fromAsmHex("0151")
 }
 
+case object TrivialTrueScriptSignature extends ScriptSignature {
+  override def signatures: Seq[ECDigitalSignature] = Nil
+  override def asm: Vector[ScriptToken] =
+    Vector(BytesToPushOntoStack(1), ScriptConstant("51"))
+
+  def isTrivialTrueScriptSignature(asm: Seq[ScriptToken]): Boolean = {
+    asm == this.asm
+  }
+}
+
 /**
   * P2PKH script signatures have only one public key
   * https://bitcoin.org/en/developer-guide#pay-to-public-key-hash-p2pkh
@@ -552,6 +562,8 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
   /** Creates a scriptSignature from the list of script tokens */
   def fromAsm(tokens: Seq[ScriptToken]): ScriptSignature = tokens match {
     case Nil => EmptyScriptSignature
+    case _ if TrivialTrueScriptSignature.isTrivialTrueScriptSignature(tokens) =>
+      TrivialTrueScriptSignature
     case _ if P2SHScriptSignature.isP2SHScriptSig(tokens) =>
       P2SHScriptSignature.fromAsm(tokens)
     case _ if ConditionalScriptSignature.isValidConditionalScriptSig(tokens) =>

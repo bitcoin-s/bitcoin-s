@@ -419,7 +419,7 @@ sealed abstract class EmptySigner extends BitcoinSignerFull[EmptySpendingInfo] {
     val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
     val satisfyEmptyScriptSig =
-      Future.successful(NonStandardScriptSignature.trivalTrue)
+      Future.successful(TrivialTrueScriptSignature)
 
     updateScriptSigInSigComponent(unsignedTx,
                                   inputIndex.toInt,
