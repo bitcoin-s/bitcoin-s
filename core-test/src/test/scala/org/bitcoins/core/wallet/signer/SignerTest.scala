@@ -108,7 +108,7 @@ class SignerTest extends BitcoinSAsyncTest {
                                                  unsignedTx,
                                                  isDummySignature = false)
 
-                keyAndSigF.map(_._2)
+                keyAndSigF.map(_.signature)
               }
 
               Future.sequence(sigFs)
