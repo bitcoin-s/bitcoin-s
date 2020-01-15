@@ -260,8 +260,8 @@ class PSBTTest extends BitcoinSAsyncTest {
       firstSig1 <- unsignedPsbt.sign(inputIndex = 0, signer = privKey2)
       signedPsbt1 <- firstSig1.sign(inputIndex = 1, signer = privKey3)
     } yield {
-      assert(signedPsbt0.bytes == expectedPsbt0.bytes)
-      assert(signedPsbt1.bytes == expectedPsbt1.bytes)
+      assert(signedPsbt0 == expectedPsbt0)
+      assert(signedPsbt1 == expectedPsbt1)
     }
   }
 }
