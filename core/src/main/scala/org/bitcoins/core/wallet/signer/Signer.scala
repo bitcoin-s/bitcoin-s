@@ -7,7 +7,6 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
@@ -263,7 +262,7 @@ object BitcoinSignerSingle {
     // if already signed by this signer
     if (psbt
           .inputMaps(inputIndex)
-          .getRecords(PartialSignatureKeyId)
+          .partialSignatures
           .exists(_.pubKey == signer.publicKey)) {
       throw new IllegalArgumentException(
         "Input has already been signed with this key")

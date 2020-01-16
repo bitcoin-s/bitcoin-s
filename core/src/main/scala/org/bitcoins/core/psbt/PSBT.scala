@@ -8,8 +8,6 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2WSHWitnessV0, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.psbt.PSBTGlobalKeyId._
-import org.bitcoins.core.psbt.PSBTInputKeyId._
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
@@ -30,10 +28,6 @@ case class PSBT(
     inputMaps: Vector[InputPSBTMap],
     outputMaps: Vector[OutputPSBTMap])
     extends NetworkElement {
-  require(globalMap
-            .getRecords(UnsignedTransactionKeyId)
-            .size == 1,
-          "There must only be one global transaction")
   require(
     inputMaps.size == transaction.inputs.size,
     "There must be an input map for every input in the global transaction")
@@ -42,6 +36,7 @@ case class PSBT(
     "There must be an output map for every output in the global transaction")
 
   import org.bitcoins.core.psbt.InputPSBTRecord._
+  import org.bitcoins.core.psbt.PSBTInputKeyId._
 
   // Need to define these so when we compare the PSBTs
   // the map lexicographical ordering is enforced
@@ -59,22 +54,11 @@ case class PSBT(
     inputBytes ++
     outputBytes
 
-  def transaction: Transaction =
-    globalMap
-      .getRecords(UnsignedTransactionKeyId)
-      .head
-      .transaction
+  def transaction: Transaction = globalMap.unsignedTransaction.transaction
 
   def isFinalized: Boolean = inputMaps.forall(_.isFinalized)
 
-  def version: UInt32 = {
-    val vec = globalMap.getRecords(VersionKeyId)
-    if (vec.isEmpty) { // If there is no version is it assumed 0
-      UInt32.zero
-    } else {
-      vec.head.version
-    }
-  }
+  def version: UInt32 = globalMap.version.version
 
   /**
     * Combiner defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#combiner
@@ -192,10 +176,7 @@ case class PSBT(
 
         val outIsWitnessScript =
           WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
-        val hasWitScript =
-          inputMaps(index)
-            .getRecords(WitnessScriptKeyId)
-            .size == 1
+        val hasWitScript = inputMaps(index).witnessScriptOpt.isDefined
 
         if (outIsWitnessScript || hasWitScript) {
           previousElements.filterNot(_.key.head == WitnessUTXOKeyId.byte) :+ WitnessUTXO(
@@ -233,10 +214,7 @@ case class PSBT(
     val previousElements = inputMaps(index).elements
 
     val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val redeemScriptOpt =
-      inputMaps(index)
-        .getRecords(PSBTInputKeyId.RedeemScriptKeyId)
-        .headOption
+    val redeemScriptOpt = inputMaps(index).redeemScriptOpt
     val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
       .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
 
@@ -275,9 +253,7 @@ case class PSBT(
 
     val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
     val redeemScriptOpt =
-      outputMaps(index)
-        .getRecords(PSBTOutputKeyId.RedeemScriptKeyId)
-        .headOption
+      outputMaps(index).redeemScriptOpt
     val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
       .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
 
@@ -408,8 +384,7 @@ case class PSBT(
       !inputMaps(inputIndex).isFinalized,
       s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
     require(
-      !inputMaps(inputIndex)
-        .getRecords(PartialSignatureKeyId)
+      !inputMaps(inputIndex).partialSignatures
         .exists(_.pubKey == partialSignature.pubKey),
       s"Input has already been signed by ${partialSignature.pubKey}"
     )
@@ -426,11 +401,8 @@ case class PSBT(
     inputMaps.zipWithIndex.foldLeft(Try(extractTransaction)) {
       case (txT, (inputMap, index)) =>
         txT.flatMap { tx =>
-          val wUtxoOpt =
-            inputMap.getRecords(WitnessUTXOKeyId).headOption
-          val utxoOpt = inputMap
-            .getRecords(NonWitnessUTXOKeyId)
-            .headOption
+          val wUtxoOpt = inputMap.witnessUTXOOpt
+          val utxoOpt = inputMap.nonWitnessOrUnknownUTXOOpt
 
           (wUtxoOpt, tx) match {
             case (Some(wUtxo), wtx: WitnessTransaction) =>
@@ -486,9 +458,7 @@ case class PSBT(
     if (isFinalized) {
       val newInputs = transaction.inputs.zip(inputMaps).map {
         case (input, inputMap) =>
-          val scriptSigOpt = inputMap
-            .getRecords(FinalizedScriptSigKeyId)
-            .headOption
+          val scriptSigOpt = inputMap.finalizedScriptSigOpt
           val scriptSig =
             scriptSigOpt.map(_.scriptSig).getOrElse(EmptyScriptSignature)
           TransactionInput(input.previousOutput, scriptSig, input.sequence)
@@ -500,9 +470,7 @@ case class PSBT(
         val witness = inputMaps.zipWithIndex.foldLeft[TransactionWitness](
           EmptyWitness.fromInputs(transaction.inputs)) {
           case (witness, (inputMap, index)) =>
-            inputMap
-              .getRecords(FinalizedScriptWitnessKeyId)
-              .headOption match {
+            inputMap.finalizedScriptWitnessOpt match {
               case None => witness
               case Some(
                   InputPSBTRecord.FinalizedScriptWitness(scriptWitness)) =>
@@ -550,16 +518,7 @@ object PSBT extends Factory[PSBT] {
 
     val global: GlobalPSBTMap = GlobalPSBTMap.fromBytes(globalBytes)
 
-    val txRecords = global
-      .getRecords(UnsignedTransactionKeyId)
-
-    if (txRecords.isEmpty)
-      throw new IllegalArgumentException("Invalid PSBT. No global transaction")
-    if (txRecords.size > 1)
-      throw new IllegalArgumentException(
-        s"Invalid PSBT. There can only be one global transaction, got: ${txRecords.size}")
-
-    val tx = txRecords.head.transaction
+    val tx = global.unsignedTransaction.transaction
 
     @tailrec
     def mapLoop[MapType <: PSBTMap[PSBTRecord]](
@@ -810,6 +769,8 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
   }
 
   override def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
+    import org.bitcoins.core.psbt.PSBTGlobalKeyId._
+
     val (key, value) = PSBTRecord.fromBytes(bytes)
     PSBTGlobalKeyId.fromByte(key.head) match {
       case UnsignedTransactionKeyId =>
@@ -915,6 +876,8 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   }
 
   override def fromBytes(bytes: ByteVector): InputPSBTRecord = {
+    import org.bitcoins.core.psbt.PSBTInputKeyId._
+
     val (key, value) = PSBTRecord.fromBytes(bytes)
     PSBTInputKeyId.fromByte(key.head) match {
       case NonWitnessUTXOKeyId =>
@@ -1039,26 +1002,34 @@ sealed trait PSBTKeyId {
   type RecordType <: PSBTRecord
 }
 
+sealed trait PSBTKeyIdFactory[KeyIdType <: PSBTKeyId]
+    extends Factory[KeyIdType] {
+  def fromByte(byte: Byte): KeyIdType
+  def unknownKey: KeyIdType
+
+  override def fromBytes(key: ByteVector): KeyIdType = {
+    if (key.isEmpty) {
+      unknownKey
+    } else {
+      fromByte(key.head)
+    }
+  }
+}
+
 sealed trait PSBTGlobalKeyId extends PSBTKeyId {
   type RecordType <: GlobalPSBTRecord
 }
 
-object PSBTGlobalKeyId {
+object PSBTGlobalKeyId extends PSBTKeyIdFactory[PSBTGlobalKeyId] {
 
-  def fromByte(byte: Byte): PSBTGlobalKeyId = byte match {
+  override def fromByte(byte: Byte): PSBTGlobalKeyId = byte match {
     case UnsignedTransactionKeyId.byte => UnsignedTransactionKeyId
     case XPubKeyKeyId.byte             => XPubKeyKeyId
     case VersionKeyId.byte             => VersionKeyId
     case _: Byte                       => UnknownKeyId
   }
 
-  def fromBytes(key: ByteVector): PSBTGlobalKeyId = {
-    if (key.isEmpty) {
-      UnknownKeyId
-    } else {
-      fromByte(key.head)
-    }
-  }
+  override def unknownKey: PSBTGlobalKeyId = UnknownKeyId
 
   final case object UnsignedTransactionKeyId extends PSBTGlobalKeyId {
     override val byte: Byte = 0x00.byteValue
@@ -1085,9 +1056,11 @@ sealed trait PSBTInputKeyId extends PSBTKeyId {
   type RecordType <: InputPSBTRecord
 }
 
-object PSBTInputKeyId {
+object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
 
-  def fromByte(byte: Byte): PSBTInputKeyId = byte match {
+  override def unknownKey: PSBTInputKeyId = UnknownKeyId
+
+  override def fromByte(byte: Byte): PSBTInputKeyId = byte match {
     case NonWitnessUTXOKeyId.byte            => NonWitnessUTXOKeyId
     case WitnessUTXOKeyId.byte               => WitnessUTXOKeyId
     case PartialSignatureKeyId.byte          => PartialSignatureKeyId
@@ -1100,14 +1073,6 @@ object PSBTInputKeyId {
     case ProofOfReservesCommitmentKeyId.byte => ProofOfReservesCommitmentKeyId
     case _: Byte                             => UnknownKeyId
 
-  }
-
-  def fromBytes(key: ByteVector): PSBTInputKeyId = {
-    if (key.isEmpty) {
-      UnknownKeyId
-    } else {
-      fromByte(key.head)
-    }
   }
 
   final case object NonWitnessUTXOKeyId extends PSBTInputKeyId {
@@ -1170,21 +1135,15 @@ sealed trait PSBTOutputKeyId extends PSBTKeyId {
   type RecordType <: OutputPSBTRecord
 }
 
-object PSBTOutputKeyId {
+object PSBTOutputKeyId extends PSBTKeyIdFactory[PSBTOutputKeyId] {
 
-  def fromByte(byte: Byte): PSBTOutputKeyId = byte match {
+  override def unknownKey: PSBTOutputKeyId = UnknownKeyId
+
+  override def fromByte(byte: Byte): PSBTOutputKeyId = byte match {
     case RedeemScriptKeyId.byte        => RedeemScriptKeyId
     case WitnessScriptKeyId.byte       => WitnessScriptKeyId
     case BIP32DerivationPathKeyId.byte => BIP32DerivationPathKeyId
     case _: Byte                       => UnknownKeyId
-  }
-
-  def fromBytes(key: ByteVector): PSBTOutputKeyId = {
-    if (key.isEmpty) {
-      UnknownKeyId
-    } else {
-      fromByte(key.head)
-    }
   }
 
   final case object RedeemScriptKeyId extends PSBTOutputKeyId {
@@ -1218,6 +1177,14 @@ sealed trait PSBTMap[+RecordType <: PSBTRecord] extends NetworkElement {
     elements
       .sortBy(_.key)
       .foldLeft(ByteVector.empty)(_ ++ _.bytes) :+ PSBTMap.separatorByte
+
+  protected def getRecords[KeyIdType <: PSBTKeyId](
+      key: KeyIdType,
+      keyIdFactory: PSBTKeyIdFactory[KeyIdType]): Vector[key.RecordType] = {
+    elements
+      .filter(element => keyIdFactory.fromByte(element.key.head) == key)
+      .asInstanceOf[Vector[key.RecordType]]
+  }
 }
 
 object PSBTMap {
@@ -1254,11 +1221,25 @@ sealed trait PSBTMapFactory[
 
 case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
     extends PSBTMap[GlobalPSBTRecord] {
+  import org.bitcoins.core.psbt.GlobalPSBTRecord._
+  import org.bitcoins.core.psbt.PSBTGlobalKeyId._
+  require(getRecords(UnsignedTransactionKeyId).nonEmpty,
+          "A GlobalPSBTMap must have a Unsigned Transaction")
 
-  def getRecords(key: PSBTGlobalKeyId): Vector[key.RecordType] = {
-    elements
-      .filter(element => PSBTGlobalKeyId.fromByte(element.key.head) == key)
-      .asInstanceOf[Vector[key.RecordType]]
+  def unsignedTransaction: UnsignedTransaction = {
+    getRecords(UnsignedTransactionKeyId).head
+  }
+
+  def extendedPublicKeys: Vector[XPubKey] = {
+    getRecords(XPubKeyKeyId)
+  }
+
+  def version: Version = {
+    getRecords(VersionKeyId).headOption.getOrElse(Version(UInt32.zero))
+  }
+
+  private def getRecords(key: PSBTGlobalKeyId): Vector[key.RecordType] = {
+    super.getRecords(key, PSBTGlobalKeyId)
   }
 
   /**
@@ -1287,11 +1268,50 @@ object GlobalPSBTMap extends PSBTMapFactory[GlobalPSBTRecord, GlobalPSBTMap] {
 case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     extends PSBTMap[InputPSBTRecord] {
   import org.bitcoins.core.psbt.InputPSBTRecord._
+  import org.bitcoins.core.psbt.PSBTInputKeyId._
 
-  def getRecords(key: PSBTInputKeyId): Vector[key.RecordType] = {
-    elements
-      .filter(element => PSBTInputKeyId.fromByte(element.key.head) == key)
-      .asInstanceOf[Vector[key.RecordType]]
+  def nonWitnessOrUnknownUTXOOpt: Option[NonWitnessOrUnknownUTXO] = {
+    getRecords(NonWitnessUTXOKeyId).headOption
+  }
+
+  def witnessUTXOOpt: Option[WitnessUTXO] = {
+    getRecords(WitnessUTXOKeyId).headOption
+  }
+
+  def partialSignatures: Vector[PartialSignature] = {
+    getRecords(PartialSignatureKeyId)
+  }
+
+  def sigHashTypeOpt: Option[SigHashType] = {
+    getRecords(SigHashTypeKeyId).headOption
+  }
+
+  def redeemScriptOpt: Option[RedeemScript] = {
+    getRecords(RedeemScriptKeyId).headOption
+  }
+
+  def witnessScriptOpt: Option[WitnessScript] = {
+    getRecords(WitnessScriptKeyId).headOption
+  }
+
+  def BIP32DerivationPaths: Vector[BIP32DerivationPath] = {
+    getRecords(BIP32DerivationPathKeyId)
+  }
+
+  def finalizedScriptSigOpt: Option[FinalizedScriptSig] = {
+    getRecords(FinalizedScriptSigKeyId).headOption
+  }
+
+  def finalizedScriptWitnessOpt: Option[FinalizedScriptWitness] = {
+    getRecords(FinalizedScriptWitnessKeyId).headOption
+  }
+
+  def proofOfReservesCommitmentOpt: Option[ProofOfReservesCommitment] = {
+    getRecords(ProofOfReservesCommitmentKeyId).headOption
+  }
+
+  private def getRecords(key: PSBTInputKeyId): Vector[key.RecordType] = {
+    super.getRecords(key, PSBTInputKeyId)
   }
 
   def isFinalized: Boolean =
@@ -1775,11 +1795,23 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
 }
 case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
     extends PSBTMap[OutputPSBTRecord] {
+  import org.bitcoins.core.psbt.OutputPSBTRecord._
+  import org.bitcoins.core.psbt.PSBTOutputKeyId._
 
-  def getRecords(key: PSBTOutputKeyId): Vector[key.RecordType] = {
-    elements
-      .filter(element => PSBTOutputKeyId.fromByte(element.key.head) == key)
-      .asInstanceOf[Vector[key.RecordType]]
+  def redeemScriptOpt: Option[RedeemScript] = {
+    getRecords(RedeemScriptKeyId).headOption
+  }
+
+  def witnessScriptOpt: Option[WitnessScript] = {
+    getRecords(WitnessScriptKeyId).headOption
+  }
+
+  def BIP32DerivationPaths: Vector[BIP32DerivationPath] = {
+    getRecords(BIP32DerivationPathKeyId)
+  }
+
+  private def getRecords(key: PSBTOutputKeyId): Vector[key.RecordType] = {
+    super.getRecords(key, PSBTOutputKeyId)
   }
 
   /**

@@ -7,12 +7,6 @@ import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
 import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
-import org.bitcoins.core.psbt.PSBTInputKeyId.{
-  BIP32DerivationPathKeyId,
-  ProofOfReservesCommitmentKeyId,
-  WitnessScriptKeyId,
-  WitnessUTXOKeyId
-}
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.testkit.core.gen.PSBTGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -56,9 +50,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
         PSBTGlobalKeyId
           .fromByte(record.key.head) == PSBTGlobalKeyId.XPubKeyKeyId))
 
-    val globalXPubs =
-      psbt.globalMap
-        .getRecords(PSBTGlobalKeyId.XPubKeyKeyId)
+    val globalXPubs = psbt.globalMap.extendedPublicKeys
     assert(globalXPubs.size == 2)
 
     val xpub1 = ExtPublicKey
@@ -86,16 +78,14 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(psbt.inputMaps.size == 1)
     assert(psbt.inputMaps.head.elements.size == 4)
 
-    val witnessUTXO =
-      psbt.inputMaps.head.getRecords(WitnessUTXOKeyId).head
+    val witnessUTXO = psbt.inputMaps.head.witnessUTXOOpt.get
     val output = TransactionOutput(
       Satoshis(500000000),
       RawScriptPubKeyParser.read(
         hex"2200202c5486126c4978079a814e13715d65f36459e4d6ccaded266d0508645bafa632"))
     assert(witnessUTXO.spentWitnessTransaction == output)
 
-    val witnessScript =
-      psbt.inputMaps.head.getRecords(WitnessScriptKeyId).head
+    val witnessScript = psbt.inputMaps.head.witnessScriptOpt.get
     val scriptPubKey = MultiSignatureScriptPubKey(
       2,
       Vector(
@@ -108,8 +98,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
 
     assert(witnessScript.witnessScript == scriptPubKey)
 
-    val bip32paths = psbt.inputMaps.head
-      .getRecords(BIP32DerivationPathKeyId)
+    val bip32paths = psbt.inputMaps.head.BIP32DerivationPaths
 
     assert(bip32paths.size == 2)
 
@@ -134,10 +123,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(psbt.outputMaps.size == 1)
     assert(psbt.outputMaps.head.elements.size == 1)
 
-    val bip32path =
-      psbt.outputMaps.head
-        .getRecords(PSBTOutputKeyId.BIP32DerivationPathKeyId)
-        .head
+    val bip32path = psbt.outputMaps.head.BIP32DerivationPaths.head
 
     assert(
       bip32path.pubKey == ECPublicKey(
@@ -168,9 +154,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
            psbt.outputMaps)
 
     assert(
-      psbtWithPoRC.inputMaps.head
-        .getRecords(ProofOfReservesCommitmentKeyId)
-        .headOption
+      psbtWithPoRC.inputMaps.head.proofOfReservesCommitmentOpt
         .contains(proofOfReservesCommitment))
   }
 
