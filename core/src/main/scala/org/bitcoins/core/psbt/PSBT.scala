@@ -1212,14 +1212,16 @@ sealed trait PSBTMap[+RecordType <: PSBTRecord] extends NetworkElement {
   require(elements.map(_.key).groupBy(identity).values.forall(_.length == 1),
           "All keys must be unique.")
 
-  final val separatorByte: Byte = 0x00.byteValue
-
   def elements: Vector[RecordType]
 
   def bytes: ByteVector =
     elements
       .sortBy(_.key)
-      .foldLeft(ByteVector.empty)(_ ++ _.bytes) :+ separatorByte
+      .foldLeft(ByteVector.empty)(_ ++ _.bytes) :+ PSBTMap.separatorByte
+}
+
+object PSBTMap {
+  final val separatorByte: Byte = 0x00.byteValue
 }
 
 sealed trait PSBTMapFactory[
@@ -1236,7 +1238,7 @@ sealed trait PSBTMapFactory[
     def loop(
         remainingBytes: ByteVector,
         accum: Vector[RecordType]): Vector[RecordType] = {
-      if (remainingBytes.head == 0x00.byteValue) {
+      if (remainingBytes.head == PSBTMap.separatorByte) {
         accum
       } else {
         val record = recordFactory.fromBytes(remainingBytes)
