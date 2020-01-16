@@ -1670,42 +1670,13 @@ object InputPSBTMap {
       unsignedTx: Transaction,
       nonWitnessTxOpt: Option[Transaction])(
       implicit ec: ExecutionContext): Future[InputPSBTMap] = {
-    val sigPs = spendingInfo.signers
-      .map(signer => (signer.publicKey, Promise[ECDigitalSignature]()))
-      .toMap
-    val sigFs: Future[Map[ECDigitalSignature, ECPublicKey]] = {
-      val futures = sigPs.map { case (key, sigP) => (key, sigP.future) }.values
-      val future: Future[Iterable[ECDigitalSignature]] = Future.sequence(futures)
-
-      future.map(_.zip(sigPs.keys).toMap)
+    val sigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
+      BitcoinSignerSingle.signSingle(spendingInfoSingle,
+                                     unsignedTx,
+                                     isDummySignature = false)
     }
 
-    val sideEffectSigners = spendingInfo.signers.map { signer =>
-      val signFunction = { bytes: ByteVector =>
-        signer.signFunction(bytes).map { sig: ECDigitalSignature =>
-          val sigWithHashType = ECDigitalSignature(
-            sig.bytes ++ ByteVector.fromByte(spendingInfo.hashType.byte))
-          sigPs(signer.publicKey).success(sigWithHashType)
-
-          sig
-        }
-      }
-
-      Sign(signFunction, signer.publicKey)
-    }
-    val sideEffectSpendingInfo = BitcoinUTXOSpendingInfoFull(
-      outPoint = spendingInfo.outPoint,
-      output = spendingInfo.output,
-      signers = sideEffectSigners,
-      redeemScriptOpt = spendingInfo.redeemScriptOpt,
-      scriptWitnessOpt = spendingInfo.scriptWitnessOpt,
-      hashType = spendingInfo.hashType,
-      conditionalPath = spendingInfo.conditionalPath
-    )
-
-    val _ = BitcoinSigner.sign(sideEffectSpendingInfo,
-                               unsignedTx,
-                               isDummySignature = false)
+    val sigFs = Future.sequence(sigsF)
 
     sigFs.map { sigs =>
       val builder = Vector.newBuilder[InputPSBTRecord]
@@ -1723,10 +1694,7 @@ object InputPSBTMap {
           }
       }
 
-      val sigsAndPubKeys = sigs.map {
-        case (sig, key) => PartialSignature(key, sig)
-      }
-      builder.++=(sigsAndPubKeys)
+      builder.++=(sigs)
 
       val sigHashType = SigHashType(spendingInfo.hashType)
       builder.+=(sigHashType)
