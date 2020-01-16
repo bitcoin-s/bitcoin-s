@@ -1673,9 +1673,9 @@ object InputPSBTMap {
     val sigPs = spendingInfo.signers
       .map(signer => (signer.publicKey, Promise[ECDigitalSignature]()))
       .toMap
-    val sigFs = {
+    val sigFs: Future[Map[ECDigitalSignature, ECPublicKey]] = {
       val futures = sigPs.map { case (key, sigP) => (key, sigP.future) }.values
-      val future = Future.sequence(futures)
+      val future: Future[Iterable[ECDigitalSignature]] = Future.sequence(futures)
 
       future.map(_.zip(sigPs.keys).toMap)
     }
