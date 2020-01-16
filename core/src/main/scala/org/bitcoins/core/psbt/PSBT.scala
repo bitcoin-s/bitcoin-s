@@ -24,7 +24,7 @@ import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
 
 import scala.annotation.tailrec
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 case class PSBT(
