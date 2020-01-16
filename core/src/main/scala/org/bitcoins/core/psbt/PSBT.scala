@@ -19,7 +19,6 @@ import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.signer.{BitcoinSigner, BitcoinSignerSingle}
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
@@ -37,8 +36,12 @@ case class PSBT(
     globalMap
       .getRecords(UnsignedTransactionKeyId)
       .size == 1)
-  require(inputMaps.size == transaction.inputs.size)
-  require(outputMaps.size == transaction.outputs.size)
+  require(
+    inputMaps.size == transaction.inputs.size,
+    "There must be an input map for every input in the global transaction")
+  require(
+    outputMaps.size == transaction.outputs.size,
+    "There must be an output map for every output in the global transaction")
 
   // Need to define these so when we compare the PSBTs
   // the map lexicographical ordering is enforced
@@ -87,10 +90,10 @@ case class PSBT(
     val global = this.globalMap.combine(other.globalMap)
     val inputs = this.inputMaps
       .zip(other.inputMaps)
-      .map(input => input._1.combine(input._2))
+      .map { case (input, otherInput) => input.combine(otherInput) }
     val outputs = this.outputMaps
       .zip(other.outputMaps)
-      .map(output => output._1.combine(output._2))
+      .map { case (output, otherOutput) => output.combine(otherOutput) }
 
     PSBT(global, inputs, outputs)
   }
@@ -130,12 +133,13 @@ case class PSBT(
       signer: Sign,
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
       isDummySignature: Boolean = false)(
-      implicit ec: ExecutionContext): Future[PSBT] =
+      implicit ec: ExecutionContext): Future[PSBT] = {
     BitcoinSignerSingle.sign(psbt = this,
                              inputIndex = inputIndex,
                              signer = signer,
                              conditionalPath = conditionalPath,
                              isDummySignature = isDummySignature)
+  }
 
   def getUTXOSpendingInfo(
       index: Int,
@@ -173,17 +177,16 @@ case class PSBT(
     * @param index index of the InputPSBTMap to add tx to
     * @return PSBT with added tx
     */
-  def addTransactionToInput(tx: Transaction, index: Int): PSBT = {
+  def addUTXOToInput(tx: Transaction, index: Int): PSBT = {
     require(
       index < inputMaps.size,
       s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
+    val previousElements = inputMaps(index).elements
+    val txIn = transaction.inputs(index)
     val elements = {
-      val previousElements = inputMaps(index).elements
-      val txIn = transaction.inputs(index)
-
       if (txIn.previousOutput.vout.toInt < tx.outputs.size) {
         val out = tx.outputs(txIn.previousOutput.vout.toInt)
 
@@ -207,7 +210,7 @@ case class PSBT(
     }
 
     val newInputMaps =
-      inputMaps.patch(index, Seq(InputPSBTMap(elements)), 1)
+      inputMaps.updated(index, InputPSBTMap(elements))
     PSBT(globalMap, newInputMaps, outputMaps)
 
   }
@@ -219,36 +222,38 @@ case class PSBT(
     * @param index index of the InputPSBTMap to add script to
     * @return PSBT with added script
     */
-  def addScriptToInput(script: ScriptPubKey, index: Int): PSBT = {
+  def addRedeemOrWitnessScriptToInput(
+      script: ScriptPubKey,
+      index: Int): PSBT = {
     require(
       index < inputMaps.size,
       s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    val elements = {
-      val previousElements = inputMaps(index).elements
+    val previousElements = inputMaps(index).elements
 
-      val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-      val redeemScript =
-        inputMaps(index).getRecords[InputPSBTRecord.RedeemScript](
+    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val redeemScriptOpt =
+      inputMaps(index)
+        .getRecords[InputPSBTRecord.RedeemScript](
           PSBTInputKeyId.RedeemScriptKeyId)
-      val hasWitScript = redeemScript.size == 1 && WitnessScriptPubKey
-        .isWitnessScriptPubKey(redeemScript.head.redeemScript.asm)
+        .headOption
+    val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
+      .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
 
-      if (!isWitScript && hasWitScript) {
-        previousElements.filterNot(
-          _.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte) :+ InputPSBTRecord
-          .WitnessScript(script.asInstanceOf[RawScriptPubKey])
-      } else {
-        previousElements.filterNot(
-          _.key.head == PSBTInputKeyId.RedeemScriptKeyId.byte) :+ InputPSBTRecord
-          .RedeemScript(script)
-      }
+    val elements = if (!isWitScript && hasWitScript) {
+      previousElements.filterNot(
+        _.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte) :+ InputPSBTRecord
+        .WitnessScript(script.asInstanceOf[RawScriptPubKey])
+    } else {
+      previousElements.filterNot(
+        _.key.head == PSBTInputKeyId.RedeemScriptKeyId.byte) :+ InputPSBTRecord
+        .RedeemScript(script)
     }
 
     val newMap = InputPSBTMap(elements).compressMap(transaction.inputs(index))
-    val newInputMaps = inputMaps.patch(index, Seq(newMap), 1)
+    val newInputMaps = inputMaps.updated(index, newMap)
 
     PSBT(globalMap, newInputMaps, outputMaps)
   }
@@ -260,35 +265,37 @@ case class PSBT(
     * @param index index of the OutputPSBTMap to add script to
     * @return PSBT with added script
     */
-  def addScriptToOutput(script: ScriptPubKey, index: Int): PSBT = {
+  def addRedeemOrWitnessScriptToOutput(
+      script: ScriptPubKey,
+      index: Int): PSBT = {
     require(
       index < outputMaps.size,
       s"index must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
-    val elements = {
-      val previousElements = outputMaps(index).elements
+    val previousElements = outputMaps(index).elements
 
-      val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-      val redeemScript =
-        outputMaps(index).getRecords[OutputPSBTRecord.RedeemScript](
+    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val redeemScriptOpt =
+      outputMaps(index)
+        .getRecords[OutputPSBTRecord.RedeemScript](
           PSBTOutputKeyId.RedeemScriptKeyId)
-      val hasWitScript = redeemScript.size == 1 && WitnessScriptPubKey
-        .isWitnessScriptPubKey(redeemScript.head.redeemScript.asm)
+        .headOption
+    val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
+      .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
 
-      if (!isWitScript && hasWitScript) {
-        previousElements.filterNot(
-          _.key.head == PSBTOutputKeyId.WitnessScriptKeyId.byte) :+ OutputPSBTRecord
-          .WitnessScript(script)
-      } else {
-        previousElements.filterNot(
-          _.key.head == PSBTOutputKeyId.RedeemScriptKeyId.byte) :+ OutputPSBTRecord
-          .RedeemScript(script)
-      }
+    val elements = if (!isWitScript && hasWitScript) {
+      previousElements.filterNot(
+        _.key.head == PSBTOutputKeyId.WitnessScriptKeyId.byte) :+ OutputPSBTRecord
+        .WitnessScript(script.asInstanceOf[RawScriptPubKey])
+    } else {
+      previousElements.filterNot(
+        _.key.head == PSBTOutputKeyId.RedeemScriptKeyId.byte) :+ OutputPSBTRecord
+        .RedeemScript(script)
     }
 
     val newMap = OutputPSBTMap(elements)
-    val newOutputMaps = outputMaps.patch(index, Seq(newMap), 1)
+    val newOutputMaps = outputMaps.updated(index, newMap)
 
     PSBT(globalMap, inputMaps, newOutputMaps)
   }
@@ -307,10 +314,10 @@ case class PSBT(
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    val elements = {
-      val previousElements = inputMaps(index).elements
+    val previousElements = inputMaps(index).elements
+    val keyOpt = extKey.deriveChildPubKey(path)
 
-      val keyOpt = extKey.deriveChildPubKey(path)
+    val elements = {
       if (keyOpt.isSuccess && !previousElements.exists(_.key == keyOpt.get.bytes
             .+:(PSBTInputKeyId.BIP32DerivationPathKeyId.byte))) {
         val fp =
@@ -325,7 +332,7 @@ case class PSBT(
       }
     }
 
-    val newInputMaps = inputMaps.patch(index, Seq(InputPSBTMap(elements)), 1)
+    val newInputMaps = inputMaps.updated(index, InputPSBTMap(elements))
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
@@ -342,10 +349,10 @@ case class PSBT(
       s"index must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
-    val elements = {
-      val previousElements = outputMaps(index).elements
+    val previousElements = outputMaps(index).elements
+    val keyOpt = extKey.deriveChildPubKey(path)
 
-      val keyOpt = extKey.deriveChildPubKey(path)
+    val elements = {
       if (keyOpt.isSuccess && !previousElements.exists(_.key == keyOpt.get.bytes
             .+:(PSBTOutputKeyId.BIP32DerivationPathKeyId.byte))) {
         val fp =
@@ -361,7 +368,7 @@ case class PSBT(
     }
 
     val newOutputMaps =
-      outputMaps.patch(index, Seq(OutputPSBTMap(elements)), 1)
+      outputMaps.updated(index, OutputPSBTMap(elements))
     PSBT(globalMap, inputMaps, newOutputMaps)
 
   }
@@ -382,7 +389,7 @@ case class PSBT(
       .filterNot(_.key.head == SighashTypeKeyId.byte) :+ SigHashType(hashType)
 
     val newInputMaps =
-      inputMaps.patch(index, Seq(InputPSBTMap(newElements)), 1)
+      inputMaps.updated(index, InputPSBTMap(newElements))
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
@@ -606,6 +613,11 @@ object PSBT extends Factory[PSBT] {
     }
   }
 
+  /**
+    * Creates an empty PSBT with only the global transaction record filled
+    * @param unsignedTx global transaction for the PSBT
+    * @return Created PSBT
+    */
   def fromUnsignedTx(unsignedTx: Transaction): PSBT = {
     val globalMap = GlobalPSBTMap(
       Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
@@ -1198,6 +1210,12 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
     * @return A GlobalPSBTMap with the combined data of the two GlobalPSBTMaps
     */
   def combine(other: GlobalPSBTMap): GlobalPSBTMap = {
+    require(
+      this
+        .getRecords(UnsignedTransactionKeyId)
+        .head == other.getRecords(UnsignedTransactionKeyId).head,
+      "Cannot combine GlobalPSBTMaps with different unsigned transactions"
+    )
     GlobalPSBTMap((this.elements ++ other.elements).distinct)
   }
 }

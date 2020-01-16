@@ -18,8 +18,6 @@ import org.bitcoins.testkit.core.gen._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
 
-import scala.annotation.tailrec
-
 class PSBTTest extends BitcoinSAsyncTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
@@ -70,26 +68,26 @@ class PSBTTest extends BitcoinSAsyncTest {
       .get
 
     val psbt = start
-      .addTransactionToInput(
+      .addUTXOToInput(
         Transaction(
           "0200000001aad73931018bd25f84ae400b68848be09db706eac2ac18298babee71ab656f8b0000000048473044022058f6fc7c6a33e1b31548d481c826c015bd30135aad42cd67790dab66d2ad243b02204a1ced2604c6735b6393e5b41691dd78b00f0c5942fb9f751856faa938157dba01feffffff0280f0fa020000000017a9140fb9463421696b82c833af241c78c17ddbde493487d0f20a270100000017a91429ca74f8a08f81999428185c97b5d852e4063f618765000000"),
         0
       )
-      .addTransactionToInput(
+      .addUTXOToInput(
         Transaction(
           "0200000000010158e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd7501000000171600145f275f436b09a8cc9a2eb2a2f528485c68a56323feffffff02d8231f1b0100000017a914aed962d6654f9a2b36608eb9d64d2b260db4f1118700c2eb0b0000000017a914b7f5faf40e3d40a5a459b1db3535f2b72fa921e88702483045022100a22edcc6e5bc511af4cc4ae0de0fcd75c7e04d8c1c3a8aa9d820ed4b967384ec02200642963597b9b1bc22c75e9f3e117284a962188bf5e8a74c895089046a20ad770121035509a48eb623e10aace8bfd0212fdb8a8e5af3c94b0b133b95e114cab89e4f7965000000"),
         1
       )
-      .addScriptToInput(
+      .addRedeemOrWitnessScriptToInput(
         ScriptPubKey.fromAsmBytes(
           hex"5221029583bf39ae0a609747ad199addd634fa6108559d6c5cd39b4c2183f1ab96e07f2102dab61ff49a14db6a7d02b0cd1fbb78fc4b18312b5b4e54dae4dba2fbfef536d752ae"),
         0
       )
-      .addScriptToInput(
+      .addRedeemOrWitnessScriptToInput(
         ScriptPubKey.fromAsmBytes(
           hex"00208c2353173743b595dfb4a07b72ba8e42e3797da74e87fe7d9d7497e3b2028903"),
         1)
-      .addScriptToInput(
+      .addRedeemOrWitnessScriptToInput(
         ScriptPubKey.fromAsmBytes(
           hex"522103089dc10c7ac6db54f91329af617333db388cead0c231f723379d1b99030b02dc21023add904f3d6dcf59ddb906b0dee23529b7ffb9ed50e5e86151926860221f0e7352ae"),
         1
@@ -186,16 +184,10 @@ class PSBTTest extends BitcoinSAsyncTest {
     assert(psbt.finalizePSBT.contains(expected))
   }
 
-  private def getDummySigners(size: Int): Vector[Sign] = {
-    @tailrec
-    def loop(i: Int, accum: Vector[Sign]): Vector[Sign] = {
-      if (i <= 0) {
-        accum
-      } else {
-        loop(i - 1, accum :+ Sign.dummySign(ECPublicKey.freshPublicKey))
-      }
-    }
-    loop(size, Vector.empty)
+  private def getDummySigners(
+      size: Int,
+      pubKey: ECPublicKey = ECPublicKey.freshPublicKey): Vector[Sign] = {
+    Vector.fill(size)(Sign.dummySign(pubKey))
   }
 
   it must "create a valid UTXOSpendingInfo" in {
@@ -221,17 +213,22 @@ class PSBTTest extends BitcoinSAsyncTest {
     assert(spendingInfo.conditionalPath == ConditionalPath.NoConditionsLeft)
   }
 
-  it must "fail to create a valid UTXOSpendingInfo" in {
+  it must "fail to create a valid UTXOSpendingInfo given a bad index" in {
 
     val psbt = PSBT(
       "70736274ff01005202000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef133579000000004f01043587cf02da3fd0088000000097048b1ad0445b1ec8275517727c87b4e4ebc18a203ffa0f94c01566bd38e9000351b743887ee1d40dc32a6043724f2d6459b3b5a4d73daec8fbae0472f3bc43e20cd90c6a4fae000080000000804f01043587cf02da3fd00880000001b90452427139cd78c2cff2444be353cd58605e3e513285e528b407fae3f6173503d30a5e97c8adbc557dac2ad9a7e39c1722ebac69e668b6f2667cc1d671c83cab0cd90c6a4fae000080010000800001012b0065cd1d000000002200202c5486126c4978079a814e13715d65f36459e4d6ccaded266d0508645bafa6320105475221029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c88712103372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b52ae2206029da12cdb5b235692b91536afefe5c91c3ab9473d8e43b533836ab456299c887110d90c6a4fae0000800000008000000000220603372b34234ed7cf9c1fea5d05d441557927be9542b162eb02e1ab2ce80224c00b10d90c6a4fae0000800100008000000000002202039eff1f547a1d5f92dfa2ba7af6ac971a4bd03ba4a734b03156a256b8ad3a1ef910ede45cc500000080000000800100008000")
 
     assertThrows[IllegalArgumentException](psbt.getUTXOSpendingInfo(index = -1))
+    assertThrows[IllegalArgumentException](
+      psbt.getUTXOSpendingInfo(index = Int.MaxValue))
+  }
 
+  it must "fail to create a valid UTXOSpendingInfo from a PSBTInputMap with insufficient data" in {
     val psbt1 = PSBT(
       "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a010000000000000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0000")
     assertThrows[UnsupportedOperationException](
-      psbt1.getUTXOSpendingInfoUsingSigners(index = 0, getDummySigners(1)))
+      psbt1.getUTXOSpendingInfoUsingSigners(index = 0,
+                                            getDummySigners(size = 1)))
   }
 
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {

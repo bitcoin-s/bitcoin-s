@@ -367,7 +367,9 @@ object BitcoinUTXOSpendingInfoFull {
 
   def apply(
       spendingInfoSingle: UTXOSpendingInfoSingle,
-      signers: Vector[Sign]): BitcoinUTXOSpendingInfoFull =
+      signers: Vector[Sign]): BitcoinUTXOSpendingInfoFull = {
+    require(signers.contains(spendingInfoSingle.signer),
+            s"Signer from spendingInfoSingle missing in signers, got: $signers")
     BitcoinUTXOSpendingInfoFull(
       outPoint = spendingInfoSingle.outPoint,
       output = spendingInfoSingle.output,
@@ -377,6 +379,7 @@ object BitcoinUTXOSpendingInfoFull {
       hashType = spendingInfoSingle.hashType,
       conditionalPath = spendingInfoSingle.conditionalPath
     )
+  }
 
   def unapply(info: BitcoinUTXOSpendingInfoFull): Option[
     (

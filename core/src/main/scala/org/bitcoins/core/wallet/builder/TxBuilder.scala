@@ -703,6 +703,12 @@ object BitcoinTxBuilder {
     BitcoinTxBuilder(destinations, map, feeRate, changeSPK, network)
   }
 
+  /**
+    * Sets the ScriptSignature for every input in the given transaction to an EmptyScriptSignature
+    * as well as sets the witness to an EmptyWitness
+    * @param tx Transaction to empty signatures
+    * @return Transaction with no signatures
+    */
   def emptyAllSigs(tx: Transaction): Transaction = {
     val newInputs = tx.inputs.map { input =>
       TransactionInput(input.previousOutput,
