@@ -11,6 +11,8 @@ import org.bitcoins.eclair.rpc.api.WebSocketEvent.{
 }
 import org.bitcoins.eclair.rpc.api.{PaymentId, WebSocketEvent}
 
+import scala.concurrent.Promise
+
 object PaymentLog {
 
   case class PaymentLogEntry(
@@ -64,8 +66,14 @@ object PaymentLog {
   val paymentLog =
     new ConcurrentHashMap[Sha256Digest, PaymentLogEntry]()
 
+  val promises =
+    new ConcurrentHashMap[Sha256Digest, Promise[Unit]]()
+
   def logPaymentHash(paymentHash: Sha256Digest): PaymentLogEntry = {
-    paymentLog.putIfAbsent(paymentHash, PaymentLogEntry(paymentHash))
+    val entry =
+      paymentLog.putIfAbsent(paymentHash, PaymentLogEntry(paymentHash))
+    promises.putIfAbsent(paymentHash, Promise())
+    entry
   }
 
   def logPaymentId(
@@ -99,7 +107,7 @@ object PaymentLog {
         throw new RuntimeException("Can't extract payment hash")
     }
 
-    paymentLog.compute(
+    val entry = paymentLog.compute(
       hash,
       new BiFunction[Sha256Digest, PaymentLogEntry, PaymentLogEntry] {
         override def apply(
@@ -114,6 +122,23 @@ object PaymentLog {
         }
       }
     )
+    promises.compute(
+      hash,
+      new BiFunction[Sha256Digest, Promise[Unit], Promise[Unit]] {
+        override def apply(
+            hash: Sha256Digest,
+            old: Promise[Unit]): Promise[Unit] = {
+          val promise = if (old == null) {
+            Promise[Unit]()
+          } else {
+            old
+          }
+          promise.success(())
+          promise
+        }
+      }
+    )
+    entry
   }
 
 }

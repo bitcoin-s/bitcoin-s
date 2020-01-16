@@ -83,6 +83,7 @@ object EclairBench extends App with EclairRpcTestUtil {
                 .createInvoice("test " + System.currentTimeMillis(), amount)
               paymentHash = invoice.lnTags.paymentHash.hash
               _ = logPaymentHash(paymentHash)
+              p = promises.get(paymentHash)
               id <- node.sendToNode(testNodeInfo.nodeId,
                                     invoice.amount.get.toMSat,
                                     invoice.lnTags.paymentHash.hash,
@@ -90,8 +91,9 @@ object EclairBench extends App with EclairRpcTestUtil {
                                     None,
                                     None,
                                     None)
+              _ = logPaymentId(paymentHash, id)
+              _ <- p.future
             } yield {
-              logPaymentId(paymentHash, id)
               Progress.inc()
               acc :+ id
             }
@@ -119,6 +121,7 @@ object EclairBench extends App with EclairRpcTestUtil {
                                paymentLog.values().asScala.forall(_.completed),
                              duration = 1.second,
                              maxTries = 100)
+        .recover(_.printStackTrace())
       _ = println("\nDone!")
     } yield {
       paymentLog
