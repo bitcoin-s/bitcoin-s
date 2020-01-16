@@ -263,7 +263,7 @@ object BitcoinSignerSingle {
     // if already signed by this signer
     if (psbt
           .inputMaps(inputIndex)
-          .getRecords[PartialSignature](PartialSignatureKeyId)
+          .getRecords(PartialSignatureKeyId)
           .exists(_.pubKey == signer.publicKey)) {
       throw new IllegalArgumentException(
         "Input has already been signed with this key")

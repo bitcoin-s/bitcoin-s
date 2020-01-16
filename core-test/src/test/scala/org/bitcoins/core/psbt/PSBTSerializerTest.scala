@@ -6,12 +6,7 @@ import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
-import org.bitcoins.core.psbt.InputPSBTRecord.{
-  BIP32DerivationPath,
-  ProofOfReservesCommitment,
-  WitnessScript,
-  WitnessUTXO
-}
+import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
 import org.bitcoins.core.psbt.PSBTInputKeyId.{
   BIP32DerivationPathKeyId,
   ProofOfReservesCommitmentKeyId,
@@ -63,7 +58,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
 
     val globalXPubs =
       psbt.globalMap
-        .getRecords[XPubKey](PSBTGlobalKeyId.XPubKeyKeyId)
+        .getRecords(PSBTGlobalKeyId.XPubKeyKeyId)
     assert(globalXPubs.size == 2)
 
     val xpub1 = ExtPublicKey
@@ -92,7 +87,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(psbt.inputMaps.head.elements.size == 4)
 
     val witnessUTXO =
-      psbt.inputMaps.head.getRecords[WitnessUTXO](WitnessUTXOKeyId).head
+      psbt.inputMaps.head.getRecords(WitnessUTXOKeyId).head
     val output = TransactionOutput(
       Satoshis(500000000),
       RawScriptPubKeyParser.read(
@@ -100,7 +95,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(witnessUTXO.spentWitnessTransaction == output)
 
     val witnessScript =
-      psbt.inputMaps.head.getRecords[WitnessScript](WitnessScriptKeyId).head
+      psbt.inputMaps.head.getRecords(WitnessScriptKeyId).head
     val scriptPubKey = MultiSignatureScriptPubKey(
       2,
       Vector(
@@ -114,7 +109,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(witnessScript.witnessScript == scriptPubKey)
 
     val bip32paths = psbt.inputMaps.head
-      .getRecords[BIP32DerivationPath](BIP32DerivationPathKeyId)
+      .getRecords(BIP32DerivationPathKeyId)
 
     assert(bip32paths.size == 2)
 
@@ -141,8 +136,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
 
     val bip32path =
       psbt.outputMaps.head
-        .getRecords[OutputPSBTRecord.BIP32DerivationPath](
-          PSBTOutputKeyId.BIP32DerivationPathKeyId)
+        .getRecords(PSBTOutputKeyId.BIP32DerivationPathKeyId)
         .head
 
     assert(
