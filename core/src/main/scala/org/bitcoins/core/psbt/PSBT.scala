@@ -8,7 +8,6 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2WSHWitnessV0, _}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.psbt.InputPSBTRecord._
 import org.bitcoins.core.psbt.PSBTGlobalKeyId._
 import org.bitcoins.core.psbt.PSBTInputKeyId._
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -41,6 +40,8 @@ case class PSBT(
   require(
     outputMaps.size == transaction.outputs.size,
     "There must be an output map for every output in the global transaction")
+
+  import org.bitcoins.core.psbt.InputPSBTRecord._
 
   // Need to define these so when we compare the PSBTs
   // the map lexicographical ordering is enforced
@@ -296,6 +297,43 @@ case class PSBT(
     PSBT(globalMap, inputMaps, newOutputMaps)
   }
 
+  private def addKeyPathToMap[
+      RecordType <: PSBTRecord,
+      MapType <: PSBTMap[RecordType]](
+      extKey: ExtKey,
+      path: BIP32Path,
+      index: Int,
+      maps: Vector[MapType],
+      makeRecord: (ECPublicKey, ByteVector, BIP32Path) => RecordType,
+      makeMap: Vector[RecordType] => MapType): Vector[MapType] = {
+    require(
+      index < maps.size,
+      s"index must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
+    require(!isFinalized, "Cannot update a PSBT that is finalized")
+
+    val previousElements = maps(index).elements
+    val keyOpt = extKey.deriveChildPubKey(path)
+
+    lazy val expectedBytes =
+      keyOpt.get.bytes.+:(PSBTOutputKeyId.BIP32DerivationPathKeyId.byte)
+
+    val elements =
+      if (keyOpt.isSuccess && !previousElements.exists(_.key == expectedBytes)) {
+        val fp =
+          if (extKey.fingerprint == hex"00000000") {
+            extKey.deriveChildPubKey(path.path.head).get.fingerprint
+          } else {
+            extKey.fingerprint
+          }
+
+        previousElements :+ makeRecord(keyOpt.get.key, fp, path)
+      } else {
+        previousElements
+      }
+
+    maps.updated(index, makeMap(elements))
+  }
+
   /**
     * Adds the BIP32Path to the indexed InputPSBTMap to the BIP32DerivationPath field
     * @param extKey ExtKey to derive key from
@@ -304,30 +342,14 @@ case class PSBT(
     * @return PSBT with added BIP32Path
     */
   def addKeyPathToInput(extKey: ExtKey, path: BIP32Path, index: Int): PSBT = {
-    require(
-      index < inputMaps.size,
-      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
-    require(!inputMaps(index).isFinalized,
-            s"Cannot update an InputPSBTMap that is finalized, index: $index")
+    val newInputMaps = addKeyPathToMap[InputPSBTRecord, InputPSBTMap](
+      extKey = extKey,
+      path = path,
+      index = index,
+      maps = inputMaps,
+      makeRecord = InputPSBTRecord.BIP32DerivationPath.apply,
+      makeMap = InputPSBTMap.apply)
 
-    val previousElements = inputMaps(index).elements
-    val keyOpt = extKey.deriveChildPubKey(path)
-
-    val elements =
-      if (keyOpt.isSuccess && !previousElements.exists(_.key == keyOpt.get.bytes
-            .+:(PSBTInputKeyId.BIP32DerivationPathKeyId.byte))) {
-        val fp =
-          if (extKey.fingerprint == hex"00000000")
-            extKey.deriveChildPubKey(path.path.head).get.fingerprint
-          else extKey.fingerprint
-        previousElements :+ InputPSBTRecord.BIP32DerivationPath(keyOpt.get.key,
-                                                                fp,
-                                                                path)
-      } else {
-        previousElements
-      }
-
-    val newInputMaps = inputMaps.updated(index, InputPSBTMap(elements))
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
@@ -339,33 +361,15 @@ case class PSBT(
     * @return PSBT with added BIP32Path
     */
   def addKeyPathToOutput(extKey: ExtKey, path: BIP32Path, index: Int): PSBT = {
-    require(
-      index < outputMaps.size,
-      s"index must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
-    require(!isFinalized, "Cannot update a PSBT that is finalized")
+    val newOutputMaps = addKeyPathToMap[OutputPSBTRecord, OutputPSBTMap](
+      extKey = extKey,
+      path = path,
+      index = index,
+      maps = outputMaps,
+      makeRecord = OutputPSBTRecord.BIP32DerivationPath.apply,
+      makeMap = OutputPSBTMap.apply)
 
-    val previousElements = outputMaps(index).elements
-    val keyOpt = extKey.deriveChildPubKey(path)
-
-    val elements = {
-      if (keyOpt.isSuccess && !previousElements.exists(_.key == keyOpt.get.bytes
-            .+:(PSBTOutputKeyId.BIP32DerivationPathKeyId.byte))) {
-        val fp =
-          if (extKey.fingerprint == hex"00000000")
-            extKey.deriveChildPubKey(path.path.head).get.fingerprint
-          else extKey.fingerprint
-        previousElements :+ OutputPSBTRecord.BIP32DerivationPath(keyOpt.get.key,
-                                                                 fp,
-                                                                 path)
-      } else {
-        previousElements
-      }
-    }
-
-    val newOutputMaps =
-      outputMaps.updated(index, OutputPSBTMap(elements))
     PSBT(globalMap, inputMaps, newOutputMaps)
-
   }
 
   /**
@@ -556,39 +560,38 @@ object PSBT extends Factory[PSBT] {
         s"Invalid PSBT. There can only be one global transaction, got: ${txRecords.size}")
 
     val tx = txRecords.head.transaction
-    val inputBytes = globalBytes.drop(global.bytes.size)
 
     @tailrec
-    def inputLoop(
+    def mapLoop[MapType <: PSBTMap[PSBTRecord]](
         bytes: ByteVector,
-        numInputs: Int,
-        accum: Seq[InputPSBTMap]): Vector[InputPSBTMap] = {
-      if (numInputs <= 0 || bytes.isEmpty) {
-        accum.toVector
+        numMaps: Int,
+        accum: Vector[MapType],
+        factory: Factory[MapType]): Vector[MapType] = {
+      if (numMaps <= 0 || bytes.isEmpty) {
+        accum
       } else {
-        val map = InputPSBTMap.fromBytes(bytes)
-        inputLoop(bytes.drop(map.bytes.size), numInputs - 1, accum :+ map)
+        val newMap = factory.fromBytes(bytes)
+        mapLoop(bytes.drop(newMap.bytes.size),
+                numMaps - 1,
+                accum :+ newMap,
+                factory)
       }
     }
 
-    val inputMaps = inputLoop(inputBytes, tx.inputs.size, Nil)
+    val inputBytes = globalBytes.drop(global.bytes.size)
+
+    val inputMaps = mapLoop[InputPSBTMap](inputBytes,
+                                          tx.inputs.size,
+                                          Vector.empty,
+                                          InputPSBTMap)
 
     val outputBytes =
       inputBytes.drop(inputMaps.foldLeft(0)(_ + _.bytes.size.toInt))
-    @tailrec
-    def outputLoop(
-        bytes: ByteVector,
-        numOutputs: Int,
-        accum: Seq[OutputPSBTMap]): Vector[OutputPSBTMap] = {
-      if (numOutputs <= 0 || bytes.isEmpty) {
-        accum.toVector
-      } else {
-        val map = OutputPSBTMap.fromBytes(bytes)
-        outputLoop(bytes.drop(map.bytes.size), numOutputs - 1, accum :+ map)
-      }
-    }
 
-    val outputMaps = outputLoop(outputBytes, tx.outputs.size, Nil)
+    val outputMaps = mapLoop[OutputPSBTMap](outputBytes,
+                                            tx.outputs.size,
+                                            Vector.empty,
+                                            OutputPSBTMap)
 
     val remainingBytes =
       outputBytes.drop(outputMaps.foldLeft(0)(_ + _.bytes.size.toInt))
@@ -759,7 +762,7 @@ object PSBTRecord {
 
 sealed trait GlobalPSBTRecord extends PSBTRecord
 
-object GlobalPSBTRecord {
+object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
   case class UnsignedTransaction(transaction: Transaction)
       extends GlobalPSBTRecord {
     require(
@@ -806,7 +809,7 @@ object GlobalPSBTRecord {
             s"Cannot make an Unknown record with a $keyId")
   }
 
-  def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
+  override def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
     val (key, value) = PSBTRecord.fromBytes(bytes)
     PSBTGlobalKeyId.fromByte(key.head) match {
       case UnsignedTransactionKeyId =>
@@ -835,7 +838,7 @@ object GlobalPSBTRecord {
 
 sealed trait InputPSBTRecord extends PSBTRecord
 
-object InputPSBTRecord {
+object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class NonWitnessOrUnknownUTXO(transactionSpent: Transaction)
       extends InputPSBTRecord {
     override val key: ByteVector = hex"00"
@@ -911,7 +914,7 @@ object InputPSBTRecord {
             s"Cannot make an Unknown record with a $keyId")
   }
 
-  def fromBytes(bytes: ByteVector): InputPSBTRecord = {
+  override def fromBytes(bytes: ByteVector): InputPSBTRecord = {
     val (key, value) = PSBTRecord.fromBytes(bytes)
     PSBTInputKeyId.fromByte(key.head) match {
       case NonWitnessUTXOKeyId =>
@@ -969,7 +972,7 @@ object InputPSBTRecord {
 
 sealed trait OutputPSBTRecord extends PSBTRecord
 
-object OutputPSBTRecord {
+object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
 
   case class RedeemScript(redeemScript: ScriptPubKey) extends OutputPSBTRecord {
     override val key: ByteVector = hex"00"
@@ -1002,7 +1005,7 @@ object OutputPSBTRecord {
             s"Cannot make an Unknown record with a $keyId")
   }
 
-  def fromBytes(bytes: ByteVector): OutputPSBTRecord = {
+  override def fromBytes(bytes: ByteVector): OutputPSBTRecord = {
     val (key, value) = PSBTRecord.fromBytes(bytes)
     PSBTOutputKeyId.fromByte(key.head) match {
       case PSBTOutputKeyId.RedeemScriptKeyId =>
@@ -1205,21 +1208,52 @@ object PSBTOutputKeyId {
   }
 }
 
-sealed trait PSBTMap extends NetworkElement {
+sealed trait PSBTMap[+RecordType <: PSBTRecord] extends NetworkElement {
   require(elements.map(_.key).groupBy(identity).values.forall(_.length == 1),
           "All keys must be unique.")
 
-  final val separatorByte: Byte = 0x00.byteValue
-
-  def elements: Vector[PSBTRecord]
+  def elements: Vector[RecordType]
 
   def bytes: ByteVector =
     elements
       .sortBy(_.key)
-      .foldLeft(ByteVector.empty)(_ ++ _.bytes) :+ separatorByte
+      .foldLeft(ByteVector.empty)(_ ++ _.bytes) :+ PSBTMap.separatorByte
 }
 
-case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
+object PSBTMap {
+  final val separatorByte: Byte = 0x00.byteValue
+}
+
+sealed trait PSBTMapFactory[
+    RecordType <: PSBTRecord, MapType <: PSBTMap[RecordType]]
+    extends Factory[MapType] {
+  def recordFactory: Factory[RecordType]
+
+  def constructMap(elements: Vector[RecordType]): MapType
+
+  lazy val empty: MapType = constructMap(Vector.empty)
+
+  override def fromBytes(bytes: ByteVector): MapType = {
+    @tailrec
+    def loop(
+        remainingBytes: ByteVector,
+        accum: Vector[RecordType]): Vector[RecordType] = {
+      if (remainingBytes.head == PSBTMap.separatorByte) {
+        accum
+      } else {
+        val record = recordFactory.fromBytes(remainingBytes)
+        val next = remainingBytes.drop(record.bytes.size)
+
+        loop(next, accum :+ record)
+      }
+    }
+
+    constructMap(loop(bytes, Vector.empty))
+  }
+}
+
+case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
+    extends PSBTMap[GlobalPSBTRecord] {
 
   def getRecords(key: PSBTGlobalKeyId): Vector[key.RecordType] = {
     elements
@@ -1243,27 +1277,16 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
   }
 }
 
-object GlobalPSBTMap {
+object GlobalPSBTMap extends PSBTMapFactory[GlobalPSBTRecord, GlobalPSBTMap] {
 
-  def fromBytes(bytes: ByteVector): GlobalPSBTMap = {
-    @tailrec
-    def loop(
-        remainingBytes: ByteVector,
-        accum: Seq[GlobalPSBTRecord]): Vector[GlobalPSBTRecord] = {
-      if (remainingBytes.head == 0x00.byteValue) {
-        accum.toVector
-      } else {
-        val record = GlobalPSBTRecord.fromBytes(remainingBytes)
-        val next = remainingBytes.drop(record.bytes.size)
-
-        loop(next, accum :+ record)
-      }
-    }
-    GlobalPSBTMap(loop(bytes, Nil))
-  }
+  override def recordFactory: Factory[GlobalPSBTRecord] = GlobalPSBTRecord
+  override def constructMap(elements: Vector[GlobalPSBTRecord]): GlobalPSBTMap =
+    GlobalPSBTMap(elements)
 }
 
-case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
+case class InputPSBTMap(elements: Vector[InputPSBTRecord])
+    extends PSBTMap[InputPSBTRecord] {
+  import org.bitcoins.core.psbt.InputPSBTRecord._
 
   def getRecords(key: PSBTInputKeyId): Vector[key.RecordType] = {
     elements
@@ -1638,7 +1661,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord]) extends PSBTMap {
   }
 }
 
-object InputPSBTMap {
+object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
+  import org.bitcoins.core.psbt.InputPSBTRecord._
 
   /** Constructs a finalized InputPSBTMap from a UTXOSpendingInfoFull,
     * the corresponding PSBT's unsigned transaction, and if this is
@@ -1745,27 +1769,12 @@ object InputPSBTMap {
     }
   }
 
-  val empty: InputPSBTMap = InputPSBTMap(Vector.empty)
-
-  def fromBytes(bytes: ByteVector): InputPSBTMap = {
-    @tailrec
-    def loop(
-        remainingBytes: ByteVector,
-        accum: Seq[InputPSBTRecord]): Vector[InputPSBTRecord] = {
-      if (remainingBytes.head == 0x00.byteValue) {
-        accum.toVector
-      } else {
-        val record = InputPSBTRecord.fromBytes(remainingBytes)
-        val next = remainingBytes.drop(record.bytes.size)
-
-        loop(next, accum :+ record)
-      }
-    }
-
-    InputPSBTMap(loop(bytes, Nil))
-  }
+  override def constructMap(elements: Vector[InputPSBTRecord]): InputPSBTMap =
+    InputPSBTMap(elements)
+  override def recordFactory: Factory[InputPSBTRecord] = InputPSBTRecord
 }
-case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
+case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
+    extends PSBTMap[OutputPSBTRecord] {
 
   def getRecords(key: PSBTOutputKeyId): Vector[key.RecordType] = {
     elements
@@ -1784,25 +1793,8 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord]) extends PSBTMap {
   }
 }
 
-object OutputPSBTMap {
-
-  val empty: OutputPSBTMap = OutputPSBTMap(Vector.empty)
-
-  def fromBytes(bytes: ByteVector): OutputPSBTMap = {
-    @tailrec
-    def loop(
-        remainingBytes: ByteVector,
-        accum: Seq[OutputPSBTRecord]): Vector[OutputPSBTRecord] = {
-      if (remainingBytes.head == 0x00.byteValue) {
-        accum.toVector
-      } else {
-        val record = OutputPSBTRecord.fromBytes(remainingBytes)
-        val next = remainingBytes.drop(record.bytes.size)
-
-        loop(next, accum :+ record)
-      }
-    }
-
-    OutputPSBTMap(loop(bytes, Nil))
-  }
+object OutputPSBTMap extends PSBTMapFactory[OutputPSBTRecord, OutputPSBTMap] {
+  override def recordFactory: Factory[OutputPSBTRecord] = OutputPSBTRecord
+  override def constructMap(elements: Vector[OutputPSBTRecord]): OutputPSBTMap =
+    OutputPSBTMap(elements)
 }

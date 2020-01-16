@@ -51,13 +51,11 @@ object NonStandardScriptSignature
                 },
                 errorMsg = "")
   }
-
-  /** A script signature to be used in tests for signing EmptyScriptPubKey.
-    * This script pushes an OP_TRUE onto the stack, causing a successful spend.
-    */
-  val trivalTrue: NonStandardScriptSignature = fromAsmHex("0151")
 }
 
+/** A script signature to be used in tests for signing EmptyScriptPubKey.
+  * This script pushes an OP_TRUE onto the stack, causing a successful spend.
+  */
 case object TrivialTrueScriptSignature extends ScriptSignature {
   override def signatures: Seq[ECDigitalSignature] = Nil
   override def asm: Vector[ScriptToken] =
