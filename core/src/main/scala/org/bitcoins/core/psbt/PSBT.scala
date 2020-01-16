@@ -31,10 +31,10 @@ case class PSBT(
     inputMaps: Vector[InputPSBTMap],
     outputMaps: Vector[OutputPSBTMap])
     extends NetworkElement {
-  require(
-    globalMap
-      .getRecords(UnsignedTransactionKeyId)
-      .size == 1)
+  require(globalMap
+            .getRecords(UnsignedTransactionKeyId)
+            .size == 1,
+          "There must only be one global transaction")
   require(
     inputMaps.size == transaction.inputs.size,
     "There must be an input map for every input in the global transaction")
@@ -185,7 +185,7 @@ case class PSBT(
 
     val previousElements = inputMaps(index).elements
     val txIn = transaction.inputs(index)
-    val elements = {
+    val elements =
       if (txIn.previousOutput.vout.toInt < tx.outputs.size) {
         val out = tx.outputs(txIn.previousOutput.vout.toInt)
 
@@ -206,7 +206,6 @@ case class PSBT(
       } else {
         previousElements
       }
-    }
 
     val newInputMaps =
       inputMaps.updated(index, InputPSBTMap(elements))
@@ -314,7 +313,7 @@ case class PSBT(
     val previousElements = inputMaps(index).elements
     val keyOpt = extKey.deriveChildPubKey(path)
 
-    val elements = {
+    val elements =
       if (keyOpt.isSuccess && !previousElements.exists(_.key == keyOpt.get.bytes
             .+:(PSBTInputKeyId.BIP32DerivationPathKeyId.byte))) {
         val fp =
@@ -327,7 +326,6 @@ case class PSBT(
       } else {
         previousElements
       }
-    }
 
     val newInputMaps = inputMaps.updated(index, InputPSBTMap(elements))
     PSBT(globalMap, newInputMaps, outputMaps)
