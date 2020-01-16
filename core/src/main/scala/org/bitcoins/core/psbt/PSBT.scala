@@ -1188,12 +1188,14 @@ sealed trait PSBTMap extends NetworkElement {
   require(elements.map(_.key).groupBy(identity).values.forall(_.length == 1),
           "All keys must be unique.")
 
+  final val separatorByte: Byte = 0x00.byteValue
+
   def elements: Vector[PSBTRecord]
 
   def bytes: ByteVector =
     elements
       .sortBy(_.key)
-      .foldLeft(ByteVector.empty)(_ ++ _.bytes) ++ hex"00"
+      .foldLeft(ByteVector.empty)(_ ++ _.bytes) :+ separatorByte
 }
 
 case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord]) extends PSBTMap {
