@@ -86,20 +86,28 @@ case class PSBT(
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#input-finalizer]]
     * @return None if there exists any input which is not ready for signing
     */
-  def finalizePSBT: Option[PSBT] = {
+  def finalizePSBT: Try[PSBT] = {
     if (isFinalized) {
-      Some(this)
+      Failure(
+        new IllegalStateException(
+          s"Cannot finalize an already finalized PSBT: $this"))
     } else {
-      val finalizedInputOpts = inputMaps.zip(transaction.inputs).map {
+      val finalizedInputTs = inputMaps.zip(transaction.inputs).map {
         case (inputMap, input) => inputMap.finalize(input)
       }
-      if (finalizedInputOpts.forall(_.isDefined)) {
-        val finalizedInputMaps = finalizedInputOpts.map(_.get)
-        val psbt = this.copy(inputMaps = finalizedInputMaps)
-        Some(psbt)
-      } else {
-        None
-      }
+
+      val finalizedInputMapsT = finalizedInputTs
+        .foldLeft[Try[Vector[InputPSBTMap]]](Success(Vector.empty)) {
+          case (inputsSoFarT, inputT) =>
+            inputsSoFarT.flatMap { inputsSoFar =>
+              inputT.map { input =>
+                inputsSoFar :+ input
+              }
+            }
+        }
+
+      finalizedInputMapsT.map(finalizedInputMaps =>
+        this.copy(inputMaps = finalizedInputMaps))
     }
   }
 
@@ -1319,34 +1327,35 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       FinalizedScriptWitnessKeyId).nonEmpty
 
   /** Finalizes this input if possible, returning None if not */
-  def finalize(input: TransactionInput): Option[InputPSBTMap] = {
+  def finalize(input: TransactionInput): Try[InputPSBTMap] = {
     if (isFinalized) {
-      Some(this)
+      Success(this)
     } else {
-      val scriptPubKeyToSatisfyOpt: Option[ScriptPubKey] = {
+      val scriptPubKeyToSatisfyT: Try[ScriptPubKey] = {
         val witnessUTXOOpt =
           getRecords(WitnessUTXOKeyId).headOption
         val nonWitnessUTXOOpt =
           getRecords(NonWitnessUTXOKeyId).headOption
 
         (witnessUTXOOpt, nonWitnessUTXOOpt) match {
-          case (None, None) => None
+          case (None, None) =>
+            Failure(
+              new IllegalStateException(
+                s"Cannot finalize without UTXO record: $this"))
           case (Some(witnessUtxo), _) =>
-            Some(witnessUtxo.spentWitnessTransaction.scriptPubKey)
+            Success(witnessUtxo.spentWitnessTransaction.scriptPubKey)
           case (_, Some(utxo)) =>
             val outputs = utxo.transactionSpent.outputs
-            scala.util
-              .Try(outputs(input.previousOutput.vout.toInt).scriptPubKey)
-              .toOption
+            Try(outputs(input.previousOutput.vout.toInt).scriptPubKey)
         }
       }
 
-      scriptPubKeyToSatisfyOpt.flatMap(finalize)
+      scriptPubKeyToSatisfyT.flatMap(finalize)
     }
   }
 
   /** Finalizes this input if possible, returning None if not */
-  private def finalize(spkToSatisfy: ScriptPubKey): Option[InputPSBTMap] = {
+  private def finalize(spkToSatisfy: ScriptPubKey): Try[InputPSBTMap] = {
 
     /** Removes non-utxo and non-unkown records, replacing them with finalized records */
     def wipeAndAdd(
@@ -1373,18 +1382,29 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       */
     def collectSigs(
         required: Int,
-        constructScriptSig: Seq[(ECDigitalSignature, ECPublicKey)] => ScriptSignature): Option[
+        constructScriptSig: Seq[(ECDigitalSignature, ECPublicKey)] => ScriptSignature): Try[
       InputPSBTMap] = {
       val sigs = getRecords(PartialSignatureKeyId)
       if (sigs.length != required) {
-        None
+        Failure(new IllegalArgumentException(
+          s"Could not collect $required signatures when only the following were present: $sigs"))
       } else {
         val scriptSig = constructScriptSig(
           sigs.map(sig => (sig.signature, sig.pubKey)))
 
         val newInputMap = wipeAndAdd(scriptSig)
 
-        Some(newInputMap)
+        Success(newInputMap)
+      }
+    }
+
+    def toTry[T](opt: Option[T], reason: String): Try[T] = {
+      opt match {
+        case Some(elem) => Success(elem)
+        case None =>
+          Failure(
+            new IllegalStateException(
+              s"Cannot finalize the following input because $reason: $this"))
       }
     }
 
@@ -1392,8 +1412,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case _: P2SHScriptPubKey =>
         val redeemScriptOpt =
           getRecords(RedeemScriptKeyId).headOption
-        redeemScriptOpt.flatMap {
-          case InputPSBTRecord.RedeemScript(redeemScript) =>
+        toTry(redeemScriptOpt, "there is no redeem script record").flatMap {
+          case RedeemScript(redeemScript) =>
             finalize(redeemScript).map { inputMap =>
               val nestedScriptSig = inputMap
                 .getRecords(FinalizedScriptSigKeyId)
@@ -1410,7 +1430,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case _: P2WSHWitnessSPKV0 =>
         val redeemScriptOpt =
           getRecords(WitnessScriptKeyId).headOption
-        redeemScriptOpt.flatMap {
+        toTry(redeemScriptOpt, "there is no witness script record").flatMap {
           case WitnessScript(redeemScript) =>
             finalize(redeemScript).map { inputMap =>
               val nestedScriptSig = inputMap
@@ -1425,7 +1445,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case _: P2WPKHWitnessSPKV0 =>
         val sigOpt =
           getRecords(PartialSignatureKeyId).headOption
-        sigOpt.map { sig =>
+        toTry(sigOpt, "there is no partial signature record").map { sig =>
           val witness = P2WPKHWitnessV0(sig.pubKey, sig.signature)
           val scriptSig = EmptyScriptSignature
           wipeAndAdd(scriptSig, Some(witness))
@@ -1433,19 +1453,20 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
         val sigOpt =
           getRecords(PartialSignatureKeyId).headOption
-        sigOpt.flatMap { sig =>
+        toTry(sigOpt, "there is no partial signature record").flatMap { sig =>
           if (sig.pubKey == p2pkWithTimeout.pubKey) {
             val scriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
                                                            signature =
                                                              sig.signature)
-            Some(wipeAndAdd(scriptSig, None))
+            Success(wipeAndAdd(scriptSig, None))
           } else if (sig.pubKey == p2pkWithTimeout.timeoutPubKey) {
             val scriptSig =
               P2PKWithTimeoutScriptSignature(beforeTimeout = false,
                                              signature = sig.signature)
-            Some(wipeAndAdd(scriptSig, None))
+            Success(wipeAndAdd(scriptSig, None))
           } else {
-            None
+            Failure(new IllegalArgumentException(
+              s"Cannot finalize the following input because the signature provided ($sig) signs for neither key in $p2pkWithTimeout: $this"))
           }
         }
       case conditional: ConditionalScriptPubKey =>
@@ -1516,7 +1537,11 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
           leaves.find(leaf => hashes.forall(leaf._2.contains))
         }
 
-        leafOpt.flatMap {
+        val leafT = toTry(
+          leafOpt,
+          s"no conditional branch using $sigs in $conditional could be found")
+
+        leafT.flatMap {
           case (path, _, spk) =>
             val finalizedOpt = finalize(spk)
             finalizedOpt.map { finalized =>
@@ -1552,11 +1577,12 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         collectSigs(required = multiSig.requiredSigs, generateScriptSig)
       case EmptyScriptPubKey =>
         val scriptSig = TrivialTrueScriptSignature
-        Some(wipeAndAdd(scriptSig))
+        Success(wipeAndAdd(scriptSig))
       case _: NonStandardScriptPubKey | _: UnassignedWitnessScriptPubKey |
           _: WitnessCommitment =>
-        throw new UnsupportedOperationException(
-          s"$spkToSatisfy is not yet supported")
+        Failure(
+          new UnsupportedOperationException(
+            s"$spkToSatisfy is not yet supported"))
     }
   }
 
