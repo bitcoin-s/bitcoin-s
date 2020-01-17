@@ -219,6 +219,11 @@ object PSBTGenerators {
     psbtWithBuilder(finalized = false).map(_.map(_._1))
   }
 
+  def pruneGlobal(globalMap: GlobalPSBTMap): GlobalPSBTMap = {
+    val newGlobalElements = pruneVec(globalMap.elements) :+ globalMap.unsignedTransaction
+    GlobalPSBTMap(newGlobalElements.distinct)
+  }
+
   def pruneVec[T](vec: Vector[T]): Vector[T] = {
     if (vec.isEmpty) {
       vec
@@ -236,13 +241,11 @@ object PSBTGenerators {
   def arbitraryPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
     psbtWithUnknowns.map { psbtF =>
       psbtF.map { psbt =>
-        val global = psbt.globalMap.elements
+        val global = psbt.globalMap
         val inputs = psbt.inputMaps
         val outputs = psbt.outputMaps
 
-        val newGlobalElements = pruneVec(global) :+ GlobalPSBTRecord
-          .UnsignedTransaction(psbt.transaction)
-        val newGlobal = GlobalPSBTMap(newGlobalElements.distinct)
+        val newGlobal = pruneGlobal(global)
         val newInputs =
           inputs.map(input => InputPSBTMap(pruneVec(input.elements)))
         val newOutputs =

@@ -139,13 +139,11 @@ class PSBTTest extends BitcoinSAsyncTest {
   it must "correctly combine PSBTs" in {
     forAllAsync(PSBTGenerators.psbtWithUnknowns) { psbtF =>
       psbtF.map { psbt =>
-        val global = psbt.globalMap.elements
+        val global = psbt.globalMap
         val inputs = psbt.inputMaps
         val outputs = psbt.outputMaps
 
-        val newGlobalElements = PSBTGenerators.pruneVec(global) :+ GlobalPSBTRecord
-          .UnsignedTransaction(psbt.transaction)
-        val newGlobal = GlobalPSBTMap(newGlobalElements.distinct)
+        val newGlobal = PSBTGenerators.pruneGlobal(global)
         val newInputs =
           inputs.map(input =>
             InputPSBTMap(PSBTGenerators.pruneVec(input.elements)))
@@ -155,9 +153,8 @@ class PSBTTest extends BitcoinSAsyncTest {
 
         val psbt1 = PSBT(newGlobal, newInputs, newOutputs)
 
-        val oppositeGlobalElements = global.filterNot(e =>
-          newGlobal.elements.contains(e)) :+ GlobalPSBTRecord
-          .UnsignedTransaction(psbt.transaction)
+        val oppositeGlobalElements = global.elements.filterNot(e =>
+          newGlobal.elements.contains(e)) :+ global.unsignedTransaction
         val oppositeGlobal = GlobalPSBTMap(oppositeGlobalElements.distinct)
         val oppositeInputs = inputs.zip(newInputs).map {
           case (map, pruned) =>
