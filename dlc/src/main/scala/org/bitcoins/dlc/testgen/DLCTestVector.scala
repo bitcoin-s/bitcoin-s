@@ -4,6 +4,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey,
+  ExtKey,
   ExtPrivateKey,
   Schnorr,
   SchnorrDigitalSignature,
@@ -324,8 +325,10 @@ object SerializedDLCTestVectorSerializers {
     hexWrites[ScriptWitnessV0]
   implicit val schnorrNonceWrites: Writes[SchnorrNonce] =
     hexWrites[SchnorrNonce]
-  implicit val extPrivKeyWrites: Writes[ExtPrivateKey] =
-    hexWrites[ExtPrivateKey]
+  implicit val extPrivKeyWrites: Writes[ExtPrivateKey] = Writes[ExtPrivateKey] {
+    extPrivKey =>
+      JsString(extPrivKey.toString)
+  }
   implicit val currencyUnitWrites: Writes[CurrencyUnit] = Writes[CurrencyUnit] {
     currencyUnit =>
       JsNumber(currencyUnit.satoshis.toLong)
@@ -369,7 +372,13 @@ object SerializedDLCTestVectorSerializers {
     Json.reads[SerializedTransactionOutPoint]
   implicit val transactionOutputReads: Reads[TransactionOutput] = hexReads(
     TransactionOutput)
-  implicit val extPrivKeyReads: Reads[ExtPrivateKey] = hexReads(ExtPrivateKey)
+  implicit val extPrivKeyReads: Reads[ExtPrivateKey] = Reads[ExtPrivateKey] {
+    json =>
+      json
+        .validate[String]
+        .map(ExtKey.fromString)
+        .map(_.get.asInstanceOf[ExtPrivateKey])
+  }
   implicit val blockStampWithFutureReads: Reads[BlockStampWithFuture] =
     Reads[BlockStampWithFuture] { json =>
       json.validate[Int].map(BlockStamp.apply)
