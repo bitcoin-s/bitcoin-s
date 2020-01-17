@@ -137,7 +137,7 @@ class PSBTTest extends BitcoinSAsyncTest {
   }
 
   it must "correctly combine PSBTs" in {
-    forAllAsync(PSBTGenerators.psbtWithUnknowns) { psbtF =>
+    forAllAsync(PSBTGenerators.arbitraryPSBT) { psbtF =>
       psbtF.map { psbt =>
         val global = psbt.globalMap
         val inputs = psbt.inputMaps
