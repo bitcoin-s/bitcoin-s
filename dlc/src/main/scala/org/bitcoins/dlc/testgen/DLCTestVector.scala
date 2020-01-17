@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.{
   NetworkElement
 }
 import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
   ScriptWitnessV0,
   WitnessScriptPubKeyV0
 }
@@ -39,6 +40,7 @@ import org.bitcoins.core.wallet.utxo.{
 import org.bitcoins.dlc.BinaryOutcomeDLCWithSelf
 import play.api.libs.json.{
   JsNumber,
+  JsObject,
   JsResult,
   JsString,
   JsValue,
@@ -315,8 +317,9 @@ object SerializedDLCTestVectorSerializers {
   implicit val transactionOutPointWrites: Writes[
     SerializedTransactionOutPoint] =
     Json.writes[SerializedTransactionOutPoint]
-  implicit val transactionOutputWrites: Writes[TransactionOutput] =
-    hexWrites[TransactionOutput]
+  implicit val serializedTransactionOutputWrites: Writes[
+    SerializedTransactionOutput] =
+    Writes[SerializedTransactionOutput](_.toJson)
   implicit val privKeyWrites: Writes[ECPrivateKey] = hexWrites[ECPrivateKey]
   implicit val hashTypeWrites: Writes[HashType] = Writes[HashType] { hashType =>
     JsNumber(hashType.num.toInt)
@@ -370,8 +373,9 @@ object SerializedDLCTestVectorSerializers {
   implicit val serializedTransactionOutPointReads: Reads[
     SerializedTransactionOutPoint] =
     Json.reads[SerializedTransactionOutPoint]
-  implicit val transactionOutputReads: Reads[TransactionOutput] = hexReads(
-    TransactionOutput)
+  implicit val serializedTransactionOutputReads: Reads[
+    SerializedTransactionOutput] =
+    Reads[SerializedTransactionOutput](SerializedTransactionOutput.fromJson)
   implicit val extPrivKeyReads: Reads[ExtPrivateKey] = Reads[ExtPrivateKey] {
     json =>
       json
@@ -461,7 +465,7 @@ case class SerializedDLCInputs(
 
 case class SerializedSegwitSpendingInfo(
     outPoint: SerializedTransactionOutPoint,
-    output: TransactionOutput,
+    output: SerializedTransactionOutput,
     keys: Vector[ECPrivateKey],
     hashType: HashType,
     scriptWitness: ScriptWitnessV0) {
@@ -470,7 +474,7 @@ case class SerializedSegwitSpendingInfo(
     SegwitV0NativeUTXOSpendingInfo(
       outPoint = outPoint.toOutPoint,
       amount = output.value,
-      scriptPubKey = output.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
+      scriptPubKey = output.spk.asInstanceOf[WitnessScriptPubKeyV0],
       signers = keys,
       hashType = hashType,
       scriptWitness = scriptWitness,
@@ -486,7 +490,7 @@ object SerializedSegwitSpendingInfo {
     SerializedSegwitSpendingInfo(
       outPoint =
         SerializedTransactionOutPoint.fromOutPoint(spendingInfo.outPoint),
-      output = spendingInfo.output,
+      output = SerializedTransactionOutput.fromOutput(spendingInfo.output),
       keys = spendingInfo.signers.toVector.map(_.asInstanceOf[ECPrivateKey]),
       hashType = spendingInfo.hashType,
       scriptWitness = spendingInfo.scriptWitness
@@ -505,6 +509,35 @@ object SerializedTransactionOutPoint {
   def fromOutPoint(
       outPoint: TransactionOutPoint): SerializedTransactionOutPoint = {
     SerializedTransactionOutPoint(outPoint.txIdBE, outPoint.vout)
+  }
+}
+
+case class SerializedTransactionOutput(value: CurrencyUnit, spk: ScriptPubKey) {
+  def toOutput: TransactionOutput = TransactionOutput(value, spk)
+
+  def toJson: JsObject =
+    JsObject(
+      Map("value" -> JsNumber(value.satoshis.toLong),
+          "spk" -> JsString(spk.hex)))
+}
+
+object SerializedTransactionOutput {
+
+  def fromOutput(output: TransactionOutput): SerializedTransactionOutput = {
+    SerializedTransactionOutput(output.value, output.scriptPubKey)
+  }
+
+  def fromJson(json: JsValue): JsResult[SerializedTransactionOutput] = {
+    json.validate[Map[String, JsValue]].flatMap { outputMap =>
+      val valueResult = outputMap("value").validate[Long].map(Satoshis.apply)
+      val spkResult =
+        outputMap("spk").validate[String].map(ScriptPubKey.fromHex)
+
+      for {
+        value <- valueResult
+        spk <- spkResult
+      } yield SerializedTransactionOutput(value, spk)
+    }
   }
 }
 
