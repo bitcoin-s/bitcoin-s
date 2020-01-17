@@ -219,6 +219,17 @@ object PSBTGenerators {
     psbtWithBuilder(finalized = false).map(_.map(_._1))
   }
 
+  def pruneVec[T](vec: Vector[T]): Vector[T] = {
+    if (vec.isEmpty) {
+      vec
+    } else {
+      val numKeep = scala.util.Random.nextInt(vec.length)
+      vec
+        .sortBy(_ => scala.util.Random.nextLong())
+        .take(numKeep)
+    }
+  }
+
   /** Generates an arbitrary unfinalized PSBT by generating a full unfinalized PSBT
     * and randomly removing records
     */
@@ -228,17 +239,6 @@ object PSBTGenerators {
         val global = psbt.globalMap.elements
         val inputs = psbt.inputMaps
         val outputs = psbt.outputMaps
-
-        def pruneVec[T](vec: Vector[T]): Vector[T] = {
-          if (vec.isEmpty) {
-            vec
-          } else {
-            val numKeep = scala.util.Random.nextInt(vec.length)
-            vec
-              .sortBy(_ => scala.util.Random.nextLong())
-              .take(numKeep)
-          }
-        }
 
         val newGlobalElements = pruneVec(global) :+ GlobalPSBTRecord
           .UnsignedTransaction(psbt.transaction)
