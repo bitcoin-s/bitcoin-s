@@ -13,14 +13,13 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.{
+  Bech32Address,
   BlockStamp,
   BlockStampWithFuture,
   NetworkElement
 }
 import org.bitcoins.core.protocol.script.{
-  ScriptPubKey,
   ScriptWitnessV0,
-  WitnessScriptPubKey,
   WitnessScriptPubKeyV0
 }
 import org.bitcoins.core.protocol.transaction.{
@@ -28,15 +27,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.{
-  BitcoinSUtil,
-  BitcoinScriptUtil,
-  CryptoUtil,
-  Factory
-}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
@@ -337,8 +330,10 @@ object SerializedDLCTestVectorSerializers {
     currencyUnit =>
       JsNumber(currencyUnit.satoshis.toLong)
   }
-  implicit val scriptPubKeyWrites: Writes[ScriptPubKey] =
-    hexWrites[ScriptPubKey]
+  implicit val scriptPubKeyWrites: Writes[WitnessScriptPubKeyV0] =
+    Writes[WitnessScriptPubKeyV0] { wspk =>
+      JsString(Bech32Address(wspk, RegTest).value)
+    }
   implicit val blockStampWithFutureWrites: Writes[BlockStampWithFuture] =
     Writes[BlockStampWithFuture] { blockStamp =>
       JsNumber(blockStamp.toUInt32.toLong)
@@ -402,16 +397,12 @@ object SerializedDLCTestVectorSerializers {
         .map(BitcoinSUtil.decodeHex)
         .map(SchnorrNonce.fromBytes)
   }
-  private val witnessScriptPubKeyV0FromAsm: Vector[ScriptToken] => WitnessScriptPubKeyV0 = {
-    asm =>
-      WitnessScriptPubKey.fromAsm(asm).get.asInstanceOf[WitnessScriptPubKeyV0]
-  }
   implicit val scriptPubKeyReads: Reads[WitnessScriptPubKeyV0] =
     Reads[WitnessScriptPubKeyV0] { json =>
       json
         .validate[String]
-        .map(BitcoinSUtil.decodeHex)
-        .map(BitcoinScriptUtil.parseScript(_, witnessScriptPubKeyV0FromAsm))
+        .map(Bech32Address.fromString)
+        .map(_.get.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0])
     }
   implicit val satoshisPerByteReads: Reads[SatoshisPerByte] =
     Reads[SatoshisPerByte] { json =>
