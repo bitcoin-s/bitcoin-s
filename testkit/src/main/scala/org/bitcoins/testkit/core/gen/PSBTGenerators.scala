@@ -1,23 +1,159 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.psbt.{
-  GlobalPSBTMap,
-  GlobalPSBTRecord,
-  InputPSBTMap,
-  OutputPSBTMap,
-  PSBT
-}
+import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
+import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
+import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoFull
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfoFull,
+  UTXOSpendingInfoFull
+}
 import org.scalacheck.Gen
+import scodec.bits.ByteVector
 
+import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 
 object PSBTGenerators {
+
+  private def unknownRecord: Gen[(ByteVector, ByteVector)] = {
+    for {
+      key <- StringGenerators.hexString
+      value <- StringGenerators.hexString
+    } yield {
+      val keyBytes = ByteVector.fromHex(key).get
+      // Do a bunch of loops to guarantee that it is not a taken KeyId
+      @tailrec
+      def loop(bytes: ByteVector): ByteVector = {
+        if (PSBTGlobalKeyId.fromBytes(bytes) != PSBTGlobalKeyId.UnknownKeyId ||
+            PSBTInputKeyId.fromBytes(bytes) != PSBTInputKeyId.UnknownKeyId ||
+            PSBTOutputKeyId.fromBytes(bytes) != PSBTOutputKeyId.UnknownKeyId) {
+          loop(bytes.tail)
+        } else {
+          bytes
+        }
+      }
+      @tailrec
+      def loop2(bytes: ByteVector): ByteVector = {
+        val newBytes = loop(bytes)
+        if (newBytes == ByteVector.empty) {
+          loop2(ByteVector(newBytes.hashCode.toByte))
+        } else {
+          newBytes
+        }
+      }
+      val usableKeyBytes = loop2(keyBytes)
+      (usableKeyBytes, ByteVector.fromHex(value).get)
+    }
+  }
+
+  private def unknownGlobal: Gen[GlobalPSBTRecord.Unknown] = {
+    unknownRecord.map {
+      case (key, value) =>
+        GlobalPSBTRecord.Unknown(key, value)
+    }
+  }
+
+  private def unknownGlobals: Gen[Vector[GlobalPSBTRecord.Unknown]] = {
+    Gen.choose(0, 4).flatMap(num => unknownGlobals(num))
+  }
+
+  private def unknownGlobals(
+      num: Int): Gen[Vector[GlobalPSBTRecord.Unknown]] = {
+    Gen.listOfN(num, unknownGlobal).map(_.toVector)
+  }
+
+  private def unknownInput: Gen[InputPSBTRecord.Unknown] = {
+    unknownRecord.map {
+      case (key, value) =>
+        InputPSBTRecord.Unknown(key, value)
+    }
+  }
+
+  private def unknownInputs: Gen[Vector[InputPSBTRecord.Unknown]] = {
+    Gen.choose(0, 4).flatMap { num =>
+      unknownInputs(num)
+    }
+  }
+
+  private def unknownInputs(num: Int): Gen[Vector[InputPSBTRecord.Unknown]] = {
+    Gen.listOfN(num, unknownInput).map(_.toVector)
+  }
+
+  private def unknownOutput: Gen[OutputPSBTRecord.Unknown] = {
+    unknownRecord.map {
+      case (key, value) =>
+        OutputPSBTRecord.Unknown(key, value)
+    }
+  }
+
+  private def unknownOutputs: Gen[Vector[OutputPSBTRecord.Unknown]] = {
+    Gen.choose(0, 4).flatMap { num =>
+      unknownOutputs(num)
+    }
+  }
+
+  private def unknownOutputs(
+      num: Int): Gen[Vector[OutputPSBTRecord.Unknown]] = {
+    Gen.listOfN(num, unknownOutput).map(_.toVector)
+  }
+
+  def psbtWithUnknowns(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
+    for {
+      psbtF <- Gen.frequency((6, fullNonFinalizedPSBT), (1, finalizedPSBT))
+      globals <- unknownGlobals
+      inputs <- unknownInputs
+      outputs <- unknownOutputs
+    } yield {
+      psbtF.map { psbt =>
+        val newGlobal = GlobalPSBTMap(psbt.globalMap.elements ++ globals)
+        val newInputMaps =
+          psbt.inputMaps.map(map => InputPSBTMap(map.elements ++ inputs))
+        val newOutputMaps =
+          psbt.outputMaps.map(map => OutputPSBTMap(map.elements ++ outputs))
+
+        PSBT(newGlobal, newInputMaps, newOutputMaps)
+      }
+    }
+  }
+
+  def psbtWithUnknownVersion(
+      implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
+    for {
+      psbtF <- psbtWithUnknowns
+      versionNumber <- Gen.choose(min = PSBT.knownVersions.last.toLong,
+                                  max = UInt32.max.toLong)
+    } yield {
+      psbtF.map { psbt =>
+        val newGlobal = GlobalPSBTMap(
+          psbt.globalMap.elements :+ Version(UInt32(versionNumber)))
+
+        PSBT(newGlobal, psbt.inputMaps, psbt.outputMaps)
+      }
+    }
+  }
+
+  def psbtToBeSigned(implicit ec: ExecutionContext): Gen[
+    Future[(PSBT, Seq[UTXOSpendingInfoFull])]] = {
+    psbtWithBuilder(finalized = false).map { psbtAndBuilderF =>
+      psbtAndBuilderF.flatMap {
+        case (psbt, builder) =>
+          val newInputsMaps = psbt.inputMaps.map { map =>
+            InputPSBTMap(map.elements.filterNot(element =>
+              PSBTInputKeyId.fromBytes(element.key) == PartialSignatureKeyId))
+          }
+
+          Future.successful(
+            PSBT(psbt.globalMap, newInputsMaps, psbt.outputMaps),
+            builder.utxos)
+      }
+    }
+  }
 
   def psbtAndBuilderFromInputs(
       finalized: Boolean,
@@ -87,7 +223,7 @@ object PSBTGenerators {
     * and randomly removing records
     */
   def arbitraryPSBT(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
-    Gen.frequency((6, fullNonFinalizedPSBT), (1, finalizedPSBT)).map { psbtF =>
+    psbtWithUnknowns.map { psbtF =>
       psbtF.map { psbt =>
         val global = psbt.globalMap.elements
         val inputs = psbt.inputMaps

@@ -1652,9 +1652,15 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
     val scriptWitnessVec = getRecords(WitnessScriptKeyId)
     val scriptWitnessOpt =
-      if (scriptWitnessVec.size == 1)
+      if (scriptWitnessVec.size == 1) {
         Some(P2WSHWitnessV0(scriptWitnessVec.head.witnessScript))
-      else None
+      } else if (output.scriptPubKey
+                   .isInstanceOf[P2WPKHWitnessSPKV0] || redeemScriptOpt.exists(
+                   _.isInstanceOf[P2WPKHWitnessSPKV0])) {
+        Some(P2WPKHWitnessV0(signer.publicKey))
+      } else {
+        None
+      }
 
     val hashTypeVec = getRecords(SigHashTypeKeyId)
     val hashType =
