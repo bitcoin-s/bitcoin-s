@@ -13,10 +13,16 @@ import org.bitcoins.core.protocol.script.{
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.utxo.ConditionalPath
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfoFull,
+  ConditionalPath
+}
 import org.bitcoins.testkit.core.gen._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._
+
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class PSBTTest extends BitcoinSAsyncTest {
 
@@ -231,6 +237,39 @@ class PSBTTest extends BitcoinSAsyncTest {
     assertThrows[UnsupportedOperationException](
       psbt1.getUTXOSpendingInfoUsingSigners(index = 0,
                                             getDummySigners(size = 1)))
+  }
+
+  it must "correctly construct and sign a PSBT" in {
+    forAllAsync(PSBTGenerators.psbtToBeSigned) { psbtWithBuilderF =>
+      psbtWithBuilderF.flatMap {
+        case (psbtNoSigs, utxos) =>
+          val infos = utxos.toVector.zipWithIndex.map {
+            case (utxo: BitcoinUTXOSpendingInfoFull, index) =>
+              (index, utxo)
+          }
+          val signedPSBTF = infos.foldLeft(Future.successful(psbtNoSigs)) {
+            case (unsignedPSBTF, (index, info)) =>
+              unsignedPSBTF.flatMap { unsignedPSBT =>
+                info.toSingles.foldLeft(Future.successful(unsignedPSBT)) {
+                  (psbtToSignF, singleInfo) =>
+                    psbtToSignF.flatMap(
+                      _.sign(index,
+                             singleInfo.signer,
+                             singleInfo.conditionalPath,
+                             test = Some(info)))
+                }
+              }
+          }
+          signedPSBTF.map { signedPSBT =>
+            val finalizedPsbtT = signedPSBT.finalizePSBT
+            finalizedPsbtT match {
+              case Success(finalizedPsbt) =>
+                assert(finalizedPsbt.extractTransactionAndValidate.isSuccess)
+              case Failure(exception) => throw exception
+            }
+          }
+      }
+    }
   }
 
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {

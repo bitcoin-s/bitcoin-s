@@ -276,8 +276,47 @@ object BitcoinSignerSingle {
                                   signer,
                                   conditionalPath)
 
+    val txToSign = spendingInfo.output.scriptPubKey match {
+      case _: WitnessScriptPubKey =>
+        tx match {
+          case btx: BaseTransaction =>
+            val transactionWitnessOpt =
+              psbt
+                .inputMaps(inputIndex)
+                .witnessScriptOpt
+                .map(scriptWit =>
+                  TransactionWitness(
+                    Vector(P2WSHWitnessV0(scriptWit.witnessScript))))
+            val transactionWitness =
+              transactionWitnessOpt.getOrElse(
+                EmptyWitness.fromInputs(btx.inputs))
+
+            WitnessTransaction(btx.version,
+                               btx.inputs,
+                               btx.outputs,
+                               btx.lockTime,
+                               transactionWitness)
+          case wtx: WitnessTransaction =>
+            wtx.witness.witnesses(inputIndex) match {
+              case EmptyScriptWitness =>
+                val transactionWitnessOpt =
+                  psbt
+                    .inputMaps(inputIndex)
+                    .witnessScriptOpt
+                    .map(scriptWit => P2WSHWitnessV0(scriptWit.witnessScript))
+                transactionWitnessOpt match {
+                  case Some(wit) => wtx.updateWitness(inputIndex, wit)
+                  case None      => wtx
+                }
+
+              case _: P2WPKHWitnessV0 | _: P2WSHWitnessV0 => wtx
+            }
+        }
+      case _: ScriptPubKey => tx
+    }
+
     val partialSignatureF =
-      signSingle(spendingInfo, tx, isDummySignature)
+      signSingle(spendingInfo, txToSign, isDummySignature)
 
     partialSignatureF.map { partialSignature =>
       psbt.addSignature(partialSignature, inputIndex)
