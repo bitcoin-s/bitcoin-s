@@ -4,6 +4,7 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey,
+  ECPublicKey,
   ExtKey,
   ExtPrivateKey,
   Schnorr,
@@ -272,11 +273,20 @@ case class SerializedDLCTestVector(
 object SerializedDLCTestVector {
 
   def fromDLCTestVector(testVector: DLCTestVector): SerializedDLCTestVector = {
+    val outcomeHash =
+      CryptoUtil.sha256(ByteVector(testVector.realOutcome.getBytes)).flip
+    val oracleSig =
+      Schnorr.signWithNonce(outcomeHash.bytes,
+                            testVector.oracleKey,
+                            testVector.oracleKValue)
+
     val inputs = SerializedDLCInputs(
       localPayouts = testVector.localPayouts,
       realOutcome = testVector.realOutcome,
       oracleKey = testVector.oracleKey,
+      oracleSig = oracleSig,
       oracleKValue = testVector.oracleKValue,
+      oracleRValue = testVector.oracleKValue.publicKey,
       localExtPrivKey = testVector.localExtPrivKey,
       localInput = testVector.localInput,
       localFundingUtxos = testVector.localFundingUtxos.map(
@@ -309,6 +319,9 @@ object SerializedDLCTestVectorSerializers {
     JsString(element.hex)
   }
 
+  implicit val ecPublicKeyWrites: Writes[ECPublicKey] = hexWrites[ECPublicKey]
+  implicit val schnorrDigitalSignatureWrites: Writes[SchnorrDigitalSignature] =
+    hexWrites[SchnorrDigitalSignature]
   implicit val uInt32Writes: Writes[UInt32] = Writes[UInt32] { uint32 =>
     JsNumber(uint32.toLong)
   }
@@ -365,6 +378,9 @@ object SerializedDLCTestVectorSerializers {
       json.validate[String].map(factory.fromHex)
   }
 
+  implicit val ecPublicKeyReads: Reads[ECPublicKey] = hexReads(ECPublicKey)
+  implicit val schnorrDigitalSignatureReads: Reads[SchnorrDigitalSignature] =
+    hexReads(SchnorrDigitalSignature)
   implicit val uInt32Reads: Reads[UInt32] = Reads[UInt32] { json =>
     json.validate[Long].map(UInt32.apply)
   }
@@ -438,7 +454,9 @@ case class SerializedDLCInputs(
     localPayouts: Map[String, CurrencyUnit],
     realOutcome: String,
     oracleKey: ECPrivateKey,
+    oracleSig: SchnorrDigitalSignature,
     oracleKValue: SchnorrNonce,
+    oracleRValue: ECPublicKey,
     localExtPrivKey: ExtPrivateKey,
     localInput: CurrencyUnit,
     localFundingUtxos: Vector[SerializedSegwitSpendingInfo],
@@ -461,6 +479,15 @@ case class SerializedDLCInputs(
             .map(_.output.value.satoshis.toLong)
             .sum > remoteInput.satoshis.toLong,
           "Remote does not have enough to fund")
+
+  private val outcomeHash =
+    CryptoUtil.sha256(ByteVector(realOutcome.getBytes)).flip
+  private val expectedOracleSig =
+    Schnorr.signWithNonce(outcomeHash.bytes, oracleKey, oracleKValue)
+  require(oracleSig == expectedOracleSig,
+          "Oracle Signature is inconsistent with keys and outcome")
+  require(oracleRValue == oracleKValue.publicKey,
+          "Oracle R value is inconsistent with k value")
 }
 
 case class SerializedSegwitSpendingInfo(
