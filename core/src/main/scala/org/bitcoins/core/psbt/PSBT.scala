@@ -584,8 +584,14 @@ object PSBT extends Factory[PSBT] {
     * @return Created PSBT
     */
   def fromUnsignedTx(unsignedTx: Transaction): PSBT = {
+    val emptySigTx = BitcoinTxBuilder.emptyAllSigs(unsignedTx)
+    val btx = emptySigTx match {
+      case wtx: WitnessTransaction =>
+        BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime)
+      case base: BaseTransaction => base
+    }
     val globalMap = GlobalPSBTMap(
-      Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
+      Vector(GlobalPSBTRecord.UnsignedTransaction(btx)))
     val inputMaps = unsignedTx.inputs.map(_ => InputPSBTMap.empty).toVector
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
 
@@ -675,8 +681,14 @@ object PSBT extends Factory[PSBT] {
       "UTXOSpendingInfos must correspond to transaction inputs"
     )
     val emptySigTx = BitcoinTxBuilder.emptyAllSigs(unsignedTx)
+    val btx = emptySigTx match {
+      case wtx: WitnessTransaction =>
+        BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime)
+      case base: BaseTransaction => base
+    }
+
     val globalMap = GlobalPSBTMap(
-      Vector(GlobalPSBTRecord.UnsignedTransaction(emptySigTx)))
+      Vector(GlobalPSBTRecord.UnsignedTransaction(btx)))
     val inputMapFs = spendingInfoAndNonWitnessTxs.map {
       case (info, txOpt) =>
         if (finalized) {
@@ -730,17 +742,11 @@ object PSBTRecord {
 sealed trait GlobalPSBTRecord extends PSBTRecord
 
 object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
-  case class UnsignedTransaction(transaction: Transaction)
+  case class UnsignedTransaction(transaction: BaseTransaction)
       extends GlobalPSBTRecord {
     require(
       transaction.inputs.forall(_.scriptSignature == EmptyScriptSignature),
       "All ScriptSignatures must be empty")
-
-    private val witnessIsEmpty = transaction match {
-      case wtx: WitnessTransaction => wtx.witness.isInstanceOf[EmptyWitness]
-      case _: BaseTransaction      => true
-    }
-    require(witnessIsEmpty, "Witness must be empty")
 
     override val key: ByteVector = hex"00"
     override val value: ByteVector = transaction.bytes
@@ -785,7 +791,7 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
         require(key.size == 1,
                 s"The key must only contain the 1 byte type, got: ${key.size}")
 
-        UnsignedTransaction(Transaction.fromBytes(value))
+        UnsignedTransaction(BaseTransaction.fromBytes(value))
       case XPubKeyKeyId =>
         val xpub = ExtPublicKey.fromBytes(key.tail.take(78))
         val fingerprint = value.take(4)
