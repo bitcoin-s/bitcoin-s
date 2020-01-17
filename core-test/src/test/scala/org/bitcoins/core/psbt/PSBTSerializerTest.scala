@@ -221,12 +221,9 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
   }
 
   it must "fail to serialize PSBTs with unknown version numbers" in {
-    forAllAsync(PSBTGenerators.psbtWithVersion) { psbtF =>
+    forAllAsync(PSBTGenerators.psbtWithUnknownVersion) { psbtF =>
       psbtF.map { psbt =>
-        if (!PSBT.knownVersions.contains(psbt.version))
-          assertThrows[IllegalArgumentException](PSBT(psbt.bytes))
-        else
-          assert(PSBT.fromBytes(psbt.bytes) == psbt)
+        assertThrows[IllegalArgumentException](PSBT(psbt.bytes))
       }
     }
   }

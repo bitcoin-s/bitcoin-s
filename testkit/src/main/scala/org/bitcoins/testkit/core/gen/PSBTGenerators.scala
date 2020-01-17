@@ -5,23 +5,23 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.signer.BitcoinSignerSingle.signSingle
-import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfoFull, UTXOSpendingInfoFull}
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfoFull,
+  UTXOSpendingInfoFull
+}
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
-import scala.jdk.CollectionConverters._
 
 object PSBTGenerators {
 
-  private def unknownGlobal: Gen[GlobalPSBTRecord.Unknown] = {
+  private def unknownRecord: Gen[(ByteVector, ByteVector)] = {
     for {
       key <- StringGenerators.hexString
       value <- StringGenerators.hexString
@@ -30,7 +30,9 @@ object PSBTGenerators {
       // Do a bunch of loops to guarantee that it is not a taken KeyId
       @tailrec
       def loop(bytes: ByteVector): ByteVector = {
-        if (bytes.size > 1 && PSBTGlobalKeyId.fromByte(bytes.head) != PSBTGlobalKeyId.UnknownKeyId) {
+        if (PSBTGlobalKeyId.fromBytes(bytes) != PSBTGlobalKeyId.UnknownKeyId ||
+            PSBTInputKeyId.fromBytes(bytes) != PSBTInputKeyId.UnknownKeyId ||
+            PSBTOutputKeyId.fromBytes(bytes) != PSBTOutputKeyId.UnknownKeyId) {
           loop(bytes.tail)
         } else {
           bytes
@@ -46,7 +48,14 @@ object PSBTGenerators {
         }
       }
       val usableKeyBytes = loop2(keyBytes)
-      GlobalPSBTRecord.Unknown(usableKeyBytes, ByteVector.fromHex(value).get)
+      (usableKeyBytes, ByteVector.fromHex(value).get)
+    }
+  }
+
+  private def unknownGlobal: Gen[GlobalPSBTRecord.Unknown] = {
+    unknownRecord.map {
+      case (key, value) =>
+        GlobalPSBTRecord.Unknown(key, value)
     }
   }
 
@@ -56,37 +65,13 @@ object PSBTGenerators {
 
   private def unknownGlobals(
       num: Int): Gen[Vector[GlobalPSBTRecord.Unknown]] = {
-    Gen
-      .sequence(0.until(num).map(_ => unknownGlobal))
-      .map(_.asScala.toVector)
+    Gen.listOfN(num, unknownGlobal).map(_.toVector)
   }
 
   private def unknownInput: Gen[InputPSBTRecord.Unknown] = {
-    for {
-      key <- StringGenerators.hexString
-      value <- StringGenerators.hexString
-    } yield {
-      val keyBytes = ByteVector.fromHex(key).get
-      // Do a bunch of loops to guarantee that it is not a taken KeyId
-      @tailrec
-      def loop(bytes: ByteVector): ByteVector = {
-        if (bytes.size > 1 && PSBTInputKeyId.fromByte(bytes.head) != PSBTInputKeyId.UnknownKeyId) {
-          loop(bytes.tail)
-        } else {
-          bytes
-        }
-      }
-      @tailrec
-      def loop2(bytes: ByteVector): ByteVector = {
-        val newBytes = loop(bytes)
-        if (newBytes == ByteVector.empty) {
-          loop2(ByteVector(newBytes.hashCode.toByte))
-        } else {
-          newBytes
-        }
-      }
-      val useableKeyBytes = loop2(keyBytes)
-      InputPSBTRecord.Unknown(useableKeyBytes, ByteVector.fromHex(value).get)
+    unknownRecord.map {
+      case (key, value) =>
+        InputPSBTRecord.Unknown(key, value)
     }
   }
 
@@ -97,37 +82,13 @@ object PSBTGenerators {
   }
 
   private def unknownInputs(num: Int): Gen[Vector[InputPSBTRecord.Unknown]] = {
-    Gen
-      .sequence(0.until(num).map(_ => unknownInput))
-      .map(_.asScala.toVector)
+    Gen.listOfN(num, unknownInput).map(_.toVector)
   }
 
   private def unknownOutput: Gen[OutputPSBTRecord.Unknown] = {
-    for {
-      key <- StringGenerators.hexString
-      value <- StringGenerators.hexString
-    } yield {
-      val keyBytes = ByteVector.fromHex(key).get
-      // Do a bunch of loops to guarantee that it is not a taken KeyId
-      @tailrec
-      def loop(bytes: ByteVector): ByteVector = {
-        if (bytes.size > 1 && PSBTOutputKeyId.fromByte(bytes.head) != PSBTOutputKeyId.UnknownKeyId) {
-          loop(bytes.tail)
-        } else {
-          bytes
-        }
-      }
-      @tailrec
-      def loop2(bytes: ByteVector): ByteVector = {
-        val newBytes = loop(bytes)
-        if (newBytes == ByteVector.empty) {
-          loop2(ByteVector(newBytes.hashCode.toByte))
-        } else {
-          newBytes
-        }
-      }
-      val useableKeyBytes = loop2(keyBytes)
-      OutputPSBTRecord.Unknown(useableKeyBytes, ByteVector.fromHex(value).get)
+    unknownRecord.map {
+      case (key, value) =>
+        OutputPSBTRecord.Unknown(key, value)
     }
   }
 
@@ -139,9 +100,7 @@ object PSBTGenerators {
 
   private def unknownOutputs(
       num: Int): Gen[Vector[OutputPSBTRecord.Unknown]] = {
-    Gen
-      .sequence(0.until(num).map(_ => unknownOutput))
-      .map(_.asScala.toVector)
+    Gen.listOfN(num, unknownOutput).map(_.toVector)
   }
 
   def psbtWithUnknowns(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
@@ -163,10 +122,12 @@ object PSBTGenerators {
     }
   }
 
-  def psbtWithVersion(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
+  def psbtWithUnknownVersion(
+      implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
     for {
       psbtF <- psbtWithUnknowns
-      versionNumber <- Gen.choose(min = 0, max = 4294967295L)
+      versionNumber <- Gen.choose(min = PSBT.knownVersions.last.toLong,
+                                  max = UInt32.max.toLong)
     } yield {
       psbtF.map { psbt =>
         val newGlobal = GlobalPSBTMap(
@@ -177,8 +138,8 @@ object PSBTGenerators {
     }
   }
 
-  def psbtToBeSigned(
-      implicit ec: ExecutionContext): Gen[Future[(PSBT, Seq[UTXOSpendingInfoFull])]] = {
+  def psbtToBeSigned(implicit ec: ExecutionContext): Gen[
+    Future[(PSBT, Seq[UTXOSpendingInfoFull])]] = {
     psbtWithBuilder(finalized = false).map { psbtAndBuilderF =>
       psbtAndBuilderF.flatMap {
         case (psbt, builder) =>

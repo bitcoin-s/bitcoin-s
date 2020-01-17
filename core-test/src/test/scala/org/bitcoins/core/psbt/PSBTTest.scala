@@ -255,8 +255,7 @@ class PSBTTest extends BitcoinSAsyncTest {
                     psbtToSignF.flatMap(
                       _.sign(index,
                              singleInfo.signer,
-                             singleInfo.conditionalPath,
-                             test = Some(info)))
+                             singleInfo.conditionalPath))
                 }
               }
           }
@@ -265,7 +264,7 @@ class PSBTTest extends BitcoinSAsyncTest {
             finalizedPsbtT match {
               case Success(finalizedPsbt) =>
                 assert(finalizedPsbt.extractTransactionAndValidate.isSuccess)
-              case Failure(exception) => throw exception
+              case Failure(exception) => fail(exception)
             }
           }
       }
