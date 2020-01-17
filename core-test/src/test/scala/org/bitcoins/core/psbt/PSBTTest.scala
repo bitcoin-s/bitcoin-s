@@ -136,6 +136,45 @@ class PSBTTest extends BitcoinSAsyncTest {
     assert(psbt2.combinePSBT(psbt2) != expected)
   }
 
+  it must "correctly combine PSBTs" in {
+    forAllAsync(PSBTGenerators.arbitraryPSBT) { psbtF =>
+      psbtF.map { psbt =>
+        val global = psbt.globalMap
+        val inputs = psbt.inputMaps
+        val outputs = psbt.outputMaps
+
+        val newGlobal = PSBTGenerators.pruneGlobal(global)
+        val newInputs =
+          inputs.map(input =>
+            InputPSBTMap(PSBTGenerators.pruneVec(input.elements)))
+        val newOutputs =
+          outputs.map(output =>
+            OutputPSBTMap(PSBTGenerators.pruneVec(output.elements)))
+
+        val psbt1 = PSBT(newGlobal, newInputs, newOutputs)
+
+        val oppositeGlobalElements = global.elements.filterNot(e =>
+          newGlobal.elements.contains(e)) :+ global.unsignedTransaction
+        val oppositeGlobal = GlobalPSBTMap(oppositeGlobalElements.distinct)
+        val oppositeInputs = inputs.zip(newInputs).map {
+          case (map, pruned) =>
+            InputPSBTMap(
+              map.elements.filterNot(e => pruned.elements.contains(e)))
+        }
+        val oppositeOutputs = outputs.zip(newOutputs).map {
+          case (map, pruned) =>
+            OutputPSBTMap(
+              map.elements.filterNot(e => pruned.elements.contains(e)))
+        }
+
+        val psbt2 = PSBT(oppositeGlobal, oppositeInputs, oppositeOutputs)
+
+        assert(psbt1.combinePSBT(psbt2) == psbt)
+        assert(psbt2.combinePSBT(psbt1) == psbt)
+      }
+    }
+  }
+
   it must "successfully combine two PSBTs with unknown types" in {
     val psbt1 = PSBT(
       "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a0100000000000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f00")
