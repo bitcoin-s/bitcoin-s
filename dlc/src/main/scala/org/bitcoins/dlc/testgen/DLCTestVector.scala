@@ -2,6 +2,7 @@ package org.bitcoins.dlc.testgen
 
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
   ECPrivateKey,
   ExtPrivateKey,
   Schnorr,
@@ -10,7 +11,7 @@ import org.bitcoins.core.crypto.{
   Sha256DigestBE
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.Int32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.{
   BlockStamp,
   BlockStampWithFuture,
@@ -312,8 +313,14 @@ object SerializedDLCTestVectorSerializers {
     JsString(element.hex)
   }
 
-  implicit val transactionOutPointWrites: Writes[TransactionOutPoint] =
-    hexWrites[TransactionOutPoint]
+  implicit val uInt32Writes: Writes[UInt32] = Writes[UInt32] { uint32 =>
+    JsNumber(uint32.toLong)
+  }
+  implicit val doubleSha256DigestBEWrites: Writes[DoubleSha256DigestBE] =
+    hexWrites[DoubleSha256DigestBE]
+  implicit val transactionOutPointWrites: Writes[
+    SerializedTransactionOutPoint] =
+    Json.writes[SerializedTransactionOutPoint]
   implicit val transactionOutputWrites: Writes[TransactionOutput] =
     hexWrites[TransactionOutput]
   implicit val privKeyWrites: Writes[ECPrivateKey] = hexWrites[ECPrivateKey]
@@ -357,8 +364,14 @@ object SerializedDLCTestVectorSerializers {
       json.validate[String].map(factory.fromHex)
   }
 
-  implicit val transactionOutPointReads: Reads[TransactionOutPoint] = hexReads(
-    TransactionOutPoint)
+  implicit val uInt32Reads: Reads[UInt32] = Reads[UInt32] { json =>
+    json.validate[Long].map(UInt32.apply)
+  }
+  implicit val doubleSha256DigestBEReads: Reads[DoubleSha256DigestBE] =
+    hexReads(DoubleSha256DigestBE)
+  implicit val serializedTransactionOutPointReads: Reads[
+    SerializedTransactionOutPoint] =
+    Json.reads[SerializedTransactionOutPoint]
   implicit val transactionOutputReads: Reads[TransactionOutput] = hexReads(
     TransactionOutput)
   implicit val extPrivKeyReads: Reads[ExtPrivateKey] = hexReads(ExtPrivateKey)
@@ -447,7 +460,7 @@ case class SerializedDLCInputs(
 }
 
 case class SerializedSegwitSpendingInfo(
-    outPoint: TransactionOutPoint,
+    outPoint: SerializedTransactionOutPoint,
     output: TransactionOutput,
     keys: Vector[ECPrivateKey],
     hashType: HashType,
@@ -455,7 +468,7 @@ case class SerializedSegwitSpendingInfo(
 
   def toSpendingInfo: SegwitV0NativeUTXOSpendingInfo = {
     SegwitV0NativeUTXOSpendingInfo(
-      outPoint = outPoint,
+      outPoint = outPoint.toOutPoint,
       amount = output.value,
       scriptPubKey = output.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
       signers = keys,
@@ -471,12 +484,27 @@ object SerializedSegwitSpendingInfo {
   def fromSpendingInfo(
       spendingInfo: SegwitV0NativeUTXOSpendingInfo): SerializedSegwitSpendingInfo = {
     SerializedSegwitSpendingInfo(
-      outPoint = spendingInfo.outPoint,
+      outPoint =
+        SerializedTransactionOutPoint.fromOutPoint(spendingInfo.outPoint),
       output = spendingInfo.output,
       keys = spendingInfo.signers.toVector.map(_.asInstanceOf[ECPrivateKey]),
       hashType = spendingInfo.hashType,
       scriptWitness = spendingInfo.scriptWitness
     )
+  }
+}
+
+case class SerializedTransactionOutPoint(
+    txid: DoubleSha256DigestBE,
+    vout: UInt32) {
+  def toOutPoint: TransactionOutPoint = TransactionOutPoint(txid, vout)
+}
+
+object SerializedTransactionOutPoint {
+
+  def fromOutPoint(
+      outPoint: TransactionOutPoint): SerializedTransactionOutPoint = {
+    SerializedTransactionOutPoint(outPoint.txIdBE, outPoint.vout)
   }
 }
 
