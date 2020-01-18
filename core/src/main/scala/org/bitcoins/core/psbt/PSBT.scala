@@ -230,16 +230,19 @@ case class PSBT(
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
     val inputMap = inputMaps(index)
-    val redeemScriptOpt = inputMap.redeemScriptOpt.map(_.redeemScript)
 
-    val elements = if (isP2SHNestedSegwit(script, redeemScriptOpt)) {
+    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val redeemScriptOpt = inputMap.redeemScriptOpt
+    val hasRedeemScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
+      .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
+
+    val elements = if (!isWitScript && hasRedeemScript) {
       inputMap.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord
         .WitnessScript(script.asInstanceOf[RawScriptPubKey])
     } else {
       inputMap.filterRecords(RedeemScriptKeyId) :+ InputPSBTRecord.RedeemScript(
         script)
     }
-
     val newMap = InputPSBTMap(elements).compressMap(transaction.inputs(index))
     val newInputMaps = inputMaps.updated(index, newMap)
 
@@ -274,6 +277,42 @@ case class PSBT(
         throw new IllegalArgumentException(
           s"Output script does not need a redeem script, got: $outputScript")
     }
+  }
+
+  def addScriptWitnessToInput(
+      scriptWitness: ScriptWitness,
+      index: Int): PSBT = {
+    require(
+      index < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+    require(!inputMaps(index).isFinalized,
+            s"Cannot update an InputPSBTMap that is finalized, index: $index")
+
+    val previousElements = inputMaps(index).elements
+      .filterNot(_.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte)
+
+    val newElement = scriptWitness match {
+      case p2wpkh: P2WPKHWitnessV0 =>
+        InputPSBTRecord.WitnessScript(P2PKHScriptPubKey(p2wpkh.pubKey))
+      case p2wsh: P2WSHWitnessV0 =>
+        InputPSBTRecord.WitnessScript(p2wsh.redeemScript)
+      case _ =>
+        throw new IllegalArgumentException(
+          s"Invalid scriptWitness given, got: $scriptWitness")
+    }
+
+    val compressedMap = InputPSBTMap(previousElements :+ newElement)
+      .compressMap(transaction.inputs(index))
+    val newMap = if (scriptWitness.isInstanceOf[P2WPKHWitnessV0]) {
+      // Compress to remove NonWitnessOrUnknownUTXO then remove P2WPKHWitnessV0
+      // because it is not necessary
+      InputPSBTMap(
+        compressedMap.elements.filterNot(
+          _.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte))
+    } else compressedMap
+
+    val newInputMaps = inputMaps.updated(index, newMap)
+    PSBT(globalMap, newInputMaps, outputMaps)
   }
 
   /**
