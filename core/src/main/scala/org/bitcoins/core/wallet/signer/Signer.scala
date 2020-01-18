@@ -280,16 +280,11 @@ object BitcoinSignerSingle {
       case _: WitnessScriptPubKey =>
         tx match {
           case btx: BaseTransaction =>
-            val transactionWitnessOpt =
-              psbt
-                .inputMaps(inputIndex)
-                .witnessScriptOpt
-                .map(scriptWit =>
-                  TransactionWitness(
-                    Vector(P2WSHWitnessV0(scriptWit.witnessScript))))
-            val transactionWitness =
-              transactionWitnessOpt.getOrElse(
-                EmptyWitness.fromInputs(btx.inputs))
+            val witnesses = psbt.inputMaps.map { map =>
+              map.witnessScriptOpt.map(scriptWit =>
+                P2WSHWitnessV0(scriptWit.witnessScript))
+            }
+            val transactionWitness = TransactionWitness.fromWitOpt(witnesses)
 
             WitnessTransaction(btx.version,
                                btx.inputs,
