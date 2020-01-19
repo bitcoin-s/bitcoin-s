@@ -62,7 +62,7 @@ implicit val walletConfig = WalletAppConfig(datadir, config)
 import org.bitcoins.chain.config.ChainAppConfig
 implicit val chainConfig = ChainAppConfig(datadir, config)
 
-// when this future completes, we havehttps://en.wikipedia.org/wiki/Liveness
+// when this future completes, we have
 // created the necessary directories and
 // databases for managing both chain state
 // and wallet state

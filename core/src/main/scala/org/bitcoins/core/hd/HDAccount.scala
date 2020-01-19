@@ -28,7 +28,7 @@ case class HDAccount(
 
 object HDAccount {
 
-  /** This method is meant to take in an arbtirary bip32 path and see
+  /** This method is meant to take in an arbitrary bip32 path and see
     * if it has the same account as the given account
     *
     * This is tricky as an account is defined as
@@ -47,13 +47,8 @@ object HDAccount {
       val zipped = path.zip(account.path)
       zipped.foldLeft(true) {
         case (past, (bip32Node, accountNode)) =>
-          if (past) {
-            bip32Node == accountNode
-          } else {
-            past
-          }
+          past && bip32Node == accountNode
       }
-
     }
   }
 
