@@ -273,6 +273,13 @@ lazy val dbCommons = project
   )
   .dependsOn(core)
 
+lazy val dbCommonsTest = project
+  .in(file("db-commons-test"))
+  .settings(
+    name := "bitcoin-s-db-commons-test"
+  )
+  .dependsOn(testkit)
+
 lazy val zmq = project
   .in(file("zmq"))
   .settings(CommonSettings.prodSettings: _*)

@@ -125,6 +125,10 @@ abstract class AppConfig extends BitcoinSLogger {
     */
   protected[bitcoins] def moduleName: String
 
+  lazy val jdbcUrl: String = {
+    dbConfig.config.getString("db.url")
+  }
+
   /**
     * The configuration details for connecting/using the database for our projects
     * that require datbase connections
