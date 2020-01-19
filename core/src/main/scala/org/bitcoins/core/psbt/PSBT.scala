@@ -306,7 +306,7 @@ case class PSBT(
         val newElement = InputPSBTRecord.WitnessScript(p2wsh.redeemScript)
         InputPSBTMap(previousElements :+ newElement)
           .compressMap(transaction.inputs(index))
-      case _: ScriptWitness =>
+      case EmptyScriptWitness =>
         throw new IllegalArgumentException(
           s"Invalid scriptWitness given, got: $scriptWitness")
     }
