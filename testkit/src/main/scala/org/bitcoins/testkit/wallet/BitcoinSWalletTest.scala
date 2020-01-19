@@ -384,7 +384,7 @@ object BitcoinSWalletTest extends WalletLogger {
       //this Thread.sleep is needed because of
       //https://github.com/bitcoin-s/bitcoin-s/issues/1009
       //once that is resolved we should be able to remove this
-      Thread.sleep(250)
+      Thread.sleep(500)
       wallet.getNewAddress()
     })
 
