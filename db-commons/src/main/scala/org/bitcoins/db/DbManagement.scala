@@ -88,11 +88,15 @@ abstract class DbManagement extends DatabaseLogger {
   /** Executes migrations related to this database
     *
     * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]] */
-  def migrate()(implicit appConfig: AppConfig): Int = {
+  def migrate(appConfig: AppConfig): Int = {
     val url = appConfig.jdbcUrl
     val username = ""
     val password = ""
-    val flyway = Flyway.configure.dataSource(url, username, password).load
+    //appConfig.dbName is for the format 'walletdb.sqlite' or 'nodedb.sqlite' etc
+    //we need to remove the '.sqlite' suffix
+    val dbName = appConfig.dbName.split('.').head.mkString
+    val config = Flyway.configure().locations(s"classpath:${dbName}/migration/")
+    val flyway = config.dataSource(url, username, password).load
     flyway.migrate()
   }
 }
