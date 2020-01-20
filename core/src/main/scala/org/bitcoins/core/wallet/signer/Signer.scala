@@ -264,8 +264,9 @@ object BitcoinSignerSingle {
           .inputMaps(inputIndex)
           .partialSignatures
           .exists(_.pubKey == signer.publicKey)) {
-      throw new IllegalArgumentException(
-        "Input has already been signed with this key")
+      Future.failed(
+        new IllegalArgumentException(
+          "Input has already been signed with this key"))
     }
 
     val tx = psbt.transaction

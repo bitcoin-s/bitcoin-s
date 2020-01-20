@@ -83,7 +83,7 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
       Satoshis(500000000),
       RawScriptPubKeyParser.read(
         hex"2200202c5486126c4978079a814e13715d65f36459e4d6ccaded266d0508645bafa632"))
-    assert(witnessUTXO.spentWitnessTransaction == output)
+    assert(witnessUTXO.witnessUTXO == output)
 
     val witnessScript = psbt.inputMaps.head.witnessScriptOpt.get
     val scriptPubKey = MultiSignatureScriptPubKey(

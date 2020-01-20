@@ -709,7 +709,7 @@ object BitcoinTxBuilder {
     * @param tx Transaction to empty signatures
     * @return Transaction with no signatures
     */
-  def emptyAllSigs(tx: Transaction): Transaction = {
+  def emptyAllScriptSigs(tx: Transaction): Transaction = {
     val newInputs = tx.inputs.map { input =>
       TransactionInput(input.previousOutput,
                        EmptyScriptSignature,
