@@ -282,14 +282,18 @@ case class PSBT(
   def addScriptWitnessToInput(
       scriptWitness: ScriptWitness,
       index: Int): PSBT = {
+    require(index >= 0,
+            s"index must be greater than or equal to 0, got: $index")
     require(
       index < inputMaps.size,
       s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
+    require(
+      inputMaps(index).witnessScriptOpt.isEmpty,
+      s"Input map already contains a ScriptWitness: ${inputMaps(index).witnessScriptOpt.get}")
 
     val previousElements = inputMaps(index).elements
-      .filterNot(_.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte)
 
     val newMap = scriptWitness match {
       case p2wpkh: P2WPKHWitnessV0 =>
