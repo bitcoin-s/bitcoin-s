@@ -4,6 +4,7 @@ import java.nio.file.{Files, Path}
 
 import com.typesafe.config.Config
 import org.bitcoins.core.hd.{AddressType, HDPurpose, HDPurposes}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
@@ -63,17 +64,13 @@ case class WalletAppConfig(
       Files.createDirectories(datadir)
     }
 
-    val initF = {
-      WalletDbManagement.createAll()(this, ec)
-    }
-    initF.onComplete {
-      case Failure(exception) =>
-        logger.error(s"Error on wallet setup: ${exception.getMessage}")
-      case Success(_) =>
-        logger.debug(s"Initializing wallet setup: done")
+    val numMigrations = {
+      WalletDbManagement.migrate(this)
     }
 
-    initF
+    logger.info(s"Applied $numMigrations to the wallet project")
+
+    FutureUtil.unit
   }
 
   /** The path to our encrypted mnemonic seed */
