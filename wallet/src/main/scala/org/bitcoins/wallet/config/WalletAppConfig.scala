@@ -3,20 +3,13 @@ package org.bitcoins.wallet.config
 import java.nio.file.{Files, Path}
 
 import com.typesafe.config.Config
-import org.bitcoins.core.hd.{
-  AddressType,
-  HDAccount,
-  HDCoin,
-  HDCoinType,
-  HDPurpose,
-  HDPurposes
-}
+import org.bitcoins.core.hd._
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 /** Configuration for the Bitcoin-S wallet
   * @param directory The data directory of the wallet
@@ -75,17 +68,13 @@ case class WalletAppConfig(
       Files.createDirectories(datadir)
     }
 
-    val initF = {
-      WalletDbManagement.createAll()(this, ec)
-    }
-    initF.onComplete {
-      case Failure(exception) =>
-        logger.error(s"Error on wallet setup: ${exception.getMessage}")
-      case Success(_) =>
-        logger.debug(s"Initializing wallet setup: done")
+    val numMigrations = {
+      WalletDbManagement.migrate(this)
     }
 
-    initF
+    logger.info(s"Applied $numMigrations to the wallet project")
+
+    FutureUtil.unit
   }
 
   /** The path to our encrypted mnemonic seed */
