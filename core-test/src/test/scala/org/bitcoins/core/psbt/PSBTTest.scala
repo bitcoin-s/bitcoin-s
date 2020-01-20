@@ -310,6 +310,22 @@ class PSBTTest extends BitcoinSAsyncTest {
     }
   }
 
+  it must "add Redeem Scripts and Witness Scripts to outputs" in {
+    forAllAsync(PSBTGenerators.fullNonFinalizedPSBT,
+                ScriptGenerators.randomNonP2SHScriptPubKey,
+                WitnessGenerators.scriptWitness) {
+      case (psbtF, spk, wit) =>
+        psbtF.map { psbt =>
+          val randOutput = scala.util.Random.nextInt(psbt.outputMaps.length)
+
+          psbt.addRedeemOrWitnessScriptToOutput(spk._1, randOutput)
+          psbt.addScriptWitnessToOutput(wit, randOutput)
+
+          succeed
+        }
+    }
+  }
+
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
     forAllAsync(CreditingTxGen.inputsAndOuptuts(),
                 ScriptGenerators.scriptPubKey,

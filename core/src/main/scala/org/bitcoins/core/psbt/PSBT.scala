@@ -278,6 +278,34 @@ case class PSBT(
     PSBT(globalMap, inputMaps, newOutputMaps)
   }
 
+  def addScriptWitnessToOutput(
+      scriptWitness: ScriptWitness,
+      index: Int): PSBT = {
+    require(index >= 0,
+            s"index must be greater than or equal to 0, got: $index")
+    require(
+      index < outputMaps.size,
+      s"index must be less than the number of output maps present in the psbt, $index >= ${inputMaps.size}")
+    require(!isFinalized, "Cannot update a PSBT that is finalized")
+    require(
+      outputMaps(index).witnessScriptOpt.isEmpty,
+      s"Output map already contains a ScriptWitness: ${inputMaps(index).witnessScriptOpt.get}")
+
+    val newElement = scriptWitness match {
+      case p2wpkh: P2WPKHWitnessV0 =>
+        OutputPSBTRecord.WitnessScript(P2PKHScriptPubKey(p2wpkh.pubKey))
+      case p2wsh: P2WSHWitnessV0 =>
+        OutputPSBTRecord.WitnessScript(p2wsh.redeemScript)
+      case EmptyScriptWitness =>
+        throw new IllegalArgumentException(
+          s"Invalid scriptWitness given, got: $scriptWitness")
+    }
+
+    val newMap = OutputPSBTMap(outputMaps(index).elements :+ newElement)
+    val newOutputMaps = outputMaps.updated(index, newMap)
+    PSBT(globalMap, inputMaps, newOutputMaps)
+  }
+
   private def addKeyPathToMap[
       RecordType <: PSBTRecord,
       MapType <: PSBTMap[RecordType]](
