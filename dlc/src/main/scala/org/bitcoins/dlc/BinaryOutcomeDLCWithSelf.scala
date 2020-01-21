@@ -29,6 +29,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
@@ -65,7 +66,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param remoteFundingUtxos Remote's funding BitcoinUTXOSpendingInfo collection
   * @param localWinPayout Local's payout in the Win case
   * @param localLosePayout Local's payout in the Lose case
-  * @param timeout The CLTV timeout in milliseconds used in all CETs
+  * @param penaltyTimeout The CSV timeout in blocks used in all CETs
+  * @param contractMaturity The CLTV in milliseconds when a signature is expected
+  * @param contractTimeout The CLTV timeout in milliseconds after which the refund tx is valid
   * @param feeRate The predicted fee rate used for all transactions
   * @param localChangeSPK Local's change ScriptPubKey used in the funding tx
   * @param remoteChangeSPK Remote's change ScriptPubKey used in the funding tx
@@ -83,7 +86,9 @@ case class BinaryOutcomeDLCWithSelf(
     remoteFundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
     localWinPayout: CurrencyUnit,
     localLosePayout: CurrencyUnit,
-    timeout: BlockStampWithFuture,
+    penaltyTimeout: Int,
+    contractMaturity: BlockStampWithFuture,
+    contractTimeout: BlockStampWithFuture,
     feeRate: FeeUnit,
     localChangeSPK: WitnessScriptPubKeyV0,
     remoteChangeSPK: WitnessScriptPubKeyV0,
@@ -254,7 +259,7 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
-      lockTime = timeout.toScriptNumber,
+      lockTime = ScriptNumber(penaltyTimeout),
       timeoutPubKey = remoteToLocalPrivKey.publicKey
     )
 
@@ -272,7 +277,8 @@ case class BinaryOutcomeDLCWithSelf(
                        Vector(fundingSpendingInfo),
                        feeRate,
                        emptyChangeSPK,
-                       network)
+                       network,
+                       contractMaturity.toUInt32)
 
     txBuilderF
       .flatMap(_.sign(invariant))
@@ -306,7 +312,7 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
-      lockTime = timeout.toScriptNumber,
+      lockTime = ScriptNumber(penaltyTimeout),
       timeoutPubKey = localToLocalPrivKey.publicKey
     )
 
@@ -324,7 +330,8 @@ case class BinaryOutcomeDLCWithSelf(
                        Vector(fundingSpendingInfo),
                        feeRate,
                        emptyChangeSPK,
-                       network)
+                       network,
+                       contractMaturity.toUInt32)
 
     txBuilderF
       .flatMap(_.sign(invariant))
@@ -355,7 +362,7 @@ case class BinaryOutcomeDLCWithSelf(
                                       feeRate,
                                       emptyChangeSPK,
                                       network,
-                                      timeout.toUInt32)
+                                      contractTimeout.toUInt32)
 
     txBuilderF.flatMap(subtractFeeAndSign)
   }
