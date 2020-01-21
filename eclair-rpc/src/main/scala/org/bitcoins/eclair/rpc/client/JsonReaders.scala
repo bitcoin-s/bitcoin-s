@@ -9,34 +9,7 @@ import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{MilliSatoshis, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.NodeId
-import org.bitcoins.eclair.rpc.api.{
-  AuditResult,
-  BaseChannelInfo,
-  ChannelDesc,
-  ChannelInfo,
-  ChannelResult,
-  ChannelStats,
-  ChannelUpdate,
-  GetInfoResult,
-  Hop,
-  IncomingPayment,
-  IncomingPaymentStatus,
-  InvoiceResult,
-  NetworkFeesResult,
-  NodeInfo,
-  OpenChannelInfo,
-  OutgoingPayment,
-  OutgoingPaymentStatus,
-  PaymentFailure,
-  PaymentId,
-  PaymentRequest,
-  PeerInfo,
-  ReceivedPayment,
-  RelayedPayment,
-  SentPayment,
-  UsableBalancesResult,
-  WebSocketEvent
-}
+import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.network.PeerState
 import org.bitcoins.rpc.serializers.SerializerUtil
 import play.api.libs.json._

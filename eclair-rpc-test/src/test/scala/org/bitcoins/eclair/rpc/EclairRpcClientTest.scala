@@ -353,7 +353,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       bitcoind <- EclairRpcTestUtil.startedBitcoindRpcClient()
       eclair <- {
         val server = EclairRpcTestUtil.eclairInstance(bitcoind)
-        val eclair = new EclairRpcClient(server, EclairRpcTestUtil.binary)
+        val eclair =
+          new EclairRpcClient(server, EclairRpcTestUtil.binary(None, None))
         eclair.start().map(_ => eclair)
       }
       _ <- TestAsyncUtil.retryUntilSatisfiedF(conditionF =
@@ -471,7 +472,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         val instance = EclairInstance(network = client.instance.network,
                                       uri = client.instance.uri,
                                       rpcUri = client.instance.rpcUri,
-                                      authCredentials = badCredentials)
+                                      authCredentials = badCredentials,
+                                      logbackXmlPath = None)
 
         Future.successful(instance)
       }
@@ -480,7 +482,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     val badClientF =
-      badInstanceF.map(new EclairRpcClient(_, EclairRpcTestUtil.binary))
+      badInstanceF.map(
+        new EclairRpcClient(_, EclairRpcTestUtil.binary(None, None)))
 
     badClientF.flatMap { badClient =>
       recoverToSucceededIf[RuntimeException](badClient.getInfo)

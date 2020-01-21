@@ -285,6 +285,7 @@ object WebSocketEvent {
       timestamp: FiniteDuration //milliseconds
   ) extends WebSocketEvent
 
+  // {"type":"payment-received","paymentHash":"e1367ac5f913708f9ecc754c49477db3e7de404de7e921cab2dfe489227e07a7","parts":[{"amount":1000,"fromChannelId":"f59a3347ac6ef95ae4ad3e3777d137f80e02bf0a88d65b88f521676c7c713bf8","timestamp":1578080963457}]}
   case class PaymentReceived(
       paymentHash: Sha256Digest,
       parts: Vector[PaymentReceived.Part]
