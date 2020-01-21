@@ -7,6 +7,9 @@ import slick.lifted.{PrimaryKey, ProvenShape}
 import org.bitcoins.core.crypto._
 import org.bitcoins.keymanager.util.HDUtil
 
+/** Represents the xpub at the account level, NOT the root xpub
+  * that in conjunction with the path specified in hdAccount
+  * can be used to generate the account level xpub */
 case class AccountDb(xpub: ExtPublicKey, hdAccount: HDAccount) {
   def xpubVersion: ExtKeyPubVersion = xpub.version
 
@@ -19,9 +22,9 @@ class AccountTable(tag: Tag) extends Table[AccountDb](tag, "wallet_accounts") {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  def purpose: Rep[HDPurpose] = column[HDPurpose]("hd_purpose")
-
   def xpub: Rep[ExtPublicKey] = column[ExtPublicKey]("xpub")
+
+  def purpose: Rep[HDPurpose] = column[HDPurpose]("hd_purpose")
 
   def coinType: Rep[HDCoinType] = column[HDCoinType]("coin")
 
@@ -46,4 +49,5 @@ class AccountTable(tag: Tag) extends Table[AccountDb](tag, "wallet_accounts") {
 
   def primaryKey: PrimaryKey =
     primaryKey("pk_account", sourceColumns = (purpose, coinType, index))
+
 }

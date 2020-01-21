@@ -33,7 +33,16 @@ private[wallet] trait AccountHandling { self: LockedWallet =>
   override protected[wallet] def getDefaultAccount(): Future[AccountDb] = {
     for {
       account <- accountDAO.read((DEFAULT_HD_COIN, 0))
-    } yield getOrThrowAccount(account)
+    } yield {
+
+      val acct = getOrThrowAccount(account)
+      require(
+        acct.hdAccount == walletConfig.defaultAccount,
+        s"Divergence between configured default account and " +
+          s"database default account walletConfig=${walletConfig.defaultAccount} database=${acct.hdAccount}"
+      )
+      acct
+    }
   }
 
   /** @inheritdoc */

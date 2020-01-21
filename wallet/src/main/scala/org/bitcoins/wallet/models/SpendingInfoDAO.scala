@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -112,10 +113,21 @@ case class SpendingInfoDAO()(
     database.run(query.result).map(_.toVector)
   }
 
+  /** Finds all utxos for a given account */
+  def findAllUnspentForAccount(
+      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+    val allUtxosF = findAllUnspent()
+    allUtxosF.map { allUtxos =>
+      allUtxos.filter(
+        utxo =>
+          HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                                  account = hdAccount))
+    }
+  }
+
   /** Enumerates all TX outpoints in the wallet */
   def findAllOutpoints(): Future[Vector[TransactionOutPoint]] = {
     val query = table.map(_.outPoint)
     database.runVec(query.result).map(_.toVector)
   }
-
 }

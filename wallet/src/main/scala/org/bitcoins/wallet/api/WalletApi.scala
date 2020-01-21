@@ -7,10 +7,10 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd.{AddressType, HDPurpose}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -111,11 +111,27 @@ trait LockedWalletApi extends WalletApi {
     } yield confirmed + unconfirmed
   }
 
+  /** Gets the balance of the given account */
+  def getBalance(account: HDAccount): Future[CurrencyUnit] = {
+    val confirmedF = getConfirmedBalance(account)
+    val unconfirmedF = getUnconfirmedBalance(account)
+    for {
+      confirmed <- confirmedF
+      unconfirmed <- unconfirmedF
+    } yield {
+      confirmed + unconfirmed
+    }
+  }
+
   /** Gets the sum of all confirmed UTXOs in this wallet */
   def getConfirmedBalance(): Future[CurrencyUnit]
 
+  def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit]
+
   /** Gets the sum of all unconfirmed UTXOs in this wallet */
   def getUnconfirmedBalance(): Future[CurrencyUnit]
+
+  def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
 
   /**
     * If a UTXO is spent outside of the wallet, we
@@ -129,7 +145,11 @@ trait LockedWalletApi extends WalletApi {
     * */
   def listUtxos(): Future[Vector[SpendingInfoDb]]
 
+  def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
+
   def listAddresses(): Future[Vector[AddressDb]]
+
+  def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
@@ -426,6 +446,8 @@ trait UnlockedWalletApi extends LockedWalletApi {
     } yield tx
   }
 
+  def createNewAccount(keyManagerParams: KeyManagerParams): Future[Wallet]
+
   /**
     * Tries to create a new account in this wallet. Fails if the
     * most recent account has no transaction history, as per
@@ -433,7 +455,9 @@ trait UnlockedWalletApi extends LockedWalletApi {
     *
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
-  def createNewAccount(keyManagerParams: KeyManagerParams): Future[WalletApi]
+  def createNewAccount(
+      hdAccount: HDAccount,
+      keyManagerParams: KeyManagerParams): Future[Wallet]
 
 }
 

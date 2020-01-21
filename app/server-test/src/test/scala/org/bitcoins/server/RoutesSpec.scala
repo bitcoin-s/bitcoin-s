@@ -80,7 +80,7 @@ class RoutesSpec
     }
 
     "return the wallet's balance" in {
-      (mockWalletApi.getBalance _)
+      (mockWalletApi.getBalance: () => Future[CurrencyUnit])
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 

@@ -4,6 +4,7 @@ import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.wallet.api._
@@ -36,7 +37,8 @@ abstract class LockedWallet
     * TXOs in the wallet, filtered by the given predicate */
   private def filterThenSum(
       predicate: SpendingInfoDb => Boolean): Future[CurrencyUnit] = {
-    for (utxos <- spendingInfoDAO.findAll())
+    for (utxos <- spendingInfoDAO.findAllUnspentForAccount(
+           walletConfig.defaultAccount))
       yield {
         val filtered = utxos
           .filter(predicate)
@@ -63,12 +65,41 @@ abstract class LockedWallet
     confirmed
   }
 
+  override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
+    val allUnspentF = spendingInfoDAO.findAllUnspent()
+    val unspentInAccountF = for {
+      allUnspent <- allUnspentF
+    } yield {
+      allUnspent.filter { utxo =>
+        HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
+        utxo.blockHash.isDefined
+      }
+    }
+
+    unspentInAccountF.map(_.foldLeft(CurrencyUnits.zero)(_ + _.output.value))
+  }
+
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
     val unconfirmed = filterThenSum(_.blockHash.isEmpty)
     unconfirmed.foreach(balance =>
       logger.trace(s"Unconfirmed balance=${balance.satoshis}"))
     unconfirmed
 
+  }
+
+  override def getUnconfirmedBalance(
+      account: HDAccount): Future[CurrencyUnit] = {
+    val allUnspentF = spendingInfoDAO.findAllUnspent()
+    val unspentInAccountF = for {
+      allUnspent <- allUnspentF
+    } yield {
+      allUnspent.filter { utxo =>
+        HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
+        utxo.blockHash.isEmpty
+      }
+    }
+
+    unspentInAccountF.map(_.foldLeft(CurrencyUnits.zero)(_ + _.output.value))
   }
 
   /** Enumerates all the TX outpoints in the wallet  */

@@ -8,7 +8,6 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManagerTestUtil
@@ -18,11 +17,12 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.util.{FileUtil, TransactionTestUtil}
+import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.wallet.api.{LockedWalletApi, UnlockedWalletApi}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
-import org.bitcoins.wallet.{LockedWallet, Wallet, WalletLogger}
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,6 +33,10 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   /** Wallet config with data directory set to user temp directory */
   implicit protected def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig()
+
+  implicit protected def walletAppConfig: WalletAppConfig = {
+    config.walletConf
+  }
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
@@ -133,7 +137,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     * underlying blockchain */
   def withFundedWallet(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      build = () => createFundedWallet(nodeApi, chainQueryApi),
+      build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi),
       destroy = { funded: FundedWallet =>
         destroyWallet(funded.wallet)
       }
@@ -158,6 +162,12 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     makeDependentFixture(build = { () =>
       createDefaultWallet(nodeApi, chainQueryApi)
     }, destroy = destroyWallet)(test)
+
+  def withNewWallet2Accounts(test: OneArgAsyncTest): FutureOutcome = {
+    makeDependentFixture(build = { () =>
+      createWallet2Accounts(nodeApi, chainQueryApi)
+    }, destroy = destroyWallet)(test)
+  }
 
   def withNewWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoind] = composeBuildersAndWrap(
@@ -271,7 +281,7 @@ object BitcoinSWalletTest extends WalletLogger {
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi)(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext): () => Future[UnlockedWalletApi] =
+      ec: ExecutionContext): () => Future[Wallet] =
     () => {
       val defaultConf = config.walletConf
       val walletConfig = extraConfig match {
@@ -291,11 +301,9 @@ object BitcoinSWalletTest extends WalletLogger {
     }
 
   /** Creates a wallet with the default configuration  */
-  private def createDefaultWallet(
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi)(
+  def createDefaultWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext): Future[UnlockedWalletApi] = {
+      ec: ExecutionContext): Future[Wallet] = {
     val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
     val km = createNewKeyManager(bip39PasswordOpt = bip39PasswordOpt)
     createNewWallet(
@@ -306,20 +314,18 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi = chainQueryApi)(config, ec)() // get the standard config
   }
 
-  /** This wallet should have a total of 6 bitcoin in it
-    * spread across 3 utxos that have values 1, 2, 3 bitcoins */
-  case class FundedWallet(wallet: LockedWallet)
-
-  /** This creates a wallet that is funded that is not paired to a bitcoind instance. */
-  def createFundedWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
+  def createWallet2Accounts(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
       implicit config: BitcoinSAppConfig,
-      system: ActorSystem): Future[FundedWallet] = {
-
-    import system.dispatcher
+      ec: ExecutionContext): Future[Wallet] = {
+    val defaultWalletF = createDefaultWallet(nodeApi, chainQueryApi)
     for {
-      wallet <- createDefaultWallet(nodeApi, chainQueryApi)
-      funded <- fundWallet(wallet)
-    } yield funded
+      wallet <- defaultWalletF
+      account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+      newAccountWallet <- wallet.createNewAccount(hdAccount = account1,
+                                                  kmParams =
+                                                    wallet.keyManager.kmParams)
+    } yield newAccountWallet
+
   }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
@@ -374,48 +380,6 @@ object BitcoinSWalletTest extends WalletLogger {
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
-  }
-
-  /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
-  def fundWallet(wallet: UnlockedWalletApi)(
-      implicit ec: ExecutionContext): Future[FundedWallet] = {
-    //get three addresses
-    val addressesF = Future.sequence(Vector.fill(3) {
-      //this Thread.sleep is needed because of
-      //https://github.com/bitcoin-s/bitcoin-s/issues/1009
-      //once that is resolved we should be able to remove this
-      Thread.sleep(500)
-      wallet.getNewAddress()
-    })
-
-    //construct three txs that send money to these addresses
-    //these are "fictional" transactions in the sense that the
-    //outpoints do not exist on a blockchain anywhere
-    val amounts = Vector(1.bitcoin, 2.bitcoin, 3.bitcoin)
-    val expectedAmt = amounts.fold(CurrencyUnits.zero)(_ + _)
-    val txsF = for {
-      addresses <- addressesF
-    } yield {
-      addresses.zip(amounts).map {
-        case (addr, amt) =>
-          val output =
-            TransactionOutput(value = amt, scriptPubKey = addr.scriptPubKey)
-          TransactionTestUtil.buildTransactionTo(output)
-      }
-    }
-
-    val fundedWalletF =
-      txsF.flatMap(txs =>
-        wallet.processTransactions(transactions = txs, blockHash = None))
-
-    //sanity check to make sure we have money
-    for {
-      fundedWallet <- fundedWalletF
-      balance <- fundedWallet.getBalance()
-      _ = require(
-        balance == 6.bitcoin,
-        s"Funding wallet fixture failed ot fund the wallet, got balance=${balance} expected=${expectedAmt}")
-    } yield FundedWallet(fundedWallet.asInstanceOf[LockedWallet])
   }
 
   /** Funds the given wallet with money from the given bitcoind */
