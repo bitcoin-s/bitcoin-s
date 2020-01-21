@@ -99,6 +99,8 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
   val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
 
+  val csvTimeout: Int = 30
+
   def constructDLC(): Future[BinaryOutcomeDLCWithSelf] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
@@ -178,8 +180,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       feeRate <- feeRateF
       client <- clientF
       currentHeight <- client.getBlockCount
-      tomorrowInBlocks = BlockHeight(currentHeight + 144)
     } yield {
+      val tomorrowInBlocks = BlockHeight(currentHeight + 144)
+      val twoDaysInBlocks = BlockHeight(currentHeight + 288)
       BinaryOutcomeDLCWithSelf(
         outcomeWin = outcomeWin,
         outcomeLose = outcomeLose,
@@ -193,7 +196,9 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
         remoteFundingUtxos = remoteFundingUtxos,
         localWinPayout = localInput + CurrencyUnits.oneMBTC,
         localLosePayout = localInput - CurrencyUnits.oneMBTC,
-        timeout = tomorrowInBlocks,
+        timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
+                               tomorrowInBlocks,
+                               twoDaysInBlocks),
         feeRate = feeRate,
         localChangeSPK = localChangeSPK,
         remoteChangeSPK = remoteChangeSPK,
@@ -242,6 +247,12 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       outcome <- dlc.executeUnilateralDLC(setup,
                                           Future.successful(oracleSig),
                                           local)
+      _ <- recoverToSucceededIf[BitcoindException](
+        publishTransaction(outcome.cet))
+      _ <- waitUntilBlock(dlc.timeouts.contractMaturity.toUInt32.toInt - 1)
+      _ <- recoverToSucceededIf[BitcoindException](
+        publishTransaction(outcome.cet))
+      _ <- waitUntilBlock(dlc.timeouts.contractMaturity.toUInt32.toInt)
       _ <- publishTransaction(outcome.cet)
       _ <- publishTransaction(outcome.localClosingTx)
       _ <- publishTransaction(outcome.remoteClosingTx)
@@ -257,10 +268,10 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
       outcome <- dlc.executeRefundDLC(setup)
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(outcome.cet))
-      _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt - 1)
+      _ <- waitUntilBlock(dlc.timeouts.contractTimeout.toUInt32.toInt - 1)
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(outcome.cet))
-      _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt)
+      _ <- waitUntilBlock(dlc.timeouts.contractTimeout.toUInt32.toInt)
       _ <- publishTransaction(outcome.cet)
       _ <- publishTransaction(outcome.localClosingTx)
       _ <- publishTransaction(outcome.remoteClosingTx)
@@ -288,20 +299,29 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     }
 
     for {
+      client <- clientF
       dlc <- constructDLC()
       setup <- dlc.setupDLC()
       cetWronglyPublished = chooseCET(setup)
       _ <- publishTransaction(setup.fundingTx)
+      _ <- recoverToSucceededIf[BitcoindException](
+        publishTransaction(cetWronglyPublished))
+      _ <- waitUntilBlock(dlc.timeouts.contractMaturity.toUInt32.toInt - 1)
+      _ <- recoverToSucceededIf[BitcoindException](
+        publishTransaction(cetWronglyPublished))
+      heightBeforePublish <- client.getBlockCount
+      _ <- waitUntilBlock(dlc.timeouts.contractMaturity.toUInt32.toInt)
       _ <- publishTransaction(cetWronglyPublished)
       outcome <- dlc.executeJusticeDLC(setup, cetWronglyPublished, local)
       _ = assert(outcome.cet == cetWronglyPublished)
       _ <- publishTransaction(outcome.remoteClosingTx)
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(outcome.localClosingTx))
-      _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt - 1)
+      penaltyHeight = heightBeforePublish + dlc.timeouts.penaltyTimeout + 1
+      _ <- waitUntilBlock(penaltyHeight - 1)
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(outcome.localClosingTx))
-      _ <- waitUntilBlock(dlc.timeout.toUInt32.toInt)
+      _ <- waitUntilBlock(penaltyHeight)
       _ <- publishTransaction(outcome.localClosingTx)
       assertion <- validateOutcome(outcome)
     } yield assertion
