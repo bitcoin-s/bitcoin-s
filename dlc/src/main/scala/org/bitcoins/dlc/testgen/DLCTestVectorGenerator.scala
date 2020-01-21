@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2WPKHV0SpendingInfo
+import org.bitcoins.dlc.DLCTimeouts
 import play.api.libs.json.{JsArray, JsError, JsResult, JsSuccess, JsValue, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -133,7 +134,12 @@ object DLCTestVectorGenerator {
     )
     val remoteChangeSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
 
-    val timeout = BlockTime(UInt32(System.currentTimeMillis() / 1000))
+    val penaltyTimeout = 10
+    val contractMaturity = BlockTime(UInt32(System.currentTimeMillis() / 1000))
+    val contractTimeout = BlockTime(contractMaturity.toUInt32 + UInt32(60 * 60))
+    val timeouts = DLCTimeouts(penaltyTimeout = penaltyTimeout,
+                               contractMaturity = contractMaturity,
+                               contractTimeout = contractTimeout)
     val feeRate = SatoshisPerByte(Satoshis.one)
 
     DLCTestVector
@@ -150,7 +156,7 @@ object DLCTestVectorGenerator {
         remoteInput = remoteInput,
         remoteFundingUtxos = remoteFundingUtxos,
         remoteChangeSPK = remoteChangeSPK,
-        timeout = timeout,
+        timeouts = timeouts,
         feeRate = feeRate
       )
   }
