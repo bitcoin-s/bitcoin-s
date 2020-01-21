@@ -3,7 +3,7 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{P2WSHWitnessV0, _}
 import org.bitcoins.core.protocol.transaction._
@@ -82,9 +82,8 @@ case class PSBT(
     PSBT(global, inputs, outputs)
   }
 
-  /** Finalizes this PSBT if possible
+  /** Finalizes this PSBT if possible, returns a Failure otherwise
     * @see [[https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#input-finalizer]]
-    * @return None if there exists any input which is not ready for signing
     */
   def finalizePSBT: Try[PSBT] = {
     if (isFinalized) {
@@ -204,6 +203,16 @@ case class PSBT(
 
   }
 
+  def isP2SHNestedSegwit(
+      script: ScriptPubKey,
+      redeemScriptOpt: Option[ScriptPubKey]): Boolean = {
+    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
+      .isWitnessScriptPubKey(redeemScriptOpt.get.asm)
+
+    !isWitScript && hasWitScript
+  }
+
   /**
     * Adds script to the indexed InputPSBTMap to either the RedeemScript
     * or WitnessScript field depending on the script and available information in the PSBT
@@ -221,13 +230,9 @@ case class PSBT(
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
     val inputMap = inputMaps(index)
+    val redeemScriptOpt = inputMap.redeemScriptOpt.map(_.redeemScript)
 
-    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val redeemScriptOpt = inputMap.redeemScriptOpt
-    val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
-      .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
-
-    val elements = if (!isWitScript && hasWitScript) {
+    val elements = if (isP2SHNestedSegwit(script, redeemScriptOpt)) {
       inputMap.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord
         .WitnessScript(script.asInstanceOf[RawScriptPubKey])
     } else {
@@ -257,13 +262,9 @@ case class PSBT(
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
     val outputMap = outputMaps(index)
+    val redeemScriptOpt = outputMap.redeemScriptOpt.map(_.redeemScript)
 
-    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val redeemScriptOpt = outputMap.redeemScriptOpt
-    val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
-      .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
-
-    val elements = if (!isWitScript && hasWitScript) {
+    val elements = if (isP2SHNestedSegwit(script, redeemScriptOpt)) {
       outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+ OutputPSBTRecord
         .WitnessScript(script.asInstanceOf[RawScriptPubKey])
     } else {
@@ -410,6 +411,13 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
+  /**
+    * Extracts the serialized from the serialized, fully signed transaction from
+    * this PSBT and validates the script signatures using the ScriptInterpreter.
+    * Only inputs for which UTXO records are present get validated.
+    *
+    * Note: This PSBT must be finalized.
+    */
   def extractTransactionAndValidate: Try[Transaction] = {
     inputMaps.zipWithIndex.foldLeft(Try(extractTransaction)) {
       case (txT, (inputMap, index)) =>
@@ -610,7 +618,7 @@ object PSBT extends Factory[PSBT] {
     * Note that this Transaction is only necessary when the output is non-segwit.
     */
   case class SpendingInfoAndNonWitnessTxs(
-      infoAndTxOpts: Vector[(UTXOSpendingInfoFull, Option[Transaction])]) {
+      infoAndTxOpts: Vector[(UTXOSpendingInfoFull, Option[BaseTransaction])]) {
     val length: Int = infoAndTxOpts.length
 
     def matchesInputs(inputs: Seq[TransactionInput]): Boolean = {
@@ -622,34 +630,8 @@ object PSBT extends Factory[PSBT] {
     }
 
     def map[T](
-        func: (UTXOSpendingInfoFull, Option[Transaction]) => T): Vector[T] = {
+        func: (UTXOSpendingInfoFull, Option[BaseTransaction]) => T): Vector[T] = {
       infoAndTxOpts.map { case (info, txOpt) => func(info, txOpt) }
-    }
-  }
-
-  object SpendingInfoAndNonWitnessTxs {
-
-    /** For use in tests, makes dummy transactions with the correct output for the PSBT */
-    def fromUnsignedTxAndInputs(
-        unsignedTx: Transaction,
-        creditingTxsInfo: Vector[UTXOSpendingInfoFull]): SpendingInfoAndNonWitnessTxs = {
-      val elements = unsignedTx.inputs.toVector.map { input =>
-        val infoOpt =
-          creditingTxsInfo.find(_.outPoint == input.previousOutput)
-        infoOpt match {
-          case Some(info) =>
-            val tx = BaseTransaction(Int32.zero,
-                                     Vector.empty,
-                                     Vector.fill(5)(info.output),
-                                     UInt32.zero)
-            (info, Some(tx))
-          case None =>
-            throw new RuntimeException(
-              "CreditingTxGen.inputsAndOutputs is being inconsistent")
-        }
-      }
-
-      SpendingInfoAndNonWitnessTxs(elements)
     }
   }
 
@@ -1395,7 +1377,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     getRecords(FinalizedScriptSigKeyId).nonEmpty || getRecords(
       FinalizedScriptWitnessKeyId).nonEmpty
 
-  /** Finalizes this input if possible, returning None if not */
+  /** Finalizes this input if possible, returning a Failure if not */
   def finalize(input: TransactionInput): Try[InputPSBTMap] = {
     if (isFinalized) {
       Success(this)
@@ -1618,7 +1600,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
                 .getRecords(FinalizedScriptSigKeyId)
                 .head
               val scriptSig =
-                ConditionalScriptSignature(nestedScriptSig.scriptSig, path)
+                ConditionalScriptSignature.fromNestedScriptSig(
+                  nestedScriptSig.scriptSig,
+                  path)
               wipeAndAdd(scriptSig)
             }
         }

@@ -1,10 +1,15 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  Transaction,
+  TransactionOutput
+}
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
+import org.bitcoins.core.psbt.PSBT.SpendingInfoAndNonWitnessTxs
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
@@ -155,6 +160,28 @@ object PSBTGenerators {
     }
   }
 
+  def spendingInfoAndNonWitnessTxsFromSpendingInfos(
+      unsignedTx: Transaction,
+      creditingTxsInfo: Vector[UTXOSpendingInfoFull]): SpendingInfoAndNonWitnessTxs = {
+    val elements = unsignedTx.inputs.toVector.map { input =>
+      val infoOpt =
+        creditingTxsInfo.find(_.outPoint == input.previousOutput)
+      infoOpt match {
+        case Some(info) =>
+          val tx = BaseTransaction(Int32.zero,
+                                   Vector.empty,
+                                   Vector.fill(5)(info.output),
+                                   UInt32.zero)
+          (info, Some(tx))
+        case None =>
+          throw new RuntimeException(
+            "CreditingTxGen.inputsAndOutputs is being inconsistent")
+      }
+    }
+
+    SpendingInfoAndNonWitnessTxs(elements)
+  }
+
   def psbtAndBuilderFromInputs(
       finalized: Boolean,
       creditingTxsInfo: Seq[BitcoinUTXOSpendingInfoFull],
@@ -169,8 +196,9 @@ object PSBTGenerators {
       builder <- builderF
       unsignedTx <- builder.unsignedTx
 
-      orderedTxInfos = PSBT.SpendingInfoAndNonWitnessTxs
-        .fromUnsignedTxAndInputs(unsignedTx, creditingTxsInfo.toVector)
+      orderedTxInfos = spendingInfoAndNonWitnessTxsFromSpendingInfos(
+        unsignedTx,
+        creditingTxsInfo.toVector)
 
       psbt <- {
         if (finalized) {
