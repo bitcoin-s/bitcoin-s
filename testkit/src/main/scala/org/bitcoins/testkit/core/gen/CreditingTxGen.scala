@@ -63,7 +63,7 @@ sealed abstract class CreditingTxGen {
       .oneOf(
         p2pkOutput,
         p2pkhOutput,
-        /*p2pkWithTimeoutOutput,*/
+        p2pkWithTimeoutOutput,
         multiSigOutput, /*cltvOutput,*/ csvOutput,
         multiSignatureWithTimeoutOutput,
         conditionalOutput,
@@ -91,6 +91,7 @@ sealed abstract class CreditingTxGen {
     p2pkhOutput,
     multiSigOutput,
     p2shOutput,
+    p2pkWithTimeoutOutput,
     csvOutput,
     multiSignatureWithTimeoutOutput,
     conditionalOutput,
@@ -98,7 +99,7 @@ sealed abstract class CreditingTxGen {
     p2wshOutput
   )
 
-  private val cltvOutputGens = Vector(p2pkWithTimeoutOutput, cltvOutput)
+  private val cltvOutputGens = Vector(cltvOutput)
 
   def output: Gen[BitcoinUTXOSpendingInfoFull] =
     Gen.oneOf(nonCltvOutputGens).flatMap(identity)

@@ -870,7 +870,7 @@ object NonStandardNotIfConditionalScriptPubKey
   * OP_IF
   *   <Public Key>
   * OP_ELSE
-  *   <Timeout> OP_CHECKLOCKTIMEVERIFY OP_DROP
+  *   <Timeout> OP_CHECKSEQUENCEVERIFY OP_DROP
   *   <Timeout Public Key>
   * OP_ENDIF
   * OP_CHECKSIG
@@ -904,7 +904,7 @@ object P2PKWithTimeoutScriptPubKey
       pubKey: ECPublicKey,
       lockTime: ScriptNumber,
       timeoutPubKey: ECPublicKey): P2PKWithTimeoutScriptPubKey = {
-    val timeoutAsm = CLTVScriptPubKey(lockTime, EmptyScriptPubKey).asm.toVector
+    val timeoutAsm = CSVScriptPubKey(lockTime, EmptyScriptPubKey).asm.toVector
     val pubKeyAsm = BitcoinScriptUtil
       .calculatePushOp(pubKey.bytes)
       .toVector ++ Vector(ScriptConstant(pubKey.bytes))
