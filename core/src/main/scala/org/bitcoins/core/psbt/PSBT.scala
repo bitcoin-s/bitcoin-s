@@ -190,7 +190,8 @@ case class PSBT(
         if (outIsWitnessScript || hasWitScript) {
           inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
         } else {
-          inputMap.filterRecords(NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(tx)
+          inputMap.filterRecords(NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(
+            tx)
         }
       } else {
         throw new IllegalArgumentException(
@@ -227,8 +228,8 @@ case class PSBT(
       .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
 
     val elements = if (!isWitScript && hasWitScript) {
-      inputMap.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord.WitnessScript(
-        script.asInstanceOf[RawScriptPubKey])
+      inputMap.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord
+        .WitnessScript(script.asInstanceOf[RawScriptPubKey])
     } else {
       inputMap.filterRecords(RedeemScriptKeyId) :+ InputPSBTRecord.RedeemScript(
         script)
