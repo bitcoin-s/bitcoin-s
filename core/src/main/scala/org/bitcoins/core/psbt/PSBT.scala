@@ -174,8 +174,8 @@ case class PSBT(
       index < inputMaps.size,
       s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
 
-    val map = inputMaps(index)
-    require(!map.isFinalized,
+    val inputMap = inputMaps(index)
+    require(!inputMap.isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
     val txIn = transaction.inputs(index)
@@ -185,12 +185,12 @@ case class PSBT(
 
         val outIsWitnessScript =
           WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
-        val hasWitScript = map.witnessScriptOpt.isDefined
+        val hasWitScript = inputMap.witnessScriptOpt.isDefined
 
         if (outIsWitnessScript || hasWitScript) {
-          map.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
+          inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
         } else {
-          map.filterRecords(NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(tx)
+          inputMap.filterRecords(NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(tx)
         }
       } else {
         throw new IllegalArgumentException(
@@ -219,18 +219,18 @@ case class PSBT(
     require(!inputMaps(index).isFinalized,
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
-    val map = inputMaps(index)
+    val inputMap = inputMaps(index)
 
     val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val redeemScriptOpt = map.redeemScriptOpt
+    val redeemScriptOpt = inputMap.redeemScriptOpt
     val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
       .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
 
     val elements = if (!isWitScript && hasWitScript) {
-      map.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord.WitnessScript(
+      inputMap.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord.WitnessScript(
         script.asInstanceOf[RawScriptPubKey])
     } else {
-      map.filterRecords(RedeemScriptKeyId) :+ InputPSBTRecord.RedeemScript(
+      inputMap.filterRecords(RedeemScriptKeyId) :+ InputPSBTRecord.RedeemScript(
         script)
     }
 
@@ -255,18 +255,18 @@ case class PSBT(
       s"index must be less than the number of output maps present in the psbt, $index >= ${outputMaps.size}")
     require(!isFinalized, "Cannot update a PSBT that is finalized")
 
-    val map = outputMaps(index)
+    val outputMap = outputMaps(index)
 
     val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val redeemScriptOpt = map.redeemScriptOpt
+    val redeemScriptOpt = outputMap.redeemScriptOpt
     val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
       .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
 
     val elements = if (!isWitScript && hasWitScript) {
-      map.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+ OutputPSBTRecord
+      outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+ OutputPSBTRecord
         .WitnessScript(script.asInstanceOf[RawScriptPubKey])
     } else {
-      map.filterRecords(PSBTOutputKeyId.RedeemScriptKeyId) :+ OutputPSBTRecord
+      outputMap.filterRecords(PSBTOutputKeyId.RedeemScriptKeyId) :+ OutputPSBTRecord
         .RedeemScript(script)
     }
 
@@ -301,7 +301,7 @@ case class PSBT(
         val elements =
           if (!previousElements.exists(_.key == expectedBytes)) {
             val fp =
-              if (extKey.fingerprint == hex"00000000") {
+              if (extKey.fingerprint == ExtKey.masterFingerprint) {
                 extKey.deriveChildPubKey(path.path.head).get.fingerprint
               } else {
                 extKey.fingerprint
