@@ -20,7 +20,7 @@ import org.bitcoins.core.wallet.signer.{
   P2PKWithTimeoutSigner
 }
 import org.bitcoins.core.wallet.utxo.{
-  MultiSignatureSpendingInfo,
+  MultiSignatureSpendingInfoFull,
   P2PKHSpendingInfo,
   P2PKSpendingInfo,
   P2PKWithTimeoutSpendingInfo
@@ -660,7 +660,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         scriptSig,
         outputIndex)
-      spendingInfo = MultiSignatureSpendingInfo(
+      spendingInfo = MultiSignatureSpendingInfoFull(
         TransactionOutPoint(creditingTx.txIdBE, inputIndex),
         creditingTx.outputs(outputIndex.toInt).value,
         multiSigScriptPubKey,

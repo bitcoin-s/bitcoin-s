@@ -190,7 +190,7 @@ object Bech32Address extends AddressFactory[Bech32Address] {
       np: NetworkParameters): Try[Bech32Address] =
     spk match {
       case witSPK: WitnessScriptPubKey =>
-        Bech32Address.fromScriptPubKey(witSPK, np)
+        Success(Bech32Address(witSPK, np))
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
           _: P2SHScriptPubKey | _: LockTimeScriptPubKey |

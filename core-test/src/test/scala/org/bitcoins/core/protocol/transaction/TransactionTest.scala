@@ -1,10 +1,6 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  WitnessTxSigComponentP2SH,
-  WitnessTxSigComponentRaw
-}
+import org.bitcoins.core.crypto.{BaseTxSigComponent, WitnessTxSigComponentP2SH, WitnessTxSigComponentRaw}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -14,14 +10,13 @@ import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.serializers.transaction.RawBaseTransactionParser
-import org.bitcoins.core.util.{CryptoUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.slf4j.LoggerFactory
-import spray.json._
+import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.testkit.core.gen.TransactionGenerators
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits._
+import spray.json._
 
 import scala.io.Source
-import org.bitcoins.testkit.core.gen.TransactionGenerators
 
 class TransactionTest extends BitcoinSUnitTest {
   behavior of "Transaction"
@@ -71,10 +66,11 @@ class TransactionTest extends BitcoinSUnitTest {
       "0000000000000000000000000000000000000000000000000000000000000000")
   }
 
-  it must "calculate the size of a tranaction correctly" in {
+  it must "calculate the size of a transaction correctly" in {
     val rawTx = TestUtil.rawTransaction
     val tx = Transaction(rawTx)
     //size is in bytes so divide by 2
+    assert(tx.size == tx.totalSize)
     tx.size must be(rawTx.size / 2)
   }
 
@@ -135,7 +131,7 @@ class TransactionTest extends BitcoinSUnitTest {
     tx2.size must be(216)
     tx2.weight must be(534)
     tx2.vsize must be(134)
-
+    tx2.baseSize must be(106)
   }
 
   it must "parse a transaction with an OP_PUSHDATA4 op code but not enough data to push" in {

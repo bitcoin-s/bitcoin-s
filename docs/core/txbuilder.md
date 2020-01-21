@@ -55,15 +55,15 @@ val destinations = {
     val destination1 = TransactionOutput(value = destinationAmount,
                                          scriptPubKey = destinationSPK)
 
-    List(destination1)
+    Vector(destination1)
 }
 
 // we have to fabricate a transaction that contains the
 // UTXO we are trying to spend. If this were a real blockchain
 // we would need to reference the UTXO set
 val creditingTx = BaseTransaction(version = Int32.one,
-                                  inputs = List.empty,
-                                  outputs = List(utxo),
+                                  inputs = Vector.empty,
+                                  outputs = Vector(utxo),
                                   lockTime = UInt32.zero)
 
 // this is the information we need from the crediting TX
@@ -72,19 +72,19 @@ val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
 // this contains all the information we need to
 // validly sign the UTXO above
-val utxoSpendingInfo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
-                                               output = utxo,
-                                               signers = List(privKey),
-                                               redeemScriptOpt = None,
-                                               scriptWitnessOpt = None,
-                                               hashType =
-                                                HashType.sigHashAll,
-                                               conditionalPath =
-                                                ConditionalPath.NoConditionsLeft)
+val utxoSpendingInfo = BitcoinUTXOSpendingInfoFull(outPoint = outPoint,
+                                                   output = utxo,
+                                                   signers = Vector(privKey),
+                                                   redeemScriptOpt = None,
+                                                   scriptWitnessOpt = None,
+                                                   hashType =
+                                                       HashType.sigHashAll,
+                                                   conditionalPath =
+                                                       ConditionalPath.NoConditionsLeft)
 
 // all of the UTXO spending information, since we are only
 //spending one UTXO, this is just one element
-val utxos: List[BitcoinUTXOSpendingInfo] = List(utxoSpendingInfo)
+val utxos: Vector[BitcoinUTXOSpendingInfoFull] = Vector(utxoSpendingInfo)
 
 // this is how much we are going to pay as a fee to the network
 // for this example, we are going to pay 1 satoshi per byte

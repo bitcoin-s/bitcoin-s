@@ -2,17 +2,11 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
-import org.bitcoins.core.script.constant.{
-  BytesToPushOntoStack,
-  ScriptConstant,
-  ScriptNumber,
-  ScriptToken
-}
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant, ScriptNumber, ScriptToken}
 import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.locktime.OP_CHECKSEQUENCEVERIFY
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
-import org.bitcoins.core.util.TestUtil
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**
   * Created by tom on 9/21/16.

@@ -1,6 +1,6 @@
 package org.bitcoins.core.wallet.fee
 
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.protocol.transaction.Transaction
 
 /**
@@ -53,3 +53,8 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
   */
 case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit
+
+object SatoshisPerVirtualByte {
+  val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(CurrencyUnits.zero)
+  val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
+}

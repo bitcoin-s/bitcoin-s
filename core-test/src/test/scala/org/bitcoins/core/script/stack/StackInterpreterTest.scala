@@ -3,8 +3,8 @@ package org.bitcoins.core.script.stack
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.ExecutedScriptProgram
-import org.bitcoins.core.util.{BitcoinSUtil, ScriptProgramTestUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.util.{BitcoinSUtil, ScriptProgramTestUtil}
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**
   * Created by chris on 1/6/16.
