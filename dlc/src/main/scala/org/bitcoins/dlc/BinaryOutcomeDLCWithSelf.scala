@@ -34,10 +34,10 @@ import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfo,
+  BitcoinUTXOSpendingInfoFull,
   ConditionalPath,
   P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfo
+  P2WSHV0SpendingInfoFull
 }
 import scodec.bits.ByteVector
 
@@ -79,8 +79,8 @@ case class BinaryOutcomeDLCWithSelf(
     remoteExtPrivKey: ExtPrivateKey,
     localInput: CurrencyUnit,
     remoteInput: CurrencyUnit,
-    localFundingUtxos: Vector[BitcoinUTXOSpendingInfo],
-    remoteFundingUtxos: Vector[BitcoinUTXOSpendingInfo],
+    localFundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
+    remoteFundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
     localWinPayout: CurrencyUnit,
     localLosePayout: CurrencyUnit,
     timeout: BlockStampWithFuture,
@@ -229,10 +229,10 @@ case class BinaryOutcomeDLCWithSelf(
   /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETLocal(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: P2WSHV0SpendingInfo,
+      fundingSpendingInfo: P2WSHV0SpendingInfoFull,
       localPayout: CurrencyUnit,
       remotePayout: CurrencyUnit,
-      invariant: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean =
+      invariant: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean =
         noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
     val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
       (cetLocalWinPrivKey, cetRemoteWinPrivKey)
@@ -282,10 +282,10 @@ case class BinaryOutcomeDLCWithSelf(
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETRemote(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: P2WSHV0SpendingInfo,
+      fundingSpendingInfo: P2WSHV0SpendingInfoFull,
       localPayout: CurrencyUnit,
       remotePayout: CurrencyUnit,
-      invariant: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean =
+      invariant: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean =
         noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
     val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
       (cetLocalWinPrivKey, cetRemoteWinPrivKey)
@@ -336,7 +336,7 @@ case class BinaryOutcomeDLCWithSelf(
     * Note that both parties have the same refund transaction.
     */
   def createRefundTx(
-      fundingSpendingInfo: P2WSHV0SpendingInfo): Future[Transaction] = {
+      fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[Transaction] = {
     val toLocalValueNotSat =
       (fundingSpendingInfo.amount * localInput).satoshis.toLong / totalInput.satoshis.toLong
     val toLocalValue = Satoshis(toLocalValueNotSat)
@@ -360,7 +360,7 @@ case class BinaryOutcomeDLCWithSelf(
     txBuilderF.flatMap(subtractFeeAndSign)
   }
 
-  def createCETWinLocal(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+  def createCETWinLocal(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
     (Transaction, P2WSHWitnessV0)] = {
     createCETLocal(
       sigPubKey = sigPubKeyWin,
@@ -370,7 +370,7 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def createCETLoseLocal(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+  def createCETLoseLocal(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
     (Transaction, P2WSHWitnessV0)] = {
     createCETLocal(
       sigPubKey = sigPubKeyLose,
@@ -380,7 +380,7 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def createCETWinRemote(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+  def createCETWinRemote(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
     (Transaction, P2WSHWitnessV0)] = {
     createCETRemote(
       sigPubKey = sigPubKeyWin,
@@ -390,7 +390,7 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def createCETLoseRemote(fundingSpendingInfo: P2WSHV0SpendingInfo): Future[
+  def createCETLoseRemote(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
     (Transaction, P2WSHWitnessV0)] = {
     createCETRemote(
       sigPubKey = sigPubKeyLose,
@@ -407,7 +407,7 @@ case class BinaryOutcomeDLCWithSelf(
 
       val fundingTxId = fundingTx.txIdBE
       val output = fundingTx.outputs.head
-      val fundingSpendingInfo = P2WSHV0SpendingInfo(
+      val fundingSpendingInfo = P2WSHV0SpendingInfoFull(
         outPoint = TransactionOutPoint(fundingTxId, UInt32.zero),
         amount = output.value,
         scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
@@ -461,7 +461,7 @@ case class BinaryOutcomeDLCWithSelf(
 
   def constructClosingTx(
       privKey: ECPrivateKey,
-      spendingInfo: BitcoinUTXOSpendingInfo,
+      spendingInfo: BitcoinUTXOSpendingInfoFull,
       isLocal: Boolean,
       isWin: Boolean,
       isToLocal: Boolean): Future[Transaction] = {
@@ -576,7 +576,7 @@ case class BinaryOutcomeDLCWithSelf(
       val privKey = ECPrivateKey.fromBytes(ByteVector(privKeyBytes))
 
       // Spend the true case on the correct CET
-      val cetSpendingInfo = P2WSHV0SpendingInfo(
+      val cetSpendingInfo = P2WSHV0SpendingInfoFull(
         outPoint = TransactionOutPoint(cet.txIdBE, UInt32.zero),
         amount = output.value,
         scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
@@ -658,7 +658,7 @@ case class BinaryOutcomeDLCWithSelf(
     val cetPrivKeyJustice = extCetPrivKey.deriveChildPrivKey(UInt32.one).key
     val cetPrivKeyToRemote = extCetPrivKey.deriveChildPrivKey(UInt32(2)).key
 
-    val justiceSpendingInfo = P2WSHV0SpendingInfo(
+    val justiceSpendingInfo = P2WSHV0SpendingInfoFull(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
       amount = justiceOutput.value,
       scriptPubKey = justiceOutput.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
@@ -793,7 +793,7 @@ object BinaryOutcomeDLCWithSelf {
   }
 
   // This invariant ensures that emptyChangeSPK is never used above
-  val noEmptyOutputs: (Seq[BitcoinUTXOSpendingInfo], Transaction) => Boolean = {
+  val noEmptyOutputs: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean = {
     (_, tx) =>
       tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
   }
@@ -847,7 +847,7 @@ object BinaryOutcomeDLCWithSelf {
 /** Contains all DLC transactions after initial setup. */
 case class SetupDLC(
     fundingTx: Transaction,
-    fundingSpendingInfo: P2WSHV0SpendingInfo,
+    fundingSpendingInfo: P2WSHV0SpendingInfoFull,
     cetWinLocal: Transaction,
     cetWinLocalWitness: P2WSHWitnessV0,
     cetLoseLocal: Transaction,
@@ -865,8 +865,8 @@ case class DLCOutcome(
     cet: Transaction,
     localClosingTx: Transaction,
     remoteClosingTx: Transaction,
-    fundingUtxos: Vector[BitcoinUTXOSpendingInfo],
-    fundingSpendingInfo: BitcoinUTXOSpendingInfo,
-    localCetSpendingInfo: BitcoinUTXOSpendingInfo,
-    remoteCetSpendingInfo: BitcoinUTXOSpendingInfo
+    fundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
+    fundingSpendingInfo: BitcoinUTXOSpendingInfoFull,
+    localCetSpendingInfo: BitcoinUTXOSpendingInfoFull,
+    remoteCetSpendingInfo: BitcoinUTXOSpendingInfoFull
 )
