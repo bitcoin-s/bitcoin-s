@@ -294,7 +294,7 @@ lazy val bench = project
     name := "bitcoin-s-bench",
     skip in publish := true
   )
-  .dependsOn(core % testAndCompile)
+  .dependsOn(core % testAndCompile, testkit)
 
 lazy val eclairRpcTest = project
   .in(file("eclair-rpc-test"))
@@ -385,7 +385,7 @@ lazy val keyManagerTest = project
   .in(file("key-manager-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-keymanager-test",
-    libraryDependencies ++= Deps.keyManagerTest)
+            libraryDependencies ++= Deps.keyManagerTest)
   .dependsOn(keyManager, testkit)
 
 lazy val walletDbSettings = dbFlywaySettings("walletdb")

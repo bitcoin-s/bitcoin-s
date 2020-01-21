@@ -704,10 +704,13 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
 
       require(instance.authCredentials.datadir.isDefined,
               s"A datadir needs to be provided to start eclair")
-
       if (process.isEmpty) {
-        val p = Process(
-          s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $pathToEclairJar &")
+        val logback = instance.logbackXmlPath
+          .map(path => s"-Dlogback.configurationFile=$path")
+          .getOrElse("")
+        val cmd =
+          s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $logback $pathToEclairJar &"
+        val p = Process(cmd)
         val result = p.run()
         logger.debug(
           s"Starting eclair with datadir ${instance.authCredentials.datadir.get}")

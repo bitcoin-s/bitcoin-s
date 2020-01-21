@@ -6,6 +6,7 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.channel.{
@@ -47,18 +48,20 @@ import scala.util.{Failure, Success}
   *
   */
 trait EclairRpcTestUtil extends BitcoinSLogger {
-  import org.bitcoins.core.compat.JavaConverters._
 
   /** Directory where sbt downloads Eclair binaries */
   private[bitcoins] val binaryDirectory =
     BitcoindRpcTestUtil.baseBinaryDirectory.resolve("eclair")
 
   /** Path to Jar downloaded by Eclair, if it exists */
-  private[bitcoins] lazy val binary: Option[File] = {
+  private[bitcoins] def binary(
+      eclairVersionOpt: Option[String],
+      eclairCommitOpt: Option[String]): Option[File] = {
     val path = binaryDirectory
-      .resolve(EclairRpcClient.version)
+      .resolve(eclairVersionOpt.getOrElse(EclairRpcClient.version))
       .resolve(
-        s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}.jar")
+        s"eclair-node-${eclairVersionOpt.getOrElse(EclairRpcClient.version)}-${eclairCommitOpt
+          .getOrElse(EclairRpcClient.commit)}.jar")
 
     if (Files.exists(path)) {
       Some(path.toFile)
@@ -70,7 +73,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def randomDirName: String =
     0.until(5).map(_ => scala.util.Random.alphanumeric.head).mkString
 
-  def randomEclairDatadir(): File = new File(s"/tmp/${randomDirName}/.eclair/")
+  def randomEclairDatadir(): File =
+    new File(s"/tmp/eclair-test/${randomDirName}/.eclair/")
 
   def cannonicalDatadir = new File(s"${System.getenv("HOME")}/.reg_eclair/")
 
@@ -94,7 +98,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   //cribbed from https://github.com/Christewart/eclair/blob/bad02e2c0e8bd039336998d318a861736edfa0ad/eclair-core/src/test/scala/fr/acinq/eclair/integration/IntegrationSpec.scala#L140-L153
-  private def commonConfig(
+  private[rpc] def commonConfig(
       bitcoindInstance: BitcoindInstance,
       port: Int = RpcUtil.randomPort,
       apiPort: Int = RpcUtil.randomPort): Config = {
@@ -126,7 +130,6 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.router.broadcast-interval" -> "2 second",
         "eclair.auto-reconnect" -> false,
         "eclair.to-remote-delay-blocks" -> 144,
-        "eclair.db.driver" -> "org.sqlite.JDBC",
         "eclair.db.regtest.url" -> "jdbc:sqlite:regtest/",
         "eclair.max-payment-fee" -> 10, // avoid complaints about too high fees
         "eclair.alias" -> "suredbits"
@@ -160,28 +163,38 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   /** Assumes bitcoind is running already and you have specified correct bindings in eclair.conf */
-  def cannonicalEclairInstance(): EclairInstance = {
+  def cannonicalEclairInstance(
+      logbackXml: Option[String] = None): EclairInstance = {
     val datadir = cannonicalDatadir
-    eclairInstance(datadir)
+    eclairInstance(datadir, logbackXml)
   }
 
-  def eclairInstance(datadir: File): EclairInstance = {
-    val instance = EclairInstance.fromDatadir(datadir)
+  def eclairInstance(
+      datadir: File,
+      logbackXml: Option[String]): EclairInstance = {
+    val instance = EclairInstance.fromDatadir(datadir, logbackXml)
     instance
   }
 
   /** Starts the given bitcoind instance and then starts the eclair instance */
-  def eclairInstance(bitcoindRpc: BitcoindRpcClient): EclairInstance = {
+  def eclairInstance(
+      bitcoindRpc: BitcoindRpcClient,
+      logbackXml: Option[String] = None): EclairInstance = {
     val datadir = eclairDataDir(bitcoindRpc, false)
-    eclairInstance(datadir)
+    eclairInstance(datadir, logbackXml)
   }
 
-  def randomEclairInstance(bitcoindRpc: BitcoindRpcClient): EclairInstance = {
+  def randomEclairInstance(
+      bitcoindRpc: BitcoindRpcClient,
+      logbackXml: Option[String] = None): EclairInstance = {
     val datadir = eclairDataDir(bitcoindRpc, false)
-    eclairInstance(datadir)
+    eclairInstance(datadir, logbackXml)
   }
 
-  def randomEclairClient(bitcoindRpcOpt: Option[BitcoindRpcClient] = None)(
+  def randomEclairClient(
+      bitcoindRpcOpt: Option[BitcoindRpcClient] = None,
+      eclairVersionOpt: Option[String] = None,
+      eclairCommitOpt: Option[String] = None)(
       implicit system: ActorSystem): Future[EclairRpcClient] = {
     import system.dispatcher
     val bitcoindRpcF: Future[BitcoindRpcClient] = {
@@ -193,17 +206,20 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
 
     val randInstanceF = bitcoindRpcF.map(randomEclairInstance(_))
-    val eclairRpcF = randInstanceF.map(i => new EclairRpcClient(i, binary))
+    val eclairRpcF = randInstanceF.map(i =>
+      new EclairRpcClient(i, binary(eclairVersionOpt, eclairCommitOpt)))
 
     val startedF = eclairRpcF.flatMap(_.start())
 
     startedF.flatMap(_ => eclairRpcF)
   }
 
-  def cannonicalEclairClient()(
+  def cannonicalEclairClient(
+      eclairVersionOpt: Option[String] = None,
+      eclairCommitOpt: Option[String] = None)(
       implicit system: ActorSystem): EclairRpcClient = {
     val inst = cannonicalEclairInstance()
-    new EclairRpcClient(inst, binary)
+    new EclairRpcClient(inst, binary(eclairVersionOpt, eclairCommitOpt))
   }
 
   def deleteTmpDir(dir: File): Boolean = {
@@ -441,7 +457,12 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     * Creates two Eclair nodes that are connected together and returns their
     * respective [[org.bitcoins.eclair.rpc.client.EclairRpcClient EclairRpcClient]]s
     */
-  def createNodePair(bitcoindRpcClientOpt: Option[BitcoindRpcClient])(
+  def createNodePair(
+      bitcoindRpcClientOpt: Option[BitcoindRpcClient],
+      eclairVersionOpt1: Option[String] = None,
+      eclairCommitOpt1: Option[String] = None,
+      eclairVersionOpt2: Option[String] = None,
+      eclairCommitOpt2: Option[String] = None)(
       implicit system: ActorSystem): Future[
     (EclairRpcClient, EclairRpcClient)] = {
     import system.dispatcher
@@ -460,13 +481,15 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       bitcoindRpcClientF.map(EclairRpcTestUtil.eclairInstance(_))
 
     val clientF = e1InstanceF.flatMap { e1 =>
-      val e = new EclairRpcClient(e1, binary)
+      val e =
+        new EclairRpcClient(e1, binary(eclairVersionOpt1, eclairCommitOpt1))
       logger.debug(
         s"Temp eclair directory created ${e.getDaemon.authCredentials.datadir}")
       e.start().map(_ => e)
     }
     val otherClientF = e2InstanceF.flatMap { e2 =>
-      val e = new EclairRpcClient(e2, binary)
+      val e =
+        new EclairRpcClient(e2, binary(eclairVersionOpt2, eclairCommitOpt2))
       logger.debug(
         s"Temp eclair directory created ${e.getDaemon.authCredentials.datadir}")
       e.start().map(_ => e)
@@ -682,9 +705,90 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     }
     shutdownF
   }
+
+  case class EclairNetwork(
+      bitcoind: BitcoindRpcClient,
+      testEclairNode: EclairRpcClient,
+      networkEclairNodes: Vector[EclairRpcClient],
+      channelIds: Vector[FundedChannelId]) {
+
+    def shutdown()(implicit ec: ExecutionContext): Future[Unit] =
+      for {
+        _ <- Future.sequence(networkEclairNodes.map(_.stop()))
+        _ <- testEclairNode.stop()
+        _ <- bitcoind.stop()
+      } yield ()
+  }
+
+  object EclairNetwork {
+
+    def start(
+        testEclairVersion: Option[String],
+        testEclairCommit: Option[String],
+        senderEclairVersion: Option[String],
+        senderEclairCommit: Option[String],
+        networkSize: Int,
+        channelAmount: MilliSatoshis,
+        logbackXml: Option[String])(
+        implicit system: ActorSystem): Future[EclairNetwork] = {
+      import system.dispatcher
+      for {
+        bitcoind <- startedBitcoindRpcClient()
+        testEclairInstance = EclairRpcTestUtil.eclairInstance(bitcoind,
+                                                              logbackXml =
+                                                                logbackXml)
+        testEclairNode = new EclairRpcClient(
+          testEclairInstance,
+          binary(testEclairVersion, testEclairCommit))
+        _ <- testEclairNode.start()
+        _ <- awaitEclairInSync(testEclairNode, bitcoind)
+        networkEclairInstances = 1
+          .to(networkSize)
+          .toVector
+          .map(_ =>
+            EclairRpcTestUtil.eclairInstance(bitcoind, logbackXml = logbackXml))
+        networkEclairNodes = networkEclairInstances.map(
+          new EclairRpcClient(_,
+                              binary(senderEclairVersion, senderEclairCommit)))
+        _ <- Future.sequence(networkEclairNodes.map(_.start()))
+        _ <- Future.sequence(
+          networkEclairNodes.map(awaitEclairInSync(_, bitcoind)))
+        _ <- Future.sequence(
+          networkEclairNodes.map(connectLNNodes(_, testEclairNode)))
+        channelIds <- networkEclairNodes.foldLeft(
+          Future.successful(Vector.empty[FundedChannelId])) { (accF, node) =>
+          for {
+            acc <- accF
+            channelId <- openChannel(n1 = node,
+                                     n2 = testEclairNode,
+                                     amt = channelAmount.toSatoshis,
+                                     pushMSat =
+                                       MilliSatoshis(channelAmount.toLong / 2))
+          } yield acc :+ channelId
+        }
+        _ <- Future.sequence(
+          channelIds.map(awaitChannelOpened(testEclairNode, _)))
+      } yield EclairNetwork(bitcoind,
+                            testEclairNode,
+                            networkEclairNodes,
+                            channelIds)
+    }
+
+  }
 }
 
-object EclairRpcTestUtil extends EclairRpcTestUtil
+object EclairRpcTestUtil extends EclairRpcTestUtil {
+  var customConfigMap: Map[String, Any] = Map.empty
+
+  override def commonConfig(
+      bitcoindInstance: BitcoindInstance,
+      port: Int,
+      apiPort: Int): Config =
+    super
+      .commonConfig(bitcoindInstance, port, apiPort)
+      .withFallback(ConfigFactory.parseMap(customConfigMap.asJava))
+
+}
 
 case class EclairNodes4(
     c1: EclairRpcClient,
