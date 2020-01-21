@@ -11,7 +11,7 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val accountDAO = daos.accountDAO
     for {
       created <- {
-        val account = WalletTestUtil.firstAccount
+        val account = WalletTestUtil.defaultHdAccount
 
         val xpub = CryptoGenerators.extPublicKey.sampleSome
 
@@ -21,5 +21,22 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       found <- accountDAO.read(
         (created.hdAccount.coin, created.hdAccount.index))
     } yield assert(found.contains(created))
+  }
+
+
+  it must "find an account by HdAccount" in { daos =>
+    val accountDAO = daos.accountDAO
+    val account = WalletTestUtil.getHdAccount1(walletAppConfig = walletAppConfig)
+    for {
+      created <- {
+
+        val xpub = CryptoGenerators.extPublicKey.sampleSome
+
+        val accountDb = AccountDb(xpub, account)
+        accountDAO.create(accountDb)
+      }
+      found <- accountDAO.findByAccount(account)
+    } yield assert(found.contains(created))
+
   }
 }

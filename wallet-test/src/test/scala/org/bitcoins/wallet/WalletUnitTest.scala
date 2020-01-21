@@ -4,7 +4,7 @@ import java.nio.file.Files
 
 import org.bitcoins.core.crypto.AesPassword
 import org.bitcoins.core.hd.HDChainType.{Change, External}
-import org.bitcoins.core.hd.{HDChainType, HDPurpose}
+import org.bitcoins.core.hd.{HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
@@ -64,16 +64,13 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "know what the last address index is" in { walletApi =>
     val wallet = walletApi.asInstanceOf[Wallet]
 
-    def getMostRecent(
-        purpose: HDPurpose,
-        chain: HDChainType,
-        acctIndex: Int
-    ): Future[AddressDb] = {
+    def getMostRecent(hdAccount: HDAccount,
+                      chain: HDChainType): Future[AddressDb] = {
       val recentOptFut: Future[Option[AddressDb]] = chain match {
         case Change =>
-          wallet.addressDAO.findMostRecentChange(purpose, acctIndex)
+          wallet.addressDAO.findMostRecentChange(hdAccount)
         case External =>
-          wallet.addressDAO.findMostRecentExternal(purpose, acctIndex)
+          wallet.addressDAO.findMostRecentExternal(hdAccount)
       }
 
       recentOptFut.map {
@@ -83,11 +80,10 @@ class WalletUnitTest extends BitcoinSWalletTest {
     }
 
     def assertIndexIs(
-        purpose: HDPurpose,
+        hdAccount: HDAccount,
         chain: HDChainType,
-        addrIndex: Int,
-        accountIndex: Int): Future[Assertion] = {
-      getMostRecent(purpose, chain, accountIndex) map { addr =>
+        addrIndex: Int): Future[Assertion] = {
+      getMostRecent(hdAccount, chain) map { addr =>
         assert(addr.path.address.index == addrIndex)
       }
     }
@@ -100,9 +96,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       * being reported
       */
     def testChain(
-        purpose: HDPurpose,
-        chain: HDChainType,
-        accIdx: Int): Future[Assertion] = {
+        hdAccount: HDAccount,
+        chain: HDChainType): Future[Assertion] = {
       val getAddrFunc: () => Future[BitcoinAddress] = chain match {
         case Change   => wallet.getNewChangeAddress _
         case External => wallet.getNewAddress _
@@ -111,9 +106,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         _ <- {
           val addrF = chain match {
             case Change =>
-              wallet.addressDAO.findMostRecentChange(purpose, accIdx)
+              wallet.addressDAO.findMostRecentChange(hdAccount)
             case External =>
-              wallet.addressDAO.findMostRecentExternal(purpose, accIdx)
+              wallet.addressDAO.findMostRecentExternal(hdAccount)
           }
           addrF.map {
             case Some(addr) =>
@@ -123,12 +118,11 @@ class WalletUnitTest extends BitcoinSWalletTest {
           }
         }
         _ <- FutureUtil.sequentially(addrRange)(_ => getAddrFunc())
-        _ <- assertIndexIs(purpose,
+        _ <- assertIndexIs(hdAccount,
                            chain,
-                           accountIndex = accIdx,
                            addrIndex = addressesToGenerate)
         newest <- getAddrFunc()
-        res <- getMostRecent(purpose, chain, accIdx).map { found =>
+        res <- getMostRecent(hdAccount, chain).map { found =>
           assert(found.address == newest)
           assert(found.path.address.index == addressesToGenerate + 1)
         }
@@ -137,9 +131,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
     for {
       account <- wallet.getDefaultAccount()
-      accIdx = account.hdAccount.index
-      _ <- testChain(wallet.DEFAULT_HD_PURPOSE, External, accIdx)
-      res <- testChain(wallet.DEFAULT_HD_PURPOSE, Change, accIdx)
+      _ <- testChain(hdAccount = account.hdAccount, External)
+      res <- testChain(hdAccount = account.hdAccount, Change)
     } yield res
   }
 

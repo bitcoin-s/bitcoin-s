@@ -24,6 +24,7 @@ import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.fixtures.WalletDAOs
+import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -69,8 +70,14 @@ object WalletTestUtil {
   private def freshXpub(): ExtPublicKey =
     CryptoGenerators.extPublicKey.sampleSome
 
-  val firstAccount = HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
-  def firstAccountDb = AccountDb(freshXpub(), firstAccount)
+  val defaultHdAccount = HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
+
+  def getHdAccount1(walletAppConfig: WalletAppConfig): HDAccount = {
+    val purpose = walletAppConfig.defaultAccountKind
+    HDAccount(coin = HDCoin(purpose, HDCoinType.Testnet), index = 1)
+  }
+
+  def firstAccountDb = AccountDb(freshXpub(), defaultHdAccount)
 
   private def randomScriptWitness: ScriptWitness =
     P2WPKHWitnessV0(freshXpub().key)

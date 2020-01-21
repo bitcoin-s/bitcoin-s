@@ -24,8 +24,38 @@ import scala.util.{Failure, Success}
 private[wallet] trait AddressHandling extends WalletLogger {
   self: LockedWallet =>
 
+  def contains(
+      address: BitcoinAddress,
+      accountOpt: Option[HDAccount]): Future[Boolean] = {
+    val possibleAddressesF = accountOpt match {
+      case Some(account) =>
+        listAddresses(account)
+      case None =>
+        listAddresses()
+    }
+
+    possibleAddressesF.map { possibleAddresses =>
+      possibleAddresses.exists(_.address == address)
+    }
+  }
+
   override def listAddresses(): Future[Vector[AddressDb]] =
     addressDAO.findAll()
+
+  override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] = {
+    val allAddressesF: Future[Vector[AddressDb]] = listAddresses()
+
+    val accountAddressesF = {
+      allAddressesF.map { addresses =>
+        addresses.filter { a =>
+          logger.info(s"a.path=${a.path} account=${account}")
+          HDAccount.isSameAccount(a.path, account)
+        }
+      }
+    }
+
+    accountAddressesF
+  }
 
   /** Enumerates the public keys in this wallet */
   protected[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
@@ -65,14 +95,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
   ): Future[BitcoinAddress] = {
     logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
 
-    val accountIndex = account.hdAccount.index
-
     val lastAddrOptF = chainType match {
       case HDChainType.External =>
-        addressDAO.findMostRecentExternal(account.hdAccount.purpose,
-                                          accountIndex)
+        addressDAO.findMostRecentExternal(account.hdAccount)
       case HDChainType.Change =>
-        addressDAO.findMostRecentChange(account.hdAccount.purpose, accountIndex)
+        addressDAO.findMostRecentChange(account.hdAccount)
     }
 
     lastAddrOptF.flatMap { lastAddrOpt =>
@@ -129,10 +156,25 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
+    val accountDbOptF = findAccount(account)
+    accountDbOptF.flatMap {
+      case Some(accountDb) => getNewAddress(accountDb)
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"))
+    }
+  }
+
   def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
     val addrF =
       getNewAddressHelper(account, HDChainType.External)
     addrF
+  }
+
+  def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
+    accountDAO.findByAccount(account)
   }
 
   /** @inheritdoc */

@@ -7,6 +7,8 @@ package org.bitcoins.core.hd
   * and
   * [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
   * account
+  *
+  * m / purpose' / coin_type' / account'
   */
 case class HDAccount(
     coin: HDCoin,
@@ -22,4 +24,35 @@ case class HDAccount(
 
   def toChain(chainType: HDChainType): HDChain =
     HDChain(chainType = chainType, account = this)
+}
+
+object HDAccount {
+
+  /** This method is meant to take in an arbitrary bip32 path and see
+    * if it has the same account as the given account
+    *
+    * This is tricky as an account is defined as
+    * m / purpose' / cointype' / account'
+    *
+    * whereas a bip32 path can be arbitrarily deep.
+    *
+    * We want to just check the first 4 elements of the path
+    * and see if they are the same, which indicates we are in
+    * the same account
+    * */
+  def isSameAccount(path: Vector[BIP32Node], account: HDAccount): Boolean = {
+    if (account.path.length > path.length) {
+      false
+    } else {
+      val zipped = path.zip(account.path)
+      zipped.foldLeft(true) {
+        case (past, (bip32Node, accountNode)) =>
+          past && bip32Node == accountNode
+      }
+    }
+  }
+
+  def isSameAccount(bip32Path: BIP32Path, account: HDAccount): Boolean = {
+    isSameAccount(bip32Path.path, account)
+  }
 }

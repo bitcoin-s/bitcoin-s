@@ -58,10 +58,14 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
-  // todo: check if there's addresses in the most recent
-  // account before creating new
+  /** Creates a new account my reading from our account database, finding the last account,
+    * and then incrementing the account index by one, and then creating that account
+    *
+    * @param kmParams
+    * @return
+    */
   override def createNewAccount(kmParams: KeyManagerParams): Future[Wallet] = {
-    accountDAO
+    val lastAccountOptF = accountDAO
       .findAll()
       .map(_.filter(_.hdAccount.purpose == kmParams.purpose))
       .map(_.sortBy(_.hdAccount.index))
@@ -69,33 +73,44 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       // to know what the index of our new account
       // should be.
       .map(_.lastOption)
-      .flatMap { mostRecentOpt =>
-        val accountIndex = mostRecentOpt match {
-          case None          => 0 // no accounts present in wallet
-          case Some(account) => account.hdAccount.index + 1
-        }
-        logger.info(
-          s"Creating new account at index $accountIndex for purpose ${kmParams.purpose}")
-        val hdCoin =
-          HDCoin(purpose = keyManager.kmParams.purpose,
-                 coinType = HDUtil.getCoinType(keyManager.kmParams.network))
-        val newAccount = HDAccount(hdCoin, accountIndex)
-        val xpub: ExtPublicKey = {
-          keyManager.deriveXPub(newAccount) match {
-            case Failure(exception) =>
-              // this won't happen, because we're deriving from a privkey
-              // this should really be changed in the method signature
-              logger.error(s"Unexpected error when deriving xpub: $exception")
-              throw exception
-            case Success(xpub) => xpub
-          }
-        }
-        val newAccountDb = AccountDb(xpub, newAccount)
-        val accountCreationF = accountDAO.create(newAccountDb)
-        accountCreationF.map(created =>
-          logger.debug(s"Created new account ${created.hdAccount}"))
-        accountCreationF
+
+    lastAccountOptF.flatMap {
+      case Some(accountDb) =>
+        val hdAccount = accountDb.hdAccount
+        val newAccount = hdAccount.copy(index = hdAccount.index + 1)
+        createNewAccount(newAccount, kmParams)
+      case None =>
+        createNewAccount(walletConfig.defaultAccount, kmParams)
+    }
+  }
+
+  // todo: check if there's addresses in the most recent
+  // account before creating new
+  override def createNewAccount(
+      hdAccount: HDAccount,
+      kmParams: KeyManagerParams): Future[Wallet] = {
+    val accountIndex = hdAccount.index
+    logger.info(
+      s"Creating new account at index $accountIndex for purpose ${kmParams.purpose}")
+    val hdCoin =
+      HDCoin(purpose = keyManager.kmParams.purpose,
+             coinType = HDUtil.getCoinType(keyManager.kmParams.network))
+    val newAccount = HDAccount(hdCoin, accountIndex)
+    val xpub: ExtPublicKey = {
+      keyManager.deriveXPub(newAccount) match {
+        case Failure(exception) =>
+          // this won't happen, because we're deriving from a privkey
+          // this should really be changed in the method signature
+          logger.error(s"Unexpected error when deriving xpub: $exception")
+          throw exception
+        case Success(xpub) => xpub
       }
+    }
+    val newAccountDb = AccountDb(xpub, newAccount)
+    val accountCreationF = accountDAO.create(newAccountDb)
+    accountCreationF.map(created =>
+      logger.debug(s"Created new account ${created.hdAccount}"))
+    accountCreationF
       .map(_ => Wallet(keyManager, nodeApi, chainQueryApi))
   }
 }
