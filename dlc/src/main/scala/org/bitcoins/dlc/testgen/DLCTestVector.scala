@@ -36,7 +36,7 @@ import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
-  SegwitV0NativeUTXOSpendingInfo
+  SegwitV0NativeUTXOSpendingInfoFull
 }
 import org.bitcoins.dlc.BinaryOutcomeDLCWithSelf
 import play.api.libs.json.{
@@ -60,11 +60,11 @@ case class DLCTestVector(
     oracleKValue: SchnorrNonce,
     localExtPrivKey: ExtPrivateKey,
     localInput: CurrencyUnit,
-    localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
+    localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
     localChangeSPK: WitnessScriptPubKeyV0,
     remoteExtPrivKey: ExtPrivateKey,
     remoteInput: CurrencyUnit,
-    remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
+    remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
     remoteChangeSPK: WitnessScriptPubKeyV0,
     timeout: BlockStampWithFuture,
     feeRate: SatoshisPerByte,
@@ -165,11 +165,11 @@ object DLCTestVector {
       oracleKValue: SchnorrNonce,
       localExtPrivKey: ExtPrivateKey,
       localInput: CurrencyUnit,
-      localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
+      localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
       localChangeSPK: WitnessScriptPubKeyV0,
       remoteExtPrivKey: ExtPrivateKey,
       remoteInput: CurrencyUnit,
-      remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfo],
+      remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
       remoteChangeSPK: WitnessScriptPubKeyV0,
       timeout: BlockStampWithFuture,
       feeRate: SatoshisPerByte)(
@@ -497,8 +497,8 @@ case class SerializedSegwitSpendingInfo(
     hashType: HashType,
     scriptWitness: ScriptWitnessV0) {
 
-  def toSpendingInfo: SegwitV0NativeUTXOSpendingInfo = {
-    SegwitV0NativeUTXOSpendingInfo(
+  def toSpendingInfo: SegwitV0NativeUTXOSpendingInfoFull = {
+    SegwitV0NativeUTXOSpendingInfoFull(
       outPoint = outPoint.toOutPoint,
       amount = output.value,
       scriptPubKey = output.spk.asInstanceOf[WitnessScriptPubKeyV0],
@@ -513,12 +513,12 @@ case class SerializedSegwitSpendingInfo(
 object SerializedSegwitSpendingInfo {
 
   def fromSpendingInfo(
-      spendingInfo: SegwitV0NativeUTXOSpendingInfo): SerializedSegwitSpendingInfo = {
+      spendingInfo: SegwitV0NativeUTXOSpendingInfoFull): SerializedSegwitSpendingInfo = {
     SerializedSegwitSpendingInfo(
       outPoint =
         SerializedTransactionOutPoint.fromOutPoint(spendingInfo.outPoint),
       output = SerializedTransactionOutput.fromOutput(spendingInfo.output),
-      keys = spendingInfo.signers.toVector.map(_.asInstanceOf[ECPrivateKey]),
+      keys = spendingInfo.signers.map(_.asInstanceOf[ECPrivateKey]),
       hashType = spendingInfo.hashType,
       scriptWitness = spendingInfo.scriptWitness
     )

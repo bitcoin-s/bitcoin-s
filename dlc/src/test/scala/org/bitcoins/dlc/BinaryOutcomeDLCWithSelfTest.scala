@@ -25,7 +25,7 @@ import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfo,
+  BitcoinUTXOSpendingInfoFull,
   P2PKHSpendingInfo
 }
 import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
@@ -66,7 +66,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
         }
 
         val inputKey = ECPrivateKey.freshPrivateKey
-        val utxos: Vector[BitcoinUTXOSpendingInfo] = Vector(
+        val utxos: Vector[BitcoinUTXOSpendingInfoFull] = Vector(
           P2PKHSpendingInfo(
             outPoint =
               TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
