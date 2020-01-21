@@ -18,6 +18,7 @@ abstract class LockedWallet
     with UtxoHandling
     with AddressHandling
     with AccountHandling
+    with FundTransactionHandling
     with TransactionProcessing
     with RescanHandling {
 

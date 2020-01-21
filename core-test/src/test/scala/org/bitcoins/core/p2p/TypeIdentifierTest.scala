@@ -5,6 +5,10 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class TypeIdentifierTest extends BitcoinSUnitTest {
 
+  it must "Create a MsgUnassigned" in {
+    assert(TypeIdentifier(100000).isInstanceOf[MsgUnassigned])
+  }
+
   "MsgTx" must "serialize to 01000000" in {
     MsgTx.hex must be("01000000")
   }

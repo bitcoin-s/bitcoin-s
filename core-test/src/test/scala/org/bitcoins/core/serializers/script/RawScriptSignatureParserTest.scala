@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.script
 
-import org.bitcoins.core.protocol.script.ScriptSignature
+import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
 /**
@@ -19,6 +19,10 @@ class RawScriptSignatureParserTest extends BitcoinSUnitTest {
   "RawScriptSignatureParser" must "write a raw script sig" in {
     val scriptSig = RawScriptSignatureParser.read(rawScriptSig)
     encode(RawScriptSignatureParser.write(scriptSig)) must be(rawScriptSig)
+  }
+
+  it must "read an EmptyScriptSignature" in {
+    assert(RawScriptSignatureParser.read(ByteVector.empty) == EmptyScriptSignature)
   }
 
   it must "read then write a raw script sig" in {

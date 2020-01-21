@@ -1,12 +1,9 @@
 package org.bitcoins.core.serializers.transaction
 
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionConstants
-}
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionConstants}
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
 /**

@@ -1,12 +1,12 @@
 package org.bitcoins.core.serializers.script
 
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.{BitcoinSUtil, TestUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
 /**
@@ -19,6 +19,10 @@ class RawScriptPubKeyParserTest extends BitcoinSUnitTest {
       RawScriptPubKeyParser.read(TestUtil.rawScriptPubKey)
     encode(RawScriptPubKeyParser.write(scriptPubKey)) must be(
       TestUtil.rawScriptPubKey)
+  }
+
+  it must "read an EmptyScriptPubKey" in {
+    assert(RawScriptPubKeyParser.read(ByteVector.empty) == EmptyScriptPubKey)
   }
 
   it must "read a raw scriptPubKey and give us the expected asm" in {

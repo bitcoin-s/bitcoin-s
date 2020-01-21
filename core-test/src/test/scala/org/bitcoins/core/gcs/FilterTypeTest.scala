@@ -15,5 +15,6 @@ class FilterTypeTest extends BitcoinSUnitTest {
     assert(FilterType.getCode(FilterType.Basic) == 0)
     assert(FilterType.byCode(0) == FilterType.Basic)
     assertThrows[IllegalArgumentException](FilterType.byCode(1))
+    assertThrows[IllegalArgumentException](FilterType.getCode(FilterType.fromHex("ffff")))
   }
 }

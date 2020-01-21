@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManagerTestUtil
@@ -17,11 +18,11 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.testkit.util.{FileUtil, TransactionTestUtil}
+import org.bitcoins.wallet.api.{LockedWalletApi, UnlockedWalletApi}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.wallet.{LockedWallet, Wallet, WalletLogger}
 import org.scalatest._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -125,6 +126,18 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
                                 chainQueryApi = chainQueryApi),
         destroy = destroyWallet
       )
+  }
+
+  /** Creates a wallet that is funded with some bitcoin, this wallet is NOT
+    * peered with a bitcoind so the funds in the wallet are not tied to an
+    * underlying blockchain */
+  def withFundedWallet(test: OneArgAsyncTest): FutureOutcome = {
+    makeDependentFixture(
+      build = () => createFundedWallet(nodeApi, chainQueryApi),
+      destroy = { funded: FundedWallet =>
+        destroyWallet(funded.wallet)
+      }
+    )(test)
   }
 
   /** Fixture for an initialized wallet which produce legacy addresses */
@@ -293,6 +306,22 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi = chainQueryApi)(config, ec)() // get the standard config
   }
 
+  /** This wallet should have a total of 6 bitcoin in it
+    * spread across 3 utxos that have values 1, 2, 3 bitcoins */
+  case class FundedWallet(wallet: LockedWallet)
+
+  /** This creates a wallet that is funded that is not paired to a bitcoind instance. */
+  def createFundedWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
+      implicit config: BitcoinSAppConfig,
+      system: ActorSystem): Future[FundedWallet] = {
+
+    import system.dispatcher
+    for {
+      wallet <- createDefaultWallet(nodeApi, chainQueryApi)
+      funded <- fundWallet(wallet)
+    } yield funded
+  }
+
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
       wallet: UnlockedWalletApi
@@ -347,6 +376,48 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield funded
   }
 
+  /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
+  def fundWallet(wallet: UnlockedWalletApi)(
+      implicit ec: ExecutionContext): Future[FundedWallet] = {
+    //get three addresses
+    val addressesF = Future.sequence(Vector.fill(3) {
+      //this Thread.sleep is needed because of
+      //https://github.com/bitcoin-s/bitcoin-s/issues/1009
+      //once that is resolved we should be able to remove this
+      Thread.sleep(500)
+      wallet.getNewAddress()
+    })
+
+    //construct three txs that send money to these addresses
+    //these are "fictional" transactions in the sense that the
+    //outpoints do not exist on a blockchain anywhere
+    val amounts = Vector(1.bitcoin, 2.bitcoin, 3.bitcoin)
+    val expectedAmt = amounts.fold(CurrencyUnits.zero)(_ + _)
+    val txsF = for {
+      addresses <- addressesF
+    } yield {
+      addresses.zip(amounts).map {
+        case (addr, amt) =>
+          val output =
+            TransactionOutput(value = amt, scriptPubKey = addr.scriptPubKey)
+          TransactionTestUtil.buildTransactionTo(output)
+      }
+    }
+
+    val fundedWalletF =
+      txsF.flatMap(txs =>
+        wallet.processTransactions(transactions = txs, blockHash = None))
+
+    //sanity check to make sure we have money
+    for {
+      fundedWallet <- fundedWalletF
+      balance <- fundedWallet.getBalance()
+      _ = require(
+        balance == 6.bitcoin,
+        s"Funding wallet fixture failed ot fund the wallet, got balance=${balance} expected=${expectedAmt}")
+    } yield FundedWallet(fundedWallet.asInstanceOf[LockedWallet])
+  }
+
   /** Funds the given wallet with money from the given bitcoind */
   def fundWalletWithBitcoind(pair: WalletWithBitcoind)(
       implicit ec: ExecutionContext): Future[WalletWithBitcoind] = {
@@ -378,10 +449,14 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def destroyWallet(wallet: UnlockedWalletApi)(
       implicit ec: ExecutionContext): Future[Unit] = {
+    destroyWallet(wallet.lock())
+  }
+
+  def destroyWallet(wallet: LockedWalletApi)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val destroyWalletF = WalletDbManagement
       .dropAll()(config = wallet.walletConfig, ec = ec)
       .map(_ => ())
-
     destroyWalletF
   }
 
