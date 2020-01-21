@@ -164,7 +164,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     remoteFundingUtxos = remoteFundingUtxos,
     localWinPayout = localInput + CurrencyUnits.oneMBTC,
     localLosePayout = localInput - CurrencyUnits.oneMBTC,
-    timeout = blockTimeToday,
+    timeouts = DLCTimeouts(0, blockTimeToday, blockTimeToday),
     feeRate = SatoshisPerByte(Satoshis.one),
     localChangeSPK = localChangeSPK,
     remoteChangeSPK = remoteChangeSPK,
