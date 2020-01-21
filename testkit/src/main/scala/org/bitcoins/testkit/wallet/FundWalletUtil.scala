@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits, _}
 import org.bitcoins.core.hd.HDAccount
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.TransactionTestUtil
@@ -19,13 +20,19 @@ trait FundWalletUtil {
       account: HDAccount,
       wallet: Wallet)(implicit ec: ExecutionContext): Future[Wallet] = {
 
-    val addressesF = Future.sequence(Vector.fill(3) {
-      //this Thread.sleep is needed because of
-      //https://github.com/bitcoin-s/bitcoin-s/issues/1009
-      //once that is resolved we should be able to remove this
-      Thread.sleep(500)
-      wallet.getNewAddress(account)
-    })
+    val init = Future.successful(Vector.empty[BitcoinAddress])
+    val addressesF: Future[Vector[BitcoinAddress]] = 0.until(3).foldLeft(init) {
+      case (accumF, _) =>
+        //this Thread.sleep is needed because of
+        //https://github.com/bitcoin-s/bitcoin-s/issues/1009
+        //once that is resolved we should be able to remove this
+        for {
+          accum <- accumF
+          address <- wallet.getNewAddress(account)
+        } yield {
+          accum.:+(address)
+        }
+    }
 
     //construct three txs that send money to these addresses
     //these are "fictional" transactions in the sense that the

@@ -111,6 +111,7 @@ trait LockedWalletApi extends WalletApi {
     } yield confirmed + unconfirmed
   }
 
+  /** Gets the balance of the given account */
   def getBalance(account: HDAccount): Future[CurrencyUnit] = {
     val confirmedF = getConfirmedBalance(account)
     val unconfirmedF = getUnconfirmedBalance(account)
