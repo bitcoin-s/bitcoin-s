@@ -66,9 +66,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param remoteFundingUtxos Remote's funding BitcoinUTXOSpendingInfo collection
   * @param localWinPayout Local's payout in the Win case
   * @param localLosePayout Local's payout in the Lose case
-  * @param penaltyTimeout The CSV timeout in blocks used in all CETs
-  * @param contractMaturity The CLTV in milliseconds when a signature is expected
-  * @param contractTimeout The CLTV timeout in milliseconds after which the refund tx is valid
+  * @param timeouts The timeouts for this DLC
   * @param feeRate The predicted fee rate used for all transactions
   * @param localChangeSPK Local's change ScriptPubKey used in the funding tx
   * @param remoteChangeSPK Remote's change ScriptPubKey used in the funding tx
@@ -86,9 +84,7 @@ case class BinaryOutcomeDLCWithSelf(
     remoteFundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
     localWinPayout: CurrencyUnit,
     localLosePayout: CurrencyUnit,
-    penaltyTimeout: Int,
-    contractMaturity: BlockStampWithFuture,
-    contractTimeout: BlockStampWithFuture,
+    timeouts: DLCTimeouts,
     feeRate: FeeUnit,
     localChangeSPK: WitnessScriptPubKeyV0,
     remoteChangeSPK: WitnessScriptPubKeyV0,
@@ -259,7 +255,7 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
-      lockTime = ScriptNumber(penaltyTimeout),
+      lockTime = ScriptNumber(timeouts.penaltyTimeout),
       timeoutPubKey = remoteToLocalPrivKey.publicKey
     )
 
@@ -278,7 +274,7 @@ case class BinaryOutcomeDLCWithSelf(
                        feeRate,
                        emptyChangeSPK,
                        network,
-                       contractMaturity.toUInt32)
+                       timeouts.contractMaturity.toUInt32)
 
     txBuilderF
       .flatMap(_.sign(invariant))
@@ -312,7 +308,7 @@ case class BinaryOutcomeDLCWithSelf(
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
-      lockTime = ScriptNumber(penaltyTimeout),
+      lockTime = ScriptNumber(timeouts.penaltyTimeout),
       timeoutPubKey = localToLocalPrivKey.publicKey
     )
 
@@ -331,7 +327,7 @@ case class BinaryOutcomeDLCWithSelf(
                        feeRate,
                        emptyChangeSPK,
                        network,
-                       contractMaturity.toUInt32)
+                       timeouts.contractMaturity.toUInt32)
 
     txBuilderF
       .flatMap(_.sign(invariant))
@@ -362,7 +358,7 @@ case class BinaryOutcomeDLCWithSelf(
                                       feeRate,
                                       emptyChangeSPK,
                                       network,
-                                      contractTimeout.toUInt32)
+                                      timeouts.contractTimeout.toUInt32)
 
     txBuilderF.flatMap(subtractFeeAndSign)
   }
@@ -876,4 +872,14 @@ case class DLCOutcome(
     fundingSpendingInfo: BitcoinUTXOSpendingInfoFull,
     localCetSpendingInfo: BitcoinUTXOSpendingInfoFull,
     remoteCetSpendingInfo: BitcoinUTXOSpendingInfoFull
+)
+
+/** @param penaltyTimeout The CSV timeout in blocks used in all CETs
+  * @param contractMaturity The CLTV in milliseconds when a signature is expected
+  * @param contractTimeout The CLTV timeout in milliseconds after which the refund tx is valid
+  */
+case class DLCTimeouts(
+    penaltyTimeout: Int,
+    contractMaturity: BlockStampWithFuture,
+    contractTimeout: BlockStampWithFuture
 )
