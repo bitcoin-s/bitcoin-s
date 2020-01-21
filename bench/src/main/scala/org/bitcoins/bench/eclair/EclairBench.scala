@@ -121,7 +121,7 @@ object EclairBench extends App with EclairRpcTestUtil {
                                paymentLog.values().asScala.forall(_.completed),
                              duration = 1.second,
                              maxTries = 100)
-        .recover(_.printStackTrace())
+        .recover { case ex: Throwable => ex.printStackTrace() }
       _ = println("\nDone!")
     } yield {
       paymentLog
