@@ -310,24 +310,43 @@ class PSBTTest extends BitcoinSAsyncTest {
     }
   }
 
-  it must "add Redeem Scripts and Witness Scripts to outputs" in {
-    forAllAsync(PSBTGenerators.fullNonFinalizedPSBT,
-                ScriptGenerators.randomNonP2SHScriptPubKey,
-                WitnessGenerators.scriptWitness) {
-      case (psbtF, spk, wit) =>
-        psbtF.map { psbt =>
-          val randOutput = scala.util.Random.nextInt(psbt.outputMaps.length)
+  it must "add Redeem Scripts to outputs" in {
+    forAllAsync(PSBTGenerators.psbtWithBuilderAndP2SHOutputs(finalized = false)) {
+      psbtWithBuilderF =>
+        psbtWithBuilderF.flatMap {
+          case (psbtEmptyOutputs, _, redeemScripts) =>
+            val psbtWithOutputs = redeemScripts.zipWithIndex.foldLeft(
+              psbtEmptyOutputs)((psbt, spk) =>
+              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
-          psbt.addRedeemOrWitnessScriptToOutput(spk._1, randOutput)
-          psbt.addScriptWitnessToOutput(wit, randOutput)
+            assert(psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+              case (map, spk) =>
+                map.redeemScriptOpt.isDefined && map.redeemScriptOpt.get.redeemScript == spk
+            })
+        }
+    }
+  }
 
-          succeed
+  it must "add Witness Scripts to outputs" in {
+    forAllAsync(
+      PSBTGenerators.psbtWithBuilderAndP2WSHOutputs(finalized = false)) {
+      psbtWithBuilderF =>
+        psbtWithBuilderF.flatMap {
+          case (psbtEmptyOutputs, _, redeemScripts) =>
+            val psbtWithOutputs = redeemScripts.zipWithIndex.foldLeft(
+              psbtEmptyOutputs)((psbt, spk) =>
+              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
+
+            assert(psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+              case (map, spk) =>
+                map.witnessScriptOpt.isDefined && map.witnessScriptOpt.get.witnessScript == spk
+            })
         }
     }
   }
 
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
-    forAllAsync(CreditingTxGen.inputsAndOuptuts(),
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), (changeSPK, _), network) =>
