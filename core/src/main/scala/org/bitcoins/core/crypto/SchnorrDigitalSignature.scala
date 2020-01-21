@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
 case class SchnorrDigitalSignature(rx: ByteVector, s: ByteVector)
@@ -15,18 +16,14 @@ case class SchnorrDigitalSignature(rx: ByteVector, s: ByteVector)
 final object DummySchnorrDigitalSignature
     extends SchnorrDigitalSignature(ByteVector.low(32), ByteVector.low(32))
 
-object SchnorrDigitalSignature {
+object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
 
-  def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
+  override def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
     require(bytes.length == 64,
             s"SchnorrDigitalSignature must be 64 bytes, got $bytes")
 
     val (rx, s) = bytes.splitAt(32)
     SchnorrDigitalSignature(rx, s)
-  }
-
-  def apply(bytes: ByteVector): SchnorrDigitalSignature = {
-    fromBytes(bytes)
   }
 
   /** Constructs a SchnorrDigitalSignature from the x-coordinate of the R
