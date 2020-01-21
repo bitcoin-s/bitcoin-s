@@ -880,10 +880,25 @@ sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
   lazy val pubKey: ECPublicKey =
     ECPublicKey.fromBytes(asm(2).bytes)
 
-  lazy val lockTime: ScriptNumber = ScriptNumber.fromBytes(asm(5).bytes)
+  private lazy val smallCSVOpt: Option[Long] = {
+    asm(4) match {
+      case num: ScriptNumberOperation => Some(num.toLong)
+      case _: ScriptToken             => None
+    }
+  }
 
-  lazy val timeoutPubKey: ECPublicKey =
-    ECPublicKey.fromBytes(asm(9).bytes)
+  lazy val lockTime: ScriptNumber = {
+    smallCSVOpt
+      .map(ScriptNumber.apply)
+      .getOrElse(ScriptNumber(asm(5).bytes))
+  }
+
+  lazy val timeoutPubKey: ECPublicKey = {
+    smallCSVOpt match {
+      case Some(_) => ECPublicKey.fromBytes(asm(8).bytes)
+      case None    => ECPublicKey.fromBytes(asm(9).bytes)
+    }
+  }
 }
 
 object P2PKWithTimeoutScriptPubKey
@@ -923,18 +938,35 @@ object P2PKWithTimeoutScriptPubKey
   }
 
   def isP2PKWithTimeoutScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.length == 12) {
-      val pubKey = ECPublicKey.fromBytes(asm(2).bytes)
-      val lockTimeTry = Try(ScriptNumber.fromBytes(asm(5).bytes))
-      val timeoutPubKey = ECPublicKey.fromBytes(asm(9).bytes)
-
-      lockTimeTry match {
-        case Success(lockTime) =>
-          asm == P2PKWithTimeoutScriptPubKey(pubKey, lockTime, timeoutPubKey).asm
-        case Failure(_) => false
-      }
-    } else {
+    if (asm.length < 5) {
       false
+    } else {
+      val (smallCSVOpt, requiredSize) = asm(4) match {
+        case num: ScriptNumberOperation => (Some(num.toLong), 11)
+        case _: ScriptToken             => (None, 12)
+      }
+
+      if (asm.length == requiredSize) {
+        val pubKey = ECPublicKey.fromBytes(asm(2).bytes)
+
+        val lockTimeTry = smallCSVOpt match {
+          case Some(num) => Success(ScriptNumber(num))
+          case None      => Try(ScriptNumber.fromBytes(asm(5).bytes))
+        }
+
+        val timeoutPubKey = smallCSVOpt match {
+          case Some(_) => ECPublicKey.fromBytes(asm(8).bytes)
+          case None    => ECPublicKey.fromBytes(asm(9).bytes)
+        }
+
+        lockTimeTry match {
+          case Success(lockTime) =>
+            asm == P2PKWithTimeoutScriptPubKey(pubKey, lockTime, timeoutPubKey).asm
+          case Failure(_) => false
+        }
+      } else {
+        false
+      }
     }
   }
 }
