@@ -750,7 +750,7 @@ object BitcoinTxBuilder {
 
   def apply(
       destinations: Seq[TransactionOutput],
-      utxos: Seq[BitcoinUTXOSpendingInfo],
+      utxos: Seq[BitcoinUTXOSpendingInfoFull],
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork,
@@ -765,7 +765,7 @@ object BitcoinTxBuilder {
 
   def apply(
       destinations: Seq[TransactionOutput],
-      utxos: Seq[BitcoinUTXOSpendingInfo],
+      utxos: Seq[BitcoinUTXOSpendingInfoFull],
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork,
