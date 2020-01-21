@@ -347,6 +347,17 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def toPoint: ECPoint = {
     CryptoParams.curve.getCurve.decodePoint(bytes.toArray)
   }
+
+  /** Adds this ECPublicKey to another as points and returns the resulting ECPublicKey.
+    *
+    * Note: if this ever becomes a bottleneck, secp256k1_ec_pubkey_combine should
+    * get wrapped in NativeSecp256k1 to speed things up.
+    */
+  def add(otherKey: ECPublicKey): ECPublicKey = {
+    val sumPoint = toPoint.add(otherKey.toPoint)
+
+    ECPublicKey.fromPoint(sumPoint)
+  }
 }
 
 object ECPublicKey extends Factory[ECPublicKey] {
