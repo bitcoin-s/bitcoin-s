@@ -349,7 +349,7 @@ object SerializedDLCTestVectorSerializers {
     hexWrites[SchnorrNonce]
   implicit val extPrivKeyWrites: Writes[ExtPrivateKey] = Writes[ExtPrivateKey] {
     extPrivKey =>
-      JsString(extPrivKey.toString)
+      JsString(extPrivKey.toStringSensitive)
   }
   implicit val currencyUnitWrites: Writes[CurrencyUnit] = Writes[CurrencyUnit] {
     currencyUnit =>
