@@ -38,7 +38,7 @@ import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   SegwitV0NativeUTXOSpendingInfoFull
 }
-import org.bitcoins.dlc.BinaryOutcomeDLCWithSelf
+import org.bitcoins.dlc.{BinaryOutcomeDLCWithSelf, DLCTimeouts}
 import play.api.libs.json.{
   JsNumber,
   JsObject,
@@ -66,7 +66,7 @@ case class DLCTestVector(
     remoteInput: CurrencyUnit,
     remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
     remoteChangeSPK: WitnessScriptPubKeyV0,
-    timeout: BlockStampWithFuture,
+    timeouts: DLCTimeouts,
     feeRate: SatoshisPerByte,
     fundingTx: Transaction,
     localWinCet: Transaction,
@@ -107,7 +107,7 @@ case class DLCTestVector(
     remoteFundingUtxos = remoteFundingUtxos,
     localWinPayout = localPayouts(possibleOutcomes.head),
     localLosePayout = localPayouts(possibleOutcomes.last),
-    timeout = timeout,
+    timeouts = timeouts,
     feeRate = feeRate,
     localChangeSPK = localChangeSPK,
     remoteChangeSPK = remoteChangeSPK,
@@ -134,7 +134,7 @@ case class DLCTestVector(
       remoteInput = remoteInput,
       remoteFundingUtxos = remoteFundingUtxos,
       remoteChangeSPK = remoteChangeSPK,
-      timeout = timeout,
+      timeouts = timeouts,
       feeRate = feeRate
     )
   }
@@ -171,7 +171,7 @@ object DLCTestVector {
       remoteInput: CurrencyUnit,
       remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
       remoteChangeSPK: WitnessScriptPubKeyV0,
-      timeout: BlockStampWithFuture,
+      timeouts: DLCTimeouts,
       feeRate: SatoshisPerByte)(
       implicit ec: ExecutionContext): Future[DLCTestVector] = {
     val possibleOutcomes = localPayouts.keySet.toVector
@@ -189,7 +189,7 @@ object DLCTestVector {
       remoteFundingUtxos = remoteFundingUtxos,
       localWinPayout = localPayouts(possibleOutcomes.head),
       localLosePayout = localPayouts(possibleOutcomes.last),
-      timeout = timeout,
+      timeouts = timeouts,
       feeRate = feeRate,
       localChangeSPK = localChangeSPK,
       remoteChangeSPK = remoteChangeSPK,
@@ -219,7 +219,7 @@ object DLCTestVector {
         remoteInput = remoteInput,
         remoteFundingUtxos = remoteFundingUtxos,
         remoteChangeSPK = remoteChangeSPK,
-        timeout = timeout,
+        timeouts = timeouts,
         feeRate = feeRate,
         fundingTx = setup.fundingTx,
         localWinCet = setup.cetWinLocal,
@@ -238,6 +238,10 @@ case class SerializedDLCTestVector(
     inputs: SerializedDLCInputs,
     outputs: SerializedDLCOutputs) {
   lazy val dlcTestVector: DLCTestVector = {
+    val timeouts = DLCTimeouts(penaltyTimeout = inputs.penaltyTimeout,
+                               contractMaturity = inputs.contractMaturity,
+                               contractTimeout = inputs.contractTimeout)
+
     DLCTestVector(
       localPayouts = inputs.localPayouts,
       realOutcome = inputs.realOutcome,
@@ -251,7 +255,7 @@ case class SerializedDLCTestVector(
       remoteInput = inputs.remoteInput,
       remoteFundingUtxos = inputs.remoteFundingUtxos.map(_.toSpendingInfo),
       remoteChangeSPK = inputs.remoteChangeSPK,
-      timeout = inputs.timeout,
+      timeouts = timeouts,
       feeRate = inputs.feeRate,
       fundingTx = outputs.fundingTx,
       localWinCet = outputs.localCets.head,
@@ -297,7 +301,9 @@ object SerializedDLCTestVector {
       remoteFundingUtxos = testVector.remoteFundingUtxos.map(
         SerializedSegwitSpendingInfo.fromSpendingInfo),
       remoteChangeSPK = testVector.remoteChangeSPK,
-      timeout = testVector.timeout,
+      penaltyTimeout = testVector.timeouts.penaltyTimeout,
+      contractMaturity = testVector.timeouts.contractMaturity,
+      contractTimeout = testVector.timeouts.contractTimeout,
       feeRate = testVector.feeRate
     )
     val outputs = SerializedDLCOutputs(
@@ -465,7 +471,9 @@ case class SerializedDLCInputs(
     remoteInput: CurrencyUnit,
     remoteFundingUtxos: Vector[SerializedSegwitSpendingInfo],
     remoteChangeSPK: WitnessScriptPubKeyV0,
-    timeout: BlockStampWithFuture,
+    penaltyTimeout: Int,
+    contractMaturity: BlockStampWithFuture,
+    contractTimeout: BlockStampWithFuture,
     feeRate: SatoshisPerByte) {
   require(localPayouts.keySet.contains(realOutcome), "Outcome must be possible")
   require(localPayouts.size == 2, "Currently only Binary DLCs are supported")

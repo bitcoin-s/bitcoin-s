@@ -381,20 +381,6 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                     case _: Failure[UInt32] => result
                   }
               }
-            case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
-              if (p2pkWithTimeout.isBeforeTimeout) {
-                loop(newRemaining, currentLockTimeOpt)
-              } else {
-                val result = computeNextLockTime(
-                  currentLockTimeOpt,
-                  p2pkWithTimeout.scriptPubKey.lockTime.toLong)
-
-                result match {
-                  case Success(newLockTime) =>
-                    loop(newRemaining, Some(newLockTime))
-                  case _: Failure[UInt32] => result
-                }
-              }
             case p2sh: P2SHSpendingInfoFull =>
               loop(p2sh.nestedSpendingInfo +: newRemaining, currentLockTimeOpt)
             case p2wsh: P2WSHV0SpendingInfoFull =>
@@ -402,7 +388,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
             case conditional: ConditionalSpendingInfoFull =>
               loop(conditional.nestedSpendingInfo +: newRemaining,
                    currentLockTimeOpt)
-            case _: P2WPKHV0SpendingInfo |
+            case _: P2WPKHV0SpendingInfo | _: P2PKWithTimeoutSpendingInfo |
                 _: UnassignedSegwitNativeUTXOSpendingInfo |
                 _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
                 _: MultiSignatureSpendingInfoFull | _: EmptySpendingInfo =>
@@ -451,9 +437,11 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
                                    sequence)
                 loop(newRemaining, input +: accum)
               } else {
+                val sequence = solveSequenceForCSV(
+                  p2pkWithTimeout.scriptPubKey.lockTime)
                 val input = TransactionInput(p2pkWithTimeout.outPoint,
                                              EmptyScriptSignature,
-                                             UInt32.zero)
+                                             sequence)
                 loop(newRemaining, input +: accum)
               }
             case p2sh: P2SHSpendingInfoFull =>
