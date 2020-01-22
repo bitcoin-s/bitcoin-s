@@ -87,7 +87,7 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
         for {
           txBuilder <- txBuilderF
           _ <- badFeeF
-          tx <- BinaryOutcomeDLCWithSelf.subtractFeeAndSign(txBuilder)
+          tx <- BinaryOutcomeDLCClient.subtractFeeAndSign(txBuilder)
         } yield {
           val diffs = outputs.zip(tx.outputs).map {
             case (before, after) =>
