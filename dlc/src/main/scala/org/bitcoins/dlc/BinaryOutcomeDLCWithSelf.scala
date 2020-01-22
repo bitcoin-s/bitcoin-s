@@ -518,7 +518,7 @@ case class BinaryOutcomeDLCWithSelf(
   def executeUnilateralDLC(
       dlcSetup: SetupDLC,
       oracleSigF: Future[SchnorrDigitalSignature],
-      local: Boolean): Future[DLCOutcome] = {
+      local: Boolean): Future[DLCOutcomeWithSelf] = {
     val SetupDLC(fundingTx,
                  fundingSpendingInfo,
                  cetWinLocal,
@@ -617,7 +617,7 @@ case class BinaryOutcomeDLCWithSelf(
 
       localSpendingTxF.flatMap { localSpendingTx =>
         remoteSpendingTxF.map { remoteSpendingTx =>
-          DLCOutcome(
+          DLCOutcomeWithSelf(
             fundingTx = fundingTx,
             cet = cet,
             localClosingTx = localSpendingTx,
@@ -640,7 +640,7 @@ case class BinaryOutcomeDLCWithSelf(
   def executeJusticeDLC(
       dlcSetup: SetupDLC,
       timedOutCET: Transaction,
-      local: Boolean): Future[DLCOutcome] = {
+      local: Boolean): Future[DLCOutcomeWithSelf] = {
     val justiceOutput = timedOutCET.outputs.head
     val normalOutput = timedOutCET.outputs.last
 
@@ -704,7 +704,7 @@ case class BinaryOutcomeDLCWithSelf(
     justiceSpendingTxF.flatMap { justiceSpendingTx =>
       normalSpendingTxF.map { normalSpendingTx =>
         // Note we misuse DLCOutcome a little here since there is no local and remote
-        DLCOutcome(
+        DLCOutcomeWithSelf(
           fundingTx = dlcSetup.fundingTx,
           cet = timedOutCET,
           localClosingTx = justiceSpendingTx,
@@ -722,7 +722,7 @@ case class BinaryOutcomeDLCWithSelf(
     *
     * @return Each transaction published and its spending info
     */
-  def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcome] = {
+  def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcomeWithSelf] = {
     val SetupDLC(fundingTx,
                  fundingSpendingInfo,
                  _,
@@ -770,7 +770,7 @@ case class BinaryOutcomeDLCWithSelf(
 
     localSpendingTxF.flatMap { localSpendingTx =>
       remoteSpendingTxF.map { remoteSpendingTx =>
-        DLCOutcome(
+        DLCOutcomeWithSelf(
           fundingTx = fundingTx,
           cet = refundTx,
           localClosingTx = localSpendingTx,
@@ -784,3 +784,15 @@ case class BinaryOutcomeDLCWithSelf(
     }
   }
 }
+
+/** Contains all DLC transactions for both parties and the BitcoinUTXOSpendingInfos they use. */
+case class DLCOutcomeWithSelf(
+    fundingTx: Transaction,
+    cet: Transaction,
+    localClosingTx: Transaction,
+    remoteClosingTx: Transaction,
+    fundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
+    fundingSpendingInfo: BitcoinUTXOSpendingInfoFull,
+    localCetSpendingInfo: BitcoinUTXOSpendingInfoFull,
+    remoteCetSpendingInfo: BitcoinUTXOSpendingInfoFull
+)

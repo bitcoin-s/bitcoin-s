@@ -175,15 +175,15 @@ class BinaryOutcomeDLCWithSelfTest extends BitcoinSAsyncTest {
     tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
   }
 
-  def validateOutcome(outcome: DLCOutcome): Assertion = {
-    val DLCOutcome(fundingTx,
-                   cet,
-                   localClosingTx,
-                   remoteClosingTx,
-                   initialSpendingInfos,
-                   fundingSpendingInfo,
-                   localCetSpendingInfo,
-                   remoteCetSpendingInfo) = outcome
+  def validateOutcome(outcome: DLCOutcomeWithSelf): Assertion = {
+    val DLCOutcomeWithSelf(fundingTx,
+                           cet,
+                           localClosingTx,
+                           remoteClosingTx,
+                           initialSpendingInfos,
+                           fundingSpendingInfo,
+                           localCetSpendingInfo,
+                           remoteCetSpendingInfo) = outcome
 
     assert(noEmptySPKOutputs(fundingTx))
     assert(noEmptySPKOutputs(cet))

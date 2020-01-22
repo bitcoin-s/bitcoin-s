@@ -211,7 +211,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
     tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
   }
 
-  def validateOutcome(outcome: DLCOutcome): Future[Assertion] = {
+  def validateOutcome(outcome: DLCOutcomeWithSelf): Future[Assertion] = {
     for {
       client <- clientF
       regtestLocalClosingTx <- client.getRawTransaction(
