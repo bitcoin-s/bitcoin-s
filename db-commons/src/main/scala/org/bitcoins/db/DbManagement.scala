@@ -1,5 +1,6 @@
 package org.bitcoins.db
 
+import org.flywaydb.core.Flyway
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -82,5 +83,20 @@ abstract class DbManagement extends DatabaseLogger {
     import config.database
     val result = database.run(table.schema.dropIfExists)
     result
+  }
+
+  /** Executes migrations related to this database
+    *
+    * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]] */
+  def migrate(appConfig: AppConfig): Int = {
+    val url = appConfig.jdbcUrl
+    val username = ""
+    val password = ""
+    //appConfig.dbName is for the format 'walletdb.sqlite' or 'nodedb.sqlite' etc
+    //we need to remove the '.sqlite' suffix
+    val dbName = appConfig.dbName.split('.').head.mkString
+    val config = Flyway.configure().locations(s"classpath:${dbName}/migration/")
+    val flyway = config.dataSource(url, username, password).load
+    flyway.migrate()
   }
 }

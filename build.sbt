@@ -46,6 +46,7 @@ lazy val `bitcoin-s` = project
     core,
     coreTest,
     dbCommons,
+    dbCommonsTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -272,6 +273,13 @@ lazy val dbCommons = project
     libraryDependencies ++= Deps.dbCommons
   )
   .dependsOn(core)
+
+lazy val dbCommonsTest = project
+  .in(file("db-commons-test"))
+  .settings(
+    name := "bitcoin-s-db-commons-test"
+  )
+  .dependsOn(testkit)
 
 lazy val zmq = project
   .in(file("zmq"))
