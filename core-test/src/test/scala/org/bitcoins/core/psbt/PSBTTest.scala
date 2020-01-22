@@ -209,7 +209,7 @@ class PSBTTest extends BitcoinSAsyncTest {
     val tx = psbt.extractTransaction
 
     assert(tx == txT.get)
-    assert(psbt.extractTransaction == expected)
+    assert(tx == expected)
   }
 
   it must "fail to extract a transaction from a non-finalized PSBT" in {

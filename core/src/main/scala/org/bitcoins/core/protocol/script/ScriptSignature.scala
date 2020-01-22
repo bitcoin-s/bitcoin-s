@@ -57,8 +57,8 @@ object NonStandardScriptSignature
   * This script pushes an OP_TRUE onto the stack, causing a successful spend.
   */
 case object TrivialTrueScriptSignature extends ScriptSignature {
-  override def signatures: Seq[ECDigitalSignature] = Nil
-  override def asm: Vector[ScriptToken] =
+  override lazy val signatures: Seq[ECDigitalSignature] = Nil
+  override lazy val asm: Vector[ScriptToken] =
     Vector(BytesToPushOntoStack(1), ScriptConstant("51"))
 
   def isTrivialTrueScriptSignature(asm: Seq[ScriptToken]): Boolean = {
@@ -520,7 +520,7 @@ object ConditionalScriptSignature
   }
 
   @scala.annotation.tailrec
-  def apply(
+  def fromNestedScriptSig(
       nestedScriptSig: ScriptSignature,
       conditionalPath: ConditionalPath): ConditionalScriptSignature = {
     conditionalPath match {
@@ -531,11 +531,11 @@ object ConditionalScriptSignature
       case ConditionalPath.nonNestedFalse =>
         ConditionalScriptSignature(nestedScriptSig, condition = false)
       case ConditionalPath.ConditionTrue(nextCondition) =>
-        ConditionalScriptSignature(
+        ConditionalScriptSignature.fromNestedScriptSig(
           ConditionalScriptSignature(nestedScriptSig, condition = true),
           nextCondition)
       case ConditionalPath.ConditionFalse(nextCondition) =>
-        ConditionalScriptSignature(
+        ConditionalScriptSignature.fromNestedScriptSig(
           ConditionalScriptSignature(nestedScriptSig, condition = false),
           nextCondition)
     }
