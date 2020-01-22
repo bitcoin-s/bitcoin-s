@@ -1,4 +1,7 @@
-CREATE TABLE IF NOT EXISTS "txo_spending_info" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"tx_outpoint" VARCHAR(254) NOT NULL,"script_pub_key" VARCHAR(254) NOT NULL,"value" INTEGER NOT NULL,"hd_privkey_path" VARCHAR(254) NOT NULL,"redeem_script" VARCHAR(254),"script_witness" VARCHAR(254),"confirmations" INTEGER NOT NULL,"spent" INTEGER NOT NULL,"txid" VARCHAR(254) NOT NULL,constraint "fk_scriptPubKey" foreign key("script_pub_key") references "addresses"("script_pub_key") on update NO ACTION on delete NO ACTION);
+CREATE TABLE IF NOT EXISTS "txo_spending_info" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"tx_outpoint" VARCHAR(254) NOT NULL, "txo_state" VARCHAR(254) NOT NULL, "script_pub_key" VARCHAR(254) NOT NULL,"value" INTEGER NOT NULL,"hd_privkey_path" VARCHAR(254) NOT NULL,"redeem_script" VARCHAR(254),"script_witness" VARCHAR(254),"confirmations" INTEGER NOT NULL,"spent" INTEGER NOT NULL,"txid" VARCHAR(254) NOT NULL,constraint "fk_scriptPubKey" foreign key("script_pub_key") references "addresses"("script_pub_key") on delete NO ACTION);
+
+UPDATE "txo_spending_info" SET "txo_state" = "PendingConfirmationsSpent" WHERE "txo_state" = 1;
+UPDATE "txo_spending_info" SET "txo_state" = "PendingConfirmationsReceived" WHERE "txo_state" = 0 ;
 
 CREATE TABLE IF NOT EXISTS "wallet_accounts" ("hd_purpose" INTEGER NOT NULL,"xpub" VARCHAR(254) NOT NULL,"coin" INTEGER NOT NULL,"account_index" INTEGER NOT NULL,constraint "pk_account" primary key("hd_purpose","coin","account_index"));
 

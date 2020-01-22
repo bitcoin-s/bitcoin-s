@@ -46,6 +46,7 @@ lazy val `bitcoin-s` = project
     core,
     coreTest,
     dbCommons,
+    dbCommonsTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
