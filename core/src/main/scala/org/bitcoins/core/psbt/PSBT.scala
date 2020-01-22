@@ -323,17 +323,21 @@ case class PSBT(
       outputMaps(index).witnessScriptOpt.isEmpty,
       s"Output map already contains a ScriptWitness: ${inputMaps(index).witnessScriptOpt.get}")
 
-    val newElement = scriptWitness match {
-      case p2wpkh: P2WPKHWitnessV0 =>
-        OutputPSBTRecord.WitnessScript(P2WPKHWitnessSPKV0(p2wpkh.pubKey))
+    val outputMap = outputMaps(index)
+
+    val newMap = scriptWitness match {
+      case _: P2WPKHWitnessV0 =>
+        // We do not need to add a WitnessScript for P2WPKH because it will
+        // be assumed because of the ScriptPubKey having the 20-byte hash
+        outputMap
       case p2wsh: P2WSHWitnessV0 =>
-        OutputPSBTRecord.WitnessScript(p2wsh.redeemScript)
+        OutputPSBTMap(outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+
+        OutputPSBTRecord.WitnessScript(p2wsh.redeemScript))
       case EmptyScriptWitness =>
         throw new IllegalArgumentException(
           s"Invalid scriptWitness given, got: $scriptWitness")
     }
 
-    val newMap = OutputPSBTMap(outputMaps(index).elements :+ newElement)
     val newOutputMaps = outputMaps.updated(index, newMap)
     PSBT(globalMap, inputMaps, newOutputMaps)
   }
