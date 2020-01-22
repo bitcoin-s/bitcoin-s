@@ -185,8 +185,10 @@ case class PSBT(
         val outIsWitnessScript =
           WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
         val hasWitScript = inputMap.witnessScriptOpt.isDefined
+        val hasWitRedeemScript = inputMap.redeemScriptOpt.isDefined && WitnessScriptPubKey
+          .isWitnessScriptPubKey(inputMap.redeemScriptOpt.get.redeemScript.asm)
 
-        if (outIsWitnessScript || hasWitScript) {
+        if (outIsWitnessScript || hasWitScript || hasWitRedeemScript) {
           inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
         } else {
           inputMap.filterRecords(NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(
@@ -230,16 +232,19 @@ case class PSBT(
             s"Cannot update an InputPSBTMap that is finalized, index: $index")
 
     val inputMap = inputMaps(index)
-    val redeemScriptOpt = inputMap.redeemScriptOpt.map(_.redeemScript)
 
-    val elements = if (isP2SHNestedSegwit(script, redeemScriptOpt)) {
+    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val redeemScriptOpt = inputMap.redeemScriptOpt
+    val hasRedeemScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
+      .isWitnessScriptPubKey(redeemScriptOpt.get.redeemScript.asm)
+
+    val elements = if (!isWitScript && hasRedeemScript) {
       inputMap.filterRecords(WitnessScriptKeyId) :+ InputPSBTRecord
         .WitnessScript(script.asInstanceOf[RawScriptPubKey])
     } else {
       inputMap.filterRecords(RedeemScriptKeyId) :+ InputPSBTRecord.RedeemScript(
         script)
     }
-
     val newMap = InputPSBTMap(elements).compressMap(transaction.inputs(index))
     val newInputMaps = inputMaps.updated(index, newMap)
 
@@ -274,6 +279,38 @@ case class PSBT(
         throw new IllegalArgumentException(
           s"Output script does not need a redeem script, got: $outputScript")
     }
+  }
+
+  def addScriptWitnessToInput(
+      scriptWitness: ScriptWitness,
+      index: Int): PSBT = {
+    require(index >= 0,
+            s"index must be greater than or equal to 0, got: $index")
+    require(
+      index < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+    require(!inputMaps(index).isFinalized,
+            s"Cannot update an InputPSBTMap that is finalized, index: $index")
+    require(
+      inputMaps(index).witnessScriptOpt.isEmpty,
+      s"Input map already contains a ScriptWitness: ${inputMaps(index).witnessScriptOpt.get}")
+
+    val previousElements = inputMaps(index).elements
+
+    val newMap = scriptWitness match {
+      case _: P2WPKHWitnessV0 =>
+        // We do not need to add the ScriptWitness because it will be known
+        // by having a 20 byte hash in the script
+        InputPSBTMap(previousElements)
+      case p2wsh: P2WSHWitnessV0 =>
+        val newElement = InputPSBTRecord.WitnessScript(p2wsh.redeemScript)
+        InputPSBTMap(previousElements :+ newElement)
+      case EmptyScriptWitness =>
+        throw new IllegalArgumentException(
+          s"Invalid scriptWitness given, got: $scriptWitness")
+    }
+    val newInputMaps = inputMaps.updated(index, newMap)
+    PSBT(globalMap, newInputMaps, outputMaps)
   }
 
   /**

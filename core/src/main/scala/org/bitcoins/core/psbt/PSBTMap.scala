@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   Transaction,
   TransactionInput,
+  TransactionOutput,
   WitnessTransaction
 }
 import org.bitcoins.core.script.crypto.HashType
@@ -142,6 +143,10 @@ object GlobalPSBTMap extends PSBTMapFactory[GlobalPSBTRecord, GlobalPSBTMap] {
 
 case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     extends PSBTMap[InputPSBTRecord] {
+  require(
+    this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty,
+    "InputPSBTMap cannot have both a NonWitnessOrUnknownUTXO and a WitnessUTXO"
+  )
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
 
@@ -551,6 +556,29 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
                                   conditionalPath)
   }
 
+  private def changeToWitnessUTXO(
+      transactionOutput: TransactionOutput): InputPSBTMap = {
+    val newElements = transactionOutput.scriptPubKey match {
+      case _: WitnessScriptPubKey =>
+        filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
+      case _: P2SHScriptPubKey =>
+        if (redeemScriptOpt.isDefined && redeemScriptOpt.get.redeemScript
+              .isInstanceOf[WitnessScriptPubKey]) {
+          filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(transactionOutput)
+        } else {
+          elements
+        }
+      case _: P2PKHScriptPubKey | _: P2PKScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
+          EmptyScriptPubKey | _: LockTimeScriptPubKey |
+          _: NonStandardScriptPubKey | _: WitnessCommitment |
+          _: ConditionalScriptPubKey =>
+        elements
+    }
+
+    InputPSBTMap(newElements)
+  }
+
   /**
     * Check if this satisfies criteria for witness. If it does, delete the NonWitnessOrUnknownUTXO field
     * This is useful for following reasons.
@@ -564,17 +592,14 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       this
     } else {
       val newElements = {
-        val nonWitUtxoVec =
-          this.getRecords(NonWitnessUTXOKeyId)
-        val witScriptVec =
-          this.getRecords(WitnessScriptKeyId)
-        if (nonWitUtxoVec.size == 1 && witScriptVec.size == 1) {
-          val nonWitUtxo = nonWitUtxoVec.head.transactionSpent
+        if (nonWitnessOrUnknownUTXOOpt.isDefined) {
+          val nonWitUtxo = nonWitnessOrUnknownUTXOOpt.get.transactionSpent
           if (txIn.previousOutput.vout.toInt < nonWitUtxo.outputs.size) {
             val out = nonWitUtxo.outputs(txIn.previousOutput.vout.toInt)
-            filterRecords(NonWitnessUTXOKeyId) :+ WitnessUTXO(out)
+            changeToWitnessUTXO(out).elements
           } else {
-            filterRecords(NonWitnessUTXOKeyId)
+            throw new IllegalArgumentException(
+              s"Invalid txIn given, got: $txIn")
           }
         } else {
           elements
