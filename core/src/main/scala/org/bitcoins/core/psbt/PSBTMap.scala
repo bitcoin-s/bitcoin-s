@@ -584,11 +584,13 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     * @return The compressed InputPSBTMap
     */
   def compressMap(txIn: TransactionInput): InputPSBTMap = {
+    require(
+      this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty,
+      "Cannot compress if map does not have a NonWitnessOrUnknownUTXO or a WitnessUTXO"
+    )
     if (isFinalized) {
       this
     } else {
-      require(
-        this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty)
       val newElements = {
         if (nonWitnessOrUnknownUTXOOpt.isDefined) {
           val nonWitUtxo = nonWitnessOrUnknownUTXOOpt.get.transactionSpent
