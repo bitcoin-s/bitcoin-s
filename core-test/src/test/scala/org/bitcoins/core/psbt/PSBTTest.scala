@@ -4,12 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  P2WSHWitnessSPKV0,
-  P2WSHWitnessV0,
-  RawScriptPubKey,
-  ScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   EmptyTransactionInput,
@@ -132,7 +127,7 @@ class PSBTTest extends BitcoinSAsyncTest {
     val nonWitnessOrUnknownUTXO = NonWitnessOrUnknownUTXO(Transaction(
       "02000000019dfc6628c26c5899fe1bd3dc338665bfd55d7ada10f6220973df2d386dec12760100000000ffffffff01f03dcd1d000000001600147b3a00bfdc14d27795c2b74901d09da6ef13357900000000"))
     val witnessUTXO =
-      WitnessUTXO(TransactionOutput(Satoshis.one, ScriptPubKey.empty))
+      WitnessUTXO(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
 
     assertThrows[IllegalArgumentException](
       InputPSBTMap(Vector(nonWitnessOrUnknownUTXO, witnessUTXO)))
