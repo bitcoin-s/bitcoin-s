@@ -185,8 +185,10 @@ case class PSBT(
         val outIsWitnessScript =
           WitnessScriptPubKey.isWitnessScriptPubKey(out.scriptPubKey.asm)
         val hasWitScript = inputMap.witnessScriptOpt.isDefined
+        val hasWitRedeemScript = inputMap.redeemScriptOpt.isDefined && WitnessScriptPubKey
+          .isWitnessScriptPubKey(inputMap.redeemScriptOpt.get.redeemScript.asm)
 
-        if (outIsWitnessScript || hasWitScript) {
+        if (outIsWitnessScript || hasWitScript || hasWitRedeemScript) {
           inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
         } else {
           inputMap.filterRecords(NonWitnessUTXOKeyId) :+ NonWitnessOrUnknownUTXO(
@@ -296,20 +298,13 @@ case class PSBT(
     val previousElements = inputMaps(index).elements
 
     val newMap = scriptWitness match {
-      case p2wpkh: P2WPKHWitnessV0 =>
-        val newElement =
-          InputPSBTRecord.WitnessScript(P2PKHScriptPubKey(p2wpkh.pubKey))
-        // Compress to remove NonWitnessOrUnknownUTXO then remove P2WPKHWitnessV0
-        // because it is not necessary
-        val compressedMap = InputPSBTMap(previousElements :+ newElement)
-          .compressMap(transaction.inputs(index))
-        InputPSBTMap(
-          compressedMap.elements.filterNot(
-            _.key.head == PSBTInputKeyId.WitnessScriptKeyId.byte))
+      case _: P2WPKHWitnessV0 =>
+        // We do not need to add the ScriptWitness because it will be known
+        // by having a 20 byte hash in the script
+        InputPSBTMap(previousElements)
       case p2wsh: P2WSHWitnessV0 =>
         val newElement = InputPSBTRecord.WitnessScript(p2wsh.redeemScript)
         InputPSBTMap(previousElements :+ newElement)
-          .compressMap(transaction.inputs(index))
       case EmptyScriptWitness =>
         throw new IllegalArgumentException(
           s"Invalid scriptWitness given, got: $scriptWitness")
