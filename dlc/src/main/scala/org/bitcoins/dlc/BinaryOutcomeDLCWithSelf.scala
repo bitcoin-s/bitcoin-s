@@ -402,7 +402,7 @@ case class BinaryOutcomeDLCWithSelf(
     )
   }
 
-  def setupDLC(): Future[SetupDLC] = {
+  def setupDLC(): Future[SetupDLCWithSelf] = {
     // Construct Funding Transaction
     createFundingTransaction.flatMap { fundingTx =>
       logger.info(s"Funding Transaction: ${fundingTx.hex}\n")
@@ -445,7 +445,7 @@ case class BinaryOutcomeDLCWithSelf(
         (cetLoseRemote, cetLoseRemoteWitness) <- cetLoseRemoteF
         refundTx <- refundTxF
       } yield {
-        SetupDLC(
+        SetupDLCWithSelf(
           fundingTx = fundingTx,
           fundingSpendingInfo = fundingSpendingInfo,
           cetWinLocal = cetWinLocal,
@@ -516,20 +516,20 @@ case class BinaryOutcomeDLCWithSelf(
     * @return Each transaction published and its spending info
     */
   def executeUnilateralDLC(
-      dlcSetup: SetupDLC,
+      dlcSetup: SetupDLCWithSelf,
       oracleSigF: Future[SchnorrDigitalSignature],
       local: Boolean): Future[DLCOutcomeWithSelf] = {
-    val SetupDLC(fundingTx,
-                 fundingSpendingInfo,
-                 cetWinLocal,
-                 cetWinLocalWitness,
-                 cetLoseLocal,
-                 cetLoseLocalWitness,
-                 cetWinRemote,
-                 cetWinRemoteWitness,
-                 cetLoseRemote,
-                 cetLoseRemoteWitness,
-                 _) = dlcSetup
+    val SetupDLCWithSelf(fundingTx,
+                         fundingSpendingInfo,
+                         cetWinLocal,
+                         cetWinLocalWitness,
+                         cetLoseLocal,
+                         cetLoseLocalWitness,
+                         cetWinRemote,
+                         cetWinRemoteWitness,
+                         cetLoseRemote,
+                         cetLoseRemoteWitness,
+                         _) = dlcSetup
 
     oracleSigF.flatMap { oracleSig =>
       val sigForWin = Schnorr.verify(messageWin, oracleSig, oraclePubKey)
@@ -638,7 +638,7 @@ case class BinaryOutcomeDLCWithSelf(
     * @return Each transaction published and its spending info
     */
   def executeJusticeDLC(
-      dlcSetup: SetupDLC,
+      dlcSetup: SetupDLCWithSelf,
       timedOutCET: Transaction,
       local: Boolean): Future[DLCOutcomeWithSelf] = {
     val justiceOutput = timedOutCET.outputs.head
@@ -722,18 +722,19 @@ case class BinaryOutcomeDLCWithSelf(
     *
     * @return Each transaction published and its spending info
     */
-  def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcomeWithSelf] = {
-    val SetupDLC(fundingTx,
-                 fundingSpendingInfo,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 refundTx) =
+  def executeRefundDLC(
+      dlcSetup: SetupDLCWithSelf): Future[DLCOutcomeWithSelf] = {
+    val SetupDLCWithSelf(fundingTx,
+                         fundingSpendingInfo,
+                         _,
+                         _,
+                         _,
+                         _,
+                         _,
+                         _,
+                         _,
+                         _,
+                         refundTx) =
       dlcSetup
 
     val localOutput = refundTx.outputs.head
@@ -784,6 +785,21 @@ case class BinaryOutcomeDLCWithSelf(
     }
   }
 }
+
+/** Contains all DLC transactions after initial setup. */
+case class SetupDLCWithSelf(
+    fundingTx: Transaction,
+    fundingSpendingInfo: P2WSHV0SpendingInfoFull,
+    cetWinLocal: Transaction,
+    cetWinLocalWitness: P2WSHWitnessV0,
+    cetLoseLocal: Transaction,
+    cetLoseLocalWitness: P2WSHWitnessV0,
+    cetWinRemote: Transaction,
+    cetWinRemoteWitness: P2WSHWitnessV0,
+    cetLoseRemote: Transaction,
+    cetLoseRemoteWitness: P2WSHWitnessV0,
+    refundTx: Transaction
+)
 
 /** Contains all DLC transactions for both parties and the BitcoinUTXOSpendingInfos they use. */
 case class DLCOutcomeWithSelf(

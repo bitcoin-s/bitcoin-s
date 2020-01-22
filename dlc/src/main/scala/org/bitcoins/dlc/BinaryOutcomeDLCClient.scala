@@ -3,6 +3,7 @@ package org.bitcoins.dlc
 import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
   ECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
@@ -410,7 +411,7 @@ case class BinaryOutcomeDLCClient(
     )
   }
 
-  def setupDLC(): Future[SetupDLC] = {
+  def setupDLC(): Future[SetupDLCWithSelf] = {
     // Construct Funding Transaction
     createUnsignedFundingTransaction.flatMap { unsignedFundingTx =>
       val fundingTxId = unsignedFundingTx.txIdBE
@@ -452,7 +453,7 @@ case class BinaryOutcomeDLCClient(
         refundTx <- refundTxF
         fundingTx <- createFundingTransaction
       } yield {
-        SetupDLC(
+        SetupDLCWithSelf(
           fundingTx = fundingTx,
           fundingSpendingInfo = fundingSpendingInfo,
           cetWinLocal = cetWinLocal,
@@ -517,19 +518,19 @@ case class BinaryOutcomeDLCClient(
     * @return Each transaction published and its spending info
     */
   def executeUnilateralDLC(
-      dlcSetup: SetupDLC,
+      dlcSetup: SetupDLCWithSelf,
       oracleSigF: Future[SchnorrDigitalSignature]): Future[DLCOutcome] = {
-    val SetupDLC(fundingTx,
-                 _,
-                 cetWinLocal,
-                 cetWinLocalWitness,
-                 cetLoseLocal,
-                 cetLoseLocalWitness,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _) = dlcSetup
+    val SetupDLCWithSelf(fundingTx,
+                         _,
+                         cetWinLocal,
+                         cetWinLocalWitness,
+                         cetLoseLocal,
+                         cetLoseLocalWitness,
+                         _,
+                         _,
+                         _,
+                         _,
+                         _) = dlcSetup
 
     oracleSigF.flatMap { oracleSig =>
       val sigForWin = Schnorr.verify(messageWin, oracleSig, oraclePubKey)
@@ -577,10 +578,9 @@ case class BinaryOutcomeDLCClient(
           fundingTx = fundingTx,
           cet = cet,
           closingTx = localSpendingTx,
-          fundingUtxos = fundingUtxos,
-          remoteFundingUTXOSigs = ???,
-          fundingSig = ???,
-          remoteFundingSig = ???,
+          fundingSigs = ???,
+          cetSig = ???,
+          remoteCETSig = ???,
           cetSpendingInfo = cetSpendingInfo
         )
       }
@@ -588,7 +588,7 @@ case class BinaryOutcomeDLCClient(
   }
 
   def executeRemoteUnilateralDLC(
-      dlcSetup: SetupDLC,
+      dlcSetup: SetupDLCWithSelf,
       publishedCET: Transaction): Future[DLCOutcome] = {
     val output = publishedCET.outputs.last
 
@@ -621,10 +621,9 @@ case class BinaryOutcomeDLCClient(
         fundingTx = dlcSetup.fundingTx,
         cet = publishedCET,
         closingTx = tx,
-        fundingUtxos = fundingUtxos,
-        remoteFundingUTXOSigs = ???,
-        fundingSig = ???,
-        remoteFundingSig = ???,
+        fundingSigs = ???,
+        cetSig = ???,
+        remoteCETSig = ???,
         cetSpendingInfo = spendingInfo
       )
     }
@@ -636,7 +635,7 @@ case class BinaryOutcomeDLCClient(
     * @return Each transaction published and its spending info
     */
   def executeJusticeDLC(
-      dlcSetup: SetupDLC,
+      dlcSetup: SetupDLCWithSelf,
       timedOutCET: Transaction): Future[DLCOutcome] = {
     val justiceOutput = timedOutCET.outputs.head
 
@@ -670,10 +669,9 @@ case class BinaryOutcomeDLCClient(
         fundingTx = dlcSetup.fundingTx,
         cet = timedOutCET,
         closingTx = justiceSpendingTx,
-        fundingUtxos = fundingUtxos,
-        remoteFundingUTXOSigs = ???,
-        fundingSig = ???,
-        remoteFundingSig = ???,
+        fundingSigs = ???,
+        cetSig = ???,
+        remoteCETSig = ???,
         cetSpendingInfo = justiceSpendingInfo
       )
     }
@@ -683,18 +681,8 @@ case class BinaryOutcomeDLCClient(
     *
     * @return Each transaction published and its spending info
     */
-  def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcome] = {
-    val SetupDLC(fundingTx,
-                 fundingSpendingInfo,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 _,
-                 refundTx) =
+  def executeRefundDLC(dlcSetup: SetupDLCWithSelf): Future[DLCOutcome] = {
+    val SetupDLCWithSelf(fundingTx, _, _, _, _, _, _, _, _, _, refundTx) =
       dlcSetup
 
     val localOutput = refundTx.outputs.head
@@ -718,10 +706,9 @@ case class BinaryOutcomeDLCClient(
         fundingTx = fundingTx,
         cet = refundTx,
         closingTx = localSpendingTx,
-        fundingUtxos = fundingUtxos,
-        remoteFundingUTXOSigs = ???,
-        fundingSig = ???,
-        remoteFundingSig = ???,
+        fundingSigs = ???,
+        cetSig = ???,
+        remoteCETSig = ???,
         cetSpendingInfo = localRefundSpendingInfo
       )
     }
@@ -795,30 +782,25 @@ object BinaryOutcomeDLCClient {
   }
 }
 
-/** Contains all DLC transactions after initial setup. */
+// TODO add fundingPSBT to allow for verification of fundingTx
+// TODO have PSBTs for each CET rather than using sigs and txids
+// TODO use SetupDLC in this file instead of SetupDLCWithSelf
 case class SetupDLC(
     fundingTx: Transaction,
-    fundingSpendingInfo: P2WSHV0SpendingInfoFull,
-    cetWinLocal: Transaction,
-    cetWinLocalWitness: P2WSHWitnessV0,
-    cetLoseLocal: Transaction,
-    cetLoseLocalWitness: P2WSHWitnessV0,
-    cetWinRemote: Transaction,
-    cetWinRemoteWitness: P2WSHWitnessV0,
-    cetLoseRemote: Transaction,
-    cetLoseRemoteWitness: P2WSHWitnessV0,
-    refundTx: Transaction
-)
+    cetWinSig: ECDigitalSignature,
+    cetLoseSig: ECDigitalSignature,
+    cetWinRemoteTxid: DoubleSha256DigestBE,
+    cetLoseRemoteTxid: DoubleSha256DigestBE,
+    refundTx: Transaction)
 
 /** Contains all DLC transactions and the BitcoinUTXOSpendingInfos they use. */
 case class DLCOutcome(
     fundingTx: Transaction,
     cet: Transaction,
     closingTx: Transaction,
-    fundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
-    remoteFundingUTXOSigs: Vector[ECDigitalSignature],
-    fundingSig: ECDigitalSignature,
-    remoteFundingSig: ECDigitalSignature,
+    fundingSigs: Vector[ECDigitalSignature],
+    cetSig: ECDigitalSignature,
+    remoteCETSig: ECDigitalSignature,
     cetSpendingInfo: BitcoinUTXOSpendingInfoFull
 )
 

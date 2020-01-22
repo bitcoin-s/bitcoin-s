@@ -282,7 +282,7 @@ class BinaryOutcomeDLCWithSelfIntegrationTest extends BitcoindRpcTest {
   def executeForJusticeCase(
       fakeWin: Boolean,
       local: Boolean): Future[Assertion] = {
-    def chooseCET(setup: SetupDLC): Transaction = {
+    def chooseCET(setup: SetupDLCWithSelf): Transaction = {
       if (fakeWin) {
         if (local) {
           setup.cetWinRemote
