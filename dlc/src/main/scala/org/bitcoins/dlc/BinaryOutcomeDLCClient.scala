@@ -6,6 +6,7 @@ import org.bitcoins.core.crypto.{
   ECPrivateKey,
   ECPublicKey,
   ExtPrivateKey,
+  ExtPublicKey,
   Schnorr,
   SchnorrDigitalSignature
 }
@@ -26,6 +27,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
+  TransactionInput,
   TransactionOutPoint,
   TransactionOutput
 }
@@ -45,30 +47,23 @@ import scodec.bits.ByteVector
 import scala.concurrent.{ExecutionContext, Future}
 
 /** This case class allows for the construction and execution of binary outcome
-  * Discreet Log Contracts between one party and itself. In the future this will
-  * be split amongst two separate parties. This change will likely require that
-  * this class be largely altered.
-  *
-  * The "two parties", which are actually just one node taking both positions, are
-  * referred to as Local and Remote. The two outcomes are called Win and Lose but
-  * note that Win refers to the case where Local wins money and Remote loses money.
-  * Likewise Lose refers to the case where Remote wins and Local loses money.
+  * Discreet Log Contracts between two parties.
   *
   * @param outcomeWin The String whose hash is signed by the oracle in the Win case
   * @param outcomeLose The String whose hash is signed by the oracle in the Lose case
   * @param oraclePubKey The Oracle's permanent public key
   * @param preCommittedR The Oracle's one-time event-specific public key
-  * @param localExtPrivKey Local's extended private key for this event
-  * @param remoteExtPrivKey Remote's extended private key for this event
-  * @param localInput Local's total collateral contribution
+  * @param extPrivKey This client's extended private key for this event
+  * @param remoteExtPubKey Remote's extended public key for this event
+  * @param input This client's total collateral contribution
   * @param remoteInput Remote's total collateral contribution
-  * @param localFundingUtxos Local's funding BitcoinUTXOSpendingInfo collection
-  * @param remoteFundingUtxos Remote's funding BitcoinUTXOSpendingInfo collection
-  * @param localWinPayout Local's payout in the Win case
-  * @param localLosePayout Local's payout in the Lose case
+  * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
+  * @param remoteFundingInputs Remote's funding inputs and their values
+  * @param winPayout This client's payout in the Win case
+  * @param losePayout This client's payout in the Lose case
   * @param timeouts The timeouts for this DLC
   * @param feeRate The predicted fee rate used for all transactions
-  * @param localChangeSPK Local's change ScriptPubKey used in the funding tx
+  * @param changeSPK This client's change ScriptPubKey used in the funding tx
   * @param remoteChangeSPK Remote's change ScriptPubKey used in the funding tx
   */
 case class BinaryOutcomeDLCClient(
@@ -76,17 +71,17 @@ case class BinaryOutcomeDLCClient(
     outcomeLose: String,
     oraclePubKey: ECPublicKey,
     preCommittedR: ECPublicKey,
-    localExtPrivKey: ExtPrivateKey,
-    remoteExtPrivKey: ExtPrivateKey,
-    localInput: CurrencyUnit,
+    extPrivKey: ExtPrivateKey,
+    remoteExtPubKey: ExtPublicKey,
+    input: CurrencyUnit,
     remoteInput: CurrencyUnit,
-    localFundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
-    remoteFundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
-    localWinPayout: CurrencyUnit,
-    localLosePayout: CurrencyUnit,
+    fundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
+    remoteFundingInputs: Vector[(TransactionInput, CurrencyUnit)],
+    winPayout: CurrencyUnit,
+    losePayout: CurrencyUnit,
     timeouts: DLCTimeouts,
     feeRate: FeeUnit,
-    localChangeSPK: WitnessScriptPubKeyV0,
+    changeSPK: WitnessScriptPubKeyV0,
     remoteChangeSPK: WitnessScriptPubKeyV0,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
@@ -109,17 +104,17 @@ case class BinaryOutcomeDLCClient(
   val sigPubKeyLose: ECPublicKey =
     Schnorr.computePubKey(messageLose, preCommittedR, oraclePubKey)
 
-  val fundingLocalPrivKey: ECPrivateKey =
-    localExtPrivKey.deriveChildPrivKey(UInt32(0)).key
+  val fundingPrivKey: ECPrivateKey =
+    extPrivKey.deriveChildPrivKey(UInt32(0)).key
 
-  val fundingRemotePrivKey: ECPrivateKey =
-    remoteExtPrivKey.deriveChildPrivKey(UInt32(0)).key
+  val fundingRemotePubKey: ECPublicKey =
+    remoteExtPubKey.deriveChildPubKey(UInt32(0)).get.key
 
-  val finalLocalPrivKey: ECPrivateKey =
-    localExtPrivKey.deriveChildPrivKey(UInt32(2)).key
+  val finalPrivKey: ECPrivateKey =
+    extPrivKey.deriveChildPrivKey(UInt32(2)).key
 
-  val finalRemotePrivKey: ECPrivateKey =
-    remoteExtPrivKey.deriveChildPrivKey(UInt32(2)).key
+  val finalRemotePubKey: ECPublicKey =
+    remoteExtPubKey.deriveChildPubKey(UInt32(2)).get.key
 
   /** The derivation index for the win and lose cases respectively.
     * We assign this index based on lexicographical order to keep things deterministic.
@@ -138,37 +133,45 @@ case class BinaryOutcomeDLCClient(
                   BIP32Node(eventIndex, hardened = false)))
   }
 
-  val cetLocalRefundPrivKey: ECPrivateKey =
-    cetExtPrivKey(localExtPrivKey, eventIndex = 0).key
+  val cetRefundPrivKey: ECPrivateKey =
+    cetExtPrivKey(extPrivKey, eventIndex = 0).key
 
-  val cetLocalWinPrivKey: ExtPrivateKey =
-    cetExtPrivKey(localExtPrivKey, winIndex)
+  val cetWinPrivKey: ExtPrivateKey =
+    cetExtPrivKey(extPrivKey, winIndex)
 
-  val cetLocalLosePrivKey: ExtPrivateKey =
-    cetExtPrivKey(localExtPrivKey, loseIndex)
+  val cetLosePrivKey: ExtPrivateKey =
+    cetExtPrivKey(extPrivKey, loseIndex)
 
-  val cetRemoteRefundPrivKey: ECPrivateKey =
-    cetExtPrivKey(remoteExtPrivKey, eventIndex = 0).key
+  def cetExtPubKey(rootKey: ExtPublicKey, eventIndex: Int): ExtPublicKey = {
+    rootKey
+      .deriveChildPubKey(
+        BIP32Path(BIP32Node(1, hardened = false),
+                  BIP32Node(eventIndex, hardened = false)))
+      .get
+  }
 
-  val cetRemoteWinPrivKey: ExtPrivateKey =
-    cetExtPrivKey(remoteExtPrivKey, winIndex)
+  val cetRemoteRefundPubKey: ECPublicKey =
+    cetExtPubKey(remoteExtPubKey, eventIndex = 0).key
 
-  val cetRemoteLosePrivKey: ExtPrivateKey =
-    cetExtPrivKey(remoteExtPrivKey, loseIndex)
+  val cetRemoteWinPubKey: ExtPublicKey =
+    cetExtPubKey(remoteExtPubKey, winIndex)
+
+  val cetRemoteLosePubKey: ExtPublicKey =
+    cetExtPubKey(remoteExtPubKey, loseIndex)
 
   /** Total collateral amount */
-  private val totalInput = localInput + remoteInput
+  private val totalInput = input + remoteInput
 
-  private val localFunding =
-    localFundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
-  private val remoteFunding =
-    remoteFundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+  private val totalFunding =
+    fundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+  private val remoteTotalFunding =
+    remoteFundingInputs.foldLeft(0L)(_ + _._2.satoshis.toLong)
 
   /** Remote's payout in the Win case (in which Remote loses) */
-  val remoteWinPayout: CurrencyUnit = totalInput - localWinPayout
+  val remoteWinPayout: CurrencyUnit = totalInput - winPayout
 
   /** Remote's payout in the Lose case (in which Remote wins) */
-  val remoteLosePayout: CurrencyUnit = totalInput - localLosePayout
+  val remoteLosePayout: CurrencyUnit = totalInput - losePayout
 
   /** This is only used as a placeholder and we use an invariant
     * when signing to ensure that this is never used.
@@ -177,14 +180,10 @@ case class BinaryOutcomeDLCClient(
     */
   private val emptyChangeSPK: ScriptPubKey = EmptyScriptPubKey
 
-  private val fundingUtxos = localFundingUtxos ++ remoteFundingUtxos
-
-  val fundingLocalPubKey: ECPublicKey = fundingLocalPrivKey.publicKey
-  val fundingRemotePubKey: ECPublicKey = fundingRemotePrivKey.publicKey
+  val fundingPubKey: ECPublicKey = fundingPrivKey.publicKey
 
   val fundingSPK: MultiSignatureScriptPubKey = {
-    MultiSignatureScriptPubKey(2,
-                               Vector(fundingLocalPubKey, fundingRemotePubKey))
+    MultiSignatureScriptPubKey(2, Vector(fundingPubKey, fundingRemotePubKey))
   }
 
   /** Experimental approx. vbytes for a CET */
@@ -209,62 +208,64 @@ case class BinaryOutcomeDLCClient(
     val output: TransactionOutput =
       TransactionOutput(totalInput + halfCetFee + halfCetFee,
                         P2WSHWitnessSPKV0(fundingSPK))
-    val localChange =
-      TransactionOutput(Satoshis(localFunding) - localInput - halfCetFee,
-                        localChangeSPK)
+    val change =
+      TransactionOutput(Satoshis(totalFunding) - input - halfCetFee, changeSPK)
     val remoteChange =
-      TransactionOutput(Satoshis(remoteFunding) - remoteInput - halfCetFee,
+      TransactionOutput(Satoshis(remoteTotalFunding) - remoteInput - halfCetFee,
                         remoteChangeSPK)
 
     val outputs: Vector[TransactionOutput] =
-      Vector(output, localChange, remoteChange)
+      Vector(output, change, remoteChange)
     val txBuilderF: Future[BitcoinTxBuilder] =
-      BitcoinTxBuilder(outputs, fundingUtxos, feeRate, emptyChangeSPK, network)
+      BitcoinTxBuilder(outputs,
+                       utxos = Vector(???),
+                       feeRate,
+                       emptyChangeSPK,
+                       network)
 
     txBuilderF.flatMap { txBuilder =>
       subtractFeeFromOutputsAndSign(txBuilder,
-                                    Vector(localChangeSPK, remoteChangeSPK))
+                                    Vector(changeSPK, remoteChangeSPK))
     }
   }
 
-  /** Constructs Local's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETLocal(
+  /** Constructs CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
+  def createCET(
       sigPubKey: ECPublicKey,
       fundingSpendingInfo: P2WSHV0SpendingInfoFull,
-      localPayout: CurrencyUnit,
+      payout: CurrencyUnit,
       remotePayout: CurrencyUnit,
       invariant: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean =
         noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
-    val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
-      (cetLocalWinPrivKey, cetRemoteWinPrivKey)
+    val (cetPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
+      (cetWinPrivKey, cetRemoteWinPubKey)
     } else {
-      (cetLocalLosePrivKey, cetRemoteLosePrivKey)
+      (cetLosePrivKey, cetRemoteLosePubKey)
     }
 
-    val localToLocalPrivKey =
-      cetLocalPrivKey.deriveChildPrivKey(UInt32.zero).key
-    val remoteToLocalPrivKey =
-      cetRemotePrivKey.deriveChildPrivKey(UInt32.one).key
-    val toRemotePrivKey = cetRemotePrivKey.deriveChildPrivKey(UInt32(2)).key
+    val toLocalPrivKey =
+      cetPrivKey.deriveChildPrivKey(UInt32.zero).key
+    val remoteToLocalPubKey =
+      cetRemotePubKey.deriveChildPubKey(UInt32.one).get.key
+    val toRemotePubKey = cetRemotePubKey.deriveChildPubKey(UInt32(2)).get.key
 
     val pubKeyBytes = NativeSecp256k1.pubKeyTweakAdd(
       sigPubKey.bytes.toArray,
-      localToLocalPrivKey.bytes.toArray,
+      toLocalPrivKey.bytes.toArray,
       true)
     val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
       lockTime = ScriptNumber(timeouts.penaltyTimeout),
-      timeoutPubKey = remoteToLocalPrivKey.publicKey
+      timeoutPubKey = remoteToLocalPubKey
     )
 
     val toLocal: TransactionOutput =
-      TransactionOutput(localPayout + toLocalClosingFee,
+      TransactionOutput(payout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
-      TransactionOutput(remotePayout,
-                        P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
+      TransactionOutput(remotePayout, P2WPKHWitnessSPKV0(toRemotePubKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
@@ -285,26 +286,22 @@ case class BinaryOutcomeDLCClient(
   def createCETRemote(
       sigPubKey: ECPublicKey,
       fundingSpendingInfo: P2WSHV0SpendingInfoFull,
-      localPayout: CurrencyUnit,
+      payout: CurrencyUnit,
       remotePayout: CurrencyUnit,
       invariant: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean =
         noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
-    val (cetLocalPrivKey, cetRemotePrivKey) = if (sigPubKey == sigPubKeyWin) {
-      (cetLocalWinPrivKey, cetRemoteWinPrivKey)
+    val (cetLocalPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
+      (cetWinPrivKey, cetRemoteWinPubKey)
     } else {
-      (cetLocalLosePrivKey, cetRemoteLosePrivKey)
+      (cetLosePrivKey, cetRemoteLosePubKey)
     }
 
-    val remoteToLocalPrivKey =
-      cetRemotePrivKey.deriveChildPrivKey(UInt32.zero).key
+    val remoteToLocalPubKey =
+      cetRemotePubKey.deriveChildPubKey(UInt32.zero).get.key
     val localToLocalPrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32.one).key
     val toRemotePrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32(2)).key
 
-    val pubKeyBytes = NativeSecp256k1.pubKeyTweakAdd(
-      sigPubKey.bytes.toArray,
-      remoteToLocalPrivKey.bytes.toArray,
-      true)
-    val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
+    val pubKey = sigPubKey.add(remoteToLocalPubKey)
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
@@ -316,8 +313,7 @@ case class BinaryOutcomeDLCClient(
       TransactionOutput(remotePayout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
-      TransactionOutput(localPayout,
-                        P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
+      TransactionOutput(payout, P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
@@ -341,16 +337,15 @@ case class BinaryOutcomeDLCClient(
   def createRefundTx(
       fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[Transaction] = {
     val toLocalValueNotSat =
-      (fundingSpendingInfo.amount * localInput).satoshis.toLong / totalInput.satoshis.toLong
+      (fundingSpendingInfo.amount * input).satoshis.toLong / totalInput.satoshis.toLong
     val toLocalValue = Satoshis(toLocalValueNotSat)
     val toRemoteValue = fundingSpendingInfo.amount - toLocalValue
 
     val toLocal = TransactionOutput(
       toLocalValue,
-      P2WPKHWitnessSPKV0(cetLocalRefundPrivKey.publicKey))
-    val toRemote = TransactionOutput(
-      toRemoteValue,
-      P2WPKHWitnessSPKV0(cetRemoteRefundPrivKey.publicKey))
+      P2WPKHWitnessSPKV0(cetRefundPrivKey.publicKey))
+    val toRemote = TransactionOutput(toRemoteValue,
+                                     P2WPKHWitnessSPKV0(cetRemoteRefundPubKey))
 
     val outputs = Vector(toLocal, toRemote)
     val txBuilderF = BitcoinTxBuilder(outputs,
@@ -363,22 +358,22 @@ case class BinaryOutcomeDLCClient(
     txBuilderF.flatMap(subtractFeeAndSign)
   }
 
-  def createCETWinLocal(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
+  def createCETWin(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
     (Transaction, P2WSHWitnessV0)] = {
-    createCETLocal(
+    createCET(
       sigPubKey = sigPubKeyWin,
       fundingSpendingInfo = fundingSpendingInfo,
-      localPayout = localWinPayout,
+      payout = winPayout,
       remotePayout = remoteWinPayout
     )
   }
 
-  def createCETLoseLocal(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
+  def createCETLose(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
     (Transaction, P2WSHWitnessV0)] = {
-    createCETLocal(
+    createCET(
       sigPubKey = sigPubKeyLose,
       fundingSpendingInfo = fundingSpendingInfo,
-      localPayout = localLosePayout,
+      payout = losePayout,
       remotePayout = remoteLosePayout
     )
   }
@@ -388,7 +383,7 @@ case class BinaryOutcomeDLCClient(
     createCETRemote(
       sigPubKey = sigPubKeyWin,
       fundingSpendingInfo = fundingSpendingInfo,
-      localPayout = localWinPayout,
+      payout = winPayout,
       remotePayout = remoteWinPayout
     )
   }
@@ -398,7 +393,7 @@ case class BinaryOutcomeDLCClient(
     createCETRemote(
       sigPubKey = sigPubKeyLose,
       fundingSpendingInfo = fundingSpendingInfo,
-      localPayout = localLosePayout,
+      payout = losePayout,
       remotePayout = remoteLosePayout
     )
   }
@@ -414,15 +409,15 @@ case class BinaryOutcomeDLCClient(
         outPoint = TransactionOutPoint(fundingTxId, UInt32.zero),
         amount = output.value,
         scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
-        signers = Vector(fundingLocalPrivKey, fundingRemotePrivKey),
+        signers = Vector(fundingPrivKey, ???),
         hashType = HashType.sigHashAll,
         scriptWitness = P2WSHWitnessV0(fundingSPK),
         conditionalPath = ConditionalPath.NoConditionsLeft
       )
 
       // Construct all CETs
-      val cetWinLocalF = createCETWinLocal(fundingSpendingInfo)
-      val cetLoseLocalF = createCETLoseLocal(fundingSpendingInfo)
+      val cetWinLocalF = createCETWin(fundingSpendingInfo)
+      val cetLoseLocalF = createCETLose(fundingSpendingInfo)
       val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
       val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
       val refundTxF = createRefundTx(fundingSpendingInfo)
@@ -465,16 +460,14 @@ case class BinaryOutcomeDLCClient(
   def constructClosingTx(
       privKey: ECPrivateKey,
       spendingInfo: BitcoinUTXOSpendingInfoFull,
-      isLocal: Boolean,
       isWin: Boolean,
-      isToLocal: Boolean): Future[Transaction] = {
+      spendsToLocal: Boolean): Future[Transaction] = {
     // If isToLocal, use payout as value, otherwise subtract fee
-    val spendingTxF = if (isToLocal) {
-      val payoutValue = (isWin, isLocal) match {
-        case (true, true)   => localWinPayout
-        case (true, false)  => remoteWinPayout
-        case (false, true)  => localLosePayout
-        case (false, false) => remoteLosePayout
+    val spendingTxF = if (spendsToLocal) {
+      val payoutValue = if (isWin) {
+        winPayout
+      } else {
+        losePayout
       }
 
       val txBuilder = BitcoinTxBuilder(
@@ -489,7 +482,6 @@ case class BinaryOutcomeDLCClient(
 
       txBuilder.flatMap(_.sign)
     } else {
-      // Construct Closing Transaction
       val txBuilder = BitcoinTxBuilder(
         destinations = Vector(
           TransactionOutput(spendingInfo.output.value,
@@ -503,10 +495,7 @@ case class BinaryOutcomeDLCClient(
       txBuilder.flatMap(subtractFeeAndSign)
     }
 
-    spendingTxF.foreach(
-      tx =>
-        logger.info(
-          s"${if (isLocal) "Local" else "Remote"} Closing Tx: ${tx.hex}"))
+    spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
 
     spendingTxF
   }
@@ -517,60 +506,43 @@ case class BinaryOutcomeDLCClient(
     */
   def executeUnilateralDLC(
       dlcSetup: SetupDLC,
-      oracleSigF: Future[SchnorrDigitalSignature],
-      local: Boolean): Future[DLCOutcome] = {
+      oracleSigF: Future[SchnorrDigitalSignature]): Future[DLCOutcome] = {
     val SetupDLC(fundingTx,
                  fundingSpendingInfo,
                  cetWinLocal,
                  cetWinLocalWitness,
                  cetLoseLocal,
                  cetLoseLocalWitness,
-                 cetWinRemote,
-                 cetWinRemoteWitness,
-                 cetLoseRemote,
-                 cetLoseRemoteWitness,
+                 _,
+                 _,
+                 _,
+                 _,
                  _) = dlcSetup
 
     oracleSigF.flatMap { oracleSig =>
       val sigForWin = Schnorr.verify(messageWin, oracleSig, oraclePubKey)
 
       // Pick the CET to use and payout by checking which message was signed
-      val (cet, extCetPrivKey, extOtherCetPrivKey, cetScriptWitness) =
+      val (cet, extCetPrivKey, remoteExtCetPubKey, cetScriptWitness) =
         if (sigForWin) {
-          if (local) {
-            (cetWinLocal,
-             cetLocalWinPrivKey,
-             cetRemoteWinPrivKey,
-             cetWinLocalWitness)
-          } else {
-            (cetWinRemote,
-             cetRemoteWinPrivKey,
-             cetLocalWinPrivKey,
-             cetWinRemoteWitness)
-          }
+          (cetWinLocal, cetWinPrivKey, cetRemoteWinPubKey, cetWinLocalWitness)
         } else if (Schnorr.verify(messageLose, oracleSig, oraclePubKey)) {
-          if (local) {
-            (cetLoseLocal,
-             cetLocalLosePrivKey,
-             cetRemoteLosePrivKey,
-             cetLoseLocalWitness)
-          } else {
-            (cetLoseRemote,
-             cetRemoteLosePrivKey,
-             cetLocalLosePrivKey,
-             cetLoseRemoteWitness)
-          }
+          (cetLoseLocal,
+           cetLosePrivKey,
+           cetRemoteLosePubKey,
+           cetLoseLocalWitness)
         } else {
           throw new IllegalStateException(
             "Signature does not correspond to either possible outcome!")
         }
 
       val cetPrivKey = extCetPrivKey.deriveChildPrivKey(UInt32.zero).key
-      val otherCetPrivKey = extOtherCetPrivKey.deriveChildPrivKey(UInt32(2)).key
+      val remoteCetPubKey =
+        remoteExtCetPubKey.deriveChildPubKey(UInt32(2)).get.key
 
       // The prefix other refers to remote if local == true and local otherwise
       val output = cet.outputs.head
-      val otherOutput = cet.outputs.last
+      val remoteOutput = cet.outputs.last
 
       val privKeyBytes = NativeSecp256k1.privKeyTweakAdd(
         cetPrivKey.bytes.toArray,
@@ -589,45 +561,32 @@ case class BinaryOutcomeDLCClient(
         conditionalPath = ConditionalPath.nonNestedTrue
       )
 
-      val otherCetSpendingInfo = P2WPKHV0SpendingInfo(
+      val remoteCetSpendingInfo = P2WPKHV0SpendingInfo(
         outPoint = TransactionOutPoint(cet.txIdBE, UInt32.one),
-        amount = otherOutput.value,
-        scriptPubKey = otherOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
-        signer = otherCetPrivKey,
+        amount = remoteOutput.value,
+        scriptPubKey =
+          remoteOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
+        signer = ???,
         hashType = HashType.sigHashAll,
-        scriptWitness = P2WPKHWitnessV0(otherCetPrivKey.publicKey)
+        scriptWitness = P2WPKHWitnessV0(remoteCetPubKey)
       )
 
-      val (localCetSpendingInfo, remoteCetSpendingInfo) = if (local) {
-        (cetSpendingInfo, otherCetSpendingInfo)
-      } else {
-        (otherCetSpendingInfo, cetSpendingInfo)
-      }
-
-      val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
-                                                localCetSpendingInfo,
-                                                isLocal = true,
+      val localSpendingTxF = constructClosingTx(finalPrivKey,
+                                                cetSpendingInfo,
                                                 isWin = sigForWin,
-                                                isToLocal = local)
-      val remoteSpendingTxF = constructClosingTx(finalRemotePrivKey,
-                                                 remoteCetSpendingInfo,
-                                                 isLocal = false,
-                                                 isWin = sigForWin,
-                                                 isToLocal = !local)
+                                                spendsToLocal = true)
 
-      localSpendingTxF.flatMap { localSpendingTx =>
-        remoteSpendingTxF.map { remoteSpendingTx =>
-          DLCOutcome(
-            fundingTx = fundingTx,
-            cet = cet,
-            localClosingTx = localSpendingTx,
-            remoteClosingTx = remoteSpendingTx,
-            fundingUtxos = fundingUtxos,
-            fundingSpendingInfo = fundingSpendingInfo,
-            localCetSpendingInfo = localCetSpendingInfo,
-            remoteCetSpendingInfo = remoteCetSpendingInfo
-          )
-        }
+      localSpendingTxF.map { localSpendingTx =>
+        DLCOutcome(
+          fundingTx = fundingTx,
+          cet = cet,
+          localClosingTx = localSpendingTx,
+          remoteClosingTx = ???,
+          fundingUtxos = fundingUtxos,
+          fundingSpendingInfo = fundingSpendingInfo,
+          localCetSpendingInfo = cetSpendingInfo,
+          remoteCetSpendingInfo = remoteCetSpendingInfo
+        )
       }
     }
   }
@@ -639,24 +598,16 @@ case class BinaryOutcomeDLCClient(
     */
   def executeJusticeDLC(
       dlcSetup: SetupDLC,
-      timedOutCET: Transaction,
-      local: Boolean): Future[DLCOutcome] = {
+      timedOutCET: Transaction): Future[DLCOutcome] = {
     val justiceOutput = timedOutCET.outputs.head
     val normalOutput = timedOutCET.outputs.last
 
-    val (extCetPrivKey, cetScriptWitness) = if (local) {
+    val (extCetPrivKey, cetScriptWitness) =
       if (timedOutCET == dlcSetup.cetWinRemote) {
-        (cetLocalWinPrivKey, dlcSetup.cetWinRemoteWitness)
+        (cetWinPrivKey, dlcSetup.cetWinRemoteWitness)
       } else {
-        (cetLocalLosePrivKey, dlcSetup.cetLoseRemoteWitness)
+        (cetLosePrivKey, dlcSetup.cetLoseRemoteWitness)
       }
-    } else {
-      if (timedOutCET == dlcSetup.cetWinLocal) {
-        (cetRemoteWinPrivKey, dlcSetup.cetWinLocalWitness)
-      } else {
-        (cetRemoteLosePrivKey, dlcSetup.cetLoseLocalWitness)
-      }
-    }
 
     val cetPrivKeyJustice = extCetPrivKey.deriveChildPrivKey(UInt32.one).key
     val cetPrivKeyToRemote = extCetPrivKey.deriveChildPrivKey(UInt32(2)).key
@@ -680,26 +631,18 @@ case class BinaryOutcomeDLCClient(
       scriptWitness = P2WPKHWitnessV0(cetPrivKeyToRemote.publicKey)
     )
 
-    val finalPrivKey = if (local) {
-      finalLocalPrivKey
-    } else {
-      finalRemotePrivKey
-    }
-
-    val isWin: Boolean = timedOutCET == dlcSetup.cetWinLocal || timedOutCET == dlcSetup.cetWinRemote
+    val isWin: Boolean = timedOutCET == dlcSetup.cetLoseRemote
 
     val justiceSpendingTxF =
       constructClosingTx(privKey = finalPrivKey,
                          spendingInfo = justiceSpendingInfo,
-                         isLocal = local,
                          isWin = isWin,
-                         isToLocal = false)
+                         spendsToLocal = false)
     val normalSpendingTxF =
       constructClosingTx(privKey = finalPrivKey,
                          spendingInfo = normalSpendingInfo,
-                         isLocal = local,
                          isWin = isWin,
-                         isToLocal = false)
+                         spendsToLocal = false)
 
     justiceSpendingTxF.flatMap { justiceSpendingTx =>
       normalSpendingTxF.map { normalSpendingTx =>
@@ -743,44 +686,36 @@ case class BinaryOutcomeDLCClient(
       outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
       amount = localOutput.value,
       scriptPubKey = localOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
-      signer = cetLocalRefundPrivKey,
+      signer = cetRefundPrivKey,
       hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(cetLocalRefundPrivKey.publicKey)
+      scriptWitness = P2WPKHWitnessV0(cetRefundPrivKey.publicKey)
     )
 
     val remoteRefundSpendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.one),
       amount = remoteOutput.value,
       scriptPubKey = remoteOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
-      signer = cetRemoteRefundPrivKey,
+      signer = ???,
       hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(cetRemoteRefundPrivKey.publicKey)
+      scriptWitness = P2WPKHWitnessV0(cetRemoteRefundPubKey)
     )
 
-    val localSpendingTxF = constructClosingTx(finalLocalPrivKey,
+    val localSpendingTxF = constructClosingTx(finalPrivKey,
                                               localRefundSpendingInfo,
-                                              isLocal = true,
                                               isWin = false,
-                                              isToLocal = false)
-    val remoteSpendingTxF = constructClosingTx(finalRemotePrivKey,
-                                               remoteRefundSpendingInfo,
-                                               isLocal = false,
-                                               isWin = false,
-                                               isToLocal = false)
+                                              spendsToLocal = false)
 
-    localSpendingTxF.flatMap { localSpendingTx =>
-      remoteSpendingTxF.map { remoteSpendingTx =>
-        DLCOutcome(
-          fundingTx = fundingTx,
-          cet = refundTx,
-          localClosingTx = localSpendingTx,
-          remoteClosingTx = remoteSpendingTx,
-          fundingUtxos = fundingUtxos,
-          fundingSpendingInfo = fundingSpendingInfo,
-          localCetSpendingInfo = localRefundSpendingInfo,
-          remoteCetSpendingInfo = remoteRefundSpendingInfo
-        )
-      }
+    localSpendingTxF.map { localSpendingTx =>
+      DLCOutcome(
+        fundingTx = fundingTx,
+        cet = refundTx,
+        localClosingTx = localSpendingTx,
+        remoteClosingTx = ???,
+        fundingUtxos = fundingUtxos,
+        fundingSpendingInfo = fundingSpendingInfo,
+        localCetSpendingInfo = localRefundSpendingInfo,
+        remoteCetSpendingInfo = remoteRefundSpendingInfo
+      )
     }
   }
 }
