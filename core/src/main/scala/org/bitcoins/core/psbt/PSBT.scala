@@ -54,6 +54,8 @@ case class PSBT(
     inputBytes ++
     outputBytes
 
+  val base64: String = bytes.toBase64
+
   def transaction: Transaction = globalMap.unsignedTransaction.transaction
 
   def isFinalized: Boolean = inputMaps.forall(_.isFinalized)
