@@ -143,6 +143,10 @@ object GlobalPSBTMap extends PSBTMapFactory[GlobalPSBTRecord, GlobalPSBTMap] {
 
 case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     extends PSBTMap[InputPSBTRecord] {
+  require(
+    this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty,
+    "InputPSBTMap cannot have both a NonWitnessOrUnknownUTXO and a WitnessUTXO"
+  )
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
 
@@ -584,10 +588,6 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     * @return The compressed InputPSBTMap
     */
   def compressMap(txIn: TransactionInput): InputPSBTMap = {
-    require(
-      this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty,
-      "Cannot compress if map does not have a NonWitnessOrUnknownUTXO or a WitnessUTXO"
-    )
     if (isFinalized) {
       this
     } else {
