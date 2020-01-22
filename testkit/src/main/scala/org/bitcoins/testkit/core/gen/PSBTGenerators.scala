@@ -215,7 +215,7 @@ object PSBTGenerators {
       implicit ec: ExecutionContext): Gen[Future[(PSBT, BitcoinTxBuilder)]] = {
     for {
       (creditingTxsInfo, destinations) <- CreditingTxGen.inputsAndOutputs()
-      changeSPK <- ScriptGenerators.scriptPubKey
+      (changeSPK, _) <- ScriptGenerators.scriptPubKey
       network <- ChainParamsGenerator.bitcoinNetworkParams
       maxFee = {
         val crediting =
@@ -228,7 +228,7 @@ object PSBTGenerators {
       psbtAndBuilderFromInputs(finalized = finalized,
                                creditingTxsInfo = creditingTxsInfo,
                                destinations = destinations,
-                               changeSPK = changeSPK._1,
+                               changeSPK = changeSPK,
                                network = network,
                                fee = fee)
     }
@@ -242,7 +242,7 @@ object PSBTGenerators {
     Future[(PSBT, BitcoinTxBuilder, Seq[ScriptPubKey])]] = {
     for {
       (creditingTxsInfo, outputs) <- CreditingTxGen.inputsAndP2SHOutputs(
-        outputGen = outputGen)
+        destinationGenerator = outputGen)
       changeSPK <- ScriptGenerators.scriptPubKey
       network <- ChainParamsGenerator.bitcoinNetworkParams
       maxFee = {

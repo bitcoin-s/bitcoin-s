@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
+import org.bitcoins.core.psbt.OutputPSBTRecord.{RedeemScript, WitnessScript}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
@@ -319,10 +320,12 @@ class PSBTTest extends BitcoinSAsyncTest {
               psbtEmptyOutputs)((psbt, spk) =>
               psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
-            assert(psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
-              case (map, spk) =>
-                map.redeemScriptOpt.isDefined && map.redeemScriptOpt.get.redeemScript == spk
-            })
+            val allOutputsValid =
+              psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+                case (map, spk) =>
+                  map.redeemScriptOpt.contains(RedeemScript(spk))
+              }
+            assert(allOutputsValid)
         }
     }
   }
@@ -337,10 +340,13 @@ class PSBTTest extends BitcoinSAsyncTest {
               psbtEmptyOutputs)((psbt, spk) =>
               psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
 
-            assert(psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
-              case (map, spk) =>
-                map.witnessScriptOpt.isDefined && map.witnessScriptOpt.get.witnessScript == spk
-            })
+            val allOutputsValid =
+              psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+                case (map, spk) =>
+                  map.witnessScriptOpt.contains(WitnessScript(spk))
+
+              }
+            assert(allOutputsValid)
         }
     }
   }

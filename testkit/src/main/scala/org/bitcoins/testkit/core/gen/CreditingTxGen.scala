@@ -396,31 +396,34 @@ sealed abstract class CreditingTxGen {
 
   def inputsAndOutputs(
       outputsToUse: Gen[Seq[BitcoinUTXOSpendingInfoFull]] = outputs,
-      outputGen: CurrencyUnit => Gen[Seq[TransactionOutput]] =
+      destinationGenerator: CurrencyUnit => Gen[Seq[TransactionOutput]] =
         TransactionGenerators.smallOutputs): Gen[
-    (Seq[BitcoinUTXOSpendingInfoFull], Seq[TransactionOutput])] =
+    (Seq[BitcoinUTXOSpendingInfoFull], Seq[TransactionOutput])] = {
     inputsAndP2SHOutputs(
       outputsToUse,
-      outputGen.andThen(_.map(_.map(x => (x, ScriptPubKey.empty)))))
+      destinationGenerator.andThen(_.map(_.map(x => (x, ScriptPubKey.empty)))))
       .map(x => (x._1, x._2.map(_._1)))
+  }
 
   def inputsAndP2SHOutputs(
       outputsToUse: Gen[Seq[BitcoinUTXOSpendingInfoFull]] = outputs,
-      outputGen: CurrencyUnit => Gen[Seq[(TransactionOutput, ScriptPubKey)]] =
+      destinationGenerator: CurrencyUnit => Gen[
+        Seq[(TransactionOutput, ScriptPubKey)]] =
         TransactionGenerators.smallP2SHOutputs): Gen[(
       Seq[BitcoinUTXOSpendingInfoFull],
-      Seq[(TransactionOutput, ScriptPubKey)])] =
+      Seq[(TransactionOutput, ScriptPubKey)])] = {
     outputsToUse
       .flatMap { creditingTxsInfo =>
         val creditingOutputs = creditingTxsInfo.map(c => c.output)
         val creditingOutputsAmt = creditingOutputs.map(_.value)
         val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
 
-        outputGen(totalAmount).map { destinations =>
+        destinationGenerator(totalAmount).map { destinations =>
           (creditingTxsInfo, destinations)
         }
       }
       .suchThat(_._1.nonEmpty)
+  }
 }
 
 object CreditingTxGen extends CreditingTxGen {}

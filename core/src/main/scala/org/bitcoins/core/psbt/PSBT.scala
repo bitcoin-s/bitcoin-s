@@ -272,7 +272,7 @@ case class PSBT(
           _: P2PKWithTimeoutScriptPubKey | _: WitnessScriptPubKey |
           _: P2PKScriptPubKey | _: P2PKHScriptPubKey =>
         throw new IllegalArgumentException(
-          s"Output script does not need a redeem script")
+          s"Output script does not need a redeem script, got: $outputScript")
     }
   }
 
@@ -300,7 +300,9 @@ case class PSBT(
     val newElement =
       if (!isWitScript && hasWitScript)
         redeemScriptToOutputRecord(redeemScriptOpt.get, script)
-      else redeemScriptToOutputRecord(transaction.outputs(index).scriptPubKey, script)
+      else
+        redeemScriptToOutputRecord(transaction.outputs(index).scriptPubKey,
+                                   script)
 
     val newMap = OutputPSBTMap(outputMap.elements :+ newElement)
     val newOutputMaps = outputMaps.updated(index, newMap)
