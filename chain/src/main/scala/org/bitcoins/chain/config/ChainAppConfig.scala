@@ -53,10 +53,11 @@ case class ChainAppConfig(
     * and inserts preliminary data like the genesis block header
     * */
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
-    val createdF = ChainDbManagement.createAll()(this, ec)
-    val isInitF = createdF.flatMap { _ =>
-      isInitialized()
-    }
+    val numMigrations = ChainDbManagement.migrate(this)
+
+    logger.info(s"Applied ${numMigrations} to chain project")
+
+    val isInitF = isInitialized()
     isInitF.flatMap { isInit =>
       if (isInit) {
         FutureUtil.unit
@@ -67,8 +68,7 @@ case class ChainAppConfig(
                                                 chain.genesisBlock.blockHeader)
         val blockHeaderDAO =
           BlockHeaderDAO()(ec = implicitly[ExecutionContext], appConfig = this)
-        val bhCreatedF =
-          createdF.flatMap(_ => blockHeaderDAO.create(genesisHeader))
+        val bhCreatedF = blockHeaderDAO.create(genesisHeader)
         bhCreatedF.flatMap { _ =>
           logger.info(s"Inserted genesis block header into DB")
           FutureUtil.unit

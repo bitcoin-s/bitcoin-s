@@ -24,6 +24,7 @@ object Deps {
     val asyncOldScalaV = "0.9.7"
     val asyncNewScalaV = "0.10.0"
 
+    val flywayV = "6.1.4"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
@@ -77,6 +78,7 @@ object Deps {
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
+    val flyway = "org.flywaydb" % "flyway-core" % V.flywayV
 
     // zero dep JSON library. Have to use different versiont to juggle
     // Scala 2.11/12/13
@@ -174,11 +176,14 @@ object Deps {
   )
 
   val dbCommons = List(
+    Compile.flyway,
     Compile.slick,
     Compile.sourcecode,
     Compile.logback,
     Compile.sqlite,
-    Compile.slickHikari
+    Compile.slickHikari,
+
+    Test.scalaTest
   )
 
   def cli(scalaVersion: String) = List(
