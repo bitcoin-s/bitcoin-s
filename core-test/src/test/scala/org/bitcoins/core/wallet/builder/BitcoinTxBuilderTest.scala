@@ -551,7 +551,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   }
 
   it must "sign a mix of spks in a tx and then have it verified" in {
-    forAllAsync(CreditingTxGen.inputsAndOuptuts(),
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
@@ -570,7 +570,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   }
 
   it must "sign a mix of p2sh/p2wsh in a tx and then have it verified" in {
-    forAllAsync(CreditingTxGen.inputsAndOuptuts(CreditingTxGen.nestedOutputs),
+    forAllAsync(CreditingTxGen.inputsAndOutputs(CreditingTxGen.nestedOutputs),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>

@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
@@ -213,8 +214,8 @@ object PSBTGenerators {
   def psbtWithBuilder(finalized: Boolean)(
       implicit ec: ExecutionContext): Gen[Future[(PSBT, BitcoinTxBuilder)]] = {
     for {
-      (creditingTxsInfo, destinations) <- CreditingTxGen.inputsAndOuptuts()
-      changeSPK <- ScriptGenerators.scriptPubKey
+      (creditingTxsInfo, destinations) <- CreditingTxGen.inputsAndOutputs()
+      (changeSPK, _) <- ScriptGenerators.scriptPubKey
       network <- ChainParamsGenerator.bitcoinNetworkParams
       maxFee = {
         val crediting =
@@ -227,11 +228,48 @@ object PSBTGenerators {
       psbtAndBuilderFromInputs(finalized = finalized,
                                creditingTxsInfo = creditingTxsInfo,
                                destinations = destinations,
-                               changeSPK = changeSPK._1,
+                               changeSPK = changeSPK,
                                network = network,
                                fee = fee)
     }
   }
+
+  def psbtWithBuilderAndP2SHOutputs(
+      finalized: Boolean,
+      outputGen: CurrencyUnit => Gen[Seq[(TransactionOutput, ScriptPubKey)]] =
+        TransactionGenerators.smallP2SHOutputs)(
+      implicit ec: ExecutionContext): Gen[
+    Future[(PSBT, BitcoinTxBuilder, Seq[ScriptPubKey])]] = {
+    for {
+      (creditingTxsInfo, outputs) <- CreditingTxGen.inputsAndP2SHOutputs(
+        destinationGenerator = outputGen)
+      changeSPK <- ScriptGenerators.scriptPubKey
+      network <- ChainParamsGenerator.bitcoinNetworkParams
+      maxFee = {
+        val destinations = outputs.map(_._1)
+        val crediting =
+          creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+        val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
+        crediting - spending
+      }
+      fee <- CurrencyUnitGenerator.feeUnit(maxFee)
+    } yield {
+      val pAndB = psbtAndBuilderFromInputs(finalized = finalized,
+                                           creditingTxsInfo = creditingTxsInfo,
+                                           destinations = outputs.map(_._1),
+                                           changeSPK = changeSPK._1,
+                                           network = network,
+                                           fee = fee)
+
+      pAndB.map(p => (p._1, p._2, outputs.map(_._2)))
+    }
+  }
+
+  def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean)(
+      implicit ec: ExecutionContext): Gen[
+    Future[(PSBT, BitcoinTxBuilder, Seq[ScriptPubKey])]] =
+    psbtWithBuilderAndP2SHOutputs(finalized,
+                                  TransactionGenerators.smallP2WSHOutputs)
 
   def finalizedPSBTWithBuilder(
       implicit ec: ExecutionContext): Gen[Future[(PSBT, BitcoinTxBuilder)]] = {

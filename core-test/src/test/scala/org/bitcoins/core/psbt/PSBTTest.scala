@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
+import org.bitcoins.core.psbt.OutputPSBTRecord.{RedeemScript, WitnessScript}
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
@@ -310,8 +311,48 @@ class PSBTTest extends BitcoinSAsyncTest {
     }
   }
 
+  it must "add Redeem Scripts to outputs" in {
+    forAllAsync(PSBTGenerators.psbtWithBuilderAndP2SHOutputs(finalized = false)) {
+      psbtWithBuilderF =>
+        psbtWithBuilderF.flatMap {
+          case (psbtEmptyOutputs, _, redeemScripts) =>
+            val psbtWithOutputs = redeemScripts.zipWithIndex.foldLeft(
+              psbtEmptyOutputs)((psbt, spk) =>
+              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
+
+            val allOutputsValid =
+              psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+                case (map, spk) =>
+                  map.redeemScriptOpt.contains(RedeemScript(spk))
+              }
+            assert(allOutputsValid)
+        }
+    }
+  }
+
+  it must "add Witness Scripts to outputs" in {
+    forAllAsync(
+      PSBTGenerators.psbtWithBuilderAndP2WSHOutputs(finalized = false)) {
+      psbtWithBuilderF =>
+        psbtWithBuilderF.flatMap {
+          case (psbtEmptyOutputs, _, redeemScripts) =>
+            val psbtWithOutputs = redeemScripts.zipWithIndex.foldLeft(
+              psbtEmptyOutputs)((psbt, spk) =>
+              psbt.addRedeemOrWitnessScriptToOutput(spk._1, spk._2))
+
+            val allOutputsValid =
+              psbtWithOutputs.outputMaps.zip(redeemScripts).forall {
+                case (map, spk) =>
+                  map.witnessScriptOpt.contains(WitnessScript(spk))
+
+              }
+            assert(allOutputsValid)
+        }
+    }
+  }
+
   it must "correctly construct and finalize PSBTs from UTXOSpendingInfo" in {
-    forAllAsync(CreditingTxGen.inputsAndOuptuts(),
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), (changeSPK, _), network) =>

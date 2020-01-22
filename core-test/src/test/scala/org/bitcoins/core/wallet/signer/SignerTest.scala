@@ -83,7 +83,7 @@ class SignerTest extends BitcoinSAsyncTest {
   }
 
   it must "sign a mix of spks in a tx and then verify that single signing agrees" in {
-    forAllAsync(CreditingTxGen.inputsAndOuptuts(),
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfos, destinations), changeSPK, network) =>

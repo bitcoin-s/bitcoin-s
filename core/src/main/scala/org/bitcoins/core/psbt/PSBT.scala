@@ -246,6 +246,36 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
+  private def redeemScriptToOutputRecord(
+      outputScript: ScriptPubKey,
+      redeemScript: ScriptPubKey): OutputPSBTRecord = {
+    outputScript match {
+      case p2sh: P2SHScriptPubKey =>
+        val scriptHash = P2SHScriptPubKey(redeemScript).scriptHash
+        if (scriptHash != p2sh.scriptHash) {
+          throw new IllegalArgumentException(
+            s"The given script's hash does not match the expected script has, got: $scriptHash, expected ${p2sh.scriptHash}")
+        } else {
+          OutputPSBTRecord.RedeemScript(redeemScript)
+        }
+      case p2wsh: P2WSHWitnessSPKV0 =>
+        val scriptHash = P2WSHWitnessSPKV0(redeemScript).scriptHash
+        if (scriptHash != p2wsh.scriptHash) {
+          throw new IllegalArgumentException(
+            s"The given script's hash does not match the expected script has, got: $scriptHash, expected ${p2wsh.scriptHash}")
+        } else {
+          OutputPSBTRecord.WitnessScript(redeemScript)
+        }
+      case _: NonStandardScriptPubKey | _: WitnessCommitment |
+          EmptyScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: ConditionalScriptPubKey | _: LockTimeScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: WitnessScriptPubKey |
+          _: P2PKScriptPubKey | _: P2PKHScriptPubKey =>
+        throw new IllegalArgumentException(
+          s"Output script does not need a redeem script, got: $outputScript")
+    }
+  }
+
   /**
     * Adds script to the indexed OutputPSBTMap to either the RedeemScript
     * or WitnessScript field depending on the script and available information in the PSBT
@@ -263,18 +293,53 @@ case class PSBT(
 
     val outputMap = outputMaps(index)
     val redeemScriptOpt = outputMap.redeemScriptOpt.map(_.redeemScript)
+    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
+    val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
+      .isWitnessScriptPubKey(redeemScriptOpt.get.asm)
 
-    val elements = if (isP2SHNestedSegwit(script, redeemScriptOpt)) {
-      outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+ OutputPSBTRecord
-        .WitnessScript(script.asInstanceOf[RawScriptPubKey])
-    } else {
-      outputMap.filterRecords(PSBTOutputKeyId.RedeemScriptKeyId) :+ OutputPSBTRecord
-        .RedeemScript(script)
-    }
+    val newElement =
+      if (!isWitScript && hasWitScript)
+        redeemScriptToOutputRecord(redeemScriptOpt.get, script)
+      else
+        redeemScriptToOutputRecord(transaction.outputs(index).scriptPubKey,
+                                   script)
 
-    val newMap = OutputPSBTMap(elements)
+    val newMap = OutputPSBTMap(outputMap.elements :+ newElement)
     val newOutputMaps = outputMaps.updated(index, newMap)
 
+    PSBT(globalMap, inputMaps, newOutputMaps)
+  }
+
+  def addScriptWitnessToOutput(
+      scriptWitness: ScriptWitness,
+      index: Int): PSBT = {
+    require(index >= 0,
+            s"index must be greater than or equal to 0, got: $index")
+    require(
+      index < outputMaps.size,
+      s"index must be less than the number of output maps present in the psbt, $index >= ${inputMaps.size}")
+    require(!isFinalized, "Cannot update a PSBT that is finalized")
+    require(
+      outputMaps(index).witnessScriptOpt.isEmpty,
+      s"Output map already contains a ScriptWitness: ${inputMaps(index).witnessScriptOpt.get}")
+
+    val outputMap = outputMaps(index)
+
+    val newMap = scriptWitness match {
+      case _: P2WPKHWitnessV0 =>
+        // We do not need to add a WitnessScript for P2WPKH because it will
+        // be assumed because of the ScriptPubKey having the 20-byte hash
+        outputMap
+      case p2wsh: P2WSHWitnessV0 =>
+        OutputPSBTMap(
+          outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+
+            OutputPSBTRecord.WitnessScript(p2wsh.redeemScript))
+      case EmptyScriptWitness =>
+        throw new IllegalArgumentException(
+          s"Invalid scriptWitness given, got: $scriptWitness")
+    }
+
+    val newOutputMaps = outputMaps.updated(index, newMap)
     PSBT(globalMap, inputMaps, newOutputMaps)
   }
 
