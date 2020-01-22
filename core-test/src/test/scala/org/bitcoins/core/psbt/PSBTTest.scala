@@ -569,9 +569,8 @@ class PSBTTest extends BitcoinSAsyncTest {
     val finalizedInputMap = InputPSBTMap(
       Vector(InputPSBTRecord.FinalizedScriptSig(EmptyScriptSignature)))
 
-    val dummyInput = dummyTx().inputs.head
-
-    val compressedInputMap = finalizedInputMap.compressMap(dummyInput)
+    val compressedInputMap =
+      finalizedInputMap.compressMap(EmptyTransactionInput)
 
     assert(compressedInputMap == finalizedInputMap)
   }
