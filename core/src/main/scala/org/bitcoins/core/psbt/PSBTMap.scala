@@ -476,16 +476,6 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     InputPSBTMap((this.elements ++ other.elements).distinct)
   }
 
-  def toUTXOSpendingInfo(
-      txIn: TransactionInput,
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
-    val signersVec = getRecords(PartialSignatureKeyId)
-    val signers =
-      signersVec.map(sig => Sign.constant(sig.signature, sig.pubKey))
-
-    toUTXOSpendingInfoUsingSigners(txIn, signers, conditionalPath)
-  }
-
   /**
     * Takes the InputPSBTMap returns a UTXOSpendingInfoFull
     * that can be used to sign the input

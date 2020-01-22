@@ -132,15 +132,6 @@ case class PSBT(
                              isDummySignature = isDummySignature)
   }
 
-  def getUTXOSpendingInfo(
-      index: Int,
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
-    require(index >= 0 && index < inputMaps.size,
-            s"Index must be within 0 and the number of inputs, got: $index")
-    inputMaps(index)
-      .toUTXOSpendingInfo(transaction.inputs(index), conditionalPath)
-  }
-
   /**
     * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfoFull
     * that can be used to sign the input

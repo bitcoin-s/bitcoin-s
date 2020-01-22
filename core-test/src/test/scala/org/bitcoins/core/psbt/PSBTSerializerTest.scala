@@ -3,10 +3,15 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.crypto.{ECPublicKey, ExtPublicKey}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
+import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
+  ScriptPubKey
+}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
 import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.testkit.core.gen.PSBTGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
@@ -117,6 +122,14 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     })
   }
 
+  it must "successfully serialize SigHash data" in {
+    val psbt = PSBT(validPsbts(2))
+    val sigHash = psbt.inputMaps.head.sigHashTypeOpt
+
+    assert(sigHash.isDefined)
+    assert(sigHash.get.hashType == HashType.sigHashAll)
+  }
+
   it must "successfully serialize a PSBT's output data" in {
     val psbt = PSBT.fromBytes(validPsbts(5))
 
@@ -156,6 +169,23 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(
       psbtWithPoRC.inputMaps.head.proofOfReservesCommitmentOpt
         .contains(proofOfReservesCommitment))
+    assert(psbtWithPoRC == PSBT(psbtWithPoRC.bytes))
+  }
+
+  it must "successfully serialize a PSBT with a Output Witness Script" in {
+    val psbt = PSBT(validPsbts.head)
+
+    val witScript = OutputPSBTRecord.WitnessScript(ScriptPubKey.empty)
+
+    val outputElements = psbt.outputMaps.head.elements :+ witScript
+
+    val psbtWithPoRC =
+      PSBT(psbt.globalMap,
+           psbt.inputMaps,
+           psbt.outputMaps.updated(0, OutputPSBTMap(outputElements)))
+
+    assert(psbtWithPoRC.outputMaps.head.witnessScriptOpt.contains(witScript))
+    assert(psbtWithPoRC == PSBT(psbtWithPoRC.bytes))
   }
 
   it must "successfully serialize and deserialize valid PSBTs from bytes" in {
@@ -234,5 +264,18 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
         assert(PSBT.fromBytes(psbt.bytes) == psbt)
       }
     }
+  }
+
+  it must "fail to get a record from a empty ByteVector" in {
+    assertThrows[IllegalArgumentException](
+      PSBTRecord.fromBytes(ByteVector.empty))
+  }
+
+  it must "produce an empty record" in {
+    val (key, value) =
+      PSBTRecord.fromBytes(CompactSizeUInt.calc(ByteVector.empty).bytes)
+
+    assert(key == ByteVector.empty)
+    assert(value == ByteVector.empty)
   }
 }
