@@ -278,4 +278,9 @@ class PSBTSerializerTest extends BitcoinSAsyncTest {
     assert(key == ByteVector.empty)
     assert(value == ByteVector.empty)
   }
+
+  it must "fail to serialize PSBT not in base64 format" in {
+    assertThrows[IllegalArgumentException](
+      PSBT.fromBase64("Never gonna give you up, never gonna let you down"))
+  }
 }

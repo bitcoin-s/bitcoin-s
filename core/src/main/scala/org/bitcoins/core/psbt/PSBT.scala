@@ -196,16 +196,6 @@ case class PSBT(
 
   }
 
-  def isP2SHNestedSegwit(
-      script: ScriptPubKey,
-      redeemScriptOpt: Option[ScriptPubKey]): Boolean = {
-    val isWitScript = WitnessScriptPubKey.isWitnessScriptPubKey(script.asm)
-    val hasWitScript = redeemScriptOpt.isDefined && WitnessScriptPubKey
-      .isWitnessScriptPubKey(redeemScriptOpt.get.asm)
-
-    !isWitScript && hasWitScript
-  }
-
   /**
     * Adds script to the indexed InputPSBTMap to either the RedeemScript
     * or WitnessScript field depending on the script and available information in the PSBT
@@ -349,7 +339,7 @@ case class PSBT(
     require(!isFinalized, "Cannot update a PSBT that is finalized")
     require(
       outputMaps(index).witnessScriptOpt.isEmpty,
-      s"Output map already contains a ScriptWitness: ${inputMaps(index).witnessScriptOpt.get}")
+      s"Output map already contains a ScriptWitness: ${outputMaps(index).witnessScriptOpt.get}")
 
     val outputMap = outputMaps(index)
 

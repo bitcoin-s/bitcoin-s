@@ -1,16 +1,11 @@
 package org.bitcoins.core.psbt
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  EmptyTransactionInput,
-  Transaction,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.GlobalPSBTRecord.{UnsignedTransaction, Version}
 import org.bitcoins.core.psbt.InputPSBTRecord.{
   NonWitnessOrUnknownUTXO,
@@ -31,6 +26,8 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 class PSBTTest extends BitcoinSAsyncTest {
+
+  behavior of "PSBT"
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
@@ -523,5 +520,159 @@ class PSBTTest extends BitcoinSAsyncTest {
       assert(signedPsbt0 == expectedPsbt0)
       assert(signedPsbt1 == expectedPsbt1)
     }
+  }
+
+  def dummyTx(scriptSig: ScriptSignature = EmptyScriptSignature,
+              spk: ScriptPubKey = EmptyScriptPubKey): Transaction = {
+    BaseTransaction(
+      version = Int32.zero,
+      inputs = Vector(
+        TransactionInput(outPoint =
+                           TransactionOutPoint(txId = DoubleSha256Digest.empty,
+                                               vout = UInt32.zero),
+                         scriptSignature = scriptSig,
+                         sequenceNumber = UInt32.zero)),
+      outputs = Vector(TransactionOutput(CurrencyUnits.oneBTC, spk)),
+      lockTime = UInt32.zero
+    )
+  }
+
+  def dummyPSBT(scriptSig: ScriptSignature = EmptyScriptSignature,
+                spk: ScriptPubKey = EmptyScriptPubKey): PSBT = {
+    PSBT.fromUnsignedTx(dummyTx(scriptSig, spk))
+  }
+
+  it must "successfully change a NonWitnessUTXO to a WitnessUTXO when compressing" in {
+    val wspk = P2WSHWitnessSPKV0(EmptyScriptPubKey)
+
+    val output =
+      TransactionOutput(value = CurrencyUnits.oneBTC, scriptPubKey = wspk)
+
+    val tx = dummyTx(spk = wspk)
+    val inputMap =
+      InputPSBTMap(Vector(InputPSBTRecord.NonWitnessOrUnknownUTXO(tx)))
+
+    val expectedInputMap =
+      InputPSBTMap(Vector(InputPSBTRecord.WitnessUTXO(output)))
+
+    val input = TransactionInput(
+      outPoint = TransactionOutPoint(txId = tx.txId, vout = UInt32.zero),
+      scriptSignature = EmptyScriptSignature,
+      sequenceNumber = UInt32.zero)
+
+    val compressedInputMap = inputMap.compressMap(input)
+
+    assert(compressedInputMap == expectedInputMap)
+  }
+
+  it must "do nothing when compressing a finalized InputPSBTMap" in {
+    val finalizedInputMap = InputPSBTMap(
+      Vector(InputPSBTRecord.FinalizedScriptSig(EmptyScriptSignature)))
+
+    val dummyInput = dummyTx().inputs.head
+
+    val compressedInputMap = finalizedInputMap.compressMap(dummyInput)
+
+    assert(compressedInputMap == finalizedInputMap)
+  }
+
+  it must "be able to filter OutputPSBTMap records" in {
+    val redeemScriptRecord = OutputPSBTRecord.RedeemScript(EmptyScriptPubKey)
+    val outputMap = OutputPSBTMap(
+      Vector(redeemScriptRecord,
+             OutputPSBTRecord.BIP32DerivationPath(ECPublicKey.freshPublicKey,
+                                                  ExtKey.masterFingerprint,
+                                                  BIP32Path.empty)))
+
+    val expectedElements = Vector(redeemScriptRecord)
+
+    val filteredElements =
+      outputMap.filterRecords(PSBTOutputKeyId.BIP32DerivationPathKeyId)
+
+    assert(filteredElements == expectedElements)
+  }
+
+  it must "fail to finalize an already finalized PSBT" in {
+    val psbt = dummyPSBT()
+
+    val finalizedInputMap = InputPSBTMap(
+      Vector(InputPSBTRecord.FinalizedScriptSig(EmptyScriptSignature)))
+    val finalizedPSBT =
+      PSBT(psbt.globalMap, Vector(finalizedInputMap), psbt.outputMaps)
+
+    assert(finalizedPSBT.isFinalized)
+
+    val finalizeTry = finalizedPSBT.finalizePSBT
+    assert(finalizeTry.isFailure)
+    assert(finalizeTry.failed.get.isInstanceOf[IllegalStateException])
+  }
+
+  it must "fail to add ScriptWitness to input when script hashes are wrong" in {
+    val wspk = P2WSHWitnessSPKV0(P2PKScriptPubKey(ECPublicKey.freshPublicKey))
+    val p2sh = P2SHScriptPubKey(wspk)
+    val badRedeemScript = P2PKScriptPubKey(ECPublicKey.freshPublicKey)
+
+    val psbtP2WSH = dummyPSBT(spk = wspk)
+    val psbtP2SH = dummyPSBT(spk = p2sh)
+
+    assertThrows[IllegalArgumentException](
+      psbtP2WSH.addRedeemOrWitnessScriptToOutput(script = badRedeemScript,
+                                                 index = 0))
+    assertThrows[IllegalArgumentException](
+      psbtP2SH.addRedeemOrWitnessScriptToOutput(script = badRedeemScript,
+                                                index = 0))
+  }
+
+  it must "fail to add an EmptyScriptWitness to an input" in {
+    val psbt = dummyPSBT()
+
+    assertThrows[IllegalArgumentException](
+      psbt.addScriptWitnessToInput(EmptyScriptWitness, index = 0))
+  }
+
+  it must "fail to addRedeemOrWitnessScriptToOuput when finalized" in {
+    val psbt = dummyPSBT()
+    val finalizedInputMap = InputPSBTMap(
+      Vector(InputPSBTRecord.FinalizedScriptSig(EmptyScriptSignature)))
+    val finalizedPsbt =
+      PSBT(psbt.globalMap, Vector(finalizedInputMap), psbt.outputMaps)
+
+    assertThrows[IllegalArgumentException](
+      finalizedPsbt.addRedeemOrWitnessScriptToOutput(EmptyScriptPubKey,
+                                                     index = 0))
+  }
+
+  it must "addScriptWitnessToOutput correctly" in {
+    val psbt = dummyPSBT()
+    val p2wshWitness = P2WSHWitnessV0(EmptyScriptPubKey)
+
+    assertThrows[IllegalArgumentException](
+      psbt.addScriptWitnessToOutput(p2wshWitness, index = -1))
+    assertThrows[IllegalArgumentException](
+      psbt.addScriptWitnessToOutput(p2wshWitness, index = 1))
+
+    val p2wpkhPSBT =
+      psbt.addScriptWitnessToOutput(P2WPKHWitnessV0(ECPublicKey.freshPublicKey),
+                                    index = 0)
+    assert(p2wpkhPSBT == psbt)
+
+    val p2wshPSBT = psbt.addScriptWitnessToOutput(p2wshWitness, index = 0)
+    val expectedOutputMap =
+      OutputPSBTMap(Vector(OutputPSBTRecord.WitnessScript(EmptyScriptPubKey)))
+    val expectedPSBT =
+      PSBT(psbt.globalMap, psbt.inputMaps, Vector(expectedOutputMap))
+    assert(p2wshPSBT == expectedPSBT)
+    assertThrows[IllegalArgumentException](
+      p2wshPSBT.addScriptWitnessToOutput(p2wshWitness, index = 0))
+
+    assertThrows[IllegalArgumentException](
+      psbt.addScriptWitnessToOutput(EmptyScriptWitness, index = 0))
+
+    val finalizedInputMap = InputPSBTMap(
+      Vector(InputPSBTRecord.FinalizedScriptSig(EmptyScriptSignature)))
+    val finalizedPsbt =
+      PSBT(psbt.globalMap, Vector(finalizedInputMap), psbt.outputMaps)
+    assertThrows[IllegalArgumentException](
+      finalizedPsbt.addScriptWitnessToOutput(p2wshWitness, index = 0))
   }
 }
