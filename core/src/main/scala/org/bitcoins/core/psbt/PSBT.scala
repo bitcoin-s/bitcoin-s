@@ -331,8 +331,9 @@ case class PSBT(
         // be assumed because of the ScriptPubKey having the 20-byte hash
         outputMap
       case p2wsh: P2WSHWitnessV0 =>
-        OutputPSBTMap(outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+
-        OutputPSBTRecord.WitnessScript(p2wsh.redeemScript))
+        OutputPSBTMap(
+          outputMap.filterRecords(PSBTOutputKeyId.WitnessScriptKeyId) :+
+            OutputPSBTRecord.WitnessScript(p2wsh.redeemScript))
       case EmptyScriptWitness =>
         throw new IllegalArgumentException(
           s"Invalid scriptWitness given, got: $scriptWitness")
