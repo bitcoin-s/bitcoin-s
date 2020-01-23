@@ -1,7 +1,7 @@
 package org.bitcoins.core.wallet.signer
 
 import org.bitcoins.core.crypto.ECDigitalSignature
-import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.script.{
   EmptyScriptWitness,
   P2WPKHWitnessV0,
@@ -82,20 +82,8 @@ class SignerTest extends BitcoinSAsyncTest {
     }
   }
 
-  private val outputGen = CreditingTxGen.outputs
-    .flatMap { creditingTxsInfo =>
-      val creditingOutputs = creditingTxsInfo.map(c => c.output)
-      val creditingOutputsAmt = creditingOutputs.map(_.value)
-      val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
-
-      TransactionGenerators.smallOutputs(totalAmount).map { destinations =>
-        (creditingTxsInfo, destinations)
-      }
-    }
-    .suchThat(_._1.nonEmpty)
-
   it must "sign a mix of spks in a tx and then verify that single signing agrees" in {
-    forAllAsync(outputGen,
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfos, destinations), changeSPK, network) =>
@@ -120,7 +108,7 @@ class SignerTest extends BitcoinSAsyncTest {
                                                  unsignedTx,
                                                  isDummySignature = false)
 
-                keyAndSigF.map(_._2)
+                keyAndSigF.map(_.signature)
               }
 
               Future.sequence(sigFs)
