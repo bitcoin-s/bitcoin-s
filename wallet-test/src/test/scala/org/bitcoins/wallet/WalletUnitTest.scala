@@ -64,8 +64,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "know what the last address index is" in { walletApi =>
     val wallet = walletApi.asInstanceOf[Wallet]
 
-    def getMostRecent(hdAccount: HDAccount,
-                      chain: HDChainType): Future[AddressDb] = {
+    def getMostRecent(
+        hdAccount: HDAccount,
+        chain: HDChainType): Future[AddressDb] = {
       val recentOptFut: Future[Option[AddressDb]] = chain match {
         case Change =>
           wallet.addressDAO.findMostRecentChange(hdAccount)
@@ -118,9 +119,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
           }
         }
         _ <- FutureUtil.sequentially(addrRange)(_ => getAddrFunc())
-        _ <- assertIndexIs(hdAccount,
-                           chain,
-                           addrIndex = addressesToGenerate)
+        _ <- assertIndexIs(hdAccount, chain, addrIndex = addressesToGenerate)
         newest <- getAddrFunc()
         res <- getMostRecent(hdAccount, chain).map { found =>
           assert(found.address == newest)

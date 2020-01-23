@@ -7,7 +7,11 @@ import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.flag.{ScriptFlagFactory, ScriptVerifyDerSig, ScriptVerifyNullDummy}
+import org.bitcoins.core.script.flag.{
+  ScriptFlagFactory,
+  ScriptVerifyDerSig,
+  ScriptVerifyNullDummy
+}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.util.{BitcoinSLogger, ScriptProgramTestUtil}
 import org.bitcoins.testkit.util.TestUtil

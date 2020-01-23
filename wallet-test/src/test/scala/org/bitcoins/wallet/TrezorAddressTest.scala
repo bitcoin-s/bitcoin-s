@@ -11,7 +11,10 @@ import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.fixtures.EmptyFixture
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{MockChainQueryApi, MockNodeApi}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  MockChainQueryApi,
+  MockNodeApi
+}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb}
 import org.scalatest.compatible.Assertion
@@ -134,17 +137,22 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     ConfigFactory.parseString(confStr)
   }
 
-  private def getWallet(config: WalletAppConfig)(implicit ec: ExecutionContext): Future[Wallet] = {
+  private def getWallet(config: WalletAppConfig)(
+      implicit ec: ExecutionContext): Future[Wallet] = {
     val bip39PasswordOpt = None
-    val kmE = BIP39KeyManager.initializeWithEntropy(entropy = mnemonic.toEntropy,
+    val kmE = BIP39KeyManager.initializeWithEntropy(
+      entropy = mnemonic.toEntropy,
       bip39PasswordOpt = bip39PasswordOpt,
       kmParams = config.kmParams)
     kmE match {
-      case Left(err) => Future.failed(new RuntimeException(s"Failed to initialize km with err=${err}"))
+      case Left(err) =>
+        Future.failed(
+          new RuntimeException(s"Failed to initialize km with err=${err}"))
       case Right(km) =>
         val wallet = Wallet(km, MockNodeApi, MockChainQueryApi)(config, ec)
-        val walletF = Wallet.initialize(wallet = wallet,
-          bip39PasswordOpt = bip39PasswordOpt)(config,ec)
+        val walletF =
+          Wallet.initialize(wallet = wallet,
+                            bip39PasswordOpt = bip39PasswordOpt)(config, ec)
         walletF
     }
   }

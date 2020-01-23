@@ -1,7 +1,10 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{BaseTransaction, TransactionInput}
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  TransactionInput
+}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
@@ -75,9 +78,11 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val WalletDAOs(_, _, spendingInfoDAO) = daos
     for {
       utxo <- WalletTestUtil.insertSegWitUTXO(daos)
-      updated <- spendingInfoDAO.update(utxo.copy(state = TxoState.PendingConfirmationsReceived))
+      updated <- spendingInfoDAO.update(
+        utxo.copy(state = TxoState.PendingConfirmationsReceived))
       unspent <- spendingInfoDAO.findAllUnspent()
-      updated <- spendingInfoDAO.updateTxoState(outputs = unspent.map(_.output),
+      updated <- spendingInfoDAO.updateTxoState(
+        outputs = unspent.map(_.output),
         state = TxoState.PendingConfirmationsSpent)
       unspentPostUpdate <- spendingInfoDAO.findAllUnspent()
     } yield {

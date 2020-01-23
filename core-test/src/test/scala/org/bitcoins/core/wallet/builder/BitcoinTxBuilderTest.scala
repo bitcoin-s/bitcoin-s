@@ -493,8 +493,9 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     )
   }
 
-  def verifyScript(tx: Transaction,
-                   utxos: Vector[UTXOSpendingInfo]): Boolean = {
+  def verifyScript(
+      tx: Transaction,
+      utxos: Vector[UTXOSpendingInfo]): Boolean = {
     val programs: Vector[PreExecutionScriptProgram] =
       tx.inputs.zipWithIndex.toVector.map {
         case (input: TransactionInput, idx: Int) =>

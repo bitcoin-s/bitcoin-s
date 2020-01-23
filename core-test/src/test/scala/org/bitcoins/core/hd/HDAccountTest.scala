@@ -8,7 +8,7 @@ class HDAccountTest extends BitcoinSUnitTest {
 
   behavior of "HDAccount"
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =  {
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration = {
     generatorDrivenConfigNewCode
   }
 
@@ -24,7 +24,9 @@ class HDAccountTest extends BitcoinSUnitTest {
 
     val isNotSame = !HDAccount.isSameAccount(missingLast, defaultAcct)
 
-    assert(isNotSame, s"If we drop the last element from the defualt path, we are not in the same account anymore")
+    assert(
+      isNotSame,
+      s"If we drop the last element from the defualt path, we are not in the same account anymore")
   }
 
   it must "fail if we modify the last element in the path" in {
@@ -33,7 +35,8 @@ class HDAccountTest extends BitcoinSUnitTest {
 
     val isNotSame = !HDAccount.isSameAccount(modifiedLast, defaultAcct)
 
-    assert(isNotSame, s"We should have the same account if we modify the account index")
+    assert(isNotSame,
+           s"We should have the same account if we modify the account index")
   }
 
   it must "succeed if we add an arbitrary element onto the end of the path" in {
@@ -41,7 +44,9 @@ class HDAccountTest extends BitcoinSUnitTest {
 
     val isSame = HDAccount.isSameAccount(extraNode, defaultAcct)
 
-    assert(isSame, s"If we add an extra element onto the path, we are still in the same account")
+    assert(
+      isSame,
+      s"If we add an extra element onto the path, we are still in the same account")
   }
 
   it must "fail with the empty path" in {
@@ -58,8 +63,9 @@ class HDAccountTest extends BitcoinSUnitTest {
   }
 
   it must "not taken an arbitrary path and arbitrary account and find them in the same account" in {
-    forAll(HDGenerators.hdAccount, HDGenerators.bip32Path) { case (acct, path) =>
-      assert(!HDAccount.isSameAccount(path, acct))
+    forAll(HDGenerators.hdAccount, HDGenerators.bip32Path) {
+      case (acct, path) =>
+        assert(!HDAccount.isSameAccount(path, acct))
     }
   }
 }
