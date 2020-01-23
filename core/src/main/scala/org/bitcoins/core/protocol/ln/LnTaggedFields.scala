@@ -15,44 +15,51 @@ import scala.reflect.ClassTag
   */
 sealed abstract class LnTaggedFields extends NetworkElement {
 
+  require(tag[LnTag.PaymentHashTag].nonEmpty, "You must supply a payment hash")
   require(
     (description.nonEmpty && description.get.string.length < 640) ||
       descriptionHash.nonEmpty,
     "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice."
   )
 
-  def paymentHash: LnTag.PaymentHashTag
+  def tags: Vector[LnTag]
 
-  def secret: Option[LnTag.SecretTag]
+  def tag[T <: LnTag: ClassTag]: Option[T] =
+    tags.collectFirst {
+      case t: T => t
+    }
 
-  def description: Option[LnTag.DescriptionTag]
+  def paymentHash: LnTag.PaymentHashTag =
+    tag[LnTag.PaymentHashTag].get
 
-  def nodeId: Option[LnTag.NodeIdTag]
+  def secret: Option[LnTag.SecretTag] =
+    tag[LnTag.SecretTag]
 
-  def descriptionHash: Option[LnTag.DescriptionHashTag]
+  def description: Option[LnTag.DescriptionTag] =
+    tag[LnTag.DescriptionTag]
 
-  def expiryTime: Option[LnTag.ExpiryTimeTag]
+  def nodeId: Option[LnTag.NodeIdTag] =
+    tag[LnTag.NodeIdTag]
 
-  def cltvExpiry: Option[LnTag.MinFinalCltvExpiry]
+  def descriptionHash: Option[LnTag.DescriptionHashTag] =
+    tag[LnTag.DescriptionHashTag]
 
-  def fallbackAddress: Option[LnTag.FallbackAddressTag]
+  def expiryTime: Option[LnTag.ExpiryTimeTag] =
+    tag[LnTag.ExpiryTimeTag]
 
-  def routingInfo: Option[LnTag.RoutingInfo]
+  def cltvExpiry: Option[LnTag.MinFinalCltvExpiry] =
+    tag[LnTag.MinFinalCltvExpiry]
 
-  def features: Option[LnTag.FeaturesTag]
+  def fallbackAddress: Option[LnTag.FallbackAddressTag] =
+    tag[LnTag.FallbackAddressTag]
 
-  lazy val data: Vector[UInt5] = Vector(Some(paymentHash),
-                                        description,
-                                        nodeId,
-                                        descriptionHash,
-                                        secret,
-                                        expiryTime,
-                                        cltvExpiry,
-                                        fallbackAddress,
-                                        routingInfo,
-                                        features)
-    .filter(_.isDefined)
-    .flatMap(_.get.data)
+  def routingInfo: Option[LnTag.RoutingInfo] =
+    tag[LnTag.RoutingInfo]
+
+  def features: Option[LnTag.FeaturesTag] =
+    tag[LnTag.FeaturesTag]
+
+  lazy val data: Vector[UInt5] = tags.flatMap(_.data)
 
   override def bytes: ByteVector = {
     val u8s = Bech32.from5bitTo8bit(data)
@@ -70,18 +77,7 @@ sealed abstract class LnTaggedFields extends NetworkElement {
 }
 
 object LnTaggedFields {
-  private case class InvoiceTagImpl(
-      paymentHash: LnTag.PaymentHashTag,
-      description: Option[LnTag.DescriptionTag],
-      nodeId: Option[LnTag.NodeIdTag],
-      descriptionHash: Option[LnTag.DescriptionHashTag],
-      expiryTime: Option[LnTag.ExpiryTimeTag],
-      secret: Option[LnTag.SecretTag],
-      cltvExpiry: Option[LnTag.MinFinalCltvExpiry],
-      fallbackAddress: Option[LnTag.FallbackAddressTag],
-      routingInfo: Option[LnTag.RoutingInfo],
-      features: Option[LnTag.FeaturesTag])
-      extends LnTaggedFields
+  private case class InvoiceTagImpl(tags: Vector[LnTag]) extends LnTaggedFields
 
   /**
     * According to BOLT11 the required fields in a LnInvoice are a payment hash
@@ -110,19 +106,20 @@ object LnTaggedFields {
       }
     }
 
-    InvoiceTagImpl(
-      paymentHash = paymentHash,
-      secret = secret,
-      description = description,
-      nodeId = nodeId,
-      descriptionHash = descriptionHash,
-      expiryTime = expiryTime,
-      cltvExpiry = cltvExpiry,
-      fallbackAddress = fallbackAddress,
-      routingInfo = routingInfo,
-      features = features
-    )
+    val tags = Vector(Some(paymentHash),
+                      description,
+                      nodeId,
+                      descriptionHash,
+                      expiryTime,
+                      cltvExpiry,
+                      fallbackAddress,
+                      routingInfo,
+                      features,
+                      secret).flatten
+    InvoiceTagImpl(tags)
   }
+
+  def apply(tags: Vector[LnTag]): LnTaggedFields = InvoiceTagImpl(tags)
 
   /** This is intended to parse all of the [[org.bitcoins.core.protocol.ln.LnTaggedFields LnTaggedFields]]
     * from the tagged part of the ln invoice. This should only be called
@@ -136,7 +133,10 @@ object LnTaggedFields {
     def loop(remaining: List[UInt5], fields: Vector[LnTag]): Vector[LnTag] = {
       remaining match {
         case h :: h1 :: h2 :: t =>
-          val prefixOpt = LnTagPrefix.fromUInt5(h)
+          val prefix = LnTagPrefix
+            .fromUInt5(h)
+            .getOrElse(
+              throw new RuntimeException("Unknown LN invoice tag prefix"))
 
           //next two 5 bit increments are data_length
           val dataLengthU5s = List(h1, h2)
@@ -146,16 +146,11 @@ object LnTaggedFields {
           //t is the actual possible payload
           val payload: Vector[UInt5] = t.take(dataLength.toInt).toVector
 
-          val newFields = prefixOpt match {
-            case Some(prefix) =>
-              val tag = LnTag.fromLnTagPrefix(prefix, payload)
-              fields :+ tag
-            case None => fields
-          }
+          val tag = LnTag.fromLnTagPrefix(prefix, payload)
 
           val newRemaining = t.slice(payload.size, t.size)
 
-          loop(newRemaining, newFields)
+          loop(newRemaining, fields :+ tag)
         case Nil =>
           fields
         case _ :: _ | _ :: _ :: _ =>
@@ -166,64 +161,7 @@ object LnTaggedFields {
 
     val tags = loop(u5s.toList, Vector.empty)
 
-    def getTag[T <: LnTag: ClassTag]: Option[T] = {
-      tags
-        .map {
-          case t: T => Some(t)
-          case _    => None
-        }
-        .find(_.isDefined)
-        .flatten
-    }
-
-    val paymentHashTag = getTag[LnTag.PaymentHashTag].getOrElse(
-      throw new IllegalArgumentException(
-        s"Payment hash must be defined in a LnInvoice")
-    )
-
-    val secret = getTag[LnTag.SecretTag]
-
-    val description = getTag[LnTag.DescriptionTag]
-
-    val descriptionHash = getTag[LnTag.DescriptionHashTag]
-
-    val nodeId = getTag[LnTag.NodeIdTag]
-
-    val expiryTime = getTag[LnTag.ExpiryTimeTag]
-
-    val cltvExpiry = getTag[LnTag.MinFinalCltvExpiry]
-
-    val fallbackAddress = getTag[LnTag.FallbackAddressTag]
-
-    val routingInfo = getTag[LnTag.RoutingInfo]
-
-    val features = getTag[LnTag.FeaturesTag]
-
-    val d: Either[LnTag.DescriptionTag, LnTag.DescriptionHashTag] = {
-      if (description.isDefined && descriptionHash.isDefined) {
-        throw new IllegalArgumentException(
-          s"Cannot have both description and description hash")
-      } else if (description.isEmpty && descriptionHash.isEmpty) {
-        throw new IllegalArgumentException(
-          s"One of description / description hash fields must be defind")
-      } else if (description.isDefined) {
-        Left(description.get)
-      } else {
-        Right(descriptionHash.get)
-      }
-    }
-
-    LnTaggedFields(
-      paymentHash = paymentHashTag,
-      secret = secret,
-      descriptionOrHash = d,
-      nodeId = nodeId,
-      expiryTime = expiryTime,
-      cltvExpiry = cltvExpiry,
-      fallbackAddress = fallbackAddress,
-      routingInfo = routingInfo,
-      features = features
-    )
+    InvoiceTagImpl(tags)
 
   }
 }

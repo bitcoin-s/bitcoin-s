@@ -17,7 +17,7 @@ import org.bitcoins.core.protocol.ln.fee.{
 }
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{Bech32, CryptoUtil}
 import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
@@ -381,10 +381,8 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val features = Some(
       LnTag.FeaturesTag(ByteVector.fromValidHex("800000000000000000000800")))
 
-    val lnTags = LnTaggedFields(paymentHash = paymentTag,
-                                descriptionOrHash = descriptionTag,
-                                secret = paymentSecret,
-                                features = features)
+    val lnTags = LnTaggedFields(
+      Vector(paymentTag, descriptionTag.value, paymentSecret.get, features.get))
 
     val hrpMilli =
       LnHumanReadablePart(LnBitcoinMainNet, Some(MilliBitcoins(25)))
@@ -503,6 +501,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
         "07d3aca4886ab447c49ad49a00277f32ee1fcf94c60faa9d2899ceb75c2466d0"))))
     invoice.lnTags.features must be(
       Some(LnTag.FeaturesTag(ByteVector.fromValidHex("0800"))))
+    invoice.toString must be(serialized)
   }
 
   it must "ensure that the malleability of the checksum in bech32 strings cannot cause a signature to become valid" in {
@@ -510,5 +509,26 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpuaztrnwngzn3kdzw5hydlzf03qdgm2hdq27cqv3agm2awhz5se903vruatfhq77w3ls4evs3ch9zw97j25emudupq63nyw24cg27h2rspfj9srqqqqqp"
 
     assert(LnInvoice.fromString(strWithError).isFailure)
+  }
+
+  it must "parse unknown tags" in {
+    val privateKeyHex =
+      "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
+    val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
+
+    val unknownTag = LnTag.UnknownTag(
+      'z',
+      Bech32.from8bitTo5bit(ByteVector.fromValidHex("cafebabe")))
+
+    val tags =
+      LnTaggedFields(Vector(paymentTag, descpriptionHashTag.value, unknownTag))
+    val expected = LnInvoice(hrpTestNetMilli, time, tags, key)
+    val serialized = expected.toString
+    val deserialized = LnInvoice.fromString(serialized).get
+    deserialized must be(expected)
+    deserialized.toString must be(serialized)
+    deserialized.lnTags.tags.size must be(3)
+    deserialized.lnTags.tags.last must be(unknownTag)
+    deserialized.lnTags must be(expected.lnTags)
   }
 }
