@@ -277,7 +277,8 @@ lazy val dbCommons = project
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
   .settings(
-    name := "bitcoin-s-db-commons-test"
+    name := "bitcoin-s-db-commons-test",
+    skip in publish := true
   )
   .dependsOn(testkit)
 
