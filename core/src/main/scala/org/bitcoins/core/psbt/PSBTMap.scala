@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 sealed trait PSBTMap[+RecordType <: PSBTRecord] extends NetworkElement {
   require(elements.map(_.key).groupBy(identity).values.forall(_.length == 1),
-          "All keys must be unique.")
+          s"All keys must be unique. Got: $elements")
 
   def elements: Vector[RecordType]
 

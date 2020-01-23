@@ -71,7 +71,7 @@ object PSBTGenerators {
 
   private def unknownGlobals(
       num: Int): Gen[Vector[GlobalPSBTRecord.Unknown]] = {
-    Gen.listOfN(num, unknownGlobal).map(_.toVector)
+    Gen.listOfN(num, unknownGlobal).map(_.toVector.distinct)
   }
 
   private def unknownInput: Gen[InputPSBTRecord.Unknown] = {
@@ -88,7 +88,7 @@ object PSBTGenerators {
   }
 
   private def unknownInputs(num: Int): Gen[Vector[InputPSBTRecord.Unknown]] = {
-    Gen.listOfN(num, unknownInput).map(_.toVector)
+    Gen.listOfN(num, unknownInput).map(_.toVector.distinct)
   }
 
   private def unknownOutput: Gen[OutputPSBTRecord.Unknown] = {
@@ -106,7 +106,7 @@ object PSBTGenerators {
 
   private def unknownOutputs(
       num: Int): Gen[Vector[OutputPSBTRecord.Unknown]] = {
-    Gen.listOfN(num, unknownOutput).map(_.toVector)
+    Gen.listOfN(num, unknownOutput).map(_.toVector.distinct)
   }
 
   def psbtWithUnknowns(implicit ec: ExecutionContext): Gen[Future[PSBT]] = {
