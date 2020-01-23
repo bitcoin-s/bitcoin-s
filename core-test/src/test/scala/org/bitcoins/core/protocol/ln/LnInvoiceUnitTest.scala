@@ -504,4 +504,11 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     invoice.lnTags.features must be(
       Some(LnTag.FeaturesTag(ByteVector.fromValidHex("0800"))))
   }
+
+  it must "ensure that the malleability of the checksum in bech32 strings cannot cause a signature to become valid" in {
+    val strWithError =
+      "lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpuaztrnwngzn3kdzw5hydlzf03qdgm2hdq27cqv3agm2awhz5se903vruatfhq77w3ls4evs3ch9zw97j25emudupq63nyw24cg27h2rspfj9srqqqqqp"
+
+    assert(LnInvoice.fromString(strWithError).isFailure)
+  }
 }

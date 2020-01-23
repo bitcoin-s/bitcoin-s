@@ -205,4 +205,17 @@ class Bech32Test extends BitcoinSUnitTest {
       assert(u8s == u8sAgain)
     }
   }
+
+  // bech 32 Weakness test vectors
+  private val invalidBech32 = Vector(
+    "bc1qvfu057ptzatpxf30xc2yunuqad4dg54gkuvx04fuzch6gezltk2q63lcaqp",
+    "bc1ql6mqttdzpekxmdp9gaglvjtnfg4ydwzdtgcqxxru7f6m0eg9pckqnncp",
+    "bc1q6g6y8y62cgt7x3s2sdwax3nuur00uwcey570zqqp",
+    "bc1q3qwt6j7yr9nzhskdh36eh6ktesy93ggwjfs9p"
+  )
+  it must "fail to find the bech32 weakness" in {
+    val failsAll = invalidBech32.forall(invalid =>
+      Bech32.splitToHrpAndData(invalid).isSuccess)
+    assert(failsAll)
+  }
 }
