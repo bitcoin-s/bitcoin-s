@@ -2,7 +2,14 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
-import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2PKHScriptPubKey, P2SHScriptPubKey, P2WPKHWitnessSPKV0, ScriptPubKey, WitnessScriptPubKeyV0}
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptPubKey,
+  P2PKHScriptPubKey,
+  P2SHScriptPubKey,
+  P2WPKHWitnessSPKV0,
+  ScriptPubKey,
+  WitnessScriptPubKeyV0
+}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.{Failure, Success, Try}

@@ -22,7 +22,8 @@ class RawScriptSignatureParserTest extends BitcoinSUnitTest {
   }
 
   it must "read an EmptyScriptSignature" in {
-    assert(RawScriptSignatureParser.read(ByteVector.empty) == EmptyScriptSignature)
+    assert(
+      RawScriptSignatureParser.read(ByteVector.empty) == EmptyScriptSignature)
   }
 
   it must "read then write a raw script sig" in {

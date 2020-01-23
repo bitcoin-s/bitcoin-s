@@ -257,25 +257,25 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
 
   it must "not serialize a MnemonicCode toString" in {
     val correctSeed = Vector("phone",
-      "dilemma",
-      "early",
-      "never",
-      "test",
-      "surge",
-      "ecology",
-      "rail",
-      "medal",
-      "benefit",
-      "mystery",
-      "toward",
-      "lounge",
-      "candy",
-      "syrup")
+                             "dilemma",
+                             "early",
+                             "never",
+                             "test",
+                             "surge",
+                             "ecology",
+                             "rail",
+                             "medal",
+                             "benefit",
+                             "mystery",
+                             "toward",
+                             "lounge",
+                             "candy",
+                             "syrup")
 
     val mnemonicCode = MnemonicCode.fromWords(correctSeed)
 
-    mnemonicCode.toString must be ("Masked(MnemonicCodeImpl)")
+    mnemonicCode.toString must be("Masked(MnemonicCodeImpl)")
 
-    mnemonicCode.toStringSensitive must be (correctSeed.mkString(","))
+    mnemonicCode.toStringSensitive must be(correctSeed.mkString(","))
   }
 }

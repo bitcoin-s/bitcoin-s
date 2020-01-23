@@ -3,16 +3,17 @@ package org.bitcoins.keymanager
 import java.nio.file.{Files, Path}
 
 import org.bitcoins.core.crypto.{AesPassword, MnemonicCode}
-import org.bitcoins.keymanager.ReadMnemonicError.{DecryptionError, JsonParsingError}
+import org.bitcoins.keymanager.ReadMnemonicError.{
+  DecryptionError,
+  JsonParsingError
+}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.{BeforeAndAfterEach, FutureOutcome}
 
-class WalletStorageTest
-    extends BitcoinSWalletTest
-    with BeforeAndAfterEach {
+class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   override type FixtureParam = WalletAppConfig
 
@@ -37,21 +38,22 @@ class WalletStorageTest
     mnemonic
   }
 
-  it must "write and read a mnemonic to disk" in { walletConf: WalletAppConfig =>
-    assert(!walletConf.seedExists())
+  it must "write and read a mnemonic to disk" in {
+    walletConf: WalletAppConfig =>
+      assert(!walletConf.seedExists())
 
-    val writtenMnemonic = getAndWriteMnemonic(walletConf)
+      val writtenMnemonic = getAndWriteMnemonic(walletConf)
 
-    // should have been written by now
-    assert(walletConf.seedExists())
-    val seedPath = getSeedPath(walletConf)
-    val read =
-      WalletStorage.decryptMnemonicFromDisk(seedPath,passphrase)
-    read match {
-      case Right(readMnemonic) =>
-        assert(writtenMnemonic == readMnemonic)
-      case Left(err) => fail(err.toString)
-    }
+      // should have been written by now
+      assert(walletConf.seedExists())
+      val seedPath = getSeedPath(walletConf)
+      val read =
+        WalletStorage.decryptMnemonicFromDisk(seedPath, passphrase)
+      read match {
+        case Right(readMnemonic) =>
+          assert(writtenMnemonic == readMnemonic)
+        case Left(err) => fail(err.toString)
+      }
   }
 
   it must "fail to read a mnemonic with bad password" in { walletConf =>
@@ -62,8 +64,8 @@ class WalletStorageTest
     read match {
       case Right(mnemonic) =>
         fail("Wrote and read with different passwords")
-      case Left(DecryptionError)        => succeed
-      case Left(err) => fail(err.toString)
+      case Left(DecryptionError) => succeed
+      case Left(err)             => fail(err.toString)
     }
   }
 
@@ -77,31 +79,30 @@ class WalletStorageTest
         | }
     """.stripMargin
     val seedPath = getSeedPath(walletConf)
-    Files.write(seedPath,
-                badJson.getBytes())
+    Files.write(seedPath, badJson.getBytes())
 
     val read =
-      WalletStorage.decryptMnemonicFromDisk(seedPath,passphrase)
+      WalletStorage.decryptMnemonicFromDisk(seedPath, passphrase)
 
     read match {
-      case Left(JsonParsingError(_))     => succeed
+      case Left(JsonParsingError(_))  => succeed
       case res @ (Left(_) | Right(_)) => fail(res.toString())
     }
   }
 
-  it must "throw an exception if we attempt to overwrite an existing seed" in { walletConf =>
+  it must "throw an exception if we attempt to overwrite an existing seed" in {
+    walletConf =>
+      assert(!walletConf.seedExists())
 
-    assert(!walletConf.seedExists())
+      val _ = getAndWriteMnemonic(walletConf)
 
-    val _ = getAndWriteMnemonic(walletConf)
+      // should have been written by now
+      assert(walletConf.seedExists())
 
-    // should have been written by now
-    assert(walletConf.seedExists())
-
-    assertThrows[RuntimeException] {
-      //attempt to write another mnemonic
-      getAndWriteMnemonic(walletConf)
-    }
+      assertThrows[RuntimeException] {
+        //attempt to write another mnemonic
+        getAndWriteMnemonic(walletConf)
+      }
   }
 
 }
