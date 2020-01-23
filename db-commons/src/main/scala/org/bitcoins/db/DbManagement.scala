@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
 import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.FlywayException
 import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -97,6 +98,15 @@ abstract class DbManagement extends DatabaseLogger {
     val dbName = appConfig.dbName.split('.').head.mkString
     val config = Flyway.configure().locations(s"classpath:${dbName}/migration/")
     val flyway = config.dataSource(url, username, password).load
-    flyway.migrate()
+
+    try {
+      flyway.migrate()
+    } catch {
+      case _: FlywayException =>
+        //maybe we have an existing database, so attempt to baseline the existing
+        //database and then apply migrations again
+        flyway.baseline()
+        flyway.migrate()
+    }
   }
 }
