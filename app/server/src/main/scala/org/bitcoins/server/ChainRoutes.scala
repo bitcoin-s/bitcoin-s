@@ -20,6 +20,18 @@ case class ChainRoutes(chain: ChainApi)(implicit system: ActorSystem)
           Server.httpSuccess(count)
         }
       }
+    case ServerCommand("getfiltercount", _) =>
+      complete {
+        chain.getFilterCount().map { count =>
+          Server.httpSuccess(count)
+        }
+      }
+    case ServerCommand("getfilterheadercount", _) =>
+      complete {
+        chain.getFilterHeaderCount().map { count =>
+          Server.httpSuccess(count)
+        }
+      }
     case ServerCommand("getbestblockhash", _) =>
       complete {
         chain.getBestBlockHash.map { hash =>

@@ -112,7 +112,7 @@ trait ChainApi extends ChainQueryApi {
       blockHash: DoubleSha256DigestBE): Future[ChainApi]
 
   /** Gets the number of compact filter headers in the database */
-  def getFilterHeaderCount: Future[Int]
+  def getFilterHeaderCount(): Future[Int]
 
   /**
     * Looks up a compact filter header by its height.
@@ -132,7 +132,7 @@ trait ChainApi extends ChainQueryApi {
   def getFilter(hash: DoubleSha256DigestBE): Future[Option[CompactFilterDb]]
 
   /** Gets the number of compact filters in the database */
-  def getFilterCount: Future[Int]
+  def getFilterCount(): Future[Int]
 
   /**
     * Looks up a compact filter by its height.
