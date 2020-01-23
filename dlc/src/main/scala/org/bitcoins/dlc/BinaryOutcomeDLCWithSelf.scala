@@ -414,7 +414,8 @@ case class BinaryOutcomeDLCWithSelf(
         outPoint = TransactionOutPoint(fundingTxId, UInt32.zero),
         amount = output.value,
         scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
-        signers = Vector(fundingLocalPrivKey, fundingRemotePrivKey),
+        signersWithPossibleExtra =
+          Vector(fundingLocalPrivKey, fundingRemotePrivKey),
         hashType = HashType.sigHashAll,
         scriptWitness = P2WSHWitnessV0(fundingSPK),
         conditionalPath = ConditionalPath.NoConditionsLeft
@@ -583,7 +584,7 @@ case class BinaryOutcomeDLCWithSelf(
         outPoint = TransactionOutPoint(cet.txIdBE, UInt32.zero),
         amount = output.value,
         scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
-        signers = Vector(privKey),
+        signersWithPossibleExtra = Vector(privKey),
         hashType = HashType.sigHashAll,
         scriptWitness = cetScriptWitness,
         conditionalPath = ConditionalPath.nonNestedTrue
@@ -665,7 +666,7 @@ case class BinaryOutcomeDLCWithSelf(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
       amount = justiceOutput.value,
       scriptPubKey = justiceOutput.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
-      signers = Vector(cetPrivKeyJustice),
+      signersWithPossibleExtra = Vector(cetPrivKeyJustice),
       hashType = HashType.sigHashAll,
       scriptWitness = cetScriptWitness,
       conditionalPath = ConditionalPath.nonNestedFalse
