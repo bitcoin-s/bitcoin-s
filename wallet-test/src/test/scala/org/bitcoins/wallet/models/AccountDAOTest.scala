@@ -23,10 +23,10 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     } yield assert(found.contains(created))
   }
 
-
   it must "find an account by HdAccount" in { daos =>
     val accountDAO = daos.accountDAO
-    val account = WalletTestUtil.getHdAccount1(walletAppConfig = walletAppConfig)
+    val account =
+      WalletTestUtil.getHdAccount1(walletAppConfig = walletAppConfig)
     for {
       created <- {
 

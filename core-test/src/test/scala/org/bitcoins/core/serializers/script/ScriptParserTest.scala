@@ -4,7 +4,11 @@ import org.bitcoins.core.script.arithmetic.OP_1ADD
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.bitcoins.core.script.crypto.{
+  OP_CHECKMULTISIG,
+  OP_CHECKSIG,
+  OP_HASH160
+}
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.splice.OP_SIZE

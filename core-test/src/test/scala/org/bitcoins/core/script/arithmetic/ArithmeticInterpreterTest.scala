@@ -3,7 +3,10 @@ package org.bitcoins.core.script.arithmetic
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.{ExecutedScriptProgram, ExecutionInProgressScriptProgram}
+import org.bitcoins.core.script.{
+  ExecutedScriptProgram,
+  ExecutionInProgressScriptProgram
+}
 import org.bitcoins.core.util.ScriptProgramTestUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
