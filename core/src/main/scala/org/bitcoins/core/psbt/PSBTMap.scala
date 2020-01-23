@@ -47,6 +47,11 @@ sealed trait PSBTMap[+RecordType <: PSBTRecord] extends NetworkElement {
     elements
       .filterNot(element => keyIdFactory.fromByte(element.key.head) == key)
   }
+
+  protected def distinctByKey[rType <: PSBTRecord](
+      records: Vector[rType]): Vector[rType] = {
+    records.groupBy(_.key).map(_._2.head).toVector
+  }
 }
 
 object PSBTMap {
@@ -123,13 +128,16 @@ case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
     // We must keep the highest version number
     // https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#version-numbers
     if (this.version.version > other.version.version) {
-      GlobalPSBTMap(
-        (this.elements ++ other.filterRecords(VersionKeyId)).distinct)
+      val newElements = distinctByKey(
+        this.elements ++ other.filterRecords(VersionKeyId))
+      GlobalPSBTMap(newElements)
     } else if (this.version.version < other.version.version) {
-      GlobalPSBTMap(
-        (this.filterRecords(VersionKeyId) ++ other.elements).distinct)
+      val newElements = distinctByKey(
+        this.filterRecords(VersionKeyId) ++ other.elements)
+      GlobalPSBTMap(newElements)
     } else {
-      GlobalPSBTMap((this.elements ++ other.elements).distinct)
+      val newElements = distinctByKey(this.elements ++ other.elements)
+      GlobalPSBTMap(newElements)
     }
   }
 }
@@ -473,7 +481,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     * @return A InputPSBTMap with the combined data of the two InputPSBTMaps
     */
   def combine(other: InputPSBTMap): InputPSBTMap = {
-    InputPSBTMap((this.elements ++ other.elements).distinct)
+    InputPSBTMap(distinctByKey(this.elements ++ other.elements))
   }
 
   /**
@@ -744,7 +752,7 @@ case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
     * @return A OutputPSBTMap with the combined data of the two OutputPSBTMaps
     */
   def combine(other: OutputPSBTMap): OutputPSBTMap = {
-    OutputPSBTMap((this.elements ++ other.elements).distinct)
+    OutputPSBTMap(distinctByKey(this.elements ++ other.elements))
   }
 }
 
