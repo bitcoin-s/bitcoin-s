@@ -136,7 +136,7 @@ object LnTaggedFields {
     def loop(remaining: List[UInt5], fields: Vector[LnTag]): Vector[LnTag] = {
       remaining match {
         case h :: h1 :: h2 :: t =>
-          val prefix = LnTagPrefix.fromUInt5(h)
+          val prefixOpt = LnTagPrefix.fromUInt5(h)
 
           //next two 5 bit increments are data_length
           val dataLengthU5s = List(h1, h2)
@@ -146,11 +146,16 @@ object LnTaggedFields {
           //t is the actual possible payload
           val payload: Vector[UInt5] = t.take(dataLength.toInt).toVector
 
-          val tag = LnTag.fromLnTagPrefix(prefix.get, payload)
+          val newFields = prefixOpt match {
+            case Some(prefix) =>
+              val tag = LnTag.fromLnTagPrefix(prefix, payload)
+              fields :+ tag
+            case None => fields
+          }
 
           val newRemaining = t.slice(payload.size, t.size)
 
-          loop(newRemaining, fields.:+(tag))
+          loop(newRemaining, newFields)
         case Nil =>
           fields
         case _ :: _ | _ :: _ :: _ =>
