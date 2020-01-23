@@ -45,12 +45,12 @@ sealed abstract class LnTaggedFields extends NetworkElement {
                                         description,
                                         nodeId,
                                         descriptionHash,
-                                        secret,
                                         expiryTime,
                                         cltvExpiry,
                                         fallbackAddress,
                                         routingInfo,
-                                        features)
+                                        features,
+                                        secret)
     .filter(_.isDefined)
     .flatMap(_.get.data)
 
