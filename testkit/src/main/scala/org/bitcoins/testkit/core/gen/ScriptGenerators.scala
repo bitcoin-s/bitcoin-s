@@ -45,6 +45,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       ScriptInterpreter.MAX_PUSH_SIZE)).bytes.length >= ScriptInterpreter.MAX_PUSH_SIZE
   }
 
+  private def truncate[A, B, C](tuple: (A, B, C)): (A, B) = (tuple._1, tuple._2)
+
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
     for {
       digitalSignature <- CryptoGenerators.digitalSignature
@@ -256,7 +258,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
                                                               pubKeys)
     } yield (multiSignatureScriptPubKey, privateKeys)
 
-  def p2shScriptPubKey: Gen[(P2SHScriptPubKey, Seq[ECPrivateKey])] =
+  /** Generates a random P2SHScriptPubKey as well as it's corresponding private keys and redeem script */
+  def p2shScriptPubKey: Gen[
+    (P2SHScriptPubKey, Seq[ECPrivateKey], ScriptPubKey)] =
     for {
       (randomScriptPubKey, privKeys) <- randomNonP2SHScriptPubKey
         .suchThat {
@@ -264,7 +268,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
             !redeemScriptTooBig(spk)
         }
       p2sh = P2SHScriptPubKey(randomScriptPubKey)
-    } yield (p2sh, privKeys)
+    } yield (p2sh, privKeys, randomScriptPubKey)
 
   def emptyScriptPubKey: Gen[(EmptyScriptPubKey.type, Seq[ECPrivateKey])] =
     (EmptyScriptPubKey, Nil)
@@ -331,18 +335,20 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       privKey <- CryptoGenerators.privateKey
     } yield (P2WPKHWitnessSPKV0(privKey.publicKey), Seq(privKey))
 
-  def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey])] =
+  /** Generates a random P2WSHWitnessSPKV0 as well as it's corresponding private keys and redeem script */
+  def p2wshSPKV0: Gen[(P2WSHWitnessSPKV0, Seq[ECPrivateKey], ScriptPubKey)] =
     randomNonP2SHScriptPubKey
       .suchThat {
         case (spk, _) =>
           !redeemScriptTooBig(spk)
       }
-      .map { spk =>
-        (P2WSHWitnessSPKV0(spk._1), spk._2)
+      .map {
+        case (spk, privateKey) =>
+          (P2WSHWitnessSPKV0(spk), privateKey, spk)
       }
 
   def witnessScriptPubKeyV0: Gen[(WitnessScriptPubKeyV0, Seq[ECPrivateKey])] =
-    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0)
+    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate))
 
   /**
     * Creates an unassigned witness scriptPubKey.
@@ -363,7 +369,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def assignedWitnessScriptPubKey: Gen[
     (WitnessScriptPubKey, Seq[ECPrivateKey])] = {
-    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0)
+    Gen.oneOf(p2wpkhSPKV0, p2wshSPKV0.map(truncate))
   }
 
   def witnessCommitment: Gen[(WitnessCommitment, Seq[ECPrivateKey])] =
@@ -411,17 +417,17 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
   /** Generates an arbitrary `ScriptPubKey` */
   def scriptPubKey: Gen[(ScriptPubKey, Seq[ECPrivateKey])] = {
     Gen.oneOf(
-      p2pkScriptPubKey.map(privKeyToSeq(_)),
-      p2pkhScriptPubKey.map(privKeyToSeq(_)),
+      p2pkScriptPubKey.map(privKeyToSeq),
+      p2pkhScriptPubKey.map(privKeyToSeq),
       p2pkWithTimeoutScriptPubKey,
       multiSigScriptPubKey,
       emptyScriptPubKey,
       cltvScriptPubKey(defaultMaxDepth),
       csvScriptPubKey(defaultMaxDepth),
       p2wpkhSPKV0,
-      p2wshSPKV0,
+      p2wshSPKV0.map(truncate),
       unassignedWitnessScriptPubKey,
-      p2shScriptPubKey,
+      p2shScriptPubKey.map(truncate),
       witnessCommitment,
       conditionalScriptPubKey(defaultMaxDepth),
       multiSignatureWithTimeoutScriptPubKey
@@ -436,7 +442,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       multiSigScriptPubKey,
       emptyScriptPubKey,
       lockTimeScriptPubKey(defaultMaxDepth),
-      p2shScriptPubKey,
+      p2shScriptPubKey.map(truncate),
       witnessCommitment,
       conditionalScriptPubKey(defaultMaxDepth),
       multiSignatureWithTimeoutScriptPubKey
@@ -1060,8 +1066,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         val scriptSig = lockTimeHelperScriptSig(spk, sigs, keys).scriptSig
         ConditionalScriptSignature(scriptSig, true)
       case EmptyScriptPubKey =>
-        // This script pushes an OP_TRUE onto the stack, causing a successful spend
-        CSVScriptSignature(NonStandardScriptSignature("0151"))
+        CSVScriptSignature(TrivialTrueScriptSignature)
       case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         //bare segwit always has an empty script sig, see BIP141
         CSVScriptSignature(EmptyScriptSignature)

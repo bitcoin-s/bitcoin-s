@@ -115,6 +115,8 @@ sealed abstract class ExtKey extends NetworkElement {
 object ExtKey extends Factory[ExtKey] {
   val hardenedIdx = UInt32(NumberUtil.pow2(31).toLong)
 
+  val masterFingerprint: ByteVector = hex"00000000"
+
   /** Takes in a base58 string and tries to convert it to an extended key */
   def fromString(base58: String): Try[ExtKey] = {
     val decoded: Try[ByteVector] = Base58.decodeCheck(base58)

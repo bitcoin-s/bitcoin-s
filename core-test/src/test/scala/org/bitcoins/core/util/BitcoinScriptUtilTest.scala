@@ -57,7 +57,7 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
     }
 
     forAll(ScriptGenerators.p2shScriptPubKey) {
-      case (p2shScript, _) =>
+      case (p2shScript, _, _) =>
         assert(
           BitcoinScriptUtil
             .getDataTokens(p2shScript.asm)
@@ -65,7 +65,7 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
     }
 
     forAll(ScriptGenerators.p2wshSPKV0) {
-      case (p2wshScript, _) =>
+      case (p2wshScript, _, _) =>
         assert(
           BitcoinScriptUtil
             .getDataTokens(p2wshScript.asm)

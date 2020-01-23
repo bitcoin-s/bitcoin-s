@@ -1,44 +1,34 @@
 package org.bitcoins.core.wallet.builder
 
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.{
-  BaseTxSigComponent,
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  WitnessTxSigComponentP2SH,
-  WitnessTxSigComponentRaw
-}
+import org.bitcoins.core.config.{RegTest, TestNet3}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
-import org.bitcoins.testkit.core.gen.{
-  ChainParamsGenerator,
-  CreditingTxGen,
-  ScriptGenerators,
-  TransactionGenerators
-}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
   ConditionalPath,
   LockTimeSpendingInfoFull,
   UTXOSpendingInfo
 }
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.constant.ScriptNumber
-import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.testkit.Implicits._
+import org.bitcoins.testkit.core.gen.{
+  ChainParamsGenerator,
+  CreditingTxGen,
+  ScriptGenerators
+}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.scalacheck.Gen
 
 class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
-  val tc = TransactionConstants
+  val tc: TransactionConstants.type = TransactionConstants
   val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
@@ -311,7 +301,6 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
 
   it must "fail to sign a p2pkh if we pass in the wrong public key" in {
     val p2pkh = P2PKHScriptPubKey(privKey.publicKey)
-    val pubKey2 = ECPrivateKey().publicKey
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2pkh)
     val destinations =
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
@@ -536,7 +525,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
               val o = TransactionOutput(CurrencyUnits.zero, x)
               BaseTxSigComponent(tx, UInt32(idx), o, Policy.standardFlags)
 
-            case p2sh: P2SHScriptPubKey =>
+            case _: P2SHScriptPubKey =>
               val p2shScriptSig =
                 tx.inputs(idx).scriptSignature.asInstanceOf[P2SHScriptSignature]
               p2shScriptSig.redeemScript match {
@@ -561,22 +550,8 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     ScriptInterpreter.runAllVerify(programs)
   }
 
-  private def outputGen(outputs: Gen[Seq[BitcoinUTXOSpendingInfoFull]]) = {
-    outputs
-      .flatMap { creditingTxsInfo =>
-        val creditingOutputs = creditingTxsInfo.map(c => c.output)
-        val creditingOutputsAmt = creditingOutputs.map(_.value)
-        val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
-
-        TransactionGenerators.smallOutputs(totalAmount).map { destinations =>
-          (creditingTxsInfo, destinations)
-        }
-      }
-      .suchThat(_._1.nonEmpty)
-  }
-
   it must "sign a mix of spks in a tx and then have it verified" in {
-    forAllAsync(outputGen(CreditingTxGen.outputs),
+    forAllAsync(CreditingTxGen.inputsAndOutputs(),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
@@ -595,7 +570,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
   }
 
   it must "sign a mix of p2sh/p2wsh in a tx and then have it verified" in {
-    forAllAsync(outputGen(CreditingTxGen.nestedOutputs),
+    forAllAsync(CreditingTxGen.inputsAndOutputs(CreditingTxGen.nestedOutputs),
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>

@@ -5,6 +5,8 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
@@ -117,8 +119,8 @@ sealed trait SingleSigner[-SpendingInfo <: UTXOSpendingInfoSingle]
   def signSingle(
       spendingInfo: SpendingInfo,
       unsignedTx: Transaction,
-      isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      isDummySignature: Boolean)(
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     signSingle(spendingInfo,
                unsignedTx,
                isDummySignature,
@@ -137,7 +139,7 @@ sealed trait SingleSigner[-SpendingInfo <: UTXOSpendingInfoSingle]
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: SpendingInfo)(
-      implicit ec: ExecutionContext): Future[(ECPublicKey, ECDigitalSignature)]
+      implicit ec: ExecutionContext): Future[PartialSignature]
 }
 
 /** The class used to represent a signing process for a specific [[org.bitcoins.core.protocol.script.ScriptPubKey]] type */
@@ -224,8 +226,7 @@ sealed trait BitcoinSignerSingle[-SpendingInfo <: BitcoinUTXOSpendingInfoSingle]
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: SpendingInfo)(
-      implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     val signatureF = doSign(
       sigComponent = sigComponent(spendingInfo, unsignedTx),
       sign = spendingInfoToSatisfy.signer.signFunction,
@@ -234,18 +235,95 @@ sealed trait BitcoinSignerSingle[-SpendingInfo <: BitcoinUTXOSpendingInfoSingle]
     )
 
     signatureF.map { sig =>
-      (spendingInfoToSatisfy.signer.publicKey, sig)
+      PartialSignature(spendingInfoToSatisfy.signer.publicKey, sig)
     }
   }
 }
 
 object BitcoinSignerSingle {
 
+  /**
+    * Signs the PSBT's input at the given input with the signer, then adds it to the PSBT
+    * in a PartialSignature record
+    * @param psbt The PSBT to sign
+    * @param inputIndex Index of input to sign
+    * @param signer Function or private key used to sign the PSBT
+    * @param isDummySignature Do not sign the tx for real, just use a dummy signature, this is useful for fee estimation
+    * @param conditionalPath Represents the spending branch being taken in a ScriptPubKey's execution
+    * @return
+    */
+  def sign(
+      psbt: PSBT,
+      inputIndex: Int,
+      signer: Sign,
+      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
+      isDummySignature: Boolean = false)(
+      implicit ec: ExecutionContext): Future[PSBT] = {
+    // if already signed by this signer
+    if (psbt
+          .inputMaps(inputIndex)
+          .partialSignatures
+          .exists(_.pubKey == signer.publicKey)) {
+      Future.failed(
+        new IllegalArgumentException(
+          "Input has already been signed with this key"))
+    }
+
+    val tx = psbt.transaction
+    val spendingInfo =
+      psbt
+        .inputMaps(inputIndex)
+        .toUTXOSpendingInfoSingle(tx.inputs(inputIndex),
+                                  signer,
+                                  conditionalPath)
+
+    val txToSign = spendingInfo.output.scriptPubKey match {
+      case _: WitnessScriptPubKey =>
+        tx match {
+          case btx: BaseTransaction =>
+            val witnesses = psbt.inputMaps.map { map =>
+              map.witnessScriptOpt.map(scriptWit =>
+                P2WSHWitnessV0(scriptWit.witnessScript))
+            }
+            val transactionWitness = TransactionWitness.fromWitOpt(witnesses)
+
+            WitnessTransaction(btx.version,
+                               btx.inputs,
+                               btx.outputs,
+                               btx.lockTime,
+                               transactionWitness)
+          case wtx: WitnessTransaction =>
+            wtx.witness.witnesses(inputIndex) match {
+              case EmptyScriptWitness =>
+                val transactionWitnessOpt =
+                  psbt
+                    .inputMaps(inputIndex)
+                    .witnessScriptOpt
+                    .map(scriptWit => P2WSHWitnessV0(scriptWit.witnessScript))
+                transactionWitnessOpt match {
+                  case Some(wit) => wtx.updateWitness(inputIndex, wit)
+                  case None      => wtx
+                }
+
+              case _: P2WPKHWitnessV0 | _: P2WSHWitnessV0 => wtx
+            }
+        }
+      case _: ScriptPubKey => tx
+    }
+
+    val partialSignatureF =
+      signSingle(spendingInfo, txToSign, isDummySignature)
+
+    partialSignatureF.map { partialSignature =>
+      psbt.addSignature(partialSignature, inputIndex)
+    }
+  }
+
   def signSingle(
       spendingInfo: UTXOSpendingInfoSingle,
       unsignedTx: Transaction,
-      isDummySignature: Boolean)(implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      isDummySignature: Boolean)(
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     signSingle(spendingInfo, unsignedTx, isDummySignature, spendingInfo)
   }
 
@@ -254,8 +332,7 @@ object BitcoinSignerSingle {
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: UTXOSpendingInfoSingle)(
-      implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     spendingInfoToSatisfy match {
       case p2pk: P2PKSpendingInfo =>
         P2PKSigner.signSingle(spendingInfo, unsignedTx, isDummySignature, p2pk)
@@ -390,14 +467,15 @@ sealed abstract class RawSingleKeyBitcoinSigner[
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
-    val keyAndSigF = signSingle(spendingInfo.toSingle(0),
-                                unsignedTx,
-                                isDummySignature,
-                                spendingInfoToSatisfy)
+    val partialSignatureF = signSingle(spendingInfo.toSingle(0),
+                                       unsignedTx,
+                                       isDummySignature,
+                                       spendingInfoToSatisfy)
 
-    val scriptSigF = keyAndSigF.map {
-      case (key, sig) =>
-        keyAndSigToScriptSig(key, sig, spendingInfoToSatisfy)
+    val scriptSigF = partialSignatureF.map { partialSignature =>
+      keyAndSigToScriptSig(partialSignature.pubKey,
+                           partialSignature.signature,
+                           spendingInfoToSatisfy)
     }
 
     updateScriptSigInSigComponent(unsignedTx,
@@ -418,9 +496,8 @@ sealed abstract class EmptySigner extends BitcoinSignerFull[EmptySpendingInfo] {
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-    // This script pushes an OP_TRUE onto the stack, causing a successful spend
     val satisfyEmptyScriptSig =
-      Future.successful(NonStandardScriptSignature("0151"))
+      Future.successful(TrivialTrueScriptSignature)
 
     updateScriptSigInSigComponent(unsignedTx,
                                   inputIndex.toInt,
@@ -498,7 +575,7 @@ sealed abstract class MultiSigSigner
                       infoSingle)
     }
 
-    val signaturesF = Future.sequence(keysAndSigsF).map(_.map(_._2))
+    val signaturesF = Future.sequence(keysAndSigsF).map(_.map(_.signature))
 
     val scriptSigF = signaturesF.map { sigs =>
       MultiSignatureScriptSignature(sigs)
@@ -521,8 +598,7 @@ sealed abstract class P2SHSignerSingle
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: P2SHSpendingInfoSingle)(
-      implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     if (spendingInfoToSatisfy != spendingInfo) {
       Future.fromTry(TxBuilderError.WrongSigner)
     } else {
@@ -623,8 +699,7 @@ sealed abstract class P2WPKHSigner
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: P2WPKHV0SpendingInfo)(
-      implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     for {
       sigComponent <- sign(spendingInfoToSatisfy,
                            unsignedTx,
@@ -644,7 +719,7 @@ sealed abstract class P2WPKHSigner
             "P2WPKHSigner.sign must return a WitnessTxSigComponent")
       }
 
-      (spendingInfoToSatisfy.signer.publicKey, sig)
+      PartialSignature(spendingInfoToSatisfy.signer.publicKey, sig)
     }
   }
 
@@ -723,8 +798,7 @@ sealed abstract class P2WSHSignerSingle
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: P2WSHV0SpendingInfoSingle)(
-      implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     val wtx = WitnessTransaction.toWitnessTx(unsignedTx)
 
     BitcoinSignerSingle.signSingle(spendingInfo,
@@ -786,8 +860,7 @@ sealed abstract class LockTimeSignerSingle
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: LockTimeSpendingInfoSingle)(
-      implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     BitcoinSignerSingle.signSingle(spendingInfo,
                                    unsignedTx,
                                    isDummySignature,
@@ -822,8 +895,7 @@ sealed abstract class ConditionalSignerSingle
       unsignedTx: Transaction,
       isDummySignature: Boolean,
       spendingInfoToSatisfy: ConditionalSpendingInfoSingle)(
-      implicit ec: ExecutionContext): Future[
-    (ECPublicKey, ECDigitalSignature)] = {
+      implicit ec: ExecutionContext): Future[PartialSignature] = {
     BitcoinSignerSingle.signSingle(spendingInfo,
                                    unsignedTx,
                                    isDummySignature,

@@ -119,6 +119,18 @@ object ConditionalPath {
 
   val nonNestedTrue: ConditionalPath = ConditionTrue(NoConditionsLeft)
   val nonNestedFalse: ConditionalPath = ConditionFalse(NoConditionsLeft)
+
+  def fromBranch(branch: Vector[Boolean]): ConditionalPath = {
+    if (branch.isEmpty) {
+      NoConditionsLeft
+    } else {
+      if (branch.head) {
+        ConditionTrue(fromBranch(branch.tail))
+      } else {
+        ConditionFalse(fromBranch(branch.tail))
+      }
+    }
+  }
 }
 
 sealed trait BitcoinUTXOSpendingInfo extends UTXOSpendingInfo {
@@ -351,6 +363,22 @@ object BitcoinUTXOSpendingInfoFull {
                                       hashType,
                                       conditionalPath)
     }
+  }
+
+  def apply(
+      spendingInfoSingle: UTXOSpendingInfoSingle,
+      signers: Vector[Sign]): BitcoinUTXOSpendingInfoFull = {
+    require(signers.contains(spendingInfoSingle.signer),
+            s"Signer from spendingInfoSingle missing in signers, got: $signers")
+    BitcoinUTXOSpendingInfoFull(
+      outPoint = spendingInfoSingle.outPoint,
+      output = spendingInfoSingle.output,
+      signers = signers,
+      redeemScriptOpt = spendingInfoSingle.redeemScriptOpt,
+      scriptWitnessOpt = spendingInfoSingle.scriptWitnessOpt,
+      hashType = spendingInfoSingle.hashType,
+      conditionalPath = spendingInfoSingle.conditionalPath
+    )
   }
 
   def unapply(info: BitcoinUTXOSpendingInfoFull): Option[
@@ -595,14 +623,17 @@ case class MultiSignatureSpendingInfoFull(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: MultiSignatureScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType
 ) extends RawScriptUTXOSpendingInfoFull
     with MultiSignatureSpendingInfo {
-  require(signers.length >= scriptPubKey.requiredSigs,
+  require(signersWithPossibleExtra.length >= scriptPubKey.requiredSigs,
           s"Not enough signers!: $this")
 
   override val requiredSigs: Int = scriptPubKey.requiredSigs
+
+  override val signers: Vector[Sign] =
+    signersWithPossibleExtra.take(requiredSigs)
 
   override def toSingle(signerIndex: Int): MultiSignatureSpendingInfoSingle = {
     MultiSignatureSpendingInfoSingle(outPoint,
@@ -614,7 +645,7 @@ case class MultiSignatureSpendingInfoFull(
 
   /** @inheritdoc */
   override def toSingles: Vector[MultiSignatureSpendingInfoSingle] = {
-    signers.take(requiredSigs).map { signer =>
+    signers.map { signer =>
       MultiSignatureSpendingInfoSingle(outPoint,
                                        amount,
                                        scriptPubKey,
@@ -674,7 +705,7 @@ case class ConditionalSpendingInfoFull(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: ConditionalScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     conditionalPath: ConditionalPath)
     extends RawScriptUTXOSpendingInfoFull
@@ -689,10 +720,12 @@ case class ConditionalSpendingInfoFull(
     RawScriptUTXOSpendingInfoFull(outPoint,
                                   amount,
                                   nestedSPK,
-                                  signers,
+                                  signersWithPossibleExtra,
                                   hashType,
                                   nextConditionalPath)
   }
+
+  override val signers: Vector[Sign] = nestedSpendingInfo.signers
 
   override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
@@ -726,7 +759,7 @@ case class LockTimeSpendingInfoFull(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: LockTimeScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     conditionalPath: ConditionalPath
 ) extends RawScriptUTXOSpendingInfoFull
@@ -736,10 +769,12 @@ case class LockTimeSpendingInfoFull(
     RawScriptUTXOSpendingInfoFull(outPoint,
                                   amount,
                                   scriptPubKey.nestedScriptPubKey,
-                                  signers,
+                                  signersWithPossibleExtra,
                                   hashType,
                                   conditionalPath)
   }
+
+  override val signers: Vector[Sign] = nestedSpendingInfo.signers
 
   override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
@@ -899,7 +934,7 @@ case class P2WSHV0SpendingInfoFull(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2WSHWitnessSPKV0,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     scriptWitness: P2WSHWitnessV0,
     conditionalPath: ConditionalPath)
@@ -910,10 +945,12 @@ case class P2WSHV0SpendingInfoFull(
     RawScriptUTXOSpendingInfoFull(outPoint,
                                   amount,
                                   scriptWitness.redeemScript,
-                                  signers,
+                                  signersWithPossibleExtra,
                                   hashType,
                                   conditionalPath)
   }
+
+  override val signers: Vector[Sign] = nestedSpendingInfo.signers
 
   override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
@@ -997,7 +1034,7 @@ case class P2SHNoNestSpendingInfoFull(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2SHScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     redeemScript: RawScriptPubKey,
     conditionalPath: ConditionalPath)
@@ -1007,9 +1044,11 @@ case class P2SHNoNestSpendingInfoFull(
     RawScriptUTXOSpendingInfoFull(outPoint,
                                   amount,
                                   redeemScript,
-                                  signers,
+                                  signersWithPossibleExtra,
                                   hashType,
                                   conditionalPath)
+
+  override val signers: Vector[Sign] = nestedSpendingInfo.signers
 
   override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }
@@ -1054,7 +1093,7 @@ case class P2SHNestedSegwitV0UTXOSpendingInfoFull(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2SHScriptPubKey,
-    signers: Vector[Sign],
+    private val signersWithPossibleExtra: Vector[Sign],
     hashType: HashType,
     redeemScript: WitnessScriptPubKeyV0,
     scriptWitness: ScriptWitnessV0,
@@ -1066,10 +1105,12 @@ case class P2SHNestedSegwitV0UTXOSpendingInfoFull(
     SegwitV0NativeUTXOSpendingInfoFull(outPoint,
                                        amount,
                                        redeemScript,
-                                       signers,
+                                       signersWithPossibleExtra,
                                        hashType,
                                        scriptWitness,
                                        conditionalPath)
+
+  override val signers: Vector[Sign] = nestedSpendingInfo.signers
 
   override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
 }

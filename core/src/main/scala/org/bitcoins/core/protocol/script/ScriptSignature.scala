@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
+import org.bitcoins.core.wallet.utxo.ConditionalPath
 
 import scala.util.{Failure, Success, Try}
 
@@ -49,6 +50,19 @@ object NonStandardScriptSignature
                   true
                 },
                 errorMsg = "")
+  }
+}
+
+/** A script signature to be used in tests for signing EmptyScriptPubKey.
+  * This script pushes an OP_TRUE onto the stack, causing a successful spend.
+  */
+case object TrivialTrueScriptSignature extends ScriptSignature {
+  override lazy val signatures: Seq[ECDigitalSignature] = Nil
+  override lazy val asm: Vector[ScriptToken] =
+    Vector(BytesToPushOntoStack(1), ScriptConstant("51"))
+
+  def isTrivialTrueScriptSignature(asm: Seq[ScriptToken]): Boolean = {
+    asm == this.asm
   }
 }
 
@@ -505,6 +519,28 @@ object ConditionalScriptSignature
     fromAsm(nestedScriptSig.asm.:+(conditionAsm))
   }
 
+  @scala.annotation.tailrec
+  def fromNestedScriptSig(
+      nestedScriptSig: ScriptSignature,
+      conditionalPath: ConditionalPath): ConditionalScriptSignature = {
+    conditionalPath match {
+      case ConditionalPath.NoConditionsLeft =>
+        throw new IllegalArgumentException("ConditionalPath cannot be empty")
+      case ConditionalPath.nonNestedTrue =>
+        ConditionalScriptSignature(nestedScriptSig, condition = true)
+      case ConditionalPath.nonNestedFalse =>
+        ConditionalScriptSignature(nestedScriptSig, condition = false)
+      case ConditionalPath.ConditionTrue(nextCondition) =>
+        ConditionalScriptSignature.fromNestedScriptSig(
+          ConditionalScriptSignature(nestedScriptSig, condition = true),
+          nextCondition)
+      case ConditionalPath.ConditionFalse(nextCondition) =>
+        ConditionalScriptSignature.fromNestedScriptSig(
+          ConditionalScriptSignature(nestedScriptSig, condition = false),
+          nextCondition)
+    }
+  }
+
   def isValidConditionalScriptSig(asm: Seq[ScriptToken]): Boolean = {
     asm.lastOption.exists(Vector(OP_0, OP_FALSE, OP_1, OP_TRUE).contains)
   }
@@ -524,6 +560,8 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
   /** Creates a scriptSignature from the list of script tokens */
   def fromAsm(tokens: Seq[ScriptToken]): ScriptSignature = tokens match {
     case Nil => EmptyScriptSignature
+    case _ if TrivialTrueScriptSignature.isTrivialTrueScriptSignature(tokens) =>
+      TrivialTrueScriptSignature
     case _ if P2SHScriptSignature.isP2SHScriptSig(tokens) =>
       P2SHScriptSignature.fromAsm(tokens)
     case _ if ConditionalScriptSignature.isValidConditionalScriptSig(tokens) =>

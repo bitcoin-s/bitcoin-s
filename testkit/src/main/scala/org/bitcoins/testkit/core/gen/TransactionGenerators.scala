@@ -63,8 +63,7 @@ object TransactionGenerators extends BitcoinSLogger {
   def smallOutputs: Gen[Seq[TransactionOutput]] =
     Gen.choose(0, 5).flatMap(i => Gen.listOfN(i, output))
 
-  /** Creates a small sequence of outputs whose total sum is <= totalAmount */
-  def smallOutputs(totalAmount: CurrencyUnit): Gen[Seq[TransactionOutput]] = {
+  private def genAmounts(totalAmount: CurrencyUnit): Seq[CurrencyUnit] = {
     val numOutputs = Gen.choose(0, 5).sampleSome
     @tailrec
     def loop(
@@ -81,12 +80,45 @@ object TransactionGenerators extends BitcoinSLogger {
         loop(remaining - 1, remainingAmount - amt, amt +: accum)
       }
     }
-    val amts = loop(numOutputs, totalAmount, Nil)
-    val spks = Gen.listOfN(numOutputs, ScriptGenerators.scriptPubKey.map(_._1))
+    loop(numOutputs, totalAmount, Nil)
+  }
+
+  /** Creates a small sequence of outputs whose total sum is <= totalAmount */
+  def smallOutputs(totalAmount: CurrencyUnit): Gen[Seq[TransactionOutput]] = {
+    val amts = genAmounts(totalAmount)
+    val spks = Gen.listOfN(amts.size, ScriptGenerators.scriptPubKey.map(_._1))
     spks.flatMap { s =>
       s.zip(amts).map {
         case (spk, amt) =>
           TransactionOutput(amt, spk)
+      }
+    }
+  }
+
+  /**
+    *  Creates a small sequence of outputs whose total sum is <= totalAmount
+    * @return Sequence of outputs and corresponding Redeem Scripts
+    */
+  def smallP2SHOutputs(totalAmount: CurrencyUnit): Gen[
+    Seq[(TransactionOutput, ScriptPubKey)]] = {
+    val amts = genAmounts(totalAmount)
+    val spks = Gen.listOfN(amts.size, ScriptGenerators.p2shScriptPubKey)
+    spks.flatMap { s =>
+      s.zip(amts).map {
+        case ((spk, _, rs), amt) =>
+          (TransactionOutput(amt, spk), rs)
+      }
+    }
+  }
+
+  def smallP2WSHOutputs(totalAmount: CurrencyUnit): Gen[
+    Seq[(TransactionOutput, ScriptPubKey)]] = {
+    val amts = genAmounts(totalAmount)
+    val spks = Gen.listOfN(amts.size, ScriptGenerators.p2wshSPKV0)
+    spks.flatMap { s =>
+      s.zip(amts).map {
+        case ((spk, _, rs), amt) =>
+          (TransactionOutput(amt, spk), rs)
       }
     }
   }
