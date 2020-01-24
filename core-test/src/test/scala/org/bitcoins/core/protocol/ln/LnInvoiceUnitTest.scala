@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.ln.fee.{
   FeeBaseMSat,
   FeeProportionalMillionths
 }
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.util.{Bech32, CryptoUtil}
@@ -534,5 +535,21 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     deserialized.lnTags.tags.size must be(3)
     deserialized.lnTags.tags.last must be(unknownTag)
     deserialized.lnTags must be(expected.lnTags)
+  }
+
+  it must "recover public keys" in {
+    def testInvoice(str: String, nodeId: String): Unit = {
+      val i = LnInvoice.fromString(str).get
+      i.toString must be(str)
+      i.nodeId must be(NodeId.fromHex(nodeId))
+    }
+    testInvoice(
+      "lnbcrt500p1p0zk8umpp5wyc4s0h4jtu5lapsr4p2nevlpck7l5xec6rpjdv2a7r992vx0ctqdq9vehk7xqrrssfs6t6nyfutf4j8wzq6mf82lxefj5zadvw8fnjw6ev38y4578734zl94jfwnsfqdyt67da7g8shvhej0rkysymy260xyjtdv2dvhmvmgpdg6qjw",
+      "03033ced5a027b2d1d0224f94cbf6983243f4ccbe07001c20b9ef2db3f116f82dc"
+    )
+    testInvoice(
+      "lnbcrt1p0zk0pepp5f86agc2ue0lt5wvx96fczj9fhzy3swlassdrru7w23n7xq8zsnfqdq8w3jhxaqxqrrss2znyruaauwel7qu5ndrrydfpl9nrwk2lry8k898xguenakge0yrrdk37jcmvanv2dccmmkzhe9ncj0v84chpftrrravp52hyna8dm8qpegw8f8",
+      "039c14dd6dbea913d3fa21b8aaa328cbacb9d6f1f967c3ead9a895c857958ed38a"
+    )
   }
 }

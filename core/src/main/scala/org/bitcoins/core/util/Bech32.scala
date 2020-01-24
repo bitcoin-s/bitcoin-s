@@ -227,8 +227,8 @@ sealed abstract class Bech32 {
   }
 
   /** Decodes a byte array from 5bits to base 8bits */
-  def from5bitTo8bit(b: Vector[UInt5]): Vector[UInt8] = {
-    NumberUtil.convertUInt5sToUInt8(b)
+  def from5bitTo8bit(b: Vector[UInt5], pad: Boolean = false): Vector[UInt8] = {
+    NumberUtil.convertUInt5sToUInt8(b, pad)
   }
 
   /**

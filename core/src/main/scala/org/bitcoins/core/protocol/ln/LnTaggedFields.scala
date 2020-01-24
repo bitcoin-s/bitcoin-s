@@ -21,9 +21,8 @@ sealed abstract class LnTaggedFields extends NetworkElement {
       descriptionHash.nonEmpty,
     "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice."
   )
-  require(
-    !(description.nonEmpty && descriptionHash.nonEmpty),
-    "You must not supply both a description hash and a literal description")
+  require(!(description.nonEmpty && descriptionHash.nonEmpty),
+          "Cannot have both description and description hash")
 
   def tags: Vector[LnTag]
 
@@ -32,34 +31,34 @@ sealed abstract class LnTaggedFields extends NetworkElement {
       case t: T => t
     }
 
-  def paymentHash: LnTag.PaymentHashTag =
+  lazy val paymentHash: LnTag.PaymentHashTag =
     tag[LnTag.PaymentHashTag].get
 
-  def secret: Option[LnTag.SecretTag] =
+  lazy val secret: Option[LnTag.SecretTag] =
     tag[LnTag.SecretTag]
 
-  def description: Option[LnTag.DescriptionTag] =
+  lazy val description: Option[LnTag.DescriptionTag] =
     tag[LnTag.DescriptionTag]
 
-  def nodeId: Option[LnTag.NodeIdTag] =
+  lazy val nodeId: Option[LnTag.NodeIdTag] =
     tag[LnTag.NodeIdTag]
 
-  def descriptionHash: Option[LnTag.DescriptionHashTag] =
+  lazy val descriptionHash: Option[LnTag.DescriptionHashTag] =
     tag[LnTag.DescriptionHashTag]
 
-  def expiryTime: Option[LnTag.ExpiryTimeTag] =
+  lazy val expiryTime: Option[LnTag.ExpiryTimeTag] =
     tag[LnTag.ExpiryTimeTag]
 
-  def cltvExpiry: Option[LnTag.MinFinalCltvExpiry] =
+  lazy val cltvExpiry: Option[LnTag.MinFinalCltvExpiry] =
     tag[LnTag.MinFinalCltvExpiry]
 
-  def fallbackAddress: Option[LnTag.FallbackAddressTag] =
+  lazy val fallbackAddress: Option[LnTag.FallbackAddressTag] =
     tag[LnTag.FallbackAddressTag]
 
-  def routingInfo: Option[LnTag.RoutingInfo] =
+  lazy val routingInfo: Option[LnTag.RoutingInfo] =
     tag[LnTag.RoutingInfo]
 
-  def features: Option[LnTag.FeaturesTag] =
+  lazy val features: Option[LnTag.FeaturesTag] =
     tag[LnTag.FeaturesTag]
 
   lazy val data: Vector[UInt5] = tags.flatMap(_.data)
