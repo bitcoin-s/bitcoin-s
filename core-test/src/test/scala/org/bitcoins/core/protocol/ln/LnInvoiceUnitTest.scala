@@ -519,7 +519,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
 
     val unknownTag = LnTag.UnknownTag(
-      'z',
+      LnTagPrefix.Unknown('z'),
       Bech32.from8bitTo5bit(ByteVector.fromValidHex("cafebabe")))
 
     val descriptionTag =
@@ -535,6 +535,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     deserialized.lnTags.tags.size must be(3)
     deserialized.lnTags.tags.last must be(unknownTag)
     deserialized.lnTags must be(expected.lnTags)
+    deserialized.nodeId.bytes must be(key.publicKey.bytes)
   }
 
   it must "recover public keys" in {

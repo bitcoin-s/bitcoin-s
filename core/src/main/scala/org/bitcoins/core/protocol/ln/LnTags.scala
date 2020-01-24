@@ -309,8 +309,8 @@ object LnTag {
       case LnTagPrefix.Features =>
         LnTag.FeaturesTag(bytes)
 
-      case LnTagPrefix.Unknown(ch) =>
-        LnTag.UnknownTag(ch, payload)
+      case prefix: LnTagPrefix.Unknown =>
+        LnTag.UnknownTag(prefix, payload)
     }
 
     tag
@@ -325,10 +325,6 @@ object LnTag {
     }
   }
 
-  case class UnknownTag(bech32Char: Char, payload: Vector[UInt5])
-      extends LnTag {
-    override def prefix: LnTagPrefix = LnTagPrefix.Unknown(bech32Char)
-
-    override def encoded: Vector[UInt5] = payload
-  }
+  case class UnknownTag(prefix: LnTagPrefix, encoded: Vector[UInt5])
+      extends LnTag
 }
