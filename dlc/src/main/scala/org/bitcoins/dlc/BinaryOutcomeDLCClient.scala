@@ -296,13 +296,18 @@ case class BinaryOutcomeDLCClient(
 
   def createFundingTransaction(
       remoteSigs: Vector[PartialSignature]): Future[Transaction] = {
+    val (localTweak, remoteTweak) = if (isInitiator) {
+      (0, fundingUtxos.length)
+    } else {
+      (remoteFundingInputs.length, 0)
+    }
+
     val fundingPSBT = remoteSigs.zipWithIndex.foldLeft(
       PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
       case (psbt, (sig, index)) =>
         psbt
-          .addUTXOToInput(remoteFundingInputs(index)._1,
-                          index + fundingUtxos.length)
-          .addSignature(sig, index + fundingUtxos.length)
+          .addUTXOToInput(remoteFundingInputs(index)._1, index + remoteTweak)
+          .addSignature(sig, index + remoteTweak)
     }
 
     val signedFundingPSBTF =
@@ -310,11 +315,11 @@ case class BinaryOutcomeDLCClient(
         case (psbtF, (utxo, index)) =>
           psbtF.flatMap { psbt =>
             psbt
-              .addWitnessUTXOToInput(output = utxo.output, index)
+              .addWitnessUTXOToInput(output = utxo.output, index + localTweak)
               .addScriptWitnessToInput(
                 scriptWitness = utxo.scriptWitnessOpt.get,
-                index)
-              .sign(index, utxo.signers.head)
+                index + localTweak)
+              .sign(index + localTweak, utxo.signers.head)
           }
       }
 
@@ -1012,7 +1017,6 @@ case class SetupDLC(
     cetLoseRemoteWitness: P2WSHWitnessV0,
     refundTx: Transaction)
 
-// TODO: Add info to validate fundingTx
 /** Contains all DLC transactions and the BitcoinUTXOSpendingInfos they use. */
 case class DLCOutcome(
     fundingTx: Transaction,

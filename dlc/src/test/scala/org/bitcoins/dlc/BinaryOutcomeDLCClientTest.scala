@@ -351,14 +351,14 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
       _ <- executeUnilateralForCase(outcomeWinHash, local = false)
     } yield succeed
   }
-  /*
+
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal lose case" in {
     for {
       _ <- executeUnilateralForCase(outcomeLoseHash, local = true)
       _ <- executeUnilateralForCase(outcomeLoseHash, local = false)
     } yield succeed
   }
-
+  /*
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
     executeRefundCase()
   }
