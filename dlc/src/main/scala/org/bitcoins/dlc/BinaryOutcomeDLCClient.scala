@@ -406,12 +406,7 @@ case class BinaryOutcomeDLCClient(
     sigF.map((unsignedTx, _, P2WSHWitnessV0(toLocalSPK)))
   }
 
-  /** Constructs the (time-locked) refund transaction for when the oracle disappears
-    * or signs an unknown message.
-    * Note that both parties have the same refund transaction.
-    */
-  def createRefundTx(
-      remoteSig: PartialSignature): Future[(Transaction, PartialSignature)] = {
+  lazy val createUnsignedRefundTx: Transaction = {
     val fundingTx = createUnsignedFundingTransaction
     val fundingTxid = fundingTx.txId
     val fundingInput = TransactionInput(
@@ -433,12 +428,43 @@ case class BinaryOutcomeDLCClient(
 
     val outputs = Vector(toLocal, toRemote)
 
-    val psbt = PSBT.fromUnsignedTx(
-      BaseTransaction(TransactionConstants.validLockVersion,
-                      Vector(fundingInput),
-                      outputs,
-                      UInt32.zero)
+    BaseTransaction(TransactionConstants.validLockVersion,
+                    Vector(fundingInput),
+                    outputs,
+                    UInt32.zero)
+  }
+
+  def createRefundSig(): Future[(Transaction, PartialSignature)] = {
+    val refundTx = createUnsignedRefundTx
+
+    val fundingTx = createUnsignedFundingTransaction
+    val fundingTxid = fundingTx.txId
+    val fundingOutPoint = TransactionOutPoint(fundingTxid, UInt32.zero)
+    val fundingOutput = fundingTx.outputs.head
+
+    val utxo = P2WSHV0SpendingInfoSingle(
+      fundingOutPoint,
+      fundingOutput.value,
+      P2WSHWitnessSPKV0(fundingSPK),
+      fundingPrivKey,
+      HashType.sigHashAll,
+      P2WSHWitnessV0(fundingSPK),
+      ConditionalPath.NoConditionsLeft
     )
+
+    val sigF =
+      BitcoinSignerSingle.signSingle(utxo, refundTx, isDummySignature = false)
+
+    sigF.map((refundTx, _))
+  }
+
+  /** Constructs the (time-locked) refund transaction for when the oracle disappears
+    * or signs an unknown message.
+    * Note that both parties have the same refund transaction.
+    */
+  def createRefundTx(
+      remoteSig: PartialSignature): Future[(Transaction, PartialSignature)] = {
+    val psbt = PSBT.fromUnsignedTx(createUnsignedRefundTx)
 
     val signedPSBTF = psbt
       .addSignature(remoteSig, inputIndex = 0)
@@ -492,14 +518,68 @@ case class BinaryOutcomeDLCClient(
     )
   }
 
-  def setupDLC(
+  def setupDLCAccept(
+      sendSigs: (
+          PartialSignature,
+          PartialSignature,
+          PartialSignature) => Future[Unit],
+      getSigs: Future[
+        (
+            PartialSignature,
+            PartialSignature,
+            PartialSignature,
+            Vector[PartialSignature])]): Future[SetupDLC] = {
+    for {
+      (cetWinRemote, remoteWinSig, cetWinRemoteWitness) <- createCETWinRemote()
+      (cetLoseRemote, remoteLoseSig, cetLoseRemoteWitness) <- createCETLoseRemote()
+      (_, remoteRefundSig) <- createRefundSig()
+      _ <- {
+        if (winIsFirst) {
+          sendSigs(remoteRefundSig, remoteWinSig, remoteLoseSig)
+        } else {
+          sendSigs(remoteRefundSig, remoteLoseSig, remoteWinSig)
+        }
+      }
+      (refundSig, firstSig, secondSig, fundingSigs) <- getSigs
+
+      (winSig, loseSig) = {
+        if (winIsFirst) {
+          (firstSig, secondSig)
+        } else {
+          (secondSig, firstSig)
+        }
+      }
+
+      (cetWinLocalF, cetWinLocalWitness) = createCETWin(winSig)
+      (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(loseSig)
+      cetWinLocal <- cetWinLocalF
+      cetLoseLocal <- cetLoseLocalF
+      (refundTx, _) <- createRefundTx(refundSig)
+      fundingTx <- createFundingTransaction(fundingSigs)
+    } yield {
+      SetupDLC(
+        fundingTx,
+        cetWinLocal,
+        cetWinLocalWitness,
+        cetLoseLocal,
+        cetLoseLocalWitness,
+        cetWinRemote.txIdBE,
+        cetWinRemoteWitness,
+        cetLoseRemote.txIdBE,
+        cetLoseRemoteWitness,
+        refundTx
+      )
+    }
+  }
+
+  def setupDLCOffer(
       getSigs: Future[(PartialSignature, PartialSignature, PartialSignature)],
       sendSigs: (
           PartialSignature,
           PartialSignature,
           PartialSignature,
           Vector[PartialSignature]) => Future[Unit],
-      getFundingSigs: Future[Vector[PartialSignature]]): Future[SetupDLC] = {
+      getFundingTx: Future[Transaction]): Future[SetupDLC] = {
     getSigs.flatMap {
       case (refundSig, firstSig, secondSig) =>
         val (winSig, loseSig) = if (winIsFirst) {
@@ -514,16 +594,6 @@ case class BinaryOutcomeDLCClient(
         val cetWinRemoteF = createCETWinRemote()
         val cetLoseRemoteF = createCETLoseRemote()
         val refundTxF = createRefundTx(refundSig)
-
-        cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet.hex}\n"))
-        cetLoseLocalF.foreach(cet =>
-          logger.info(s"CET Lose Local: ${cet.hex}\n"))
-        cetWinRemoteF.foreach(cet =>
-          logger.info(s"CET Win Remote: ${cet._1.hex}\n"))
-        cetLoseRemoteF.foreach(cet =>
-          logger.info(s"CET Lose Remote: ${cet._1.hex}\n"))
-        refundTxF.foreach(refundTx =>
-          logger.info(s"Refund Tx: ${refundTx._1.hex}\n"))
 
         for {
           cetWinLocal <- cetWinLocalF
@@ -545,8 +615,7 @@ case class BinaryOutcomeDLCClient(
                        localFundingSigs)
             }
           }
-          fundingSigs <- getFundingSigs
-          fundingTx <- createFundingTransaction(fundingSigs)
+          fundingTx <- getFundingTx
         } yield {
           SetupDLC(
             fundingTx,
