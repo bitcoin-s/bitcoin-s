@@ -4,7 +4,6 @@ import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
-  ECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
   ExtPrivateKey,
@@ -272,7 +271,7 @@ case class BinaryOutcomeDLCClient(
       sigPubKey: ECPublicKey,
       remoteSig: PartialSignature,
       payout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[Transaction] = {
+      remotePayout: CurrencyUnit): (Future[Transaction], P2WSHWitnessV0) = {
     val (cetPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
       (cetWinPrivKey, cetRemoteWinPubKey)
     } else {
@@ -322,16 +321,19 @@ case class BinaryOutcomeDLCClient(
       .addSignature(remoteSig, inputIndex = 0)
       .sign(inputIndex = 0, fundingPrivKey)
 
-    signedPSBTF.flatMap { signedPSBT =>
+    val signedCETF = signedPSBTF.flatMap { signedPSBT =>
       Future.fromTry(signedPSBT.extractTransactionAndValidate)
     }
+
+    (signedCETF, P2WSHWitnessV0(toLocalSPK))
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETRemote(
       sigPubKey: ECPublicKey,
       payout: CurrencyUnit,
-      remotePayout: CurrencyUnit): Future[(Transaction, PartialSignature)] = {
+      remotePayout: CurrencyUnit): Future[
+    (Transaction, PartialSignature, P2WSHWitnessV0)] = {
     val (cetLocalPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
       (cetWinPrivKey, cetRemoteWinPubKey)
     } else {
@@ -385,7 +387,7 @@ case class BinaryOutcomeDLCClient(
       isDummySignature = false
     )
 
-    sigF.map((unsignedTx, _))
+    sigF.map((unsignedTx, _, P2WSHWitnessV0(toLocalSPK)))
   }
 
   /** Constructs the (time-locked) refund transaction for when the oracle disappears
@@ -436,7 +438,8 @@ case class BinaryOutcomeDLCClient(
     }
   }
 
-  def createCETWin(remoteSig: PartialSignature): Future[Transaction] = {
+  def createCETWin(
+      remoteSig: PartialSignature): (Future[Transaction], P2WSHWitnessV0) = {
     createCET(
       sigPubKey = sigPubKeyWin,
       remoteSig = remoteSig,
@@ -445,7 +448,8 @@ case class BinaryOutcomeDLCClient(
     )
   }
 
-  def createCETLose(remoteSig: PartialSignature): Future[Transaction] = {
+  def createCETLose(
+      remoteSig: PartialSignature): (Future[Transaction], P2WSHWitnessV0) = {
     createCET(
       sigPubKey = sigPubKeyLose,
       remoteSig = remoteSig,
@@ -454,7 +458,8 @@ case class BinaryOutcomeDLCClient(
     )
   }
 
-  def createCETWinRemote(): Future[(Transaction, PartialSignature)] = {
+  def createCETWinRemote(): Future[
+    (Transaction, PartialSignature, P2WSHWitnessV0)] = {
     createCETRemote(
       sigPubKey = sigPubKeyWin,
       payout = winPayout,
@@ -462,7 +467,8 @@ case class BinaryOutcomeDLCClient(
     )
   }
 
-  def createCETLoseRemote(): Future[(Transaction, PartialSignature)] = {
+  def createCETLoseRemote(): Future[
+    (Transaction, PartialSignature, P2WSHWitnessV0)] = {
     createCETRemote(
       sigPubKey = sigPubKeyLose,
       payout = losePayout,
@@ -481,8 +487,8 @@ case class BinaryOutcomeDLCClient(
     getSigs.flatMap {
       case (refundSig, winSig, loseSig) =>
         // Construct all CETs
-        val cetWinLocalF = createCETWin(winSig)
-        val cetLoseLocalF = createCETLose(loseSig)
+        val (cetWinLocalF, cetWinLocalWitness) = createCETWin(winSig)
+        val (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(loseSig)
         val cetWinRemoteF = createCETWinRemote()
         val cetLoseRemoteF = createCETLoseRemote()
         val refundTxF = createRefundTx(refundSig)
@@ -500,8 +506,8 @@ case class BinaryOutcomeDLCClient(
         for {
           cetWinLocal <- cetWinLocalF
           cetLoseLocal <- cetLoseLocalF
-          (cetWinRemote, remoteWinSig) <- cetWinRemoteF
-          (cetLoseRemote, remoteLoseSig) <- cetLoseRemoteF
+          (cetWinRemote, remoteWinSig, cetWinRemoteWitness) <- cetWinRemoteF
+          (cetLoseRemote, remoteLoseSig, cetLoseRemoteWitness) <- cetLoseRemoteF
           (refundTx, remoteRefundSig) <- refundTxF
           _ <- sendSigs(remoteRefundSig, remoteWinSig, remoteLoseSig, ???)
           fundingSigs <- getFundingSigs
@@ -510,9 +516,13 @@ case class BinaryOutcomeDLCClient(
           SetupDLC(
             fundingTx,
             cetWinLocal,
+            cetWinLocalWitness,
             cetLoseLocal,
+            cetLoseLocalWitness,
             cetWinRemote.txIdBE,
+            cetWinRemoteWitness,
             cetLoseRemote.txIdBE,
+            cetLoseRemoteWitness,
             refundTx
           )
         }
@@ -524,7 +534,7 @@ case class BinaryOutcomeDLCClient(
       spendingInfo: BitcoinUTXOSpendingInfoFull,
       isWin: Boolean,
       spendsToLocal: Boolean): Future[Transaction] = {
-    // If isToLocal, use payout as value, otherwise subtract fee
+    // If spendsToLocal, use payout as value, otherwise subtract fee
     val spendingTxF = if (spendsToLocal) {
       val payoutValue = if (isWin) {
         winPayout
@@ -567,28 +577,28 @@ case class BinaryOutcomeDLCClient(
     * @return Each transaction published and its spending info
     */
   def executeUnilateralDLC(
-      dlcSetup: SetupDLCWithSelf,
+      dlcSetup: SetupDLC,
       oracleSigF: Future[SchnorrDigitalSignature]): Future[DLCOutcome] = {
-    val SetupDLCWithSelf(fundingTx,
-                         _,
-                         cetWinLocal,
-                         cetWinLocalWitness,
-                         cetLoseLocal,
-                         cetLoseLocalWitness,
-                         _,
-                         _,
-                         _,
-                         _,
-                         _) = dlcSetup
+    val SetupDLC(fundingTx,
+                 cetWinLocal,
+                 cetWinLocalWitness,
+                 cetLoseLocal,
+                 cetLoseLocalWitness,
+                 _,
+                 _,
+                 _,
+                 _,
+                 _) = dlcSetup
 
     oracleSigF.flatMap { oracleSig =>
       val sigForWin = Schnorr.verify(messageWin, oracleSig, oraclePubKey)
+      val sigForLose = Schnorr.verify(messageLose, oracleSig, oraclePubKey)
 
       // Pick the CET to use and payout by checking which message was signed
       val (cet, extCetPrivKey, cetScriptWitness) =
         if (sigForWin) {
           (cetWinLocal, cetWinPrivKey, cetWinLocalWitness)
-        } else if (Schnorr.verify(messageLose, oracleSig, oraclePubKey)) {
+        } else if (sigForLose) {
           (cetLoseLocal, cetLosePrivKey, cetLoseLocalWitness)
         } else {
           throw new IllegalStateException(
@@ -627,9 +637,6 @@ case class BinaryOutcomeDLCClient(
           fundingTx = fundingTx,
           cet = cet,
           closingTx = localSpendingTx,
-          fundingSigs = ???,
-          cetSig = ???,
-          remoteCETSig = ???,
           cetSpendingInfo = cetSpendingInfo
         )
       }
@@ -670,9 +677,6 @@ case class BinaryOutcomeDLCClient(
         fundingTx = dlcSetup.fundingTx,
         cet = publishedCET,
         closingTx = tx,
-        fundingSigs = ???,
-        cetSig = ???,
-        remoteCETSig = ???,
         cetSpendingInfo = spendingInfo
       )
     }
@@ -718,9 +722,6 @@ case class BinaryOutcomeDLCClient(
         fundingTx = dlcSetup.fundingTx,
         cet = timedOutCET,
         closingTx = justiceSpendingTx,
-        fundingSigs = ???,
-        cetSig = ???,
-        remoteCETSig = ???,
         cetSpendingInfo = justiceSpendingInfo
       )
     }
@@ -730,8 +731,8 @@ case class BinaryOutcomeDLCClient(
     *
     * @return Each transaction published and its spending info
     */
-  def executeRefundDLC(dlcSetup: SetupDLCWithSelf): Future[DLCOutcome] = {
-    val SetupDLCWithSelf(fundingTx, _, _, _, _, _, _, _, _, _, refundTx) =
+  def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcome] = {
+    val SetupDLC(fundingTx, _, _, _, _, _, _, _, _, refundTx) =
       dlcSetup
 
     val localOutput = refundTx.outputs.head
@@ -755,9 +756,6 @@ case class BinaryOutcomeDLCClient(
         fundingTx = fundingTx,
         cet = refundTx,
         closingTx = localSpendingTx,
-        fundingSigs = ???,
-        cetSig = ???,
-        remoteCETSig = ???,
         cetSpendingInfo = localRefundSpendingInfo
       )
     }
@@ -848,23 +846,24 @@ object BinaryOutcomeDLCClient {
   }
 }
 
-// TODO use SetupDLC in this file instead of SetupDLCWithSelf
 case class SetupDLC(
     fundingTx: Transaction,
     cetWin: Transaction,
+    cetWinWitness: P2WSHWitnessV0,
     cetLose: Transaction,
+    cetLoseWitness: P2WSHWitnessV0,
     cetWinRemoteTxid: DoubleSha256DigestBE,
+    cetWinRemoteWitness: P2WSHWitnessV0,
     cetLoseRemoteTxid: DoubleSha256DigestBE,
+    cetLoseRemoteWitness: P2WSHWitnessV0,
     refundTx: Transaction)
 
+// TODO: Add info to validate fundingTx
 /** Contains all DLC transactions and the BitcoinUTXOSpendingInfos they use. */
 case class DLCOutcome(
     fundingTx: Transaction,
     cet: Transaction,
     closingTx: Transaction,
-    fundingSigs: Vector[ECDigitalSignature],
-    cetSig: ECDigitalSignature,
-    remoteCETSig: ECDigitalSignature,
     cetSpendingInfo: BitcoinUTXOSpendingInfoFull
 )
 
