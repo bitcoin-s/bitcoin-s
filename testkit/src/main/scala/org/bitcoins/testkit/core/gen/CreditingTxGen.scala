@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.crypto.Sign
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -393,6 +394,37 @@ sealed abstract class CreditingTxGen {
         }
       }
     }
+
+  def inputsAndOutputs(
+      outputsToUse: Gen[Seq[BitcoinUTXOSpendingInfoFull]] = outputs,
+      destinationGenerator: CurrencyUnit => Gen[Seq[TransactionOutput]] =
+        TransactionGenerators.smallOutputs): Gen[
+    (Seq[BitcoinUTXOSpendingInfoFull], Seq[TransactionOutput])] = {
+    inputsAndP2SHOutputs(
+      outputsToUse,
+      destinationGenerator.andThen(_.map(_.map(x => (x, ScriptPubKey.empty)))))
+      .map(x => (x._1, x._2.map(_._1)))
+  }
+
+  def inputsAndP2SHOutputs(
+      outputsToUse: Gen[Seq[BitcoinUTXOSpendingInfoFull]] = outputs,
+      destinationGenerator: CurrencyUnit => Gen[
+        Seq[(TransactionOutput, ScriptPubKey)]] =
+        TransactionGenerators.smallP2SHOutputs): Gen[(
+      Seq[BitcoinUTXOSpendingInfoFull],
+      Seq[(TransactionOutput, ScriptPubKey)])] = {
+    outputsToUse
+      .flatMap { creditingTxsInfo =>
+        val creditingOutputs = creditingTxsInfo.map(c => c.output)
+        val creditingOutputsAmt = creditingOutputs.map(_.value)
+        val totalAmount = creditingOutputsAmt.fold(CurrencyUnits.zero)(_ + _)
+
+        destinationGenerator(totalAmount).map { destinations =>
+          (creditingTxsInfo, destinations)
+        }
+      }
+      .suchThat(_._1.nonEmpty)
+  }
 }
 
 object CreditingTxGen extends CreditingTxGen {}

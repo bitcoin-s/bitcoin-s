@@ -36,6 +36,8 @@ object CliCommand {
   // Chain
   case object GetBestBlockHash extends CliCommand
   case object GetBlockCount extends CliCommand
+  case object GetFilterCount extends CliCommand
+  case object GetFilterHeaderCount extends CliCommand
   case class Rescan(
       addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],
@@ -63,6 +65,14 @@ object Cli extends App {
         .hidden()
         .action((_, conf) => conf.copy(command = GetBlockCount))
         .text(s"Get the block height"),
+      cmd("getfiltercount")
+        .hidden()
+        .action((_, conf) => conf.copy(command = GetFilterCount))
+        .text(s"Get the number of filters"),
+      cmd("getfilterheadercount")
+        .hidden()
+        .action((_, conf) => conf.copy(command = GetFilterHeaderCount))
+        .text(s"Get the number of filter headers"),
       cmd("getbestblockhash")
         .hidden()
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
@@ -211,6 +221,10 @@ object Cli extends App {
                    Seq(up.writeJs(address), up.writeJs(bitcoins)))
     // height
     case GetBlockCount => RequestParam("getblockcount")
+    // filter count
+    case GetFilterCount => RequestParam("getfiltercount")
+    // filter header count
+    case GetFilterHeaderCount => RequestParam("getfilterheadercount")
     // besthash
     case GetBestBlockHash => RequestParam("getbestblockhash")
     // peers

@@ -96,7 +96,7 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   }
 
   it must "not serialize a ECPrivateKey toString" in {
-    ECPrivateKey().toString must be ("Masked(ECPrivateKeyImpl)")
+    ECPrivateKey().toString must be("Masked(ECPrivateKeyImpl)")
   }
 
 }

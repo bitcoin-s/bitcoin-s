@@ -6,7 +6,10 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{OP_0, ScriptNumber}
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.{ExecutedScriptProgram, PreExecutionScriptProgram}
+import org.bitcoins.core.script.{
+  ExecutedScriptProgram,
+  PreExecutionScriptProgram
+}
 import org.bitcoins.core.util.ScriptProgramTestUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 

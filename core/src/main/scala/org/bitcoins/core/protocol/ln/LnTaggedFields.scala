@@ -130,9 +130,9 @@ object LnTaggedFields {
     */
   def fromUInt5s(u5s: Vector[UInt5]): LnTaggedFields = {
     @tailrec
-    def loop(remaining: List[UInt5], fields: Vector[LnTag]): Vector[LnTag] = {
+    def loop(remaining: Vector[UInt5], fields: Vector[LnTag]): Vector[LnTag] = {
       remaining match {
-        case h :: h1 :: h2 :: t =>
+        case h +: h1 +: h2 +: t =>
           val prefix = LnTagPrefix
             .fromUInt5(h)
             .getOrElse(
@@ -151,15 +151,15 @@ object LnTaggedFields {
           val newRemaining = t.slice(payload.size, t.size)
 
           loop(newRemaining, fields :+ tag)
-        case Nil =>
+        case IndexedSeq() =>
           fields
-        case _ :: _ | _ :: _ :: _ =>
+        case _ +: _ | _ +: _ +: _ =>
           throw new IllegalArgumentException(
             "Failed to parse LnTaggedFields, needs 15bits of meta data to be able to parse")
       }
     }
 
-    val tags = loop(u5s.toList, Vector.empty)
+    val tags = loop(u5s, Vector.empty)
 
     InvoiceTagImpl(tags)
 

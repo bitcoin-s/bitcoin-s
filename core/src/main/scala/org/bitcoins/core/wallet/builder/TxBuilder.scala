@@ -702,4 +702,32 @@ object BitcoinTxBuilder {
     val map = loop(utxos, Map.empty)
     BitcoinTxBuilder(destinations, map, feeRate, changeSPK, network)
   }
+
+  /**
+    * Sets the ScriptSignature for every input in the given transaction to an EmptyScriptSignature
+    * as well as sets the witness to an EmptyWitness
+    * @param tx Transaction to empty signatures
+    * @return Transaction with no signatures
+    */
+  def emptyAllScriptSigs(tx: Transaction): Transaction = {
+    val newInputs = tx.inputs.map { input =>
+      TransactionInput(input.previousOutput,
+                       EmptyScriptSignature,
+                       input.sequence)
+    }
+
+    tx match {
+      case btx: BaseTransaction =>
+        BaseTransaction(version = btx.version,
+                        inputs = newInputs,
+                        outputs = btx.outputs,
+                        lockTime = btx.lockTime)
+      case wtx: WitnessTransaction =>
+        WitnessTransaction(version = wtx.version,
+                           inputs = newInputs,
+                           outputs = wtx.outputs,
+                           lockTime = wtx.lockTime,
+                           witness = EmptyWitness.fromInputs(newInputs))
+    }
+  }
 }

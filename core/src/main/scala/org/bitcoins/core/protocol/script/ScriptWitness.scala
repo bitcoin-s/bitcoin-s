@@ -74,7 +74,7 @@ object P2WPKHWitnessV0 {
       case x @ (_: LockTimeScriptSignature | _: MultiSignatureScriptSignature |
           _: ConditionalScriptSignature | _: NonStandardScriptSignature |
           _: P2PKScriptSignature | _: P2SHScriptSignature |
-          EmptyScriptSignature) =>
+          TrivialTrueScriptSignature | EmptyScriptSignature) =>
         throw new IllegalArgumentException(
           s"Expected P2PKHScriptSignature, got $x")
     }

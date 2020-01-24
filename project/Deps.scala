@@ -24,7 +24,7 @@ object Deps {
     val asyncOldScalaV = "0.9.7"
     val asyncNewScalaV = "0.10.0"
 
-    val flywayV = "6.1.4"
+    val flywayV = "6.2.0"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"

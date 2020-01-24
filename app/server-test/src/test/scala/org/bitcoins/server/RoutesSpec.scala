@@ -65,6 +65,34 @@ class RoutesSpec
       }
     }
 
+    "return the filter count" in {
+      (mockChainApi.getFilterCount: () => Future[Int])
+        .expects()
+        .returning(Future.successful(1234567890))
+
+      val route =
+        chainRoutes.handleCommand(ServerCommand("getfiltercount", Arr()))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":1234567890,"error":null}"""
+      }
+    }
+
+    "return the filter header count" in {
+      (mockChainApi.getFilterHeaderCount: () => Future[Int])
+        .expects()
+        .returning(Future.successful(1234567890))
+
+      val route =
+        chainRoutes.handleCommand(ServerCommand("getfilterheadercount", Arr()))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":1234567890,"error":null}"""
+      }
+    }
+
     "return the best block hash" in {
       (mockChainApi.getBestBlockHash: () => Future[DoubleSha256DigestBE])
         .expects()

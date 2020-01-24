@@ -10,7 +10,7 @@ class P2SHScriptPubKeySpec extends Properties("P2SHScriptPubKeySpec") {
 
   property("Symmetrical serialization") =
     Prop.forAll(ScriptGenerators.p2shScriptPubKey) {
-      case (p2shScriptPubKey, _) =>
+      case (p2shScriptPubKey, _, _) =>
         P2SHScriptPubKey(p2shScriptPubKey.hex) == p2shScriptPubKey
     }
 }

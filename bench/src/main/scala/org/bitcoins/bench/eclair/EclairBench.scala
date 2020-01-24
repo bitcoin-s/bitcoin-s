@@ -84,13 +84,7 @@ object EclairBench extends App with EclairRpcTestUtil {
               paymentHash = invoice.lnTags.paymentHash.hash
               _ = logPaymentHash(paymentHash)
               p = promises.get(paymentHash)
-              id <- node.sendToNode(testNodeInfo.nodeId,
-                                    invoice.amount.get.toMSat,
-                                    invoice.lnTags.paymentHash.hash,
-                                    None,
-                                    None,
-                                    None,
-                                    None)
+              id <- node.payInvoice(invoice)
               _ = logPaymentId(paymentHash, id)
               _ <- p.future
             } yield {
