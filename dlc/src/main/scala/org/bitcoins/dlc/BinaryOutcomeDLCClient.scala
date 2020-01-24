@@ -49,8 +49,7 @@ import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoSingle,
   ConditionalPath,
   P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfoFull,
-  P2WSHV0SpendingInfoSingle
+  P2WSHV0SpendingInfoFull
 }
 import scodec.bits.ByteVector
 
@@ -88,7 +87,7 @@ case class BinaryOutcomeDLCClient(
     input: CurrencyUnit,
     remoteInput: CurrencyUnit,
     fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
-    remoteFundingInputs: Vector[(TransactionOutPoint, CurrencyUnit)],
+    remoteFundingInputs: Vector[(Transaction, UInt32)],
     winPayout: CurrencyUnit,
     losePayout: CurrencyUnit,
     timeouts: DLCTimeouts,
@@ -179,7 +178,10 @@ case class BinaryOutcomeDLCClient(
   private val totalFunding =
     fundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
   private val remoteTotalFunding =
-    remoteFundingInputs.foldLeft(0L)(_ + _._2.satoshis.toLong)
+    remoteFundingInputs.foldLeft(0L) {
+      case (accum, (tx, vout)) =>
+        accum + tx.outputs(vout.toInt).value.satoshis.toLong
+    }
 
   /** Remote's payout in the Win case (in which Remote loses) */
   val remoteWinPayout: CurrencyUnit = totalInput - winPayout
@@ -255,8 +257,12 @@ case class BinaryOutcomeDLCClient(
 
     val localInputs =
       TxBuilder.calcSequenceForInputs(fundingUtxos, isRBFEnabled)
-    val remoteInputs = remoteFundingInputs.map(outpoint =>
-      TransactionInput(outpoint._1, EmptyScriptSignature, sequence))
+    val remoteInputs = remoteFundingInputs.map {
+      case (tx, vout) =>
+        TransactionInput(TransactionOutPoint(tx.txId, vout),
+                         EmptyScriptSignature,
+                         sequence)
+    }
     val inputs = if (isInitiator) {
       localInputs ++ remoteInputs
     } else {
@@ -293,13 +299,23 @@ case class BinaryOutcomeDLCClient(
     val fundingPSBT = remoteSigs.zipWithIndex.foldLeft(
       PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
       case (psbt, (sig, index)) =>
-        psbt.addSignature(sig, index + fundingUtxos.length)
+        psbt
+          .addUTXOToInput(remoteFundingInputs(index)._1,
+                          index + fundingUtxos.length)
+          .addSignature(sig, index + fundingUtxos.length)
     }
 
     val signedFundingPSBTF =
       fundingUtxos.zipWithIndex.foldLeft(Future.successful(fundingPSBT)) {
         case (psbtF, (utxo, index)) =>
-          psbtF.flatMap(_.sign(index, utxo.signers.head))
+          psbtF.flatMap { psbt =>
+            psbt
+              .addWitnessUTXOToInput(output = utxo.output, index)
+              .addScriptWitnessToInput(
+                scriptWitness = utxo.scriptWitnessOpt.get,
+                index)
+              .sign(index, utxo.signers.head)
+          }
       }
 
     signedFundingPSBTF.flatMap { signedFundingPSBT =>
@@ -361,11 +377,12 @@ case class BinaryOutcomeDLCClient(
                       UInt32.zero)
     )
 
-    val signedPSBTF = psbt
+    val readyToSignPSBT = psbt
       .addSignature(remoteSig, inputIndex = 0)
       .addUTXOToInput(fundingTx, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-      .sign(inputIndex = 0, fundingPrivKey)
+
+    val signedPSBTF = readyToSignPSBT.sign(inputIndex = 0, fundingPrivKey)
 
     val signedCETF = signedPSBTF.flatMap { signedPSBT =>
       val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
@@ -410,7 +427,6 @@ case class BinaryOutcomeDLCClient(
 
     val fundingTx = createUnsignedFundingTransaction
     val fundingTxid = fundingTx.txIdBE
-    val fundingOutput = fundingTx.outputs.head
     val fundingOutPoint = TransactionOutPoint(fundingTxid, UInt32.zero)
     val fundingInput =
       TransactionInput(fundingOutPoint, EmptyScriptSignature, sequence)
@@ -420,19 +436,12 @@ case class BinaryOutcomeDLCClient(
                                      outputs,
                                      UInt32.zero)
 
-    val sigF = BitcoinSignerSingle.signSingle(
-      spendingInfo = P2WSHV0SpendingInfoSingle(
-        outPoint = fundingOutPoint,
-        amount = fundingOutput.value,
-        scriptPubKey = P2WSHWitnessSPKV0(fundingSPK),
-        signer = fundingPrivKey,
-        hashType = HashType.sigHashAll,
-        scriptWitness = P2WSHWitnessV0(fundingSPK),
-        conditionalPath = ConditionalPath.NoConditionsLeft
-      ),
-      unsignedTx = unsignedTx,
-      isDummySignature = false
-    )
+    val sigF = PSBT
+      .fromUnsignedTx(unsignedTx)
+      .addUTXOToInput(fundingTx, index = 0)
+      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
+      .sign(inputIndex = 0, fundingPrivKey)
+      .map(_.inputMaps.head.partialSignatures.head)
 
     sigF.map((unsignedTx, _, P2WSHWitnessV0(toLocalSPK)))
   }
@@ -446,18 +455,31 @@ case class BinaryOutcomeDLCClient(
       sequence)
     val fundingOutput = fundingTx.outputs.head
 
-    val toLocalValueNotSat =
-      (fundingOutput.value * input).satoshis.toLong / totalInput.satoshis.toLong
-    val toLocalValue = Satoshis(toLocalValueNotSat)
-    val toRemoteValue = fundingOutput.value - toLocalValue
+    val (initiatorValue, initiatorKey, otherValue, otherKey) =
+      if (isInitiator) {
+        val toLocalValue = Satoshis(
+          (fundingOutput.value * input).satoshis.toLong / totalInput.satoshis.toLong)
 
-    val toLocal = TransactionOutput(
-      toLocalValue,
-      P2WPKHWitnessSPKV0(cetRefundPrivKey.publicKey))
-    val toRemote = TransactionOutput(toRemoteValue,
-                                     P2WPKHWitnessSPKV0(cetRemoteRefundPubKey))
+        (toLocalValue,
+         cetRefundPrivKey.publicKey,
+         fundingOutput.value - toLocalValue,
+         cetRemoteRefundPubKey)
+      } else {
+        val toRemoteValue = Satoshis(
+          (fundingOutput.value * remoteInput).satoshis.toLong / totalInput.satoshis.toLong)
 
-    val outputs = Vector(toLocal, toRemote)
+        (toRemoteValue,
+         cetRemoteRefundPubKey,
+         fundingOutput.value - toRemoteValue,
+         cetRefundPrivKey.publicKey)
+      }
+
+    val toInitiatorOutput =
+      TransactionOutput(initiatorValue, P2WPKHWitnessSPKV0(initiatorKey))
+    val toOtherOutput =
+      TransactionOutput(otherValue, P2WPKHWitnessSPKV0(otherKey))
+
+    val outputs = Vector(toInitiatorOutput, toOtherOutput)
 
     BaseTransaction(TransactionConstants.validLockVersion,
                     Vector(fundingInput),
@@ -466,25 +488,15 @@ case class BinaryOutcomeDLCClient(
   }
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
+    val fundingTx = createUnsignedFundingTransaction
     val refundTx = createUnsignedRefundTx
 
-    val fundingTx = createUnsignedFundingTransaction
-    val fundingTxid = fundingTx.txId
-    val fundingOutPoint = TransactionOutPoint(fundingTxid, UInt32.zero)
-    val fundingOutput = fundingTx.outputs.head
-
-    val utxo = P2WSHV0SpendingInfoSingle(
-      fundingOutPoint,
-      fundingOutput.value,
-      P2WSHWitnessSPKV0(fundingSPK),
-      fundingPrivKey,
-      HashType.sigHashAll,
-      P2WSHWitnessV0(fundingSPK),
-      ConditionalPath.NoConditionsLeft
-    )
-
-    val sigF =
-      BitcoinSignerSingle.signSingle(utxo, refundTx, isDummySignature = false)
+    val sigF = PSBT
+      .fromUnsignedTx(refundTx)
+      .addUTXOToInput(fundingTx, index = 0)
+      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
+      .sign(inputIndex = 0, fundingPrivKey)
+      .map(_.inputMaps.head.partialSignatures.head)
 
     sigF.map((refundTx, _))
   }
