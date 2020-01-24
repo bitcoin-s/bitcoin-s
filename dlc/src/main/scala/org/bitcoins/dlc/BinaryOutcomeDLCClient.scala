@@ -63,6 +63,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param outcomeLose The String whose hash is signed by the oracle in the Lose case
   * @param oraclePubKey The Oracle's permanent public key
   * @param preCommittedR The Oracle's one-time event-specific public key
+  * @param isInitiator True if this client sends the offer message
   * @param extPrivKey This client's extended private key for this event
   * @param remoteExtPubKey Remote's extended public key for this event
   * @param input This client's total collateral contribution
@@ -81,6 +82,7 @@ case class BinaryOutcomeDLCClient(
     outcomeLose: String,
     oraclePubKey: ECPublicKey,
     preCommittedR: ECPublicKey,
+    isInitiator: Boolean,
     extPrivKey: ExtPrivateKey,
     remoteExtPubKey: ExtPublicKey,
     input: CurrencyUnit,
@@ -195,7 +197,13 @@ case class BinaryOutcomeDLCClient(
   val fundingPubKey: ECPublicKey = fundingPrivKey.publicKey
 
   val fundingSPK: MultiSignatureScriptPubKey = {
-    MultiSignatureScriptPubKey(2, Vector(fundingPubKey, fundingRemotePubKey))
+    val fundingKeys = if (isInitiator) {
+      Vector(fundingPubKey, fundingRemotePubKey)
+    } else {
+      Vector(fundingRemotePubKey, fundingPubKey)
+    }
+
+    MultiSignatureScriptPubKey(2, fundingKeys)
   }
 
   /** Experimental approx. vbytes for a CET */
@@ -223,20 +231,37 @@ case class BinaryOutcomeDLCClient(
     val output: TransactionOutput =
       TransactionOutput(totalInput + halfCetFee + halfCetFee,
                         P2WSHWitnessSPKV0(fundingSPK))
-    val change =
-      TransactionOutput(Satoshis(totalFunding) - input - halfCetFee, changeSPK)
-    val remoteChange =
-      TransactionOutput(Satoshis(remoteTotalFunding) - remoteInput - halfCetFee,
-                        remoteChangeSPK)
+
+    val (initiatorChange, initiatorChangeSPK, otherChange, otherChangeSPK) =
+      if (isInitiator) {
+        (Satoshis(totalFunding) - input,
+         changeSPK,
+         Satoshis(remoteTotalFunding) - remoteInput,
+         remoteChangeSPK)
+      } else {
+        (Satoshis(remoteTotalFunding) - remoteInput,
+         remoteChangeSPK,
+         Satoshis(totalFunding) - input,
+         changeSPK)
+      }
+
+    val initiatorChangeOutput =
+      TransactionOutput(initiatorChange - halfCetFee, initiatorChangeSPK)
+    val otherChangeOutput =
+      TransactionOutput(otherChange - halfCetFee, otherChangeSPK)
 
     val outputs: Vector[TransactionOutput] =
-      Vector(output, change, remoteChange)
+      Vector(output, initiatorChangeOutput, otherChangeOutput)
 
     val localInputs =
       TxBuilder.calcSequenceForInputs(fundingUtxos, isRBFEnabled)
     val remoteInputs = remoteFundingInputs.map(outpoint =>
       TransactionInput(outpoint._1, EmptyScriptSignature, sequence))
-    val inputs = localInputs ++ remoteInputs
+    val inputs = if (isInitiator) {
+      localInputs ++ remoteInputs
+    } else {
+      remoteInputs ++ localInputs
+    }
 
     val txWithoutFee = BaseTransaction(version =
                                          TransactionConstants.validLockVersion,
@@ -538,6 +563,8 @@ case class BinaryOutcomeDLCClient(
             PartialSignature,
             PartialSignature,
             Vector[PartialSignature])]): Future[SetupDLC] = {
+    require(!isInitiator, "You should call setupDLCOffer")
+
     for {
       (cetWinRemote, remoteWinSig, cetWinRemoteWitness) <- createCETWinRemote()
       (cetLoseRemote, remoteLoseSig, cetLoseRemoteWitness) <- createCETLoseRemote()
@@ -589,6 +616,8 @@ case class BinaryOutcomeDLCClient(
           PartialSignature,
           Vector[PartialSignature]) => Future[Unit],
       getFundingTx: Future[Transaction]): Future[SetupDLC] = {
+    require(isInitiator, "You should call setupDLCAccept")
+
     getSigs.flatMap {
       case (refundSig, firstSig, secondSig) =>
         val (winSig, loseSig) = if (winIsFirst) {
