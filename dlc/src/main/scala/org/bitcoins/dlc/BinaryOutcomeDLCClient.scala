@@ -44,12 +44,14 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
   BitcoinUTXOSpendingInfoSingle,
   ConditionalPath,
   P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfoFull
+  P2WSHV0SpendingInfoFull,
+  P2WSHV0SpendingInfoSingle
 }
 import scodec.bits.ByteVector
 
@@ -205,6 +207,10 @@ case class BinaryOutcomeDLCClient(
   private val toLocalClosingFee: CurrencyUnit = Satoshis(
     approxToLocalClosingVBytes * feeRate.toLong)
 
+  private val isRBFEnabled = Policy.isRBFEnabled
+  private val sequence =
+    if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+
   private lazy val createUnsignedFundingTransaction: Transaction = {
     /* We need to commit to the CET's and local closing tx's fee during the construction of
      * the funding transaction so that the CET outputs have the expected payouts.
@@ -225,11 +231,8 @@ case class BinaryOutcomeDLCClient(
     val outputs: Vector[TransactionOutput] =
       Vector(output, change, remoteChange)
 
-    val isRBFEnabled = Policy.isRBFEnabled
     val localInputs =
       TxBuilder.calcSequenceForInputs(fundingUtxos, isRBFEnabled)
-    val sequence =
-      if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
     val remoteInputs = remoteFundingInputs.map(outpoint =>
       TransactionInput(outpoint._1, EmptyScriptSignature, sequence))
     val inputs = localInputs ++ remoteInputs
@@ -267,11 +270,9 @@ case class BinaryOutcomeDLCClient(
   /** Constructs CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCET(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: P2WSHV0SpendingInfoFull,
+      remoteSig: PartialSignature,
       payout: CurrencyUnit,
-      remotePayout: CurrencyUnit,
-      invariant: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean =
-        noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
+      remotePayout: CurrencyUnit): Future[Transaction] = {
     val (cetPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
       (cetWinPrivKey, cetRemoteWinPubKey)
     } else {
@@ -304,27 +305,33 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
-    val txBuilderF =
-      BitcoinTxBuilder(outputs,
-                       Vector(fundingSpendingInfo),
-                       feeRate,
-                       emptyChangeSPK,
-                       network,
-                       timeouts.contractMaturity.toUInt32)
+    val fundingTxid = createUnsignedFundingTransaction.txId
+    val fundingInput = TransactionInput(
+      TransactionOutPoint(fundingTxid, UInt32.zero),
+      EmptyScriptSignature,
+      sequence)
 
-    txBuilderF
-      .flatMap(_.sign(invariant))
-      .map((_, P2WSHWitnessV0(toLocalSPK)))
+    val psbt = PSBT.fromUnsignedTx(
+      BaseTransaction(TransactionConstants.validLockVersion,
+                      Vector(fundingInput),
+                      outputs,
+                      UInt32.zero)
+    )
+
+    val signedPSBTF = psbt
+      .addSignature(remoteSig, inputIndex = 0)
+      .sign(inputIndex = 0, fundingPrivKey)
+
+    signedPSBTF.flatMap { signedPSBT =>
+      Future.fromTry(signedPSBT.extractTransactionAndValidate)
+    }
   }
 
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETRemote(
       sigPubKey: ECPublicKey,
-      fundingSpendingInfo: P2WSHV0SpendingInfoFull,
       payout: CurrencyUnit,
-      remotePayout: CurrencyUnit,
-      invariant: (Seq[BitcoinUTXOSpendingInfoFull], Transaction) => Boolean =
-        noEmptyOutputs): Future[(Transaction, P2WSHWitnessV0)] = {
+      remotePayout: CurrencyUnit): Future[(Transaction, PartialSignature)] = {
     val (cetLocalPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
       (cetWinPrivKey, cetRemoteWinPubKey)
     } else {
@@ -352,17 +359,33 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
-    val txBuilderF =
-      BitcoinTxBuilder(outputs,
-                       Vector(fundingSpendingInfo),
-                       feeRate,
-                       emptyChangeSPK,
-                       network,
-                       timeouts.contractMaturity.toUInt32)
+    val fundingTx = createUnsignedFundingTransaction
+    val fundingTxid = fundingTx.txIdBE
+    val fundingOutput = fundingTx.outputs.head
+    val fundingOutPoint = TransactionOutPoint(fundingTxid, UInt32.zero)
+    val fundingInput =
+      TransactionInput(fundingOutPoint, EmptyScriptSignature, sequence)
 
-    txBuilderF
-      .flatMap(_.sign(invariant))
-      .map((_, P2WSHWitnessV0(toLocalSPK)))
+    val unsignedTx = BaseTransaction(TransactionConstants.validLockVersion,
+                                     Vector(fundingInput),
+                                     outputs,
+                                     UInt32.zero)
+
+    val sigF = BitcoinSignerSingle.signSingle(
+      spendingInfo = P2WSHV0SpendingInfoSingle(
+        outPoint = fundingOutPoint,
+        amount = fundingOutput.value,
+        scriptPubKey = P2WSHWitnessSPKV0(fundingSPK),
+        signer = fundingPrivKey,
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WSHWitnessV0(fundingSPK),
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      ),
+      unsignedTx = unsignedTx,
+      isDummySignature = false
+    )
+
+    sigF.map((unsignedTx, _))
   }
 
   /** Constructs the (time-locked) refund transaction for when the oracle disappears
@@ -370,11 +393,19 @@ case class BinaryOutcomeDLCClient(
     * Note that both parties have the same refund transaction.
     */
   def createRefundTx(
-      fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[Transaction] = {
+      remoteSig: PartialSignature): Future[(Transaction, PartialSignature)] = {
+    val fundingTx = createUnsignedFundingTransaction
+    val fundingTxid = fundingTx.txId
+    val fundingInput = TransactionInput(
+      TransactionOutPoint(fundingTxid, UInt32.zero),
+      EmptyScriptSignature,
+      sequence)
+    val fundingOutput = fundingTx.outputs.head
+
     val toLocalValueNotSat =
-      (fundingSpendingInfo.amount * input).satoshis.toLong / totalInput.satoshis.toLong
+      (fundingOutput.value * input).satoshis.toLong / totalInput.satoshis.toLong
     val toLocalValue = Satoshis(toLocalValueNotSat)
-    val toRemoteValue = fundingSpendingInfo.amount - toLocalValue
+    val toRemoteValue = fundingOutput.value - toLocalValue
 
     val toLocal = TransactionOutput(
       toLocalValue,
@@ -383,109 +414,108 @@ case class BinaryOutcomeDLCClient(
                                      P2WPKHWitnessSPKV0(cetRemoteRefundPubKey))
 
     val outputs = Vector(toLocal, toRemote)
-    val txBuilderF = BitcoinTxBuilder(outputs,
-                                      Vector(fundingSpendingInfo),
-                                      feeRate,
-                                      emptyChangeSPK,
-                                      network,
-                                      timeouts.contractTimeout.toUInt32)
 
-    txBuilderF.flatMap(subtractFeeAndSign)
+    val psbt = PSBT.fromUnsignedTx(
+      BaseTransaction(TransactionConstants.validLockVersion,
+                      Vector(fundingInput),
+                      outputs,
+                      UInt32.zero)
+    )
+
+    val signedPSBTF = psbt
+      .addSignature(remoteSig, inputIndex = 0)
+      .sign(inputIndex = 0, fundingPrivKey)
+
+    signedPSBTF.flatMap { signedPSBT =>
+      val sig = signedPSBT.inputMaps.head.partialSignatures
+        .filter(_.pubKey == fundingPubKey)
+        .head
+
+      val txF = Future.fromTry(signedPSBT.extractTransactionAndValidate)
+      txF.map((_, sig))
+    }
   }
 
-  def createCETWin(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
-    (Transaction, P2WSHWitnessV0)] = {
+  def createCETWin(remoteSig: PartialSignature): Future[Transaction] = {
     createCET(
       sigPubKey = sigPubKeyWin,
-      fundingSpendingInfo = fundingSpendingInfo,
+      remoteSig = remoteSig,
       payout = winPayout,
       remotePayout = remoteWinPayout
     )
   }
 
-  def createCETLose(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
-    (Transaction, P2WSHWitnessV0)] = {
+  def createCETLose(remoteSig: PartialSignature): Future[Transaction] = {
     createCET(
       sigPubKey = sigPubKeyLose,
-      fundingSpendingInfo = fundingSpendingInfo,
+      remoteSig = remoteSig,
       payout = losePayout,
       remotePayout = remoteLosePayout
     )
   }
 
-  def createCETWinRemote(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
-    (Transaction, P2WSHWitnessV0)] = {
+  def createCETWinRemote(): Future[(Transaction, PartialSignature)] = {
     createCETRemote(
       sigPubKey = sigPubKeyWin,
-      fundingSpendingInfo = fundingSpendingInfo,
       payout = winPayout,
       remotePayout = remoteWinPayout
     )
   }
 
-  def createCETLoseRemote(fundingSpendingInfo: P2WSHV0SpendingInfoFull): Future[
-    (Transaction, P2WSHWitnessV0)] = {
+  def createCETLoseRemote(): Future[(Transaction, PartialSignature)] = {
     createCETRemote(
       sigPubKey = sigPubKeyLose,
-      fundingSpendingInfo = fundingSpendingInfo,
       payout = losePayout,
       remotePayout = remoteLosePayout
     )
   }
 
-  def setupDLC(): Future[SetupDLCWithSelf] = {
-    // Construct Funding Transaction
-    val unsignedFundingTx = createUnsignedFundingTransaction
-    val fundingTxId = unsignedFundingTx.txIdBE
-    val output = unsignedFundingTx.outputs.head
+  def setupDLC(
+      getSigs: Future[(PartialSignature, PartialSignature, PartialSignature)],
+      sendSigs: (
+          PartialSignature,
+          PartialSignature,
+          PartialSignature,
+          PartialSignature) => Future[Unit],
+      getFundingSigs: Future[Vector[PartialSignature]]): Future[SetupDLC] = {
+    getSigs.flatMap {
+      case (refundSig, winSig, loseSig) =>
+        // Construct all CETs
+        val cetWinLocalF = createCETWin(winSig)
+        val cetLoseLocalF = createCETLose(loseSig)
+        val cetWinRemoteF = createCETWinRemote()
+        val cetLoseRemoteF = createCETLoseRemote()
+        val refundTxF = createRefundTx(refundSig)
 
-    val fundingSpendingInfo = P2WSHV0SpendingInfoFull(
-      outPoint = TransactionOutPoint(fundingTxId, UInt32.zero),
-      amount = output.value,
-      scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
-      signersWithPossibleExtra = Vector(fundingPrivKey, ???),
-      hashType = HashType.sigHashAll,
-      scriptWitness = P2WSHWitnessV0(fundingSPK),
-      conditionalPath = ConditionalPath.NoConditionsLeft
-    )
+        cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet.hex}\n"))
+        cetLoseLocalF.foreach(cet =>
+          logger.info(s"CET Lose Local: ${cet.hex}\n"))
+        cetWinRemoteF.foreach(cet =>
+          logger.info(s"CET Win Remote: ${cet._1.hex}\n"))
+        cetLoseRemoteF.foreach(cet =>
+          logger.info(s"CET Lose Remote: ${cet._1.hex}\n"))
+        refundTxF.foreach(refundTx =>
+          logger.info(s"Refund Tx: ${refundTx._1.hex}\n"))
 
-    // Construct all CETs
-    val cetWinLocalF = createCETWin(fundingSpendingInfo)
-    val cetLoseLocalF = createCETLose(fundingSpendingInfo)
-    val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
-    val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
-    val refundTxF = createRefundTx(fundingSpendingInfo)
-
-    cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet._1.hex}\n"))
-    cetLoseLocalF.foreach(cet =>
-      logger.info(s"CET Lose Local: ${cet._1.hex}\n"))
-    cetWinRemoteF.foreach(cet =>
-      logger.info(s"CET Win Remote: ${cet._1.hex}\n"))
-    cetLoseRemoteF.foreach(cet =>
-      logger.info(s"CET Lose Remote: ${cet._1.hex}\n"))
-    refundTxF.foreach(refundTx => logger.info(s"Refund Tx: ${refundTx.hex}\n"))
-
-    for {
-      (cetWinLocal, cetWinLocalWitness) <- cetWinLocalF
-      (cetLoseLocal, cetLoseLocalWitness) <- cetLoseLocalF
-      (cetWinRemote, cetWinRemoteWitness) <- cetWinRemoteF
-      (cetLoseRemote, cetLoseRemoteWitness) <- cetLoseRemoteF
-      refundTx <- refundTxF
-      fundingTx <- createFundingTransaction(???)
-    } yield {
-      SetupDLCWithSelf(
-        fundingTx = fundingTx,
-        fundingSpendingInfo = fundingSpendingInfo,
-        cetWinLocal = cetWinLocal,
-        cetWinLocalWitness = cetWinLocalWitness,
-        cetLoseLocal = cetLoseLocal,
-        cetLoseLocalWitness = cetLoseLocalWitness,
-        cetWinRemote = cetWinRemote,
-        cetWinRemoteWitness = cetWinRemoteWitness,
-        cetLoseRemote = cetLoseRemote,
-        cetLoseRemoteWitness = cetLoseRemoteWitness,
-        refundTx = refundTx
-      )
+        for {
+          cetWinLocal <- cetWinLocalF
+          cetLoseLocal <- cetLoseLocalF
+          (cetWinRemote, remoteWinSig) <- cetWinRemoteF
+          (cetLoseRemote, remoteLoseSig) <- cetLoseRemoteF
+          (refundTx, remoteRefundSig) <- refundTxF
+          _ <- sendSigs(remoteRefundSig, remoteWinSig, remoteLoseSig, ???)
+          fundingSigs <- getFundingSigs
+          fundingTx <- createFundingTransaction(fundingSigs)
+        } yield {
+          SetupDLC(
+            fundingTx,
+            cetWinLocal,
+            cetLoseLocal,
+            cetWinRemote.txIdBE,
+            cetLoseRemote.txIdBE,
+            refundTx
+          )
+        }
     }
   }
 
@@ -818,13 +848,11 @@ object BinaryOutcomeDLCClient {
   }
 }
 
-// TODO add fundingPSBT to allow for verification of fundingTx
-// TODO have PSBTs for each CET rather than using sigs and txids
 // TODO use SetupDLC in this file instead of SetupDLCWithSelf
 case class SetupDLC(
     fundingTx: Transaction,
-    cetWinSig: ECDigitalSignature,
-    cetLoseSig: ECDigitalSignature,
+    cetWin: Transaction,
+    cetLose: Transaction,
     cetWinRemoteTxid: DoubleSha256DigestBE,
     cetLoseRemoteTxid: DoubleSha256DigestBE,
     refundTx: Transaction)
