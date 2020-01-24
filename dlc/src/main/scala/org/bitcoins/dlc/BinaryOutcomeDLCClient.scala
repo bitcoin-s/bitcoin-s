@@ -278,7 +278,9 @@ case class BinaryOutcomeDLCClient(
       }
 
     signedFundingPSBTF.flatMap { signedFundingPSBT =>
-      Future.fromTry(signedFundingPSBT.extractTransactionAndValidate)
+      val txT =
+        signedFundingPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
+      Future.fromTry(txT)
     }
   }
 
@@ -320,7 +322,8 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
-    val fundingTxid = createUnsignedFundingTransaction.txId
+    val fundingTx = createUnsignedFundingTransaction
+    val fundingTxid = fundingTx.txId
     val fundingInput = TransactionInput(
       TransactionOutPoint(fundingTxid, UInt32.zero),
       EmptyScriptSignature,
@@ -335,10 +338,13 @@ case class BinaryOutcomeDLCClient(
 
     val signedPSBTF = psbt
       .addSignature(remoteSig, inputIndex = 0)
+      .addUTXOToInput(fundingTx, index = 0)
+      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
 
     val signedCETF = signedPSBTF.flatMap { signedPSBT =>
-      Future.fromTry(signedPSBT.extractTransactionAndValidate)
+      val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
+      Future.fromTry(txT)
     }
 
     (signedCETF, P2WSHWitnessV0(toLocalSPK))
@@ -468,6 +474,8 @@ case class BinaryOutcomeDLCClient(
 
     val signedPSBTF = psbt
       .addSignature(remoteSig, inputIndex = 0)
+      .addUTXOToInput(createUnsignedFundingTransaction, index = 0)
+      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
 
     signedPSBTF.flatMap { signedPSBT =>
@@ -475,7 +483,8 @@ case class BinaryOutcomeDLCClient(
         .filter(_.pubKey == fundingPubKey)
         .head
 
-      val txF = Future.fromTry(signedPSBT.extractTransactionAndValidate)
+      val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
+      val txF = Future.fromTry(txT)
       txF.map((_, sig))
     }
   }
@@ -748,12 +757,12 @@ case class BinaryOutcomeDLCClient(
   }
 
   def executeRemoteUnilateralDLC(
-      dlcSetup: SetupDLCWithSelf,
+      dlcSetup: SetupDLC,
       publishedCET: Transaction): Future[DLCOutcome] = {
     val output = publishedCET.outputs.last
 
     val (extCetPrivKey, isWin) =
-      if (publishedCET == dlcSetup.cetWinRemote) {
+      if (publishedCET.txIdBE == dlcSetup.cetWinRemoteTxid) {
         (cetWinPrivKey, false)
       } else {
         (cetLosePrivKey, true)
@@ -792,12 +801,12 @@ case class BinaryOutcomeDLCClient(
     * @return Each transaction published and its spending info
     */
   def executeJusticeDLC(
-      dlcSetup: SetupDLCWithSelf,
+      dlcSetup: SetupDLC,
       timedOutCET: Transaction): Future[DLCOutcome] = {
     val justiceOutput = timedOutCET.outputs.head
 
     val (extCetPrivKey, cetScriptWitness, isWin) =
-      if (timedOutCET == dlcSetup.cetWinRemote) {
+      if (timedOutCET.txIdBE == dlcSetup.cetWinRemoteTxid) {
         (cetWinPrivKey, dlcSetup.cetWinRemoteWitness, false)
       } else {
         (cetLosePrivKey, dlcSetup.cetLoseRemoteWitness, true)
