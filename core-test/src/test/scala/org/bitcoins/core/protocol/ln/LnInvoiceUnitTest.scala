@@ -373,7 +373,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val lnInvoiceSig =
       LnInvoiceSignature(recoverId = UInt8.zero, signature = signature)
 
-    val descriptionTag = Left(LnTag.DescriptionTag("coffee beans"))
+    val descriptionTag = LnTag.DescriptionTag("coffee beans")
 
     val paymentSecret = Some(
       LnTag.SecretTag(PaymentSecret.fromHex(
@@ -383,7 +383,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       LnTag.FeaturesTag(ByteVector.fromValidHex("800000000000000000000800")))
 
     val lnTags = LnTaggedFields(
-      Vector(paymentTag, descriptionTag.value, paymentSecret.get, features.get))
+      Vector(paymentTag, descriptionTag, paymentSecret.get, features.get))
 
     val hrpMilli =
       LnHumanReadablePart(LnBitcoinMainNet, Some(MilliBitcoins(25)))
