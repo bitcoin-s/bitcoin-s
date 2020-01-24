@@ -521,8 +521,11 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       'z',
       Bech32.from8bitTo5bit(ByteVector.fromValidHex("cafebabe")))
 
+    val descriptionTag =
+      LnTag.DescriptionTag("Please consider supporting this project")
+
     val tags =
-      LnTaggedFields(Vector(paymentTag, descpriptionHashTag.value, unknownTag))
+      LnTaggedFields(Vector(paymentTag, descriptionTag, unknownTag))
     val expected = LnInvoice(hrpTestNetMilli, time, tags, key)
     val serialized = expected.toString
     val deserialized = LnInvoice.fromString(serialized).get

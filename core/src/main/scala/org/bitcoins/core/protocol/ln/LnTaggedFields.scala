@@ -21,6 +21,9 @@ sealed abstract class LnTaggedFields extends NetworkElement {
       descriptionHash.nonEmpty,
     "You must supply either a description hash, or a literal description that is 640 characters or less to create an invoice."
   )
+  require(
+    !(description.nonEmpty && descriptionHash.nonEmpty),
+    "You must not supply both a description hash and a literal description")
 
   def tags: Vector[LnTag]
 
