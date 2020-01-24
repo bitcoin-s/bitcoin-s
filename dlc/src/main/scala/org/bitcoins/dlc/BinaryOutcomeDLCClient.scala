@@ -15,9 +15,11 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BlockStampWithFuture
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
+  EmptyScriptSignature,
   MultiSignatureScriptPubKey,
   P2PKWithTimeoutScriptPubKey,
   P2WPKHWitnessSPKV0,
@@ -28,18 +30,23 @@ import org.bitcoins.core.protocol.script.{
   WitnessScriptPubKeyV0
 }
 import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
   Transaction,
+  TransactionConstants,
   TransactionInput,
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
+  BitcoinUTXOSpendingInfoSingle,
   ConditionalPath,
   P2WPKHV0SpendingInfo,
   P2WSHV0SpendingInfoFull
@@ -77,8 +84,8 @@ case class BinaryOutcomeDLCClient(
     remoteExtPubKey: ExtPublicKey,
     input: CurrencyUnit,
     remoteInput: CurrencyUnit,
-    fundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
-    remoteFundingInputs: Vector[(TransactionInput, CurrencyUnit)],
+    fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
+    remoteFundingInputs: Vector[(TransactionOutPoint, CurrencyUnit)],
     winPayout: CurrencyUnit,
     losePayout: CurrencyUnit,
     timeouts: DLCTimeouts,
@@ -198,10 +205,7 @@ case class BinaryOutcomeDLCClient(
   private val toLocalClosingFee: CurrencyUnit = Satoshis(
     approxToLocalClosingVBytes * feeRate.toLong)
 
-  private lazy val (createUnsignedFundingTransaction, fundingTxBuilderF): (
-      Future[Transaction],
-      Future[BitcoinTxBuilder]) = {
-
+  private lazy val createUnsignedFundingTransaction: Transaction = {
     /* We need to commit to the CET's and local closing tx's fee during the construction of
      * the funding transaction so that the CET outputs have the expected payouts.
      *
@@ -220,26 +224,44 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] =
       Vector(output, change, remoteChange)
-    val txBuilderF: Future[BitcoinTxBuilder] =
-      BitcoinTxBuilder(outputs,
-                       utxos = Vector(???),
-                       feeRate,
-                       emptyChangeSPK,
-                       network)
 
-    val txAndBuilderF = txBuilderF.flatMap { txBuilder =>
-      for {
-        newBuilder <- subtractFeeFromOutputs(txBuilder,
-                                             Vector(changeSPK, remoteChangeSPK))
-        unsignedTx <- newBuilder.unsignedTx
-      } yield (unsignedTx, newBuilder)
-    }
+    val isRBFEnabled = Policy.isRBFEnabled
+    val localInputs =
+      TxBuilder.calcSequenceForInputs(fundingUtxos, isRBFEnabled)
+    val sequence =
+      if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+    val remoteInputs = remoteFundingInputs.map(outpoint =>
+      TransactionInput(outpoint._1, EmptyScriptSignature, sequence))
+    val inputs = localInputs ++ remoteInputs
 
-    (txAndBuilderF.map(_._1), txAndBuilderF.map(_._2))
+    val txWithoutFee = BaseTransaction(version =
+                                         TransactionConstants.validLockVersion,
+                                       inputs = inputs,
+                                       outputs = outputs,
+                                       lockTime = UInt32.zero)
+
+    subtractFeeFromOutputs(txWithoutFee,
+                           feeRate,
+                           Vector(changeSPK, remoteChangeSPK))
   }
 
-  def createFundingTransaction: Future[Transaction] = {
-    fundingTxBuilderF.flatMap(_.sign(noEmptyOutputs))
+  def createFundingTransaction(
+      remoteSigs: Vector[PartialSignature]): Future[Transaction] = {
+    val fundingPSBT = remoteSigs.zipWithIndex.foldLeft(
+      PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
+      case (psbt, (sig, index)) =>
+        psbt.addSignature(sig, index + fundingUtxos.length)
+    }
+
+    val signedFundingPSBTF =
+      fundingUtxos.zipWithIndex.foldLeft(Future.successful(fundingPSBT)) {
+        case (psbtF, (utxo, index)) =>
+          psbtF.flatMap(_.sign(index, utxo.signers.head))
+      }
+
+    signedFundingPSBTF.flatMap { signedFundingPSBT =>
+      Future.fromTry(signedFundingPSBT.extractTransactionAndValidate)
+    }
   }
 
   /** Constructs CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
@@ -413,60 +435,57 @@ case class BinaryOutcomeDLCClient(
 
   def setupDLC(): Future[SetupDLCWithSelf] = {
     // Construct Funding Transaction
-    createUnsignedFundingTransaction.flatMap { unsignedFundingTx =>
-      val fundingTxId = unsignedFundingTx.txIdBE
-      val output = unsignedFundingTx.outputs.head
+    val unsignedFundingTx = createUnsignedFundingTransaction
+    val fundingTxId = unsignedFundingTx.txIdBE
+    val output = unsignedFundingTx.outputs.head
 
-      val fundingSpendingInfo = P2WSHV0SpendingInfoFull(
-        outPoint = TransactionOutPoint(fundingTxId, UInt32.zero),
-        amount = output.value,
-        scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
-        signersWithPossibleExtra = Vector(fundingPrivKey, ???),
-        hashType = HashType.sigHashAll,
-        scriptWitness = P2WSHWitnessV0(fundingSPK),
-        conditionalPath = ConditionalPath.NoConditionsLeft
+    val fundingSpendingInfo = P2WSHV0SpendingInfoFull(
+      outPoint = TransactionOutPoint(fundingTxId, UInt32.zero),
+      amount = output.value,
+      scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
+      signersWithPossibleExtra = Vector(fundingPrivKey, ???),
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WSHWitnessV0(fundingSPK),
+      conditionalPath = ConditionalPath.NoConditionsLeft
+    )
+
+    // Construct all CETs
+    val cetWinLocalF = createCETWin(fundingSpendingInfo)
+    val cetLoseLocalF = createCETLose(fundingSpendingInfo)
+    val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
+    val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
+    val refundTxF = createRefundTx(fundingSpendingInfo)
+
+    cetWinLocalF.foreach(cet => logger.info(s"CET Win Local: ${cet._1.hex}\n"))
+    cetLoseLocalF.foreach(cet =>
+      logger.info(s"CET Lose Local: ${cet._1.hex}\n"))
+    cetWinRemoteF.foreach(cet =>
+      logger.info(s"CET Win Remote: ${cet._1.hex}\n"))
+    cetLoseRemoteF.foreach(cet =>
+      logger.info(s"CET Lose Remote: ${cet._1.hex}\n"))
+    refundTxF.foreach(refundTx => logger.info(s"Refund Tx: ${refundTx.hex}\n"))
+
+    for {
+      (cetWinLocal, cetWinLocalWitness) <- cetWinLocalF
+      (cetLoseLocal, cetLoseLocalWitness) <- cetLoseLocalF
+      (cetWinRemote, cetWinRemoteWitness) <- cetWinRemoteF
+      (cetLoseRemote, cetLoseRemoteWitness) <- cetLoseRemoteF
+      refundTx <- refundTxF
+      fundingTx <- createFundingTransaction(???)
+    } yield {
+      SetupDLCWithSelf(
+        fundingTx = fundingTx,
+        fundingSpendingInfo = fundingSpendingInfo,
+        cetWinLocal = cetWinLocal,
+        cetWinLocalWitness = cetWinLocalWitness,
+        cetLoseLocal = cetLoseLocal,
+        cetLoseLocalWitness = cetLoseLocalWitness,
+        cetWinRemote = cetWinRemote,
+        cetWinRemoteWitness = cetWinRemoteWitness,
+        cetLoseRemote = cetLoseRemote,
+        cetLoseRemoteWitness = cetLoseRemoteWitness,
+        refundTx = refundTx
       )
-
-      // Construct all CETs
-      val cetWinLocalF = createCETWin(fundingSpendingInfo)
-      val cetLoseLocalF = createCETLose(fundingSpendingInfo)
-      val cetWinRemoteF = createCETWinRemote(fundingSpendingInfo)
-      val cetLoseRemoteF = createCETLoseRemote(fundingSpendingInfo)
-      val refundTxF = createRefundTx(fundingSpendingInfo)
-
-      cetWinLocalF.foreach(cet =>
-        logger.info(s"CET Win Local: ${cet._1.hex}\n"))
-      cetLoseLocalF.foreach(cet =>
-        logger.info(s"CET Lose Local: ${cet._1.hex}\n"))
-      cetWinRemoteF.foreach(cet =>
-        logger.info(s"CET Win Remote: ${cet._1.hex}\n"))
-      cetLoseRemoteF.foreach(cet =>
-        logger.info(s"CET Lose Remote: ${cet._1.hex}\n"))
-      refundTxF.foreach(refundTx =>
-        logger.info(s"Refund Tx: ${refundTx.hex}\n"))
-
-      for {
-        (cetWinLocal, cetWinLocalWitness) <- cetWinLocalF
-        (cetLoseLocal, cetLoseLocalWitness) <- cetLoseLocalF
-        (cetWinRemote, cetWinRemoteWitness) <- cetWinRemoteF
-        (cetLoseRemote, cetLoseRemoteWitness) <- cetLoseRemoteF
-        refundTx <- refundTxF
-        fundingTx <- createFundingTransaction
-      } yield {
-        SetupDLCWithSelf(
-          fundingTx = fundingTx,
-          fundingSpendingInfo = fundingSpendingInfo,
-          cetWinLocal = cetWinLocal,
-          cetWinLocalWitness = cetWinLocalWitness,
-          cetLoseLocal = cetLoseLocal,
-          cetLoseLocalWitness = cetLoseLocalWitness,
-          cetWinRemote = cetWinRemote,
-          cetWinRemoteWitness = cetWinRemoteWitness,
-          cetLoseRemote = cetLoseRemote,
-          cetLoseRemoteWitness = cetLoseRemoteWitness,
-          refundTx = refundTx
-        )
-      }
     }
   }
 
@@ -739,38 +758,44 @@ object BinaryOutcomeDLCClient {
     subtractFeeFromOutputs(txBuilder, spks).flatMap(_.sign(noEmptyOutputs))
   }
 
+  private def subtractFees(
+      tx: Transaction,
+      feeRate: FeeUnit,
+      spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
+    val fee = feeRate.calc(tx)
+
+    val outputs = tx.outputs.zipWithIndex.filter {
+      case (output, _) => spks.contains(output.scriptPubKey)
+    }
+    val unchangedOutputs = tx.outputs.zipWithIndex.filterNot {
+      case (output, _) => spks.contains(output.scriptPubKey)
+    }
+
+    val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
+    val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
+
+    val newOutputsWithoutRemainder = outputs.map {
+      case (output, index) =>
+        (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
+         index)
+    }
+    val (lastOutput, lastOutputIndex) = newOutputsWithoutRemainder.last
+    val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
+                                          lastOutput.scriptPubKey)
+    val newOutputs = newOutputsWithoutRemainder
+      .dropRight(1)
+      .:+((newLastOutput, lastOutputIndex))
+
+    (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1).toVector
+  }
+
   /** Subtracts the estimated fee by removing from each output with a specified spk evenly */
   def subtractFeeFromOutputs(
       txBuilder: BitcoinTxBuilder,
       spks: Vector[ScriptPubKey])(
       implicit ec: ExecutionContext): Future[BitcoinTxBuilder] = {
     txBuilder.unsignedTx.flatMap { tx =>
-      val fee = txBuilder.feeRate.calc(tx)
-
-      val outputs = txBuilder.destinations.zipWithIndex.filter {
-        case (output, _) => spks.contains(output.scriptPubKey)
-      }
-      val unchangedOutputs = txBuilder.destinations.zipWithIndex.filterNot {
-        case (output, _) => spks.contains(output.scriptPubKey)
-      }
-
-      val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
-      val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
-
-      val newOutputsWithoutRemainder = outputs.map {
-        case (output, index) =>
-          (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
-           index)
-      }
-      val (lastOutput, lastOutputIndex) = newOutputsWithoutRemainder.last
-      val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
-                                            lastOutput.scriptPubKey)
-      val newOutputs = newOutputsWithoutRemainder
-        .dropRight(1)
-        .:+((newLastOutput, lastOutputIndex))
-
-      val allOuputsWithNew =
-        (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1)
+      val allOuputsWithNew = subtractFees(tx, txBuilder.feeRate, spks)
 
       BitcoinTxBuilder(allOuputsWithNew,
                        txBuilder.utxoMap,
@@ -779,6 +804,17 @@ object BinaryOutcomeDLCClient {
                        txBuilder.network,
                        txBuilder.lockTimeOverrideOpt)
     }
+  }
+
+  /** Subtracts the estimated fee by removing from each output with a specified spk evenly */
+  def subtractFeeFromOutputs(
+      tx: BaseTransaction,
+      feeRate: FeeUnit,
+      spks: Vector[ScriptPubKey]): BaseTransaction = {
+    // TODO: feeRate probably needs to be fleshed out as tx doesn't have dummy sigs in
+    val allOuputsWithNew = subtractFees(tx, feeRate, spks)
+
+    BaseTransaction(tx.version, tx.inputs, allOuputsWithNew, tx.lockTime)
   }
 }
 
