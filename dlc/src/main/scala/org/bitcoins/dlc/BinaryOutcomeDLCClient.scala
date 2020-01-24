@@ -126,11 +126,13 @@ case class BinaryOutcomeDLCClient(
   val finalRemotePubKey: ECPublicKey =
     remoteExtPubKey.deriveChildPubKey(UInt32(2)).get.key
 
+  val winIsFirst: Boolean = outcomeWin.compareTo(outcomeLose) > 0
+
   /** The derivation index for the win and lose cases respectively.
     * We assign this index based on lexicographical order to keep things deterministic.
     */
   private val (winIndex, loseIndex) =
-    if (outcomeWin.compareTo(outcomeLose) > 0) {
+    if (winIsFirst) {
       (1, 2)
     } else {
       (2, 1)
@@ -245,6 +247,20 @@ case class BinaryOutcomeDLCClient(
     subtractFeeFromOutputs(txWithoutFee,
                            feeRate,
                            Vector(changeSPK, remoteChangeSPK))
+  }
+
+  def createFundingTransactionSigs(): Future[Vector[PartialSignature]] = {
+    val fundingTx = createUnsignedFundingTransaction
+
+    val sigFs = fundingUtxos.foldLeft(Vector.empty[Future[PartialSignature]]) {
+      case (vec, utxo) =>
+        val sigF = BitcoinSignerSingle.signSingle(utxo,
+                                                  fundingTx,
+                                                  isDummySignature = false)
+        vec :+ sigF
+    }
+
+    Future.sequence(sigFs)
   }
 
   def createFundingTransaction(
@@ -482,10 +498,16 @@ case class BinaryOutcomeDLCClient(
           PartialSignature,
           PartialSignature,
           PartialSignature,
-          PartialSignature) => Future[Unit],
+          Vector[PartialSignature]) => Future[Unit],
       getFundingSigs: Future[Vector[PartialSignature]]): Future[SetupDLC] = {
     getSigs.flatMap {
-      case (refundSig, winSig, loseSig) =>
+      case (refundSig, firstSig, secondSig) =>
+        val (winSig, loseSig) = if (winIsFirst) {
+          (firstSig, secondSig)
+        } else {
+          (secondSig, firstSig)
+        }
+
         // Construct all CETs
         val (cetWinLocalF, cetWinLocalWitness) = createCETWin(winSig)
         val (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(loseSig)
@@ -509,7 +531,20 @@ case class BinaryOutcomeDLCClient(
           (cetWinRemote, remoteWinSig, cetWinRemoteWitness) <- cetWinRemoteF
           (cetLoseRemote, remoteLoseSig, cetLoseRemoteWitness) <- cetLoseRemoteF
           (refundTx, remoteRefundSig) <- refundTxF
-          _ <- sendSigs(remoteRefundSig, remoteWinSig, remoteLoseSig, ???)
+          localFundingSigs <- createFundingTransactionSigs()
+          _ <- {
+            if (winIsFirst) {
+              sendSigs(remoteRefundSig,
+                       remoteWinSig,
+                       remoteLoseSig,
+                       localFundingSigs)
+            } else {
+              sendSigs(remoteRefundSig,
+                       remoteLoseSig,
+                       remoteWinSig,
+                       localFundingSigs)
+            }
+          }
           fundingSigs <- getFundingSigs
           fundingTx <- createFundingTransaction(fundingSigs)
         } yield {
