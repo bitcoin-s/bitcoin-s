@@ -292,7 +292,16 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
     for {
       acceptSetup <- acceptSetupF
       offerSetup <- offerSetupF
-    } yield (acceptSetup, offerSetup)
+    } yield {
+      assert(acceptSetup.fundingTx == offerSetup.fundingTx)
+      assert(acceptSetup.refundTx == offerSetup.refundTx)
+      assert(acceptSetup.cetWin.txIdBE == offerSetup.cetWinRemoteTxid)
+      assert(acceptSetup.cetLose.txIdBE == offerSetup.cetLoseRemoteTxid)
+      assert(acceptSetup.cetWinRemoteTxid == offerSetup.cetWin.txIdBE)
+      assert(acceptSetup.cetLoseRemoteTxid == offerSetup.cetLose.txIdBE)
+
+      (acceptSetup, offerSetup)
+    }
   }
 
   def executeUnilateralForCase(
@@ -339,30 +348,38 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
         }
     }
   }
-  /*
+
   def executeJusticeCase(
       fakeWin: Boolean,
       local: Boolean): Future[Assertion] = {
-    dlc.setupDLC().flatMap { setup =>
-      val timedOutCET = if (fakeWin) {
-        if (local) {
-          setup.cetWinRemote
-        } else {
-          setup.cetWinLocal
-        }
-      } else {
-        if (local) {
-          setup.cetLoseRemote
-        } else {
-          setup.cetLoseLocal
-        }
-      }
-      val outcomeF = dlc.executeJusticeDLC(setup, timedOutCET, local)
+    setupDLC().flatMap {
+      case (acceptSetup, offerSetup) =>
+        val (cheaterSetup, punisherSetup, punisherDLC) =
+          if (local) {
+            (offerSetup, acceptSetup, dlcAccept)
+          } else {
+            (acceptSetup, offerSetup, dlcOffer)
+          }
 
-      outcomeF.map(validateOutcome)
+        val timedOutCET = if (fakeWin) {
+          cheaterSetup.cetWin
+        } else {
+          cheaterSetup.cetLose
+        }
+
+        for {
+          justiceOutcome <- punisherDLC.executeJusticeDLC(punisherSetup,
+                                                          timedOutCET)
+          toRemoteOutcome <- punisherDLC.executeRemoteUnilateralDLC(
+            punisherSetup,
+            timedOutCET)
+        } yield {
+          validateOutcome(justiceOutcome)
+          validateOutcome(toRemoteOutcome)
+        }
     }
   }
-   */
+
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal win case" in {
     for {
       _ <- executeUnilateralForCase(outcomeWinHash, local = true)
@@ -380,7 +397,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
     executeRefundCase()
   }
-  /*
+
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice win case" in {
     for {
       _ <- executeJusticeCase(fakeWin = true, local = true)
@@ -393,5 +410,5 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
       _ <- executeJusticeCase(fakeWin = false, local = true)
       _ <- executeJusticeCase(fakeWin = false, local = false)
     } yield succeed
-  }*/
+  }
 }
