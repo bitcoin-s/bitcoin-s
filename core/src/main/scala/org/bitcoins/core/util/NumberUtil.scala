@@ -141,10 +141,12 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
 
   }
 
-  def convertUInt5sToUInt8(u5s: Vector[UInt5]): Vector[UInt8] = {
+  def convertUInt5sToUInt8(
+      u5s: Vector[UInt5],
+      pad: Boolean = false): Vector[UInt8] = {
     val u8s = u5s.map(_.toUInt8)
     val u8sTry =
-      NumberUtil.convert[UInt8](u8s, UInt32(5), UInt32(8), pad = false, {
+      NumberUtil.convert[UInt8](u8s, UInt32(5), UInt32(8), pad = pad, {
         u8: UInt8 =>
           u8
       })

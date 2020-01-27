@@ -15,6 +15,8 @@ sealed abstract class LnTagPrefix {
   */
 object LnTagPrefix {
 
+  case class Unknown(value: Char) extends LnTagPrefix
+
   case object PaymentHash extends LnTagPrefix {
     override val value: Char = 'p'
   }
@@ -54,9 +56,8 @@ object LnTagPrefix {
     override val value: Char = '9'
   }
 
-  private lazy val all: Map[Char, LnTagPrefix] =
+  private lazy val allKnown: Map[Char, LnTagPrefix] =
     List(PaymentHash,
-         Secret,
          Description,
          NodeId,
          DescriptionHash,
@@ -64,24 +65,29 @@ object LnTagPrefix {
          CltvExpiry,
          FallbackAddress,
          RoutingInfo,
-         Features)
+         Features,
+         Secret)
       .map(prefix => prefix.value -> prefix)
       .toMap
 
   def fromString(str: String): Option[LnTagPrefix] = {
     if (str.length == 1) {
-      fromChar(str.head)
+      Option(fromChar(str.head))
     } else {
       None
     }
   }
 
-  def fromChar(char: Char): Option[LnTagPrefix] = {
-    all.get(char)
+  def fromChar(char: Char): LnTagPrefix = {
+    allKnown.getOrElse(char, Unknown(char))
   }
 
   private lazy val prefixUInt5: Map[UInt5, LnTagPrefix] = {
-    all.map {
+    val all = Bech32.charset
+      .map(value => (value, Unknown(value)))
+      .toMap
+
+    (all ++ allKnown).map {
       case (_, prefix) =>
         val index = Bech32.charset.indexOf(prefix.value)
         (UInt5(index), prefix)

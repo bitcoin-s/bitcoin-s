@@ -151,6 +151,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         _ <- EclairRpcTestUtil.awaitEclairInSync(client4, bitcoind)
         _ <- EclairRpcTestUtil.awaitEclairInSync(client1, bitcoind)
         invoice <- client4.createInvoice("foo", 1000.msats)
+        info <- client4.getInfo
+        _ = assert(info.nodeId == invoice.nodeId)
         route <- client1.findRoute(invoice, None)
       } yield {
         route.size == 4
@@ -194,6 +196,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       _ <- EclairRpcTestUtil.awaitEclairInSync(client4, bitcoind)
       _ <- EclairRpcTestUtil.awaitEclairInSync(client1, bitcoind)
       invoice <- client4.createInvoice("test", 1000.msats)
+      info <- client4.getInfo
+      _ = assert(info.nodeId == invoice.nodeId)
       paymentId <- client1.payInvoice(invoice)
       _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client1,
                                                         paymentId,
@@ -217,6 +221,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
           _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
           invoice <- otherClient.createInvoice("abc", 50.msats)
+          info <- otherClient.getInfo
+          _ = assert(info.nodeId == invoice.nodeId)
           paymentResult <- client.payAndMonitorInvoice(invoice,
                                                        Some("ext_id"),
                                                        3.second,
@@ -236,6 +242,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         for {
           _ <- openAndConfirmChannel(clientF, otherClientF)
           invoice <- otherClient.createInvoice("abc", 50.msats)
+          info <- otherClient.getInfo
+          _ = assert(info.nodeId == invoice.nodeId)
           infos <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
           _ = assert(infos.isEmpty)
           paymentId <- client.payInvoice(invoice)
@@ -253,7 +261,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     for {
       c <- clientF
       invoice <- c.createInvoice("test")
+      info <- c.getInfo
     } yield {
+      assert(invoice.nodeId == info.nodeId)
       assert(invoice.hrp.toString == LnHumanReadablePart.lnbcrt.toString)
       assert(invoice.network == LnBitcoinRegTest)
       assert(invoice.amount.isEmpty)
@@ -267,7 +277,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     for {
       c <- clientF
       invoice <- c.createInvoice(description = "test", amountMsat = 12345.msats)
+      info <- c.getInfo
     } yield {
+      assert(invoice.nodeId == info.nodeId)
       assert(
         invoice.hrp.toString == LnHumanReadablePart
           .lnbcrt(Some(12345.msats.toLnCurrencyUnit))
@@ -286,7 +298,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       invoice <- c.createInvoice(description = "test",
                                  amountMsat = 12345.msats,
                                  expireIn = 67890.seconds)
+      info <- c.getInfo
     } yield {
+      assert(invoice.nodeId == info.nodeId)
       assert(
         invoice.hrp.toString == LnHumanReadablePart
           .lnbcrt(Some(12345.msats.toLnCurrencyUnit))
@@ -309,7 +323,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                                  expireIn = Some(67890.seconds),
                                  fallbackAddress = Some(testBitcoinAddress),
                                  paymentPreimage = None)
+      info <- c.getInfo
     } yield {
+      assert(invoice.nodeId == info.nodeId)
       assert(
         invoice.hrp.toString == LnHumanReadablePart
           .lnbcrt(Some(123450.pBTC))
@@ -335,7 +351,9 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         fallbackAddress = Some(testBitcoinAddress),
         paymentPreimage = Some(testPaymentPreimage)
       )
+      info <- c.getInfo
     } yield {
+      assert(invoice.nodeId == info.nodeId)
       assert(
         invoice.hrp.toString == LnHumanReadablePart
           .lnbcrt(Some(12345.msats.toLnCurrencyUnit))
@@ -510,7 +528,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            otherClientNodeId <- otherClient.getInfo.map(_.nodeId)
+            otherClientInfo <- otherClient.getInfo
+            otherClientNodeId = otherClientInfo.nodeId
             preimage = PaymentPreimage.random
             invoice <- otherClient.createInvoice("foo", amt, preimage)
             route <- client.findRoute(otherClientNodeId, amt)
@@ -522,6 +541,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
           } yield {
+            assert(otherClientNodeId == invoice.nodeId)
             assert(succeeded.nonEmpty)
 
             val succeededPayment = succeeded.head
