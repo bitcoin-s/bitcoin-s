@@ -416,55 +416,70 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       assert(acceptOutcome.fundingTx == offerOutcome.fundingTx)
     }
   }
-  /*
+
   def executeForJusticeCase(
-                             fakeWin: Boolean,
-                             local: Boolean): Future[Assertion] = {
-    def chooseCET(setup: SetupDLCWithSelf): Transaction = {
+      fakeWin: Boolean,
+      local: Boolean): Future[Assertion] = {
+    def chooseCET(localSetup: SetupDLC, remoteSetup: SetupDLC): Transaction = {
       if (fakeWin) {
         if (local) {
-          setup.cetWinRemote
+          remoteSetup.cetWin
         } else {
-          setup.cetWinLocal
+          localSetup.cetWin
         }
       } else {
         if (local) {
-          setup.cetLoseRemote
+          remoteSetup.cetLose
         } else {
-          setup.cetLoseLocal
+          localSetup.cetLose
         }
       }
     }
 
     for {
       client <- clientF
-      dlc <- constructDLC()
-      setup <- dlc.setupDLC()
-      cetWronglyPublished = chooseCET(setup)
-      _ <- publishTransaction(setup.fundingTx)
+      (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
+      (punisherDLC, punisherSetup) = {
+        if (local) {
+          (offerDLC, offerSetup)
+        } else {
+          (acceptDLC, acceptSetup)
+        }
+      }
+      cetWronglyPublished = chooseCET(offerSetup, acceptSetup)
+      _ = assert(offerDLC.timeouts == acceptDLC.timeouts)
+      timeout = offerDLC.timeouts.contractMaturity.toUInt32.toInt
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(cetWronglyPublished))
-      _ <- waitUntilBlock(dlc.timeouts.contractMaturity.toUInt32.toInt - 1)
+      _ <- waitUntilBlock(timeout - 1)
       _ <- recoverToSucceededIf[BitcoindException](
         publishTransaction(cetWronglyPublished))
       heightBeforePublish <- client.getBlockCount
-      _ <- waitUntilBlock(dlc.timeouts.contractMaturity.toUInt32.toInt)
+      _ <- waitUntilBlock(timeout)
       _ <- publishTransaction(cetWronglyPublished)
-      outcome <- dlc.executeJusticeDLC(setup, cetWronglyPublished, local)
-      _ = assert(outcome.cet == cetWronglyPublished)
-      _ <- publishTransaction(outcome.remoteClosingTx)
+      justiceOutcome <- punisherDLC.executeJusticeDLC(punisherSetup,
+                                                      cetWronglyPublished)
+      toRemoteOutcome <- punisherDLC.executeRemoteUnilateralDLC(
+        punisherSetup,
+        cetWronglyPublished)
+      _ = assert(toRemoteOutcome.cet == cetWronglyPublished)
+      _ = assert(justiceOutcome.cet == cetWronglyPublished)
+      _ <- publishTransaction(toRemoteOutcome.closingTx)
       _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(outcome.localClosingTx))
-      penaltyHeight = heightBeforePublish + dlc.timeouts.penaltyTimeout + 1
+        publishTransaction(justiceOutcome.closingTx))
+      penaltyHeight = heightBeforePublish + punisherDLC.timeouts.penaltyTimeout + 1
       _ <- waitUntilBlock(penaltyHeight - 1)
       _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(outcome.localClosingTx))
+        publishTransaction(justiceOutcome.closingTx))
       _ <- waitUntilBlock(penaltyHeight)
-      _ <- publishTransaction(outcome.localClosingTx)
-      assertion <- validateOutcome(outcome)
-    } yield assertion
+      _ <- publishTransaction(justiceOutcome.closingTx)
+      _ <- validateOutcome(toRemoteOutcome)
+      _ <- validateOutcome(justiceOutcome)
+    } yield {
+      assert(justiceOutcome.fundingTx == toRemoteOutcome.fundingTx)
+    }
   }
-   */
+
   it should "be able to publish all DLC txs to Regtest for the normal Win case" in {
     for {
       _ <- executeForUnilateralCase(outcomeWinHash, local = true)
@@ -485,7 +500,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       _ <- executeForRefundCase(local = false)
     } yield succeed
   }
-  /*
+
   it should "be able to take the justice branch on Regtest for the Win case" in {
     for {
       _ <- executeForJusticeCase(fakeWin = true, local = true)
@@ -498,5 +513,5 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       _ <- executeForJusticeCase(fakeWin = false, local = true)
       _ <- executeForJusticeCase(fakeWin = false, local = false)
     } yield succeed
-  }*/
+  }
 }
