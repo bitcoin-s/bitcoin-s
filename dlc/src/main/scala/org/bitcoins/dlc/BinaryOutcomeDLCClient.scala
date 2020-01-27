@@ -486,10 +486,12 @@ case class BinaryOutcomeDLCClient(
 
     val outputs = Vector(toInitiatorOutput, toOtherOutput)
 
-    BaseTransaction(TransactionConstants.validLockVersion,
-                    Vector(fundingInput),
-                    outputs,
-                    timeouts.contractTimeout.toUInt32)
+    val refundTxNoFee = BaseTransaction(TransactionConstants.validLockVersion,
+                                        Vector(fundingInput),
+                                        outputs,
+                                        timeouts.contractTimeout.toUInt32)
+
+    subtractFeeFromOutputs(refundTxNoFee, feeRate, outputs.map(_.scriptPubKey))
   }
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
@@ -894,14 +896,14 @@ case class BinaryOutcomeDLCClient(
     val SetupDLC(fundingTx, _, _, _, _, _, _, _, _, refundTx) =
       dlcSetup
 
-    val localOutput = if (isInitiator) {
-      refundTx.outputs.head
+    val (localOutput, vout) = if (isInitiator) {
+      (refundTx.outputs.head, UInt32.zero)
     } else {
-      refundTx.outputs.last
+      (refundTx.outputs.last, UInt32.one)
     }
 
     val localRefundSpendingInfo = P2WPKHV0SpendingInfo(
-      outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
+      outPoint = TransactionOutPoint(refundTx.txIdBE, vout),
       amount = localOutput.value,
       scriptPubKey = localOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
       signer = cetRefundPrivKey,

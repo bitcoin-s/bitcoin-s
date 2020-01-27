@@ -393,26 +393,30 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       assert(unilateralOutcome.cet == otherOutcome.cet)
     }
   }
-  /*
-  def executeForRefundCase(): Future[Assertion] = {
-    for {
-      dlc <- constructDLC()
-      setup <- dlc.setupDLC()
-      _ <- publishTransaction(setup.fundingTx)
-      outcome <- dlc.executeRefundDLC(setup)
-      _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(outcome.cet))
-      _ <- waitUntilBlock(dlc.timeouts.contractTimeout.toUInt32.toInt - 1)
-      _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(outcome.cet))
-      _ <- waitUntilBlock(dlc.timeouts.contractTimeout.toUInt32.toInt)
-      _ <- publishTransaction(outcome.cet)
-      _ <- publishTransaction(outcome.localClosingTx)
-      _ <- publishTransaction(outcome.remoteClosingTx)
-      assertion <- validateOutcome(outcome)
-    } yield assertion
-  }
 
+  def executeForRefundCase(local: Boolean): Future[Assertion] = {
+    for {
+      (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
+      acceptOutcome <- acceptDLC.executeRefundDLC(acceptSetup)
+      offerOutcome <- offerDLC.executeRefundDLC(offerSetup)
+      _ = assert(offerOutcome.cet == acceptOutcome.cet)
+      cet = offerOutcome.cet
+      _ = assert(acceptDLC.timeouts == offerDLC.timeouts)
+      timeout = offerDLC.timeouts.contractTimeout.toUInt32.toInt
+      _ <- recoverToSucceededIf[BitcoindException](publishTransaction(cet))
+      _ <- waitUntilBlock(timeout - 1)
+      _ <- recoverToSucceededIf[BitcoindException](publishTransaction(cet))
+      _ <- waitUntilBlock(timeout)
+      _ <- publishTransaction(cet)
+      _ <- publishTransaction(offerOutcome.closingTx)
+      _ <- publishTransaction(acceptOutcome.closingTx)
+      _ <- validateOutcome(offerOutcome)
+      _ <- validateOutcome(acceptOutcome)
+    } yield {
+      assert(acceptOutcome.fundingTx == offerOutcome.fundingTx)
+    }
+  }
+  /*
   def executeForJusticeCase(
                              fakeWin: Boolean,
                              local: Boolean): Future[Assertion] = {
@@ -474,11 +478,14 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       _ <- executeForUnilateralCase(outcomeLoseHash, local = false)
     } yield succeed
   }
-  /*
-  it should "be able to publish all DLC txs to Regtest for the Refund case" in {
-    executeForRefundCase()
-  }
 
+  it should "be able to publish all DLC txs to Regtest for the Refund case" in {
+    for {
+      _ <- executeForRefundCase(local = true)
+      _ <- executeForRefundCase(local = false)
+    } yield succeed
+  }
+  /*
   it should "be able to take the justice branch on Regtest for the Win case" in {
     for {
       _ <- executeForJusticeCase(fakeWin = true, local = true)
