@@ -222,7 +222,7 @@ case class BinaryOutcomeDLCClient(
   private val sequence =
     if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
 
-  private lazy val createUnsignedFundingTransaction: Transaction = {
+  lazy val createUnsignedFundingTransaction: Transaction = {
     /* We need to commit to the CET's and local closing tx's fee during the construction of
      * the funding transaction so that the CET outputs have the expected payouts.
      *
@@ -379,7 +379,7 @@ case class BinaryOutcomeDLCClient(
       BaseTransaction(TransactionConstants.validLockVersion,
                       Vector(fundingInput),
                       outputs,
-                      UInt32.zero)
+                      timeouts.contractMaturity.toUInt32)
     )
 
     val readyToSignPSBT = psbt
@@ -439,7 +439,7 @@ case class BinaryOutcomeDLCClient(
     val unsignedTx = BaseTransaction(TransactionConstants.validLockVersion,
                                      Vector(fundingInput),
                                      outputs,
-                                     UInt32.zero)
+                                     timeouts.contractMaturity.toUInt32)
 
     val sigF = PSBT
       .fromUnsignedTx(unsignedTx)
@@ -489,7 +489,7 @@ case class BinaryOutcomeDLCClient(
     BaseTransaction(TransactionConstants.validLockVersion,
                     Vector(fundingInput),
                     outputs,
-                    UInt32.zero)
+                    timeouts.contractTimeout.toUInt32)
   }
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
