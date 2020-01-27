@@ -254,12 +254,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
     )
   }
 
-  def executeUnilateralForCase(
-      outcomeHash: Sha256DigestBE,
-      local: Boolean): Future[Assertion] = {
-    val oracleSig =
-      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
-
+  def setupDLC(): Future[(SetupDLC, SetupDLC)] = {
     val offerSigReceiveP =
       Promise[(PartialSignature, PartialSignature, PartialSignature)]()
     val sendAcceptSigs = {
@@ -294,34 +289,57 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
                                              getFundingTx =
                                                acceptSetupF.map(_.fundingTx))
 
-    val (unilateralSetupF, unilateralDLC, otherSetupF, otherDLC) = if (local) {
-      (offerSetupF, dlcOffer, acceptSetupF, dlcAccept)
-    } else {
-      (acceptSetupF, dlcAccept, offerSetupF, dlcOffer)
-    }
-
     for {
-      unilateralSetup <- unilateralSetupF
-      unilateralOutcome <- unilateralDLC.executeUnilateralDLC(
-        unilateralSetup,
-        Future.successful(oracleSig))
-      otherSetup <- otherSetupF
-      otherOutcome <- otherDLC.executeRemoteUnilateralDLC(otherSetup,
-                                                          unilateralOutcome.cet)
-    } yield {
-      validateOutcome(unilateralOutcome)
-      validateOutcome(otherOutcome)
+      acceptSetup <- acceptSetupF
+      offerSetup <- offerSetupF
+    } yield (acceptSetup, offerSetup)
+  }
+
+  def executeUnilateralForCase(
+      outcomeHash: Sha256DigestBE,
+      local: Boolean): Future[Assertion] = {
+    val oracleSig =
+      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
+
+    setupDLC().flatMap {
+      case (acceptSetup, offerSetup) =>
+        val (unilateralSetup, unilateralDLC, otherSetup, otherDLC) =
+          if (local) {
+            (offerSetup, dlcOffer, acceptSetup, dlcAccept)
+          } else {
+            (acceptSetup, dlcAccept, offerSetup, dlcOffer)
+          }
+
+        for {
+          unilateralOutcome <- unilateralDLC.executeUnilateralDLC(
+            unilateralSetup,
+            Future.successful(oracleSig))
+          otherOutcome <- otherDLC.executeRemoteUnilateralDLC(
+            otherSetup,
+            unilateralOutcome.cet)
+        } yield {
+          validateOutcome(unilateralOutcome)
+          validateOutcome(otherOutcome)
+        }
+    }
+  }
+
+  def executeRefundCase(): Future[Assertion] = {
+    setupDLC().flatMap {
+      case (acceptSetup, offerSetup) =>
+        for {
+          acceptOutcome <- dlcAccept.executeRefundDLC(acceptSetup)
+          offerOutcome <- dlcOffer.executeRefundDLC(offerSetup)
+        } yield {
+          validateOutcome(acceptOutcome)
+          validateOutcome(offerOutcome)
+
+          assert(acceptOutcome.fundingTx == offerOutcome.fundingTx)
+          assert(acceptOutcome.cet == offerOutcome.cet)
+        }
     }
   }
   /*
-  def executeRefundCase(): Future[Assertion] = {
-    val outcomeF = dlc.setupDLC().flatMap { setup =>
-      dlc.executeRefundDLC(setup)
-    }
-
-    outcomeF.map(validateOutcome)
-  }
-
   def executeJusticeCase(
       fakeWin: Boolean,
       local: Boolean): Future[Assertion] = {
@@ -358,11 +376,11 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
       _ <- executeUnilateralForCase(outcomeLoseHash, local = false)
     } yield succeed
   }
-  /*
+
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
     executeRefundCase()
   }
-
+  /*
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice win case" in {
     for {
       _ <- executeJusticeCase(fakeWin = true, local = true)

@@ -894,7 +894,11 @@ case class BinaryOutcomeDLCClient(
     val SetupDLC(fundingTx, _, _, _, _, _, _, _, _, refundTx) =
       dlcSetup
 
-    val localOutput = refundTx.outputs.head
+    val localOutput = if (isInitiator) {
+      refundTx.outputs.head
+    } else {
+      refundTx.outputs.last
+    }
 
     val localRefundSpendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(refundTx.txIdBE, UInt32.zero),
