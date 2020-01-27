@@ -194,6 +194,9 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       val localExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
       val remoteExtPrivKey = ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
 
+      val localVout = localFundingUtxos.head.outPoint.vout
+      val remoteVout = remoteFundingUtxos.head.outPoint.vout
+
       val acceptDLC = BinaryOutcomeDLCClient(
         outcomeWin = outcomeWin,
         outcomeLose = outcomeLose,
@@ -205,8 +208,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         input = localInput,
         remoteInput = remoteInput,
         fundingUtxos = localFundingUtxos,
-        remoteFundingInputs =
-          Vector((fundingTx, remoteFundingUtxos.head.outPoint.vout)),
+        remoteFundingInputs = Vector(
+          (fundingTx.txIdBE, fundingTx.outputs(remoteVout.toInt), remoteVout)),
         winPayout = localInput + CurrencyUnits.oneMBTC,
         losePayout = localInput - CurrencyUnits.oneMBTC,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
@@ -229,8 +232,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         input = remoteInput,
         remoteInput = localInput,
         fundingUtxos = remoteFundingUtxos,
-        remoteFundingInputs =
-          Vector((fundingTx, localFundingUtxos.head.outPoint.vout)),
+        remoteFundingInputs = Vector(
+          (fundingTx.txIdBE, fundingTx.outputs(localVout.toInt), localVout)),
         winPayout = remoteInput - CurrencyUnits.oneMBTC,
         losePayout = remoteInput + CurrencyUnits.oneMBTC,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,

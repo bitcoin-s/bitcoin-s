@@ -4,6 +4,7 @@ import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
+  DummyECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
   ExtPrivateKey,
@@ -34,7 +35,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionInput,
   TransactionOutPoint,
-  TransactionOutput
+  TransactionOutput,
+  TransactionWitness,
+  WitnessTransaction
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
@@ -68,7 +71,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param input This client's total collateral contribution
   * @param remoteInput Remote's total collateral contribution
   * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
-  * @param remoteFundingInputs Remote's funding inputs and their values
+  * @param remoteFundingInputs Remote's funding txids, outputs, their vouts
   * @param winPayout This client's payout in the Win case
   * @param losePayout This client's payout in the Lose case
   * @param timeouts The timeouts for this DLC
@@ -87,7 +90,8 @@ case class BinaryOutcomeDLCClient(
     input: CurrencyUnit,
     remoteInput: CurrencyUnit,
     fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
-    remoteFundingInputs: Vector[(Transaction, UInt32)],
+    remoteFundingInputs: Vector[
+      (DoubleSha256DigestBE, TransactionOutput, UInt32)],
     winPayout: CurrencyUnit,
     losePayout: CurrencyUnit,
     timeouts: DLCTimeouts,
@@ -179,8 +183,8 @@ case class BinaryOutcomeDLCClient(
     fundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
   private val remoteTotalFunding =
     remoteFundingInputs.foldLeft(0L) {
-      case (accum, (tx, vout)) =>
-        accum + tx.outputs(vout.toInt).value.satoshis.toLong
+      case (accum, (_, output, _)) =>
+        accum + output.value.satoshis.toLong
     }
 
   /** Remote's payout in the Win case (in which Remote loses) */
@@ -258,8 +262,8 @@ case class BinaryOutcomeDLCClient(
     val localInputs =
       TxBuilder.calcSequenceForInputs(fundingUtxos, isRBFEnabled)
     val remoteInputs = remoteFundingInputs.map {
-      case (tx, vout) =>
-        TransactionInput(TransactionOutPoint(tx.txId, vout),
+      case (txid, _, vout) =>
+        TransactionInput(TransactionOutPoint(txid, vout),
                          EmptyScriptSignature,
                          sequence)
     }
@@ -306,7 +310,8 @@ case class BinaryOutcomeDLCClient(
       PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
       case (psbt, (sig, index)) =>
         psbt
-          .addUTXOToInput(remoteFundingInputs(index)._1, index + remoteTweak)
+          .addWitnessUTXOToInput(remoteFundingInputs(index)._2,
+                                 index + remoteTweak)
           .addSignature(sig, index + remoteTweak)
     }
 
@@ -1004,8 +1009,17 @@ object BinaryOutcomeDLCClient {
       tx: BaseTransaction,
       feeRate: FeeUnit,
       spks: Vector[ScriptPubKey]): BaseTransaction = {
-    // TODO: feeRate probably needs to be fleshed out as tx doesn't have dummy sigs in
-    val allOuputsWithNew = subtractFees(tx, feeRate, spks)
+    // tx has empty script sigs and we need to account for witness data in fees
+    val dummyTxWit = TransactionWitness(
+      Vector.fill(tx.inputs.length)(
+        P2WPKHWitnessV0(ECPublicKey.freshPublicKey, DummyECDigitalSignature)))
+    val wtx = WitnessTransaction(tx.version,
+                                 tx.inputs,
+                                 tx.outputs,
+                                 tx.lockTime,
+                                 dummyTxWit)
+
+    val allOuputsWithNew = subtractFees(wtx, feeRate, spks)
 
     BaseTransaction(tx.version, tx.inputs, allOuputsWithNew, tx.lockTime)
   }
