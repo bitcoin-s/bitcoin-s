@@ -246,21 +246,9 @@ object LnInvoice extends BitcoinSLogger {
       lnTags: LnTaggedFields): ByteVector = {
     val tsu5 = uInt64ToBase32(timestamp)
     val payloadU5 = tsu5 ++ lnTags.data
-    val payloadU8 = Bech32.from5bitTo8bit(payloadU5)
+    val payloadU8 = Bech32.from5bitTo8bit(payloadU5, pad = true)
     val payload = UInt8.toBytes(payloadU8)
-    val allBytes = hrp.bytes ++ payload
-
-    //for an explanation of why this is needed see
-    //https://github.com/bitcoin-s/bitcoin-s-core/issues/277
-    //https://github.com/bitcoin-s/bitcoin-s-core/pull/285
-    val allBytesU5s = Bech32.from8bitTo5bit(allBytes)
-
-    if (allBytesU5s.length % 8 == 0) {
-      allBytes ++ ByteVector(0)
-    } else {
-      allBytes
-    }
-
+    hrp.bytes ++ payload
   }
 
   def buildSigHashData(

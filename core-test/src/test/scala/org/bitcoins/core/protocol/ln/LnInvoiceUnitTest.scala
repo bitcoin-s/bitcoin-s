@@ -15,9 +15,10 @@ import org.bitcoins.core.protocol.ln.fee.{
   FeeBaseMSat,
   FeeProportionalMillionths
 }
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.{Bech32, CryptoUtil}
 import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
@@ -372,7 +373,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val lnInvoiceSig =
       LnInvoiceSignature(recoverId = UInt8.zero, signature = signature)
 
-    val descriptionTag = Left(LnTag.DescriptionTag("coffee beans"))
+    val descriptionTag = LnTag.DescriptionTag("coffee beans")
 
     val paymentSecret = Some(
       LnTag.SecretTag(PaymentSecret.fromHex(
@@ -381,10 +382,8 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
     val features = Some(
       LnTag.FeaturesTag(ByteVector.fromValidHex("800000000000000000000800")))
 
-    val lnTags = LnTaggedFields(paymentHash = paymentTag,
-                                descriptionOrHash = descriptionTag,
-                                secret = paymentSecret,
-                                features = features)
+    val lnTags = LnTaggedFields(
+      Vector(paymentTag, descriptionTag, paymentSecret.get, features.get))
 
     val hrpMilli =
       LnHumanReadablePart(LnBitcoinMainNet, Some(MilliBitcoins(25)))
@@ -512,5 +511,46 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
       "lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpuaztrnwngzn3kdzw5hydlzf03qdgm2hdq27cqv3agm2awhz5se903vruatfhq77w3ls4evs3ch9zw97j25emudupq63nyw24cg27h2rspfj9srqqqqqp"
 
     assert(LnInvoice.fromString(strWithError).isFailure)
+  }
+
+  it must "parse unknown tags" in {
+    val privateKeyHex =
+      "180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"
+    val key: ECPrivateKey = ECPrivateKey(privateKeyHex)
+
+    val unknownTag = LnTag.UnknownTag(
+      LnTagPrefix.Unknown('z'),
+      Bech32.from8bitTo5bit(ByteVector.fromValidHex("cafebabe")))
+
+    val descriptionTag =
+      LnTag.DescriptionTag("Please consider supporting this project")
+
+    val tags =
+      LnTaggedFields(Vector(paymentTag, descriptionTag, unknownTag))
+    val expected = LnInvoice(hrpTestNetMilli, time, tags, key)
+    val serialized = expected.toString
+    val deserialized = LnInvoice.fromString(serialized).get
+    deserialized must be(expected)
+    deserialized.toString must be(serialized)
+    deserialized.lnTags.tags.size must be(3)
+    deserialized.lnTags.tags.last must be(unknownTag)
+    deserialized.lnTags must be(expected.lnTags)
+    deserialized.nodeId.bytes must be(key.publicKey.bytes)
+  }
+
+  it must "recover public keys" in {
+    def testInvoice(str: String, nodeId: String): Unit = {
+      val i = LnInvoice.fromString(str).get
+      i.toString must be(str)
+      i.nodeId must be(NodeId.fromHex(nodeId))
+    }
+    testInvoice(
+      "lnbcrt500p1p0zk8umpp5wyc4s0h4jtu5lapsr4p2nevlpck7l5xec6rpjdv2a7r992vx0ctqdq9vehk7xqrrssfs6t6nyfutf4j8wzq6mf82lxefj5zadvw8fnjw6ev38y4578734zl94jfwnsfqdyt67da7g8shvhej0rkysymy260xyjtdv2dvhmvmgpdg6qjw",
+      "03033ced5a027b2d1d0224f94cbf6983243f4ccbe07001c20b9ef2db3f116f82dc"
+    )
+    testInvoice(
+      "lnbcrt1p0zk0pepp5f86agc2ue0lt5wvx96fczj9fhzy3swlassdrru7w23n7xq8zsnfqdq8w3jhxaqxqrrss2znyruaauwel7qu5ndrrydfpl9nrwk2lry8k898xguenakge0yrrdk37jcmvanv2dccmmkzhe9ncj0v84chpftrrravp52hyna8dm8qpegw8f8",
+      "039c14dd6dbea913d3fa21b8aaa328cbacb9d6f1f967c3ead9a895c857958ed38a"
+    )
   }
 }

@@ -308,6 +308,9 @@ object LnTag {
 
       case LnTagPrefix.Features =>
         LnTag.FeaturesTag(bytes)
+
+      case prefix: LnTagPrefix.Unknown =>
+        LnTag.UnknownTag(prefix, payload)
     }
 
     tag
@@ -321,4 +324,7 @@ object LnTag {
       Bech32.from8bitTo5bit(features)
     }
   }
+
+  case class UnknownTag(prefix: LnTagPrefix, encoded: Vector[UInt5])
+      extends LnTag
 }
