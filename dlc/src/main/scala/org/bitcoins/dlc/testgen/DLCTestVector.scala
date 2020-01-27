@@ -41,11 +41,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2WPKHV0SpendingInfo,
   SegwitV0NativeUTXOSpendingInfoFull
 }
-import org.bitcoins.dlc.{
-  BinaryOutcomeDLCClient,
-  BinaryOutcomeDLCWithSelf,
-  DLCTimeouts
-}
+import org.bitcoins.dlc.{BinaryOutcomeDLCClient, DLCTimeouts}
 import play.api.libs.json.{
   JsNumber,
   JsObject,
@@ -100,26 +96,6 @@ case class DLCTestVector(
   implicit private val ec: ExecutionContext = ExecutionContext.global
 
   val possibleOutcomes: Vector[String] = localPayouts.keySet.toVector
-
-  lazy val dlc: BinaryOutcomeDLCWithSelf = BinaryOutcomeDLCWithSelf(
-    outcomeWin = possibleOutcomes.head,
-    outcomeLose = possibleOutcomes.last,
-    oraclePubKey = oracleKey.publicKey,
-    preCommittedR = oracleKValue.publicKey,
-    localExtPrivKey = localExtPrivKey,
-    remoteExtPrivKey = remoteExtPrivKey,
-    localInput = localInput,
-    remoteInput = remoteInput,
-    localFundingUtxos = localFundingUtxos,
-    remoteFundingUtxos = remoteFundingUtxos,
-    localWinPayout = localPayouts(possibleOutcomes.head),
-    localLosePayout = localPayouts(possibleOutcomes.last),
-    timeouts = timeouts,
-    feeRate = feeRate,
-    localChangeSPK = localChangeSPK,
-    remoteChangeSPK = remoteChangeSPK,
-    network = RegTest
-  )
 
   val outcomeHash: Sha256DigestBE =
     CryptoUtil.sha256(ByteVector(realOutcome.getBytes)).flip
