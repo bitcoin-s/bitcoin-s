@@ -124,18 +124,7 @@ case class DLCTestVector(
 
   /** Tests that regenerating from inputs yields same outputs */
   def test(): Future[Boolean] = {
-    regenerate.map { regenerated =>
-      if (regenerated != this) {
-        println(s"BEFORE: $this")
-        println()
-        println(s"AFTER: $regenerated")
-        println()
-
-        false
-      } else {
-        true
-      }
-    }
+    regenerate.map(_ == this)
   }
 
   def toJson: JsValue = {
@@ -171,10 +160,10 @@ object DLCTestVector {
     val possibleOutcomes = localPayouts.keySet.toVector
 
     val localFundingInputs = localFundingUtxos.map { info =>
-      (info.outPoint.txIdBE, info.output, info.outPoint.vout)
+      (info.outPoint, info.output)
     }
     val remoteFundingInputs = remoteFundingUtxos.map { info =>
-      (info.outPoint.txIdBE, info.output, info.outPoint.vout)
+      (info.outPoint, info.output)
     }
 
     val offerDLC = BinaryOutcomeDLCClient(

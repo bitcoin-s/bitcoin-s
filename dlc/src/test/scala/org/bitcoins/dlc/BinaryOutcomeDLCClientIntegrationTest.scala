@@ -209,7 +209,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         remoteInput = remoteInput,
         fundingUtxos = localFundingUtxos,
         remoteFundingInputs = Vector(
-          (fundingTx.txIdBE, fundingTx.outputs(remoteVout.toInt), remoteVout)),
+          (TransactionOutPoint(fundingTx.txIdBE, remoteVout),
+           fundingTx.outputs(remoteVout.toInt))),
         winPayout = localInput + CurrencyUnits.oneMBTC,
         losePayout = localInput - CurrencyUnits.oneMBTC,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
@@ -233,7 +234,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         remoteInput = localInput,
         fundingUtxos = remoteFundingUtxos,
         remoteFundingInputs = Vector(
-          (fundingTx.txIdBE, fundingTx.outputs(localVout.toInt), localVout)),
+          (TransactionOutPoint(fundingTx.txIdBE, localVout),
+           fundingTx.outputs(localVout.toInt))),
         winPayout = remoteInput - CurrencyUnits.oneMBTC,
         losePayout = remoteInput + CurrencyUnits.oneMBTC,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,

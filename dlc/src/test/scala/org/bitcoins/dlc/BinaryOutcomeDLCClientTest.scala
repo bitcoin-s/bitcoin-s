@@ -185,13 +185,15 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   val acceptExtPrivKey: ExtPrivateKey =
     ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
 
-  val localFundingInputs: Vector[
-    (DoubleSha256DigestBE, TransactionOutput, UInt32)] = Vector(
-    (localFundingTx.txIdBE, localFundingTx.outputs.head, UInt32.zero))
+  val localFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)] =
+    Vector(
+      (TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
+       localFundingTx.outputs.head))
 
-  val remoteFundingInputs: Vector[
-    (DoubleSha256DigestBE, TransactionOutput, UInt32)] = Vector(
-    (remoteFundingTx.txIdBE, remoteFundingTx.outputs.head, UInt32.zero))
+  val remoteFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)] =
+    Vector(
+      (TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
+       remoteFundingTx.outputs.head))
 
   val timeouts: DLCTimeouts = DLCTimeouts(0, blockTimeToday, blockTimeToday)
   val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)

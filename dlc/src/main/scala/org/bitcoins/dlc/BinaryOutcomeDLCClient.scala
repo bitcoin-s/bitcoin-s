@@ -71,7 +71,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param input This client's total collateral contribution
   * @param remoteInput Remote's total collateral contribution
   * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
-  * @param remoteFundingInputs Remote's funding txids, outputs, their vouts
+  * @param remoteFundingInputs Remote's funding outpoints and their outputs
   * @param winPayout This client's payout in the Win case
   * @param losePayout This client's payout in the Lose case
   * @param timeouts The timeouts for this DLC
@@ -90,8 +90,7 @@ case class BinaryOutcomeDLCClient(
     input: CurrencyUnit,
     remoteInput: CurrencyUnit,
     fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
-    remoteFundingInputs: Vector[
-      (DoubleSha256DigestBE, TransactionOutput, UInt32)],
+    remoteFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)],
     winPayout: CurrencyUnit,
     losePayout: CurrencyUnit,
     timeouts: DLCTimeouts,
@@ -183,7 +182,7 @@ case class BinaryOutcomeDLCClient(
     fundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
   private val remoteTotalFunding =
     remoteFundingInputs.foldLeft(0L) {
-      case (accum, (_, output, _)) =>
+      case (accum, (_, output)) =>
         accum + output.value.satoshis.toLong
     }
 
@@ -262,10 +261,8 @@ case class BinaryOutcomeDLCClient(
     val localInputs =
       TxBuilder.calcSequenceForInputs(fundingUtxos, isRBFEnabled)
     val remoteInputs = remoteFundingInputs.map {
-      case (txid, _, vout) =>
-        TransactionInput(TransactionOutPoint(txid, vout),
-                         EmptyScriptSignature,
-                         sequence)
+      case (outPoint, _) =>
+        TransactionInput(outPoint, EmptyScriptSignature, sequence)
     }
     val inputs = if (isInitiator) {
       localInputs ++ remoteInputs
@@ -324,7 +321,7 @@ case class BinaryOutcomeDLCClient(
               .addScriptWitnessToInput(
                 scriptWitness = utxo.scriptWitnessOpt.get,
                 index + localTweak)
-              .sign(index + localTweak, utxo.signers.head)
+              .sign(index + localTweak, utxo.signer)
           }
       }
 
@@ -407,7 +404,7 @@ case class BinaryOutcomeDLCClient(
       sigPubKey: ECPublicKey,
       payout: CurrencyUnit,
       remotePayout: CurrencyUnit): Future[
-    (Transaction, PartialSignature, P2WSHWitnessV0)] = {
+    (Transaction, P2WSHWitnessV0, PartialSignature)] = {
     val (cetLocalPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
       (cetWinPrivKey, cetRemoteWinPubKey)
     } else {
@@ -453,7 +450,7 @@ case class BinaryOutcomeDLCClient(
       .sign(inputIndex = 0, fundingPrivKey)
       .map(_.inputMaps.head.partialSignatures.head)
 
-    sigF.map((unsignedTx, _, P2WSHWitnessV0(toLocalSPK)))
+    sigF.map((unsignedTx, P2WSHWitnessV0(toLocalSPK), _))
   }
 
   lazy val createUnsignedRefundTx: Transaction = {
@@ -559,7 +556,7 @@ case class BinaryOutcomeDLCClient(
   }
 
   def createCETWinRemote(): Future[
-    (Transaction, PartialSignature, P2WSHWitnessV0)] = {
+    (Transaction, P2WSHWitnessV0, PartialSignature)] = {
     createCETRemote(
       sigPubKey = sigPubKeyWin,
       payout = winPayout,
@@ -568,7 +565,7 @@ case class BinaryOutcomeDLCClient(
   }
 
   def createCETLoseRemote(): Future[
-    (Transaction, PartialSignature, P2WSHWitnessV0)] = {
+    (Transaction, P2WSHWitnessV0, PartialSignature)] = {
     createCETRemote(
       sigPubKey = sigPubKeyLose,
       payout = losePayout,
@@ -576,6 +573,17 @@ case class BinaryOutcomeDLCClient(
     )
   }
 
+  /** Executes DLC setup for the party responding to the initiator.
+    *
+    * This party is the first to send signatures but does not send funding
+    * tx signatures.
+    *
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#accept]]
+    *
+    * @param sendSigs The function by which this party sends their CET signatures to the initiator
+    * @param getSigs The future which becomes populated by the initiator's CET and funding signatures
+    *                (note that this will complete only after the receipt of this client's signatures)
+    */
   def setupDLCAccept(
       sendSigs: (
           PartialSignature,
@@ -590,8 +598,8 @@ case class BinaryOutcomeDLCClient(
     require(!isInitiator, "You should call setupDLCOffer")
 
     for {
-      (cetWinRemote, remoteWinSig, cetWinRemoteWitness) <- createCETWinRemote()
-      (cetLoseRemote, remoteLoseSig, cetLoseRemoteWitness) <- createCETLoseRemote()
+      (cetWinRemote, cetWinRemoteWitness, remoteWinSig) <- createCETWinRemote()
+      (cetLoseRemote, cetLoseRemoteWitness, remoteLoseSig) <- createCETLoseRemote()
       (_, remoteRefundSig) <- createRefundSig()
       _ <- {
         if (winIsFirst) {
@@ -632,6 +640,16 @@ case class BinaryOutcomeDLCClient(
     }
   }
 
+  /** Executes DLC setup for the initiating party.
+    *
+    * This party is the first to send signatures but does not send funding
+    * tx signatures.
+    *
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Protocol.md#sign]]
+    *
+    * @param getSigs The future which becomes populated with the other party's CET signatures
+    * @param sendSigs The function by which this party sends their CET and funding signatures to the other party
+    */
   def setupDLCOffer(
       getSigs: Future[(PartialSignature, PartialSignature, PartialSignature)],
       sendSigs: (
@@ -660,8 +678,8 @@ case class BinaryOutcomeDLCClient(
         for {
           cetWinLocal <- cetWinLocalF
           cetLoseLocal <- cetLoseLocalF
-          (cetWinRemote, remoteWinSig, cetWinRemoteWitness) <- cetWinRemoteF
-          (cetLoseRemote, remoteLoseSig, cetLoseRemoteWitness) <- cetLoseRemoteF
+          (cetWinRemote, cetWinRemoteWitness, remoteWinSig) <- cetWinRemoteF
+          (cetLoseRemote, cetLoseRemoteWitness, remoteLoseSig) <- cetLoseRemoteF
           (refundTx, remoteRefundSig) <- refundTxF
           localFundingSigs <- createFundingTransactionSigs()
           _ <- {
@@ -739,6 +757,7 @@ case class BinaryOutcomeDLCClient(
   }
 
   /** Constructs and executes on the unilateral spending branch of a DLC
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#closing-transaction-unilateral]]
     *
     * @return Each transaction published and its spending info
     */
@@ -809,6 +828,9 @@ case class BinaryOutcomeDLCClient(
     }
   }
 
+  /** Constructs the closing transaction on the to_remote output of a counter-party's unilateral CET broadcast
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#closing-transaction-unilateral]]
+    */
   def executeRemoteUnilateralDLC(
       dlcSetup: SetupDLC,
       publishedCET: Transaction): Future[DLCOutcome] = {
@@ -850,6 +872,7 @@ case class BinaryOutcomeDLCClient(
 
   /** Constructs and executes on the justice spending branch of a DLC
     * where a published CET has timed out.
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#closing-transaction-penalty]]
     *
     * @return Each transaction published and its spending info
     */
@@ -894,6 +917,7 @@ case class BinaryOutcomeDLCClient(
   }
 
   /** Constructs and executes on the refund spending branch of a DLC
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#refund-transaction]]
     *
     * @return Each transaction published and its spending info
     */
