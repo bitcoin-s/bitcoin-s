@@ -187,7 +187,7 @@ class GCSTest extends BitcoinSUnitTest {
 
   it must "encode and decode arbitrary sets of elements for arbitrary p" in {
 
-    def items: Gen[(Vector[UInt64], UInt8)] = {
+    val items: Gen[(Vector[UInt64], UInt8)] = {
       NumberGenerator.genP.flatMap { p =>
         Gen.choose(10, 50).flatMap { size =>
           // If hash's quotient when divided by 2^p is too large, we hang converting to unary
