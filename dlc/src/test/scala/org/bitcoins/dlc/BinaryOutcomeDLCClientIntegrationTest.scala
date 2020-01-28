@@ -26,7 +26,6 @@ import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -275,28 +274,16 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       dlcAccept: BinaryOutcomeDLCClient,
       dlcOffer: BinaryOutcomeDLCClient): Future[(SetupDLC, SetupDLC)] = {
     val offerSigReceiveP =
-      Promise[(PartialSignature, PartialSignature, PartialSignature)]()
-    val sendAcceptSigs = {
-      (
-          sig1: PartialSignature,
-          sig2: PartialSignature,
-          sig3: PartialSignature) =>
-        val _ = offerSigReceiveP.success(sig1, sig2, sig3)
-        FutureUtil.unit
+      Promise[CETSignatures]()
+    val sendAcceptSigs = { sigs: CETSignatures =>
+      val _ = offerSigReceiveP.success(sigs)
+      FutureUtil.unit
     }
 
-    val acceptSigReceiveP = Promise[(
-        PartialSignature,
-        PartialSignature,
-        PartialSignature,
-        Vector[PartialSignature])]()
+    val acceptSigReceiveP = Promise[(CETSignatures, FundingSignatures)]()
     val sendOfferSigs = {
-      (
-          sig1: PartialSignature,
-          sig2: PartialSignature,
-          sig3: PartialSignature,
-          sigs: Vector[PartialSignature]) =>
-        val _ = acceptSigReceiveP.success(sig1, sig2, sig3, sigs)
+      (cetSigs: CETSignatures, fundingSigs: FundingSignatures) =>
+        val _ = acceptSigReceiveP.success(cetSigs, fundingSigs)
         FutureUtil.unit
     }
 

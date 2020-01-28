@@ -32,7 +32,6 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory, FutureUtil}
@@ -41,7 +40,12 @@ import org.bitcoins.core.wallet.utxo.{
   P2WPKHV0SpendingInfo,
   SegwitV0NativeUTXOSpendingInfoFull
 }
-import org.bitcoins.dlc.{BinaryOutcomeDLCClient, DLCTimeouts}
+import org.bitcoins.dlc.{
+  BinaryOutcomeDLCClient,
+  CETSignatures,
+  DLCTimeouts,
+  FundingSignatures
+}
 import play.api.libs.json.{
   JsNumber,
   JsObject,
@@ -215,28 +219,16 @@ object DLCTestVector {
       Schnorr.signWithNonce(outcomeHash.bytes, oracleKey, oracleKValue)
 
     val offerSigReceiveP =
-      Promise[(PartialSignature, PartialSignature, PartialSignature)]()
-    val sendAcceptSigs = {
-      (
-          sig1: PartialSignature,
-          sig2: PartialSignature,
-          sig3: PartialSignature) =>
-        val _ = offerSigReceiveP.success(sig1, sig2, sig3)
-        FutureUtil.unit
+      Promise[CETSignatures]()
+    val sendAcceptSigs = { sigs: CETSignatures =>
+      val _ = offerSigReceiveP.success(sigs)
+      FutureUtil.unit
     }
 
-    val acceptSigReceiveP = Promise[(
-        PartialSignature,
-        PartialSignature,
-        PartialSignature,
-        Vector[PartialSignature])]()
+    val acceptSigReceiveP = Promise[(CETSignatures, FundingSignatures)]()
     val sendOfferSigs = {
-      (
-          sig1: PartialSignature,
-          sig2: PartialSignature,
-          sig3: PartialSignature,
-          sigs: Vector[PartialSignature]) =>
-        val _ = acceptSigReceiveP.success(sig1, sig2, sig3, sigs)
+      (cetSigs: CETSignatures, fundingSigs: FundingSignatures) =>
+        val _ = acceptSigReceiveP.success(cetSigs, fundingSigs)
         FutureUtil.unit
     }
 

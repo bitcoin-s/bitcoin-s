@@ -3,7 +3,6 @@ package org.bitcoins.dlc
 import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
   DummyECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
@@ -16,7 +15,6 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.BlockStampWithFuture
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   EmptyScriptSignature,
@@ -281,7 +279,7 @@ case class BinaryOutcomeDLCClient(
                            Vector(changeSPK, remoteChangeSPK))
   }
 
-  def createFundingTransactionSigs(): Future[Vector[PartialSignature]] = {
+  def createFundingTransactionSigs(): Future[FundingSignatures] = {
     val fundingTx = createUnsignedFundingTransaction
 
     val sigFs = fundingUtxos.foldLeft(Vector.empty[Future[PartialSignature]]) {
@@ -292,25 +290,25 @@ case class BinaryOutcomeDLCClient(
         vec :+ sigF
     }
 
-    Future.sequence(sigFs)
+    Future.sequence(sigFs).map(FundingSignatures.apply)
   }
 
   def createFundingTransaction(
-      remoteSigs: Vector[PartialSignature]): Future[Transaction] = {
+      remoteSigs: FundingSignatures): Future[Transaction] = {
     val (localTweak, remoteTweak) = if (isInitiator) {
       (0, fundingUtxos.length)
     } else {
       (remoteFundingInputs.length, 0)
     }
 
-    val fundingPSBT = remoteSigs.zipWithIndex.foldLeft(
-      PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
-      case (psbt, (sig, index)) =>
-        psbt
-          .addWitnessUTXOToInput(remoteFundingInputs(index)._2,
-                                 index + remoteTweak)
-          .addSignature(sig, index + remoteTweak)
-    }
+    val fundingPSBT = remoteSigs.sigs.zipWithIndex
+      .foldLeft(PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
+        case (psbt, (sig, index)) =>
+          psbt
+            .addWitnessUTXOToInput(remoteFundingInputs(index)._2,
+                                   index + remoteTweak)
+            .addSignature(sig, index + remoteTweak)
+      }
 
     val signedFundingPSBTF =
       fundingUtxos.zipWithIndex.foldLeft(Future.successful(fundingPSBT)) {
@@ -585,44 +583,23 @@ case class BinaryOutcomeDLCClient(
     *                (note that this will complete only after the receipt of this client's signatures)
     */
   def setupDLCAccept(
-      sendSigs: (
-          PartialSignature,
-          PartialSignature,
-          PartialSignature) => Future[Unit],
-      getSigs: Future[
-        (
-            PartialSignature,
-            PartialSignature,
-            PartialSignature,
-            Vector[PartialSignature])]): Future[SetupDLC] = {
+      sendSigs: CETSignatures => Future[Unit],
+      getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
     for {
       (cetWinRemote, cetWinRemoteWitness, remoteWinSig) <- createCETWinRemote()
       (cetLoseRemote, cetLoseRemoteWitness, remoteLoseSig) <- createCETLoseRemote()
       (_, remoteRefundSig) <- createRefundSig()
-      _ <- {
-        if (winIsFirst) {
-          sendSigs(remoteRefundSig, remoteWinSig, remoteLoseSig)
-        } else {
-          sendSigs(remoteRefundSig, remoteLoseSig, remoteWinSig)
-        }
-      }
-      (refundSig, firstSig, secondSig, fundingSigs) <- getSigs
+      cetSigs = CETSignatures(remoteWinSig, remoteLoseSig, remoteRefundSig)
+      _ <- sendSigs(cetSigs)
+      (cetSigs, fundingSigs) <- getSigs
 
-      (winSig, loseSig) = {
-        if (winIsFirst) {
-          (firstSig, secondSig)
-        } else {
-          (secondSig, firstSig)
-        }
-      }
-
-      (cetWinLocalF, cetWinLocalWitness) = createCETWin(winSig)
-      (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(loseSig)
+      (cetWinLocalF, cetWinLocalWitness) = createCETWin(cetSigs.winSig)
+      (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(cetSigs.loseSig)
       cetWinLocal <- cetWinLocalF
       cetLoseLocal <- cetLoseLocalF
-      (refundTx, _) <- createRefundTx(refundSig)
+      (refundTx, _) <- createRefundTx(cetSigs.refundSig)
       fundingTx <- createFundingTransaction(fundingSigs)
     } yield {
       SetupDLC(
@@ -651,23 +628,13 @@ case class BinaryOutcomeDLCClient(
     * @param sendSigs The function by which this party sends their CET and funding signatures to the other party
     */
   def setupDLCOffer(
-      getSigs: Future[(PartialSignature, PartialSignature, PartialSignature)],
-      sendSigs: (
-          PartialSignature,
-          PartialSignature,
-          PartialSignature,
-          Vector[PartialSignature]) => Future[Unit],
+      getSigs: Future[CETSignatures],
+      sendSigs: (CETSignatures, FundingSignatures) => Future[Unit],
       getFundingTx: Future[Transaction]): Future[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
     getSigs.flatMap {
-      case (refundSig, firstSig, secondSig) =>
-        val (winSig, loseSig) = if (winIsFirst) {
-          (firstSig, secondSig)
-        } else {
-          (secondSig, firstSig)
-        }
-
+      case CETSignatures(winSig, loseSig, refundSig) =>
         // Construct all CETs
         val (cetWinLocalF, cetWinLocalWitness) = createCETWin(winSig)
         val (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(loseSig)
@@ -681,20 +648,9 @@ case class BinaryOutcomeDLCClient(
           (cetWinRemote, cetWinRemoteWitness, remoteWinSig) <- cetWinRemoteF
           (cetLoseRemote, cetLoseRemoteWitness, remoteLoseSig) <- cetLoseRemoteF
           (refundTx, remoteRefundSig) <- refundTxF
+          cetSigs = CETSignatures(remoteWinSig, remoteLoseSig, remoteRefundSig)
           localFundingSigs <- createFundingTransactionSigs()
-          _ <- {
-            if (winIsFirst) {
-              sendSigs(remoteRefundSig,
-                       remoteWinSig,
-                       remoteLoseSig,
-                       localFundingSigs)
-            } else {
-              sendSigs(remoteRefundSig,
-                       remoteLoseSig,
-                       remoteWinSig,
-                       localFundingSigs)
-            }
-          }
+          _ <- sendSigs(cetSigs, localFundingSigs)
           fundingTx <- getFundingTx
         } yield {
           SetupDLC(
@@ -1049,32 +1005,9 @@ object BinaryOutcomeDLCClient {
   }
 }
 
-case class SetupDLC(
-    fundingTx: Transaction,
-    cetWin: Transaction,
-    cetWinWitness: P2WSHWitnessV0,
-    cetLose: Transaction,
-    cetLoseWitness: P2WSHWitnessV0,
-    cetWinRemoteTxid: DoubleSha256DigestBE,
-    cetWinRemoteWitness: P2WSHWitnessV0,
-    cetLoseRemoteTxid: DoubleSha256DigestBE,
-    cetLoseRemoteWitness: P2WSHWitnessV0,
-    refundTx: Transaction)
+case class FundingSignatures(sigs: Vector[PartialSignature])
 
-/** Contains all DLC transactions and the BitcoinUTXOSpendingInfos they use. */
-case class DLCOutcome(
-    fundingTx: Transaction,
-    cet: Transaction,
-    closingTx: Transaction,
-    cetSpendingInfo: BitcoinUTXOSpendingInfoFull
-)
-
-/** @param penaltyTimeout The CSV timeout in blocks used in all CETs
-  * @param contractMaturity The CLTV in milliseconds when a signature is expected
-  * @param contractTimeout The CLTV timeout in milliseconds after which the refund tx is valid
-  */
-case class DLCTimeouts(
-    penaltyTimeout: Int,
-    contractMaturity: BlockStampWithFuture,
-    contractTimeout: BlockStampWithFuture
-)
+case class CETSignatures(
+    winSig: PartialSignature,
+    loseSig: PartialSignature,
+    refundSig: PartialSignature)
