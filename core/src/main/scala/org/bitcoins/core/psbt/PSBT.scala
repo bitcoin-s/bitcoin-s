@@ -614,6 +614,8 @@ object PSBT extends Factory[PSBT] {
   // The magic bytes and separator defined by https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki#specification
   final val magicBytes = hex"70736274ff"
 
+  final val empty = fromUnsignedTx(EmptyTransaction)
+
   def fromString(str: String): PSBT = {
     ByteVector.fromHex(str) match {
       case Some(hex) =>

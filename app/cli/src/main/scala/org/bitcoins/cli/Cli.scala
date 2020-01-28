@@ -8,7 +8,7 @@ import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.picklers._
 import scopt.OParser
@@ -196,7 +196,7 @@ object Cli extends App {
         ),
       cmd("finalizepsbt")
         .hidden()
-        .action((_, conf) => conf.copy(command = FinalizePSBT(null)))
+        .action((_, conf) => conf.copy(command = FinalizePSBT(PSBT.empty)))
         .text("Finalizes the given PSBT if it can")
         .children(
           opt[PSBT]("psbt")
@@ -210,7 +210,7 @@ object Cli extends App {
         ),
       cmd("extractfrompsbt")
         .hidden()
-        .action((_, conf) => conf.copy(command = ExtractFromPSBT(null)))
+        .action((_, conf) => conf.copy(command = ExtractFromPSBT(PSBT.empty)))
         .text("Extracts a transaction from the given PSBT if it can")
         .children(
           opt[PSBT]("psbt")
@@ -224,7 +224,8 @@ object Cli extends App {
         ),
       cmd("converttopsbt")
         .hidden()
-        .action((_, conf) => conf.copy(command = ConvertToPSBT(null)))
+        .action((_, conf) =>
+          conf.copy(command = ConvertToPSBT(EmptyTransaction)))
         .text("Creates an empty psbt from the given transaction")
         .children(
           opt[Transaction]("unsignedTx")
