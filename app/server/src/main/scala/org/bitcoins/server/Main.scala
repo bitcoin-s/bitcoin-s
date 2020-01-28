@@ -5,6 +5,7 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.Core
 import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -55,7 +56,9 @@ object Main extends App {
       val walletRoutes = WalletRoutes(wallet, node)
       val nodeRoutes = NodeRoutes(node)
       val chainRoutes = ChainRoutes(chainApi)
-      val server = Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes))
+      val coreRoutes = CoreRoutes(Core)
+      val server =
+        Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
 
       server.start()
     }

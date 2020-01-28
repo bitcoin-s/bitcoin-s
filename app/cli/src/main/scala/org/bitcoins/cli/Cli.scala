@@ -8,6 +8,8 @@ import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.picklers._
 import scopt.OParser
 import ujson.{Num, Str}
@@ -44,6 +46,13 @@ object CliCommand {
       endBlock: Option[BlockStamp],
       force: Boolean)
       extends CliCommand
+
+  // PSBT
+  case class CombinePSBTs(psbts: Seq[PSBT]) extends CliCommand
+  case class JoinPSBTs(psbts: Seq[PSBT]) extends CliCommand
+  case class FinalizePSBT(psbt: PSBT) extends CliCommand
+  case class ExtractFromPSBT(psbt: PSBT) extends CliCommand
+  case class ConvertToPSBT(transaction: Transaction) extends CliCommand
 }
 
 object Cli extends App {
@@ -157,6 +166,76 @@ object Cli extends App {
         .hidden()
         .action((_, conf) => conf.copy(command = GetPeers))
         .text(s"List the connected peers"),
+      cmd("combinepsbts")
+        .hidden()
+        .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
+        .text("Combines all the given PSBTs")
+        .children(
+          opt[Seq[PSBT]]("psbts")
+            .required()
+            .action((seq, conf) =>
+              conf.copy(command = conf.command match {
+                case combinePSBTs: CombinePSBTs =>
+                  combinePSBTs.copy(psbts = seq)
+                case other => other
+              }))
+        ),
+      cmd("joinpsbts")
+        .hidden()
+        .action((_, conf) => conf.copy(command = JoinPSBTs(Seq.empty)))
+        .text("Combines all the given PSBTs")
+        .children(
+          opt[Seq[PSBT]]("psbts")
+            .required()
+            .action((seq, conf) =>
+              conf.copy(command = conf.command match {
+                case joinPSBTs: JoinPSBTs =>
+                  joinPSBTs.copy(psbts = seq)
+                case other => other
+              }))
+        ),
+      cmd("finalizepsbt")
+        .hidden()
+        .action((_, conf) => conf.copy(command = FinalizePSBT(null)))
+        .text("Finalizes the given PSBT if it can")
+        .children(
+          opt[PSBT]("psbt")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case finalizePSBT: FinalizePSBT =>
+                  finalizePSBT.copy(psbt = psbt)
+                case other => other
+              }))
+        ),
+      cmd("extractfrompsbt")
+        .hidden()
+        .action((_, conf) => conf.copy(command = ExtractFromPSBT(null)))
+        .text("Extracts a transaction from the given PSBT if it can")
+        .children(
+          opt[PSBT]("psbt")
+            .required()
+            .action((psbt, conf) =>
+              conf.copy(command = conf.command match {
+                case extractFromPSBT: ExtractFromPSBT =>
+                  extractFromPSBT.copy(psbt = psbt)
+                case other => other
+              }))
+        ),
+      cmd("converttopsbt")
+        .hidden()
+        .action((_, conf) => conf.copy(command = ConvertToPSBT(null)))
+        .text("Creates an empty psbt from the given transaction")
+        .children(
+          opt[Transaction]("unsignedTx")
+            .required()
+            .action((tx, conf) =>
+              conf.copy(command = conf.command match {
+                case convertToPSBT: ConvertToPSBT =>
+                  convertToPSBT.copy(transaction = tx)
+                case other => other
+              }))
+        ),
       help('h', "help").text("Display this help message and exit"),
       arg[String]("<cmd>")
         .optional()
@@ -228,7 +307,19 @@ object Cli extends App {
     // besthash
     case GetBestBlockHash => RequestParam("getbestblockhash")
     // peers
-    case GetPeers  => RequestParam("getpeers")
+    case GetPeers => RequestParam("getpeers")
+    // PSBTs
+    case CombinePSBTs(psbts) =>
+      RequestParam("combinepsbts", Seq(up.writeJs(psbts)))
+    case JoinPSBTs(psbts) =>
+      RequestParam("joinpsbts", Seq(up.writeJs(psbts)))
+    case FinalizePSBT(psbt) =>
+      RequestParam("finalizepsbt", Seq(up.writeJs(psbt)))
+    case ExtractFromPSBT(psbt) =>
+      RequestParam("extractfrompsbt", Seq(up.writeJs(psbt)))
+    case ConvertToPSBT(tx) =>
+      RequestParam("converttopsbt", Seq(up.writeJs(tx)))
+
     case NoCommand => ???
   }
 

@@ -2,7 +2,9 @@ package org.bitcoins.server
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.psbt.PSBT
 import ujson._
 import upickle.default._
 
@@ -13,6 +15,65 @@ case class ServerCommand(method: String, params: ujson.Arr)
 
 object ServerCommand {
   implicit val rw: ReadWriter[ServerCommand] = macroRW
+}
+
+case class CombinePSBTs(psbts: Seq[PSBT])
+
+object CombinePSBTs extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CombinePSBTs] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(CombinePSBTs(jsToPSBTSeq(jsArr.arr.head)))
+  }
+}
+
+case class JoinPSBTs(psbts: Seq[PSBT])
+
+object JoinPSBTs extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[JoinPSBTs] = {
+    CombinePSBTs
+      .fromJsArr(jsArr)
+      .map(combine => JoinPSBTs(combine.psbts))
+  }
+}
+
+case class FinalizePSBT(psbt: PSBT)
+
+object FinalizePSBT extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[FinalizePSBT] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(FinalizePSBT(jsToPSBT(jsArr.arr.head)))
+  }
+}
+
+case class ExtractFromPSBT(psbt: PSBT)
+
+object ExtractFromPSBT extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExtractFromPSBT] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(ExtractFromPSBT(jsToPSBT(jsArr.arr.head)))
+  }
+}
+
+case class ConvertToPSBT(tx: Transaction)
+
+object ConvertToPSBT extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ConvertToPSBT] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(ConvertToPSBT(jsToTx(jsArr.arr.head)))
+  }
 }
 
 case class Rescan(
@@ -118,5 +179,13 @@ trait ServerJsonModels {
         throw Value.InvalidData(js, "Expected a valid address")
     }
   }
+
+  def jsToPSBTSeq(js: Value): Seq[PSBT] = {
+    js.arr.foldLeft(Seq.empty[PSBT])((seq, psbt) => seq :+ jsToPSBT(psbt))
+  }
+
+  def jsToPSBT(js: Value): PSBT = PSBT.fromString(js.str)
+
+  def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 
 }
