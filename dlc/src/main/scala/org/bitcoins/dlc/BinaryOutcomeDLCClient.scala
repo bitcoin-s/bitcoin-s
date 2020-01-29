@@ -1,7 +1,7 @@
 package org.bitcoins.dlc
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.crypto.{
   DummyECDigitalSignature,
   ECPrivateKey,
@@ -9,7 +9,8 @@ import org.bitcoins.core.crypto.{
   ExtPrivateKey,
   ExtPublicKey,
   Schnorr,
-  SchnorrDigitalSignature
+  SchnorrDigitalSignature,
+  Sha256DigestBE
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
@@ -78,8 +79,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param remoteChangeSPK Remote's change ScriptPubKey used in the funding tx
   */
 case class BinaryOutcomeDLCClient(
-    outcomeWin: String,
-    outcomeLose: String,
+    outcomeWin: Sha256DigestBE,
+    outcomeLose: Sha256DigestBE,
     oraclePubKey: ECPublicKey,
     preCommittedR: ECPublicKey,
     isInitiator: Boolean,
@@ -101,12 +102,10 @@ case class BinaryOutcomeDLCClient(
   import BinaryOutcomeDLCClient._
 
   /** Hash signed by oracle in Win case */
-  val messageWin: ByteVector =
-    CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip.bytes
+  val messageWin: ByteVector = outcomeWin.bytes
 
   /** Hash signed by oracle in Lose case */
-  val messageLose: ByteVector =
-    CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip.bytes
+  val messageLose: ByteVector = outcomeLose.bytes
 
   /** sig*G in the Win case */
   val sigPubKeyWin: ECPublicKey =
@@ -128,7 +127,7 @@ case class BinaryOutcomeDLCClient(
   val finalRemotePubKey: ECPublicKey =
     remoteExtPubKey.deriveChildPubKey(UInt32(2)).get.key
 
-  val winIsFirst: Boolean = outcomeWin.compareTo(outcomeLose) > 0
+  val winIsFirst: Boolean = outcomeWin.hex.compareTo(outcomeLose.hex) > 0
 
   /** The derivation index for the win and lose cases respectively.
     * We assign this index based on lexicographical order to keep things deterministic.
@@ -913,6 +912,125 @@ case class BinaryOutcomeDLCClient(
 }
 
 object BinaryOutcomeDLCClient {
+
+  def apply(
+      outcomeWin: String,
+      outcomeLose: String,
+      oraclePubKey: ECPublicKey,
+      preCommittedR: ECPublicKey,
+      isInitiator: Boolean,
+      extPrivKey: ExtPrivateKey,
+      remoteExtPubKey: ExtPublicKey,
+      input: CurrencyUnit,
+      remoteInput: CurrencyUnit,
+      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
+      remoteFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)],
+      winPayout: CurrencyUnit,
+      losePayout: CurrencyUnit,
+      timeouts: DLCTimeouts,
+      feeRate: FeeUnit,
+      changeSPK: WitnessScriptPubKeyV0,
+      remoteChangeSPK: WitnessScriptPubKeyV0,
+      network: BitcoinNetwork)(
+      implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
+    val hashWin = CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip
+    val hashLose = CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip
+
+    BinaryOutcomeDLCClient(
+      outcomeWin = hashWin,
+      outcomeLose = hashLose,
+      oraclePubKey = oraclePubKey,
+      preCommittedR = preCommittedR,
+      isInitiator = isInitiator,
+      extPrivKey = extPrivKey,
+      remoteExtPubKey = remoteExtPubKey,
+      input = input,
+      remoteInput = remoteInput,
+      fundingUtxos = fundingUtxos,
+      remoteFundingInputs = remoteFundingInputs,
+      winPayout = winPayout,
+      losePayout = losePayout,
+      timeouts = timeouts,
+      feeRate = feeRate,
+      changeSPK = changeSPK,
+      remoteChangeSPK = remoteChangeSPK,
+      network = network
+    )
+  }
+
+  def fromOffer(
+      offer: DLCMessage.DLCOffer,
+      extPrivKey: ExtPrivateKey,
+      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
+      totalCollateral: CurrencyUnit,
+      winPayout: CurrencyUnit,
+      losePayout: CurrencyUnit,
+      changeSPK: P2WPKHWitnessSPKV0)(
+      implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
+    BinaryOutcomeDLCClient(
+      outcomeWin = offer.contractInfo.keys.head,
+      outcomeLose = offer.contractInfo.keys.last,
+      oraclePubKey = offer.oracleInfo.pubKey,
+      preCommittedR = offer.oracleInfo.rValue,
+      isInitiator = false,
+      extPrivKey = extPrivKey,
+      remoteExtPubKey = offer.extPubKey,
+      input = totalCollateral,
+      remoteInput = offer.totalCollateral,
+      fundingUtxos = fundingUtxos,
+      remoteFundingInputs = offer.fundingInputs,
+      winPayout = winPayout,
+      losePayout = losePayout,
+      timeouts = offer.timeouts,
+      feeRate = offer.feeRate,
+      changeSPK = changeSPK,
+      remoteChangeSPK =
+        offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
+      network = RegTest
+    )
+  }
+
+  def fromOfferAndAccept(
+      offer: DLCMessage.DLCOffer,
+      accept: DLCMessage.DLCAccept,
+      extPrivKey: ExtPrivateKey,
+      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
+      winPayout: CurrencyUnit,
+      losePayout: CurrencyUnit)(
+      implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
+    require(extPrivKey.extPublicKey == offer.extPubKey,
+            "ExtPrivateKey must match the one in your Offer message")
+    require(
+      fundingUtxos.zip(offer.fundingInputs).forall {
+        case (info, (outPoint, output)) =>
+          info.output == output && info.outPoint == outPoint
+      },
+      "Funding UTXOs must match those in your Offer message"
+    )
+
+    BinaryOutcomeDLCClient(
+      outcomeWin = offer.contractInfo.keys.head,
+      outcomeLose = offer.contractInfo.keys.last,
+      oraclePubKey = offer.oracleInfo.pubKey,
+      preCommittedR = offer.oracleInfo.rValue,
+      isInitiator = true,
+      extPrivKey = extPrivKey,
+      remoteExtPubKey = accept.extPubKey,
+      input = offer.totalCollateral,
+      remoteInput = accept.totalCollateral,
+      fundingUtxos = fundingUtxos,
+      remoteFundingInputs = accept.fundingInputs,
+      winPayout = winPayout,
+      losePayout = losePayout,
+      timeouts = offer.timeouts,
+      feeRate = offer.feeRate,
+      changeSPK =
+        offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
+      remoteChangeSPK =
+        accept.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
+      network = RegTest
+    )
+  }
 
   /** Subtracts the estimated fee by removing from each output evenly */
   def subtractFeeAndSign(txBuilder: BitcoinTxBuilder)(

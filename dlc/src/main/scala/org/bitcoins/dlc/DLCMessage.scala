@@ -1,13 +1,7 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.core.crypto.{
-  ECPublicKey,
-  ExtPublicKey,
-  SchnorrNonce,
-  Sha256DigestBE
-}
+import org.bitcoins.core.crypto.{ECPublicKey, ExtPublicKey, Sha256DigestBE}
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
@@ -18,7 +12,7 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 sealed trait DLCMessage
 
 object DLCMessage {
-  case class OracleInfo(pubKey: ECPublicKey, rValue: SchnorrNonce)
+  case class OracleInfo(pubKey: ECPublicKey, rValue: ECPublicKey)
 
   case class DLCOffer(
       contractInfo: Map[Sha256DigestBE, Satoshis],
@@ -28,9 +22,7 @@ object DLCMessage {
       fundingInputs: Vector[(TransactionOutPoint, TransactionOutput)],
       changeAddress: Bech32Address,
       feeRate: SatoshisPerVirtualByte,
-      cetCSV: UInt32,
-      cetCLTV: UInt32,
-      refundCLTV: UInt32)
+      timeouts: DLCTimeouts)
       extends DLCMessage
 
   case class DLCAccept(
