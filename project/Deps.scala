@@ -132,7 +132,11 @@ object Deps {
     Compile.slf4j
   )
 
-  val dlc = List()
+  val dlc = List(
+    Compile.playJson
+  )
+
+  val dlcTest = List()
 
   val secp256k1jni = List(
     Compile.nativeLoader,
