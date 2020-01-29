@@ -349,7 +349,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
     } yield (acceptDLC, acceptSetup, offerDLC, offerSetup)
   }
 
-  def executeMutualForCase(
+  def executeForMutualCase(
       outcomeHash: Sha256DigestBE,
       local: Boolean): Future[Assertion] = {
     val oracleSig =
@@ -568,15 +568,15 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
 
   it should "be able to publish all DLC txs to Regtest for the mutual Win case" in {
     for {
-      _ <- executeMutualForCase(outcomeWinHash, local = true)
-      _ <- executeMutualForCase(outcomeWinHash, local = false)
+      _ <- executeForMutualCase(outcomeWinHash, local = true)
+      _ <- executeForMutualCase(outcomeWinHash, local = false)
     } yield succeed
   }
 
   it should "be able to publish all DLC txs to Regtest for the mutual Lose case" in {
     for {
-      _ <- executeMutualForCase(outcomeLoseHash, local = true)
-      _ <- executeMutualForCase(outcomeLoseHash, local = false)
+      _ <- executeForMutualCase(outcomeLoseHash, local = true)
+      _ <- executeForMutualCase(outcomeLoseHash, local = false)
     } yield succeed
   }
 

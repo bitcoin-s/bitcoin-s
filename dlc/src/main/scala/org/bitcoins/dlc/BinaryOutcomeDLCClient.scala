@@ -339,8 +339,8 @@ case class BinaryOutcomeDLCClient(
       } else if (Schnorr.verify(messageLose, sig, oraclePubKey)) {
         (losePayout, remoteLosePayout)
       } else {
-        throw new IllegalStateException(
-          "Signature does not correspond to either possible outcome!")
+        throw new IllegalArgumentException(
+          s"Signature does not correspond to either possible outcome! $sig")
       }
 
     val toLocal =
@@ -375,7 +375,10 @@ case class BinaryOutcomeDLCClient(
 
     unsignedPSBT
       .sign(inputIndex = 0, fundingPrivKey)
-      .map(_.inputMaps.head.partialSignatures.head)
+      .map(
+        _.inputMaps.head.partialSignatures
+          .find(_.pubKey == fundingPrivKey.publicKey)
+          .get)
   }
 
   def createMutualCloseTx(
@@ -510,7 +513,10 @@ case class BinaryOutcomeDLCClient(
       .addUTXOToInput(fundingTx, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
-      .map(_.inputMaps.head.partialSignatures.head)
+      .map(
+        _.inputMaps.head.partialSignatures
+          .find(_.pubKey == fundingPrivKey.publicKey)
+          .get)
 
     sigF.map((unsignedTx, P2WSHWitnessV0(toLocalSPK), _))
   }
@@ -567,7 +573,10 @@ case class BinaryOutcomeDLCClient(
       .addUTXOToInput(fundingTx, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
-      .map(_.inputMaps.head.partialSignatures.head)
+      .map(
+        _.inputMaps.head.partialSignatures
+          .find(_.pubKey == fundingPrivKey.publicKey)
+          .get)
 
     sigF.map((refundTx, _))
   }
@@ -588,8 +597,8 @@ case class BinaryOutcomeDLCClient(
 
     signedPSBTF.flatMap { signedPSBT =>
       val sig = signedPSBT.inputMaps.head.partialSignatures
-        .filter(_.pubKey == fundingPubKey)
-        .head
+        .find(_.pubKey == fundingPubKey)
+        .get
 
       val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
       val txF = Future.fromTry(txT)
@@ -836,8 +845,8 @@ case class BinaryOutcomeDLCClient(
         } else if (sigForLose) {
           (cetLoseLocal, cetLosePrivKey, cetLoseLocalWitness)
         } else {
-          throw new IllegalStateException(
-            "Signature does not correspond to either possible outcome!")
+          throw new IllegalArgumentException(
+            s"Signature does not correspond to either possible outcome! $oracleSig")
         }
 
       val cetPrivKey = extCetPrivKey.deriveChildPrivKey(UInt32.zero).key
