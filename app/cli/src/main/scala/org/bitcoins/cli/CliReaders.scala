@@ -76,13 +76,6 @@ object CliReaders {
   implicit val txReads: Read[Transaction] = new Read[Transaction] {
     val arity: Int = 1
 
-    val reads: String => Transaction = str => {
-      try {
-        Transaction.fromHex(str)
-      } catch {
-        case err: Exception =>
-          sys.error(err.getLocalizedMessage)
-      }
-    }
+    val reads: String => Transaction = Transaction.fromHex
   }
 }
