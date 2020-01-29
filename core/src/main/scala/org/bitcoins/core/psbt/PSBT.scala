@@ -196,6 +196,24 @@ case class PSBT(
 
   }
 
+  def addWitnessUTXOToInput(output: TransactionOutput, index: Int): PSBT = {
+    require(WitnessScriptPubKey.isWitnessScriptPubKey(output.scriptPubKey.asm),
+            s"Given output was not a Witness UTXO: $output")
+    require(
+      index < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+
+    val inputMap = inputMaps(index)
+    require(!inputMap.isFinalized,
+            s"Cannot update an InputPSBTMap that is finalized, index: $index")
+
+    val elements = inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(
+      output)
+    val newInputMaps = inputMaps.updated(index, InputPSBTMap(elements))
+
+    PSBT(globalMap, newInputMaps, outputMaps)
+  }
+
   /**
     * Adds script to the indexed InputPSBTMap to either the RedeemScript
     * or WitnessScript field depending on the script and available information in the PSBT
