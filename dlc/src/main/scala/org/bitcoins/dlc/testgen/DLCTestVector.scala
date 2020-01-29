@@ -21,6 +21,8 @@ import org.bitcoins.core.protocol.{
   NetworkElement
 }
 import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
   ScriptPubKey,
   ScriptWitnessV0,
   WitnessScriptPubKeyV0
@@ -32,13 +34,18 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
+import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{
-  ConditionalPath,
+  P2WPKHV0SpendingInfo,
   SegwitV0NativeUTXOSpendingInfoFull
 }
-import org.bitcoins.dlc.{BinaryOutcomeDLCWithSelf, DLCTimeouts}
+import org.bitcoins.dlc.{
+  BinaryOutcomeDLCClient,
+  CETSignatures,
+  DLCTimeouts,
+  FundingSignatures
+}
 import play.api.libs.json.{
   JsNumber,
   JsObject,
@@ -51,7 +58,7 @@ import play.api.libs.json.{
 }
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 case class DLCTestVector(
     localPayouts: Map[String, CurrencyUnit],
@@ -60,11 +67,11 @@ case class DLCTestVector(
     oracleKValue: SchnorrNonce,
     localExtPrivKey: ExtPrivateKey,
     localInput: CurrencyUnit,
-    localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
+    localFundingUtxos: Vector[P2WPKHV0SpendingInfo],
     localChangeSPK: WitnessScriptPubKeyV0,
     remoteExtPrivKey: ExtPrivateKey,
     remoteInput: CurrencyUnit,
-    remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
+    remoteFundingUtxos: Vector[P2WPKHV0SpendingInfo],
     remoteChangeSPK: WitnessScriptPubKeyV0,
     timeouts: DLCTimeouts,
     feeRate: SatoshisPerByte,
@@ -93,26 +100,6 @@ case class DLCTestVector(
   implicit private val ec: ExecutionContext = ExecutionContext.global
 
   val possibleOutcomes: Vector[String] = localPayouts.keySet.toVector
-
-  lazy val dlc: BinaryOutcomeDLCWithSelf = BinaryOutcomeDLCWithSelf(
-    outcomeWin = possibleOutcomes.head,
-    outcomeLose = possibleOutcomes.last,
-    oraclePubKey = oracleKey.publicKey,
-    preCommittedR = oracleKValue.publicKey,
-    localExtPrivKey = localExtPrivKey,
-    remoteExtPrivKey = remoteExtPrivKey,
-    localInput = localInput,
-    remoteInput = remoteInput,
-    localFundingUtxos = localFundingUtxos,
-    remoteFundingUtxos = remoteFundingUtxos,
-    localWinPayout = localPayouts(possibleOutcomes.head),
-    localLosePayout = localPayouts(possibleOutcomes.last),
-    timeouts = timeouts,
-    feeRate = feeRate,
-    localChangeSPK = localChangeSPK,
-    remoteChangeSPK = remoteChangeSPK,
-    network = RegTest
-  )
 
   val outcomeHash: Sha256DigestBE =
     CryptoUtil.sha256(ByteVector(realOutcome.getBytes)).flip
@@ -165,34 +152,65 @@ object DLCTestVector {
       oracleKValue: SchnorrNonce,
       localExtPrivKey: ExtPrivateKey,
       localInput: CurrencyUnit,
-      localFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
+      localFundingUtxos: Vector[P2WPKHV0SpendingInfo],
       localChangeSPK: WitnessScriptPubKeyV0,
       remoteExtPrivKey: ExtPrivateKey,
       remoteInput: CurrencyUnit,
-      remoteFundingUtxos: Vector[SegwitV0NativeUTXOSpendingInfoFull],
+      remoteFundingUtxos: Vector[P2WPKHV0SpendingInfo],
       remoteChangeSPK: WitnessScriptPubKeyV0,
       timeouts: DLCTimeouts,
       feeRate: SatoshisPerByte)(
       implicit ec: ExecutionContext): Future[DLCTestVector] = {
     val possibleOutcomes = localPayouts.keySet.toVector
 
-    val dlc = BinaryOutcomeDLCWithSelf(
+    val localFundingInputs = localFundingUtxos.map { info =>
+      (info.outPoint, info.output)
+    }
+    val remoteFundingInputs = remoteFundingUtxos.map { info =>
+      (info.outPoint, info.output)
+    }
+
+    val offerDLC = BinaryOutcomeDLCClient(
       outcomeWin = possibleOutcomes.head,
       outcomeLose = possibleOutcomes.last,
       oraclePubKey = oracleKey.publicKey,
       preCommittedR = oracleKValue.publicKey,
-      localExtPrivKey = localExtPrivKey,
-      remoteExtPrivKey = remoteExtPrivKey,
-      localInput = localInput,
+      isInitiator = true,
+      extPrivKey = localExtPrivKey,
+      remoteExtPubKey = remoteExtPrivKey.extPublicKey,
+      input = localInput,
       remoteInput = remoteInput,
-      localFundingUtxos = localFundingUtxos,
-      remoteFundingUtxos = remoteFundingUtxos,
-      localWinPayout = localPayouts(possibleOutcomes.head),
-      localLosePayout = localPayouts(possibleOutcomes.last),
+      fundingUtxos = localFundingUtxos,
+      remoteFundingInputs = remoteFundingInputs,
+      winPayout = localPayouts(possibleOutcomes.head),
+      losePayout = localPayouts(possibleOutcomes.last),
       timeouts = timeouts,
       feeRate = feeRate,
-      localChangeSPK = localChangeSPK,
+      changeSPK = localChangeSPK,
       remoteChangeSPK = remoteChangeSPK,
+      network = RegTest
+    )
+
+    val acceptDLC = BinaryOutcomeDLCClient(
+      outcomeWin = possibleOutcomes.head,
+      outcomeLose = possibleOutcomes.last,
+      oraclePubKey = oracleKey.publicKey,
+      preCommittedR = oracleKValue.publicKey,
+      isInitiator = false,
+      extPrivKey = remoteExtPrivKey,
+      remoteExtPubKey = localExtPrivKey.extPublicKey,
+      input = remoteInput,
+      remoteInput = localInput,
+      fundingUtxos = remoteFundingUtxos,
+      remoteFundingInputs = localFundingInputs,
+      winPayout = localInput + remoteInput - localPayouts(
+        possibleOutcomes.head),
+      losePayout = localInput + remoteInput - localPayouts(
+        possibleOutcomes.last),
+      timeouts = timeouts,
+      feeRate = feeRate,
+      changeSPK = remoteChangeSPK,
+      remoteChangeSPK = localChangeSPK,
       network = RegTest
     )
 
@@ -200,11 +218,37 @@ object DLCTestVector {
     val oracleSig =
       Schnorr.signWithNonce(outcomeHash.bytes, oracleKey, oracleKValue)
 
+    val offerSigReceiveP =
+      Promise[CETSignatures]()
+    val sendAcceptSigs = { sigs: CETSignatures =>
+      val _ = offerSigReceiveP.success(sigs)
+      FutureUtil.unit
+    }
+
+    val acceptSigReceiveP = Promise[(CETSignatures, FundingSignatures)]()
+    val sendOfferSigs = {
+      (cetSigs: CETSignatures, fundingSigs: FundingSignatures) =>
+        val _ = acceptSigReceiveP.success(cetSigs, fundingSigs)
+        FutureUtil.unit
+    }
+
+    val acceptSetupF = acceptDLC.setupDLCAccept(sendSigs = sendAcceptSigs,
+                                                getSigs =
+                                                  acceptSigReceiveP.future)
+    val offerSetupF = offerDLC.setupDLCOffer(getSigs = offerSigReceiveP.future,
+                                             sendSigs = sendOfferSigs,
+                                             getFundingTx =
+                                               acceptSetupF.map(_.fundingTx))
+
     for {
-      setup <- dlc.setupDLC()
-      outcome <- dlc.executeUnilateralDLC(setup,
-                                          Future.successful(oracleSig),
-                                          local = true)
+      acceptSetup <- acceptSetupF
+      offerSetup <- offerSetupF
+      unilateralOutcome <- offerDLC.executeUnilateralDLC(
+        offerSetup,
+        Future.successful(oracleSig))
+      toRemoteOutcome <- acceptDLC.executeRemoteUnilateralDLC(
+        acceptSetup,
+        unilateralOutcome.cet)
     } yield {
       DLCTestVector(
         localPayouts = localPayouts,
@@ -221,14 +265,14 @@ object DLCTestVector {
         remoteChangeSPK = remoteChangeSPK,
         timeouts = timeouts,
         feeRate = feeRate,
-        fundingTx = setup.fundingTx,
-        localWinCet = setup.cetWinLocal,
-        localLoseCet = setup.cetLoseLocal,
-        remoteWinCet = setup.cetWinRemote,
-        remoteLoseCet = setup.cetLoseRemote,
-        refundTx = setup.refundTx,
-        localClosingTx = outcome.localClosingTx,
-        remoteClosingTx = outcome.remoteClosingTx
+        fundingTx = offerSetup.fundingTx,
+        localWinCet = offerSetup.cetWin,
+        localLoseCet = offerSetup.cetLose,
+        remoteWinCet = acceptSetup.cetWin,
+        remoteLoseCet = acceptSetup.cetLose,
+        refundTx = offerSetup.refundTx,
+        localClosingTx = unilateralOutcome.closingTx,
+        remoteClosingTx = toRemoteOutcome.closingTx
       )
     }
   }
@@ -505,15 +549,14 @@ case class SerializedSegwitSpendingInfo(
     hashType: HashType,
     scriptWitness: ScriptWitnessV0) {
 
-  def toSpendingInfo: SegwitV0NativeUTXOSpendingInfoFull = {
-    SegwitV0NativeUTXOSpendingInfoFull(
+  def toSpendingInfo: P2WPKHV0SpendingInfo = {
+    P2WPKHV0SpendingInfo(
       outPoint = outPoint.toOutPoint,
       amount = output.value,
-      scriptPubKey = output.spk.asInstanceOf[WitnessScriptPubKeyV0],
-      signers = keys,
+      scriptPubKey = output.spk.asInstanceOf[P2WPKHWitnessSPKV0],
+      signer = keys.head,
       hashType = hashType,
-      scriptWitness = scriptWitness,
-      conditionalPath = ConditionalPath.NoConditionsLeft
+      scriptWitness = scriptWitness.asInstanceOf[P2WPKHWitnessV0]
     )
   }
 }

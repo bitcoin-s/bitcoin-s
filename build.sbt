@@ -428,7 +428,20 @@ lazy val dlc = project
     name := "bitcoin-s-dlc",
     libraryDependencies ++= Deps.dlc
   )
-  .dependsOn(core, testkit)
+  .dependsOn(core)
+
+lazy val dlcTest = project
+  .in(file("dlc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-test",
+    libraryDependencies ++= Deps.dlcTest
+  )
+  .dependsOn(
+    core % testAndCompile,
+    testkit,
+    dlc
+  )
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet) */
