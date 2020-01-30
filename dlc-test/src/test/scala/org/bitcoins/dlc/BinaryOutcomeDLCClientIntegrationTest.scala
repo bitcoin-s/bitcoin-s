@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{
   ECPublicKey,
   ExtPrivateKey,
   Schnorr,
+  SchnorrDigitalSignature,
   SchnorrNonce,
   Sha256DigestBE
 }
@@ -26,6 +27,7 @@ import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessV0
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -347,6 +349,100 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
     } yield (acceptDLC, acceptSetup, offerDLC, offerSetup)
   }
 
+  def executeForMutualCase(
+      outcomeHash: Sha256DigestBE,
+      local: Boolean): Future[Assertion] = {
+    val oracleSig =
+      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
+
+    val setupsAndDLCs = for {
+      (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
+    } yield {
+      if (local) {
+        (offerDLC, offerSetup, acceptDLC, acceptSetup)
+      } else {
+        (acceptDLC, acceptSetup, offerDLC, offerSetup)
+      }
+    }
+
+    val outcomeFs = setupsAndDLCs.map {
+      case (initDLC, initSetup, otherDLC, otherSetup) =>
+        val closeSigsP = Promise[(SchnorrDigitalSignature, PartialSignature)]()
+        val initSendSigs = {
+          (sig: SchnorrDigitalSignature, fundingSig: PartialSignature) =>
+            closeSigsP.success(sig, fundingSig)
+            FutureUtil.unit
+        }
+
+        val mutualCloseTxP = Promise[Transaction]()
+
+        val watchForMutualCloseTx = new Runnable {
+          override def run(): Unit = {
+            if (!mutualCloseTxP.isCompleted) {
+              val fundingTxId = initDLC
+                .createUnsignedMutualClosePSBT(oracleSig, initSetup.fundingTx)
+                .transaction
+                .txIdBE
+
+              clientF.foreach { client =>
+                val fundingTxResultF = client.getRawTransaction(fundingTxId)
+
+                fundingTxResultF.onComplete {
+                  case Success(fundingTxResult) =>
+                    if (fundingTxResult.confirmations.isEmpty) {
+                      ()
+                    } else {
+                      logger.info(
+                        s"Found funding tx on chain! $fundingTxResult")
+                      mutualCloseTxP.trySuccess(fundingTxResult.hex)
+                    }
+                  case Failure(_) => ()
+                }
+              }
+            }
+          }
+        }
+
+        val cancelOnMutualCloseFound =
+          system.scheduler.schedule(100.milliseconds,
+                                    1.second,
+                                    watchForMutualCloseTx)
+
+        mutualCloseTxP.future.foreach(_ => cancelOnMutualCloseFound.cancel())
+
+        val initOutcomeF =
+          initDLC.initiateMutualClose(initSetup,
+                                      oracleSig,
+                                      initSendSigs,
+                                      mutualCloseTxP.future)
+
+        val otherOutcomeF =
+          otherDLC.executeMutualClose(otherSetup, closeSigsP.future)
+
+        (initOutcomeF, otherOutcomeF)
+    }
+
+    for {
+      (initOutcomeF, otherOutcomeF) <- outcomeFs
+      otherOutcome <- otherOutcomeF
+      _ <- publishTransaction(otherOutcome.closingTx)
+      initOutcome <- initOutcomeF
+      client <- clientF
+      regtestClosingTx <- client.getRawTransaction(
+        otherOutcome.closingTx.txIdBE)
+    } yield {
+      assert(initOutcome.fundingTx == otherOutcome.fundingTx)
+      assert(initOutcome.closingTx == otherOutcome.closingTx)
+
+      assert(noEmptySPKOutputs(initOutcome.fundingTx))
+      assert(noEmptySPKOutputs(initOutcome.closingTx))
+
+      assert(regtestClosingTx.hex == initOutcome.closingTx)
+      assert(regtestClosingTx.confirmations.isDefined)
+      assert(regtestClosingTx.confirmations.get >= 6)
+    }
+  }
+
   def executeForUnilateralCase(
       outcomeHash: Sha256DigestBE,
       local: Boolean): Future[Assertion] = {
@@ -470,6 +566,20 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
     } yield {
       assert(justiceOutcome.fundingTx == toRemoteOutcome.fundingTx)
     }
+  }
+
+  it should "be able to publish all DLC txs to Regtest for the mutual Win case" in {
+    for {
+      _ <- executeForMutualCase(outcomeWinHash, local = true)
+      _ <- executeForMutualCase(outcomeWinHash, local = false)
+    } yield succeed
+  }
+
+  it should "be able to publish all DLC txs to Regtest for the mutual Lose case" in {
+    for {
+      _ <- executeForMutualCase(outcomeLoseHash, local = true)
+      _ <- executeForMutualCase(outcomeLoseHash, local = false)
+    } yield succeed
   }
 
   it should "be able to publish all DLC txs to Regtest for the normal Win case" in {
