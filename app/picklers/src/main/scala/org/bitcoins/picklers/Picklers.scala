@@ -2,6 +2,8 @@ package org.bitcoins
 
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.psbt.PSBT
 import upickle.default._
 
 package object picklers {
@@ -18,4 +20,10 @@ package object picklers {
 
   implicit val blockStampPickler: ReadWriter[BlockStamp] =
     readwriter[String].bimap(_.mkString, BlockStamp.fromString(_).get)
+
+  implicit val psbtPickler: ReadWriter[PSBT] =
+    readwriter[String].bimap(_.base64, PSBT.fromString)
+
+  implicit val transactionPickler: ReadWriter[Transaction] =
+    readwriter[String].bimap(_.hex, Transaction.fromHex)
 }

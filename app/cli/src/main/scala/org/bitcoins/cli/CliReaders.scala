@@ -6,6 +6,9 @@ import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.psbt.PSBT
+import scodec.bits.ByteVector
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
@@ -62,4 +65,17 @@ object CliReaders {
           case _ => BlockStamp.fromString(str).get
         }
     }
+
+  implicit val psbtReads: Read[PSBT] =
+    new Read[PSBT] {
+      val arity: Int = 1
+
+      val reads: String => PSBT = PSBT.fromString
+    }
+
+  implicit val txReads: Read[Transaction] = new Read[Transaction] {
+    val arity: Int = 1
+
+    val reads: String => Transaction = Transaction.fromHex
+  }
 }
