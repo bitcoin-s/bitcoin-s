@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{
   ECPublicKey,
   ExtPrivateKey,
   Schnorr,
+  SchnorrDigitalSignature,
   SchnorrNonce,
   Sha256DigestBE
 }
@@ -26,6 +27,7 @@ import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessSPKV0,
   P2WPKHWitnessV0
 }
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
@@ -295,6 +297,52 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
+  def executeMutualForCase(
+      outcomeHash: Sha256DigestBE,
+      local: Boolean): Future[Assertion] = {
+    val oracleSig =
+      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
+
+    setupDLC().flatMap {
+      case (acceptSetup, offerSetup) =>
+        val (initSetup, initDLC, otherSetup, otherDLC) =
+          if (local) {
+            (offerSetup, dlcOffer, acceptSetup, dlcAccept)
+          } else {
+            (acceptSetup, dlcAccept, offerSetup, dlcOffer)
+          }
+
+        val closeSigsP = Promise[(SchnorrDigitalSignature, PartialSignature)]()
+        val initSendSigs = {
+          (sig: SchnorrDigitalSignature, fundingSig: PartialSignature) =>
+            closeSigsP.success(sig, fundingSig)
+            FutureUtil.unit
+        }
+
+        val otherOutcomeF =
+          otherDLC.executeMutualClose(otherSetup, closeSigsP.future)
+        val initOutcomeF =
+          initDLC.initiateMutualClose(initSetup,
+                                      oracleSig,
+                                      initSendSigs,
+                                      otherOutcomeF.map(_.closingTx))
+
+        for {
+          initOutcome <- initOutcomeF
+          otherOutcome <- otherOutcomeF
+        } yield {
+          assert(initOutcome.fundingTx == otherOutcome.fundingTx)
+          assert(initSetup.fundingTx == otherSetup.fundingTx)
+          assert(initSetup.fundingTx == initOutcome.fundingTx)
+
+          assert(initOutcome.closingTx == otherOutcome.closingTx)
+
+          assert(noEmptySPKOutputs(initOutcome.fundingTx))
+          assert(noEmptySPKOutputs(initOutcome.closingTx))
+        }
+    }
+  }
+
   def executeUnilateralForCase(
       outcomeHash: Sha256DigestBE,
       local: Boolean): Future[Assertion] = {
@@ -369,6 +417,20 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
           validateOutcome(toRemoteOutcome)
         }
     }
+  }
+
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual win case" in {
+    for {
+      _ <- executeMutualForCase(outcomeWinHash, local = true)
+      _ <- executeMutualForCase(outcomeWinHash, local = false)
+    } yield succeed
+  }
+
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual lose case" in {
+    for {
+      _ <- executeMutualForCase(outcomeLoseHash, local = true)
+      _ <- executeMutualForCase(outcomeLoseHash, local = false)
+    } yield succeed
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal win case" in {
