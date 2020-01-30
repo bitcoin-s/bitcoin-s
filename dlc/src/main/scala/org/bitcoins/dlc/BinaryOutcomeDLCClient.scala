@@ -330,6 +330,11 @@ case class BinaryOutcomeDLCClient(
     }
   }
 
+  /** Creates a ready-to-sign PSBT for the Mutual Close tx
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#mutual-closing-transaction]]
+    *
+    * @param sig The oracle's signature for this contract
+    */
   def createUnsignedMutualClosePSBT(
       sig: SchnorrDigitalSignature,
       fundingTx: Transaction): PSBT = {
@@ -375,10 +380,7 @@ case class BinaryOutcomeDLCClient(
 
     unsignedPSBT
       .sign(inputIndex = 0, fundingPrivKey)
-      .map(
-        _.inputMaps.head.partialSignatures
-          .find(_.pubKey == fundingPrivKey.publicKey)
-          .get)
+      .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
   }
 
   def createMutualCloseTx(
@@ -464,6 +466,19 @@ case class BinaryOutcomeDLCClient(
     (signedCETF, P2WSHWitnessV0(toLocalSPK))
   }
 
+  private def findSigInPSBT(
+      psbt: PSBT,
+      pubKey: ECPublicKey): Future[PartialSignature] = {
+    val sigOpt = psbt.inputMaps.head.partialSignatures
+      .find(_.pubKey == pubKey)
+
+    sigOpt match {
+      case None =>
+        Future.failed(new RuntimeException("No signature found after signing"))
+      case Some(partialSig) => Future.successful(partialSig)
+    }
+  }
+
   /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createCETRemote(
       sigPubKey: ECPublicKey,
@@ -513,10 +528,7 @@ case class BinaryOutcomeDLCClient(
       .addUTXOToInput(fundingTx, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
-      .map(
-        _.inputMaps.head.partialSignatures
-          .find(_.pubKey == fundingPrivKey.publicKey)
-          .get)
+      .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
 
     sigF.map((unsignedTx, P2WSHWitnessV0(toLocalSPK), _))
   }
@@ -573,10 +585,7 @@ case class BinaryOutcomeDLCClient(
       .addUTXOToInput(fundingTx, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
-      .map(
-        _.inputMaps.head.partialSignatures
-          .find(_.pubKey == fundingPrivKey.publicKey)
-          .get)
+      .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
 
     sigF.map((refundTx, _))
   }
@@ -596,13 +605,11 @@ case class BinaryOutcomeDLCClient(
       .sign(inputIndex = 0, fundingPrivKey)
 
     signedPSBTF.flatMap { signedPSBT =>
-      val sig = signedPSBT.inputMaps.head.partialSignatures
-        .find(_.pubKey == fundingPubKey)
-        .get
+      val sigF = findSigInPSBT(signedPSBT, fundingPrivKey.publicKey)
 
       val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
       val txF = Future.fromTry(txT)
-      txF.map((_, sig))
+      txF.flatMap(tx => sigF.map(sig => (tx, sig)))
     }
   }
 
@@ -785,12 +792,21 @@ case class BinaryOutcomeDLCClient(
     spendingTxF
   }
 
+  /** Initiates a Mutual Close by offering signatures to the counter-party
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#mutual-closing-transaction]]
+    *
+    * @param sig The oracle's signature on this contract's event
+    * @param sendSigs The function by which signatures are sent to the counter-party
+    * @param getMutualCloseTx The Future which becomes populated with the published Mutual Close tx
+    */
   def initiateMutualClose(
       dlcSetup: SetupDLC,
       sig: SchnorrDigitalSignature,
       sendSigs: (SchnorrDigitalSignature, PartialSignature) => Future[Unit],
       getMutualCloseTx: Future[Transaction]): Future[CooperativeDLCOutcome] = {
     val fundingTx = dlcSetup.fundingTx
+
+    logger.info(s"Attempting Mutual Close for funding tx: ${fundingTx.txIdBE}")
 
     for {
       fundingSig <- createMutualCloseTxSig(sig, fundingTx)
@@ -801,6 +817,11 @@ case class BinaryOutcomeDLCClient(
     }
   }
 
+  /** Responds to initiation of a Mutual Close by constructing and publishing the Mutual Close tx
+    * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#mutual-closing-transaction]]
+    *
+    * @param getSigs The Future which becomes populated with the initiating party's signatures
+    */
   def executeMutualClose(
       dlcSetup: SetupDLC,
       getSigs: Future[(SchnorrDigitalSignature, PartialSignature)]): Future[

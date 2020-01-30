@@ -379,19 +379,21 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         val watchForMutualCloseTx = new Runnable {
           override def run(): Unit = {
             if (!mutualCloseTxP.isCompleted) {
+              val fundingTxId = initDLC
+                .createUnsignedMutualClosePSBT(oracleSig, initSetup.fundingTx)
+                .transaction
+                .txIdBE
+
               clientF.foreach { client =>
-                val fundingTxResultF = client.getRawTransaction(
-                  initDLC
-                    .createUnsignedMutualClosePSBT(oracleSig,
-                                                   initSetup.fundingTx)
-                    .transaction
-                    .txIdBE)
+                val fundingTxResultF = client.getRawTransaction(fundingTxId)
 
                 fundingTxResultF.onComplete {
                   case Success(fundingTxResult) =>
                     if (fundingTxResult.confirmations.isEmpty) {
                       ()
                     } else {
+                      logger.info(
+                        s"Found funding tx on chain! $fundingTxResult")
                       mutualCloseTxP.trySuccess(fundingTxResult.hex)
                     }
                   case Failure(_) => ()
