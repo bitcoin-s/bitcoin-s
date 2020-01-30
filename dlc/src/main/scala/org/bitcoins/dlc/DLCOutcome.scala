@@ -10,3 +10,5 @@ case class DLCOutcome(
     closingTx: Transaction,
     cetSpendingInfo: BitcoinUTXOSpendingInfoFull
 )
+
+case class CooperativeDLCOutcome(fundingTx: Transaction, closingTx: Transaction)
