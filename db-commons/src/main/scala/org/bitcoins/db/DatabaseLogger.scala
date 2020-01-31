@@ -1,23 +1,24 @@
 package org.bitcoins.db
 
-import org.slf4j.Logger
+import org.bitcoins.core.config.NetworkParameters
 
 /** Exposes access to the database interaction logger */
 private[bitcoins] trait DatabaseLogger {
-  private var _logger: Logger = _
+  private var _logger: MarkedLogger = _
   protected[bitcoins] def logger(implicit config: AppConfig) = {
     if (_logger == null) {
-      _logger = DatabaseLogger.getLogger
+      _logger = DatabaseLoggerImpl(config.network).getLogger
     }
     _logger
   }
 }
 
-private[bitcoins] object DatabaseLogger extends AppLoggers {
+private[db] case class DatabaseLoggerImpl(network: NetworkParameters)
+    extends AppLoggers {
 
   /**
     * @return the database interaction logger
     */
-  def getLogger(implicit conf: AppConfig): Logger =
+  def getLogger(implicit conf: AppConfig): MarkedLogger =
     getLoggerImpl(LoggerKind.Database)
 }
