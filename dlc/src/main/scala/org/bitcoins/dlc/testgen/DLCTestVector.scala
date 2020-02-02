@@ -60,6 +60,7 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
+// TODO: Add test vectors to dlc_test.json where dust outputs are removed
 case class DLCTestVector(
     localPayouts: Map[String, CurrencyUnit],
     realOutcome: String,
@@ -81,8 +82,8 @@ case class DLCTestVector(
     remoteWinCet: Transaction,
     remoteLoseCet: Transaction,
     refundTx: Transaction,
-    localClosingTx: Transaction,
-    remoteClosingTx: Transaction
+    localClosingTxOpt: Option[Transaction],
+    remoteClosingTxOpt: Option[Transaction]
 ) {
   require(localPayouts.keySet.contains(realOutcome), "Outcome must be possible")
   require(localPayouts.size == 2, "Currently only Binary DLCs are supported")
@@ -271,8 +272,8 @@ object DLCTestVector {
         remoteWinCet = acceptSetup.cetWin,
         remoteLoseCet = acceptSetup.cetLose,
         refundTx = offerSetup.refundTx,
-        localClosingTx = unilateralOutcome.closingTx,
-        remoteClosingTx = toRemoteOutcome.closingTx
+        localClosingTxOpt = unilateralOutcome.closingTxOpt,
+        remoteClosingTxOpt = toRemoteOutcome.closingTxOpt
       )
     }
   }
@@ -307,8 +308,8 @@ case class SerializedDLCTestVector(
       remoteWinCet = outputs.remoteCets.head,
       remoteLoseCet = outputs.remoteCets.last,
       refundTx = outputs.refundTx,
-      localClosingTx = outputs.localClosingTx,
-      remoteClosingTx = outputs.remoteClosingTx
+      localClosingTxOpt = outputs.localClosingTx,
+      remoteClosingTxOpt = outputs.remoteClosingTx
     )
   }
 
@@ -355,8 +356,8 @@ object SerializedDLCTestVector {
       localCets = Vector(testVector.localWinCet, testVector.localLoseCet),
       remoteCets = Vector(testVector.remoteWinCet, testVector.remoteLoseCet),
       refundTx = testVector.refundTx,
-      localClosingTx = testVector.localClosingTx,
-      remoteClosingTx = testVector.remoteClosingTx
+      localClosingTx = testVector.localClosingTxOpt,
+      remoteClosingTx = testVector.remoteClosingTxOpt
     )
 
     SerializedDLCTestVector(inputs, outputs)
@@ -624,8 +625,8 @@ case class SerializedDLCOutputs(
     localCets: Vector[Transaction],
     remoteCets: Vector[Transaction],
     refundTx: Transaction,
-    localClosingTx: Transaction,
-    remoteClosingTx: Transaction) {
+    localClosingTx: Option[Transaction],
+    remoteClosingTx: Option[Transaction]) {
   require(localCets.length == 2,
           s"There must be two local CETs, got $localCets")
   require(remoteCets.length == 2,

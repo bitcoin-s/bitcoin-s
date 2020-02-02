@@ -364,7 +364,7 @@ case class BinaryOutcomeDLCClient(
       sequence)
     val utx = BaseTransaction(TransactionConstants.validLockVersion,
                               Vector(input),
-                              outputs,
+                              outputs.filter(_.value >= Policy.dustThreshold),
                               UInt32.zero)
 
     PSBT
@@ -447,7 +447,7 @@ case class BinaryOutcomeDLCClient(
     val psbt = PSBT.fromUnsignedTx(
       BaseTransaction(TransactionConstants.validLockVersion,
                       Vector(fundingInput),
-                      outputs,
+                      outputs.filter(_.value >= Policy.dustThreshold),
                       timeouts.contractMaturity.toUInt32)
     )
 
@@ -518,10 +518,11 @@ case class BinaryOutcomeDLCClient(
     val fundingInput =
       TransactionInput(fundingOutPoint, EmptyScriptSignature, sequence)
 
-    val unsignedTx = BaseTransaction(TransactionConstants.validLockVersion,
-                                     Vector(fundingInput),
-                                     outputs,
-                                     timeouts.contractMaturity.toUInt32)
+    val unsignedTx = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Vector(fundingInput),
+      outputs.filter(_.value >= Policy.dustThreshold),
+      timeouts.contractMaturity.toUInt32)
 
     val sigF = PSBT
       .fromUnsignedTx(unsignedTx)
@@ -753,26 +754,31 @@ case class BinaryOutcomeDLCClient(
       privKey: ECPrivateKey,
       spendingInfo: BitcoinUTXOSpendingInfoFull,
       isWin: Boolean,
-      spendsToLocal: Boolean): Future[Transaction] = {
+      spendsToLocal: Boolean): Future[Option[Transaction]] = {
     // If spendsToLocal, use payout as value, otherwise subtract fee
-    val spendingTxF = if (spendsToLocal) {
+    val spendingTxOptF = if (spendsToLocal) {
       val payoutValue = if (isWin) {
         winPayout
       } else {
         losePayout
       }
 
-      val txBuilder = BitcoinTxBuilder(
-        destinations = Vector(
-          TransactionOutput(payoutValue,
-                            P2WPKHWitnessSPKV0(privKey.publicKey))),
-        utxos = Vector(spendingInfo),
-        feeRate = feeRate,
-        changeSPK = emptyChangeSPK,
-        network = network
-      )
+      if (payoutValue < Policy.dustThreshold) {
+        Future.successful(None)
+      } else {
 
-      txBuilder.flatMap(_.sign)
+        val txBuilder = BitcoinTxBuilder(
+          destinations = Vector(
+            TransactionOutput(payoutValue,
+                              P2WPKHWitnessSPKV0(privKey.publicKey))),
+          utxos = Vector(spendingInfo),
+          feeRate = feeRate,
+          changeSPK = emptyChangeSPK,
+          network = network
+        )
+
+        txBuilder.flatMap(_.sign).map(Some(_))
+      }
     } else {
       val txBuilder = BitcoinTxBuilder(
         destinations = Vector(
@@ -784,12 +790,13 @@ case class BinaryOutcomeDLCClient(
         network = network
       )
 
-      txBuilder.flatMap(subtractFeeAndSign)
+      txBuilder.flatMap(subtractFeeAndSign).map(Some(_))
     }
 
-    spendingTxF.foreach(tx => logger.info(s"Closing Tx: ${tx.hex}"))
+    spendingTxOptF.foreach(txOpt =>
+      logger.info(s"Closing Tx: ${txOpt.map(_.hex)}"))
 
-    spendingTxF
+    spendingTxOptF
   }
 
   /** Initiates a Mutual Close by offering signatures to the counter-party
@@ -836,6 +843,10 @@ case class BinaryOutcomeDLCClient(
     }
   }
 
+  private def isToLocalOutput(output: TransactionOutput): Boolean = {
+    output.scriptPubKey.isInstanceOf[P2WSHWitnessSPKV0]
+  }
+
   /** Constructs and executes on the unilateral spending branch of a DLC
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#closing-transaction-unilateral]]
     *
@@ -872,7 +883,6 @@ case class BinaryOutcomeDLCClient(
 
       val cetPrivKey = extCetPrivKey.deriveChildPrivKey(UInt32.zero).key
 
-      // The prefix other refers to remote if local == true and local otherwise
       val output = cet.outputs.head
 
       val privKeyBytes = NativeSecp256k1.privKeyTweakAdd(
@@ -885,24 +895,33 @@ case class BinaryOutcomeDLCClient(
       val cetSpendingInfo = P2WSHV0SpendingInfoFull(
         outPoint = TransactionOutPoint(cet.txIdBE, UInt32.zero),
         amount = output.value,
-        scriptPubKey = output.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
+        scriptPubKey = P2WSHWitnessSPKV0(cetScriptWitness.redeemScript),
         signersWithPossibleExtra = Vector(privKey),
         hashType = HashType.sigHashAll,
         scriptWitness = cetScriptWitness,
         conditionalPath = ConditionalPath.nonNestedTrue
       )
 
-      val localSpendingTxF = constructClosingTx(finalPrivKey,
-                                                cetSpendingInfo,
-                                                isWin = sigForWin,
-                                                spendsToLocal = true)
+      if (isToLocalOutput(output)) {
+        val localSpendingTxF = constructClosingTx(finalPrivKey,
+                                                  cetSpendingInfo,
+                                                  isWin = sigForWin,
+                                                  spendsToLocal = true)
 
-      localSpendingTxF.map { localSpendingTx =>
-        DLCOutcome(
-          fundingTx = fundingTx,
-          cet = cet,
-          closingTx = localSpendingTx,
-          cetSpendingInfo = cetSpendingInfo
+        localSpendingTxF.map { localSpendingTx =>
+          DLCOutcome(
+            fundingTx = fundingTx,
+            cet = cet,
+            closingTxOpt = localSpendingTx,
+            cetSpendingInfo = cetSpendingInfo
+          )
+        }
+      } else {
+        Future.successful(
+          DLCOutcome(fundingTx = fundingTx,
+                     cet = cet,
+                     closingTxOpt = None,
+                     cetSpendingInfo = cetSpendingInfo)
         )
       }
     }
@@ -928,25 +947,34 @@ case class BinaryOutcomeDLCClient(
     val spendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(publishedCET.txIdBE, UInt32.one),
       amount = output.value,
-      scriptPubKey = output.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
+      scriptPubKey = P2WPKHWitnessSPKV0(cetPrivKeyToRemote.publicKey),
       signer = cetPrivKeyToRemote,
       hashType = HashType.sigHashAll,
       scriptWitness = P2WPKHWitnessV0(cetPrivKeyToRemote.publicKey)
     )
 
-    val txF =
-      constructClosingTx(privKey = finalPrivKey,
-                         spendingInfo = spendingInfo,
-                         isWin = isWin,
-                         spendsToLocal = false)
-
-    txF.map { tx =>
-      DLCOutcome(
-        fundingTx = dlcSetup.fundingTx,
-        cet = publishedCET,
-        closingTx = tx,
-        cetSpendingInfo = spendingInfo
+    if (isToLocalOutput(output)) {
+      Future.successful(
+        DLCOutcome(fundingTx = dlcSetup.fundingTx,
+                   cet = publishedCET,
+                   closingTxOpt = None,
+                   cetSpendingInfo = spendingInfo)
       )
+    } else {
+      val txF =
+        constructClosingTx(privKey = finalPrivKey,
+                           spendingInfo = spendingInfo,
+                           isWin = isWin,
+                           spendsToLocal = false)
+
+      txF.map { tx =>
+        DLCOutcome(
+          fundingTx = dlcSetup.fundingTx,
+          cet = publishedCET,
+          closingTxOpt = tx,
+          cetSpendingInfo = spendingInfo
+        )
+      }
     }
   }
 
@@ -973,25 +1001,34 @@ case class BinaryOutcomeDLCClient(
     val justiceSpendingInfo = P2WSHV0SpendingInfoFull(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
       amount = justiceOutput.value,
-      scriptPubKey = justiceOutput.scriptPubKey.asInstanceOf[P2WSHWitnessSPKV0],
+      scriptPubKey = P2WSHWitnessSPKV0(cetScriptWitness.redeemScript),
       signersWithPossibleExtra = Vector(cetPrivKeyJustice),
       hashType = HashType.sigHashAll,
       scriptWitness = cetScriptWitness,
       conditionalPath = ConditionalPath.nonNestedFalse
     )
 
-    val justiceSpendingTxF =
-      constructClosingTx(privKey = finalPrivKey,
-                         spendingInfo = justiceSpendingInfo,
-                         isWin = isWin,
-                         spendsToLocal = false)
+    if (isToLocalOutput(justiceOutput)) {
+      val justiceSpendingTxF =
+        constructClosingTx(privKey = finalPrivKey,
+                           spendingInfo = justiceSpendingInfo,
+                           isWin = isWin,
+                           spendsToLocal = false)
 
-    justiceSpendingTxF.map { justiceSpendingTx =>
-      DLCOutcome(
-        fundingTx = dlcSetup.fundingTx,
-        cet = timedOutCET,
-        closingTx = justiceSpendingTx,
-        cetSpendingInfo = justiceSpendingInfo
+      justiceSpendingTxF.map { justiceSpendingTx =>
+        DLCOutcome(
+          fundingTx = dlcSetup.fundingTx,
+          cet = timedOutCET,
+          closingTxOpt = justiceSpendingTx,
+          cetSpendingInfo = justiceSpendingInfo
+        )
+      }
+    } else {
+      Future.successful(
+        DLCOutcome(fundingTx = dlcSetup.fundingTx,
+                   cet = timedOutCET,
+                   closingTxOpt = None,
+                   cetSpendingInfo = justiceSpendingInfo)
       )
     }
   }
@@ -1014,7 +1051,7 @@ case class BinaryOutcomeDLCClient(
     val localRefundSpendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(refundTx.txIdBE, vout),
       amount = localOutput.value,
-      scriptPubKey = localOutput.scriptPubKey.asInstanceOf[P2WPKHWitnessSPKV0],
+      scriptPubKey = P2WPKHWitnessSPKV0(cetRefundPrivKey.publicKey),
       signer = cetRefundPrivKey,
       hashType = HashType.sigHashAll,
       scriptWitness = P2WPKHWitnessV0(cetRefundPrivKey.publicKey)
@@ -1029,7 +1066,7 @@ case class BinaryOutcomeDLCClient(
       DLCOutcome(
         fundingTx = fundingTx,
         cet = refundTx,
-        closingTx = localSpendingTx,
+        closingTxOpt = localSpendingTx,
         cetSpendingInfo = localRefundSpendingInfo
       )
     }

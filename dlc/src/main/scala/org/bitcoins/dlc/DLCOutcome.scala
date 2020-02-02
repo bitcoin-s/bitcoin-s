@@ -7,7 +7,7 @@ import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoFull
 case class DLCOutcome(
     fundingTx: Transaction,
     cet: Transaction,
-    closingTx: Transaction,
+    closingTxOpt: Option[Transaction],
     cetSpendingInfo: BitcoinUTXOSpendingInfoFull
 )
 

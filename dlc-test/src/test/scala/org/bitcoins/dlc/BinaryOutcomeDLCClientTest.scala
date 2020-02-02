@@ -125,6 +125,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   val preCommittedR: ECPublicKey = preCommittedK.publicKey
   val localInput: CurrencyUnit = CurrencyUnits.oneBTC
   val remoteInput: CurrencyUnit = CurrencyUnits.oneBTC
+  val totalInput: CurrencyUnit = localInput + remoteInput
 
   val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
@@ -212,8 +213,8 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
     remoteInput = remoteInput,
     fundingUtxos = localFundingUtxos,
     remoteFundingInputs = remoteFundingInputs,
-    winPayout = localInput + CurrencyUnits.oneMBTC,
-    losePayout = localInput - CurrencyUnits.oneMBTC,
+    winPayout = totalInput,
+    losePayout = CurrencyUnits.zero,
     timeouts = timeouts,
     feeRate = feeRate,
     changeSPK = localChangeSPK,
@@ -234,8 +235,8 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
     remoteInput = localInput,
     fundingUtxos = remoteFundingUtxos,
     remoteFundingInputs = localFundingInputs,
-    winPayout = remoteInput - CurrencyUnits.oneMBTC,
-    losePayout = remoteInput + CurrencyUnits.oneMBTC,
+    winPayout = CurrencyUnits.zero,
+    losePayout = totalInput,
     timeouts = timeouts,
     feeRate = feeRate,
     changeSPK = remoteChangeSPK,
@@ -248,15 +249,20 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   }
 
   def validateOutcome(outcome: DLCOutcome): Assertion = {
-    val DLCOutcome(fundingTx, cet, closingTx, cetSpendingInfo) = outcome
+    val DLCOutcome(fundingTx, cet, closingTxOpt, cetSpendingInfo) = outcome
 
     assert(noEmptySPKOutputs(fundingTx))
     assert(noEmptySPKOutputs(cet))
-    assert(noEmptySPKOutputs(closingTx))
 
-    assert(
-      BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
-    )
+    closingTxOpt match {
+      case None => succeed
+      case Some(closingTx) =>
+        assert(noEmptySPKOutputs(closingTx))
+
+        assert(
+          BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
+        )
+    }
   }
 
   def setupDLC(): Future[(SetupDLC, SetupDLC)] = {
