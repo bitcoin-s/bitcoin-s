@@ -102,29 +102,29 @@ case class BinaryOutcomeDLCClient(
   import BinaryOutcomeDLCClient._
 
   /** Hash signed by oracle in Win case */
-  val messageWin: ByteVector = outcomeWin.bytes
+  lazy val messageWin: ByteVector = outcomeWin.bytes
 
   /** Hash signed by oracle in Lose case */
-  val messageLose: ByteVector = outcomeLose.bytes
+  lazy val messageLose: ByteVector = outcomeLose.bytes
 
   /** sig*G in the Win case */
-  val sigPubKeyWin: ECPublicKey =
+  lazy val sigPubKeyWin: ECPublicKey =
     Schnorr.computePubKey(messageWin, preCommittedR, oraclePubKey)
 
   /** sig*G in the Lose case */
-  val sigPubKeyLose: ECPublicKey =
+  lazy val sigPubKeyLose: ECPublicKey =
     Schnorr.computePubKey(messageLose, preCommittedR, oraclePubKey)
 
-  val fundingPrivKey: ECPrivateKey =
+  lazy val fundingPrivKey: ECPrivateKey =
     extPrivKey.deriveChildPrivKey(UInt32(0)).key
 
-  val fundingRemotePubKey: ECPublicKey =
+  lazy val fundingRemotePubKey: ECPublicKey =
     remoteExtPubKey.deriveChildPubKey(UInt32(0)).get.key
 
-  val finalPrivKey: ECPrivateKey =
+  lazy val finalPrivKey: ECPrivateKey =
     extPrivKey.deriveChildPrivKey(UInt32(2)).key
 
-  val finalRemotePubKey: ECPublicKey =
+  lazy val finalRemotePubKey: ECPublicKey =
     remoteExtPubKey.deriveChildPubKey(UInt32(2)).get.key
 
   val winIsFirst: Boolean = outcomeWin.hex.compareTo(outcomeLose.hex) > 0
@@ -146,13 +146,13 @@ case class BinaryOutcomeDLCClient(
                   BIP32Node(eventIndex, hardened = false)))
   }
 
-  val cetRefundPrivKey: ECPrivateKey =
+  lazy val cetRefundPrivKey: ECPrivateKey =
     cetExtPrivKey(extPrivKey, eventIndex = 0).key
 
-  val cetWinPrivKey: ExtPrivateKey =
+  lazy val cetWinPrivKey: ExtPrivateKey =
     cetExtPrivKey(extPrivKey, winIndex)
 
-  val cetLosePrivKey: ExtPrivateKey =
+  lazy val cetLosePrivKey: ExtPrivateKey =
     cetExtPrivKey(extPrivKey, loseIndex)
 
   def cetExtPubKey(rootKey: ExtPublicKey, eventIndex: Int): ExtPublicKey = {
@@ -163,13 +163,13 @@ case class BinaryOutcomeDLCClient(
       .get
   }
 
-  val cetRemoteRefundPubKey: ECPublicKey =
+  lazy val cetRemoteRefundPubKey: ECPublicKey =
     cetExtPubKey(remoteExtPubKey, eventIndex = 0).key
 
-  val cetRemoteWinPubKey: ExtPublicKey =
+  lazy val cetRemoteWinPubKey: ExtPublicKey =
     cetExtPubKey(remoteExtPubKey, winIndex)
 
-  val cetRemoteLosePubKey: ExtPublicKey =
+  lazy val cetRemoteLosePubKey: ExtPublicKey =
     cetExtPubKey(remoteExtPubKey, loseIndex)
 
   /** Total collateral amount */
@@ -568,6 +568,16 @@ case class BinaryOutcomeDLCClient(
       payout = losePayout,
       remotePayout = remoteLosePayout
     )
+  }
+
+  def createCETSigs: Future[CETSignatures] = {
+    for {
+      (_, _, remoteWinSig) <- createCETWinRemote()
+      (_, _, remoteLoseSig) <- createCETLoseRemote()
+      (_, remoteRefundSig) <- createRefundSig()
+    } yield {
+      CETSignatures(remoteWinSig, remoteLoseSig, remoteRefundSig)
+    }
   }
 
   /** Executes DLC setup for the party responding to the initiator.

@@ -2,22 +2,31 @@ package org.bitcoins.server
 
 import java.time.{ZoneId, ZonedDateTime}
 
+import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.{
   BlockHash,
   BlockHeight,
   BlockTime,
   InvalidBlockStamp
 }
-import org.bitcoins.core.protocol.transaction.EmptyTransaction
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  EmptyTransactionOutPoint,
+  EmptyTransactionOutput
+}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, OracleInfo}
+import org.bitcoins.dlc.{CETSignatures, DLCTimeouts}
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
 import org.scalamock.scalatest.MockFactory
@@ -132,6 +141,110 @@ class RoutesSpec
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"""" + testAddressStr + """","error":null}"""
+      }
+    }
+
+    "create a dlc offer" in {
+      (mockWalletApi
+        .createDLCOffer(_: Bitcoins,
+                        _: OracleInfo,
+                        _: Vector[Sha256DigestBE],
+                        _: Option[SatoshisPerVirtualByte],
+                        _: UInt32,
+                        _: UInt32))
+        .expects(
+          Bitcoins(100),
+          OracleInfo(
+            "036374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f5860303bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"),
+          Vector(
+            Sha256DigestBE(
+              "ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562"),
+            Sha256DigestBE(
+              "e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea")
+          ),
+          Some(SatoshisPerVirtualByte(Satoshis.one)),
+          UInt32(1580323752),
+          UInt32(1581323752)
+        )
+        .returning(Future.successful(DLCOffer(
+          Vector(
+            (Sha256DigestBE(
+               "ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562"),
+             Satoshis(5)),
+            (Sha256DigestBE(
+               "e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea"),
+             Satoshis(4))
+          ).toMap,
+          OracleInfo("036374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f5860303bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"),
+          ExtPublicKey
+            .fromString("xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8")
+            .get,
+          Bitcoins(100).satoshis,
+          Vector((EmptyTransactionOutPoint, EmptyTransactionOutput),
+                 (EmptyTransactionOutPoint, EmptyTransactionOutput)),
+          Bech32Address
+            .fromString("bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2")
+            .get,
+          SatoshisPerVirtualByte.one,
+          DLCTimeouts(5, BlockStamp(1580323752), BlockStamp(1581323752))
+        )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand(
+          "createdlcoffer",
+          Arr(
+            Num(100),
+            Str("036374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f5860303bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"),
+            Arr(
+              Str("ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562"),
+              Str("e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea")
+            ),
+            Num(1),
+            Num(1580323752),
+            Num(1581323752),
+            Bool(false)
+          )
+        ))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual
+          """{"result":"{\"contractInfo\":[{\"sha256\":\"ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562\",\"sats\":5},{\"sha256\":\"e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea\",\"sats\":4}],\"oracleInfo\":\"036374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f5860303bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1\",\"extPubKey\":\"0488b21e000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d5080339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2\",\"totalCollateral\":10000000000,\"fundingInputs\":[{\"outpoint\":\"0000000000000000000000000000000000000000000000000000000000000000ffffffff\",\"output\":\"ffffffffffffffff00\"},{\"outpoint\":\"0000000000000000000000000000000000000000000000000000000000000000ffffffff\",\"output\":\"ffffffffffffffff00\"}],\"changeAddress\":\"bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2\",\"feeRate\":1,\"timeouts\":{\"penalty\":5,\"contractMaturity\":1580323752,\"contractTimeout\":1581323752}}","error":null}"""
+      }
+    }
+
+    "accept a dlc offer" in {
+      val offerStr =
+        "{\"contractInfo\":[{\"sha256\":\"ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562\",\"sats\":5},{\"sha256\":\"e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea\",\"sats\":4}],\"oracleInfo\":\"036374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f5860303bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1\",\"extPubKey\":\"0488b21e000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d5080339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2\",\"totalCollateral\":10000000000,\"fundingInputs\":[{\"outpoint\":\"0000000000000000000000000000000000000000000000000000000000000000ffffffff\",\"output\":\"ffffffffffffffff00\"},{\"outpoint\":\"0000000000000000000000000000000000000000000000000000000000000000ffffffff\",\"output\":\"ffffffffffffffff00\"}],\"timeouts\":{\"penalty\":5,\"contractMaturity\":1580323752,\"contractTimeout\":1581323752}}"
+
+      val dummyPartialSig = PartialSignature(
+        ECPublicKey(
+          "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919"),
+        DummyECDigitalSignature)
+      (mockWalletApi
+        .acceptDLCOffer(_: DLCOffer, _: Bitcoins))
+        .expects(DLCOffer.fromJson(ujson.read(offerStr)), Bitcoins(100))
+        .returning(
+          Future.successful(DLCAccept(
+            Bitcoins(100).satoshis,
+            ExtPublicKey
+              .fromString("xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8")
+              .get,
+            Vector((EmptyTransactionOutPoint, EmptyTransactionOutput)),
+            Bech32Address
+              .fromString("bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2")
+              .get,
+            CETSignatures(dummyPartialSig, dummyPartialSig, dummyPartialSig)
+          ))
+        )
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("acceptdlcoffer",
+                      Arr(Str(offerStr), Num(100), Bool(false))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"{\"totalCollateral\":10000000000,\"extPubKey\":\"0488b21e000000000000000000873dff81c02f525623fd1fe5167eac3a55a049de3d314bb42ee227ffed37d5080339a36013301597daef41fbe593a02cc513d0b55527ec2df1050e2e8ff49c85c2\",\"fundingInputs\":[{\"outpoint\":\"0000000000000000000000000000000000000000000000000000000000000000ffffffff\",\"output\":\"ffffffffffffffff00\"}],\"changeAddress\":\"bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2\",\"cetSigs\":{\"winSig\":\"2202024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b91948000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\"loseSig\":\"2202024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b91948000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\"refundSig\":\"2202024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b91948000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\"}}","error":null}"""
       }
     }
 

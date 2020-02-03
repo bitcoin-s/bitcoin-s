@@ -4,9 +4,18 @@ import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.{
+  MultiSignatureScriptPubKey,
+  P2WPKHWitnessSPKV0,
+  P2WSHWitnessSPKV0,
+  WitnessScriptPubKey
+}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, BlockStamp}
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, OracleInfo}
+import org.bitcoins.dlc.{BinaryOutcomeDLCClient, DLCTimeouts}
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil
@@ -28,6 +37,102 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
   override def lock(): LockedWalletApi = {
     logger.debug(s"Locking wallet")
     LockedWallet(nodeApi, chainQueryApi)
+  }
+
+  /** We need a output so we can get proper tx size estimation */
+  private def getDummyDLCFundingOutputs(
+      amount: CurrencyUnit): Vector[TransactionOutput] = {
+    val key = ECPublicKey.freshPublicKey
+    val spk = P2WSHWitnessSPKV0(MultiSignatureScriptPubKey(2, Seq(key, key)))
+
+    // funded output and the other party's change
+    Vector(TransactionOutput(amount, spk), TransactionOutput(1.satoshi, spk))
+  }
+
+  override def createDLCOffer(
+      amount: Bitcoins,
+      oracleInfo: OracleInfo,
+      contractInfo: Vector[Sha256DigestBE],
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      locktime: UInt32,
+      refundLocktime: UInt32): Future[DLCOffer] = {
+    val feeRate = feeRateOpt.getOrElse(SatoshisPerVirtualByte.one)
+    for {
+      account <- getDefaultAccount()
+      txBuilder <- fundRawTransactionInternal(
+        destinations = getDummyDLCFundingOutputs(amount),
+        feeRate = feeRate,
+        fromAccount = account,
+        keyManagerOpt = Some(keyManager)
+      )
+    } yield {
+      DLCOffer(
+        Map.from(contractInfo.map(sha => (sha, amount.satoshis))),
+        oracleInfo,
+        keyManager.getRootXPub,
+        amount.satoshis,
+        txBuilder.utxoMap
+          .filter(_._2.amount != Satoshis.one)
+          .map(utxo => (utxo._1, utxo._2.output))
+          .toVector,
+        Bech32Address(txBuilder.changeSPK.asInstanceOf[WitnessScriptPubKey],
+                      keyManager.kmParams.network),
+        feeRate,
+        DLCTimeouts(5,
+                    BlockStamp(locktime.toInt),
+                    BlockStamp(refundLocktime.toInt))
+      )
+    }
+  }
+
+  override def acceptDLCOffer(
+      dlcOffer: DLCOffer,
+      amount: Bitcoins): Future[DLCAccept] = {
+    val clientF = for {
+      account <- getDefaultAccount()
+      txBuilder <- fundRawTransactionInternal(
+        destinations = getDummyDLCFundingOutputs(amount),
+        feeRate = dlcOffer.feeRate,
+        fromAccount = account,
+        keyManagerOpt = Some(keyManager)
+      )
+    } yield {
+      val fundingUtxos =
+        txBuilder.utxoMap.values
+          .flatMap(_.toSingles)
+          .toVector
+      val changeSPK = txBuilder.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
+      val client = BinaryOutcomeDLCClient.fromOffer(
+        dlcOffer,
+        keyManager.rootExtPrivKey, // todo change to a ExtSign.deriveAndSignFuture // fixme this will need to be changed according to KeyDerivation.md
+        fundingUtxos,
+        amount,
+        dlcOffer.totalCollateral + amount,
+        dlcOffer.totalCollateral + amount, //todo remove these for binary cases after refactor
+        changeSPK
+      )
+
+      (client, txBuilder, changeSPK)
+    }
+
+    val f = clientF.flatMap {
+      case (client, txBuilder, changeSPK) =>
+        client.createCETSigs.map(
+          sigs =>
+            DLCAccept(
+              amount.satoshis,
+              keyManager.getRootXPub,
+              txBuilder.utxoMap.map(utxo => (utxo._1, utxo._2.output)).toVector,
+              Bech32Address(changeSPK, keyManager.kmParams.network),
+              sigs
+            )
+        )
+    }
+    f.failed.foreach { err =>
+      err.printStackTrace()
+      logger.error(err.getLocalizedMessage)
+    }
+    f
   }
 
   override def sendToAddress(

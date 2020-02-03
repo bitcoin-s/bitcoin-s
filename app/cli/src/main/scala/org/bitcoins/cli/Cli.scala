@@ -6,8 +6,12 @@ import java.{util => ju}
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.Sha256DigestBE
 import org.bitcoins.core.currency._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol._
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.dlc.DLCMessage.{DLCOffer, OracleInfo}
 import org.bitcoins.picklers._
 import scopt.OParser
 import ujson.{Num, Str}
@@ -23,6 +27,20 @@ sealed abstract class CliCommand
 
 object CliCommand {
   case object NoCommand extends CliCommand
+
+  // DLC
+  case class CreateDLCOffer(
+      amount: Bitcoins,
+      oracleInfo: OracleInfo,
+      contractInfo: Seq[Sha256DigestBE],
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      locktime: UInt32,
+      refundLT: UInt32,
+      escaped: Boolean)
+      extends CliCommand
+
+  case class AcceptDLCOffer(offer: DLCOffer, amount: Bitcoins, escaped: Boolean)
+      extends CliCommand
 
   // Wallet
   case class SendToAddress(destination: BitcoinAddress, amount: Bitcoins)
@@ -125,6 +143,104 @@ object Cli extends App {
         .hidden()
         .action((_, conf) => conf.copy(command = GetBalance))
         .text("Get the wallet balance"),
+      cmd("createdlcoffer")
+        .hidden()
+        .action(
+          (_, conf) =>
+            conf.copy(
+              command = CreateDLCOffer(0.bitcoins,
+                                       null,
+                                       Vector.empty,
+                                       None,
+                                       UInt32.zero,
+                                       UInt32.zero,
+                                       escaped = false)))
+        .text("Creates a DLC offer that another party can accept")
+        .children(
+          opt[Bitcoins]("amount").required
+            .action((amt, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(amount = amt)
+                case other => other
+              })),
+          opt[OracleInfo]("oracleInfo")
+            .required()
+            .action((info, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(oracleInfo = info)
+                case other => other
+              })),
+          opt[Seq[Sha256DigestBE]]("contractInfo")
+            .required()
+            .action((info, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(contractInfo = info)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(feeRateOpt = Some(feeRate))
+                case other => other
+              })),
+          opt[UInt32]("locktime")
+            .required()
+            .action((locktime, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(locktime = locktime)
+                case other => other
+              })),
+          opt[UInt32]("refundlocktime")
+            .required()
+            .action((refundLT, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(refundLT = refundLT)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
+      cmd("acceptdlcoffer")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(
+            command = AcceptDLCOffer(null, 0.bitcoins, escaped = false)))
+        .text("Accepts a DLC offer given from another party")
+        .children(
+          opt[DLCOffer]("offer").required
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(offer = offer)
+                case other => other
+              })),
+          opt[Bitcoins]("amount").required
+            .action((amt, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(amount = amt)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
       cmd("getnewaddress")
         .hidden()
         .action((_, conf) => conf.copy(command = GetNewAddress))
@@ -205,6 +321,30 @@ object Cli extends App {
   }
 
   val requestParam: RequestParam = config.command match {
+    // DLC
+    case CreateDLCOffer(amount,
+                        oracleInfo,
+                        contractInfo,
+                        feeRateOpt,
+                        locktime,
+                        refundLT,
+                        escaped) =>
+      RequestParam(
+        "createdlcoffer",
+        Seq(
+          up.writeJs(amount),
+          up.writeJs(oracleInfo),
+          up.writeJs(contractInfo),
+          up.writeJs(feeRateOpt.getOrElse(SatoshisPerVirtualByte.one)),
+          up.writeJs(locktime),
+          up.writeJs(refundLT),
+          up.writeJs(escaped)
+        )
+      )
+    case AcceptDLCOffer(offer, amount, escaped) =>
+      RequestParam(
+        "acceptdlcoffer",
+        Seq(up.writeJs(offer), up.writeJs(amount), up.writeJs(escaped)))
     case GetBalance =>
       RequestParam("getbalance")
     case GetNewAddress =>

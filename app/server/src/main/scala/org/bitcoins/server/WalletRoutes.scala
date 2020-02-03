@@ -8,6 +8,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.Node
 import org.bitcoins.picklers._
+import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.api.UnlockedWalletApi
 
 import scala.concurrent.Future
@@ -15,9 +16,15 @@ import scala.util.{Failure, Success}
 
 case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
     implicit system: ActorSystem)
-    extends ServerRoute {
+    extends ServerRoute
+    with WalletLogger {
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
+
+  private def escape(raw: String): String = {
+    import scala.reflect.runtime.universe._
+    Literal(Constant(raw)).toString
+  }
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand("getbalance", _) =>
@@ -33,6 +40,50 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         wallet.getNewAddress().map { address =>
           Server.httpSuccess(address)
         }
+      }
+
+    case ServerCommand("createdlcoffer", arr) =>
+      CreateDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+            CreateDLCOffer(amount,
+                           oracleInfo,
+                           contractInfo,
+                           feeRateOpt,
+                           locktime,
+                           refundLT,
+                           escaped)) =>
+          complete {
+            wallet
+              .createDLCOffer(amount,
+                              oracleInfo,
+                              contractInfo.toVector,
+                              feeRateOpt,
+                              locktime,
+                              refundLT)
+              .map { offer =>
+                val str = offer.toJsonStr
+                val sendString = if (escaped) escape(str) else str
+                Server.httpSuccess(sendString)
+              }
+          }
+      }
+
+    case ServerCommand("acceptdlcoffer", arr) =>
+      AcceptDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AcceptDLCOffer(offer, amount, escaped)) =>
+          complete {
+            wallet
+              .acceptDLCOffer(offer, amount)
+              .map { accept =>
+                val str = accept.toJsonStr
+                val sendString = if (escaped) escape(str) else str
+                Server.httpSuccess(sendString)
+              }
+          }
       }
 
     case ServerCommand("sendtoaddress", arr) =>

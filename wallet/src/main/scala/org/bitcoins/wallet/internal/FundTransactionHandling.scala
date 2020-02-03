@@ -65,6 +65,10 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
     val addrInfosWithUtxoF: Future[Vector[(SpendingInfoDb, AddressInfo)]] =
       for {
         selectedUtxos <- selectedUtxosF
+        _ <- Future {
+          selectedUtxosF.failed.foreach(err =>
+            logger.error(err.getLocalizedMessage))
+        }
         addrInfoOptF = selectedUtxos.map { utxo =>
           val addrInfoOptF = getAddressInfo(utxo)
           //.get should be safe here because of foreign key at the database level

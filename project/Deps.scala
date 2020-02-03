@@ -101,7 +101,7 @@ object Deps {
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
-    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources() withJavadoc()
+    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
   }
 
   object Test {
@@ -132,8 +132,10 @@ object Deps {
     Compile.slf4j
   )
 
-  val dlc = List(
-    Compile.playJson
+  def dlc(scalaVersion: String) = List(
+    Compile.playJson,
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
+    else Compile.newMicroJson
   )
 
   val dlcTest = List()
@@ -188,7 +190,6 @@ object Deps {
     Compile.logback,
     Compile.sqlite,
     Compile.slickHikari,
-
     Test.scalaTest
   )
 
@@ -251,7 +252,7 @@ object Deps {
 
   def keyManager(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
-    else Compile.newMicroJson,
+    else Compile.newMicroJson
   )
 
   val keyManagerTest = List(

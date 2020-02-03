@@ -5,15 +5,17 @@ import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, OracleInfo}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.Wallet
@@ -417,6 +419,16 @@ trait UnlockedWalletApi extends LockedWalletApi {
     * encrypted and unaccessible
     */
   def lock(): LockedWalletApi
+
+  def createDLCOffer(
+      amount: Bitcoins,
+      oracleInfo: OracleInfo,
+      contractInfo: Vector[Sha256DigestBE],
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      locktime: UInt32,
+      refundLT: UInt32): Future[DLCOffer]
+
+  def acceptDLCOffer(dlcOffer: DLCOffer, amount: Bitcoins): Future[DLCAccept]
 
   /**
     *
