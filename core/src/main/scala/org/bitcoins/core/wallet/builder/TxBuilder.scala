@@ -613,9 +613,7 @@ object TxBuilder {
                 _: UnassignedSegwitNativeUTXOSpendingInfo |
                 _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
                 _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
-              //none of these script types affect the sequence number of a tx
-              //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
-              //see BIP125 for more information
+              //none of these script types affect the sequence number of a tx so the defaultSequence is used
               val input =
                 TransactionInput(spendingInfo.outPoint,
                                  EmptyScriptSignature,

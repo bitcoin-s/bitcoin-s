@@ -11,7 +11,7 @@ trait TransactionConstants {
   lazy val validLockVersion = Int32(2)
   lazy val lockTime = UInt32.zero
   lazy val sequence = UInt32(4294967295L)
-  lazy val disableRBFSequence = UInt32(4294967294L)
+  lazy val disableRBFSequence = sequence - UInt32.one
 
   /**
     * If bit (1 << 31) of the sequence number is set,
