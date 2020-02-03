@@ -48,7 +48,7 @@ case class Server(conf: AppConfig, handlers: Seq[ServerRoute])(
                            StatusCodes.BadRequest))
       case err: Throwable =>
         logger.info(s"Unhandled error in server:", err)
-        complete(Server.httpError("There was an error"))
+        complete(Server.httpError(s"Request failed: ${err.getMessage}"))
     }
 
     handleRejections(rejectionHandler) {
