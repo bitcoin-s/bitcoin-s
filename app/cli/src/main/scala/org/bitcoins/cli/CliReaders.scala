@@ -9,7 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{DLCOffer, OracleInfo}
+import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, OracleInfo}
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
@@ -98,6 +98,15 @@ object CliReaders {
     // this will be a JSON string
     override def reads: String => DLCOffer = str => {
       DLCOffer.fromJson(ujson.read(str))
+    }
+  }
+
+  implicit val dlcAcceptReads: Read[DLCAccept] = new Read[DLCAccept] {
+    override def arity: Int = 1
+
+    // this will be a JSON string
+    override def reads: String => DLCAccept = str => {
+      DLCAccept.fromJson(ujson.read(str))
     }
   }
 }

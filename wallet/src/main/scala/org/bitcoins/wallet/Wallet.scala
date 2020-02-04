@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.script.{
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, OracleInfo}
+import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, DLCSign, OracleInfo}
 import org.bitcoins.dlc.{BinaryOutcomeDLCClient, DLCTimeouts}
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -133,6 +133,37 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       logger.error(err.getLocalizedMessage)
     }
     f
+  }
+
+  def signDLC(offer: DLCOffer, accept: DLCAccept): Future[DLCSign] = {
+    val clientF = for {
+      account <- getDefaultAccount()
+      txBuilder <- fundRawTransactionInternal(
+        destinations = getDummyDLCFundingOutputs(offer.totalCollateral),
+        feeRate = offer.feeRate,
+        fromAccount = account,
+        keyManagerOpt = Some(keyManager)
+      )
+    } yield {
+      val fundingUtxos =
+        txBuilder.utxoMap.values
+          .flatMap(_.toSingles)
+          .toVector
+      BinaryOutcomeDLCClient.fromOfferAndAccept(
+        offer,
+        accept,
+        keyManager.rootExtPrivKey,
+        fundingUtxos,
+        offer.totalCollateral + accept.totalCollateral,
+        offer.totalCollateral + accept.totalCollateral)
+    }
+
+    clientF.flatMap { client =>
+      client.createCETSigs.zip(client.createFundingTransactionSigs()).map {
+        case (cetSigs, fundingSigs) =>
+          DLCSign(cetSigs, fundingSigs)
+      }
+    }
   }
 
   override def sendToAddress(

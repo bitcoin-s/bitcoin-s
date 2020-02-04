@@ -9,6 +9,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp, NetworkElement}
+import org.bitcoins.core.psbt.InputPSBTRecord
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.Factory
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import scodec.bits.ByteVector
@@ -209,6 +211,84 @@ object DLCMessage {
     def toJsonStr: String = toJson.toString()
   }
 
+  object DLCAccept {
+
+    def fromJson(js: Value): DLCAccept = {
+      val iter = js.obj.iterator
+
+      val emptyAccept =
+        DLCAccept(Satoshis.zero, null, Vector.empty, null, null)
+
+      iter.foldLeft(emptyAccept) {
+        case (accept, (key, value)) =>
+          key match {
+            case "totalCollateral" =>
+              val totalCollateral = Satoshis(value.num.toLong)
+              accept.copy(totalCollateral = totalCollateral)
+            case "extPubKey" =>
+              val extPubKey = ExtPublicKey(value.str)
+              accept.copy(extPubKey = extPubKey)
+            case "fundingInputs" =>
+              if (value.arr.isEmpty) {
+                accept
+              } else {
+                val fundingInputs = value.arr.map { subVal =>
+                  val obj = subVal.obj
+                  val outpointIndex =
+                    obj.value.keys.toList.indexOf("outpoint")
+                  val outputIndex = obj.value.keys.toList.indexOf("output")
+
+                  (TransactionOutPoint(obj.values(outpointIndex).str),
+                   TransactionOutput(obj.values(outputIndex).str))
+                }
+                accept.copy(fundingInputs = fundingInputs.toVector)
+              }
+            case "changeAddress" =>
+              val changeAddress = Bech32Address.fromString(value.str).get
+              accept.copy(changeAddress = changeAddress)
+            case "cetSigs" =>
+              def partialSigFromHex(hex: String): PartialSignature = {
+                InputPSBTRecord(hex) match {
+                  case partialSignature: PartialSignature =>
+                    partialSignature
+                  case other =>
+                    throw new IllegalArgumentException(
+                      s"Invalid PartialSignature encoding, got: $other")
+                }
+              }
+
+              val obj = value.obj
+              val winIndex = obj.keys.toList.indexOf("winSig")
+              val loseIndex = obj.keys.toList.indexOf("loseSig")
+              val refundIndex = obj.keys.toList.indexOf("refundSig")
+
+              val cetSigs = CETSignatures(
+                partialSigFromHex(obj.values(winIndex).str),
+                partialSigFromHex(obj.values(loseIndex).str),
+                partialSigFromHex(obj.values(refundIndex).str)
+              )
+              accept.copy(cetSigs = cetSigs)
+          }
+      }
+    }
+  }
+
   case class DLCSign(cetSigs: CETSignatures, fundingSigs: FundingSignatures)
-      extends DLCMessage
+      extends DLCMessage {
+
+    def toJson: Value = {
+      val fundingSigsJson = fundingSigs.sigs.map(sig => Str(sig.hex))
+
+      Obj(
+        mutable.LinkedHashMap[String, Value](
+          "winSig" -> Str(cetSigs.winSig.hex),
+          "loseSig" -> Str(cetSigs.loseSig.hex),
+          "refundSig" -> Str(cetSigs.refundSig.hex),
+          "fundingSigs" -> fundingSigsJson
+        )
+      )
+    }
+
+    def toJsonStr: String = toJson.toString()
+  }
 }

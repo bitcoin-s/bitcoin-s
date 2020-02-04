@@ -86,6 +86,20 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("signdlc", arr) =>
+      SignDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignDLC(offer, accept, escaped)) =>
+          complete {
+            wallet.signDLC(offer, accept).map { sig =>
+              val str = sig.toJsonStr
+              val sendString = if (escaped) escape(str) else str
+              Server.httpSuccess(sendString)
+            }
+          }
+      }
+
     case ServerCommand("sendtoaddress", arr) =>
       // TODO create custom directive for this?
       SendToAddress.fromJsArr(arr) match {

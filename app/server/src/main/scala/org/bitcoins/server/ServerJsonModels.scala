@@ -6,7 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{DLCOffer, OracleInfo}
+import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, OracleInfo}
 import ujson._
 import upickle.default._
 
@@ -134,6 +134,27 @@ object AcceptDLCOffer extends ServerJsonModels {
         Failure(
           new IllegalArgumentException("Missing offer and amount arguments"))
 
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class SignDLC(offer: DLCOffer, accept: DLCAccept, escaped: Boolean)
+
+object SignDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignDLC] = {
+    jsArr.arr.toList match {
+      case offerJs :: acceptJs :: escapedJs :: Nil =>
+        Try {
+          val offer = DLCOffer.fromJson(ujson.read(offerJs.str))
+          val accept = DLCAccept.fromJson(ujson.read(acceptJs.str))
+          val escaped = escapedJs.bool
+          SignDLC(offer, accept, escaped)
+        }
       case other =>
         Failure(
           new IllegalArgumentException(

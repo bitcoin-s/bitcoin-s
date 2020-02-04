@@ -11,7 +11,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{DLCOffer, OracleInfo}
+import org.bitcoins.dlc.DLCMessage.{DLCAccept, DLCOffer, OracleInfo}
 import org.bitcoins.picklers._
 import scopt.OParser
 import ujson.{Num, Str}
@@ -40,6 +40,9 @@ object CliCommand {
       extends CliCommand
 
   case class AcceptDLCOffer(offer: DLCOffer, amount: Bitcoins, escaped: Boolean)
+      extends CliCommand
+
+  case class SignDLC(offer: DLCOffer, accept: DLCAccept, escaped: Boolean)
       extends CliCommand
 
   // Wallet
@@ -241,6 +244,34 @@ object Cli extends App {
                 case other => other
               }))
         ),
+      cmd("signdlc")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = SignDLC(null, null, escaped = false)))
+        .text("Signs a DLC")
+        .children(
+          opt[DLCOffer]("offer").required
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case signDLC: SignDLC =>
+                  signDLC.copy(offer = offer)
+                case other => other
+              })),
+          opt[DLCAccept]("accept").required
+            .action((accept, conf) =>
+              conf.copy(command = conf.command match {
+                case signDLC: SignDLC =>
+                  signDLC.copy(accept = accept)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case signDLC: SignDLC =>
+                  signDLC.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
       cmd("getnewaddress")
         .hidden()
         .action((_, conf) => conf.copy(command = GetNewAddress))
@@ -345,6 +376,10 @@ object Cli extends App {
       RequestParam(
         "acceptdlcoffer",
         Seq(up.writeJs(offer), up.writeJs(amount), up.writeJs(escaped)))
+    case SignDLC(offer, accept, escaped) =>
+      RequestParam(
+        "signdlc",
+        Seq(up.writeJs(offer), up.writeJs(accept), up.writeJs(escaped)))
     case GetBalance =>
       RequestParam("getbalance")
     case GetNewAddress =>
