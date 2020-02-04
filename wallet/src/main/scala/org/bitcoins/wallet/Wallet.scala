@@ -66,8 +66,12 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
         keyManagerOpt = Some(keyManager)
       )
     } yield {
+      val contractInfoMap =
+        (Map.newBuilder ++= contractInfo.map(sha => (sha, amount.satoshis)))
+          .result()
+
       DLCOffer(
-        Map.from(contractInfo.map(sha => (sha, amount.satoshis))),
+        contractInfoMap,
         oracleInfo,
         keyManager.getRootXPub,
         amount.satoshis,
