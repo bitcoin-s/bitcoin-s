@@ -177,6 +177,16 @@ object DLCMessage {
     }
   }
 
+  private def partialSigFromHex(hex: String): PartialSignature = {
+    InputPSBTRecord(hex) match {
+      case partialSignature: PartialSignature =>
+        partialSignature
+      case other =>
+        throw new IllegalArgumentException(
+          s"Invalid PartialSignature encoding, got: $other")
+    }
+  }
+
   case class DLCAccept(
       totalCollateral: Satoshis,
       extPubKey: ExtPublicKey,
@@ -247,16 +257,6 @@ object DLCMessage {
               val changeAddress = Bech32Address.fromString(value.str).get
               accept.copy(changeAddress = changeAddress)
             case "cetSigs" =>
-              def partialSigFromHex(hex: String): PartialSignature = {
-                InputPSBTRecord(hex) match {
-                  case partialSignature: PartialSignature =>
-                    partialSignature
-                  case other =>
-                    throw new IllegalArgumentException(
-                      s"Invalid PartialSignature encoding, got: $other")
-                }
-              }
-
               val obj = value.obj
               val winIndex = obj.keys.toList.indexOf("winSig")
               val loseIndex = obj.keys.toList.indexOf("loseSig")
@@ -290,5 +290,42 @@ object DLCMessage {
     }
 
     def toJsonStr: String = toJson.toString()
+  }
+
+  object DLCSign {
+
+    def fromJson(js: Value): DLCSign = {
+      val iter = js.obj.iterator
+
+      val emptySign =
+        DLCSign(CETSignatures(null, null, null),
+                FundingSignatures(Vector.empty))
+
+      iter.foldLeft(emptySign) {
+        case (sign, (key, value)) =>
+          key match {
+            case "winSig" =>
+              val winSig = partialSigFromHex(value.str)
+              val cetSigs = sign.cetSigs.copy(winSig = winSig)
+              sign.copy(cetSigs = cetSigs)
+            case "loseSig" =>
+              val loseSig = partialSigFromHex(value.str)
+              val cetSigs = sign.cetSigs.copy(loseSig = loseSig)
+              sign.copy(cetSigs = cetSigs)
+            case "refundSig" =>
+              val refundSig = partialSigFromHex(value.str)
+              val cetSigs = sign.cetSigs.copy(refundSig = refundSig)
+              sign.copy(cetSigs = cetSigs)
+            case "fundingSigs" =>
+              if (value.arr.isEmpty) {
+                sign
+              } else {
+                val fundingSigs =
+                  value.arr.map(subVal => partialSigFromHex(subVal.str))
+                sign.copy(fundingSigs = FundingSignatures(fundingSigs.toVector))
+              }
+          }
+      }
+    }
   }
 }

@@ -2,7 +2,6 @@ package org.bitcoins.server
 
 import java.time.{ZoneId, ZonedDateTime}
 
-import akka.http.scaladsl.model.ContentType
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
