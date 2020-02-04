@@ -10,8 +10,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.p2p.{NetworkMessage, _}
-import org.bitcoins.node.P2PLogger
-import org.bitcoins.node.NodeCallbacks
+import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.P2PClient
@@ -49,14 +48,11 @@ class PeerMessageReceiver(
     * but have NOT started the handshake
     * This method will initiate the handshake
     */
-  protected[networking] def connect(
-      client: P2PClient): Future[PeerMessageReceiver] = {
+  protected[networking] def connect(client: P2PClient): PeerMessageReceiver = {
 
     state match {
       case bad @ (_: Initializing | _: Normal | _: Disconnected) =>
-        Future.failed(
-          new RuntimeException(s"Cannot call connect when in state=${bad}")
-        )
+        throw new RuntimeException(s"Cannot call connect when in state=${bad}")
       case Preconnection =>
         logger.info(s"Connection established with peer=${peer}")
 
@@ -68,18 +64,16 @@ class PeerMessageReceiver(
 
         val newRecv = toState(newState)
 
-        Future.successful(newRecv)
+        newRecv
     }
   }
 
-  protected[networking] def disconnect(): Future[PeerMessageReceiver] = {
+  protected[networking] def disconnect(): PeerMessageReceiver = {
     logger.trace(s"Disconnecting with internalstate=${state}")
     state match {
       case bad @ (_: Initializing | _: Disconnected | Preconnection) =>
-        Future.failed(
-          new RuntimeException(
-            s"Cannot disconnect from peer=${peer} when in state=${bad}")
-        )
+        throw new RuntimeException(
+          s"Cannot disconnect from peer=${peer} when in state=${bad}")
 
       case good: Normal =>
         logger.debug(s"Disconnected bitcoin peer=${peer}")
@@ -92,7 +86,7 @@ class PeerMessageReceiver(
 
         val newRecv = toState(newState)
 
-        Future.successful(newRecv)
+        newRecv
     }
   }
 
