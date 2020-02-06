@@ -1,5 +1,6 @@
 package org.bitcoins.eclair.rpc.client
 
+import java.net.InetSocketAddress
 import java.util.UUID
 
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sha256Digest}
@@ -15,7 +16,7 @@ import org.bitcoins.rpc.serializers.SerializerUtil
 import play.api.libs.json._
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object JsonReaders {
   import org.bitcoins.rpc.serializers.JsonReaders._
@@ -78,6 +79,20 @@ object JsonReaders {
   implicit val lnInvoiceSignatureReads: Reads[LnInvoiceSignature] = {
     Reads { jsValue =>
       SerializerUtil.processJsString(LnInvoiceSignature.fromHex)(jsValue)
+    }
+  }
+
+  implicit val inetSocketAddressReads: Reads[InetSocketAddress] = {
+    Reads { jsValue =>
+      SerializerUtil.processJsString({ addr =>
+        addr.split(":") match {
+          case Array(host, portStr) =>
+            val port = Try(portStr.toInt).getOrElse(
+              throw new RuntimeException(s"Invalid port number `$portStr`"))
+            InetSocketAddress.createUnresolved(host, port.toInt)
+          case _ => throw new RuntimeException(s"Invalid inet address `$addr`")
+        }
+      })(jsValue)
     }
   }
 
@@ -192,6 +207,9 @@ object JsonReaders {
     SerializerUtil.processJsString(s => PaymentId(UUID.fromString(s)))(jsValue)
   }
 
+  implicit val sendToRouteResultReads: Reads[SendToRouteResult] =
+    Json.reads[SendToRouteResult]
+
   //don't make this implicit so we don't accidentally read the wrong time unit
   val finiteDurationReadsMilliseconds: Reads[FiniteDuration] =
     Reads { js =>
@@ -201,6 +219,10 @@ object JsonReaders {
   //don't make this implicit so we don't accidentally read the wrong time unit
   val finiteDurationReadsSeconds: Reads[FiniteDuration] = Reads { js =>
     SerializerUtil.processJsNumberBigInt(_.longValue.seconds)(js)
+  }
+
+  implicit val paymentTypeReads: Reads[PaymentType] = Reads { jsValue =>
+    SerializerUtil.processJsString(PaymentType.fromString)(jsValue)
   }
 
   implicit val paymentReceivedReads: Reads[IncomingPaymentStatus.Received] =
@@ -291,8 +313,10 @@ object JsonReaders {
       parentId <- (js \ "parentId").validate[PaymentId]
       externalId <- (js \ "externalId").validateOpt[String]
       paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
+      paymentType <- (js \ "paymentType").validate[PaymentType]
       amount <- (js \ "amount").validate[MilliSatoshis]
-      targetNodeId <- (js \ "targetNodeId").validate[NodeId]
+      recipientAmount <- (js \ "recipientAmount").validate[MilliSatoshis]
+      recipientNodeId <- (js \ "recipientNodeId").validate[NodeId]
       createdAt <- (js \ "createdAt")
         .validate[FiniteDuration](finiteDurationReadsMilliseconds)
       paymentRequest <- (js \ "paymentRequest").validateOpt[PaymentRequest]
@@ -301,8 +325,10 @@ object JsonReaders {
                             parentId,
                             externalId,
                             paymentHash,
+                            paymentType,
                             amount,
-                            targetNodeId,
+                            recipientAmount,
+                            recipientNodeId,
                             createdAt,
                             paymentRequest,
                             status)
