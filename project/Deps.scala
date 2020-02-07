@@ -53,6 +53,7 @@ object Deps {
     // CLI deps
     val scoptV = "4.0.0-RC2"
     val sttpV = "1.7.2"
+    val codehausV = "3.1.0"
   }
 
   object Compile {
@@ -69,7 +70,7 @@ object Deps {
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
 
     val logback = "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc ()
-
+    val codehaus = "org.codehaus.janino" % "janino" % V.codehausV
     //for loading secp256k1 natively
     val nativeLoader = "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
 
@@ -191,7 +192,11 @@ object Deps {
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
     else Compile.newMicroPickle,
     Compile.logback,
-    Compile.scopt
+    Compile.scopt,
+    //we can remove this dependency when this is fixed
+    //https://github.com/oracle/graal/issues/1943
+    //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
+    Compile.codehaus
   )
 
   def picklers(scalaVersion: String) = List(
