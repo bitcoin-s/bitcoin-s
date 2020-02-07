@@ -27,13 +27,10 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
       destroy: T => Future[Any])(test: OneArgAsyncTest): FutureOutcome = {
     val fixtureF = build()
 
-    fixtureF.failed.foreach { err =>
-      println(s"Failed to build fixture with err=${err}")
-      throw err
-    }
-
     val outcomeF: Future[Outcome] = fixtureF.flatMap { fixture =>
       test(fixture.asInstanceOf[FixtureParam]).toFuture
+    }.recoverWith { case err =>
+      FutureOutcome.failed(err).toFuture
     }
 
     val futOutcome: FutureOutcome = new FutureOutcome(outcomeF)

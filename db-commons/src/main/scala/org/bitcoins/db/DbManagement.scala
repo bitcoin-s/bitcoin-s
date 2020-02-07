@@ -102,7 +102,8 @@ abstract class DbManagement extends DatabaseLogger {
     try {
       flyway.migrate()
     } catch {
-      case _: FlywayException =>
+      case err: FlywayException =>
+        logger(appConfig).warn(s"Failed to apply first round of migrations, attempting baseline and re-apply",err)
         //maybe we have an existing database, so attempt to baseline the existing
         //database and then apply migrations again
         flyway.baseline()
