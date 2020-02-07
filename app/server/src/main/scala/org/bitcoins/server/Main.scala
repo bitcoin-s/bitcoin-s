@@ -84,10 +84,7 @@ object Main extends App {
   /** Checks if the user already has a wallet */
   private def hasWallet(): Future[Boolean] = {
     val walletDB = walletConf.dbPath resolve walletConf.dbName
-    val hdCoin = HDCoin(purpose = walletConf.kmParams.purpose,
-                        coinType =
-                          HDUtil.getCoinType(walletConf.kmParams.network))
-
+    val hdCoin = walletConf.defaultAccount.coin
     if (Files.exists(walletDB) && walletConf.seedExists()) {
       AccountDAO().read((hdCoin, 0)).map(_.isDefined)
     } else {
