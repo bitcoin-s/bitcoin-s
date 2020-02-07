@@ -29,7 +29,7 @@ trait BitcoinSFixture extends BitcoinSAsyncFixtureTest {
 
     val outcomeF: Future[Outcome] = fixtureF.flatMap { fixture =>
       test(fixture.asInstanceOf[FixtureParam]).toFuture
-    }.recoverWith { err =>
+    }.recoverWith { case err =>
       FutureOutcome.failed(err).toFuture
     }
 
