@@ -28,7 +28,7 @@ addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.2")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.1.1")
 
 // SQL migrations
-addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.2.0")
+addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.2.2")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.0.5")
 
