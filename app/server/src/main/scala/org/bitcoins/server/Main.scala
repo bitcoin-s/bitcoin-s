@@ -7,14 +7,17 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.hd.HDCoin
 import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.keymanager.util.HDUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{LockedWallet, Wallet}
 
 import scala.concurrent.duration._
@@ -79,9 +82,14 @@ object Main extends App {
   }
 
   /** Checks if the user already has a wallet */
-  private def hasWallet(): Boolean = {
+  private def hasWallet(): Future[Boolean] = {
     val walletDB = walletConf.dbPath resolve walletConf.dbName
-    Files.exists(walletDB) && walletConf.seedExists()
+    val hdCoin = walletConf.defaultAccount.coin
+    if (Files.exists(walletDB) && walletConf.seedExists()) {
+      AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+    } else {
+      Future.successful(false)
+    }
   }
 
   private def createNode: Future[Node] = {
@@ -99,35 +107,37 @@ object Main extends App {
       nodeApi: Node,
       chainQueryApi: ChainQueryApi,
       bip39PasswordOpt: Option[String]): Future[UnlockedWalletApi] = {
-    if (hasWallet()) {
-      logger.info(s"Using pre-existing wallet")
-      val locked = LockedWallet(nodeApi, chainQueryApi)
+    hasWallet().flatMap { walletExists =>
+      if (walletExists) {
+        logger.info(s"Using pre-existing wallet")
+        val locked = LockedWallet(nodeApi, chainQueryApi)
 
-      // TODO change me when we implement proper password handling
-      locked.unlock(BIP39KeyManager.badPassphrase, bip39PasswordOpt) match {
-        case Right(wallet) =>
-          Future.successful(wallet)
-        case Left(kmError) =>
-          error(kmError)
+        // TODO change me when we implement proper password handling
+        locked.unlock(BIP39KeyManager.badPassphrase, bip39PasswordOpt) match {
+          case Right(wallet) =>
+            Future.successful(wallet)
+          case Left(kmError) =>
+            error(kmError)
+        }
+      } else {
+        logger.info(s"Initializing key manager")
+        val bip39PasswordOpt = None
+        val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
+          BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+                                     bip39PasswordOpt = bip39PasswordOpt)
+
+        val keyManager = keyManagerE match {
+          case Right(keyManager) => keyManager
+          case Left(err) =>
+            error(err)
+        }
+
+        logger.info(s"Creating new wallet")
+        val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
+
+        Wallet.initialize(wallet = unInitializedWallet,
+                          bip39PasswordOpt = bip39PasswordOpt)
       }
-    } else {
-      logger.info(s"Initializing key manager")
-      val bip39PasswordOpt = None
-      val keyManagerE: Either[KeyManagerInitializeError, BIP39KeyManager] =
-        BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
-                                   bip39PasswordOpt = bip39PasswordOpt)
-
-      val keyManager = keyManagerE match {
-        case Right(keyManager) => keyManager
-        case Left(err) =>
-          error(err)
-      }
-
-      logger.info(s"Creating new wallet")
-      val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
-
-      Wallet.initialize(wallet = unInitializedWallet,
-                        bip39PasswordOpt = bip39PasswordOpt)
     }
   }
 

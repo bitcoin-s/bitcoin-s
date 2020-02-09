@@ -72,42 +72,59 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
     val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=${seedPath}")
 
-    if (Files.notExists(seedPath)) {
-      logger.info(
-        s"Seed path parent directory does not exist, creating ${seedPath.getParent}")
-      Files.createDirectories(seedPath.getParent)
-    }
+    val writtenToDiskE: CompatEither[KeyManagerInitializeError, KeyManager] =
+      if (Files.notExists(seedPath)) {
+        logger.info(
+          s"Seed path parent directory does not exist, creating ${seedPath.getParent}")
+        Files.createDirectories(seedPath.getParent)
 
-    val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
-    val mnemonicE: CompatEither[KeyManagerInitializeError, MnemonicCode] =
-      mnemonicT match {
-        case Success(mnemonic) =>
-          logger.info(s"Created mnemonic from entropy")
-          CompatEither(Right(mnemonic))
-        case Failure(err) =>
-          logger.error(s"Could not create mnemonic from entropy! $err")
-          CompatEither(Left(InitializeKeyManagerError.BadEntropy))
-      }
+        val mnemonicT = Try(MnemonicCode.fromEntropy(entropy))
+        val mnemonicE: CompatEither[KeyManagerInitializeError, MnemonicCode] =
+          mnemonicT match {
+            case Success(mnemonic) =>
+              logger.info(s"Created mnemonic from entropy")
+              CompatEither(Right(mnemonic))
+            case Failure(err) =>
+              logger.error(s"Could not create mnemonic from entropy! $err")
+              CompatEither(Left(InitializeKeyManagerError.BadEntropy))
+          }
 
-    val encryptedMnemonicE: CompatEither[
-      KeyManagerInitializeError,
-      EncryptedMnemonic] =
-      mnemonicE.map { EncryptedMnemonicHelper.encrypt(_, badPassphrase) }
+        val encryptedMnemonicE: CompatEither[
+          KeyManagerInitializeError,
+          EncryptedMnemonic] =
+          mnemonicE.map {
+            EncryptedMnemonicHelper.encrypt(_, badPassphrase)
+          }
 
-    val writeToDiskE: CompatEither[KeyManagerInitializeError, KeyManager] =
-      for {
-        mnemonic <- mnemonicE
-        encrypted <- encryptedMnemonicE
-        _ = {
-          val mnemonicPath =
-            WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
-          logger.info(s"Saved encrypted wallet mnemonic to $mnemonicPath")
+        for {
+          mnemonic <- mnemonicE
+          encrypted <- encryptedMnemonicE
+          _ = {
+            val mnemonicPath =
+              WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
+            logger.info(s"Saved encrypted wallet mnemonic to $mnemonicPath")
+          }
+
+        } yield {
+          BIP39KeyManager(mnemonic = mnemonic,
+                          kmParams = kmParams,
+                          bip39PasswordOpt = bip39PasswordOpt)
         }
+      } else {
+        logger.info(
+          s"Seed file already exists, attempting to initialize form existing seed file=$seedPath.")
 
-      } yield {
-        BIP39KeyManager(mnemonic = mnemonic,
-                        kmParams = kmParams,
-                        bip39PasswordOpt = bip39PasswordOpt)
+        WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, badPassphrase) match {
+          case Right(mnemonic) =>
+            CompatRight(
+              BIP39KeyManager(mnemonic = mnemonic,
+                              kmParams = kmParams,
+                              bip39PasswordOpt = bip39PasswordOpt))
+          case Left(err) =>
+            CompatLeft(
+              InitializeKeyManagerError.FailedToReadWrittenSeed(
+                KeyManagerUnlockError.JsonParsingError(err.toString)))
+        }
       }
 
     //verify we can unlock it for a sanity check
@@ -118,7 +135,7 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
 
     val biasedFinalE: CompatEither[KeyManagerInitializeError, BIP39KeyManager] =
       for {
-        kmBeforeWrite <- writeToDiskE
+        kmBeforeWrite <- writtenToDiskE
         invariant <- unlocked match {
           case Right(unlockedKeyManager) =>
             require(kmBeforeWrite == unlockedKeyManager,
