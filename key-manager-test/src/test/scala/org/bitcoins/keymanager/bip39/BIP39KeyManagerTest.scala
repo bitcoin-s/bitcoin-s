@@ -1,6 +1,8 @@
 package org.bitcoins.keymanager.bip39
 
-import org.bitcoins.core.config.MainNet
+import java.nio.file.Files
+
+import org.bitcoins.core.config.{MainNet, RegTest}
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.keymanager._
@@ -142,6 +144,32 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
       kmParams = buildParams())
 
     assert(init == Left(InitializeKeyManagerError.BadEntropy))
+  }
+
+  it must "read an existing seed from disk if we call initialize and one already exists" in {
+    val seedPath = KeyManagerTestUtil.tmpSeedPath
+    val kmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
+    val entropy = MnemonicCode.getEntropy256Bits
+    val passwordOpt = Some(KeyManagerTestUtil.bip39Password)
+    val keyManager = withInitializedKeyManager(kmParams = kmParams,
+                                               entropy = entropy,
+                                               bip39PasswordOpt = passwordOpt)
+
+    assert(Files.exists(keyManager.kmParams.seedPath),
+           s"Seed path must exist after calling withInitializedKeyManager")
+
+    val firstXpub = keyManager.getRootXPub
+
+    //now let's try to initialize again, our xpub should be exactly the same
+    val keyManager2E =
+      BIP39KeyManager.initialize(kmParams, bip39PasswordOpt = passwordOpt)
+    keyManager2E match {
+      case Left(_) =>
+        fail(s"Must have been able to intiialize the key manager for test")
+      case Right(km2) =>
+        assert(km2.getRootXPub == firstXpub)
+    }
+
   }
 
   private def buildParams(): KeyManagerParams = {
