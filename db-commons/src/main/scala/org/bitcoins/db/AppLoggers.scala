@@ -11,7 +11,7 @@ import ch.qos.logback.core.encoder.Encoder
 import ch.qos.logback.core.FileAppender
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.classic.joran.JoranConfigurator
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 
 /** Provides logging functionality for Bitcoin-S
   * app modules (i.e. the modules that are capable
@@ -28,7 +28,7 @@ private[bitcoins] trait AppLoggers {
     case object Database extends LoggerKind
   }
 
-  def network: NetworkParameters
+  def conf: AppConfig
 
   private val context = {
     val context = LoggerFactory.getILoggerFactory match {
@@ -87,8 +87,8 @@ private[bitcoins] trait AppLoggers {
 
     logFileAppender.setRollingPolicy(logFilePolicy)
 
-    val baseDir = AppConfig.DEFAULT_BITCOIN_S_DATADIR
-    val lastDirname = network match {
+    val baseDir = conf.baseDatadir
+    val lastDirname = conf.network match {
       case MainNet  => "mainnet"
       case TestNet3 => "testnet3"
       case RegTest  => "regtest"
@@ -112,8 +112,7 @@ private[bitcoins] trait AppLoggers {
   /** Stitches together the encoder, appenders and sets the correct
     * logging level
     */
-  protected def getLoggerImpl(loggerKind: LoggerKind)(
-      implicit conf: AppConfig): MarkedLogger = {
+  protected def getLoggerImpl(loggerKind: LoggerKind): MarkedLogger = {
     import LoggerKind._
 
     val (name, level) = loggerKind match {

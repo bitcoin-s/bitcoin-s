@@ -23,9 +23,7 @@ import scala.concurrent.{Await, Future}
 object Main extends App {
   implicit val conf = BitcoinSAppConfig.fromDefaultDatadir()
 
-  private val logger = HttpLoggerImpl(conf.nodeConf.network).getLogger(
-    conf.nodeConf // doesn't matter which one we pass in
-  )
+  private val logger = HttpLoggerImpl(conf.nodeConf).getLogger
 
   implicit val walletConf: WalletAppConfig = conf.walletConf
   implicit val nodeConf: NodeAppConfig = conf.nodeConf
