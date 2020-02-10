@@ -854,7 +854,8 @@ case class BinaryOutcomeDLCClient(
     */
   def executeUnilateralDLC(
       dlcSetup: SetupDLC,
-      oracleSigF: Future[SchnorrDigitalSignature]): Future[DLCOutcome] = {
+      oracleSigF: Future[SchnorrDigitalSignature]): Future[
+    UnilateralDLCOutcome] = {
     val SetupDLC(fundingTx,
                  cetWinLocal,
                  cetWinLocalWitness,
@@ -908,20 +909,21 @@ case class BinaryOutcomeDLCClient(
                                                   isWin = sigForWin,
                                                   spendsToLocal = true)
 
-        localSpendingTxF.map { localSpendingTx =>
-          DLCOutcome(
-            fundingTx = fundingTx,
-            cet = cet,
-            closingTxOpt = localSpendingTx,
-            cetSpendingInfo = cetSpendingInfo
-          )
+        localSpendingTxF.map {
+          case Some(localSpendingTx) =>
+            UnilateralDLCOutcomeWithClosing(
+              fundingTx = fundingTx,
+              cet = cet,
+              closingTx = localSpendingTx,
+              cetSpendingInfo = cetSpendingInfo
+            )
+          case None =>
+            UnilateralDLCOutcomeWithDustClosing(fundingTx = fundingTx,
+                                                cet = cet)
         }
       } else {
         Future.successful(
-          DLCOutcome(fundingTx = fundingTx,
-                     cet = cet,
-                     closingTxOpt = None,
-                     cetSpendingInfo = cetSpendingInfo)
+          UnilateralDLCOutcomeWithDustClosing(fundingTx = fundingTx, cet = cet)
         )
       }
     }
@@ -932,7 +934,7 @@ case class BinaryOutcomeDLCClient(
     */
   def executeRemoteUnilateralDLC(
       dlcSetup: SetupDLC,
-      publishedCET: Transaction): Future[DLCOutcome] = {
+      publishedCET: Transaction): Future[UnilateralDLCOutcome] = {
     val output = publishedCET.outputs.last
 
     val (extCetPrivKey, isWin) =
@@ -955,10 +957,8 @@ case class BinaryOutcomeDLCClient(
 
     if (isToLocalOutput(output)) {
       Future.successful(
-        DLCOutcome(fundingTx = dlcSetup.fundingTx,
-                   cet = publishedCET,
-                   closingTxOpt = None,
-                   cetSpendingInfo = spendingInfo)
+        UnilateralDLCOutcomeWithDustClosing(fundingTx = dlcSetup.fundingTx,
+                                            cet = publishedCET)
       )
     } else {
       val txF =
@@ -967,13 +967,17 @@ case class BinaryOutcomeDLCClient(
                            isWin = isWin,
                            spendsToLocal = false)
 
-      txF.map { tx =>
-        DLCOutcome(
-          fundingTx = dlcSetup.fundingTx,
-          cet = publishedCET,
-          closingTxOpt = tx,
-          cetSpendingInfo = spendingInfo
-        )
+      txF.map {
+        case Some(tx) =>
+          UnilateralDLCOutcomeWithClosing(
+            fundingTx = dlcSetup.fundingTx,
+            cet = publishedCET,
+            closingTx = tx,
+            cetSpendingInfo = spendingInfo
+          )
+        case None =>
+          UnilateralDLCOutcomeWithDustClosing(fundingTx = dlcSetup.fundingTx,
+                                              cet = publishedCET)
       }
     }
   }
@@ -986,7 +990,7 @@ case class BinaryOutcomeDLCClient(
     */
   def executeJusticeDLC(
       dlcSetup: SetupDLC,
-      timedOutCET: Transaction): Future[DLCOutcome] = {
+      timedOutCET: Transaction): Future[UnilateralDLCOutcome] = {
     val justiceOutput = timedOutCET.outputs.head
 
     val (extCetPrivKey, cetScriptWitness, isWin) =
@@ -1015,20 +1019,22 @@ case class BinaryOutcomeDLCClient(
                            isWin = isWin,
                            spendsToLocal = false)
 
-      justiceSpendingTxF.map { justiceSpendingTx =>
-        DLCOutcome(
-          fundingTx = dlcSetup.fundingTx,
-          cet = timedOutCET,
-          closingTxOpt = justiceSpendingTx,
-          cetSpendingInfo = justiceSpendingInfo
-        )
+      justiceSpendingTxF.map {
+        case Some(justiceSpendingTx) =>
+          UnilateralDLCOutcomeWithClosing(
+            fundingTx = dlcSetup.fundingTx,
+            cet = timedOutCET,
+            closingTx = justiceSpendingTx,
+            cetSpendingInfo = justiceSpendingInfo
+          )
+        case None =>
+          UnilateralDLCOutcomeWithDustClosing(fundingTx = dlcSetup.fundingTx,
+                                              cet = timedOutCET)
       }
     } else {
       Future.successful(
-        DLCOutcome(fundingTx = dlcSetup.fundingTx,
-                   cet = timedOutCET,
-                   closingTxOpt = None,
-                   cetSpendingInfo = justiceSpendingInfo)
+        UnilateralDLCOutcomeWithDustClosing(fundingTx = dlcSetup.fundingTx,
+                                            cet = timedOutCET)
       )
     }
   }
@@ -1038,7 +1044,7 @@ case class BinaryOutcomeDLCClient(
     *
     * @return Each transaction published and its spending info
     */
-  def executeRefundDLC(dlcSetup: SetupDLC): Future[DLCOutcome] = {
+  def executeRefundDLC(dlcSetup: SetupDLC): Future[RefundDLCOutcome] = {
     val SetupDLC(fundingTx, _, _, _, _, _, _, _, _, refundTx) =
       dlcSetup
 
@@ -1062,13 +1068,17 @@ case class BinaryOutcomeDLCClient(
                                               isWin = false,
                                               spendsToLocal = false)
 
-    localSpendingTxF.map { localSpendingTx =>
-      DLCOutcome(
-        fundingTx = fundingTx,
-        cet = refundTx,
-        closingTxOpt = localSpendingTx,
-        cetSpendingInfo = localRefundSpendingInfo
-      )
+    localSpendingTxF.map {
+      case Some(localSpendingTx) =>
+        RefundDLCOutcomeWithClosing(
+          fundingTx = fundingTx,
+          refundTx = refundTx,
+          closingTx = localSpendingTx,
+          refundSpendingInfo = localRefundSpendingInfo
+        )
+      case None =>
+        RefundDLCOutcomeWithDustClosing(fundingTx = fundingTx,
+                                        refundTx = refundTx)
     }
   }
 }

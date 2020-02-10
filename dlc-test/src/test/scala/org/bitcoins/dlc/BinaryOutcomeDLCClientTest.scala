@@ -249,19 +249,40 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   }
 
   def validateOutcome(outcome: DLCOutcome): Assertion = {
-    val DLCOutcome(fundingTx, cet, closingTxOpt, cetSpendingInfo) = outcome
-
+    val fundingTx = outcome.fundingTx
     assert(noEmptySPKOutputs(fundingTx))
-    assert(noEmptySPKOutputs(cet))
+
+    outcome match {
+      case unilateral: UnilateralDLCOutcome =>
+        assert(noEmptySPKOutputs(unilateral.cet))
+      case refund: RefundDLCOutcome =>
+        assert(noEmptySPKOutputs(refund.refundTx))
+      case _: CooperativeDLCOutcome => ()
+    }
+
+    val (closingTxOpt, cetSpendingInfoOpt) = outcome match {
+      case _: UnilateralDLCOutcomeWithDustClosing |
+          _: RefundDLCOutcomeWithDustClosing =>
+        (None, None)
+      case UnilateralDLCOutcomeWithClosing(_, _, closingTx, spendingInfo) =>
+        (Some(closingTx), Some(spendingInfo))
+      case RefundDLCOutcomeWithClosing(_, _, closingTx, spendingInfo) =>
+        (Some(closingTx), Some(spendingInfo))
+      case CooperativeDLCOutcome(_, closingTx) => (Some(closingTx), None)
+    }
 
     closingTxOpt match {
       case None => succeed
       case Some(closingTx) =>
         assert(noEmptySPKOutputs(closingTx))
 
-        assert(
-          BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
-        )
+        cetSpendingInfoOpt match {
+          case None => succeed
+          case Some(cetSpendingInfo) =>
+            assert(
+              BitcoinScriptUtil.verifyScript(closingTx, Vector(cetSpendingInfo))
+            )
+        }
     }
   }
 
@@ -389,7 +410,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
           validateOutcome(offerOutcome)
 
           assert(acceptOutcome.fundingTx == offerOutcome.fundingTx)
-          assert(acceptOutcome.cet == offerOutcome.cet)
+          assert(acceptOutcome.refundTx == offerOutcome.refundTx)
         }
     }
   }

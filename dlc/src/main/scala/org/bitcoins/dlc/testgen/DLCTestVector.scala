@@ -44,7 +44,9 @@ import org.bitcoins.dlc.{
   BinaryOutcomeDLCClient,
   CETSignatures,
   DLCTimeouts,
-  FundingSignatures
+  FundingSignatures,
+  UnilateralDLCOutcomeWithClosing,
+  UnilateralDLCOutcomeWithDustClosing
 }
 import play.api.libs.json.{
   JsNumber,
@@ -251,6 +253,17 @@ object DLCTestVector {
         acceptSetup,
         unilateralOutcome.cet)
     } yield {
+      val localClosingTxOpt = unilateralOutcome match {
+        case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
+          Some(closingTx)
+        case _: UnilateralDLCOutcomeWithDustClosing => None
+      }
+      val remoteClosingTxOpt = toRemoteOutcome match {
+        case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
+          Some(closingTx)
+        case _: UnilateralDLCOutcomeWithDustClosing => None
+      }
+
       DLCTestVector(
         localPayouts = localPayouts,
         realOutcome = realOutcome,
@@ -272,8 +285,8 @@ object DLCTestVector {
         remoteWinCet = acceptSetup.cetWin,
         remoteLoseCet = acceptSetup.cetLose,
         refundTx = offerSetup.refundTx,
-        localClosingTxOpt = unilateralOutcome.closingTxOpt,
-        remoteClosingTxOpt = toRemoteOutcome.closingTxOpt
+        localClosingTxOpt = localClosingTxOpt,
+        remoteClosingTxOpt = remoteClosingTxOpt
       )
     }
   }
