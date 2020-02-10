@@ -570,7 +570,7 @@ object TxBuilder {
     */
   def calcSequenceForInputs(
       utxos: Seq[UTXOSpendingInfo],
-      defaultSequence: UInt32 = UInt32.zero): Seq[TransactionInput] = {
+      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
     @tailrec
     def loop(
         remaining: Seq[UTXOSpendingInfo],
