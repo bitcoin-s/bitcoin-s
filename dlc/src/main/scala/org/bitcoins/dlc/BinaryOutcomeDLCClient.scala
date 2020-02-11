@@ -14,7 +14,6 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
-import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   EmptyScriptSignature,
@@ -219,9 +218,9 @@ case class BinaryOutcomeDLCClient(
   private val toLocalClosingFee: CurrencyUnit = Satoshis(
     approxToLocalClosingVBytes * feeRate.toLong)
 
-  private val isRBFEnabled = Policy.isRBFEnabled
+  private val isRBFEnabled = false
   private val sequence =
-    if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+    if (isRBFEnabled) UInt32.zero else TransactionConstants.disableRBFSequence
 
   lazy val createUnsignedFundingTransaction: Transaction = {
     /* We need to commit to the CET's and local closing tx's fee during the construction of
@@ -257,7 +256,7 @@ case class BinaryOutcomeDLCClient(
       Vector(output, initiatorChangeOutput, otherChangeOutput)
 
     val localInputs =
-      TxBuilder.calcSequenceForInputs(fundingUtxos, isRBFEnabled)
+      TxBuilder.calcSequenceForInputs(fundingUtxos, sequence)
     val remoteInputs = remoteFundingInputs.map {
       case (outPoint, _) =>
         TransactionInput(outPoint, EmptyScriptSignature, sequence)

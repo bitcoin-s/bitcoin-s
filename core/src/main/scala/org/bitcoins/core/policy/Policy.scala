@@ -1,6 +1,7 @@
 package org.bitcoins.core.policy
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script.flag._
 
 /**
@@ -66,7 +67,7 @@ sealed abstract class Policy {
   /** Max fee for a transaction is set to 10 mBTC right now */
   def maxFee: CurrencyUnit = Satoshis(10) * CurrencyUnits.oneMBTC
 
-  def isRBFEnabled: Boolean = true
+  def sequence: UInt32 = UInt32.zero
 }
 
 object Policy extends Policy
