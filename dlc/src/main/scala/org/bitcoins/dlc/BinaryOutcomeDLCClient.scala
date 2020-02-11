@@ -963,8 +963,6 @@ object BinaryOutcomeDLCClient {
       extPrivKey: ExtPrivateKey,
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
       totalCollateral: CurrencyUnit,
-      winPayout: CurrencyUnit,
-      losePayout: CurrencyUnit,
       changeSPK: P2WPKHWitnessSPKV0)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
     BinaryOutcomeDLCClient(
@@ -979,8 +977,8 @@ object BinaryOutcomeDLCClient {
       remoteInput = offer.totalCollateral,
       fundingUtxos = fundingUtxos,
       remoteFundingInputs = offer.fundingInputs,
-      winPayout = winPayout,
-      losePayout = losePayout,
+      winPayout = offer.contractInfo.head._2,
+      losePayout = offer.contractInfo.last._2,
       timeouts = offer.timeouts,
       feeRate = offer.feeRate,
       changeSPK = changeSPK,
@@ -994,9 +992,7 @@ object BinaryOutcomeDLCClient {
       offer: DLCMessage.DLCOffer,
       accept: DLCMessage.DLCAccept,
       extPrivKey: ExtPrivateKey,
-      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
-      winPayout: CurrencyUnit,
-      losePayout: CurrencyUnit)(
+      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle])(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
     require(extPrivKey.extPublicKey == offer.extPubKey,
             "ExtPrivateKey must match the one in your Offer message")
@@ -1020,8 +1016,8 @@ object BinaryOutcomeDLCClient {
       remoteInput = accept.totalCollateral,
       fundingUtxos = fundingUtxos,
       remoteFundingInputs = accept.fundingInputs,
-      winPayout = winPayout,
-      losePayout = losePayout,
+      winPayout = offer.contractInfo.head._2,
+      losePayout = offer.contractInfo.last._2,
       timeouts = offer.timeouts,
       feeRate = offer.feeRate,
       changeSPK =
