@@ -48,7 +48,7 @@ abstract class LockedWallet
                 case TxoState.PendingConfirmationsReceived |
                     TxoState.ConfirmedReceived =>
                   txo.output.value
-                case TxoState.PendingConfirmationsSpent |
+                case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
                     TxoState.ConfirmedSpent | TxoState.DoesNotExist =>
                   CurrencyUnits.zero
               }
