@@ -1,7 +1,7 @@
 package org.bitcoins.db
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import ch.qos.logback.classic
+import org.slf4j.{LoggerFactory, MDC}
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
@@ -11,6 +11,7 @@ import ch.qos.logback.core.encoder.Encoder
 import ch.qos.logback.core.FileAppender
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.classic.joran.JoranConfigurator
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 
 /** Provides logging functionality for Bitcoin-S
   * app modules (i.e. the modules that are capable
@@ -27,8 +28,10 @@ private[bitcoins] trait AppLoggers {
     case object Database extends LoggerKind
   }
 
+  def conf: AppConfig
+
   private val context = {
-    val context = LoggerFactory.getILoggerFactory() match {
+    val context = LoggerFactory.getILoggerFactory match {
       case ctx: LoggerContext => ctx
       case other              => sys.error(s"Expected LoggerContext, got: $other")
     }
@@ -46,7 +49,7 @@ private[bitcoins] trait AppLoggers {
     val encoder = new PatternLayoutEncoder()
     // same date format as Bitcoin Core
     encoder.setPattern(
-      s"%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX} %level [%logger{0}] %msg%n")
+      s"%date{yyyy-MM-dd'T'HH:mm:ss,SSXXX} %level [%X{name}] %msg%n")
     encoder.setContext(context)
     encoder.start()
     encoder.asInstanceOf[Encoder[Nothing]]
@@ -61,6 +64,7 @@ private[bitcoins] trait AppLoggers {
     appender.setContext(context)
     appender.setName("console")
     appender.setEncoder(encoder)
+    appender.start()
     appender.asInstanceOf[ConsoleAppender[ILoggingEvent]]
   }
 
@@ -83,14 +87,32 @@ private[bitcoins] trait AppLoggers {
 
     logFileAppender.setRollingPolicy(logFilePolicy)
 
+    val baseDir = conf.baseDatadir
+    val lastDirname = conf.network match {
+      case MainNet  => "mainnet"
+      case TestNet3 => "testnet3"
+      case RegTest  => "regtest"
+    }
+    val logFile = baseDir.resolve(lastDirname).resolve(s"bitcoin-s.log")
+
+    logFileAppender.setFile(logFile.toString)
+    logFileAppender.start()
+
     logFileAppender.asInstanceOf[FileAppender[ILoggingEvent]]
+  }
+
+  private lazy val logger: classic.Logger = {
+    val logger = context.getLogger("Bitcoin-S")
+    logger.addAppender(fileAppender)
+    logger.addAppender(consoleAppender)
+    logger.setAdditive(true)
+    logger
   }
 
   /** Stitches together the encoder, appenders and sets the correct
     * logging level
     */
-  protected def getLoggerImpl(loggerKind: LoggerKind)(
-      implicit conf: AppConfig): Logger = {
+  protected def getLoggerImpl(loggerKind: LoggerKind): MarkedLogger = {
     import LoggerKind._
 
     val (name, level) = loggerKind match {
@@ -103,23 +125,54 @@ private[bitcoins] trait AppLoggers {
       case Database    => ("DATABASE", conf.databaseLogLevel)
     }
 
-    val logger = context.getLogger(name)
-
-    if (!conf.disableFileLogging) {
-      val logfile = conf.datadir.resolve(s"bitcoin-s.log")
-      fileAppender.setFile(logfile.toString())
-      fileAppender.start()
-      logger.addAppender(fileAppender)
-    }
-
-    if (!conf.disableConsoleLogging) {
-      consoleAppender.start()
-      logger.addAppender(consoleAppender)
-    }
-
     logger.setLevel(level)
-    logger.setAdditive(true)
 
-    logger
+    MarkedLogger(name, logger)
+  }
+}
+
+case class MarkedLogger(name: String, logger: classic.Logger) {
+  private def setContext(): Unit = {
+    MDC.put("name", name)
+  }
+
+  def info(message: String): Unit = {
+    setContext()
+    logger.info(message)
+  }
+
+  def info(message: String, t: Throwable): Unit = {
+    setContext()
+    logger.info(message, t)
+  }
+
+  def debug(message: String): Unit = {
+    setContext()
+    logger.debug(message)
+  }
+
+  def error(message: String): Unit = {
+    setContext()
+    logger.error(message)
+  }
+
+  def error(message: String, t: Throwable): Unit = {
+    setContext()
+    logger.error(message, t)
+  }
+
+  def trace(message: String): Unit = {
+    setContext()
+    logger.trace(message)
+  }
+
+  def warn(message: String): Unit = {
+    setContext()
+    logger.warn(message)
+  }
+
+  def warn(message: String, t: Throwable): Unit = {
+    setContext()
+    logger.warn(message, t)
   }
 }
