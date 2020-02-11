@@ -1,11 +1,9 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.core.gen.ChainParamsGenerator
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.RegTest
 
 class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "create a private key from its hex representation" in {
@@ -65,7 +63,7 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
         network match {
           case MainNet =>
             assert(ECPrivateKey.parseNetworkFromWIF(wif).get == network)
-          case TestNet3 | RegTest =>
+          case TestNet3 | RegTest | SigNet =>
             assert(ECPrivateKey.parseNetworkFromWIF(wif).get == TestNet3)
         }
         assert(ECPrivateKey.fromWIFToPrivateKey(wif) == privKey)

@@ -70,14 +70,16 @@ case class BitcoindConfig(
     network match {
       case MainNet  => "main"
       case RegTest  => "regtest"
+      case SigNet   => "signet"
       case TestNet3 => "test"
     }
 
   /** The networks we're _not_ on */
   private lazy val otherNetworks = network match {
-    case MainNet  => List("test", "regtest")
-    case RegTest  => List("main", "test")
-    case TestNet3 => List("main", "regtest")
+    case MainNet  => List("test", "regtest", "signet")
+    case RegTest  => List("main", "test", "signet")
+    case SigNet   => List("main", "test", "regtest")
+    case TestNet3 => List("main", "regtest", "signet")
   }
 
   private lazy val ourNetworkString: String = networkString(network)

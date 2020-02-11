@@ -143,10 +143,43 @@ sealed abstract class RegTest extends BitcoinNetwork {
 }
 
 final case object RegTest extends RegTest
+
+sealed abstract class SigNet extends BitcoinNetwork {
+  override def chainParams: SigNetChainParams.type = SigNetChainParams
+
+  /**
+   * @inheritdoc
+   */
+  override def port = 38333
+
+  /**
+   * @inheritdoc
+   */
+  override def rpcPort = 38332
+
+  /**
+   * @inheritdoc
+   */
+  override def dnsSeeds = {
+    Seq(
+      "178.128.221.177",
+      "2a01:7c8:d005:390::5",
+      "ntv3mtqw5wt63red.onion:38333",
+    )
+  }
+
+  /**
+   * @inheritdoc
+   */
+  override def magicBytes = ByteVector(0xf0, 0xc7, 0x70, 0x6a)
+
+}
+
+final case object SigNet extends SigNet
 // $COVERAGE-ON$
 
 object Networks {
-  val knownNetworks: Seq[NetworkParameters] = Seq(MainNet, TestNet3, RegTest)
+  val knownNetworks: Seq[NetworkParameters] = Seq(MainNet, TestNet3, RegTest, SigNet)
   val secretKeyBytes: Seq[ByteVector] = knownNetworks.map(_.privateKey)
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
@@ -156,6 +189,7 @@ object Networks {
     case "mainnet" => Some(MainNet)
     case "testnet" => Some(TestNet3)
     case "regtest" => Some(RegTest)
+    case "signet"  => Some(SigNet)
     case _: String => None
   }
 
@@ -163,7 +197,8 @@ object Networks {
   def magicToNetwork: Map[ByteVector, NetworkParameters] = Map(
     MainNet.magicBytes -> MainNet,
     TestNet3.magicBytes -> TestNet3,
-    RegTest.magicBytes -> RegTest
+    RegTest.magicBytes -> RegTest,
+    SigNet.magicBytes -> SigNet
   )
 
   def bytesToNetwork: Map[ByteVector, NetworkParameters] = Map(
@@ -172,8 +207,10 @@ object Networks {
     MainNet.privateKey -> MainNet,
     TestNet3.p2pkhNetworkByte -> TestNet3,
     TestNet3.p2shNetworkByte -> TestNet3,
-    TestNet3.privateKey -> TestNet3
-
+    TestNet3.privateKey -> TestNet3,
     //ommitting regtest as it has the same network bytes as testnet3
+    SigNet.p2pkhNetworkByte -> SigNet,
+    SigNet.p2shNetworkByte -> SigNet,
+    SigNet.privateKey -> SigNet
   )
 }

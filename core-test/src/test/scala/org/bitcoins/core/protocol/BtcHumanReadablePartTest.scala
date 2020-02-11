@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol
 
-import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3, SigNet}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Success
@@ -12,11 +12,13 @@ class BtcHumanReadablePartTest extends BitcoinSUnitTest {
     BtcHumanReadablePart("tb") must be(Success(tb))
     BtcHumanReadablePart("bc") must be(Success(bc))
     BtcHumanReadablePart("bcrt") must be(Success(bcrt))
+    BtcHumanReadablePart("sb") must be(Success(sb))
   }
 
   it must "match the correct hrp with the correct network" in {
     BtcHumanReadablePart(TestNet3) must be(tb)
     BtcHumanReadablePart(MainNet) must be(bc)
     BtcHumanReadablePart(RegTest) must be(bcrt)
+    BtcHumanReadablePart(SigNet) must be(sb)
   }
 }

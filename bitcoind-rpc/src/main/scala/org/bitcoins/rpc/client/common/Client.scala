@@ -8,7 +8,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, StreamTcpException}
 import akka.util.ByteString
-import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3, SigNet}
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -50,6 +50,7 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
       case MainNet  => ""
       case TestNet3 => "testnet"
       case RegTest  => "regtest"
+      case SigNet   => "signet"
     }
     instance.datadir.toPath.resolve(prefix).resolve("debug.log")
   }

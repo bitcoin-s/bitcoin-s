@@ -6,6 +6,7 @@ import java.nio.file.Paths
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.config.SigNet
 import java.nio.file.Files
 import org.bitcoins.core.config.NetworkParameters
 
@@ -63,6 +64,7 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
         case TestNet3 => "testnet3"
         case MainNet  => ""
         case RegTest  => "regtest"
+        case SigNet   => "signet"
 
       }
       Paths.get(datadir.toString, middleSegment, ".cookie")

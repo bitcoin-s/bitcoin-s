@@ -39,10 +39,23 @@ object BtcHumanReadablePart {
     override def chars: String = "bcrt"
   }
 
+  /**
+   * Represents the HumanReadablePart for a bitcoin signet bech32 address
+   *
+   * @see Signet is not covered in the BIP. See
+   *      [[https://github.com/bitcoin/bitcoin/pull/16411 this issue]]
+   *      for more context.
+   */
+  case object sb extends BtcHumanReadablePart {
+    override def network: SigNet.type = SigNet
+    override def chars: String = "sb"
+  }
+
   def apply(str: String): Try[BtcHumanReadablePart] = str match {
     case "bc"   => Success(bc)
     case "tb"   => Success(tb)
     case "bcrt" => Success(bcrt) // Bitcoin Core specific
+    case "sb"   => Success(sb)
     case _ =>
       Failure(
         new IllegalArgumentException(s"Could not construct BTC HRP from $str"))
@@ -52,6 +65,7 @@ object BtcHumanReadablePart {
     case _: MainNet  => bc
     case _: TestNet3 => tb
     case _: RegTest  => bcrt
+    case _: SigNet   => sb
   }
 
   def apply(hrp: Bech32HumanReadablePart): Try[BtcHumanReadablePart] =

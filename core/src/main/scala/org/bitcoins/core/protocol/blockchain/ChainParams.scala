@@ -2,21 +2,17 @@ package org.bitcoins.core.protocol.blockchain
 
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
-import org.bitcoins.core.config.{
-  BitcoinNetwork,
-  MainNet,
-  NetworkParameters,
-  RegTest,
-  TestNet3
-}
+
+import org.bitcoins.core.config.{BitcoinNetwork, MainNet, NetworkParameters, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
-import org.bitcoins.core.script.crypto.OP_CHECKSIG
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, OP_1, ScriptConstant}
+import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG}
 import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
 import scodec.bits.{ByteVector, _}
 
@@ -105,6 +101,52 @@ sealed abstract class ChainParams {
   }
 
   /**
+   * Creates the Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] for Signet.
+   *
+   * @see Mimics
+   *      [[https://github.com/bitcoin/bitcoin/blob/006d9ab9e59a00fa02b8d5f32919f9d57567fa65/src/chainparams.cpp#L67 this function]]
+   *      in Bitcoin Core
+   *
+   * @param time the time when the miner started hashing the block header
+   * @param nonce the nonce to mine the block
+   * @param nBits An encoded version of the target threshold this block’s header hash must be less than or equal to.
+   * @param version the block version
+   * @param amount the block reward for the genesis block (50 BTC in Bitcoin)
+   * @return the newly minted genesis block
+   */
+  def createSignetGenesisBlock(
+      time: UInt32,
+      nonce: UInt32,
+      nBits: UInt32,
+      version: Int32,
+      amount: CurrencyUnit): Block = {
+    val defaultSignetKey = DoubleSha256Digest(
+      "03ad5e0edad18cb1f0fc0d28a3d4f1f3e445640337489abb10404f2d1e086be430")
+    val const = ScriptConstant(defaultSignetKey.bytes)
+
+    val asm = {
+      List(OP_1, const, OP_1, OP_CHECKMULTISIG)
+    }
+
+    val blockScript = ScriptSignature.fromAsm(asm)
+    val genesisOutputScript = ScriptPubKey.fromAsm(Seq(OP_RETURN))
+
+    val input = CoinbaseInput(blockScript, TransactionConstants.sequence)
+    val output = TransactionOutput(amount, genesisOutputScript)
+    val tx = BaseTransaction(TransactionConstants.version,
+      Seq(input),
+      Seq(output),
+      TransactionConstants.lockTime)
+    val prevBlockHash = DoubleSha256Digest(
+      "0000000000000000000000000000000000000000000000000000000000000000")
+    val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
+    val genesisBlockHeader =
+      BlockHeader(version, prevBlockHash, merkleRootHash, time, nBits, nonce)
+    val genesisBlock = Block(genesisBlockHeader, Seq(tx))
+    genesisBlock
+  }
+
+  /**
     * @param timestamp a piece of data to signify when this block was first created - satoshi used an article headline
     * @param scriptPubKey the scriptPubKey that needs to be satisfied in able to spend the genesis block reward
     * @param time the time when the miner started hashing the block header
@@ -147,10 +189,7 @@ sealed abstract class ChainParams {
     val prevBlockHash = DoubleSha256Digest(
       "0000000000000000000000000000000000000000000000000000000000000000")
     val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
-    val genesisBlockHeader =
-      BlockHeader(version, prevBlockHash, merkleRootHash, time, nBits, nonce)
-    val genesisBlock = Block(genesisBlockHeader, Seq(tx))
-    genesisBlock
+    Block(BlockHeader(version, prevBlockHash, merkleRootHash, time, nBits, nonce), Seq(tx))
   }
 
   /**
@@ -397,6 +436,57 @@ object RegTestNetChainParams extends BitcoinChainParams {
     * @inheritdoc
     */
   override lazy val network: BitcoinNetwork = RegTest
+}
+
+object SigNetChainParams extends BitcoinChainParams {
+  override lazy val networkId = "signet"
+  override lazy val genesisBlock: Block =
+    createSignetGenesisBlock(UInt32(1534313275),
+      UInt32(621297),
+      UInt32(0x1e2adc28),
+      Int32.one,
+      Satoshis(5000000000L))
+
+  override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
+    Map(
+      Base58Type.PubKeyAddress -> hex"7d",
+      Base58Type.ScriptAddress -> hex"57",
+      Base58Type.SecretKey -> hex"d9",
+      Base58Type.ExtPublicKey -> hex"043587cf", // tprv
+      Base58Type.ExtSecretKey -> hex"04358394"  // tpub
+    )
+
+  /**
+   * Pow limit on signet
+   * [[https://github.com/bitcoin/bitcoin/blob/006d9ab9e59a00fa02b8d5f32919f9d57567fa65/src/chainparams.cpp#L316 signet pow limit]]
+   */
+  override lazy val powLimit: BigInteger = {
+    new BigInteger("00002adc28cf53b63c82faa55d83e40ac63b5f100aa5d8df62a429192f9e8ce5")
+  }
+
+  /**
+   * Minimum amount of chain work on the test network
+   */
+  override lazy val minimumChainWork: BigInteger = {
+    BigInteger.valueOf(0)
+  }
+
+  /**
+   * Regtest allows trivial difficulty blocks
+   * [[https://github.com/bitcoin/bitcoin/blob/006d9ab9e59a00fa02b8d5f32919f9d57567fa65/src/chainparams.cpp#L312 regtest min difficulty]]
+   */
+  override lazy val allowMinDifficultyBlocks: Boolean = false
+
+  /**
+   * Regtest allows pow retargetting
+   * [[https://github.com/bitcoin/bitcoin/blob/006d9ab9e59a00fa02b8d5f32919f9d57567fa65/src/chainparams.cpp#L313 signet pow retargetting]]
+   */
+  override lazy val noRetargeting: Boolean = false
+
+  /**
+   * @inheritdoc
+   */
+  override lazy val network: BitcoinNetwork = SigNet
 }
 
 sealed abstract class Base58Type

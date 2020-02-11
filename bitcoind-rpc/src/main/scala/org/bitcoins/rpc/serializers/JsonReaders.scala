@@ -539,6 +539,7 @@ object JsonReaders {
 
     def reads(json: JsValue): JsResult[NetworkParameters] =
       json.validate[String].map(_.toLowerCase()).map {
+        case "signet"  => SigNet
         case "regtest" => RegTest
         case "main"    => MainNet
         case "test"    => TestNet3

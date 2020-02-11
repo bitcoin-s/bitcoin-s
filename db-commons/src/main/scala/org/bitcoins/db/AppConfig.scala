@@ -1,13 +1,10 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, SigNet, TestNet3}
+import org.bitcoins.core.protocol.blockchain.{ChainParams, MainNetChainParams, RegTestNetChainParams, SigNetChainParams, TestNetChainParams}
 import java.nio.file.Path
 import java.nio.file.Paths
 
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.config.RegTest
 import com.typesafe.config._
 import org.bitcoins.core.util.BitcoinSLogger
 import slick.jdbc.SQLiteProfile
@@ -17,9 +14,6 @@ import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
 import slick.basic.DatabaseConfig
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.core.protocol.blockchain.TestNetChainParams
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import java.nio.file.Files
 
 import scala.util.Properties
@@ -198,9 +192,10 @@ abstract class AppConfig extends BitcoinSLogger {
       case "mainnet"  => MainNetChainParams
       case "testnet3" => TestNetChainParams
       case "regtest"  => RegTestNetChainParams
+      case "signet"   => SigNetChainParams
       case other: String =>
         throw new IllegalArgumentException(
-          s"'$other' is not a recognized network! Available options: mainnet, testnet3, regtest")
+          s"'$other' is not a recognized network! Available options: mainnet, testnet3, regtest, signet")
     }
   }
 
@@ -306,6 +301,7 @@ abstract class AppConfig extends BitcoinSLogger {
       case MainNet  => "mainnet"
       case TestNet3 => "testnet3"
       case RegTest  => "regtest"
+      case SigNet   => "signet"
     }
     baseDatadir.resolve(lastDirname)
   }

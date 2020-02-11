@@ -22,10 +22,15 @@ class NetworkParametersTest extends BitcoinSUnitTest {
     BitcoinSUtil.encodeHex(RegTest.magicBytes) must be("fabfb5da")
   }
 
+  it must "create the correct magic network bytes for signet" in {
+    BitcoinSUtil.encodeHex(SigNet.magicBytes) must be("f0c7706a")
+  }
+
   it must "get the correct Network from string" in {
     assert(Networks.fromString("mainnet").contains(MainNet))
     assert(Networks.fromString("testnet").contains(TestNet3))
     assert(Networks.fromString("regtest").contains(RegTest))
+    assert(Networks.fromString("signet").contains(SigNet))
     assert(Networks.fromString("").isEmpty)
     assert(Networks.fromString("craig wright is a fraud").isEmpty)
   }
