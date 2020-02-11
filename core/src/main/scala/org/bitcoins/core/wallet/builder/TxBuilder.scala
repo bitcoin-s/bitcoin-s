@@ -160,7 +160,7 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
     val utxos = utxoMap.values.toList
     val unsignedTxWit = TransactionWitness.fromWitOpt(scriptWitOpt.toVector)
     val calculatedLockTime = TxBuilder.calcLockTime(utxos)
-    val inputs = TxBuilder.calcSequenceForInputs(utxos, Policy.isRBFEnabled)
+    val inputs = TxBuilder.calcSequenceForInputs(utxos)
     val emptyChangeOutput = TransactionOutput(CurrencyUnits.zero, changeSPK)
     val unsignedTxNoFee = calculatedLockTime.map { cLockTime =>
       val lockTimeF = lockTimeOverrideOpt match {
@@ -570,7 +570,7 @@ object TxBuilder {
     */
   def calcSequenceForInputs(
       utxos: Seq[UTXOSpendingInfo],
-      isRBFEnabled: Boolean): Seq[TransactionInput] = {
+      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
     @tailrec
     def loop(
         remaining: Seq[UTXOSpendingInfo],
@@ -590,13 +590,10 @@ object TxBuilder {
               loop(newRemaining, input +: accum)
             case p2pkWithTimeout: P2PKWithTimeoutSpendingInfo =>
               if (p2pkWithTimeout.isBeforeTimeout) {
-                val sequence =
-                  if (isRBFEnabled) UInt32.zero
-                  else TransactionConstants.sequence
                 val input =
                   TransactionInput(spendingInfo.outPoint,
                                    EmptyScriptSignature,
-                                   sequence)
+                                   defaultSequence)
                 loop(newRemaining, input +: accum)
               } else {
                 val sequence = solveSequenceForCSV(
@@ -616,15 +613,11 @@ object TxBuilder {
                 _: UnassignedSegwitNativeUTXOSpendingInfo |
                 _: P2PKSpendingInfo | _: P2PKHSpendingInfo |
                 _: MultiSignatureSpendingInfo | _: EmptySpendingInfo =>
-              //none of these script types affect the sequence number of a tx
-              //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
-              //see BIP125 for more information
-              val sequence =
-                if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+              //none of these script types affect the sequence number of a tx so the defaultSequence is used
               val input =
                 TransactionInput(spendingInfo.outPoint,
                                  EmptyScriptSignature,
-                                 sequence)
+                                 defaultSequence)
               loop(newRemaining, input +: accum)
           }
       }
