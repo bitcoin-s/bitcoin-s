@@ -144,6 +144,12 @@ abstract class LockedWallet
       outpoints.foldLeft(withPubs) { _.insert(_) }
     }
   }
+
+  override def markUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    val updated = utxos.map(_.copyWithState(TxoState.Reserved))
+    spendingInfoDAO.updateAll(updated)
+  }
 }
 
 object LockedWallet {
