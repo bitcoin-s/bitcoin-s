@@ -40,8 +40,8 @@ object PaymentLog {
       case Some(e) =>
         e match {
           case PaymentReceived(_, parts) =>
-            parts.maxBy(_.timestamp).timestamp.toMillis
-          case PaymentFailed(_, _, _, timestamp) => timestamp.toMillis
+            parts.maxBy(_.timestamp).timestamp.toEpochMilli
+          case PaymentFailed(_, _, _, timestamp) => timestamp.toEpochMilli
           case _: WebSocketEvent =>
             throw new RuntimeException("Can't extract a timestamp")
         }

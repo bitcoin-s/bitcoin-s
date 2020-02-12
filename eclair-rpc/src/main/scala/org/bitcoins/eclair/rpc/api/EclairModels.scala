@@ -1,6 +1,7 @@
 package org.bitcoins.eclair.rpc.api
 
 import java.net.InetSocketAddress
+import java.time.Instant
 import java.util.UUID
 
 import org.bitcoins.core.crypto.{
@@ -84,7 +85,7 @@ case class OpenChannelInfo(
 case class NodeInfo(
     signature: ECDigitalSignature,
     features: String,
-    timestamp: Long,
+    timestamp: Instant,
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
@@ -104,7 +105,7 @@ case class NetworkFeesResult(
     txId: DoubleSha256DigestBE,
     fee: Satoshis,
     txType: String,
-    timestamp: FiniteDuration //milliseconds
+    timestamp: Instant //milliseconds
 )
 
 case class ChannelStats(
@@ -132,7 +133,7 @@ object ReceivedPayment {
   case class Part(
       amount: MilliSatoshis,
       fromChannelId: FundedChannelId,
-      timestamp: FiniteDuration //milliseconds
+      timestamp: Instant //milliseconds
   )
 }
 
@@ -142,7 +143,7 @@ case class RelayedPayment(
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
     toChannelId: FundedChannelId,
-    timestamp: FiniteDuration //milliseconds
+    timestamp: Instant //milliseconds
 )
 
 case class SentPayment(
@@ -160,7 +161,7 @@ object SentPayment {
       amount: MilliSatoshis,
       feesPaid: MilliSatoshis,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration //milliseconds
+      timestamp: Instant //milliseconds
   )
 }
 
@@ -168,7 +169,7 @@ case class ChannelUpdate(
     signature: ECDigitalSignature,
     chainHash: DoubleSha256Digest,
     shortChannelId: ShortChannelId,
-    timestamp: Long, //seconds
+    timestamp: Instant, //seconds
     messageFlags: Int,
     channelFlags: Int,
     cltvExpiryDelta: Int,
@@ -193,7 +194,7 @@ case class ChannelResult(
 
 case class InvoiceResult(
     prefix: LnHumanReadablePart,
-    timestamp: FiniteDuration, //seconds
+    timestamp: Instant, //seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
@@ -208,7 +209,7 @@ case class SendToRouteResult(paymentId: PaymentId, parentId: PaymentId)
 
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
-    timestamp: FiniteDuration, //seconds
+    timestamp: Instant, //seconds
     nodeId: NodeId,
     serialized: String,
     description: String,
@@ -242,14 +243,14 @@ case class OutgoingPayment(
     amount: MilliSatoshis,
     recipientAmount: MilliSatoshis,
     recipientNodeId: NodeId,
-    createdAt: FiniteDuration, //milliseconds
+    createdAt: Instant, //milliseconds
     paymentRequest: Option[PaymentRequest],
     status: OutgoingPaymentStatus)
 
 case class IncomingPayment(
     paymentRequest: PaymentRequest,
     paymentPreimage: PaymentPreimage,
-    createdAt: FiniteDuration, //milliseconds
+    createdAt: Instant, //milliseconds
     status: IncomingPaymentStatus)
 
 sealed trait IncomingPaymentStatus
@@ -260,7 +261,7 @@ object IncomingPaymentStatus {
 
   case object Expired extends IncomingPaymentStatus
 
-  case class Received(amount: MilliSatoshis, receivedAt: Long //milliseconds
+  case class Received(amount: MilliSatoshis, receivedAt: Instant //milliseconds
   ) extends IncomingPaymentStatus
 
 }
@@ -274,7 +275,7 @@ object OutgoingPaymentStatus {
       paymentPreimage: PaymentPreimage,
       feesPaid: MilliSatoshis,
       route: Seq[Hop],
-      completedAt: FiniteDuration //milliseconds
+      completedAt: Instant //milliseconds
   ) extends OutgoingPaymentStatus
 
   case class Failed(failures: Seq[PaymentFailure]) extends OutgoingPaymentStatus
@@ -306,10 +307,9 @@ object WebSocketEvent {
       paymentHash: Sha256Digest,
       fromChannelId: FundedChannelId,
       toChannelId: FundedChannelId,
-      timestamp: FiniteDuration //milliseconds
+      timestamp: Instant //milliseconds
   ) extends WebSocketEvent
 
-  // {"type":"payment-received","paymentHash":"e1367ac5f913708f9ecc754c49477db3e7de404de7e921cab2dfe489227e07a7","parts":[{"amount":1000,"fromChannelId":"f59a3347ac6ef95ae4ad3e3777d137f80e02bf0a88d65b88f521676c7c713bf8","timestamp":1578080963457}]}
   case class PaymentReceived(
       paymentHash: Sha256Digest,
       parts: Vector[PaymentReceived.Part]
@@ -319,14 +319,14 @@ object WebSocketEvent {
     case class Part(
         amount: MilliSatoshis,
         fromChannelId: FundedChannelId,
-        timestamp: FiniteDuration // milliseconds
+        timestamp: Instant // milliseconds
     )
   }
   case class PaymentFailed(
       id: PaymentId,
       paymentHash: Sha256Digest,
       failures: Vector[String],
-      timestamp: FiniteDuration // milliseconds
+      timestamp: Instant // milliseconds
   ) extends WebSocketEvent
 
   case class PaymentSent(
@@ -342,14 +342,14 @@ object WebSocketEvent {
         amount: MilliSatoshis,
         feesPaid: MilliSatoshis,
         toChannelId: FundedChannelId,
-        timestamp: FiniteDuration // milliseconds
+        timestamp: Instant // milliseconds
     )
   }
 
   case class PaymentSettlingOnchain(
       amount: MilliSatoshis,
       paymentHash: Sha256Digest,
-      timestamp: FiniteDuration //milliseconds
+      timestamp: Instant //milliseconds
   ) extends WebSocketEvent
 
 }
