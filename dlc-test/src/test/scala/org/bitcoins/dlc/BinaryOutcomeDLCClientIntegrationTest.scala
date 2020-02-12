@@ -82,6 +82,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
   val preCommittedR: ECPublicKey = preCommittedK.publicKey
   val localInput: CurrencyUnit = CurrencyUnits.oneBTC
   val remoteInput: CurrencyUnit = CurrencyUnits.oneBTC
+  val totalInput: CurrencyUnit = localInput + remoteInput
 
   val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
@@ -212,8 +213,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         remoteFundingInputs = Vector(
           (TransactionOutPoint(fundingTx.txIdBE, remoteVout),
            fundingTx.outputs(remoteVout.toInt))),
-        winPayout = localInput + CurrencyUnits.oneMBTC,
-        losePayout = localInput - CurrencyUnits.oneMBTC,
+        winPayout = totalInput,
+        losePayout = CurrencyUnits.zero,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
                                tomorrowInBlocks,
                                twoDaysInBlocks),
@@ -237,8 +238,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         remoteFundingInputs = Vector(
           (TransactionOutPoint(fundingTx.txIdBE, localVout),
            fundingTx.outputs(localVout.toInt))),
-        winPayout = remoteInput - CurrencyUnits.oneMBTC,
-        losePayout = remoteInput + CurrencyUnits.oneMBTC,
+        winPayout = CurrencyUnits.zero,
+        losePayout = totalInput,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
                                tomorrowInBlocks,
                                twoDaysInBlocks),
@@ -257,18 +258,41 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def validateOutcome(outcome: DLCOutcome): Future[Assertion] = {
-    for {
-      client <- clientF
-      regtestLocalClosingTx <- client.getRawTransaction(
-        outcome.closingTx.txIdBE)
-    } yield {
-      assert(regtestLocalClosingTx.hex == outcome.closingTx)
-      assert(regtestLocalClosingTx.confirmations.isDefined)
-      assert(regtestLocalClosingTx.confirmations.get >= 6)
+    clientF.flatMap { client =>
+      val closingTxOpt = outcome match {
+        case _: CooperativeDLCOutcome | _: UnilateralDLCOutcomeWithDustClosing |
+            _: RefundDLCOutcomeWithDustClosing =>
+          None
+        case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
+          Some(closingTx)
+        case RefundDLCOutcomeWithClosing(_, _, closingTx, _) => Some(closingTx)
+      }
 
-      assert(noEmptySPKOutputs(outcome.fundingTx))
-      assert(noEmptySPKOutputs(outcome.cet))
-      assert(noEmptySPKOutputs(outcome.closingTx))
+      val cetOpt = outcome match {
+        case unilateral: UnilateralDLCOutcome => Some(unilateral.cet)
+        case refund: RefundDLCOutcome         => Some(refund.refundTx)
+        case _: CooperativeDLCOutcome         => None
+      }
+
+      closingTxOpt match {
+        case None =>
+          Future {
+            cetOpt.foreach(cet => assert(noEmptySPKOutputs(cet)))
+            assert(noEmptySPKOutputs(outcome.fundingTx))
+          }
+        case Some(closingTx) =>
+          val txResultF = client.getRawTransaction(closingTx.txIdBE)
+
+          txResultF.map { regtestLocalClosingTx =>
+            assert(regtestLocalClosingTx.hex == closingTx)
+            assert(regtestLocalClosingTx.confirmations.isDefined)
+            assert(regtestLocalClosingTx.confirmations.get >= 6)
+
+            assert(noEmptySPKOutputs(outcome.fundingTx))
+            cetOpt.foreach(cet => assert(noEmptySPKOutputs(cet)))
+            assert(noEmptySPKOutputs(closingTx))
+          }
+      }
     }
   }
 
@@ -470,10 +494,22 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       _ <- waitUntilBlock(
         unilateralDLC.timeouts.contractMaturity.toUInt32.toInt)
       _ <- publishTransaction(unilateralOutcome.cet)
-      _ <- publishTransaction(unilateralOutcome.closingTx)
+      _ <- {
+        unilateralOutcome match {
+          case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
+            publishTransaction(closingTx)
+          case _: UnilateralDLCOutcomeWithDustClosing => FutureUtil.unit
+        }
+      }
       otherOutcome <- otherDLC.executeRemoteUnilateralDLC(otherSetup,
                                                           unilateralOutcome.cet)
-      _ <- publishTransaction(otherOutcome.closingTx)
+      _ <- {
+        otherOutcome match {
+          case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
+            publishTransaction(closingTx)
+          case _: UnilateralDLCOutcomeWithDustClosing => FutureUtil.unit
+        }
+      }
       _ <- validateOutcome(unilateralOutcome)
       _ <- validateOutcome(otherOutcome)
     } yield {
@@ -487,17 +523,41 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
       acceptOutcome <- acceptDLC.executeRefundDLC(acceptSetup)
       offerOutcome <- offerDLC.executeRefundDLC(offerSetup)
-      _ = assert(offerOutcome.cet == acceptOutcome.cet)
-      cet = offerOutcome.cet
+      offerClosingTxOpt = {
+        offerOutcome match {
+          case RefundDLCOutcomeWithClosing(_, _, closingTx, _) =>
+            Some(closingTx)
+          case _: RefundDLCOutcomeWithDustClosing => None
+        }
+      }
+      acceptClosingTxOpt = {
+        acceptOutcome match {
+          case RefundDLCOutcomeWithClosing(_, _, closingTx, _) =>
+            Some(closingTx)
+          case _: RefundDLCOutcomeWithDustClosing => None
+        }
+      }
+      _ = assert(offerOutcome.refundTx == acceptOutcome.refundTx)
+      refundTx = offerOutcome.refundTx
       _ = assert(acceptDLC.timeouts == offerDLC.timeouts)
       timeout = offerDLC.timeouts.contractTimeout.toUInt32.toInt
-      _ <- recoverToSucceededIf[BitcoindException](publishTransaction(cet))
+      _ <- recoverToSucceededIf[BitcoindException](publishTransaction(refundTx))
       _ <- waitUntilBlock(timeout - 1)
-      _ <- recoverToSucceededIf[BitcoindException](publishTransaction(cet))
+      _ <- recoverToSucceededIf[BitcoindException](publishTransaction(refundTx))
       _ <- waitUntilBlock(timeout)
-      _ <- publishTransaction(cet)
-      _ <- publishTransaction(offerOutcome.closingTx)
-      _ <- publishTransaction(acceptOutcome.closingTx)
+      _ <- publishTransaction(refundTx)
+      _ <- {
+        offerClosingTxOpt match {
+          case Some(closingTx) => publishTransaction(closingTx)
+          case None            => FutureUtil.unit
+        }
+      }
+      _ <- {
+        acceptClosingTxOpt match {
+          case Some(closingTx) => publishTransaction(closingTx)
+          case None            => FutureUtil.unit
+        }
+      }
       _ <- validateOutcome(offerOutcome)
       _ <- validateOutcome(acceptOutcome)
     } yield {
@@ -552,15 +612,40 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         cetWronglyPublished)
       _ = assert(toRemoteOutcome.cet == cetWronglyPublished)
       _ = assert(justiceOutcome.cet == cetWronglyPublished)
-      _ <- publishTransaction(toRemoteOutcome.closingTx)
-      _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(justiceOutcome.closingTx))
+      _ <- {
+        toRemoteOutcome match {
+          case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
+            publishTransaction(closingTx)
+          case _: UnilateralDLCOutcomeWithDustClosing => FutureUtil.unit
+        }
+      }
+      justiceClosingTxOpt = {
+        justiceOutcome match {
+          case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
+            Some(closingTx)
+          case _: UnilateralDLCOutcomeWithDustClosing => None
+        }
+      }
+      _ <- justiceClosingTxOpt
+        .map { tx =>
+          recoverToSucceededIf[BitcoindException](
+            publishTransaction(tx)
+          )
+        }
+        .getOrElse(FutureUtil.unit)
       penaltyHeight = heightBeforePublish + punisherDLC.timeouts.penaltyTimeout + 1
       _ <- waitUntilBlock(penaltyHeight - 1)
-      _ <- recoverToSucceededIf[BitcoindException](
-        publishTransaction(justiceOutcome.closingTx))
+      _ <- justiceClosingTxOpt
+        .map { tx =>
+          recoverToSucceededIf[BitcoindException](
+            publishTransaction(tx)
+          )
+        }
+        .getOrElse(FutureUtil.unit)
       _ <- waitUntilBlock(penaltyHeight)
-      _ <- publishTransaction(justiceOutcome.closingTx)
+      _ <- justiceClosingTxOpt
+        .map(publishTransaction)
+        .getOrElse(FutureUtil.unit)
       _ <- validateOutcome(toRemoteOutcome)
       _ <- validateOutcome(justiceOutcome)
     } yield {
