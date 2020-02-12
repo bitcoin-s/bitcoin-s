@@ -947,8 +947,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     val client1F = connectedClientsF.map(_.c1)
     val client2F = connectedClientsF.map(_.c2)
 
-    // allupdates for a single node is broken in Eclair 0.3.2
-    // TODO remove recoverToPendingIf when https://github.com/ACINQ/eclair/issues/1179 is fixed
     sendPaymentsF.flatMap { _ =>
       executeSpecificClients(clientF = client1F,
                              otherClientF = client2F,
@@ -1047,8 +1045,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "get updates for a single node" in {
-    // allupdates for a single node is broken in Eclair 0.3.2
-    // TODO remove recoverToPendingIf when https://github.com/ACINQ/eclair/issues/1179 is fixed
     for {
       client <- clientF
       nodeInfo <- client.getInfo
@@ -1095,8 +1091,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
     //the second client and fourth client aren't directly connected
     //which is why i am choosing to use them for this test
-    // allupdates for a single node is broken in Eclair 0.3.2
-    // TODO remove pendingUntilFixed when https://github.com/ACINQ/eclair/issues/1179 is fixed
     executeSpecificClients(
       clientF = secondClientF,
       otherClientF = fourthClientF,
