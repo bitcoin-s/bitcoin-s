@@ -1,18 +1,21 @@
 package org.bitcoins.eclair.rpc.api
 
+import java.net.InetSocketAddress
+import java.time.Instant
+
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.protocol.Address
+import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
+import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.{
   LnInvoice,
   LnParams,
   PaymentPreimage,
   ShortChannelId
 }
-import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
-import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.network.NodeUri
 
@@ -42,9 +45,7 @@ trait EclairApi {
     * @param from start timestamp
     * @param to end timestamp
     */
-  def audit(
-      from: Option[FiniteDuration],
-      to: Option[FiniteDuration]): Future[AuditResult]
+  def audit(from: Option[Instant], to: Option[Instant]): Future[AuditResult]
 
   def allUpdates(): Future[Vector[ChannelUpdate]]
 
@@ -66,6 +67,10 @@ trait EclairApi {
   def connect(nodeURI: NodeUri): Future[Unit]
 
   def connect(nodeId: NodeId, host: String, port: Int): Future[Unit]
+
+  def connect(nodeId: NodeId, addr: InetSocketAddress): Future[Unit]
+
+  def connect(nodeId: NodeId): Future[Unit]
 
   def disconnect(nodeId: NodeId): Future[Unit]
 
@@ -106,10 +111,11 @@ trait EclairApi {
 
   def open(
       nodeId: NodeId,
-      fundingSatoshis: CurrencyUnit,
+      funding: CurrencyUnit,
       pushMsat: Option[MilliSatoshis],
       feerateSatPerByte: Option[SatoshisPerByte],
-      channelFlags: Option[Byte]): Future[FundedChannelId]
+      channelFlags: Option[Byte],
+      openTimeout: Option[FiniteDuration]): Future[FundedChannelId]
 
   /** The network that this [[org.bitcoins.eclair.rpc.api.EclairApi EclairApi]] is
     * running on. This is not available directly from the eclair api, but is a very
@@ -171,8 +177,12 @@ trait EclairApi {
   def getInvoice(paymentHash: Sha256Digest): Future[LnInvoice]
 
   def listInvoices(
-      from: Option[FiniteDuration],
-      to: Option[FiniteDuration]): Future[Vector[LnInvoice]]
+      from: Option[Instant],
+      to: Option[Instant]): Future[Vector[LnInvoice]]
+
+  def listPendingInvoices(
+      from: Option[Instant],
+      to: Option[Instant]): Future[Vector[LnInvoice]]
 
   def parseInvoice(invoice: LnInvoice): Future[InvoiceResult]
 
@@ -238,9 +248,7 @@ trait EclairApi {
   def getReceivedInfo(
       paymentHash: Sha256Digest): Future[Option[IncomingPayment]]
 
-  def getReceivedInfo(invoice: LnInvoice): Future[Option[IncomingPayment]] = {
-    getReceivedInfo(invoice.lnTags.paymentHash.hash)
-  }
+  def getReceivedInfo(invoice: LnInvoice): Future[Option[IncomingPayment]]
 
   def sendToNode(
       nodeId: NodeId,
@@ -255,14 +263,19 @@ trait EclairApi {
     * Documented by not implemented in Eclair
     */
   def sendToRoute(
+      invoice: LnInvoice,
       route: scala.collection.immutable.Seq[NodeId],
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
       finalCltvExpiry: Long,
-      externalId: Option[String]): Future[PaymentId]
+      recipientAmountMsat: Option[MilliSatoshis],
+      parentId: Option[PaymentId],
+      externalId: Option[String]): Future[SendToRouteResult]
 
   def usableBalances(): Future[Vector[UsableBalancesResult]]
 
   /** Connects to the Eclair web socket end point and passes [[WebSocketEvent]]s to the given [[eventHandler]] */
   def connectToWebSocket(eventHandler: WebSocketEvent => Unit): Future[Unit]
+
+  def getNewAddress(): Future[BitcoinAddress]
 }
