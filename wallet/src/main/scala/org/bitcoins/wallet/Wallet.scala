@@ -42,7 +42,8 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
         destinations = Vector(destination),
         feeRate = feeRate,
         fromAccount = fromAccount,
-        keyManagerOpt = Some(keyManager))
+        keyManagerOpt = Some(keyManager),
+        markAsReserved = false)
       signed <- txBuilder.sign
       ourOuts <- findOurOuts(signed)
       _ <- processOurTransaction(signed, blockHashOpt = None)

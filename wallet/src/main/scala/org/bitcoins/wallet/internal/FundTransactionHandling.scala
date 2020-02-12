@@ -17,7 +17,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
-      markAsReserved: Boolean = false): Future[Transaction] = {
+      markAsReserved: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       funded <- fundRawTransaction(destinations = destinations,
