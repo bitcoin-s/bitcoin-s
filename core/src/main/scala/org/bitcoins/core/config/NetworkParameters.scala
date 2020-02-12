@@ -160,13 +160,10 @@ sealed abstract class SigNet extends BitcoinNetwork {
   /**
    * @inheritdoc
    */
-  override def dnsSeeds = {
-    Seq(
-      "178.128.221.177",
-      "2a01:7c8:d005:390::5",
-      "ntv3mtqw5wt63red.onion:38333",
-    )
-  }
+  override def dnsSeeds: Seq[String] =
+    Seq("178.128.221.177",
+        "2a01:7c8:d005:390::5",
+        "ntv3mtqw5wt63red.onion:38333")
 
   /**
    * @inheritdoc
