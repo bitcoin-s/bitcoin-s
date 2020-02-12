@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
@@ -17,12 +18,7 @@ import org.bitcoins.core.protocol.ln.channel.{
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.eclair.rpc.api.{
-  EclairApi,
-  OutgoingPayment,
-  OutgoingPaymentStatus,
-  PaymentId
-}
+import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -107,6 +103,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.chain" -> "regtest",
         "eclair.spv" -> false,
         "eclair.server.public-ips.1" -> "127.0.0.1",
+        "eclair.server.public-ips.2" -> "of7husrflx7sforh3fw6yqlpwstee3wg5imvvmkp4bz6rbjxtg5nljad.onion",
         "eclair.server.binding-ip" -> "0.0.0.0",
         "eclair.server.port" -> port,
         "eclair.bitcoind.rpcuser" -> bitcoindInstance.authCredentials
@@ -274,11 +271,11 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       duration: FiniteDuration = 1.second,
       maxTries: Int = 60,
       failFast: Boolean = true)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus[OutgoingPaymentStatus.Succeeded](client,
-                                                             paymentId,
-                                                             duration,
-                                                             maxTries,
-                                                             failFast)
+    awaitUntilOutgoingPaymentStatus[OutgoingPaymentStatus.Succeeded](client,
+                                                                     paymentId,
+                                                                     duration,
+                                                                     maxTries,
+                                                                     failFast)
   }
 
   def awaitUntilPaymentFailed(
@@ -287,14 +284,14 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       duration: FiniteDuration = 1.second,
       maxTries: Int = 60,
       failFast: Boolean = false)(implicit system: ActorSystem): Future[Unit] = {
-    awaitUntilPaymentStatus[OutgoingPaymentStatus.Failed](client,
-                                                          paymentId,
-                                                          duration,
-                                                          maxTries,
-                                                          failFast)
+    awaitUntilOutgoingPaymentStatus[OutgoingPaymentStatus.Failed](client,
+                                                                  paymentId,
+                                                                  duration,
+                                                                  maxTries,
+                                                                  failFast)
   }
 
-  private def awaitUntilPaymentStatus[T <: OutgoingPaymentStatus](
+  private def awaitUntilOutgoingPaymentStatus[T <: OutgoingPaymentStatus](
       client: EclairApi,
       paymentId: PaymentId,
       duration: FiniteDuration,
@@ -328,6 +325,37 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
           true
         }
       }(system.dispatcher)
+    }
+
+    TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isInState(),
+                                       duration = duration,
+                                       maxTries = maxTries)
+  }
+
+  def awaitUntilIncomingPaymentStatus[T <: IncomingPaymentStatus](
+      client: EclairApi,
+      paymentHash: Sha256Digest,
+      duration: FiniteDuration = 1.second,
+      maxTries: Int = 60)(
+      implicit system: ActorSystem,
+      tag: ClassTag[T]): Future[Unit] = {
+    logger.debug(
+      s"Awaiting payment ${paymentHash} to enter ${tag.runtimeClass.getName} state")
+
+    def isInState(): Future[Boolean] = {
+
+      client
+        .getReceivedInfo(paymentHash)
+        .map { payment =>
+          if (!payment.exists(
+                result => tag.runtimeClass == result.status.getClass)) {
+            logger.trace(
+              s"Payment ${paymentHash} has not entered ${tag.runtimeClass.getName} yet. Currently in ${payment.map(_.status).mkString(",")}")
+            false
+          } else {
+            true
+          }
+        }(system.dispatcher)
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(conditionF = () => isInState(),
@@ -515,8 +543,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     val infoF = otherClient.getInfo
     val nodeIdF = infoF.map(_.nodeId)
     val connection: Future[Unit] = infoF.flatMap { info =>
-      val Array(host, port) = info.publicAddresses.head.split(":")
-      client.connect(info.nodeId, host, port.toInt)
+      client.connect(info.nodeId, info.publicAddresses.head)
     }
 
     def isConnected(): Future[Boolean] = {
@@ -601,10 +628,11 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
           logger.debug(
             s"Opening a channel from ${nodeId1} -> ${nodeId2} with amount ${amt}")
           n1.open(nodeId = nodeId2,
-                  fundingSatoshis = amt,
+                  funding = amt,
                   pushMsat = Some(pushMSat),
                   feerateSatPerByte = None,
-                  channelFlags = None)
+                  channelFlags = None,
+                  openTimeout = None)
       }
     }
 

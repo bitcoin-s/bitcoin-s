@@ -1,5 +1,6 @@
 package org.bitcoins.eclair.rpc.api
 
+import java.net.InetSocketAddress
 import java.util.UUID
 
 import org.bitcoins.core.crypto.{
@@ -30,7 +31,7 @@ case class GetInfoResult(
     alias: String,
     chainHash: DoubleSha256Digest,
     blockHeight: Long,
-    publicAddresses: Seq[String])
+    publicAddresses: Seq[InetSocketAddress])
 
 case class PeerInfo(
     nodeId: NodeId,
@@ -87,7 +88,7 @@ case class NodeInfo(
     nodeId: NodeId,
     rgbColor: String,
     alias: String,
-    addresses: Vector[String])
+    addresses: Vector[InetSocketAddress])
 
 case class ChannelDesc(shortChannelId: ShortChannelId, a: NodeId, b: NodeId)
 
@@ -148,6 +149,8 @@ case class SentPayment(
     id: PaymentId,
     paymentHash: Sha256Digest,
     paymentPreimage: PaymentPreimage,
+    recipientAmount: MilliSatoshis,
+    recipientNodeId: NodeId,
     parts: Vector[SentPayment.Part]
 )
 
@@ -201,6 +204,8 @@ case class PaymentId(value: UUID) {
   override def toString: String = value.toString
 }
 
+case class SendToRouteResult(paymentId: PaymentId, parentId: PaymentId)
+
 case class PaymentRequest(
     prefix: LnHumanReadablePart,
     timestamp: FiniteDuration, //seconds
@@ -211,13 +216,32 @@ case class PaymentRequest(
     expiry: FiniteDuration, //seconds
     amount: Option[MilliSatoshis])
 
+sealed trait PaymentType
+
+object PaymentType {
+
+  case object Standard extends PaymentType
+  case object SwapIn extends PaymentType
+  case object SwapOut extends PaymentType
+
+  def fromString(str: String): PaymentType = str match {
+    case "Standard" => Standard
+    case "SwapIn"   => SwapIn
+    case "SwapOut"  => SwapOut
+    case _          => throw new RuntimeException(s"Unknown payment type `$str`")
+  }
+
+}
+
 case class OutgoingPayment(
     id: PaymentId,
     parentId: PaymentId,
     externalId: Option[String],
     paymentHash: Sha256Digest,
+    paymentType: PaymentType,
     amount: MilliSatoshis,
-    targetNodeId: NodeId,
+    recipientAmount: MilliSatoshis,
+    recipientNodeId: NodeId,
     createdAt: FiniteDuration, //milliseconds
     paymentRequest: Option[PaymentRequest],
     status: OutgoingPaymentStatus)
