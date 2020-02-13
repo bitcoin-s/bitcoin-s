@@ -783,7 +783,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   it should "be able to generate a payment invoice and then check that invoice" in {
     val amt = 1000.msats
     val description = "bitcoin-s test case"
-    val expiry = (System.currentTimeMillis() / 1000).seconds
+    val expiry = 10.seconds
 
     val invoiceF = clientF.flatMap(
       _.createInvoice(description = description,
@@ -797,7 +797,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     paymentRequestF.map { paymentRequest =>
       val i = LnInvoice.fromString(paymentRequest.serialized).get
       assert(i.amount.get.toMSat == amt)
-      assert(paymentRequest.timestamp == expiry)
+      assert(paymentRequest.expiry == expiry)
     }
   }
 
