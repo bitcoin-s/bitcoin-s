@@ -151,6 +151,9 @@ trait LockedWalletApi extends WalletApi {
 
   def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
+  def markUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
+
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
 
