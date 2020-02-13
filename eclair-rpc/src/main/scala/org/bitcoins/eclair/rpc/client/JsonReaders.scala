@@ -1,9 +1,15 @@
 package org.bitcoins.eclair.rpc.client
 
 import java.net.InetSocketAddress
+import java.time.Instant
 import java.util.UUID
 
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sha256Digest}
+import org.bitcoins.core.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECDigitalSignature,
+  Sha256Digest
+}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
@@ -112,7 +118,24 @@ object JsonReaders {
   }
 
   implicit val nodeInfoReads: Reads[NodeInfo] = {
-    Json.reads[NodeInfo]
+    Reads { jsValue =>
+      for {
+        signature <- (jsValue \ "signature").validate[ECDigitalSignature]
+        features <- (jsValue \ "features").validate[String]
+        timestamp <- (jsValue \ "timestamp")
+          .validate[Instant](instantReadsSeconds)
+        nodeId <- (jsValue \ "nodeId").validate[NodeId]
+        rgbColor <- (jsValue \ "rgbColor").validate[String]
+        alias <- (jsValue \ "alias").validate[String]
+        addresses <- (jsValue \ "addresses").validate[Vector[InetSocketAddress]]
+      } yield NodeInfo(signature,
+                       features,
+                       timestamp,
+                       nodeId,
+                       rgbColor,
+                       alias,
+                       addresses)
+    }
   }
 
   implicit val paymentPreimageReads: Reads[PaymentPreimage] = {
@@ -135,14 +158,15 @@ object JsonReaders {
     Reads { jsValue =>
       for {
         prefix <- (jsValue \ "prefix").validate[LnHumanReadablePart]
-        timestamp <- (jsValue \ "timestamp").validate[Long]
+        timestamp <- (jsValue \ "timestamp")
+          .validate[Instant](instantReadsSeconds)
         nodeId <- (jsValue \ "nodeId").validate[NodeId]
         serialized <- (jsValue \ "serialized").validate[String]
         description <- (jsValue \ "description").validate[String]
         paymentHash <- (jsValue \ "paymentHash").validate[Sha256Digest]
         expiry <- (jsValue \ "expiry").validate[Long]
       } yield InvoiceResult(prefix,
-                            timestamp.seconds,
+                            timestamp,
                             nodeId,
                             serialized,
                             description,
@@ -200,7 +224,36 @@ object JsonReaders {
   }
 
   implicit val channelUpdateReads: Reads[ChannelUpdate] = {
-    Json.reads[ChannelUpdate]
+    Reads { jsValue =>
+      for {
+        signature <- (jsValue \ "signature").validate[ECDigitalSignature]
+        chainHash <- (jsValue \ "chainHash").validate[DoubleSha256Digest]
+        shortChannelId <- (jsValue \ "shortChannelId").validate[ShortChannelId]
+        timestamp <- (jsValue \ "timestamp")
+          .validate[Instant](instantReadsSeconds)
+        messageFlags <- (jsValue \ "messageFlags").validate[Int]
+        channelFlags <- (jsValue \ "channelFlags").validate[Int]
+        cltvExpiryDelta <- (jsValue \ "cltvExpiryDelta").validate[Int]
+        htlcMinimumMsat <- (jsValue \ "htlcMinimumMsat").validate[MilliSatoshis]
+        feeProportionalMillionths <- (jsValue \ "feeProportionalMillionths")
+          .validate[FeeProportionalMillionths]
+        htlcMaximumMsat <- (jsValue \ "htlcMaximumMsat")
+          .validateOpt[MilliSatoshis]
+        feeBaseMsat <- (jsValue \ "feeBaseMsat").validate[MilliSatoshis]
+      } yield ChannelUpdate(
+        signature,
+        chainHash,
+        shortChannelId,
+        timestamp,
+        messageFlags,
+        channelFlags,
+        cltvExpiryDelta,
+        htlcMinimumMsat,
+        feeProportionalMillionths,
+        htlcMaximumMsat,
+        feeBaseMsat
+      )
+    }
   }
 
   implicit val paymentIdReads: Reads[PaymentId] = Reads { jsValue =>
@@ -221,6 +274,17 @@ object JsonReaders {
     SerializerUtil.processJsNumberBigInt(_.longValue.seconds)(js)
   }
 
+  val instantReadsMilliseconds: Reads[Instant] =
+    Reads { js =>
+      SerializerUtil.processJsNumberBigInt(x =>
+        Instant.ofEpochMilli(x.longValue))(js)
+    }
+
+  val instantReadsSeconds: Reads[Instant] = Reads { js =>
+    SerializerUtil.processJsNumberBigInt(x =>
+      Instant.ofEpochSecond(x.longValue))(js)
+  }
+
   implicit val paymentTypeReads: Reads[PaymentType] = Reads { jsValue =>
     SerializerUtil.processJsString(PaymentType.fromString)(jsValue)
   }
@@ -236,7 +300,7 @@ object JsonReaders {
         feesPaid <- (js \ "feesPaid").validate[MilliSatoshis]
         route <- (js \ "route").validate[Seq[Hop]]
         completed <- (js \ "completedAt")
-          .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+          .validate[Instant](instantReadsMilliseconds)
       } yield OutgoingPaymentStatus.Succeeded(paymentPreimage = preimage,
                                               feesPaid = feesPaid,
                                               route = route,
@@ -289,7 +353,7 @@ object JsonReaders {
     for {
       prefix <- (js \ "prefix").validate[LnHumanReadablePart]
       timestamp <- (js \ "timestamp")
-        .validate[FiniteDuration](finiteDurationReadsSeconds)
+        .validate[Instant](instantReadsSeconds)
       nodeId <- (js \ "nodeId").validate[NodeId]
       serialized <- (js \ "serialized").validate[String]
       description <- (js \ "serialized").validate[String]
@@ -318,7 +382,7 @@ object JsonReaders {
       recipientAmount <- (js \ "recipientAmount").validate[MilliSatoshis]
       recipientNodeId <- (js \ "recipientNodeId").validate[NodeId]
       createdAt <- (js \ "createdAt")
-        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+        .validate[Instant](instantReadsMilliseconds)
       paymentRequest <- (js \ "paymentRequest").validateOpt[PaymentRequest]
       status <- (js \ "status").validate[OutgoingPaymentStatus]
     } yield OutgoingPayment(id,
@@ -340,7 +404,7 @@ object JsonReaders {
         paymentRequest <- (js \ "paymentRequest").validate[PaymentRequest]
         paymentPreimage <- (js \ "paymentPreimage").validate[PaymentPreimage]
         createdAt <- (js \ "createdAt")
-          .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+          .validate[Instant](instantReadsMilliseconds)
         status <- (js \ "status").validate[IncomingPaymentStatus]
       } yield IncomingPayment(paymentRequest,
                               paymentPreimage,
@@ -385,7 +449,7 @@ object JsonReaders {
         amount <- (js \ "amount").validate[MilliSatoshis]
         fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
         timestamp <- (js \ "timestamp")
-          .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+          .validate[Instant](instantReadsMilliseconds)
       } yield ReceivedPayment.Part(amount, fromChannelId, timestamp)
   }
 
@@ -399,7 +463,7 @@ object JsonReaders {
       feesPaid <- (js \ "feesPaid").validate[MilliSatoshis]
       toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
       timestamp <- (js \ "timestamp")
-        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+        .validate[Instant](instantReadsMilliseconds)
     } yield SentPayment.Part(id, amount, feesPaid, toChannelId, timestamp)
   }
 
@@ -413,7 +477,7 @@ object JsonReaders {
       fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
       toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
       timestamp <- (js \ "timestamp")
-        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+        .validate[Instant](instantReadsMilliseconds)
     } yield RelayedPayment(amountIn,
                            amountOut,
                            paymentHash,
@@ -431,7 +495,7 @@ object JsonReaders {
       fee <- (js \ "fee").validate[Satoshis]
       txType <- (js \ "txType").validate[String]
       timestamp <- (js \ "timestamp")
-        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+        .validate[Instant](instantReadsMilliseconds)
     } yield NetworkFeesResult(remoteNodeId,
                               channelId,
                               txId,
@@ -455,7 +519,7 @@ object JsonReaders {
         fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
         toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
         timestamp <- (js \ "timestamp")
-          .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+          .validate[Instant](instantReadsMilliseconds)
       } yield WebSocketEvent.PaymentRelayed(amountIn,
                                             amountOut,
                                             paymentHash,
@@ -470,7 +534,7 @@ object JsonReaders {
       amount <- (js \ "amount").validate[MilliSatoshis]
       fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
       timestamp <- (js \ "timestamp")
-        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+        .validate[Instant](instantReadsMilliseconds)
     } yield WebSocketEvent.PaymentReceived.Part(amount,
                                                 fromChannelId,
                                                 timestamp)
@@ -492,7 +556,7 @@ object JsonReaders {
         paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
         failures <- (js \ "failures").validate[Vector[String]]
         timestamp <- (js \ "timestamp")
-          .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+          .validate[Instant](instantReadsMilliseconds)
       } yield WebSocketEvent.PaymentFailed(id, paymentHash, failures, timestamp)
     }
 
@@ -504,7 +568,7 @@ object JsonReaders {
       feesPaid <- (js \ "feesPaid").validate[MilliSatoshis]
       toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
       timestamp <- (js \ "timestamp")
-        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+        .validate[Instant](instantReadsMilliseconds)
     } yield WebSocketEvent.PaymentSent.Part(id,
                                             amount,
                                             feesPaid,
@@ -532,7 +596,7 @@ object JsonReaders {
       amount <- (js \ "amount").validate[MilliSatoshis]
       paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
       timestamp <- (js \ "timestamp")
-        .validate[FiniteDuration](finiteDurationReadsMilliseconds)
+        .validate[Instant](instantReadsMilliseconds)
     } yield WebSocketEvent.PaymentSettlingOnchain(amount,
                                                   paymentHash,
                                                   timestamp)
