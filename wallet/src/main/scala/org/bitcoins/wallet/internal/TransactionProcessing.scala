@@ -203,8 +203,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
               s"Marked utxo=${updated.toHumanReadableString} as state=${updated.state}")
         )
         updatedF.map(Some(_))
-      case TxoState.ConfirmedSpent | TxoState.PendingConfirmationsSpent |
-          TxoState.DoesNotExist =>
+      case TxoState.Reserved | TxoState.ConfirmedSpent |
+          TxoState.PendingConfirmationsSpent | TxoState.DoesNotExist =>
         FutureUtil.none
     }
   }

@@ -18,6 +18,9 @@ object TxoState {
   /** Means we have received funds and they are fully confirmed for this utxo */
   final case object ConfirmedReceived extends ReceivedState
 
+  /** Means we have not spent this utxo yet, but will be used in a future transaction */
+  final case object Reserved extends SpentState
+
   /** Means we have spent this utxo, but it is not fully confirmed */
   final case object PendingConfirmationsSpent extends SpentState
 
@@ -27,6 +30,7 @@ object TxoState {
   val all: Vector[TxoState] = Vector(DoesNotExist,
                                      PendingConfirmationsReceived,
                                      ConfirmedReceived,
+                                     Reserved,
                                      PendingConfirmationsSpent,
                                      ConfirmedSpent)
 

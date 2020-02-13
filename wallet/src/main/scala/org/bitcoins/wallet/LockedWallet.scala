@@ -48,7 +48,7 @@ abstract class LockedWallet
                 case TxoState.PendingConfirmationsReceived |
                     TxoState.ConfirmedReceived =>
                   txo.output.value
-                case TxoState.PendingConfirmationsSpent |
+                case TxoState.Reserved | TxoState.PendingConfirmationsSpent |
                     TxoState.ConfirmedSpent | TxoState.DoesNotExist =>
                   CurrencyUnits.zero
               }
@@ -143,6 +143,12 @@ abstract class LockedWallet
       val withPubs = pubkeys.foldLeft(baseBloom) { _.insert(_) }
       outpoints.foldLeft(withPubs) { _.insert(_) }
     }
+  }
+
+  override def markUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    val updated = utxos.map(_.copyWithState(TxoState.Reserved))
+    spendingInfoDAO.updateAll(updated)
   }
 }
 

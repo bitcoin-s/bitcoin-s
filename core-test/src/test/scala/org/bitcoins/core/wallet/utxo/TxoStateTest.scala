@@ -15,6 +15,8 @@ class TxoStateTest extends BitcoinSUnitTest {
     TxoState.fromString("ConfirmedReceived").get must be(
       TxoState.ConfirmedReceived)
 
+    TxoState.fromString("Reserved").get must be(TxoState.Reserved)
+
     TxoState.fromString("PendingConfirmationsSpent").get must be(
       TxoState.PendingConfirmationsSpent)
 

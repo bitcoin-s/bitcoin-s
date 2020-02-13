@@ -16,24 +16,28 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit): Future[Transaction] = {
+      feeRate: FeeUnit,
+      markAsReserved: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       funded <- fundRawTransaction(destinations = destinations,
                                    feeRate = feeRate,
-                                   fromAccount = account)
+                                   fromAccount = account,
+                                   markAsReserved = markAsReserved)
     } yield funded
   }
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] = {
+      fromAccount: AccountDb,
+      markAsReserved: Boolean = false): Future[Transaction] = {
     val txBuilderF =
       fundRawTransactionInternal(destinations = destinations,
                                  feeRate = feeRate,
                                  fromAccount = fromAccount,
-                                 keyManagerOpt = None)
+                                 keyManagerOpt = None,
+                                 markAsReserved = markAsReserved)
     txBuilderF.flatMap(_.unsignedTx)
   }
 
@@ -52,14 +56,17 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
-      keyManagerOpt: Option[BIP39KeyManager]): Future[BitcoinTxBuilder] = {
+      keyManagerOpt: Option[BIP39KeyManager],
+      markAsReserved: Boolean = false): Future[BitcoinTxBuilder] = {
     val utxosF = listUtxos(fromAccount.hdAccount)
     val changeAddrF = getNewChangeAddress(fromAccount)
     val selectedUtxosF = for {
       walletUtxos <- utxosF
       //currently just grab the biggest utxos
-      selectedUtxos = CoinSelector
+      utxos = CoinSelector
         .accumulateLargest(walletUtxos, destinations, feeRate)
+      selectedUtxos <- if (markAsReserved) markUTXOsAsReserved(utxos)
+      else Future.successful(utxos)
     } yield selectedUtxos
 
     val addrInfosWithUtxoF: Future[Vector[(SpendingInfoDb, AddressInfo)]] =

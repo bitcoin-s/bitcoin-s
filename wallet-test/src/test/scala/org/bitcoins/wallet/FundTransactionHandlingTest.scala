@@ -3,6 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.util.TestUtil
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
@@ -23,7 +24,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(destination),
-                                                feeRate = feeRate)
+                                                feeRate = feeRate,
+                                                false)
       for {
         fundedTx <- fundedTxF
       } yield {
@@ -42,7 +44,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(newDestination),
-                                                feeRate = feeRate)
+                                                feeRate = feeRate,
+                                                false)
       for {
         fundedTx <- fundedTxF
       } yield {
@@ -60,7 +63,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
       val wallet = fundedWallet.wallet
       val fundedTxF = wallet.fundRawTransaction(destinations = destinations,
-                                                feeRate = feeRate)
+                                                feeRate = feeRate,
+                                                false)
       for {
         fundedTx <- fundedTxF
       } yield {
@@ -82,7 +86,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(tooBigOutput),
-                                                feeRate = feeRate)
+                                                feeRate = feeRate,
+                                                false)
 
       recoverToSucceededIf[RuntimeException] {
         fundedTxF
@@ -100,7 +105,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       //not have enough money for this
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(tooBigOutput),
-                                                feeRate = feeRate)
+                                                feeRate = feeRate,
+                                                false)
 
       recoverToSucceededIf[RuntimeException] {
         fundedTxF
@@ -120,7 +126,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       account1DbOpt <- account1DbF
       fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
                                             feeRate,
-                                            account1DbOpt.get)
+                                            account1DbOpt.get,
+                                            false)
     } yield {
       assert(fundedTx.inputs.nonEmpty)
       assert(fundedTx.outputs.contains(newDestination))
@@ -141,11 +148,27 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
         account1DbOpt <- account1DbF
         fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
                                               feeRate,
-                                              account1DbOpt.get)
+                                              account1DbOpt.get,
+                                              false)
       } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
         fundedTxF
+      }
+  }
+
+  it must "mark utxos as reserved after building a transaction" in {
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
+      val fundedTxF = wallet.fundRawTransaction(destinations =
+                                                  Vector(destination),
+                                                feeRate = feeRate,
+                                                markAsReserved = true)
+      for {
+        fundedTx <- fundedTxF
+        spendingInfos <- wallet.spendingInfoDAO.findOutputsBeingSpent(fundedTx)
+      } yield {
+        assert(spendingInfos.exists(_.state == TxoState.Reserved))
       }
   }
 }
