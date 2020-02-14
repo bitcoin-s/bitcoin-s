@@ -1,7 +1,7 @@
 package org.bitcoins.dlc
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   DummyECDigitalSignature,
   ECPrivateKey,
@@ -1078,7 +1078,8 @@ object BinaryOutcomeDLCClient {
       nextAddressIndex: Int,
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
       totalCollateral: CurrencyUnit,
-      changeSPK: P2WPKHWitnessSPKV0)(
+      changeSPK: P2WPKHWitnessSPKV0,
+      network: BitcoinNetwork)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
     BinaryOutcomeDLCClient(
       outcomeWin = offer.contractInfo.keys.head,
@@ -1100,7 +1101,7 @@ object BinaryOutcomeDLCClient {
       changeSPK = changeSPK,
       remoteChangeSPK =
         offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
-      network = RegTest
+      network = network
     )
   }
 
@@ -1109,11 +1110,12 @@ object BinaryOutcomeDLCClient {
       accept: DLCMessage.DLCAccept,
       extPrivKey: ExtPrivateKey,
       nextAddressIndex: Int,
-      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle])(
+      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
+      network: BitcoinNetwork)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
     require(
       DLCPublicKeys
-        .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex) == offer.pubKeys,
+        .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network) == offer.pubKeys,
       "ExtPrivateKey must match the one in your Offer message")
     require(
       fundingUtxos.zip(offer.fundingInputs).forall {
@@ -1144,7 +1146,7 @@ object BinaryOutcomeDLCClient {
         offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
       remoteChangeSPK =
         accept.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
-      network = RegTest
+      network = network
     )
   }
 

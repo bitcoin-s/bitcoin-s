@@ -209,7 +209,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         nextAddressIndex = 0,
         remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(remoteExtPrivKey,
                                                              nextAddressIndex =
-                                                               0),
+                                                               0,
+                                                             RegTest),
         input = localInput,
         remoteInput = remoteInput,
         fundingUtxos = localFundingUtxos,
@@ -237,7 +238,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         nextAddressIndex = 0,
         remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(localExtPrivKey,
                                                              nextAddressIndex =
-                                                               0),
+                                                               0,
+                                                             RegTest),
         input = remoteInput,
         remoteInput = localInput,
         fundingUtxos = remoteFundingUtxos,
