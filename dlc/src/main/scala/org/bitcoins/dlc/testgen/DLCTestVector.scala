@@ -258,7 +258,8 @@ object DLCTestVector {
         Future.successful(oracleSig))
       toRemoteOutcome <- acceptDLC.executeRemoteUnilateralDLC(
         acceptSetup,
-        unilateralOutcome.cet)
+        unilateralOutcome.cet,
+        acceptDLC.finalPrivKey)
     } yield {
       val localClosingTxOpt = unilateralOutcome match {
         case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>

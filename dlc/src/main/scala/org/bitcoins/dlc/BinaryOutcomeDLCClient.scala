@@ -883,7 +883,8 @@ case class BinaryOutcomeDLCClient(
     */
   def executeRemoteUnilateralDLC(
       dlcSetup: SetupDLC,
-      publishedCET: Transaction): Future[UnilateralDLCOutcome] = {
+      publishedCET: Transaction,
+      sweepPrivKey: ECPrivateKey): Future[UnilateralDLCOutcome] = {
     val output = publishedCET.outputs.last
 
     val isWin = publishedCET.txIdBE != dlcSetup.cetWinRemoteTxid
@@ -904,7 +905,7 @@ case class BinaryOutcomeDLCClient(
       )
     } else {
       val txF =
-        constructClosingTx(privKey = finalPrivKey,
+        constructClosingTx(privKey = sweepPrivKey,
                            spendingInfo = spendingInfo,
                            isWin = isWin,
                            spendsToLocal = false)

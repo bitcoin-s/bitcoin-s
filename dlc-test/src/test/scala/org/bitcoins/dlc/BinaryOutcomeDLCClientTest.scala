@@ -397,7 +397,8 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
             Future.successful(oracleSig))
           otherOutcome <- otherDLC.executeRemoteUnilateralDLC(
             otherSetup,
-            unilateralOutcome.cet)
+            unilateralOutcome.cet,
+            ECPrivateKey.freshPrivateKey)
         } yield {
           validateOutcome(unilateralOutcome)
           validateOutcome(otherOutcome)
@@ -444,7 +445,8 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
                                                           timedOutCET)
           toRemoteOutcome <- punisherDLC.executeRemoteUnilateralDLC(
             punisherSetup,
-            timedOutCET)
+            timedOutCET,
+            ECPrivateKey.freshPrivateKey)
         } yield {
           validateOutcome(justiceOutcome)
           validateOutcome(toRemoteOutcome)
