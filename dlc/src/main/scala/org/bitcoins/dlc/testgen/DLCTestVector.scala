@@ -43,6 +43,7 @@ import org.bitcoins.core.wallet.utxo.{
 import org.bitcoins.dlc.{
   BinaryOutcomeDLCClient,
   CETSignatures,
+  DLCPublicKeys,
   DLCTimeouts,
   FundingSignatures,
   UnilateralDLCOutcomeWithClosing,
@@ -180,7 +181,10 @@ object DLCTestVector {
       preCommittedR = oracleKValue.publicKey,
       isInitiator = true,
       extPrivKey = localExtPrivKey,
-      remoteExtPubKey = remoteExtPrivKey.extPublicKey,
+      nextAddressIndex = 0,
+      remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(remoteExtPrivKey,
+                                                           nextAddressIndex = 0,
+                                                           RegTest),
       input = localInput,
       remoteInput = remoteInput,
       fundingUtxos = localFundingUtxos,
@@ -201,7 +205,10 @@ object DLCTestVector {
       preCommittedR = oracleKValue.publicKey,
       isInitiator = false,
       extPrivKey = remoteExtPrivKey,
-      remoteExtPubKey = localExtPrivKey.extPublicKey,
+      nextAddressIndex = 0,
+      remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(localExtPrivKey,
+                                                           nextAddressIndex = 0,
+                                                           RegTest),
       input = remoteInput,
       remoteInput = localInput,
       fundingUtxos = remoteFundingUtxos,
@@ -251,7 +258,8 @@ object DLCTestVector {
         Future.successful(oracleSig))
       toRemoteOutcome <- acceptDLC.executeRemoteUnilateralDLC(
         acceptSetup,
-        unilateralOutcome.cet)
+        unilateralOutcome.cet,
+        acceptDLC.finalPrivKey)
     } yield {
       val localClosingTxOpt = unilateralOutcome match {
         case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>

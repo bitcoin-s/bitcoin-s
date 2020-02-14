@@ -1,20 +1,20 @@
 package org.bitcoins.dlc
 
 import org.bitcoin.NativeSecp256k1
-import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   DummyECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
   ExtPrivateKey,
-  ExtPublicKey,
   Schnorr,
   SchnorrDigitalSignature,
   Sha256DigestBE
 }
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
+import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   EmptyScriptSignature,
@@ -64,8 +64,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param oraclePubKey The Oracle's permanent public key
   * @param preCommittedR The Oracle's one-time event-specific public key
   * @param isInitiator True if this client sends the offer message
-  * @param extPrivKey This client's extended private key for this event
-  * @param remoteExtPubKey Remote's extended public key for this event
+  * @param extPrivKey This client's extended private key (at the account level) for this event
+  * @param nextAddressIndex The next unused address index for the provided extPrivKey
+  * @param remotePubKeys Remote's public keys for this event
   * @param input This client's total collateral contribution
   * @param remoteInput Remote's total collateral contribution
   * @param fundingUtxos This client's funding BitcoinUTXOSpendingInfo collection
@@ -84,7 +85,8 @@ case class BinaryOutcomeDLCClient(
     preCommittedR: ECPublicKey,
     isInitiator: Boolean,
     extPrivKey: ExtPrivateKey,
-    remoteExtPubKey: ExtPublicKey,
+    nextAddressIndex: Int,
+    remotePubKeys: DLCPublicKeys,
     input: CurrencyUnit,
     remoteInput: CurrencyUnit,
     fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
@@ -115,61 +117,33 @@ case class BinaryOutcomeDLCClient(
     Schnorr.computePubKey(messageLose, preCommittedR, oraclePubKey)
 
   val fundingPrivKey: ECPrivateKey =
-    extPrivKey.deriveChildPrivKey(UInt32(0)).key
+    extPrivKey
+      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/$nextAddressIndex"))
+      .key
 
-  val fundingRemotePubKey: ECPublicKey =
-    remoteExtPubKey.deriveChildPubKey(UInt32(0)).get.key
+  val cetToLocalPrivKey: ECPrivateKey =
+    extPrivKey
+      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 1}"))
+      .key
+
+  val cetToRemotePrivKey: ECPrivateKey =
+    extPrivKey
+      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 2}"))
+      .key
 
   val finalPrivKey: ECPrivateKey =
-    extPrivKey.deriveChildPrivKey(UInt32(2)).key
+    extPrivKey
+      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 3}"))
+      .key
 
-  val finalRemotePubKey: ECPublicKey =
-    remoteExtPubKey.deriveChildPubKey(UInt32(2)).get.key
+  val fundingRemotePubKey: ECPublicKey = remotePubKeys.fundingKey
 
-  val winIsFirst: Boolean = outcomeWin.hex.compareTo(outcomeLose.hex) > 0
+  val cetToLocalRemotePubKey: ECPublicKey = remotePubKeys.toLocalCETKey
 
-  /** The derivation index for the win and lose cases respectively.
-    * We assign this index based on lexicographical order to keep things deterministic.
-    */
-  private val (winIndex, loseIndex) =
-    if (winIsFirst) {
-      (1, 2)
-    } else {
-      (2, 1)
-    }
+  val cetToRemoteRemotePubKey: ECPublicKey = remotePubKeys.toRemoteCETKey
 
-  def cetExtPrivKey(rootKey: ExtPrivateKey, eventIndex: Int): ExtPrivateKey = {
-    rootKey
-      .deriveChildPrivKey(
-        BIP32Path(BIP32Node(1, hardened = false),
-                  BIP32Node(eventIndex, hardened = false)))
-  }
-
-  val cetRefundPrivKey: ECPrivateKey =
-    cetExtPrivKey(extPrivKey, eventIndex = 0).key
-
-  val cetWinPrivKey: ExtPrivateKey =
-    cetExtPrivKey(extPrivKey, winIndex)
-
-  val cetLosePrivKey: ExtPrivateKey =
-    cetExtPrivKey(extPrivKey, loseIndex)
-
-  def cetExtPubKey(rootKey: ExtPublicKey, eventIndex: Int): ExtPublicKey = {
-    rootKey
-      .deriveChildPubKey(
-        BIP32Path(BIP32Node(1, hardened = false),
-                  BIP32Node(eventIndex, hardened = false)))
-      .get
-  }
-
-  val cetRemoteRefundPubKey: ECPublicKey =
-    cetExtPubKey(remoteExtPubKey, eventIndex = 0).key
-
-  val cetRemoteWinPubKey: ExtPublicKey =
-    cetExtPubKey(remoteExtPubKey, winIndex)
-
-  val cetRemoteLosePubKey: ExtPublicKey =
-    cetExtPubKey(remoteExtPubKey, loseIndex)
+  val finalRemoteScriptPubKey: ScriptPubKey =
+    remotePubKeys.finalAddress.scriptPubKey
 
   /** Total collateral amount */
   private val totalInput = input + remoteInput
@@ -350,7 +324,7 @@ case class BinaryOutcomeDLCClient(
       TransactionOutput(toLocalPayout,
                         P2WPKHWitnessSPKV0(finalPrivKey.publicKey))
     val toRemote =
-      TransactionOutput(toRemotePayout, P2WPKHWitnessSPKV0(finalRemotePubKey))
+      TransactionOutput(toRemotePayout, finalRemoteScriptPubKey)
     val outputs = if (isInitiator) {
       Vector(toLocal, toRemote)
     } else {
@@ -403,35 +377,24 @@ case class BinaryOutcomeDLCClient(
       remoteSig: PartialSignature,
       payout: CurrencyUnit,
       remotePayout: CurrencyUnit): (Future[Transaction], P2WSHWitnessV0) = {
-    val (cetPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
-      (cetWinPrivKey, cetRemoteWinPubKey)
-    } else {
-      (cetLosePrivKey, cetRemoteLosePubKey)
-    }
-
-    val toLocalPrivKey =
-      cetPrivKey.deriveChildPrivKey(UInt32.zero).key
-    val remoteToLocalPubKey =
-      cetRemotePubKey.deriveChildPubKey(UInt32.one).get.key
-    val toRemotePubKey = cetRemotePubKey.deriveChildPubKey(UInt32(2)).get.key
-
     val pubKeyBytes = NativeSecp256k1.pubKeyTweakAdd(
       sigPubKey.bytes.toArray,
-      toLocalPrivKey.bytes.toArray,
+      cetToLocalPrivKey.bytes.toArray,
       true)
     val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
       lockTime = ScriptNumber(timeouts.penaltyTimeout),
-      timeoutPubKey = remoteToLocalPubKey
+      timeoutPubKey = cetToLocalRemotePubKey
     )
 
     val toLocal: TransactionOutput =
       TransactionOutput(payout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
-      TransactionOutput(remotePayout, P2WPKHWitnessSPKV0(toRemotePubKey))
+      TransactionOutput(remotePayout,
+                        P2WPKHWitnessSPKV0(cetToRemoteRemotePubKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
@@ -483,30 +446,20 @@ case class BinaryOutcomeDLCClient(
       payout: CurrencyUnit,
       remotePayout: CurrencyUnit): Future[
     (Transaction, P2WSHWitnessV0, PartialSignature)] = {
-    val (cetLocalPrivKey, cetRemotePubKey) = if (sigPubKey == sigPubKeyWin) {
-      (cetWinPrivKey, cetRemoteWinPubKey)
-    } else {
-      (cetLosePrivKey, cetRemoteLosePubKey)
-    }
-
-    val remoteToLocalPubKey =
-      cetRemotePubKey.deriveChildPubKey(UInt32.zero).get.key
-    val localToLocalPrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32.one).key
-    val toRemotePrivKey = cetLocalPrivKey.deriveChildPrivKey(UInt32(2)).key
-
-    val pubKey = sigPubKey.add(remoteToLocalPubKey)
+    val pubKey = sigPubKey.add(cetToLocalRemotePubKey)
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
       lockTime = ScriptNumber(timeouts.penaltyTimeout),
-      timeoutPubKey = localToLocalPrivKey.publicKey
+      timeoutPubKey = cetToLocalPrivKey.publicKey
     )
 
     val toLocal: TransactionOutput =
       TransactionOutput(remotePayout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
-      TransactionOutput(payout, P2WPKHWitnessSPKV0(toRemotePrivKey.publicKey))
+      TransactionOutput(payout,
+                        P2WPKHWitnessSPKV0(cetToRemotePrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
@@ -541,29 +494,29 @@ case class BinaryOutcomeDLCClient(
       sequence)
     val fundingOutput = fundingTx.outputs.head
 
-    val (initiatorValue, initiatorKey, otherValue, otherKey) =
+    val (initiatorValue, initiatorSPK, otherValue, otherSPK) =
       if (isInitiator) {
         val toLocalValue = Satoshis(
           (fundingOutput.value * input).satoshis.toLong / totalInput.satoshis.toLong)
 
         (toLocalValue,
-         cetRefundPrivKey.publicKey,
+         P2WPKHWitnessSPKV0(finalPrivKey.publicKey),
          fundingOutput.value - toLocalValue,
-         cetRemoteRefundPubKey)
+         finalRemoteScriptPubKey)
       } else {
         val toRemoteValue = Satoshis(
           (fundingOutput.value * remoteInput).satoshis.toLong / totalInput.satoshis.toLong)
 
         (toRemoteValue,
-         cetRemoteRefundPubKey,
+         finalRemoteScriptPubKey,
          fundingOutput.value - toRemoteValue,
-         cetRefundPrivKey.publicKey)
+         P2WPKHWitnessSPKV0(finalPrivKey.publicKey))
       }
 
     val toInitiatorOutput =
-      TransactionOutput(initiatorValue, P2WPKHWitnessSPKV0(initiatorKey))
+      TransactionOutput(initiatorValue, initiatorSPK)
     val toOtherOutput =
-      TransactionOutput(otherValue, P2WPKHWitnessSPKV0(otherKey))
+      TransactionOutput(otherValue, otherSPK)
 
     val outputs = Vector(toInitiatorOutput, toOtherOutput)
 
@@ -870,22 +823,20 @@ case class BinaryOutcomeDLCClient(
       val sigForLose = Schnorr.verify(messageLose, oracleSig, oraclePubKey)
 
       // Pick the CET to use and payout by checking which message was signed
-      val (cet, extCetPrivKey, cetScriptWitness) =
+      val (cet, cetScriptWitness) =
         if (sigForWin) {
-          (cetWinLocal, cetWinPrivKey, cetWinLocalWitness)
+          (cetWinLocal, cetWinLocalWitness)
         } else if (sigForLose) {
-          (cetLoseLocal, cetLosePrivKey, cetLoseLocalWitness)
+          (cetLoseLocal, cetLoseLocalWitness)
         } else {
           throw new IllegalArgumentException(
             s"Signature does not correspond to either possible outcome! $oracleSig")
         }
 
-      val cetPrivKey = extCetPrivKey.deriveChildPrivKey(UInt32.zero).key
-
       val output = cet.outputs.head
 
       val privKeyBytes = NativeSecp256k1.privKeyTweakAdd(
-        cetPrivKey.bytes.toArray,
+        cetToLocalPrivKey.bytes.toArray,
         oracleSig.s.toArray
       )
       val privKey = ECPrivateKey.fromBytes(ByteVector(privKeyBytes))
@@ -932,25 +883,19 @@ case class BinaryOutcomeDLCClient(
     */
   def executeRemoteUnilateralDLC(
       dlcSetup: SetupDLC,
-      publishedCET: Transaction): Future[UnilateralDLCOutcome] = {
+      publishedCET: Transaction,
+      sweepPrivKey: ECPrivateKey): Future[UnilateralDLCOutcome] = {
     val output = publishedCET.outputs.last
 
-    val (extCetPrivKey, isWin) =
-      if (publishedCET.txIdBE == dlcSetup.cetWinRemoteTxid) {
-        (cetWinPrivKey, false)
-      } else {
-        (cetLosePrivKey, true)
-      }
-
-    val cetPrivKeyToRemote = extCetPrivKey.deriveChildPrivKey(UInt32(2)).key
+    val isWin = publishedCET.txIdBE != dlcSetup.cetWinRemoteTxid
 
     val spendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(publishedCET.txIdBE, UInt32.one),
       amount = output.value,
-      scriptPubKey = P2WPKHWitnessSPKV0(cetPrivKeyToRemote.publicKey),
-      signer = cetPrivKeyToRemote,
+      scriptPubKey = P2WPKHWitnessSPKV0(cetToRemotePrivKey.publicKey),
+      signer = cetToRemotePrivKey,
       hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(cetPrivKeyToRemote.publicKey)
+      scriptWitness = P2WPKHWitnessV0(cetToRemotePrivKey.publicKey)
     )
 
     if (isToLocalOutput(output)) {
@@ -960,7 +905,7 @@ case class BinaryOutcomeDLCClient(
       )
     } else {
       val txF =
-        constructClosingTx(privKey = finalPrivKey,
+        constructClosingTx(privKey = sweepPrivKey,
                            spendingInfo = spendingInfo,
                            isWin = isWin,
                            spendsToLocal = false)
@@ -991,20 +936,18 @@ case class BinaryOutcomeDLCClient(
       timedOutCET: Transaction): Future[UnilateralDLCOutcome] = {
     val justiceOutput = timedOutCET.outputs.head
 
-    val (extCetPrivKey, cetScriptWitness, isWin) =
+    val (cetScriptWitness, isWin) =
       if (timedOutCET.txIdBE == dlcSetup.cetWinRemoteTxid) {
-        (cetWinPrivKey, dlcSetup.cetWinRemoteWitness, false)
+        (dlcSetup.cetWinRemoteWitness, false)
       } else {
-        (cetLosePrivKey, dlcSetup.cetLoseRemoteWitness, true)
+        (dlcSetup.cetLoseRemoteWitness, true)
       }
-
-    val cetPrivKeyJustice = extCetPrivKey.deriveChildPrivKey(UInt32.one).key
 
     val justiceSpendingInfo = P2WSHV0SpendingInfoFull(
       outPoint = TransactionOutPoint(timedOutCET.txIdBE, UInt32.zero),
       amount = justiceOutput.value,
       scriptPubKey = P2WSHWitnessSPKV0(cetScriptWitness.redeemScript),
-      signersWithPossibleExtra = Vector(cetPrivKeyJustice),
+      signersWithPossibleExtra = Vector(cetToLocalPrivKey),
       hashType = HashType.sigHashAll,
       scriptWitness = cetScriptWitness,
       conditionalPath = ConditionalPath.nonNestedFalse
@@ -1055,10 +998,10 @@ case class BinaryOutcomeDLCClient(
     val localRefundSpendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(refundTx.txIdBE, vout),
       amount = localOutput.value,
-      scriptPubKey = P2WPKHWitnessSPKV0(cetRefundPrivKey.publicKey),
-      signer = cetRefundPrivKey,
+      scriptPubKey = P2WPKHWitnessSPKV0(finalPrivKey.publicKey),
+      signer = finalPrivKey,
       hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(cetRefundPrivKey.publicKey)
+      scriptWitness = P2WPKHWitnessV0(finalPrivKey.publicKey)
     )
 
     val localSpendingTxF = constructClosingTx(finalPrivKey,
@@ -1090,7 +1033,8 @@ object BinaryOutcomeDLCClient {
       preCommittedR: ECPublicKey,
       isInitiator: Boolean,
       extPrivKey: ExtPrivateKey,
-      remoteExtPubKey: ExtPublicKey,
+      nextAddressIndex: Int,
+      remotePubKeys: DLCPublicKeys,
       input: CurrencyUnit,
       remoteInput: CurrencyUnit,
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
@@ -1113,7 +1057,8 @@ object BinaryOutcomeDLCClient {
       preCommittedR = preCommittedR,
       isInitiator = isInitiator,
       extPrivKey = extPrivKey,
-      remoteExtPubKey = remoteExtPubKey,
+      nextAddressIndex = nextAddressIndex,
+      remotePubKeys = remotePubKeys,
       input = input,
       remoteInput = remoteInput,
       fundingUtxos = fundingUtxos,
@@ -1131,9 +1076,11 @@ object BinaryOutcomeDLCClient {
   def fromOffer(
       offer: DLCMessage.DLCOffer,
       extPrivKey: ExtPrivateKey,
+      nextAddressIndex: Int,
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
       totalCollateral: CurrencyUnit,
-      changeSPK: P2WPKHWitnessSPKV0)(
+      changeSPK: P2WPKHWitnessSPKV0,
+      network: BitcoinNetwork)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
     BinaryOutcomeDLCClient(
       outcomeWin = offer.contractInfo.keys.head,
@@ -1142,7 +1089,8 @@ object BinaryOutcomeDLCClient {
       preCommittedR = offer.oracleInfo.rValue,
       isInitiator = false,
       extPrivKey = extPrivKey,
-      remoteExtPubKey = offer.extPubKey,
+      nextAddressIndex = nextAddressIndex,
+      remotePubKeys = offer.pubKeys,
       input = totalCollateral,
       remoteInput = offer.totalCollateral,
       fundingUtxos = fundingUtxos,
@@ -1154,7 +1102,7 @@ object BinaryOutcomeDLCClient {
       changeSPK = changeSPK,
       remoteChangeSPK =
         offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
-      network = RegTest
+      network = network
     )
   }
 
@@ -1162,10 +1110,14 @@ object BinaryOutcomeDLCClient {
       offer: DLCMessage.DLCOffer,
       accept: DLCMessage.DLCAccept,
       extPrivKey: ExtPrivateKey,
-      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle])(
+      nextAddressIndex: Int,
+      fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
+      network: BitcoinNetwork)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
-    require(extPrivKey.extPublicKey == offer.extPubKey,
-            "ExtPrivateKey must match the one in your Offer message")
+    require(
+      DLCPublicKeys
+        .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network) == offer.pubKeys,
+      "ExtPrivateKey must match the one in your Offer message")
     require(
       fundingUtxos.zip(offer.fundingInputs).forall {
         case (info, (outPoint, output)) =>
@@ -1181,7 +1133,8 @@ object BinaryOutcomeDLCClient {
       preCommittedR = offer.oracleInfo.rValue,
       isInitiator = true,
       extPrivKey = extPrivKey,
-      remoteExtPubKey = accept.extPubKey,
+      nextAddressIndex = nextAddressIndex,
+      remotePubKeys = accept.pubKeys,
       input = offer.totalCollateral,
       remoteInput = accept.totalCollateral,
       fundingUtxos = fundingUtxos,
@@ -1194,7 +1147,7 @@ object BinaryOutcomeDLCClient {
         offer.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
       remoteChangeSPK =
         accept.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
-      network = RegTest
+      network = network
     )
   }
 
