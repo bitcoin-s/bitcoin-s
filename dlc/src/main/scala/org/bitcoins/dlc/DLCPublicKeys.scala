@@ -1,6 +1,6 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.config.{NetworkParameters, RegTest}
 import org.bitcoins.core.crypto.{ECPublicKey, ExtPrivateKey, ExtPublicKey}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
@@ -16,7 +16,8 @@ object DLCPublicKeys {
 
   def fromExtPubKeyAndIndex(
       extPubKey: ExtPublicKey,
-      nextAddressIndex: Int): DLCPublicKeys = {
+      nextAddressIndex: Int,
+      network: NetworkParameters = RegTest): DLCPublicKeys = {
     val fundingPubKey: ECPublicKey =
       extPubKey
         .deriveChildPubKey(BIP32Path.fromString(s"m/0/$nextAddressIndex"))
@@ -45,13 +46,14 @@ object DLCPublicKeys {
       fundingKey = fundingPubKey,
       toLocalCETKey = cetToLocalPubKey,
       toRemoteCETKey = cetToRemotePubKey,
-      finalAddress = Bech32Address(P2WPKHWitnessSPKV0(finalPubKey), RegTest)
+      finalAddress = Bech32Address(P2WPKHWitnessSPKV0(finalPubKey), network)
     )
   }
 
   def fromExtPrivKeyAndIndex(
       extPrivKey: ExtPrivateKey,
-      nextAddressIndex: Int): DLCPublicKeys = {
-    fromExtPubKeyAndIndex(extPrivKey.extPublicKey, nextAddressIndex)
+      nextAddressIndex: Int,
+      network: NetworkParameters = RegTest): DLCPublicKeys = {
+    fromExtPubKeyAndIndex(extPrivKey.extPublicKey, nextAddressIndex, network)
   }
 }
