@@ -64,7 +64,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param oraclePubKey The Oracle's permanent public key
   * @param preCommittedR The Oracle's one-time event-specific public key
   * @param isInitiator True if this client sends the offer message
-  * @param extPrivKey This client's extended private key for this event
+  * @param extPrivKey This client's extended private key (at the account level) for this event
+  * @param nextAddressIndex The next unused address index for the provided extPrivKey
   * @param remotePubKeys Remote's public keys for this event
   * @param input This client's total collateral contribution
   * @param remoteInput Remote's total collateral contribution
