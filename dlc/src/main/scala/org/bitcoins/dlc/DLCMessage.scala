@@ -1,6 +1,6 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.core.crypto.{ECPublicKey, ExtPublicKey, Sha256DigestBE}
+import org.bitcoins.core.crypto.{ECPublicKey, Sha256DigestBE}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.transaction.{
@@ -17,7 +17,7 @@ object DLCMessage {
   case class DLCOffer(
       contractInfo: Map[Sha256DigestBE, Satoshis],
       oracleInfo: OracleInfo,
-      extPubKey: ExtPublicKey,
+      pubKeys: DLCPublicKeys,
       totalCollateral: Satoshis,
       fundingInputs: Vector[(TransactionOutPoint, TransactionOutput)],
       changeAddress: Bech32Address,
@@ -27,7 +27,7 @@ object DLCMessage {
 
   case class DLCAccept(
       totalCollateral: Satoshis,
-      extPubKey: ExtPublicKey,
+      pubKeys: DLCPublicKeys,
       fundingInputs: Vector[(TransactionOutPoint, TransactionOutput)],
       changeAddress: Bech32Address,
       cetSigs: CETSignatures)

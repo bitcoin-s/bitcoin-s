@@ -206,7 +206,11 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         preCommittedR = preCommittedR,
         isInitiator = false,
         extPrivKey = localExtPrivKey,
-        remoteExtPubKey = remoteExtPrivKey.extPublicKey,
+        nextAddressIndex = 0,
+        remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(remoteExtPrivKey,
+                                                             nextAddressIndex =
+                                                               0,
+                                                             RegTest),
         input = localInput,
         remoteInput = remoteInput,
         fundingUtxos = localFundingUtxos,
@@ -231,7 +235,11 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         preCommittedR = preCommittedR,
         isInitiator = true,
         extPrivKey = remoteExtPrivKey,
-        remoteExtPubKey = localExtPrivKey.extPublicKey,
+        nextAddressIndex = 0,
+        remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(localExtPrivKey,
+                                                             nextAddressIndex =
+                                                               0,
+                                                             RegTest),
         input = remoteInput,
         remoteInput = localInput,
         fundingUtxos = remoteFundingUtxos,
@@ -501,8 +509,10 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
           case _: UnilateralDLCOutcomeWithDustClosing => FutureUtil.unit
         }
       }
-      otherOutcome <- otherDLC.executeRemoteUnilateralDLC(otherSetup,
-                                                          unilateralOutcome.cet)
+      otherOutcome <- otherDLC.executeRemoteUnilateralDLC(
+        otherSetup,
+        unilateralOutcome.cet,
+        ECPrivateKey.freshPrivateKey)
       _ <- {
         otherOutcome match {
           case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
@@ -609,7 +619,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
                                                       cetWronglyPublished)
       toRemoteOutcome <- punisherDLC.executeRemoteUnilateralDLC(
         punisherSetup,
-        cetWronglyPublished)
+        cetWronglyPublished,
+        ECPrivateKey.freshPrivateKey)
       _ = assert(toRemoteOutcome.cet == cetWronglyPublished)
       _ = assert(justiceOutcome.cet == cetWronglyPublished)
       _ <- {
