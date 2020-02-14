@@ -15,6 +15,7 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   EmptyScriptSignature,
@@ -272,9 +273,15 @@ case class BinaryOutcomeDLCClient(
                                        outputs = outputs,
                                        lockTime = UInt32.zero)
 
-    subtractFeeFromOutputs(txWithoutFee,
-                           feeRate,
-                           Vector(changeSPK, remoteChangeSPK))
+    val txWithFee = subtractFeeFromOutputs(txWithoutFee,
+                                           feeRate,
+                                           Vector(changeSPK, remoteChangeSPK))
+
+    BaseTransaction(version = txWithFee.version,
+                    inputs = txWithFee.inputs,
+                    outputs =
+                      txWithFee.outputs.filter(_.value >= Policy.dustThreshold),
+                    lockTime = txWithFee.lockTime)
   }
 
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
