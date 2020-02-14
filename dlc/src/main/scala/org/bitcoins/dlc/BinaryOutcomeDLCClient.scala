@@ -246,9 +246,15 @@ case class BinaryOutcomeDLCClient(
                                        outputs = outputs,
                                        lockTime = UInt32.zero)
 
-    subtractFeeFromOutputs(txWithoutFee,
-                           feeRate,
-                           Vector(changeSPK, remoteChangeSPK))
+    val txWithFee = subtractFeeFromOutputs(txWithoutFee,
+                                           feeRate,
+                                           Vector(changeSPK, remoteChangeSPK))
+
+    BaseTransaction(version = txWithFee.version,
+                    inputs = txWithFee.inputs,
+                    outputs =
+                      txWithFee.outputs.filter(_.value >= Policy.dustThreshold),
+                    lockTime = txWithFee.lockTime)
   }
 
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
