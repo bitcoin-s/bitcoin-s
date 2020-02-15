@@ -22,7 +22,12 @@ import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.{
+  AccountDb,
+  AddressDb,
+  ExecutedDLCDb,
+  SpendingInfoDb
+}
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -438,6 +443,8 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def acceptDLCOffer(dlcOffer: DLCOffer): Future[DLCAccept]
 
   def signDLC(accept: DLCAccept): Future[DLCSign]
+
+  def addDLCSigs(sigs: DLCSign): Future[ExecutedDLCDb]
 
   /**
     *
