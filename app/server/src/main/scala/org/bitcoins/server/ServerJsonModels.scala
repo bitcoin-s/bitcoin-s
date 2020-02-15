@@ -7,7 +7,12 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{ContractInfo, DLCOffer, OracleInfo}
+import org.bitcoins.dlc.DLCMessage.{
+  ContractInfo,
+  DLCAccept,
+  DLCOffer,
+  OracleInfo
+}
 import ujson._
 import upickle.default._
 
@@ -193,6 +198,29 @@ object AcceptDLCOffer extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 2, got"))
+    }
+  }
+}
+
+case class SignDLC(accept: DLCAccept, escaped: Boolean)
+
+object SignDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignDLC] = {
+    jsArr.arr.toList match {
+      case acceptJs :: escapedJs :: Nil =>
+        Try {
+          val accept = DLCAccept.fromJson(ujson.read(acceptJs.str))
+          val escaped = escapedJs.bool
+          SignDLC(accept, escaped)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing accept and escaped arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
     }
   }
 }

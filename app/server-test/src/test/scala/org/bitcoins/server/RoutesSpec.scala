@@ -13,12 +13,12 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, BlockStamp}
-import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
+import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.dlc.DLCMessage._
-import org.bitcoins.dlc.{CETSignatures, DLCMessage, DLCPublicKeys, DLCTimeouts}
+import org.bitcoins.dlc._
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
 import org.scalamock.scalatest.MockFactory
@@ -234,6 +234,11 @@ class RoutesSpec
     val dummyKey = ECPublicKey(
       "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
 
+    val dummyPartialSig = PartialSignature(
+      ECPublicKey(
+        "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919"),
+      DummyECDigitalSignature)
+
     val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
 
     val dummyDLCKeys = DLCPublicKeys(dummyKey,
@@ -297,10 +302,6 @@ class RoutesSpec
 
       val sats = Satoshis.max
 
-      val dummyPartialSig = PartialSignature(
-        ECPublicKey(
-          "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919"),
-        DummyECDigitalSignature)
       (mockWalletApi
         .acceptDLCOffer(_: DLCOffer))
         .expects(DLCOffer.fromJson(ujson.read(offerStr)))
@@ -325,6 +326,31 @@ class RoutesSpec
         responseAs[String] shouldEqual s"""{"result":"{\\"totalCollateral\\":${sats.toLong},\\"pubKeys\\":{\\"fundingKey\\":\\"${dummyKey.hex}\\",\\"toLocalCETKey\\":\\"${dummyKey.hex}\\",\\"toRemoteCETKey\\":\\"${dummyKey.hex}\\",\\"finalAddress\\":\\"$dummyAddress\\"},\\"fundingInputs\\":[{\\"outpoint\\":\\"${EmptyTransactionOutPoint.hex}\\",\\"output\\":\\"${EmptyTransactionOutput.hex}\\"}],\\"changeAddress\\":\\"$dummyAddress\\",\\"cetSigs\\":{\\"winSig\\":\\"${dummyPartialSig.hex}\\",\\"loseSig\\":\\"${dummyPartialSig.hex}\\",\\"refundSig\\":\\"${dummyPartialSig.hex}\\"},\\"eventId\\":\\"${eventId.hex}\\"}","error":null}"""
       }
     }
+
+    "sign a dlc" in {
+      val acceptStr =
+        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","toLocalCETKey":"${dummyKey.hex}","toRemoteCETKey":"${dummyKey.hex}","finalAddress":"$dummyAddress"},"fundingInputs":[{"outpoint":"${EmptyTransactionOutPoint.hex}","output":"${EmptyTransactionOutput.hex}"}],"changeAddress":"$dummyAddress","cetSigs":{"winSig":"${dummyPartialSig.hex}","loseSig":"${dummyPartialSig.hex}","refundSig":"${dummyPartialSig.hex}"},"eventId\":"${eventId.hex}"}"""
+
+      (mockWalletApi
+        .signDLC(_: DLCAccept))
+        .expects(DLCAccept.fromJson(ujson.read(acceptStr)))
+        .returning(
+          Future.successful(
+            DLCSign(
+              CETSignatures(dummyPartialSig, dummyPartialSig, dummyPartialSig),
+              FundingSignatures(Vector(dummyPartialSig)),
+              eventId
+            )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("signdlc", Arr(Str(acceptStr), Bool(false))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual s"""{"result":"{\\"cetSigs\\":{\\"winSig\\":\\"${dummyPartialSig.hex}\\",\\"loseSig\\":\\"${dummyPartialSig.hex}\\",\\"refundSig\\":\\"${dummyPartialSig.hex}\\"},\\"fundingSigs\\":[\\"${dummyPartialSig.hex}\\"],\\"eventId\\":\\"${eventId.hex}\\"}","error":null}"""
+      }
+    }
+
     "send to an address" in {
       // positive cases
 

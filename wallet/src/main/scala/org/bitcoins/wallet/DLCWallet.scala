@@ -269,4 +269,57 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       )
     }
   }
+
+  def registerDLCAccept(accept: DLCAccept): Future[DLCAcceptDb] = {
+    dlcOfferDAO.findByEventId(accept.eventId).flatMap {
+      case Some(_) =>
+        logger.debug(
+          s"DLC Offer (${accept.eventId.hex}) found, adding accept data")
+
+        val dlcAcceptDb = DLCAcceptDb(accept.eventId,
+                                      accept.pubKeys,
+                                      accept.totalCollateral,
+                                      accept.fundingInputs,
+                                      accept.cetSigs,
+                                      accept.changeAddress)
+        dlcAcceptDAO.update(dlcAcceptDb)
+      case None =>
+        throw new RuntimeException(
+          s"No DLC Offer found with corresponding eventId ${accept.eventId}, this wallet did not create the corresponding offer")
+    }
+  }
+
+  /**
+    * Creates signatures for the DLCs CETs and Funding Inputs
+    *
+    * This is the second step of the initiator
+    */
+  override def signDLC(accept: DLCAccept): Future[DLCSign] = {
+    for {
+      account <- getDefaultAccountForType(AddressType.SegWit)
+      dLCAcceptDb <- registerDLCAccept(accept)
+      dlcOpt <- dlcDAO.findByEventId(accept.eventId)
+      spendingInfoDbs <- listUtxos(dLCAcceptDb.fundingInputs.map(_.outPoint))
+      offerOpt <- dlcOfferDAO.findByEventId(accept.eventId)
+      offer = offerOpt.get // Safe, we throw in registerDLCAccept if it is None
+      dlc = dlcOpt.get
+      spendingInfos = spendingInfoDbs.flatMap(
+        _.toUTXOSpendingInfo(account, keyManager, offer.network).toSingles)
+      client = BinaryOutcomeDLCClient.fromOfferAndAccept(
+        offer.toDLCOffer,
+        accept,
+        keyManager.rootExtPrivKey,
+        dlc.keyIndex,
+        spendingInfos,
+        offer.network)
+      cetSigs <- client.createCETSigs
+      fundingSigs <- client.createFundingTransactionSigs()
+      updatedDLCDb = dlc.copy(initiatorCetSigsOpt = Some(cetSigs),
+                              fundingSigsOpt = Some(fundingSigs))
+      _ <- dlcDAO.update(updatedDLCDb)
+    } yield {
+      DLCSign(cetSigs, fundingSigs, accept.eventId)
+    }
+  }
+
 }

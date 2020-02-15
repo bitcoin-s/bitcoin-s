@@ -87,6 +87,19 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
               .map(handleDLCMessage(_, escaped))
           }
       }
+
+    case ServerCommand("signdlc", arr) =>
+      SignDLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignDLC(accept, escaped)) =>
+          complete {
+            wallet
+              .signDLC(accept)
+              .map(handleDLCMessage(_, escaped))
+          }
+      }
+
     case ServerCommand("sendtoaddress", arr) =>
       // TODO create custom directive for this?
       SendToAddress.fromJsArr(arr) match {

@@ -408,7 +408,7 @@ object DLCMessage {
 
       val cetSigs =
         vec
-          .find(_._1 == "timeouts")
+          .find(_._1 == "cetSigs")
           .map {
             case (_, value) =>
               implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
@@ -437,8 +437,73 @@ object DLCMessage {
     }
   }
 
-  case class DLCSign(cetSigs: CETSignatures, fundingSigs: FundingSignatures)
+  case class DLCSign(
+      cetSigs: CETSignatures,
+      fundingSigs: FundingSignatures,
+      eventId: Sha256DigestBE)
       extends DLCMessage {
-    override def toJson: Value = ???
+
+    def toJson: Value = {
+      val fundingSigsJson = fundingSigs.sigs.map(sig => Str(sig.hex))
+
+      val cetSigsJson =
+        mutable.LinkedHashMap("winSig" -> Str(cetSigs.winSig.hex),
+                              "loseSig" -> Str(cetSigs.loseSig.hex),
+                              "refundSig" -> Str(cetSigs.refundSig.hex))
+
+      Obj(
+        mutable.LinkedHashMap[String, Value](
+          "cetSigs" -> cetSigsJson,
+          "fundingSigs" -> fundingSigsJson,
+          "eventId" -> Str(eventId.hex)
+        )
+      )
+    }
+  }
+
+  object DLCSign {
+
+    def fromJson(js: Value): DLCSign = {
+      val vec = js.obj.toVector
+
+      val cetSigs =
+        vec
+          .find(_._1 == "cetSigs")
+          .map {
+            case (_, value) =>
+              implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
+
+              val winSig = getValue("winSig")
+              val loseSig = getValue("loseSig")
+              val refundSig = getValue("refundSig")
+
+              CETSignatures(
+                PartialSignature(winSig.str),
+                PartialSignature(loseSig.str),
+                PartialSignature(refundSig.str)
+              )
+          }
+          .get
+
+      val fundingSigs =
+        vec
+          .find(_._1 == "fundingSigs")
+          .map {
+            case (_, value) =>
+              if (value.arr.isEmpty) {
+                throw new RuntimeException(
+                  s"DLC Sign cannot have empty fundingSigs, got $js")
+              } else {
+                value.arr.map(subVal => PartialSignature(subVal.str))
+              }
+          }
+          .get
+          .toVector
+
+      val eventId =
+        vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
+
+      DLCSign(cetSigs, FundingSignatures(fundingSigs), eventId)
+    }
   }
 }

@@ -6,7 +6,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.transaction.OutputReference
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{ContractInfo, OracleInfo}
+import org.bitcoins.dlc.DLCMessage.{ContractInfo, DLCOffer, OracleInfo}
 import org.bitcoins.dlc.{DLCPublicKeys, DLCTimeouts}
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
@@ -21,7 +21,21 @@ case class DLCOfferDb(
     totalCollateral: CurrencyUnit,
     fundingInputs: Vector[OutputReference],
     feeRate: SatoshisPerVirtualByte,
-    changeAddress: Bech32Address)
+    changeAddress: Bech32Address) {
+
+  def toDLCOffer: DLCOffer = {
+    DLCOffer(
+      contractInfo,
+      oracleInfo,
+      pubKeys,
+      totalCollateral.satoshis,
+      fundingInputs,
+      changeAddress,
+      feeRate,
+      timeouts
+    )
+  }
+}
 
 class DLCOfferTable(tag: Tag)
     extends Table[DLCOfferDb](tag, "wallet_dlc_offers") {
