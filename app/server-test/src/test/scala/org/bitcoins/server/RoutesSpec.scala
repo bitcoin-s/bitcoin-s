@@ -9,6 +9,7 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.hd.{HDAccount, HDCoin, HDCoinType, HDPurpose}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp._
 import org.bitcoins.core.protocol.transaction._
@@ -21,6 +22,7 @@ import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
+import org.bitcoins.wallet.models.ExecutedDLCDb
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
 import ujson.Value.InvalidData
@@ -348,6 +350,33 @@ class RoutesSpec
       Post() ~> route ~> check {
         contentType shouldEqual `application/json`
         responseAs[String] shouldEqual s"""{"result":"{\\"cetSigs\\":{\\"winSig\\":\\"${dummyPartialSig.hex}\\",\\"loseSig\\":\\"${dummyPartialSig.hex}\\",\\"refundSig\\":\\"${dummyPartialSig.hex}\\"},\\"fundingSigs\\":[\\"${dummyPartialSig.hex}\\"],\\"eventId\\":\\"${eventId.hex}\\"}","error":null}"""
+      }
+    }
+
+    "add dlc sigs" in {
+      val sigsStr =
+        s"""{"cetSigs":{"winSig":"${dummyPartialSig.hex}","loseSig":"${dummyPartialSig.hex}","refundSig":"${dummyPartialSig.hex}"},"fundingSigs":["${dummyPartialSig.hex}"],"eventId":"${eventId.hex}"}"""
+
+      (mockWalletApi
+        .addDLCSigs(_: DLCSign))
+        .expects(DLCSign.fromJson(ujson.read(sigsStr)))
+        .returning(Future.successful(ExecutedDLCDb(
+          eventId = eventId,
+          isInitiator = false,
+          account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
+          keyIndex = 0,
+          initiatorCetSigsOpt = Some(
+            CETSignatures(dummyPartialSig, dummyPartialSig, dummyPartialSig)),
+          fundingSigsOpt = Some(FundingSignatures(Vector(dummyPartialSig))),
+          oracleSigOpt = None
+        )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("adddlcsigs", Arr(Str(sigsStr))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual s"""{"result":"Successfully added sigs to DLC ${eventId.hex}","error":null}"""
       }
     }
 

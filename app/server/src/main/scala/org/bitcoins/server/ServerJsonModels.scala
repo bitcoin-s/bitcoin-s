@@ -7,12 +7,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer,
-  OracleInfo
-}
+import org.bitcoins.dlc.DLCMessage._
 import ujson._
 import upickle.default._
 
@@ -221,6 +216,27 @@ object SignDLC extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class AddDLCSigs(sigs: DLCSign)
+
+object AddDLCSigs extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AddDLCSigs] = {
+    jsArr.arr.toList match {
+      case sigsJs :: Nil =>
+        Try {
+          val sigs = DLCSign.fromJson(ujson.read(sigsJs.str))
+          AddDLCSigs(sigs)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing sigs argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
   }
 }

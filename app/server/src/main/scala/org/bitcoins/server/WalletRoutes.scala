@@ -100,6 +100,19 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("adddlcsigs", arr) =>
+      AddDLCSigs.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AddDLCSigs(sigs)) =>
+          complete {
+            wallet.addDLCSigs(sigs).map { _ =>
+              Server.httpSuccess(
+                s"Successfully added sigs to DLC ${sigs.eventId.hex}")
+            }
+          }
+      }
+
     case ServerCommand("sendtoaddress", arr) =>
       // TODO create custom directive for this?
       SendToAddress.fromJsArr(arr) match {

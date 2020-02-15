@@ -322,4 +322,21 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
+  /**
+    * Inputs the received signatures for a DLC into our database
+    *
+    * This is the second step of the recipient
+    */
+  override def addDLCSigs(sign: DLCSign): Future[ExecutedDLCDb] = {
+    dlcDAO.findByEventId(sign.eventId).flatMap {
+      case Some(dlc) =>
+        val newDLCDb = dlc.copy(initiatorCetSigsOpt = Some(sign.cetSigs),
+                                fundingSigsOpt = Some(sign.fundingSigs))
+        dlcDAO.update(newDLCDb)
+      case None =>
+        Future.failed(
+          new NoSuchElementException(
+            s"No DLC found with corresponding eventId ${sign.eventId}"))
+    }
+  }
 }

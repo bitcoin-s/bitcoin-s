@@ -9,12 +9,7 @@ import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer,
-  OracleInfo
-}
+import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.picklers._
 import scopt.OParser
 import ujson.{Num, Str}
@@ -200,6 +195,19 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("adddlcsigs")
+        .hidden()
+        .action((_, conf) => conf.copy(command = AddDLCSigs(null)))
+        .text("Adds DLC Signatures into the database")
+        .children(
+          opt[DLCSign]("sigs").required
+            .action((sigs, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigs =>
+                  addDLCSigs.copy(sigs = sigs)
+                case other => other
+              }))
+        ),
       cmd("getbalance")
         .hidden()
         .action((_, conf) => conf.copy(command = GetBalance))
@@ -362,6 +370,9 @@ object ConsoleCli {
                      Seq(up.writeJs(offer), up.writeJs(escaped)))
       case SignDLC(accept, escaped) =>
         RequestParam("signdlc", Seq(up.writeJs(accept), up.writeJs(escaped)))
+      case AddDLCSigs(sigs) =>
+        RequestParam("adddlcsigs", Seq(up.writeJs(sigs)))
+      // Wallet
       case GetBalance =>
         RequestParam("getbalance")
       case GetNewAddress =>
@@ -500,6 +511,8 @@ object CliCommand {
       extends CliCommand
 
   case class SignDLC(accept: DLCAccept, escaped: Boolean) extends CliCommand
+
+  case class AddDLCSigs(sigs: DLCSign) extends CliCommand
 
   // Wallet
   case class SendToAddress(destination: BitcoinAddress, amount: Bitcoins)
