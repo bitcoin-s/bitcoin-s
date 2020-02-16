@@ -17,7 +17,8 @@ TaskKeys.downloadBitcoind := {
   val logger = streams.value.log
   import scala.sys.process._
 
-  val binaryDir = Paths.get("binaries", "bitcoind")
+  val binaryDir = CommonSettings.binariesPath.resolve("bitcoind")
+
 
   if (Files.notExists(binaryDir)) {
     logger.info(s"Creating directory for bitcoind binaries: $binaryDir")

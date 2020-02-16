@@ -700,7 +700,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
         }
       case (None, Some(path)) =>
         val eclairV =
-          s"/eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}.jar"
+          s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}.jar"
         val fullPath = path + eclairV
 
         val jar = new File(fullPath)

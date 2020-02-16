@@ -1,5 +1,7 @@
 import java.nio.file._
 
+import scala.util.Properties
+
 name := "bitcoin-s-eclair-rpc"
 
 libraryDependencies ++= Deps.eclairRpc
@@ -12,7 +14,7 @@ TaskKeys.downloadEclair := {
   val logger = streams.value.log
   import scala.sys.process._
 
-  val binaryDir = Paths.get("binaries", "eclair")
+  val binaryDir = CommonSettings.binariesPath.resolve("eclair")
 
   if (Files.notExists(binaryDir)) {
     logger.info(s"Creating directory for Eclair binaires: $binaryDir")
