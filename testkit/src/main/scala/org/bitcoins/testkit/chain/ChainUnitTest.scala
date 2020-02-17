@@ -436,15 +436,13 @@ object ChainUnitTest extends ChainVerificationLogger {
       appConfig: ChainAppConfig): Future[(ChainHandler, BlockHeaderDb)] = {
     val tableSetupF = setupAllTables()
 
-    val chainHandlerF = makeChainHandler()
-
     val genesisHeaderF = tableSetupF.flatMap { _ =>
+      val chainHandlerF = makeChainHandler()
       for {
         chainHandler <- chainHandlerF
         genHeader <- chainHandler.blockHeaderDAO.create(genesisHeaderDb)
-        genFilterHeader <- chainHandler.filterHeaderDAO.create(
-          genesisFilterHeaderDb)
-        genFilter <- chainHandler.filterDAO.create(genesisFilterDb)
+        _ <- chainHandler.filterHeaderDAO.create(genesisFilterHeaderDb)
+        _ <- chainHandler.filterDAO.create(genesisFilterDb)
       } yield genHeader
     }
 
