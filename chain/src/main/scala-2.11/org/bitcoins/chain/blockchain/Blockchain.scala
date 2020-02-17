@@ -2,11 +2,10 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.models.BlockHeaderDb
 
-import scala.collection.{mutable, IndexedSeqLike}
+import scala.collection.mutable
 
 /** @inheritdoc */
 case class Blockchain(headers: Vector[BlockHeaderDb])
-    extends IndexedSeqLike[BlockHeaderDb, Vector[BlockHeaderDb]]
     with BaseBlockChain {
 
   protected[blockchain] def compObjectfromHeaders(

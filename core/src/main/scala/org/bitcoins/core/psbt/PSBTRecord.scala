@@ -74,8 +74,8 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
       derivationPath: BIP32Path)
       extends GlobalPSBTRecord {
     require(
-      derivationPath.path.length == xpub.depth.toInt,
-      s"Derivation path length does not match xpubkey depth, difference: ${derivationPath.path.length - xpub.depth.toInt}"
+      derivationPath.length == xpub.depth.toInt,
+      s"Derivation path length does not match xpubkey depth, difference: ${derivationPath.length - xpub.depth.toInt}"
     )
     require(
       masterFingerprint.length == 4,
@@ -83,7 +83,7 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
 
     override type KeyId = XPubKeyKeyId.type
     override val key: ByteVector = ByteVector(XPubKeyKeyId.byte) ++ xpub.bytes
-    override val value: ByteVector = derivationPath.path
+    override val value: ByteVector = derivationPath
       .foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
@@ -193,7 +193,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
     override type KeyId = BIP32DerivationPathKeyId.type
     override val key: ByteVector = ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes
     override val value: ByteVector =
-      path.path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
+      path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
   case class FinalizedScriptSig(scriptSig: ScriptSignature)
@@ -315,7 +315,7 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
     override type KeyId = BIP32DerivationPathKeyId.type
     override val key: ByteVector = ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes
     override val value: ByteVector =
-      path.path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
+      path.foldLeft(masterFingerprint)(_ ++ _.toUInt32.bytesLE)
   }
 
   case class Unknown(key: ByteVector, value: ByteVector)

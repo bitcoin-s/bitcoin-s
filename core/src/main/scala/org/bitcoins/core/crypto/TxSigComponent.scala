@@ -86,7 +86,7 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
 
   override def transaction: WitnessTransaction
 
-  def witness: ScriptWitness = transaction.witness.witnesses(inputIndex.toInt)
+  def witness: ScriptWitness = transaction.witness(inputIndex.toInt)
 
   def witnessVersion: WitnessVersion
 

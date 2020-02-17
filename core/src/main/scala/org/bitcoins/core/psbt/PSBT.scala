@@ -387,7 +387,7 @@ case class PSBT(
           if (!previousElements.exists(_.key == expectedBytes)) {
             val fp =
               if (extKey.fingerprint == ExtKey.masterFingerprint) {
-                extKey.deriveChildPubKey(path.path.head).get.fingerprint
+                extKey.deriveChildPubKey(path.head).get.fingerprint
               } else {
                 extKey.fingerprint
               }
@@ -579,7 +579,7 @@ case class PSBT(
               case Some(
                   InputPSBTRecord.FinalizedScriptWitness(scriptWitness)) =>
                 TransactionWitness(
-                  witness.witnesses.updated(index, scriptWitness))
+                  witness.updated(index, scriptWitness).toVector)
             }
         }
         WitnessTransaction(transaction.version,

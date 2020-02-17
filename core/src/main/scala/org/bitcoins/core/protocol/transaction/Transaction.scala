@@ -120,8 +120,8 @@ case object EmptyTransaction extends BaseTransaction {
 
 sealed abstract class WitnessTransaction extends Transaction {
   require(
-    inputs.length == witness.witnesses.length,
-    s"Must have same amount of inputs and witnesses in witness tx, inputs=${inputs.length} witnesses=${witness.witnesses.length}"
+    inputs.length == witness.length,
+    s"Must have same amount of inputs and witnesses in witness tx, inputs=${inputs.length} witnesses=${witness.length}"
   )
 
   /** The txId for the witness transaction from satoshi's original serialization */

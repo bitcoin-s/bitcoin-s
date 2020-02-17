@@ -1130,17 +1130,11 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       case b: BaseTxSigComponent =>
         b.transaction match {
           case wtx: WitnessTransaction =>
-            wtx.witness
-              .witnesses(txSigComponent.inputIndex.toInt)
-              .stack
-              .nonEmpty
+            wtx.witness(txSigComponent.inputIndex.toInt).stack.nonEmpty
           case _: BaseTransaction => false
         }
       case r: WitnessTxSigComponentRebuilt =>
-        r.transaction.witness
-          .witnesses(txSigComponent.inputIndex.toInt)
-          .stack
-          .nonEmpty
+        r.transaction.witness(txSigComponent.inputIndex.toInt).stack.nonEmpty
     }
 
     if (unexpectedWitness)

@@ -50,7 +50,7 @@ object BIP39Seed extends Factory[BIP39Seed] {
       password: String = EMPTY_PASSWORD): BIP39Seed = {
     val salt = s"mnemonic$password"
 
-    val words = mnemonic.words.mkString(" ")
+    val words = mnemonic.mkString(" ")
 
     val encodedBytes = PBKDF2
       .withSha512(words, salt, ITERATION_COUNT, DERIVED_KEY_LENGTH)
