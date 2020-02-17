@@ -39,7 +39,7 @@ sealed abstract class RawWitnessTransactionParser
       outputBytes,
       RawTransactionOutputParser.read(_))
     val witness = TransactionWitness(witnessBytes, inputs.size)
-    val lockTimeBytes = witnessBytes.splitAt(witness.size)._2
+    val lockTimeBytes = witnessBytes.splitAt(witness.byteSize)._2
     val lockTime = UInt32(lockTimeBytes.take(4).reverse)
     WitnessTransaction(version, inputs, outputs, lockTime, witness)
   }

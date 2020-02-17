@@ -16,7 +16,7 @@ trait RawAddrMessageSerializer extends RawBitcoinSerializer[AddrMessage] {
 
   override def read(bytes: ByteVector): AddrMessage = {
     val ipCount = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    val ipAddressBytes = bytes.slice(ipCount.size.toInt, bytes.size)
+    val ipAddressBytes = bytes.slice(ipCount.byteSize.toInt, bytes.size)
     val (networkIpAddresses, _) =
       parseNetworkIpAddresses(ipCount, ipAddressBytes)
     AddrMessage(ipCount, networkIpAddresses)
@@ -48,7 +48,7 @@ trait RawAddrMessageSerializer extends RawBitcoinSerializer[AddrMessage] {
         val networkIpAddress =
           RawNetworkIpAddressSerializer.read(remainingBytes)
         val newRemainingBytes =
-          remainingBytes.slice(networkIpAddress.size, remainingBytes.size)
+          remainingBytes.slice(networkIpAddress.byteSize, remainingBytes.size)
         loop(remainingAddresses - 1,
              newRemainingBytes,
              networkIpAddress :: accum)

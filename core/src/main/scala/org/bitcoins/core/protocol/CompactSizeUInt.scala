@@ -15,7 +15,7 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
   /** The number parsed from VarInt. */
   def num: UInt64
 
-  override def hex = size match {
+  override def hex = byteSize match {
     case 1 => BitcoinSUtil.flipEndianness(num.hex.slice(14, 16))
     case 3 => "fd" + BitcoinSUtil.flipEndianness(num.hex.slice(12, 16))
     case 5 => "fe" + BitcoinSUtil.flipEndianness(num.hex.slice(8, 16))
@@ -37,7 +37,9 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
 }
 
 object CompactSizeUInt extends Factory[CompactSizeUInt] {
-  private case class CompactSizeUIntImpl(num: UInt64, override val size: Long)
+  private case class CompactSizeUIntImpl(
+      num: UInt64,
+      override val byteSize: Long)
       extends CompactSizeUInt
 
   val zero: CompactSizeUInt = CompactSizeUInt(UInt64.zero)

@@ -39,11 +39,11 @@ object PSBTRecord {
     if (keyCmpctUInt.toLong == 0) {
       (ByteVector.empty, ByteVector.empty)
     } else {
-      val key = bytes.drop(keyCmpctUInt.size).take(keyCmpctUInt.toLong)
-      val valueBytes = bytes.drop(keyCmpctUInt.size + keyCmpctUInt.toLong)
+      val key = bytes.drop(keyCmpctUInt.byteSize).take(keyCmpctUInt.toLong)
+      val valueBytes = bytes.drop(keyCmpctUInt.byteSize + keyCmpctUInt.toLong)
       val valueCmpctUInt = CompactSizeUInt.parse(valueBytes)
       val value = valueBytes
-        .drop(valueCmpctUInt.size)
+        .drop(valueCmpctUInt.byteSize)
         .take(valueCmpctUInt.toLong)
 
       (key, value)
@@ -155,7 +155,8 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
       pubKey: ECPublicKey,
       signature: ECDigitalSignature)
       extends InputPSBTRecord {
-    require(pubKey.size == 33, s"pubKey must be 33 bytes, got: ${pubKey.size}")
+    require(pubKey.byteSize == 33,
+            s"pubKey must be 33 bytes, got: ${pubKey.byteSize}")
 
     override type KeyId = PartialSignatureKeyId.type
     override val key: ByteVector = ByteVector(PartialSignatureKeyId.byte) ++ pubKey.bytes
@@ -186,7 +187,8 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
       masterFingerprint: ByteVector,
       path: BIP32Path)
       extends InputPSBTRecord {
-    require(pubKey.size == 33, s"pubKey must be 33 bytes, got: ${pubKey.size}")
+    require(pubKey.byteSize == 33,
+            s"pubKey must be 33 bytes, got: ${pubKey.byteSize}")
 
     override type KeyId = BIP32DerivationPathKeyId.type
     override val key: ByteVector = ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes
@@ -307,7 +309,8 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
       masterFingerprint: ByteVector,
       path: BIP32Path)
       extends OutputPSBTRecord {
-    require(pubKey.size == 33, s"pubKey must be 33 bytes, got: ${pubKey.size}")
+    require(pubKey.byteSize == 33,
+            s"pubKey must be 33 bytes, got: ${pubKey.byteSize}")
 
     override type KeyId = BIP32DerivationPathKeyId.type
     override val key: ByteVector = ByteVector(BIP32DerivationPathKeyId.byte) ++ pubKey.bytes

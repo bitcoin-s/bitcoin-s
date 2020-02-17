@@ -32,7 +32,7 @@ class RawTransactionInputParserTest extends FlatSpec with MustMatchers {
 
   it must "find the correct size for an input" in {
     val txInput: TransactionInput = RawTransactionInputParser.read(rawTxInput)
-    txInput.size must be(BitcoinSUtil.decodeHex(rawTxInput).size)
+    txInput.byteSize must be(BitcoinSUtil.decodeHex(rawTxInput).size)
   }
 
   it must "write a single input" in {

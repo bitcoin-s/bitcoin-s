@@ -71,7 +71,7 @@ sealed abstract class Transaction extends NetworkElement {
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
     */
   def baseSize: Long = this match {
-    case btx: BaseTransaction => btx.size
+    case btx: BaseTransaction => btx.byteSize
     case wtx: WitnessTransaction =>
       BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime).baseSize
   }
@@ -106,7 +106,7 @@ sealed abstract class Transaction extends NetworkElement {
 
 sealed abstract class BaseTransaction extends Transaction {
   override def bytes = RawBaseTransactionParser.write(this)
-  override def weight = size * 4
+  override def weight = byteSize * 4
 
 }
 
@@ -153,7 +153,7 @@ sealed abstract class WitnessTransaction extends Transaction {
     */
   override def weight: Long = {
     val base = BaseTransaction(version, inputs, outputs, lockTime)
-    base.size * 3 + size
+    base.byteSize * 3 + byteSize
   }
   override def bytes = RawWitnessTransactionParser.write(this)
 

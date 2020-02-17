@@ -247,7 +247,7 @@ object LnTag {
           accum
         } else {
           val route = LnRoute.fromBytes(remaining)
-          val newRemaining = remaining.slice(route.size, remaining.size)
+          val newRemaining = remaining.slice(route.byteSize, remaining.size)
           loop(newRemaining, accum.:+(route))
         }
       }

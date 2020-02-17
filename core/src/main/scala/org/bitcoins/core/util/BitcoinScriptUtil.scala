@@ -588,7 +588,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     //but scala collections don't allow you to use 'slice' with longs
     val len = Try(compactSizeUInt.num.toInt).getOrElse(Int.MaxValue)
     val scriptPubKeyBytes =
-      bytes.slice(compactSizeUInt.size.toInt, len + compactSizeUInt.size.toInt)
+      bytes.slice(compactSizeUInt.byteSize.toInt,
+                  len + compactSizeUInt.byteSize.toInt)
     val script: List[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
     f(script.toVector)
   }
