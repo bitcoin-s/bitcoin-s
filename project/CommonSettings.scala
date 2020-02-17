@@ -1,4 +1,6 @@
 // these two imports are needed for sbt syntax to work
+import java.nio.file.Paths
+
 import sbt._
 import sbt.Keys._
 
@@ -116,4 +118,6 @@ object CommonSettings {
   ) ++ testSettings
 
   lazy val prodSettings: Seq[Setting[_]] = settings
+
+  lazy val binariesPath = Paths.get(Properties.userHome, ".bitcoin-s", "binaries")
 }

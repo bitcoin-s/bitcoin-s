@@ -26,6 +26,7 @@ import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.{BitcoindRpcTestUtil, TestRpcUtil}
+import org.bitcoins.testkit.util.TestkitBinaries
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,7 +48,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
   /** Directory where sbt downloads Eclair binaries */
   private[bitcoins] val binaryDirectory =
-    BitcoindRpcTestUtil.baseBinaryDirectory.resolve("eclair")
+    TestkitBinaries.baseBinaryDirectory.resolve("eclair")
 
   /** Path to Jar downloaded by Eclair, if it exists */
   private[bitcoins] def binary(
