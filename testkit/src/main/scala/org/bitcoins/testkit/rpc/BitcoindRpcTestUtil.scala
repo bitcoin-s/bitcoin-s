@@ -53,7 +53,7 @@ import org.bitcoins.rpc.jsonmodels.{
   SignRawTransactionResult
 }
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
-import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.util.{FileUtil, TestkitBinaries}
 import org.bitcoins.util.ListUtil
 
 import scala.annotation.tailrec
@@ -156,25 +156,9 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
 
   lazy val network: RegTest.type = RegTest
 
-  /** The base directory where binaries needed in tests
-    * are located. */
-  private[bitcoins] val baseBinaryDirectory = {
-    val cwd = Paths.get(Properties.userDir)
-    val pathsToGoBackFrom = List("eclair-rpc-test",
-                                 "bitcoind-rpc-test",
-                                 "node-test",
-                                 "wallet-test",
-                                 "chain-test")
-
-    val rootDir = if (pathsToGoBackFrom.exists(cwd.endsWith)) {
-      cwd.getParent()
-    } else cwd
-    rootDir.resolve("binaries")
-  }
-
   /** The directory that sbt downloads bitcoind binaries into */
   private[bitcoins] val binaryDirectory = {
-    baseBinaryDirectory.resolve("bitcoind")
+    TestkitBinaries.baseBinaryDirectory.resolve("bitcoind")
   }
 
   def newestBitcoindBinary: File = getBinary(BitcoindVersion.newest)
