@@ -45,7 +45,7 @@ class WitnessScriptPubKeySpec extends Properties("WitnessScriptPubKeySpec") {
   property("witnessScriptPubKey fromAsm symmetry") = {
     Prop.forAll(ScriptGenerators.witnessScriptPubKey) {
       case (witScriptPubKey, _) =>
-        WitnessScriptPubKey(witScriptPubKey.asm).get == witScriptPubKey
+        WitnessScriptPubKey(witScriptPubKey.asm) == witScriptPubKey
     }
   }
 }

@@ -3,6 +3,7 @@ package org.bitcoins.core.policy
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script.flag._
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 
 /**
   * Created by chris on 4/6/16.
@@ -63,6 +64,9 @@ sealed abstract class Policy {
 
   /** A default fee to use per byte on the bitcoin network */
   def defaultFee: CurrencyUnit = Satoshis(50)
+
+  /** A default fee to use per byte on the bitcoin network */
+  def defaultFeeRate: FeeUnit = SatoshisPerVirtualByte(defaultFee)
 
   /** Max fee for a transaction is set to 10 mBTC right now */
   def maxFee: CurrencyUnit = Satoshis(10) * CurrencyUnits.oneMBTC

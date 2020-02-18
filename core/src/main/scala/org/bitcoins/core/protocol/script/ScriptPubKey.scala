@@ -1048,7 +1048,7 @@ object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
     if (nonWitnessScriptPubKey
           .isInstanceOf[NonStandardScriptPubKey] && WitnessScriptPubKey
           .isWitnessScriptPubKey(asm)) {
-      WitnessScriptPubKey(asm).get
+      WitnessScriptPubKey(asm)
     } else {
       nonWitnessScriptPubKey
     }
@@ -1065,7 +1065,7 @@ sealed trait WitnessScriptPubKey extends ScriptPubKey {
   def witnessVersion = WitnessVersion(asm.head)
 }
 
-object WitnessScriptPubKey {
+object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
 
   /** Witness scripts must begin with one of these operations, see
     * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP141]] */
@@ -1089,16 +1089,18 @@ object WitnessScriptPubKey {
 
   val unassignedWitVersions = validWitVersions.tail
 
-  def apply(asm: Seq[ScriptToken]): Option[WitnessScriptPubKey] = fromAsm(asm)
+  def apply(asm: Seq[ScriptToken]): WitnessScriptPubKey = fromAsm(asm)
 
-  def fromAsm(asm: Seq[ScriptToken]): Option[WitnessScriptPubKey] = asm match {
+  def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKey = asm match {
     case _ if P2WPKHWitnessSPKV0.isValid(asm) =>
-      Some(P2WPKHWitnessSPKV0.fromAsm(asm))
+      P2WPKHWitnessSPKV0.fromAsm(asm)
     case _ if P2WSHWitnessSPKV0.isValid(asm) =>
-      Some(P2WSHWitnessSPKV0.fromAsm(asm))
+      P2WSHWitnessSPKV0.fromAsm(asm)
     case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) =>
-      Some(UnassignedWitnessScriptPubKey(asm))
-    case _ => None
+      UnassignedWitnessScriptPubKey(asm)
+    case _ =>
+      throw new IllegalArgumentException(
+        "Given asm was not a WitnessScriptPubKey, got: " + asm)
   }
 
   /**
