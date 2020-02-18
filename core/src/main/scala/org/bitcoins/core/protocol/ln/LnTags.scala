@@ -220,7 +220,7 @@ object LnTag {
   case class RoutingInfo(routes: Vector[LnRoute])
       extends SeqWrapper[LnRoute]
       with LnTag {
-    override val wrapped: Vector[LnRoute] = routes
+    override protected val wrapped: Vector[LnRoute] = routes
 
     override val prefix: LnTagPrefix = LnTagPrefix.RoutingInfo
 

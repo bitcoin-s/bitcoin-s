@@ -53,7 +53,7 @@ sealed abstract class MnemonicCode
     */
   def words: Vector[String]
 
-  override lazy val wrapped: Vector[String] = words
+  override protected lazy val wrapped: Vector[String] = words
 
   /**
     * Returns the entropy initially provided to construct

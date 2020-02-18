@@ -163,7 +163,7 @@ case class TestMempoolAcceptResult(
 final case class DeriveAddressesResult(addresses: Vector[BitcoinAddress])
     extends OtherResult
     with SeqWrapper[BitcoinAddress] {
-  override val wrapped: Vector[BitcoinAddress] = addresses
+  override protected val wrapped: Vector[BitcoinAddress] = addresses
 }
 
 final case class GetDescriptorInfoResult(

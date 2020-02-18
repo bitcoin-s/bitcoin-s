@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
 
 abstract class BIP32Path extends SeqWrapper[BIP32Node] {
   def path: Vector[BIP32Node]
-  override lazy val wrapped: Seq[BIP32Node] = path
+  override protected lazy val wrapped: Vector[BIP32Node] = path
 
   /**
     * BIP32 paths can be subsets/superset of each other.

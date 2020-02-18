@@ -158,7 +158,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty,
     "InputPSBTMap cannot have both a NonWitnessOrUnknownUTXO and a WitnessUTXO"
   )
-  override val wrapped: Vector[InputPSBTRecord] = elements
+  override protected val wrapped: Vector[InputPSBTRecord] = elements
 
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._

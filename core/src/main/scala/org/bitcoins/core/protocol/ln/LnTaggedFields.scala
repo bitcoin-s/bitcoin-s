@@ -28,7 +28,7 @@ sealed abstract class LnTaggedFields
 
   def tags: Vector[LnTag]
 
-  override lazy val wrapped: Vector[LnTag] = tags
+  override protected lazy val wrapped: Vector[LnTag] = tags
 
   def tag[T <: LnTag: ClassTag]: Option[T] =
     tags.collectFirst {

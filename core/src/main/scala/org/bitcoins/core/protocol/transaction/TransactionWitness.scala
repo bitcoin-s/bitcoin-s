@@ -15,7 +15,7 @@ sealed abstract class TransactionWitness
     extends SeqWrapper[ScriptWitness]
     with NetworkElement {
   val witnesses: Vector[ScriptWitness]
-  override val wrapped: Vector[ScriptWitness] = witnesses
+  override protected val wrapped: Vector[ScriptWitness] = witnesses
 
   override def bytes: ByteVector = {
     RawTransactionWitnessParser.write(this)

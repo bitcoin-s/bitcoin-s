@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 /** @inheritdoc */
 case class Blockchain(headers: Vector[BlockHeaderDb])
-    with BaseBlockChain {
+    extends BaseBlockChain {
 
   protected[blockchain] def compObjectfromHeaders(
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain =
