@@ -9,9 +9,9 @@ import org.bitcoins.eclair.rpc.api.PaymentId
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success}
 
 /**
@@ -116,16 +116,16 @@ object EclairBench extends App with EclairRpcTestUtil {
         maxTries = 100)
       _ <- TestAsyncUtil
         .retryUntilSatisfied(condition =
-                               CollectionHasAsScala(paymentLog.values()).asScala
-                                 .forall(_.completed),
+                               paymentLog.values().asScala.forall(_.completed),
                              duration = 1.second,
                              maxTries = 100)
         .recover { case ex: Throwable => ex.printStackTrace() }
       _ = println("\nDone!")
     } yield {
-      CollectionHasAsScala(
-        paymentLog
-          .values()).asScala.toVector
+      paymentLog
+        .values()
+        .asScala
+        .toVector
         .sortBy(_.paymentSentAt)
     }
   }
@@ -157,7 +157,7 @@ object EclairBench extends App with EclairRpcTestUtil {
             }
       val outputFile = new File(OutputFileName)
       Files.write(outputFile.toPath,
-                  SeqHasAsJava(csv).asJava,
+                  csv.asJava,
                   StandardOpenOption.CREATE,
                   StandardOpenOption.WRITE,
                   StandardOpenOption.TRUNCATE_EXISTING)
