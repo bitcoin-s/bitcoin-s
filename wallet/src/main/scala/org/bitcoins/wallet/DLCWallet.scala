@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
 import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
 import org.bitcoins.wallet.api._
@@ -159,6 +160,112 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         dlcOfferDb.changeAddress,
         feeRate,
         dlcOfferDb.timeouts
+      )
+    }
+  }
+
+  /**
+    * Creates a DLCAccept from the default Segwit account from a given offer, if one has already been
+    * created with the given parameters then that one will be returned instead.
+    *
+    * This is the first step of the recipient
+    */
+  override def acceptDLCOffer(offer: DLCOffer): Future[DLCAccept] = {
+    logger.debug("Calculating relevant wallet data for DLC Accept")
+
+    val eventId =
+      DLCMessage.calcEventId(offer.oracleInfo,
+                             offer.contractInfo,
+                             offer.timeouts)
+
+    val collateral = offer.contractInfo.values.max
+
+    logger.debug(s"Checking if Accept ($eventId) has already been made")
+    for {
+      dlc <- initDLC(eventId = eventId, isInitiator = false)
+      accountOpt <- accountDAO.findByAccount(dlc.account)
+      dlcAcceptDbOpt <- dlcAcceptDAO.findByEventId(eventId)
+      dlcAccept <- dlcAcceptDbOpt match {
+        case Some(dlcAcceptDb) =>
+          logger.debug(
+            s"DLC Accept ($eventId) has already been made, returning accept")
+          val accept = DLCAccept(
+            dlcAcceptDb.totalCollateral.satoshis,
+            dlcAcceptDb.pubKeys,
+            dlcAcceptDb.fundingInputs,
+            dlcAcceptDb.changeAddress,
+            dlcAcceptDb.cetSigs,
+            dlcAcceptDb.eventId
+          )
+          Future.successful(accept)
+        case None =>
+          createNewDLCAccept(eventId, accountOpt.get, collateral, offer)
+      }
+    } yield dlcAccept
+  }
+
+  private def createNewDLCAccept(
+      eventId: Sha256DigestBE,
+      account: AccountDb,
+      collateral: CurrencyUnit,
+      offer: DLCOffer): Future[DLCAccept] = {
+    for {
+      txBuilder <- fundRawTransactionInternal(
+        destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
+        feeRate = offer.feeRate,
+        fromAccount = account,
+        keyManagerOpt = Some(keyManager),
+        markAsReserved = true
+      )
+      network = networkParameters.asInstanceOf[BitcoinNetwork]
+
+      spendingInfos = txBuilder.utxos.toVector
+        .flatMap(_.toSingles)
+        .asInstanceOf[Vector[BitcoinUTXOSpendingInfoSingle]]
+
+      utxos = txBuilder.utxoMap
+        .map(utxo => OutputReference(utxo._1, utxo._2.output))
+        .toVector
+
+      changeSPK = txBuilder.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
+      changeAddr = Bech32Address(changeSPK, network)
+      nextIndex <- getNextAvailableIndex(account, HDChainType.External)
+
+      client = BinaryOutcomeDLCClient.fromOffer(
+        offer,
+        keyManager.rootExtPrivKey, // todo change to a ExtSign.deriveAndSignFuture
+        nextIndex,
+        spendingInfos,
+        collateral,
+        changeSPK,
+        network
+      )
+      cetSigs <- client.createCETSigs
+      pubKeys = DLCPublicKeys.fromExtPubKeyAndIndex(account.xpub,
+                                                    nextIndex,
+                                                    network)
+
+      _ = logger.debug(
+        s"DLC Accept data collected, creating database entry, ${eventId.hex}")
+
+      dlcAcceptDb = DLCAcceptDb(
+        eventId = eventId,
+        pubKeys,
+        collateral,
+        utxos,
+        cetSigs,
+        changeAddr
+      )
+
+      _ <- dlcAcceptDAO.create(dlcAcceptDb)
+    } yield {
+      DLCAccept(
+        dlcAcceptDb.totalCollateral.satoshis,
+        dlcAcceptDb.pubKeys,
+        dlcAcceptDb.fundingInputs,
+        dlcAcceptDb.changeAddress,
+        dlcAcceptDb.cetSigs,
+        dlcAcceptDb.eventId
       )
     }
   }

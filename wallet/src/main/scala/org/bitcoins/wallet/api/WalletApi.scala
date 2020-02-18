@@ -15,12 +15,11 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.dlc.DLCMessage.{
   ContractInfo,
   DLCAccept,
   DLCOffer,
-  DLCSign,
   OracleInfo
 }
 import org.bitcoins.keymanager._
@@ -440,6 +439,8 @@ trait UnlockedWalletApi extends LockedWalletApi {
       feeRateOpt: Option[FeeUnit],
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer]
+
+  def acceptDLCOffer(dlcOffer: DLCOffer): Future[DLCAccept]
 
   /**
     *

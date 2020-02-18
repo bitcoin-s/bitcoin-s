@@ -1,6 +1,5 @@
 package org.bitcoins.server
 
-import org.bitcoins.core.crypto.Sha256DigestBE
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -8,13 +7,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{
-  ContractInfo,
-  DLCAccept,
-  DLCOffer,
-  DLCSign,
-  OracleInfo
-}
+import org.bitcoins.dlc.DLCMessage.{ContractInfo, DLCOffer, OracleInfo}
 import ujson._
 import upickle.default._
 
@@ -180,6 +173,30 @@ object CreateDLCOffer extends ServerJsonModels {
     }
   }
 }
+
+case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
+
+object AcceptDLCOffer extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCOffer] = {
+    jsArr.arr.toList match {
+      case offerJs :: escapedJs :: Nil =>
+        Try {
+          val offer = DLCOffer.fromJson(ujson.read(offerJs.str))
+          val escaped = escapedJs.bool
+          AcceptDLCOffer(offer, escaped)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing offer arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2, got"))
+    }
+  }
+}
+
 case class SendToAddress(address: BitcoinAddress, amount: Bitcoins)
 
 object SendToAddress extends ServerJsonModels {

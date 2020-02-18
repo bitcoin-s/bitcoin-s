@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.{
   BitcoinAddress,
   NetworkElement
 }
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.{CryptoUtil, Factory}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import scodec.bits.ByteVector
@@ -309,9 +310,131 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[OutputReference],
       changeAddress: Bech32Address,
-      cetSigs: CETSignatures)
+      cetSigs: CETSignatures,
+      eventId: Sha256DigestBE)
       extends DLCMessage {
-    override def toJson: Value = ???
+
+    def toJson: Value = {
+      val fundingInputsJson =
+        fundingInputs.map(
+          input =>
+            mutable.LinkedHashMap("outpoint" -> Str(input.outPoint.hex),
+                                  "output" -> Str(input.output.hex)))
+
+      val cetSigsJson =
+        mutable.LinkedHashMap("winSig" -> Str(cetSigs.winSig.hex),
+                              "loseSig" -> Str(cetSigs.loseSig.hex),
+                              "refundSig" -> Str(cetSigs.refundSig.hex))
+
+      val pubKeysJson =
+        mutable.LinkedHashMap(
+          "fundingKey" -> Str(pubKeys.fundingKey.hex),
+          "toLocalCETKey" -> Str(pubKeys.toLocalCETKey.hex),
+          "toRemoteCETKey" -> Str(pubKeys.toRemoteCETKey.hex),
+          "finalAddress" -> Str(pubKeys.finalAddress.value)
+        )
+
+      Obj(
+        mutable.LinkedHashMap[String, Value](
+          "totalCollateral" -> Num(totalCollateral.toLong),
+          "pubKeys" -> pubKeysJson,
+          "fundingInputs" -> fundingInputsJson,
+          "changeAddress" -> Str(changeAddress.value),
+          "cetSigs" -> cetSigsJson,
+          "eventId" -> Str(eventId.hex)
+        )
+      )
+    }
+  }
+
+  object DLCAccept {
+
+    def fromJson(js: Value): DLCAccept = {
+      val vec = js.obj.toVector
+
+      val totalCollateral = vec
+        .find(_._1 == "totalCollateral")
+        .map(obj => Satoshis(obj._2.num.toLong))
+        .get
+      val changeAddress =
+        vec
+          .find(_._1 == "changeAddress")
+          .map(obj => Bech32Address.fromString(obj._2.str).get)
+          .get
+
+      val pubKeys =
+        vec
+          .find(_._1 == "pubKeys")
+          .map {
+            case (_, value) =>
+              implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
+
+              val fundingKey =
+                getValue("fundingKey")
+              val toLocalCETKey =
+                getValue("toLocalCETKey")
+              val toRemoteCETKey =
+                getValue("toRemoteCETKey")
+              val finalAddress =
+                getValue("finalAddress")
+
+              DLCPublicKeys(
+                ECPublicKey(fundingKey.str),
+                ECPublicKey(toLocalCETKey.str),
+                ECPublicKey(toRemoteCETKey.str),
+                BitcoinAddress(finalAddress.str).get
+              )
+          }
+          .get
+
+      val fundingInputs =
+        vec
+          .find(_._1 == "fundingInputs")
+          .map {
+            case (_, value) =>
+              value.arr.map { subVal =>
+                implicit val obj: mutable.LinkedHashMap[String, Value] =
+                  subVal.obj
+
+                val outpoint = getValue("outpoint")
+                val output = getValue("output")
+
+                OutputReference(TransactionOutPoint(outpoint.str),
+                                TransactionOutput(output.str))
+              }
+          }
+          .get
+          .toVector
+
+      val cetSigs =
+        vec
+          .find(_._1 == "timeouts")
+          .map {
+            case (_, value) =>
+              implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
+
+              val winSig = getValue("winSig")
+              val loseSig = getValue("loseSig")
+              val refundSig = getValue("refundSig")
+
+              CETSignatures(
+                PartialSignature(winSig.str),
+                PartialSignature(loseSig.str),
+                PartialSignature(refundSig.str)
+              )
+          }
+          .get
+
+      val eventId =
+        vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
+
+      DLCAccept(totalCollateral,
+                pubKeys,
+                fundingInputs,
+                changeAddress,
+                cetSigs,
+                eventId)
+    }
   }
 
   case class DLCSign(cetSigs: CETSignatures, fundingSigs: FundingSignatures)

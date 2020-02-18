@@ -575,6 +575,16 @@ case class BinaryOutcomeDLCClient(
     )
   }
 
+  def createCETSigs: Future[CETSignatures] = {
+    for {
+      (_, _, remoteWinSig) <- createCETWinRemote()
+      (_, _, remoteLoseSig) <- createCETLoseRemote()
+      (_, remoteRefundSig) <- createRefundSig()
+    } yield {
+      CETSignatures(remoteWinSig, remoteLoseSig, remoteRefundSig)
+    }
+  }
+
   /** Executes DLC setup for the party responding to the initiator.
     *
     * This party is the first to send signatures but does not send funding
