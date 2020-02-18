@@ -1096,16 +1096,18 @@ object BinaryOutcomeDLCClient {
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
       network: BitcoinNetwork)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
+    val pubKeys = DLCPublicKeys
+      .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network)
     require(
-      DLCPublicKeys
-        .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network) == offer.pubKeys,
-      "ExtPrivateKey must match the one in your Offer message")
+      pubKeys == offer.pubKeys,
+      s"ExtPrivateKey must match the one in your Offer message: ${offer.pubKeys}, got: $pubKeys")
     require(
       fundingUtxos.zip(offer.fundingInputs).forall {
         case (info, OutputReference(outPoint, output)) =>
           info.output == output && info.outPoint == outPoint
       },
-      "Funding UTXOs must match those in your Offer message"
+      s"Funding UTXOs must match those in your Offer message: ${offer.fundingInputs}, got: ${fundingUtxos
+        .map(utxo => OutputReference(utxo.outPoint, utxo.output))}"
     )
 
     BinaryOutcomeDLCClient(
