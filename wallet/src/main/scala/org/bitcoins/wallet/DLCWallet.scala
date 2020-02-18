@@ -33,15 +33,17 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         for {
           account <- getDefaultAccountForType(AddressType.SegWit)
           nextIndex <- getNextAvailableIndex(account, HDChainType.External)
-        } yield {
-          ExecutedDLCDb(eventId = eventId,
-                        isInitiator = isInitiator,
-                        account = account.hdAccount,
-                        keyIndex = nextIndex,
-                        initiatorCetSigsOpt = None,
-                        fundingSigsOpt = None,
-                        oracleSigOpt = None)
-        }
+          dlc = {
+            ExecutedDLCDb(eventId = eventId,
+                          isInitiator = isInitiator,
+                          account = account.hdAccount,
+                          keyIndex = nextIndex,
+                          initiatorCetSigsOpt = None,
+                          fundingSigsOpt = None,
+                          oracleSigOpt = None)
+          }
+          writtenDLC <- dlcDAO.create(dlc)
+        } yield writtenDLC
     }
   }
 
@@ -233,7 +235,8 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
       client = BinaryOutcomeDLCClient.fromOffer(
         offer,
-        keyManager.rootExtPrivKey, // todo change to a ExtSign.deriveAndSignFuture
+        keyManager.rootExtPrivKey
+          .deriveChildPrivKey(account.hdAccount), // todo change to a ExtSign.deriveAndSignFuture
         nextIndex,
         spendingInfos,
         collateral,
@@ -297,18 +300,18 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
   override def signDLC(accept: DLCAccept): Future[DLCSign] = {
     for {
       account <- getDefaultAccountForType(AddressType.SegWit)
-      dLCAcceptDb <- registerDLCAccept(accept)
+      _ <- registerDLCAccept(accept)
       dlcOpt <- dlcDAO.findByEventId(accept.eventId)
-      spendingInfoDbs <- listUtxos(dLCAcceptDb.fundingInputs.map(_.outPoint))
       offerOpt <- dlcOfferDAO.findByEventId(accept.eventId)
       offer = offerOpt.get // Safe, we throw in registerDLCAccept if it is None
       dlc = dlcOpt.get
+      spendingInfoDbs <- listUtxos(offer.fundingInputs.map(_.outPoint))
       spendingInfos = spendingInfoDbs.flatMap(
         _.toUTXOSpendingInfo(account, keyManager, offer.network).toSingles)
       client = BinaryOutcomeDLCClient.fromOfferAndAccept(
         offer.toDLCOffer,
         accept,
-        keyManager.rootExtPrivKey,
+        keyManager.rootExtPrivKey.deriveChildPrivKey(account.hdAccount),
         dlc.keyIndex,
         spendingInfos,
         offer.network)

@@ -6,3 +6,18 @@ case class HDCoin(purpose: HDPurpose, coinType: HDCoinType) extends BIP32Path {
 
   def toAccount(index: Int): HDAccount = HDAccount(this, index)
 }
+
+object HDCoin {
+
+  def fromPath(path: BIP32Path): Option[HDCoin] = {
+    if (path.path.length == 2) {
+      HDPurposes.fromNode(path.path.head).map { purpose =>
+        val coinType = HDCoinType.fromInt(path.path.last.index)
+
+        HDCoin(purpose, coinType)
+      }
+    } else {
+      None
+    }
+  }
+}
