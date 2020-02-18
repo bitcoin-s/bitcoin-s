@@ -88,13 +88,9 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
           case (utxo, addrInfo) =>
             keyManagerOpt match {
               case Some(km) =>
-                utxo.toUTXOSpendingInfo(account = fromAccount,
-                                        keyManager = km,
-                                        networkParameters = networkParameters)
+                utxo.toUTXOSpendingInfo(keyManager = km)
               case None =>
-                utxo.toUTXOSpendingInfo(account = fromAccount,
-                                        sign = Sign.dummySign(addrInfo.pubkey),
-                                        networkParameters = networkParameters)
+                utxo.toUTXOSpendingInfo(sign = Sign.dummySign(addrInfo.pubkey))
             }
 
         }

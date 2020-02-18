@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sign}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{HDPath, LegacyHDPath, SegWitHDPath}
@@ -131,22 +130,14 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
     * a signable (and sensitive) real-world UTXO
     */
   def toUTXOSpendingInfo(
-      account: AccountDb,
-      keyManager: BIP39KeyManager,
-      networkParameters: NetworkParameters): BitcoinUTXOSpendingInfoFull = {
+      keyManager: BIP39KeyManager): BitcoinUTXOSpendingInfoFull = {
 
     val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
 
-    toUTXOSpendingInfo(account = account,
-                       sign = sign,
-                       networkParameters = networkParameters)
+    toUTXOSpendingInfo(sign = sign)
   }
 
-  def toUTXOSpendingInfo(
-      account: AccountDb,
-      sign: Sign,
-      networkParameters: NetworkParameters
-  ): BitcoinUTXOSpendingInfoFull = {
+  def toUTXOSpendingInfo(sign: Sign): BitcoinUTXOSpendingInfoFull = {
     BitcoinUTXOSpendingInfoFull(
       outPoint,
       output,
