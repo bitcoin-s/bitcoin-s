@@ -55,6 +55,13 @@ object CliReaders {
       val reads: String => Bitcoins = str => Bitcoins(BigDecimal(str))
     }
 
+  implicit val satoshisReads: Read[Satoshis] =
+    new Read[Satoshis] {
+      val arity: Int = 1
+
+      val reads: String => Satoshis = str => Satoshis(BigInt(str))
+    }
+
   implicit val satoshisPerVirtualByteReads: Read[SatoshisPerVirtualByte] =
     new Read[SatoshisPerVirtualByte] {
       val arity: Int = 1

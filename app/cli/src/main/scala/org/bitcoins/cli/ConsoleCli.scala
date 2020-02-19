@@ -100,6 +100,7 @@ object ConsoleCli {
             conf.copy(
               command = CreateDLCOffer(OracleInfo.empty,
                                        ContractInfo.empty,
+                                       Satoshis.zero,
                                        None,
                                        UInt32.zero,
                                        UInt32.zero,
@@ -120,6 +121,14 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case offer: CreateDLCOffer =>
                   offer.copy(contractInfo = info)
+                case other => other
+              })),
+          opt[Satoshis]("collateral")
+            .required()
+            .action((collateral, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(collateral = collateral)
                 case other => other
               })),
           opt[SatoshisPerVirtualByte]("feerate")
@@ -381,18 +390,22 @@ object ConsoleCli {
       // DLCs
       case CreateDLCOffer(oracleInfo,
                           contractInfo,
+                          collateral,
                           feeRateOpt,
                           locktime,
                           refundLT,
                           escaped) =>
         RequestParam(
           "createdlcoffer",
-          Seq(up.writeJs(oracleInfo),
-              up.writeJs(contractInfo),
-              up.writeJs(feeRateOpt),
-              up.writeJs(locktime),
-              up.writeJs(refundLT),
-              up.writeJs(escaped))
+          Seq(
+            up.writeJs(oracleInfo),
+            up.writeJs(contractInfo),
+            up.writeJs(collateral),
+            up.writeJs(feeRateOpt),
+            up.writeJs(locktime),
+            up.writeJs(refundLT),
+            up.writeJs(escaped)
+          )
         )
       case AcceptDLCOffer(offer, escaped) =>
         RequestParam("acceptdlcoffer",
@@ -534,6 +547,7 @@ object CliCommand {
   case class CreateDLCOffer(
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
+      collateral: Satoshis,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       locktime: UInt32,
       refundLT: UInt32,

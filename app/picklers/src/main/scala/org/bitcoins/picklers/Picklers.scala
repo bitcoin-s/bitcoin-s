@@ -19,6 +19,9 @@ package object picklers {
   implicit val bitcoinsPickler: ReadWriter[Bitcoins] =
     readwriter[Double].bimap(_.toBigDecimal.toDouble, Bitcoins(_))
 
+  implicit val satoshisPickler: ReadWriter[Satoshis] =
+    readwriter[Long].bimap(_.toLong, Satoshis.apply)
+
   implicit val sha256DigestBEPickler: ReadWriter[Sha256DigestBE] =
     readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)
 
