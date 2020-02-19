@@ -111,6 +111,7 @@ object AddressDbHelper {
       pub: ECPublicKey,
       path: NestedSegWitHDPath,
       np: NetworkParameters): NestedSegWitAddressDb = {
+    val _ = (pub, path, np)
     throw new UnsupportedOperationException(
       "Nested segwit is not implemented yet!")
   }

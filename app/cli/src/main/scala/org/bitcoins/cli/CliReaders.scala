@@ -8,7 +8,6 @@ import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.PSBT
-import scodec.bits.ByteVector
 import scopt._
 
 /** scopt readers for parsing CLI params and options */

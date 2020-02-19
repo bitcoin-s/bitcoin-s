@@ -7,10 +7,8 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.ChainQueryApi
-import org.bitcoins.core.hd.HDCoin
 import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.keymanager.util.HDUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
