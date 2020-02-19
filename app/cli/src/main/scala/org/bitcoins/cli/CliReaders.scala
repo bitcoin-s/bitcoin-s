@@ -131,4 +131,13 @@ object CliReaders {
       DLCAccept.fromJson(ujson.read(str))
     }
   }
+
+  implicit val dlcSignReads: Read[DLCSign] = new Read[DLCSign] {
+    override def arity: Int = 1
+
+    // this will be a JSON string
+    override def reads: String => DLCSign = str => {
+      DLCSign.fromJson(ujson.read(str))
+    }
+  }
 }
