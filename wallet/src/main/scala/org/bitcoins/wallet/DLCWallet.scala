@@ -448,4 +448,19 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
   override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] =
     ???
+
+  override def executeDLCForceClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[Transaction] = ???
+
+  override def claimDLCRemoteFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Transaction] = ???
+
+  override def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction] =
+    ???
+
+  override def claimDLCPenaltyFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Transaction] = ???
 }

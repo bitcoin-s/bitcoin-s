@@ -459,6 +459,20 @@ trait UnlockedWalletApi extends LockedWalletApi {
 
   def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction]
 
+  def executeDLCForceClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[Transaction]
+
+  def claimDLCRemoteFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Transaction]
+
+  def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction]
+
+  def claimDLCPenaltyFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Transaction]
+
   /**
     *
     * Sends money from the specified account

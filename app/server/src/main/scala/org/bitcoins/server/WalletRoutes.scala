@@ -151,6 +151,54 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("executedlcforceclose", arr) =>
+      ExecuteDLCForceClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCForceClose(eventId, oracleSig)) =>
+          complete {
+            wallet.executeDLCForceClose(eventId, oracleSig).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("claimdlcremotefunds", arr) =>
+      ClaimDLCRemoteFunds.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ClaimDLCRemoteFunds(eventId, tx)) =>
+          complete {
+            wallet.claimDLCRemoteFunds(eventId, tx).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("executedlcrefund", arr) =>
+      ExecuteDLCRefund.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCRefund(eventId)) =>
+          complete {
+            wallet.executeDLCRefund(eventId).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("claimdlcpenaltyfunds", arr) =>
+      ClaimDLCPenaltyFunds.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ClaimDLCPenaltyFunds(eventId, tx)) =>
+          complete {
+            wallet.claimDLCPenaltyFunds(eventId, tx).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
     case ServerCommand("sendtoaddress", arr) =>
       // TODO create custom directive for this?
       SendToAddress.fromJsArr(arr) match {

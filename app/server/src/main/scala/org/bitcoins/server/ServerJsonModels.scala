@@ -315,6 +315,106 @@ object GetDLCFundingTx extends ServerJsonModels {
   }
 }
 
+case class ExecuteDLCForceClose(
+    eventId: Sha256DigestBE,
+    oracleSig: SchnorrDigitalSignature)
+
+object ExecuteDLCForceClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCForceClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: oracleSigJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
+
+          ExecuteDLCForceClose(eventId, oracleSig)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and oracleSig arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class ClaimDLCRemoteFunds(
+    eventId: Sha256DigestBE,
+    forceCloseTx: Transaction)
+
+object ClaimDLCRemoteFunds extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ClaimDLCRemoteFunds] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: forceCloseTxJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val forceCloseTx = jsToTx(forceCloseTxJs)
+          ClaimDLCRemoteFunds(eventId, forceCloseTx)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and forceCloseTx arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class ExecuteDLCRefund(eventId: Sha256DigestBE)
+
+object ExecuteDLCRefund extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRefund] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          ExecuteDLCRefund(eventId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing eventId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class ClaimDLCPenaltyFunds(
+    eventId: Sha256DigestBE,
+    forceCloseTx: Transaction)
+
+object ClaimDLCPenaltyFunds extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ClaimDLCPenaltyFunds] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: forceCloseTxJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val forceCloseTx = jsToTx(forceCloseTxJs)
+          ClaimDLCPenaltyFunds(eventId, forceCloseTx)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and forceCloseTx arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
 case class SendToAddress(address: BitcoinAddress, amount: Bitcoins)
 
 object SendToAddress extends ServerJsonModels {
