@@ -55,6 +55,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     * This is the first step of the initiator
     */
   override def createDLCOffer(
+      collateral: CurrencyUnit,
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       collateral: Satoshis,
