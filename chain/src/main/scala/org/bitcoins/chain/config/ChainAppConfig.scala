@@ -42,7 +42,7 @@ case class ChainAppConfig(
       logger.debug(s"Chain project is initialized")
     }
     isDefinedOptF.recover {
-      case e: Throwable =>
+      case _: Throwable =>
         logger.info(s"Chain project is not initialized")
         false
     }

@@ -104,7 +104,7 @@ case class P2PClientActor(
       handleCommand(cmd, peerOpt = None)
 
     case connected: Tcp.Connected =>
-      handleEvent(connected, unalignedBytes = ByteVector.empty)
+      val _ = handleEvent(connected, unalignedBytes = ByteVector.empty)
     case msg: NetworkMessage =>
       self.forward(msg.payload)
     case payload: NetworkPayload =>

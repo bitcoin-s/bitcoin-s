@@ -11,7 +11,7 @@ import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 /**
@@ -70,10 +70,12 @@ object EclairBench extends App with EclairRpcTestUtil {
     }
   }
 
-  def sendPayments(network: EclairNetwork, amount: MilliSatoshis, count: Int)(
-      implicit ec: ExecutionContext): Future[Vector[PaymentId]] =
+  def sendPayments(
+      network: EclairNetwork,
+      amount: MilliSatoshis,
+      count: Int): Future[Vector[PaymentId]] =
     for {
-      testNodeInfo <- network.testEclairNode.getInfo
+      _ <- network.testEclairNode.getInfo
       paymentIds <- Future.sequence(network.networkEclairNodes.map { node =>
         1.to(count).foldLeft(Future.successful(Vector.empty[PaymentId])) {
           (accF, _) =>
@@ -98,7 +100,9 @@ object EclairBench extends App with EclairRpcTestUtil {
   def runTests(network: EclairNetwork): Future[Vector[PaymentLogEntry]] = {
     println("Setting up the test network")
     for {
-      _ <- network.testEclairNode.connectToWebSocket(logEvent)
+      _ <- network.testEclairNode.connectToWebSocket { event =>
+        val _ = logEvent(event)
+      }
       _ = println(
         s"Set up ${NetworkSize} nodes, that will send $PaymentCount payments to the test node each")
       _ = println(
