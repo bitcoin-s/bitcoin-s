@@ -2,41 +2,13 @@ package org.bitcoins.dlc
 
 import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.crypto.{
-  DummyECDigitalSignature,
-  ECPrivateKey,
-  ECPublicKey,
-  ExtPrivateKey,
-  Schnorr,
-  SchnorrDigitalSignature,
-  Sha256DigestBE
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  EmptyScriptSignature,
-  MultiSignatureScriptPubKey,
-  P2PKWithTimeoutScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0,
-  P2WSHWitnessSPKV0,
-  P2WSHWitnessV0,
-  ScriptPubKey,
-  WitnessScriptPubKeyV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  Transaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput,
-  TransactionWitness,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptNumber
@@ -45,13 +17,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
-import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfoFull,
-  BitcoinUTXOSpendingInfoSingle,
-  ConditionalPath,
-  P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfoFull
-}
+import org.bitcoins.core.wallet.utxo._
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -257,6 +223,12 @@ case class BinaryOutcomeDLCClient(
                     lockTime = txWithFee.lockTime)
   }
 
+  lazy val fundingTxId: DoubleSha256Digest =
+    createUnsignedFundingTransaction.txId
+
+  lazy val fundingOutput: TransactionOutput =
+    createUnsignedFundingTransaction.outputs.head
+
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
     val fundingTx = createUnsignedFundingTransaction
 
@@ -313,9 +285,7 @@ case class BinaryOutcomeDLCClient(
     *
     * @param sig The oracle's signature for this contract
     */
-  def createUnsignedMutualClosePSBT(
-      sig: SchnorrDigitalSignature,
-      fundingTx: Transaction): PSBT = {
+  def createUnsignedMutualClosePSBT(sig: SchnorrDigitalSignature): PSBT = {
     val (toLocalPayout, toRemotePayout) =
       if (Schnorr.verify(messageWin, sig, oraclePubKey)) {
         (winPayout, remoteWinPayout)
@@ -336,10 +306,9 @@ case class BinaryOutcomeDLCClient(
     } else {
       Vector(toRemote, toLocal)
     }
-    val input = TransactionInput(
-      TransactionOutPoint(fundingTx.txId, UInt32.zero),
-      EmptyScriptSignature,
-      sequence)
+    val input = TransactionInput(TransactionOutPoint(fundingTxId, UInt32.zero),
+                                 EmptyScriptSignature,
+                                 sequence)
     val utx = BaseTransaction(TransactionConstants.validLockVersion,
                               Vector(input),
                               outputs.filter(_.value >= Policy.dustThreshold),
@@ -347,14 +316,14 @@ case class BinaryOutcomeDLCClient(
 
     PSBT
       .fromUnsignedTx(utx)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
   }
 
   def createMutualCloseTxSig(
-      sig: SchnorrDigitalSignature,
-      fundingTx: Transaction): Future[PartialSignature] = {
-    val unsignedPSBT = createUnsignedMutualClosePSBT(sig, fundingTx)
+      sig: SchnorrDigitalSignature): Future[PartialSignature] = {
+    val unsignedPSBT =
+      createUnsignedMutualClosePSBT(sig)
 
     unsignedPSBT
       .sign(inputIndex = 0, fundingPrivKey)
@@ -363,9 +332,9 @@ case class BinaryOutcomeDLCClient(
 
   def createMutualCloseTx(
       sig: SchnorrDigitalSignature,
-      fundingSig: PartialSignature,
-      fundingTx: Transaction): Future[Transaction] = {
-    val unsignedPSBT = createUnsignedMutualClosePSBT(sig, fundingTx)
+      fundingSig: PartialSignature): Future[Transaction] = {
+    val unsignedPSBT =
+      createUnsignedMutualClosePSBT(sig)
 
     val signedPSBTF = unsignedPSBT
       .addSignature(fundingSig, inputIndex = 0)
@@ -404,10 +373,8 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
-    val fundingTx = createUnsignedFundingTransaction
-    val fundingTxid = fundingTx.txId
     val fundingInput = TransactionInput(
-      TransactionOutPoint(fundingTxid, UInt32.zero),
+      TransactionOutPoint(fundingTxId, UInt32.zero),
       EmptyScriptSignature,
       sequence)
 
@@ -420,7 +387,7 @@ case class BinaryOutcomeDLCClient(
 
     val readyToSignPSBT = psbt
       .addSignature(remoteSig, inputIndex = 0)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
 
     val signedPSBTF = readyToSignPSBT.sign(inputIndex = 0, fundingPrivKey)
@@ -469,9 +436,7 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
-    val fundingTx = createUnsignedFundingTransaction
-    val fundingTxid = fundingTx.txIdBE
-    val fundingOutPoint = TransactionOutPoint(fundingTxid, UInt32.zero)
+    val fundingOutPoint = TransactionOutPoint(fundingTxId, UInt32.zero)
     val fundingInput =
       TransactionInput(fundingOutPoint, EmptyScriptSignature, sequence)
 
@@ -483,7 +448,7 @@ case class BinaryOutcomeDLCClient(
 
     val sigF = PSBT
       .fromUnsignedTx(unsignedTx)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
       .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
@@ -535,12 +500,11 @@ case class BinaryOutcomeDLCClient(
   }
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
-    val fundingTx = createUnsignedFundingTransaction
     val refundTx = createUnsignedRefundTx
 
     val sigF = PSBT
       .fromUnsignedTx(refundTx)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
       .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
@@ -558,7 +522,7 @@ case class BinaryOutcomeDLCClient(
 
     val signedPSBTF = psbt
       .addSignature(remoteSig, inputIndex = 0)
-      .addUTXOToInput(createUnsignedFundingTransaction, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
 
@@ -773,7 +737,7 @@ case class BinaryOutcomeDLCClient(
     logger.info(s"Attempting Mutual Close for funding tx: ${fundingTx.txIdBE}")
 
     for {
-      fundingSig <- createMutualCloseTxSig(sig, fundingTx)
+      fundingSig <- createMutualCloseTxSig(sig)
       _ <- sendSigs(sig, fundingSig)
       mutualCloseTx <- getMutualCloseTx
     } yield {
@@ -794,7 +758,7 @@ case class BinaryOutcomeDLCClient(
 
     for {
       (sig, fundingSig) <- getSigs
-      mutualCloseTx <- createMutualCloseTx(sig, fundingSig, fundingTx)
+      mutualCloseTx <- createMutualCloseTx(sig, fundingSig)
     } yield {
       CooperativeDLCOutcome(fundingTx, mutualCloseTx)
     }
