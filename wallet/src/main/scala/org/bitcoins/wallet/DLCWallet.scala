@@ -9,6 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
@@ -55,7 +56,6 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     * This is the first step of the initiator
     */
   override def createDLCOffer(
-      collateral: CurrencyUnit,
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       collateral: Satoshis,
@@ -441,4 +441,12 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       sigMessage <- client.createMutualCloseSig(eventId, setup, oracleSig)
     } yield sigMessage
   }
+
+  override def acceptDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature,
+      closeSig: PartialSignature): Future[Transaction] = ???
+
+  override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] =
+    ???
 }

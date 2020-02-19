@@ -58,8 +58,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-            CreateDLCOffer(collateral,
-                           oracleInfo,
+            CreateDLCOffer(oracleInfo,
                            contractInfo,
                            collateral,
                            feeRateOpt,
