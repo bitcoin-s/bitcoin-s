@@ -1,6 +1,6 @@
 package org.bitcoins.cli
 
-import org.bitcoins.cli.CliCommand.{CreateDLCOffer, _}
+import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.Sha256DigestBE
@@ -11,6 +11,9 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage.{ContractInfo, OracleInfo}
+||||||| parent of ae663564fd... Wallet & CLI Accept DLC Offer
+import org.bitcoins.dlc.DLCMessage.OracleInfo
+import org.bitcoins.dlc.DLCMessage.{DLCOffer, OracleInfo}
 import org.bitcoins.picklers._
 import scopt.OParser
 import ujson.{Num, Str}
@@ -151,6 +154,27 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case create: CreateDLCOffer =>
                   create.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
+      cmd("acceptdlcoffer")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = AcceptDLCOffer(null, escaped = false)))
+        .text("Accepts a DLC offer given from another party")
+        .children(
+          opt[DLCOffer]("offer").required
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(offer = offer)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(escaped = escaped)
                 case other => other
               }))
         ),
@@ -295,6 +319,7 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = config.command match {
+      // DLCs
       case CreateDLCOffer(oracleInfo,
                           contractInfo,
                           feeRateOpt,
@@ -310,6 +335,9 @@ object ConsoleCli {
               up.writeJs(refundLT),
               up.writeJs(escaped))
         )
+      case AcceptDLCOffer(offer, escaped) =>
+        RequestParam("acceptdlcoffer",
+                     Seq(up.writeJs(offer), up.writeJs(escaped)))
       case GetBalance =>
         RequestParam("getbalance")
       case GetNewAddress =>
@@ -432,6 +460,8 @@ case class Config(
 sealed abstract class CliCommand
 
 object CliCommand {
+  case object NoCommand extends CliCommand
+
   // DLC
   case class CreateDLCOffer(
       oracleInfo: OracleInfo,
@@ -442,7 +472,8 @@ object CliCommand {
       escaped: Boolean)
       extends CliCommand
 
-  case object NoCommand extends CliCommand
+  case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
+      extends CliCommand
 
   // Wallet
   case class SendToAddress(destination: BitcoinAddress, amount: Bitcoins)

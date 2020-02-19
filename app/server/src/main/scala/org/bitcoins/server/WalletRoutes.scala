@@ -75,6 +75,18 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
               .map(handleDLCMessage(_, escaped))
           }
       }
+
+    case ServerCommand("acceptdlcoffer", arr) =>
+      AcceptDLCOffer.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AcceptDLCOffer(offer, escaped)) =>
+          complete {
+            wallet
+              .acceptDLCOffer(offer)
+              .map(handleDLCMessage(_, escaped))
+          }
+      }
     case ServerCommand("sendtoaddress", arr) =>
       // TODO create custom directive for this?
       SendToAddress.fromJsArr(arr) match {

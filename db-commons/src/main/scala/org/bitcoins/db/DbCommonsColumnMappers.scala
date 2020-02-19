@@ -6,24 +6,15 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.script.{
-  ScriptPubKey,
-  ScriptWitness,
-  WitnessScriptPubKey
-}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.protocol.{
-  Bech32Address,
-  BitcoinAddress,
-  BlockStampWithFuture
-}
 import org.bitcoins.core.psbt.InputPSBTMap
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte

@@ -1,13 +1,17 @@
 package org.bitcoins
 
-import org.bitcoins.core.crypto.Sha256DigestBE
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.dlc.DLCMessage.{ContractInfo, DLCOffer, OracleInfo}
+import org.bitcoins.dlc.DLCMessage.{
+  ContractInfo,
+  DLCAccept,
+  DLCOffer,
+  OracleInfo
+}
 import upickle.default._
 
 package object picklers {
@@ -39,6 +43,10 @@ package object picklers {
   implicit val dlcOfferPickler: ReadWriter[DLCOffer] =
     readwriter[String]
       .bimap(_.toJsonStr, str => DLCOffer.fromJson(ujson.read(str)))
+
+  implicit val dlcAcceptPickler: ReadWriter[DLCAccept] =
+    readwriter[String]
+      .bimap(_.toJsonStr, str => DLCAccept.fromJson(ujson.read(str).obj))
 
   implicit val blockStampPickler: ReadWriter[BlockStamp] =
     readwriter[String].bimap(_.mkString, BlockStamp.fromString(_).get)
