@@ -7,20 +7,23 @@ import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
-import org.bitcoins.core.api.CoreApi
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.BlockStamp.{
-  BlockHash,
-  BlockHeight,
-  BlockTime,
-  InvalidBlockStamp
+import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BlockStamp._
+import org.bitcoins.core.protocol.transaction.{
+  EmptyOutputReference,
+  EmptyTransaction,
+  EmptyTransactionOutPoint,
+  EmptyTransactionOutput,
+  Transaction
 }
-import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.dlc.DLCMessage.{ContractInfo, DLCOffer, OracleInfo}
+import org.bitcoins.dlc.{DLCMessage, DLCPublicKeys, DLCTimeouts}
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
 import org.scalamock.scalatest.MockFactory
@@ -220,6 +223,74 @@ class RoutesSpec
       }
     }
 
+    val oracleInfoStr =
+      "036374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f5860303bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"
+
+    val contractInfo = ContractInfo(
+      "ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f5628813000000000000e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea8813000000000000")
+
+    val contractInfoDigests =
+      Vector("ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562",
+             "e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea")
+
+    val contractMaturity = 1580323752
+    val contractTimeout = 1581323752
+
+    val dummyKey = ECPublicKey(
+      "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
+    val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
+
+    val dummyDLCKeys = DLCPublicKeys(dummyKey,
+                                     dummyKey,
+                                     dummyKey,
+                                     BitcoinAddress(dummyAddress).get)
+
+    "create a dlc offer" in {
+
+      (mockWalletApi
+        .createDLCOffer(_: OracleInfo,
+                        _: ContractInfo,
+                        _: Option[SatoshisPerVirtualByte],
+                        _: UInt32,
+                        _: UInt32))
+        .expects(
+          OracleInfo(oracleInfoStr),
+          contractInfo,
+          Some(SatoshisPerVirtualByte(Satoshis.one)),
+          UInt32(contractMaturity),
+          UInt32(contractTimeout)
+        )
+        .returning(Future.successful(DLCOffer(
+          contractInfo,
+          OracleInfo(oracleInfoStr),
+          dummyDLCKeys,
+          Bitcoins(100).satoshis,
+          Vector(EmptyOutputReference, EmptyOutputReference),
+          Bech32Address.fromString(dummyAddress).get,
+          SatoshisPerVirtualByte.one,
+          DLCTimeouts(DLCTimeouts.DEFAULT_PENALTY_TIMEOUT,
+                      BlockStamp(contractMaturity),
+                      BlockStamp(contractTimeout))
+        )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand(
+          "createdlcoffer",
+          Arr(
+            Str(oracleInfoStr),
+            Str(contractInfo.hex),
+            Num(1),
+            Num(contractMaturity),
+            Num(contractTimeout),
+            Bool(false)
+          )
+        ))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual s"""{"result":"{\\"contractInfo\\":[{\\"sha256\\":\\"${contractInfo.keys.head.hex}\\",\\"sats\\":${contractInfo.values.head.toLong}},{\\"sha256\\":\\"${contractInfo.keys.last.hex}\\",\\"sats\\":${contractInfo.values.last.toLong}}],\\"oracleInfo\\":\\"$oracleInfoStr\\",\\"pubKeys\\":{\\"fundingKey\\":\\"${dummyKey.hex}\\",\\"toLocalCETKey\\":\\"${dummyKey.hex}\\",\\"toRemoteCETKey\\":\\"${dummyKey.hex}\\",\\"finalAddress\\":\\"$dummyAddress\\"},\\"totalCollateral\\":10000000000,\\"fundingInputs\\":[{\\"outpoint\\":\\"${EmptyTransactionOutPoint.hex}\\",\\"output\\":\\"${EmptyTransactionOutput.hex}\\"},{\\"outpoint\\":\\"${EmptyTransactionOutPoint.hex}\\",\\"output\\":\\"${EmptyTransactionOutput.hex}\\"}],\\"changeAddress\\":\\"$dummyAddress\\",\\"feeRate\\":1,\\"timeouts\\":{\\"penalty\\":5,\\"contractMaturity\\":$contractMaturity,\\"contractTimeout\\":$contractTimeout}}","error":null}"""
+      }
+    }
     "send to an address" in {
       // positive cases
 

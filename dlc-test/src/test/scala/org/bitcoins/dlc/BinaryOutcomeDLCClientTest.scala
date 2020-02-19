@@ -17,6 +17,7 @@ import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
+  OutputReference,
   Transaction,
   TransactionConstants,
   TransactionOutPoint,
@@ -187,17 +188,18 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   val acceptExtPrivKey: ExtPrivateKey =
     ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
 
-  val localFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)] =
+  val localFundingInputs: Vector[OutputReference] =
     Vector(
-      (TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
-       localFundingTx.outputs.head))
+      OutputReference(TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
+                      localFundingTx.outputs.head))
 
-  val remoteFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)] =
+  val remoteFundingInputs: Vector[OutputReference] =
     Vector(
-      (TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
-       remoteFundingTx.outputs.head))
+      OutputReference(TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
+                      remoteFundingTx.outputs.head))
 
-  val timeouts: DLCTimeouts = DLCTimeouts(0, blockTimeToday, blockTimeToday)
+  val timeouts: DLCTimeouts =
+    DLCTimeouts(UInt32.zero, blockTimeToday, blockTimeToday)
   val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
   // Offer is local

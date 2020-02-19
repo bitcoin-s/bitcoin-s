@@ -209,6 +209,7 @@ lazy val appServer = project
     node,
     chain,
     wallet,
+    dlc,
     bitcoindRpc
   )
 
@@ -226,13 +227,14 @@ lazy val appServerTest = project
 lazy val picklers = project
   .in(file("app/picklers"))
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(core % testAndCompile)
+  .dependsOn(core % testAndCompile, dlc)
 
 lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    picklers
+    picklers,
+    dlc
   )
 
 lazy val cliTest = project
@@ -273,7 +275,7 @@ lazy val dbCommons = project
     name := "bitcoin-s-db-commons",
     libraryDependencies ++= Deps.dbCommons
   )
-  .dependsOn(core)
+  .dependsOn(core, dlc)
 
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
@@ -407,7 +409,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(core, dbCommons, keyManager)
+  .dependsOn(core, dbCommons, dlc, keyManager)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project
@@ -426,7 +428,8 @@ lazy val dlc = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(
     name := "bitcoin-s-dlc",
-    libraryDependencies ++= Deps.dlc
+    // version number needed for MicroJson
+    libraryDependencies ++= Deps.dlc(scalaVersion.value)
   )
   .dependsOn(core)
 

@@ -2,41 +2,13 @@ package org.bitcoins.dlc
 
 import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.crypto.{
-  DummyECDigitalSignature,
-  ECPrivateKey,
-  ECPublicKey,
-  ExtPrivateKey,
-  Schnorr,
-  SchnorrDigitalSignature,
-  Sha256DigestBE
-}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  EmptyScriptSignature,
-  MultiSignatureScriptPubKey,
-  P2PKWithTimeoutScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0,
-  P2WSHWitnessSPKV0,
-  P2WSHWitnessV0,
-  ScriptPubKey,
-  WitnessScriptPubKeyV0
-}
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  Transaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput,
-  TransactionWitness,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptNumber
@@ -45,13 +17,7 @@ import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
-import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfoFull,
-  BitcoinUTXOSpendingInfoSingle,
-  ConditionalPath,
-  P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfoFull
-}
+import org.bitcoins.core.wallet.utxo._
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -90,13 +56,13 @@ case class BinaryOutcomeDLCClient(
     input: CurrencyUnit,
     remoteInput: CurrencyUnit,
     fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
-    remoteFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)],
+    remoteFundingInputs: Vector[OutputReference],
     winPayout: CurrencyUnit,
     losePayout: CurrencyUnit,
     timeouts: DLCTimeouts,
     feeRate: FeeUnit,
-    changeSPK: WitnessScriptPubKeyV0,
-    remoteChangeSPK: WitnessScriptPubKeyV0,
+    changeSPK: WitnessScriptPubKey,
+    remoteChangeSPK: WitnessScriptPubKey,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
@@ -152,7 +118,7 @@ case class BinaryOutcomeDLCClient(
     fundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
   private val remoteTotalFunding =
     remoteFundingInputs.foldLeft(0L) {
-      case (accum, (_, output)) =>
+      case (accum, OutputReference(_, output)) =>
         accum + output.value.satoshis.toLong
     }
 
@@ -231,7 +197,7 @@ case class BinaryOutcomeDLCClient(
     val localInputs =
       TxBuilder.calcSequenceForInputs(fundingUtxos, sequence)
     val remoteInputs = remoteFundingInputs.map {
-      case (outPoint, _) =>
+      case OutputReference(outPoint, _) =>
         TransactionInput(outPoint, EmptyScriptSignature, sequence)
     }
     val inputs = if (isInitiator) {
@@ -283,7 +249,7 @@ case class BinaryOutcomeDLCClient(
       .foldLeft(PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
         case (psbt, (sig, index)) =>
           psbt
-            .addWitnessUTXOToInput(remoteFundingInputs(index)._2,
+            .addWitnessUTXOToInput(remoteFundingInputs(index).output,
                                    index + remoteTweak)
             .addSignature(sig, index + remoteTweak)
       }
@@ -391,7 +357,7 @@ case class BinaryOutcomeDLCClient(
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
-      lockTime = ScriptNumber(timeouts.penaltyTimeout),
+      lockTime = ScriptNumber(timeouts.penaltyTimeout.toLong),
       timeoutPubKey = cetToLocalRemotePubKey
     )
 
@@ -456,7 +422,7 @@ case class BinaryOutcomeDLCClient(
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
-      lockTime = ScriptNumber(timeouts.penaltyTimeout),
+      lockTime = ScriptNumber(timeouts.penaltyTimeout.toLong),
       timeoutPubKey = cetToLocalPrivKey.publicKey
     )
 
@@ -1044,7 +1010,7 @@ object BinaryOutcomeDLCClient {
       input: CurrencyUnit,
       remoteInput: CurrencyUnit,
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
-      remoteFundingInputs: Vector[(TransactionOutPoint, TransactionOutput)],
+      remoteFundingInputs: Vector[OutputReference],
       winPayout: CurrencyUnit,
       losePayout: CurrencyUnit,
       timeouts: DLCTimeouts,
@@ -1101,8 +1067,8 @@ object BinaryOutcomeDLCClient {
       remoteInput = offer.totalCollateral,
       fundingUtxos = fundingUtxos,
       remoteFundingInputs = offer.fundingInputs,
-      winPayout = offer.contractInfo.head._2,
-      losePayout = offer.contractInfo.last._2,
+      winPayout = offer.contractInfo.values.head,
+      losePayout = offer.contractInfo.values.last,
       timeouts = offer.timeouts,
       feeRate = offer.feeRate,
       changeSPK = changeSPK,
@@ -1120,16 +1086,18 @@ object BinaryOutcomeDLCClient {
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
       network: BitcoinNetwork)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
+    val pubKeys = DLCPublicKeys
+      .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network)
     require(
-      DLCPublicKeys
-        .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network) == offer.pubKeys,
-      "ExtPrivateKey must match the one in your Offer message")
+      pubKeys == offer.pubKeys,
+      s"ExtPrivateKey must match the one in your Offer message: ${offer.pubKeys}, got: $pubKeys")
     require(
       fundingUtxos.zip(offer.fundingInputs).forall {
-        case (info, (outPoint, output)) =>
+        case (info, OutputReference(outPoint, output)) =>
           info.output == output && info.outPoint == outPoint
       },
-      "Funding UTXOs must match those in your Offer message"
+      s"Funding UTXOs must match those in your Offer message: ${offer.fundingInputs}, got: ${fundingUtxos
+        .map(utxo => OutputReference(utxo.outPoint, utxo.output))}"
     )
 
     BinaryOutcomeDLCClient(
@@ -1145,8 +1113,8 @@ object BinaryOutcomeDLCClient {
       remoteInput = accept.totalCollateral,
       fundingUtxos = fundingUtxos,
       remoteFundingInputs = accept.fundingInputs,
-      winPayout = offer.contractInfo.head._2,
-      losePayout = offer.contractInfo.last._2,
+      winPayout = offer.contractInfo.values.head,
+      losePayout = offer.contractInfo.values.last,
       timeouts = offer.timeouts,
       feeRate = offer.feeRate,
       changeSPK =
