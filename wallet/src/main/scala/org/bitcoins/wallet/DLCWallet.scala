@@ -9,6 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
 import org.bitcoins.dlc.DLCMessage._
@@ -259,7 +260,20 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         cetSigs,
         changeAddr
       )
+      dlcOfferDb = DLCOfferDb(
+        eventId,
+        network,
+        offer.oracleInfo,
+        offer.contractInfo,
+        offer.timeouts,
+        offer.pubKeys,
+        offer.totalCollateral,
+        offer.fundingInputs,
+        offer.feeRate,
+        offer.changeAddress
+      )
 
+      _ <- dlcOfferDAO.create(dlcOfferDb)
       _ <- dlcAcceptDAO.create(dlcAcceptDb)
     } yield {
       DLCAccept(
@@ -341,5 +355,86 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
           new NoSuchElementException(
             s"No DLC found with corresponding eventId ${sign.eventId}"))
     }
+  }
+
+  private def clientFromDb(
+      dlcDb: ExecutedDLCDb,
+      dlcOffer: DLCOfferDb,
+      dlcAccept: DLCAcceptDb): Future[(BinaryOutcomeDLCClient, SetupDLC)] = {
+    val extPrivKey = keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
+
+    val (setupMsg, remoteSetupMsg) = if (dlcDb.isInitiator) {
+      (dlcOffer.toDLCOffer, dlcAccept.toDLCAccept)
+    } else {
+      (dlcAccept.toDLCAccept, dlcOffer.toDLCOffer)
+    }
+
+    val fundingInputs = setupMsg.fundingInputs
+
+    val accountDb =
+      AccountDb(keyManager.deriveXPub(dlcDb.account).get, dlcDb.account)
+
+    val utxosF = listUtxos(dlcDb.account).map(
+      _.filter(info =>
+        fundingInputs.contains(OutputReference(info.outPoint, info.output)))
+        .map(info =>
+          info.toUTXOSpendingInfo(accountDb, keyManager, dlcOffer.network)))
+
+    utxosF.flatMap { fundingUtxos =>
+      val client = BinaryOutcomeDLCClient(
+        outcomeWin = dlcOffer.contractInfo.head._1,
+        outcomeLose = dlcOffer.contractInfo.last._1,
+        oraclePubKey = dlcOffer.oracleInfo.pubKey,
+        preCommittedR = dlcOffer.oracleInfo.rValue,
+        isInitiator = dlcDb.isInitiator,
+        extPrivKey = extPrivKey,
+        nextAddressIndex = dlcDb.keyIndex,
+        remotePubKeys = remoteSetupMsg.pubKeys,
+        input = setupMsg.totalCollateral,
+        remoteInput = remoteSetupMsg.totalCollateral,
+        fundingUtxos = fundingUtxos.flatMap(_.toSingles),
+        remoteFundingInputs = remoteSetupMsg.fundingInputs,
+        winPayout = dlcOffer.contractInfo.head._2,
+        losePayout = dlcOffer.contractInfo.last._2,
+        timeouts = dlcOffer.timeouts,
+        feeRate = dlcOffer.feeRate,
+        changeSPK = setupMsg.changeAddress.scriptPubKey,
+        remoteChangeSPK = remoteSetupMsg.changeAddress.scriptPubKey,
+        network = dlcOffer.network
+      )
+
+      val setupF = if (dlcDb.isInitiator) {
+        val fundingTxIdBE = client.createUnsignedFundingTransaction.txIdBE
+        val fundingTxF = ???
+
+        client.setupDLCOffer(Future.successful(dlcAccept.cetSigs),
+                             (_, _) => FutureUtil.unit,
+                             fundingTxF)
+      } else {
+        client.setupDLCAccept(
+          _ => FutureUtil.unit,
+          Future.successful(
+            (dlcDb.initiatorCetSigsOpt.get, dlcDb.fundingSigsOpt.get)))
+      }
+
+      setupF.map((client, _))
+    }
+  }
+
+  override def initDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
+    for {
+      dlcDbOpt <- dlcDAO.findByEventId(eventId)
+      dlcDb = dlcDbOpt.get
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
+      dlcOffer = dlcOfferOpt.get
+      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
+      dlcAccept = dlcAcceptOpt.get
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      sigMessage <- client.createMutualCloseSig(eventId, setup, oracleSig)
+    } yield sigMessage
   }
 }

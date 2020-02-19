@@ -3,6 +3,7 @@ package org.bitcoins.cli
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
@@ -208,6 +209,34 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("initdlcmutualclose")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = InitDLCMutualClose(null, null, escaped = false)))
+        .text("Sign Mutual Close Tx for given oracle event")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case initClose: InitDLCMutualClose =>
+                  initClose.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[SchnorrDigitalSignature]("oraclesig").required
+            .action((sig, conf) =>
+              conf.copy(command = conf.command match {
+                case initClose: InitDLCMutualClose =>
+                  initClose.copy(oracleSig = sig)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case initClose: InitDLCMutualClose =>
+                  initClose.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
       cmd("getbalance")
         .hidden()
         .action((_, conf) => conf.copy(command = GetBalance))
@@ -372,6 +401,10 @@ object ConsoleCli {
         RequestParam("signdlc", Seq(up.writeJs(accept), up.writeJs(escaped)))
       case AddDLCSigs(sigs) =>
         RequestParam("adddlcsigs", Seq(up.writeJs(sigs)))
+      case InitDLCMutualClose(eventId, oracleSig, escaped) =>
+        RequestParam(
+          "initdlcmutualclose",
+          Seq(up.writeJs(eventId), up.writeJs(oracleSig), up.writeJs(escaped)))
       // Wallet
       case GetBalance =>
         RequestParam("getbalance")
@@ -513,6 +546,12 @@ object CliCommand {
   case class SignDLC(accept: DLCAccept, escaped: Boolean) extends CliCommand
 
   case class AddDLCSigs(sigs: DLCSign) extends CliCommand
+
+  case class InitDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature,
+      escaped: Boolean)
+      extends CliCommand
 
   // Wallet
   case class SendToAddress(destination: BitcoinAddress, amount: Bitcoins)

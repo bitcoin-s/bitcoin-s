@@ -446,6 +446,10 @@ trait UnlockedWalletApi extends LockedWalletApi {
 
   def addDLCSigs(sigs: DLCSign): Future[ExecutedDLCDb]
 
+  def initDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig]
+
   /**
     *
     * Sends money from the specified account

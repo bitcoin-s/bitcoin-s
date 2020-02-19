@@ -1,6 +1,10 @@
 package org.bitcoins.dlc
 
-import org.bitcoins.core.crypto.{ECPublicKey, Sha256DigestBE}
+import org.bitcoins.core.crypto.{
+  ECPublicKey,
+  SchnorrDigitalSignature,
+  Sha256DigestBE
+}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
@@ -124,6 +128,13 @@ object DLCMessage {
     }
   }
 
+  sealed trait DLCSetupMessage extends DLCMessage {
+    def pubKeys: DLCPublicKeys
+    def totalCollateral: Satoshis
+    def fundingInputs: Vector[OutputReference]
+    def changeAddress: Bech32Address
+  }
+
   /**
     * The initiating party starts the protocol by sending an offer message to the other party.
     *
@@ -146,7 +157,7 @@ object DLCMessage {
       changeAddress: Bech32Address,
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts)
-      extends DLCMessage {
+      extends DLCSetupMessage {
 
     override def toJson: Value = {
       val contractInfosJson =
@@ -312,7 +323,7 @@ object DLCMessage {
       changeAddress: Bech32Address,
       cetSigs: CETSignatures,
       eventId: Sha256DigestBE)
-      extends DLCMessage {
+      extends DLCSetupMessage {
 
     def toJson: Value = {
       val fundingInputsJson =
@@ -504,6 +515,44 @@ object DLCMessage {
         vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
 
       DLCSign(cetSigs, FundingSignatures(fundingSigs), eventId)
+    }
+  }
+
+  case class DLCMutualCloseSig(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature,
+      mutualSig: PartialSignature)
+      extends DLCMessage {
+    override def toJson: Value = {
+      Obj(
+        mutable.LinkedHashMap[String, Value](
+          "eventId" -> Str(eventId.hex),
+          "oracleSig" -> Str(oracleSig.hex),
+          "mutualCloseSig" -> Str(mutualSig.hex)
+        )
+      )
+    }
+  }
+
+  object DLCMutualCloseSig {
+
+    def fromJson(js: Value): DLCMutualCloseSig = {
+      val vec = js.obj.toVector
+
+      val eventId =
+        vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get
+
+      val oracleSig = vec
+        .find(_._1 == "oracleSig")
+        .map(obj => SchnorrDigitalSignature(obj._2.str))
+        .get
+
+      val sig = vec
+        .find(_._1 == "mutualCloseSig")
+        .map(obj => PartialSignature(obj._2.str))
+        .get
+
+      DLCMutualCloseSig(eventId, oracleSig, sig)
     }
   }
 }
