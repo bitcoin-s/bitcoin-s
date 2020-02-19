@@ -435,7 +435,6 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def lock(): LockedWalletApi
 
   def createDLCOffer(
-      collateral: CurrencyUnit,
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
       collateral: Satoshis,
