@@ -57,12 +57,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
   override def createDLCOffer(
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
+      collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
       locktime: UInt32,
       refundLocktime: UInt32): Future[DLCOffer] = {
     logger.debug("Calculating relevant wallet data for DLC Offer")
-
-    val collateral = contractInfo.values.max
 
     val timeouts = DLCTimeouts(DLCTimeouts.DEFAULT_PENALTY_TIMEOUT,
                                BlockStamp(locktime.toInt),
@@ -181,7 +180,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                              offer.contractInfo,
                              offer.timeouts)
 
-    val collateral = offer.contractInfo.values.max
+    val collateral = offer.contractInfo.values.max - offer.totalCollateral
 
     logger.debug(s"Checking if Accept ($eventId) has already been made")
     for {
@@ -299,7 +298,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                                       accept.fundingInputs,
                                       accept.cetSigs,
                                       accept.changeAddress)
-        dlcAcceptDAO.update(dlcAcceptDb)
+        dlcAcceptDAO.upsert(dlcAcceptDb)
       case None =>
         throw new RuntimeException(
           s"No DLC Offer found with corresponding eventId ${accept.eventId}, this wallet did not create the corresponding offer")
@@ -374,13 +373,17 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     val accountDb =
       AccountDb(keyManager.deriveXPub(dlcDb.account).get, dlcDb.account)
 
-    val utxosF = listUtxos(dlcDb.account).map(
-      _.filter(info =>
-        fundingInputs.contains(OutputReference(info.outPoint, info.output)))
-        .map(info =>
-          info.toUTXOSpendingInfo(accountDb, keyManager, dlcOffer.network)))
+    val utxosF = listUtxos(fundingInputs.map(_.outPoint))
+      .map(_.map(info =>
+        info.toUTXOSpendingInfo(accountDb, keyManager, dlcOffer.network)))
 
     utxosF.flatMap { fundingUtxos =>
+      val (winPayout, losePayout) = if (dlcDb.isInitiator) {
+        (dlcOffer.contractInfo.head._2, dlcOffer.contractInfo.last._2)
+      } else {
+        (dlcOffer.contractInfo.last._2, dlcOffer.contractInfo.head._2)
+      }
+
       val client = BinaryOutcomeDLCClient(
         outcomeWin = dlcOffer.contractInfo.head._1,
         outcomeLose = dlcOffer.contractInfo.last._1,
@@ -394,8 +397,8 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         remoteInput = remoteSetupMsg.totalCollateral,
         fundingUtxos = fundingUtxos.flatMap(_.toSingles),
         remoteFundingInputs = remoteSetupMsg.fundingInputs,
-        winPayout = dlcOffer.contractInfo.head._2,
-        losePayout = dlcOffer.contractInfo.last._2,
+        winPayout = winPayout,
+        losePayout = losePayout,
         timeouts = dlcOffer.timeouts,
         feeRate = dlcOffer.feeRate,
         changeSPK = setupMsg.changeAddress.scriptPubKey,

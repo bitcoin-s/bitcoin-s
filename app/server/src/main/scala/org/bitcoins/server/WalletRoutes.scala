@@ -60,6 +60,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(
             CreateDLCOffer(oracleInfo,
                            contractInfo,
+                           collateral,
                            feeRateOpt,
                            locktime,
                            refundLT,
@@ -68,6 +69,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             wallet
               .createDLCOffer(oracleInfo,
                               contractInfo,
+                              collateral,
                               feeRateOpt,
                               locktime,
                               refundLT)
