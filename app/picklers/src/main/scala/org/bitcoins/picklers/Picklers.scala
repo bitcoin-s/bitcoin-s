@@ -5,6 +5,7 @@ import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
@@ -45,6 +46,9 @@ package object picklers {
   implicit val schnorrDigitalSignaturePickler: ReadWriter[
     SchnorrDigitalSignature] =
     readwriter[String].bimap(_.hex, SchnorrDigitalSignature.fromHex)
+
+  implicit val partialSignaturePickler: ReadWriter[PartialSignature] =
+    readwriter[String].bimap(_.hex, PartialSignature.fromHex)
 
   implicit val dlcOfferPickler: ReadWriter[DLCOffer] =
     readwriter[String]

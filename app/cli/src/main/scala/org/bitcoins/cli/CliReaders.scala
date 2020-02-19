@@ -9,6 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import scodec.bits.ByteVector
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -127,6 +128,14 @@ object CliReaders {
 
       override def reads: String => SchnorrDigitalSignature =
         SchnorrDigitalSignature.fromHex
+    }
+
+  implicit val partialSigReads: Read[PartialSignature] =
+    new Read[PartialSignature] {
+      override def arity: Int = 1
+
+      override def reads: String => PartialSignature =
+        PartialSignature.fromHex
     }
 
   implicit val sha256DigestBEReads: Read[Sha256DigestBE] =

@@ -58,7 +58,8 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(
-            CreateDLCOffer(oracleInfo,
+            CreateDLCOffer(collateral,
+                           oracleInfo,
                            contractInfo,
                            collateral,
                            feeRateOpt,
@@ -122,6 +123,31 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           complete {
             wallet.initDLCMutualClose(eventId, oracleSig).map {
               handleDLCMessage(_, escaped)
+            }
+          }
+      }
+
+    case ServerCommand("acceptdlcmutualclose", arr) =>
+      AcceptDLCMutualClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AcceptDLCMutualClose(eventId, oracleSig, closeSig)) =>
+          complete {
+            wallet.acceptDLCMutualClose(eventId, oracleSig, closeSig).map {
+              tx =>
+                Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("getdlcfundingtx", arr) =>
+      GetDLCFundingTx.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetDLCFundingTx(eventId)) =>
+          complete {
+            wallet.getDLCFundingTx(eventId).map { tx =>
+              Server.httpSuccess(tx.hex)
             }
           }
       }
