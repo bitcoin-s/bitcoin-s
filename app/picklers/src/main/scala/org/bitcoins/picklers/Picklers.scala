@@ -1,5 +1,6 @@
 package org.bitcoins
 
+import org.bitcoins.core.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -18,6 +19,9 @@ package object picklers {
   implicit val bitcoinsPickler: ReadWriter[Bitcoins] =
     readwriter[Double].bimap(_.toBigDecimal.toDouble, Bitcoins(_))
 
+  implicit val sha256DigestBEPickler: ReadWriter[Sha256DigestBE] =
+    readwriter[String].bimap(_.hex, Sha256DigestBE.fromHex)
+
   implicit val doubleSha256DigestBEPickler: ReadWriter[DoubleSha256DigestBE] =
     readwriter[String].bimap(_.hex, DoubleSha256DigestBE(_))
 
@@ -34,6 +38,10 @@ package object picklers {
 
   implicit val contractInfoPickler: ReadWriter[ContractInfo] =
     readwriter[String].bimap(_.hex, ContractInfo.fromHex)
+
+  implicit val schnorrDigitalSignaturePickler: ReadWriter[
+    SchnorrDigitalSignature] =
+    readwriter[String].bimap(_.hex, SchnorrDigitalSignature.fromHex)
 
   implicit val dlcOfferPickler: ReadWriter[DLCOffer] =
     readwriter[String]

@@ -18,6 +18,7 @@ import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.dlc.DLCMessage.DLCMutualCloseSig
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -730,6 +731,17 @@ case class BinaryOutcomeDLCClient(
       logger.info(s"Closing Tx: ${txOpt.map(_.hex)}"))
 
     spendingTxOptF
+  }
+
+  def createMutualCloseSig(
+      eventId: Sha256DigestBE,
+      dlcSetup: SetupDLC,
+      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
+    val fundingTx = dlcSetup.fundingTx
+
+    createMutualCloseTxSig(oracleSig, fundingTx).map { sig =>
+      DLCMutualCloseSig(eventId, oracleSig, sig)
+    }
   }
 
   /** Initiates a Mutual Close by offering signatures to the counter-party
