@@ -150,6 +150,23 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("executedlcunilateralclose", arr) =>
+      ExecuteDLCUnilateralClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCUnilateralClose(eventId, oracleSig)) =>
+          complete {
+            wallet.executeDLCUnilateralClose(eventId, oracleSig).map { txs =>
+              txs._2 match {
+                case Some(closingTx) =>
+                  Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
+                case None =>
+                  Server.httpSuccess(txs._1.hex)
+              }
+            }
+          }
+      }
+
     case ServerCommand("executedlcforceclose", arr) =>
       ExecuteDLCForceClose.fromJsArr(arr) match {
         case Failure(exception) =>
