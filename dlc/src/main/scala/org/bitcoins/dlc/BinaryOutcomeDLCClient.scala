@@ -733,7 +733,6 @@ case class BinaryOutcomeDLCClient(
 
   def createMutualCloseSig(
       eventId: Sha256DigestBE,
-      dlcSetup: SetupDLC,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
 
     createMutualCloseTxSig(oracleSig).map { sig =>
