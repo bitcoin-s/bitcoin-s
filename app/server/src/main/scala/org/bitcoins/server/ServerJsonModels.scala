@@ -6,7 +6,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
@@ -270,26 +269,20 @@ object InitDLCMutualClose extends ServerJsonModels {
   }
 }
 
-case class AcceptDLCMutualClose(
-    eventId: Sha256DigestBE,
-    oracleSig: SchnorrDigitalSignature,
-    closeSig: PartialSignature)
+case class AcceptDLCMutualClose(mutualCloseSig: DLCMutualCloseSig)
 
 object AcceptDLCMutualClose extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCMutualClose] = {
     jsArr.arr.toList match {
-      case eventIdJs :: oracleSigJs :: closeSigJs :: Nil =>
+      case mutualCloseSig :: Nil =>
         Try {
-          val eventId = Sha256DigestBE(eventIdJs.str)
-          val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
-          val closeSig = PartialSignature(closeSigJs.str)
-          AcceptDLCMutualClose(eventId, oracleSig, closeSig)
+          AcceptDLCMutualClose(DLCMutualCloseSig.fromJson(mutualCloseSig))
         }
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 3"))
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
   }
 }

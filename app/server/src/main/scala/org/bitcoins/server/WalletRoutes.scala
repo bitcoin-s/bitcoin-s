@@ -130,11 +130,10 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       AcceptDLCMutualClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(AcceptDLCMutualClose(eventId, oracleSig, closeSig)) =>
+        case Success(AcceptDLCMutualClose(mutualCloseSig)) =>
           complete {
-            wallet.acceptDLCMutualClose(eventId, oracleSig, closeSig).map {
-              tx =>
-                Server.httpSuccess(tx.hex)
+            wallet.acceptDLCMutualClose(mutualCloseSig).map { tx =>
+              Server.httpSuccess(tx.hex)
             }
           }
       }
