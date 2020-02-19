@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
 import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
@@ -45,6 +46,19 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
           }
           writtenDLC <- dlcDAO.create(dlc)
         } yield writtenDLC
+    }
+  }
+
+  private def updateDLCOracleSig(
+      eventId: Sha256DigestBE,
+      sig: SchnorrDigitalSignature): Future[ExecutedDLCDb] = {
+    dlcDAO.findByEventId(eventId).flatMap {
+      case Some(dlcDb) =>
+        dlcDAO.update(dlcDb.copy(oracleSigOpt = Some(sig)))
+      case None =>
+        Future.failed(
+          new NoSuchElementException(
+            s"No DLC found with that eventId $eventId"))
     }
   }
 
@@ -356,17 +370,16 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
-  private def updateDLCOracleSig(
-      eventId: Sha256DigestBE,
-      sig: SchnorrDigitalSignature): Future[ExecutedDLCDb] = {
-    dlcDAO.findByEventId(eventId).flatMap {
-      case Some(dlcDb) =>
-        dlcDAO.update(dlcDb.copy(oracleSigOpt = Some(sig)))
-      case None =>
-        Future.failed(
-          new NoSuchElementException(
-            s"No DLC found with that eventId $eventId"))
-    }
+  private def getAllDLCData(eventId: Sha256DigestBE): Future[
+    (ExecutedDLCDb, DLCOfferDb, DLCAcceptDb)] = {
+    for {
+      dlcDbOpt <- dlcDAO.findByEventId(eventId)
+      dlcDb = dlcDbOpt.get
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
+      dlcOffer = dlcOfferOpt.get
+      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
+      dlcAccept = dlcAcceptOpt.get
+    } yield (dlcDb, dlcOffer, dlcAccept)
   }
 
   private def clientFromDb(
@@ -450,6 +463,31 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
       sigMessage <- client.createMutualCloseSig(eventId, oracleSig)
     } yield sigMessage
+  }
+
+  override def executeDLCUnilateralClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[
+    (Transaction, Option[Transaction])] = {
+    for {
+      _ <- updateDLCOracleSig(eventId, oracleSig)
+
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      outcome <- client.executeUnilateralDLC(setup, oracleSig)
+      txs <- outcome match {
+        case closing: UnilateralDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.cetSpendingInfo,
+                  closing.cet,
+                  isDummySignature = false)
+            .map(signed => (signed.transaction, Some(closing.closingTx)))
+        case _: UnilateralDLCOutcomeWithDustClosing =>
+          Future.successful((outcome.cet, None))
+      }
+    } yield txs
   }
 
   override def acceptDLCMutualClose(

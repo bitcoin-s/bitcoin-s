@@ -309,6 +309,33 @@ object GetDLCFundingTx extends ServerJsonModels {
   }
 }
 
+case class ExecuteDLCUnilateralClose(
+    eventId: Sha256DigestBE,
+    oracleSig: SchnorrDigitalSignature)
+
+object ExecuteDLCUnilateralClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCUnilateralClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: oracleSigJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
+
+          ExecuteDLCUnilateralClose(eventId, oracleSig)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and oracleSig arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
 case class ExecuteDLCForceClose(
     eventId: Sha256DigestBE,
     oracleSig: SchnorrDigitalSignature)

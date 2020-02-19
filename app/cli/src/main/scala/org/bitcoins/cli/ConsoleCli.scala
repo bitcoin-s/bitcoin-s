@@ -272,6 +272,27 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("executedlcunilateralclose")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = ExecuteDLCUnilateralClose(null, null)))
+        .text("Executes a force close for the DLC with the given eventId")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
+                  executeDLCUnilateralClose.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[SchnorrDigitalSignature]("oraclesig").required
+            .action((sig, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
+                  executeDLCUnilateralClose.copy(oracleSig = sig)
+                case other => other
+              }))
+        ),
       cmd("executedlcforceclose")
         .hidden()
         .action((_, conf) =>
@@ -524,6 +545,9 @@ object ConsoleCli {
           Seq(up.writeJs(eventId), up.writeJs(oracleSig), up.writeJs(escaped)))
       case AcceptDLCMutualClose(mutualCloseSig) =>
         RequestParam("acceptdlcmutualclose", Seq(up.writeJs(mutualCloseSig)))
+      case ExecuteDLCUnilateralClose(eventId, oracleSig) =>
+        RequestParam("executedlcunilateralclose",
+                     Seq(up.writeJs(eventId), up.writeJs(oracleSig)))
       case GetDLCFundingTx(eventId) =>
         RequestParam("getdlcfundingtx", Seq(up.writeJs(eventId)))
       case ExecuteDLCForceClose(eventId, oracleSig) =>
@@ -690,6 +714,11 @@ object CliCommand {
       extends CliCommand
 
   case class GetDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
+
+  case class ExecuteDLCUnilateralClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature)
+      extends CliCommand
 
   case class ExecuteDLCForceClose(
       eventId: Sha256DigestBE,
