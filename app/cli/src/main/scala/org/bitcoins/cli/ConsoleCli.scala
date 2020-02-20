@@ -276,7 +276,7 @@ object ConsoleCli {
         .hidden()
         .action((_, conf) =>
           conf.copy(command = ExecuteDLCUnilateralClose(null, null)))
-        .text("Executes a force close for the DLC with the given eventId")
+        .text("Executes a unilateral close for the DLC with the given eventId")
         .children(
           opt[Sha256DigestBE]("eventid").required
             .action((eventId, conf) =>
@@ -290,6 +290,28 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
                   executeDLCUnilateralClose.copy(oracleSig = sig)
+                case other => other
+              }))
+        ),
+      cmd("executedlcremoteunilateralclose")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(
+            command = ExecuteDLCRemoteUnilateralClose(null, EmptyTransaction)))
+        .text("Executes a unilateral close for the DLC with the given eventId")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
+                  executeDLCRemoteUnilateralClose.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[Transaction]("cet").required
+            .action((cet, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
+                  executeDLCRemoteUnilateralClose.copy(cet = cet)
                 case other => other
               }))
         ),
@@ -548,6 +570,9 @@ object ConsoleCli {
       case ExecuteDLCUnilateralClose(eventId, oracleSig) =>
         RequestParam("executedlcunilateralclose",
                      Seq(up.writeJs(eventId), up.writeJs(oracleSig)))
+      case ExecuteDLCRemoteUnilateralClose(eventId, cet) =>
+        RequestParam("executedlcremoteunilateralclose",
+                     Seq(up.writeJs(eventId), up.writeJs(cet)))
       case GetDLCFundingTx(eventId) =>
         RequestParam("getdlcfundingtx", Seq(up.writeJs(eventId)))
       case ExecuteDLCForceClose(eventId, oracleSig) =>
@@ -718,6 +743,11 @@ object CliCommand {
   case class ExecuteDLCUnilateralClose(
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature)
+      extends CliCommand
+
+  case class ExecuteDLCRemoteUnilateralClose(
+      eventId: Sha256DigestBE,
+      cet: Transaction)
       extends CliCommand
 
   case class ExecuteDLCForceClose(

@@ -336,6 +336,32 @@ object ExecuteDLCUnilateralClose extends ServerJsonModels {
   }
 }
 
+case class ExecuteDLCRemoteUnilateralClose(
+    eventId: Sha256DigestBE,
+    cet: Transaction)
+
+object ExecuteDLCRemoteUnilateralClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRemoteUnilateralClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: cetJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val cet = jsToTx(cetJs)
+
+          ExecuteDLCRemoteUnilateralClose(eventId, cet)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing eventId and cet arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
 case class ExecuteDLCForceClose(
     eventId: Sha256DigestBE,
     oracleSig: SchnorrDigitalSignature)

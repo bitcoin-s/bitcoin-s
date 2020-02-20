@@ -490,6 +490,33 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     } yield txs
   }
 
+  override def executeRemoteUnilateralDLC(
+      eventId: Sha256DigestBE,
+      cet: Transaction): Future[Option[Transaction]] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      newAddr <- getNewAddress(AddressType.SegWit)
+
+      outcome <- client.executeRemoteUnilateralDLC(
+        setup,
+        cet,
+        newAddr.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
+      txOpt <- outcome match {
+        case closing: UnilateralDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.cetSpendingInfo,
+                  closing.closingTx,
+                  isDummySignature = false)
+            .map(signed => Some(signed.transaction))
+        case _: UnilateralDLCOutcomeWithDustClosing =>
+          Future.successful(None)
+      }
+    } yield txOpt
+  }
+
   override def acceptDLCMutualClose(
       mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = {
     for {

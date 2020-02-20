@@ -167,6 +167,22 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("executedlcremoteunilateralclose", arr) =>
+      ExecuteDLCRemoteUnilateralClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCRemoteUnilateralClose(eventId, cet)) =>
+          complete {
+            wallet.executeRemoteUnilateralDLC(eventId, cet).map {
+              case Some(closingTx) =>
+                Server.httpSuccess(closingTx.hex)
+              case None =>
+                Server.httpSuccess(
+                  "Recieved would have only been dust, they have been used as fees")
+            }
+          }
+      }
+
     case ServerCommand("executedlcforceclose", arr) =>
       ExecuteDLCForceClose.fromJsArr(arr) match {
         case Failure(exception) =>
