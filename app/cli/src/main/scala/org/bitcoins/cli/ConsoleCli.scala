@@ -49,6 +49,18 @@ object ConsoleCli {
         .hidden()
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
         .text(s"Get the best block hash"),
+      cmd("decoderawtransaction")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
+        .text(s"Decode the given raw hex transaction")
+        .children(opt[Transaction]("tx")
+          .required()
+          .action((tx, conf) =>
+            conf.copy(command = conf.command match {
+              case decode: DecodeRawTransaction => decode.copy(transaction = tx)
+              case other                        => other
+            }))),
       cmd("rescan")
         .hidden()
         .action(
@@ -623,6 +635,9 @@ object ConsoleCli {
       case ConvertToPSBT(tx) =>
         RequestParam("converttopsbt", Seq(up.writeJs(tx)))
 
+      case DecodeRawTransaction(tx) =>
+        RequestParam("decoderawtransaction", Seq(up.writeJs(tx)))
+
       case NoCommand => ???
     }
 
@@ -781,6 +796,7 @@ object CliCommand {
   case object GetBlockCount extends CliCommand
   case object GetFilterCount extends CliCommand
   case object GetFilterHeaderCount extends CliCommand
+  case class DecodeRawTransaction(transaction: Transaction) extends CliCommand
   case class Rescan(
       addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],

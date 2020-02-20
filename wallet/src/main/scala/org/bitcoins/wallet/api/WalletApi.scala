@@ -8,12 +8,26 @@ import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptWitness,
+  P2WPKHWitnessV0,
+  P2WSHWitnessV0,
+  ScriptPubKey
+}
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  Transaction,
+  WitnessTransaction
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.script.constant.{
+  ScriptConstant,
+  ScriptNumberOperation,
+  ScriptToken
+}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.dlc.DLCMessage._
@@ -28,6 +42,7 @@ import org.bitcoins.wallet.models.{
   ExecutedDLCDb,
   SpendingInfoDb
 }
+import play.api.libs.json.{JsNumber, JsString, Json, Writes}
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,6 +66,116 @@ sealed trait WalletApi {
   def chainParams: ChainParams = walletConfig.chain
 
   def networkParameters: NetworkParameters = walletConfig.network
+
+  case class SerializedTransactionInput(
+      txid: DoubleSha256DigestBE,
+      vout: UInt32,
+      scriptSig: String,
+      txinwitness: String,
+      sequence: UInt32
+  )
+
+  case class SerializedTransactionOutput(
+      value: BigDecimal,
+      n: UInt32,
+      scriptPubKey: ScriptPubKey
+  )
+
+  case class SerializedTransaction(
+      txid: DoubleSha256DigestBE,
+      version: Int32,
+      size: Long,
+      vsize: Long,
+      weight: Long,
+      locktime: UInt32,
+      vin: Vector[SerializedTransactionInput],
+      vout: Vector[SerializedTransactionOutput])
+
+  def decodeRawTransaction(tx: Transaction): String = {
+    def asmToString(asm: Vector[ScriptToken]): String = {
+      (if (asm.isEmpty) "" else "\n") ++ asm
+        .map {
+          case numOp: ScriptNumberOperation => numOp.toString
+          case constOp: ScriptConstant      => constOp.bytes.toString
+          case otherOp                      => otherOp.toString
+        }
+        .mkString("\n")
+    }
+
+    implicit val doubleSha256DigestBEWrites: Writes[DoubleSha256DigestBE] =
+      Writes[DoubleSha256DigestBE](hash => JsString(hash.hex))
+    implicit val uInt32Writes: Writes[UInt32] =
+      Writes[UInt32](num => JsNumber(num.toLong))
+    implicit val int32Writes: Writes[Int32] =
+      Writes[Int32](num => JsNumber(num.toLong))
+    implicit val scriptPubKeyWrites: Writes[ScriptPubKey] =
+      Writes[ScriptPubKey](spk => JsString(asmToString(spk.asm.toVector)))
+
+    implicit val serializedTransactionInputWrites: Writes[
+      SerializedTransactionInput] = Json.writes[SerializedTransactionInput]
+    implicit val serializedTransactionOutputWrites: Writes[
+      SerializedTransactionOutput] = Json.writes[SerializedTransactionOutput]
+    implicit val serializedTransactionWrites: Writes[SerializedTransaction] =
+      Json.writes[SerializedTransaction]
+
+    val inputs = tx.inputs.toVector.zipWithIndex.map {
+      case (input, index) =>
+        val witnessStr = tx match {
+          case _: BaseTransaction => ""
+          case wtx: WitnessTransaction =>
+            wtx.witness.witnesses(index) match {
+              case EmptyScriptWitness => ""
+              case p2wpkh: P2WPKHWitnessV0 =>
+                s"p2wpkh of pubkey ${p2wpkh.pubKey} with signature ${p2wpkh.signature}"
+              case p2wsh: P2WSHWitnessV0 =>
+                s"p2wsh of ${asmToString(p2wsh.redeemScript.asm.toVector)} with stack ${Json
+                  .toJson(p2wsh.stack.tail.map(_.toHex))}"
+            }
+        }
+
+        SerializedTransactionInput(
+          input.previousOutput.txIdBE,
+          input.previousOutput.vout,
+          asmToString(input.scriptSignature.asm.toVector),
+          witnessStr,
+          input.sequence)
+    }
+
+    val outputs = tx.outputs.toVector.zipWithIndex.map {
+      case (output, index) =>
+        SerializedTransactionOutput(output.value.toBigDecimal,
+                                    UInt32(index),
+                                    output.scriptPubKey)
+    }
+
+    val serializedTx = SerializedTransaction(tx.txIdBE,
+                                             tx.version,
+                                             tx.size,
+                                             tx.vsize,
+                                             tx.weight,
+                                             tx.lockTime,
+                                             inputs,
+                                             outputs)
+
+    val json = Json.toJson(serializedTx)
+    val strWithEscaped = Json.prettyPrint(json)
+
+    var escaped: Boolean = false
+
+    strWithEscaped
+      .map {
+        case '\\' =>
+          escaped = true
+          '\\'
+        case 'n' if escaped =>
+          escaped = false
+          '\n'
+        case char =>
+          escaped = false
+          char
+      }
+      .filterNot(_ == '\\')
+  }
 }
 
 /**
