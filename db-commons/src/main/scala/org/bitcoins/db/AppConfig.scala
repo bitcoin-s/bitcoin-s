@@ -379,7 +379,7 @@ object AppConfig extends BitcoinSLogger {
     * should probably mimic what Bitcoin Core does
     */
   private[bitcoins] val DEFAULT_BITCOIN_S_DATADIR: Path =
-    Paths.get(Properties.userHome, ".bitcoin-s")
+    Paths.get(Properties.userHome, ".bitcoin-s2")
 
   /**
     * Matches the default data directory location

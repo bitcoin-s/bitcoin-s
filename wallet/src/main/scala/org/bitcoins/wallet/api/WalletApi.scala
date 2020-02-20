@@ -461,6 +461,10 @@ trait UnlockedWalletApi extends LockedWalletApi {
       oracleSig: SchnorrDigitalSignature): Future[
     (Transaction, Option[Transaction])]
 
+  def executeRemoteUnilateralDLC(
+      eventId: Sha256DigestBE,
+      cet: Transaction): Future[Option[Transaction]]
+
   def executeDLCForceClose(
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[Transaction]
