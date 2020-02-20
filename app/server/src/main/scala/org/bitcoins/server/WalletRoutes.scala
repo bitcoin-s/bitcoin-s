@@ -189,8 +189,13 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ExecuteDLCForceClose(eventId, oracleSig)) =>
           complete {
-            wallet.executeDLCForceClose(eventId, oracleSig).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.executeDLCForceClose(eventId, oracleSig).map { txs =>
+              txs._2 match {
+                case Some(closingTx) =>
+                  Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
+                case None =>
+                  Server.httpSuccess(txs._1.hex)
+              }
             }
           }
       }
@@ -201,8 +206,12 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ClaimDLCRemoteFunds(eventId, tx)) =>
           complete {
-            wallet.claimDLCRemoteFunds(eventId, tx).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.claimDLCRemoteFunds(eventId, tx).map {
+              case Some(closingTx) =>
+                Server.httpSuccess(closingTx.hex)
+              case None =>
+                Server.httpSuccess(
+                  "Recieved would have only been dust, they have been used as fees")
             }
           }
       }
@@ -230,8 +239,12 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ClaimDLCPenaltyFunds(eventId, tx)) =>
           complete {
-            wallet.claimDLCPenaltyFunds(eventId, tx).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.claimDLCPenaltyFunds(eventId, tx).map {
+              case Some(closingTx) =>
+                Server.httpSuccess(closingTx.hex)
+              case None =>
+                Server.httpSuccess(
+                  "Recieved would have only been dust, they have been used as fees")
             }
           }
       }
