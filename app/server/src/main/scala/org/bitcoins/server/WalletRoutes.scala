@@ -213,8 +213,13 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ExecuteDLCRefund(eventId)) =>
           complete {
-            wallet.executeDLCRefund(eventId).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.executeDLCRefund(eventId).map { txs =>
+              txs._2 match {
+                case Some(closingTx) =>
+                  Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
+                case None =>
+                  Server.httpSuccess(txs._1.hex)
+              }
             }
           }
       }
