@@ -33,7 +33,8 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       dlcMessage: DLCMessage,
       escaped: Boolean): HttpEntity.Strict = {
     val str = dlcMessage.toJsonStr
-    val sendString = if (escaped) escape(str) else str
+    val sendString =
+      if (escaped) escape(str) else ujson.read(str).render(indent = 2)
     Server.httpSuccess(sendString)
   }
 
