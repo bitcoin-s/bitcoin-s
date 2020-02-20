@@ -481,9 +481,9 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         case closing: UnilateralDLCOutcomeWithClosing =>
           BitcoinSigner
             .sign(closing.cetSpendingInfo,
-                  closing.cet,
+                  closing.closingTx,
                   isDummySignature = false)
-            .map(signed => (signed.transaction, Some(closing.closingTx)))
+            .map(signed => (outcome.cet, Some(signed.transaction)))
         case _: UnilateralDLCOutcomeWithDustClosing =>
           Future.successful((outcome.cet, None))
       }
