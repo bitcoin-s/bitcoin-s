@@ -453,10 +453,34 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
   }
 
   override def acceptDLCMutualClose(
-      mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = ???
+      mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = {
+    for {
+      dlcDb <- updateDLCOracleSig(mutualCloseSig.eventId,
+                                  mutualCloseSig.oracleSig)
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(mutualCloseSig.eventId)
+      dlcOffer = dlcOfferOpt.get
+      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(mutualCloseSig.eventId)
+      dlcAccept = dlcAcceptOpt.get
 
-  override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] =
-    ???
+      (client, _) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      tx <- client.createMutualCloseTx(mutualCloseSig.oracleSig,
+                                       mutualCloseSig.mutualSig)
+    } yield tx
+  }
+
+  override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] = {
+    for {
+      dlcDbOpt <- dlcDAO.findByEventId(eventId)
+      dlcDb = dlcDbOpt.get
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
+      dlcOffer = dlcOfferOpt.get
+      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
+      dlcAccept = dlcAcceptOpt.get
+
+      (_, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+    } yield setup.fundingTx
+  }
 
   override def executeDLCForceClose(
       eventId: Sha256DigestBE,

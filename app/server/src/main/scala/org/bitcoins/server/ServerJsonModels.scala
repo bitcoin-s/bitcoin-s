@@ -277,7 +277,8 @@ object AcceptDLCMutualClose extends ServerJsonModels {
     jsArr.arr.toList match {
       case mutualCloseSig :: Nil =>
         Try {
-          AcceptDLCMutualClose(DLCMutualCloseSig.fromJson(mutualCloseSig))
+          AcceptDLCMutualClose(
+            DLCMutualCloseSig.fromJson(ujson.read(mutualCloseSig.str)))
         }
       case other =>
         Failure(
