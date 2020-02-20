@@ -598,7 +598,8 @@ trait UnlockedWalletApi extends LockedWalletApi {
       eventId: Sha256DigestBE,
       forceCloseTx: Transaction): Future[Transaction]
 
-  def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction]
+  def executeDLCRefund(
+      eventId: Sha256DigestBE): Future[(Transaction, Option[Transaction])]
 
   def claimDLCPenaltyFunds(
       eventId: Sha256DigestBE,

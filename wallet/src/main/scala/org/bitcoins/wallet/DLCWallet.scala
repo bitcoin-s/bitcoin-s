@@ -555,8 +555,26 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       eventId: Sha256DigestBE,
       forceCloseTx: Transaction): Future[Transaction] = ???
 
-  override def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction] =
-    ???
+  override def executeDLCRefund(
+      eventId: Sha256DigestBE): Future[(Transaction, Option[Transaction])] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      outcome <- client.executeRefundDLC(setup)
+      txs <- outcome match {
+        case closing: RefundDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.refundSpendingInfo,
+                  closing.closingTx,
+                  isDummySignature = false)
+            .map(signed => (outcome.refundTx, Some(signed.transaction)))
+        case _: RefundDLCOutcomeWithDustClosing =>
+          Future.successful((outcome.refundTx, None))
+      }
+    } yield txs
+  }
 
   override def claimDLCPenaltyFunds(
       eventId: Sha256DigestBE,
