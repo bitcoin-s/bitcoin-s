@@ -572,5 +572,23 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
   override def claimDLCPenaltyFunds(
       eventId: Sha256DigestBE,
-      forceCloseTx: Transaction): Future[Transaction] = ???
+      forceCloseTx: Transaction): Future[Option[Transaction]] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      outcome <- client.executeJusticeDLC(setup, forceCloseTx)
+      txOpt <- outcome match {
+        case closing: UnilateralDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.cetSpendingInfo,
+                  closing.closingTx,
+                  isDummySignature = false)
+            .map(signed => Some(signed.transaction))
+        case _: UnilateralDLCOutcomeWithDustClosing =>
+          Future.successful(None)
+      }
+    } yield txOpt
+  }
 }
