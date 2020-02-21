@@ -187,7 +187,7 @@ class GCSTest extends BitcoinSUnitTest {
 
   it must "encode and decode arbitrary sets of elements for arbitrary p" in {
 
-    val upperBoundGen = Gen.choose(10, 50) //what are these numbers?
+    val upperBoundGen = Gen.choose(10, 20) //what are these numbers?
 
     val itemsGen: Gen[(Vector[UInt64], UInt8)] = {
       NumberGenerator.genP.flatMap { p =>
