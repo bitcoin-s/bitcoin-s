@@ -30,7 +30,7 @@ object HDAccount {
 
   def fromPath(path: BIP32Path): Option[HDAccount] = {
 
-    HDCoin.fromPath(BIP32Path(path.path.dropRight(1))).flatMap { coin =>
+    HDCoin.fromPath(BIP32Path(path.path.init)).flatMap { coin =>
       val lastNode = path.path.last
       if (lastNode.hardened) {
         Some(HDAccount(coin, lastNode.index))
