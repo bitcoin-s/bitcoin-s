@@ -26,7 +26,11 @@ import org.bitcoins.core.protocol.script.{
   P2WPKHWitnessSPKV0,
   P2WPKHWitnessV0
 }
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  OutputReference,
+  Transaction,
+  TransactionOutPoint
+}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
@@ -103,7 +107,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
   val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
     ECPublicKey.freshPublicKey)
 
-  val csvTimeout: Int = 30
+  val csvTimeout: UInt32 = UInt32(30)
 
   def constructDLC(): Future[(BinaryOutcomeDLCClient, BinaryOutcomeDLCClient)] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
@@ -215,8 +219,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         remoteInput = remoteInput,
         fundingUtxos = localFundingUtxos,
         remoteFundingInputs = Vector(
-          (TransactionOutPoint(fundingTx.txIdBE, remoteVout),
-           fundingTx.outputs(remoteVout.toInt))),
+          OutputReference(TransactionOutPoint(fundingTx.txIdBE, remoteVout),
+                          fundingTx.outputs(remoteVout.toInt))),
         winPayout = totalInput,
         losePayout = CurrencyUnits.zero,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
@@ -244,8 +248,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         remoteInput = localInput,
         fundingUtxos = remoteFundingUtxos,
         remoteFundingInputs = Vector(
-          (TransactionOutPoint(fundingTx.txIdBE, localVout),
-           fundingTx.outputs(localVout.toInt))),
+          OutputReference(TransactionOutPoint(fundingTx.txIdBE, localVout),
+                          fundingTx.outputs(localVout.toInt))),
         winPayout = CurrencyUnits.zero,
         losePayout = totalInput,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
@@ -644,7 +648,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
           )
         }
         .getOrElse(FutureUtil.unit)
-      penaltyHeight = heightBeforePublish + punisherDLC.timeouts.penaltyTimeout + 1
+      penaltyHeight = heightBeforePublish + punisherDLC.timeouts.penaltyTimeout.toInt + 1
       _ <- waitUntilBlock(penaltyHeight - 1)
       _ <- justiceClosingTxOpt
         .map { tx =>
