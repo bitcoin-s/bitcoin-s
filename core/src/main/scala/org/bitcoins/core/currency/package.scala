@@ -42,4 +42,9 @@ package object currency {
     new Ordering[CurrencyUnit] {
       override def compare(x: CurrencyUnit, y: CurrencyUnit): Int = x.compare(y)
     }
+
+  implicit val satoshisOrdering: Ordering[Satoshis] =
+    new Ordering[Satoshis] {
+      override def compare(x: Satoshis, y: Satoshis): Int = x.compare(y)
+    }
 }

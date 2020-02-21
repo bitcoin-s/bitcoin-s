@@ -4,9 +4,12 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.picklers._
 import scopt.OParser
 import ujson.{Num, Str}
@@ -86,6 +89,122 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
                   rescan.copy(endBlock = Option(end))
+                case other => other
+              }))
+        ),
+      cmd("createdlcoffer")
+        .hidden()
+        .action(
+          (_, conf) =>
+            conf.copy(
+              command = CreateDLCOffer(OracleInfo.empty,
+                                       ContractInfo.empty,
+                                       None,
+                                       UInt32.zero,
+                                       UInt32.zero,
+                                       escaped = false)))
+        .text("Creates a DLC offer that another party can accept")
+        .children(
+          opt[OracleInfo]("oracleInfo")
+            .required()
+            .action((info, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(oracleInfo = info)
+                case other => other
+              })),
+          opt[ContractInfo]("contractInfo")
+            .required()
+            .action((info, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(contractInfo = info)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(feeRateOpt = Some(feeRate))
+                case other => other
+              })),
+          opt[UInt32]("locktime")
+            .required()
+            .action((locktime, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(locktime = locktime)
+                case other => other
+              })),
+          opt[UInt32]("refundlocktime")
+            .required()
+            .action((refundLT, conf) =>
+              conf.copy(command = conf.command match {
+                case offer: CreateDLCOffer =>
+                  offer.copy(refundLT = refundLT)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case create: CreateDLCOffer =>
+                  create.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
+      cmd("acceptdlcoffer")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = AcceptDLCOffer(null, escaped = false)))
+        .text("Accepts a DLC offer given from another party")
+        .children(
+          opt[DLCOffer]("offer").required
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(offer = offer)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case accept: AcceptDLCOffer =>
+                  accept.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
+      cmd("signdlc")
+        .hidden()
+        .action(
+          (_, conf) => conf.copy(command = SignDLC(null, escaped = false)))
+        .text("Signs a DLC")
+        .children(
+          opt[DLCAccept]("accept").required
+            .action((accept, conf) =>
+              conf.copy(command = conf.command match {
+                case signDLC: SignDLC =>
+                  signDLC.copy(accept = accept)
+                case other => other
+              })),
+          opt[Boolean]("escaped")
+            .action((escaped, conf) =>
+              conf.copy(command = conf.command match {
+                case signDLC: SignDLC =>
+                  signDLC.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
+      cmd("adddlcsigs")
+        .hidden()
+        .action((_, conf) => conf.copy(command = AddDLCSigs(null)))
+        .text("Adds DLC Signatures into the database")
+        .children(
+          opt[DLCSign]("sigs").required
+            .action((sigs, conf) =>
+              conf.copy(command = conf.command match {
+                case addDLCSigs: AddDLCSigs =>
+                  addDLCSigs.copy(sigs = sigs)
                 case other => other
               }))
         ),
@@ -240,6 +359,30 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = config.command match {
+      // DLCs
+      case CreateDLCOffer(oracleInfo,
+                          contractInfo,
+                          feeRateOpt,
+                          locktime,
+                          refundLT,
+                          escaped) =>
+        RequestParam(
+          "createdlcoffer",
+          Seq(up.writeJs(oracleInfo),
+              up.writeJs(contractInfo),
+              up.writeJs(feeRateOpt),
+              up.writeJs(locktime),
+              up.writeJs(refundLT),
+              up.writeJs(escaped))
+        )
+      case AcceptDLCOffer(offer, escaped) =>
+        RequestParam("acceptdlcoffer",
+                     Seq(up.writeJs(offer), up.writeJs(escaped)))
+      case SignDLC(accept, escaped) =>
+        RequestParam("signdlc", Seq(up.writeJs(accept), up.writeJs(escaped)))
+      case AddDLCSigs(sigs) =>
+        RequestParam("adddlcsigs", Seq(up.writeJs(sigs)))
+      // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
       case GetNewAddress =>
@@ -363,6 +506,23 @@ sealed abstract class CliCommand
 
 object CliCommand {
   case object NoCommand extends CliCommand
+
+  // DLC
+  case class CreateDLCOffer(
+      oracleInfo: OracleInfo,
+      contractInfo: ContractInfo,
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      locktime: UInt32,
+      refundLT: UInt32,
+      escaped: Boolean)
+      extends CliCommand
+
+  case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
+      extends CliCommand
+
+  case class SignDLC(accept: DLCAccept, escaped: Boolean) extends CliCommand
+
+  case class AddDLCSigs(sigs: DLCSign) extends CliCommand
 
   // Wallet
   case class SendToAddress(destination: BitcoinAddress, amount: Bitcoins)

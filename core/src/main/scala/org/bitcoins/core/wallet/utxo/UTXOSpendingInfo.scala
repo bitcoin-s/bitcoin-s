@@ -272,6 +272,9 @@ sealed trait BitcoinUTXOSpendingInfoFull
                                   hashType,
                                   conditionalPath)
   }
+
+  override def toSingles: Vector[BitcoinUTXOSpendingInfoSingle] =
+    super.toSingles.asInstanceOf[Vector[BitcoinUTXOSpendingInfoSingle]]
 }
 
 object BitcoinUTXOSpendingInfoFull {

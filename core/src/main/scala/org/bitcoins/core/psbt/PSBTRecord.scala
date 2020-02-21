@@ -1,6 +1,11 @@
 package org.bitcoins.core.psbt
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, ExtPublicKey}
+import org.bitcoins.core.crypto.{
+  DummyECDigitalSignature,
+  ECDigitalSignature,
+  ECPublicKey,
+  ExtPublicKey
+}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
@@ -161,6 +166,23 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
     override type KeyId = PartialSignatureKeyId.type
     override val key: ByteVector = ByteVector(PartialSignatureKeyId.byte) ++ pubKey.bytes
     override val value: ByteVector = signature.bytes
+  }
+
+  object PartialSignature extends Factory[PartialSignature] {
+
+    def dummyPartialSig(
+        pubKey: ECPublicKey = ECPublicKey.freshPublicKey): PartialSignature = {
+      PartialSignature(pubKey, DummyECDigitalSignature)
+    }
+
+    override def fromBytes(bytes: ByteVector): PartialSignature =
+      InputPSBTRecord(bytes) match {
+        case partialSignature: PartialSignature =>
+          partialSignature
+        case other: InputPSBTRecord =>
+          throw new IllegalArgumentException(
+            s"Invalid PartialSignature encoding, got: $other")
+      }
   }
 
   case class SigHashType(hashType: HashType) extends InputPSBTRecord {
