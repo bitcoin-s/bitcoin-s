@@ -17,7 +17,7 @@ import org.bitcoins.wallet.models._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
+abstract class Wallet extends DLCWallet with UnlockedWalletApi {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
