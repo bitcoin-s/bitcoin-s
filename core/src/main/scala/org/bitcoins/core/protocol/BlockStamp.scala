@@ -6,6 +6,7 @@ import java.time.temporal.{ChronoField, TemporalAccessor}
 
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BlockStamp.{BlockTime, _}
 import org.bitcoins.core.script.constant.ScriptNumber
 
 import scala.util.{Failure, Try}
@@ -51,14 +52,8 @@ object BlockStamp {
     */
   final val LOCKTIME_THRESHOLD: Int = 500000000
 
-  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]] */
-  def apply(timelockNumber: Int): BlockStampWithFuture = {
-    if (timelockNumber < LOCKTIME_THRESHOLD) {
-      BlockHeight(timelockNumber)
-    } else {
-      BlockTime(UInt32(timelockNumber))
-    }
-  }
+  def apply(timeLockNumber: Int): BlockStampWithFuture =
+    BlockStampWithFuture.fromUInt32(UInt32(timeLockNumber))
 
   object BlockTime {
 
@@ -67,19 +62,43 @@ object BlockStamp {
       val time = UInt32(seconds)
       new BlockTime(time)
     }
-
   }
 
   def fromString(s: String): Try[BlockStamp] = {
-    lazy val blockHash = Try(DoubleSha256DigestBE.fromHex(s)).map(BlockHash(_))
 
-    lazy val blockHeight = Try(s.toInt).map(BlockHeight(_))
+    lazy val blockStampWithFuture = BlockStampWithFuture.fromString(s)
+
+    lazy val blockHash = Try(DoubleSha256DigestBE(s)).map(BlockHash)
+
+    blockHash orElse blockStampWithFuture
+  }
+}
+
+object BlockStampWithFuture {
+
+  def fromString(s: String): Try[BlockStampWithFuture] = {
+    lazy val blockHeight = Try(s.toInt).map(BlockHeight)
 
     lazy val blockTime =
       Try(DateTimeFormatter.ISO_INSTANT.parse(s)).map(BlockTime(_))
 
     lazy val error = Failure(InvalidBlockStamp(s))
 
-    blockHash orElse blockHeight orElse blockTime orElse error
+    blockHeight orElse blockTime orElse error
+  }
+
+  def apply(timeLockNumber: UInt32): BlockStampWithFuture =
+    fromUInt32(timeLockNumber)
+
+  def apply(timeLockNumber: Int): BlockStampWithFuture =
+    fromUInt32(UInt32(timeLockNumber))
+
+  /** @see [[https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#detailed-specification]] */
+  def fromUInt32(uInt32: UInt32): BlockStampWithFuture = {
+    if (uInt32 < UInt32(LOCKTIME_THRESHOLD)) {
+      BlockHeight(uInt32.toInt)
+    } else {
+      BlockStamp.BlockTime(uInt32)
+    }
   }
 }

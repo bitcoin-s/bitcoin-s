@@ -4,11 +4,19 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.dlc.DLCMessage.{
+  ContractInfo,
+  DLCAccept,
+  DLCOffer,
+  DLCSign,
+  OracleInfo
+}
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
@@ -53,6 +61,23 @@ object CliReaders {
         SatoshisPerVirtualByte(Satoshis(BigInt(str)))
     }
 
+  implicit val uInt32Reads: Read[UInt32] = new Read[UInt32] {
+    val arity: Int = 1
+
+    val reads: String => UInt32 = str => UInt32(BigInt(str))
+  }
+
+  implicit val oracleInfoReads: Read[OracleInfo] = new Read[OracleInfo] {
+    val arity: Int = 1
+    val reads: String => OracleInfo = OracleInfo.fromHex
+  }
+
+  implicit val contractInfoReads: Read[ContractInfo] =
+    new Read[ContractInfo] {
+      val arity: Int = 1
+      val reads: String => ContractInfo = ContractInfo.fromHex
+    }
+
   implicit val blockStampReads: Read[BlockStamp] =
     new Read[BlockStamp] {
       val arity: Int = 1
@@ -85,5 +110,32 @@ object CliReaders {
     val arity: Int = 1
 
     val reads: String => Transaction = Transaction.fromHex
+  }
+
+  implicit val dlcOfferReads: Read[DLCOffer] = new Read[DLCOffer] {
+    override def arity: Int = 1
+
+    // this will be a JSON string
+    override def reads: String => DLCOffer = str => {
+      DLCOffer.fromJson(ujson.read(str))
+    }
+  }
+
+  implicit val dlcAcceptReads: Read[DLCAccept] = new Read[DLCAccept] {
+    override def arity: Int = 1
+
+    // this will be a JSON string
+    override def reads: String => DLCAccept = str => {
+      DLCAccept.fromJson(ujson.read(str))
+    }
+  }
+
+  implicit val dlcSignReads: Read[DLCSign] = new Read[DLCSign] {
+    override def arity: Int = 1
+
+    // this will be a JSON string
+    override def reads: String => DLCSign = str => {
+      DLCSign.fromJson(ujson.read(str))
+    }
   }
 }
