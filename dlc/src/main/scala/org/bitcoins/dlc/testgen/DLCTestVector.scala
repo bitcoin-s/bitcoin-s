@@ -28,6 +28,7 @@ import org.bitcoins.core.protocol.script.{
   WitnessScriptPubKeyV0
 }
 import org.bitcoins.core.protocol.transaction.{
+  OutputReference,
   Transaction,
   TransactionOutPoint,
   TransactionOutput
@@ -168,10 +169,10 @@ object DLCTestVector {
     val possibleOutcomes = localPayouts.keySet.toVector
 
     val localFundingInputs = localFundingUtxos.map { info =>
-      (info.outPoint, info.output)
+      OutputReference(info.outPoint, info.output)
     }
     val remoteFundingInputs = remoteFundingUtxos.map { info =>
-      (info.outPoint, info.output)
+      OutputReference(info.outPoint, info.output)
     }
 
     val offerDLC = BinaryOutcomeDLCClient(
@@ -537,7 +538,7 @@ case class SerializedDLCInputs(
     remoteInput: CurrencyUnit,
     remoteFundingUtxos: Vector[SerializedSegwitSpendingInfo],
     remoteChangeSPK: WitnessScriptPubKeyV0,
-    penaltyTimeout: Int,
+    penaltyTimeout: UInt32,
     contractMaturity: BlockStampWithFuture,
     contractTimeout: BlockStampWithFuture,
     feeRate: SatoshisPerByte) {

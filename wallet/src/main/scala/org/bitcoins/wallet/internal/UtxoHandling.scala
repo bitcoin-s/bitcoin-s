@@ -43,6 +43,14 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     spendingInfoDAO.findAllUnspentForAccount(hdAccount)
   }
 
+  /** Returns all the utxos originating from the given outpoints */
+  def listUtxos(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    spendingInfoDAO
+      .findAll()
+      .map(_.filter(spendingInfo => outPoints.contains(spendingInfo.outPoint)))
+  }
+
   /**
     * Tries to convert the provided spk to an address, and then checks if we have
     * it in our address table

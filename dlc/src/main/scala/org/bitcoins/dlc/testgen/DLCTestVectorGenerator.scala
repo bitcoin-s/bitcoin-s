@@ -134,7 +134,7 @@ object DLCTestVectorGenerator {
     )
     val remoteChangeSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
 
-    val penaltyTimeout = 30
+    val penaltyTimeout = UInt32(30)
     val contractMaturity = BlockTime(UInt32(System.currentTimeMillis() / 1000))
     val contractTimeout = BlockTime(
       contractMaturity.toUInt32 + UInt32(60 * 60 * 24))
