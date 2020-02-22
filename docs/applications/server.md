@@ -34,7 +34,7 @@ $ ./app/server/target/universal/stage/bin/bitcoin-s-server
 If you would like to pass in a custom datadir for your server, you can do
 
 ```bash
-./app/server/target/universal/stage/bin/bitcoin-s-server -- /path/to/datadir/
+./app/server/target/universal/stage/bin/bitcoin-s-server --datadir /path/to/datadir/
 ```
 For more information on configuring the server please see our [configuration](configuration.md) document
 
