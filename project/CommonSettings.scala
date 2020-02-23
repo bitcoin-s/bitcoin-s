@@ -60,10 +60,6 @@ object CommonSettings {
         Seq("-source", "1.8", "-target", "1.8")
       }
     },
-    //show full stack trace of failed tests
-    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oF"),
-    //show duration of tests
-    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oD"),
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     // Travis has performance issues on macOS
     Test / parallelExecution := !(Properties.isMac && isCI)
@@ -107,6 +103,9 @@ object CommonSettings {
   val testCompilerOpts: Seq[String] = commonCompilerOpts
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
+    //show full stack trace (-oF) of failed tests and duration of tests (-oD)
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
+    logBuffered in Test := false,
     publish / skip := true
   ) ++ settings
 
