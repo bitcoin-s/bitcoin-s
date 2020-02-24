@@ -38,8 +38,15 @@ object HDCoinType {
 
   def fromNetwork(np: NetworkParameters): HDCoinType = {
     np match {
-      case MainNet => Bitcoin
+      case MainNet            => Bitcoin
       case TestNet3 | RegTest => Testnet
     }
+  }
+
+  def fromNode(node: BIP32Node): HDCoinType = {
+    require(node.hardened,
+            s"Cannot construct HDCoinType from un-hardened node: $node")
+
+    fromInt(node.index)
   }
 }

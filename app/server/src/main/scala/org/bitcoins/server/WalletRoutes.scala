@@ -114,6 +114,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(
             CreateDLCOffer(oracleInfo,
                            contractInfo,
+                           collateral,
                            feeRateOpt,
                            locktime,
                            refundLT,
@@ -122,6 +123,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             wallet
               .createDLCOffer(oracleInfo,
                               contractInfo,
+                              collateral,
                               feeRateOpt,
                               locktime,
                               refundLT)
@@ -162,6 +164,18 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             wallet.addDLCSigs(sigs).map { _ =>
               Server.httpSuccess(
                 s"Successfully added sigs to DLC ${sigs.eventId.hex}")
+            }
+          }
+      }
+
+    case ServerCommand("initdlcmutualclose", arr) =>
+      InitDLCMutualClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(InitDLCMutualClose(eventId, oracleSig, escaped)) =>
+          complete {
+            wallet.initDLCMutualClose(eventId, oracleSig).map {
+              handleDLCMessage(_, escaped)
             }
           }
       }
