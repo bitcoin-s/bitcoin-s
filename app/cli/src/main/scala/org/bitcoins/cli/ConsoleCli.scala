@@ -319,7 +319,7 @@ object ConsoleCli {
                   executeDLCRemoteUnilateralClose.copy(eventId = eventId)
                 case other => other
               })),
-          opt[Transaction]("cet").required
+          opt[Transaction]("forceCloseTx").required
             .action((cet, conf) =>
               conf.copy(command = conf.command match {
                 case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>

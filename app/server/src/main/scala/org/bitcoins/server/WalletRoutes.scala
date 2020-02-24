@@ -179,7 +179,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
                 Server.httpSuccess(closingTx.hex)
               case None =>
                 Server.httpSuccess(
-                  "Recieved would have only been dust, they have been used as fees")
+                  "Received would have only been dust, they have been used as fees")
             }
           }
       }
@@ -212,7 +212,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
                 Server.httpSuccess(closingTx.hex)
               case None =>
                 Server.httpSuccess(
-                  "Recieved would have only been dust, they have been used as fees")
+                  "Received would have only been dust, they have been used as fees")
             }
           }
       }
@@ -245,7 +245,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
                 Server.httpSuccess(closingTx.hex)
               case None =>
                 Server.httpSuccess(
-                  "Recieved would have only been dust, they have been used as fees")
+                  "Received would have only been dust, they have been used as fees")
             }
           }
       }
