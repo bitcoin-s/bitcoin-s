@@ -13,6 +13,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.dlc.DLCMessage._
@@ -373,6 +374,13 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def initDLCMutualClose(
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig]
+
+  def acceptDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature,
+      closeSig: PartialSignature): Future[Transaction]
+
+  def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction]
 
   /**
     *

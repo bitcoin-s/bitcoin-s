@@ -416,7 +416,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
           override def run(): Unit = {
             if (!mutualCloseTxP.isCompleted) {
               val fundingTxId = initDLC
-                .createUnsignedMutualClosePSBT(oracleSig, initSetup.fundingTx)
+                .createUnsignedMutualClosePSBT(oracleSig)
                 .transaction
                 .txIdBE
 
