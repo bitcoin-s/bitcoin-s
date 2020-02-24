@@ -58,7 +58,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       case None =>
         Future.failed(
           new NoSuchElementException(
-            s"No DLC found with that eventId $eventId"))
+            s"No DLC found with that eventId ${eventId.hex}"))
     }
   }
 
@@ -493,12 +493,9 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
   override def acceptDLCMutualClose(
       mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = {
     for {
-      dlcDb <- updateDLCOracleSig(mutualCloseSig.eventId,
-                                  mutualCloseSig.oracleSig)
-      dlcOfferOpt <- dlcOfferDAO.findByEventId(mutualCloseSig.eventId)
-      dlcOffer = dlcOfferOpt.get
-      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(mutualCloseSig.eventId)
-      dlcAccept = dlcAcceptOpt.get
+      _ <- updateDLCOracleSig(mutualCloseSig.eventId, mutualCloseSig.oracleSig)
+
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(mutualCloseSig.eventId)
 
       (client, _) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
 
@@ -509,13 +506,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
   override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] = {
     for {
-      dlcDbOpt <- dlcDAO.findByEventId(eventId)
-      dlcDb = dlcDbOpt.get
-      dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
-      dlcOffer = dlcOfferOpt.get
-      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
-      dlcAccept = dlcAcceptOpt.get
-
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
       (_, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
     } yield setup.fundingTx
   }
