@@ -271,12 +271,14 @@ class RoutesSpec
       (mockWalletApi
         .createDLCOffer(_: OracleInfo,
                         _: ContractInfo,
+                        _: Satoshis,
                         _: Option[SatoshisPerVirtualByte],
                         _: UInt32,
                         _: UInt32))
         .expects(
           OracleInfo(oracleInfoStr),
           contractInfo,
+          Satoshis(2500),
           Some(SatoshisPerVirtualByte(Satoshis.one)),
           UInt32(contractMaturity),
           UInt32(contractTimeout)
@@ -285,7 +287,7 @@ class RoutesSpec
           contractInfo,
           OracleInfo(oracleInfoStr),
           dummyDLCKeys,
-          Bitcoins(100).satoshis,
+          Satoshis(2500),
           Vector(EmptyOutputReference, EmptyOutputReference),
           Bech32Address.fromString(dummyAddress).get,
           SatoshisPerVirtualByte.one,
@@ -300,6 +302,7 @@ class RoutesSpec
           Arr(
             Str(oracleInfoStr),
             Str(contractInfo.hex),
+            Num(2500),
             Num(1),
             Num(contractMaturity),
             Num(contractTimeout),
@@ -309,7 +312,7 @@ class RoutesSpec
 
       Post() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"{\\"contractInfo\\":[{\\"sha256\\":\\"${contractInfo.keys.head.hex}\\",\\"sats\\":${contractInfo.values.head.toLong}},{\\"sha256\\":\\"${contractInfo.keys.last.hex}\\",\\"sats\\":${contractInfo.values.last.toLong}}],\\"oracleInfo\\":\\"$oracleInfoStr\\",\\"pubKeys\\":{\\"fundingKey\\":\\"${dummyKey.hex}\\",\\"toLocalCETKey\\":\\"${dummyKey.hex}\\",\\"toRemoteCETKey\\":\\"${dummyKey.hex}\\",\\"finalAddress\\":\\"$dummyAddress\\"},\\"totalCollateral\\":10000000000,\\"fundingInputs\\":[{\\"outpoint\\":\\"${EmptyTransactionOutPoint.hex}\\",\\"output\\":\\"${EmptyTransactionOutput.hex}\\"},{\\"outpoint\\":\\"${EmptyTransactionOutPoint.hex}\\",\\"output\\":\\"${EmptyTransactionOutput.hex}\\"}],\\"changeAddress\\":\\"$dummyAddress\\",\\"feeRate\\":1,\\"timeouts\\":{\\"penalty\\":5,\\"contractMaturity\\":$contractMaturity,\\"contractTimeout\\":$contractTimeout}}","error":null}"""
+        responseAs[String] shouldEqual s"""{"result":"{\\"contractInfo\\":[{\\"sha256\\":\\"${contractInfo.keys.head.hex}\\",\\"sats\\":${contractInfo.values.head.toLong}},{\\"sha256\\":\\"${contractInfo.keys.last.hex}\\",\\"sats\\":${contractInfo.values.last.toLong}}],\\"oracleInfo\\":\\"$oracleInfoStr\\",\\"pubKeys\\":{\\"fundingKey\\":\\"${dummyKey.hex}\\",\\"toLocalCETKey\\":\\"${dummyKey.hex}\\",\\"toRemoteCETKey\\":\\"${dummyKey.hex}\\",\\"finalAddress\\":\\"$dummyAddress\\"},\\"totalCollateral\\":2500,\\"fundingInputs\\":[{\\"outpoint\\":\\"${EmptyTransactionOutPoint.hex}\\",\\"output\\":\\"${EmptyTransactionOutput.hex}\\"},{\\"outpoint\\":\\"${EmptyTransactionOutPoint.hex}\\",\\"output\\":\\"${EmptyTransactionOutput.hex}\\"}],\\"changeAddress\\":\\"$dummyAddress\\",\\"feeRate\\":1,\\"timeouts\\":{\\"penalty\\":5,\\"contractMaturity\\":$contractMaturity,\\"contractTimeout\\":$contractTimeout}}","error":null}"""
       }
     }
 

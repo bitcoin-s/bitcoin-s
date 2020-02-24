@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.psbt.InputPSBTMap
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
@@ -193,7 +193,7 @@ abstract class DbCommonsColumnMappers {
   implicit val hdAccountMapper: BaseColumnType[HDAccount] = {
     MappedColumnType.base[HDAccount, String](
       _.toString,
-      BIP32Path.fromString(_).asInstanceOf[HDAccount])
+      str => HDAccount.fromPath(BIP32Path.fromString(str)).get)
   }
 
   implicit val dlcPubKeysMapper: BaseColumnType[DLCPublicKeys] = {
@@ -236,7 +236,7 @@ abstract class DbCommonsColumnMappers {
       cetSigs =>
         cetSigs.winSig.hex ++ cetSigs.loseSig.hex ++ cetSigs.refundSig.hex,
       str => {
-        val sigs = InputPSBTMap(str ++ "00").partialSignatures
+        val sigs = PartialSignature.vecFromHex(str)
         CETSignatures(sigs.head, sigs(1), sigs.last)
       }
     )
@@ -246,7 +246,7 @@ abstract class DbCommonsColumnMappers {
     MappedColumnType.base[FundingSignatures, String](
       _.sigs.map(_.hex).mkString,
       str => {
-        val sigs = InputPSBTMap(str ++ "00").partialSignatures
+        val sigs = PartialSignature.vecFromHex(str)
         FundingSignatures(sigs)
       }
     )
