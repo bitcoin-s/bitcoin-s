@@ -17,7 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.Factory
+import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 import scodec.bits.ByteVector
 
 sealed trait PSBTRecord extends NetworkElement {
@@ -183,6 +183,28 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
           throw new IllegalArgumentException(
             s"Invalid PartialSignature encoding, got: $other")
       }
+
+    def vecFromBytes(bytes: ByteVector): Vector[PartialSignature] = {
+      @scala.annotation.tailrec
+      def loop(
+          remainingBytes: ByteVector,
+          accum: Vector[PartialSignature]): Vector[PartialSignature] = {
+        if (remainingBytes.isEmpty) {
+          accum
+        } else {
+          val record = fromBytes(remainingBytes)
+          val next = remainingBytes.drop(record.bytes.size)
+
+          loop(next, accum :+ record)
+        }
+      }
+
+      loop(bytes, Vector.empty)
+    }
+
+    def vecFromHex(hex: String): Vector[PartialSignature] = {
+      vecFromBytes(BitcoinSUtil.decodeHex(hex))
+    }
   }
 
   case class SigHashType(hashType: HashType) extends InputPSBTRecord {

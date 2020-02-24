@@ -4,6 +4,7 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.transaction.OutputReference
+import org.bitcoins.dlc.DLCMessage.DLCAccept
 import org.bitcoins.dlc.{CETSignatures, DLCPublicKeys}
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
@@ -14,7 +15,17 @@ case class DLCAcceptDb(
     totalCollateral: CurrencyUnit,
     fundingInputs: Vector[OutputReference],
     cetSigs: CETSignatures,
-    changeAddress: Bech32Address)
+    changeAddress: Bech32Address) {
+
+  def toDLCAccept: DLCAccept = {
+    DLCAccept(totalCollateral.satoshis,
+              pubKeys,
+              fundingInputs,
+              changeAddress,
+              cetSigs,
+              eventId)
+  }
+}
 
 class DLCAcceptTable(tag: Tag)
     extends Table[DLCAcceptDb](tag, "wallet_dlc_accepts") {

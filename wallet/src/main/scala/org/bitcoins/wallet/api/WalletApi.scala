@@ -5,7 +5,7 @@ import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
 import org.bitcoins.core.number.UInt32
@@ -436,6 +436,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def createDLCOffer(
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
+      collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer]
@@ -445,6 +446,10 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def signDLC(accept: DLCAccept): Future[DLCSign]
 
   def addDLCSigs(sigs: DLCSign): Future[ExecutedDLCDb]
+
+  def initDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig]
 
   /**
     *
