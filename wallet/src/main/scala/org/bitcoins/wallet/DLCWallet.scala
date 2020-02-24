@@ -9,6 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
@@ -407,12 +408,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       )
 
       val setupF = if (dlcDb.isInitiator) {
-        val fundingTxIdBE = client.createUnsignedFundingTransaction.txIdBE
-        val fundingTxF = ???
-
-        client.setupDLCOffer(Future.successful(dlcAccept.cetSigs),
-                             (_, _) => FutureUtil.unit,
-                             fundingTxF)
+        // TODO: Note that the funding tx in this setup is not signed
+        client.setupDLCOffer(
+          Future.successful(dlcAccept.cetSigs),
+          (_, _) => FutureUtil.unit,
+          Future.successful(client.createUnsignedFundingTransaction))
       } else {
         client.setupDLCAccept(
           _ => FutureUtil.unit,
@@ -435,9 +435,17 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
       dlcAccept = dlcAcceptOpt.get
 
-      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+      (client, _) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
 
-      sigMessage <- client.createMutualCloseSig(eventId, setup, oracleSig)
+      sigMessage <- client.createMutualCloseSig(eventId, oracleSig)
     } yield sigMessage
   }
+
+  override def acceptDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature,
+      closeSig: PartialSignature): Future[Transaction] = ???
+
+  override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] =
+    ???
 }
