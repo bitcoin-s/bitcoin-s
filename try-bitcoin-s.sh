@@ -19,7 +19,7 @@ protocol.ln, wallet.builder._, protocol.transaction._, \
 script._, config._, protocol._ " 
 # launch Ammonite with bitcoin-s on the classpath
 ~/.coursier/coursier launch -q -P \
-  com.lihaoyi:ammonite_2.12.8:1.6.0 \
+  com.lihaoyi:ammonite_2.12.10:1.9.2 \
   org.bitcoin-s:bitcoin-s-core_2.12:latest.release \
   -M ammonite.Main -- --banner "$MSG" \
   --predef-code "$IMPORT_STATEMENT" < /dev/tty
