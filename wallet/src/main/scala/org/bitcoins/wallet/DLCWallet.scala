@@ -9,6 +9,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
 import org.bitcoins.dlc.DLCMessage._
@@ -33,15 +34,17 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         for {
           account <- getDefaultAccountForType(AddressType.SegWit)
           nextIndex <- getNextAvailableIndex(account, HDChainType.External)
-        } yield {
-          ExecutedDLCDb(eventId = eventId,
-                        isInitiator = isInitiator,
-                        account = account.hdAccount,
-                        keyIndex = nextIndex,
-                        initiatorCetSigsOpt = None,
-                        fundingSigsOpt = None,
-                        oracleSigOpt = None)
-        }
+          dlc = {
+            ExecutedDLCDb(eventId = eventId,
+                          isInitiator = isInitiator,
+                          account = account.hdAccount,
+                          keyIndex = nextIndex,
+                          initiatorCetSigsOpt = None,
+                          fundingSigsOpt = None,
+                          oracleSigOpt = None)
+          }
+          writtenDLC <- dlcDAO.create(dlc)
+        } yield writtenDLC
     }
   }
 
@@ -54,12 +57,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
   override def createDLCOffer(
       oracleInfo: OracleInfo,
       contractInfo: ContractInfo,
+      collateral: Satoshis,
       feeRateOpt: Option[FeeUnit],
       locktime: UInt32,
       refundLocktime: UInt32): Future[DLCOffer] = {
     logger.debug("Calculating relevant wallet data for DLC Offer")
-
-    val collateral = contractInfo.values.max
 
     val timeouts = DLCTimeouts(DLCTimeouts.DEFAULT_PENALTY_TIMEOUT,
                                BlockStamp(locktime.toInt),
@@ -178,7 +180,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                              offer.contractInfo,
                              offer.timeouts)
 
-    val collateral = offer.contractInfo.values.max
+    val collateral = offer.contractInfo.values.max - offer.totalCollateral
 
     logger.debug(s"Checking if Accept ($eventId) has already been made")
     for {
@@ -233,7 +235,8 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
       client = BinaryOutcomeDLCClient.fromOffer(
         offer,
-        keyManager.rootExtPrivKey, // todo change to a ExtSign.deriveAndSignFuture
+        keyManager.rootExtPrivKey
+          .deriveChildPrivKey(account.hdAccount), // todo change to a ExtSign.deriveAndSignFuture
         nextIndex,
         spendingInfos,
         collateral,
@@ -256,7 +259,20 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         cetSigs,
         changeAddr
       )
+      dlcOfferDb = DLCOfferDb(
+        eventId,
+        network,
+        offer.oracleInfo,
+        offer.contractInfo,
+        offer.timeouts,
+        offer.pubKeys,
+        offer.totalCollateral,
+        offer.fundingInputs,
+        offer.feeRate,
+        offer.changeAddress
+      )
 
+      _ <- dlcOfferDAO.create(dlcOfferDb)
       _ <- dlcAcceptDAO.create(dlcAcceptDb)
     } yield {
       DLCAccept(
@@ -282,7 +298,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                                       accept.fundingInputs,
                                       accept.cetSigs,
                                       accept.changeAddress)
-        dlcAcceptDAO.update(dlcAcceptDb)
+        dlcAcceptDAO.upsert(dlcAcceptDb)
       case None =>
         throw new RuntimeException(
           s"No DLC Offer found with corresponding eventId ${accept.eventId}, this wallet did not create the corresponding offer")
@@ -297,18 +313,18 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
   override def signDLC(accept: DLCAccept): Future[DLCSign] = {
     for {
       account <- getDefaultAccountForType(AddressType.SegWit)
-      dLCAcceptDb <- registerDLCAccept(accept)
+      _ <- registerDLCAccept(accept)
       dlcOpt <- dlcDAO.findByEventId(accept.eventId)
-      spendingInfoDbs <- listUtxos(dLCAcceptDb.fundingInputs.map(_.outPoint))
       offerOpt <- dlcOfferDAO.findByEventId(accept.eventId)
       offer = offerOpt.get // Safe, we throw in registerDLCAccept if it is None
       dlc = dlcOpt.get
+      spendingInfoDbs <- listUtxos(offer.fundingInputs.map(_.outPoint))
       spendingInfos = spendingInfoDbs.flatMap(
         _.toUTXOSpendingInfo(account, keyManager, offer.network).toSingles)
       client = BinaryOutcomeDLCClient.fromOfferAndAccept(
         offer.toDLCOffer,
         accept,
-        keyManager.rootExtPrivKey,
+        keyManager.rootExtPrivKey.deriveChildPrivKey(account.hdAccount),
         dlc.keyIndex,
         spendingInfos,
         offer.network)
@@ -338,5 +354,90 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
           new NoSuchElementException(
             s"No DLC found with corresponding eventId ${sign.eventId}"))
     }
+  }
+
+  private def clientFromDb(
+      dlcDb: ExecutedDLCDb,
+      dlcOffer: DLCOfferDb,
+      dlcAccept: DLCAcceptDb): Future[(BinaryOutcomeDLCClient, SetupDLC)] = {
+    val extPrivKey = keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
+
+    val (setupMsg, remoteSetupMsg) = if (dlcDb.isInitiator) {
+      (dlcOffer.toDLCOffer, dlcAccept.toDLCAccept)
+    } else {
+      (dlcAccept.toDLCAccept, dlcOffer.toDLCOffer)
+    }
+
+    val fundingInputs = setupMsg.fundingInputs
+
+    val accountDb =
+      AccountDb(keyManager.deriveXPub(dlcDb.account).get, dlcDb.account)
+
+    val utxosF = listUtxos(fundingInputs.map(_.outPoint))
+      .map(_.map(info =>
+        info.toUTXOSpendingInfo(accountDb, keyManager, dlcOffer.network)))
+
+    utxosF.flatMap { fundingUtxos =>
+      val (winPayout, losePayout) = if (dlcDb.isInitiator) {
+        (dlcOffer.contractInfo.head._2, dlcOffer.contractInfo.last._2)
+      } else {
+        (dlcOffer.contractInfo.last._2, dlcOffer.contractInfo.head._2)
+      }
+
+      val client = BinaryOutcomeDLCClient(
+        outcomeWin = dlcOffer.contractInfo.head._1,
+        outcomeLose = dlcOffer.contractInfo.last._1,
+        oraclePubKey = dlcOffer.oracleInfo.pubKey,
+        preCommittedR = dlcOffer.oracleInfo.rValue,
+        isInitiator = dlcDb.isInitiator,
+        extPrivKey = extPrivKey,
+        nextAddressIndex = dlcDb.keyIndex,
+        remotePubKeys = remoteSetupMsg.pubKeys,
+        input = setupMsg.totalCollateral,
+        remoteInput = remoteSetupMsg.totalCollateral,
+        fundingUtxos = fundingUtxos.flatMap(_.toSingles),
+        remoteFundingInputs = remoteSetupMsg.fundingInputs,
+        winPayout = winPayout,
+        losePayout = losePayout,
+        timeouts = dlcOffer.timeouts,
+        feeRate = dlcOffer.feeRate,
+        changeSPK = setupMsg.changeAddress.scriptPubKey,
+        remoteChangeSPK = remoteSetupMsg.changeAddress.scriptPubKey,
+        network = dlcOffer.network
+      )
+
+      val setupF = if (dlcDb.isInitiator) {
+        val fundingTxIdBE = client.createUnsignedFundingTransaction.txIdBE
+        val fundingTxF = ???
+
+        client.setupDLCOffer(Future.successful(dlcAccept.cetSigs),
+                             (_, _) => FutureUtil.unit,
+                             fundingTxF)
+      } else {
+        client.setupDLCAccept(
+          _ => FutureUtil.unit,
+          Future.successful(
+            (dlcDb.initiatorCetSigsOpt.get, dlcDb.fundingSigsOpt.get)))
+      }
+
+      setupF.map((client, _))
+    }
+  }
+
+  override def initDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
+    for {
+      dlcDbOpt <- dlcDAO.findByEventId(eventId)
+      dlcDb = dlcDbOpt.get
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
+      dlcOffer = dlcOfferOpt.get
+      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
+      dlcAccept = dlcAcceptOpt.get
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      sigMessage <- client.createMutualCloseSig(eventId, setup, oracleSig)
+    } yield sigMessage
   }
 }

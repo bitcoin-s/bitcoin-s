@@ -18,6 +18,7 @@ import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.dlc.DLCMessage.DLCMutualCloseSig
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -732,6 +733,17 @@ case class BinaryOutcomeDLCClient(
     spendingTxOptF
   }
 
+  def createMutualCloseSig(
+      eventId: Sha256DigestBE,
+      dlcSetup: SetupDLC,
+      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
+    val fundingTx = dlcSetup.fundingTx
+
+    createMutualCloseTxSig(oracleSig, fundingTx).map { sig =>
+      DLCMutualCloseSig(eventId, oracleSig, sig)
+    }
+  }
+
   /** Initiates a Mutual Close by offering signatures to the counter-party
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#mutual-closing-transaction]]
     *
@@ -1077,8 +1089,8 @@ object BinaryOutcomeDLCClient {
       remoteInput = offer.totalCollateral,
       fundingUtxos = fundingUtxos,
       remoteFundingInputs = offer.fundingInputs,
-      winPayout = offer.contractInfo.values.head,
-      losePayout = offer.contractInfo.values.last,
+      winPayout = offer.contractInfo.values.last,
+      losePayout = offer.contractInfo.values.head,
       timeouts = offer.timeouts,
       feeRate = offer.feeRate,
       changeSPK = changeSPK,
@@ -1096,16 +1108,18 @@ object BinaryOutcomeDLCClient {
       fundingUtxos: Vector[BitcoinUTXOSpendingInfoSingle],
       network: BitcoinNetwork)(
       implicit ec: ExecutionContext): BinaryOutcomeDLCClient = {
+    val pubKeys = DLCPublicKeys
+      .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network)
     require(
-      DLCPublicKeys
-        .fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network) == offer.pubKeys,
-      "ExtPrivateKey must match the one in your Offer message")
+      pubKeys == offer.pubKeys,
+      s"ExtPrivateKey must match the one in your Offer message: ${offer.pubKeys}, got: $pubKeys")
     require(
       fundingUtxos.zip(offer.fundingInputs).forall {
         case (info, OutputReference(outPoint, output)) =>
           info.output == output && info.outPoint == outPoint
       },
-      "Funding UTXOs must match those in your Offer message"
+      s"Funding UTXOs must match those in your Offer message: ${offer.fundingInputs}, got: ${fundingUtxos
+        .map(utxo => OutputReference(utxo.outPoint, utxo.output))}"
     )
 
     BinaryOutcomeDLCClient(
