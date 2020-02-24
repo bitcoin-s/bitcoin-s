@@ -7,6 +7,7 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.chain.validation.TipValidation
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.util.SeqWrapper
 
 import scala.annotation.tailrec
 
@@ -33,7 +34,7 @@ import scala.annotation.tailrec
   * }}}
   *
   */
-private[blockchain] trait BaseBlockChain {
+private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
 
   protected[blockchain] def compObjectfromHeaders(
       headers: scala.collection.immutable.Seq[BlockHeaderDb]): Blockchain
@@ -43,11 +44,9 @@ private[blockchain] trait BaseBlockChain {
   /** The height of the chain */
   val height: Int = tip.height
 
-  val length: Int = headers.length
-
-  def apply(idx: Int): BlockHeaderDb = headers(idx)
-
   def headers: Vector[BlockHeaderDb]
+
+  override protected lazy val wrapped: Vector[BlockHeaderDb] = headers
 
   def find(predicate: BlockHeaderDb => Boolean): Option[BlockHeaderDb]
 

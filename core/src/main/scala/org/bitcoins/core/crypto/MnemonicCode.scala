@@ -2,7 +2,7 @@ package org.bitcoins.core.crypto
 
 import java.security.SecureRandom
 
-import org.bitcoins.core.util.{CryptoUtil, MaskedToString}
+import org.bitcoins.core.util.{CryptoUtil, MaskedToString, SeqWrapper}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -16,7 +16,9 @@ import scala.io.Source
   * can be the root of a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki  BIP32]]
   * HD wallet.
   */
-sealed abstract class MnemonicCode extends MaskedToString {
+sealed abstract class MnemonicCode
+    extends SeqWrapper[String]
+    with MaskedToString {
   require(
     MnemonicCode.VALID_LENGTHS.contains(words.length), {
       val validLengths = MnemonicCode.VALID_LENGTHS.mkString(", ")
@@ -50,6 +52,8 @@ sealed abstract class MnemonicCode extends MaskedToString {
     * The mnemonic code itself
     */
   def words: Vector[String]
+
+  override protected lazy val wrapped: Vector[String] = words
 
   /**
     * Returns the entropy initially provided to construct

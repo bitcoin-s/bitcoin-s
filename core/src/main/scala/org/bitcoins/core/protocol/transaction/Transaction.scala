@@ -71,7 +71,7 @@ sealed abstract class Transaction extends NetworkElement {
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations]]
     */
   def baseSize: Long = this match {
-    case btx: BaseTransaction => btx.size
+    case btx: BaseTransaction => btx.byteSize
     case wtx: WitnessTransaction =>
       BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime).baseSize
   }
@@ -106,7 +106,7 @@ sealed abstract class Transaction extends NetworkElement {
 
 sealed abstract class BaseTransaction extends Transaction {
   override def bytes = RawBaseTransactionParser.write(this)
-  override def weight = size * 4
+  override def weight = byteSize * 4
 
 }
 
@@ -120,8 +120,8 @@ case object EmptyTransaction extends BaseTransaction {
 
 sealed abstract class WitnessTransaction extends Transaction {
   require(
-    inputs.length == witness.witnesses.length,
-    s"Must have same amount of inputs and witnesses in witness tx, inputs=${inputs.length} witnesses=${witness.witnesses.length}"
+    inputs.length == witness.length,
+    s"Must have same amount of inputs and witnesses in witness tx, inputs=${inputs.length} witnesses=${witness.length}"
   )
 
   /** The txId for the witness transaction from satoshi's original serialization */
@@ -153,7 +153,7 @@ sealed abstract class WitnessTransaction extends Transaction {
     */
   override def weight: Long = {
     val base = BaseTransaction(version, inputs, outputs, lockTime)
-    base.size * 3 + size
+    base.byteSize * 3 + byteSize
   }
   override def bytes = RawWitnessTransactionParser.write(this)
 

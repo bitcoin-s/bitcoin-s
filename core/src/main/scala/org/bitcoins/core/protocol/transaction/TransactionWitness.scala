@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{EmptyScriptWitness, ScriptWitness}
 import org.bitcoins.core.serializers.transaction.RawTransactionWitnessParser
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.{BitcoinSUtil, SeqWrapper}
 import scodec.bits.ByteVector
 
 /**
@@ -11,8 +11,11 @@ import scodec.bits.ByteVector
   * The witness data for [[org.bitcoins.core.protocol.script.ScriptSignature ScriptSignature]] in this transaction
   * [[https://github.com/bitcoin/bitcoin/blob/b4e4ba475a5679e09f279aaf2a83dcf93c632bdb/src/primitives/transaction.h#L232-L268]]
   */
-sealed abstract class TransactionWitness extends NetworkElement {
+sealed abstract class TransactionWitness
+    extends SeqWrapper[ScriptWitness]
+    with NetworkElement {
   val witnesses: Vector[ScriptWitness]
+  override protected val wrapped: Vector[ScriptWitness] = witnesses
 
   override def bytes: ByteVector = {
     RawTransactionWitnessParser.write(this)

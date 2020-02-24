@@ -17,7 +17,7 @@ sealed abstract class RawScriptWitnessParser
   def read(bytes: ByteVector): ScriptWitness = {
     //first byte is the number of stack items
     val stackSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    val (_, stackBytes) = bytes.splitAt(stackSize.size.toInt)
+    val (_, stackBytes) = bytes.splitAt(stackSize.byteSize.toInt)
     @tailrec
     def loop(
         remainingBytes: ByteVector,
@@ -27,7 +27,7 @@ sealed abstract class RawScriptWitnessParser
       else {
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
         val (_, stackElementBytes) =
-          remainingBytes.splitAt(elementSize.size.toInt)
+          remainingBytes.splitAt(elementSize.byteSize.toInt)
         val stackElement = stackElementBytes.take(elementSize.num.toInt)
         val (_, newRemainingBytes) =
           stackElementBytes.splitAt(stackElement.size)

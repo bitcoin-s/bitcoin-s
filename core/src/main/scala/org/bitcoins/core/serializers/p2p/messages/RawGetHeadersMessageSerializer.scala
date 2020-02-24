@@ -15,7 +15,7 @@ trait RawGetHeadersMessageSerializer
     val version = ProtocolVersion(bytes.take(4))
     val hashCount =
       CompactSizeUInt.parseCompactSizeUInt(bytes.slice(4, bytes.length))
-    val hashesStartIndex = (hashCount.size + 4).toInt
+    val hashesStartIndex = (hashCount.byteSize + 4).toInt
     val (hashes, remainingBytes) =
       parseHashes(bytes.slice(hashesStartIndex, bytes.length), hashCount)
     val hashStop = DoubleSha256Digest(remainingBytes.take(32))

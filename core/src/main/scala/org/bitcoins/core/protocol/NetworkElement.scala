@@ -11,7 +11,7 @@ import scodec.bits.ByteVector
 trait NetworkElement extends Any {
 
   /** The size of the NetworkElement in bytes. */
-  def size: Long = bytes.size
+  def byteSize: Long = bytes.size
 
   /** The hexadecimal representation of the NetworkElement */
   def hex: String = bytes.toHex

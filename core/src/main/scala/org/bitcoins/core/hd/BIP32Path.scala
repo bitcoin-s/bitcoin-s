@@ -2,11 +2,12 @@ package org.bitcoins.core.hd
 
 import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.util.Factory
+import org.bitcoins.core.util.{Factory, SeqWrapper}
 import scodec.bits.ByteVector
 
-abstract class BIP32Path {
+abstract class BIP32Path extends SeqWrapper[BIP32Node] {
   def path: Vector[BIP32Node]
+  override protected lazy val wrapped: Vector[BIP32Node] = path
 
   /**
     * BIP32 paths can be subsets/superset of each other.
@@ -31,12 +32,11 @@ abstract class BIP32Path {
     * m/44'/1'/0 diff m/44'/2'/1 == None
     * }}}
     */
-  def diff(that: BIP32Path): Option[BIP32Path] = {
-    import that.{path => otherPath}
+  def diff(otherPath: BIP32Path): Option[BIP32Path] = {
 
     if (path.length > otherPath.length) {
       None
-    } else if (path == otherPath) {
+    } else if (this.toVector == otherPath.toVector) {
       Some(BIP32Path.empty)
     } else {
       val lengthDiff = otherPath.length - path.length
@@ -64,7 +64,7 @@ abstract class BIP32Path {
           // append the next divergent element to
           // the acummed value
           case (Some(accum), ((None, their), _)) =>
-            Some(BIP32Path(accum.path :+ their))
+            Some(BIP32Path((accum :+ their).toVector))
 
           // we've not yet reached the start of diverging
           // paths

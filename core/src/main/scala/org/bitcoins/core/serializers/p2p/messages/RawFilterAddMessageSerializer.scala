@@ -14,7 +14,7 @@ trait RawFilterAddMessageSerializer
 
   override def read(bytes: ByteVector): FilterAddMessage = {
     val elementSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    val element = bytes.slice(elementSize.size.toInt, bytes.size)
+    val element = bytes.slice(elementSize.byteSize.toInt, bytes.size)
     FilterAddMessage(elementSize, element)
   }
 

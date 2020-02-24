@@ -43,7 +43,7 @@ trait RawVersionMessageSerializer
     val userAgentSize =
       CompactSizeUInt.parseCompactSizeUInt(bytes.slice(80, bytes.size))
 
-    val userAgentBytesStartIndex = 80 + userAgentSize.size.toInt
+    val userAgentBytesStartIndex = 80 + userAgentSize.byteSize.toInt
 
     val userAgentBytes = bytes.slice(
       userAgentBytesStartIndex,

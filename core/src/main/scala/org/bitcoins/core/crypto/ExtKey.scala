@@ -92,7 +92,7 @@ sealed abstract class ExtKey extends NetworkElement {
             case Nil => Success(accum)
           }
         }
-        loop(path.path.toList, pub)
+        loop(path.toList, pub)
     }
 
   }
@@ -184,7 +184,7 @@ sealed abstract class ExtPrivateKey
     *      specialized version of a BIP32 path
     */
   def deriveChildPrivKey(path: BIP32Path): ExtPrivateKey = {
-    path.path.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Node) =>
+    path.foldLeft(this)((accum: ExtPrivateKey, curr: BIP32Node) =>
       accum.deriveChildPrivKey(curr.toUInt32))
   }
 
@@ -326,8 +326,8 @@ object ExtPrivateKey extends Factory[ExtPrivateKey] {
                              chaincode,
                              masterPrivKey)
 
-    path.path.foldLeft(root)((accum, curr) =>
-      accum.deriveChildPrivKey(curr.toUInt32))
+    path.foldLeft(root)(
+      (accum, curr) => accum.deriveChildPrivKey(curr.toUInt32))
   }
 
   /** Generates a extended private key from the provided seed and version */

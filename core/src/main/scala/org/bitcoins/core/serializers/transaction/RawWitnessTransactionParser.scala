@@ -39,7 +39,7 @@ sealed abstract class RawWitnessTransactionParser
       outputBytes,
       RawTransactionOutputParser.read(_))
     val witness = TransactionWitness(witnessBytes, inputs.size)
-    val lockTimeBytes = witnessBytes.splitAt(witness.size)._2
+    val lockTimeBytes = witnessBytes.splitAt(witness.byteSize)._2
     val lockTime = UInt32(lockTimeBytes.take(4).reverse)
     WitnessTransaction(version, inputs, outputs, lockTime, witness)
   }
@@ -67,7 +67,7 @@ sealed abstract class RawWitnessTransactionParser
     val lockTime = tx.lockTime.bytes.reverse
     //notice we use the old serialization format if all witnesses are empty
     // https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
-    if (tx.witness.witnesses.exists(_ != EmptyScriptWitness)) {
+    if (tx.witness.exists(_ != EmptyScriptWitness)) {
       val witConstant = ByteVector(0.toByte, 1.toByte)
       version ++ witConstant ++ inputs ++ outputs ++ witness ++ lockTime
     } else BaseTransaction(tx.version, tx.inputs, tx.outputs, tx.lockTime).bytes
