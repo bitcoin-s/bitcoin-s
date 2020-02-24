@@ -400,7 +400,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
           otherOutcome <- otherDLC.executeRemoteUnilateralDLC(
             otherSetup,
             unilateralOutcome.cet,
-            ECPrivateKey.freshPrivateKey)
+            P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey))
         } yield {
           validateOutcome(unilateralOutcome)
           validateOutcome(otherOutcome)
@@ -448,7 +448,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
           toRemoteOutcome <- punisherDLC.executeRemoteUnilateralDLC(
             punisherSetup,
             timedOutCET,
-            ECPrivateKey.freshPrivateKey)
+            P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey))
         } yield {
           validateOutcome(justiceOutcome)
           validateOutcome(toRemoteOutcome)
