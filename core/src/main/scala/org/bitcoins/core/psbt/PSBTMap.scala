@@ -13,7 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
   WitnessTransaction
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{CryptoUtil, Factory}
+import org.bitcoins.core.util.{CryptoUtil, Factory, SeqWrapper}
 import org.bitcoins.core.wallet.signer.{BitcoinSigner, BitcoinSignerSingle}
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits.ByteVector
@@ -87,11 +87,13 @@ sealed trait PSBTMapFactory[
 }
 
 case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
-    extends PSBTMap[GlobalPSBTRecord] {
+    extends SeqWrapper[GlobalPSBTRecord]
+    with PSBTMap[GlobalPSBTRecord] {
   import org.bitcoins.core.psbt.GlobalPSBTRecord._
   import org.bitcoins.core.psbt.PSBTGlobalKeyId._
   require(getRecords(UnsignedTransactionKeyId).nonEmpty,
           "A GlobalPSBTMap must have a Unsigned Transaction")
+  override val wrapped: Vector[GlobalPSBTRecord] = elements
 
   def unsignedTransaction: UnsignedTransaction = {
     getRecords(UnsignedTransactionKeyId).head
@@ -150,11 +152,14 @@ object GlobalPSBTMap extends PSBTMapFactory[GlobalPSBTRecord, GlobalPSBTMap] {
 }
 
 case class InputPSBTMap(elements: Vector[InputPSBTRecord])
-    extends PSBTMap[InputPSBTRecord] {
+    extends SeqWrapper[InputPSBTRecord]
+    with PSBTMap[InputPSBTRecord] {
   require(
     this.witnessUTXOOpt.isEmpty || this.nonWitnessOrUnknownUTXOOpt.isEmpty,
     "InputPSBTMap cannot have both a NonWitnessOrUnknownUTXO and a WitnessUTXO"
   )
+  override protected val wrapped: Vector[InputPSBTRecord] = elements
+
   import org.bitcoins.core.psbt.InputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTInputKeyId._
 
@@ -642,7 +647,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       sigComponent.transaction match {
         case _: BaseTransaction => InputPSBTMap(utxos ++ Vector(scriptSig))
         case wtx: WitnessTransaction =>
-          val witness = wtx.witness.witnesses(sigComponent.inputIndex.toInt)
+          val witness = wtx.witness(sigComponent.inputIndex.toInt)
           val scriptWitness = FinalizedScriptWitness(witness)
           val finalizedSigs =
             if (witness != EmptyScriptWitness) {
@@ -721,9 +726,12 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
   override def recordFactory: Factory[InputPSBTRecord] = InputPSBTRecord
 }
 case class OutputPSBTMap(elements: Vector[OutputPSBTRecord])
-    extends PSBTMap[OutputPSBTRecord] {
+    extends SeqWrapper[OutputPSBTRecord]
+    with PSBTMap[OutputPSBTRecord] {
   import org.bitcoins.core.psbt.OutputPSBTRecord._
   import org.bitcoins.core.psbt.PSBTOutputKeyId._
+
+  override val wrapped: Vector[OutputPSBTRecord] = elements
 
   def redeemScriptOpt: Option[RedeemScript] = {
     getRecords(RedeemScriptKeyId).headOption

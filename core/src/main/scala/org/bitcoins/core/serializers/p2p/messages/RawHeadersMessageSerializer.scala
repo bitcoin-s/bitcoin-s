@@ -12,7 +12,7 @@ trait RawHeadersMessageSerializer extends RawBitcoinSerializer[HeadersMessage] {
 
   def read(bytes: ByteVector): HeadersMessage = {
     val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    val headerStartIndex = compactSizeUInt.size.toInt
+    val headerStartIndex = compactSizeUInt.byteSize.toInt
     val headerBytes = bytes.slice(headerStartIndex, bytes.length)
     val headers = parseBlockHeaders(headerBytes, compactSizeUInt)
     HeadersMessage(compactSizeUInt, headers)

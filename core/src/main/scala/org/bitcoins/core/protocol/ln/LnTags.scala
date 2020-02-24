@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WSHWitnessSPKV0}
-import org.bitcoins.core.util.{Bech32, CryptoUtil}
+import org.bitcoins.core.util.{Bech32, CryptoUtil, SeqWrapper}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -19,7 +19,7 @@ import scala.annotation.tailrec
   * One of the tagged fields on a Lightning Network invoice
   * [[https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md#tagged-fields]]
   */
-sealed abstract class LnTag {
+sealed trait LnTag {
 
   def prefix: LnTagPrefix
 
@@ -217,7 +217,10 @@ object LnTag {
     }
   }
 
-  case class RoutingInfo(routes: Vector[LnRoute]) extends LnTag {
+  case class RoutingInfo(routes: Vector[LnRoute])
+      extends SeqWrapper[LnRoute]
+      with LnTag {
+    override protected val wrapped: Vector[LnRoute] = routes
 
     override val prefix: LnTagPrefix = LnTagPrefix.RoutingInfo
 
@@ -247,7 +250,7 @@ object LnTag {
           accum
         } else {
           val route = LnRoute.fromBytes(remaining)
-          val newRemaining = remaining.slice(route.size, remaining.size)
+          val newRemaining = remaining.slice(route.byteSize, remaining.size)
           loop(newRemaining, accum.:+(route))
         }
       }

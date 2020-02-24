@@ -53,6 +53,6 @@ object HDAccount {
   }
 
   def isSameAccount(bip32Path: BIP32Path, account: HDAccount): Boolean = {
-    isSameAccount(bip32Path.path, account)
+    isSameAccount(bip32Path.toVector, account)
   }
 }

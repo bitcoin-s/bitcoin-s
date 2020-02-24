@@ -62,7 +62,7 @@ class RawTransactionOutPointParserTest extends BitcoinSUnitTest {
     val rawOutPoint =
       "85d6b0da2edf96b282030d3f4f79d14cc8c882cfef1b3064170c850660317de100000000"
     val outPoint = RawTransactionOutPointParser.read(rawOutPoint)
-    outPoint.size must be(36)
+    outPoint.byteSize must be(36)
   }
 
   it must "parse a outpoint with extremely large vout" in {

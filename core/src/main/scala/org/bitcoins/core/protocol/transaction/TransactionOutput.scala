@@ -11,7 +11,7 @@ case class TransactionOutput(value: CurrencyUnit, scriptPubKey: ScriptPubKey)
     extends NetworkElement {
 
   //https://bitcoin.org/en/developer-reference#txout
-  override def size = scriptPubKey.size + 8
+  override def byteSize = scriptPubKey.byteSize + 8
 
   override def bytes = RawTransactionOutputParser.write(this)
 }

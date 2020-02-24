@@ -12,6 +12,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import play.api.libs.json.JsObject
 
@@ -161,6 +162,9 @@ case class TestMempoolAcceptResult(
 
 final case class DeriveAddressesResult(addresses: Vector[BitcoinAddress])
     extends OtherResult
+    with SeqWrapper[BitcoinAddress] {
+  override protected val wrapped: Vector[BitcoinAddress] = addresses
+}
 
 final case class GetDescriptorInfoResult(
     descriptor: String,

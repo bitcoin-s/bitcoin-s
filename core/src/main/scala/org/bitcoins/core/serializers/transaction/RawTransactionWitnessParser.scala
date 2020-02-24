@@ -38,7 +38,7 @@ sealed abstract class RawTransactionWitnessParser {
   }
 
   def write(witness: TransactionWitness): ByteVector = {
-    witness.witnesses.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    witness.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
 }
 

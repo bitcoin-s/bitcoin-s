@@ -15,9 +15,9 @@ sealed abstract class RawBloomFilterSerializer
 
   override def read(bytes: ByteVector): BloomFilter = {
     val filterSize = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    val filter = bytes.slice(filterSize.size.toInt,
-                             filterSize.size.toInt + filterSize.num.toInt)
-    val hashFuncsIndex = (filterSize.size + filterSize.num.toInt).toInt
+    val filter = bytes.slice(filterSize.byteSize.toInt,
+                             filterSize.byteSize.toInt + filterSize.num.toInt)
+    val hashFuncsIndex = (filterSize.byteSize + filterSize.num.toInt).toInt
     val hashFuncs = UInt32(
       bytes.slice(hashFuncsIndex, hashFuncsIndex + 4).reverse)
     val tweakIndex = hashFuncsIndex + 4

@@ -293,7 +293,7 @@ object BitcoinSignerSingle {
                                btx.lockTime,
                                transactionWitness)
           case wtx: WitnessTransaction =>
-            wtx.witness.witnesses(inputIndex) match {
+            wtx.witness(inputIndex) match {
               case EmptyScriptWitness =>
                 val transactionWitnessOpt =
                   psbt
@@ -740,8 +740,9 @@ sealed abstract class P2WPKHSigner
           val pubKey = signer.publicKey
 
           val unsignedTxWitness = TransactionWitness(
-            wtx.witness.witnesses
-              .updated(inputIndex.toInt, spendingInfoToSatisfy.scriptWitness))
+            wtx.witness
+              .updated(inputIndex.toInt, spendingInfoToSatisfy.scriptWitness)
+              .toVector)
 
           val unsignedWtx = WitnessTransaction(wtx.version,
                                                wtx.inputs,

@@ -19,7 +19,7 @@ trait RawInventoryMessageSerializer
     */
   override def read(bytes: ByteVector): InventoryMessage = {
     val inventoryCount = CompactSizeUInt.parseCompactSizeUInt(bytes)
-    val inventoryStart = inventoryCount.size.toInt
+    val inventoryStart = inventoryCount.byteSize.toInt
     val remainingBytes = bytes.slice(inventoryStart, bytes.size)
     val (inventories, _) = parseInventories(remainingBytes, inventoryCount)
     InventoryMessage(inventoryCount, inventories)

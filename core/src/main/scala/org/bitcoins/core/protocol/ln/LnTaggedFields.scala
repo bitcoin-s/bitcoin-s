@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.ln
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.util.LnUtil
-import org.bitcoins.core.util.Bech32
+import org.bitcoins.core.util.{Bech32, SeqWrapper}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -13,7 +13,9 @@ import scala.reflect.ClassTag
 /**
   * An aggregation of all the individual tagged fields in a [[org.bitcoins.core.protocol.ln.LnInvoice]]
   */
-sealed abstract class LnTaggedFields extends NetworkElement {
+sealed abstract class LnTaggedFields
+    extends SeqWrapper[LnTag]
+    with NetworkElement {
 
   require(tag[LnTag.PaymentHashTag].nonEmpty, "You must supply a payment hash")
   require(
@@ -25,6 +27,8 @@ sealed abstract class LnTaggedFields extends NetworkElement {
           "Cannot have both description and description hash")
 
   def tags: Vector[LnTag]
+
+  override protected lazy val wrapped: Vector[LnTag] = tags
 
   def tag[T <: LnTag: ClassTag]: Option[T] =
     tags.collectFirst {
