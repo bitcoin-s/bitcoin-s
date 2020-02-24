@@ -33,4 +33,11 @@ object HDCoinType {
       case _: Int =>
         throw new IllegalArgumentException(s"$int is not valid coin type!")
     }
+
+  def fromNode(node: BIP32Node): HDCoinType = {
+    require(node.hardened,
+            s"Cannot construct HDCoinType from un-hardened node: $node")
+
+    fromInt(node.index)
+  }
 }

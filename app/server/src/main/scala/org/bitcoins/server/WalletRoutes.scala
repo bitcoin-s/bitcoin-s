@@ -8,7 +8,6 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.dlc.DLCMessage
-import org.bitcoins.dlc.DLCMessage.ContractInfo
 import org.bitcoins.node.Node
 import org.bitcoins.picklers._
 import org.bitcoins.wallet.WalletLogger
@@ -61,6 +60,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(
             CreateDLCOffer(oracleInfo,
                            contractInfo,
+                           collateral,
                            feeRateOpt,
                            locktime,
                            refundLT,
@@ -69,6 +69,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             wallet
               .createDLCOffer(oracleInfo,
                               contractInfo,
+                              collateral,
                               feeRateOpt,
                               locktime,
                               refundLT)
@@ -109,6 +110,18 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             wallet.addDLCSigs(sigs).map { _ =>
               Server.httpSuccess(
                 s"Successfully added sigs to DLC ${sigs.eventId.hex}")
+            }
+          }
+      }
+
+    case ServerCommand("initdlcmutualclose", arr) =>
+      InitDLCMutualClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(InitDLCMutualClose(eventId, oracleSig, escaped)) =>
+          complete {
+            wallet.initDLCMutualClose(eventId, oracleSig).map {
+              handleDLCMessage(_, escaped)
             }
           }
       }

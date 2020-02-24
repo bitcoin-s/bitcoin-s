@@ -28,6 +28,18 @@ case class HDAccount(
 
 object HDAccount {
 
+  def fromPath(path: BIP32Path): Option[HDAccount] = {
+
+    HDCoin.fromPath(BIP32Path(path.path.init)).flatMap { coin =>
+      val lastNode = path.path.last
+      if (lastNode.hardened) {
+        Some(HDAccount(coin, lastNode.index))
+      } else {
+        None
+      }
+    }
+  }
+
   /** This method is meant to take in an arbitrary bip32 path and see
     * if it has the same account as the given account
     *

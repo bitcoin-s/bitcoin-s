@@ -1,5 +1,6 @@
 package org.bitcoins.server
 
+import org.bitcoins.core.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -141,6 +142,7 @@ object Rescan extends ServerJsonModels {
 case class CreateDLCOffer(
     oracleInfo: OracleInfo,
     contractInfo: ContractInfo,
+    collateral: Satoshis,
     feeRateOpt: Option[SatoshisPerVirtualByte],
     locktime: UInt32,
     refundLocktime: UInt32,
@@ -151,16 +153,18 @@ object CreateDLCOffer extends ServerJsonModels {
   def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
 
     jsArr.arr.toList match {
-      case oracleInfoJs :: contractInfoJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: escapedJs :: Nil =>
+      case oracleInfoJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: escapedJs :: Nil =>
         Try {
           val oracleInfo = jsToOracleInfo(oracleInfoJs)
           val contractInfo = jsToContractInfo(contractInfoJs)
+          val collateral = jsToSatoshis(collateralJs)
           val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
           val locktime = jsToUInt32(locktimeJs)
           val refundLT = jsToUInt32(refundLTJs)
           val escaped = escapedJs.bool
           CreateDLCOffer(oracleInfo,
                          contractInfo,
+                         collateral,
                          feeRate,
                          locktime,
                          refundLT,
@@ -169,7 +173,7 @@ object CreateDLCOffer extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 5"))
+            s"Bad number of arguments: ${other.length}. Expected: 7"))
     }
   }
 }
@@ -237,6 +241,30 @@ object AddDLCSigs extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class InitDLCMutualClose(
+    eventId: Sha256DigestBE,
+    oracleSig: SchnorrDigitalSignature,
+    escaped: Boolean)
+
+object InitDLCMutualClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[InitDLCMutualClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: sigJs :: escapedJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val oracleSig = jsToSchnorrDigitalSignature(sigJs)
+          val escaped = escapedJs.bool
+          InitDLCMutualClose(eventId, oracleSig, escaped)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 }
@@ -310,6 +338,15 @@ trait ServerJsonModels {
       throw Value.InvalidData(js, "Expected a UInt32")
   }
 
+  def jsToSatoshis(js: Value): Satoshis = js match {
+    case str: Str =>
+      Satoshis(BigInt(str.value))
+    case num: Num =>
+      Satoshis(num.value.toLong)
+    case _: Value =>
+      throw Value.InvalidData(js, "Expected value in Satoshis")
+  }
+
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {
       BitcoinAddress.fromStringExn(js.str)
@@ -327,4 +364,13 @@ trait ServerJsonModels {
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 
+  def jsToSchnorrDigitalSignature(js: Value): SchnorrDigitalSignature =
+    js match {
+      case str: Str =>
+        SchnorrDigitalSignature(str.value)
+      case _: Value =>
+        throw Value.InvalidData(
+          js,
+          "Expected a SchnorrDigitalSignature as a hex string")
+    }
 }

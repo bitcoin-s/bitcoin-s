@@ -3,7 +3,7 @@ package org.bitcoins.cli
 import java.time.{ZoneId, ZonedDateTime}
 
 import org.bitcoins.core.config.{NetworkParameters, Networks}
-import org.bitcoins.core.crypto.Sha256DigestBE
+import org.bitcoins.core.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
@@ -53,6 +53,13 @@ object CliReaders {
     new Read[Bitcoins] {
       val arity: Int = 1
       val reads: String => Bitcoins = str => Bitcoins(BigDecimal(str))
+    }
+
+  implicit val satoshisReads: Read[Satoshis] =
+    new Read[Satoshis] {
+      val arity: Int = 1
+
+      val reads: String => Satoshis = str => Satoshis(BigInt(str))
     }
 
   implicit val satoshisPerVirtualByteReads: Read[SatoshisPerVirtualByte] =
@@ -113,6 +120,21 @@ object CliReaders {
 
     val reads: String => Transaction = Transaction.fromHex
   }
+
+  implicit val schnorrSigReads: Read[SchnorrDigitalSignature] =
+    new Read[SchnorrDigitalSignature] {
+      override def arity: Int = 1
+
+      override def reads: String => SchnorrDigitalSignature =
+        SchnorrDigitalSignature.fromHex
+    }
+
+  implicit val sha256DigestBEReads: Read[Sha256DigestBE] =
+    new Read[Sha256DigestBE] {
+      val arity: Int = 1
+
+      val reads: String => Sha256DigestBE = Sha256DigestBE.fromHex
+    }
 
   implicit val dlcOfferReads: Read[DLCOffer] = new Read[DLCOffer] {
     override def arity: Int = 1
