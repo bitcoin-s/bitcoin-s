@@ -62,41 +62,15 @@ case class SerializedTransactionOutput(
 
 object SerializedTransaction {
 
-  def decodeRawTransaction(tx: Transaction): String = {
-    def tokenToString(token: ScriptToken): String = {
-      token match {
-        case numOp: ScriptNumberOperation => numOp.toString
-        case constOp: ScriptConstant      => constOp.bytes.toString
-        case otherOp                      => otherOp.toString
-      }
+  private def tokenToString(token: ScriptToken): String = {
+    token match {
+      case numOp: ScriptNumberOperation => numOp.toString
+      case constOp: ScriptConstant      => constOp.bytes.toString
+      case otherOp: ScriptToken         => otherOp.toString
     }
+  }
 
-    implicit val byteVectorWrites: Writes[ByteVector] =
-      Writes[ByteVector](bytes => JsString(bytes.toHex))
-    implicit val ecDigitalSignatureWrites: Writes[ECDigitalSignature] =
-      Writes[ECDigitalSignature](sig => JsString(sig.hex))
-    implicit val ecPublicKeyWrites: Writes[ECPublicKey] =
-      Writes[ECPublicKey](pubKey => JsString(pubKey.hex))
-    implicit val scriptTokenWrites: Writes[ScriptToken] =
-      Writes[ScriptToken](token => JsString(tokenToString(token)))
-    implicit val doubleSha256DigestBEWrites: Writes[DoubleSha256DigestBE] =
-      Writes[DoubleSha256DigestBE](hash => JsString(hash.hex))
-    implicit val uInt32Writes: Writes[UInt32] =
-      Writes[UInt32](num => JsNumber(num.toLong))
-    implicit val int32Writes: Writes[Int32] =
-      Writes[Int32](num => JsNumber(num.toLong))
-    implicit val scriptPubKeyWrites: Writes[ScriptPubKey] =
-      Writes[ScriptPubKey](spk => Json.toJson(spk.asm))
-
-    implicit val serializedTransactionWitnessWrites: Writes[
-      SerializedTransactionWitness] = Json.writes[SerializedTransactionWitness]
-    implicit val serializedTransactionInputWrites: Writes[
-      SerializedTransactionInput] = Json.writes[SerializedTransactionInput]
-    implicit val serializedTransactionOutputWrites: Writes[
-      SerializedTransactionOutput] = Json.writes[SerializedTransactionOutput]
-    implicit val serializedTransactionWrites: Writes[SerializedTransaction] =
-      Json.writes[SerializedTransaction]
-
+  def decodeRawTransaction(tx: Transaction): String = {
     val inputs = tx.inputs.toVector.zipWithIndex.map {
       case (input, index) =>
         val witnessOpt = tx match {
@@ -106,38 +80,41 @@ object SerializedTransaction {
               case EmptyScriptWitness => None
               case p2wpkh: P2WPKHWitnessV0 =>
                 Some(
-                  SerializedTransactionWitness(p2wpkh.hex,
-                                               Some("P2WPKH"),
-                                               None,
-                                               Some(p2wpkh.pubKey),
-                                               Some(p2wpkh.signature),
-                                               None))
+                  SerializedTransactionWitness(hex = p2wpkh.hex,
+                                               scriptType = Some("P2WPKH"),
+                                               script = None,
+                                               pubKey = Some(p2wpkh.pubKey),
+                                               signature =
+                                                 Some(p2wpkh.signature),
+                                               stack = None))
               case p2wsh: P2WSHWitnessV0 =>
                 Some(
                   SerializedTransactionWitness(
-                    p2wsh.hex,
-                    Some("P2WSH"),
-                    Some(p2wsh.redeemScript.asm.toVector),
-                    None,
-                    None,
-                    Some(p2wsh.stack.toVector.tail)))
+                    hex = p2wsh.hex,
+                    scriptType = Some("P2WSH"),
+                    script = Some(p2wsh.redeemScript.asm.toVector),
+                    pubKey = None,
+                    signature = None,
+                    stack = Some(p2wsh.stack.toVector.tail)))
             }
         }
 
-        SerializedTransactionInput(input.previousOutput.txIdBE,
-                                   input.hex,
-                                   input.previousOutput.vout,
-                                   input.scriptSignature.asm.toVector,
-                                   witnessOpt,
-                                   input.sequence)
+        SerializedTransactionInput(
+          txid = input.previousOutput.txIdBE,
+          hex = input.hex,
+          vout = input.previousOutput.vout,
+          scriptSig = input.scriptSignature.asm.toVector,
+          txinwitness = witnessOpt,
+          sequence = input.sequence
+        )
     }
 
     val outputs = tx.outputs.toVector.zipWithIndex.map {
       case (output, index) =>
-        SerializedTransactionOutput(output.value.toBigDecimal,
-                                    UInt32(index),
-                                    output.scriptPubKey,
-                                    output.hex)
+        SerializedTransactionOutput(value = output.value.toBigDecimal,
+                                    n = UInt32(index),
+                                    scriptPubKey = output.scriptPubKey,
+                                    hex = output.hex)
     }
 
     val wtxidOpt = tx match {
@@ -145,15 +122,15 @@ object SerializedTransaction {
       case wtx: WitnessTransaction => Some(wtx.wTxIdBE)
     }
 
-    val serializedTx = SerializedTransaction(tx.txIdBE,
-                                             wtxidOpt,
-                                             tx.version,
-                                             tx.size,
-                                             tx.vsize,
-                                             tx.weight,
-                                             tx.lockTime,
-                                             inputs,
-                                             outputs)
+    val serializedTx = SerializedTransaction(txid = tx.txIdBE,
+                                             wtxid = wtxidOpt,
+                                             version = tx.version,
+                                             size = tx.size,
+                                             vsize = tx.vsize,
+                                             weight = tx.weight,
+                                             locktime = tx.lockTime,
+                                             vin = inputs,
+                                             vout = outputs)
 
     val json = Json.toJson(serializedTx)
     val strWithEscaped = Json.prettyPrint(json)
@@ -174,4 +151,30 @@ object SerializedTransaction {
       }
       .filterNot(_ == '\\')
   }
+
+  implicit val byteVectorWrites: Writes[ByteVector] =
+    Writes[ByteVector](bytes => JsString(bytes.toHex))
+  implicit val ecDigitalSignatureWrites: Writes[ECDigitalSignature] =
+    Writes[ECDigitalSignature](sig => JsString(sig.hex))
+  implicit val ecPublicKeyWrites: Writes[ECPublicKey] =
+    Writes[ECPublicKey](pubKey => JsString(pubKey.hex))
+  implicit val scriptTokenWrites: Writes[ScriptToken] =
+    Writes[ScriptToken](token => JsString(tokenToString(token)))
+  implicit val doubleSha256DigestBEWrites: Writes[DoubleSha256DigestBE] =
+    Writes[DoubleSha256DigestBE](hash => JsString(hash.hex))
+  implicit val uInt32Writes: Writes[UInt32] =
+    Writes[UInt32](num => JsNumber(num.toLong))
+  implicit val int32Writes: Writes[Int32] =
+    Writes[Int32](num => JsNumber(num.toLong))
+  implicit val scriptPubKeyWrites: Writes[ScriptPubKey] =
+    Writes[ScriptPubKey](spk => Json.toJson(spk.asm))
+
+  implicit val serializedTransactionWitnessWrites: Writes[
+    SerializedTransactionWitness] = Json.writes[SerializedTransactionWitness]
+  implicit val serializedTransactionInputWrites: Writes[
+    SerializedTransactionInput] = Json.writes[SerializedTransactionInput]
+  implicit val serializedTransactionOutputWrites: Writes[
+    SerializedTransactionOutput] = Json.writes[SerializedTransactionOutput]
+  implicit val serializedTransactionWrites: Writes[SerializedTransaction] =
+    Json.writes[SerializedTransaction]
 }
