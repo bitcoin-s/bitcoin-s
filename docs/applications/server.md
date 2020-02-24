@@ -31,6 +31,11 @@ This will produce a script to execute bitcoin-s which you can start with
 $ ./app/server/target/universal/stage/bin/bitcoin-s-server
 ```
 
+If you would like to pass in a custom datadir for your server, you can do
+
+```bash
+./app/server/target/universal/stage/bin/bitcoin-s-server --datadir /path/to/datadir/
+```
 For more information on configuring the server please see our [configuration](configuration.md) document
 
 For more information on how to use our built in `cli` to interact with the server please see [cli.md](cli.md)

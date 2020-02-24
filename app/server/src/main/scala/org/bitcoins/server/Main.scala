@@ -1,12 +1,13 @@
 package org.bitcoins.server
 
 import java.net.InetSocketAddress
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node.config.NodeAppConfig
@@ -22,7 +23,18 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 object Main extends App {
-  implicit val conf = BitcoinSAppConfig.fromDefaultDatadir()
+  implicit val conf = {
+    val dataDirIndexOpt = args.zipWithIndex
+      .find(_._1.toLowerCase == "--datadir")
+
+    val datadirPath = dataDirIndexOpt match {
+      case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
+      case Some((_, dataDirIndex)) =>
+        val str = args(dataDirIndex + 1)
+        Paths.get(str)
+    }
+    BitcoinSAppConfig(datadirPath)
+  }
 
   private val logger = HttpLoggerImpl(conf.nodeConf).getLogger
 
