@@ -8,7 +8,6 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
@@ -162,11 +161,11 @@ object ConsoleCli {
                   offer.copy(refundLT = refundLT)
                 case other => other
               })),
-          opt[Boolean]("escaped")
-            .action((escaped, conf) =>
+          opt[Unit]("escaped")
+            .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case create: CreateDLCOffer =>
-                  create.copy(escaped = escaped)
+                  create.copy(escaped = true)
                 case other => other
               }))
         ),
@@ -183,11 +182,11 @@ object ConsoleCli {
                   accept.copy(offer = offer)
                 case other => other
               })),
-          opt[Boolean]("escaped")
-            .action((escaped, conf) =>
+          opt[Unit]("escaped")
+            .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case accept: AcceptDLCOffer =>
-                  accept.copy(escaped = escaped)
+                  accept.copy(escaped = true)
                 case other => other
               }))
         ),
@@ -204,11 +203,11 @@ object ConsoleCli {
                   signDLC.copy(accept = accept)
                 case other => other
               })),
-          opt[Boolean]("escaped")
-            .action((escaped, conf) =>
+          opt[Unit]("escaped")
+            .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case signDLC: SignDLC =>
-                  signDLC.copy(escaped = escaped)
+                  signDLC.copy(escaped = true)
                 case other => other
               }))
         ),
@@ -245,39 +244,24 @@ object ConsoleCli {
                   initClose.copy(oracleSig = sig)
                 case other => other
               })),
-          opt[Boolean]("escaped")
-            .action((escaped, conf) =>
+          opt[Unit]("escaped")
+            .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case initClose: InitDLCMutualClose =>
-                  initClose.copy(escaped = escaped)
+                  initClose.copy(escaped = true)
                 case other => other
               }))
         ),
-      cmd("acceptmutualclose")
+      cmd("acceptdlcmutualclose")
         .hidden()
-        .action((_, conf) =>
-          conf.copy(command = AcceptDLCMutualClose(null, null, null)))
+        .action((_, conf) => conf.copy(command = AcceptDLCMutualClose(null)))
         .text("Sign Mutual Close Tx for given oracle event")
         .children(
-          opt[Sha256DigestBE]("eventid").required
-            .action((eventId, conf) =>
+          opt[DLCMutualCloseSig]("closesig").required
+            .action((closeSig, conf) =>
               conf.copy(command = conf.command match {
                 case acceptClose: AcceptDLCMutualClose =>
-                  acceptClose.copy(eventId = eventId)
-                case other => other
-              })),
-          opt[SchnorrDigitalSignature]("oraclesig").required
-            .action((sig, conf) =>
-              conf.copy(command = conf.command match {
-                case acceptClose: AcceptDLCMutualClose =>
-                  acceptClose.copy(oracleSig = sig)
-                case other => other
-              })),
-          opt[PartialSignature]("closesig").required
-            .action((sig, conf) =>
-              conf.copy(command = conf.command match {
-                case acceptClose: AcceptDLCMutualClose =>
-                  acceptClose.copy(closeSig = sig)
+                  acceptClose.copy(mutualCloseSig = closeSig)
                 case other => other
               }))
         ),
@@ -291,6 +275,105 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case getDLCFundingTx: GetDLCFundingTx =>
                   getDLCFundingTx.copy(eventId = eventId)
+                case other => other
+              }))
+        ),
+      cmd("executedlcunilateralclose")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = ExecuteDLCUnilateralClose(null, null)))
+        .text("Executes a force close for the DLC with the given eventId")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
+                  executeDLCUnilateralClose.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[SchnorrDigitalSignature]("oraclesig").required
+            .action((sig, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
+                  executeDLCUnilateralClose.copy(oracleSig = sig)
+                case other => other
+              }))
+        ),
+      cmd("executedlcforceclose")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = ExecuteDLCForceClose(null, null)))
+        .text("Executes a force close for the DLC with the given eventId")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCForceClose: ExecuteDLCForceClose =>
+                  executeDLCForceClose.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[SchnorrDigitalSignature]("oraclesig").required
+            .action((sig, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCForceClose: ExecuteDLCForceClose =>
+                  executeDLCForceClose.copy(oracleSig = sig)
+                case other => other
+              }))
+        ),
+      cmd("claimdlcremotefunds")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = ClaimDLCRemoteFunds(null, EmptyTransaction)))
+        .text("Claims the remote funds for the corresponding DLC")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case claimDLCRemoteFunds: ClaimDLCRemoteFunds =>
+                  claimDLCRemoteFunds.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[Transaction]("forceclosetx")
+            .required()
+            .action((tx, conf) =>
+              conf.copy(command = conf.command match {
+                case claimDLCRemoteFunds: ClaimDLCRemoteFunds =>
+                  claimDLCRemoteFunds.copy(forceCloseTx = tx)
+                case other => other
+              }))
+        ),
+      cmd("executedlcrefund")
+        .hidden()
+        .action((_, conf) => conf.copy(command = ExecuteDLCRefund(null)))
+        .text("Executes the Refund transaction for the given DLC")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCRefund: ExecuteDLCRefund =>
+                  executeDLCRefund.copy(eventId = eventId)
+                case other => other
+              }))
+        ),
+      cmd("claimdlcpenaltyfunds")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = ClaimDLCPenaltyFunds(null, EmptyTransaction)))
+        .text("Claims the penalty funds for the corresponding DLC")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case claimDLCPenaltyFunds: ClaimDLCPenaltyFunds =>
+                  claimDLCPenaltyFunds.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[Transaction]("forceclosetx")
+            .required()
+            .action((tx, conf) =>
+              conf.copy(command = conf.command match {
+                case claimDLCPenaltyFunds: ClaimDLCPenaltyFunds =>
+                  claimDLCPenaltyFunds.copy(forceCloseTx = tx)
                 case other => other
               }))
         ),
@@ -552,12 +635,24 @@ object ConsoleCli {
         RequestParam(
           "initdlcmutualclose",
           Seq(up.writeJs(eventId), up.writeJs(oracleSig), up.writeJs(escaped)))
-      case AcceptDLCMutualClose(eventId, oracleSig, closeSig) =>
-        RequestParam(
-          "acceptdlcmutualclose",
-          Seq(up.writeJs(eventId), up.writeJs(oracleSig), up.writeJs(closeSig)))
+      case AcceptDLCMutualClose(mutualCloseSig) =>
+        RequestParam("acceptdlcmutualclose", Seq(up.writeJs(mutualCloseSig)))
+      case ExecuteDLCUnilateralClose(eventId, oracleSig) =>
+        RequestParam("executedlcunilateralclose",
+                     Seq(up.writeJs(eventId), up.writeJs(oracleSig)))
       case GetDLCFundingTx(eventId) =>
         RequestParam("getdlcfundingtx", Seq(up.writeJs(eventId)))
+      case ExecuteDLCForceClose(eventId, oracleSig) =>
+        RequestParam("executedlcforceclose",
+                     Seq(up.writeJs(eventId), up.writeJs(oracleSig)))
+      case ClaimDLCRemoteFunds(eventId, forceCloseTx) =>
+        RequestParam("claimdlcremotefunds",
+                     Seq(up.writeJs(eventId), up.writeJs(forceCloseTx)))
+      case ExecuteDLCRefund(eventId) =>
+        RequestParam("executedlcrefund", Seq(up.writeJs(eventId)))
+      case ClaimDLCPenaltyFunds(eventId, forceCloseTx) =>
+        RequestParam("claimdlcpenaltyfunds",
+                     Seq(up.writeJs(eventId), up.writeJs(forceCloseTx)))
       // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
@@ -717,13 +812,32 @@ object CliCommand {
       escaped: Boolean)
       extends CliCommand
 
-  case class AcceptDLCMutualClose(
-      eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature,
-      closeSig: PartialSignature)
+  case class AcceptDLCMutualClose(mutualCloseSig: DLCMutualCloseSig)
       extends CliCommand
 
   case class GetDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
+
+  case class ExecuteDLCUnilateralClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature)
+      extends CliCommand
+
+  case class ExecuteDLCForceClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature)
+      extends CliCommand
+
+  case class ClaimDLCRemoteFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction)
+      extends CliCommand
+
+  case class ExecuteDLCRefund(eventId: Sha256DigestBE) extends CliCommand
+
+  case class ClaimDLCPenaltyFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction)
+      extends CliCommand
 
   // Wallet
   case class SendToAddress(

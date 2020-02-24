@@ -66,6 +66,11 @@ package object picklers {
     readwriter[String]
       .bimap(_.toJsonStr, str => DLCSign.fromJson(ujson.read(str).obj))
 
+  implicit val dlcMutualCloseSigPickler: ReadWriter[DLCMutualCloseSig] =
+    readwriter[String].bimap(
+      _.toJsonStr,
+      str => DLCMutualCloseSig.fromJson(ujson.read(str).obj))
+
   implicit val blockStampPickler: ReadWriter[BlockStamp] =
     readwriter[String].bimap(_.mkString, BlockStamp.fromString(_).get)
 
