@@ -130,11 +130,10 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       AcceptDLCMutualClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(AcceptDLCMutualClose(eventId, oracleSig, closeSig)) =>
+        case Success(AcceptDLCMutualClose(mutualCloseSig)) =>
           complete {
-            wallet.acceptDLCMutualClose(eventId, oracleSig, closeSig).map {
-              tx =>
-                Server.httpSuccess(tx.hex)
+            wallet.acceptDLCMutualClose(mutualCloseSig).map { tx =>
+              Server.httpSuccess(tx.hex)
             }
           }
       }
@@ -146,6 +145,71 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(GetDLCFundingTx(eventId)) =>
           complete {
             wallet.getDLCFundingTx(eventId).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("executedlcunilateralclose", arr) =>
+      ExecuteDLCUnilateralClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCUnilateralClose(eventId, oracleSig)) =>
+          complete {
+            wallet.executeDLCUnilateralClose(eventId, oracleSig).map { txs =>
+              txs._2 match {
+                case Some(closingTx) =>
+                  Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
+                case None =>
+                  Server.httpSuccess(txs._1.hex)
+              }
+            }
+          }
+      }
+
+    case ServerCommand("executedlcforceclose", arr) =>
+      ExecuteDLCForceClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCForceClose(eventId, oracleSig)) =>
+          complete {
+            wallet.executeDLCForceClose(eventId, oracleSig).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("claimdlcremotefunds", arr) =>
+      ClaimDLCRemoteFunds.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ClaimDLCRemoteFunds(eventId, tx)) =>
+          complete {
+            wallet.claimDLCRemoteFunds(eventId, tx).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("executedlcrefund", arr) =>
+      ExecuteDLCRefund.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCRefund(eventId)) =>
+          complete {
+            wallet.executeDLCRefund(eventId).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("claimdlcpenaltyfunds", arr) =>
+      ClaimDLCPenaltyFunds.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ClaimDLCPenaltyFunds(eventId, tx)) =>
+          complete {
+            wallet.claimDLCPenaltyFunds(eventId, tx).map { tx =>
               Server.httpSuccess(tx.hex)
             }
           }
