@@ -224,6 +224,12 @@ case class BinaryOutcomeDLCClient(
                     lockTime = txWithFee.lockTime)
   }
 
+  lazy val fundingTxId: DoubleSha256Digest =
+    createUnsignedFundingTransaction.txId
+
+  lazy val fundingOutput: TransactionOutput =
+    createUnsignedFundingTransaction.outputs.head
+
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
     val fundingTx = createUnsignedFundingTransaction
 
@@ -280,9 +286,7 @@ case class BinaryOutcomeDLCClient(
     *
     * @param sig The oracle's signature for this contract
     */
-  def createUnsignedMutualClosePSBT(
-      sig: SchnorrDigitalSignature,
-      fundingTx: Transaction): PSBT = {
+  def createUnsignedMutualClosePSBT(sig: SchnorrDigitalSignature): PSBT = {
     val (toLocalPayout, toRemotePayout) =
       if (Schnorr.verify(messageWin, sig, oraclePubKey)) {
         (winPayout, remoteWinPayout)
@@ -303,10 +307,9 @@ case class BinaryOutcomeDLCClient(
     } else {
       Vector(toRemote, toLocal)
     }
-    val input = TransactionInput(
-      TransactionOutPoint(fundingTx.txId, UInt32.zero),
-      EmptyScriptSignature,
-      sequence)
+    val input = TransactionInput(TransactionOutPoint(fundingTxId, UInt32.zero),
+                                 EmptyScriptSignature,
+                                 sequence)
     val utx = BaseTransaction(TransactionConstants.validLockVersion,
                               Vector(input),
                               outputs.filter(_.value >= Policy.dustThreshold),
@@ -314,14 +317,14 @@ case class BinaryOutcomeDLCClient(
 
     PSBT
       .fromUnsignedTx(utx)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
   }
 
   def createMutualCloseTxSig(
-      sig: SchnorrDigitalSignature,
-      fundingTx: Transaction): Future[PartialSignature] = {
-    val unsignedPSBT = createUnsignedMutualClosePSBT(sig, fundingTx)
+      sig: SchnorrDigitalSignature): Future[PartialSignature] = {
+    val unsignedPSBT =
+      createUnsignedMutualClosePSBT(sig)
 
     unsignedPSBT
       .sign(inputIndex = 0, fundingPrivKey)
@@ -330,9 +333,9 @@ case class BinaryOutcomeDLCClient(
 
   def createMutualCloseTx(
       sig: SchnorrDigitalSignature,
-      fundingSig: PartialSignature,
-      fundingTx: Transaction): Future[Transaction] = {
-    val unsignedPSBT = createUnsignedMutualClosePSBT(sig, fundingTx)
+      fundingSig: PartialSignature): Future[Transaction] = {
+    val unsignedPSBT =
+      createUnsignedMutualClosePSBT(sig)
 
     val signedPSBTF = unsignedPSBT
       .addSignature(fundingSig, inputIndex = 0)
@@ -371,10 +374,8 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
-    val fundingTx = createUnsignedFundingTransaction
-    val fundingTxid = fundingTx.txId
     val fundingInput = TransactionInput(
-      TransactionOutPoint(fundingTxid, UInt32.zero),
+      TransactionOutPoint(fundingTxId, UInt32.zero),
       EmptyScriptSignature,
       sequence)
 
@@ -387,7 +388,7 @@ case class BinaryOutcomeDLCClient(
 
     val readyToSignPSBT = psbt
       .addSignature(remoteSig, inputIndex = 0)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
 
     val signedPSBTF = readyToSignPSBT.sign(inputIndex = 0, fundingPrivKey)
@@ -436,9 +437,7 @@ case class BinaryOutcomeDLCClient(
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
-    val fundingTx = createUnsignedFundingTransaction
-    val fundingTxid = fundingTx.txIdBE
-    val fundingOutPoint = TransactionOutPoint(fundingTxid, UInt32.zero)
+    val fundingOutPoint = TransactionOutPoint(fundingTxId, UInt32.zero)
     val fundingInput =
       TransactionInput(fundingOutPoint, EmptyScriptSignature, sequence)
 
@@ -450,7 +449,7 @@ case class BinaryOutcomeDLCClient(
 
     val sigF = PSBT
       .fromUnsignedTx(unsignedTx)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
       .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
@@ -502,12 +501,11 @@ case class BinaryOutcomeDLCClient(
   }
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
-    val fundingTx = createUnsignedFundingTransaction
     val refundTx = createUnsignedRefundTx
 
     val sigF = PSBT
       .fromUnsignedTx(refundTx)
-      .addUTXOToInput(fundingTx, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
       .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
@@ -525,7 +523,7 @@ case class BinaryOutcomeDLCClient(
 
     val signedPSBTF = psbt
       .addSignature(remoteSig, inputIndex = 0)
-      .addUTXOToInput(createUnsignedFundingTransaction, index = 0)
+      .addWitnessUTXOToInput(fundingOutput, index = 0)
       .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
       .sign(inputIndex = 0, fundingPrivKey)
 
@@ -735,11 +733,9 @@ case class BinaryOutcomeDLCClient(
 
   def createMutualCloseSig(
       eventId: Sha256DigestBE,
-      dlcSetup: SetupDLC,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
-    val fundingTx = dlcSetup.fundingTx
 
-    createMutualCloseTxSig(oracleSig, fundingTx).map { sig =>
+    createMutualCloseTxSig(oracleSig).map { sig =>
       DLCMutualCloseSig(eventId, oracleSig, sig)
     }
   }
@@ -761,7 +757,7 @@ case class BinaryOutcomeDLCClient(
     logger.info(s"Attempting Mutual Close for funding tx: ${fundingTx.txIdBE}")
 
     for {
-      fundingSig <- createMutualCloseTxSig(sig, fundingTx)
+      fundingSig <- createMutualCloseTxSig(sig)
       _ <- sendSigs(sig, fundingSig)
       mutualCloseTx <- getMutualCloseTx
     } yield {
@@ -782,7 +778,7 @@ case class BinaryOutcomeDLCClient(
 
     for {
       (sig, fundingSig) <- getSigs
-      mutualCloseTx <- createMutualCloseTx(sig, fundingSig, fundingTx)
+      mutualCloseTx <- createMutualCloseTx(sig, fundingSig)
     } yield {
       CooperativeDLCOutcome(fundingTx, mutualCloseTx)
     }
