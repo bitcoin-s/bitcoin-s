@@ -6,6 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
@@ -349,6 +350,51 @@ object InitDLCMutualClose extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class AcceptDLCMutualClose(
+    eventId: Sha256DigestBE,
+    oracleSig: SchnorrDigitalSignature,
+    closeSig: PartialSignature)
+
+object AcceptDLCMutualClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCMutualClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: oracleSigJs :: closeSigJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
+          val closeSig = PartialSignature(closeSigJs.str)
+          AcceptDLCMutualClose(eventId, oracleSig, closeSig)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class GetDLCFundingTx(eventId: Sha256DigestBE)
+
+object GetDLCFundingTx extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLCFundingTx] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          GetDLCFundingTx(eventId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing eventId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
     }
   }
 }

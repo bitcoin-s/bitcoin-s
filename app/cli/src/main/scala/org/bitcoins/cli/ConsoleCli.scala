@@ -8,6 +8,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
@@ -249,6 +250,47 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case initClose: InitDLCMutualClose =>
                   initClose.copy(escaped = escaped)
+                case other => other
+              }))
+        ),
+      cmd("acceptmutualclose")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = AcceptDLCMutualClose(null, null, null)))
+        .text("Sign Mutual Close Tx for given oracle event")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case acceptClose: AcceptDLCMutualClose =>
+                  acceptClose.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[SchnorrDigitalSignature]("oraclesig").required
+            .action((sig, conf) =>
+              conf.copy(command = conf.command match {
+                case acceptClose: AcceptDLCMutualClose =>
+                  acceptClose.copy(oracleSig = sig)
+                case other => other
+              })),
+          opt[PartialSignature]("closesig").required
+            .action((sig, conf) =>
+              conf.copy(command = conf.command match {
+                case acceptClose: AcceptDLCMutualClose =>
+                  acceptClose.copy(closeSig = sig)
+                case other => other
+              }))
+        ),
+      cmd("getdlcfundingtx")
+        .hidden()
+        .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
+        .text("Returns the Funding Tx corresponding to the DLC with the given eventId")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case getDLCFundingTx: GetDLCFundingTx =>
+                  getDLCFundingTx.copy(eventId = eventId)
                 case other => other
               }))
         ),
@@ -510,6 +552,12 @@ object ConsoleCli {
         RequestParam(
           "initdlcmutualclose",
           Seq(up.writeJs(eventId), up.writeJs(oracleSig), up.writeJs(escaped)))
+      case AcceptDLCMutualClose(eventId, oracleSig, closeSig) =>
+        RequestParam(
+          "acceptdlcmutualclose",
+          Seq(up.writeJs(eventId), up.writeJs(oracleSig), up.writeJs(closeSig)))
+      case GetDLCFundingTx(eventId) =>
+        RequestParam("getdlcfundingtx", Seq(up.writeJs(eventId)))
       // Wallet
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
@@ -668,6 +716,14 @@ object CliCommand {
       oracleSig: SchnorrDigitalSignature,
       escaped: Boolean)
       extends CliCommand
+
+  case class AcceptDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature,
+      closeSig: PartialSignature)
+      extends CliCommand
+
+  case class GetDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
 
   // Wallet
   case class SendToAddress(
