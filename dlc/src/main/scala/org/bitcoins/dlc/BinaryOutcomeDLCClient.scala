@@ -868,6 +868,11 @@ case class BinaryOutcomeDLCClient(
     }
   }
 
+  def executeUnilateralDLC(
+      dlcSetup: SetupDLC,
+      oracleSig: SchnorrDigitalSignature): Future[UnilateralDLCOutcome] =
+    executeUnilateralDLC(dlcSetup, Future.successful(oracleSig))
+
   /** Constructs the closing transaction on the to_remote output of a counter-party's unilateral CET broadcast
     * @see [[https://github.com/discreetlogcontracts/dlcspecs/blob/master/Transactions.md#closing-transaction-unilateral]]
     */

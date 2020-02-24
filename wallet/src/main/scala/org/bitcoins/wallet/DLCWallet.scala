@@ -9,9 +9,9 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
 import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
@@ -46,6 +46,19 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
           }
           writtenDLC <- dlcDAO.create(dlc)
         } yield writtenDLC
+    }
+  }
+
+  private def updateDLCOracleSig(
+      eventId: Sha256DigestBE,
+      sig: SchnorrDigitalSignature): Future[ExecutedDLCDb] = {
+    dlcDAO.findByEventId(eventId).flatMap {
+      case Some(dlcDb) =>
+        dlcDAO.update(dlcDb.copy(oracleSigOpt = Some(sig)))
+      case None =>
+        Future.failed(
+          new NoSuchElementException(
+            s"No DLC found with that eventId ${eventId.hex}"))
     }
   }
 
@@ -357,6 +370,18 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
+  private def getAllDLCData(eventId: Sha256DigestBE): Future[
+    (ExecutedDLCDb, DLCOfferDb, DLCAcceptDb)] = {
+    for {
+      dlcDbOpt <- dlcDAO.findByEventId(eventId)
+      dlcDb = dlcDbOpt.get
+      dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
+      dlcOffer = dlcOfferOpt.get
+      dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
+      dlcAccept = dlcAcceptOpt.get
+    } yield (dlcDb, dlcOffer, dlcAccept)
+  }
+
   private def clientFromDb(
       dlcDb: ExecutedDLCDb,
       dlcOffer: DLCOfferDb,
@@ -428,8 +453,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
     for {
-      dlcDbOpt <- dlcDAO.findByEventId(eventId)
-      dlcDb = dlcDbOpt.get
+      dlcDb <- updateDLCOracleSig(eventId, oracleSig)
       dlcOfferOpt <- dlcOfferDAO.findByEventId(eventId)
       dlcOffer = dlcOfferOpt.get
       dlcAcceptOpt <- dlcAcceptDAO.findByEventId(eventId)
@@ -441,11 +465,64 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     } yield sigMessage
   }
 
-  override def acceptDLCMutualClose(
+  override def executeDLCUnilateralClose(
       eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature,
-      closeSig: PartialSignature): Future[Transaction] = ???
+      oracleSig: SchnorrDigitalSignature): Future[
+    (Transaction, Option[Transaction])] = {
+    for {
+      _ <- updateDLCOracleSig(eventId, oracleSig)
 
-  override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] =
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      outcome <- client.executeUnilateralDLC(setup, oracleSig)
+      txs <- outcome match {
+        case closing: UnilateralDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.cetSpendingInfo,
+                  closing.closingTx,
+                  isDummySignature = false)
+            .map(signed => (outcome.cet, Some(signed.transaction)))
+        case _: UnilateralDLCOutcomeWithDustClosing =>
+          Future.successful((outcome.cet, None))
+      }
+    } yield txs
+  }
+
+  override def acceptDLCMutualClose(
+      mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = {
+    for {
+      _ <- updateDLCOracleSig(mutualCloseSig.eventId, mutualCloseSig.oracleSig)
+
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(mutualCloseSig.eventId)
+
+      (client, _) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      tx <- client.createMutualCloseTx(mutualCloseSig.oracleSig,
+                                       mutualCloseSig.mutualSig)
+    } yield tx
+  }
+
+  override def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+      (_, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+    } yield setup.fundingTx
+  }
+
+  override def executeDLCForceClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[Transaction] = ???
+
+  override def claimDLCRemoteFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Transaction] = ???
+
+  override def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction] =
     ???
+
+  override def claimDLCPenaltyFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Transaction] = ???
 }
