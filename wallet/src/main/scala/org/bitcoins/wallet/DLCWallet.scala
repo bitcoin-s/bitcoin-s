@@ -334,7 +334,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       dlc = dlcOpt.get
       spendingInfoDbs <- listUtxos(offer.fundingInputs.map(_.outPoint))
       spendingInfos = spendingInfoDbs.flatMap(
-        _.toUTXOSpendingInfo(account, keyManager, offer.network).toSingles)
+        _.toUTXOSpendingInfo(keyManager).toSingles)
       client = BinaryOutcomeDLCClient.fromOfferAndAccept(
         offer.toDLCOffer,
         accept,
@@ -396,12 +396,8 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
     val fundingInputs = setupMsg.fundingInputs
 
-    val accountDb =
-      AccountDb(keyManager.deriveXPub(dlcDb.account).get, dlcDb.account)
-
     val utxosF = listUtxos(fundingInputs.map(_.outPoint))
-      .map(_.map(info =>
-        info.toUTXOSpendingInfo(accountDb, keyManager, dlcOffer.network)))
+      .map(_.map(info => info.toUTXOSpendingInfo(keyManager)))
 
     utxosF.flatMap { fundingUtxos =>
       val (winPayout, losePayout) = if (dlcDb.isInitiator) {
