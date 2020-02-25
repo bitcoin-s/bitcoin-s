@@ -125,7 +125,7 @@ object SerializedTransaction {
     val serializedTx = SerializedTransaction(txid = tx.txIdBE,
                                              wtxid = wtxidOpt,
                                              version = tx.version,
-                                             size = tx.size,
+                                             size = tx.byteSize,
                                              vsize = tx.vsize,
                                              weight = tx.weight,
                                              locktime = tx.lockTime,

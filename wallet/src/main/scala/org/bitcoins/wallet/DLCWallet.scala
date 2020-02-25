@@ -396,9 +396,6 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
     val fundingInputs = setupMsg.fundingInputs
 
-    val accountDb =
-      AccountDb(keyManager.deriveXPub(dlcDb.account).get, dlcDb.account)
-
     val utxosF = listUtxos(fundingInputs.map(_.outPoint))
       .map(_.map(info => info.toUTXOSpendingInfo(keyManager)))
 
