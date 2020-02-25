@@ -33,7 +33,8 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       dlcMessage: DLCMessage,
       escaped: Boolean): HttpEntity.Strict = {
     val str = dlcMessage.toJsonStr
-    val sendString = if (escaped) escape(str) else str
+    val sendString =
+      if (escaped) escape(str) else ujson.read(str).render(indent = 2)
     Server.httpSuccess(sendString)
   }
 
@@ -221,14 +222,35 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("executedlcremoteunilateralclose", arr) =>
+      ExecuteDLCRemoteUnilateralClose.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ExecuteDLCRemoteUnilateralClose(eventId, cet)) =>
+          complete {
+            wallet.executeRemoteUnilateralDLC(eventId, cet).map {
+              case Some(closingTx) =>
+                Server.httpSuccess(closingTx.hex)
+              case None =>
+                Server.httpSuccess(
+                  "Received would have only been dust, they have been used as fees")
+            }
+          }
+      }
+
     case ServerCommand("executedlcforceclose", arr) =>
       ExecuteDLCForceClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ExecuteDLCForceClose(eventId, oracleSig)) =>
           complete {
-            wallet.executeDLCForceClose(eventId, oracleSig).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.executeDLCForceClose(eventId, oracleSig).map { txs =>
+              txs._2 match {
+                case Some(closingTx) =>
+                  Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
+                case None =>
+                  Server.httpSuccess(txs._1.hex)
+              }
             }
           }
       }
@@ -239,8 +261,12 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ClaimDLCRemoteFunds(eventId, tx)) =>
           complete {
-            wallet.claimDLCRemoteFunds(eventId, tx).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.claimDLCRemoteFunds(eventId, tx).map {
+              case Some(closingTx) =>
+                Server.httpSuccess(closingTx.hex)
+              case None =>
+                Server.httpSuccess(
+                  "Received would have only been dust, they have been used as fees")
             }
           }
       }
@@ -251,8 +277,13 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ExecuteDLCRefund(eventId)) =>
           complete {
-            wallet.executeDLCRefund(eventId).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.executeDLCRefund(eventId).map { txs =>
+              txs._2 match {
+                case Some(closingTx) =>
+                  Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
+                case None =>
+                  Server.httpSuccess(txs._1.hex)
+              }
             }
           }
       }
@@ -263,8 +294,12 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ClaimDLCPenaltyFunds(eventId, tx)) =>
           complete {
-            wallet.claimDLCPenaltyFunds(eventId, tx).map { tx =>
-              Server.httpSuccess(tx.hex)
+            wallet.claimDLCPenaltyFunds(eventId, tx).map {
+              case Some(closingTx) =>
+                Server.httpSuccess(closingTx.hex)
+              case None =>
+                Server.httpSuccess(
+                  "Received would have only been dust, they have been used as fees")
             }
           }
       }
@@ -350,5 +385,15 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         }
       }
 
+    case ServerCommand("decoderawtransaction", arr) =>
+      DecodeRawTransaction.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(DecodeRawTransaction(tx)) =>
+          complete {
+            val jsonStr = wallet.decodeRawTransaction(tx)
+            Server.httpSuccess(jsonStr)
+          }
+      }
   }
 }

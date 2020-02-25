@@ -48,6 +48,18 @@ object ConsoleCli {
       cmd("getbestblockhash")
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
         .text(s"Get the best block hash"),
+      cmd("decoderawtransaction")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(command = DecodeRawTransaction(EmptyTransaction)))
+        .text(s"Decode the given raw hex transaction")
+        .children(opt[Transaction]("tx")
+          .required()
+          .action((tx, conf) =>
+            conf.copy(command = conf.command match {
+              case decode: DecodeRawTransaction => decode.copy(transaction = tx)
+              case other                        => other
+            }))),
       note(sys.props("line.separator") + "=== Wallet ==="),
       cmd("rescan")
         .action(
@@ -282,7 +294,7 @@ object ConsoleCli {
         .hidden()
         .action((_, conf) =>
           conf.copy(command = ExecuteDLCUnilateralClose(null, null)))
-        .text("Executes a force close for the DLC with the given eventId")
+        .text("Executes a unilateral close for the DLC with the given eventId")
         .children(
           opt[Sha256DigestBE]("eventid").required
             .action((eventId, conf) =>
@@ -296,6 +308,28 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case executeDLCUnilateralClose: ExecuteDLCUnilateralClose =>
                   executeDLCUnilateralClose.copy(oracleSig = sig)
+                case other => other
+              }))
+        ),
+      cmd("executedlcremoteunilateralclose")
+        .hidden()
+        .action((_, conf) =>
+          conf.copy(
+            command = ExecuteDLCRemoteUnilateralClose(null, EmptyTransaction)))
+        .text("Executes a unilateral close for the DLC with the given eventId")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
+                  executeDLCRemoteUnilateralClose.copy(eventId = eventId)
+                case other => other
+              })),
+          opt[Transaction]("forceCloseTx").required
+            .action((cet, conf) =>
+              conf.copy(command = conf.command match {
+                case executeDLCRemoteUnilateralClose: ExecuteDLCRemoteUnilateralClose =>
+                  executeDLCRemoteUnilateralClose.copy(cet = cet)
                 case other => other
               }))
         ),
@@ -640,6 +674,9 @@ object ConsoleCli {
       case ExecuteDLCUnilateralClose(eventId, oracleSig) =>
         RequestParam("executedlcunilateralclose",
                      Seq(up.writeJs(eventId), up.writeJs(oracleSig)))
+      case ExecuteDLCRemoteUnilateralClose(eventId, cet) =>
+        RequestParam("executedlcremoteunilateralclose",
+                     Seq(up.writeJs(eventId), up.writeJs(cet)))
       case GetDLCFundingTx(eventId) =>
         RequestParam("getdlcfundingtx", Seq(up.writeJs(eventId)))
       case ExecuteDLCForceClose(eventId, oracleSig) =>
@@ -698,6 +735,9 @@ object ConsoleCli {
         RequestParam("extractfrompsbt", Seq(up.writeJs(psbt)))
       case ConvertToPSBT(tx) =>
         RequestParam("converttopsbt", Seq(up.writeJs(tx)))
+
+      case DecodeRawTransaction(tx) =>
+        RequestParam("decoderawtransaction", Seq(up.writeJs(tx)))
 
       case NoCommand => ???
     }
@@ -822,6 +862,11 @@ object CliCommand {
       oracleSig: SchnorrDigitalSignature)
       extends CliCommand
 
+  case class ExecuteDLCRemoteUnilateralClose(
+      eventId: Sha256DigestBE,
+      cet: Transaction)
+      extends CliCommand
+
   case class ExecuteDLCForceClose(
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature)
@@ -865,6 +910,7 @@ object CliCommand {
   case object GetBlockCount extends CliCommand
   case object GetFilterCount extends CliCommand
   case object GetFilterHeaderCount extends CliCommand
+  case class DecodeRawTransaction(transaction: Transaction) extends CliCommand
   case class Rescan(
       addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],

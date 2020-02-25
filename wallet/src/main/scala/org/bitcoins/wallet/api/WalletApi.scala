@@ -49,6 +49,9 @@ sealed trait WalletApi {
   def chainParams: ChainParams = walletConfig.chain
 
   def networkParameters: NetworkParameters = walletConfig.network
+
+  def decodeRawTransaction(tx: Transaction): String =
+    SerializedTransaction.decodeRawTransaction(tx)
 }
 
 /**
@@ -384,19 +387,25 @@ trait UnlockedWalletApi extends LockedWalletApi {
       oracleSig: SchnorrDigitalSignature): Future[
     (Transaction, Option[Transaction])]
 
+  def executeRemoteUnilateralDLC(
+      eventId: Sha256DigestBE,
+      cet: Transaction): Future[Option[Transaction]]
+
   def executeDLCForceClose(
       eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature): Future[Transaction]
+      oracleSig: SchnorrDigitalSignature): Future[
+    (Transaction, Option[Transaction])]
 
   def claimDLCRemoteFunds(
       eventId: Sha256DigestBE,
-      forceCloseTx: Transaction): Future[Transaction]
+      forceCloseTx: Transaction): Future[Option[Transaction]]
 
-  def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction]
+  def executeDLCRefund(
+      eventId: Sha256DigestBE): Future[(Transaction, Option[Transaction])]
 
   def claimDLCPenaltyFunds(
       eventId: Sha256DigestBE,
-      forceCloseTx: Transaction): Future[Transaction]
+      forceCloseTx: Transaction): Future[Option[Transaction]]
 
   /**
     *

@@ -489,6 +489,33 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     } yield txs
   }
 
+  override def executeRemoteUnilateralDLC(
+      eventId: Sha256DigestBE,
+      cet: Transaction): Future[Option[Transaction]] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      newAddr <- getNewAddress(AddressType.SegWit)
+
+      outcome <- client.executeRemoteUnilateralDLC(
+        setup,
+        cet,
+        newAddr.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
+      txOpt <- outcome match {
+        case closing: UnilateralDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.cetSpendingInfo,
+                  closing.closingTx,
+                  isDummySignature = false)
+            .map(signed => Some(signed.transaction))
+        case _: UnilateralDLCOutcomeWithDustClosing =>
+          Future.successful(None)
+      }
+    } yield txOpt
+  }
+
   override def acceptDLCMutualClose(
       mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = {
     for {
@@ -512,16 +539,55 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
 
   override def executeDLCForceClose(
       eventId: Sha256DigestBE,
-      oracleSig: SchnorrDigitalSignature): Future[Transaction] = ???
+      oracleSig: SchnorrDigitalSignature): Future[
+    (Transaction, Option[Transaction])] =
+    executeDLCUnilateralClose(eventId, oracleSig)
 
   override def claimDLCRemoteFunds(
       eventId: Sha256DigestBE,
-      forceCloseTx: Transaction): Future[Transaction] = ???
+      forceCloseTx: Transaction): Future[Option[Transaction]] =
+    executeRemoteUnilateralDLC(eventId, forceCloseTx)
 
-  override def executeDLCRefund(eventId: Sha256DigestBE): Future[Transaction] =
-    ???
+  override def executeDLCRefund(
+      eventId: Sha256DigestBE): Future[(Transaction, Option[Transaction])] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      outcome <- client.executeRefundDLC(setup)
+      txs <- outcome match {
+        case closing: RefundDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.refundSpendingInfo,
+                  closing.closingTx,
+                  isDummySignature = false)
+            .map(signed => (outcome.refundTx, Some(signed.transaction)))
+        case _: RefundDLCOutcomeWithDustClosing =>
+          Future.successful((outcome.refundTx, None))
+      }
+    } yield txs
+  }
 
   override def claimDLCPenaltyFunds(
       eventId: Sha256DigestBE,
-      forceCloseTx: Transaction): Future[Transaction] = ???
+      forceCloseTx: Transaction): Future[Option[Transaction]] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept) <- getAllDLCData(eventId)
+
+      (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept)
+
+      outcome <- client.executeJusticeDLC(setup, forceCloseTx)
+      txOpt <- outcome match {
+        case closing: UnilateralDLCOutcomeWithClosing =>
+          BitcoinSigner
+            .sign(closing.cetSpendingInfo,
+                  closing.closingTx,
+                  isDummySignature = false)
+            .map(signed => Some(signed.transaction))
+        case _: UnilateralDLCOutcomeWithDustClosing =>
+          Future.successful(None)
+      }
+    } yield txOpt
+  }
 }

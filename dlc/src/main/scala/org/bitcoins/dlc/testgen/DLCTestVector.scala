@@ -260,7 +260,7 @@ object DLCTestVector {
       toRemoteOutcome <- acceptDLC.executeRemoteUnilateralDLC(
         acceptSetup,
         unilateralOutcome.cet,
-        acceptDLC.finalPrivKey)
+        P2WPKHWitnessSPKV0(acceptDLC.finalPrivKey.publicKey))
     } yield {
       val localClosingTxOpt = unilateralOutcome match {
         case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
