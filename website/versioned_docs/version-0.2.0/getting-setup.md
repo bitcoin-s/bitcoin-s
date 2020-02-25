@@ -115,3 +115,7 @@ $HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/bin/bitcoin-cli --datadir=[pa
 ```
 
 There is currently a bug on regtest where the server is unable to handle too many blocks at once, so when generating more than a couple blocks (like above), it is recommended you shut down your server and restart it after the blocks have been created.
+
+## Step 6 (Optional): Moving To Testnet
+
+To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file. This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node. Keep in mind then when you restart your server, it will begin initial sink which will take many hours as all block filters for all testnet blocks will be downloaded.
