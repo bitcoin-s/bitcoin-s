@@ -683,10 +683,11 @@ case class BinaryOutcomeDLCClient(
   }
 
   def constructClosingTx(
-      privKey: ECPrivateKey,
       spendingInfo: BitcoinUTXOSpendingInfoFull,
       isWin: Boolean,
-      spendsToLocal: Boolean): Future[Option[Transaction]] = {
+      spendsToLocal: Boolean,
+      sweepSPK: WitnessScriptPubKey = P2WPKHWitnessSPKV0(finalPrivKey.publicKey)): Future[
+    Option[Transaction]] = {
     // If spendsToLocal, use payout as value, otherwise subtract fee
     val spendingTxOptF = if (spendsToLocal) {
       val payoutValue = if (isWin) {
@@ -700,9 +701,7 @@ case class BinaryOutcomeDLCClient(
       } else {
 
         val txBuilder = BitcoinTxBuilder(
-          destinations = Vector(
-            TransactionOutput(payoutValue,
-                              P2WPKHWitnessSPKV0(privKey.publicKey))),
+          destinations = Vector(TransactionOutput(payoutValue, sweepSPK)),
           utxos = Vector(spendingInfo),
           feeRate = feeRate,
           changeSPK = emptyChangeSPK,
@@ -713,9 +712,8 @@ case class BinaryOutcomeDLCClient(
       }
     } else {
       val txBuilder = BitcoinTxBuilder(
-        destinations = Vector(
-          TransactionOutput(spendingInfo.output.value,
-                            P2WPKHWitnessSPKV0(privKey.publicKey))),
+        destinations =
+          Vector(TransactionOutput(spendingInfo.output.value, sweepSPK)),
         utxos = Vector(spendingInfo),
         feeRate = feeRate,
         changeSPK = emptyChangeSPK,
@@ -843,8 +841,7 @@ case class BinaryOutcomeDLCClient(
       )
 
       if (isToLocalOutput(output)) {
-        val localSpendingTxF = constructClosingTx(finalPrivKey,
-                                                  cetSpendingInfo,
+        val localSpendingTxF = constructClosingTx(cetSpendingInfo,
                                                   isWin = sigForWin,
                                                   spendsToLocal = true)
 
@@ -879,7 +876,7 @@ case class BinaryOutcomeDLCClient(
   def executeRemoteUnilateralDLC(
       dlcSetup: SetupDLC,
       publishedCET: Transaction,
-      sweepPrivKey: ECPrivateKey): Future[UnilateralDLCOutcome] = {
+      sweepSPK: WitnessScriptPubKey): Future[UnilateralDLCOutcome] = {
     val output = publishedCET.outputs.last
 
     val isWin = publishedCET.txIdBE != dlcSetup.cetWinRemoteTxid
@@ -900,7 +897,7 @@ case class BinaryOutcomeDLCClient(
       )
     } else {
       val txF =
-        constructClosingTx(privKey = sweepPrivKey,
+        constructClosingTx(sweepSPK = sweepSPK,
                            spendingInfo = spendingInfo,
                            isWin = isWin,
                            spendsToLocal = false)
@@ -950,8 +947,7 @@ case class BinaryOutcomeDLCClient(
 
     if (isToLocalOutput(justiceOutput)) {
       val justiceSpendingTxF =
-        constructClosingTx(privKey = finalPrivKey,
-                           spendingInfo = justiceSpendingInfo,
+        constructClosingTx(spendingInfo = justiceSpendingInfo,
                            isWin = isWin,
                            spendsToLocal = false)
 
@@ -999,8 +995,7 @@ case class BinaryOutcomeDLCClient(
       scriptWitness = P2WPKHWitnessV0(finalPrivKey.publicKey)
     )
 
-    val localSpendingTxF = constructClosingTx(finalPrivKey,
-                                              localRefundSpendingInfo,
+    val localSpendingTxF = constructClosingTx(localRefundSpendingInfo,
                                               isWin = false,
                                               spendsToLocal = false)
 

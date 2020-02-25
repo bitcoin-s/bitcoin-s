@@ -80,6 +80,24 @@ object ConvertToPSBT extends ServerJsonModels {
   }
 }
 
+case class DecodeRawTransaction(tx: Transaction)
+
+object DecodeRawTransaction extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[DecodeRawTransaction] = {
+    jsArr.arr.toList match {
+      case tx :: Nil =>
+        Try {
+          DecodeRawTransaction(Transaction.fromHex(tx.str))
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 case class Rescan(
     batchSize: Option[Int],
     startBlock: Option[BlockStamp],
@@ -328,6 +346,32 @@ object ExecuteDLCUnilateralClose extends ServerJsonModels {
         Failure(
           new IllegalArgumentException(
             "Missing eventId and oracleSig arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class ExecuteDLCRemoteUnilateralClose(
+    eventId: Sha256DigestBE,
+    cet: Transaction)
+
+object ExecuteDLCRemoteUnilateralClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRemoteUnilateralClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: cetJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val cet = jsToTx(cetJs)
+
+          ExecuteDLCRemoteUnilateralClose(eventId, cet)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing eventId and cet arguments"))
       case other =>
         Failure(
           new IllegalArgumentException(
