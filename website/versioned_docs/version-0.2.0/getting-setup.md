@@ -29,14 +29,26 @@ git submodule update
 
 to download the secp256k1 submodule.
 
-You should be able to test your secp256k1 installation by running `sbt console` in your bitcoin-s directory and then running
+You should be able to test your secp256k1 installation by running `sbt core/console` in your bitcoin-s directory and then running
 
 ```scala
 scala> import org.bitcoin._
 import org.bitcoin._
 
 scala> Secp256k1Context.isEnabled()
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
 res0: Boolean = true
+```
+
+where the important thing is that the function returns `true`, and you can ignore SLF4J errors.
+
+We will now download all of the bitcoind and eclair binaries needed with the following two commands
+
+```bashrc
+sbt downloadBitcoind
+sbt downloadEclair
 ```
 
 Lastly, you can test that your bitcoin-s build is functional by running
@@ -56,10 +68,6 @@ regtest=1
 server=1
 rpcuser=[your username here]
 rpcpassword=[your password here]
-rpcport=18332
-zmqpubrawblock=tcp://127.0.0.1:29000
-zmppubrawtx=tcp://127.0.0.1:29000
-addresstype=p2sh-segwit
 daemon=1
 deprecatedrpc=signrawtransaction
 blockfilterindex=1
@@ -85,7 +93,7 @@ We are finally ready to start running some programs! Follow the [instructions he
 Now, you want to run your `bitcoind` in regtest by doing the following command:
 
 ```bashrc
-./binaries/bitcoind/bitcoin-0.18.99/bin/bitcoind --datadir=[path/to/conf/directory] --rpcport=18332
+$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/bin/bitcoind --datadir=[path/to/conf/directory] --rpcport=18332
 ```
 
 Once the node is running, you should be able to start your bitcoin-s server with
@@ -103,7 +111,7 @@ and once this is done, you should be able to communicate with the server using
 To fund your wallet, you should use the CLI's `getnewaddress` command and then run
 
 ```bashrc
-./binaries/bitcoind/bitcoin-0.18.99/bin/bitcoin-cli --datadir=[path/to/conf/directory] --rpcport=18332 generatetoaddress 200 [address]
+$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/bin/bitcoin-cli --datadir=[path/to/conf/directory] --rpcport=18332 generatetoaddress 200 [address]
 ```
 
 There is currently a bug on regtest where the server is unable to handle too many blocks at once, so when generating more than a couple blocks (like above), it is recommended you shut down your server and restart it after the blocks have been created.
