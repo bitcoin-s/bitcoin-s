@@ -19,13 +19,13 @@ import org.bitcoins.core.protocol.{
   NetworkElement
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.{CryptoUtil, Factory}
+import org.bitcoins.core.util.{CryptoUtil, Factory, MapWrapper}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import scodec.bits.ByteVector
 import ujson._
 
 import scala.annotation.tailrec
-import scala.collection.{mutable, GenTraversableOnce}
+import scala.collection.mutable
 
 sealed trait DLCMessage {
   def toJson: Value
@@ -73,34 +73,19 @@ object DLCMessage {
   }
 
   case class ContractInfo(outcomeValueMap: Map[Sha256DigestBE, Satoshis])
-      extends NetworkElement {
+      extends NetworkElement
+      with MapWrapper[Sha256DigestBE, Satoshis] {
+    override def wrapped: Map[Sha256DigestBE, Satoshis] = outcomeValueMap
+
+    override def removed(key: Sha256DigestBE): ContractInfo = {
+      ContractInfo(outcomeValueMap.removed(key))
+    }
+
     override def bytes: ByteVector = {
       outcomeValueMap.foldLeft(ByteVector.empty) {
         case (vec, (digest, sats)) => vec ++ digest.bytes ++ sats.bytes
       }
     }
-    // Give common Map methods so that users don't have to reach in every time
-
-    def head: (Sha256DigestBE, Satoshis) = outcomeValueMap.head
-    def last: (Sha256DigestBE, Satoshis) = outcomeValueMap.last
-
-    def tail: Map[Sha256DigestBE, Satoshis] = outcomeValueMap.tail
-    def init: Map[Sha256DigestBE, Satoshis] = outcomeValueMap.init
-
-    def keys: Iterable[Sha256DigestBE] = outcomeValueMap.keys
-    def values: Iterable[Satoshis] = outcomeValueMap.values
-
-    def toVector: Vector[(Sha256DigestBE, Satoshis)] = outcomeValueMap.toVector
-
-    def foldLeft[B](z: B)(op: (B, (Sha256DigestBE, Satoshis)) => B): B =
-      outcomeValueMap.foldLeft(z)(op)
-
-    def map[B](f: ((Sha256DigestBE, Satoshis)) => B): Iterable[B] =
-      outcomeValueMap.map(f)
-
-    def flatMap[B](
-        f: ((Sha256DigestBE, Satoshis)) => GenTraversableOnce[B]): Iterable[B] =
-      outcomeValueMap.flatMap(f)
   }
 
   object ContractInfo extends Factory[ContractInfo] {
