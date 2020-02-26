@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Key Manager · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="### Key Manager"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Key Manager · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="### Key Manager"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/next/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Key manager</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-started">Add Bitcoin-S to your project</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/core/core-intro">Core module</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/addresses">Generating addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/hd-keys">HD key generation</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/sign">Sign api</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/txbuilder">TxBuilder example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key manager</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/next/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/applications/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/cli">cli</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/configuration">Application configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/node">Light client</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/server">application server</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/wallet">Wallet</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/next/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/security">Security</a></li></ul></div></div></section></div><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Key Manager · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="### Key Manager"/><meta name="docsearch:version" content="next"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Key Manager · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="### Key Manager"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>next</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/next/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Key manager</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-started">Add Bitcoin-S to your project</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/core/core-intro">Core module</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/addresses">Generating addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/hd-keys">HD key generation</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/sign">Sign api</a></li><li class="navListItem"><a class="navItem" href="/docs/next/core/txbuilder">TxBuilder example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key manager</h3><ul class=""><li class="navListItem navListItemActive"><a class="navItem" href="/docs/next/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/next/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/applications/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/cli">cli</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/configuration">Application configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/node">Light client</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/server">application server</a></li><li class="navListItem"><a class="navItem" href="/docs/next/applications/wallet">Wallet</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/next/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/next/security">Security</a></li></ul></div></div></section></div><script>
             var coll = document.getElementsByClassName('collapsible');
             var checkActiveCategory = true;
             for (var i = 0; i < coll.length; i++) {
@@ -70,41 +70,41 @@
 <span class="hljs-comment">//get 256 bits of random entropy</span>
 <span class="hljs-keyword">val</span> entropy = <span class="hljs-type">MnemonicCode</span>.getEntropy256Bits
 <span class="hljs-comment">// entropy: scodec.bits.BitVector = Bytes(</span>
-<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@6d4a8eb3, 0L, 32L)),</span>
+<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@122240ab, 0L, 32L)),</span>
 <span class="hljs-comment">//   256L</span>
 <span class="hljs-comment">// )</span>
 
 <span class="hljs-keyword">val</span> mnemonic = <span class="hljs-type">MnemonicCode</span>.fromEntropy(entropy)
 <span class="hljs-comment">// mnemonic: MnemonicCode = IndexedSeq(</span>
-<span class="hljs-comment">//   "secret",</span>
-<span class="hljs-comment">//   "giant",</span>
-<span class="hljs-comment">//   "blue",</span>
-<span class="hljs-comment">//   "road",</span>
-<span class="hljs-comment">//   "slam",</span>
-<span class="hljs-comment">//   "else",</span>
-<span class="hljs-comment">//   "inner",</span>
-<span class="hljs-comment">//   "once",</span>
-<span class="hljs-comment">//   "course",</span>
-<span class="hljs-comment">//   "prefer",</span>
-<span class="hljs-comment">//   "black",</span>
-<span class="hljs-comment">//   "pond",</span>
-<span class="hljs-comment">//   "kick",</span>
-<span class="hljs-comment">//   "rich",</span>
-<span class="hljs-comment">//   "olive",</span>
-<span class="hljs-comment">//   "axis",</span>
-<span class="hljs-comment">//   "weapon",</span>
-<span class="hljs-comment">//   "mask",</span>
-<span class="hljs-comment">//   "advance",</span>
-<span class="hljs-comment">//   "sibling",</span>
-<span class="hljs-comment">//   "drip",</span>
-<span class="hljs-comment">//   "correct",</span>
-<span class="hljs-comment">//   "joke",</span>
-<span class="hljs-comment">//   "wreck"</span>
+<span class="hljs-comment">//   "response",</span>
+<span class="hljs-comment">//   "promote",</span>
+<span class="hljs-comment">//   "alley",</span>
+<span class="hljs-comment">//   "opinion",</span>
+<span class="hljs-comment">//   "title",</span>
+<span class="hljs-comment">//   "random",</span>
+<span class="hljs-comment">//   "lab",</span>
+<span class="hljs-comment">//   "fatigue",</span>
+<span class="hljs-comment">//   "churn",</span>
+<span class="hljs-comment">//   "cave",</span>
+<span class="hljs-comment">//   "ethics",</span>
+<span class="hljs-comment">//   "hero",</span>
+<span class="hljs-comment">//   "sense",</span>
+<span class="hljs-comment">//   "moral",</span>
+<span class="hljs-comment">//   "account",</span>
+<span class="hljs-comment">//   "canyon",</span>
+<span class="hljs-comment">//   "rapid",</span>
+<span class="hljs-comment">//   "hawk",</span>
+<span class="hljs-comment">//   "anchor",</span>
+<span class="hljs-comment">//   "rotate",</span>
+<span class="hljs-comment">//   "loop",</span>
+<span class="hljs-comment">//   "wish",</span>
+<span class="hljs-comment">//   "inject",</span>
+<span class="hljs-comment">//   "music"</span>
 <span class="hljs-comment">// )</span>
 
 <span class="hljs-comment">//you can print that mnemonic seed with this</span>
 println(mnemonic.words)
-<span class="hljs-comment">// Vector(secret, giant, blue, road, slam, else, inner, once, course, prefer, black, pond, kick, rich, olive, axis, weapon, mask, advance, sibling, drip, correct, joke, wreck)</span>
+<span class="hljs-comment">// Vector(response, promote, alley, opinion, title, random, lab, fatigue, churn, cave, ethics, hero, sense, moral, account, canyon, rapid, hawk, anchor, rotate, loop, wish, inject, music)</span>
 </code></pre>
 <p>Now that we have a <code>MnemonicCode</code> that was securely generated, we need to now create <code>KeyManagerParams</code> which tells us how to generate
 generate specific kinds of addresses for wallets.</p>
@@ -131,7 +131,7 @@ generate specific kinds of addresses for wallets.</p>
 <span class="hljs-comment">//this will create a temp directory with the prefix 'key-manager-example` that will</span>
 <span class="hljs-comment">//have a file in it called "encrypted-bitcoin-s-seed.json"</span>
 <span class="hljs-keyword">val</span> seedPath = <span class="hljs-type">Files</span>.createTempDirectory(<span class="hljs-string">"key-manager-example"</span>).resolve(<span class="hljs-type">WalletStorage</span>.<span class="hljs-type">ENCRYPTED_SEED_FILE_NAME</span>)
-<span class="hljs-comment">// seedPath: Path = /tmp/key-manager-example17530969980164063091/encrypted-bitcoin-s-seed.json</span>
+<span class="hljs-comment">// seedPath: Path = /tmp/key-manager-example11484886349204084939/encrypted-bitcoin-s-seed.json</span>
 
 <span class="hljs-comment">//let's create a native segwit key manager</span>
 <span class="hljs-keyword">val</span> purpose = <span class="hljs-type">HDPurposes</span>.<span class="hljs-type">SegWit</span>
@@ -143,7 +143,7 @@ generate specific kinds of addresses for wallets.</p>
 
 <span class="hljs-keyword">val</span> kmParams = <span class="hljs-type">KeyManagerParams</span>(seedPath, purpose, network)
 <span class="hljs-comment">// kmParams: KeyManagerParams = KeyManagerParams(</span>
-<span class="hljs-comment">//   /tmp/key-manager-example17530969980164063091/encrypted-bitcoin-s-seed.json,</span>
+<span class="hljs-comment">//   /tmp/key-manager-example11484886349204084939/encrypted-bitcoin-s-seed.json,</span>
 <span class="hljs-comment">//   IndexedSeq(BIP32Node(84, true)),</span>
 <span class="hljs-comment">//   RegTest</span>
 <span class="hljs-comment">// )</span>
@@ -152,33 +152,33 @@ generate specific kinds of addresses for wallets.</p>
 <span class="hljs-comment">// km: Either[KeyManagerInitializeError, BIP39KeyManager] = Right(</span>
 <span class="hljs-comment">//   BIP39KeyManager(</span>
 <span class="hljs-comment">//     IndexedSeq(</span>
-<span class="hljs-comment">//       "secret",</span>
-<span class="hljs-comment">//       "giant",</span>
-<span class="hljs-comment">//       "blue",</span>
-<span class="hljs-comment">//       "road",</span>
-<span class="hljs-comment">//       "slam",</span>
-<span class="hljs-comment">//       "else",</span>
-<span class="hljs-comment">//       "inner",</span>
-<span class="hljs-comment">//       "once",</span>
-<span class="hljs-comment">//       "course",</span>
-<span class="hljs-comment">//       "prefer",</span>
-<span class="hljs-comment">//       "black",</span>
-<span class="hljs-comment">//       "pond",</span>
-<span class="hljs-comment">//       "kick",</span>
-<span class="hljs-comment">//       "rich",</span>
-<span class="hljs-comment">//       "olive",</span>
-<span class="hljs-comment">//       "axis",</span>
-<span class="hljs-comment">//       "weapon",</span>
-<span class="hljs-comment">//       "mask",</span>
-<span class="hljs-comment">//       "advance",</span>
-<span class="hljs-comment">//       "sibling",</span>
-<span class="hljs-comment">//       "drip",</span>
-<span class="hljs-comment">//       "correct",</span>
-<span class="hljs-comment">//       "joke",</span>
-<span class="hljs-comment">//       "wreck"</span>
+<span class="hljs-comment">//       "response",</span>
+<span class="hljs-comment">//       "promote",</span>
+<span class="hljs-comment">//       "alley",</span>
+<span class="hljs-comment">//       "opinion",</span>
+<span class="hljs-comment">//       "title",</span>
+<span class="hljs-comment">//       "random",</span>
+<span class="hljs-comment">//       "lab",</span>
+<span class="hljs-comment">//       "fatigue",</span>
+<span class="hljs-comment">//       "churn",</span>
+<span class="hljs-comment">//       "cave",</span>
+<span class="hljs-comment">//       "ethics",</span>
+<span class="hljs-comment">//       "hero",</span>
+<span class="hljs-comment">//       "sense",</span>
+<span class="hljs-comment">//       "moral",</span>
+<span class="hljs-comment">//       "account",</span>
+<span class="hljs-comment">//       "canyon",</span>
+<span class="hljs-comment">//       "rapid",</span>
+<span class="hljs-comment">//       "hawk",</span>
+<span class="hljs-comment">//       "anchor",</span>
+<span class="hljs-comment">//       "rotate",</span>
+<span class="hljs-comment">//       "loop",</span>
+<span class="hljs-comment">//       "wish",</span>
+<span class="hljs-comment">//       "inject",</span>
+<span class="hljs-comment">//       "music"</span>
 <span class="hljs-comment">//     ),</span>
 <span class="hljs-comment">//     KeyManagerParams(</span>
-<span class="hljs-comment">//       /tmp/key-manager-example17530969980164063091/encrypted-bitcoin-s-seed.json,</span>
+<span class="hljs-comment">//       /tmp/key-manager-example11484886349204084939/encrypted-bitcoin-s-seed.json,</span>
 <span class="hljs-comment">//       IndexedSeq(BIP32Node(84, true)),</span>
 <span class="hljs-comment">//       RegTest</span>
 <span class="hljs-comment">//     ),</span>
@@ -190,17 +190,17 @@ generate specific kinds of addresses for wallets.</p>
 <span class="hljs-comment">// rootXPub: ExtPublicKey = ExtPublicKeyImpl(</span>
 <span class="hljs-comment">//   SegWitTestNet3Pub,</span>
 <span class="hljs-comment">//   UInt8Impl(0),</span>
-<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@5dd5bb0d, 0L, 4L)),</span>
+<span class="hljs-comment">//   Chunk(View(scodec.bits.ByteVector$AtArray@1b116f85, 0L, 4L)),</span>
 <span class="hljs-comment">//   UInt32Impl(0),</span>
-<span class="hljs-comment">//   ChainCode(Chunk(View(scodec.bits.ByteVector$AtArray@57039723, 32L, 32L))),</span>
+<span class="hljs-comment">//   ChainCode(Chunk(View(scodec.bits.ByteVector$AtArray@e817cdf, 32L, 32L))),</span>
 <span class="hljs-comment">//   ECPublicKeyImpl(</span>
-<span class="hljs-comment">//     Chunk(View(scodec.bits.ByteVector$AtArray@50f13e50, 0L, 33L)),</span>
-<span class="hljs-comment">//     scala.concurrent.impl.ExecutionContextImpl$$anon$3@521ed648[Running, parallelism = 2, size = 1, active = 0, running = 0, steals = 16, tasks = 0, submissions = 0]</span>
+<span class="hljs-comment">//     Chunk(View(scodec.bits.ByteVector$AtArray@75d97c40, 0L, 33L)),</span>
+<span class="hljs-comment">//     scala.concurrent.impl.ExecutionContextImpl$$anon$3@2c1533a3[Running, parallelism = 2, size = 1, active = 0, running = 0, steals = 16, tasks = 0, submissions = 0]</span>
 <span class="hljs-comment">//   )</span>
 <span class="hljs-comment">// )</span>
 
 println(rootXPub)
-<span class="hljs-comment">// vpub5SLqN2bLY4WeYiaCp8oMZ3FjeW42469jBijS1YAM8C3QUozZHX2RQfot7eLweodnXrBjvZ6nmP5TKSYYH3TX6LCL5CABRiKULTyBhuLeMvz</span>
+<span class="hljs-comment">// vpub5SLqN2bLY4WeYbWo69ATbXvRrrs9jTvrVdSipdbo7fuF6HMBrHvVjQTXzFnReBN3Pq6gEsGU4aCjmhCcTS7GLdTMS6cJ433JuxBh6r2NQDr</span>
 </code></pre>
 <p>Which should print something that looks like this</p>
 <p><code>vpub5SLqN2bLY4WeXxMqwJHJFBEwxSscGB2uDUnsTS3edVjZEwTrQDFDNqoR2xLqARQPabGaXsHSTenTRcqm2EnB9MpuC4vSk3LqSgNmGGZtuq7</code></p>
