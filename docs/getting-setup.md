@@ -1,4 +1,9 @@
-# Getting Setup With Bitcoin-S
+---
+id: getting-setup
+title: Getting Bitcoin-S installed on your machine
+---
+
+## Getting Setup With Bitcoin-S
 
 ## Step 1: Java and Scala
 

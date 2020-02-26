@@ -1,8 +1,13 @@
-# Executing A Discreet Log Contract (DLC)
+---
+id: dlc
+title: Executing A DLC with Bitcoin-S
+---
+
+## Executing A Discreet Log Contract (DLC)
 
 ## Step 1: Get Bitcoin-S Setup
 
-See the other document
+See the [setup document](../geting-setup.md)
 
 ## Step 2: Agree On Contract Terms
 

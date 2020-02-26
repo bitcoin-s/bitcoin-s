@@ -3,6 +3,10 @@ id: getting-started
 title: Add Bitcoin-S to your project
 ---
 
+## If you want to setup Bitcoin-S locally
+
+Then go to [this document](getting-setup.md).
+
 ## REPL
 
 You can try out Bitcoin-S in a REPL in a matter of seconds. Run the provided
@@ -62,7 +66,7 @@ recent snapshot published is `@UNSTABLE_VERSION@`.
 To fetch snapshots, you will need to add the correct
 resolver in your `build.sbt`:
 
-```sbt
+​```sbt
 resolvers += Resolver.sonatypeRepo("snapshots")
 ${List.fill(3)("`").mkString /* Hacky solution to get around nesting backticks */ }
 
