@@ -68,6 +68,7 @@ regtest=1
 server=1
 rpcuser=[your username here]
 rpcpassword=[your password here]
+rpcport=18332
 daemon=1
 deprecatedrpc=signrawtransaction
 blockfilterindex=1
@@ -105,7 +106,7 @@ Once the node is running, you should be able to start your bitcoin-s server with
 and once this is done, you should be able to communicate with the server using
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli getblockcount
+./app/cli/target/graalvm-native-image/bitcoin-s-cli getnewaddress
 ```
 
 To fund your wallet, you should use the CLI's `getnewaddress` command and then run
@@ -118,4 +119,10 @@ There is currently a bug on regtest where the server is unable to handle too man
 
 ## Step 6 (Optional): Moving To Testnet
 
-To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file. This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node. Keep in mind then when you restart your server, it will begin initial sink which will take many hours as all block filters for all testnet blocks will be downloaded.
+To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file. This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node. Keep in mind then when you restart your server, it will begin initial sink which will take many hours as all block filters for all testnet blocks will be downloaded. If you wish to speed this process up, download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/testnet-chaindump-2-25-2020.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
+
+```bashrc
+cat chaindump.sql | sqlite3 chaindb.sqlite
+```
+
+This should take a couple minutes to execute, but once it is done, you will only have a short while left to sync once you start your server.
