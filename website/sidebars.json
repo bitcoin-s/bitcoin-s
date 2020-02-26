@@ -7,6 +7,7 @@
       "core/addresses",
       "core/hd-keys",
       "core/sign",
+      "core/psbts",
       "core/txbuilder"
     ],
     "Key manager": [
