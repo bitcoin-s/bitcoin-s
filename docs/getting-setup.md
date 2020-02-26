@@ -7,7 +7,7 @@ title: Getting Bitcoin-S installed on your machine
 
 ## Step 1: Java and Scala
 
-The first step in getting setup will be getting the [Java Development Kit](https://www.oracle.com/java/technologies/javase-downloads.html) (JDK) installed on your machine. Bitcoin-S works best with Java 8 but _should_ also work with Java 11.
+The first step in getting setup will be getting the [Java Development Kit](https://www.oracle.com/java/technologies/javase-downloads.html) (JDK) installed on your machine. Bitcoin-S works best with Java 8 but _should_ also work with Java 11 and Java 13.
 
 Once java is setup on your machine (try running `javac -version`), you are ready to download and install the [Scala Build Tool](https://www.scala-sbt.org/download.html) (sbt). Note that running `sbt` for the first time will take a while.
 
@@ -16,13 +16,13 @@ Once java is setup on your machine (try running `javac -version`), you are ready
 Now, it is time to clone the [Bitcoin-S repository](https://github.com/bitcoin-s/bitcoin-s/) by running
 
 ```bashrc
-git clone git@github.com:bitcoin-s/bitcoin-s.git
+git clone --recursive git@github.com:bitcoin-s/bitcoin-s.git
 ```
 
 or alternatively, if you do not have ssh setup with github, you can run
 
 ```bashrc
-git clone https://github.com/bitcoin-s/bitcoin-s.git
+git clone --recursive https://github.com/bitcoin-s/bitcoin-s.git
 ```
 
 Next, you will want to execute the commands
@@ -49,6 +49,8 @@ res0: Boolean = true
 
 where the important thing is that the function returns `true`, and you can ignore SLF4J errors.
 
+Note: To exit the `sbt console`, you can execute `:quit`, and for general help, run `:help`.
+
 We will now download all of the bitcoind and eclair binaries needed with the following two commands
 
 ```bashrc
@@ -64,7 +66,7 @@ sbt test
 
 ## Step 3: Configuration
 
-Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](applications/configuration#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `localhost:18444` if you want to run in regtest.
+Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](applications/configuration#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `"localhost:18444"` if you want to run in regtest.
 
 Once the bitcoin-s configuration is all done, I recommend creating a directory someplace in which to run your `bitcoind` node. Once you have this directory created, add the following `bitcoin.conf` file to it
 

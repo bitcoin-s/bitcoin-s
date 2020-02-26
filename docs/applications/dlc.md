@@ -7,7 +7,9 @@ title: Executing A DLC with Bitcoin-S
 
 ## Step 1: Get Bitcoin-S Setup
 
-See the [setup document](../getting-setup)
+See the [setup document](../getting-setup).
+
+Make sure to follow [Step 4](../getting-setup#step-4-optional-discreet-log-contract-branch) to checkout the `dlc` feature branch.
 
 ## Step 2: Agree On Contract Terms
 
