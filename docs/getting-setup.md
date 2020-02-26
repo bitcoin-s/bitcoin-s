@@ -64,7 +64,7 @@ sbt test
 
 ## Step 3: Configuration
 
-Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](https://bitcoin-s.org/docs/next/applications/configuration#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `localhost:18444` if you want to run in regtest.
+Now that we have the bitcoin-s repo setup, we want to create our application configurations. This is done by creating a `bitcoin-s.conf` file at `$HOME/.bitcoin-s`. [Here is an example configuration file](applications/configuration#example-configuration-file). The only thing that you will _need_ to change is the `peers` list to which you will want to add `localhost:18444` if you want to run in regtest.
 
 Once the bitcoin-s configuration is all done, I recommend creating a directory someplace in which to run your `bitcoind` node. Once you have this directory created, add the following `bitcoin.conf` file to it
 
@@ -94,7 +94,7 @@ and then test that `Secp256k1Context.isEnabled()` as in Step 2.
 
 ## Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)
 
-We are finally ready to start running some programs! Follow the [instructions here](https://bitcoin-s.org/docs/next/applications/server#building-the-server) to build the server. Then, follow [these instructions](https://bitcoin-s.org/docs/next/applications/cli) to setup the CLI (note that this will require you install some graalvm things as detailed in the instructions).
+We are finally ready to start running some programs! Follow the [instructions here](applications/server#building-the-server) to build the server. Then, follow [these instructions](applications/cli) to setup the CLI (note that this will require you install some graalvm things as detailed in the instructions).
 
 Now, you want to run your `bitcoind` in regtest by doing the following command:
 
