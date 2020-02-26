@@ -77,8 +77,12 @@ object DLCMessage {
       with MapWrapper[Sha256DigestBE, Satoshis] {
     override def wrapped: Map[Sha256DigestBE, Satoshis] = outcomeValueMap
 
-    override def removed(key: Sha256DigestBE): ContractInfo = {
-      ContractInfo(outcomeValueMap.removed(key))
+    def removed(key: Sha256DigestBE): ContractInfo = {
+      ContractInfo(outcomeValueMap - key)
+    }
+
+    def -(key: Sha256DigestBE): ContractInfo = {
+      ContractInfo(outcomeValueMap - key)
     }
 
     override def bytes: ByteVector = {
