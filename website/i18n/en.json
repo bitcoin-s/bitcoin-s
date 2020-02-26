@@ -9,19 +9,19 @@
         "title": "Blockchain Verification"
       },
       "applications/cli": {
-        "title": "bitcoin-s cli"
+        "title": "cli"
       },
       "applications/configuration": {
         "title": "Application configuration"
       },
-      "applications/key-manager": {
-        "title": "Key Manager"
+      "applications/dlc": {
+        "title": "Executing A DLC with Bitcoin-S"
       },
       "applications/node": {
         "title": "Light client"
       },
       "applications/server": {
-        "title": "bitcoin-s application server"
+        "title": "application server"
       },
       "applications/wallet": {
         "title": "Wallet"
@@ -41,11 +41,17 @@
       "core/hd-keys": {
         "title": "HD key generation"
       },
+      "core/psbts": {
+        "title": "Partially Signed Bitcoin Transactions"
+      },
       "core/sign": {
         "title": "Sign api"
       },
       "core/txbuilder": {
         "title": "TxBuilder example"
+      },
+      "getting-setup": {
+        "title": "Getting Bitcoin-S installed on your machine"
       },
       "getting-started": {
         "title": "Add Bitcoin-S to your project"
@@ -116,9 +122,6 @@
       "version-0.2.0/applications/version-0.2.0-node": {
         "title": "Light client"
       },
-      "version-0.2.0/applications/version-0.2.0-server": {
-        "title": "bitcoin-s application server"
-      },
       "version-0.2.0/applications/version-0.2.0-wallet": {
         "title": "Wallet"
       },
@@ -137,17 +140,11 @@
       "version-0.2.0/core/version-0.2.0-hd-keys": {
         "title": "HD key generation"
       },
-      "version-0.2.0/core/version-0.2.0-sign": {
-        "title": "Sign api"
-      },
       "version-0.2.0/core/version-0.2.0-txbuilder": {
         "title": "TxBuilder example"
       },
       "version-0.2.0/version-0.2.0-getting-started": {
         "title": "Add Bitcoin-S to your project"
-      },
-      "version-0.2.0/key-manager/version-0.2.0-key-manager": {
-        "title": "Key Manager"
       },
       "version-0.2.0/rpc/version-0.2.0-rpc-bitcoind": {
         "title": "bitcoind/Bitcoin Core"
@@ -158,47 +155,8 @@
       "version-0.2.0/rpc/version-0.2.0-rpc-clients-intro": {
         "title": "Introduction"
       },
-      "version-0.2.0/version-0.2.0-security": {
-        "title": "Security"
-      },
       "version-0.2.0/version-0.2.0-windows-users": {
         "title": "windows-users"
-      },
-      "version-0.2/applications/version-0.2-server": {
-        "title": "bitcoin-s application server"
-      },
-      "version-0.2/applications/version-0.2-wallet": {
-        "title": "Wallet"
-      },
-      "version-0.2/version-0.2-contributing-website": {
-        "title": "Contributing to the website"
-      },
-      "version-0.2/core/version-0.2-addresses": {
-        "title": "Generating addresses"
-      },
-      "version-0.2/core/version-0.2-core-intro": {
-        "title": "Core module"
-      },
-      "version-0.2/core/version-0.2-hd-keys": {
-        "title": "HD key generation"
-      },
-      "version-0.2/core/version-0.2-sign": {
-        "title": "Sign api"
-      },
-      "version-0.2/core/version-0.2-txbuilder": {
-        "title": "TxBuilder example"
-      },
-      "version-0.2/version-0.2-getting-started": {
-        "title": "Add Bitcoin-S to your project"
-      },
-      "version-0.2/key-manager/version-0.2-key-manager": {
-        "title": "Key Manager"
-      },
-      "version-0.2/rpc/version-0.2-rpc-bitcoind": {
-        "title": "bitcoind/Bitcoin Core"
-      },
-      "version-0.2/version-0.2-security": {
-        "title": "Security"
       }
     },
     "links": {
@@ -208,7 +166,9 @@
     },
     "categories": {
       "Getting started": "Getting started",
+      "Getting setup": "Getting setup",
       "Core module": "Core module",
+      "Key manager": "Key manager",
       "RPC clients": "RPC clients",
       "Applications": "Applications",
       "Contributing": "Contributing",
