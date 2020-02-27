@@ -3,27 +3,37 @@ package org.bitcoins.wallet.models
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.OutputReference
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStampWithFuture}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage.{ContractInfo, DLCOffer, OracleInfo}
-import org.bitcoins.dlc.{DLCPublicKeys, DLCTimeouts}
+import org.bitcoins.dlc.{DLCMessage, DLCPublicKeys, DLCTimeouts}
 import slick.jdbc.SQLiteProfile.api._
-import slick.lifted.{PrimaryKey, ProvenShape}
+import slick.lifted.{ForeignKeyQuery, PrimaryKey, ProvenShape}
 
 case class DLCOfferDb(
     eventId: Sha256DigestBE,
     network: BitcoinNetwork,
-    oracleInfo: OracleInfo,
+    oraclePubKey: ECPublicKey,
+    oracleRValue: ECPublicKey,
     contractInfo: ContractInfo,
-    timeouts: DLCTimeouts,
-    pubKeys: DLCPublicKeys,
+    penaltyTimeout: UInt32,
+    contractMaturity: BlockStampWithFuture,
+    contractTimeout: BlockStampWithFuture,
+    fundingKey: ECPublicKey,
+    toLocalCETKey: ECPublicKey,
+    finalAddress: BitcoinAddress,
     totalCollateral: CurrencyUnit,
-    fundingInputs: Vector[OutputReference],
     feeRate: SatoshisPerVirtualByte,
-    changeAddress: Bech32Address) {
+    changeAddress: BitcoinAddress) {
 
-  def toDLCOffer: DLCOffer = {
+  def toDLCOffer(fundingInputs: Vector[OutputReference]): DLCOffer = {
+    val oracleInfo = OracleInfo(oraclePubKey, oracleRValue)
+    val pubKeys =
+      DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
+    val timeouts =
+      DLCTimeouts(penaltyTimeout, contractMaturity, contractTimeout)
     DLCOffer(
       contractInfo,
       oracleInfo,
@@ -37,6 +47,31 @@ case class DLCOfferDb(
   }
 }
 
+object DLCOfferDb {
+
+  def fromDLCOffer(offer: DLCOffer, network: BitcoinNetwork): DLCOfferDb = {
+    val eventId = DLCMessage.calcEventId(offer.oracleInfo,
+                                         offer.contractInfo,
+                                         offer.timeouts)
+    DLCOfferDb(
+      eventId,
+      network,
+      offer.oracleInfo.pubKey,
+      offer.oracleInfo.rValue,
+      offer.contractInfo,
+      offer.timeouts.penaltyTimeout,
+      offer.timeouts.contractMaturity,
+      offer.timeouts.contractTimeout,
+      offer.pubKeys.fundingKey,
+      offer.pubKeys.toLocalCETKey,
+      offer.pubKeys.finalAddress,
+      offer.totalCollateral,
+      offer.feeRate,
+      offer.changeAddress
+    )
+  }
+}
+
 class DLCOfferTable(tag: Tag)
     extends Table[DLCOfferDb](tag, "wallet_dlc_offers") {
 
@@ -46,55 +81,74 @@ class DLCOfferTable(tag: Tag)
 
   def network: Rep[BitcoinNetwork] = column("network")
 
-  def oracleInfo: Rep[OracleInfo] = column("oracleInfo")
+  def oraclePubKey: Rep[ECPublicKey] = column("oraclePubKey")
+
+  def oracleRValue: Rep[ECPublicKey] = column("oracleRValue")
 
   def contractInfo: Rep[ContractInfo] = column("contractInfo")
 
-  def timeouts: Rep[DLCTimeouts] = column("timeouts")
+  def penaltyTimeout: Rep[UInt32] = column("penaltyTimeout")
 
-  def pubKeys: Rep[DLCPublicKeys] = column("pubKeys")
+  def contractMaturity: Rep[BlockStampWithFuture] = column("contractMaturity")
+
+  def contractTimeout: Rep[BlockStampWithFuture] = column("contractTimeout")
+
+  def fundingKey: Rep[ECPublicKey] = column("fundingKey")
+
+  def toLocalCETKey: Rep[ECPublicKey] = column("toLocalCETKey")
+
+  def finalAddress: Rep[BitcoinAddress] = column("finalAddress")
 
   def totalCollateral: Rep[CurrencyUnit] = column("totalCollateral")
 
-  def fundingInputs: Rep[Vector[OutputReference]] =
-    column("fundingInputs")
-
   def feeRate: Rep[SatoshisPerVirtualByte] = column("feeRate")
 
-  def changeAddress: Rep[Bech32Address] = column("changeAddress")
+  def changeAddress: Rep[BitcoinAddress] = column("changeAddress")
 
   private type DLCTuple = (
       Sha256DigestBE,
       BitcoinNetwork,
-      OracleInfo,
+      ECPublicKey,
+      ECPublicKey,
       ContractInfo,
-      DLCTimeouts,
-      DLCPublicKeys,
+      UInt32,
+      BlockStampWithFuture,
+      BlockStampWithFuture,
+      ECPublicKey,
+      ECPublicKey,
+      BitcoinAddress,
       CurrencyUnit,
-      Vector[OutputReference],
       SatoshisPerVirtualByte,
-      Bech32Address)
+      BitcoinAddress)
 
   private val fromTuple: DLCTuple => DLCOfferDb = {
     case (eventId,
           network,
-          oracleInfo,
+          oraclePubKey,
+          oracleRValue,
           contractInfo,
-          timeouts,
-          pubKeys,
+          penaltyTimeout,
+          contractMaturity,
+          contractTimeout,
+          fundingKey,
+          toLocalCETKey,
+          finalAddress,
           totalCollateral,
-          fundingInputs,
           feeRate,
           changeAddress) =>
       DLCOfferDb(
         eventId,
         network,
-        oracleInfo,
+        oraclePubKey,
+        oracleRValue,
         contractInfo,
-        timeouts,
-        pubKeys,
+        penaltyTimeout,
+        contractMaturity,
+        contractTimeout,
+        fundingKey,
+        toLocalCETKey,
+        finalAddress,
         totalCollateral,
-        fundingInputs,
         feeRate,
         changeAddress
       )
@@ -104,27 +158,40 @@ class DLCOfferTable(tag: Tag)
     Some(
       (dlc.eventId,
        dlc.network,
-       dlc.oracleInfo,
+       dlc.oraclePubKey,
+       dlc.oracleRValue,
        dlc.contractInfo,
-       dlc.timeouts,
-       dlc.pubKeys,
+       dlc.penaltyTimeout,
+       dlc.contractMaturity,
+       dlc.contractTimeout,
+       dlc.fundingKey,
+       dlc.toLocalCETKey,
+       dlc.finalAddress,
        dlc.totalCollateral,
-       dlc.fundingInputs,
        dlc.feeRate,
        dlc.changeAddress))
 
   def * : ProvenShape[DLCOfferDb] =
     (eventId,
      network,
-     oracleInfo,
+     oraclePubKey,
+     oracleRValue,
      contractInfo,
-     timeouts,
-     pubKeys,
+     penaltyTimeout,
+     contractMaturity,
+     contractTimeout,
+     fundingKey,
+     toLocalCETKey,
+     finalAddress,
      totalCollateral,
-     fundingInputs,
      feeRate,
      changeAddress) <> (fromTuple, toTuple)
 
   def primaryKey: PrimaryKey =
     primaryKey(name = "pk_dlc", sourceColumns = eventId)
+
+  def fk: ForeignKeyQuery[DLCTable, DLCDb] =
+    foreignKey("fk_eventId",
+               sourceColumns = eventId,
+               targetTableQuery = TableQuery[DLCTable])(_.eventId)
 }

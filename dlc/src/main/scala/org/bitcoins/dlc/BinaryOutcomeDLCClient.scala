@@ -13,7 +13,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil, MapWrapper}
 import org.bitcoins.core.wallet.builder.{BitcoinTxBuilder, TxBuilder}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
@@ -62,8 +62,8 @@ case class BinaryOutcomeDLCClient(
     losePayout: CurrencyUnit,
     timeouts: DLCTimeouts,
     feeRate: FeeUnit,
-    changeSPK: WitnessScriptPubKey,
-    remoteChangeSPK: WitnessScriptPubKey,
+    changeSPK: ScriptPubKey,
+    remoteChangeSPK: ScriptPubKey,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
 
@@ -226,15 +226,23 @@ case class BinaryOutcomeDLCClient(
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
     val fundingTx = createUnsignedFundingTransaction
 
-    val sigFs = fundingUtxos.foldLeft(Vector.empty[Future[PartialSignature]]) {
+    val outPointAndSigFs = fundingUtxos.foldLeft(
+      Vector.empty[Future[(TransactionOutPoint, PartialSignature)]]) {
       case (vec, utxo) =>
-        val sigF = BitcoinSignerSingle.signSingle(utxo,
-                                                  fundingTx,
-                                                  isDummySignature = false)
+        val sigF = BitcoinSignerSingle
+          .signSingle(utxo, fundingTx, isDummySignature = false)
+          .map(sig => (utxo.outPoint, sig))
         vec :+ sigF
     }
+    val sigsF = Future.sequence(outPointAndSigFs)
 
-    Future.sequence(sigFs).map(FundingSignatures.apply)
+    val outPointAndSigsF = sigsF.map { sigs =>
+      sigs.map {
+        case (outPoint, _) =>
+          (outPoint, sigs.filter(_._1 == outPoint).map(_._2))
+      }.toMap
+    }
+    outPointAndSigsF.map(FundingSignatures.apply)
   }
 
   def createFundingTransaction(
@@ -245,13 +253,15 @@ case class BinaryOutcomeDLCClient(
       (remoteFundingInputs.length, 0)
     }
 
-    val fundingPSBT = remoteSigs.sigs.zipWithIndex
+    val fundingPSBT = remoteSigs.zipWithIndex
       .foldLeft(PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
-        case (psbt, (sig, index)) =>
+        case (psbt, ((outPoint, sigs), index)) =>
+          require(psbt.transaction.inputs(index).previousOutput == outPoint,
+                  "Adding signature for incorrect input")
           psbt
             .addWitnessUTXOToInput(remoteFundingInputs(index).output,
                                    index + remoteTweak)
-            .addSignature(sig, index + remoteTweak)
+            .addSignatures(sigs, index + remoteTweak)
       }
 
     val signedFundingPSBTF =
@@ -1233,7 +1243,13 @@ object BinaryOutcomeDLCClient {
   }
 }
 
-case class FundingSignatures(sigs: Vector[PartialSignature])
+case class FundingSignatures(
+    sigs: Map[TransactionOutPoint, Vector[PartialSignature]])
+    extends MapWrapper[TransactionOutPoint, Vector[PartialSignature]] {
+  override protected def wrapped: Map[
+    TransactionOutPoint,
+    Vector[PartialSignature]] = sigs
+}
 
 case class CETSignatures(
     winSig: PartialSignature,
