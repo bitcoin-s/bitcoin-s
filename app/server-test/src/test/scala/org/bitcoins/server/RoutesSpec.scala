@@ -198,11 +198,26 @@ class RoutesSpec
         .returning(Future.successful(Bitcoins(50)))
 
       val route =
-        walletRoutes.handleCommand(ServerCommand("getbalance", Arr()))
+        walletRoutes.handleCommand(
+          ServerCommand("getbalance", Arr(Bool(false))))
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":50,"error":null}"""
+        responseAs[String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+      }
+    }
+
+    "return the wallet's balance in sats" in {
+      (mockWalletApi.getBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("getbalance", Arr(Bool(true))))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"5000000000 sats","error":null}"""
       }
     }
 

@@ -17,6 +17,18 @@ object ServerCommand {
   implicit val rw: ReadWriter[ServerCommand] = macroRW
 }
 
+case class GetBalance(isSats: Boolean)
+
+object GetBalance extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetBalance] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(GetBalance(jsArr.arr.head.bool))
+  }
+}
+
 case class CombinePSBTs(psbts: Seq[PSBT])
 
 object CombinePSBTs extends ServerJsonModels {
