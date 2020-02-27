@@ -44,6 +44,12 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
   def nodeApi: NodeApi = MockNodeApi
 
+  val legacyWalletConf: Config =
+    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")
+
+  val segwitWalletConf: Config =
+    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
+
   // This is a random block on testnet
   val testBlockHash = DoubleSha256DigestBE.fromHex(
     "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75")
@@ -120,7 +126,8 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
-      val km = createNewKeyManager()
+      val newWalletConf = walletAppConfig.withOverrides(walletConfig)
+      val km = createNewKeyManager()(newWalletConf)
       val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
       makeDependentFixture(
         build = createNewWallet(keyManager = km,
@@ -144,18 +151,26 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     )(test)
   }
 
+  def withFundedSegwitWallet(test: OneArgAsyncTest): FutureOutcome = {
+    makeDependentFixture(
+      build = () =>
+        FundWalletUtil.createFundedWallet(nodeApi,
+                                          chainQueryApi,
+                                          Some(segwitWalletConf)),
+      destroy = { funded: FundedWallet =>
+        destroyWallet(funded.wallet)
+      }
+    )(test)
+  }
+
   /** Fixture for an initialized wallet which produce legacy addresses */
   def withLegacyWallet(test: OneArgAsyncTest): FutureOutcome = {
-    val confOverride =
-      ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")
-    withNewConfiguredWallet(confOverride)(test)
+    withNewConfiguredWallet(legacyWalletConf)(test)
   }
 
   /** Fixture for an initialized wallet which produce segwit addresses */
   def withSegwitWallet(test: OneArgAsyncTest): FutureOutcome = {
-    val confOverride =
-      ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
-    withNewConfiguredWallet(confOverride)(test)
+    withNewConfiguredWallet(segwitWalletConf)(test)
   }
 
   def withNewWallet(test: OneArgAsyncTest): FutureOutcome =
@@ -257,10 +272,10 @@ object BitcoinSWalletTest extends WalletLogger {
 
   private def createNewKeyManager(
       bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt)(
-      implicit config: BitcoinSAppConfig): BIP39KeyManager = {
-    val keyManagerE = BIP39KeyManager.initialize(
-      kmParams = config.walletConf.kmParams,
-      bip39PasswordOpt = bip39PasswordOpt)
+      implicit config: WalletAppConfig): BIP39KeyManager = {
+    val keyManagerE = BIP39KeyManager.initialize(kmParams = config.kmParams,
+                                                 bip39PasswordOpt =
+                                                   bip39PasswordOpt)
     keyManagerE match {
       case Right(keyManager) => keyManager
       case Left(err) =>
@@ -301,23 +316,38 @@ object BitcoinSWalletTest extends WalletLogger {
     }
 
   /** Creates a wallet with the default configuration  */
-  def createDefaultWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
+  def createDefaultWallet(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
     val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
-    val km = createNewKeyManager(bip39PasswordOpt = bip39PasswordOpt)
+
+    val newWalletConf = extraConfig match {
+      case None =>
+        config.walletConf
+      case Some(walletConf) =>
+        config.walletConf.withOverrides(walletConf)
+    }
+    val km =
+      createNewKeyManager(bip39PasswordOpt = bip39PasswordOpt)(newWalletConf)
     createNewWallet(
       keyManager = km,
       bip39PasswordOpt = bip39PasswordOpt,
-      extraConfig = None,
+      extraConfig = extraConfig,
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi)(config, ec)() // get the standard config
   }
 
-  def createWallet2Accounts(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
+  def createWallet2Accounts(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
       ec: ExecutionContext): Future[Wallet] = {
-    val defaultWalletF = createDefaultWallet(nodeApi, chainQueryApi)
+    val defaultWalletF =
+      createDefaultWallet(nodeApi, chainQueryApi, extraConfig)
     for {
       wallet <- defaultWalletF
       account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)

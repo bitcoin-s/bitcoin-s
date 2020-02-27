@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import akka.actor.ActorSystem
+import com.typesafe.config.Config
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits, _}
 import org.bitcoins.core.hd.HDAccount
@@ -9,7 +10,7 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.TransactionTestUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.wallet.{LockedWallet, Wallet}
+import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -95,7 +96,7 @@ trait FundWalletUtil {
           s"got balance=${hdAccount1} expected=${expectedAccount1Amt}"
       )
 
-    } yield FundedWallet(fundedWallet.asInstanceOf[LockedWallet])
+    } yield FundedWallet(fundedWallet)
   }
 }
 
@@ -105,19 +106,24 @@ object FundWalletUtil extends FundWalletUtil {
     * Account 0 (default account) has utxos of 1,2,3 bitcoin in it (6 btc total)
     * Account 1 has a utxos of 0.2,0.3,0.5 bitcoin in it (0.6 total)
     * */
-  case class FundedWallet(wallet: LockedWallet)
+  case class FundedWallet(wallet: Wallet)
 
   /** This creates a wallet that was two funded accounts
     * Account 0 (default account) has utxos of 1,2,3 bitcoin in it (6 btc total)
     * Account 1 has a utxos of 0.2,0.3,0.5 bitcoin in it (1 btc total)
     * */
-  def createFundedWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
+  def createFundedWallet(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
       system: ActorSystem): Future[FundedWallet] = {
 
     import system.dispatcher
     for {
-      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi,
+                                                         chainQueryApi,
+                                                         extraConfig)
       funded <- FundWalletUtil.fundWallet(wallet)
     } yield funded
   }
