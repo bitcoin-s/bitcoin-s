@@ -380,7 +380,8 @@ lazy val testkit = project
     eclairRpc,
     node,
     wallet,
-    zmq
+    zmq,
+    dlc
   )
 
 lazy val docs = project
