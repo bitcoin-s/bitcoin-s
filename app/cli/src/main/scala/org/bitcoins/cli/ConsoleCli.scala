@@ -91,8 +91,18 @@ object ConsoleCli {
         ),
       cmd("getbalance")
         .hidden()
-        .action((_, conf) => conf.copy(command = GetBalance))
-        .text("Get the wallet balance"),
+        .action((_, conf) => conf.copy(command = GetBalance(false)))
+        .text("Get the wallet balance")
+        .children(
+          opt[Unit]("sats")
+            .required()
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case getBalance: GetBalance =>
+                  getBalance.copy(isSats = true)
+                case other => other
+              }))
+        ),
       cmd("getnewaddress")
         .hidden()
         .action((_, conf) => conf.copy(command = GetNewAddress))
@@ -230,8 +240,8 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = config.command match {
-      case GetBalance =>
-        RequestParam("getbalance")
+      case GetBalance(isSats) =>
+        RequestParam("getbalance", Seq(up.writeJs(isSats)))
       case GetNewAddress =>
         RequestParam("getnewaddress")
       case Rescan(addressBatchSize, startBlock, endBlock, force) =>
@@ -358,7 +368,7 @@ object CliCommand {
   case class SendToAddress(destination: BitcoinAddress, amount: Bitcoins)
       extends CliCommand
   case object GetNewAddress extends CliCommand
-  case object GetBalance extends CliCommand
+  case class GetBalance(isSats: Boolean) extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand
