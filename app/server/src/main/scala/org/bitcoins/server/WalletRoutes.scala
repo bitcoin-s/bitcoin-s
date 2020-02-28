@@ -20,14 +20,24 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
   implicit val materializer = ActorMaterializer()
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
-    case ServerCommand("getbalance", _) =>
-      complete {
-        wallet.getBalance().map { balance =>
-          Server.httpSuccess(
-            Bitcoins(balance.satoshis)
-          )
-        }
+    case ServerCommand("getbalance", arr) =>
+      GetBalance.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetBalance(isSats)) =>
+          complete {
+            wallet.getBalance().map { balance =>
+              Server.httpSuccess(
+                if (isSats) {
+                  balance.satoshis.toString
+                } else {
+                  Bitcoins(balance.satoshis).toString
+                }
+              )
+            }
+          }
       }
+
     case ServerCommand("getnewaddress", _) =>
       complete {
         wallet.getNewAddress().map { address =>
