@@ -166,7 +166,6 @@ object DLCMessage {
         mutable.LinkedHashMap(
           "fundingKey" -> Str(pubKeys.fundingKey.hex),
           "toLocalCETKey" -> Str(pubKeys.toLocalCETKey.hex),
-          "toRemoteCETKey" -> Str(pubKeys.toRemoteCETKey.hex),
           "finalAddress" -> Str(pubKeys.finalAddress.value)
         )
 
@@ -240,13 +239,11 @@ object DLCMessage {
 
               val fundingKey = getValue("fundingKey")
               val toLocalCETKey = getValue("toLocalCETKey")
-              val toRemoteCETKey = getValue("toRemoteCETKey")
               val finalAddress = getValue("finalAddress")
 
               DLCPublicKeys(
                 ECPublicKey(fundingKey.str),
                 ECPublicKey(toLocalCETKey.str),
-                ECPublicKey(toRemoteCETKey.str),
                 BitcoinAddress(finalAddress.str).get
               )
           }
@@ -322,7 +319,6 @@ object DLCMessage {
         mutable.LinkedHashMap(
           "fundingKey" -> Str(pubKeys.fundingKey.hex),
           "toLocalCETKey" -> Str(pubKeys.toLocalCETKey.hex),
-          "toRemoteCETKey" -> Str(pubKeys.toRemoteCETKey.hex),
           "finalAddress" -> Str(pubKeys.finalAddress.value)
         )
 
@@ -365,15 +361,12 @@ object DLCMessage {
                 getValue("fundingKey")
               val toLocalCETKey =
                 getValue("toLocalCETKey")
-              val toRemoteCETKey =
-                getValue("toRemoteCETKey")
               val finalAddress =
                 getValue("finalAddress")
 
               DLCPublicKeys(
                 ECPublicKey(fundingKey.str),
                 ECPublicKey(toLocalCETKey.str),
-                ECPublicKey(toRemoteCETKey.str),
                 BitcoinAddress(finalAddress.str).get
               )
           }
