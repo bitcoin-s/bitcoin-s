@@ -13,7 +13,11 @@ case class WalletDAOs(
     utxoDAO: SpendingInfoDAO,
     transactionDAO: TransactionDAO,
     incomingTxDAO: IncomingTransactionDAO,
-    outgoingTxDAO: OutgoingTransactionDAO)
+    outgoingTxDAO: OutgoingTransactionDAO,
+    dlcDAO: DLCDAO,
+    dlcOfferDAO: DLCOfferDAO,
+    dlcAcceptDAO: DLCAcceptDAO,
+    dlcInputsDAO: DLCFundingInputDAO)
 
 trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
 
@@ -24,7 +28,22 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
     val tx = TransactionDAO()
     val incomingTx = IncomingTransactionDAO()
     val outgoingTx = OutgoingTransactionDAO()
-    WalletDAOs(account, address, utxo, tx, incomingTx, outgoingTx)
+    val dlc = DLCDAO()
+    val dlcOfferDAO = DLCOfferDAO()
+    val dlcAcceptDAO = DLCAcceptDAO()
+    val dlcInputsDAO = DLCFundingInputDAO()
+    WalletDAOs(
+      accountDAO = account,
+      addressDAO = address,
+      utxoDAO = utxo,
+      transactionDAO = tx,
+      incomingTxDAO = incomingTx,
+      outgoingTxDAO = outgoingTx,
+      dlcDAO = dlc,
+      dlcOfferDAO = dlcOfferDAO,
+      dlcAcceptDAO = dlcAcceptDAO,
+      dlcInputsDAO = dlcInputsDAO
+    )
   }
 
   final override type FixtureParam = WalletDAOs
