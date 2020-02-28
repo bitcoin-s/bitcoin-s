@@ -9,7 +9,6 @@ import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 case class DLCPublicKeys(
     fundingKey: ECPublicKey,
     toLocalCETKey: ECPublicKey,
-    toRemoteCETKey: ECPublicKey,
     finalAddress: BitcoinAddress)
 
 object DLCPublicKeys {
@@ -30,22 +29,15 @@ object DLCPublicKeys {
         .get
         .key
 
-    val cetToRemotePubKey: ECPublicKey =
-      extPubKey
-        .deriveChildPubKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 2}"))
-        .get
-        .key
-
     val finalPubKey: ECPublicKey =
       extPubKey
-        .deriveChildPubKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 3}"))
+        .deriveChildPubKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 2}"))
         .get
         .key
 
     DLCPublicKeys(
       fundingKey = fundingPubKey,
       toLocalCETKey = cetToLocalPubKey,
-      toRemoteCETKey = cetToRemotePubKey,
       finalAddress = Bech32Address(P2WPKHWitnessSPKV0(finalPubKey), network)
     )
   }
