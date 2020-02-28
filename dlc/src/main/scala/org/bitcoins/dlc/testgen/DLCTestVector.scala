@@ -77,6 +77,7 @@ case class DLCTestVector(
     remoteExtPrivKey: ExtPrivateKey,
     remoteInput: CurrencyUnit,
     remoteFundingUtxos: Vector[P2WPKHV0SpendingInfo],
+    remoteToRemoteSweepSPK: WitnessScriptPubKeyV0,
     remoteChangeSPK: WitnessScriptPubKeyV0,
     timeouts: DLCTimeouts,
     feeRate: SatoshisPerByte,
@@ -125,6 +126,7 @@ case class DLCTestVector(
       remoteExtPrivKey = remoteExtPrivKey,
       remoteInput = remoteInput,
       remoteFundingUtxos = remoteFundingUtxos,
+      remoteToRemoteSweepSPK = remoteToRemoteSweepSPK,
       remoteChangeSPK = remoteChangeSPK,
       timeouts = timeouts,
       feeRate = feeRate
@@ -162,6 +164,7 @@ object DLCTestVector {
       remoteExtPrivKey: ExtPrivateKey,
       remoteInput: CurrencyUnit,
       remoteFundingUtxos: Vector[P2WPKHV0SpendingInfo],
+      remoteToRemoteSweepSPK: WitnessScriptPubKeyV0,
       remoteChangeSPK: WitnessScriptPubKeyV0,
       timeouts: DLCTimeouts,
       feeRate: SatoshisPerByte)(
@@ -260,7 +263,7 @@ object DLCTestVector {
       toRemoteOutcome <- acceptDLC.executeRemoteUnilateralDLC(
         acceptSetup,
         unilateralOutcome.cet,
-        P2WPKHWitnessSPKV0(acceptDLC.finalPrivKey.publicKey))
+        remoteToRemoteSweepSPK)
     } yield {
       val localClosingTxOpt = unilateralOutcome match {
         case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
@@ -285,6 +288,7 @@ object DLCTestVector {
         remoteExtPrivKey = remoteExtPrivKey,
         remoteInput = remoteInput,
         remoteFundingUtxos = remoteFundingUtxos,
+        remoteToRemoteSweepSPK = remoteToRemoteSweepSPK,
         remoteChangeSPK = remoteChangeSPK,
         timeouts = timeouts,
         feeRate = feeRate,
@@ -321,6 +325,7 @@ case class SerializedDLCTestVector(
       remoteExtPrivKey = inputs.remoteExtPrivKey,
       remoteInput = inputs.remoteInput,
       remoteFundingUtxos = inputs.remoteFundingUtxos.map(_.toSpendingInfo),
+      remoteToRemoteSweepSPK = inputs.remoteToRemoteSweepSPK,
       remoteChangeSPK = inputs.remoteChangeSPK,
       timeouts = timeouts,
       feeRate = inputs.feeRate,
@@ -367,6 +372,7 @@ object SerializedDLCTestVector {
       remoteInput = testVector.remoteInput,
       remoteFundingUtxos = testVector.remoteFundingUtxos.map(
         SerializedSegwitSpendingInfo.fromSpendingInfo),
+      remoteToRemoteSweepSPK = testVector.remoteToRemoteSweepSPK,
       remoteChangeSPK = testVector.remoteChangeSPK,
       penaltyTimeout = testVector.timeouts.penaltyTimeout,
       contractMaturity = testVector.timeouts.contractMaturity,
@@ -537,6 +543,7 @@ case class SerializedDLCInputs(
     remoteExtPrivKey: ExtPrivateKey,
     remoteInput: CurrencyUnit,
     remoteFundingUtxos: Vector[SerializedSegwitSpendingInfo],
+    remoteToRemoteSweepSPK: WitnessScriptPubKeyV0,
     remoteChangeSPK: WitnessScriptPubKeyV0,
     penaltyTimeout: UInt32,
     contractMaturity: BlockStampWithFuture,

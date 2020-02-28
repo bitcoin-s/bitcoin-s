@@ -132,6 +132,7 @@ object DLCTestVectorGenerator {
         scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
       )
     )
+    val remoteToRemoteSweepSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
     val remoteChangeSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
 
     val penaltyTimeout = UInt32(30)
@@ -156,6 +157,7 @@ object DLCTestVectorGenerator {
         remoteExtPrivKey = remoteExtPrivKey,
         remoteInput = remoteInput,
         remoteFundingUtxos = remoteFundingUtxos,
+        remoteToRemoteSweepSPK = remoteToRemoteSweepSPK,
         remoteChangeSPK = remoteChangeSPK,
         timeouts = timeouts,
         feeRate = feeRate
