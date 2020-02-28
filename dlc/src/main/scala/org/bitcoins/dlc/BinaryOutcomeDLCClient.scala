@@ -93,21 +93,14 @@ case class BinaryOutcomeDLCClient(
       .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 1}"))
       .key
 
-  val cetToRemotePrivKey: ECPrivateKey =
-    extPrivKey
-      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 2}"))
-      .key
-
   val finalPrivKey: ECPrivateKey =
     extPrivKey
-      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 3}"))
+      .deriveChildPrivKey(BIP32Path.fromString(s"m/0/${nextAddressIndex + 2}"))
       .key
 
   val fundingRemotePubKey: ECPublicKey = remotePubKeys.fundingKey
 
   val cetToLocalRemotePubKey: ECPublicKey = remotePubKeys.toLocalCETKey
-
-  val cetToRemoteRemotePubKey: ECPublicKey = remotePubKeys.toRemoteCETKey
 
   val finalRemoteScriptPubKey: ScriptPubKey =
     remotePubKeys.finalAddress.scriptPubKey
@@ -353,11 +346,10 @@ case class BinaryOutcomeDLCClient(
       remoteSig: PartialSignature,
       payout: CurrencyUnit,
       remotePayout: CurrencyUnit): (Future[Transaction], P2WSHWitnessV0) = {
-    val pubKeyBytes = NativeSecp256k1.pubKeyTweakAdd(
-      sigPubKey.bytes.toArray,
-      cetToLocalPrivKey.bytes.toArray,
-      true)
-    val pubKey = ECPublicKey.fromBytes(ByteVector(pubKeyBytes))
+    val tweak = CryptoUtil.sha256(cetToLocalPrivKey.publicKey.bytes).flip
+    val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
+
+    val pubKey = sigPubKey.add(fundingPubKey).add(tweakPubKey)
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
@@ -369,8 +361,7 @@ case class BinaryOutcomeDLCClient(
       TransactionOutput(payout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
-      TransactionOutput(remotePayout,
-                        P2WPKHWitnessSPKV0(cetToRemoteRemotePubKey))
+      TransactionOutput(remotePayout, finalRemoteScriptPubKey)
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
@@ -420,7 +411,10 @@ case class BinaryOutcomeDLCClient(
       payout: CurrencyUnit,
       remotePayout: CurrencyUnit): Future[
     (Transaction, P2WSHWitnessV0, PartialSignature)] = {
-    val pubKey = sigPubKey.add(cetToLocalRemotePubKey)
+    val tweak = CryptoUtil.sha256(cetToLocalRemotePubKey.bytes).flip
+    val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
+
+    val pubKey = sigPubKey.add(fundingRemotePubKey).add(tweakPubKey)
 
     val toLocalSPK = P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
@@ -432,8 +426,7 @@ case class BinaryOutcomeDLCClient(
       TransactionOutput(remotePayout + toLocalClosingFee,
                         P2WSHWitnessSPKV0(toLocalSPK))
     val toRemote: TransactionOutput =
-      TransactionOutput(payout,
-                        P2WPKHWitnessSPKV0(cetToRemotePrivKey.publicKey))
+      TransactionOutput(payout, P2WPKHWitnessSPKV0(finalPrivKey.publicKey))
 
     val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
 
@@ -823,11 +816,17 @@ case class BinaryOutcomeDLCClient(
 
       val output = cet.outputs.head
 
-      val privKeyBytes = NativeSecp256k1.privKeyTweakAdd(
-        cetToLocalPrivKey.bytes.toArray,
-        oracleSig.s.toArray
+      val privKeyBytes1 = NativeSecp256k1.privKeyTweakAdd(
+        oracleSig.s.toArray,
+        fundingPrivKey.bytes.toArray
       )
-      val privKey = ECPrivateKey.fromBytes(ByteVector(privKeyBytes))
+      val tweak = CryptoUtil.sha256(cetToLocalPrivKey.publicKey.bytes).flip
+      val privKeyBytes2 = NativeSecp256k1.privKeyTweakAdd(
+        privKeyBytes1,
+        tweak.bytes.toArray
+      )
+
+      val privKey = ECPrivateKey.fromBytes(ByteVector(privKeyBytes2))
 
       // Spend the true case on the correct CET
       val cetSpendingInfo = P2WSHV0SpendingInfoFull(
@@ -884,10 +883,10 @@ case class BinaryOutcomeDLCClient(
     val spendingInfo = P2WPKHV0SpendingInfo(
       outPoint = TransactionOutPoint(publishedCET.txIdBE, UInt32.one),
       amount = output.value,
-      scriptPubKey = P2WPKHWitnessSPKV0(cetToRemotePrivKey.publicKey),
-      signer = cetToRemotePrivKey,
+      scriptPubKey = P2WPKHWitnessSPKV0(finalPrivKey.publicKey),
+      signer = finalPrivKey,
       hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(cetToRemotePrivKey.publicKey)
+      scriptWitness = P2WPKHWitnessV0(finalPrivKey.publicKey)
     )
 
     if (isToLocalOutput(output)) {

@@ -427,10 +427,8 @@ class RoutesSpec
 
     val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
 
-    val dummyDLCKeys = DLCPublicKeys(dummyKey,
-                                     dummyKey,
-                                     dummyKey,
-                                     BitcoinAddress(dummyAddress).get)
+    val dummyDLCKeys =
+      DLCPublicKeys(dummyKey, dummyKey, BitcoinAddress(dummyAddress).get)
 
     val eventId = Sha256DigestBE(
       "de462f212d95ca4cf5db54eee08f14be0ee934e9ecfc6e9b7014ecfa51ba7b66")

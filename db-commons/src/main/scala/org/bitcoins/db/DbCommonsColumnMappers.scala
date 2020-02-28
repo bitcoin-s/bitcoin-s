@@ -202,17 +202,15 @@ abstract class DbCommonsColumnMappers {
         pubKeys => {
           pubKeys.fundingKey.hex ++ "|" ++
             pubKeys.toLocalCETKey.hex ++ "|" ++
-            pubKeys.toRemoteCETKey.hex ++ "|" ++
             pubKeys.finalAddress.value
         },
         str => {
           val strings = str.split('|')
           val fundingKey = ECPublicKey(strings.head)
           val toLocalCETKey = ECPublicKey(strings(1))
-          val toRemoteCETKey = ECPublicKey(strings(2))
-          val finalAddress = BitcoinAddress(strings(3)).get
+          val finalAddress = BitcoinAddress(strings(2)).get
 
-          DLCPublicKeys(fundingKey, toLocalCETKey, toRemoteCETKey, finalAddress)
+          DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
         }
       )
   }
