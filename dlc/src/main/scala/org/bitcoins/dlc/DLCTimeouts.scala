@@ -1,6 +1,7 @@
 package org.bitcoins.dlc
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BlockStamp.{BlockHeight, BlockTime}
 import org.bitcoins.core.protocol.{BlockStampWithFuture, NetworkElement}
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
@@ -14,6 +15,18 @@ case class DLCTimeouts(
     contractMaturity: BlockStampWithFuture,
     contractTimeout: BlockStampWithFuture
 ) extends NetworkElement {
+  (contractMaturity, contractTimeout) match {
+    case (_: BlockTime, _: BlockTime) =>
+      if (contractMaturity.toUInt32 >= contractTimeout.toUInt32)
+        throw new IllegalArgumentException(
+          s"contract must mature before it expires, ${contractTimeout.toUInt32} >= ${contractMaturity.toUInt32}")
+    case (_: BlockHeight, _: BlockHeight) =>
+      if (contractMaturity.toUInt32 >= contractTimeout.toUInt32)
+        throw new IllegalArgumentException(
+          s"contract must mature before it expires, ${contractTimeout.toUInt32} >= ${contractMaturity.toUInt32}")
+    case (_: BlockTime, _: BlockHeight) | (_: BlockHeight, _: BlockTime) => ()
+  }
+
   override def bytes: ByteVector = {
     penaltyTimeout.bytes ++ contractMaturity.toUInt32.bytes ++ contractTimeout.toUInt32.bytes
   }
