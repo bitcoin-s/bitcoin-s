@@ -84,7 +84,7 @@ object DLCMessage {
 
     private val sizeOfMapElement: Int = 40
 
-    val empty: ContractInfo = ContractInfo(ByteVector.low(40))
+    val empty: ContractInfo = ContractInfo(ByteVector.low(sizeOfMapElement))
 
     override def fromBytes(bytes: ByteVector): ContractInfo = {
       @tailrec
@@ -110,6 +110,9 @@ object DLCMessage {
     def totalCollateral: Satoshis
     def fundingInputs: Vector[OutputReference]
     def changeAddress: BitcoinAddress
+    require(
+      totalCollateral >= Satoshis.zero,
+      s"Cannot have a negative totalCollateral, got: ${totalCollateral.toLong}")
   }
 
   /**
