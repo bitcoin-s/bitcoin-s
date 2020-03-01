@@ -2,28 +2,52 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.OutputReference
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.dlc.DLCMessage.DLCAccept
 import org.bitcoins.dlc.{CETSignatures, DLCPublicKeys}
 import slick.jdbc.SQLiteProfile.api._
-import slick.lifted.{PrimaryKey, ProvenShape}
+import slick.lifted.{ForeignKeyQuery, PrimaryKey, ProvenShape}
 
 case class DLCAcceptDb(
     eventId: Sha256DigestBE,
-    pubKeys: DLCPublicKeys,
+    fundingKey: ECPublicKey,
+    toLocalCETKey: ECPublicKey,
+    finalAddress: BitcoinAddress,
     totalCollateral: CurrencyUnit,
-    fundingInputs: Vector[OutputReference],
-    cetSigs: CETSignatures,
-    changeAddress: Bech32Address) {
+    winSig: PartialSignature,
+    loseSig: PartialSignature,
+    refundSig: PartialSignature,
+    changeAddress: BitcoinAddress) {
 
-  def toDLCAccept: DLCAccept = {
+  def toDLCAccept(fundingInputs: Vector[OutputReference]): DLCAccept = {
+    val pubKeys =
+      DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
+    val cetSigs = CETSignatures(winSig, loseSig, refundSig)
     DLCAccept(totalCollateral.satoshis,
               pubKeys,
               fundingInputs,
               changeAddress,
               cetSigs,
               eventId)
+  }
+}
+
+object DLCAcceptDb {
+
+  def fromDLCAccept(accept: DLCAccept): DLCAcceptDb = {
+    DLCAcceptDb(
+      accept.eventId,
+      accept.pubKeys.fundingKey,
+      accept.pubKeys.toLocalCETKey,
+      accept.pubKeys.finalAddress,
+      accept.totalCollateral,
+      accept.cetSigs.winSig,
+      accept.cetSigs.loseSig,
+      accept.cetSigs.refundSig,
+      accept.changeAddress
+    )
   }
 }
 
@@ -34,52 +58,82 @@ class DLCAcceptTable(tag: Tag)
 
   def eventId: Rep[Sha256DigestBE] = column("eventId", O.Unique)
 
-  def pubKeys: Rep[DLCPublicKeys] = column("pubKeys")
+  def fundingKey: Rep[ECPublicKey] = column("fundingKey")
+
+  def toLocalCETKey: Rep[ECPublicKey] = column("toLocalCETKey")
+
+  def finalAddress: Rep[BitcoinAddress] = column("finalAddress")
 
   def totalCollateral: Rep[CurrencyUnit] = column("totalCollateral")
 
-  def fundingInputs: Rep[Vector[OutputReference]] =
-    column("fundingInputs")
+  def winSig: Rep[PartialSignature] = column("winSig")
 
-  def cetSigs: Rep[CETSignatures] = column("cetSigs")
+  def loseSig: Rep[PartialSignature] = column("loseSig")
 
-  def changeAddress: Rep[Bech32Address] = column("changeAddress")
+  def refundSig: Rep[PartialSignature] = column("refundSig")
+
+  def changeAddress: Rep[BitcoinAddress] = column("changeAddress")
 
   private type DLCTuple = (
       Sha256DigestBE,
-      DLCPublicKeys,
+      ECPublicKey,
+      ECPublicKey,
+      BitcoinAddress,
       CurrencyUnit,
-      Vector[OutputReference],
-      CETSignatures,
-      Bech32Address)
+      PartialSignature,
+      PartialSignature,
+      PartialSignature,
+      BitcoinAddress)
 
   private val fromTuple: DLCTuple => DLCAcceptDb = {
     case (eventId,
-          pubKeys,
+          fundingKey,
+          toLocalCETKey,
+          finalAddress,
           totalCollateral,
-          fundingInputs,
-          cetSigs,
+          winSig,
+          loseSig,
+          refundSig,
           changeAddress) =>
       DLCAcceptDb(eventId,
-                  pubKeys,
+                  fundingKey,
+                  toLocalCETKey,
+                  finalAddress,
                   totalCollateral,
-                  fundingInputs,
-                  cetSigs,
+                  winSig,
+                  loseSig,
+                  refundSig,
                   changeAddress)
   }
 
   private val toTuple: DLCAcceptDb => Option[DLCTuple] = dlc =>
     Some(
       (dlc.eventId,
-       dlc.pubKeys,
+       dlc.fundingKey,
+       dlc.toLocalCETKey,
+       dlc.finalAddress,
        dlc.totalCollateral,
-       dlc.fundingInputs,
-       dlc.cetSigs,
+       dlc.winSig,
+       dlc.loseSig,
+       dlc.refundSig,
        dlc.changeAddress))
 
   def * : ProvenShape[DLCAcceptDb] =
-    (eventId, pubKeys, totalCollateral, fundingInputs, cetSigs, changeAddress) <> (fromTuple, toTuple)
+    (eventId,
+     fundingKey,
+     toLocalCETKey,
+     finalAddress,
+     totalCollateral,
+     winSig,
+     loseSig,
+     refundSig,
+     changeAddress) <> (fromTuple, toTuple)
 
   def primaryKey: PrimaryKey =
     primaryKey(name = "pk_dlc", sourceColumns = eventId)
+
+  def fk: ForeignKeyQuery[DLCTable, DLCDb] =
+    foreignKey("fk_eventId",
+               sourceColumns = eventId,
+               targetTableQuery = TableQuery[DLCTable])(_.eventId)
 }
