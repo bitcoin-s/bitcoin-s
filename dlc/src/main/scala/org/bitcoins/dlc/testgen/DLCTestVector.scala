@@ -28,11 +28,13 @@ import org.bitcoins.core.protocol.script.{
   WitnessScriptPubKeyV0
 }
 import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
   OutputReference,
   Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory, FutureUtil}
@@ -87,6 +89,7 @@ case class DLCTestVector(
     remoteWinCet: Transaction,
     remoteLoseCet: Transaction,
     refundTx: Transaction,
+    mutualCloseTx: Transaction,
     localClosingTxOpt: Option[Transaction],
     remoteClosingTxOpt: Option[Transaction]
 ) {
@@ -264,6 +267,14 @@ object DLCTestVector {
         acceptSetup,
         unilateralOutcome.cet,
         remoteToRemoteSweepSPK)
+
+      sigsP = Promise[(SchnorrDigitalSignature, PartialSignature)]()
+      _ <- offerDLC.initiateMutualClose(offerSetup, oracleSig, {
+        (sig, offerSig) =>
+          sigsP.success((sig, offerSig))
+          FutureUtil.unit
+      }, Future.successful(EmptyTransaction))
+      mutualOutcome <- acceptDLC.executeMutualClose(acceptSetup, sigsP.future)
     } yield {
       val localClosingTxOpt = unilateralOutcome match {
         case UnilateralDLCOutcomeWithClosing(_, _, closingTx, _) =>
@@ -298,6 +309,7 @@ object DLCTestVector {
         remoteWinCet = acceptSetup.cetWin,
         remoteLoseCet = acceptSetup.cetLose,
         refundTx = offerSetup.refundTx,
+        mutualCloseTx = mutualOutcome.closingTx,
         localClosingTxOpt = localClosingTxOpt,
         remoteClosingTxOpt = remoteClosingTxOpt
       )
@@ -335,6 +347,7 @@ case class SerializedDLCTestVector(
       remoteWinCet = outputs.remoteCets.head,
       remoteLoseCet = outputs.remoteCets.last,
       refundTx = outputs.refundTx,
+      mutualCloseTx = outputs.mutualCloseTx,
       localClosingTxOpt = outputs.localClosingTx,
       remoteClosingTxOpt = outputs.remoteClosingTx
     )
@@ -384,6 +397,7 @@ object SerializedDLCTestVector {
       localCets = Vector(testVector.localWinCet, testVector.localLoseCet),
       remoteCets = Vector(testVector.remoteWinCet, testVector.remoteLoseCet),
       refundTx = testVector.refundTx,
+      mutualCloseTx = testVector.mutualCloseTx,
       localClosingTx = testVector.localClosingTxOpt,
       remoteClosingTx = testVector.remoteClosingTxOpt
     )
@@ -654,6 +668,7 @@ case class SerializedDLCOutputs(
     localCets: Vector[Transaction],
     remoteCets: Vector[Transaction],
     refundTx: Transaction,
+    mutualCloseTx: Transaction,
     localClosingTx: Option[Transaction],
     remoteClosingTx: Option[Transaction]) {
   require(localCets.length == 2,
