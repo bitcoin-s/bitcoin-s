@@ -152,8 +152,10 @@ case class BinaryOutcomeDLCClient(
     approxToLocalClosingVBytes * feeRate.toLong)
 
   private val isRBFEnabled = false
-  private val sequence =
-    if (isRBFEnabled) UInt32.zero else TransactionConstants.disableRBFSequence
+  private val (noTimeLockSequence, timeLockSequence) =
+    if (isRBFEnabled) (UInt32.zero, UInt32.zero)
+    else
+      (TransactionConstants.sequence, TransactionConstants.disableRBFSequence)
 
   lazy val createUnsignedFundingTransaction: Transaction = {
     /* We need to commit to the CET's and local closing tx's fee during the construction of
@@ -189,10 +191,10 @@ case class BinaryOutcomeDLCClient(
       Vector(output, initiatorChangeOutput, otherChangeOutput)
 
     val localInputs =
-      TxBuilder.calcSequenceForInputs(fundingUtxos, sequence)
+      TxBuilder.calcSequenceForInputs(fundingUtxos, noTimeLockSequence)
     val remoteInputs = remoteFundingInputs.map {
       case OutputReference(outPoint, _) =>
-        TransactionInput(outPoint, EmptyScriptSignature, sequence)
+        TransactionInput(outPoint, EmptyScriptSignature, noTimeLockSequence)
     }
     val inputs = if (isInitiator) {
       localInputs ++ remoteInputs
@@ -302,7 +304,7 @@ case class BinaryOutcomeDLCClient(
     }
     val input = TransactionInput(TransactionOutPoint(fundingTxId, UInt32.zero),
                                  EmptyScriptSignature,
-                                 sequence)
+                                 noTimeLockSequence)
     val utx = BaseTransaction(TransactionConstants.validLockVersion,
                               Vector(input),
                               outputs.filter(_.value >= Policy.dustThreshold),
@@ -368,7 +370,7 @@ case class BinaryOutcomeDLCClient(
     val fundingInput = TransactionInput(
       TransactionOutPoint(fundingTxId, UInt32.zero),
       EmptyScriptSignature,
-      sequence)
+      timeLockSequence)
 
     val psbt = PSBT.fromUnsignedTx(
       BaseTransaction(TransactionConstants.validLockVersion,
@@ -432,7 +434,7 @@ case class BinaryOutcomeDLCClient(
 
     val fundingOutPoint = TransactionOutPoint(fundingTxId, UInt32.zero)
     val fundingInput =
-      TransactionInput(fundingOutPoint, EmptyScriptSignature, sequence)
+      TransactionInput(fundingOutPoint, EmptyScriptSignature, timeLockSequence)
 
     val unsignedTx = BaseTransaction(
       TransactionConstants.validLockVersion,
@@ -456,7 +458,7 @@ case class BinaryOutcomeDLCClient(
     val fundingInput = TransactionInput(
       TransactionOutPoint(fundingTxid, UInt32.zero),
       EmptyScriptSignature,
-      sequence)
+      timeLockSequence)
     val fundingOutput = fundingTx.outputs.head
 
     val (initiatorValue, initiatorSPK, otherValue, otherSPK) =
