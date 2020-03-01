@@ -6,26 +6,24 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{
-  OutputReference,
   Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  BlockStampWithFuture
+}
+import org.bitcoins.core.psbt.InputPSBTMap
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.dlc.DLCMessage.{ContractInfo, OracleInfo}
-import org.bitcoins.dlc.{
-  CETSignatures,
-  DLCPublicKeys,
-  DLCTimeouts,
-  FundingSignatures
-}
+import org.bitcoins.dlc.DLCMessage.ContractInfo
 import scodec.bits.ByteVector
 import slick.jdbc.GetResult
 import slick.jdbc.SQLiteProfile.api._
@@ -196,58 +194,30 @@ abstract class DbCommonsColumnMappers {
       str => HDAccount.fromPath(BIP32Path.fromString(str)).get)
   }
 
-  implicit val dlcPubKeysMapper: BaseColumnType[DLCPublicKeys] = {
-    MappedColumnType
-      .base[DLCPublicKeys, String](
-        pubKeys => {
-          pubKeys.fundingKey.hex ++ "|" ++
-            pubKeys.toLocalCETKey.hex ++ "|" ++
-            pubKeys.finalAddress.value
-        },
-        str => {
-          val strings = str.split('|')
-          val fundingKey = ECPublicKey(strings.head)
-          val toLocalCETKey = ECPublicKey(strings(1))
-          val finalAddress = BitcoinAddress(strings(2)).get
-
-          DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
-        }
-      )
-  }
-
-  implicit val oracleInfoMapper: BaseColumnType[OracleInfo] = {
-    MappedColumnType
-      .base[OracleInfo, String](_.hex, OracleInfo.fromHex)
-  }
-
   implicit val contractInfoMapper: BaseColumnType[ContractInfo] = {
     MappedColumnType
       .base[ContractInfo, String](_.hex, ContractInfo.fromHex)
   }
 
-  implicit val dlcTimeoutsMapper: BaseColumnType[DLCTimeouts] = {
-    MappedColumnType.base[DLCTimeouts, String](_.hex, DLCTimeouts.fromHex)
+  implicit val blockStampWithFutureMapper: BaseColumnType[
+    BlockStampWithFuture] = {
+    MappedColumnType.base[BlockStampWithFuture, Long](
+      _.toUInt32.toLong,
+      long => BlockStampWithFuture(UInt32(long)))
   }
 
-  implicit val cetSigsMapper: BaseColumnType[CETSignatures] = {
-    MappedColumnType.base[CETSignatures, String](
-      cetSigs =>
-        cetSigs.winSig.hex ++ cetSigs.loseSig.hex ++ cetSigs.refundSig.hex,
-      str => {
-        val sigs = PartialSignature.vecFromHex(str)
-        CETSignatures(sigs.head, sigs(1), sigs.last)
-      }
-    )
+  implicit val partialSigMapper: BaseColumnType[PartialSignature] = {
+    MappedColumnType
+      .base[PartialSignature, String](_.hex, PartialSignature.fromHex)
   }
 
-  implicit val fundingSigsMapper: BaseColumnType[FundingSignatures] = {
-    MappedColumnType.base[FundingSignatures, String](
-      _.sigs.map(_.hex).mkString,
-      str => {
-        val sigs = PartialSignature.vecFromHex(str)
-        FundingSignatures(sigs)
-      }
-    )
+  implicit val partialSigsMapper: BaseColumnType[Vector[PartialSignature]] = {
+    MappedColumnType
+      .base[Vector[PartialSignature], String](
+        _.foldLeft("")(_ ++ _.hex),
+        hex =>
+          if (hex.isEmpty) Vector.empty
+          else InputPSBTMap(hex ++ "00").partialSignatures)
   }
 
   implicit val satoshisPerVirtualByteMapper: BaseColumnType[
@@ -256,20 +226,6 @@ abstract class DbCommonsColumnMappers {
       .base[SatoshisPerVirtualByte, String](
         _.currencyUnit.hex,
         hex => SatoshisPerVirtualByte(Satoshis.fromHex(hex)))
-  }
-
-  implicit val fundingInputsVectorMapper: BaseColumnType[
-    Vector[OutputReference]] = {
-    MappedColumnType
-      .base[Vector[OutputReference], String](
-        _.foldLeft(new StringBuilder) {
-          case (builder, out) => builder ++= out.hex ++ "|"
-        }.result(),
-        str => {
-          val strings = str.split('|').toVector
-          strings.map(OutputReference.fromHex)
-        }
-      )
   }
 
   implicit val networkMapper: BaseColumnType[BitcoinNetwork] = {

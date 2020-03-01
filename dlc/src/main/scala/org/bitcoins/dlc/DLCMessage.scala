@@ -13,11 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.protocol.{
-  Bech32Address,
-  BitcoinAddress,
-  NetworkElement
-}
+import org.bitcoins.core.protocol.{BitcoinAddress, NetworkElement}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.{CryptoUtil, Factory, MapWrapper}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -113,7 +109,7 @@ object DLCMessage {
     def pubKeys: DLCPublicKeys
     def totalCollateral: Satoshis
     def fundingInputs: Vector[OutputReference]
-    def changeAddress: Bech32Address
+    def changeAddress: BitcoinAddress
   }
 
   /**
@@ -135,7 +131,7 @@ object DLCMessage {
       pubKeys: DLCPublicKeys,
       totalCollateral: Satoshis,
       fundingInputs: Vector[OutputReference],
-      changeAddress: Bech32Address,
+      changeAddress: BitcoinAddress,
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
@@ -256,7 +252,7 @@ object DLCMessage {
       val changeAddress =
         vec
           .find(_._1 == "changeAddress")
-          .map(obj => Bech32Address.fromString(obj._2.str).get)
+          .map(obj => BitcoinAddress.fromString(obj._2.str).get)
           .get
       val feeRate =
         vec
@@ -298,7 +294,7 @@ object DLCMessage {
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
       fundingInputs: Vector[OutputReference],
-      changeAddress: Bech32Address,
+      changeAddress: BitcoinAddress,
       cetSigs: CETSignatures,
       eventId: Sha256DigestBE)
       extends DLCSetupMessage {
@@ -347,7 +343,7 @@ object DLCMessage {
       val changeAddress =
         vec
           .find(_._1 == "changeAddress")
-          .map(obj => Bech32Address.fromString(obj._2.str).get)
+          .map(obj => BitcoinAddress.fromString(obj._2.str).get)
           .get
 
       val pubKeys =
@@ -429,7 +425,16 @@ object DLCMessage {
       extends DLCMessage {
 
     def toJson: Value = {
-      val fundingSigsJson = fundingSigs.sigs.map(sig => Str(sig.hex))
+
+      val fundingSigsMap = fundingSigs.map(
+        outPointAndSig =>
+          (outPointAndSig._1.hex,
+           Arr.from(outPointAndSig._2.map(sig => Str(sig.hex)))))
+
+      val fundingSigsJson = fundingSigsMap
+        .foldLeft(mutable.LinkedHashMap.newBuilder[String, Value])(
+          (builder, element) => builder += element)
+        .result()
 
       val cetSigsJson =
         mutable.LinkedHashMap("winSig" -> Str(cetSigs.winSig.hex),
@@ -475,15 +480,21 @@ object DLCMessage {
           .find(_._1 == "fundingSigs")
           .map {
             case (_, value) =>
-              if (value.arr.isEmpty) {
+              if (value.obj.isEmpty) {
                 throw new RuntimeException(
                   s"DLC Sign cannot have empty fundingSigs, got $js")
               } else {
-                value.arr.map(subVal => PartialSignature(subVal.str))
+                value.obj.toVector.map {
+                  case (outPoint, sigs) =>
+                    (TransactionOutPoint(outPoint),
+                     sigs.arr
+                       .map(sig => PartialSignature(sig.str))
+                       .toVector)
+                }
               }
           }
           .get
-          .toVector
+          .toMap
 
       val eventId =
         vec.find(_._1 == "eventId").map(obj => Sha256DigestBE(obj._2.str)).get

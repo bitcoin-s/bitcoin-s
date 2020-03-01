@@ -2,21 +2,21 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.dlc.{CETSignatures, FundingSignatures}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
 
-case class ExecutedDLCDb(
+case class DLCDb(
     eventId: Sha256DigestBE,
     isInitiator: Boolean,
     account: HDAccount,
     keyIndex: Int,
-    initiatorCetSigsOpt: Option[CETSignatures],
-    fundingSigsOpt: Option[FundingSignatures],
+    winSigOpt: Option[PartialSignature],
+    loseSigOpt: Option[PartialSignature],
+    refundSigOpt: Option[PartialSignature],
     oracleSigOpt: Option[SchnorrDigitalSignature])
 
-class ExecutedDLCTable(tag: Tag)
-    extends Table[ExecutedDLCDb](tag, "wallet_dlcs") {
+class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -28,10 +28,14 @@ class ExecutedDLCTable(tag: Tag)
 
   def keyIndex: Rep[Int] = column("keyIndex")
 
-  def initiatorCetSigsOpt: Rep[Option[CETSignatures]] =
-    column("initiatorCetSigs")
+  def initiatorWinSigOpt: Rep[Option[PartialSignature]] =
+    column("initiatorWinSig")
 
-  def fundingSigsOpt: Rep[Option[FundingSignatures]] = column("fundingSigs")
+  def initiatorLoseSigOpt: Rep[Option[PartialSignature]] =
+    column("initiatorLoseSig")
+
+  def initiatorRefundSigOpt: Rep[Option[PartialSignature]] =
+    column("initiatorRefundSig")
 
   def oracleSigOpt: Rep[Option[SchnorrDigitalSignature]] = column("oracleSig")
 
@@ -40,46 +44,51 @@ class ExecutedDLCTable(tag: Tag)
       Boolean,
       HDAccount,
       Int,
-      Option[CETSignatures],
-      Option[FundingSignatures],
+      Option[PartialSignature],
+      Option[PartialSignature],
+      Option[PartialSignature],
       Option[SchnorrDigitalSignature])
 
-  private val fromTuple: DLCTuple => ExecutedDLCDb = {
+  private val fromTuple: DLCTuple => DLCDb = {
     case (eventId,
           isInitiator,
           account,
           keyIndex,
-          cetSigsOpt,
-          fundingSigsOpt,
+          initiatorWinSigOpt,
+          initiatorLoseSigOpt,
+          initiatorRefundSigOpt,
           oracleSigOpt) =>
-      ExecutedDLCDb(
+      DLCDb(
         eventId,
         isInitiator,
         account,
         keyIndex,
-        cetSigsOpt,
-        fundingSigsOpt,
+        initiatorWinSigOpt,
+        initiatorLoseSigOpt,
+        initiatorRefundSigOpt,
         oracleSigOpt
       )
   }
 
-  private val toTuple: ExecutedDLCDb => Option[DLCTuple] = dlc =>
+  private val toTuple: DLCDb => Option[DLCTuple] = dlc =>
     Some(
       (dlc.eventId,
        dlc.isInitiator,
        dlc.account,
        dlc.keyIndex,
-       dlc.initiatorCetSigsOpt,
-       dlc.fundingSigsOpt,
+       dlc.winSigOpt,
+       dlc.loseSigOpt,
+       dlc.refundSigOpt,
        dlc.oracleSigOpt))
 
-  def * : ProvenShape[ExecutedDLCDb] =
+  def * : ProvenShape[DLCDb] =
     (eventId,
      isInitiator,
      account,
      keyIndex,
-     initiatorCetSigsOpt,
-     fundingSigsOpt,
+     initiatorWinSigOpt,
+     initiatorLoseSigOpt,
+     initiatorRefundSigOpt,
      oracleSigOpt) <> (fromTuple, toTuple)
 
   def primaryKey: PrimaryKey =
