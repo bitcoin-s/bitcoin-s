@@ -506,8 +506,7 @@ case class PSBT(
       .intersect(partialSignatures.map(_.pubKey))
     require(
       intersect.isEmpty,
-      s"Input has already been signed by one or more of the associated public keys given ${intersect
-        .map(_.pubKey)}"
+      s"Input has already been signed by one or more of the associated public keys given ${intersect}"
     )
     val newElements = inputMaps(inputIndex).elements ++ partialSignatures
 

@@ -236,13 +236,13 @@ case class BinaryOutcomeDLCClient(
     }
     val sigsF = Future.sequence(outPointAndSigFs)
 
-    val outPointAndSigsF = sigsF.map { sigs =>
-      sigs.map {
-        case (outPoint, _) =>
-          (outPoint, sigs.filter(_._1 == outPoint).map(_._2))
-      }.toMap
-    }
-    outPointAndSigsF.map(FundingSignatures.apply)
+    val sigsByOutPointF = sigsF.map(_.groupBy(_._1))
+    val sigsMapF = sigsByOutPointF.map(_.map {
+      case (outPoint, outPointAndSigs) =>
+        outPoint -> outPointAndSigs.map(_._2)
+    })
+
+    sigsMapF.map(FundingSignatures.apply)
   }
 
   def createFundingTransaction(
