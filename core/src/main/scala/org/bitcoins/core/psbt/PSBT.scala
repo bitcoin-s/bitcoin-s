@@ -502,7 +502,8 @@ case class PSBT(
       !inputMaps(inputIndex).isFinalized,
       s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
     val intersect = inputMaps(inputIndex).partialSignatures
-      .intersect(partialSignatures)
+      .map(_.pubKey)
+      .intersect(partialSignatures.map(_.pubKey))
     require(
       intersect.isEmpty,
       s"Input has already been signed by one or more of the associated public keys given ${intersect
