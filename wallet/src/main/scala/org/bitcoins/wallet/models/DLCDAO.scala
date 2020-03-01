@@ -7,34 +7,32 @@ import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class ExecutedDLCDAO()(
+case class DLCDAO()(
     implicit val ec: ExecutionContext,
     val appConfig: WalletAppConfig)
-    extends CRUD[ExecutedDLCDb, Sha256DigestBE] {
+    extends CRUD[DLCDb, Sha256DigestBE] {
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table: TableQuery[ExecutedDLCTable] =
-    TableQuery[ExecutedDLCTable]
+  override val table: TableQuery[DLCTable] =
+    TableQuery[DLCTable]
 
-  override def createAll(
-      ts: Vector[ExecutedDLCDb]): Future[Vector[ExecutedDLCDb]] =
+  override def createAll(ts: Vector[DLCDb]): Future[Vector[DLCDb]] =
     SlickUtil.createAllNoAutoInc(ts, database, table)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[Sha256DigestBE]): Query[Table[_], ExecutedDLCDb, Seq] =
+      ids: Vector[Sha256DigestBE]): Query[Table[_], DLCDb, Seq] =
     table.filter(_.eventId.inSet(ids))
 
   override def findByPrimaryKey(
-      id: Sha256DigestBE): Query[Table[_], ExecutedDLCDb, Seq] = {
+      id: Sha256DigestBE): Query[Table[_], DLCDb, Seq] = {
     table
       .filter(_.eventId === id)
   }
 
-  override def findAll(
-      dlcs: Vector[ExecutedDLCDb]): Query[Table[_], ExecutedDLCDb, Seq] =
+  override def findAll(dlcs: Vector[DLCDb]): Query[Table[_], DLCDb, Seq] =
     findByPrimaryKeys(dlcs.map(_.eventId))
 
-  def findByEventId(eventId: Sha256DigestBE): Future[Option[ExecutedDLCDb]] = {
+  def findByEventId(eventId: Sha256DigestBE): Future[Option[DLCDb]] = {
     val q = table.filter(_.eventId === eventId)
 
     database.run(q.result).map {
@@ -42,7 +40,7 @@ case class ExecutedDLCDAO()(
         Some(h)
       case Vector() =>
         None
-      case dlcs: Vector[ExecutedDLCDb] =>
+      case dlcs: Vector[DLCDb] =>
         throw new RuntimeException(
           s"More than one DLC per eventId ($eventId), got: $dlcs")
     }
