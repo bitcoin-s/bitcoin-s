@@ -31,15 +31,9 @@ matrix:
       scala:
         - 2.11.12
     - os: osx
-      name: "macOS bitcoind tests"
+      name: "macOS bitcoind and eclair tests"
       env:
-        - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls"
-      scala:
-        - 2.13.1
-    - os: osx
-      name: "macOS Eclair tests"
-      env:
-        - TEST_COMMAND="eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
+        - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
       scala:
         - 2.13.1
     - os: osx
