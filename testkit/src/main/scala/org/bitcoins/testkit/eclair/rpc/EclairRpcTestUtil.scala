@@ -89,7 +89,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
       zmqPort: Int = RpcUtil.randomPort): BitcoindInstance = {
-    BitcoindRpcTestUtil.v17Instance(port = port,
+    BitcoindRpcTestUtil.v19Instance(port = port,
                                     rpcPort = rpcPort,
                                     zmqPort = zmqPort)
   }
