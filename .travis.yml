@@ -36,18 +36,12 @@ matrix:
         - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
       scala:
         - 2.13.1
-    - os: osx
-      name: "macOS wallet tests"
-      env:
-        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
-      scala:
-        - 2.13.1
     # skip all test tagged as UsesExperimentalBitcoind
     # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
     - os: osx
-      name: "macOS node tests"
+      name: "macOS wallet and node tests"
       env:
-        - TEST_COMMAND="nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
+        - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala:
         - 2.13.1
 
