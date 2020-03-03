@@ -9,8 +9,12 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.db.CRUD
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletTestUtil}
+import org.scalatest.Assertion
+
+import scala.concurrent.Future
 
 class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
@@ -20,53 +24,42 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   val eventId: Sha256DigestBE = dlcDb.eventId
 
-  it should "correctly insert a DLC into the database" in { daos =>
-    val dlcDAO = daos.dlcDAO
-
+  def verifyDatabaseInsertion[ElementType](
+      element: ElementType,
+      dao: CRUD[ElementType, Sha256DigestBE],
+      dlcDAO: DLCDAO): Future[Assertion] = {
     for {
       _ <- dlcDAO.create(dlcDb)
-      readDLC <- dlcDAO.read(eventId)
+      _ <- dao.upsert(element) //upsert in case we are testing the dlcDAO
+
+      read <- dao.read(eventId)
     } yield {
-      assert(readDLC.contains(dlcDb))
+      assert(read.contains(element))
     }
+  }
+
+  it should "correctly insert a DLC into the database" in { daos =>
+    val dlcDAO = daos.dlcDAO
+    verifyDatabaseInsertion(dlcDb, dlcDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCOffer into the database" in { daos =>
     val dlcDAO = daos.dlcDAO
     val offerDAO = daos.dlcOfferDAO
 
-    val offer = DLCWalletTestUtil.sampleDLCOffer
+    val offerDb =
+      DLCOfferDb.fromDLCOffer(DLCWalletTestUtil.sampleDLCOffer, RegTest)
 
-    for {
-      _ <- dlcDAO.create(dlcDb)
-      offerDb = DLCOfferDb.fromDLCOffer(offer, RegTest)
-      _ <- offerDAO.create(offerDb)
-
-      readOffer <- offerDAO.read(eventId)
-    } yield {
-      assert(
-        readOffer.get.toDLCOffer(offer.fundingInputs).toJson == offer.toJson)
-    }
+    verifyDatabaseInsertion(offerDb, offerDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCAccept into the database" in { daos =>
     val dlcDAO = daos.dlcDAO
     val acceptDAO = daos.dlcAcceptDAO
 
-    val accept = DLCWalletTestUtil.sampleDLCAccept
+    val acceptDb = DLCAcceptDb.fromDLCAccept(DLCWalletTestUtil.sampleDLCAccept)
 
-    for {
-      _ <- dlcDAO.create(dlcDb)
-      acceptDb = DLCAcceptDb.fromDLCAccept(accept)
-      _ <- acceptDAO.create(acceptDb)
-
-      readAccept <- acceptDAO.read(eventId)
-    } yield {
-      assert(
-        readAccept.get
-          .toDLCAccept(accept.fundingInputs)
-          .toJson == accept.toJson)
-    }
+    verifyDatabaseInsertion(acceptDb, acceptDAO, dlcDAO)
   }
 
   it should "correctly insert funding inputs into the database" in { daos =>
