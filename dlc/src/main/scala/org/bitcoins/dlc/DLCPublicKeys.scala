@@ -9,7 +9,11 @@ import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 case class DLCPublicKeys(
     fundingKey: ECPublicKey,
     toLocalCETKey: ECPublicKey,
-    finalAddress: BitcoinAddress)
+    finalAddress: BitcoinAddress) {
+  require(
+    fundingKey != toLocalCETKey,
+    s"Cannot use same key for fundingKey and toLocalCETKey, got $fundingKey")
+}
 
 object DLCPublicKeys {
 

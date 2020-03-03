@@ -199,7 +199,10 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
                       remoteFundingTx.outputs.head))
 
   val timeouts: DLCTimeouts =
-    DLCTimeouts(UInt32.zero, blockTimeToday, blockTimeToday)
+    DLCTimeouts(UInt32.zero,
+                blockTimeToday,
+                BlockTime(UInt32(blockTimeToday.time.toLong + 1)))
+
   val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
   // Offer is local
