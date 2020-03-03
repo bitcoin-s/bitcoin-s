@@ -2,6 +2,7 @@ package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
+import org.bitcoins.core.hd.{BIP32Path, HDAccount}
 import org.bitcoins.core.protocol.transaction.{
   EmptyOutputReference,
   EmptyTransactionOutPoint
@@ -12,6 +13,7 @@ import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
+import org.bitcoins.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
 object DLCWalletTestUtil {
@@ -87,4 +89,15 @@ object DLCWalletTestUtil {
 
   lazy val sampleDLCSign: DLCSign =
     DLCSign(dummyCETSigs, dummyFundingSignatures, sampleDLCEventId)
+
+  lazy val sampleDLCDb: DLCDb = DLCDb(
+    eventId = sampleDLCEventId,
+    isInitiator = true,
+    account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
+    keyIndex = 0,
+    winSigOpt = None,
+    loseSigOpt = None,
+    refundSigOpt = None,
+    oracleSigOpt = Some(sampleOracleLoseSig)
+  )
 }
