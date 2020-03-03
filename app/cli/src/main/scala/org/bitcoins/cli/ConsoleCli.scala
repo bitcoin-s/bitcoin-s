@@ -95,7 +95,6 @@ object ConsoleCli {
         .text("Get the wallet balance")
         .children(
           opt[Unit]("sats")
-            .required()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case getBalance: GetBalance =>
