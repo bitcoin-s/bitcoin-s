@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.wallet
 
-import akka.actor.ActorSystem
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{BIP32Path, HDAccount}
@@ -157,9 +156,8 @@ object DLCWalletUtil extends DLCWalletUtil {
 
   def createDLCWallets(
       fundedWalletA: FundedWallet,
-      fundedWalletB: FundedWallet)(implicit system: ActorSystem): Future[
+      fundedWalletB: FundedWallet)(implicit ec: ExecutionContext): Future[
     (InitializedDLCWallet, InitializedDLCWallet)] = {
-    import system.dispatcher
 
     initDLC(fundedWalletA, fundedWalletB)
   }

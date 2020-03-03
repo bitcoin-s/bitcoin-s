@@ -1,6 +1,15 @@
 package org.bitcoins.wallet.dlc
 
-import org.bitcoins.core.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.core.crypto.{
+  SchnorrDigitalSignature,
+  Sha256DigestBE,
+  WitnessTxSigComponent
+}
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.transaction.WitnessTransaction
+import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -13,11 +22,13 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     withDualDLCWallets(test)
   }
 
-  behavior of "DLCExecution"
+  behavior of "DLCWallet"
 
   val eventId: Sha256DigestBE = DLCWalletUtil.sampleDLCEventId
   val winSig: SchnorrDigitalSignature = DLCWalletUtil.sampleOracleWinSig
   val loseSig: SchnorrDigitalSignature = DLCWalletUtil.sampleOracleLoseSig
+
+  val flags: Seq[ScriptFlag] = Policy.standardFlags
 
   it must "get the correct funding transaction" in {
     case (dlcWalletA: InitializedDLCWallet, dlcWalletB: InitializedDLCWallet) =>
@@ -61,6 +72,24 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
           fundingTx.outputs.exists(
             _.scriptPubKey == accept.changeAddress.scriptPubKey))
         assert(ScriptInterpreter.checkTransaction(fundingTx))
+
+        val fundingTxPrevOutputRefs = inputsA.map(_.toOutputReference) ++ inputsB
+          .map(_.toOutputReference)
+
+        val fundingTxVerify = fundingTx.inputs.zipWithIndex.forall {
+          case (input, index) =>
+            val output = fundingTxPrevOutputRefs
+              .find(_.outPoint == input.previousOutput)
+              .get
+              .output
+            val sigComponent =
+              WitnessTxSigComponent(fundingTx.asInstanceOf[WitnessTransaction],
+                                    UInt32(index),
+                                    output,
+                                    flags)
+            ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent))
+        }
+        assert(fundingTxVerify)
       }
   }
 
@@ -72,6 +101,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       for {
         offerOpt <- dlcA.dlcOfferDAO.findByEventId(eventId)
 
+        fundingTx <- dlcA.getDLCFundingTx(eventId)
+
         closeSig <- dlcA.initDLCMutualClose(eventId, winSig)
         tx <- dlcB.acceptDLCMutualClose(closeSig)
       } yield {
@@ -82,6 +113,14 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(tx.outputs.size == 1)
         assert(tx.outputs.head.scriptPubKey == offer.finalAddress.scriptPubKey)
         assert(ScriptInterpreter.checkTransaction(tx))
+
+        val sigComponent =
+          WitnessTxSigComponent(tx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                fundingTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
       }
   }
 
@@ -93,6 +132,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       for {
         acceptOpt <- dlcB.dlcAcceptDAO.findByEventId(eventId)
 
+        fundingTx <- dlcA.getDLCFundingTx(eventId)
+
         closeSig <- dlcB.initDLCMutualClose(eventId, loseSig)
         tx <- dlcA.acceptDLCMutualClose(closeSig)
       } yield {
@@ -103,6 +144,14 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(tx.outputs.size == 1)
         assert(tx.outputs.head.scriptPubKey == accept.finalAddress.scriptPubKey)
         assert(ScriptInterpreter.checkTransaction(tx))
+
+        val sigComponent =
+          WitnessTxSigComponent(tx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                fundingTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
       }
   }
 
@@ -113,6 +162,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       for {
         (cet, closeTxOpt) <- dlcA.executeDLCForceClose(eventId, winSig)
 
+        fundingTx <- dlcA.getDLCFundingTx(eventId)
+
       } yield {
         assert(closeTxOpt.isDefined)
         val closeTx = closeTxOpt.get
@@ -121,6 +172,24 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(cet.outputs.size == 1)
         assert(ScriptInterpreter.checkTransaction(cet))
         assert(ScriptInterpreter.checkTransaction(closeTx))
+
+        val cetSigComponent =
+          WitnessTxSigComponent(cet.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                fundingTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(
+            PreExecutionScriptProgram(cetSigComponent)))
+
+        val closeSigComponent =
+          WitnessTxSigComponent(closeTx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                cet.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(
+            PreExecutionScriptProgram(closeSigComponent)))
       }
   }
 
@@ -131,6 +200,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       for {
         (cet, closeTxOpt) <- dlcB.executeDLCForceClose(eventId, loseSig)
 
+        fundingTx <- dlcB.getDLCFundingTx(eventId)
       } yield {
         assert(closeTxOpt.isDefined)
         val closeTx = closeTxOpt.get
@@ -139,6 +209,24 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(cet.outputs.size == 1)
         assert(ScriptInterpreter.checkTransaction(cet))
         assert(ScriptInterpreter.checkTransaction(closeTx))
+
+        val cetSigComponent =
+          WitnessTxSigComponent(cet.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                fundingTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(
+            PreExecutionScriptProgram(cetSigComponent)))
+
+        val closeSigComponent =
+          WitnessTxSigComponent(closeTx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                cet.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(
+            PreExecutionScriptProgram(closeSigComponent)))
       }
   }
 
@@ -148,6 +236,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       for {
         (refundTx, closeTxOpt) <- dlcA.executeDLCRefund(eventId)
+
+        fundingTx <- dlcA.getDLCFundingTx(eventId)
       } yield {
         assert(closeTxOpt.isDefined)
         val closeTx = closeTxOpt.get
@@ -156,6 +246,14 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(refundTx.outputs.size == 2)
         assert(ScriptInterpreter.checkTransaction(refundTx))
         assert(ScriptInterpreter.checkTransaction(closeTx))
+
+        val sigComponent =
+          WitnessTxSigComponent(refundTx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                fundingTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
       }
   }
 
@@ -165,6 +263,7 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
       for {
         (refundTx, closeTxOpt) <- dlcB.executeDLCRefund(eventId)
+        fundingTx <- dlcB.getDLCFundingTx(eventId)
       } yield {
         assert(closeTxOpt.isDefined)
         val closeTx = closeTxOpt.get
@@ -173,6 +272,14 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(refundTx.outputs.size == 2)
         assert(ScriptInterpreter.checkTransaction(refundTx))
         assert(ScriptInterpreter.checkTransaction(closeTx))
+
+        val sigComponent =
+          WitnessTxSigComponent(refundTx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                fundingTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
       }
   }
 
@@ -191,6 +298,14 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(penaltyTx.inputs.size == 1)
         assert(penaltyTx.outputs.size == 1)
         assert(ScriptInterpreter.checkTransaction(penaltyTx))
+
+        val sigComponent =
+          WitnessTxSigComponent(penaltyTx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                forceCloseTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
       }
   }
 
@@ -209,6 +324,14 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
         assert(penaltyTx.inputs.size == 1)
         assert(penaltyTx.outputs.size == 1)
         assert(ScriptInterpreter.checkTransaction(penaltyTx))
+
+        val sigComponent =
+          WitnessTxSigComponent(penaltyTx.asInstanceOf[WitnessTransaction],
+                                UInt32.zero,
+                                forceCloseTx.outputs.head,
+                                flags)
+        assert(
+          ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
       }
   }
 }
