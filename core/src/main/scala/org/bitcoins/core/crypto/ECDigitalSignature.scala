@@ -9,6 +9,10 @@ import scodec.bits.ByteVector
 sealed abstract class ECDigitalSignature extends BitcoinSLogger {
   require(r.signum == 1 || r.signum == 0, s"r must not be negative, got ${r}")
   require(s.signum == 1 || s.signum == 0, s"s must not be negative, got ${s}")
+
+  def ==(p: ECDigitalSignature): Boolean = this.bytes == p.bytes
+  def !=(p: ECDigitalSignature): Boolean = !(this == p)
+
   def hex: String = BitcoinSUtil.encodeHex(bytes)
 
   def bytes: ByteVector
