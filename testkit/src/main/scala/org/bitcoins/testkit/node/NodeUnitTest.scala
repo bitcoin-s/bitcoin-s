@@ -30,7 +30,7 @@ import org.bitcoins.testkit.node.fixture.{
 }
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.Wallet
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.duration._
@@ -168,17 +168,17 @@ object NodeUnitTest extends P2PLogger {
     * 4. a spv node that is connected to the bitcoin instance -- but not started!  */
   trait NodeFundedWalletBitcoind {
     def node: Node
-    def wallet: UnlockedWalletApi
+    def wallet: Wallet
     def bitcoindRpc: BitcoindRpcClient
   }
   case class SpvNodeFundedWalletBitcoind(
       node: SpvNode,
-      wallet: UnlockedWalletApi,
+      wallet: Wallet,
       bitcoindRpc: BitcoindRpcClient)
       extends NodeFundedWalletBitcoind
   case class NeutrinoNodeFundedWalletBitcoind(
       node: NeutrinoNode,
-      wallet: UnlockedWalletApi,
+      wallet: Wallet,
       bitcoindRpc: BitcoindRpcClient)
       extends NodeFundedWalletBitcoind
 
