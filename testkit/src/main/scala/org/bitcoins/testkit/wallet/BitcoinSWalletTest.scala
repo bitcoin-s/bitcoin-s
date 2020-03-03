@@ -189,7 +189,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
       builder = { () =>
         createDefaultWallet(nodeApi, chainQueryApi)
       },
-      dependentBuilder = { (wallet: UnlockedWalletApi) =>
+      dependentBuilder = { (wallet: Wallet) =>
         createWalletWithBitcoind(wallet)
       },
       wrap = (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
@@ -206,7 +206,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
         builder = { () =>
           createDefaultWallet(nodeApi, chainQueryApi)
         },
-        dependentBuilder = { (wallet: UnlockedWalletApi) =>
+        dependentBuilder = { (wallet: Wallet) =>
           createWalletWithBitcoind(wallet)
         },
         processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoind) =>
@@ -266,9 +266,7 @@ object BitcoinSWalletTest extends WalletLogger {
       Future.successful(Vector.empty)
   }
 
-  case class WalletWithBitcoind(
-      wallet: UnlockedWalletApi,
-      bitcoind: BitcoindRpcClient)
+  case class WalletWithBitcoind(wallet: Wallet, bitcoind: BitcoindRpcClient)
 
   private def createNewKeyManager(
       bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt)(
@@ -360,7 +358,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
-      wallet: UnlockedWalletApi
+      wallet: Wallet
   )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
     bitcoindF.map(WalletWithBitcoind(wallet, _))(system.dispatcher)
@@ -368,7 +366,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
   def createWalletWithBitcoind(
-      wallet: UnlockedWalletApi,
+      wallet: Wallet,
       versionOpt: Option[BitcoindVersion]
   )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
@@ -377,7 +375,7 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   def createWalletWithBitcoind(
-      wallet: UnlockedWalletApi,
+      wallet: Wallet,
       bitcoindRpcClient: BitcoindRpcClient
   ): Future[WalletWithBitcoind] = {
     Future.successful(WalletWithBitcoind(wallet, bitcoindRpcClient))
