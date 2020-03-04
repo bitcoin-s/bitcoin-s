@@ -24,15 +24,16 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   val eventId: Sha256DigestBE = dlcDb.eventId
 
-  def verifyDatabaseInsertion[ElementType](
+  def verifyDatabaseInsertion[ElementType, KeyType](
       element: ElementType,
-      dao: CRUD[ElementType, Sha256DigestBE],
+      key: KeyType,
+      dao: CRUD[ElementType, KeyType],
       dlcDAO: DLCDAO): Future[Assertion] = {
     for {
       _ <- dlcDAO.create(dlcDb)
       _ <- dao.upsert(element) //upsert in case we are testing the dlcDAO
 
-      read <- dao.read(eventId)
+      read <- dao.read(key)
     } yield {
       assert(read.contains(element))
     }
@@ -40,7 +41,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   it should "correctly insert a DLC into the database" in { daos =>
     val dlcDAO = daos.dlcDAO
-    verifyDatabaseInsertion(dlcDb, dlcDAO, dlcDAO)
+    verifyDatabaseInsertion(dlcDb, eventId, dlcDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCOffer into the database" in { daos =>
@@ -50,7 +51,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val offerDb =
       DLCOfferDb.fromDLCOffer(DLCWalletTestUtil.sampleDLCOffer, RegTest)
 
-    verifyDatabaseInsertion(offerDb, offerDAO, dlcDAO)
+    verifyDatabaseInsertion(offerDb, eventId, offerDAO, dlcDAO)
   }
 
   it should "correctly insert a DLCAccept into the database" in { daos =>
@@ -59,12 +60,12 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
     val acceptDb = DLCAcceptDb.fromDLCAccept(DLCWalletTestUtil.sampleDLCAccept)
 
-    verifyDatabaseInsertion(acceptDb, acceptDAO, dlcDAO)
+    verifyDatabaseInsertion(acceptDb, eventId, acceptDAO, dlcDAO)
   }
 
   it should "correctly insert funding inputs into the database" in { daos =>
-    val inputsDAO = daos.dlcInputsDAO
     val dlcDAO = daos.dlcDAO
+    val inputsDAO = daos.dlcInputsDAO
 
     val input = DLCFundingInputDb(
       eventId = eventId,
@@ -74,12 +75,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       sigs = Vector(DLCWalletTestUtil.dummyPartialSig)
     )
 
-    for {
-      _ <- dlcDAO.create(dlcDb)
-      _ <- inputsDAO.create(input)
-
-      readInput <- inputsDAO.findByEventId(eventId)
-    } yield assert(readInput.head.toString == input.toString)
+    verifyDatabaseInsertion(input, input.outPoint, inputsDAO, dlcDAO)
   }
 
   it should "correctly find funding inputs by eventId and isInitiator" in {
