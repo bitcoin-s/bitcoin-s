@@ -4,7 +4,7 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
@@ -29,12 +29,15 @@ import ujson.Value.InvalidData
 import ujson._
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class RoutesSpec
     extends WordSpec
     with Matchers
     with ScalatestRouteTest
     with MockFactory {
+
+  implicit val timeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
