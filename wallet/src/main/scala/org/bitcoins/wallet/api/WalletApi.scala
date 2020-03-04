@@ -439,6 +439,17 @@ trait UnlockedWalletApi extends LockedWalletApi {
       locktime: UInt32,
       refundLT: UInt32): Future[DLCOffer]
 
+  def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
+    createDLCOffer(
+      dlcOffer.oracleInfo,
+      dlcOffer.contractInfo,
+      dlcOffer.totalCollateral,
+      Some(dlcOffer.feeRate),
+      dlcOffer.timeouts.contractMaturity.toUInt32,
+      dlcOffer.timeouts.contractTimeout.toUInt32
+    )
+  }
+
   def acceptDLCOffer(dlcOffer: DLCOffer): Future[DLCAccept]
 
   def signDLC(accept: DLCAccept): Future[DLCSign]
