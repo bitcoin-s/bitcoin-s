@@ -3,7 +3,7 @@ id: txbuilder
 title: TxBuilder example
 ---
 
-Bitcoin-S features a transaction buidlder that constructs and signs Bitcoin
+Bitcoin-S features a transaction builder that constructs and signs Bitcoin
 transactions. Here's an example of how to use it
 
 ```scala mdoc:silent
