@@ -130,7 +130,7 @@ val signatureF = BitcoinSignerSingle.signSingle(spendingInfo = spendingInfoSingl
 
 // We can then add the signature to the PSBT
 // Note: this signature could be produced by us or another party
-signatureF.map(sig => psbtWithSigHashFlags.addSignature(sig, inputIndex = 0)
+signatureF.map(sig => psbtWithSigHashFlags.addSignature(sig, inputIndex = 0))
 
 // With our first input signed we can now move on to showing how another party could sign our second input
 psbtFirstSigF.map { psbtFirstSig =>
