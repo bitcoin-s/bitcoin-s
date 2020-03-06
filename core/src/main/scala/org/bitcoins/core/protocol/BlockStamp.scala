@@ -15,6 +15,9 @@ sealed trait BlockStamp {
 }
 
 object BlockStamp {
+  val height0 = BlockHeight(0)
+  val height0Opt = Some(height0)
+
   case class InvalidBlockStamp(blockStamp: String)
       extends RuntimeException(s"Invalid blockstamp: ${blockStamp}")
 

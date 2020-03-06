@@ -23,7 +23,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[Unit] = {
 
-    logger.info(s"Starting rescanning the wallet.")
+    logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
 
     val res = for {
       _ <- spendingInfoDAO.deleteAll()

@@ -16,7 +16,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
@@ -48,7 +48,7 @@ sealed trait WalletApi {
 /**
   * API for a locked wallet
   */
-trait LockedWalletApi extends WalletApi {
+trait LockedWalletApi extends WalletApi with WalletLogger {
 
   /**
     * Retrieves a bloom filter that that can be sent to a P2P network node
@@ -285,7 +285,6 @@ trait LockedWalletApi extends WalletApi {
       implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
     require(batchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
-
     if (scripts.isEmpty) {
       Future.successful(Vector.empty)
     } else {
@@ -293,10 +292,11 @@ trait LockedWalletApi extends WalletApi {
 
       /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
         * It's needed to limit number of threads required to run the matching */
-      def calcGroupSize(vectorSize: Int): Int =
+      def calcGroupSize(vectorSize: Int): Int = {
         if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
           vectorSize / parallelismLevel + 1
         else vectorSize / parallelismLevel
+      }
 
       def findMatches(filters: Vector[FilterResponse]): Future[
         Iterator[BlockMatchingResponse]] = {
@@ -338,10 +338,12 @@ trait LockedWalletApi extends WalletApi {
           acc: Future[Vector[BlockMatchingResponse]]): Future[
         Vector[BlockMatchingResponse]] = {
         if (end <= start) {
+          logger.info(s"end<=start")
           acc
         } else {
           val startHeight = end - (batchSize - 1)
           val endHeight = end
+          logger.info(s"startHeight=${startHeight} endHeight=${endHeight}")
           val newAcc = for {
             compactFilterDbs <- chainQueryApi.getFiltersBetweenHeights(
               startHeight,
@@ -366,8 +368,10 @@ trait LockedWalletApi extends WalletApi {
         _ = if (startHeight > endHeight)
           throw InvalidBlockRange(
             s"End position cannot precede start: $startHeight:$endHeight")
+        _ = logger.info(s"Beginning to search for matches between ${startHeight}:${endHeight}")
         matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
       } yield {
+        logger.info(s"Matched ${matched.length} blocks on rescan")
         matched
       }
     }
