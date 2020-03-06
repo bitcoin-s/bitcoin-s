@@ -50,7 +50,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
   def addressCallback: DataMessageHandler.OnTxReceived = { tx: Transaction =>
     // we check if any of the addresses in the TX
     // pays to our wallet address
-    val _ = for {
+    for {
       addressFromWallet <- addressFromWalletP.future
       result = tx.outputs.exists(
         _.scriptPubKey == addressFromWallet.scriptPubKey)

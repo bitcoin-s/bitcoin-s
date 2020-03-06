@@ -12,6 +12,7 @@ import org.bitcoins.testkit.core.gen.{
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 class MerkleBuffersTest extends BitcoinSUnitTest {
@@ -41,6 +42,7 @@ class MerkleBuffersTest extends BitcoinSUnitTest {
                 assert(txs == merkleTxs,
                        "Received TXs in callback was not the ones we put in")))
             callbackCount = callbackCount + 1
+            Future.unit
         }
 
         val merkle = MerkleBlock(block, txs.map(_.txId))

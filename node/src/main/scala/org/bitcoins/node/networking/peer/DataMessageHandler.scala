@@ -5,8 +5,9 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
@@ -96,19 +97,18 @@ case class DataMessageHandler(
             }
           }
           newChainApi <- chainApi.processFilter(filter)
-        } yield {
-
-          Try {
-            val blockFilter =
-              BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
-            callbacks.onCompactFilterReceived.foreach(
-              _.apply(filter.blockHash, blockFilter))
-          } match {
+          blockFilterT = Try(
+            BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
+          _ <- blockFilterT match {
             case Failure(ex) =>
               logger.error("Error processing compact filter", ex)
-            case Success(_) => ()
+              Future.unit
+            case Success(blockFilter) =>
+              callbacks.onCompactFilterReceived.foldLeft(FutureUtil.unit)(
+                (acc, callback) =>
+                  acc.flatMap(_ => callback(filter.blockHash, blockFilter)))
           }
-
+        } yield {
           this.copy(chainApi = newChainApi,
                     receivedFilterCount = newCount,
                     syncing = newSyncing)
@@ -205,10 +205,10 @@ case class DataMessageHandler(
       case msg: BlockMessage =>
         logger.info(
           s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
-        Future {
-          callbacks.onBlockReceived.foreach(_.apply(msg.block))
-          this
-        }
+        callbacks.onBlockReceived
+          .foldLeft(FutureUtil.unit)((acc, callback) =>
+            acc.flatMap(_ => callback(msg.block)))
+          .map(_ => this)
       case TransactionMessage(tx) =>
         val belongsToMerkle =
           MerkleBuffers.putTx(tx, callbacks.onMerkleBlockReceived)
@@ -219,10 +219,10 @@ case class DataMessageHandler(
         } else {
           logger.trace(
             s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-          Future {
-            callbacks.onTxReceived.foreach(_.apply(tx))
-            this
-          }
+          callbacks.onTxReceived
+            .foldLeft(FutureUtil.unit)((acc, callback) =>
+              acc.flatMap(_ => callback(tx)))
+            .map(_ => this)
         }
       case MerkleBlockMessage(merkleBlock) =>
         MerkleBuffers.putMerkle(merkleBlock)
@@ -318,18 +318,23 @@ case class DataMessageHandler(
 object DataMessageHandler {
 
   /** Callback for handling a received block */
-  type OnBlockReceived = Block => Unit
+  type OnBlockReceived = Block => Future[Unit]
 
   /** Callback for handling a received Merkle block with its corresponding TXs */
-  type OnMerkleBlockReceived = (MerkleBlock, Vector[Transaction]) => Unit
+  type OnMerkleBlockReceived =
+    (MerkleBlock, Vector[Transaction]) => Future[Unit]
 
   /** Callback for handling a received transaction */
-  type OnTxReceived = Transaction => Unit
+  type OnTxReceived = Transaction => Future[Unit]
 
   /** Callback for handling a received compact block filter */
-  type OnCompactFilterReceived = (DoubleSha256Digest, GolombFilter) => Unit
+  type OnCompactFilterReceived =
+    (DoubleSha256Digest, GolombFilter) => Future[Unit]
+
+  /** Callback for handling a received block header */
+  type OnBlockHeadersReceived = Vector[BlockHeader] => Future[Unit]
 
   /** Does nothing */
-  def noop[T]: T => Unit = _ => ()
+  def noop[T]: T => Future[Unit] = _ => Future.unit
 
 }

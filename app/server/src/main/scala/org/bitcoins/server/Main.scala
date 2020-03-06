@@ -153,17 +153,14 @@ object Main extends App {
       wallet: UnlockedWalletApi): Future[NodeCallbacks] = {
     import DataMessageHandler._
     lazy val onTx: OnTxReceived = { tx =>
-      wallet.processTransaction(tx, blockHash = None)
-      ()
+      wallet.processTransaction(tx, blockHash = None).map(_ => ())
     }
     lazy val onCompactFilter: OnCompactFilterReceived = {
       (blockHash, blockFilter) =>
-        wallet.processCompactFilter(blockHash, blockFilter)
-        ()
+        wallet.processCompactFilter(blockHash, blockFilter).map(_ => ())
     }
     lazy val onBlock: OnBlockReceived = { block =>
-      wallet.processBlock(block)
-      ()
+      wallet.processBlock(block).map(_ => ())
     }
     if (nodeConf.isSPVEnabled) {
       Future.successful(NodeCallbacks(onTxReceived = Seq(onTx)))
