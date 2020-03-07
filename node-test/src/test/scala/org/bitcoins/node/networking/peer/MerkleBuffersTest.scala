@@ -42,7 +42,7 @@ class MerkleBuffersTest extends BitcoinSUnitTest {
                 assert(txs == merkleTxs,
                        "Received TXs in callback was not the ones we put in")))
             callbackCount = callbackCount + 1
-            Future.unit
+            Future.successful(())
         }
 
         val merkle = MerkleBlock(block, txs.map(_.txId))

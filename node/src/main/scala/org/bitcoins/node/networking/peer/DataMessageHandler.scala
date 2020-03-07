@@ -102,7 +102,7 @@ case class DataMessageHandler(
           _ <- blockFilterT match {
             case Failure(ex) =>
               logger.error("Error processing compact filter", ex)
-              Future.unit
+              Future.successful(())
             case Success(blockFilter) =>
               callbacks.onCompactFilterReceived.foldLeft(FutureUtil.unit)(
                 (acc, callback) =>
@@ -335,6 +335,6 @@ object DataMessageHandler {
   type OnBlockHeadersReceived = Vector[BlockHeader] => Future[Unit]
 
   /** Does nothing */
-  def noop[T]: T => Future[Unit] = _ => Future.unit
+  def noop[T]: T => Future[Unit] = _ => Future.successful(())
 
 }
