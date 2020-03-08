@@ -51,26 +51,25 @@ class FilterSyncTest extends ChainUnitTest {
     } yield assert(filterCount == 1)
   }
 
-  it must "sync a bunch of filter headers from an external data source" in {
-    fixture =>
-      val BitcoindV19ChainHandler(bitcoind, chainHandler) = fixture
+  it must "sync a bunch of filter headers from an external data source" in { fixture =>
+    val BitcoindV19ChainHandler(bitcoind, chainHandler) = fixture
 
-      val numBlocks = 100
-      val generatedBlocksF = for {
-        addr <- bitcoind.getNewAddress
-        hashes <- bitcoind.generateToAddress(numBlocks, addr)
-      } yield hashes
+    val numBlocks = 100
+    val generatedBlocksF = for {
+      addr <- bitcoind.getNewAddress
+      hashes <- bitcoind.generateToAddress(numBlocks, addr)
+    } yield hashes
 
-      val syncedF = generatedBlocksF.flatMap { _ =>
-        syncHelper(fixture)
-      }
+    val syncedF = generatedBlocksF.flatMap { _ =>
+      syncHelper(fixture)
+    }
 
-      for {
-        syncedChainApi <- syncedF
-        filterHeaderCount <- syncedChainApi.getFilterHeaderCount()
-        _ = assert(filterHeaderCount == numBlocks)
-        filterCount <- syncedChainApi.getFilterCount()
-      } yield assert(filterCount == numBlocks)
+    for {
+      syncedChainApi <- syncedF
+      filterHeaderCount <- syncedChainApi.getFilterHeaderCount()
+      _ = assert(filterHeaderCount == numBlocks)
+      filterCount <- syncedChainApi.getFilterCount()
+    } yield assert(filterCount == numBlocks)
   }
 
   it must "be able to call filterSync() and not fail when nothing has happened" in {
