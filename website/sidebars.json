@@ -7,6 +7,7 @@
       "core/addresses",
       "core/hd-keys",
       "core/adding-spks",
+      "core/spending-info",
       "core/sign",
       "core/psbts",
       "core/txbuilder"

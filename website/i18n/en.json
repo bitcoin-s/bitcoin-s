@@ -50,6 +50,9 @@
       "core/sign": {
         "title": "Sign api"
       },
+      "core/spending-info": {
+        "title": "Signing Transactions"
+      },
       "core/txbuilder": {
         "title": "TxBuilder example"
       },
