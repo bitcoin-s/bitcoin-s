@@ -23,6 +23,12 @@ Please note that this document only explains how to add new `RawScriptPubKey`s w
 
 It is also important to note that all new scripts should be implemented as if they are to appear on-chain without any P2SH or P2WSH. Bitcoin-S already supports conversions from raw on-chain scripts to these formats in the constructors for the script hash schemes which does not require extra support for new script types.
 
+## Step 0: Design Philosophy
+
+Bitcoin-S strives to have script types defined in such a way that they can be easily composed and reused. Before going through this guide and implementing a really large script template type, try to decompose your script into smaller re-usable pieces.
+
+Also remember to consider what existing pieces you can use. For example, `LockTimeScriptPubKey`s are implemented in such a way that any other `RawScriptPubKey` can be given a time lock by nesting it within a `LockTimeScriptPubKey` subtype. Likewise, `ConditionalScriptPubKey`s are built to allow any other `RawScriptPubKey` type to populate both the `OP_IF/OP_NOTIF` case and the `OP_ELSE` case.
+
 ## Step 1: Create a New ScriptPubKey Trait
 
 Go to `ScriptPubKey.scala` and add a new trait:
