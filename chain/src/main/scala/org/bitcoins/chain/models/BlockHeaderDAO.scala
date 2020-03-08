@@ -141,7 +141,7 @@ case class BlockHeaderDAO()(
     }
   }
 
-  /** Gets Block Headers of all childred starting with the given block hash (inclusive), could be out of order */
+  /** Gets Block Headers of all children starting with the given block hash (inclusive), could be out of order */
   def getNChildren(
       ancestorHash: DoubleSha256DigestBE,
       n: Int): Future[Vector[BlockHeaderDb]] = {

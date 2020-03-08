@@ -1,6 +1,6 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.util.CryptoUtil
 
 /**
@@ -24,5 +24,18 @@ case class FilterHeader(
   /** Given the next Block Filter hash, constructs the next Block Filter Header */
   def nextHeader(nextFilterHash: DoubleSha256Digest): FilterHeader = {
     FilterHeader(filterHash = nextFilterHash, prevHeaderHash = this.hash)
+  }
+
+  override def toString: String = {
+    s"FilterHeader(hashBE=${hash.flip},filterHashBE=${filterHash.flip.hex},prevHeaderHashBE=${prevHeaderHash.flip.hex})"
+  }
+}
+
+object FilterHeader {
+
+  def apply(
+      filterHash: DoubleSha256DigestBE,
+      prevHeaderHash: DoubleSha256DigestBE): FilterHeader = {
+    new FilterHeader(filterHash.flip, prevHeaderHash.flip)
   }
 }

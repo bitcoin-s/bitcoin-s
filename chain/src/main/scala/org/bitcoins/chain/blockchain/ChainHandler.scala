@@ -193,9 +193,9 @@ case class ChainHandler(
       filterHeaders: Vector[FilterHeader],
       stopHash: DoubleSha256DigestBE): Future[ChainApi] = {
 
-    val filterHeadersToCreateF = for {
+    val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
       blockHeaders <- blockHeaderDAO
-        .getNChildren(stopHash, filterHeaders.size - 1)
+        .getNChildren(ancestorHash = stopHash, n = filterHeaders.size - 1)
         .map(_.sortBy(_.height))
     } yield {
       if (blockHeaders.size != filterHeaders.size) {
@@ -214,17 +214,24 @@ case class ChainHandler(
     for {
       filterHeadersToCreate <- filterHeadersToCreateF
       _ <- if (filterHeadersToCreate.nonEmpty && filterHeadersToCreate.head.height > 0) {
-        filterHeaderDAO
-          .findByHash(filterHeadersToCreate.head.previousFilterHeaderBE)
-          .map { prevHeaderOpt =>
+        val firstFilter = filterHeadersToCreate.head
+        val filterHashFOpt = filterHeaderDAO
+          .findByHash(firstFilter.previousFilterHeaderBE)
+        filterHashFOpt.map {
+          case Some(prevHeader) =>
             require(
-              prevHeaderOpt.nonEmpty,
-              s"Previous filter header does not exist: ${filterHeadersToCreate.head.previousFilterHeaderBE}")
-            require(
-              prevHeaderOpt.get.height == filterHeadersToCreate.head.height - 1,
-              s"Unexpected previous header's height: ${prevHeaderOpt.get.height} != ${filterHeadersToCreate.head.height - 1}"
+              prevHeader.height == firstFilter.height - 1,
+              s"Unexpected previous header's height: ${prevHeader.height} != ${filterHeadersToCreate.head.height - 1}"
             )
-          }
+          case None =>
+            if (firstFilter.previousFilterHeaderBE == DoubleSha256DigestBE.empty && firstFilter.height == 0) {
+              //we are ok, according to BIP157 the previous the genesis filter's prev hash should
+              //be the empty hash
+              ()
+            } else {
+              sys.error(s"Previous filter header does not exist: $firstFilter")
+            }
+        }
       } else FutureUtil.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
     } yield this
@@ -348,6 +355,32 @@ case class ChainHandler(
     filterHeaderDAO.getAtHeight(height)
 
   /** @inheritdoc */
+  override def getBestFilterHeader(): Future[CompactFilterHeaderDb] = {
+    //this seems realy brittle, is there a guarantee
+    //that the highest filter header count is our best filter header?
+    val filterCountF = getFilterHeaderCount()
+    val ourBestFilterHeader = for {
+      count <- filterCountF
+      filterHeader <- getFilterHeadersAtHeight(count)
+    } yield {
+      //TODO: Figure out what the best way to select
+      //the best filter header is if we have competing
+      //chains. (Same thing applies to getBestBlockHash()
+      //for now, just do the dumb thing and pick the first one
+      filterHeader match {
+        case tip1 +: _ +: _ =>
+          tip1
+        case tip +: _ =>
+          tip
+        case Vector() =>
+          sys.error(s"No filter headers found in database!")
+      }
+    }
+
+    ourBestFilterHeader
+  }
+
+  /** @inheritdoc */
   override def getFilterHeader(
       blockHash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] =
     filterHeaderDAO.findByBlockHash(blockHash)
@@ -410,6 +443,28 @@ case class ChainHandler(
       .map(dbos =>
         dbos.map(dbo =>
           FilterResponse(dbo.golombFilter, dbo.blockHashBE, dbo.height)))
+
+  /** @inheritdoc */
+  override def getHeadersBetween(
+      from: BlockHeaderDb,
+      to: BlockHeaderDb): Future[Vector[BlockHeaderDb]] = {
+    logger.info(s"Finding headers from=$from to=$to")
+    def loop(
+        currentF: Future[BlockHeaderDb],
+        accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
+      currentF.flatMap { current =>
+        if (current.previousBlockHashBE == from.hashBE) {
+          Future.successful(current +: accum)
+        } else {
+          val nextOptF = getHeader(current.previousBlockHashBE)
+          val nextF = nextOptF.map(_.getOrElse(
+            sys.error(s"Could not find header=${current.previousBlockHashBE}")))
+          loop(nextF, current +: accum)
+        }
+      }
+    }
+    loop(Future.successful(to), Vector.empty)
+  }
 }
 
 object ChainHandler {

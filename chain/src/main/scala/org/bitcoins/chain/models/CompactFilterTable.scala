@@ -13,9 +13,16 @@ case class CompactFilterDb(
     bytes: ByteVector,
     height: Int,
     blockHashBE: DoubleSha256DigestBE) {
+  require(
+    CryptoUtil.doubleSHA256(bytes).flip == hashBE,
+    s"Bytes must hash to hashBE! It looks like you didn't construct CompactFilterDb correctly")
 
   def golombFilter: GolombFilter = filterType match {
     case FilterType.Basic => BlockFilter.fromBytes(bytes, blockHashBE.flip)
+  }
+
+  override def toString: String = {
+    s"CompactFilterDb(hashBE=$hashBE,filterType=$filterType,height=$height,blockHashBE=$blockHashBE,bytes=${bytes})"
   }
 }
 

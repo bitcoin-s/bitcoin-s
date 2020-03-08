@@ -1,16 +1,16 @@
 package org.bitcoins.chain.blockchain.sync
 
+import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.ChainVerificationLogger
 
-trait ChainSync extends ChainVerificationLogger {
+abstract class ChainSync extends ChainVerificationLogger {
 
   /** This method checks if our chain handler has the tip of the blockchain as an external source
     * If we do not have the same chain, we sync our chain handler until we are at the same best block hash
@@ -74,12 +74,11 @@ trait ChainSync extends ChainVerificationLogger {
     require(tips.nonEmpty, s"Cannot sync without the genesis block")
 
     //we need to walk backwards on the chain until we get to one of our tips
-
     val tipsBH = tips.map(_.blockHeader)
 
     def loop(
         lastHeaderF: Future[BlockHeader],
-        accum: List[BlockHeader]): Future[List[BlockHeader]] = {
+        accum: Vector[BlockHeader]): Future[Vector[BlockHeader]] = {
       lastHeaderF.flatMap { lastHeader =>
         if (tipsBH.contains(lastHeader)) {
           //means we have synced back to a block that we know
@@ -117,18 +116,17 @@ trait ChainSync extends ChainVerificationLogger {
       } else {
         //this represents all headers we have received from our external data source
         //and need to process with our chain handler
-        val headersToSyncF = loop(bestHeaderF, List.empty)
+        val headersToSyncF = loop(bestHeaderF, Vector.empty)
 
         //now we are going to add them to our chain and return the chain api
         headersToSyncF.flatMap { headers =>
           logger.info(
             s"Attempting to sync ${headers.length} blockheader to our chainstate")
-          chainApi.processHeaders(headers.toVector)
+          chainApi.processHeaders(headers)
         }
       }
 
     }
-
   }
 }
 
