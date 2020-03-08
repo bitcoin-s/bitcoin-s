@@ -1,4 +1,9 @@
-# Adding a New ScriptPubKey Type
+---
+id: adding-spks
+title: Adding New Script Types
+---
+
+## Adding a New ScriptPubKey Type
 
 In this document, we will describe how to add new script implementations and types in Bitcoin-S. We will use the following script template example which we have called P2PK with Timeout to illustrate the process:
 

@@ -32,6 +32,9 @@
       "contributing": {
         "title": "Contributing"
       },
+      "core/adding-spks": {
+        "title": "Adding New Script Types"
+      },
       "core/addresses": {
         "title": "Generating addresses"
       },

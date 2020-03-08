@@ -6,6 +6,7 @@
       "core/core-intro",
       "core/addresses",
       "core/hd-keys",
+      "core/adding-spks",
       "core/sign",
       "core/psbts",
       "core/txbuilder"
