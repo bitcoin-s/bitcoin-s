@@ -407,7 +407,7 @@ Now that we have created our new `RawScriptUTXOSpendingInfoFull` and `RawScriptU
 
 ## Step 8: Create a Signer
 
-We must now add signing functionality for our new script type withing `Signer.scala`. Once again, we have three different cases depending on your new script type.
+We must now add signing functionality for our new script type within `Signer.scala`. Once again, we have three different cases depending on your new script type.
 
 ### Non-Nested Single-Key Spending Info
 
@@ -673,7 +673,7 @@ You may get these warnings for your new `ScriptSignature` type as well. These ar
 
 ## Step 13: Run tests and debug
 
-Lastly, once everything is compiling nicely, all that is left is to run tests and debug. While withing an `sbt` terminal session, run the following two commands to run the relevant tests:
+Lastly, once everything is compiling nicely, all that is left is to run tests and debug. While within an `sbt` terminal session, run the following two commands to run the relevant tests:
 
 ```
 project coreTest
