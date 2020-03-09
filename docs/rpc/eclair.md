@@ -33,11 +33,14 @@ We will default to using the `binary` field first when trying to start the jar, 
 
 Here is an example of how to start eclair:
 
-```scala mdoc:compile-only
+```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import java.nio.file.Paths
+```
+
+```scala mdoc:compile-only
 
 implicit val system = ActorSystem(s"eclair-rpc-${System.currentTimeMillis}")
 implicit val ec = system.dispatcher
