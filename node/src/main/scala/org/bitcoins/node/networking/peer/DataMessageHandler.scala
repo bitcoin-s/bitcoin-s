@@ -97,17 +97,12 @@ case class DataMessageHandler(
             }
           }
           newChainApi <- chainApi.processFilter(filter)
-          blockFilterT = Try(
+          blockFilter <- Future(
             BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
-          _ <- blockFilterT match {
-            case Failure(ex) =>
-              logger.error("Error processing compact filter", ex)
-              Future.successful(())
-            case Success(blockFilter) =>
-              callbacks.onCompactFilterReceived.foldLeft(FutureUtil.unit)(
-                (acc, callback) =>
-                  acc.flatMap(_ => callback(filter.blockHash, blockFilter)))
-          }
+          _ <- callbacks.onCompactFilterReceived.foldLeft(FutureUtil.unit)(
+            (acc, callback) =>
+              acc.flatMap(_ => callback(filter.blockHash, blockFilter)))
+
         } yield {
           this.copy(chainApi = newChainApi,
                     receivedFilterCount = newCount,
