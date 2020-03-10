@@ -42,6 +42,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
               oracleSigOpt = None
             )
           }
+          _ <- writeDLCKeysToAddressDb(account, nextIndex)
           writtenDLC <- dlcDAO.create(dlc)
         } yield writtenDLC
     }
@@ -57,6 +58,18 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         Future.failed(
           new NoSuchElementException(
             s"No DLC found with that eventId ${eventId.hex}"))
+    }
+  }
+
+  private def writeDLCKeysToAddressDb(
+      account: AccountDb,
+      index: Int): Future[Vector[AddressDb]] = {
+    for {
+      zero <- getAddress(account, HDChainType.External, index)
+      one <- getAddress(account, HDChainType.External, index + 1)
+      two <- getAddress(account, HDChainType.External, index + 2)
+    } yield {
+      Vector(zero, one, two)
     }
   }
 

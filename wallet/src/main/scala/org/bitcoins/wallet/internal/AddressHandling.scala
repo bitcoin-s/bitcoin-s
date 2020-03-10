@@ -184,6 +184,63 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addrF
   }
 
+  def getAddress(
+      account: AccountDb,
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb] = {
+
+    val coinType = account.hdAccount.coin.coinType
+    val accountIndex = account.hdAccount.index
+
+    val path = account.hdAccount.purpose match {
+      case HDPurposes.Legacy =>
+        LegacyHDPath(coinType, accountIndex, chainType, addressIndex)
+      case HDPurposes.NestedSegWit =>
+        NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex)
+      case HDPurposes.SegWit =>
+        SegWitHDPath(coinType, accountIndex, chainType, addressIndex)
+    }
+
+    val pathDiff =
+      account.hdAccount.diff(path) match {
+        case Some(value) => value
+        case None =>
+          throw new IllegalArgumentException(
+            s"Could not diff ${account.hdAccount} and $path")
+      }
+
+    val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+      case Failure(exception) => throw exception
+      case Success(value)     => value.key
+    }
+
+    val addressDb = account.hdAccount.purpose match {
+      case HDPurposes.SegWit =>
+        AddressDbHelper.getSegwitAddress(
+          pubkey,
+          SegWitHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+      case HDPurposes.NestedSegWit =>
+        AddressDbHelper.getNestedSegwitAddress(
+          pubkey,
+          NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+      case HDPurposes.Legacy =>
+        AddressDbHelper.getLegacyAddress(
+          pubkey,
+          LegacyHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+    }
+
+    logger.debug(s"Writing $addressDb to DB")
+
+    addressDAO.upsert(addressDb).map { written =>
+      logger.debug(
+        s"Got $chainType address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+      written
+    }
+  }
+
   def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
     accountDAO.findByAccount(account)
   }
