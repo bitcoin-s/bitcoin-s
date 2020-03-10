@@ -18,6 +18,12 @@ import scala.concurrent.{ExecutionContext, Future}
   *    getFilterFunc: BlockHeader => Future[GolombFilter]
   * }}}
   * which will allow us to sync our internal filters against.
+  *
+  * It should be noted you are entirely trusting the provider
+  * of the `getFilterFunc` as you aren't able to validate the result
+  * against another peer that as BIP157 specifies
+  *
+  * @see [[https://github.com/bitcoin/bips/blob/master/bip-0157.mediawiki#client-operation]]
   * */
 abstract class FilterSync extends ChainVerificationLogger {
 
