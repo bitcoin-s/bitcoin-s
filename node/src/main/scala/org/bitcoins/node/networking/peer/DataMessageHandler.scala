@@ -14,7 +14,6 @@ import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
@@ -330,6 +329,6 @@ object DataMessageHandler {
   type OnBlockHeadersReceived = Vector[BlockHeader] => Future[Unit]
 
   /** Does nothing */
-  def noop[T]: T => Future[Unit] = _ => Future.successful(())
+  def noop[T]: T => Future[Unit] = _ => FutureUtil.unit
 
 }

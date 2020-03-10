@@ -3,6 +3,7 @@ package org.bitcoins.node.networking.peer
 import _root_.org.scalatest.compatible.Assertion
 import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.core.gen.{
@@ -12,7 +13,6 @@ import org.bitcoins.testkit.core.gen.{
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
 
-import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 class MerkleBuffersTest extends BitcoinSUnitTest {
@@ -42,7 +42,7 @@ class MerkleBuffersTest extends BitcoinSUnitTest {
                 assert(txs == merkleTxs,
                        "Received TXs in callback was not the ones we put in")))
             callbackCount = callbackCount + 1
-            Future.successful(())
+            FutureUtil.unit
         }
 
         val merkle = MerkleBlock(block, txs.map(_.txId))
