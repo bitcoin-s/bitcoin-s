@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.db.CRUD
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletTestUtil}
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -20,7 +20,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   behavior of "DLCDAO"
 
-  val dlcDb: DLCDb = DLCWalletTestUtil.sampleDLCDb
+  val dlcDb: DLCDb = DLCWalletUtil.sampleDLCDb
 
   val eventId: Sha256DigestBE = dlcDb.eventId
 
@@ -49,7 +49,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val offerDAO = daos.dlcOfferDAO
 
     val offerDb =
-      DLCOfferDb.fromDLCOffer(DLCWalletTestUtil.sampleDLCOffer, RegTest)
+      DLCOfferDb.fromDLCOffer(DLCWalletUtil.sampleDLCOffer, RegTest)
 
     verifyDatabaseInsertion(offerDb, eventId, offerDAO, dlcDAO)
   }
@@ -58,7 +58,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val dlcDAO = daos.dlcDAO
     val acceptDAO = daos.dlcAcceptDAO
 
-    val acceptDb = DLCAcceptDb.fromDLCAccept(DLCWalletTestUtil.sampleDLCAccept)
+    val acceptDb = DLCAcceptDb.fromDLCAccept(DLCWalletUtil.sampleDLCAccept)
 
     verifyDatabaseInsertion(acceptDb, eventId, acceptDAO, dlcDAO)
   }
@@ -72,7 +72,7 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
       isInitiator = true,
       outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
       output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
-      sigs = Vector(DLCWalletTestUtil.dummyPartialSig)
+      sigs = Vector(DLCWalletUtil.dummyPartialSig)
     )
 
     verifyDatabaseInsertion(input, input.outPoint, inputsDAO, dlcDAO)
@@ -89,21 +89,21 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           isInitiator = true,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.zero),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
-          sigs = Vector(DLCWalletTestUtil.dummyPartialSig)
+          sigs = Vector(DLCWalletUtil.dummyPartialSig)
         ),
         DLCFundingInputDb(
           eventId = eventId,
           isInitiator = false,
           outPoint = TransactionOutPoint(testBlockHash, UInt32.one),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
-          sigs = Vector(DLCWalletTestUtil.dummyPartialSig)
+          sigs = Vector(DLCWalletUtil.dummyPartialSig)
         ),
         DLCFundingInputDb(
           eventId = eventId,
           isInitiator = true,
           outPoint = TransactionOutPoint(testBlockHash, UInt32(3)),
           output = TransactionOutput(Satoshis.one, EmptyScriptPubKey),
-          sigs = Vector(DLCWalletTestUtil.dummyPartialSig)
+          sigs = Vector(DLCWalletUtil.dummyPartialSig)
         )
       )
 
