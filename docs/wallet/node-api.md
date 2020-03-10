@@ -3,33 +3,6 @@ id: node-api
 title: node-api
 ---
 
-### NodeApi
-
-The NodeApi is how the wallet project retrieves relevant node data like blocks.
-This allows the wallet for example to retrieve blocks for finding its relevant transactions.
-
-Since this is an API it can be hooked up to the `node` module of bitcoin-s but it can also be linked to
-any other implementation of your choosing. This allows you to use the bitcoin-s wallet in any schema that you
-want.
-
-The functions that the NodeApi supports are:
-
-```scala mdoc:compile-only
-import org.bitcoins.core.crypto.DoubleSha256Digest
-
-import scala.concurrent.Future
-
-trait NodeApi {
-
-  /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]] */
-    def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit]
-}
-```
-
-## Downloading blocks with bitcoind
-
-As an example, we will show you how to use the `NodeApi` and bitcoind to download blocks for a wallet.
-
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.NodeApi
@@ -47,6 +20,29 @@ import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```
+
+### NodeApi
+
+The NodeApi is how the wallet project retrieves relevant node data like blocks.
+This allows the wallet for example to retrieve blocks for finding its relevant transactions.
+
+Since this is an API it can be hooked up to the `node` module of bitcoin-s but it can also be linked to
+any other implementation of your choosing. This allows you to use the bitcoin-s wallet in any schema that you
+want.
+
+The functions that the NodeApi supports are:
+
+```scala mdoc:compile-only
+trait NodeApi {
+
+  /** Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]] */
+    def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit]
+}
+```
+
+## Downloading blocks with bitcoind
+
+As an example, we will show you how to use the `NodeApi` and bitcoind to download blocks for a wallet.
 
 ```scala mdoc:compile-only
 implicit val system: ActorSystem = ActorSystem(s"node-api-example")
