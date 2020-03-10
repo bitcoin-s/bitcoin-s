@@ -16,8 +16,7 @@ creation, updating, combining, signing, finalizing,
 and transaction extraction.
 
 An example on a typical PSBT workflow:
-
-```scala mdoc:to-string
+```scala mdoc:invisible
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
@@ -25,6 +24,9 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
 import scodec.bits._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+```
+
+```scala mdoc:to-string
 implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
 // First you need an unsigned transaction,

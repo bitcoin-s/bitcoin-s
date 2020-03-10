@@ -20,18 +20,17 @@ you can generate bech32 addresses in four(!) lines of code
 (not counting comments and imports), so now there's no
 reason to keep using legacy transaction formats.
 
-```scala mdoc:to-string
+```scala mdoc:invisible
 import org.bitcoins.core.{crypto, protocol, config}
-// if you want to get addresses for mainnet, just import
-// config.MainNet here instead
 import config.TestNet3
 import crypto.ECPrivateKey
 
-// this gets all addresses into scope
 import protocol._
-
-// this gets all scriptPubKeys into scope
 import protocol.script._
+import org.bitcoins.core.protocol.P2PKHAddress
+```
+
+```scala mdoc:to-string
 
 // this generates a random private key
 val privkey = ECPrivateKey()
@@ -44,6 +43,8 @@ val segwitAddress = {
     val scriptPubKey = P2WPKHWitnessSPKV0(pubkey)
     Bech32Address(scriptPubKey, TestNet3)
 }
+
+println(segwitAddress.toString)
 ```
 
 ## Generating legacy (base58) addresses
@@ -53,10 +54,10 @@ compatability reasons, that's also a walk in the park.
 Take a look:
 
 ```scala mdoc:to-string
-// pay-to-pubkey-hash address
-import org.bitcoins.core.protocol.P2PKHAddress
 
 // we're reusing the same private/public key pair
 // from before. don't do this in an actual application!
 val legacyAddress = P2PKHAddress(pubkey, TestNet3)
+
+println(legacyAddress.toString)
 ```

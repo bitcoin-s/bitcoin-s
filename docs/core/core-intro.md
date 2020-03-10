@@ -76,7 +76,7 @@ Transactions are run through the interpreter to check their validity. These are 
 
 Here is an example of a transaction spending a `scriptPubKey` which is correctly evaluated with our interpreter implementation:
 
-```scala mdoc:silent:reset
+```scala mdoc:invisible
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script._
@@ -85,6 +85,9 @@ import org.bitcoins.core.policy._
 import org.bitcoins.core.number._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
+```
+
+```scala mdoc:to-string
 
 val spendingTx = Transaction.fromHex("0100000001ccf318f0cbac588a680bbad075aebdda1f211c94ba28125b0f627f9248310db3000000006b4830450221008337ce3ce0c6ac0ab72509f889c1d52701817a2362d6357457b63e3bdedc0c0602202908963b9cf1a095ab3b34b95ce2bc0d67fb0f19be1cc5f7b3de0b3a325629bf01210241d746ca08da0a668735c3e01c1fa02045f2f399c5937079b6434b5a31dfe353ffffffff0210335d05000000001976a914b1d7591b69e9def0feb13254bace942923c7922d88ac48030000000000001976a9145e690c865c2f6f7a9710a474154ab1423abb5b9288ac00000000")
 
@@ -97,8 +100,8 @@ val inputIndex = UInt32.zero
 val btxsc = BaseTxSigComponent(spendingTx,inputIndex,output,Policy.standardScriptVerifyFlags)
 
 val preExecution = PreExecutionScriptProgram(btxsc)
-```
 
-```scala mdoc
 val result = ScriptInterpreter.run(preExecution)
+
+println(s"Script execution result=${result}")
 ```

@@ -8,17 +8,37 @@ title: bitcoind/Bitcoin Core
 The Bitcoin Core RPC client in Bitcoin-S currently supports the Bitcoin Core 0.16, 0.17, 0.18, and 0.19
 version lines. It can be set up to work with both local and remote Bitcoin Core servers.
 
+You can fetch them using bitcoin-s by running the following sbt command
+
+```bash
+sbt downloadBitcoind
+```
+
+The binaries will be stored in `$HOME/.bitcoin-s/binaries/bitcoind/`
+
 ## Connecting to a local `bitcoind` instance
 
 ### Getting started quickly, with default options:
-
-```scala mdoc:compile-only
+```scala mdoc:invisible
 import scala.concurrent._
 
 import org.bitcoins.{rpc, core}
-import core.currency.Bitcoins
 import rpc.client.common._
 import java.io._
+import java.net.URI
+
+import org.bitcoins.core.config._
+import org.bitcoins.rpc.config._
+import org.bitcoins.rpc.client.common._
+
+import org.bitcoins.rpc.BitcoindWalletException
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.protocol._
+import org.bitcoins.core.currency._
+
+```
+
+```scala mdoc:compile-only
 
 implicit val ec: ExecutionContext = ExecutionContext.global
 
@@ -50,12 +70,8 @@ Now that we have a secure connection between our remote `bitcoind`, we're
 ready to create the connection with our RPC client
 
 ```scala mdoc:compile-only
-import java.net.URI
-import scala.concurrent._
 
-import org.bitcoins.core.config._
-import org.bitcoins.rpc.config._
-import org.bitcoins.rpc.client.common._
+implicit val ec: ExecutionContext = ExecutionContext.global
 
 val username = "FILL_ME_IN" //this username comes from 'rpcuser' in your bitcoin.conf file
 val password = "FILL_ME_IN" //this password comes from your 'rpcpassword' in your bitcoin.conf file
@@ -73,8 +89,6 @@ val bitcoindInstance = {
     authCredentials = authCredentials
   )
 }
-
-implicit val ec: ExecutionContext = ExecutionContext.global
 
 val rpcCli = BitcoindRpcClient(bitcoindInstance)
 
@@ -94,14 +108,6 @@ class is only intended to cover errors returned by Bitcoin Core. An example of h
 handling could look:
 
 ```scala mdoc:compile-only
-import org.bitcoins.rpc.client.common._
-import org.bitcoins.rpc.BitcoindWalletException
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.protocol._
-import org.bitcoins.core.currency._
-import java.io._
-
-import scala.concurrent._
 
 implicit val ec = ExecutionContext.global
 

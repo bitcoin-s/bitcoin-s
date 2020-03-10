@@ -17,6 +17,9 @@
       "applications/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
       },
+      "applications/filter-sync": {
+        "title": "Syncing Blockfilters"
+      },
       "applications/node": {
         "title": "Light client"
       },
@@ -32,6 +35,9 @@
       "contributing": {
         "title": "Contributing"
       },
+      "core/adding-spks": {
+        "title": "Adding New Script Types"
+      },
       "core/addresses": {
         "title": "Generating addresses"
       },
@@ -46,6 +52,9 @@
       },
       "core/sign": {
         "title": "Sign api"
+      },
+      "core/spending-info": {
+        "title": "Signing Transactions"
       },
       "core/txbuilder": {
         "title": "TxBuilder example"
