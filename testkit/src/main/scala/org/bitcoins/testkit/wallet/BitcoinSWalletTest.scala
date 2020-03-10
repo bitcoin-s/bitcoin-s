@@ -13,6 +13,7 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManagerTestUtil
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -197,7 +198,6 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     )
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
-
   }
 
   def withFundedWalletAndBitcoind(test: OneArgAsyncTest): FutureOutcome = {
@@ -212,6 +212,24 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
         processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoind) =>
           fundWalletWithBitcoind(pair)
       )
+
+    makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
+  }
+
+  def withFundedWalletAndBitcoindV19(test: OneArgAsyncTest): FutureOutcome = {
+    val builder: () => Future[WalletWithBitcoindV19] = {
+      composeBuildersAndWrapFuture(
+        builder = { () =>
+          createDefaultWallet(nodeApi, chainQueryApi)
+        },
+        dependentBuilder = { (wallet: Wallet) =>
+          createWalletWithBitcoindV19(wallet)
+        },
+        processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoindV19) =>
+          fundWalletWithBitcoind(pair)
+            .map(_.asInstanceOf[WalletWithBitcoindV19])
+      )
+    }
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
   }
@@ -266,7 +284,12 @@ object BitcoinSWalletTest extends WalletLogger {
       Future.successful(Vector.empty)
   }
 
-  case class WalletWithBitcoind(wallet: Wallet, bitcoind: BitcoindRpcClient)
+  sealed trait WalletWithBitcoind {
+    def wallet: Wallet
+    def bitcoind: BitcoindRpcClient
+  }
+  case class WalletWithBitcoindRpc(wallet: Wallet, bitcoind: BitcoindRpcClient) extends WalletWithBitcoind
+  case class WalletWithBitcoindV19(wallet: Wallet, bitcoind: BitcoindV19RpcClient) extends WalletWithBitcoind
 
   private def createNewKeyManager(
       bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt)(
@@ -361,7 +384,7 @@ object BitcoinSWalletTest extends WalletLogger {
       wallet: Wallet
   )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds()
-    bitcoindF.map(WalletWithBitcoind(wallet, _))(system.dispatcher)
+    bitcoindF.map(WalletWithBitcoindRpc(wallet, _))(system.dispatcher)
   }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the bitcoind wallet */
@@ -371,14 +394,22 @@ object BitcoinSWalletTest extends WalletLogger {
   )(implicit system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     val bitcoindF = BitcoinSFixture.createBitcoindWithFunds(versionOpt)
-    bitcoindF.map(WalletWithBitcoind(wallet, _))
+    bitcoindF.map(WalletWithBitcoindRpc(wallet, _))
+  }
+
+  def createWalletWithBitcoindV19(wallet: Wallet)(implicit system: ActorSystem): Future[WalletWithBitcoindV19] = {
+    import system.dispatcher
+    val createdF = createWalletWithBitcoind(wallet, versionOpt = Some(BitcoindVersion.V19))
+    for {
+      created <- createdF
+    } yield WalletWithBitcoindV19(created.wallet, created.bitcoind.asInstanceOf[BitcoindV19RpcClient])
   }
 
   def createWalletWithBitcoind(
       wallet: Wallet,
       bitcoindRpcClient: BitcoindRpcClient
   ): Future[WalletWithBitcoind] = {
-    Future.successful(WalletWithBitcoind(wallet, bitcoindRpcClient))
+    Future.successful(WalletWithBitcoindRpc(wallet, bitcoindRpcClient))
   }
 
   /** Gives us a funded bitcoin-s wallet and the bitcoind instance that funded that wallet */
@@ -413,7 +444,7 @@ object BitcoinSWalletTest extends WalletLogger {
   /** Funds the given wallet with money from the given bitcoind */
   def fundWalletWithBitcoind(pair: WalletWithBitcoind)(
       implicit ec: ExecutionContext): Future[WalletWithBitcoind] = {
-    val WalletWithBitcoind(wallet, bitcoind) = pair
+    val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
     for {
       addr <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(addr, initialFunds)
@@ -430,7 +461,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    val WalletWithBitcoind(wallet, bitcoind) = walletWithBitcoind
+    val (wallet, bitcoind) = (walletWithBitcoind.wallet, walletWithBitcoind.bitcoind)
     val stopF = bitcoind.stop()
     val destroyWalletF = destroyWallet(wallet)
     for {

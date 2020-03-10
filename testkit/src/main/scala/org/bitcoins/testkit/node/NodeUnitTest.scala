@@ -289,7 +289,7 @@ object NodeUnitTest extends P2PLogger {
       appConfig: BitcoinSAppConfig): Future[Unit] = {
     import system.dispatcher
     val walletWithBitcoind = {
-      BitcoinSWalletTest.WalletWithBitcoind(fundedWalletBitcoind.wallet,
+      BitcoinSWalletTest.WalletWithBitcoindRpc(fundedWalletBitcoind.wallet,
                                             fundedWalletBitcoind.bitcoindRpc)
     }
 

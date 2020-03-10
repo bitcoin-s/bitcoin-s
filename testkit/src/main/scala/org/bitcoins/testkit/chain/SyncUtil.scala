@@ -1,8 +1,10 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
+import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
+import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -37,6 +39,52 @@ abstract class SyncUtil {
         case GetBlockFilterResult(filter, header) =>
           FilterWithHeaderHash(filter, header)
       }
+  }
+
+
+  def getChainQueryApi(bitcoindV19RpcClient: BitcoindV19RpcClient)(implicit ec: ExecutionContext): ChainQueryApi = {
+    new ChainQueryApi {
+      /** Gets the height of the given block */
+      override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+        bitcoindV19RpcClient.getBlockHeader(blockHash)
+          .map(b => Some(b.height))
+      }
+
+      /** Gets the hash of the block that is what we consider "best" */
+      override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
+        bitcoindV19RpcClient.getBestBlockHash
+      }
+
+      /** Gets number of confirmations for the given block hash */
+      override def getNumberOfConfirmations(blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = {
+        bitcoindV19RpcClient.getBlock(blockHashOpt).map { b =>
+          Some(b.confirmations)
+        }
+      }
+
+      /** Gets the number of compact filters in the database */
+      override def getFilterCount: Future[Int] = {
+        //filter count should be same as block height?
+        bitcoindV19RpcClient.getBlockCount
+      }
+
+      /** Returns the block height of the given block stamp */
+      override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = {
+        blockStamp match {
+          case BlockStamp.BlockHash(hash) => getBlockHeight(hash).map(_.get)  
+          case BlockStamp.BlockHeight(height) =>
+            Future.failed(new RuntimeException(s"Cannot query bitcoind by height=${height}"))
+          case BlockStamp.BlockTime(time) =>
+            Future.failed(new RuntimeException(s"Cannot query by block time"))
+        }
+      }
+
+
+      override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
+        //how to query filters by height with bitcoind?
+        Future.failed(new RuntimeException(s"Cannot query filters by height with bitcoind"))
+      }
+    }
   }
 }
 
