@@ -40,10 +40,36 @@ UTXOs with popular database like Postgres, SQLite, etc.
 This code snippet you have a running `bitcoind` instance, locally
 on regtest.
 
+```scala mdoc:invisible
+
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.sync.ChainSync
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.chain.models._
+
+import org.bitcoins.core.api._
+import ChainQueryApi._
+import org.bitcoins.core.crypto._
+import org.bitcoins.core.protocol._
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.currency._
+import org.bitcoins.keymanager.bip39._
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.api.LockedWalletApi
+import org.bitcoins.wallet.Wallet
+
+import com.typesafe.config.ConfigFactory
+import java.nio.file.Files
+import scala.concurrent._
+```
+
 ```scala mdoc:compile-only
 implicit val ec = scala.concurrent.ExecutionContext.global
 
-import com.typesafe.config.ConfigFactory
+
 val config = ConfigFactory.parseString {
     """
     | bitcoin-s {
@@ -52,49 +78,41 @@ val config = ConfigFactory.parseString {
     """.stripMargin
 }
 
-import java.nio.file.Files
+
 val datadir = Files.createTempDirectory("bitcoin-s-wallet")
 
-import org.bitcoins.wallet.config.WalletAppConfig
+
 implicit val walletConfig = WalletAppConfig(datadir, config)
 
 // we also need to store chain state for syncing purposes
-import org.bitcoins.chain.config.ChainAppConfig
 implicit val chainConfig = ChainAppConfig(datadir, config)
 
 // when this future completes, we have
 // created the necessary directories and
 // databases for managing both chain state
 // and wallet state
-import scala.concurrent._
 val configF: Future[Unit] = for {
     _ <- walletConfig.initialize()
     _ <- chainConfig.initialize()
 } yield ()
 
-import org.bitcoins.rpc.config.BitcoindInstance
 val bitcoindInstance = BitcoindInstance.fromDatadir()
 
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
 val bitcoind = BitcoindRpcClient(bitcoindInstance)
 
 // when this future completes, we have
 // synced our chain handler to our bitcoind
 // peer
-import org.bitcoins.chain.api.ChainApi
 val syncF: Future[ChainApi] = configF.flatMap { _ =>
     val getBestBlockHashFunc = { () =>
         bitcoind.getBestBlockHash
     }
 
-    import org.bitcoins.core.crypto.DoubleSha256DigestBE
+    
     val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
         bitcoind.getBlockHeader(hash).map(_.blockHeader)
     }
 
-
-    import org.bitcoins.chain.models._
-    import org.bitcoins.chain.blockchain.ChainHandler
     val blockHeaderDAO = BlockHeaderDAO()
     val compactFilterHeaderDAO = CompactFilterHeaderDAO()
     val compactFilterDAO = CompactFilterDAO()
@@ -105,12 +123,10 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
         blockchains = Vector.empty,
         blockFilterCheckpoints = Map.empty)
 
-    import org.bitcoins.chain.blockchain.sync.ChainSync
     ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
 }
 
 //initialize our key manager, where we store our keys
-import org.bitcoins.keymanager.bip39._
 //you can add a password here if you want
 //val bip39PasswordOpt = Some("my-password-here")
 val bip39PasswordOpt = None
@@ -120,16 +136,9 @@ val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams, bip39Password
 
 // once this future completes, we have a initialized
 // wallet
-
-import org.bitcoins.wallet.api.LockedWalletApi
-import org.bitcoins.wallet.Wallet
-import org.bitcoins.core.api._
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.protocol._
 val wallet = Wallet(keyManager, new NodeApi {
     override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
   }, new ChainQueryApi {
-    import org.bitcoins.core.api.ChainQueryApi._
     override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
     override def getBestBlockHash(): Future[DoubleSha256DigestBE] = Future.successful(DoubleSha256DigestBE.empty)
     override def getNumberOfConfirmations(blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
@@ -143,9 +152,6 @@ val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
 
 // when this future completes, ww have sent a transaction
 // from bitcoind to the Bitcoin-S wallet
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.currency._
 val transactionF: Future[(Transaction, Option[DoubleSha256DigestBE])] = for {
     wallet <- walletF
     address <- wallet.getNewAddress()

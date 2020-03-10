@@ -16,24 +16,27 @@ we demonstrate how to do this, while persisting it to disk. We should be
 able to read this chain on subsequent runs, assuming we are connected
 to the same `bitcoind` instance.
 
-```scala mdoc:compile-only
+```scala mdoc:invisible
 import org.bitcoins.chain.blockchain._
 import org.bitcoins.chain.blockchain.sync._
 import org.bitcoins.chain.models._
-
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.testkit.chain._
 
 import scala.concurrent._
+import java.nio.file.Files
+```
+
+```scala mdoc:compile-only
 
 implicit val ec = ExecutionContext.global
 
 // We are assuming that a `bitcoind` regtest node is running the background.
 // You can see our `bitcoind` guides to see how to connect
 // to a local or remote `bitcoind` node.
-
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
 
 val bitcoindInstance = BitcoindInstance.fromDatadir()
 val rpcCli = BitcoindRpcClient(bitcoindInstance)
@@ -44,9 +47,7 @@ val getBestBlockHash = ChainTestUtil.bestBlockHashFnRpc(Future.successful(rpcCli
 
 val getBlockHeader = ChainTestUtil.getBlockHeaderFnRpc(Future.successful(rpcCli))
 
-
 // set a data directory
-import java.nio.file.Files
 val datadir = Files.createTempDirectory("bitcoin-s-test")
 
 // set the currenet network to regtest
@@ -59,7 +60,6 @@ val config = ConfigFactory.parseString {
     |""".stripMargin
 }
 
-import org.bitcoins.chain.config.ChainAppConfig
 implicit val chainConfig = ChainAppConfig(datadir, config)
 
 // Initialize the needed database tables if they don't exist:
@@ -76,7 +76,6 @@ val syncedChainApiF = for {
     handler <- chainHandlerF
     synced <- ChainSync.sync(handler, getBlockHeader, getBestBlockHash)
 } yield synced
-
 
 val syncResultF = syncedChainApiF.flatMap { chainApi =>
   chainApi.getBlockCount.map(count => println(s"chain api blockcount=${count}"))

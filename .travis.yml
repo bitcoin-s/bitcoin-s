@@ -48,9 +48,10 @@ matrix:
     # compile website, to check for documentation regressions
     - stage: test
       name: Compile website and check formatting
-      script:
-        - sbt docs/mdoc
-        - sbt test:scalafmtCheck
+      env:
+        - TEST_COMMAND="test:scalafmtCheck docs/mdoc"
+      scala:
+        - 2.13.1
 
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed

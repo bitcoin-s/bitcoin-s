@@ -26,7 +26,7 @@ A popular way for bitcoin wallet's to represent entropy is [BIP39](https://githu
 
 You can generate a `MnemonicCode` in bitcoin-s with the following code
 
-```scala mdoc
+```scala mdoc:to-string
 import org.bitcoins.core.crypto._
 
 //get 256 bits of random entropy
@@ -48,12 +48,10 @@ generate specific kinds of addresses for wallets.
 3. [`network`](../../core/src/main/scala/org/bitcoins/core/config/NetworkParameters.scala) what cryptocurrency network this key manager is associated with
 
 
-This controls how the root key is defined. The combination of `purpose` and `network` determine how the root `ExtKey` is serialized. For more information on how this works please see [hd-keys](hd-keys.md)
+This controls how the root key is defined. The combination of `purpose` and `network` determine how the root `ExtKey` is serialized. For more information on how this works please see [hd-keys](../core/hd-keys.md)
 
 Now we can construct a native segwit key manager for the regtest network!
-
-```scala mdoc
-
+```scala mdoc:invisible
 import org.bitcoins.core.crypto._
 
 import org.bitcoins.core.config._
@@ -65,6 +63,10 @@ import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39._
 
 import java.nio.file._
+
+```
+
+```scala mdoc:to-string
 
 //this will create a temp directory with the prefix 'key-manager-example` that will
 //have a file in it called "encrypted-bitcoin-s-seed.json"
@@ -94,13 +96,13 @@ which is a native segwit `ExtPubKey` for the regtest network!
 You can always change the `network` or `purpose` to support different things. You do _not_ need to initialize the key manager
 again after initializing it once. You can use the same `mnemonic` for different networks, which you control `KeyManagerParams`.
 
-```scala
+```scala mdoc:to-string
 
 //let's create a nested segwit key manager for mainnet
 val mainnetKmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, MainNet)
 
 //we do not need to all `initializeWithMnemonic()` again as we have saved the seed to dis
-val mainnetKeyManager = KeyManager(mnemonic, mainnetKmParams)
+val mainnetKeyManager = BIP39KeyManager(mnemonic, mainnetKmParams, None)
 
 val mainnetXpub = mainnetKeyManager.getRootXPub
 
