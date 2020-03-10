@@ -5,13 +5,17 @@ import java.net.InetSocketAddress
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.ChainVerificationLogger
+import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models._
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.db.AppConfig
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.chain.fixture._
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -211,19 +215,6 @@ trait ChainUnitTest
     } yield (chainHandler, zmqSubscriber)
   }
 
-  def createChainApiWithBitcoindRpc(
-      bitcoind: BitcoindRpcClient): Future[BitcoindChainHandlerViaRpc] = {
-    val handlerWithGenesisHeaderF =
-      ChainUnitTest.setupHeaderTableWithGenesisHeader()
-
-    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
-
-    chainHandlerF.map { handler =>
-      chain.fixture.BitcoindChainHandlerViaRpc(bitcoind, handler)
-    }
-
-  }
-
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
     composeBuildersAndWrap(() => BitcoinSFixture.createBitcoind(),
                            createChainHandlerWithBitcoindZmq,
@@ -238,17 +229,9 @@ trait ChainUnitTest
       bitcoindChainHandler.bitcoindRpc,
       bitcoindChainHandler.chainHandler)
 
-    destroyBitcoindChainApiViaRpc(rpc).map { _ =>
+    ChainUnitTest.destroyBitcoindChainApiViaRpc(rpc).map { _ =>
       bitcoindChainHandler.zmqSubscriber.stop
     }
-  }
-
-  def destroyBitcoindChainApiViaRpc(
-      bitcoindChainHandler: BitcoindChainHandlerViaRpc): Future[Unit] = {
-    val stopBitcoindF =
-      BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
-    val dropTableF = ChainUnitTest.destroyAllTables()
-    stopBitcoindF.flatMap(_ => dropTableF)
   }
 
   /**
@@ -273,10 +256,22 @@ trait ChainUnitTest
   def withBitcoindChainHandlerViaRpc(test: OneArgAsyncTest)(
       implicit system: ActorSystem): FutureOutcome = {
     val builder: () => Future[BitcoindChainHandlerViaRpc] = { () =>
-      BitcoinSFixture.createBitcoind().flatMap(createChainApiWithBitcoindRpc)
+      BitcoinSFixture
+        .createBitcoind()
+        .flatMap(ChainUnitTest.createChainApiWithBitcoindRpc)
     }
 
-    makeDependentFixture(builder, destroyBitcoindChainApiViaRpc)(test)
+    makeDependentFixture(builder, ChainUnitTest.destroyBitcoindChainApiViaRpc)(
+      test)
+  }
+
+  def withBitcoindV19ChainHandlerViaRpc(test: OneArgAsyncTest)(
+      implicit system: ActorSystem): FutureOutcome = {
+    val builder: () => Future[BitcoindV19ChainHandler] = { () =>
+      ChainUnitTest.createBitcoindV19ChainHandler()
+    }
+    makeDependentFixture(builder, ChainUnitTest.destroyBitcoindV19ChainApi)(
+      test)
   }
 }
 
@@ -406,6 +401,54 @@ object ChainUnitTest extends ChainVerificationLogger {
     }
   }
 
+  def createChainApiWithBitcoindRpc(bitcoind: BitcoindRpcClient)(
+      implicit ec: ExecutionContext,
+      chainAppConfig: ChainAppConfig): Future[BitcoindChainHandlerViaRpc] = {
+    val handlerWithGenesisHeaderF =
+      ChainUnitTest.setupHeaderTableWithGenesisHeader()
+
+    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
+
+    chainHandlerF.map { handler =>
+      chain.fixture.BitcoindChainHandlerViaRpc(bitcoind, handler)
+    }
+  }
+
+  def destroyBitcoindChainApiViaRpc(
+      bitcoindChainHandler: BitcoindChainHandlerViaRpc)(
+      implicit system: ActorSystem,
+      chainAppConfig: ChainAppConfig): Future[Unit] = {
+    import system.dispatcher
+    val stopBitcoindF =
+      BitcoindRpcTestUtil.stopServer(bitcoindChainHandler.bitcoindRpc)
+    val dropTableF = ChainUnitTest.destroyAllTables()
+    stopBitcoindF.flatMap(_ => dropTableF)
+  }
+
+  def createBitcoindV19ChainHandler()(
+      implicit system: ActorSystem,
+      chainAppConfig: ChainAppConfig): Future[BitcoindV19ChainHandler] = {
+    import system.dispatcher
+    val bitcoindV = BitcoindVersion.V19
+    BitcoinSFixture
+      .createBitcoind(Some(bitcoindV))
+      .flatMap(createChainApiWithBitcoindRpc)
+      .map { b: BitcoindChainHandlerViaRpc =>
+        BitcoindV19ChainHandler(
+          b.bitcoindRpc.asInstanceOf[BitcoindV19RpcClient],
+          b.chainHandler)
+      }
+  }
+
+  def destroyBitcoindV19ChainApi(
+      bitcoindV19ChainHandler: BitcoindV19ChainHandler)(
+      implicit system: ActorSystem,
+      chainAppConfig: ChainAppConfig): Future[Unit] = {
+    val b = BitcoindChainHandlerViaRpc(bitcoindV19ChainHandler.bitcoind,
+                                       bitcoindV19ChainHandler.chainHandler)
+    destroyBitcoindChainApiViaRpc(b)
+  }
+
   def destroyBitcoind(bitcoind: BitcoindRpcClient)(
       implicit system: ActorSystem): Future[Unit] = {
     BitcoindRpcTestUtil.stopServer(bitcoind)
@@ -465,4 +508,20 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   }
 
+  /** Syncs the given chain handler to the given bitcoind */
+  def syncFromBitcoind(bitcoind: BitcoindRpcClient, chainHandler: ChainHandler)(
+      implicit ec: ExecutionContext,
+      chainAppConfig: ChainAppConfig): Future[ChainApi] = {
+    //sync headers
+    //first we need to implement the 'getBestBlockHashFunc' and 'getBlockHeaderFunc' functions
+    val getBestBlockHashFunc = { () =>
+      bitcoind.getBestBlockHash
+    }
+
+    val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
+      bitcoind.getBlockHeader(hash).map(_.blockHeader)
+    }
+
+    ChainSync.sync(chainHandler, getBlockHeaderFunc, getBestBlockHashFunc)
+  }
 }

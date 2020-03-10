@@ -1,6 +1,6 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
 import org.bitcoins.core.util.CryptoUtil
@@ -24,6 +24,10 @@ case class GolombFilter(
   /** The hash of this serialized filter */
   lazy val hash: DoubleSha256Digest = {
     CryptoUtil.doubleSHA256(this.bytes)
+  }
+
+  lazy val hashBE: DoubleSha256DigestBE = {
+    hash.flip
   }
 
   /** Given the previous FilterHeader, constructs the header corresponding to this */

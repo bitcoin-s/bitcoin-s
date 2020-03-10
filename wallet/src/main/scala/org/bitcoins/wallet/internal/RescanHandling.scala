@@ -49,7 +49,9 @@ private[wallet] trait RescanHandling extends WalletLogger {
       addressBatchSize: Int): Future[Unit] = {
     for {
       scriptPubKeys <- generateScriptPubKeys(addressBatchSize)
-      blocks <- matchBlocks(scriptPubKeys, endOpt, startOpt)
+      blocks <- matchBlocks(scriptPubKeys = scriptPubKeys,
+                            endOpt = endOpt,
+                            startOpt = startOpt)
       _ <- downloadAndProcessBlocks(blocks)
       externalGap <- calcAddressGap(HDChainType.External)
       changeGap <- calcAddressGap(HDChainType.Change)
@@ -119,8 +121,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors() * 2)
 
     val blocksF = for {
-      blocks <- getMatchingBlocks(scriptPubKeys, startOpt, endOpt)(
-        ExecutionContext.fromExecutor(threadPool))
+      blocks <- getMatchingBlocks(
+        scripts = scriptPubKeys,
+        startOpt = startOpt,
+        endOpt = endOpt)(ExecutionContext.fromExecutor(threadPool))
     } yield {
       blocks.sortBy(_.blockHeight).map(_.blockHash.flip)
     }

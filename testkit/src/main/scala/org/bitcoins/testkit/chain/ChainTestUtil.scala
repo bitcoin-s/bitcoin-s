@@ -1,17 +1,13 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.models._
-import org.bitcoins.core.crypto
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
   MainNetChainParams,
   RegTestNetChainParams
 }
-import org.bitcoins.rpc.client.common.BitcoindRpcClient
-
-import scala.concurrent.{ExecutionContext, Future}
 
 sealed abstract class ChainTestUtil {
   lazy val regTestChainParams: RegTestNetChainParams.type =
@@ -79,20 +75,6 @@ sealed abstract class ChainTestUtil {
 
     lazy val blockHeaderDb566496 =
       BlockHeaderDbHelper.fromBlockHeader(566496, blockHeader566496)
-  }
-
-  /** Creates a best block header function for [[org.bitcoins.chain.blockchain.sync.ChainSync.sync() ChainSync.sync]] */
-  def bestBlockHashFnRpc(bitcoindF: Future[BitcoindRpcClient])(
-      implicit ec: ExecutionContext): () => Future[DoubleSha256DigestBE] = {
-    () =>
-      bitcoindF.flatMap(_.getBestBlockHash)
-  }
-
-  /** Creates a getBlocKHeader function for [[org.bitcoins.chain.blockchain.sync.ChainSync.sync() ChainSync.sync]] */
-  def getBlockHeaderFnRpc(bitcoindF: Future[BitcoindRpcClient])(
-      implicit ec: ExecutionContext): DoubleSha256DigestBE => Future[
-    BlockHeader] = { hash: crypto.DoubleSha256DigestBE =>
-    bitcoindF.flatMap(_.getBlockHeader(hash).map(_.blockHeader))
   }
 }
 
