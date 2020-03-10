@@ -66,7 +66,7 @@ import java.nio.file._
 
 ```
 
-```scala mdoc:nest:to-string
+```scala mdoc:to-string
 
 //this will create a temp directory with the prefix 'key-manager-example` that will
 //have a file in it called "encrypted-bitcoin-s-seed.json"
@@ -96,7 +96,7 @@ which is a native segwit `ExtPubKey` for the regtest network!
 You can always change the `network` or `purpose` to support different things. You do _not_ need to initialize the key manager
 again after initializing it once. You can use the same `mnemonic` for different networks, which you control `KeyManagerParams`.
 
-```scala mdoc:nest:to-string
+```scala mdoc:to-string
 
 //let's create a nested segwit key manager for mainnet
 val mainnetKmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, MainNet)

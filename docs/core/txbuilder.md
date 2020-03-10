@@ -25,7 +25,7 @@ import wallet.utxo._
 
 ```
 
-```scala mdoc:nest:to-string
+```scala mdoc:to-string
 
 implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
 
@@ -128,7 +128,7 @@ val signedTx: Transaction = {
 }
 ```
 
-```scala mdoc:nest:to-string
+```scala mdoc:to-string
 signedTx.inputs.length
 
 signedTx.outputs.length

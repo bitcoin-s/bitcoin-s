@@ -26,7 +26,7 @@ import scodec.bits._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 ```
 
-```scala mdoc:nest:to-string
+```scala mdoc:to-string
 implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
 // First you need an unsigned transaction,

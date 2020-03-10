@@ -53,7 +53,7 @@ If you need to generate legacy addresses for backwards
 compatability reasons, that's also a walk in the park.
 Take a look:
 
-```scala mdoc:nest:to-string
+```scala mdoc:to-string
 
 // we're reusing the same private/public key pair
 // from before. don't do this in an actual application!
