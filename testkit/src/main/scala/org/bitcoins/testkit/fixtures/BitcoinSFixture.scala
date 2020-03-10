@@ -150,10 +150,11 @@ object BitcoinSFixture {
   /** Creates a new bitcoind instance */
   def createBitcoind(versionOpt: Option[BitcoindVersion] = None)(
       implicit system: ActorSystem): Future[BitcoindRpcClient] = {
-    import system.dispatcher
     val instance = BitcoindRpcTestUtil.instance(versionOpt = versionOpt)
-    val bitcoind = BitcoindRpcClient.withActorSystem(instance)
-
-    bitcoind.start().map(_ => bitcoind)
+    val bitcoind = versionOpt match {
+      case Some(v) => BitcoindRpcClient.fromVersion(v, instance)
+      case None    => new BitcoindRpcClient(instance)
+    }
+    bitcoind.start()
   }
 }

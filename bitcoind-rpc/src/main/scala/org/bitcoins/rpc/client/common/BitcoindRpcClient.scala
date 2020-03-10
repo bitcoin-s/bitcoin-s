@@ -3,6 +3,10 @@ package org.bitcoins.rpc.client.common
 import java.io.File
 
 import akka.actor.ActorSystem
+import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
+import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
+import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.config.{BitcoindConfig, BitcoindInstance}
 
 /**
@@ -80,6 +84,22 @@ object BitcoindRpcClient {
     val instance = BitcoindInstance.fromDatadir(datadir, binary)
     val cli = BitcoindRpcClient(instance)
     cli
+  }
+
+  /** Returns a bitcoind with the appropriated version you passed in, the bitcoind is NOT started. */
+  def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(
+      implicit system: ActorSystem): BitcoindRpcClient = {
+    val bitcoind = version match {
+      case BitcoindVersion.V16 => BitcoindV16RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V17 => BitcoindV17RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V18 => BitcoindV18RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
+      case BitcoindVersion.Experimental | BitcoindVersion.Unknown =>
+        sys.error(
+          s"Cannot create a bitcoind from a unknown or experimental version")
+    }
+
+    bitcoind
   }
 }
 

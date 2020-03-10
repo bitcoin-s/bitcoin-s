@@ -120,6 +120,12 @@ trait ChainApi extends ChainQueryApi {
   def getFilterHeadersAtHeight(
       height: Int): Future[Vector[CompactFilterHeaderDb]]
 
+  /** Finds the "best" filter header we have stored in our database
+    * What this means in practice is the latest filter header we
+    * have received from our peer.
+    * */
+  def getBestFilterHeader(): Future[CompactFilterHeaderDb]
+
   /**
     * Looks up a compact filter header by its hash.
     */
@@ -141,4 +147,9 @@ trait ChainApi extends ChainQueryApi {
 
   /** Returns the block height of the given block stamp */
   def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int]
+
+  /** Fetchs the block headers between from (exclusive) and to (inclusive) */
+  def getHeadersBetween(
+      from: BlockHeaderDb,
+      to: BlockHeaderDb): Future[Vector[BlockHeaderDb]]
 }

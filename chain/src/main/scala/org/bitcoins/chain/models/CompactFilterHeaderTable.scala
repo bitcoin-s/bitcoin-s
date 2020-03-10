@@ -14,6 +14,10 @@ case class CompactFilterHeaderDb(
 
   def filterHeader: FilterHeader =
     FilterHeader(filterHashBE.flip, previousFilterHeaderBE.flip)
+
+  override def toString: String = {
+    s"CompactFilterDb(hashBE=$hashBE,filterHashBE=$filterHashBE,previousFilterHeaderBE=$previousFilterHeaderBE,blockHashBE=$blockHashBE,height=$height)"
+  }
 }
 
 object CompactFilterHeaderDbHelper {
@@ -21,7 +25,7 @@ object CompactFilterHeaderDbHelper {
   def fromFilterHeader(
       filterHeader: FilterHeader,
       blockHash: DoubleSha256DigestBE,
-      height: Int) =
+      height: Int): CompactFilterHeaderDb =
     CompactFilterHeaderDb(
       hashBE = filterHeader.hash.flip,
       filterHashBE = filterHeader.filterHash.flip,

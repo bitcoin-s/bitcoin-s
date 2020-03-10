@@ -32,6 +32,7 @@ trait ChainQueryApi {
   def getFiltersBetweenHeights(
       startHeight: Int,
       endHeight: Int): Future[Vector[FilterResponse]]
+
 }
 
 object ChainQueryApi {

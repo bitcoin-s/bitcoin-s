@@ -22,6 +22,7 @@
     ],
     "Applications": [
       "applications/chain",
+      "applications/filter-sync",
       "applications/cli",
       "applications/configuration",
       "applications/dlc",

@@ -43,14 +43,14 @@ val rpcCli = BitcoindRpcClient(bitcoindInstance)
 
 // Next, we need to create a way to monitor the chain:
 
-val getBestBlockHash = ChainTestUtil.bestBlockHashFnRpc(Future.successful(rpcCli))
+val getBestBlockHash = SyncUtil.getBestBlockHashFunc(rpcCli)
 
-val getBlockHeader = ChainTestUtil.getBlockHeaderFnRpc(Future.successful(rpcCli))
+val getBlockHeader = SyncUtil.getBlockHeaderFunc(rpcCli)
 
 // set a data directory
 val datadir = Files.createTempDirectory("bitcoin-s-test")
 
-// set the currenet network to regtest
+// set the current network to regtest
 import com.typesafe.config.ConfigFactory
 val config = ConfigFactory.parseString {
     """
@@ -68,9 +68,11 @@ val blockHeaderDAO = BlockHeaderDAO()
 val compactFilterHeaderDAO = CompactFilterHeaderDAO()
 val compactFilterDAO = CompactFilterDAO()
 
-// Now, do the actual syncing:
+
+//initialize the chain handler from the database
 val chainHandlerF = ChainHandler.fromDatabase(blockHeaderDAO, compactFilterHeaderDAO, compactFilterDAO)
 
+// Now, do the actual syncing:
 val syncedChainApiF = for {
     _ <- chainProjectInitF
     handler <- chainHandlerF
