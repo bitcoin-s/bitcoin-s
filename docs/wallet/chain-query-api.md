@@ -51,7 +51,7 @@ trait ChainQueryApi {
 
 As an example, we will show you how to use the `ChainQueryApi` and bitcoind to query chain data.
 
-```scala mdoc:compile-only
+```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
@@ -71,7 +71,9 @@ import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
+```
 
+```scala mdoc:compile-only
 implicit val system: ActorSystem = ActorSystem(s"node-api-example")
 implicit val ec: ExecutionContextExecutor = system.dispatcher
 implicit val walletConf: WalletAppConfig =
@@ -79,11 +81,11 @@ implicit val walletConf: WalletAppConfig =
 
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
-  val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
+val bitcoind = BitcoindV19RpcClient(BitcoindInstance.fromConfigFile())
 val nodeApi = BitcoinSWalletTest.MockNodeApi
 
 // Create our key manager
-  val keyManagerE = BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
+val keyManagerE = BIP39KeyManager.initialize(kmParams = walletConf.kmParams,
                                                bip39PasswordOpt = None)
 
 val keyManager = keyManagerE match {
@@ -94,7 +96,7 @@ val keyManager = keyManagerE match {
 
 // This function can be used to create a callback for when our chain api receives a transaction, block, or
 // a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks
-  def createCallbacks(
+def createCallbacks(
       processTransaction: Transaction => Unit,
       processCompactFilter: (DoubleSha256Digest, GolombFilter) => Unit,
       processBlock: Block => Unit): NodeCallbacks = {
@@ -118,7 +120,7 @@ val keyManager = keyManagerE match {
 // Here is a super simple example of a callback, this could be replaced with anything, from
 // relaying the block on the network, finding relevant wallet transactions, verifying the block,
 // or writing it to disk
-  val exampleProcessTx = (tx: Transaction) =>
+val exampleProcessTx = (tx: Transaction) =>
     println(s"Received tx: ${tx.txIdBE}")
 
 val exampleProcessBlock = (block: Block) =>
@@ -133,7 +135,7 @@ val exampleCallbacks =
 
 // Here is where we are defining our actual chain api, Ideally this could be it's own class
 // but for the examples sake we will keep it small.
-  val chainApi = new ChainQueryApi {
+val chainApi = new ChainQueryApi {
 
     /** Gets the height of the given block */
     override def getBlockHeight(
@@ -196,6 +198,10 @@ val exampleCallbacks =
   }
 
 // Finally, we can initialize our wallet with our own node api
-  val wallet =
+val wallet =
     Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi)
+
+// Then to trigger one of the events we can run
+wallet.chainQueryApi.getFiltersBetweenHeights(100, 150)
+
 ```
