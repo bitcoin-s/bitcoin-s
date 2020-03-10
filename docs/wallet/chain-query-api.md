@@ -3,6 +3,27 @@ id: chain-query-api
 title: chain-query-api
 ---
 
+```scala mdoc:invisible
+import akka.actor.ActorSystem
+import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.gcs.{FilterType, GolombFilter}
+import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.node.NodeCallbacks
+import org.bitcoins.node.networking.peer.DataMessageHandler._
+import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
+import org.bitcoins.rpc.config.BitcoindInstance
+import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.config.WalletAppConfig
+
+import scala.concurrent.{ExecutionContextExecutor, Future}
+```
 
 ### ChainQueryApi
 
@@ -17,12 +38,6 @@ want.
 The functions that the ChainQueryApi supports are:
 
 ```scala mdoc:compile-only
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.protocol.BlockStamp
-
-import scala.concurrent.Future
-
 trait ChainQueryApi {
 
   /** Gets the height of the given block */
@@ -50,28 +65,6 @@ trait ChainQueryApi {
 ## Chain query with bitcoind
 
 As an example, we will show you how to use the `ChainQueryApi` and bitcoind to query chain data.
-
-```scala mdoc:invisible
-import akka.actor.ActorSystem
-import org.bitcoins.core.api.ChainQueryApi
-import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.{FilterType, GolombFilter}
-import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.node.NodeCallbacks
-import org.bitcoins.node.networking.peer.DataMessageHandler._
-import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.Wallet
-import org.bitcoins.wallet.config.WalletAppConfig
-
-import scala.concurrent.{ExecutionContextExecutor, Future}
-```
 
 ```scala mdoc:compile-only
 implicit val system: ActorSystem = ActorSystem(s"node-api-example")
