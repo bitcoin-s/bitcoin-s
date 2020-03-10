@@ -23,6 +23,9 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     AppConfig.throwIfDefaultDatadir(config2.walletConf)
   }
 
+  /** Creates two segwit wallets that are funded with some bitcoin, these wallets are NOT
+    * peered with a bitcoind so the funds in the wallets are not tied to an
+    * underlying blockchain */
   def withDualFundedSegwitWallets(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
       build = () =>
@@ -42,6 +45,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     )(test)
   }
 
+  /** Creates 2 funded segwit wallets that have a DLC initiated */
   def withDualDLCWallets(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
       build = () =>
