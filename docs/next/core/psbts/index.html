@@ -68,15 +68,8 @@ you should checkout
 creation, updating, combining, signing, finalizing,
 and transaction extraction.</p>
 <p>An example on a typical PSBT workflow:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> org.bitcoins.core.crypto.<span class="hljs-type">ECPrivateKey</span>
-<span class="hljs-keyword">import</span> org.bitcoins.core.protocol.script.<span class="hljs-type">ScriptPubKey</span>
-<span class="hljs-keyword">import</span> org.bitcoins.core.protocol.transaction.{<span class="hljs-type">BaseTransaction</span>, <span class="hljs-type">Transaction</span>}
-<span class="hljs-keyword">import</span> org.bitcoins.core.psbt.<span class="hljs-type">PSBT</span>
-<span class="hljs-keyword">import</span> org.bitcoins.core.script.crypto.<span class="hljs-type">HashType</span>
-<span class="hljs-keyword">import</span> scodec.bits._
-<span class="hljs-keyword">import</span> scala.concurrent.{<span class="hljs-type">ExecutionContext</span>, <span class="hljs-type">ExecutionContextExecutor</span>}
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContextExecutor</span> = <span class="hljs-type">ExecutionContext</span>.global
-<span class="hljs-comment">// ec: ExecutionContextExecutor = scala.concurrent.impl.ExecutionContextImpl$$anon$3@665ea8ec[Running, parallelism = 2, size = 1, active = 1, running = 1, steals = 5, tasks = 0, submissions = 0]</span>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContextExecutor</span> = <span class="hljs-type">ExecutionContext</span>.global
+<span class="hljs-comment">// ec: ExecutionContextExecutor = scala.concurrent.impl.ExecutionContextImpl$$anon$3@6443cf48[Running, parallelism = 2, size = 1, active = 0, running = 0, steals = 8, tasks = 0, submissions = 0]</span>
 
 <span class="hljs-comment">// First you need an unsigned transaction,</span>
 <span class="hljs-comment">// here we have a standard 2 input, 2 output transaction</span>

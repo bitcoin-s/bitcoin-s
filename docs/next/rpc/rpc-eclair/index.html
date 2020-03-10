@@ -72,12 +72,7 @@
 </ol>
 <p>We will default to using the <code>binary</code> field first when trying to start the jar, and the fallback to <code>ECLAIR_PATH</code>.</p>
 <p>Here is an example of how to start eclair:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> akka.actor.<span class="hljs-type">ActorSystem</span>
-<span class="hljs-keyword">import</span> org.bitcoins.eclair.rpc.client.<span class="hljs-type">EclairRpcClient</span>
-<span class="hljs-keyword">import</span> org.bitcoins.eclair.rpc.config.<span class="hljs-type">EclairInstance</span>
-<span class="hljs-keyword">import</span> java.nio.file.<span class="hljs-type">Paths</span>
-
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s"eclair-rpc-<span class="hljs-subst">${System.currentTimeMillis}</span>"</span>)
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> system = <span class="hljs-type">ActorSystem</span>(<span class="hljs-string">s"eclair-rpc-<span class="hljs-subst">${System.currentTimeMillis}</span>"</span>)
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec = system.dispatcher
 
 <span class="hljs-keyword">val</span> datadirPath = <span class="hljs-type">Paths</span>.get(<span class="hljs-string">"path"</span>, <span class="hljs-string">"to"</span>, <span class="hljs-string">"datadir"</span>)
