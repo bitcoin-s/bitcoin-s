@@ -17,6 +17,7 @@ import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
@@ -217,18 +218,11 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   }
 
   def withFundedWalletAndBitcoindV19(test: OneArgAsyncTest): FutureOutcome = {
-    val builder: () => Future[WalletWithBitcoindV19] = {
-      composeBuildersAndWrapFuture(
-        builder = { () =>
-          createDefaultWallet(nodeApi, chainQueryApi)
-        },
-        dependentBuilder = { (wallet: Wallet) =>
-          createWalletWithBitcoindV19(wallet)
-        },
-        processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoindV19) =>
-          fundWalletWithBitcoind(pair)
-            .map(_.asInstanceOf[WalletWithBitcoindV19])
-      )
+    val builder: () => Future[WalletWithBitcoindV19] = { () =>
+      for {
+        walletBitcoind <- createDefaultWalletBitcoindChainQuery(nodeApi)
+        fundedWallet <- fundWalletWithBitcoind(walletBitcoind)
+      } yield fundedWallet
     }
 
     makeDependentFixture(builder, destroy = destroyWalletWithBitcoind)(test)
@@ -288,8 +282,12 @@ object BitcoinSWalletTest extends WalletLogger {
     def wallet: Wallet
     def bitcoind: BitcoindRpcClient
   }
-  case class WalletWithBitcoindRpc(wallet: Wallet, bitcoind: BitcoindRpcClient) extends WalletWithBitcoind
-  case class WalletWithBitcoindV19(wallet: Wallet, bitcoind: BitcoindV19RpcClient) extends WalletWithBitcoind
+  case class WalletWithBitcoindRpc(wallet: Wallet, bitcoind: BitcoindRpcClient)
+      extends WalletWithBitcoind
+  case class WalletWithBitcoindV19(
+      wallet: Wallet,
+      bitcoind: BitcoindV19RpcClient)
+      extends WalletWithBitcoind
 
   private def createNewKeyManager(
       bip39PasswordOpt: Option[String] = KeyManagerTestUtil.bip39PasswordOpt)(
@@ -361,6 +359,26 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi = chainQueryApi)(config, ec)() // get the standard config
   }
 
+  /** Creates a default wallet with bitcoind where the [[ChainQueryApi]] fed to the wallet
+    * is implemented by bitcoind */
+  def createDefaultWalletBitcoindChainQuery(
+      nodeApi: NodeApi,
+      extraConfig: Option[Config] = None)(
+      implicit config: BitcoinSAppConfig,
+      system: ActorSystem): Future[WalletWithBitcoindV19] = {
+    import system.dispatcher
+    val bitcoindF = BitcoinSFixture
+      .createBitcoindWithFunds(Some(BitcoindVersion.V19))
+      .map(_.asInstanceOf[BitcoindV19RpcClient])
+    val chainQueryF = bitcoindF.map(b => SyncUtil.getChainQueryApi(b))
+
+    for {
+      bitcoind <- bitcoindF
+      chainQuery <- chainQueryF
+      wallet <- createDefaultWallet(nodeApi, chainQuery, extraConfig)
+    } yield WalletWithBitcoindV19(wallet, bitcoind)
+  }
+
   def createWallet2Accounts(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
@@ -397,12 +415,16 @@ object BitcoinSWalletTest extends WalletLogger {
     bitcoindF.map(WalletWithBitcoindRpc(wallet, _))
   }
 
-  def createWalletWithBitcoindV19(wallet: Wallet)(implicit system: ActorSystem): Future[WalletWithBitcoindV19] = {
+  def createWalletWithBitcoindV19(wallet: Wallet)(
+      implicit system: ActorSystem): Future[WalletWithBitcoindV19] = {
     import system.dispatcher
-    val createdF = createWalletWithBitcoind(wallet, versionOpt = Some(BitcoindVersion.V19))
+    val createdF =
+      createWalletWithBitcoind(wallet, versionOpt = Some(BitcoindVersion.V19))
     for {
       created <- createdF
-    } yield WalletWithBitcoindV19(created.wallet, created.bitcoind.asInstanceOf[BitcoindV19RpcClient])
+    } yield WalletWithBitcoindV19(
+      created.wallet,
+      created.bitcoind.asInstanceOf[BitcoindV19RpcClient])
   }
 
   def createWalletWithBitcoind(
@@ -442,8 +464,8 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   /** Funds the given wallet with money from the given bitcoind */
-  def fundWalletWithBitcoind(pair: WalletWithBitcoind)(
-      implicit ec: ExecutionContext): Future[WalletWithBitcoind] = {
+  def fundWalletWithBitcoind[T <: WalletWithBitcoind](pair: T)(
+      implicit ec: ExecutionContext): Future[T] = {
     val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
     for {
       addr <- wallet.getNewAddress()
@@ -461,7 +483,8 @@ object BitcoinSWalletTest extends WalletLogger {
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(
       implicit ec: ExecutionContext): Future[Unit] = {
-    val (wallet, bitcoind) = (walletWithBitcoind.wallet, walletWithBitcoind.bitcoind)
+    val (wallet, bitcoind) =
+      (walletWithBitcoind.wallet, walletWithBitcoind.bitcoind)
     val stopF = bitcoind.stop()
     val destroyWalletF = destroyWallet(wallet)
     for {

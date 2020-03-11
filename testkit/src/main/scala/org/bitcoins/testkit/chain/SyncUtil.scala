@@ -41,12 +41,15 @@ abstract class SyncUtil {
       }
   }
 
-
-  def getChainQueryApi(bitcoindV19RpcClient: BitcoindV19RpcClient)(implicit ec: ExecutionContext): ChainQueryApi = {
+  def getChainQueryApi(bitcoindV19RpcClient: BitcoindV19RpcClient)(
+      implicit ec: ExecutionContext): ChainQueryApi = {
     new ChainQueryApi {
+
       /** Gets the height of the given block */
-      override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
-        bitcoindV19RpcClient.getBlockHeader(blockHash)
+      override def getBlockHeight(
+          blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
+        bitcoindV19RpcClient
+          .getBlockHeader(blockHash)
           .map(b => Some(b.height))
       }
 
@@ -56,7 +59,8 @@ abstract class SyncUtil {
       }
 
       /** Gets number of confirmations for the given block hash */
-      override def getNumberOfConfirmations(blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = {
+      override def getNumberOfConfirmations(
+          blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = {
         bitcoindV19RpcClient.getBlock(blockHashOpt).map { b =>
           Some(b.confirmations)
         }
@@ -69,20 +73,25 @@ abstract class SyncUtil {
       }
 
       /** Returns the block height of the given block stamp */
-      override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = {
+      override def getHeightByBlockStamp(
+          blockStamp: BlockStamp): Future[Int] = {
         blockStamp match {
-          case BlockStamp.BlockHash(hash) => getBlockHeight(hash).map(_.get)  
+          case BlockStamp.BlockHash(hash) => getBlockHeight(hash).map(_.get)
           case BlockStamp.BlockHeight(height) =>
-            Future.failed(new RuntimeException(s"Cannot query bitcoind by height=${height}"))
+            Future.failed(
+              new RuntimeException(
+                s"Cannot query bitcoind by height=${height}"))
           case BlockStamp.BlockTime(time) =>
             Future.failed(new RuntimeException(s"Cannot query by block time"))
         }
       }
 
-
-      override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
+      override def getFiltersBetweenHeights(
+          startHeight: Int,
+          endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
         //how to query filters by height with bitcoind?
-        Future.failed(new RuntimeException(s"Cannot query filters by height with bitcoind"))
+        Future.failed(
+          new RuntimeException(s"Cannot query filters by height with bitcoind"))
       }
     }
   }

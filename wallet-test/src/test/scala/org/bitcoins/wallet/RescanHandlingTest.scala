@@ -32,13 +32,11 @@ class RescanHandlingTest extends BitcoinSWalletTest {
     val WalletWithBitcoindV19(wallet, bitcoind) = fixture
 
     val initBalanceF = wallet.getBalance()
-    val bestHashHeightF = wallet.chainQueryApi.getBestHashBlockHeight()
 
     val rescanF = for {
       initBalance <- initBalanceF
-      bestHashHeight <- bestHashHeightF
-      tipOpt = Some(BlockStamp.BlockHeight(bestHashHeight))
-      _ <- wallet.rescanNeutrinoWallet(BlockStamp.height0Opt, tipOpt, 100)
+      _ = assert(initBalance > CurrencyUnits.zero, s"Cannot run rescan test if our init wallet balance is zero!")
+      _ <- wallet.rescanNeutrinoWallet(100)
       balanceAfterRescan <- wallet.getBalance()
     } yield  {
       assert(balanceAfterRescan == initBalance)
@@ -46,4 +44,10 @@ class RescanHandlingTest extends BitcoinSWalletTest {
 
     rescanF
   }
+
+  it must "be able to discover funds that occurred in a certain range of block hashes"
+
+  it must "NOT discover funds that happened OUTSIDE of a certain range of block hashes"
+
+
 }

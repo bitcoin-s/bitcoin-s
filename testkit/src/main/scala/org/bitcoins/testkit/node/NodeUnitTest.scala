@@ -290,7 +290,7 @@ object NodeUnitTest extends P2PLogger {
     import system.dispatcher
     val walletWithBitcoind = {
       BitcoinSWalletTest.WalletWithBitcoindRpc(fundedWalletBitcoind.wallet,
-                                            fundedWalletBitcoind.bitcoindRpc)
+                                               fundedWalletBitcoind.bitcoindRpc)
     }
 
     //these need to be done in order, as the spv node needs to be

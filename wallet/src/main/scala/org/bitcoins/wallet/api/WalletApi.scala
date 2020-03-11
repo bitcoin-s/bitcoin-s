@@ -341,7 +341,7 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
           logger.info(s"end<=start")
           acc
         } else {
-          val startHeight = end - (batchSize - 1)
+          val startHeight = Math.max(end - (batchSize - 1), 0)
           val endHeight = end
           logger.info(s"startHeight=${startHeight} endHeight=${endHeight}")
           val newAcc = for {
@@ -368,7 +368,8 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
         _ = if (startHeight > endHeight)
           throw InvalidBlockRange(
             s"End position cannot precede start: $startHeight:$endHeight")
-        _ = logger.info(s"Beginning to search for matches between ${startHeight}:${endHeight}")
+        _ = logger.info(
+          s"Beginning to search for matches between ${startHeight}:${endHeight}")
         matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
       } yield {
         logger.info(s"Matched ${matched.length} blocks on rescan")
@@ -404,6 +405,11 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[Unit]
+
+  /** Helper method to resca the ENTIRE blockchain. */
+  def rescanNeutrinoWallet(addressBatchSize: Int): Future[Unit] = {
+    rescanNeutrinoWallet(None, None, addressBatchSize)
+  }
 
   /**
     * Recreates the account using BIP-44 approach
