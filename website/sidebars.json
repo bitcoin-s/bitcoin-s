@@ -15,6 +15,9 @@
     "Key manager": [
       "key-manager/key-manager"
     ],
+    "Wallet": [
+      "wallet/chain-query-api"
+    ],
     "RPC clients": [
       "rpc/rpc-clients-intro",
       "rpc/rpc-eclair",
