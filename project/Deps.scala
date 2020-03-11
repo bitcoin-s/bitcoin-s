@@ -53,7 +53,7 @@ object Deps {
     // CLI deps
     val scoptV = "4.0.0-RC2"
     val sttpV = "1.7.2"
-    val codehausV = "3.1.0"
+    val codehausV = "3.1.1"
   }
 
   object Compile {
