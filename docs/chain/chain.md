@@ -47,8 +47,6 @@ val getBestBlockHash = SyncUtil.getBestBlockHashFunc(rpcCli)
 
 val getBlockHeader = SyncUtil.getBlockHeaderFunc(rpcCli)
 
-val getBlockHeader = SyncUtil.getBlockHeaderFunc(rpcCli)
-
 // set a data directory
 val datadir = Files.createTempDirectory("bitcoin-s-test")
 
