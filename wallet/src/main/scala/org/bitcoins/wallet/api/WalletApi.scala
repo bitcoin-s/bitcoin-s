@@ -407,7 +407,7 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       addressBatchSize: Int): Future[Unit]
 
   /** Helper method to resca the ENTIRE blockchain. */
-  def rescanNeutrinoWallet(addressBatchSize: Int): Future[Unit] = {
+  def fullRescanNeurinoWallet(addressBatchSize: Int): Future[Unit] = {
     rescanNeutrinoWallet(None, None, addressBatchSize)
   }
 

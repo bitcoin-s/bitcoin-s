@@ -2,6 +2,7 @@ package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
 import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
@@ -87,11 +88,19 @@ abstract class SyncUtil {
       }
 
       override def getFiltersBetweenHeights(
-          startHeight: Int,
-          endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
-        //how to query filters by height with bitcoind?
-        Future.failed(
-          new RuntimeException(s"Cannot query filters by height with bitcoind"))
+                                             startHeight: Int,
+                                             endHeight: Int): Future[Vector[FilterResponse]] = {
+        val range = startHeight.until(endHeight)
+        val filterFs = range.map { height =>
+            for {
+              hash <- bitcoindV19RpcClient.getBlockHash(height)
+              filter <- bitcoindV19RpcClient.getBlockFilter(hash, FilterType.Basic)
+            } yield {
+              FilterResponse(filter.filter, hash, height)
+            }
+          }.toVector
+
+        Future.sequence(filterFs)
       }
     }
   }
