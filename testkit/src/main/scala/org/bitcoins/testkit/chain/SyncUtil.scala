@@ -1,12 +1,13 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
-import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
@@ -14,7 +15,7 @@ import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Useful utilities to use in the chain project for syncing things against bitcoind */
-abstract class SyncUtil {
+abstract class SyncUtil extends BitcoinSLogger {
 
   /** Creates a function that will retrun bitcoin's best block hash when called */
   def getBestBlockHashFunc(
@@ -88,19 +89,58 @@ abstract class SyncUtil {
       }
 
       override def getFiltersBetweenHeights(
-                                             startHeight: Int,
-                                             endHeight: Int): Future[Vector[FilterResponse]] = {
-        val range = startHeight.until(endHeight)
-        val filterFs = range.map { height =>
+          startHeight: Int,
+          endHeight: Int): Future[Vector[FilterResponse]] = {
+        val allHeights = startHeight.until(endHeight)
+
+        def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
+          val filterFs = range.map { height =>
             for {
               hash <- bitcoindV19RpcClient.getBlockHash(height)
-              filter <- bitcoindV19RpcClient.getBlockFilter(hash, FilterType.Basic)
+              filter <- bitcoindV19RpcClient.getBlockFilter(hash,
+                                                            FilterType.Basic)
             } yield {
               FilterResponse(filter.filter, hash, height)
             }
-          }.toVector
+          }
+          Future.sequence(filterFs)
+        }
 
-        Future.sequence(filterFs)
+        FutureUtil.batchExecute(elements = allHeights.toVector,
+                                f = f,
+                                init = Vector.empty,
+                                batchSize = 25)
+      }
+    }
+  }
+
+  def getNodeApi(bitcoindRpcClient: BitcoindRpcClient)(
+      implicit ec: ExecutionContext): NodeApi = {
+    new NodeApi {
+
+      /**
+        * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+        */
+      override def downloadBlocks(
+          blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+        logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
+        val f: Vector[DoubleSha256Digest] => Future[Vector[Unit]] = {
+          case hashes =>
+            val blocks: Vector[Future[Unit]] = hashes.map {
+              bitcoindRpcClient
+                .getBlockRaw(_)
+                .map(_ => ())
+            }
+            Future.sequence(blocks)
+        }
+
+        val batchSize = 25
+        FutureUtil
+          .batchExecute(blockHashes, f, Vector.empty, batchSize)
+          .map { _ =>
+            logger.info(s"Done fetching ${blockHashes} hashes from bitcoind")
+            ()
+          }
       }
     }
   }
