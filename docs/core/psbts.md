@@ -16,17 +16,24 @@ creation, updating, combining, signing, finalizing,
 and transaction extraction.
 
 An example on a typical PSBT workflow:
+
 ```scala mdoc:invisible
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfoSingle,
+  ConditionalPath
+}
 import scodec.bits._
+
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 ```
 
-```scala mdoc:to-string
+```scala mdoc:compile-only
 implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
 // First you need an unsigned transaction,
@@ -37,7 +44,7 @@ val unsignedTransaction = BaseTransaction(
     "020000000258e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd750000000000ffffffff838d0427d0ec650a68aa46bb0b098aea4422c071b2ca78352a077959d07cea1d0100000000ffffffff0270aaf00800000000160014d85c2b71d0060b09c9886aeb815e50991dda124d00e1f5050000000016001400aea9a2e5f0f876a588df5546e8742d1d87008f00000000")
 
 // To create the initial PSBT all we need to do is
- val emptyPSBT = PSBT.fromUnsignedTx(unsignedTransaction)
+val emptyPSBT = PSBT.fromUnsignedTx(unsignedTransaction)
 
 // Now that we have an empty PSBT we can start updating it with data we know
 
@@ -105,6 +112,34 @@ val psbtFirstSigF =
       .sign(inputIndex = 0, signer = privKey0)
       .flatMap(_.sign(inputIndex = 0, signer = privKey1))
 
+// Alternatively, you can use produce a signature with a BitcoinUTXOSpendingInfoSingle
+// using the BitcoinSingleSigner will return a PartialSignature that can be added to a PSBT
+
+// First we need to declare out spendingInfoSingle
+val outPoint = unsignedTransaction.inputs.head.previousOutput
+val output = utxo0.outputs(outPoint.vout.toInt)
+
+val spendingInfoSingle = BitcoinUTXOSpendingInfoSingle(
+    outPoint = outPoint,
+    output = output,
+    signer = privKey0,
+    redeemScriptOpt = Some(redeemScript0),
+    scriptWitnessOpt = None,
+    hashType = HashType.sigHashAll,
+    conditionalPath = ConditionalPath.NoConditionsLeft
+  )
+
+// Then we can sign the transaction
+val signatureF = BitcoinSignerSingle.signSingle(
+    spendingInfo = spendingInfoSingle,
+    unsignedTx = unsignedTransaction,
+    isDummySignature = false)
+
+// We can then add the signature to the PSBT
+// Note: this signature could be produced by us or another party
+signatureF.map(sig => psbtWithSigHashFlags.addSignature(sig, inputIndex = 0))
+
+// With our first input signed we can now move on to showing how another party could sign our second input
 psbtFirstSigF.map { psbtFirstSig =>
     // In this scenario, let's say that the second input does not belong to us and we need
     // another party to sign it. In this case we would need to send the PSBT to the other party.
