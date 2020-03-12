@@ -128,16 +128,8 @@ trait DLCWalletUtil {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
 
-    val sampleOfferData = sampleDLCOffer
     for {
-      offer <- walletA.createDLCOffer(
-        sampleOfferData.oracleInfo,
-        sampleOfferData.contractInfo,
-        Satoshis(6000),
-        Some(sampleOfferData.feeRate),
-        sampleOfferData.timeouts.contractMaturity.toUInt32,
-        sampleOfferData.timeouts.contractTimeout.toUInt32
-      )
+      offer <- walletA.registerDLCOffer(sampleDLCOffer)
       accept <- walletB.acceptDLCOffer(offer)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
