@@ -220,7 +220,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   def withFundedWalletAndBitcoindV19(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoindV19] = { () =>
       for {
-        walletBitcoind <- createDefaultWalletBitcoindChainQuery(nodeApi)
+        walletBitcoind <- createDefaultWalletBitcoindNodeChainQueryApi()
         fundedWallet <- fundWalletWithBitcoind(walletBitcoind)
       } yield fundedWallet
     }
@@ -361,8 +361,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Creates a default wallet with bitcoind where the [[ChainQueryApi]] fed to the wallet
     * is implemented by bitcoind */
-  def createDefaultWalletBitcoindChainQuery(
-      nodeApi: NodeApi,
+  def createDefaultWalletBitcoindNodeChainQueryApi(
       extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
       system: ActorSystem): Future[WalletWithBitcoindV19] = {
@@ -370,12 +369,13 @@ object BitcoinSWalletTest extends WalletLogger {
     val bitcoindF = BitcoinSFixture
       .createBitcoindWithFunds(Some(BitcoindVersion.V19))
       .map(_.asInstanceOf[BitcoindV19RpcClient])
-    val chainQueryF = bitcoindF.map(b => SyncUtil.getChainQueryApi(b))
+    val nodeChainQueryApiF =
+      bitcoindF.map(b => SyncUtil.getNodeChainQueryApi(b))
 
     for {
       bitcoind <- bitcoindF
-      chainQuery <- chainQueryF
-      wallet <- createDefaultWallet(nodeApi, chainQuery, extraConfig)
+      api <- nodeChainQueryApiF
+      wallet <- createDefaultWallet(api.nodeApi, api.chainQueryApi, extraConfig)
     } yield WalletWithBitcoindV19(wallet, bitcoind)
   }
 

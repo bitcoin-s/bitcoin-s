@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
@@ -143,6 +143,13 @@ abstract class SyncUtil extends BitcoinSLogger {
           }
       }
     }
+  }
+
+  def getNodeChainQueryApi(bitcoindV19RpcClient: BitcoindV19RpcClient)(
+      implicit ec: ExecutionContext): NodeChainQueryApi = {
+    val chainQuery = SyncUtil.getChainQueryApi(bitcoindV19RpcClient)
+    val nodeApi = SyncUtil.getNodeApi(bitcoindV19RpcClient)
+    NodeChainQueryApi(nodeApi, chainQuery)
   }
 }
 
