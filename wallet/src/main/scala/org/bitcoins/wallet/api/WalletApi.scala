@@ -16,12 +16,11 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -330,32 +329,17 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
         }
       }
 
-      /** Iterates over all filters in the range to find matches */
-      @tailrec
-      def loop(
-          start: Int,
-          end: Int,
-          acc: Future[Vector[BlockMatchingResponse]]): Future[
-        Vector[BlockMatchingResponse]] = {
-        if (end <= start) {
-          logger.info(s"end<=start")
-          acc
-        } else {
-          val startHeight = Math.max(end - (batchSize - 1), 0)
-          val endHeight = end
-          logger.info(s"startHeight=${startHeight} endHeight=${endHeight}")
-          val newAcc = for {
-            compactFilterDbs <- chainQueryApi.getFiltersBetweenHeights(
-              startHeight,
-              endHeight)
-            filtered <- findMatches(compactFilterDbs)
-            res <- acc
-          } yield {
-            res ++ filtered
-          }
-          val newEnd = Math.max(start, endHeight - batchSize)
-          loop(start, newEnd, newAcc)
-        }
+
+
+      def fetchFiltersInRange(heightRange: Vector[Int]): Future[Vector[BlockMatchingResponse]] = {
+        val startHeight = heightRange.head
+        val endHeight = heightRange.last
+        for {
+          compactFiltersDbs <- chainQueryApi.getFiltersBetweenHeights(
+            startHeight = startHeight,
+            endHeight = endHeight)
+          filtered <- findMatches(compactFiltersDbs)
+        } yield filtered.toVector
       }
 
       for {
@@ -370,7 +354,12 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
             s"End position cannot precede start: $startHeight:$endHeight")
         _ = logger.info(
           s"Beginning to search for matches between ${startHeight}:${endHeight}")
-        matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
+        range = startHeight.to(endHeight)
+        batchSize = calcGroupSize(range.length)
+        matched <- FutureUtil.batchExecute(elements = range.toVector,
+          f = fetchFiltersInRange,
+          init = Vector.empty,
+          batchSize = batchSize)
       } yield {
         logger.info(s"Matched ${matched.length} blocks on rescan")
         matched

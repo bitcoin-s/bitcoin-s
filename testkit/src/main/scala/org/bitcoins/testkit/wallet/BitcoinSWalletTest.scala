@@ -494,7 +494,6 @@ object BitcoinSWalletTest extends WalletLogger {
       tx <- bitcoind.getRawTransaction(txId)
       _ <- wallet.processTransaction(tx.hex, tx.blockhash)
       balance <- wallet.getBalance()
-
     } yield {
       assert(balance >= initialFunds)
       pair

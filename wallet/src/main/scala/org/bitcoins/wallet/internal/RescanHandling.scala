@@ -102,16 +102,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def downloadAndProcessBlocks(
       blocks: Vector[DoubleSha256Digest]): Future[Unit] = {
-    logger.debug(s"Requesting ${blocks.size} block(s)")
+    logger.info(s"Requesting ${blocks.size} block(s)")
     blocks.foldLeft(FutureUtil.unit) { (prevF, blockHash) =>
       val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
       for {
         _ <- prevF
         _ <- nodeApi.downloadBlocks(Vector(blockHash))
         _ <- completedF
-      } yield {
-        logger.info(s"completedF blockSignal done for ${blockHash}")
-      }
+      } yield ()
     }
   }
 

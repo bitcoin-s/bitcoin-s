@@ -7,7 +7,10 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{WalletWithBitcoind, WalletWithBitcoindRpc}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  WalletWithBitcoind,
+  WalletWithBitcoindRpc
+}
 import org.scalatest.FutureOutcome
 
 class UTXOLifeCycleTest extends BitcoinSWalletTest {

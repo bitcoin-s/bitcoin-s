@@ -3,7 +3,10 @@ package org.bitcoins.wallet
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{WalletWithBitcoind, WalletWithBitcoindRpc}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  WalletWithBitcoind,
+  WalletWithBitcoindRpc
+}
 import org.scalatest.FutureOutcome
 
 class WalletBloomTest extends BitcoinSWalletTest {

@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
+import org.bitcoins.chain.blockchain.sync.{ChainSync, FilterWithHeaderHash}
+import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -8,6 +9,7 @@ import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
+import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
@@ -81,9 +83,7 @@ abstract class SyncUtil extends BitcoinSLogger {
         blockStamp match {
           case BlockStamp.BlockHash(hash) => getBlockHeight(hash).map(_.get)
           case BlockStamp.BlockHeight(height) =>
-            Future.failed(
-              new RuntimeException(
-                s"Cannot query bitcoind by height=${height}"))
+            Future.successful(height)
           case BlockStamp.BlockTime(time) =>
             Future.failed(new RuntimeException(s"Cannot query by block time"))
         }
@@ -92,7 +92,7 @@ abstract class SyncUtil extends BitcoinSLogger {
       override def getFiltersBetweenHeights(
           startHeight: Int,
           endHeight: Int): Future[Vector[FilterResponse]] = {
-        val allHeights = startHeight.until(endHeight)
+        val allHeights = startHeight.to(endHeight)
 
         def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
           val filterFs = range.map { height =>
