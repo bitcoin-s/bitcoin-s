@@ -16,18 +16,23 @@ import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
+import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
+import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.models.DLCDb
 import scodec.bits.ByteVector
 
-object DLCWalletUtil {
+import scala.concurrent.{ExecutionContext, Future}
+
+trait DLCWalletUtil {
   lazy val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
   lazy val nonce: SchnorrNonce = SchnorrNonce.freshNonce
   lazy val rValue: ECPublicKey = nonce.publicKey
 
-  val winHash: Sha256DigestBE =
+  lazy val winHash: Sha256DigestBE =
     CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
 
-  val loseHash: Sha256DigestBE =
+  lazy val loseHash: Sha256DigestBE =
     CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
 
   lazy val sampleOracleInfo: OracleInfo = OracleInfo(
@@ -116,4 +121,36 @@ object DLCWalletUtil {
     refundSigOpt = None,
     oracleSigOpt = Some(sampleOracleLoseSig)
   )
+
+  def initDLC(fundedWalletA: FundedWallet, fundedWalletB: FundedWallet)(
+      implicit ec: ExecutionContext): Future[
+    (InitializedDLCWallet, InitializedDLCWallet)] = {
+    val walletA = fundedWalletA.wallet
+    val walletB = fundedWalletB.wallet
+
+    for {
+      offer <- walletA.registerDLCOffer(sampleDLCOffer)
+      accept <- walletB.acceptDLCOffer(offer)
+      sigs <- walletA.signDLC(accept)
+      _ <- walletB.addDLCSigs(sigs)
+    } yield {
+      (InitializedDLCWallet(FundedWallet(walletA)),
+       InitializedDLCWallet(FundedWallet(walletB)))
+    }
+  }
+}
+
+object DLCWalletUtil extends DLCWalletUtil {
+
+  case class InitializedDLCWallet(funded: FundedWallet) {
+    val wallet: Wallet = funded.wallet
+  }
+
+  def createDLCWallets(
+      fundedWalletA: FundedWallet,
+      fundedWalletB: FundedWallet)(implicit ec: ExecutionContext): Future[
+    (InitializedDLCWallet, InitializedDLCWallet)] = {
+
+    initDLC(fundedWalletA, fundedWalletB)
+  }
 }
