@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -21,9 +20,6 @@ import org.bitcoins.wallet.models._
 import scala.concurrent.Future
 
 abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
-
-  val nodeApi: NodeApi
-  val chainQueryApi: ChainQueryApi
 
   private def initDLC(
       eventId: Sha256DigestBE,
@@ -324,7 +320,6 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     */
   override def signDLC(accept: DLCAccept): Future[DLCSign] = {
     for {
-      account <- getDefaultAccountForType(AddressType.SegWit)
       _ <- registerDLCAccept(accept)
       dlcOpt <- dlcDAO.findByEventId(accept.eventId)
       offerOpt <- dlcOfferDAO.findByEventId(accept.eventId)
@@ -338,7 +333,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       client = BinaryOutcomeDLCClient.fromOfferAndAccept(
         offer.toDLCOffer(fundingInputs.map(_.toOutputReference)),
         accept,
-        keyManager.rootExtPrivKey.deriveChildPrivKey(account.hdAccount),
+        keyManager.rootExtPrivKey.deriveChildPrivKey(dlc.account),
         dlc.keyIndex,
         spendingInfos,
         offer.network

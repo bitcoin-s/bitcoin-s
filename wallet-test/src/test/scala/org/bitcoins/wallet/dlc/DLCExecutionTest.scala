@@ -7,13 +7,16 @@ import org.bitcoins.core.crypto.{
 }
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.transaction.WitnessTransaction
+import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
-import org.scalatest.FutureOutcome
+import org.bitcoins.wallet.Wallet
+import org.scalatest.{Assertion, FutureOutcome}
+
+import scala.concurrent.Future
 
 class DLCExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
@@ -29,6 +32,87 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   val loseSig: SchnorrDigitalSignature = DLCWalletUtil.sampleOracleLoseSig
 
   val flags: Seq[ScriptFlag] = Policy.standardFlags
+
+  def mutualCloseTest(
+      wallets: FixtureParam,
+      asInitiator: Boolean): Future[Assertion] = {
+    val (dlcA, dlcB, sig) =
+      if (asInitiator) (wallets._1.wallet, wallets._2.wallet, winSig)
+      else (wallets._2.wallet, wallets._1.wallet, loseSig)
+
+    for {
+      offerOpt <- dlcA.dlcOfferDAO.findByEventId(eventId)
+      acceptOpt <- dlcA.dlcAcceptDAO.findByEventId(eventId)
+
+      fundingTx <- dlcA.getDLCFundingTx(eventId)
+
+      closeSig <- dlcA.initDLCMutualClose(eventId, sig)
+      tx <- dlcB.acceptDLCMutualClose(closeSig)
+    } yield {
+      assert(offerOpt.isDefined)
+      val offer = offerOpt.get
+      assert(acceptOpt.isDefined)
+      val accept = acceptOpt.get
+
+      assert(tx.inputs.size == 1)
+      assert(tx.outputs.size == 1)
+      if (asInitiator) {
+        assert(tx.outputs.head.scriptPubKey == offer.finalAddress.scriptPubKey)
+      } else {
+        assert(tx.outputs.head.scriptPubKey == accept.finalAddress.scriptPubKey)
+      }
+      assert(ScriptInterpreter.checkTransaction(tx))
+
+      val sigComponent =
+        WitnessTxSigComponent(tx.asInstanceOf[WitnessTransaction],
+                              UInt32.zero,
+                              fundingTx.outputs.head,
+                              flags)
+      assert(
+        ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
+    }
+  }
+
+  def dlcExecutionTest(
+      wallets: FixtureParam,
+      asInitiator: Boolean,
+      func: Wallet => Future[(Transaction, Option[Transaction])],
+      expectedOutputs: Int): Future[Assertion] = {
+    val dlcA = wallets._1.wallet
+    val dlcB = wallets._2.wallet
+
+    for {
+      fundingTx <- dlcB.getDLCFundingTx(eventId)
+      (tx, closeTxOpt) <- if (asInitiator) func(dlcA) else func(dlcB)
+    } yield {
+      assert(closeTxOpt.isDefined)
+      val closeTx = closeTxOpt.get
+
+      assert(tx.inputs.size == 1)
+      assert(tx.outputs.size == expectedOutputs)
+      assert(ScriptInterpreter.checkTransaction(tx))
+      assert(ScriptInterpreter.checkTransaction(closeTx))
+
+      val txSigComponent =
+        WitnessTxSigComponent(tx.asInstanceOf[WitnessTransaction],
+                              UInt32.zero,
+                              fundingTx.outputs.head,
+                              flags)
+      assert(
+        ScriptInterpreter.runVerify(PreExecutionScriptProgram(txSigComponent)))
+
+      val output = if (asInitiator) tx.outputs.head else tx.outputs.last
+
+      val closeSigComponent =
+        WitnessTxSigComponent(closeTx.asInstanceOf[WitnessTransaction],
+                              UInt32.zero,
+                              output,
+                              flags)
+      assert(
+        ScriptInterpreter.runVerify(
+          PreExecutionScriptProgram(closeSigComponent)))
+    }
+  }
 
   it must "get the correct funding transaction" in { wallets =>
     val dlcA = wallets._1.wallet
@@ -93,185 +177,47 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   }
 
   it must "do a dlc mutual close where the initiator wins" in { wallets =>
-    val dlcA = wallets._1.wallet
-    val dlcB = wallets._2.wallet
-
-    for {
-      offerOpt <- dlcA.dlcOfferDAO.findByEventId(eventId)
-
-      fundingTx <- dlcA.getDLCFundingTx(eventId)
-
-      closeSig <- dlcA.initDLCMutualClose(eventId, winSig)
-      tx <- dlcB.acceptDLCMutualClose(closeSig)
-    } yield {
-      assert(offerOpt.isDefined)
-      val offer = offerOpt.get
-
-      assert(tx.inputs.size == 1)
-      assert(tx.outputs.size == 1)
-      assert(tx.outputs.head.scriptPubKey == offer.finalAddress.scriptPubKey)
-      assert(ScriptInterpreter.checkTransaction(tx))
-
-      val sigComponent =
-        WitnessTxSigComponent(tx.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              fundingTx.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
-    }
+    mutualCloseTest(wallets = wallets, asInitiator = true)
   }
 
   it must "do a dlc mutual close where the recipient wins" in { wallets =>
-    val dlcA = wallets._1.wallet
-    val dlcB = wallets._2.wallet
-
-    for {
-      acceptOpt <- dlcB.dlcAcceptDAO.findByEventId(eventId)
-
-      fundingTx <- dlcA.getDLCFundingTx(eventId)
-
-      closeSig <- dlcB.initDLCMutualClose(eventId, loseSig)
-      tx <- dlcA.acceptDLCMutualClose(closeSig)
-    } yield {
-      assert(acceptOpt.isDefined)
-      val accept = acceptOpt.get
-
-      assert(tx.inputs.size == 1)
-      assert(tx.outputs.size == 1)
-      assert(tx.outputs.head.scriptPubKey == accept.finalAddress.scriptPubKey)
-      assert(ScriptInterpreter.checkTransaction(tx))
-
-      val sigComponent =
-        WitnessTxSigComponent(tx.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              fundingTx.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
-    }
+    mutualCloseTest(wallets = wallets, asInitiator = false)
   }
 
   it must "do a unilateral close as the initiator" in { wallets =>
-    val dlcA = wallets._1.wallet
+    val func = (wallet: Wallet) => wallet.executeDLCForceClose(eventId, winSig)
 
-    for {
-      (cet, closeTxOpt) <- dlcA.executeDLCForceClose(eventId, winSig)
-
-      fundingTx <- dlcA.getDLCFundingTx(eventId)
-
-    } yield {
-      assert(closeTxOpt.isDefined)
-      val closeTx = closeTxOpt.get
-
-      assert(cet.inputs.size == 1)
-      assert(cet.outputs.size == 1)
-      assert(ScriptInterpreter.checkTransaction(cet))
-      assert(ScriptInterpreter.checkTransaction(closeTx))
-
-      val cetSigComponent =
-        WitnessTxSigComponent(cet.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              fundingTx.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(PreExecutionScriptProgram(cetSigComponent)))
-
-      val closeSigComponent =
-        WitnessTxSigComponent(closeTx.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              cet.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(
-          PreExecutionScriptProgram(closeSigComponent)))
-    }
+    dlcExecutionTest(wallets = wallets,
+                     asInitiator = true,
+                     func = func,
+                     expectedOutputs = 1)
   }
 
   it must "do a unilateral close as the recipient" in { wallets =>
-    val dlcB = wallets._2.wallet
+    val func = (wallet: Wallet) => wallet.executeDLCForceClose(eventId, loseSig)
 
-    for {
-      (cet, closeTxOpt) <- dlcB.executeDLCForceClose(eventId, loseSig)
-
-      fundingTx <- dlcB.getDLCFundingTx(eventId)
-    } yield {
-      assert(closeTxOpt.isDefined)
-      val closeTx = closeTxOpt.get
-
-      assert(cet.inputs.size == 1)
-      assert(cet.outputs.size == 1)
-      assert(ScriptInterpreter.checkTransaction(cet))
-      assert(ScriptInterpreter.checkTransaction(closeTx))
-
-      val cetSigComponent =
-        WitnessTxSigComponent(cet.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              fundingTx.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(PreExecutionScriptProgram(cetSigComponent)))
-
-      val closeSigComponent =
-        WitnessTxSigComponent(closeTx.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              cet.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(
-          PreExecutionScriptProgram(closeSigComponent)))
-    }
+    dlcExecutionTest(wallets = wallets,
+                     asInitiator = false,
+                     func = func,
+                     expectedOutputs = 1)
   }
 
   it must "do a refund on a dlc as the initiator" in { wallets =>
-    val dlcA = wallets._1.wallet
+    val func = (wallet: Wallet) => wallet.executeDLCRefund(eventId)
 
-    for {
-      (refundTx, closeTxOpt) <- dlcA.executeDLCRefund(eventId)
-
-      fundingTx <- dlcA.getDLCFundingTx(eventId)
-    } yield {
-      assert(closeTxOpt.isDefined)
-      val closeTx = closeTxOpt.get
-
-      assert(refundTx.inputs.size == 1)
-      assert(refundTx.outputs.size == 2)
-      assert(ScriptInterpreter.checkTransaction(refundTx))
-      assert(ScriptInterpreter.checkTransaction(closeTx))
-
-      val sigComponent =
-        WitnessTxSigComponent(refundTx.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              fundingTx.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
-    }
+    dlcExecutionTest(wallets = wallets,
+                     asInitiator = true,
+                     func = func,
+                     expectedOutputs = 2)
   }
 
   it must "do a refund on a dlc as the recipient" in { wallets =>
-    val dlcB = wallets._2.wallet
+    val func = (wallet: Wallet) => wallet.executeDLCRefund(eventId)
 
-    for {
-      (refundTx, closeTxOpt) <- dlcB.executeDLCRefund(eventId)
-      fundingTx <- dlcB.getDLCFundingTx(eventId)
-    } yield {
-      assert(closeTxOpt.isDefined)
-      val closeTx = closeTxOpt.get
-
-      assert(refundTx.inputs.size == 1)
-      assert(refundTx.outputs.size == 2)
-      assert(ScriptInterpreter.checkTransaction(refundTx))
-      assert(ScriptInterpreter.checkTransaction(closeTx))
-
-      val sigComponent =
-        WitnessTxSigComponent(refundTx.asInstanceOf[WitnessTransaction],
-                              UInt32.zero,
-                              fundingTx.outputs.head,
-                              flags)
-      assert(
-        ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent)))
-    }
+    dlcExecutionTest(wallets = wallets,
+                     asInitiator = false,
+                     func = func,
+                     expectedOutputs = 2)
   }
 
   it must "do a penalty transaction on a dlc as the initiator" in { wallets =>
