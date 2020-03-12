@@ -27,7 +27,7 @@ import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   import BitcoinSWalletTest._
@@ -220,7 +220,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   def withFundedWalletAndBitcoindV19(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletWithBitcoindV19] = { () =>
       for {
-        walletBitcoind <- createDefaultWalletBitcoindNodeChainQueryApi()
+        walletBitcoind <- createWalletBitcoindNodeChainQueryApi()
         fundedWallet <- fundWalletWithBitcoind(walletBitcoind)
       } yield fundedWallet
     }
@@ -361,8 +361,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
   /** Creates a default wallet with bitcoind where the [[ChainQueryApi]] fed to the wallet
     * is implemented by bitcoind */
-  def createDefaultWalletBitcoindNodeChainQueryApi(
-      extraConfig: Option[Config] = None)(
+  def createWalletBitcoindNodeChainQueryApi(extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
       system: ActorSystem): Future[WalletWithBitcoindV19] = {
     import system.dispatcher
@@ -376,7 +375,28 @@ object BitcoinSWalletTest extends WalletLogger {
       bitcoind <- bitcoindF
       api <- nodeChainQueryApiF
       wallet <- createDefaultWallet(api.nodeApi, api.chainQueryApi, extraConfig)
-    } yield WalletWithBitcoindV19(wallet, bitcoind)
+
+      //we need to create a promise so we can inject the wallet with the callback
+      //after we have created it into SyncUtil.getNodeChainQueryApiWalletCallback
+      //so we don't lose the internal state of the wallet
+      walletCallbackP = Promise[Wallet]()
+      //now unfortunately we have to create _another_ wallet that has the correct callback
+      //setup for our wallet so we can receive block updates from bitcoind
+      apiCallback = SyncUtil.getNodeChainQueryApiWalletCallback(
+        bitcoindV19RpcClient = bitcoind,
+        walletF = walletCallbackP.future)
+
+      //create the wallet with the appropriate callbacks now that
+      //we have them
+      walletWithCallback = Wallet(keyManager = wallet.keyManager,
+                                  nodeApi = apiCallback.nodeApi,
+                                  chainQueryApi = apiCallback.chainQueryApi)(
+        wallet.walletConfig,
+        wallet.ec)
+      //complete the walletCallbackP so we can handle the callbacks when they are
+      //called without hanging forever.
+      _ = walletCallbackP.success(walletWithCallback)
+    } yield WalletWithBitcoindV19(walletWithCallback, bitcoind)
   }
 
   def createWallet2Accounts(

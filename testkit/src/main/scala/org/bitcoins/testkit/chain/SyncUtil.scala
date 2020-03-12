@@ -6,11 +6,12 @@ import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
+import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -135,12 +136,65 @@ abstract class SyncUtil extends BitcoinSLogger {
         }
 
         val batchSize = 25
-        FutureUtil
-          .batchExecute(blockHashes, f, Vector.empty, batchSize)
-          .map { _ =>
-            logger.info(s"Done fetching ${blockHashes} hashes from bitcoind")
-            ()
-          }
+        val batchedExecutedF = FutureUtil.batchExecute(elements = blockHashes,
+                                                       f = f,
+                                                       init = Vector.empty,
+                                                       batchSize = batchSize)
+
+        batchedExecutedF.map { _ =>
+          logger.info(s"Done fetching ${blockHashes} hashes from bitcoind")
+          ()
+        }
+      }
+    }
+  }
+
+  def getNodeApiWalletCallback(
+      bitcoindRpcClient: BitcoindRpcClient,
+      walletF: Future[Wallet])(implicit ec: ExecutionContext): NodeApi = {
+    new NodeApi {
+
+      /**
+        * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+        */
+      /**
+        * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
+        */
+      override def downloadBlocks(
+          blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
+        logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
+        val f: Vector[DoubleSha256Digest] => Future[Wallet] = {
+          case hashes =>
+            val fetchedBlocks: Vector[Future[Block]] = hashes.map {
+              bitcoindRpcClient
+                .getBlockRaw(_)
+            }
+            val blocksF = Future.sequence(fetchedBlocks)
+
+            val updatedWalletF = for {
+              blocks <- blocksF
+              wallet <- walletF
+              processedWallet <- {
+                FutureUtil.foldLeftAsync(wallet, blocks) {
+                  case (wallet, block) =>
+                    wallet.processBlock(block).map(_.asInstanceOf[Wallet])
+                }
+              }
+            } yield processedWallet
+
+            updatedWalletF
+        }
+
+        val batchSize = 25
+        val batchedExecutedF = FutureUtil.batchExecute(elements = blockHashes,
+                                                       f = f,
+                                                       init = Vector.empty,
+                                                       batchSize = batchSize)
+
+        batchedExecutedF.map { _ =>
+          logger.info(s"Done fetching ${blockHashes} hashes from bitcoind")
+          ()
+        }
       }
     }
   }
@@ -149,6 +203,16 @@ abstract class SyncUtil extends BitcoinSLogger {
       implicit ec: ExecutionContext): NodeChainQueryApi = {
     val chainQuery = SyncUtil.getChainQueryApi(bitcoindV19RpcClient)
     val nodeApi = SyncUtil.getNodeApi(bitcoindV19RpcClient)
+    NodeChainQueryApi(nodeApi, chainQuery)
+  }
+
+  def getNodeChainQueryApiWalletCallback(
+      bitcoindV19RpcClient: BitcoindV19RpcClient,
+      walletF: Future[Wallet])(
+      implicit ec: ExecutionContext): NodeChainQueryApi = {
+    val chainQuery = SyncUtil.getChainQueryApi(bitcoindV19RpcClient)
+    val nodeApi =
+      SyncUtil.getNodeApiWalletCallback(bitcoindV19RpcClient, walletF)
     NodeChainQueryApi(nodeApi, chainQuery)
   }
 }
