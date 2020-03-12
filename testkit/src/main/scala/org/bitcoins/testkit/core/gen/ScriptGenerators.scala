@@ -26,6 +26,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2PKWithTimeoutSpendingInfo
 }
 import org.scalacheck.Gen
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -49,21 +50,28 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
 
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
     for {
-      digitalSignature <- CryptoGenerators.digitalSignature
+      sig <- CryptoGenerators.digitalSignature
+      hashType <- CryptoGenerators.hashType
+      digitalSignature = ECDigitalSignature(
+        sig.bytes ++ ByteVector.fromByte(hashType.byte))
     } yield P2PKScriptSignature(digitalSignature)
 
   def p2pkhScriptSignature: Gen[P2PKHScriptSignature] =
     for {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
-      signature = privKey.sign(hash)
+      hashType <- CryptoGenerators.hashType
+      signature = ECDigitalSignature.fromBytes(
+        privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte))
     } yield P2PKHScriptSignature(signature, privKey.publicKey)
 
   def p2pkWithTimeoutScriptSignature: Gen[ConditionalScriptSignature] =
     for {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
-      signature = privKey.sign(hash)
+      hashType <- CryptoGenerators.hashType
+      signature = ECDigitalSignature.fromBytes(
+        privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte))
       beforeTimeout <- NumberGenerator.bool
     } yield P2PKWithTimeoutScriptSignature(beforeTimeout, signature)
 
@@ -71,10 +79,12 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
     val signatures: Gen[Seq[ECDigitalSignature]] = for {
       numKeys <- Gen.choose(1, Consensus.maxPublicKeysPerMultiSig)
       hash <- CryptoGenerators.doubleSha256Digest
+      hashType <- CryptoGenerators.hashType
     } yield for {
       _ <- 0 until numKeys
       privKey = ECPrivateKey()
-    } yield privKey.sign(hash)
+    } yield ECDigitalSignature.fromBytes(
+      privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte))
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
   }
 

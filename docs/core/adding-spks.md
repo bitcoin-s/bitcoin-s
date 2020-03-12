@@ -35,6 +35,8 @@ import org.bitcoins.testkit.core.gen.ScriptGenerators._
 
 import org.scalacheck.Gen
 
+import scodec.bits.ByteVector
+
 import scala.concurrent.{Future, ExecutionContext, Await}
 import scala.util._
 
@@ -779,7 +781,9 @@ We must also create a generator for our `ScriptSignature` type, even if we did n
     for {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
-      signature = privKey.sign(hash)
+      hashType <- CryptoGenerators.hashType
+      signature = ECDigitalSignature.fromBytes(
+        privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte))
       beforeTimeout <- NumberGenerator.bool
     } yield P2PKWithTimeoutScriptSignature(beforeTimeout, signature)
 ```
