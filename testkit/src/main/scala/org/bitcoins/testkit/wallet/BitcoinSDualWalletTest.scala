@@ -21,6 +21,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(config.walletConf)
     AppConfig.throwIfDefaultDatadir(config2.walletConf)
+    super.beforeAll()
   }
 
   /** Creates two segwit wallets that are funded with some bitcoin, these wallets are NOT
