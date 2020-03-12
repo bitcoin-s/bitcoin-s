@@ -1,6 +1,6 @@
 ---
 id: cli
-title: cli
+title: CLI
 ---
 
 

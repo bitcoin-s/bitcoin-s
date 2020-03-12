@@ -1,6 +1,6 @@
 ---
 id: txbuilder
-title: TxBuilder example
+title: TxBuilder Example
 ---
 
 Bitcoin-S features a transaction builder that constructs and signs Bitcoin

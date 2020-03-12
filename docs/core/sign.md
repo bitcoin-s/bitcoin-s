@@ -1,6 +1,6 @@
 ---
 id: sign
-title: Sign api
+title: Sign API
 ---
 
 ### The [`Sign` API](org/bitcoins/core/crypto/Sign.scala)

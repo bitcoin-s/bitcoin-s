@@ -1,6 +1,6 @@
 ---
 id: node-api
-title: node-api
+title: Node API
 ---
 
 ```scala mdoc:invisible
@@ -21,7 +21,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```
 
-### NodeApi
+### NodeAPI
 
 The NodeApi is how the wallet project retrieves relevant node data like blocks.
 This allows the wallet for example to retrieve blocks for finding its relevant transactions.

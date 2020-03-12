@@ -1,6 +1,6 @@
 ---
 id: hd-keys
-title: HD key generation
+title: HD Key Generation
 ---
 
 In modern Bitcoin wallets, users only need to write down

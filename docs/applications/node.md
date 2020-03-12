@@ -1,6 +1,6 @@
 ---
-title: Light client
 id: node
+title: Light Client
 ---
 
 Bitcoin-S comes bundled with a light client Bitcoin node. this client

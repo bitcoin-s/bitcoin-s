@@ -1,6 +1,6 @@
 ---
 id: configuration
-title: Application configuration
+title: Application Configuration
 ---
 
 Bitcoin-S uses [HOCON](https://github.com/lightbend/config/blob/master/HOCON.md)

@@ -6,7 +6,7 @@ title: Key Manager
 
 ### Key Manager
 
-The key manager module's goal is to encapusulate all private key interactions with the [wallet](../applications/wallet.md) project.
+The key manager module's goal is to encapusulate all private key interactions with the [wallet](../wallet/wallet.md) project.
 
 As of this writing, there is only one type of `KeyManager` - [`BIP39KeyManager`](../../key-manager/src/main/scala/org/bitcoins/keymanager/bip39/BIP39KeyManager.scala). 
 
