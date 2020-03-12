@@ -22,8 +22,6 @@ The binaries will be stored in `$HOME/.bitcoin-s/binaries/bitcoind/`
 ```scala mdoc:invisible
 import scala.concurrent._
 
-import org.bitcoins.{rpc, core}
-import rpc.client.common._
 import java.io._
 import java.net.URI
 
