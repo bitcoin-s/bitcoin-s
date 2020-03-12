@@ -563,7 +563,9 @@
     <span class="hljs-keyword">for</span> {
       privKey &lt;- <span class="hljs-type">CryptoGenerators</span>.privateKey
       hash &lt;- <span class="hljs-type">CryptoGenerators</span>.doubleSha256Digest
-      signature = privKey.sign(hash)
+      hashType &lt;- <span class="hljs-type">CryptoGenerators</span>.hashType
+      signature = <span class="hljs-type">ECDigitalSignature</span>.fromBytes(
+        privKey.sign(hash).bytes ++ <span class="hljs-type">ByteVector</span>.fromByte(hashType.byte))
       beforeTimeout &lt;- <span class="hljs-type">NumberGenerator</span>.bool
     } <span class="hljs-keyword">yield</span> <span class="hljs-type">P2PKWithTimeoutScriptSignature</span>(beforeTimeout, signature)
 </code></pre>
