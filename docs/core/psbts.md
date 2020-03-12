@@ -30,7 +30,8 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import scodec.bits._
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 ```
 
 ```scala mdoc:compile-only
@@ -56,10 +57,7 @@ val utxo0 = Transaction(
 val utxo1 = Transaction(
     "0200000000010158e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd7501000000171600145f275f436b09a8cc9a2eb2a2f528485c68a56323feffffff02d8231f1b0100000017a914aed962d6654f9a2b36608eb9d64d2b260db4f1118700c2eb0b0000000017a914b7f5faf40e3d40a5a459b1db3535f2b72fa921e88702483045022100a22edcc6e5bc511af4cc4ae0de0fcd75c7e04d8c1c3a8aa9d820ed4b967384ec02200642963597b9b1bc22c75e9f3e117284a962188bf5e8a74c895089046a20ad770121035509a48eb623e10aace8bfd0212fdb8a8e5af3c94b0b133b95e114cab89e4f7965000000")
 
-val psbtWithUTXOs = emptyPSBT
-    .addUTXOToInput(utxo0, index = 0)
-    .addUTXOToInput(utxo1, index = 1)
-
+val psbtWithUTXOs = emptyPSBT.addUTXOToInput(utxo0, index = 0).addUTXOToInput(utxo1, index = 1)
 // After we have the relevant UTXOs we can add the
 // redeem scripts, witness scripts, and BIP 32 derivation paths if needed
 
@@ -86,7 +84,7 @@ val witnessScript = ScriptPubKey.fromAsmBytes(
     hex"522103089dc10c7ac6db54f91329af617333db388cead0c231f723379d1b99030b02dc21023add904f3d6dcf59ddb906b0dee23529b7ffb9ed50e5e86151926860221f0e7352ae")
 
 // put the data in the PSBT
-  val psbtWithUpdatedSecondInput = psbtWithUpdatedFirstInput
+val psbtWithUpdatedSecondInput = psbtWithUpdatedFirstInput
     .addRedeemOrWitnessScriptToInput(redeemScript1, index = 1)
     .addRedeemOrWitnessScriptToInput(witnessScript, index = 1)
 
@@ -101,7 +99,7 @@ val psbtWithSigHashFlags = psbtWithUpdatedSecondInput
 // Signing a PSBT will return a Future[PSBT] so this will need to be handled
 // correctly in an application
 // Here we use the relevant private keys to sign the first input
-  val privKey0 = ECPrivateKey.fromWIFToPrivateKey(
+val privKey0 = ECPrivateKey.fromWIFToPrivateKey(
     "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr")
 
 val privKey1 = ECPrivateKey.fromWIFToPrivateKey(
@@ -140,7 +138,7 @@ val signatureF = BitcoinSignerSingle.signSingle(
 signatureF.map(sig => psbtWithSigHashFlags.addSignature(sig, inputIndex = 0))
 
 // With our first input signed we can now move on to showing how another party could sign our second input
-psbtFirstSigF.map { psbtFirstSig =>
+  val signedTransactionF = psbtFirstSigF.map { psbtFirstSig =>
     // In this scenario, let's say that the second input does not belong to us and we need
     // another party to sign it. In this case we would need to send the PSBT to the other party.
     // The two standard formats for this are in byte form or in base64 you can access these easily.
@@ -166,6 +164,8 @@ psbtFirstSigF.map { psbtFirstSig =>
     // After it has been finalized we can extract the fully signed transaction that is ready
     // to be broadcast to the network.
     // You can also use extractTransactionAndValidate that will validate if the transaction is valid
-    val transaction = finalizedPSBT.get.extractTransaction
+    finalizedPSBT.get.extractTransaction
   }
+
+Await.result(signedTransactionF, 30.seconds)
 ```
