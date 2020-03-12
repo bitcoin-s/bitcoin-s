@@ -11,7 +11,6 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
 import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
@@ -520,17 +519,14 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
 
       outcome <- client.executeUnilateralDLC(setup, oracleSig)
-      txs <- outcome match {
+    } yield {
+      outcome match {
         case closing: UnilateralDLCOutcomeWithClosing =>
-          BitcoinSigner
-            .sign(closing.cetSpendingInfo,
-                  closing.closingTx,
-                  isDummySignature = false)
-            .map(signed => (outcome.cet, Some(signed.transaction)))
+          (closing.cet, Some(closing.closingTx))
         case _: UnilateralDLCOutcomeWithDustClosing =>
-          Future.successful((outcome.cet, None))
+          (outcome.cet, None)
       }
-    } yield txs
+    }
   }
 
   override def executeRemoteUnilateralDLC(
@@ -547,17 +543,14 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         setup,
         cet,
         newAddr.scriptPubKey.asInstanceOf[WitnessScriptPubKey])
-      txOpt <- outcome match {
+    } yield {
+      outcome match {
         case closing: UnilateralDLCOutcomeWithClosing =>
-          BitcoinSigner
-            .sign(closing.cetSpendingInfo,
-                  closing.closingTx,
-                  isDummySignature = false)
-            .map(signed => Some(signed.transaction))
+          Some(closing.closingTx)
         case _: UnilateralDLCOutcomeWithDustClosing =>
-          Future.successful(None)
+          None
       }
-    } yield txOpt
+    }
   }
 
   override def acceptDLCMutualClose(
@@ -601,17 +594,14 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
 
       outcome <- client.executeRefundDLC(setup)
-      txs <- outcome match {
+    } yield {
+      outcome match {
         case closing: RefundDLCOutcomeWithClosing =>
-          BitcoinSigner
-            .sign(closing.refundSpendingInfo,
-                  closing.closingTx,
-                  isDummySignature = false)
-            .map(signed => (outcome.refundTx, Some(signed.transaction)))
+          (closing.refundTx, Some(closing.closingTx))
         case _: RefundDLCOutcomeWithDustClosing =>
-          Future.successful((outcome.refundTx, None))
+          (outcome.refundTx, None)
       }
-    } yield txs
+    }
   }
 
   override def claimDLCPenaltyFunds(
@@ -623,16 +613,13 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (client, setup) <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
 
       outcome <- client.executeJusticeDLC(setup, forceCloseTx)
-      txOpt <- outcome match {
+    } yield {
+      outcome match {
         case closing: UnilateralDLCOutcomeWithClosing =>
-          BitcoinSigner
-            .sign(closing.cetSpendingInfo,
-                  closing.closingTx,
-                  isDummySignature = false)
-            .map(signed => Some(signed.transaction))
+          Some(closing.closingTx)
         case _: UnilateralDLCOutcomeWithDustClosing =>
-          Future.successful(None)
+          None
       }
-    } yield txOpt
+    }
   }
 }
