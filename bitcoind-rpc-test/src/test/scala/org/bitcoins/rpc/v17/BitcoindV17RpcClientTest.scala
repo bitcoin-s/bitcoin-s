@@ -16,7 +16,6 @@ import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
-import java.time.LocalDateTime
 
 import scala.concurrent.Future
 
@@ -108,13 +107,16 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     } yield assert(signed.complete)
   }
 
+  private val SpreadInSeconds = 30
+
   it should "be able to get the address info for a given address" in {
     for {
       (client, _) <- clientsF
       addr <- client.getNewAddress
       info <- client.getAddressInfo(addr)
     } yield assert(
-      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+      info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
+        .currentTimeMillis() / 1000 +- SpreadInSeconds)
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {
@@ -123,7 +125,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       addr <- client.getNewAddress(addressType = AddressType.P2SHSegwit)
       info <- client.getAddressInfo(addr)
     } yield assert(
-      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+      info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
+        .currentTimeMillis() / 1000 +- SpreadInSeconds)
   }
 
   it should "be able to get the address info for a given Legacy address" in {
@@ -132,7 +135,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       addr <- client.getNewAddress(addressType = AddressType.Legacy)
       info <- client.getAddressInfo(addr)
     } yield assert(
-      info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+      info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
+        .currentTimeMillis() / 1000 +- SpreadInSeconds)
   }
 
   // needs #360 to be merged
@@ -144,7 +148,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     } yield {
       assert(info.address.networkParameters == RegTest)
       assert(
-        info.timestamp.exists(_.getDayOfYear == LocalDateTime.now.getDayOfYear))
+        info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
+          .currentTimeMillis() / 1000 +- SpreadInSeconds)
     }
   }
 

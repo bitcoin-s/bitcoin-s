@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.jsonmodels
 
 import java.io.File
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
 
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
@@ -221,7 +221,7 @@ case class AddressInfoResult(
     pubkey: Option[ECPublicKey],
     embedded: Option[EmbeddedResult],
     label: String,
-    timestamp: Option[LocalDateTime],
+    timestamp: Option[ZonedDateTime],
     hdkeypath: Option[BIP32Path],
     hdseedid: Option[RipeMd160Digest],
     hdmasterkeyid: Option[RipeMd160Digest],
