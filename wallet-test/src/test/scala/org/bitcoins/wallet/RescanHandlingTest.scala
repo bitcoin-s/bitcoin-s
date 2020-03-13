@@ -53,6 +53,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
 
       val amt = Bitcoins.one
       val numBlocks = 1
+
       //send funds to a fresh wallet address
       val addrF = wallet.getNewAddress()
       val bitcoindAddrF = bitcoind.getNewAddress
@@ -99,8 +100,6 @@ class RescanHandlingTest extends BitcoinSWalletTest {
       val WalletWithBitcoindV19(wallet, bitcoind) = fixture
 
       val initBalanceF = wallet.getBalance()
-
-      val blockCountF = wallet.chainQueryApi.getBestHashBlockHeight()
 
       //find the first block a utxo was created in
       val utxosF = wallet.listUtxos()

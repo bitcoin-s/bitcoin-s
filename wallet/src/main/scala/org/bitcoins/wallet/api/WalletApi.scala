@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
@@ -156,6 +155,12 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
 
+  /** Removes all utxos and addresses from the wallet.
+    * Don't call this unless you are sure you can recover
+    * your wallet
+    * */
+  def clearUtxosAndAddresses(): Future[WalletApi]
+
   /**
     * Gets a new external address with the specified
     * type. Calling this method multiple
@@ -281,91 +286,7 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       endOpt: Option[BlockStamp] = None,
       batchSize: Int = 100,
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
-      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
-    require(batchSize > 0, "batch size must be greater than zero")
-    require(parallelismLevel > 0, "parallelism level must be greater than zero")
-    if (scripts.isEmpty) {
-      Future.successful(Vector.empty)
-    } else {
-      val bytes = scripts.map(_.asmBytes)
-
-      /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
-        * It's needed to limit number of threads required to run the matching */
-      def calcGroupSize(vectorSize: Int): Int = {
-        if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
-          vectorSize / parallelismLevel + 1
-        else vectorSize / parallelismLevel
-      }
-
-      def findMatches(filters: Vector[FilterResponse]): Future[
-        Iterator[BlockMatchingResponse]] = {
-        if (filters.isEmpty)
-          Future.successful(Iterator.empty)
-        else {
-          /* Iterates over the grouped vector of filters to find matches with the given [[bytes]]. */
-          val groupSize = calcGroupSize(filters.size)
-          val filterGroups = filters.grouped(groupSize)
-          // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
-          Future
-            .sequence(filterGroups.map { filterGroup =>
-              // We need to wrap in a future here to make sure we can
-              // potentially run these matches in parallel
-              Future {
-                // Find any matches in the group and add the corresponding block hashes into the result
-                filterGroup
-                  .foldLeft(Vector.empty[BlockMatchingResponse]) {
-                    (blocks, filter) =>
-                      val matcher = SimpleFilterMatcher(filter.compactFilter)
-                      if (matcher.matchesAny(bytes)) {
-                        blocks :+ BlockMatchingResponse(filter.blockHash,
-                                                        filter.blockHeight)
-                      } else {
-                        blocks
-                      }
-                  }
-              }
-            })
-            .map(_.flatten)
-        }
-      }
-
-
-
-      def fetchFiltersInRange(heightRange: Vector[Int]): Future[Vector[BlockMatchingResponse]] = {
-        val startHeight = heightRange.head
-        val endHeight = heightRange.last
-        for {
-          compactFiltersDbs <- chainQueryApi.getFiltersBetweenHeights(
-            startHeight = startHeight,
-            endHeight = endHeight)
-          filtered <- findMatches(compactFiltersDbs)
-        } yield filtered.toVector
-      }
-
-      for {
-        startHeight <- startOpt.fold(Future.successful(0))(
-          chainQueryApi.getHeightByBlockStamp)
-        _ = if (startHeight < 0)
-          throw InvalidBlockRange(s"Start position cannot negative")
-        endHeight <- endOpt.fold(chainQueryApi.getFilterCount)(
-          chainQueryApi.getHeightByBlockStamp)
-        _ = if (startHeight > endHeight)
-          throw InvalidBlockRange(
-            s"End position cannot precede start: $startHeight:$endHeight")
-        _ = logger.info(
-          s"Beginning to search for matches between ${startHeight}:${endHeight}")
-        range = startHeight.to(endHeight)
-        batchSize = calcGroupSize(range.length)
-        matched <- FutureUtil.batchExecute(elements = range.toVector,
-          f = fetchFiltersInRange,
-          init = Vector.empty,
-          batchSize = batchSize)
-      } yield {
-        logger.info(s"Matched ${matched.length} blocks on rescan")
-        matched
-      }
-    }
-  }
+      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]]
 
   /**
     * Recreates the account using BIP-157 approach
@@ -395,9 +316,11 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[Unit]
 
-  /** Helper method to resca the ENTIRE blockchain. */
+  /** Helper method to rescan the ENTIRE blockchain. */
   def fullRescanNeurinoWallet(addressBatchSize: Int): Future[Unit] = {
-    rescanNeutrinoWallet(None, None, addressBatchSize)
+    rescanNeutrinoWallet(startOpt = None,
+                         endOpt = None,
+                         addressBatchSize = addressBatchSize)
   }
 
   /**

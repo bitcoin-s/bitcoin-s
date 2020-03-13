@@ -1,15 +1,13 @@
 package org.bitcoins.testkit.chain
 
-import org.bitcoins.chain.blockchain.sync.{ChainSync, FilterWithHeaderHash}
-import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
+import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
+import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
-import org.bitcoins.db.AppConfig
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
