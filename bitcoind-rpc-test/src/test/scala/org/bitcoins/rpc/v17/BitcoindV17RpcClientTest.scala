@@ -107,6 +107,8 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
     } yield assert(signed.complete)
   }
 
+  private val SpreadInSeconds = 30
+
   it should "be able to get the address info for a given address" in {
     for {
       (client, _) <- clientsF
@@ -114,7 +116,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       info <- client.getAddressInfo(addr)
     } yield assert(
       info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
-        .currentTimeMillis() / 1000 +- 20)
+        .currentTimeMillis() / 1000 +- SpreadInSeconds)
   }
 
   it should "be able to get the address info for a given P2SHSegwit address" in {
@@ -124,7 +126,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       info <- client.getAddressInfo(addr)
     } yield assert(
       info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
-        .currentTimeMillis() / 1000 +- 20)
+        .currentTimeMillis() / 1000 +- SpreadInSeconds)
   }
 
   it should "be able to get the address info for a given Legacy address" in {
@@ -134,7 +136,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       info <- client.getAddressInfo(addr)
     } yield assert(
       info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
-        .currentTimeMillis() / 1000 +- 20)
+        .currentTimeMillis() / 1000 +- SpreadInSeconds)
   }
 
   // needs #360 to be merged
@@ -147,7 +149,7 @@ class BitcoindV17RpcClientTest extends BitcoindRpcTest {
       assert(info.address.networkParameters == RegTest)
       assert(
         info.timestamp.map(_.toEpochSecond).getOrElse(0L) === System
-          .currentTimeMillis() / 1000 +- 20)
+          .currentTimeMillis() / 1000 +- SpreadInSeconds)
     }
   }
 
