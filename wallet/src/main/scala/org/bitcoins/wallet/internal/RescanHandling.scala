@@ -68,9 +68,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
           throw InvalidBlockRange(
             s"End position cannot precede start: $startHeight:$endHeight")
         _ = logger.info(
-          s"Beginning to search for matches between ${startHeight}:${endHeight}")
+          s"Beginning to search for matches between ${startHeight}:${endHeight} against ${scripts.length} spks")
         range = startHeight.to(endHeight)
-        batchSize = calcGroupSize(range.length, parallelismLevel)
         matched <- FutureUtil.batchExecute(
           elements = range.toVector,
           f = fetchFiltersInRange(scripts, parallelismLevel)(_),
@@ -212,10 +211,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
     val startHeight = heightRange.head
     val endHeight = heightRange.last
     for {
-      compactFiltersDbs <- chainQueryApi.getFiltersBetweenHeights(
+      filtersResponse <- chainQueryApi.getFiltersBetweenHeights(
         startHeight = startHeight,
         endHeight = endHeight)
-      filtered <- findMatches(compactFiltersDbs, scripts, parallelismLevel)
+      filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
     } yield filtered.toVector
   }
 

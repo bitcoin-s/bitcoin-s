@@ -18,7 +18,7 @@ import org.bitcoins.wallet.models.SpendingInfoTable
 import org.scalatest.{DoNotDiscover, FutureOutcome}
 
 import scala.concurrent.{Future, Promise}
-
+@DoNotDiscover
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
