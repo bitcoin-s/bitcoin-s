@@ -102,10 +102,10 @@ sealed abstract class ECPrivateKey
           .encodeHex(pubBytes)}")
       ECPublicKey(pubBytes)
     } else {
-      val priv = new BigInteger(bytes.toArray)
+      val priv = new BigInteger(1, bytes.toArray)
       val point =
         CryptoParams.curve.getG.multiply(priv)
-      val pubBytes = ByteVector(point.getEncoded(true))
+      val pubBytes = ByteVector(point.getEncoded(isCompressed))
       require(
         ECPublicKey.isFullyValid(pubBytes),
         s"Bouncy Castle failed to generate a valid public key, got: ${BitcoinSUtil
@@ -145,7 +145,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
               s"Invalid key according to secp256k1, hex: ${bytes.toHex}")
     } else {
       require(CryptoParams.curve.getCurve
-                .isValidFieldElement(new BigInteger(bytes.toArray)),
+                .isValidFieldElement(new BigInteger(1, bytes.toArray)),
               s"Invalid key according to Bouncy Castle, hex: ${bytes.toHex}")
     }
   }

@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoin.NativeSecp256k1
+import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
@@ -38,15 +38,20 @@ class ECPublicKeyTest extends BitcoinSUnitTest {
   }
 
   it must "add keys correctly" in {
-    forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
-      case (pubKey, privKey) =>
-        val sumKeyBytes = NativeSecp256k1.pubKeyTweakAdd(pubKey.bytes.toArray,
-                                                         privKey.bytes.toArray,
-                                                         true)
-        val sumKeyExpected = ECPublicKey.fromBytes(ByteVector(sumKeyBytes))
-        val sumKey = pubKey.add(privKey.publicKey)
+    if (Secp256k1Context.isEnabled) {
+      forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
+        case (pubKey, privKey) =>
+          val sumKeyBytes =
+            NativeSecp256k1.pubKeyTweakAdd(pubKey.bytes.toArray,
+                                           privKey.bytes.toArray,
+                                           true)
+          val sumKeyExpected = ECPublicKey.fromBytes(ByteVector(sumKeyBytes))
+          val sumKey = pubKey.add(privKey.publicKey)
 
-        assert(sumKey == sumKeyExpected)
+          assert(sumKey == sumKeyExpected)
+      }
+    } else {
+      succeed
     }
   }
 }
