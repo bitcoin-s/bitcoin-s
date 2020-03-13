@@ -370,8 +370,8 @@ object BitcoinSWalletTest extends WalletLogger {
       .map(_.asInstanceOf[BitcoindV19RpcClient])
     val nodeChainQueryApiF =
       bitcoindF.map(b => SyncUtil.getNodeChainQueryApi(b))
-
-    for {
+    val walletCallbackP = Promise[Wallet]()
+    val walletWithBitcoindV19F = for {
       bitcoind <- bitcoindF
       api <- nodeChainQueryApiF
       wallet <- createDefaultWallet(api.nodeApi, api.chainQueryApi, extraConfig)
@@ -379,7 +379,7 @@ object BitcoinSWalletTest extends WalletLogger {
       //we need to create a promise so we can inject the wallet with the callback
       //after we have created it into SyncUtil.getNodeChainQueryApiWalletCallback
       //so we don't lose the internal state of the wallet
-      walletCallbackP = Promise[Wallet]()
+
       //now unfortunately we have to create _another_ wallet that has the correct callback
       //setup for our wallet so we can receive block updates from bitcoind
       apiCallback = SyncUtil.getNodeChainQueryApiWalletCallback(
@@ -397,6 +397,10 @@ object BitcoinSWalletTest extends WalletLogger {
       //called without hanging forever.
       _ = walletCallbackP.success(walletWithCallback)
     } yield WalletWithBitcoindV19(walletWithCallback, bitcoind)
+
+    walletWithBitcoindV19F.failed.foreach(err => walletCallbackP.failure(err))
+
+    walletWithBitcoindV19F
   }
 
   def createWallet2Accounts(

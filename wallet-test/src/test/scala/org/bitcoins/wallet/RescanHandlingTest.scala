@@ -2,18 +2,13 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
 import org.bitcoins.core.protocol.BlockStamp
-import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
   WalletWithBitcoind,
   WalletWithBitcoindV19
 }
-import org.bitcoins.wallet.api.WalletApi
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.SpendingInfoTable
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
