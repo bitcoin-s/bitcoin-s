@@ -112,11 +112,13 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       blockHash: DoubleSha256Digest,
       failure: Try[_]): Unit =
     synchronized {
+      logger.debug(s"Updating wallet signal completion for ${blockHash}")
       blockProcessingSignals.get(blockHash).foreach { signal =>
         blockProcessingSignals =
           blockProcessingSignals.filterNot(_._1 == blockHash)
         failure match {
-          case Success(_)         => signal.success(blockHash)
+          case Success(_) =>
+            signal.success(blockHash)
           case Failure(exception) => signal.failure(exception)
         }
       }

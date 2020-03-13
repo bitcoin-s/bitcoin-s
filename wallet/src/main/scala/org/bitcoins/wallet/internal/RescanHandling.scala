@@ -2,11 +2,14 @@ package org.bitcoins.wallet.internal
 
 import java.util.concurrent.Executors
 
+import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
 import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.{LockedWallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,11 +26,10 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[Unit] = {
 
-    logger.info(s"Starting rescanning the wallet.")
+    logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
 
     val res = for {
-      _ <- spendingInfoDAO.deleteAll()
-      _ <- addressDAO.deleteAll()
+      _ <- clearUtxosAndAddresses()
       _ <- doNeutrinoRescan(startOpt, endOpt, addressBatchSize)
     } yield ()
 
@@ -39,6 +41,45 @@ private[wallet] trait RescanHandling extends WalletLogger {
   /** @inheritdoc */
   override def rescanSPVWallet(): Future[Unit] =
     Future.failed(new RuntimeException("Rescan not implemented for SPV wallet"))
+
+  /** @inheritdoc */
+  override def getMatchingBlocks(
+      scripts: Vector[ScriptPubKey],
+      startOpt: Option[BlockStamp] = None,
+      endOpt: Option[BlockStamp] = None,
+      batchSize: Int = 100,
+      parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
+      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
+    require(batchSize > 0, "batch size must be greater than zero")
+    require(parallelismLevel > 0, "parallelism level must be greater than zero")
+    if (scripts.isEmpty) {
+      Future.successful(Vector.empty)
+    } else {
+
+      for {
+        startHeight <- startOpt.fold(Future.successful(0))(
+          chainQueryApi.getHeightByBlockStamp)
+        _ = if (startHeight < 0)
+          throw InvalidBlockRange(s"Start position cannot negative")
+        endHeight <- endOpt.fold(chainQueryApi.getFilterCount)(
+          chainQueryApi.getHeightByBlockStamp)
+        _ = if (startHeight > endHeight)
+          throw InvalidBlockRange(
+            s"End position cannot precede start: $startHeight:$endHeight")
+        _ = logger.info(
+          s"Beginning to search for matches between ${startHeight}:${endHeight} against ${scripts.length} spks")
+        range = startHeight.to(endHeight)
+        matched <- FutureUtil.batchExecute(
+          elements = range.toVector,
+          f = fetchFiltersInRange(scripts, parallelismLevel)(_),
+          init = Vector.empty,
+          batchSize = batchSize)
+      } yield {
+        logger.info(s"Matched ${matched.length} blocks on rescan")
+        matched
+      }
+    }
+  }
 
   /////////////////////
   // Private methods
@@ -55,9 +96,14 @@ private[wallet] trait RescanHandling extends WalletLogger {
       _ <- downloadAndProcessBlocks(blocks)
       externalGap <- calcAddressGap(HDChainType.External)
       changeGap <- calcAddressGap(HDChainType.Change)
-      res <- if (externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit)
+      res <- if (externalGap >= walletConfig.addressGapLimit && changeGap >= walletConfig.addressGapLimit) {
         pruneUnusedAddresses()
-      else doNeutrinoRescan(startOpt, endOpt, addressBatchSize)
+      } else {
+        logger.info(
+          s"Attempting rescan again with fresh pool of addresses as we had a " +
+            s"match within our address gap limit of ${walletConfig.addressGapLimit}")
+        doNeutrinoRescan(startOpt, endOpt, addressBatchSize)
+      }
     } yield res
   }
 
@@ -102,7 +148,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
 
   private def downloadAndProcessBlocks(
       blocks: Vector[DoubleSha256Digest]): Future[Unit] = {
-    logger.debug(s"Requesting ${blocks.size} block(s)")
+    logger.info(s"Requesting ${blocks.size} block(s)")
     blocks.foldLeft(FutureUtil.unit) { (prevF, blockHash) =>
       val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
       for {
@@ -155,6 +201,63 @@ private[wallet] trait RescanHandling extends WalletLogger {
             } yield prev :+ address
         }
     } yield addresses.map(_.scriptPubKey) ++ changeAddresses.map(_.scriptPubKey)
+  }
+
+  private def fetchFiltersInRange(
+      scripts: Vector[ScriptPubKey],
+      parallelismLevel: Int)(
+      heightRange: Vector[Int]): Future[Vector[BlockMatchingResponse]] = {
+    val startHeight = heightRange.head
+    val endHeight = heightRange.last
+    for {
+      filtersResponse <- chainQueryApi.getFiltersBetweenHeights(
+        startHeight = startHeight,
+        endHeight = endHeight)
+      filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
+    } yield filtered.toVector
+  }
+
+  private def findMatches(
+      filters: Vector[FilterResponse],
+      scripts: Vector[ScriptPubKey],
+      parallelismLevel: Int): Future[Iterator[BlockMatchingResponse]] = {
+    if (filters.isEmpty)
+      Future.successful(Iterator.empty)
+    else {
+      val bytes = scripts.map(_.asmBytes)
+      /* Iterates over the grouped vector of filters to find matches with the given [[bytes]]. */
+      val groupSize = calcGroupSize(filters.size, parallelismLevel)
+      val filterGroups = filters.grouped(groupSize)
+      // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
+      Future
+        .sequence(filterGroups.map { filterGroup =>
+          // We need to wrap in a future here to make sure we can
+          // potentially run these matches in parallel
+          Future {
+            // Find any matches in the group and add the corresponding block hashes into the result
+            filterGroup
+              .foldLeft(Vector.empty[BlockMatchingResponse]) {
+                (blocks, filter) =>
+                  val matcher = SimpleFilterMatcher(filter.compactFilter)
+                  if (matcher.matchesAny(bytes)) {
+                    blocks :+ BlockMatchingResponse(filter.blockHash,
+                                                    filter.blockHeight)
+                  } else {
+                    blocks
+                  }
+              }
+          }
+        })
+        .map(_.flatten)
+    }
+  }
+
+  /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
+    * It's needed to limit number of threads required to run the matching */
+  private def calcGroupSize(vectorSize: Int, parallelismLevel: Int): Int = {
+    if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
+      vectorSize / parallelismLevel + 1
+    else vectorSize / parallelismLevel
   }
 
 }

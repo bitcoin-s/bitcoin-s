@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * This trait provides methods to query various types of blockchain data.
@@ -18,6 +18,14 @@ trait ChainQueryApi {
 
   /** Gets the hash of the block that is what we consider "best" */
   def getBestBlockHash(): Future[DoubleSha256DigestBE]
+
+  def getBestHashBlockHeight()(implicit ec: ExecutionContext): Future[Int] =
+    for {
+      hash <- getBestBlockHash()
+      heightOpt <- getBlockHeight(hash)
+      _ = require(heightOpt.isDefined,
+                  s"Best block hash must have a height! blockhash=$hash")
+    } yield heightOpt.get
 
   /** Gets number of confirmations for the given block hash*/
   def getNumberOfConfirmations(

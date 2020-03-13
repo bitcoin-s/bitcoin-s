@@ -94,7 +94,9 @@ object BitcoindRpcClient {
       case BitcoindVersion.V17 => BitcoindV17RpcClient.withActorSystem(instance)
       case BitcoindVersion.V18 => BitcoindV18RpcClient.withActorSystem(instance)
       case BitcoindVersion.V19 => BitcoindV19RpcClient.withActorSystem(instance)
-      case BitcoindVersion.Experimental | BitcoindVersion.Unknown =>
+      case BitcoindVersion.Experimental =>
+        BitcoindV18RpcClient.withActorSystem(instance)
+      case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a bitcoind from a unknown or experimental version")
     }
