@@ -35,8 +35,8 @@ abstract class LockedWallet
 
   override def clearUtxosAndAddresses(): Future[LockedWallet] = {
     for {
-      _ <- addressDAO.deleteAll()
       _ <- spendingInfoDAO.deleteAll()
+      _ <- addressDAO.deleteAll()
     } yield this
   }
 
