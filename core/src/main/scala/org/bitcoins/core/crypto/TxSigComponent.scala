@@ -49,6 +49,7 @@ object TxSigComponent {
       inputIndex: UInt32,
       output: TransactionOutput,
       flags: Seq[ScriptFlag]): TxSigComponent = {
+    val scriptSig = transaction.inputs(inputIndex.toInt).scriptSignature
     output.scriptPubKey match {
       case _: WitnessScriptPubKey =>
         transaction match {
@@ -58,8 +59,10 @@ object TxSigComponent {
           case wtx: WitnessTransaction =>
             WitnessTxSigComponent(wtx, inputIndex, output, flags)
         }
-      case p2sh: P2SHScriptPubKey =>
-        if (WitnessScriptPubKey.isWitnessScriptPubKey(p2sh.asm)) {
+      case _: P2SHScriptPubKey =>
+        val p2shScriptSig = scriptSig.asInstanceOf[P2SHScriptSignature]
+        if (WitnessScriptPubKey.isWitnessScriptPubKey(
+              p2shScriptSig.redeemScript.asm)) {
           transaction match {
             case _: BaseTransaction =>
               throw new IllegalArgumentException(
