@@ -1,6 +1,6 @@
 ---
 id: chain-query-api
-title: chain-query-api
+title: Chain Query API
 ---
 
 ```scala mdoc:invisible
@@ -25,7 +25,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```
 
-### ChainQueryApi
+### ChainQueryAPI
 
 The ChainQueryApi is how the wallet project stays aware of the current best chain.
 This allows the wallet for example to calculate the number of confirmations for a transaction,

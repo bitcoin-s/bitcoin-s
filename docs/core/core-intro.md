@@ -1,6 +1,6 @@
 ---
 id: core-intro
-title: Core module
+title: Core Module
 ---
 
 The `core` module is the core (duh!) functionality of Bitcoin-S. The goal is to provide basic
