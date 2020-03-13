@@ -3,7 +3,7 @@ package org.bitcoins.core.crypto
 import java.math.BigInteger
 import java.security.SecureRandom
 
-import org.bitcoin.NativeSecp256k1
+import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{BitcoinSUtil, _}
@@ -50,9 +50,13 @@ sealed abstract class ECPrivateKey
     */
   override def sign(dataToSign: ByteVector): ECDigitalSignature = {
     require(dataToSign.length == 32 && bytes.length <= 32)
-    val signature =
-      NativeSecp256k1.sign(dataToSign.toArray, bytes.toArray)
-    ECDigitalSignature(ByteVector(signature))
+    if (Secp256k1Context.isEnabled) {
+      val signature =
+        NativeSecp256k1.sign(dataToSign.toArray, bytes.toArray)
+      ECDigitalSignature(ByteVector(signature))
+    } else {
+      signWithBouncyCastle(dataToSign)
+    }
   }
 
   def sign(hash: HashDigest): ECDigitalSignature = sign(hash.bytes)
@@ -88,14 +92,26 @@ sealed abstract class ECPrivateKey
 
   /** Derives the public for a the private key */
   def publicKey: ECPublicKey = {
-    val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
-    require(
-      NativeSecp256k1.isValidPubKey(pubKeyBytes),
-      s"secp256k1 failed to generate a valid public key, got: ${BitcoinSUtil
-        .encodeHex(ByteVector(pubKeyBytes))}"
-    )
-    ECPublicKey(ByteVector(pubKeyBytes))
+    if (Secp256k1Context.isEnabled) {
+      val pubKeyBytes: Array[Byte] =
+        NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
+      val pubBytes = ByteVector(pubKeyBytes)
+      require(
+        ECPublicKey.isFullyValid(pubBytes),
+        s"secp256k1 failed to generate a valid public key, got: ${BitcoinSUtil
+          .encodeHex(pubBytes)}")
+      ECPublicKey(pubBytes)
+    } else {
+      val priv = new BigInteger(bytes.toArray)
+      val point =
+        CryptoParams.curve.getG.multiply(priv)
+      val pubBytes = ByteVector(point.getEncoded(true))
+      require(
+        ECPublicKey.isFullyValid(pubBytes),
+        s"Bouncy Castle failed to generate a valid public key, got: ${BitcoinSUtil
+          .encodeHex(pubBytes)}")
+      ECPublicKey(pubBytes)
+    }
   }
 
   /**
@@ -124,8 +140,14 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
       isCompressed: Boolean,
       ec: ExecutionContext)
       extends ECPrivateKey {
-    require(NativeSecp256k1.secKeyVerify(bytes.toArray),
-            s"Invalid key according to secp256k1, hex: ${bytes.toHex}")
+    if (Secp256k1Context.isEnabled) {
+      require(NativeSecp256k1.secKeyVerify(bytes.toArray),
+              s"Invalid key according to secp256k1, hex: ${bytes.toHex}")
+    } else {
+      require(CryptoParams.curve.getCurve
+                .isValidFieldElement(new BigInteger(bytes.toArray)),
+              s"Invalid key according to Bouncy Castle, hex: ${bytes.toHex}")
+    }
   }
 
   def apply(bytes: ByteVector, isCompressed: Boolean)(
@@ -274,9 +296,12 @@ sealed abstract class ECPublicKey extends BaseECKey {
     * [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]'s corresponding
     * [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]]. */
   def verify(data: ByteVector, signature: ECDigitalSignature): Boolean = {
-    val result = NativeSecp256k1.verify(data.toArray,
-                                        signature.bytes.toArray,
-                                        bytes.toArray)
+    val result = if (Secp256k1Context.isEnabled) {
+      NativeSecp256k1.verify(data.toArray,
+                             signature.bytes.toArray,
+                             bytes.toArray)
+    } else false
+
     if (!result) {
       //if signature verification fails with libsecp256k1 we need to use our old
       //verification function from spongy castle, this is needed because early blockchain
@@ -293,9 +318,6 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
   override def toString = "ECPublicKey(" + hex + ")"
 
-  @deprecated(
-    "Deprecated in favor of using verify functionality inside of secp256k1",
-    "2/20/2017")
   private def oldVerify(
       data: ByteVector,
       signature: ECDigitalSignature): Boolean = {
@@ -334,8 +356,17 @@ sealed abstract class ECPublicKey extends BaseECKey {
   /** Returns the decompressed version of this [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] */
   def decompressed: ECPublicKey = {
     if (isCompressed) {
-      val decompressed = NativeSecp256k1.decompress(bytes.toArray)
-      ECPublicKey.fromBytes(ByteVector(decompressed))
+      if (Secp256k1Context.isEnabled) {
+        val decompressed = NativeSecp256k1.decompress(bytes.toArray)
+        ECPublicKey.fromBytes(ByteVector(decompressed))
+      } else {
+        val point = CryptoParams.curve.getCurve.decodePoint(bytes.toArray)
+        val decompressedBytes =
+          ByteVector.fromHex("04").get ++
+            ByteVector(point.getXCoord.getEncoded) ++
+            ByteVector(point.getYCoord.getEncoded)
+        ECPublicKey(decompressedBytes)
+      }
     } else this
   }
 
@@ -388,9 +419,16 @@ object ECPublicKey extends Factory[ECPublicKey] {
     * Mimics this function in bitcoin core
     * [[https://github.com/bitcoin/bitcoin/blob/27765b6403cece54320374b37afb01a0cfe571c3/src/pubkey.cpp#L207-L212]]
     */
-  def isFullyValid(bytes: ByteVector): Boolean =
-    Try(NativeSecp256k1.isValidPubKey(bytes.toArray))
-      .getOrElse(false) && isValid(bytes)
+  def isFullyValid(bytes: ByteVector): Boolean = {
+    if (Secp256k1Context.isEnabled) {
+      Try(NativeSecp256k1.isValidPubKey(bytes.toArray))
+        .getOrElse(false) && isValid(bytes)
+    } else {
+      Try(CryptoParams.curve.getCurve.decodePoint(bytes.toArray))
+        .map(_.getCurve == CryptoParams.curve.getCurve)
+        .getOrElse(false) && isValid(bytes)
+    }
+  }
 
   /**
     * Mimics the CPubKey::IsValid function in Bitcoin core, this is a consensus rule
