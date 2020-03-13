@@ -57,7 +57,8 @@ val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
 val peerF = bitcoindF.map(b => NodeUnitTest.createPeer(b))
 
 // set a data directory
-val datadir = Files.createTempDirectory("bitcoin-s-test")
+val prefix = s"node-example-${System.currentTimeMillis()}"
+val datadir = Files.createTempDirectory(prefix)
 
 val tmpDir = BitcoinSTestAppConfig.tmpDir()
 // set the current network to regtest
