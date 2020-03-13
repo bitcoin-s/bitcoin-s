@@ -9,10 +9,10 @@
         "title": "Blockchain Verification"
       },
       "applications/cli": {
-        "title": "cli"
+        "title": "CLI"
       },
       "applications/configuration": {
-        "title": "Application configuration"
+        "title": "Application Configuration"
       },
       "applications/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
@@ -21,13 +21,19 @@
         "title": "Syncing Blockfilters"
       },
       "applications/node": {
-        "title": "Light client"
+        "title": "Light Client"
       },
       "applications/server": {
-        "title": "application server"
+        "title": "Application Server"
       },
       "applications/wallet": {
         "title": "Wallet"
+      },
+      "chain/chain": {
+        "title": "Blockchain Verification"
+      },
+      "chain/filter-sync": {
+        "title": "Syncing Blockfilters"
       },
       "contributing-website": {
         "title": "Contributing to the website"
@@ -39,25 +45,25 @@
         "title": "Adding New Script Types"
       },
       "core/addresses": {
-        "title": "Generating addresses"
+        "title": "Generating Addresses"
       },
       "core/core-intro": {
-        "title": "Core module"
+        "title": "Core Module"
       },
       "core/hd-keys": {
-        "title": "HD key generation"
+        "title": "HD Key Generation"
       },
       "core/psbts": {
         "title": "Partially Signed Bitcoin Transactions"
       },
       "core/sign": {
-        "title": "Sign api"
+        "title": "Sign API"
       },
       "core/spending-info": {
         "title": "Signing Transactions"
       },
       "core/txbuilder": {
-        "title": "TxBuilder example"
+        "title": "TxBuilder Example"
       },
       "getting-setup": {
         "title": "Getting Bitcoin-S installed on your machine"
@@ -79,6 +85,18 @@
       },
       "security": {
         "title": "Security"
+      },
+      "wallet/chain-query-api": {
+        "title": "Chain Query Api"
+      },
+      "wallet/dlc": {
+        "title": "Executing A DLC with Bitcoin-S"
+      },
+      "wallet/node-api": {
+        "title": "Node Api"
+      },
+      "wallet/wallet": {
+        "title": "Wallet"
       },
       "windows-users": {
         "title": "windows-users"
@@ -174,14 +192,19 @@
       "Help": "Help"
     },
     "categories": {
-      "Getting started": "Getting started",
-      "Getting setup": "Getting setup",
-      "Core module": "Core module",
-      "Key manager": "Key manager",
-      "RPC clients": "RPC clients",
+      "Getting Started": "Getting Started",
+      "Getting Setup": "Getting Setup",
       "Applications": "Applications",
+      "Chain": "Chain",
+      "Core Module": "Core Module",
+      "Key Manager": "Key Manager",
+      "Wallet": "Wallet",
+      "RPC Clients": "RPC Clients",
       "Contributing": "Contributing",
-      "Security": "Security"
+      "Security": "Security",
+      "Getting started": "Getting started",
+      "Core module": "Core module",
+      "RPC clients": "RPC clients"
     }
   },
   "pages-strings": {

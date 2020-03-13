@@ -1,6 +1,6 @@
 ---
 id: server
-title: application server
+title: Application Server
 ---
 
 
@@ -8,8 +8,8 @@ title: application server
 
 The [server](../../app/server) project is the aggregation of these three sub projects
 
-1. [Wallet](wallet.md)
-2. [Chain](chain.md)
+1. [Wallet](../wallet/wallet.md)
+2. [Chain](../chain/chain.md)
 3. [Node](node.md)
 
 The server project provides a away to access information from these three projects via a JSON RPC.

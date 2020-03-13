@@ -1,6 +1,6 @@
 ---
 id: addresses
-title: Generating addresses
+title: Generating Addresses
 ---
 
 Almost all Bitcoin applications need to generate addresses
