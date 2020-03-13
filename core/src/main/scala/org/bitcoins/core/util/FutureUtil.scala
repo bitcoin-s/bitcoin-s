@@ -41,4 +41,27 @@ object FutureUtil {
         }
     }
   }
+
+  /** Takes elements, groups them into batches of 'batchSize' and then calls f on them.
+    * The next batch does not start executing until the first batch is finished
+    * */
+  def batchExecute[T, U](
+      elements: Vector[T],
+      f: Vector[T] => Future[U],
+      init: U,
+      batchSize: Int)(implicit ec: ExecutionContext): Future[U] = {
+    val initF = Future.successful(init)
+    val batches = elements.grouped(batchSize)
+    for {
+      batchExecution <- {
+        batches.foldLeft(initF) {
+          case (uF, batch) =>
+            for {
+              _ <- uF
+              executed <- f(batch)
+            } yield executed
+        }
+      }
+    } yield batchExecution
+  }
 }

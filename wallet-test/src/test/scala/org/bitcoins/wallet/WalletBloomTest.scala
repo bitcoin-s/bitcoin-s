@@ -3,7 +3,10 @@ package org.bitcoins.wallet
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  WalletWithBitcoind,
+  WalletWithBitcoindRpc
+}
 import org.scalatest.FutureOutcome
 
 class WalletBloomTest extends BitcoinSWalletTest {
@@ -16,7 +19,7 @@ class WalletBloomTest extends BitcoinSWalletTest {
 
   it should "generate a bloom filter that matches the pubkeys in our wallet" in {
     param =>
-      val WalletWithBitcoind(walletApi, _) = param
+      val WalletWithBitcoindRpc(walletApi, _) = param
       val wallet = walletApi.asInstanceOf[Wallet]
       for {
         _ <- FutureUtil.sequentially(0 until 10)(_ => wallet.getNewAddress())
@@ -31,7 +34,7 @@ class WalletBloomTest extends BitcoinSWalletTest {
 
   it should "generate a bloom filter that matches the outpoints in our wallet" in {
     param =>
-      val WalletWithBitcoind(walletApi, bitcoind) = param
+      val WalletWithBitcoindRpc(walletApi, bitcoind) = param
       val wallet = walletApi.asInstanceOf[Wallet]
 
       for {

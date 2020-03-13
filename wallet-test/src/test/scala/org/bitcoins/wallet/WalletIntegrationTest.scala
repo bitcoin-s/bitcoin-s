@@ -4,7 +4,10 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDChainType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  WalletWithBitcoind,
+  WalletWithBitcoindRpc
+}
 import org.scalatest.FutureOutcome
 
 class WalletIntegrationTest extends BitcoinSWalletTest {
@@ -36,7 +39,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
   it should ("create an address, receive funds to it from bitcoind, import the"
     + " UTXO and construct a valid, signed transaction that's"
     + " broadcast and confirmed by bitcoind") in { walletWithBitcoind =>
-    val WalletWithBitcoind(wallet, bitcoind) = walletWithBitcoind
+    val WalletWithBitcoindRpc(wallet, bitcoind) = walletWithBitcoind
     // the amount we're receiving from bitcoind
     val valueFromBitcoind = Bitcoins.one
 

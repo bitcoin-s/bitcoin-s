@@ -29,14 +29,14 @@
       "wallet/wallet",
       "wallet/chain-query-api",
       "wallet/node-api",
-      "wallet/dlc"
+      "wallet/dlc",
+      "wallet/wallet-rescan"
     ],
     "RPC Clients": [
       "rpc/rpc-clients-intro",
       "rpc/rpc-eclair",
       "rpc/rpc-bitcoind"
     ],
-
     "Contributing": ["contributing", "contributing-website"],
     "Security": ["security"]
   }

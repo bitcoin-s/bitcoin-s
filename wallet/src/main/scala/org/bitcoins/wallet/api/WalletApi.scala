@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
@@ -16,12 +15,11 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -48,7 +46,7 @@ sealed trait WalletApi {
 /**
   * API for a locked wallet
   */
-trait LockedWalletApi extends WalletApi {
+trait LockedWalletApi extends WalletApi with WalletLogger {
 
   /**
     * Retrieves a bloom filter that that can be sent to a P2P network node
@@ -156,6 +154,12 @@ trait LockedWalletApi extends WalletApi {
 
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
+
+  /** Removes all utxos and addresses from the wallet.
+    * Don't call this unless you are sure you can recover
+    * your wallet
+    * */
+  def clearUtxosAndAddresses(): Future[WalletApi]
 
   /**
     * Gets a new external address with the specified
@@ -282,96 +286,7 @@ trait LockedWalletApi extends WalletApi {
       endOpt: Option[BlockStamp] = None,
       batchSize: Int = 100,
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors())(
-      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
-    require(batchSize > 0, "batch size must be greater than zero")
-    require(parallelismLevel > 0, "parallelism level must be greater than zero")
-
-    if (scripts.isEmpty) {
-      Future.successful(Vector.empty)
-    } else {
-      val bytes = scripts.map(_.asmBytes)
-
-      /** Calculates group size to split a filter vector into [[parallelismLevel]] groups.
-        * It's needed to limit number of threads required to run the matching */
-      def calcGroupSize(vectorSize: Int): Int =
-        if (vectorSize / parallelismLevel * parallelismLevel < vectorSize)
-          vectorSize / parallelismLevel + 1
-        else vectorSize / parallelismLevel
-
-      def findMatches(filters: Vector[FilterResponse]): Future[
-        Iterator[BlockMatchingResponse]] = {
-        if (filters.isEmpty)
-          Future.successful(Iterator.empty)
-        else {
-          /* Iterates over the grouped vector of filters to find matches with the given [[bytes]]. */
-          val groupSize = calcGroupSize(filters.size)
-          val filterGroups = filters.grouped(groupSize)
-          // Sequence on the filter groups making sure the number of threads doesn't exceed [[parallelismLevel]].
-          Future
-            .sequence(filterGroups.map { filterGroup =>
-              // We need to wrap in a future here to make sure we can
-              // potentially run these matches in parallel
-              Future {
-                // Find any matches in the group and add the corresponding block hashes into the result
-                filterGroup
-                  .foldLeft(Vector.empty[BlockMatchingResponse]) {
-                    (blocks, filter) =>
-                      val matcher = SimpleFilterMatcher(filter.compactFilter)
-                      if (matcher.matchesAny(bytes)) {
-                        blocks :+ BlockMatchingResponse(filter.blockHash,
-                                                        filter.blockHeight)
-                      } else {
-                        blocks
-                      }
-                  }
-              }
-            })
-            .map(_.flatten)
-        }
-      }
-
-      /** Iterates over all filters in the range to find matches */
-      @tailrec
-      def loop(
-          start: Int,
-          end: Int,
-          acc: Future[Vector[BlockMatchingResponse]]): Future[
-        Vector[BlockMatchingResponse]] = {
-        if (end <= start) {
-          acc
-        } else {
-          val startHeight = end - (batchSize - 1)
-          val endHeight = end
-          val newAcc = for {
-            compactFilterDbs <- chainQueryApi.getFiltersBetweenHeights(
-              startHeight,
-              endHeight)
-            filtered <- findMatches(compactFilterDbs)
-            res <- acc
-          } yield {
-            res ++ filtered
-          }
-          val newEnd = Math.max(start, endHeight - batchSize)
-          loop(start, newEnd, newAcc)
-        }
-      }
-
-      for {
-        startHeight <- startOpt.fold(Future.successful(0))(
-          chainQueryApi.getHeightByBlockStamp)
-        _ = if (startHeight < 0)
-          throw InvalidBlockRange(s"Start position cannot negative")
-        endHeight <- endOpt.fold(chainQueryApi.getFilterCount)(
-          chainQueryApi.getHeightByBlockStamp)
-        _ = if (startHeight > endHeight)
-          throw InvalidBlockRange(
-            s"End position cannot precede start: $startHeight:$endHeight")
-        matched <- loop(startHeight, endHeight, Future.successful(Vector.empty))
-      } yield {
-        matched
-      }
-    }
-  }
+      implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]]
 
   /**
     * Recreates the account using BIP-157 approach
@@ -401,11 +316,17 @@ trait LockedWalletApi extends WalletApi {
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[Unit]
 
+  /** Helper method to rescan the ENTIRE blockchain. */
+  def fullRescanNeurinoWallet(addressBatchSize: Int): Future[Unit] = {
+    rescanNeutrinoWallet(startOpt = None,
+                         endOpt = None,
+                         addressBatchSize = addressBatchSize)
+  }
+
   /**
     * Recreates the account using BIP-44 approach
     */
   def rescanSPVWallet(): Future[Unit]
-
 }
 
 trait UnlockedWalletApi extends LockedWalletApi {

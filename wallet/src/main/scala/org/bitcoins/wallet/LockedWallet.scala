@@ -33,6 +33,13 @@ abstract class LockedWallet
       spendingInfoCount <- spendingInfoDAO.count()
     } yield addressCount == 0 && spendingInfoCount == 0
 
+  override def clearUtxosAndAddresses(): Future[LockedWallet] = {
+    for {
+      _ <- spendingInfoDAO.deleteAll()
+      _ <- addressDAO.deleteAll()
+    } yield this
+  }
+
   /** Sums up the value of all unspent
     * TXOs in the wallet, filtered by the given predicate */
   private def filterThenSum(

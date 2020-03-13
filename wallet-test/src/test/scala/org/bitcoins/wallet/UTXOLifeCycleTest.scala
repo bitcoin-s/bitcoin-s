@@ -7,7 +7,10 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
+  WalletWithBitcoind,
+  WalletWithBitcoindRpc
+}
 import org.scalatest.FutureOutcome
 
 class UTXOLifeCycleTest extends BitcoinSWalletTest {
@@ -24,7 +27,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
   }
 
   it should "track a utxo state change to pending spent" in { param =>
-    val WalletWithBitcoind(wallet, _) = param
+    val WalletWithBitcoindRpc(wallet, _) = param
 
     for {
       tx <- wallet.sendToAddress(testAddr,
@@ -38,7 +41,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
   }
 
   it should "track a utxo state change to pending recieved" in { param =>
-    val WalletWithBitcoind(wallet, bitcoind) = param
+    val WalletWithBitcoindRpc(wallet, bitcoind) = param
 
     for {
       addr <- wallet.getNewAddress()
@@ -56,7 +59,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
   }
 
   it should "track a utxo state change to reserved" in { param =>
-    val WalletWithBitcoind(wallet, _) = param
+    val WalletWithBitcoindRpc(wallet, _) = param
 
     val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
 
