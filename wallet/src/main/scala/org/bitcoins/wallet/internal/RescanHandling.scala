@@ -29,8 +29,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
     logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
 
     val res = for {
-      _ <- spendingInfoDAO.deleteAll()
-      _ <- addressDAO.deleteAll()
+      _ <- clearUtxosAndAddresses()
       _ <- doNeutrinoRescan(startOpt, endOpt, addressBatchSize)
     } yield ()
 

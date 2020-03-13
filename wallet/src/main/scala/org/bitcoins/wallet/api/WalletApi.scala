@@ -327,7 +327,6 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     * Recreates the account using BIP-44 approach
     */
   def rescanSPVWallet(): Future[Unit]
-
 }
 
 trait UnlockedWalletApi extends LockedWalletApi {

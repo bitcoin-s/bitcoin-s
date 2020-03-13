@@ -23,7 +23,8 @@ trait ChainQueryApi {
     for {
       hash <- getBestBlockHash()
       heightOpt <- getBlockHeight(hash)
-      _ = require(heightOpt.isDefined, s"Best block hash must have a height!")
+      _ = require(heightOpt.isDefined,
+                  s"Best block hash must have a height! blockhash=$hash")
     } yield heightOpt.get
 
   /** Gets number of confirmations for the given block hash*/

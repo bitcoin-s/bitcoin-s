@@ -29,7 +29,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
   val DEFAULT_ADDR_BATCH_SIZE = 10
   it must "be able to discover funds that belong to the wallet using WalletApi.rescanNeutrinoWallet" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+      val WalletWithBitcoindV19(wallet, _) = fixture
 
       val initBalanceF = wallet.getBalance()
 
@@ -97,7 +97,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
 
   it must "NOT discover funds that happened OUTSIDE of a certain range of block hashes" in {
     fixture: WalletWithBitcoind =>
-      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+      val WalletWithBitcoindV19(wallet, _) = fixture
 
       val initBalanceF = wallet.getBalance()
 

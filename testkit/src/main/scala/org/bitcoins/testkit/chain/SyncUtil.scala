@@ -4,7 +4,7 @@ import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.{FilterType, GolombFilter}
+import org.bitcoins.core.gcs.{FilterType}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
@@ -82,7 +82,7 @@ abstract class SyncUtil extends BitcoinSLogger {
           case BlockStamp.BlockHash(hash) => getBlockHeight(hash).map(_.get)
           case BlockStamp.BlockHeight(height) =>
             Future.successful(height)
-          case BlockStamp.BlockTime(time) =>
+          case BlockStamp.BlockTime(_) =>
             Future.failed(new RuntimeException(s"Cannot query by block time"))
         }
       }
@@ -140,7 +140,8 @@ abstract class SyncUtil extends BitcoinSLogger {
                                                        batchSize = batchSize)
 
         batchedExecutedF.map { _ =>
-          logger.info(s"Done fetching ${blockHashes} hashes from bitcoind")
+          logger.info(
+            s"Done fetching ${blockHashes.length} hashes from bitcoind")
           ()
         }
       }
@@ -190,7 +191,8 @@ abstract class SyncUtil extends BitcoinSLogger {
                                                        batchSize = batchSize)
 
         batchedExecutedF.map { _ =>
-          logger.info(s"Done fetching ${blockHashes} hashes from bitcoind")
+          logger.info(
+            s"Done fetching ${blockHashes.length} hashes from bitcoind")
           ()
         }
       }
