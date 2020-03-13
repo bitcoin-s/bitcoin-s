@@ -2,12 +2,13 @@ package org.bitcoins.rpc.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time._
 
+import org.bitcoins.core.config._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
+import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.script.{
   ScriptPubKey,
@@ -31,8 +32,6 @@ import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.util.{Failure, Success, Try}
-import org.bitcoins.core.config._
-import org.bitcoins.core.p2p.ServiceIdentifier
 
 object JsonReaders {
 
@@ -67,10 +66,21 @@ object JsonReaders {
       }
     }
   }
+
+  implicit object ZonedDateTimeReads extends Reads[ZonedDateTime] {
+    override def reads(json: JsValue): JsResult[ZonedDateTime] =
+      SerializerUtil.processJsNumberBigInt[ZonedDateTime](
+        bigInt =>
+          ZonedDateTime.ofInstant(Instant.ofEpochSecond(bigInt.toLong),
+                                  ZoneOffset.UTC))(json)
+  }
+
   implicit object LocalDateTimeReads extends Reads[LocalDateTime] {
     override def reads(json: JsValue): JsResult[LocalDateTime] =
-      SerializerUtil.processJsNumberBigInt[LocalDateTime](bigInt =>
-        LocalDateTime.ofEpochSecond(bigInt.toLong, 0, ZoneOffset.UTC))(json)
+      SerializerUtil.processJsNumberBigInt[LocalDateTime](
+        bigInt =>
+          LocalDateTime.ofInstant(Instant.ofEpochSecond(bigInt.toLong),
+                                  ZoneId.systemDefault()))(json)
   }
 
   implicit object BigIntReads extends Reads[BigInt] {
