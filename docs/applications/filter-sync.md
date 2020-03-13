@@ -26,12 +26,8 @@ import akka.actor.ActorSystem
 
 import org.bitcoins.core.gcs._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.chain.blockchain._
 import org.bitcoins.chain.blockchain.sync._
-import org.bitcoins.chain.models._
-import org.bitcoins.chain.config._
 
-import org.bitcoins.rpc.client.common._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain._
 import org.bitcoins.testkit.chain.fixture.BitcoindV19ChainHandler
