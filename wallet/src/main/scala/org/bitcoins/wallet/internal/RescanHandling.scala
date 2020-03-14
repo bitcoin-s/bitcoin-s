@@ -71,7 +71,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         range = startHeight.to(endHeight)
         matched <- FutureUtil.batchExecute(
           elements = range.toVector,
-          f = fetchFiltersInRange(scripts, parallelismLevel)(_),
+          f = fetchFiltersInRange(scripts, parallelismLevel),
           init = Vector.empty,
           batchSize = batchSize)
       } yield {
