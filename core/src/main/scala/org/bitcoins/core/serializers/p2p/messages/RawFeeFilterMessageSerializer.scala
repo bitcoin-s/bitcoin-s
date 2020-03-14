@@ -12,12 +12,13 @@ sealed abstract class RawFeeFilterMessageSerializer
   override def read(bytes: ByteVector): FeeFilterMessage = {
     val satBytes = bytes.take(8).reverse
     val sat = Satoshis(satBytes)
-    val satPerKb = SatoshisPerKiloByte(sat)
+    val satPerKb = SatoshisPerKiloByte(sat.toDouble)
     FeeFilterMessage(satPerKb)
   }
 
   override def write(feeFilterMessage: FeeFilterMessage): ByteVector = {
-    feeFilterMessage.feeRate.currencyUnit.satoshis.bytes.reverse
+    val sats = Satoshis(feeFilterMessage.feeRate.sats.toLong)
+    sats.bytes.reverse
   }
 }
 

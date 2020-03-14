@@ -60,14 +60,14 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     val listF =
       BitcoinTxBuilder(destinations = Vector.empty,
                        utxos = List(utxo),
-                       feeRate = SatoshisPerByte(1.sat),
+                       feeRate = SatoshisPerByte(1),
                        changeSPK = EmptyScriptPubKey,
                        network = RegTest)
 
     val vecF =
       BitcoinTxBuilder(destinations = Vector.empty,
                        utxos = List(utxo),
-                       feeRate = SatoshisPerByte(1.sat),
+                       feeRate = SatoshisPerByte(1),
                        changeSPK = EmptyScriptPubKey,
                        network = RegTest)
 
@@ -98,7 +98,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
     val utxoMap: UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val feeUnit = SatoshisPerVirtualByte.one
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
                                      feeRate = feeUnit,
@@ -129,7 +129,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
     val utxoMap: UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
+    val feeUnit = SatoshisPerVirtualByte(-1)
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
                                      feeRate = feeUnit,
@@ -158,7 +158,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                                            conditionalPath =
                                              ConditionalPath.NoConditionsLeft)
     val utxoMap: UTXOMap = Map(outPoint -> utxo)
-    val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
+    val feeUnit = SatoshisPerVirtualByte.one
     val txBuilder = BitcoinTxBuilder(destinations = destinations,
                                      utxos = utxoMap,
                                      feeRate = feeUnit,
@@ -205,7 +205,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
       conditionalPath = ConditionalPath.NoConditionsLeft
     )
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val feeUnit = SatoshisPerVirtualByte.one
     val txBuilderMap = BitcoinTxBuilder(destinations = destinations,
                                         utxos = utxoMap,
                                         feeRate = feeUnit,
@@ -287,7 +287,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     )
     val utxoMap: UTXOMap = Map(outPoint -> utxo)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val feeUnit = SatoshisPerVirtualByte.one
     val txBuilderWitness = BitcoinTxBuilder(destinations,
                                             utxoMap,
                                             feeUnit,
@@ -321,7 +321,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     )
     val utxoMap: UTXOMap = Map(outPoint -> utxo)
 
-    val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
+    val feeUnit = SatoshisPerVirtualByte.one
     val txBuilderWitness = BitcoinTxBuilder(destinations = destinations,
                                             utxos = utxoMap,
                                             feeRate = feeUnit,
@@ -401,7 +401,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
         Vector(cltvSpendingInfo),
-        SatoshisPerByte(Satoshis.one),
+        SatoshisPerByte(1),
         EmptyScriptPubKey,
         RegTest
       )
@@ -435,7 +435,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
         Vector(cltvSpendingInfo),
-        SatoshisPerByte(Satoshis.one),
+        SatoshisPerByte(1),
         EmptyScriptPubKey,
         RegTest
       )
@@ -483,7 +483,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
           TransactionOutput(Bitcoins.one + Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
         Vector(cltvSpendingInfo1, cltvSpendingInfo2),
-        SatoshisPerByte(Satoshis.one),
+        SatoshisPerByte(1),
         EmptyScriptPubKey,
         RegTest
       )
@@ -556,7 +556,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
-        val fee = SatoshisPerVirtualByte(Satoshis(1000))
+        val fee = SatoshisPerVirtualByte(1000)
         val builder = BitcoinTxBuilder(destinations,
                                        creditingTxsInfo,
                                        fee,
@@ -575,7 +575,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfo, destinations), changeSPK, network) =>
-        val fee = SatoshisPerByte(Satoshis(1000))
+        val fee = SatoshisPerByte(1000)
         val builder = BitcoinTxBuilder(destinations,
                                        creditingTxsInfo,
                                        fee,

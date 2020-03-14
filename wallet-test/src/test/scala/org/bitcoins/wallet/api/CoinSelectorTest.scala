@@ -29,7 +29,7 @@ class CoinSelectorTest extends BitcoinSWalletTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val output = TransactionOutput(99.sats, ScriptPubKey.empty)
-    val feeRate = SatoshisPerByte(CurrencyUnits.zero)
+    val feeRate = SatoshisPerByte(0)
 
     val utxo1 = SegwitV0SpendingInfo(
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,

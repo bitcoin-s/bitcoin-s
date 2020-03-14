@@ -10,7 +10,7 @@ class TxBuilderTest extends BitcoinSUnitTest {
   "TxBuilder" must "detect a bad fee on the tx" in {
     val estimatedFee = 1000.sats
     val actualFee = 1.sat
-    val feeRate = SatoshisPerVirtualByte(1.sat)
+    val feeRate = SatoshisPerVirtualByte.one
     TxBuilder
       .isValidFeeRange(estimatedFee, actualFee, feeRate)
       .isFailure must be(true)

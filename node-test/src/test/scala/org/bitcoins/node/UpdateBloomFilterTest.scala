@@ -132,9 +132,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
 
       addressFromBitcoind <- rpc.getNewAddress
       tx <- wallet
-        .sendToAddress(addressFromBitcoind,
-                       5.bitcoin,
-                       SatoshisPerByte(100.sats))
+        .sendToAddress(addressFromBitcoind, 5.bitcoin, SatoshisPerByte(100))
       _ = txFromWalletP.success(tx)
       updatedBloom <- spv.updateBloomFilter(tx).map(_.bloomFilter)
       _ = spv.broadcastTransaction(tx)

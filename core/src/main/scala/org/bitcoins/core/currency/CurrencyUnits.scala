@@ -116,6 +116,8 @@ sealed abstract class Satoshis extends CurrencyUnit {
 
   def toLong: Long = underlying.toLong
 
+  def toDouble: Double = toLong.toDouble
+
   def ==(satoshis: Satoshis): Boolean = underlying == satoshis.underlying
 }
 

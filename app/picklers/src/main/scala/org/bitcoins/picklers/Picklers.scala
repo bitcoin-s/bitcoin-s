@@ -1,8 +1,8 @@
 package org.bitcoins
 
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import upickle.default._
@@ -30,6 +30,5 @@ package object picklers {
 
   implicit val satoshisPerVirtualBytePickler: ReadWriter[
     SatoshisPerVirtualByte] =
-    readwriter[Long].bimap(_.currencyUnit.satoshis.toLong,
-                           l => SatoshisPerVirtualByte(Satoshis(l)))
+    readwriter[Double].bimap(_.sats, SatoshisPerVirtualByte(_))
 }

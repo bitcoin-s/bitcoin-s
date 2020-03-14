@@ -622,9 +622,9 @@ object TxBuilder {
     //See this link for more info on variance in size on ECDigitalSignatures
     //https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
-    val acceptableVariance = 40 * feeRate.toLong
-    val min = Satoshis(-acceptableVariance)
-    val max = Satoshis(acceptableVariance)
+    val acceptableVariance = 40 * feeRate.baseAmount
+    val min = Satoshis(-acceptableVariance.toLong)
+    val max = Satoshis(acceptableVariance.toLong)
     val difference = estimatedFee - actualFee
     if (difference <= min) {
       logger.error(
@@ -668,7 +668,7 @@ object BitcoinTxBuilder {
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
-    if (feeRate.toLong <= 0) {
+    if (feeRate.baseAmount <= 0) {
       Future.fromTry(TxBuilderError.LowFee)
     } else {
       Future.successful(

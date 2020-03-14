@@ -18,19 +18,19 @@ trait CurrencyUnitGenerator {
   def satsPerByte: Gen[SatoshisPerByte] = {
     for {
       curr <- positiveRealistic
-    } yield SatoshisPerByte(curr)
+    } yield SatoshisPerByte(curr.toDouble)
   }
 
   def satsPerKiloByte: Gen[SatoshisPerKiloByte] = {
     for {
       curr <- positiveRealistic
-    } yield SatoshisPerKiloByte(curr)
+    } yield SatoshisPerKiloByte(curr.toDouble)
   }
 
   def satsPerVirtualByte: Gen[SatoshisPerVirtualByte] = {
     for {
       curr <- positiveRealistic
-    } yield SatoshisPerVirtualByte(curr)
+    } yield SatoshisPerVirtualByte(curr.toDouble)
   }
 
   def feeUnit: Gen[FeeUnit] =
@@ -39,7 +39,7 @@ trait CurrencyUnitGenerator {
   /** Generates a FeeUnit based on the maxFee allowed for a transaction */
   def feeUnit(maxFee: Long): Gen[FeeUnit] = {
     Gen.choose(0L, maxFee / 10000L).map { n =>
-      SatoshisPerKiloByte(Satoshis(n))
+      SatoshisPerKiloByte(n.toDouble)
     }
   }
 

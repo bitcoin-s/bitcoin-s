@@ -55,7 +55,7 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           complete {
             // TODO dynamic fees based off mempool and recent blocks
             val feeRate =
-              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
+              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100))
             wallet.sendToAddress(address, bitcoins, feeRate).map { tx =>
               node.broadcastTransaction(tx)
               Server.httpSuccess(tx.txIdBE)

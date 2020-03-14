@@ -224,7 +224,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
       "nodeId" -> nodeId.toString,
       "fundingSatoshis" -> fundingSatoshis) ++ Seq(
       pushMsat.map(x => "pushMsat" -> x.toBigDecimal.toString),
-      feerateSatPerByte.map(x => "feerateSatPerByte" -> x.toLong.toString),
+      feerateSatPerByte.map(x => "feerateSatPerByte" -> x.baseAmount.toString),
       channelFlags.map(x => "channelFlags" -> x.toString),
       openTimeout.map(x => "openTimeoutSeconds" -> x.toSeconds.toString)
     ).flatten

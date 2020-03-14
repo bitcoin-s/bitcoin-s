@@ -50,7 +50,7 @@ object CliReaders {
       val arity: Int = 1
 
       val reads: String => SatoshisPerVirtualByte = str =>
-        SatoshisPerVirtualByte(Satoshis(BigInt(str)))
+        SatoshisPerVirtualByte(BigDecimal(str).toDouble)
     }
 
   implicit val blockStampReads: Read[BlockStamp] =

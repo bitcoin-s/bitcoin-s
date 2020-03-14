@@ -87,7 +87,7 @@ class SignerTest extends BitcoinSAsyncTest {
                 ScriptGenerators.scriptPubKey,
                 ChainParamsGenerator.bitcoinNetworkParams) {
       case ((creditingTxsInfos, destinations), changeSPK, network) =>
-        val fee = SatoshisPerVirtualByte(Satoshis(1000))
+        val fee = SatoshisPerVirtualByte(1000)
 
         for {
           builder <- BitcoinTxBuilder(destinations,

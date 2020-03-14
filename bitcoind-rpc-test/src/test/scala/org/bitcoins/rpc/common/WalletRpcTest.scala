@@ -487,7 +487,7 @@ class WalletRpcTest extends BitcoindRpcTest {
       info <- client.getWalletInfo
     } yield {
       assert(success)
-      assert(info.paytxfee == SatoshisPerByte(Satoshis(1000)))
+      assert(info.paytxfee == SatoshisPerByte(1000))
     }
   }
 

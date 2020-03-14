@@ -46,7 +46,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   }
 
   val TestAmount = 1.bitcoin
-  val FeeRate = SatoshisPerByte(10.sats)
+  val FeeRate = SatoshisPerByte(10)
   val TestFees = 2240.sats
 
   def callbacks: NodeCallbacks = {
