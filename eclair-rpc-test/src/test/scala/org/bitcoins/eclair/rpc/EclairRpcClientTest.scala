@@ -221,7 +221,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
           bitcoind <- bitcoindRpcClientF
-          _ <- openAndConfirmChannel(clientF, otherClientF)
+          _ <- EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
           _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
           _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
           invoice <- otherClient.createInvoice("abc", 50.msats)
@@ -244,7 +244,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
-          _ <- openAndConfirmChannel(clientF, otherClientF)
+          _ <- EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
           invoice <- otherClient.createInvoice("abc", 50.msats)
           info <- otherClient.getInfo
           _ = assert(info.nodeId == invoice.nodeId)
@@ -579,7 +579,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            channelId <- openAndConfirmChannel(clientF, otherClientF)
+            channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
+                                                                 otherClientF)
             otherClientNodeId <- otherClient.getInfo.map(_.nodeId)
             channels <- client.channels(otherClientNodeId)
             // without this we've been getting "route not found"
@@ -640,7 +641,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            channelId <- openAndConfirmChannel(clientF, otherClientF)
+            channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
+                                                                 otherClientF)
             preimage = PaymentPreimage.random
             invoice <- otherClient.createInvoice("test", amt, preimage)
             paymentId <- client.payInvoice(invoice)
@@ -687,7 +689,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            channelId <- openAndConfirmChannel(clientF, otherClientF)
+            channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
+                                                                 otherClientF)
             invoice <- otherClient.createInvoice("no amount")
             paymentId <- client.payInvoice(invoice, amt)
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
@@ -962,7 +965,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     val sendInBothDiercions = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
-          _ <- openAndConfirmChannel(clientF, otherClientF)
+          _ <- EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
 
           invoice <- otherClient.createInvoice("test", paymentAmount)
           paymentId <- client.payInvoice(invoice)
@@ -985,7 +988,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   it should "update the relay fee of a channel" in {
     val channelAndFeeF = for {
-      channel <- openAndConfirmChannel(clientF, otherClientF)
+      channel <- EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
       feeOpt <- clientF.flatMap(_.channel(channel).map(_.feeBaseMsat))
     } yield {
       assert(feeOpt.isDefined)
@@ -1005,7 +1008,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
 
   it should "update the relay fee of a channel with short channel id" in {
     val channelAndFeeF = for {
-      channelId <- openAndConfirmChannel(clientF, otherClientF)
+      channelId <- EclairRpcTestUtil.openAndConfirmChannel(clientF,
+                                                           otherClientF)
       client <- clientF
       channel <- client.channel(channelId)
     } yield {
@@ -1212,42 +1216,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
 
     recognizedOpenChannel
-  }
-
-  private def openAndConfirmChannel(
-      client1F: Future[EclairRpcClient],
-      client2F: Future[EclairRpcClient],
-      amount: CurrencyUnit = Satoshis(1000000)): Future[ChannelId] = {
-
-    val bitcoindRpcF = client1F.map(EclairRpcTestUtil.getBitcoindRpc(_))
-
-    val nodeId2F: Future[NodeId] = client2F.flatMap(_.getInfo.map(_.nodeId))
-
-    val channelIdF: Future[ChannelId] = {
-      nodeId2F.flatMap { nid2 =>
-        client1F.flatMap(_.open(nid2, amount))
-      }
-    }
-
-    //confirm the funding tx
-    val genF = for {
-      _ <- channelIdF
-      bitcoind <- bitcoindRpcF
-      address <- bitcoind.getNewAddress
-      headers <- bitcoind.generateToAddress(6, address)
-    } yield headers
-
-    channelIdF.flatMap { cid =>
-      genF.flatMap { _ =>
-        //wait until our peer has put the channel in the
-        //NORMAL state so we can route payments to them
-        val normalF = client2F.flatMap(c2 =>
-          EclairRpcTestUtil.awaitUntilChannelNormal(c2, cid))
-
-        normalF.map(_ => cid)
-
-      }
-    }
   }
 
   private def updateIsInChannels(channels: Seq[OpenChannelInfo])(

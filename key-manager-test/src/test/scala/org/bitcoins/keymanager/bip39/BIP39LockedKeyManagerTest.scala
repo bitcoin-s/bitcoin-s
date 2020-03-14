@@ -1,11 +1,8 @@
 package org.bitcoins.keymanager.bip39
 
 import org.bitcoins.core.crypto.AesPassword
-import org.bitcoins.keymanager.{
-  KeyManagerTestUtil,
-  KeyManagerUnitTest,
-  KeyManagerUnlockError
-}
+import org.bitcoins.keymanager.KeyManagerUnlockError
+import org.bitcoins.testkit.keymanager.{KeyManagerTestUtil, KeyManagerUnitTest}
 
 class BIP39LockedKeyManagerTest extends KeyManagerUnitTest {
 
