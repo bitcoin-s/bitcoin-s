@@ -12,7 +12,7 @@ read more about how neutrino works [here](https://suredbits.com/neutrino-what-is
 
 #### Callbacks
 
-We support call backs for the following events that happen on the bitcoin p2p network:
+Bitcoin-S support call backs for the following events that happen on the bitcoin p2p network:
 
 1. onTxReceived
 2. onBlockReceived
@@ -24,12 +24,18 @@ so that you can be notified of the event. Let's make a easy one
 
 #### Example
 
-Here is an example of constructing a neutrino node and registering a callback so you can be notified of an event
+Here is an example of constructing a neutrino node and registering a callback so you can be notified of an event.
+
+To run the example, we need a bitcoind binary that has neutrino support. Unforunately bitcoin core has not merged neutrino
+p2p network support yet ([pr here](https://github.com/bitcoin/bitcoin/pull/16442)) which means that we have built a custom binary and host it ourselves. You need
+to make sure to run `sbt downloadBitcoind` and then look for the `bitcoind` binary with neutrino support in
+`$HOME/.bitcoin-s/binaries/bitcoind/bitcoin-0.18.99/`. This binary is built from the open PR on bitcoin core.
 
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.node._
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.testkit.node._
 import org.bitcoins.testkit.node.fixture._
 import org.bitcoins.testkit.rpc._
@@ -48,8 +54,8 @@ implicit val system = ActorSystem(s"node-example")
 implicit val ec = system.dispatcher
 
 //we also require a bitcoind instance to connect to
-//so let's start one
-val instance = BitcoindRpcTestUtil.instance()
+//so let's start one (make sure you ran 'sbt downloadBitcoind')
+val instance = BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.Experimental))
 val p2pPort = instance.p2pPort
 val bitcoindF = BitcoindRpcTestUtil.startedBitcoindRpcClient(instance)
 
