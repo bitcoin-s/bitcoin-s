@@ -1,6 +1,7 @@
-package org.bitcoins.keymanager
+package org.bitcoins.testkit.keymanager
 
 import org.bitcoins.core.crypto.MnemonicCode
+import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
