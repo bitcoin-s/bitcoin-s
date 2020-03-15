@@ -4,13 +4,14 @@
     "Getting Setup": ["getting-setup"],
     "Applications": [
       "applications/cli",
-      "applications/configuration",
-      "applications/node",
       "applications/server"
     ],
     "Chain": [
       "chain/chain",
       "chain/filter-sync"
+    ],
+    "Configuration": [
+      "config/configuration"
     ],
     "Core Module": [
       "core/core-intro",
@@ -24,6 +25,9 @@
     ],
     "Key Manager": [
       "key-manager/key-manager"
+    ],
+    "Node": [
+      "node/node"
     ],
     "Wallet": [
       "wallet/wallet",
