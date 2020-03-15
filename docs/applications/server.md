@@ -10,7 +10,7 @@ The [server](../../app/server) project is the aggregation of these three sub pro
 
 1. [Wallet](../wallet/wallet.md)
 2. [Chain](../chain/chain.md)
-3. [Node](node.md)
+3. [Node](../node/node.md)
 
 The server project provides a away to access information from these three projects via a JSON RPC.
 
@@ -36,6 +36,6 @@ If you would like to pass in a custom datadir for your server, you can do
 ```bash
 ./app/server/target/universal/stage/bin/bitcoin-s-server --datadir /path/to/datadir/
 ```
-For more information on configuring the server please see our [configuration](configuration.md) document
+For more information on configuring the server please see our [configuration](../config/configuration.md) document
 
 For more information on how to use our built in `cli` to interact with the server please see [cli.md](cli.md)
