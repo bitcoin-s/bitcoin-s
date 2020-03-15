@@ -3,9 +3,9 @@ id: testkit
 title: Testkit
 ---
 
-## Philosphy of testkit
+## Philosphy of Testkit
 
-The high level of of the bitcoin-s testkit is to mimic provide functionality to test 3rd party applications.
+The high level of of the bitcoin-s testkit is to mimic and provide functionality to test 3rd party applications.
 
 There are other examples of these in the Scala ecosystem like the `akka-testkit` and `slick-testkit`.
 
@@ -44,6 +44,7 @@ implicit val ec = system.dispatcher
 
 //pick our bitcoind version we want to spin up
 //you can pick older versions if you want
+//we support versions 16-19
 val bitcoindV = BitcoindVersion.V19
 
 //create an instance
