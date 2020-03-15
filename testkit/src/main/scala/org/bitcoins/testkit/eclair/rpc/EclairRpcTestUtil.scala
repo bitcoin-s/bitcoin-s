@@ -9,7 +9,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.Sha256Digest
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
   ChannelState,
@@ -430,6 +430,43 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     genBlocksF.flatMap { _ =>
       nodeVecF.map { nodeVec =>
         EclairNodes4(nodeVec.head, nodeVec(1), nodeVec(2), nodeVec(3))
+      }
+    }
+  }
+
+  def openAndConfirmChannel(
+      client1F: Future[EclairRpcClient],
+      client2F: Future[EclairRpcClient],
+      amount: CurrencyUnit = Satoshis(1000000))(
+      implicit system: ActorSystem): Future[ChannelId] = {
+    import system.dispatcher
+    val bitcoindRpcF = client1F.map(EclairRpcTestUtil.getBitcoindRpc(_))
+
+    val nodeId2F: Future[NodeId] = client2F.flatMap(_.getInfo.map(_.nodeId))
+
+    val channelIdF: Future[ChannelId] = {
+      nodeId2F.flatMap { nid2 =>
+        client1F.flatMap(_.open(nid2, amount))
+      }
+    }
+
+    //confirm the funding tx
+    val genF = for {
+      _ <- channelIdF
+      bitcoind <- bitcoindRpcF
+      address <- bitcoind.getNewAddress
+      headers <- bitcoind.generateToAddress(6, address)
+    } yield headers
+
+    channelIdF.flatMap { cid =>
+      genF.flatMap { _ =>
+        //wait until our peer has put the channel in the
+        //NORMAL state so we can route payments to them
+        val normalF = client2F.flatMap(c2 =>
+          EclairRpcTestUtil.awaitUntilChannelNormal(c2, cid))
+
+        normalF.map(_ => cid)
+
       }
     }
   }
