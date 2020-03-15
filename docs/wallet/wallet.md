@@ -14,8 +14,8 @@ This is because it (nor the documentation) is not deemed production
 ready. Use at your own risk, and without too much money depending on it.
 
 ### Disclaimer 
-The wallet api will changing significantly in the next release of bitcoin-s. EXPECT API BREAKING CHANGES and surprising
-behavior in the current wallet.
+The wallet api will changing significantly in the next release of bitcoin-s. EXPECT API BREAKING CHANGES and
+surprising behavior from the current wallet..
 
 ### How is the bitcoin-s wallet implemented
 
