@@ -42,7 +42,7 @@ sealed abstract class Pow {
 
             nonMinDiffF match {
               case Some(bh) => bh.nBits
-              case None     =>
+              case None =>
                 config.chain match {
                   case RegTestNetChainParams =>
                     RegTestNetChainParams.compressedPowLimit

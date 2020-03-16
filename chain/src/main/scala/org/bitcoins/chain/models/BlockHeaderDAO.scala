@@ -142,8 +142,8 @@ case class BlockHeaderDAO()(
   }
 
   /** Gets ancestor block headers starting with the given block hash (inclusive)
-   * These headers are guaranteed to be in order and a valid chain.
-   * */
+    * These headers are guaranteed to be in order and a valid chain.
+    * */
   def getNAncestors(
       childHash: DoubleSha256DigestBE,
       n: Int): Future[Vector[BlockHeaderDb]] = {
@@ -160,11 +160,14 @@ case class BlockHeaderDAO()(
       }
     } yield {
       if (headerOpt.isDefined) {
-        val blockchains = Blockchain.reconstructFromHeaders(headerOpt.get, headers)
-        require(blockchains.length == 1 || blockchains.isEmpty, s"Can only have one blockchain when walking backwards, got=${blockchains.length}")
+        val blockchains =
+          Blockchain.reconstructFromHeaders(headerOpt.get, headers)
+        require(
+          blockchains.length == 1 || blockchains.isEmpty,
+          s"Can only have one blockchain when walking backwards, got=${blockchains.length}")
         blockchains.headOption match {
           case Some(h) => h.toVector
-          case None =>
+          case None    =>
             //if we couldn't build a blockchain at all,
             //form a trivial with the given childHash
             Vector(headerOpt.get)
