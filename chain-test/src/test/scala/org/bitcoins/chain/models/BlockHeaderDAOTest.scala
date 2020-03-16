@@ -208,28 +208,39 @@ class BlockHeaderDAOTest extends ChainUnitTest {
       val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
       val createdF = blockHeaderDAO.create(blockHeader)
 
+      val noGenesisAncestorsF =
+        blockHeaderDAO.getNAncestors(childHash =
+                                       genesisHeaderDb.blockHeader.hashBE,
+                                     n = 1)
+
+      val foundGenesisF =
+        blockHeaderDAO.getNAncestors(childHash =
+                                       genesisHeaderDb.blockHeader.hashBE,
+                                     n = 0)
       val emptyAssertion = for {
-        children <- blockHeaderDAO.getNAncestors(
-          ancestorHash = genesisHeaderDb.blockHeader.hashBE,
-          n = 1)
+        noGenesisAncestors <- noGenesisAncestorsF
+        foundGenesis <- foundGenesisF
       } yield {
-        assert(children.length == 1)
-        assert(children == Vector(genesisHeaderDb))
+        assert(noGenesisAncestors.length == 1)
+        assert(noGenesisAncestors == Vector(ChainUnitTest.genesisHeaderDb))
+
+        assert(foundGenesis.length == 1)
+        assert(foundGenesis == Vector(ChainUnitTest.genesisHeaderDb))
       }
 
       val oneChildF = for {
         created <- createdF
-        children <- blockHeaderDAO.getNAncestors(ancestorHash =
+        children <- blockHeaderDAO.getNAncestors(childHash =
                                                    created.blockHeader.hashBE,
                                                  n = 1)
       } yield {
         assert(children.length == 2)
-        assert(children == Vector(genesisHeaderDb, created))
+        assert(children == Vector(created, genesisHeaderDb))
       }
 
       val bashHash = DoubleSha256DigestBE.empty
       val hashDoesNotExistF = for {
-        children <- blockHeaderDAO.getNAncestors(ancestorHash = bashHash, n = 1)
+        children <- blockHeaderDAO.getNAncestors(childHash = bashHash, n = 1)
       } yield {
         assert(children.isEmpty)
       }

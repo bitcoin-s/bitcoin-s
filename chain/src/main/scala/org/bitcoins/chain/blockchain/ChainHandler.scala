@@ -195,7 +195,7 @@ case class ChainHandler(
 
     val filterHeadersToCreateF: Future[Vector[CompactFilterHeaderDb]] = for {
       blockHeaders <- blockHeaderDAO
-        .getNAncestors(ancestorHash = stopHash, n = filterHeaders.size - 1)
+        .getNAncestors(childHash = stopHash, n = filterHeaders.size - 1)
         .map(_.sortBy(_.height))
     } yield {
       if (blockHeaders.size != filterHeaders.size) {

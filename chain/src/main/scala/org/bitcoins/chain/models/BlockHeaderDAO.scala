@@ -141,21 +141,37 @@ case class BlockHeaderDAO()(
     }
   }
 
-  /** Gets Block Headers of all children starting with the given block hash (inclusive), could be out of order */
+  /** Gets ancestor block headers starting with the given block hash (inclusive)
+   * These headers are guaranteed to be in order and a valid chain.
+   * */
   def getNAncestors(
-      ancestorHash: DoubleSha256DigestBE,
+      childHash: DoubleSha256DigestBE,
       n: Int): Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting $n ancestors for blockhash=$ancestorHash")
+    logger.debug(s"Getting $n ancestors for blockhash=$childHash")
+    val headerOptF = findByHash(childHash)
     for {
-      headerOpt <- findByHash(ancestorHash)
-      res <- headerOpt match {
+      headerOpt <- headerOptF
+      headers <- headerOpt match {
         case Some(header) =>
-          getBetweenHeights(Math.max(header.height - n, 0), header.height)
+          val startHeight = Math.max(header.height - n, 0)
+          getBetweenHeights(startHeight, header.height)
         case None =>
           Future.successful(Vector.empty)
       }
     } yield {
-      res
+      if (headerOpt.isDefined) {
+        val blockchains = Blockchain.reconstructFromHeaders(headerOpt.get, headers)
+        require(blockchains.length == 1 || blockchains.isEmpty, s"Can only have one blockchain when walking backwards, got=${blockchains.length}")
+        blockchains.headOption match {
+          case Some(h) => h.toVector
+          case None =>
+            //if we couldn't build a blockchain at all,
+            //form a trivial with the given childHash
+            Vector(headerOpt.get)
+        }
+      } else {
+        Vector.empty
+      }
     }
   }
 
