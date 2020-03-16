@@ -198,6 +198,7 @@ trait GetHeadersMessage extends DataPayload {
     val count = hashCount.toInt
     // only display first hash, otherwise this gets really long
     val hashesStr = hashes match {
+      case Nil         => "empty"
       case head +: Nil => head.toString
       case head +: _   => s"$head, ..."
     }
