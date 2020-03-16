@@ -18,8 +18,6 @@ package org.bitcoin;
 
 import org.scijava.nativelib.NativeLoader;
 
-import java.util.Properties;
-
 /**
  * This class holds the context reference used in native methods 
  * to handle ECDSA operations.
@@ -49,7 +47,9 @@ public class Secp256k1Context {
 
   public static boolean isEnabled() {
       String secpDisabled = System.getenv("DISABLE_SECP256K1");
-      if (secpDisabled != null && secpDisabled.equals("true")) {
+      if (secpDisabled != null &&
+              (secpDisabled.toLowerCase().equals("true") ||
+                      secpDisabled.equals("1"))) {
           return false;
       } else {
           return enabled;

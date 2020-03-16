@@ -51,6 +51,7 @@ class ECPublicKeyTest extends BitcoinSUnitTest {
           assert(sumKey == sumKeyExpected)
       }
     } else {
+      // No other implementation to compare to
       succeed
     }
   }
