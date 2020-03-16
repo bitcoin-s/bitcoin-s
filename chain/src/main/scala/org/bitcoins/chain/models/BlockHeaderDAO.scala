@@ -142,9 +142,10 @@ case class BlockHeaderDAO()(
   }
 
   /** Gets Block Headers of all children starting with the given block hash (inclusive), could be out of order */
-  def getNChildren(
+  def getNAncestors(
       ancestorHash: DoubleSha256DigestBE,
       n: Int): Future[Vector[BlockHeaderDb]] = {
+    logger.debug(s"Getting $n ancestors for blockhash=$ancestorHash")
     for {
       headerOpt <- findByHash(ancestorHash)
       res <- headerOpt match {
