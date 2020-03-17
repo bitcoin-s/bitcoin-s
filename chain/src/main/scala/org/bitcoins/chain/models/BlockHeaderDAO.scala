@@ -160,18 +160,9 @@ case class BlockHeaderDAO()(
       }
     } yield {
       if (headerOpt.isDefined) {
-        val blockchains =
-          Blockchain.reconstructFromHeaders(headerOpt.get, headers)
-        require(
-          blockchains.length == 1 || blockchains.isEmpty,
-          s"Can only have one blockchain when walking backwards, got=${blockchains.length}")
-        blockchains.headOption match {
-          case Some(h) => h.toVector
-          case None    =>
-            //if we couldn't build a blockchain at all,
-            //form a trivial with the given childHash
-            Vector(headerOpt.get)
-        }
+        val connectedHeaders =
+          Blockchain.connectWalkBackwards(headerOpt.get, headers)
+        connectedHeaders.reverse
       } else {
         Vector.empty
       }

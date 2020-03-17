@@ -118,7 +118,7 @@ private[blockchain] trait BaseBlockChainCompObject
           //found a header to connect to!
           val prevBlockHeader = blockchain.headers(prevHeaderIdx)
           logger.debug(
-            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
+            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers")
           val chain = blockchain.fromValidHeader(prevBlockHeader)
           val tipResult =
             TipValidation.checkNewTip(newPotentialTip = header, chain)
@@ -240,18 +240,18 @@ private[blockchain] trait BaseBlockChainCompObject
   @tailrec
   final def connectWalkBackwards(
       current: BlockHeaderDb,
-      accum: Vector[BlockHeader],
-      ancestors: Vector[BlockHeaderDb])(
-      implicit chainAppConfig: ChainAppConfig): Vector[BlockHeader] = {
+      ancestors: Vector[BlockHeaderDb],
+      accum: Vector[BlockHeaderDb] = Vector.empty)(
+      implicit chainAppConfig: ChainAppConfig): Vector[BlockHeaderDb] = {
     val prevHeaderOpt = ancestors.find(_.hashBE == current.previousBlockHashBE)
     prevHeaderOpt match {
       case Some(h) =>
         connectWalkBackwards(current = h,
-                             accum = current.blockHeader +: accum,
+                             accum = current +: accum,
                              ancestors = ancestors)
       case None =>
         logger.debug(s"No prev found for $current hashBE=${current.hashBE}")
-        current.blockHeader +: accum
+        current +: accum
     }
   }
 
@@ -283,7 +283,7 @@ private[blockchain] trait BaseBlockChainCompObject
 
     //now let's connect headers
     val blockchainUpdateOpt = initBlockchainOpt.map { initBlockchain =>
-      Blockchain.connectHeadersToChains(orderedHeaders.tail,
+      Blockchain.connectHeadersToChains(orderedHeaders.tail.map(_.blockHeader),
                                         Vector(initBlockchain))
     }
 
