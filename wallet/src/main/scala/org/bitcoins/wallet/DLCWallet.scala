@@ -236,7 +236,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       changeSPK = txBuilder.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
       changeAddr = Bech32Address(changeSPK, network)
 
-      client = BinaryOutcomeDLCClient.fromOffer(
+      client = DLCClient.fromOffer(
         offer,
         keyManager.rootExtPrivKey
           .deriveChildPrivKey(account.hdAccount), // todo change to a ExtSign.deriveAndSignFuture
@@ -339,7 +339,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       spendingInfoDbs <- listUtxos(fundingInputs.map(_.outPoint))
       spendingInfos = spendingInfoDbs.flatMap(
         _.toUTXOSpendingInfo(keyManager).toSingles)
-      client = BinaryOutcomeDLCClient.fromOfferAndAccept(
+      client = DLCClient.fromOfferAndAccept(
         offer.toDLCOffer(fundingInputs.map(_.toOutputReference)),
         accept,
         keyManager.rootExtPrivKey.deriveChildPrivKey(dlc.account),
@@ -428,8 +428,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputs: Vector[DLCFundingInputDb],
-      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[
-    (BinaryOutcomeDLCClient, SetupDLC)] = {
+      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[(DLCClient, SetupDLC)] = {
     val extPrivKey = keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
 
     val offerInputs =

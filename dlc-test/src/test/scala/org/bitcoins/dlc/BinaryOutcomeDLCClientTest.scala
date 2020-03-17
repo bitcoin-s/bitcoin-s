@@ -97,7 +97,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
         for {
           txBuilder <- txBuilderF
           _ <- badFeeF
-          tx <- BinaryOutcomeDLCClient.subtractFeeAndSign(txBuilder)
+          tx <- DLCClient.subtractFeeAndSign(txBuilder)
         } yield {
           val diffs = outputs.zip(tx.outputs).map {
             case (before, after) =>
@@ -206,7 +206,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
   // Offer is local
-  val dlcOffer: BinaryOutcomeDLCClient = BinaryOutcomeDLCClient(
+  val dlcOffer: DLCClient = DLCClient(
     outcomeWin = outcomeWin,
     outcomeLose = outcomeLose,
     oraclePubKey = oraclePubKey,
@@ -231,7 +231,7 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
   )
 
   // Accept is remote
-  val dlcAccept: BinaryOutcomeDLCClient = BinaryOutcomeDLCClient(
+  val dlcAccept: DLCClient = DLCClient(
     outcomeWin = outcomeWin,
     outcomeLose = outcomeLose,
     oraclePubKey = oraclePubKey,

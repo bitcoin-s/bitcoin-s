@@ -109,7 +109,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
 
   val csvTimeout: UInt32 = UInt32(30)
 
-  def constructDLC(): Future[(BinaryOutcomeDLCClient, BinaryOutcomeDLCClient)] = {
+  def constructDLC(): Future[(DLCClient, DLCClient)] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }
@@ -203,7 +203,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
       val localVout = localFundingUtxos.head.outPoint.vout
       val remoteVout = remoteFundingUtxos.head.outPoint.vout
 
-      val acceptDLC = BinaryOutcomeDLCClient(
+      val acceptDLC = DLCClient(
         outcomeWin = outcomeWin,
         outcomeLose = outcomeLose,
         oraclePubKey = oraclePubKey,
@@ -232,7 +232,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
         network = RegTest
       )
 
-      val offerDLC = BinaryOutcomeDLCClient(
+      val offerDLC = DLCClient(
         outcomeWin = outcomeWin,
         outcomeLose = outcomeLose,
         oraclePubKey = oraclePubKey,
@@ -309,8 +309,8 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def setupDLC(
-      dlcAccept: BinaryOutcomeDLCClient,
-      dlcOffer: BinaryOutcomeDLCClient): Future[(SetupDLC, SetupDLC)] = {
+      dlcAccept: DLCClient,
+      dlcOffer: DLCClient): Future[(SetupDLC, SetupDLC)] = {
     val offerSigReceiveP =
       Promise[CETSignatures]()
     val sendAcceptSigs = { sigs: CETSignatures =>
@@ -378,7 +378,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def constructAndSetupDLC(): Future[
-    (BinaryOutcomeDLCClient, SetupDLC, BinaryOutcomeDLCClient, SetupDLC)] = {
+    (DLCClient, SetupDLC, DLCClient, SetupDLC)] = {
     for {
       (acceptDLC, offerDLC) <- constructDLC()
       (acceptSetup, offerSetup) <- setupDLC(acceptDLC, offerDLC)
