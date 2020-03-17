@@ -15,6 +15,7 @@ sealed abstract class WalletDbManagement extends DbManagement {
   private val dlcOfferTable = TableQuery[DLCOfferTable]
   private val dlcAcceptTable = TableQuery[DLCAcceptTable]
   private val dlcInputsTable = TableQuery[DLCFundingInputsTable]
+  private val dlcSigsTable = TableQuery[DLCCETSignatureTable]
 
   override val allTables: List[TableQuery[_ <: Table[_]]] =
     List(accountTable,
@@ -26,7 +27,8 @@ sealed abstract class WalletDbManagement extends DbManagement {
          dlcTable,
          dlcOfferTable,
          dlcAcceptTable,
-         dlcInputsTable)
+         dlcInputsTable,
+         dlcSigsTable)
 
 }
 

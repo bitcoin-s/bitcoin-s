@@ -309,11 +309,15 @@ object DLCMessage {
             mutable.LinkedHashMap("outpoint" -> Str(input.outPoint.hex),
                                   "output" -> Str(input.output.hex)))
 
-      val cetSigsJson =
-        mutable.LinkedHashMap("winSig" -> Str(cetSigs.winSig.hex),
-                              "loseSig" -> Str(cetSigs.loseSig.hex),
-                              "refundSig" -> Str(cetSigs.refundSig.hex))
+      val outcomeSigsJson =
+        cetSigs.outcomeSigs.map {
+          case (hash, sig) =>
+            mutable.LinkedHashMap(hash.hex -> Str(sig.hex))
+        }
 
+      val cetSigsJson =
+        mutable.LinkedHashMap("outcomeSigs" -> Value(outcomeSigsJson),
+                              "refundSig" -> Str(cetSigs.refundSig.hex))
       val pubKeysJson =
         mutable.LinkedHashMap(
           "fundingKey" -> Str(pubKeys.fundingKey.hex),
@@ -397,13 +401,18 @@ object DLCMessage {
             case (_, value) =>
               implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
 
-              val winSig = getValue("winSig")
-              val loseSig = getValue("loseSig")
+              val outcomeSigsMap = getValue("outcomeSigs")
+              val outcomeSigs = outcomeSigsMap.arr.map { v =>
+                val (key, value) = v.obj.head
+                val hash = Sha256DigestBE(key)
+                val sig = PartialSignature(value.str)
+                (hash, sig)
+              }
+
               val refundSig = getValue("refundSig")
 
               CETSignatures(
-                PartialSignature(winSig.str),
-                PartialSignature(loseSig.str),
+                outcomeSigs.toMap,
                 PartialSignature(refundSig.str)
               )
           }
@@ -439,9 +448,14 @@ object DLCMessage {
           (builder, element) => builder += element)
         .result()
 
+      val outcomeSigsJson =
+        cetSigs.outcomeSigs.map {
+          case (hash, sig) =>
+            mutable.LinkedHashMap(hash.hex -> Str(sig.hex))
+        }
+
       val cetSigsJson =
-        mutable.LinkedHashMap("winSig" -> Str(cetSigs.winSig.hex),
-                              "loseSig" -> Str(cetSigs.loseSig.hex),
+        mutable.LinkedHashMap("outcomeSigs" -> Value(outcomeSigsJson),
                               "refundSig" -> Str(cetSigs.refundSig.hex))
 
       Obj(
@@ -466,13 +480,18 @@ object DLCMessage {
             case (_, value) =>
               implicit val obj: mutable.LinkedHashMap[String, Value] = value.obj
 
-              val winSig = getValue("winSig")
-              val loseSig = getValue("loseSig")
+              val outcomeSigsMap = getValue("outcomeSigs")
+              val outcomeSigs = outcomeSigsMap.arr.map { item =>
+                val (key, value) = item.obj.head
+                val hash = Sha256DigestBE(key)
+                val sig = PartialSignature(value.str)
+                (hash, sig)
+              }
+
               val refundSig = getValue("refundSig")
 
               CETSignatures(
-                PartialSignature(winSig.str),
-                PartialSignature(loseSig.str),
+                outcomeSigs.toMap,
                 PartialSignature(refundSig.str)
               )
           }
