@@ -3,9 +3,9 @@ id: secp256k1
 title: Secp256k1
 ---
 
-[Libsecp256k1](https://github.com/bitcoin-core/secp256k1) is a optimized C library used to create and verify digital signatures on the secp256k1 curve.
+[Libsecp256k1](https://github.com/bitcoin-core/secp256k1) is used to preform cryptographic operations on the secp256k1 curve.
 This is the curve that bitcoin uses. There is a _signficant_ speedup when using this library compared to java crypto libraries
-like bouncy castle. 
+like bouncy castle.
 
 In bitcoin-s, we support native binaries for libsecp256k1
 
@@ -15,7 +15,7 @@ In bitcoin-s, we support native binaries for libsecp256k1
 4. [windows 64 bit](../../secp256k1jni/natives/windows_64)
 
 Bitcoin-s uses a zero dependency library called [`native-lib-loader`](https://github.com/scijava/native-lib-loader). 
-The does the appropriate loading of the library onto your classpath to be accessed. 
+That does the appropriate loading of the library onto your classpath to be accessed.
 
 #### Using libsecp256k1
 
@@ -28,9 +28,9 @@ import org.bitcoins.core.crypto._
 ```
 
 ```scala mdoc:compile-only
-val isEnabled = Secp256k1Context.isEnabled()
+val isEnabled = org.bitcoin.Secp256k1Context.isEnabled()
 
-println(s"isEnabled=${isEnabled}")
+println(s"Secp256k1Context.isEnabled=${isEnabled}")
 ```
 
 If libsecp256k1 is enabled, you can use [NativeSecp256k1](../../secp256k1jni/src/main/java/org/bitcoin/NativeSecp256k1.java)
