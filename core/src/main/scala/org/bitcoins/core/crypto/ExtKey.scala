@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoin.NativeSecp256k1
+import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.NetworkElement
@@ -200,7 +200,12 @@ sealed abstract class ExtPrivateKey
     val (il, ir) = hmac.splitAt(32)
     //should be ECGroup addition
     //parse256(IL) + kpar (mod n)
-    val tweak = NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
+    val tweak = if (Secp256k1Context.isEnabled) {
+      NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
+    } else {
+      val sum = BouncyCastleUtil.addNumbers(key.bytes, il)
+      sum.toByteArray
+    }
     val childKey = ECPrivateKey(ByteVector(tweak))
     val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)
     ExtPrivateKey(version, depth + UInt8.one, fp, idx, ChainCode(ir), childKey)
@@ -353,10 +358,15 @@ sealed abstract class ExtPublicKey extends ExtKey {
       val hmac = CryptoUtil.hmac512(chainCode.bytes, data)
       val (il, ir) = hmac.splitAt(32)
       val priv = ECPrivateKey(il)
-      val tweaked = NativeSecp256k1.pubKeyTweakAdd(key.bytes.toArray,
-                                                   hmac.toArray,
-                                                   priv.isCompressed)
-      val childPubKey = ECPublicKey(ByteVector(tweaked))
+      val childPubKey = if (Secp256k1Context.isEnabled) {
+        val tweaked = NativeSecp256k1.pubKeyTweakAdd(key.bytes.toArray,
+                                                     il.toArray,
+                                                     priv.isCompressed)
+        ECPublicKey(ByteVector(tweaked))
+      } else {
+        val tweak = ECPrivateKey.fromBytes(il).publicKey
+        key.add(tweak)
+      }
 
       //we do not handle this case since it is impossible
       //In case parse256(IL) ≥ n or Ki is the point at infinity, the resulting key is invalid,
