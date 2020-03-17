@@ -20,12 +20,15 @@ object BouncyCastleUtil {
   private val G: ECPoint = CryptoParams.curve.getG
   private val N: BigInteger = CryptoParams.curve.getN
 
-  private def number(bytes: ByteVector): BigInteger = {
+  private def getBigInteger(bytes: ByteVector): BigInteger = {
     new BigInteger(1, bytes.toArray)
   }
 
   def addNumbers(num1: ByteVector, num2: ByteVector): BigInteger = {
-    number(num1).add(number(num2)).mod(N)
+    val bigInteger1 = getBigInteger(num1)
+    val bigInteger2 = getBigInteger(num2)
+
+    bigInteger1.add(bigInteger2).mod(N)
   }
 
   def decodePoint(bytes: ByteVector): ECPoint = {
@@ -50,7 +53,7 @@ object BouncyCastleUtil {
   }
 
   def computePublicKey(privateKey: ECPrivateKey): ECPublicKey = {
-    val priv = number(privateKey.bytes)
+    val priv = getBigInteger(privateKey.bytes)
     val point = G.multiply(priv)
     val pubBytes = ByteVector(point.getEncoded(privateKey.isCompressed))
     require(
@@ -66,7 +69,8 @@ object BouncyCastleUtil {
     val signer: ECDSASigner = new ECDSASigner(
       new HMacDSAKCalculator(new SHA256Digest()))
     val privKey: ECPrivateKeyParameters =
-      new ECPrivateKeyParameters(number(privateKey.bytes), CryptoParams.curve)
+      new ECPrivateKeyParameters(getBigInteger(privateKey.bytes),
+                                 CryptoParams.curve)
     signer.init(true, privKey)
     val components: Array[BigInteger] =
       signer.generateSignature(dataToSign.toArray)

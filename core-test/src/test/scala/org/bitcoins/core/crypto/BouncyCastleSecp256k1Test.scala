@@ -20,7 +20,23 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     }
   }
 
-  it must "add keys the same" in {
+  it must "add private keys the same" in {
+    forAll(CryptoGenerators.privateKey, CryptoGenerators.privateKey) {
+      case (priv1, priv2) =>
+        val sumWithBouncyCastle =
+          BouncyCastleUtil.addNumbers(priv1.bytes, priv2.bytes)
+        val sumWithSecp = NativeSecp256k1.privKeyTweakAdd(priv1.bytes.toArray,
+                                                          priv2.bytes.toArray)
+
+        val sumKeyWithBouncyCastle =
+          ECPrivateKey(ByteVector(sumWithBouncyCastle.toByteArray))
+        val sumKeyWithSecp = ECPrivateKey(ByteVector(sumWithSecp))
+
+        assert(sumKeyWithBouncyCastle == sumKeyWithSecp)
+    }
+  }
+
+  it must "add public keys the same" in {
     forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
       case (pubKey, privKey) =>
         val sumKeyBytes =
@@ -28,7 +44,7 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
                                          privKey.bytes.toArray,
                                          true)
         val sumKeyExpected = ECPublicKey.fromBytes(ByteVector(sumKeyBytes))
-        val sumKey = pubKey.add(privKey.publicKey) // This uses Bouncy Castle
+        val sumKey = pubKey.addWithBouncyCastle(privKey.publicKey)
 
         assert(sumKey == sumKeyExpected)
     }

@@ -45,6 +45,11 @@ public class Secp256k1Context {
       context = contextRef;
   }
 
+  /**
+   * Detects whether or not the libsecp256k1 binaries were successfully
+   * loaded in static initialization above. Useful in enabling a fallback
+   * to Bouncy Castle implementations in the case of having no libsecp present.
+   */
   public static boolean isEnabled() {
       String secpDisabled = System.getenv("DISABLE_SECP256K1");
       if (secpDisabled != null &&

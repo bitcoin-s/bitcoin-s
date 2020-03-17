@@ -1,7 +1,5 @@
 package org.bitcoins.core.crypto
 
-import java.math.BigInteger
-
 import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}

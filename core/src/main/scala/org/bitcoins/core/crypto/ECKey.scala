@@ -372,6 +372,10 @@ sealed abstract class ECPublicKey extends BaseECKey {
     * get wrapped in NativeSecp256k1 to speed things up.
     */
   def add(otherKey: ECPublicKey): ECPublicKey = {
+    addWithBouncyCastle(otherKey)
+  }
+
+  def addWithBouncyCastle(otherKey: ECPublicKey): ECPublicKey = {
     val sumPoint = toPoint.add(otherKey.toPoint)
 
     ECPublicKey.fromPoint(sumPoint)
