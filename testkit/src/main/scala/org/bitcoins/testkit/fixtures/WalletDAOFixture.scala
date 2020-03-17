@@ -17,7 +17,8 @@ case class WalletDAOs(
     dlcDAO: DLCDAO,
     dlcOfferDAO: DLCOfferDAO,
     dlcAcceptDAO: DLCAcceptDAO,
-    dlcInputsDAO: DLCFundingInputDAO)
+    dlcInputsDAO: DLCFundingInputDAO,
+    dlcSigsDAO: DLCCETSignatureDAO)
 
 trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
 
@@ -32,6 +33,7 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
     val dlcOfferDAO = DLCOfferDAO()
     val dlcAcceptDAO = DLCAcceptDAO()
     val dlcInputsDAO = DLCFundingInputDAO()
+    val dlcSigsDAO = DLCCETSignatureDAO()
     WalletDAOs(
       accountDAO = account,
       addressDAO = address,
@@ -42,7 +44,8 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
       dlcDAO = dlc,
       dlcOfferDAO = dlcOfferDAO,
       dlcAcceptDAO = dlcAcceptDAO,
-      dlcInputsDAO = dlcInputsDAO
+      dlcInputsDAO = dlcInputsDAO,
+      dlcSigsDAO = dlcSigsDAO
     )
   }
 

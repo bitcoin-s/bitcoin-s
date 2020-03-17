@@ -11,8 +11,6 @@ case class DLCDb(
     isInitiator: Boolean,
     account: HDAccount,
     keyIndex: Int,
-    winSigOpt: Option[PartialSignature],
-    loseSigOpt: Option[PartialSignature],
     refundSigOpt: Option[PartialSignature],
     oracleSigOpt: Option[SchnorrDigitalSignature])
 
@@ -28,12 +26,6 @@ class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
 
   def keyIndex: Rep[Int] = column("keyIndex")
 
-  def initiatorWinSigOpt: Rep[Option[PartialSignature]] =
-    column("initiatorWinSig")
-
-  def initiatorLoseSigOpt: Rep[Option[PartialSignature]] =
-    column("initiatorLoseSig")
-
   def initiatorRefundSigOpt: Rep[Option[PartialSignature]] =
     column("initiatorRefundSig")
 
@@ -45,8 +37,6 @@ class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
       HDAccount,
       Int,
       Option[PartialSignature],
-      Option[PartialSignature],
-      Option[PartialSignature],
       Option[SchnorrDigitalSignature])
 
   private val fromTuple: DLCTuple => DLCDb = {
@@ -54,8 +44,6 @@ class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
           isInitiator,
           account,
           keyIndex,
-          initiatorWinSigOpt,
-          initiatorLoseSigOpt,
           initiatorRefundSigOpt,
           oracleSigOpt) =>
       DLCDb(
@@ -63,8 +51,6 @@ class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
         isInitiator,
         account,
         keyIndex,
-        initiatorWinSigOpt,
-        initiatorLoseSigOpt,
         initiatorRefundSigOpt,
         oracleSigOpt
       )
@@ -76,8 +62,6 @@ class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
        dlc.isInitiator,
        dlc.account,
        dlc.keyIndex,
-       dlc.winSigOpt,
-       dlc.loseSigOpt,
        dlc.refundSigOpt,
        dlc.oracleSigOpt))
 
@@ -86,8 +70,6 @@ class DLCTable(tag: Tag) extends Table[DLCDb](tag, "wallet_dlcs") {
      isInitiator,
      account,
      keyIndex,
-     initiatorWinSigOpt,
-     initiatorLoseSigOpt,
      initiatorRefundSigOpt,
      oracleSigOpt) <> (fromTuple, toTuple)
 

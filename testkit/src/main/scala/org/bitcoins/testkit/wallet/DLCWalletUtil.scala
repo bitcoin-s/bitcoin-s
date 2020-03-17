@@ -91,8 +91,11 @@ trait DLCWalletUtil {
   lazy val sampleDLCEventId: Sha256DigestBE =
     DLCMessage.calcEventId(sampleOracleInfo, sampleContractInfo, dummyTimeouts)
 
+  lazy val dummyOutcomeSigs: Map[Sha256DigestBE, PartialSignature] =
+    Map(winHash -> dummyPartialSig, loseHash -> dummyPartialSig)
+
   lazy val dummyCETSigs: CETSignatures =
-    CETSignatures(dummyPartialSig, dummyPartialSig, dummyPartialSig)
+    CETSignatures(dummyOutcomeSigs, dummyPartialSig)
 
   lazy val sampleDLCAccept: DLCAccept = DLCAccept(
     Satoshis(5000),
@@ -116,8 +119,6 @@ trait DLCWalletUtil {
     isInitiator = true,
     account = HDAccount.fromPath(BIP32Path.fromString("m/84'/0'/0'")).get,
     keyIndex = 0,
-    winSigOpt = None,
-    loseSigOpt = None,
     refundSigOpt = None,
     oracleSigOpt = Some(sampleOracleLoseSig)
   )

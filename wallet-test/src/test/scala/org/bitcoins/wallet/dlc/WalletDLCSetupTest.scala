@@ -84,11 +84,13 @@ class WalletDLCSetupTest extends BitcoinSWalletTest {
       _ <- fundedWallet.acceptDLCOffer(offer) // must initialize the dlc in the database
 
       dlcDb <- fundedWallet.addDLCSigs(sigs)
+      outcomeSigs <- fundedWallet.dlcSigsDAO.findByEventId(sigs.eventId)
     } yield {
       assert(dlcDb.eventId == sigs.eventId)
-      assert(dlcDb.winSigOpt.isDefined)
-      assert(dlcDb.loseSigOpt.isDefined)
       assert(dlcDb.refundSigOpt.isDefined)
+      assert(dlcDb.refundSigOpt.get === sigs.cetSigs.refundSig)
+      assert(sigs.cetSigs.outcomeSigs.forall(sig =>
+        outcomeSigs.exists(_.toTuple == sig)))
     }
   }
 }
