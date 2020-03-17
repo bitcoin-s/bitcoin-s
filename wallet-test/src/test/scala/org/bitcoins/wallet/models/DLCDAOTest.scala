@@ -58,7 +58,8 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
     val dlcDAO = daos.dlcDAO
     val acceptDAO = daos.dlcAcceptDAO
 
-    val acceptDb = DLCAcceptDb.fromDLCAccept(DLCWalletUtil.sampleDLCAccept)
+    val acceptDb =
+      DLCAcceptDb.fromDLCAccept(DLCWalletUtil.sampleDLCAccept)
 
     verifyDatabaseInsertion(acceptDb, eventId, acceptDAO, dlcDAO)
   }
@@ -113,5 +114,51 @@ class DLCDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
         readInput <- inputsDAO.findByEventId(eventId, isInitiator = true)
       } yield assert(readInput.size == 2)
+  }
+
+  it should "correctly insert CET signatures into the database" in { daos =>
+    val dlcDAO = daos.dlcDAO
+    val sigsDAO = daos.dlcSigsDAO
+
+    val sig = DLCCETSignatureDb(
+      eventId = eventId,
+      outcomeHash = DLCWalletUtil.winHash,
+      signature = DLCWalletUtil.dummyPartialSig
+    )
+
+    verifyDatabaseInsertion(sig,
+                            (sig.eventId, sig.outcomeHash),
+                            sigsDAO,
+                            dlcDAO)
+  }
+
+  it should "correctly find CET signatures by eventId" in { daos =>
+    val dlcDAO = daos.dlcDAO
+    val sigsDAO = daos.dlcSigsDAO
+
+    val sigs = Vector(
+      DLCCETSignatureDb(
+        eventId = eventId,
+        outcomeHash = DLCWalletUtil.winHash,
+        signature = DLCWalletUtil.dummyPartialSig
+      ),
+      DLCCETSignatureDb(
+        eventId = eventId,
+        outcomeHash = DLCWalletUtil.loseHash,
+        signature = DLCWalletUtil.dummyPartialSig
+      )
+    )
+
+    for {
+      _ <- dlcDAO.create(dlcDb)
+      _ <- sigsDAO.createAll(sigs)
+
+      readInput <- sigsDAO.findByEventId(eventId)
+    } yield {
+      assert(readInput.size == 2)
+      // Do it this way so ordering doesn't matter
+      assert(readInput.contains(sigs.head))
+      assert(readInput.contains(sigs.last))
+    }
   }
 }

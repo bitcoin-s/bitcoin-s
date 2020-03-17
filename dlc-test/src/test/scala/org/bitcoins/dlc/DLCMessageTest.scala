@@ -36,6 +36,9 @@ class DLCMessageTest extends BitcoinSAsyncTest {
   val dummyAddress: BitcoinAddress = BitcoinAddress(
     "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get
 
+  val dummyHash: Sha256DigestBE = Sha256DigestBE(
+    "00000000000000000008bba30d4d0fb53dcbffb601557de9f16d257d4f1985b7")
+
   val dummySig: PartialSignature =
     PartialSignature(dummyPubKey, DummyECDigitalSignature)
 
@@ -60,7 +63,7 @@ class DLCMessageTest extends BitcoinSAsyncTest {
         DLCPublicKeys(dummyPubKey, dummyPubKey2, dummyAddress),
         Vector.empty,
         dummyAddress,
-        CETSignatures(dummySig, dummySig, dummySig),
+        CETSignatures(Map(dummyHash -> dummySig), dummySig),
         Sha256DigestBE(ByteVector.low(32))
       )
     )

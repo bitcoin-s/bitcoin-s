@@ -16,15 +16,15 @@ case class DLCAcceptDb(
     toLocalCETKey: ECPublicKey,
     finalAddress: BitcoinAddress,
     totalCollateral: CurrencyUnit,
-    winSig: PartialSignature,
-    loseSig: PartialSignature,
     refundSig: PartialSignature,
     changeAddress: BitcoinAddress) {
 
-  def toDLCAccept(fundingInputs: Vector[OutputReference]): DLCAccept = {
+  def toDLCAccept(
+      fundingInputs: Vector[OutputReference],
+      outcomeSigs: Map[Sha256DigestBE, PartialSignature]): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
-    val cetSigs = CETSignatures(winSig, loseSig, refundSig)
+    val cetSigs = CETSignatures(outcomeSigs, refundSig)
     DLCAccept(totalCollateral.satoshis,
               pubKeys,
               fundingInputs,
@@ -43,8 +43,6 @@ object DLCAcceptDb {
       accept.pubKeys.toLocalCETKey,
       accept.pubKeys.finalAddress,
       accept.totalCollateral,
-      accept.cetSigs.winSig,
-      accept.cetSigs.loseSig,
       accept.cetSigs.refundSig,
       accept.changeAddress
     )
@@ -66,10 +64,6 @@ class DLCAcceptTable(tag: Tag)
 
   def totalCollateral: Rep[CurrencyUnit] = column("totalCollateral")
 
-  def winSig: Rep[PartialSignature] = column("winSig")
-
-  def loseSig: Rep[PartialSignature] = column("loseSig")
-
   def refundSig: Rep[PartialSignature] = column("refundSig")
 
   def changeAddress: Rep[BitcoinAddress] = column("changeAddress")
@@ -81,8 +75,6 @@ class DLCAcceptTable(tag: Tag)
       BitcoinAddress,
       CurrencyUnit,
       PartialSignature,
-      PartialSignature,
-      PartialSignature,
       BitcoinAddress)
 
   private val fromTuple: DLCTuple => DLCAcceptDb = {
@@ -91,8 +83,6 @@ class DLCAcceptTable(tag: Tag)
           toLocalCETKey,
           finalAddress,
           totalCollateral,
-          winSig,
-          loseSig,
           refundSig,
           changeAddress) =>
       DLCAcceptDb(eventId,
@@ -100,8 +90,6 @@ class DLCAcceptTable(tag: Tag)
                   toLocalCETKey,
                   finalAddress,
                   totalCollateral,
-                  winSig,
-                  loseSig,
                   refundSig,
                   changeAddress)
   }
@@ -113,8 +101,6 @@ class DLCAcceptTable(tag: Tag)
        dlc.toLocalCETKey,
        dlc.finalAddress,
        dlc.totalCollateral,
-       dlc.winSig,
-       dlc.loseSig,
        dlc.refundSig,
        dlc.changeAddress))
 
@@ -124,8 +110,6 @@ class DLCAcceptTable(tag: Tag)
      toLocalCETKey,
      finalAddress,
      totalCollateral,
-     winSig,
-     loseSig,
      refundSig,
      changeAddress) <> (fromTuple, toTuple)
 

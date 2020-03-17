@@ -585,7 +585,9 @@ case class BinaryOutcomeDLCClient(
       (_, _, remoteLoseSig) <- createCETLoseRemote()
       (_, remoteRefundSig) <- createRefundSig()
     } yield {
-      CETSignatures(remoteWinSig, remoteLoseSig, remoteRefundSig)
+      val remoteOutcomeSigs =
+        Map(outcomeWin -> remoteWinSig, outcomeLose -> remoteLoseSig)
+      CETSignatures(remoteOutcomeSigs, remoteRefundSig)
     }
   }
 
@@ -609,12 +611,16 @@ case class BinaryOutcomeDLCClient(
       (cetWinRemote, cetWinRemoteWitness, remoteWinSig) <- createCETWinRemote()
       (cetLoseRemote, cetLoseRemoteWitness, remoteLoseSig) <- createCETLoseRemote()
       (_, remoteRefundSig) <- createRefundSig()
-      cetSigs = CETSignatures(remoteWinSig, remoteLoseSig, remoteRefundSig)
+      remoteOutcomeSigs = Map(outcomeWin -> remoteWinSig,
+                              outcomeLose -> remoteLoseSig)
+      cetSigs = CETSignatures(remoteOutcomeSigs, remoteRefundSig)
       _ <- sendSigs(cetSigs)
       (cetSigs, fundingSigs) <- getSigs
 
-      (cetWinLocalF, cetWinLocalWitness) = createCETWin(cetSigs.winSig)
-      (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(cetSigs.loseSig)
+      winSig = cetSigs.outcomeSigs.find(_._1 == outcomeWin).get._2
+      loseSig = cetSigs.outcomeSigs.find(_._1 == outcomeLose).get._2
+      (cetWinLocalF, cetWinLocalWitness) = createCETWin(winSig)
+      (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(loseSig)
       cetWinLocal <- cetWinLocalF
       cetLoseLocal <- cetLoseLocalF
       (refundTx, _) <- createRefundTx(cetSigs.refundSig)
@@ -652,8 +658,10 @@ case class BinaryOutcomeDLCClient(
     require(isInitiator, "You should call setupDLCAccept")
 
     getSigs.flatMap {
-      case CETSignatures(winSig, loseSig, refundSig) =>
+      case CETSignatures(outcomeSigs, refundSig) =>
         // Construct all CETs
+        val winSig = outcomeSigs.find(_._1 == outcomeWin).get._2
+        val loseSig = outcomeSigs.find(_._1 == outcomeLose).get._2
         val (cetWinLocalF, cetWinLocalWitness) = createCETWin(winSig)
         val (cetLoseLocalF, cetLoseLocalWitness) = createCETLose(loseSig)
         val cetWinRemoteF = createCETWinRemote()
@@ -666,7 +674,9 @@ case class BinaryOutcomeDLCClient(
           (cetWinRemote, cetWinRemoteWitness, remoteWinSig) <- cetWinRemoteF
           (cetLoseRemote, cetLoseRemoteWitness, remoteLoseSig) <- cetLoseRemoteF
           (refundTx, remoteRefundSig) <- refundTxF
-          cetSigs = CETSignatures(remoteWinSig, remoteLoseSig, remoteRefundSig)
+          remoteOutcomeSigs = Map(outcomeWin -> remoteWinSig,
+                                  outcomeLose -> remoteLoseSig)
+          cetSigs = CETSignatures(remoteOutcomeSigs, remoteRefundSig)
           localFundingSigs <- createFundingTransactionSigs()
           _ <- sendSigs(cetSigs, localFundingSigs)
           fundingTx <- getFundingTx
@@ -1254,6 +1264,5 @@ case class FundingSignatures(
 }
 
 case class CETSignatures(
-    winSig: PartialSignature,
-    loseSig: PartialSignature,
+    outcomeSigs: Map[Sha256DigestBE, PartialSignature],
     refundSig: PartialSignature)

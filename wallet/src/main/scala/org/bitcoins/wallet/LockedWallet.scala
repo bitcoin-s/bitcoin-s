@@ -29,6 +29,7 @@ abstract class LockedWallet
   private[wallet] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
   private[wallet] val dlcDAO: DLCDAO = DLCDAO()
   private[wallet] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
+  private[wallet] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
 
   override def isEmpty(): Future[Boolean] =
