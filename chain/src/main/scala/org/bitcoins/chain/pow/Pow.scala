@@ -49,7 +49,7 @@ sealed abstract class Pow {
                   case TestNetChainParams | MainNetChainParams =>
                     //if we can't find a non min diffulty block, let's just fail
                     throw new RuntimeException(
-                      s"Could not find non mindiffulty block in chain of size=${blockchain.length}! hash=${tip.hashBE.hex} height=${currentHeight}")
+                      s"Could not find non mindifficulty block in chain of size=${blockchain.length}! hash=${tip.hashBE.hex} height=${currentHeight}")
                 }
 
             }
