@@ -21,7 +21,7 @@ import org.bitcoins.core.protocol.{
   P2SHAddress
 }
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerKiloByte}
+import org.bitcoins.core.wallet.fee.{BitcoinFeeRate, SatoshisPerKiloByte}
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
@@ -69,7 +69,7 @@ object JsonSerializers {
   implicit val transactionReads: Reads[Transaction] = TransactionReads
   implicit val transactionOutPointReads: Reads[TransactionOutPoint] =
     TransactionOutPointReads
-  implicit val bitcoinFeeUnitReads: Reads[BitcoinFeeUnit] = BitcoinFeeUnitReads
+  implicit val bitcoinFeeUnitReads: Reads[BitcoinFeeRate] = BitcoinFeeUnitReads
   implicit val fileReads: Reads[File] = FileReads
   implicit val uRIReads: Reads[URI] = URIReads
   implicit val scriptSignatureReads: Reads[ScriptSignature] =

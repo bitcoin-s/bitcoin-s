@@ -3,7 +3,7 @@ package org.bitcoins.wallet.api
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
+import org.bitcoins.core.wallet.fee.{FeeRate, SatoshisPerByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{
@@ -18,7 +18,7 @@ import org.scalatest.FutureOutcome
 class CoinSelectorTest extends BitcoinSWalletTest {
   case class CoinSelectionFixture(
       output: TransactionOutput,
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       utxo1: SpendingInfoDb,
       utxo2: SpendingInfoDb,
       utxo3: SpendingInfoDb) {
@@ -29,7 +29,7 @@ class CoinSelectorTest extends BitcoinSWalletTest {
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val output = TransactionOutput(99.sats, ScriptPubKey.empty)
-    val feeRate = SatoshisPerByte(0)
+    val feeRate = SatoshisPerByte.zero
 
     val utxo1 = SegwitV0SpendingInfo(
       txid = CryptoGenerators.doubleSha256Digest.sampleSome.flip,

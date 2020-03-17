@@ -14,7 +14,7 @@ import org.bitcoins.core.psbt.PSBT.SpendingInfoAndNonWitnessTxs
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.FeeRate
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
   UTXOSpendingInfoFull
@@ -193,7 +193,7 @@ object PSBTGenerators {
       destinations: Seq[TransactionOutput],
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork,
-      fee: FeeUnit)(
+      fee: FeeRate)(
       implicit ec: ExecutionContext): Future[(PSBT, BitcoinTxBuilder)] = {
     val builderF =
       BitcoinTxBuilder(destinations, creditingTxsInfo, fee, changeSPK, network)
@@ -227,7 +227,7 @@ object PSBTGenerators {
         val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
         crediting - spending
       }
-      fee <- CurrencyUnitGenerator.feeUnit(maxFee)
+      fee <- CurrencyUnitGenerator.feeRate(maxFee)
     } yield {
       psbtAndBuilderFromInputs(finalized = finalized,
                                creditingTxsInfo = creditingTxsInfo,
@@ -256,7 +256,7 @@ object PSBTGenerators {
         val spending = destinations.foldLeft(0L)(_ + _.value.satoshis.toLong)
         crediting - spending
       }
-      fee <- CurrencyUnitGenerator.feeUnit(maxFee)
+      fee <- CurrencyUnitGenerator.feeRate(maxFee)
     } yield {
       val pAndB = psbtAndBuilderFromInputs(finalized = finalized,
                                            creditingTxsInfo = creditingTxsInfo,

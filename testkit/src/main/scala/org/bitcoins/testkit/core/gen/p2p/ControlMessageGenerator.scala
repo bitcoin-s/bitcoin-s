@@ -16,9 +16,12 @@ import org.bitcoins.testkit.core.gen.{
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{
+  FlatSatoshis,
+  SatoshisPerByte,
+  SatoshisPerKiloByte,
+  SatoshisPerVirtualByte
+}
 
 object ControlMessageGenerator {
 
@@ -36,12 +39,12 @@ object ControlMessageGenerator {
 
   def feeFilterMessage: Gen[FeeFilterMessage] = {
     for {
-      fee <- CurrencyUnitGenerator.feeUnit.suchThat(
+      fee <- CurrencyUnitGenerator.feeRate.suchThat(
         !_.isInstanceOf[SatoshisPerVirtualByte])
     } yield fee match {
       case fee: SatoshisPerByte     => FeeFilterMessage(fee)
       case fee: SatoshisPerKiloByte => FeeFilterMessage(fee)
-      case SatoshisPerVirtualByte(_) =>
+      case SatoshisPerVirtualByte(_) | FlatSatoshis(_) =>
         throw new RuntimeException(s"We cannot end up here")
     }
   }

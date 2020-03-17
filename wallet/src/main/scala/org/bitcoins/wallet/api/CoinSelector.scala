@@ -2,7 +2,7 @@ package org.bitcoins.wallet.api
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.FeeRate
 import org.bitcoins.wallet.models.SpendingInfoDb
 
 import scala.annotation.tailrec
@@ -17,7 +17,7 @@ trait CoinSelector {
   def accumulateLargest(
       walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
+      feeRate: FeeRate): Vector[SpendingInfoDb] = {
     val sortedUtxos =
       walletUtxos.sortBy(_.output.value).reverse
 
@@ -33,7 +33,7 @@ trait CoinSelector {
   def accumulateSmallestViable(
       walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
+      feeRate: FeeRate): Vector[SpendingInfoDb] = {
     val sortedUtxos = walletUtxos.sortBy(_.output.value)
 
     accumulate(sortedUtxos, outputs, feeRate)
@@ -43,7 +43,7 @@ trait CoinSelector {
   def accumulate(
       walletUtxos: Vector[SpendingInfoDb],
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit): Vector[SpendingInfoDb] = {
+      feeRate: FeeRate): Vector[SpendingInfoDb] = {
     val totalValue = outputs.foldLeft(CurrencyUnits.zero) {
       case (totVal, output) => totVal + output.value
     }

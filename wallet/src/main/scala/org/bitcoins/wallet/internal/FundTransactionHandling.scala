@@ -4,7 +4,7 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.FeeRate
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.api.{AddressInfo, CoinSelector, LockedWalletApi}
@@ -16,7 +16,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       markAsReserved: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
@@ -29,7 +29,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       fromAccount: AccountDb,
       markAsReserved: Boolean = false): Future[Transaction] = {
     val txBuilderF =
@@ -54,7 +54,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
     * */
   private[wallet] def fundRawTransactionInternal(
       destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       fromAccount: AccountDb,
       keyManagerOpt: Option[BIP39KeyManager],
       markAsReserved: Boolean = false): Future[BitcoinTxBuilder] = {

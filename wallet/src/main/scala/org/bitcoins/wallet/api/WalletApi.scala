@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.FeeRate
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
@@ -353,7 +353,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       fromAccount: AccountDb): Future[Transaction]
 
   /**
@@ -364,7 +364,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit
+      feeRate: FeeRate
   ): Future[Transaction] = {
     for {
       account <- getDefaultAccount()

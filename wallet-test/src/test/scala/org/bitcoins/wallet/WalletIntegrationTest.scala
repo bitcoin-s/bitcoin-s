@@ -19,7 +19,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
   behavior of "Wallet - integration test"
 
-  val feeRate: SatoshisPerByte = SatoshisPerByte(1)
+  val feeRate: SatoshisPerByte = SatoshisPerByte.one
 
   /** Checks that the given vaues are the same-ish, save for fee-level deviations */
   private def isCloseEnough(

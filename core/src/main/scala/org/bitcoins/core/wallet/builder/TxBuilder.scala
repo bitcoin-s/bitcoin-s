@@ -17,7 +17,7 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.FeeRate
 import org.bitcoins.core.wallet.signer._
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
@@ -87,9 +87,9 @@ sealed abstract class TxBuilder {
 
   def utxos: Seq[UTXOSpendingInfoFull] = utxoMap.values.toSeq
 
-  /** This represents the rate, in [[org.bitcoins.core.wallet.fee.FeeUnit FeeUnit]], we
+  /** This represents the rate, in [[org.bitcoins.core.wallet.fee.FeeRate FeeRate]], we
     * should pay for this transaction */
-  def feeRate: FeeUnit
+  def feeRate: FeeRate
 
   /**
     * This is where all the money that is NOT sent to destination outputs is spent too.
@@ -607,7 +607,7 @@ object TxBuilder {
   def isValidFeeRange(
       estimatedFee: CurrencyUnit,
       actualFee: CurrencyUnit,
-      feeRate: FeeUnit): Try[Unit] = {
+      feeRate: FeeRate): Try[Unit] = {
 
     //what the number '40' represents is the allowed variance -- in bytes -- between the size of the two
     //versions of signed tx. I believe the two signed version can vary in size because the digital
@@ -647,7 +647,7 @@ object BitcoinTxBuilder {
   private case class BitcoinTxBuilderImpl(
       destinations: Seq[TransactionOutput],
       utxoMap: UTXOMap,
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork)
       extends BitcoinTxBuilder
@@ -665,7 +665,7 @@ object BitcoinTxBuilder {
   def apply(
       destinations: Seq[TransactionOutput],
       utxos: BitcoinTxBuilder.UTXOMap,
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
     if (feeRate.baseAmount <= 0) {
@@ -679,7 +679,7 @@ object BitcoinTxBuilder {
   def apply(
       destinations: Seq[TransactionOutput],
       utxos: Seq[BitcoinUTXOSpendingInfoFull],
-      feeRate: FeeUnit,
+      feeRate: FeeRate,
       changeSPK: ScriptPubKey,
       network: BitcoinNetwork): Future[BitcoinTxBuilder] = {
     @tailrec

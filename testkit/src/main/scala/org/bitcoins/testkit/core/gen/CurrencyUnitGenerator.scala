@@ -8,7 +8,7 @@ import org.bitcoins.core.currency.{
 }
 import org.bitcoins.core.protocol.ln.currency._
 import org.scalacheck.Gen
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.FeeRate
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -33,11 +33,11 @@ trait CurrencyUnitGenerator {
     } yield SatoshisPerVirtualByte(curr.toDouble)
   }
 
-  def feeUnit: Gen[FeeUnit] =
+  def feeRate: Gen[FeeRate] =
     Gen.oneOf(satsPerByte, satsPerKiloByte, satsPerVirtualByte)
 
-  /** Generates a FeeUnit based on the maxFee allowed for a transaction */
-  def feeUnit(maxFee: Long): Gen[FeeUnit] = {
+  /** Generates a FeeRate based on the maxFee allowed for a transaction */
+  def feeRate(maxFee: Long): Gen[FeeRate] = {
     Gen.choose(0L, maxFee / 10000L).map { n =>
       SatoshisPerKiloByte(n.toDouble)
     }

@@ -60,14 +60,14 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     val listF =
       BitcoinTxBuilder(destinations = Vector.empty,
                        utxos = List(utxo),
-                       feeRate = SatoshisPerByte(1),
+                       feeRate = SatoshisPerByte.one,
                        changeSPK = EmptyScriptPubKey,
                        network = RegTest)
 
     val vecF =
       BitcoinTxBuilder(destinations = Vector.empty,
                        utxos = List(utxo),
-                       feeRate = SatoshisPerByte(1),
+                       feeRate = SatoshisPerByte.one,
                        changeSPK = EmptyScriptPubKey,
                        network = RegTest)
 
@@ -401,7 +401,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
         Vector(cltvSpendingInfo),
-        SatoshisPerByte(1),
+        SatoshisPerByte.one,
         EmptyScriptPubKey,
         RegTest
       )
@@ -435,7 +435,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
         Vector(cltvSpendingInfo),
-        SatoshisPerByte(1),
+        SatoshisPerByte.one,
         EmptyScriptPubKey,
         RegTest
       )
@@ -483,7 +483,7 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
           TransactionOutput(Bitcoins.one + Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
         Vector(cltvSpendingInfo1, cltvSpendingInfo2),
-        SatoshisPerByte(1),
+        SatoshisPerByte.one,
         EmptyScriptPubKey,
         RegTest
       )

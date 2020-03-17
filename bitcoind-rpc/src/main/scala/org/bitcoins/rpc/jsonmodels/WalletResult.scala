@@ -16,7 +16,7 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.core.wallet.fee.BitcoinFeeRate
 import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 
 sealed abstract class WalletResult
@@ -85,7 +85,7 @@ case class GetWalletInfoResult(
     keypoololdest: UInt32,
     keypoolsize: Int,
     keypoolsize_hd_internal: Int,
-    paytxfee: BitcoinFeeUnit,
+    paytxfee: BitcoinFeeRate,
     hdmasterkeyid: Option[Sha256Hash160Digest],
     unlocked_until: Option[Int])
     extends WalletResult
