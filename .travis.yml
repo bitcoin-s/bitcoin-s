@@ -30,6 +30,13 @@ matrix:
         - TEST_COMMAND="test:compile"
       scala:
         - 2.11.12
+    - os: linux
+      name: "Secp256k1 Disabled Core Test"
+      env:
+        - DISABLE_SECP256K1="true"
+        - TEST_COMMAND="coreTest/test"
+      scala:
+        - 2.13.1
     - os: osx
       name: "macOS bitcoind and eclair tests"
       env:

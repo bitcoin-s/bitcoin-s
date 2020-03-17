@@ -1,9 +1,11 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoin.NativeSecp256k1
+import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
+
+import scala.concurrent.ExecutionContext
 
 class ECPublicKeyTest extends BitcoinSUnitTest {
 
@@ -37,16 +39,20 @@ class ECPublicKeyTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "add keys correctly" in {
-    forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
-      case (pubKey, privKey) =>
-        val sumKeyBytes = NativeSecp256k1.pubKeyTweakAdd(pubKey.bytes.toArray,
-                                                         privKey.bytes.toArray,
-                                                         true)
-        val sumKeyExpected = ECPublicKey.fromBytes(ByteVector(sumKeyBytes))
-        val sumKey = pubKey.add(privKey.publicKey)
+  it must "decompress keys correctly" in {
+    forAll(CryptoGenerators.privateKey) { privKey =>
+      val pubKey = privKey.publicKey
 
-        assert(sumKey == sumKeyExpected)
+      assert(privKey.isCompressed)
+      assert(pubKey.isCompressed)
+
+      val decompressedPrivKey =
+        ECPrivateKey(privKey.bytes, isCompressed = false)(
+          ExecutionContext.global)
+      val decompressedPubKey = pubKey.decompressed
+
+      assert(decompressedPrivKey.publicKey == decompressedPubKey)
+      assert(pubKey.bytes.tail == decompressedPubKey.bytes.splitAt(33)._1.tail)
     }
   }
 }
