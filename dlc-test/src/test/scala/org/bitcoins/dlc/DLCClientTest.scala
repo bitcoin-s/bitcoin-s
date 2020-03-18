@@ -118,119 +118,98 @@ class DLCClientTest extends BitcoinSAsyncTest {
   val preCommittedK: SchnorrNonce = SchnorrNonce.freshNonce
   val preCommittedR: ECPublicKey = preCommittedK.publicKey
 
-  def genOutcomes(size: Int): Vector[String] = {
-    (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
-  }
+  val localInput: CurrencyUnit = CurrencyUnits.oneBTC
+  val remoteInput: CurrencyUnit = CurrencyUnits.oneBTC
+  val totalInput: CurrencyUnit = localInput + remoteInput
 
-  def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
-    val vals = if (size < 2) {
-      throw new IllegalArgumentException(
-        s"Size must be at least two, got $size")
-    } else if (size == 2) {
-      Vector(totalAmount.satoshis, Satoshis.zero)
-    } else {
-      (0 until size - 2).map { _ =>
-        Satoshis(scala.util.Random.nextInt(totalAmount.satoshis.toLong.toInt))
-      }.toVector :+ totalAmount.satoshis :+ Satoshis.zero
-    }
+  val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
+  val inputPrivKeyRemote: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val inputPubKeyRemote: ECPublicKey = inputPrivKeyRemote.publicKey
 
-    val valsWithOrder = vals.map(_ -> scala.util.Random.nextDouble())
-    valsWithOrder.sortBy(_._2).map(_._1)
-  }
+  val blockTimeToday: BlockTime = BlockTime(
+    UInt32(System.currentTimeMillis() / 1000))
+
+  val localFundingTx: Transaction = BaseTransaction(
+    TransactionConstants.validLockVersion,
+    Vector.empty,
+    Vector(
+      TransactionOutput(localInput * 2,
+                        P2WPKHWitnessSPKV0(inputPrivKeyLocal.publicKey))),
+    UInt32.zero
+  )
+
+  val localFundingUtxos = Vector(
+    P2WPKHV0SpendingInfo(
+      outPoint = TransactionOutPoint(localFundingTx.txId, UInt32.zero),
+      amount = localInput * 2,
+      scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyLocal),
+      signer = inputPrivKeyLocal,
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WPKHWitnessV0(inputPrivKeyLocal.publicKey)
+    )
+  )
+
+  val remoteFundingTx: Transaction = BaseTransaction(
+    TransactionConstants.validLockVersion,
+    Vector.empty,
+    Vector(
+      TransactionOutput(remoteInput * 2,
+                        P2WPKHWitnessSPKV0(inputPrivKeyRemote.publicKey))),
+    UInt32.zero
+  )
+
+  val remoteFundingUtxos = Vector(
+    P2WPKHV0SpendingInfo(
+      outPoint = TransactionOutPoint(remoteFundingTx.txId, UInt32.zero),
+      amount = remoteInput * 2,
+      scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyRemote),
+      signer = inputPrivKeyRemote,
+      hashType = HashType.sigHashAll,
+      scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
+    )
+  )
+
+  val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
+    ECPublicKey.freshPublicKey)
+
+  val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
+    ECPublicKey.freshPublicKey)
+
+  val offerExtPrivKey: ExtPrivateKey =
+    ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
+
+  val acceptExtPrivKey: ExtPrivateKey =
+    ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
+
+  val localFundingInputs: Vector[OutputReference] =
+    Vector(
+      OutputReference(TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
+                      localFundingTx.outputs.head))
+
+  val remoteFundingInputs: Vector[OutputReference] =
+    Vector(
+      OutputReference(TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
+                      remoteFundingTx.outputs.head))
+
+  val timeouts: DLCTimeouts =
+    DLCTimeouts(UInt32.zero,
+                blockTimeToday,
+                BlockTime(UInt32(blockTimeToday.time.toLong + 1)))
+
+  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
   def constructDLCClients(
       numOutcomes: Int): (DLCClient, DLCClient, Vector[Sha256DigestBE]) = {
-    val outcomes: Vector[String] = genOutcomes(numOutcomes)
+    val outcomes: Vector[String] = DLCTestUtil.genOutcomes(numOutcomes)
     val outcomeHashes =
       outcomes.map(msg => CryptoUtil.sha256(ByteVector(msg.getBytes)).flip)
 
-    val localInput: CurrencyUnit = CurrencyUnits.oneBTC
-    val remoteInput: CurrencyUnit = CurrencyUnits.oneBTC
-    val totalInput: CurrencyUnit = localInput + remoteInput
-
     val outcomeMap =
-      outcomeHashes.zip(genValues(numOutcomes, totalInput)).toMap
+      outcomeHashes.zip(DLCTestUtil.genValues(numOutcomes, totalInput)).toMap
     val remoteOutcomeMap = outcomeMap.map {
       case (hash, amt) => (hash, (totalInput - amt).satoshis)
     }
-
-    val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
-    val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
-    val inputPrivKeyRemote: ECPrivateKey = ECPrivateKey.freshPrivateKey
-    val inputPubKeyRemote: ECPublicKey = inputPrivKeyRemote.publicKey
-
-    val blockTimeToday: BlockTime = BlockTime(
-      UInt32(System.currentTimeMillis() / 1000))
-
-    val localFundingTx: Transaction = BaseTransaction(
-      TransactionConstants.validLockVersion,
-      Vector.empty,
-      Vector(
-        TransactionOutput(localInput * 2,
-                          P2WPKHWitnessSPKV0(inputPrivKeyLocal.publicKey))),
-      UInt32.zero
-    )
-
-    val localFundingUtxos = Vector(
-      P2WPKHV0SpendingInfo(
-        outPoint = TransactionOutPoint(localFundingTx.txId, UInt32.zero),
-        amount = localInput * 2,
-        scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyLocal),
-        signer = inputPrivKeyLocal,
-        hashType = HashType.sigHashAll,
-        scriptWitness = P2WPKHWitnessV0(inputPrivKeyLocal.publicKey)
-      )
-    )
-
-    val remoteFundingTx: Transaction = BaseTransaction(
-      TransactionConstants.validLockVersion,
-      Vector.empty,
-      Vector(
-        TransactionOutput(remoteInput * 2,
-                          P2WPKHWitnessSPKV0(inputPrivKeyRemote.publicKey))),
-      UInt32.zero
-    )
-
-    val remoteFundingUtxos = Vector(
-      P2WPKHV0SpendingInfo(
-        outPoint = TransactionOutPoint(remoteFundingTx.txId, UInt32.zero),
-        amount = remoteInput * 2,
-        scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyRemote),
-        signer = inputPrivKeyRemote,
-        hashType = HashType.sigHashAll,
-        scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
-      )
-    )
-
-    val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
-      ECPublicKey.freshPublicKey)
-
-    val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
-      ECPublicKey.freshPublicKey)
-
-    val offerExtPrivKey: ExtPrivateKey =
-      ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
-
-    val acceptExtPrivKey: ExtPrivateKey =
-      ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
-
-    val localFundingInputs: Vector[OutputReference] =
-      Vector(
-        OutputReference(TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
-                        localFundingTx.outputs.head))
-
-    val remoteFundingInputs: Vector[OutputReference] =
-      Vector(
-        OutputReference(
-          TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
-          remoteFundingTx.outputs.head))
-
-    val timeouts: DLCTimeouts =
-      DLCTimeouts(UInt32.zero,
-                  blockTimeToday,
-                  BlockTime(UInt32(blockTimeToday.time.toLong + 1)))
-
-    val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
     // Offer is local
     val dlcOffer: DLCClient = DLCClient(
@@ -497,44 +476,32 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
   val numOutcomesToTest: Vector[Int] = Vector(2, 3, 5, 8)
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual local case" in {
+  def runTests(
+      exec: (Int, Int, Boolean) => Future[Assertion],
+      local: Boolean): Future[Assertion] = {
     val testFs = numOutcomesToTest.flatMap { numOutcomes =>
       (0 until numOutcomes).map { outcomeIndex =>
-        executeMutualForCase(outcomeIndex, numOutcomes, local = true)
+        exec(outcomeIndex, numOutcomes, local)
       }
     }
 
     Future.sequence(testFs).map(_ => succeed)
+  }
+
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual local case" in {
+    runTests(executeMutualForCase, local = true)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual lose case" in {
-    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
-      (0 until numOutcomes).map { outcomeIndex =>
-        executeMutualForCase(outcomeIndex, numOutcomes, local = false)
-      }
-    }
-
-    Future.sequence(testFs).map(_ => succeed)
+    runTests(executeMutualForCase, local = false)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal local case" in {
-    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
-      (0 until numOutcomes).map { outcomeIndex =>
-        executeUnilateralForCase(outcomeIndex, numOutcomes, local = true)
-      }
-    }
-
-    Future.sequence(testFs).map(_ => succeed)
+    runTests(executeUnilateralForCase, local = true)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal remote case" in {
-    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
-      (0 until numOutcomes).map { outcomeIndex =>
-        executeUnilateralForCase(outcomeIndex, numOutcomes, local = false)
-      }
-    }
-
-    Future.sequence(testFs).map(_ => succeed)
+    runTests(executeUnilateralForCase, local = false)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
@@ -546,23 +513,11 @@ class DLCClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice local case" in {
-    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
-      (0 until numOutcomes).map { fakeOutcomeIndex =>
-        executeJusticeCase(fakeOutcomeIndex, numOutcomes, local = true)
-      }
-    }
-
-    Future.sequence(testFs).map(_ => succeed)
+    runTests(executeJusticeCase, local = true)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice remote case" in {
-    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
-      (0 until numOutcomes).map { fakeOutcomeIndex =>
-        executeJusticeCase(fakeOutcomeIndex, numOutcomes, local = false)
-      }
-    }
-
-    Future.sequence(testFs).map(_ => succeed)
+    runTests(executeJusticeCase, local = false)
   }
 
   it should "all work for a 100 outcome DLC" in {

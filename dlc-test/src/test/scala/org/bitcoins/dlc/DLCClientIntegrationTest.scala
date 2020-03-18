@@ -36,6 +36,7 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2WPKHV0SpendingInfo
+import org.bitcoins.dlc.DLCMessage.ContractInfo
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
@@ -72,14 +73,6 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
 
   behavior of "DLCClient"
 
-  val outcomeWin = "WIN"
-
-  val outcomeWinHash: Sha256DigestBE =
-    CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip
-  val outcomeLose = "LOSE"
-
-  val outcomeLoseHash: Sha256DigestBE =
-    CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip
   val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val oraclePubKey: ECPublicKey = oraclePrivKey.publicKey
   val preCommittedK: SchnorrNonce = SchnorrNonce.freshNonce
@@ -109,7 +102,8 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
 
   val csvTimeout: UInt32 = UInt32(30)
 
-  def constructDLC(): Future[(DLCClient, DLCClient)] = {
+  def constructDLC(numOutcomes: Int): Future[
+    (DLCClient, DLCClient, Vector[Sha256DigestBE])] = {
     def fundingInput(input: CurrencyUnit): Bitcoins = {
       Bitcoins((input + Satoshis(200)).satoshis)
     }
@@ -203,9 +197,18 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       val localVout = localFundingUtxos.head.outPoint.vout
       val remoteVout = remoteFundingUtxos.head.outPoint.vout
 
+      val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
+      val outcomeHashes =
+        outcomes.map(msg => CryptoUtil.sha256(ByteVector(msg.getBytes)).flip)
+
+      val outcomeMap =
+        outcomeHashes.zip(DLCTestUtil.genValues(numOutcomes, totalInput)).toMap
+      val otherOutcomeMap = outcomeMap.map {
+        case (hash, amt) => (hash, (totalInput - amt).satoshis)
+      }
+
       val acceptDLC = DLCClient(
-        outcomeWin = outcomeWin,
-        outcomeLose = outcomeLose,
+        outcomes = ContractInfo(outcomeMap),
         oraclePubKey = oraclePubKey,
         preCommittedR = preCommittedR,
         isInitiator = false,
@@ -221,8 +224,6 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         remoteFundingInputs = Vector(
           OutputReference(TransactionOutPoint(fundingTx.txIdBE, remoteVout),
                           fundingTx.outputs(remoteVout.toInt))),
-        winPayout = totalInput,
-        losePayout = CurrencyUnits.zero,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
                                tomorrowInBlocks,
                                twoDaysInBlocks),
@@ -233,8 +234,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       )
 
       val offerDLC = DLCClient(
-        outcomeWin = outcomeWin,
-        outcomeLose = outcomeLose,
+        outcomes = ContractInfo(otherOutcomeMap),
         oraclePubKey = oraclePubKey,
         preCommittedR = preCommittedR,
         isInitiator = true,
@@ -250,8 +250,6 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         remoteFundingInputs = Vector(
           OutputReference(TransactionOutPoint(fundingTx.txIdBE, localVout),
                           fundingTx.outputs(localVout.toInt))),
-        winPayout = CurrencyUnits.zero,
-        losePayout = totalInput,
         timeouts = DLCTimeouts(penaltyTimeout = csvTimeout,
                                tomorrowInBlocks,
                                twoDaysInBlocks),
@@ -261,7 +259,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
         network = RegTest
       )
 
-      (acceptDLC, offerDLC)
+      (acceptDLC, offerDLC, outcomeHashes)
     }
   }
 
@@ -381,32 +379,37 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     }
   }
 
-  def constructAndSetupDLC(): Future[
-    (DLCClient, SetupDLC, DLCClient, SetupDLC)] = {
+  def constructAndSetupDLC(numOutcomes: Int): Future[
+    (DLCClient, SetupDLC, DLCClient, SetupDLC, Vector[Sha256DigestBE])] = {
     for {
-      (acceptDLC, offerDLC) <- constructDLC()
+      (acceptDLC, offerDLC, outcomeHashes) <- constructDLC(numOutcomes)
       (acceptSetup, offerSetup) <- setupDLC(acceptDLC, offerDLC)
-    } yield (acceptDLC, acceptSetup, offerDLC, offerSetup)
+    } yield (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes)
   }
 
   def executeForMutualCase(
-      outcomeHash: Sha256DigestBE,
+      outcomeIndex: Int,
+      numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
-    val oracleSig =
-      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
     val setupsAndDLCs = for {
-      (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
+      (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes) <- constructAndSetupDLC(
+        numOutcomes)
     } yield {
+      val oracleSig =
+        Schnorr.signWithNonce(outcomeHashes(outcomeIndex).bytes,
+                              oraclePrivKey,
+                              preCommittedK)
+
       if (local) {
-        (offerDLC, offerSetup, acceptDLC, acceptSetup)
+        (offerDLC, offerSetup, acceptDLC, acceptSetup, oracleSig)
       } else {
-        (acceptDLC, acceptSetup, offerDLC, offerSetup)
+        (acceptDLC, acceptSetup, offerDLC, offerSetup, oracleSig)
       }
     }
 
     val outcomeFs = setupsAndDLCs.map {
-      case (initDLC, initSetup, otherDLC, otherSetup) =>
+      case (initDLC, initSetup, otherDLC, otherSetup, oracleSig) =>
         val closeSigsP = Promise[(SchnorrDigitalSignature, PartialSignature)]()
         val initSendSigs = {
           (sig: SchnorrDigitalSignature, fundingSig: PartialSignature) =>
@@ -484,13 +487,15 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def executeForUnilateralCase(
-      outcomeHash: Sha256DigestBE,
+      outcomeIndex: Int,
+      numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
-    val oracleSig =
-      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
-
     for {
-      (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
+      (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes) <- constructAndSetupDLC(
+        numOutcomes)
+      oracleSig = Schnorr.signWithNonce(outcomeHashes(outcomeIndex).bytes,
+                                        oraclePrivKey,
+                                        preCommittedK)
       (unilateralDLC, unilateralSetup, otherDLC, otherSetup) = {
         if (local) {
           (offerDLC, offerSetup, acceptDLC, acceptSetup)
@@ -536,9 +541,12 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     }
   }
 
-  def executeForRefundCase(local: Boolean): Future[Assertion] = {
+  def executeForRefundCase(
+      numOutcomes: Int,
+      local: Boolean): Future[Assertion] = {
     for {
-      (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
+      (acceptDLC, acceptSetup, offerDLC, offerSetup, _) <- constructAndSetupDLC(
+        numOutcomes)
       acceptOutcome <- acceptDLC.executeRefundDLC(acceptSetup)
       offerOutcome <- offerDLC.executeRefundDLC(offerSetup)
       offerClosingTxOpt = {
@@ -584,27 +592,24 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
   }
 
   def executeForJusticeCase(
-      fakeWin: Boolean,
+      fakeOutcomeIndex: Int,
+      numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
-    def chooseCET(localSetup: SetupDLC, remoteSetup: SetupDLC): Transaction = {
-      if (fakeWin) {
-        if (local) {
-          remoteSetup.cets.values.head.tx
-        } else {
-          localSetup.cets.values.head.tx
-        }
+    def chooseCET(
+        localSetup: SetupDLC,
+        remoteSetup: SetupDLC,
+        outcomeHash: Sha256DigestBE): Transaction = {
+      if (local) {
+        remoteSetup.cets(outcomeHash).tx
       } else {
-        if (local) {
-          remoteSetup.cets.values.last.tx
-        } else {
-          localSetup.cets.values.last.tx
-        }
+        localSetup.cets(outcomeHash).tx
       }
     }
 
     for {
       client <- clientF
-      (acceptDLC, acceptSetup, offerDLC, offerSetup) <- constructAndSetupDLC()
+      (acceptDLC, acceptSetup, offerDLC, offerSetup, outcomeHashes) <- constructAndSetupDLC(
+        numOutcomes)
       (punisherDLC, punisherSetup) = {
         if (local) {
           (offerDLC, offerSetup)
@@ -612,7 +617,9 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
           (acceptDLC, acceptSetup)
         }
       }
-      cetWronglyPublished = chooseCET(offerSetup, acceptSetup)
+      cetWronglyPublished = chooseCET(offerSetup,
+                                      acceptSetup,
+                                      outcomeHashes(fakeOutcomeIndex))
       _ = assert(offerDLC.timeouts == acceptDLC.timeouts)
       timeout = offerDLC.timeouts.contractMaturity.toUInt32.toInt
       _ <- recoverToSucceededIf[BitcoindException](
@@ -672,52 +679,70 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     }
   }
 
-  it should "be able to publish all DLC txs to Regtest for the mutual Win case" in {
-    for {
-      _ <- executeForMutualCase(outcomeWinHash, local = true)
-      _ <- executeForMutualCase(outcomeWinHash, local = false)
-    } yield succeed
+  val numOutcomesToTest: Vector[Int] = Vector(2, 8) //, 100)
+
+  def indicesToTest(numOutcomes: Int): Vector[Int] = {
+    if (numOutcomes == 2) {
+      Vector(0, 1)
+    } else {
+      Vector(0, numOutcomes / 2, numOutcomes - 1)
+    }
   }
 
-  it should "be able to publish all DLC txs to Regtest for the mutual Lose case" in {
-    for {
-      _ <- executeForMutualCase(outcomeLoseHash, local = true)
-      _ <- executeForMutualCase(outcomeLoseHash, local = false)
-    } yield succeed
+  def runTests(
+      exec: (Int, Int, Boolean) => Future[Assertion],
+      local: Boolean): Future[Assertion] = {
+    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
+      indicesToTest(numOutcomes).map { outcomeIndex => () =>
+        exec(outcomeIndex, numOutcomes, local)
+      }
+    }
+
+    testFs.foldLeft(Future.successful(succeed)) {
+      case (resultF, testExec) =>
+        resultF.flatMap { _ =>
+          testExec()
+        }
+    }
   }
 
-  it should "be able to publish all DLC txs to Regtest for the normal Win case" in {
-    for {
-      _ <- executeForUnilateralCase(outcomeWinHash, local = true)
-      _ <- executeForUnilateralCase(outcomeWinHash, local = false)
-    } yield succeed
+  it should "be able to publish all DLC txs to Regtest for the mutual local case" in {
+    runTests(executeForMutualCase, local = true)
   }
 
-  it should "be able to publish all DLC txs to Regtest for the normal Lose case" in {
-    for {
-      _ <- executeForUnilateralCase(outcomeLoseHash, local = true)
-      _ <- executeForUnilateralCase(outcomeLoseHash, local = false)
-    } yield succeed
+  it should "be able to publish all DLC txs to Regtest for the mutual remote case" in {
+    runTests(executeForMutualCase, local = false)
+  }
+
+  it should "be able to publish all DLC txs to Regtest for the normal local case" in {
+    runTests(executeForUnilateralCase, local = true)
+  }
+
+  it should "be able to publish all DLC txs to Regtest for the normal remote case" in {
+    runTests(executeForUnilateralCase, local = false)
   }
 
   it should "be able to publish all DLC txs to Regtest for the Refund case" in {
-    for {
-      _ <- executeForRefundCase(local = true)
-      _ <- executeForRefundCase(local = false)
-    } yield succeed
+    val testFs = numOutcomesToTest.map { numOutcomes => () =>
+      for {
+        _ <- executeForRefundCase(numOutcomes, local = true)
+        _ <- executeForRefundCase(numOutcomes, local = false)
+      } yield succeed
+    }
+
+    testFs.foldLeft(Future.successful(succeed)) {
+      case (resultF, testExec) =>
+        resultF.flatMap { _ =>
+          testExec()
+        }
+    }
   }
 
-  it should "be able to take the justice branch on Regtest for the Win case" in {
-    for {
-      _ <- executeForJusticeCase(fakeWin = true, local = true)
-      _ <- executeForJusticeCase(fakeWin = true, local = false)
-    } yield succeed
+  it should "be able to take the justice branch on Regtest for the local case" in {
+    runTests(executeForJusticeCase, local = true)
   }
 
-  it should "be able to take the justice branch on Regtest for the Lose case" in {
-    for {
-      _ <- executeForJusticeCase(fakeWin = false, local = true)
-      _ <- executeForJusticeCase(fakeWin = false, local = false)
-    } yield succeed
+  it should "be able to take the justice branch on Regtest for the remote case" in {
+    runTests(executeForJusticeCase, local = false)
   }
 }
