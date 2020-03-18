@@ -451,19 +451,12 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       .map(_.map(info => info.toUTXOSpendingInfo(keyManager)))
 
     utxosF.flatMap { fundingUtxos =>
-      val (winPayout, losePayout) = if (dlcDb.isInitiator) {
-        (dlcOffer.contractInfo.head._2, dlcOffer.contractInfo.last._2)
-      } else {
-        (dlcOffer.contractInfo.last._2, dlcOffer.contractInfo.head._2)
-      }
-
       val timeouts = DLCTimeouts(dlcOffer.penaltyTimeout,
                                  dlcOffer.contractMaturity,
                                  dlcOffer.contractTimeout)
 
-      val client = BinaryOutcomeDLCClient(
-        outcomeWin = dlcOffer.contractInfo.head._1,
-        outcomeLose = dlcOffer.contractInfo.last._1,
+      val client = DLCClient(
+        outcomes = dlcOffer.contractInfo,
         oraclePubKey = dlcOffer.oraclePubKey,
         preCommittedR = dlcOffer.oracleRValue,
         isInitiator = dlcDb.isInitiator,
@@ -474,8 +467,6 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         remoteInput = remoteSetupMsg.totalCollateral,
         fundingUtxos = fundingUtxos.flatMap(_.toSingles),
         remoteFundingInputs = remoteSetupMsg.fundingInputs,
-        winPayout = winPayout,
-        losePayout = losePayout,
         timeouts = timeouts,
         feeRate = dlcOffer.feeRate,
         changeSPK = setupMsg.changeAddress.scriptPubKey,

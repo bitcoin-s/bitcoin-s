@@ -45,8 +45,8 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{Future, Promise}
 
-class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
-  behavior of "BinaryOutcomeDLCClient"
+class DLCClientTest extends BitcoinSAsyncTest {
+  behavior of "DLCClient"
 
   it should "correctly subtract fees evenly amongst outputs" in {
     // subtractFeeAndSign has an invariant that no EmptyScriptPubKeys are allowed
@@ -326,10 +326,14 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
     } yield {
       assert(acceptSetup.fundingTx == offerSetup.fundingTx)
       assert(acceptSetup.refundTx == offerSetup.refundTx)
-      assert(acceptSetup.cetWin.txIdBE == offerSetup.cetWinRemoteTxid)
-      assert(acceptSetup.cetLose.txIdBE == offerSetup.cetLoseRemoteTxid)
-      assert(acceptSetup.cetWinRemoteTxid == offerSetup.cetWin.txIdBE)
-      assert(acceptSetup.cetLoseRemoteTxid == offerSetup.cetLose.txIdBE)
+      assert(
+        acceptSetup.cets.values.head.tx.txIdBE == offerSetup.cets.values.head.remoteTxid)
+      assert(
+        acceptSetup.cets.values.last.tx.txIdBE == offerSetup.cets.values.last.remoteTxid)
+      assert(
+        acceptSetup.cets.values.head.remoteTxid == offerSetup.cets.values.head.tx.txIdBE)
+      assert(
+        acceptSetup.cets.values.last.remoteTxid == offerSetup.cets.values.last.tx.txIdBE)
 
       (acceptSetup, offerSetup)
     }
@@ -440,9 +444,9 @@ class BinaryOutcomeDLCClientTest extends BitcoinSAsyncTest {
           }
 
         val timedOutCET = if (fakeWin) {
-          cheaterSetup.cetWin
+          cheaterSetup.cets.values.head.tx
         } else {
-          cheaterSetup.cetLose
+          cheaterSetup.cets.values.last.tx
         }
 
         for {

@@ -46,7 +46,7 @@ import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success, Try}
 
-class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
+class DLCClientIntegrationTest extends BitcoindRpcTest {
   private val clientsF = BitcoindRpcTestUtil.createNodePairV18(clientAccum)
   private val clientF = clientsF.map(_._1)
   private val addressForMiningF = clientF.flatMap(_.getNewAddress)
@@ -70,7 +70,7 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
     } yield ()
   }
 
-  behavior of "BinaryOutcomeDLCClient"
+  behavior of "DLCClient"
 
   val outcomeWin = "WIN"
 
@@ -368,10 +368,14 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
     } yield {
       assert(acceptSetup.fundingTx == offerSetup.fundingTx)
       assert(acceptSetup.refundTx == offerSetup.refundTx)
-      assert(acceptSetup.cetWin.txIdBE == offerSetup.cetWinRemoteTxid)
-      assert(acceptSetup.cetLose.txIdBE == offerSetup.cetLoseRemoteTxid)
-      assert(acceptSetup.cetWinRemoteTxid == offerSetup.cetWin.txIdBE)
-      assert(acceptSetup.cetLoseRemoteTxid == offerSetup.cetLose.txIdBE)
+      assert(
+        acceptSetup.cets.values.head.tx.txIdBE == offerSetup.cets.values.head.remoteTxid)
+      assert(
+        acceptSetup.cets.values.last.tx.txIdBE == offerSetup.cets.values.last.remoteTxid)
+      assert(
+        acceptSetup.cets.values.head.remoteTxid == offerSetup.cets.values.head.tx.txIdBE)
+      assert(
+        acceptSetup.cets.values.last.remoteTxid == offerSetup.cets.values.last.tx.txIdBE)
 
       (acceptSetup, offerSetup)
     }
@@ -585,15 +589,15 @@ class BinaryOutcomeDLCClientIntegrationTest extends BitcoindRpcTest {
     def chooseCET(localSetup: SetupDLC, remoteSetup: SetupDLC): Transaction = {
       if (fakeWin) {
         if (local) {
-          remoteSetup.cetWin
+          remoteSetup.cets.values.head.tx
         } else {
-          localSetup.cetWin
+          localSetup.cets.values.head.tx
         }
       } else {
         if (local) {
-          remoteSetup.cetLose
+          remoteSetup.cets.values.last.tx
         } else {
-          localSetup.cetLose
+          localSetup.cets.values.last.tx
         }
       }
     }
