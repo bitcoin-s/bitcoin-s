@@ -45,11 +45,16 @@ object OutgoingTransactionDb {
                              input.sequence))
         BaseTransaction(btx.version, unsignedInputs, btx.outputs, btx.lockTime)
       case wtx: WitnessTransaction =>
+        val unsignedInputs = wtx.inputs.map(
+          input =>
+            TransactionInput(input.previousOutput,
+                             EmptyScriptSignature,
+                             input.sequence))
         WitnessTransaction(wtx.version,
-                           wtx.inputs,
+                           unsignedInputs,
                            wtx.outputs,
                            wtx.lockTime,
-                           EmptyWitness.fromInputs(wtx.inputs))
+                           EmptyWitness.fromInputs(unsignedInputs))
     }
     OutgoingTransactionDb(tx.txIdBE,
                           tx,
