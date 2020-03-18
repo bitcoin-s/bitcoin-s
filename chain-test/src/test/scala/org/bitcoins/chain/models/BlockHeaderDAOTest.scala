@@ -1,6 +1,7 @@
 package org.bitcoins.chain.models
 
 import akka.actor.ActorSystem
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
 
@@ -200,5 +201,54 @@ class BlockHeaderDAOTest extends ChainUnitTest {
       genesisF.map { genesisOpt =>
         assert(genesisOpt.contains(genesisHeaderDb))
       }
+  }
+
+  it must "implement getNAncestors correctly" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val createdF = blockHeaderDAO.create(blockHeader)
+
+      val noGenesisAncestorsF =
+        blockHeaderDAO.getNAncestors(childHash =
+                                       genesisHeaderDb.blockHeader.hashBE,
+                                     n = 1)
+
+      val foundGenesisF =
+        blockHeaderDAO.getNAncestors(childHash =
+                                       genesisHeaderDb.blockHeader.hashBE,
+                                     n = 0)
+      val emptyAssertion = for {
+        noGenesisAncestors <- noGenesisAncestorsF
+        foundGenesis <- foundGenesisF
+      } yield {
+        assert(noGenesisAncestors.length == 1)
+        assert(noGenesisAncestors == Vector(ChainUnitTest.genesisHeaderDb))
+
+        assert(foundGenesis.length == 1)
+        assert(foundGenesis == Vector(ChainUnitTest.genesisHeaderDb))
+      }
+
+      val oneChildF = for {
+        created <- createdF
+        children <- blockHeaderDAO.getNAncestors(childHash =
+                                                   created.blockHeader.hashBE,
+                                                 n = 1)
+      } yield {
+        assert(children.length == 2)
+        assert(children == Vector(created, genesisHeaderDb))
+      }
+
+      val bashHash = DoubleSha256DigestBE.empty
+      val hashDoesNotExistF = for {
+        children <- blockHeaderDAO.getNAncestors(childHash = bashHash, n = 1)
+      } yield {
+        assert(children.isEmpty)
+      }
+
+      for {
+        _ <- emptyAssertion
+        _ <- oneChildF
+        lastAssert <- hashDoesNotExistF
+      } yield lastAssert
   }
 }

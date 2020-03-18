@@ -1,10 +1,10 @@
 package org.bitcoins.chain.pow
 
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.chain.models.{BlockHeaderDb}
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.protocol.blockchain.{BlockHeader, ChainParams}
+import org.bitcoins.chain.models.BlockHeaderDb
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.util.NumberUtil
 
 /**
@@ -42,10 +42,16 @@ sealed abstract class Pow {
 
             nonMinDiffF match {
               case Some(bh) => bh.nBits
-              case None     =>
-                //if we can't find a non min diffulty block, let's just fail
-                throw new RuntimeException(
-                  s"Could not find non mindiffulty block in chain! hash=${tip.hashBE.hex} height=${currentHeight}")
+              case None =>
+                config.chain match {
+                  case RegTestNetChainParams =>
+                    RegTestNetChainParams.compressedPowLimit
+                  case TestNetChainParams | MainNetChainParams =>
+                    //if we can't find a non min diffulty block, let's just fail
+                    throw new RuntimeException(
+                      s"Could not find non mindifficulty block in chain of size=${blockchain.length}! hash=${tip.hashBE.hex} height=${currentHeight}")
+                }
+
             }
           }
         } else {

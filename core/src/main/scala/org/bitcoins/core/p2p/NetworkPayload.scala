@@ -1047,6 +1047,17 @@ case class CompactFilterCheckPointMessage(
 
   def bytes: ByteVector =
     RawCompactFilterCheckpointMessageSerializer.write(this)
+
+  override def toString: String = {
+    val headersString = {
+      if (filterHeaders.isEmpty) {
+        "empty"
+      } else {
+        s"${filterHeaders.head}...${filterHeaders.last}"
+      }
+    }
+    s"CompactFilterCheckPointMessage(filterType=${filterType}, stopHash=${stopHash}, filterHeaders=${headersString})"
+  }
 }
 
 object CompactFilterCheckPointMessage
