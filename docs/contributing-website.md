@@ -70,6 +70,15 @@ manually include it in the side menu.
 You can do this by editing the `website/sidebars.json` file. The name to use is
 the `id` specified in the page metadata (see the existing pages for an example).
 
+
+## Creating a new version
+
+You can create a new version of the site by running this in the `website/` directory.
+
+```bashrc
+ yarn run version [MY-VERSION-HERE]
+```
+
 ## Publishing the site
 
 ```bash
