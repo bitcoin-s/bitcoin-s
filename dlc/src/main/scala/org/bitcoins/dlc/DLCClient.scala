@@ -23,7 +23,7 @@ import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** This case class allows for the construction and execution of binary outcome
+/** This case class allows for the construction and execution of
   * Discreet Log Contracts between two parties.
   *
   * @param outcomes The ContractInfo from the local view
