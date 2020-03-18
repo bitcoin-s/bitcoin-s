@@ -358,6 +358,9 @@ lazy val nodeTest =
 lazy val testkit = project
   .in(file("testkit"))
   .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-testkit"
+  )
   .dependsOn(
     core % testAndCompile,
     appServer,
