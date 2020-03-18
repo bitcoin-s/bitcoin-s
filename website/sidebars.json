@@ -41,6 +41,9 @@
       "rpc/rpc-eclair",
       "rpc/rpc-bitcoind"
     ],
+    "Secp256k1": [
+      "secp256k1/secp256k1"
+    ],
     "Testkit": [
       "testkit/testkit"
     ],
