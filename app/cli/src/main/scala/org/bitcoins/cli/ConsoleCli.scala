@@ -29,24 +29,23 @@ object ConsoleCli {
       opt[Unit]("debug")
         .action((_, conf) => conf.copy(debug = true))
         .text("Print debugging information"),
+      help('h', "help").text("Display this help message and exit"),
+      note(sys.props("line.separator") + "Commands:"),
+      note(sys.props("line.separator") + "===Blockchain ==="),
       cmd("getblockcount")
-        .hidden()
         .action((_, conf) => conf.copy(command = GetBlockCount))
         .text(s"Get the block height"),
       cmd("getfiltercount")
-        .hidden()
         .action((_, conf) => conf.copy(command = GetFilterCount))
         .text(s"Get the number of filters"),
       cmd("getfilterheadercount")
-        .hidden()
         .action((_, conf) => conf.copy(command = GetFilterHeaderCount))
         .text(s"Get the number of filter headers"),
       cmd("getbestblockhash")
-        .hidden()
         .action((_, conf) => conf.copy(command = GetBestBlockHash))
         .text(s"Get the best block hash"),
+      note(sys.props("line.separator") + "=== Wallet ==="),
       cmd("rescan")
-        .hidden()
         .action(
           (_, conf) =>
             conf.copy(
@@ -54,9 +53,10 @@ object ConsoleCli {
                                startBlock = Option.empty,
                                endBlock = Option.empty,
                                force = false)))
-        .text(s"Rescan UTXOs")
+        .text(s"Rescan for wallet UTXOs")
         .children(
-          opt[Unit]("force")
+          arg[Unit]("force")
+            .text("Clears existing wallet records. Warning! Use with caution!")
             .optional()
             .action((_, conf) =>
               conf.copy(command = conf.command match {
@@ -64,7 +64,8 @@ object ConsoleCli {
                   rescan.copy(force = true)
                 case other => other
               })),
-          opt[Int]("batch-size")
+          arg[Int]("batch-size")
+            .text("Number of filters that can be matched in one batch")
             .optional()
             .action((batchSize, conf) =>
               conf.copy(command = conf.command match {
@@ -72,7 +73,8 @@ object ConsoleCli {
                   rescan.copy(addressBatchSize = Option(batchSize))
                 case other => other
               })),
-          opt[BlockStamp]("start")
+          arg[BlockStamp]("start")
+            .text("Start height")
             .optional()
             .action((start, conf) =>
               conf.copy(command = conf.command match {
@@ -80,7 +82,8 @@ object ConsoleCli {
                   rescan.copy(startBlock = Option(start))
                 case other => other
               })),
-          opt[BlockStamp]("end")
+          arg[BlockStamp]("end")
+            .text("End height")
             .optional()
             .action((end, conf) =>
               conf.copy(command = conf.command match {
@@ -90,11 +93,11 @@ object ConsoleCli {
               }))
         ),
       cmd("getbalance")
-        .hidden()
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
         .children(
-          opt[Unit]("sats")
+          arg[Unit]("sats")
+            .text("Display balance in satoshis")
             .action((_, conf) =>
               conf.copy(command = conf.command match {
                 case getBalance: GetBalance =>
@@ -103,17 +106,16 @@ object ConsoleCli {
               }))
         ),
       cmd("getnewaddress")
-        .hidden()
         .action((_, conf) => conf.copy(command = GetNewAddress))
         .text("Get a new address"),
       cmd("sendtoaddress")
-        .hidden()
         .action(
           // TODO how to handle null here?
           (_, conf) => conf.copy(command = SendToAddress(null, 0.bitcoin)))
         .text("Send money to the given address")
         .children(
-          opt[BitcoinAddress]("address")
+          arg[BitcoinAddress]("address")
+            .text("Adress to send to")
             .required()
             .action((addr, conf) =>
               conf.copy(command = conf.command match {
@@ -121,7 +123,8 @@ object ConsoleCli {
                   send.copy(destination = addr)
                 case other => other
               })),
-          opt[Bitcoins]("amount")
+          arg[Bitcoins]("amount")
+            .text("amount to send in BTC")
             .required()
             .action((btc, conf) =>
               conf.copy(command = conf.command match {
@@ -130,16 +133,17 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
-        .hidden()
         .action((_, conf) => conf.copy(command = GetPeers))
         .text(s"List the connected peers"),
+      note(sys.props("line.separator") + "=== PSBT ==="),
       cmd("combinepsbts")
-        .hidden()
         .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
         .text("Combines all the given PSBTs")
         .children(
-          opt[Seq[PSBT]]("psbts")
+          arg[Seq[PSBT]]("psbts")
+            .text("PSBT serialized in hex or base64 format")
             .required()
             .action((seq, conf) =>
               conf.copy(command = conf.command match {
@@ -149,11 +153,11 @@ object ConsoleCli {
               }))
         ),
       cmd("joinpsbts")
-        .hidden()
         .action((_, conf) => conf.copy(command = JoinPSBTs(Seq.empty)))
         .text("Combines all the given PSBTs")
         .children(
-          opt[Seq[PSBT]]("psbts")
+          arg[Seq[PSBT]]("psbts")
+            .text("PSBT serialized in hex or base64 format")
             .required()
             .action((seq, conf) =>
               conf.copy(command = conf.command match {
@@ -163,11 +167,11 @@ object ConsoleCli {
               }))
         ),
       cmd("finalizepsbt")
-        .hidden()
         .action((_, conf) => conf.copy(command = FinalizePSBT(PSBT.empty)))
         .text("Finalizes the given PSBT if it can")
         .children(
-          opt[PSBT]("psbt")
+          arg[PSBT]("psbt")
+            .text("PSBT serialized in hex or base64 format")
             .required()
             .action((psbt, conf) =>
               conf.copy(command = conf.command match {
@@ -177,11 +181,11 @@ object ConsoleCli {
               }))
         ),
       cmd("extractfrompsbt")
-        .hidden()
         .action((_, conf) => conf.copy(command = ExtractFromPSBT(PSBT.empty)))
         .text("Extracts a transaction from the given PSBT if it can")
         .children(
-          opt[PSBT]("psbt")
+          arg[PSBT]("psbt")
+            .text("PSBT serialized in hex or base64 format")
             .required()
             .action((psbt, conf) =>
               conf.copy(command = conf.command match {
@@ -191,12 +195,12 @@ object ConsoleCli {
               }))
         ),
       cmd("converttopsbt")
-        .hidden()
         .action((_, conf) =>
           conf.copy(command = ConvertToPSBT(EmptyTransaction)))
         .text("Creates an empty psbt from the given transaction")
         .children(
-          opt[Transaction]("unsignedTx")
+          arg[Transaction]("unsignedTx")
+            .text("serialized unsigned transaction in hex")
             .required()
             .action((tx, conf) =>
               conf.copy(command = conf.command match {
@@ -205,11 +209,6 @@ object ConsoleCli {
                 case other => other
               }))
         ),
-      help('h', "help").text("Display this help message and exit"),
-      arg[String]("<cmd>")
-        .optional()
-        .text(
-          "The command and arguments to be executed. Try bitcoin-s-cli help for a list of all commands"),
       checkConfig {
         case Config(NoCommand, _, _) =>
           failure("You need to provide a command!")
