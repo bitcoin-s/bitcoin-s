@@ -44,8 +44,8 @@ import org.bitcoins.core.wallet.utxo.{
   SegwitV0NativeUTXOSpendingInfoFull
 }
 import org.bitcoins.dlc.{
-  BinaryOutcomeDLCClient,
   CETSignatures,
+  DLCClient,
   DLCPublicKeys,
   DLCTimeouts,
   FundingSignatures,
@@ -181,7 +181,7 @@ object DLCTestVector {
       OutputReference(info.outPoint, info.output)
     }
 
-    val offerDLC = BinaryOutcomeDLCClient(
+    val offerDLC = DLCClient(
       outcomeWin = possibleOutcomes.head,
       outcomeLose = possibleOutcomes.last,
       oraclePubKey = oracleKey.publicKey,
@@ -205,7 +205,7 @@ object DLCTestVector {
       network = RegTest
     )
 
-    val acceptDLC = BinaryOutcomeDLCClient(
+    val acceptDLC = DLCClient(
       outcomeWin = possibleOutcomes.head,
       outcomeLose = possibleOutcomes.last,
       oraclePubKey = oracleKey.publicKey,
@@ -304,10 +304,10 @@ object DLCTestVector {
         timeouts = timeouts,
         feeRate = feeRate,
         fundingTx = offerSetup.fundingTx,
-        localWinCet = offerSetup.cetWin,
-        localLoseCet = offerSetup.cetLose,
-        remoteWinCet = acceptSetup.cetWin,
-        remoteLoseCet = acceptSetup.cetLose,
+        localWinCet = offerSetup.cets.head._2.tx,
+        localLoseCet = offerSetup.cets.last._2.tx,
+        remoteWinCet = acceptSetup.cets.head._2.tx,
+        remoteLoseCet = acceptSetup.cets.last._2.tx,
         refundTx = offerSetup.refundTx,
         mutualCloseTx = mutualOutcome.closingTx,
         localClosingTxOpt = localClosingTxOpt,
