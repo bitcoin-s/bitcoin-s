@@ -10,7 +10,9 @@ import org.bitcoins.wallet.db.WalletDbManagement
 case class WalletDAOs(
     accountDAO: AccountDAO,
     addressDAO: AddressDAO,
-    utxoDAO: SpendingInfoDAO)
+    utxoDAO: SpendingInfoDAO,
+    incomingTxDAO: IncomingTransactionDAO,
+    outgoingTxDAO: OutgoingTransactionDAO)
 
 trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
 
@@ -18,7 +20,9 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
     val account = AccountDAO()
     val address = AddressDAO()
     val utxo = SpendingInfoDAO()
-    WalletDAOs(account, address, utxo)
+    val incomingTxDAO = IncomingTransactionDAO()
+    val outgoingTxDAO = OutgoingTransactionDAO()
+    WalletDAOs(account, address, utxo, incomingTxDAO, outgoingTxDAO)
   }
 
   final override type FixtureParam = WalletDAOs

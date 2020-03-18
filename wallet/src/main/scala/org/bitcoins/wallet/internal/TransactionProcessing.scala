@@ -1,10 +1,12 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
@@ -75,10 +77,17 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private[wallet] def processOurTransaction(
       transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
       blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
     logger.info(
       s"Processing TX from our wallet, transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
-    processTransactionImpl(transaction, blockHashOpt).map { result =>
+    val outgoing =
+      OutgoingTransactionDb.fromTransaction(transaction, feeRate, inputAmount)
+    for {
+      _ <- outgoingTxDAO.upsert(outgoing)
+      result <- processTransactionImpl(transaction, blockHashOpt)
+    } yield {
       val txid = transaction.txIdBE
       val changeOutputs = result.updatedIncoming.length
       val spentOutputs = result.updatedOutgoing.length

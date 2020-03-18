@@ -60,7 +60,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
 
   /** Constructs a DB level representation of the given UTXO, and persist it to disk */
   private def writeUtxo(
-      txid: DoubleSha256DigestBE,
+      tx: Transaction,
       state: TxoState,
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
@@ -71,7 +71,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       case segwitAddr: SegWitAddressDb =>
         SegwitV0SpendingInfo(
           state = state,
-          txid = txid,
+          txid = tx.txIdBE,
           outPoint = outPoint,
           output = output,
           privKeyPath = segwitAddr.path,
@@ -80,7 +80,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         )
       case LegacyAddressDb(path, _, _, _, _) =>
         LegacySpendingInfo(state = state,
-                           txid = txid,
+                           txid = tx.txIdBE,
                            outPoint = outPoint,
                            output = output,
                            privKeyPath = path,
@@ -99,7 +99,11 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         )
     }
 
-    spendingInfoDAO.create(utxo).map { written =>
+    val txDb = IncomingTransactionDb.fromTransaction(tx)
+    for {
+      _ <- incomingTxDAO.upsert(txDb)
+      written <- spendingInfoDAO.create(utxo)
+    } yield {
       val writtenOut = written.outPoint
       logger.info(
         s"Successfully inserted UTXO ${writtenOut.txId.hex}:${writtenOut.vout.toInt} into DB")
@@ -147,7 +151,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       addressDbEitherF.flatMap { addressDbE =>
         val biasedE: CompatEither[AddUtxoError, Future[SpendingInfoDb]] = for {
           addressDb <- addressDbE
-        } yield writeUtxo(txid = transaction.txIdBE,
+        } yield writeUtxo(tx = transaction,
                           state = state,
                           output = output,
                           outPoint = outPoint,

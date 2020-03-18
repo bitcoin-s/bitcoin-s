@@ -55,6 +55,11 @@ case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit
 
 object SatoshisPerVirtualByte {
+
+  def apply(satoshis: Long): SatoshisPerVirtualByte = {
+    SatoshisPerVirtualByte(Satoshis(satoshis))
+  }
+
   val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(CurrencyUnits.zero)
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 }

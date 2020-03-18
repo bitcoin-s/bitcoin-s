@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
-import org.bitcoins.testkit.fixtures.{WalletDAOFixture, WalletDAOs}
+import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 
 class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
@@ -40,7 +40,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   }
 
   it should "find incoming outputs being spent, given a TX" in { daos =>
-    val WalletDAOs(_, _, utxoDAO) = daos
+    val utxoDAO = daos.utxoDAO
 
     for {
       utxo <- WalletTestUtil.insertLegacyUTXO(daos)
@@ -75,7 +75,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   }
 
   it must "insert an unspent TXO and then mark it as spent" in { daos =>
-    val WalletDAOs(_, _, spendingInfoDAO) = daos
+    val spendingInfoDAO = daos.utxoDAO
     for {
       utxo <- WalletTestUtil.insertSegWitUTXO(daos)
       updated <- spendingInfoDAO.update(
@@ -93,7 +93,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   }
 
   it must "insert an unspent TXO and find it as unspent" in { daos =>
-    val WalletDAOs(_, _, spendingInfoDAO) = daos
+    val spendingInfoDAO = daos.utxoDAO
     for {
       utxo <- WalletTestUtil.insertLegacyUTXO(daos)
       state = utxo.copy(state = TxoState.PendingConfirmationsReceived)
@@ -108,7 +108,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   }
 
   it must "insert a spent TXO and NOT find it as unspent" in { daos =>
-    val WalletDAOs(_, _, spendingInfoDAO) = daos
+    val spendingInfoDAO = daos.utxoDAO
     for {
       utxo <- WalletTestUtil.insertLegacyUTXO(daos)
       state = utxo.copy(state = TxoState.PendingConfirmationsSpent)
@@ -118,7 +118,7 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   }
 
   it must "insert a TXO and read it back with through a TXID " in { daos =>
-    val WalletDAOs(_, _, spendingInfoDAO) = daos
+    val spendingInfoDAO = daos.utxoDAO
 
     for {
       utxo <- WalletTestUtil.insertLegacyUTXO(daos)

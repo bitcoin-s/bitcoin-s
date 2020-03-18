@@ -26,7 +26,7 @@ import org.bitcoins.core.wallet.utxo.{
 import org.bitcoins.db.{DbRowAutoInc, TableAutoInc}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import slick.jdbc.SQLiteProfile.api._
-import slick.lifted.ProvenShape
+import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
 /**
   * DB representation of a native V0
@@ -228,6 +228,13 @@ case class SpendingInfoTable(tag: Tag)
     foreignKey("fk_scriptPubKey",
                sourceColumns = scriptPubKey,
                targetTableQuery = addressTable)(_.scriptPubKey)
+  }
+
+  /** All UTXOs must have a corresponding transaction in the wallet */
+  def fk_txId = {
+    val txTable = TableQuery[IncomingTransactionTable]
+    foreignKey("fk_txId", sourceColumns = txid, targetTableQuery = txTable)(
+      _.txIdBE)
   }
 
   private type UTXOTuple = (
