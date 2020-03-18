@@ -118,7 +118,7 @@ private[blockchain] trait BaseBlockChainCompObject
           //found a header to connect to!
           val prevBlockHeader = blockchain.headers(prevHeaderIdx)
           logger.debug(
-            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain")
+            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers")
           val chain = blockchain.fromValidHeader(prevBlockHeader)
           val tipResult =
             TipValidation.checkNewTip(newPotentialTip = header, chain)
@@ -234,4 +234,62 @@ private[blockchain] trait BaseBlockChainCompObject
     }
   }
 
+  /** Walks backwards from the current header searching through ancestors if [[current.previousBlockHashBE]] is in [[ancestors]]
+    * This does not validate other things such as POW.
+    * */
+  @tailrec
+  final def connectWalkBackwards(
+      current: BlockHeaderDb,
+      ancestors: Vector[BlockHeaderDb],
+      accum: Vector[BlockHeaderDb] = Vector.empty)(
+      implicit chainAppConfig: ChainAppConfig): Vector[BlockHeaderDb] = {
+    val prevHeaderOpt = ancestors.find(_.hashBE == current.previousBlockHashBE)
+    prevHeaderOpt match {
+      case Some(h) =>
+        connectWalkBackwards(current = h,
+                             accum = current +: accum,
+                             ancestors = ancestors)
+      case None =>
+        logger.debug(s"No prev found for $current hashBE=${current.hashBE}")
+        current +: accum
+    }
+  }
+
+  /** Walks backwards from a child header reconstructing a blockchain
+    * This validates things like POW, difficulty change etc.
+    * */
+  def reconstructFromHeaders(
+      childHeader: BlockHeaderDb,
+      ancestors: Vector[BlockHeaderDb])(
+      implicit chainAppConfig: ChainAppConfig): Vector[Blockchain] = {
+    //now all hashes are connected correctly forming a
+    //valid blockchain in term of hashes connected to each other
+    val orderedHeaders = connectWalkBackwards(current = childHeader,
+                                              accum = Vector.empty,
+                                              ancestors = ancestors)
+
+    val initBlockchainOpt = orderedHeaders match {
+      case Vector() | _ +: Vector() =>
+        //for the case of _ +: Vector() this means only our
+        //child header is in the chain, which means we
+        //weren't able to form a blockchain
+        None
+      case h +: _ =>
+        //find our first header as we need it's Db representation
+        //rather than just the raw header
+        val dbOpt = ancestors.find(_.hashBE == h.hashBE)
+        Some(Blockchain.fromHeaders(Vector(dbOpt.get)))
+    }
+
+    //now let's connect headers
+    val blockchainUpdateOpt = initBlockchainOpt.map { initBlockchain =>
+      Blockchain.connectHeadersToChains(orderedHeaders.tail.map(_.blockHeader),
+                                        Vector(initBlockchain))
+    }
+
+    blockchainUpdateOpt match {
+      case Some(v) => v.map(_.blockchain)
+      case None    => Vector.empty
+    }
+  }
 }

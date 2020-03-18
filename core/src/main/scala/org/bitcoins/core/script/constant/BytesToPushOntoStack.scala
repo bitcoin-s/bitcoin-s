@@ -25,7 +25,7 @@ object BytesToPushOntoStack
     override val opCode = num
   }
 
-  override def operations: Seq[BytesToPushOntoStack] =
+  override val operations: Seq[BytesToPushOntoStack] =
     (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i))
 
   def fromNumber(num: Long): BytesToPushOntoStack = {
