@@ -455,8 +455,17 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                                  dlcOffer.contractMaturity,
                                  dlcOffer.contractTimeout)
 
+      val outcomes =
+        if (dlcDb.isInitiator) dlcOffer.contractInfo
+        else
+          ContractInfo(offer.contractInfo.map {
+            case (hash, amt) =>
+              (hash,
+               (accept.totalCollateral + offer.totalCollateral - amt).satoshis)
+          })
+
       val client = DLCClient(
-        outcomes = dlcOffer.contractInfo,
+        outcomes = outcomes,
         oraclePubKey = dlcOffer.oraclePubKey,
         preCommittedR = dlcOffer.oracleRValue,
         isInitiator = dlcDb.isInitiator,
