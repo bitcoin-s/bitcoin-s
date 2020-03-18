@@ -37,6 +37,7 @@ import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
   P2WPKHV0SpendingInfo
 }
+import org.bitcoins.dlc.DLCMessage.ContractInfo
 import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
@@ -112,148 +113,171 @@ class DLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  val outcomeWin = "WIN"
-
-  val outcomeWinHash: Sha256DigestBE =
-    CryptoUtil.sha256(ByteVector(outcomeWin.getBytes)).flip
-  val outcomeLose = "LOSE"
-
-  val outcomeLoseHash: Sha256DigestBE =
-    CryptoUtil.sha256(ByteVector(outcomeLose.getBytes)).flip
   val oraclePrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val oraclePubKey: ECPublicKey = oraclePrivKey.publicKey
   val preCommittedK: SchnorrNonce = SchnorrNonce.freshNonce
   val preCommittedR: ECPublicKey = preCommittedK.publicKey
-  val localInput: CurrencyUnit = CurrencyUnits.oneBTC
-  val remoteInput: CurrencyUnit = CurrencyUnits.oneBTC
-  val totalInput: CurrencyUnit = localInput + remoteInput
 
-  val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
-  val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
-  val inputPrivKeyRemote: ECPrivateKey = ECPrivateKey.freshPrivateKey
-  val inputPubKeyRemote: ECPublicKey = inputPrivKeyRemote.publicKey
+  def genOutcomes(size: Int): Vector[String] = {
+    (0 until size).map(_ => scala.util.Random.nextLong().toString).toVector
+  }
 
-  val blockTimeToday: BlockTime = BlockTime(
-    UInt32(System.currentTimeMillis() / 1000))
+  def genValues(size: Int, totalAmount: CurrencyUnit): Vector[Satoshis] = {
+    val vals = if (size < 2) {
+      throw new IllegalArgumentException(
+        s"Size must be at least two, got $size")
+    } else if (size == 2) {
+      Vector(totalAmount.satoshis, Satoshis.zero)
+    } else {
+      (0 until size - 2).map { _ =>
+        Satoshis(scala.util.Random.nextInt(totalAmount.satoshis.toLong.toInt))
+      }.toVector :+ totalAmount.satoshis :+ Satoshis.zero
+    }
 
-  val localFundingTx: Transaction = BaseTransaction(
-    TransactionConstants.validLockVersion,
-    Vector.empty,
-    Vector(
-      TransactionOutput(localInput * 2,
-                        P2WPKHWitnessSPKV0(inputPrivKeyLocal.publicKey))),
-    UInt32.zero
-  )
+    val valsWithOrder = vals.map(_ -> scala.util.Random.nextDouble())
+    valsWithOrder.sortBy(_._2).map(_._1)
+  }
 
-  val localFundingUtxos = Vector(
-    P2WPKHV0SpendingInfo(
-      outPoint = TransactionOutPoint(localFundingTx.txId, UInt32.zero),
-      amount = localInput * 2,
-      scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyLocal),
-      signer = inputPrivKeyLocal,
-      hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(inputPrivKeyLocal.publicKey)
+  def constructDLCClients(
+      numOutcomes: Int): (DLCClient, DLCClient, Vector[Sha256DigestBE]) = {
+    val outcomes: Vector[String] = genOutcomes(numOutcomes)
+    val outcomeHashes =
+      outcomes.map(msg => CryptoUtil.sha256(ByteVector(msg.getBytes)).flip)
+
+    val localInput: CurrencyUnit = CurrencyUnits.oneBTC
+    val remoteInput: CurrencyUnit = CurrencyUnits.oneBTC
+    val totalInput: CurrencyUnit = localInput + remoteInput
+
+    val outcomeMap =
+      outcomeHashes.zip(genValues(numOutcomes, totalInput)).toMap
+    val remoteOutcomeMap = outcomeMap.map {
+      case (hash, amt) => (hash, (totalInput - amt).satoshis)
+    }
+
+    val inputPrivKeyLocal: ECPrivateKey = ECPrivateKey.freshPrivateKey
+    val inputPubKeyLocal: ECPublicKey = inputPrivKeyLocal.publicKey
+    val inputPrivKeyRemote: ECPrivateKey = ECPrivateKey.freshPrivateKey
+    val inputPubKeyRemote: ECPublicKey = inputPrivKeyRemote.publicKey
+
+    val blockTimeToday: BlockTime = BlockTime(
+      UInt32(System.currentTimeMillis() / 1000))
+
+    val localFundingTx: Transaction = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Vector.empty,
+      Vector(
+        TransactionOutput(localInput * 2,
+                          P2WPKHWitnessSPKV0(inputPrivKeyLocal.publicKey))),
+      UInt32.zero
     )
-  )
 
-  val remoteFundingTx: Transaction = BaseTransaction(
-    TransactionConstants.validLockVersion,
-    Vector.empty,
-    Vector(
-      TransactionOutput(remoteInput * 2,
-                        P2WPKHWitnessSPKV0(inputPrivKeyRemote.publicKey))),
-    UInt32.zero
-  )
-
-  val remoteFundingUtxos = Vector(
-    P2WPKHV0SpendingInfo(
-      outPoint = TransactionOutPoint(remoteFundingTx.txId, UInt32.zero),
-      amount = remoteInput * 2,
-      scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyRemote),
-      signer = inputPrivKeyRemote,
-      hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
+    val localFundingUtxos = Vector(
+      P2WPKHV0SpendingInfo(
+        outPoint = TransactionOutPoint(localFundingTx.txId, UInt32.zero),
+        amount = localInput * 2,
+        scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyLocal),
+        signer = inputPrivKeyLocal,
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WPKHWitnessV0(inputPrivKeyLocal.publicKey)
+      )
     )
-  )
 
-  val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
-    ECPublicKey.freshPublicKey)
+    val remoteFundingTx: Transaction = BaseTransaction(
+      TransactionConstants.validLockVersion,
+      Vector.empty,
+      Vector(
+        TransactionOutput(remoteInput * 2,
+                          P2WPKHWitnessSPKV0(inputPrivKeyRemote.publicKey))),
+      UInt32.zero
+    )
 
-  val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
-    ECPublicKey.freshPublicKey)
+    val remoteFundingUtxos = Vector(
+      P2WPKHV0SpendingInfo(
+        outPoint = TransactionOutPoint(remoteFundingTx.txId, UInt32.zero),
+        amount = remoteInput * 2,
+        scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyRemote),
+        signer = inputPrivKeyRemote,
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
+      )
+    )
 
-  val offerExtPrivKey: ExtPrivateKey =
-    ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
+    val localChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
+      ECPublicKey.freshPublicKey)
 
-  val acceptExtPrivKey: ExtPrivateKey =
-    ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
+    val remoteChangeSPK: P2WPKHWitnessSPKV0 = P2WPKHWitnessSPKV0(
+      ECPublicKey.freshPublicKey)
 
-  val localFundingInputs: Vector[OutputReference] =
-    Vector(
-      OutputReference(TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
-                      localFundingTx.outputs.head))
+    val offerExtPrivKey: ExtPrivateKey =
+      ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
 
-  val remoteFundingInputs: Vector[OutputReference] =
-    Vector(
-      OutputReference(TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
-                      remoteFundingTx.outputs.head))
+    val acceptExtPrivKey: ExtPrivateKey =
+      ExtPrivateKey.freshRootKey(LegacyTestNet3Priv)
 
-  val timeouts: DLCTimeouts =
-    DLCTimeouts(UInt32.zero,
-                blockTimeToday,
-                BlockTime(UInt32(blockTimeToday.time.toLong + 1)))
+    val localFundingInputs: Vector[OutputReference] =
+      Vector(
+        OutputReference(TransactionOutPoint(localFundingTx.txIdBE, UInt32.zero),
+                        localFundingTx.outputs.head))
 
-  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
+    val remoteFundingInputs: Vector[OutputReference] =
+      Vector(
+        OutputReference(
+          TransactionOutPoint(remoteFundingTx.txIdBE, UInt32.zero),
+          remoteFundingTx.outputs.head))
 
-  // Offer is local
-  val dlcOffer: DLCClient = DLCClient(
-    outcomeWin = outcomeWin,
-    outcomeLose = outcomeLose,
-    oraclePubKey = oraclePubKey,
-    preCommittedR = preCommittedR,
-    isInitiator = true,
-    extPrivKey = offerExtPrivKey,
-    nextAddressIndex = 0,
-    remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(acceptExtPrivKey,
-                                                         nextAddressIndex = 0,
-                                                         RegTest),
-    input = localInput,
-    remoteInput = remoteInput,
-    fundingUtxos = localFundingUtxos,
-    remoteFundingInputs = remoteFundingInputs,
-    winPayout = totalInput,
-    losePayout = CurrencyUnits.zero,
-    timeouts = timeouts,
-    feeRate = feeRate,
-    changeSPK = localChangeSPK,
-    remoteChangeSPK = remoteChangeSPK,
-    network = RegTest
-  )
+    val timeouts: DLCTimeouts =
+      DLCTimeouts(UInt32.zero,
+                  blockTimeToday,
+                  BlockTime(UInt32(blockTimeToday.time.toLong + 1)))
 
-  // Accept is remote
-  val dlcAccept: DLCClient = DLCClient(
-    outcomeWin = outcomeWin,
-    outcomeLose = outcomeLose,
-    oraclePubKey = oraclePubKey,
-    preCommittedR = preCommittedR,
-    isInitiator = false,
-    extPrivKey = acceptExtPrivKey,
-    nextAddressIndex = 0,
-    remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(offerExtPrivKey,
-                                                         nextAddressIndex = 0,
-                                                         RegTest),
-    input = remoteInput,
-    remoteInput = localInput,
-    fundingUtxos = remoteFundingUtxos,
-    remoteFundingInputs = localFundingInputs,
-    winPayout = CurrencyUnits.zero,
-    losePayout = totalInput,
-    timeouts = timeouts,
-    feeRate = feeRate,
-    changeSPK = remoteChangeSPK,
-    remoteChangeSPK = localChangeSPK,
-    network = RegTest
-  )
+    val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
+
+    // Offer is local
+    val dlcOffer: DLCClient = DLCClient(
+      outcomes = ContractInfo(outcomeMap),
+      oraclePubKey = oraclePubKey,
+      preCommittedR = preCommittedR,
+      isInitiator = true,
+      extPrivKey = offerExtPrivKey,
+      nextAddressIndex = 0,
+      remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(acceptExtPrivKey,
+                                                           nextAddressIndex = 0,
+                                                           RegTest),
+      input = localInput,
+      remoteInput = remoteInput,
+      fundingUtxos = localFundingUtxos,
+      remoteFundingInputs = remoteFundingInputs,
+      timeouts = timeouts,
+      feeRate = feeRate,
+      changeSPK = localChangeSPK,
+      remoteChangeSPK = remoteChangeSPK,
+      network = RegTest
+    )
+
+    // Accept is remote
+    val dlcAccept: DLCClient = DLCClient(
+      outcomes = ContractInfo(remoteOutcomeMap),
+      oraclePubKey = oraclePubKey,
+      preCommittedR = preCommittedR,
+      isInitiator = false,
+      extPrivKey = acceptExtPrivKey,
+      nextAddressIndex = 0,
+      remotePubKeys = DLCPublicKeys.fromExtPrivKeyAndIndex(offerExtPrivKey,
+                                                           nextAddressIndex = 0,
+                                                           RegTest),
+      input = remoteInput,
+      remoteInput = localInput,
+      fundingUtxos = remoteFundingUtxos,
+      remoteFundingInputs = localFundingInputs,
+      timeouts = timeouts,
+      feeRate = feeRate,
+      changeSPK = remoteChangeSPK,
+      remoteChangeSPK = localChangeSPK,
+      network = RegTest
+    )
+
+    (dlcOffer, dlcAccept, outcomeHashes)
+  }
 
   def noEmptySPKOutputs(tx: Transaction): Boolean = {
     tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
@@ -297,7 +321,10 @@ class DLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  def setupDLC(): Future[(SetupDLC, SetupDLC)] = {
+  def setupDLC(numOutcomes: Int): Future[
+    (SetupDLC, DLCClient, SetupDLC, DLCClient, Vector[Sha256DigestBE])] = {
+    val (dlcOffer, dlcAccept, outcomeHashes) = constructDLCClients(numOutcomes)
+
     val offerSigReceiveP =
       Promise[CETSignatures]()
     val sendAcceptSigs = { sigs: CETSignatures =>
@@ -335,18 +362,22 @@ class DLCClientTest extends BitcoinSAsyncTest {
       assert(
         acceptSetup.cets.values.last.remoteTxid == offerSetup.cets.values.last.tx.txIdBE)
 
-      (acceptSetup, offerSetup)
+      (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeHashes)
     }
   }
 
   def executeMutualForCase(
-      outcomeHash: Sha256DigestBE,
+      outcomeIndex: Int,
+      numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
-    val oracleSig =
-      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
-    setupDLC().flatMap {
-      case (acceptSetup, offerSetup) =>
+    setupDLC(numOutcomes).flatMap {
+      case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeHashes) =>
+        val oracleSig =
+          Schnorr.signWithNonce(outcomeHashes(outcomeIndex).bytes,
+                                oraclePrivKey,
+                                preCommittedK)
+
         val (initSetup, initDLC, otherSetup, otherDLC) =
           if (local) {
             (offerSetup, dlcOffer, acceptSetup, dlcAccept)
@@ -386,13 +417,17 @@ class DLCClientTest extends BitcoinSAsyncTest {
   }
 
   def executeUnilateralForCase(
-      outcomeHash: Sha256DigestBE,
+      outcomeIndex: Int,
+      numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
-    val oracleSig =
-      Schnorr.signWithNonce(outcomeHash.bytes, oraclePrivKey, preCommittedK)
 
-    setupDLC().flatMap {
-      case (acceptSetup, offerSetup) =>
+    setupDLC(numOutcomes).flatMap {
+      case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeHashes) =>
+        val oracleSig =
+          Schnorr.signWithNonce(outcomeHashes(outcomeIndex).bytes,
+                                oraclePrivKey,
+                                preCommittedK)
+
         val (unilateralSetup, unilateralDLC, otherSetup, otherDLC) =
           if (local) {
             (offerSetup, dlcOffer, acceptSetup, dlcAccept)
@@ -415,9 +450,9 @@ class DLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  def executeRefundCase(): Future[Assertion] = {
-    setupDLC().flatMap {
-      case (acceptSetup, offerSetup) =>
+  def executeRefundCase(numOutcomes: Int): Future[Assertion] = {
+    setupDLC(numOutcomes).flatMap {
+      case (acceptSetup, dlcAccept, offerSetup, dlcOffer, _) =>
         for {
           acceptOutcome <- dlcAccept.executeRefundDLC(acceptSetup)
           offerOutcome <- dlcOffer.executeRefundDLC(offerSetup)
@@ -432,10 +467,11 @@ class DLCClientTest extends BitcoinSAsyncTest {
   }
 
   def executeJusticeCase(
-      fakeWin: Boolean,
+      fakeOutcomeIndex: Int,
+      numOutcomes: Int,
       local: Boolean): Future[Assertion] = {
-    setupDLC().flatMap {
-      case (acceptSetup, offerSetup) =>
+    setupDLC(numOutcomes).flatMap {
+      case (acceptSetup, dlcAccept, offerSetup, dlcOffer, outcomeHashes) =>
         val (cheaterSetup, punisherSetup, punisherDLC) =
           if (local) {
             (offerSetup, acceptSetup, dlcAccept)
@@ -443,11 +479,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
             (acceptSetup, offerSetup, dlcOffer)
           }
 
-        val timedOutCET = if (fakeWin) {
-          cheaterSetup.cets.values.head.tx
-        } else {
-          cheaterSetup.cets.values.last.tx
-        }
+        val timedOutCET = cheaterSetup.cets(outcomeHashes(fakeOutcomeIndex)).tx
 
         for {
           justiceOutcome <- punisherDLC.executeJusticeDLC(punisherSetup,
@@ -463,49 +495,89 @@ class DLCClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual win case" in {
-    for {
-      _ <- executeMutualForCase(outcomeWinHash, local = true)
-      _ <- executeMutualForCase(outcomeWinHash, local = false)
-    } yield succeed
+  val numOutcomesToTest: Vector[Int] = Vector(2, 3, 5, 8)
+
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual local case" in {
+    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
+      (0 until numOutcomes).map { outcomeIndex =>
+        executeMutualForCase(outcomeIndex, numOutcomes, local = true)
+      }
+    }
+
+    Future.sequence(testFs).map(_ => succeed)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the mutual lose case" in {
-    for {
-      _ <- executeMutualForCase(outcomeLoseHash, local = true)
-      _ <- executeMutualForCase(outcomeLoseHash, local = false)
-    } yield succeed
+    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
+      (0 until numOutcomes).map { outcomeIndex =>
+        executeMutualForCase(outcomeIndex, numOutcomes, local = false)
+      }
+    }
+
+    Future.sequence(testFs).map(_ => succeed)
   }
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal win case" in {
-    for {
-      _ <- executeUnilateralForCase(outcomeWinHash, local = true)
-      _ <- executeUnilateralForCase(outcomeWinHash, local = false)
-    } yield succeed
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal local case" in {
+    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
+      (0 until numOutcomes).map { outcomeIndex =>
+        executeUnilateralForCase(outcomeIndex, numOutcomes, local = true)
+      }
+    }
+
+    Future.sequence(testFs).map(_ => succeed)
   }
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal lose case" in {
-    for {
-      _ <- executeUnilateralForCase(outcomeLoseHash, local = true)
-      _ <- executeUnilateralForCase(outcomeLoseHash, local = false)
-    } yield succeed
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the normal remote case" in {
+    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
+      (0 until numOutcomes).map { outcomeIndex =>
+        executeUnilateralForCase(outcomeIndex, numOutcomes, local = false)
+      }
+    }
+
+    Future.sequence(testFs).map(_ => succeed)
   }
 
   it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the refund case" in {
-    executeRefundCase()
+    val testFs = numOutcomesToTest.map { numOutcomes =>
+      executeRefundCase(numOutcomes)
+    }
+
+    Future.sequence(testFs).map(_ => succeed)
   }
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice win case" in {
-    for {
-      _ <- executeJusticeCase(fakeWin = true, local = true)
-      _ <- executeJusticeCase(fakeWin = true, local = false)
-    } yield succeed
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice local case" in {
+    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
+      (0 until numOutcomes).map { fakeOutcomeIndex =>
+        executeJusticeCase(fakeOutcomeIndex, numOutcomes, local = true)
+      }
+    }
+
+    Future.sequence(testFs).map(_ => succeed)
   }
 
-  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice lose case" in {
-    for {
-      _ <- executeJusticeCase(fakeWin = false, local = true)
-      _ <- executeJusticeCase(fakeWin = false, local = false)
-    } yield succeed
+  it should "be able to construct and verify with ScriptInterpreter every tx in a DLC for the justice remote case" in {
+    val testFs = numOutcomesToTest.flatMap { numOutcomes =>
+      (0 until numOutcomes).map { fakeOutcomeIndex =>
+        executeJusticeCase(fakeOutcomeIndex, numOutcomes, local = false)
+      }
+    }
+
+    Future.sequence(testFs).map(_ => succeed)
+  }
+
+  it should "all work for a 100 outcome DLC" in {
+    val numOutcomes = 100
+    val testFs = (0 until 10).map(_ * 10).map { outcomeIndex =>
+      for {
+        _ <- executeMutualForCase(outcomeIndex, numOutcomes, local = true)
+        _ <- executeMutualForCase(outcomeIndex, numOutcomes, local = false)
+        _ <- executeUnilateralForCase(outcomeIndex, numOutcomes, local = true)
+        _ <- executeUnilateralForCase(outcomeIndex, numOutcomes, local = false)
+        _ <- executeJusticeCase(outcomeIndex, numOutcomes, local = true)
+        _ <- executeJusticeCase(outcomeIndex, numOutcomes, local = false)
+      } yield succeed
+    }
+
+    Future.sequence(testFs).flatMap(_ => executeRefundCase(numOutcomes))
   }
 }
