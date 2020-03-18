@@ -8,7 +8,8 @@ Bitcoin-s has node module that allows you to connect to the p2p network.
 ### Neutrino Node
 
 Bitcoin-s has experimental support for neutrino which is a new lite client proposal on the bitcoin p2p network. You can
-read more about how neutrino works [here](https://suredbits.com/neutrino-what-is-it-and-why-we-need-it/).
+read more about how neutrino works [here](https://suredbits.com/neutrino-what-is-it-and-why-we-need-it/). At this time, 
+bitcoin-s only supports connecting to one trusted peer.
 
 #### Callbacks
 
