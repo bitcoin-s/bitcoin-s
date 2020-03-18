@@ -230,6 +230,9 @@
       "version-0.3.0/config/version-0.3.0-configuration": {
         "title": "Application Configuration"
       },
+      "version-0.3.0/version-0.3.0-contributing-website": {
+        "title": "Contributing to the website"
+      },
       "version-0.3.0/version-0.3.0-contributing": {
         "title": "Contributing"
       },
