@@ -42,6 +42,43 @@ sealed abstract class TxSigComponent {
   def sigVersion: SignatureVersion
 }
 
+object TxSigComponent {
+
+  def apply(
+      transaction: Transaction,
+      inputIndex: UInt32,
+      output: TransactionOutput,
+      flags: Seq[ScriptFlag]): TxSigComponent = {
+    val scriptSig = transaction.inputs(inputIndex.toInt).scriptSignature
+    output.scriptPubKey match {
+      case _: WitnessScriptPubKey =>
+        transaction match {
+          case _: BaseTransaction =>
+            throw new IllegalArgumentException(
+              s"Cannot spend from segwit output ($output) with a base transaction ($transaction)")
+          case wtx: WitnessTransaction =>
+            WitnessTxSigComponent(wtx, inputIndex, output, flags)
+        }
+      case _: P2SHScriptPubKey =>
+        val p2shScriptSig = scriptSig.asInstanceOf[P2SHScriptSignature]
+        if (WitnessScriptPubKey.isWitnessScriptPubKey(
+              p2shScriptSig.redeemScript.asm)) {
+          transaction match {
+            case _: BaseTransaction =>
+              throw new IllegalArgumentException(
+                s"Cannot spend from segwit output ($output) with a base transaction ($transaction)")
+            case wtx: WitnessTransaction =>
+              WitnessTxSigComponentP2SH(wtx, inputIndex, output, flags)
+          }
+        } else {
+          P2SHTxSigComponent(transaction, inputIndex, output, flags)
+        }
+      case _: RawScriptPubKey =>
+        BaseTxSigComponent(transaction, inputIndex, output, flags)
+    }
+  }
+}
+
 /**
   * The [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]]
   * used to evaluate the the original Satoshi transaction digest algorithm.
