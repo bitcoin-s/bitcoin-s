@@ -257,6 +257,11 @@ lazy val gui = project
     cli
   )
 
+lazy val dlcSuredbitsClient = project
+  .in(file("app/dlc-suredbits-client"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(eclairRpc, wallet)
+
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
 lazy val chain = project
   .in(file("chain"))

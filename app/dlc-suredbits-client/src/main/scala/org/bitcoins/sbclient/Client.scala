@@ -1,0 +1,130 @@
+package org.bitcoins.sbclient
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpRequest, Uri}
+import akka.stream.ActorMaterializer
+import akka.util.ByteString
+import org.bitcoins.core.crypto.{
+  AesCrypt,
+  AesEncryptedData,
+  AesKey,
+  ECPublicKey,
+  SchnorrDigitalSignature
+}
+import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
+import org.bitcoins.eclair.rpc.api.{EclairApi, OutgoingPaymentStatus}
+import play.api.libs.json.{JsError, JsSuccess, JsValue, Json, Reads}
+
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.duration.DurationInt
+
+object Client {
+
+  def rawRestCall(uri: Uri)(implicit system: ActorSystem): Future[String] = {
+    implicit val m: ActorMaterializer = ActorMaterializer.create(system)
+    implicit val ec: ExecutionContextExecutor = m.executionContext
+
+    Http()
+      .singleRequest(HttpRequest(uri = uri))
+      .flatMap(
+        response =>
+          response.entity.dataBytes
+            .runFold(ByteString.empty)(_ ++ _)
+            .map(payload => payload.decodeString(ByteString.UTF_8))
+      )
+  }
+
+  def restCall(uri: Uri)(implicit system: ActorSystem): Future[JsValue] = {
+    rawRestCall(uri).map(Json.parse)(system.dispatcher)
+  }
+
+  import org.bitcoins.eclair.rpc.client.JsonReaders.lnInvoiceReads
+  implicit val invoiceAndDataResponseReads: Reads[InvoiceAndDataResponse] =
+    Json.reads[InvoiceAndDataResponse]
+
+  def request(
+      exchange: Exchange,
+      tradingPair: TradingPair,
+      requestType: RequestType)(
+      implicit system: ActorSystem): Future[InvoiceAndDataResponse] = {
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
+
+    val prefix = "https://test.api.suredbits.com/dlc/v0"
+    val uri =
+      s"$prefix/${exchange.toLongString}/${tradingPair.toLowerString}/${requestType.requestString}"
+    restCall(uri)
+      .map(_.validate[InvoiceAndDataResponse])
+      .flatMap {
+        case JsSuccess(response, _) => Future.successful(response)
+        case JsError(error) =>
+          Future.failed(
+            new RuntimeException(
+              s"Unexpected error when parsing response: $error"))
+      }
+  }
+
+  def makePayment(eclairApi: EclairApi, invoice: LnInvoice)(
+      implicit ec: ExecutionContext): Future[PaymentPreimage] = {
+    for {
+      payment <- eclairApi.payAndMonitorInvoice(invoice,
+                                                externalId = None,
+                                                interval = 500.milliseconds,
+                                                maxAttempts = 10)
+    } yield payment.status match {
+      case OutgoingPaymentStatus.Succeeded(preImage, _, _, _) => preImage
+      case OutgoingPaymentStatus.Failed(errs) =>
+        val errMsgs = errs.map(_.failureMessage).mkString(",\n")
+        throw new RuntimeException(s"Payment failed: $errMsgs")
+      case OutgoingPaymentStatus.Pending =>
+        throw new IllegalStateException("This should not be possible.")
+    }
+  }
+
+  def decryptData(data: String, preImage: PaymentPreimage): String = {
+    AesCrypt.decrypt(AesEncryptedData.fromValidBase64(data),
+                     AesKey.fromValidBytes(preImage.bytes)) match {
+      case Left(err) => throw err
+      case Right(decrypted) =>
+        decrypted.decodeUtf8 match {
+          case Right(decodedStr) => decodedStr
+          case Left(err)         => throw err
+        }
+    }
+  }
+
+  def requestAndPay(
+      exchange: Exchange,
+      tradingPair: TradingPair,
+      requestType: RequestType,
+      eclairApi: EclairApi)(implicit system: ActorSystem): Future[String] = {
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
+
+    for {
+      InvoiceAndDataResponse(invoice, encryptedData) <- request(exchange,
+                                                                tradingPair,
+                                                                requestType)
+      preImage <- makePayment(eclairApi, invoice)
+    } yield decryptData(encryptedData, preImage)
+  }
+
+  def requestRValueAndPay(
+      exchange: Exchange,
+      tradingPair: TradingPair,
+      eclairApi: EclairApi)(
+      implicit system: ActorSystem): Future[ECPublicKey] = {
+    val dataF =
+      requestAndPay(exchange, tradingPair, RequestType.RValue, eclairApi)
+    dataF.map(ECPublicKey.fromHex)(system.dispatcher)
+  }
+
+  def requestLastSigAndPay(
+      exchange: Exchange,
+      tradingPair: TradingPair,
+      eclairApi: EclairApi)(
+      implicit system: ActorSystem): Future[SchnorrDigitalSignature] = {
+    val dataF =
+      requestAndPay(exchange, tradingPair, RequestType.LastSig, eclairApi)
+    dataF.map(SchnorrDigitalSignature.fromHex)(system.dispatcher)
+  }
+}
