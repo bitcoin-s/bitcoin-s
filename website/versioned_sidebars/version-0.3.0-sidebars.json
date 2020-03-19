@@ -1,0 +1,62 @@
+{
+  "version-0.3.0-docs": {
+    "Getting Started": [
+      "version-0.3.0-getting-started"
+    ],
+    "Getting Setup": [
+      "version-0.3.0-getting-setup"
+    ],
+    "Applications": [
+      "version-0.3.0-applications/cli",
+      "version-0.3.0-applications/server"
+    ],
+    "Chain": [
+      "version-0.3.0-chain/chain",
+      "version-0.3.0-chain/filter-sync"
+    ],
+    "Configuration": [
+      "version-0.3.0-config/configuration"
+    ],
+    "Core Module": [
+      "version-0.3.0-core/core-intro",
+      "version-0.3.0-core/addresses",
+      "version-0.3.0-core/hd-keys",
+      "version-0.3.0-core/adding-spks",
+      "version-0.3.0-core/spending-info",
+      "version-0.3.0-core/sign",
+      "version-0.3.0-core/psbts",
+      "version-0.3.0-core/txbuilder"
+    ],
+    "Key Manager": [
+      "version-0.3.0-key-manager/key-manager"
+    ],
+    "Node": [
+      "version-0.3.0-node/node"
+    ],
+    "Wallet": [
+      "version-0.3.0-wallet/wallet",
+      "version-0.3.0-wallet/chain-query-api",
+      "version-0.3.0-wallet/node-api",
+      "version-0.3.0-wallet/dlc",
+      "version-0.3.0-wallet/wallet-rescan"
+    ],
+    "RPC Clients": [
+      "version-0.3.0-rpc/rpc-clients-intro",
+      "version-0.3.0-rpc/rpc-eclair",
+      "version-0.3.0-rpc/rpc-bitcoind"
+    ],
+    "Secp256k1": [
+      "version-0.3.0-secp256k1/secp256k1"
+    ],
+    "Testkit": [
+      "version-0.3.0-testkit/testkit"
+    ],
+    "Contributing": [
+      "version-0.3.0-contributing",
+      "version-0.3.0-contributing-website"
+    ],
+    "Security": [
+      "version-0.3.0-security"
+    ]
+  }
+}

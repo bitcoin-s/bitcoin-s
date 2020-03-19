@@ -1,6 +1,7 @@
 ---
-id: contributing-website
+id: version-0.3.0-contributing-website
 title: Contributing to the website
+original_id: contributing-website
 ---
 
 This website is built using [Docusaurus](https://docusaurus.io/).
@@ -76,12 +77,7 @@ the `id` specified in the page metadata (see the existing pages for an example).
 You can create a new version of the site by running this in the `website/` directory.
 
 ```bashrc
-yarn run version [MY-VERSION-HERE]
-```
-
-You also need to manually run 
-```bashrc
-git add versioned_docs/version-[MY-VERSION-HERE]/ versioned_sidebars/version-[MY-VERSION-HERE]-sidebars.json
+ yarn run version [MY-VERSION-HERE]
 ```
 
 ## Publishing the site
