@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>TxBuilder example · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S features a transaction buidlder that constructs and signs Bitcoin"/><meta name="docsearch:version" content="0.3.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="TxBuilder example · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S features a transaction buidlder that constructs and signs Bitcoin"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.3.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Core module</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-started">Add Bitcoin-S to your project</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/core/core-intro">Core module</a></li><li class="navListItem"><a class="navItem" href="/docs/core/addresses">Generating addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/core/hd-keys">HD key generation</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/core/txbuilder">TxBuilder example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/applications/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/cli">bitcoin-s cli</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/configuration">Application configuration</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/key-manager">Key Manager</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/node">Light client</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/wallet">Wallet</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/security">Security</a></li></ul></div></div></section></div><script>
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>TxBuilder Example · bitcoin-s</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="Bitcoin-S features a transaction builder that constructs and signs Bitcoin"/><meta name="docsearch:version" content="0.3.0"/><meta name="docsearch:language" content="en"/><meta property="og:title" content="TxBuilder Example · bitcoin-s"/><meta property="og:type" content="website"/><meta property="og:url" content="https://bitcoin-s.org/"/><meta property="og:description" content="Bitcoin-S features a transaction builder that constructs and signs Bitcoin"/><meta property="og:image" content="https://bitcoin-s.org/img/undraw_online.svg"/><meta name="twitter:card" content="summary"/><meta name="twitter:image" content="https://bitcoin-s.org/img/undraw_tweetstorm.svg"/><link rel="shortcut icon" href="/img/favicon.ico"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.css"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><link rel="stylesheet" href="/css/code-block-buttons.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script><script type="text/javascript" src="https://fonts.googleapis.com/css?family=Montserrat:500"></script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-61958686-2"></script><script type="text/javascript" src="/js/code-block-buttons.js"></script><script src="/js/scrollSpy.js"></script><link rel="stylesheet" href="/css/main.css"/><script src="/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/"><img class="logo" src="/img/favicon.ico" alt="bitcoin-s"/><h2 class="headerTitleWithLogo">bitcoin-s</h2></a><a href="/versions"><h3>0.3.0</h3></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/docs/core/core-intro" target="_self">Docs</a></li><li class=""><a href="/api/org/bitcoins" target="_self">API</a></li><li class=""><a href="/help" target="_self">Help</a></li><li class="navSearchWrapper reactNavSearchWrapper"><input type="text" id="search_input_react" placeholder="Search" title="Search"/></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Core Module</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Started</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-started">Intro and Getting Started</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Getting Setup</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/getting-setup">Getting Bitcoin-S installed on your machine</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Applications</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/applications/cli">bitcoin-s cli</a></li><li class="navListItem"><a class="navItem" href="/docs/applications/server">Application Server</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Chain</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/chain/chain">Blockchain Verification</a></li><li class="navListItem"><a class="navItem" href="/docs/chain/filter-sync">Syncing Blockfilters</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Configuration</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/config/configuration">Application Configuration</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Core Module</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/core/core-intro">Core Module</a></li><li class="navListItem"><a class="navItem" href="/docs/core/addresses">Generating Addresses</a></li><li class="navListItem"><a class="navItem" href="/docs/core/hd-keys">HD Key Generation</a></li><li class="navListItem"><a class="navItem" href="/docs/core/adding-spks">Adding New Script Types</a></li><li class="navListItem"><a class="navItem" href="/docs/core/spending-info">Signing Transactions</a></li><li class="navListItem"><a class="navItem" href="/docs/core/sign">Sign API</a></li><li class="navListItem"><a class="navItem" href="/docs/core/psbts">Partially Signed Bitcoin Transactions</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/docs/core/txbuilder">TxBuilder Example</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Key Manager</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/key-manager/key-manager">Key Manager</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Node</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/node/node">Light Client</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Wallet</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet">Wallet</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/chain-query-api">Chain Query API</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/node-api">Node API</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/dlc">Executing A DLC with Bitcoin-S</a></li><li class="navListItem"><a class="navItem" href="/docs/wallet/wallet-rescan">Wallet Rescans</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">RPC Clients</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-clients-intro">Introduction</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-eclair">Eclair</a></li><li class="navListItem"><a class="navItem" href="/docs/rpc/rpc-bitcoind">bitcoind/Bitcoin Core</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Secp256k1</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/secp256k1/secp256k1">Secp256k1</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Testkit</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/testkit/testkit">Testkit</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Contributing</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/contributing">Contributing</a></li><li class="navListItem"><a class="navItem" href="/docs/contributing-website">Contributing to the website</a></li></ul></div><div class="navGroup"><h3 class="navGroupCategoryTitle">Security</h3><ul class=""><li class="navListItem"><a class="navItem" href="/docs/security">Security</a></li></ul></div></div></section></div><script>
             var coll = document.getElementsByClassName('collapsible');
             var checkActiveCategory = true;
             for (var i = 0; i < coll.length; i++) {
@@ -54,48 +54,41 @@
                 };
               }
             });
-        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/core/txbuilder.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">TxBuilder example</h1></header><article><div><span><p>Bitcoin-S features a transaction buidlder that constructs and signs Bitcoin
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><a class="edit-page-link button" href="https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/core/txbuilder.md" target="_blank" rel="noreferrer noopener">Edit</a><h1 id="__docusaurus" class="postHeaderTitle">TxBuilder Example</h1></header><article><div><span><p>Bitcoin-S features a transaction builder that constructs and signs Bitcoin
 transactions. Here's an example of how to use it</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> scala.concurrent._
-<span class="hljs-keyword">import</span> scala.concurrent.duration._
-
-<span class="hljs-keyword">import</span> org.bitcoins.core._
-<span class="hljs-keyword">import</span> number._
-<span class="hljs-keyword">import</span> config._
-<span class="hljs-keyword">import</span> currency._
-<span class="hljs-keyword">import</span> crypto._
-<span class="hljs-keyword">import</span> script.crypto._
-<span class="hljs-keyword">import</span> protocol.transaction._
-<span class="hljs-keyword">import</span> protocol.script._
-
-<span class="hljs-keyword">import</span> wallet.builder._
-<span class="hljs-keyword">import</span> wallet.fee._
-<span class="hljs-keyword">import</span> wallet.utxo._
-
-<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.<span class="hljs-type">Implicits</span>.global
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> ec: <span class="hljs-type">ExecutionContext</span> = <span class="hljs-type">ExecutionContext</span>.<span class="hljs-type">Implicits</span>.global
+<span class="hljs-comment">// ec: ExecutionContext = scala.concurrent.impl.ExecutionContextImpl$$anon$3@259cf018[Running, parallelism = 8, size = 2, active = 0, running = 0, steals = 20, tasks = 0, submissions = 0]</span>
 
 <span class="hljs-comment">// generate a fresh private key that we are going to use in the scriptpubkey</span>
 <span class="hljs-keyword">val</span> privKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+<span class="hljs-comment">// privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> pubKey = privKey.publicKey
+<span class="hljs-comment">// pubKey: ECPublicKey = ECPublicKey(0383604b72577aebd92ab56ba6141a3e942fb86941e37b2e978b11257f8b9a6400)</span>
 
 <span class="hljs-comment">// this is the script that the TxBuilder is going to create a</span>
 <span class="hljs-comment">// script signature that validly spends this scriptPubKey</span>
 <span class="hljs-keyword">val</span> creditingSpk = <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = privKey.publicKey)
+<span class="hljs-comment">// creditingSpk: P2PKHScriptPubKey = pkh(be30549d4ac6b3391370321ffbc630aef84272e6)</span>
 <span class="hljs-keyword">val</span> amount = <span class="hljs-number">10000.</span>satoshis
+<span class="hljs-comment">// amount: Satoshis = 10000 sats</span>
 
 <span class="hljs-comment">// this is the UTXO we are going to be spending</span>
 <span class="hljs-keyword">val</span> utxo =
   <span class="hljs-type">TransactionOutput</span>(value = amount, scriptPubKey = creditingSpk)
+<span class="hljs-comment">// utxo: TransactionOutput = TransactionOutput(10000 sats,pkh(be30549d4ac6b3391370321ffbc630aef84272e6))</span>
 
 <span class="hljs-comment">// the private key that locks the funds for the script we are spending too</span>
 <span class="hljs-keyword">val</span> destinationPrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+<span class="hljs-comment">// destinationPrivKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 
 <span class="hljs-comment">// the amount we are sending -- 5000 satoshis -- to the destinationSPK</span>
 <span class="hljs-keyword">val</span> destinationAmount = <span class="hljs-number">5000.</span>satoshis
+<span class="hljs-comment">// destinationAmount: Satoshis = 5000 sats</span>
 
 <span class="hljs-comment">// the script that corresponds to destination private key, this is what is protecting the money</span>
 <span class="hljs-keyword">val</span> destinationSPK =
   <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = destinationPrivKey.publicKey)
+<span class="hljs-comment">// destinationSPK: P2PKHScriptPubKey = pkh(fab4c315dedacdf530c6b560c146514749533e83)</span>
 
 <span class="hljs-comment">// this is where we are sending money too</span>
 <span class="hljs-comment">// we could add more destinations here if we</span>
@@ -104,48 +97,57 @@ transactions. Here's an example of how to use it</p>
     <span class="hljs-keyword">val</span> destination1 = <span class="hljs-type">TransactionOutput</span>(value = destinationAmount,
                                          scriptPubKey = destinationSPK)
 
-    <span class="hljs-type">List</span>(destination1)
+    <span class="hljs-type">Vector</span>(destination1)
 }
+<span class="hljs-comment">// destinations: Vector[TransactionOutput] = Vector(TransactionOutput(5000 sats,pkh(fab4c315dedacdf530c6b560c146514749533e83)))</span>
 
 <span class="hljs-comment">// we have to fabricate a transaction that contains the</span>
 <span class="hljs-comment">// UTXO we are trying to spend. If this were a real blockchain</span>
 <span class="hljs-comment">// we would need to reference the UTXO set</span>
 <span class="hljs-keyword">val</span> creditingTx = <span class="hljs-type">BaseTransaction</span>(version = <span class="hljs-type">Int32</span>.one,
-                                  inputs = <span class="hljs-type">List</span>.empty,
-                                  outputs = <span class="hljs-type">List</span>(utxo),
+                                  inputs = <span class="hljs-type">Vector</span>.empty,
+                                  outputs = <span class="hljs-type">Vector</span>(utxo),
                                   lockTime = <span class="hljs-type">UInt32</span>.zero)
+<span class="hljs-comment">// creditingTx: BaseTransaction = BaseTransactionImpl(Int32Impl(1),Vector(),Vector(TransactionOutput(10000 sats,pkh(be30549d4ac6b3391370321ffbc630aef84272e6))),UInt32Impl(0))</span>
 
 <span class="hljs-comment">// this is the information we need from the crediting TX</span>
 <span class="hljs-comment">// to properly "link" it in the transaction we are creating</span>
 <span class="hljs-keyword">val</span> outPoint = <span class="hljs-type">TransactionOutPoint</span>(creditingTx.txId, <span class="hljs-type">UInt32</span>.zero)
+<span class="hljs-comment">// outPoint: TransactionOutPoint = TransactionOutPoint(0f9997fb129243db98adaf0fb4882c14cfbda0a076b954b4bd0a7f500a41eeff:0)</span>
 
 <span class="hljs-comment">// this contains all the information we need to</span>
 <span class="hljs-comment">// validly sign the UTXO above</span>
-<span class="hljs-keyword">val</span> utxoSpendingInfo = <span class="hljs-type">BitcoinUTXOSpendingInfo</span>(outPoint = outPoint,
-                                               output = utxo,
-                                               signers = <span class="hljs-type">List</span>(privKey),
-                                               redeemScriptOpt = <span class="hljs-type">None</span>,
-                                               scriptWitnessOpt = <span class="hljs-type">None</span>,
-                                               hashType =
-                                                <span class="hljs-type">HashType</span>.sigHashAll,
-                                               conditionalPath =
-                                                <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoConditionsLeft</span>)
+<span class="hljs-keyword">val</span> utxoSpendingInfo = <span class="hljs-type">BitcoinUTXOSpendingInfoFull</span>(outPoint = outPoint,
+                                                   output = utxo,
+                                                   signers = <span class="hljs-type">Vector</span>(privKey),
+                                                   redeemScriptOpt = <span class="hljs-type">None</span>,
+                                                   scriptWitnessOpt = <span class="hljs-type">None</span>,
+                                                   hashType =
+                                                       <span class="hljs-type">HashType</span>.sigHashAll,
+                                                   conditionalPath =
+                                                       <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoConditionsLeft</span>)
+<span class="hljs-comment">// utxoSpendingInfo: BitcoinUTXOSpendingInfoFull = P2PKHSpendingInfo(TransactionOutPoint(0f9997fb129243db98adaf0fb4882c14cfbda0a076b954b4bd0a7f500a41eeff:0),10000 sats,pkh(be30549d4ac6b3391370321ffbc630aef84272e6),Masked(ECPrivateKeyImpl),SIGHASH_ALL(Int32Impl(1)))</span>
 
 <span class="hljs-comment">// all of the UTXO spending information, since we are only</span>
 <span class="hljs-comment">//spending one UTXO, this is just one element</span>
-<span class="hljs-keyword">val</span> utxos: <span class="hljs-type">List</span>[<span class="hljs-type">BitcoinUTXOSpendingInfo</span>] = <span class="hljs-type">List</span>(utxoSpendingInfo)
+<span class="hljs-keyword">val</span> utxos: <span class="hljs-type">Vector</span>[<span class="hljs-type">BitcoinUTXOSpendingInfoFull</span>] = <span class="hljs-type">Vector</span>(utxoSpendingInfo)
+<span class="hljs-comment">// utxos: Vector[BitcoinUTXOSpendingInfoFull] = Vector(P2PKHSpendingInfo(TransactionOutPoint(0f9997fb129243db98adaf0fb4882c14cfbda0a076b954b4bd0a7f500a41eeff:0),10000 sats,pkh(be30549d4ac6b3391370321ffbc630aef84272e6),Masked(ECPrivateKeyImpl),SIGHASH_ALL(Int32Impl(1))))</span>
 
 <span class="hljs-comment">// this is how much we are going to pay as a fee to the network</span>
 <span class="hljs-comment">// for this example, we are going to pay 1 satoshi per byte</span>
 <span class="hljs-keyword">val</span> feeRate = <span class="hljs-type">SatoshisPerByte</span>(<span class="hljs-number">1.</span>satoshi)
+<span class="hljs-comment">// feeRate: SatoshisPerByte = SatoshisPerByte(1 sat)</span>
 
 <span class="hljs-keyword">val</span> changePrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+<span class="hljs-comment">// changePrivKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> changeSPK = <span class="hljs-type">P2PKHScriptPubKey</span>(pubKey = changePrivKey.publicKey)
+<span class="hljs-comment">// changeSPK: P2PKHScriptPubKey = pkh(79c2ad65b2805f0b56ee83b160a0fc6e9eeec5ff)</span>
 
 <span class="hljs-comment">// the network we are on, for this example we are using</span>
 <span class="hljs-comment">// the regression test network. This is a network you control</span>
 <span class="hljs-comment">// on your own machine</span>
 <span class="hljs-keyword">val</span> networkParams = <span class="hljs-type">RegTest</span>
+<span class="hljs-comment">// networkParams: RegTest.type = RegTest</span>
 
 <span class="hljs-comment">// Yay! Now we have a TxBuilder object that we can use</span>
 <span class="hljs-comment">// to sign the TX.</span>
@@ -158,6 +160,7 @@ transactions. Here's an example of how to use it</p>
     network = networkParams)
   <span class="hljs-type">Await</span>.result(builderF, <span class="hljs-number">30.</span>seconds)
 }
+<span class="hljs-comment">// txBuilder: BitcoinTxBuilder = BitcoinTxBuilderImpl(Vector(TransactionOutput(5000 sats,pkh(fab4c315dedacdf530c6b560c146514749533e83))),Map(TransactionOutPoint(0f9997fb129243db98adaf0fb4882c14cfbda0a076b954b4bd0a7f500a41eeff:0) -&gt; P2PKHSpendingInfo(TransactionOutPoint(0f9997fb129243db98adaf0fb4882c14cfbda0a076b954b4bd0a7f500a41eeff:0),10000 sats,pkh(be30549d4ac6b3391370321ffbc630aef84272e6),Masked(ECPrivateKeyImpl),SIGHASH_ALL(Int32Impl(1)))),SatoshisPerByte(1 sat),pkh(79c2ad65b2805f0b56ee83b160a0fc6e9eeec5ff),RegTest)</span>
 
 <span class="hljs-comment">// Let's finally produce a validly signed tx!</span>
 <span class="hljs-comment">// The 'sign' method is going produce a validly signed transaction</span>
@@ -171,6 +174,7 @@ transactions. Here's an example of how to use it</p>
   <span class="hljs-keyword">val</span> signF = txBuilder.sign
   <span class="hljs-type">Await</span>.result(signF, <span class="hljs-number">30.</span>seconds)
 }
+<span class="hljs-comment">// signedTx: Transaction = BaseTransactionImpl(Int32Impl(2),List(TransactionInputImpl(TransactionOutPoint(0f9997fb129243db98adaf0fb4882c14cfbda0a076b954b4bd0a7f500a41eeff:0),P2PKHScriptSignature(ECPublicKey(0383604b72577aebd92ab56ba6141a3e942fb86941e37b2e978b11257f8b9a6400), ECDigitalSignature(3045022100f8138b17824e063daa266388d28117e122bcaca623b5cd5410959b96692d7e5f02201110005441e352ea076ec27c21524ad51ac1b7315209e9760ae07aaf726978ac01)),UInt32Impl(0))),Vector(TransactionOutput(5000 sats,pkh(fab4c315dedacdf530c6b560c146514749533e83)), TransactionOutput(4774 sats,pkh(79c2ad65b2805f0b56ee83b160a0fc6e9eeec5ff))),UInt32Impl(0))</span>
 </code></pre>
 <pre><code class="hljs css language-scala">signedTx.inputs.length
 <span class="hljs-comment">// res0: Int = 1</span>
@@ -180,9 +184,9 @@ signedTx.outputs.length
 
 <span class="hljs-comment">//remember, you can call .hex on any bitcoin-s data structure to get the hex representation!</span>
 signedTx.hex
-<span class="hljs-comment">// res2: String = "020000000105ce42dbf90341da072dd5c55ae5a1c4d18fccc617ae95aa91d4f0c8721436ec000000006b483045022100cb92bb8e229baf1a91143dec4ebbd5e042e59c6d414af0155f807fe794015f860220010bb5fa4a4bd47443e9126763ad99427d13d783f265fa5ed16663c4c61a80b2012103beb6c43fc354dff73c504d056160c23a7683171dd82726fd4c3f45a92c90bda2000000000288130000000000001976a9141fef0151debc8f755c716f64fbf579fe627d4c3588aca6120000000000001976a91429219d3b85bf55540cbc64445f6ed85bc18af25c88ac00000000"</span>
+<span class="hljs-comment">// res2: String = 0200000001ffee410a507f0abdb454b976a0a0bdcf142c88b40fafad98db439212fb97990f000000006b483045022100f8138b17824e063daa266388d28117e122bcaca623b5cd5410959b96692d7e5f02201110005441e352ea076ec27c21524ad51ac1b7315209e9760ae07aaf726978ac01210383604b72577aebd92ab56ba6141a3e942fb86941e37b2e978b11257f8b9a6400000000000288130000000000001976a914fab4c315dedacdf530c6b560c146514749533e8388aca6120000000000001976a91479c2ad65b2805f0b56ee83b160a0fc6e9eeec5ff88ac00000000</span>
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-2-17 by Chris Stewart</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/core/sign"><span class="arrow-prev">← </span><span>Sign API</span></a><a class="docs-next button" href="/docs/rpc/rpc-clients-intro"><span>Introduction</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 2020-3-13 by Ben Carman</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/docs/core/psbts"><span class="arrow-prev">← </span><span>Partially Signed Bitcoin Transactions</span></a><a class="docs-next button" href="/docs/key-manager/key-manager"><span>Key Manager</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"></nav></div><footer class="nav-footer" id="footer"><section class="sitemap"><a href="/" class="nav-home"><img src="/img/favicon.ico" alt="bitcoin-s" width="66" height="58"/></a><div><h5>Docs</h5><a href="/docs/en/getting-started">Getting Started</a><a href="/docs/en/core/core-intro">Guides</a><a href="/api/org/bitcoins">API Reference</a></div><div><h5>Community</h5><a href="/en/users.html">User Showcase</a><a href="https://join.slack.com/t/suredbits/shared_invite/enQtNDEyMjY3MTg1MTg3LTYyYjkwOGUzMDQ4NDAwZjE1M2I3MmQyNWNlZjNlYjg4OGRjYTRjNWUwNjRjNjg4Y2NjZjAxYjU1N2JjMTU1YWM" target="_blank" rel="noreferrer noopener">Slack</a><a href="https://gitter.im/bitcoin-s-core/">Gitter chat</a></div><div><h5>More</h5><a href="https://github.com/bitcoin-s/bitcoin-s">GitHub</a><a class="github-button" href="https://github.com/bitcoin-s/bitcoin-s" data-icon="octicon-star" data-count-href="/bitcoin-s/bitcoin-s-core/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div></section><section class="copyright">Copyright © 2020 Suredbits &amp; the bitcoin-s developers</section></footer></div><script type="text/javascript" src="https://cdn.jsdelivr.net/docsearch.js/1/docsearch.min.js"></script><script>
                 document.addEventListener('keyup', function(e) {
                   if (e.target !== document.body) {
                     return;
