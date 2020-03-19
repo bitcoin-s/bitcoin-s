@@ -3,6 +3,8 @@ package org.bitcoins.core.script.interpreter
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -175,6 +177,32 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
     */
   def runAllVerify(programs: Seq[PreExecutionScriptProgram]): Boolean = {
     !programs.exists(p => ScriptInterpreter.run(p) != ScriptOk)
+  }
+
+  def verifyInputScript(
+      transaction: Transaction,
+      inputIndex: Long,
+      prevOut: TransactionOutput): Boolean = {
+    val sigComponent = TxSigComponent(
+      transaction,
+      UInt32(inputIndex),
+      prevOut,
+      Policy.standardFlags
+    )
+    ScriptInterpreter.runVerify(PreExecutionScriptProgram(sigComponent))
+  }
+
+  def verifyTransaction(
+      transaction: Transaction,
+      prevOuts: Vector[TransactionOutput]): Boolean = {
+    require(
+      transaction.inputs.size == prevOuts.size,
+      s"There must be a prevOut for every input in the transaction, got ${prevOuts.size}")
+
+    prevOuts.zipWithIndex.forall {
+      case (prevOut, index) =>
+        verifyInputScript(transaction, index, prevOut)
+    }
   }
 
   /**
