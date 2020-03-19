@@ -33,15 +33,13 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2WPKHV0SpendingInfo
-import org.bitcoins.dlc.DLCMessage.ContractInfo
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest.Assertion
-import scodec.bits.ByteVector
 
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.DurationInt
@@ -197,18 +195,13 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       val localVout = localFundingUtxos.head.outPoint.vout
       val remoteVout = remoteFundingUtxos.head.outPoint.vout
 
-      val outcomes = DLCTestUtil.genOutcomes(numOutcomes)
-      val outcomeHashes =
-        outcomes.map(msg => CryptoUtil.sha256(ByteVector(msg.getBytes)).flip)
+      val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
 
-      val outcomeMap =
-        outcomeHashes.zip(DLCTestUtil.genValues(numOutcomes, totalInput)).toMap
-      val otherOutcomeMap = outcomeMap.map {
-        case (hash, amt) => (hash, (totalInput - amt).satoshis)
-      }
+      val (outcomes, otherOutcomes) =
+        DLCTestUtil.genContractInfos(outcomeHashes, totalInput)
 
       val acceptDLC = DLCClient(
-        outcomes = ContractInfo(outcomeMap),
+        outcomes = outcomes,
         oraclePubKey = oraclePubKey,
         preCommittedR = preCommittedR,
         isInitiator = false,
@@ -234,7 +227,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
       )
 
       val offerDLC = DLCClient(
-        outcomes = ContractInfo(otherOutcomeMap),
+        outcomes = otherOutcomes,
         oraclePubKey = oraclePubKey,
         preCommittedR = preCommittedR,
         isInitiator = true,
@@ -679,7 +672,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     }
   }
 
-  val numOutcomesToTest: Vector[Int] = Vector(2, 8) //, 100)
+  val numOutcomesToTest: Vector[Int] = Vector(2, 8, 100)
 
   def indicesToTest(numOutcomes: Int): Vector[Int] = {
     if (numOutcomes == 2) {

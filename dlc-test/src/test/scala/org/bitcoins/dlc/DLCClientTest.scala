@@ -30,19 +30,17 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{BitcoinScriptUtil, CryptoUtil, FutureUtil}
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
   P2WPKHV0SpendingInfo
 }
-import org.bitcoins.dlc.DLCMessage.ContractInfo
 import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 import org.scalatest.Assertion
-import scodec.bits.ByteVector
 
 import scala.concurrent.{Future, Promise}
 
@@ -201,19 +199,14 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
   def constructDLCClients(
       numOutcomes: Int): (DLCClient, DLCClient, Vector[Sha256DigestBE]) = {
-    val outcomes: Vector[String] = DLCTestUtil.genOutcomes(numOutcomes)
-    val outcomeHashes =
-      outcomes.map(msg => CryptoUtil.sha256(ByteVector(msg.getBytes)).flip)
+    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
 
-    val outcomeMap =
-      outcomeHashes.zip(DLCTestUtil.genValues(numOutcomes, totalInput)).toMap
-    val remoteOutcomeMap = outcomeMap.map {
-      case (hash, amt) => (hash, (totalInput - amt).satoshis)
-    }
+    val (outcomes, remoteOutcomes) =
+      DLCTestUtil.genContractInfos(outcomeHashes, totalInput)
 
     // Offer is local
     val dlcOffer: DLCClient = DLCClient(
-      outcomes = ContractInfo(outcomeMap),
+      outcomes = outcomes,
       oraclePubKey = oraclePubKey,
       preCommittedR = preCommittedR,
       isInitiator = true,
@@ -235,7 +228,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
     // Accept is remote
     val dlcAccept: DLCClient = DLCClient(
-      outcomes = ContractInfo(remoteOutcomeMap),
+      outcomes = remoteOutcomes,
       oraclePubKey = oraclePubKey,
       preCommittedR = preCommittedR,
       isInitiator = false,
