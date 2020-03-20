@@ -10,12 +10,14 @@ import org.bitcoins.core.protocol.transaction.Transaction
 sealed abstract class FeeRate {
   def *(tx: Transaction): CurrencyUnit = calc(tx)
   def calc(tx: Transaction): CurrencyUnit
-  def baseAmount: Double
   def units: FeeUnit
+  def baseAmount: Double
+
+  require(baseAmount >= 0, "FeeRate cannot be negative")
 }
 
 /**
-  * Meant to represent the different fee unit types for the bitcoin protocol
+  * Meant to represent the different fee rate types for the bitcoin protocol
   * @see [[https://en.bitcoin.it/wiki/Weight_units]]
   */
 sealed abstract class BitcoinFeeRate extends FeeRate {
@@ -23,10 +25,17 @@ sealed abstract class BitcoinFeeRate extends FeeRate {
   override def baseAmount: Double = sats
 
   def calc(tx: Transaction): CurrencyUnit = {
-    Satoshis((tx.baseSize * baseAmount).toLong)
+    val fee = tx.baseSize * baseAmount
+
+    require(fee < 0, "Fee cannot be negative")
+    require(fee < Satoshis.max.toDouble,
+            "Fee cannot be greater than the max value")
+
+    Satoshis(fee.toLong)
   }
 }
 
+/** Represents how satoshis per byte of the transaction fee */
 case class SatoshisPerByte(sats: Double) extends BitcoinFeeRate {
 
   def toSatPerKb: SatoshisPerKiloByte = {
@@ -37,10 +46,14 @@ case class SatoshisPerByte(sats: Double) extends BitcoinFeeRate {
 }
 
 object SatoshisPerByte {
+
+  def apply(sats: BigDecimal): SatoshisPerByte = SatoshisPerByte(sats.toDouble)
+
   val zero: SatoshisPerByte = SatoshisPerByte(0)
   val one: SatoshisPerByte = SatoshisPerByte(1)
 }
 
+/** Represents how satoshis per kilobyte of the transaction fee */
 case class SatoshisPerKiloByte(sats: Double) extends BitcoinFeeRate {
 
   override def baseAmount: Double = sats * 0.001
@@ -53,6 +66,10 @@ case class SatoshisPerKiloByte(sats: Double) extends BitcoinFeeRate {
 }
 
 object SatoshisPerKiloByte {
+
+  def apply(sats: BigDecimal): SatoshisPerKiloByte =
+    SatoshisPerKiloByte(sats.toDouble)
+
   val zero: SatoshisPerKiloByte = SatoshisPerKiloByte(0)
   val one: SatoshisPerKiloByte = SatoshisPerKiloByte(1)
 }
@@ -65,19 +82,32 @@ object SatoshisPerKiloByte {
   */
 case class SatoshisPerVirtualByte(sats: Double) extends BitcoinFeeRate {
   override def calc(tx: Transaction): CurrencyUnit = {
-    Satoshis((tx.vsize * baseAmount).toLong)
+    val fee = tx.vsize * baseAmount
+
+    require(fee < 0, "Fee cannot be negative")
+    require(fee < Satoshis.max.toDouble,
+            "Fee cannot be greater than the max value")
+
+    Satoshis(fee.toLong)
   }
 
   override def units: FeeUnit = FeeUnit.PerVirtualByte
 }
 
 object SatoshisPerVirtualByte {
+
+  def apply(sats: BigDecimal): SatoshisPerVirtualByte =
+    SatoshisPerVirtualByte(sats.toDouble)
+
   val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(0)
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(1)
 }
 
+/** Represents how many satoshis to be paid for the transaction fee */
 case class FlatSatoshis(satoshis: Long) extends BitcoinFeeRate {
   override def sats: Double = satoshis.toDouble
+
+  def currencyUnit: Satoshis = Satoshis(satoshis)
 
   override def calc(tx: Transaction): CurrencyUnit = {
     Satoshis(satoshis)

@@ -532,7 +532,7 @@ object JsonReaders {
   implicit object BitcoinFeeUnitReads extends Reads[BitcoinFeeRate] {
     override def reads(json: JsValue): JsResult[BitcoinFeeRate] =
       SerializerUtil.processJsNumber[BitcoinFeeRate](num =>
-        SatoshisPerByte((num * 100000).toDouble))(json)
+        SatoshisPerByte(num * 100000.0))(json)
   }
 
   implicit object FileReads extends Reads[File] {

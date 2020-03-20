@@ -152,8 +152,7 @@ object JsonSerializers {
     new Reads[SatoshisPerKiloByte] {
 
       def reads(json: JsValue): JsResult[SatoshisPerKiloByte] =
-        SerializerUtil.processJsNumber(num =>
-          SatoshisPerKiloByte(num.toDouble))(json)
+        SerializerUtil.processJsNumber(num => SatoshisPerKiloByte(num))(json)
     }
 
   implicit val peerNetworkInfoReads: Reads[PeerNetworkInfo] =

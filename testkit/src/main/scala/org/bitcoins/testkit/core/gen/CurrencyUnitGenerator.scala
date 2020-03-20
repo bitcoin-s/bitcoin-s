@@ -38,8 +38,8 @@ trait CurrencyUnitGenerator {
 
   /** Generates a FeeRate based on the maxFee allowed for a transaction */
   def feeRate(maxFee: Long): Gen[FeeRate] = {
-    Gen.choose(0L, maxFee / 10000L).map { n =>
-      SatoshisPerKiloByte(n.toDouble)
+    Gen.choose(0L, maxFee / 10000.0).map { n =>
+      SatoshisPerKiloByte(n)
     }
   }
 
