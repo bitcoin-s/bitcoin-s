@@ -11,6 +11,7 @@ case class WalletDAOs(
     accountDAO: AccountDAO,
     addressDAO: AddressDAO,
     utxoDAO: SpendingInfoDAO,
+    transactionDAO: TransactionDAO,
     incomingTxDAO: IncomingTransactionDAO,
     outgoingTxDAO: OutgoingTransactionDAO)
 
@@ -20,9 +21,10 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
     val account = AccountDAO()
     val address = AddressDAO()
     val utxo = SpendingInfoDAO()
-    val incomingTxDAO = IncomingTransactionDAO()
-    val outgoingTxDAO = OutgoingTransactionDAO()
-    WalletDAOs(account, address, utxo, incomingTxDAO, outgoingTxDAO)
+    val tx = TransactionDAO()
+    val incomingTx = IncomingTransactionDAO()
+    val outgoingTx = OutgoingTransactionDAO()
+    WalletDAOs(account, address, utxo, tx, incomingTx, outgoingTx)
   }
 
   final override type FixtureParam = WalletDAOs

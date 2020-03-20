@@ -99,9 +99,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         )
     }
 
-    val txDb = IncomingTransactionDb.fromTransaction(tx)
     for {
-      _ <- incomingTxDAO.upsert(txDb)
       written <- spendingInfoDAO.create(utxo)
     } yield {
       val writtenOut = written.outPoint

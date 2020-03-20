@@ -174,6 +174,24 @@ object WalletTestUtil {
                     scriptPubKey = wspk)
   }
 
+  def insertDummyIncomingTransaction(daos: WalletDAOs, utxo: SpendingInfoDb)(
+      implicit ec: ExecutionContext): Future[IncomingTransactionDb] = {
+    val txDb = TransactionDb(utxo.txid,
+                             EmptyTransaction,
+                             utxo.txid,
+                             EmptyTransaction,
+                             None,
+                             Satoshis.zero,
+                             1,
+                             1,
+                             UInt32.zero)
+    val incomingDb = IncomingTransactionDb(utxo.txid, utxo.output.value)
+    for {
+      _ <- daos.transactionDAO.upsert(txDb)
+      written <- daos.incomingTxDAO.upsert(incomingDb)
+    } yield written
+  }
+
   /** Given an account returns a sample address */
   def getNestedSegwitAddressDb(account: AccountDb): AddressDb = {
     val path = NestedSegWitHDPath(WalletTestUtil.hdCoinType,
@@ -202,14 +220,7 @@ object WalletTestUtil {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
       utxo = sampleLegacyUTXO(addr.scriptPubKey)
-      txDb = IncomingTransactionDb(utxo.txid,
-                                   EmptyTransaction,
-                                   utxo.txid,
-                                   EmptyTransaction,
-                                   1,
-                                   1,
-                                   UInt32.zero)
-      _ <- daos.incomingTxDAO.create(txDb)
+      _ <- insertDummyIncomingTransaction(daos, utxo)
       utxoDb <- daos.utxoDAO.create(utxo)
     } yield utxoDb.asInstanceOf[LegacySpendingInfo]
   }
@@ -221,14 +232,7 @@ object WalletTestUtil {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
       utxo = sampleSegwitUTXO(addr.scriptPubKey)
-      txDb = IncomingTransactionDb(utxo.txid,
-                                   EmptyTransaction,
-                                   utxo.txid,
-                                   EmptyTransaction,
-                                   1,
-                                   1,
-                                   UInt32.zero)
-      _ <- daos.incomingTxDAO.create(txDb)
+      _ <- insertDummyIncomingTransaction(daos, utxo)
       utxoDb <- daos.utxoDAO.create(utxo)
     } yield utxoDb.asInstanceOf[SegwitV0SpendingInfo]
   }

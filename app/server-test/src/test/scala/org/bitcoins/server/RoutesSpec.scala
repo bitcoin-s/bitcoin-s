@@ -20,7 +20,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
 import org.scalamock.scalatest.MockFactory
@@ -239,7 +239,7 @@ class RoutesSpec
       // positive cases
 
       (mockWalletApi
-        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: FeeUnit))
+        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: SatoshisPerByte))
         .expects(testAddress, Bitcoins(100), *)
         .returning(Future.successful(EmptyTransaction))
 

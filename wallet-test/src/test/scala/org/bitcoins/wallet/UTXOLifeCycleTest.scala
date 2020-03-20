@@ -4,7 +4,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
@@ -32,7 +32,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     for {
       tx <- wallet.sendToAddress(testAddr,
                                  Satoshis(3000),
-                                 SatoshisPerVirtualByte(Satoshis(3)))
+                                 SatoshisPerByte(Satoshis(3)))
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
     } yield {
@@ -49,7 +49,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
       tx <- bitcoind.getRawTransactionRaw(txId)
       _ <- wallet.processOurTransaction(tx,
-                                        SatoshisPerVirtualByte.zero,
+                                        SatoshisPerByte(Satoshis(3)),
                                         Satoshis(3000),
                                         None)
 

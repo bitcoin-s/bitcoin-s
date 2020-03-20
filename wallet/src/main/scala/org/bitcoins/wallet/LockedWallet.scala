@@ -26,6 +26,7 @@ abstract class LockedWallet
   private[wallet] val addressDAO: AddressDAO = AddressDAO()
   private[wallet] val accountDAO: AccountDAO = AccountDAO()
   private[wallet] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
+  private[wallet] val transactionDAO: TransactionDAO = TransactionDAO()
   private[wallet] val incomingTxDAO: IncomingTransactionDAO =
     IncomingTransactionDAO()
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =

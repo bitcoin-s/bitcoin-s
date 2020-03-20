@@ -8,6 +8,7 @@ sealed abstract class WalletDbManagement extends DbManagement {
   private val accountTable = TableQuery[AccountTable]
   private val addressTable = TableQuery[AddressTable]
   private val utxoTable = TableQuery[SpendingInfoTable]
+  private val txTable = TableQuery[TransactionTable]
   private val incomingTxTable = TableQuery[IncomingTransactionTable]
   private val outgoingTxTable = TableQuery[OutgoingTransactionTable]
 
@@ -15,6 +16,7 @@ sealed abstract class WalletDbManagement extends DbManagement {
     List(accountTable,
          addressTable,
          utxoTable,
+         txTable,
          incomingTxTable,
          outgoingTxTable)
 
