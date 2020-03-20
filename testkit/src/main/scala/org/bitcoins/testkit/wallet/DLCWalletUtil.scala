@@ -16,6 +16,7 @@ import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.dlc.DLCMessage._
 import org.bitcoins.dlc._
+import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.wallet.Wallet
@@ -129,8 +130,24 @@ trait DLCWalletUtil {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
 
+    val numOutcomes = scala.util.Random.nextInt(20) + 2
+    val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
+    val (contractInfo, _) =
+      DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
+
+    val generatedOffer = DLCOffer(
+      contractInfo,
+      sampleOracleInfo,
+      dummyDLCKeys,
+      Satoshis(5000),
+      Vector(dummyOutputRefs.head),
+      dummyAddress,
+      SatoshisPerVirtualByte(Satoshis(3)),
+      dummyTimeouts
+    )
+
     for {
-      offer <- walletA.registerDLCOffer(sampleDLCOffer)
+      offer <- walletA.registerDLCOffer(generatedOffer)
       accept <- walletB.acceptDLCOffer(offer)
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)

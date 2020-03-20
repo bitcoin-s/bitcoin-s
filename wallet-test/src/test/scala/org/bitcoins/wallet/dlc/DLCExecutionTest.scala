@@ -1,10 +1,12 @@
 package org.bitcoins.wallet.dlc
 
 import org.bitcoins.core.crypto.{
+  Schnorr,
   SchnorrDigitalSignature,
   Sha256DigestBE,
   WitnessTxSigComponent
 }
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.{
@@ -14,12 +16,15 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.dlc.DLCMessage.ContractInfo
 import org.bitcoins.testkit.wallet.DLCWalletUtil.InitializedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.models.DLCOfferDb
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
+import scala.math.Ordering
 
 class DLCExecutionTest extends BitcoinSDualWalletTest {
   type FixtureParam = (InitializedDLCWallet, InitializedDLCWallet)
@@ -30,9 +35,42 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
 
   behavior of "DLCWallet"
 
-  val eventId: Sha256DigestBE = DLCWalletUtil.sampleDLCEventId
-  val winSig: SchnorrDigitalSignature = DLCWalletUtil.sampleOracleWinSig
-  val loseSig: SchnorrDigitalSignature = DLCWalletUtil.sampleOracleLoseSig
+  def getInitialOffer(wallet: Wallet): Future[DLCOfferDb] = {
+    wallet.dlcOfferDAO.findAll().map { all =>
+      require(all.size == 1, "There should only be one dlc initialized")
+      all.head
+    }
+  }
+
+  def getSigs(contractInfo: ContractInfo): (
+      SchnorrDigitalSignature,
+      SchnorrDigitalSignature) = {
+
+//    implicit val ciOrdering: Ordering[(Sha256DigestBE, Satoshis)] =
+
+    // Get a hash that the initiator wins for
+    val initiatorWinHash =
+      contractInfo
+        .max(new Ordering[(Sha256DigestBE, Satoshis)] {
+          override def compare(
+              x: (Sha256DigestBE, Satoshis),
+              y: (Sha256DigestBE, Satoshis)): Int =
+            x._2.compare(y._2)
+        })
+        ._1
+    val initiatorWinSig = Schnorr.signWithNonce(initiatorWinHash.bytes,
+                                                DLCWalletUtil.oraclePrivKey,
+                                                DLCWalletUtil.nonce)
+
+    // Get a hash that the recipient wins for
+    val recipientWinHash =
+      contractInfo.find(_._2 == Satoshis.zero).get._1
+    val recipientWinSig = Schnorr.signWithNonce(recipientWinHash.bytes,
+                                                DLCWalletUtil.oraclePrivKey,
+                                                DLCWalletUtil.nonce)
+
+    (initiatorWinSig, recipientWinSig)
+  }
 
   def verifyInput(
       transaction: Transaction,
@@ -50,34 +88,42 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   def mutualCloseTest(
       wallets: FixtureParam,
       asInitiator: Boolean): Future[Assertion] = {
-    val (dlcA, dlcB, sig) =
-      if (asInitiator) (wallets._1.wallet, wallets._2.wallet, winSig)
-      else (wallets._2.wallet, wallets._1.wallet, loseSig)
+    getInitialOffer(wallets._1.wallet).flatMap { offer =>
+      val eventId = offer.eventId
 
-    for {
-      offerOpt <- dlcA.dlcOfferDAO.findByEventId(eventId)
-      acceptOpt <- dlcA.dlcAcceptDAO.findByEventId(eventId)
+      val (initiatorWinSig, recipientWinSig) = getSigs(offer.contractInfo)
 
-      fundingTx <- dlcA.getDLCFundingTx(eventId)
+      val (dlcA, dlcB, sig) =
+        if (asInitiator) (wallets._1.wallet, wallets._2.wallet, initiatorWinSig)
+        else (wallets._2.wallet, wallets._1.wallet, recipientWinSig)
 
-      closeSig <- dlcA.initDLCMutualClose(eventId, sig)
-      tx <- dlcB.acceptDLCMutualClose(closeSig)
-    } yield {
-      assert(offerOpt.isDefined)
-      val offer = offerOpt.get
-      assert(acceptOpt.isDefined)
-      val accept = acceptOpt.get
+      for {
+        offerOpt <- dlcA.dlcOfferDAO.findByEventId(eventId)
+        acceptOpt <- dlcA.dlcAcceptDAO.findByEventId(eventId)
 
-      assert(tx.inputs.size == 1)
-      assert(tx.outputs.size == 1)
-      if (asInitiator) {
-        assert(tx.outputs.head.scriptPubKey == offer.finalAddress.scriptPubKey)
-      } else {
-        assert(tx.outputs.head.scriptPubKey == accept.finalAddress.scriptPubKey)
+        fundingTx <- dlcA.getDLCFundingTx(eventId)
+
+        closeSig <- dlcA.initDLCMutualClose(eventId, sig)
+        tx <- dlcB.acceptDLCMutualClose(closeSig)
+      } yield {
+        assert(offerOpt.isDefined)
+        val offer = offerOpt.get
+        assert(acceptOpt.isDefined)
+        val accept = acceptOpt.get
+
+        assert(tx.inputs.size == 1)
+        assert(tx.outputs.size == 1)
+        if (asInitiator) {
+          assert(
+            tx.outputs.head.scriptPubKey == offer.finalAddress.scriptPubKey)
+        } else {
+          assert(
+            tx.outputs.head.scriptPubKey == accept.finalAddress.scriptPubKey)
+        }
+        assert(ScriptInterpreter.checkTransaction(tx))
+
+        assert(verifyInput(tx, 0, fundingTx.outputs.head))
       }
-      assert(ScriptInterpreter.checkTransaction(tx))
-
-      assert(verifyInput(tx, 0, fundingTx.outputs.head))
     }
   }
 
@@ -90,7 +136,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcB = wallets._2.wallet
 
     for {
-      fundingTx <- dlcB.getDLCFundingTx(eventId)
+      offer <- getInitialOffer(dlcA)
+      fundingTx <- dlcB.getDLCFundingTx(offer.eventId)
       (tx, closeTxOpt) <- if (asInitiator) func(dlcA) else func(dlcB)
     } yield {
       assert(closeTxOpt.isDefined)
@@ -113,6 +160,8 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcB = wallets._2.wallet
 
     for {
+      offerDb <- getInitialOffer(dlcA)
+      eventId = offerDb.eventId
       offerOpt <- dlcA.dlcOfferDAO.findByEventId(eventId)
       acceptOpt <- dlcB.dlcAcceptDAO.findByEventId(eventId)
 
@@ -174,39 +223,53 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
   }
 
   it must "do a unilateral close as the initiator" in { wallets =>
-    val func = (wallet: Wallet) => wallet.executeDLCForceClose(eventId, winSig)
+    for {
+      offer <- getInitialOffer(wallets._1.wallet)
+      (sig, _) = getSigs(offer.contractInfo)
+      func = (wallet: Wallet) => wallet.executeDLCForceClose(offer.eventId, sig)
 
-    dlcExecutionTest(wallets = wallets,
-                     asInitiator = true,
-                     func = func,
-                     expectedOutputs = 1)
+      result <- dlcExecutionTest(wallets = wallets,
+                                 asInitiator = true,
+                                 func = func,
+                                 expectedOutputs = 1)
+    } yield result
   }
 
   it must "do a unilateral close as the recipient" in { wallets =>
-    val func = (wallet: Wallet) => wallet.executeDLCForceClose(eventId, loseSig)
+    for {
+      offer <- getInitialOffer(wallets._2.wallet)
+      (_, sig) = getSigs(offer.contractInfo)
+      func = (wallet: Wallet) => wallet.executeDLCForceClose(offer.eventId, sig)
 
-    dlcExecutionTest(wallets = wallets,
-                     asInitiator = false,
-                     func = func,
-                     expectedOutputs = 1)
+      result <- dlcExecutionTest(wallets = wallets,
+                                 asInitiator = false,
+                                 func = func,
+                                 expectedOutputs = 1)
+    } yield result
   }
 
   it must "do a refund on a dlc as the initiator" in { wallets =>
-    val func = (wallet: Wallet) => wallet.executeDLCRefund(eventId)
+    for {
+      offer <- getInitialOffer(wallets._1.wallet)
+      func = (wallet: Wallet) => wallet.executeDLCRefund(offer.eventId)
 
-    dlcExecutionTest(wallets = wallets,
-                     asInitiator = true,
-                     func = func,
-                     expectedOutputs = 2)
+      result <- dlcExecutionTest(wallets = wallets,
+                                 asInitiator = true,
+                                 func = func,
+                                 expectedOutputs = 2)
+    } yield result
   }
 
   it must "do a refund on a dlc as the recipient" in { wallets =>
-    val func = (wallet: Wallet) => wallet.executeDLCRefund(eventId)
+    for {
+      offer <- getInitialOffer(wallets._2.wallet)
+      func = (wallet: Wallet) => wallet.executeDLCRefund(offer.eventId)
 
-    dlcExecutionTest(wallets = wallets,
-                     asInitiator = false,
-                     func = func,
-                     expectedOutputs = 2)
+      result <- dlcExecutionTest(wallets = wallets,
+                                 asInitiator = false,
+                                 func = func,
+                                 expectedOutputs = 2)
+    } yield result
   }
 
   it must "do a penalty transaction on a dlc as the initiator" in { wallets =>
@@ -214,8 +277,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcB = wallets._2.wallet
 
     for {
-      (forceCloseTx, _) <- dlcB.executeDLCForceClose(eventId, loseSig)
-      penaltyTxOpt <- dlcA.claimDLCPenaltyFunds(eventId, forceCloseTx)
+      offer <- getInitialOffer(dlcA)
+      (_, sig) = getSigs(offer.contractInfo)
+      (forceCloseTx, _) <- dlcB.executeDLCForceClose(offer.eventId, sig)
+      penaltyTxOpt <- dlcA.claimDLCPenaltyFunds(offer.eventId, forceCloseTx)
     } yield {
       assert(penaltyTxOpt.isDefined)
       val penaltyTx = penaltyTxOpt.get
@@ -233,8 +298,10 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     val dlcB = wallets._2.wallet
 
     for {
-      (forceCloseTx, _) <- dlcA.executeDLCForceClose(eventId, winSig)
-      penaltyTxOpt <- dlcB.claimDLCPenaltyFunds(eventId, forceCloseTx)
+      offer <- getInitialOffer(dlcA)
+      (sig, _) = getSigs(offer.contractInfo)
+      (forceCloseTx, _) <- dlcA.executeDLCForceClose(offer.eventId, sig)
+      penaltyTxOpt <- dlcB.claimDLCPenaltyFunds(offer.eventId, forceCloseTx)
     } yield {
       assert(penaltyTxOpt.isDefined)
       val penaltyTx = penaltyTxOpt.get

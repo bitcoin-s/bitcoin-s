@@ -37,6 +37,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.P2WPKHV0SpendingInfo
 import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.scalatest.Assertion
