@@ -1,4 +1,4 @@
-package org.bitcoins.dlc
+package org.bitcoins.testkit.dlc
 
 import org.bitcoins.core.crypto.Sha256DigestBE
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
