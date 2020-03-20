@@ -98,15 +98,10 @@ case class DataMessageHandler(
           newChainApi <- chainApi.processFilter(filter)
           blockFilter <- Future(
             BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
-          _ <- callbacks.onCompactFilterReceived
-            .foldLeft(FutureUtil.unit)(
-              (acc, callback) =>
-                acc.flatMap(
-                  _ =>
-                    callback(filter.blockHash, blockFilter).recover(err =>
-                      logger.error(
-                        "onCompactFilterReceived Callback failed with error: ",
-                        err))))
+          _ <- callbacks.executeOnCompactFilterReceivedCallbacks(
+            logger,
+            filter.blockHash,
+            blockFilter)
 
         } yield {
           this.copy(chainApi = newChainApi,
@@ -205,30 +200,22 @@ case class DataMessageHandler(
       case msg: BlockMessage =>
         logger.info(
           s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
-        callbacks.onBlockReceived
-          .foldLeft(FutureUtil.unit)((acc, callback) =>
-            acc.flatMap(_ =>
-              callback(msg.block).recover(err =>
-                logger.error("onBlockReceived Callback failed with error: ",
-                             err))))
+        callbacks
+          .executeOnBlockReceivedCallbacks(logger, msg.block)
           .map(_ => this)
       case TransactionMessage(tx) =>
-        val belongsToMerkle =
-          MerkleBuffers.putTx(tx, callbacks.onMerkleBlockReceived)
-        if (belongsToMerkle) {
-          logger.trace(
-            s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
-          Future.successful(this)
-        } else {
-          logger.trace(
-            s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-          callbacks.onTxReceived
-            .foldLeft(FutureUtil.unit)((acc, callback) =>
-              acc.flatMap(_ =>
-                callback(tx).recover(err =>
-                  logger.error("onTxReceived Callback failed with error: ",
-                               err))))
-            .map(_ => this)
+        MerkleBuffers.putTx(tx, callbacks).flatMap { belongsToMerkle =>
+          if (belongsToMerkle) {
+            logger.trace(
+              s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
+            Future.successful(this)
+          } else {
+            logger.trace(
+              s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
+            callbacks
+              .executeOnTxReceivedCallbacks(logger, tx)
+              .map(_ => this)
+          }
         }
       case MerkleBlockMessage(merkleBlock) =>
         MerkleBuffers.putMerkle(merkleBlock)
