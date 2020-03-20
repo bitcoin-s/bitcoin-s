@@ -17,7 +17,7 @@ import org.bitcoins.eclair.rpc.api.{EclairApi, OutgoingPaymentStatus}
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json, Reads}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 object Client {
 
@@ -46,13 +46,13 @@ object Client {
   def request(
       exchange: Exchange,
       tradingPair: TradingPair,
-      requestType: RequestType)(
+      requestType: RequestType,
+      endpoint: String = "https://test.api.suredbits.com/dlc/v0")(
       implicit system: ActorSystem): Future[InvoiceAndDataResponse] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-    val prefix = "https://test.api.suredbits.com/dlc/v0"
     val uri =
-      s"$prefix/${exchange.toLongString}/${tradingPair.toLowerString}/${requestType.requestString}"
+      s"$endpoint/${exchange.toLongString}/${tradingPair.toLowerString}/${requestType.requestString}"
     restCall(uri)
       .map(_.validate[InvoiceAndDataResponse])
       .flatMap {
@@ -64,12 +64,15 @@ object Client {
       }
   }
 
-  def makePayment(eclairApi: EclairApi, invoice: LnInvoice)(
+  def makePayment(
+      eclairApi: EclairApi,
+      invoice: LnInvoice,
+      timeout: FiniteDuration = 5.seconds)(
       implicit ec: ExecutionContext): Future[PaymentPreimage] = {
     for {
       payment <- eclairApi.payAndMonitorInvoice(invoice,
                                                 externalId = None,
-                                                interval = 500.milliseconds,
+                                                interval = timeout / 10,
                                                 maxAttempts = 10)
     } yield payment.status match {
       case OutgoingPaymentStatus.Succeeded(preImage, _, _, _) => preImage
