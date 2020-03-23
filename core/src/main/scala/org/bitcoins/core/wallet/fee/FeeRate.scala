@@ -27,7 +27,7 @@ sealed abstract class BitcoinFeeRate extends FeeRate {
   def calc(tx: Transaction): CurrencyUnit = {
     val fee = tx.baseSize * baseAmount
 
-    require(fee < 0, "Fee cannot be negative")
+    require(fee >= 0, "Fee cannot be negative")
     require(fee < Satoshis.max.toDouble,
             "Fee cannot be greater than the max value")
 
@@ -84,7 +84,7 @@ case class SatoshisPerVirtualByte(sats: Double) extends BitcoinFeeRate {
   override def calc(tx: Transaction): CurrencyUnit = {
     val fee = tx.vsize * baseAmount
 
-    require(fee < 0, "Fee cannot be negative")
+    require(fee >= 0, "Fee cannot be negative")
     require(fee < Satoshis.max.toDouble,
             "Fee cannot be greater than the max value")
 
