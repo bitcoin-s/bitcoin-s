@@ -46,8 +46,6 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
       SchnorrDigitalSignature,
       SchnorrDigitalSignature) = {
 
-//    implicit val ciOrdering: Ordering[(Sha256DigestBE, Satoshis)] =
-
     // Get a hash that the initiator wins for
     val initiatorWinHash =
       contractInfo
