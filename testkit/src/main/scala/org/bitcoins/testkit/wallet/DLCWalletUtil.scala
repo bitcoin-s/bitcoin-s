@@ -130,7 +130,7 @@ trait DLCWalletUtil {
     val walletA = fundedWalletA.wallet
     val walletB = fundedWalletB.wallet
 
-    val numOutcomes = scala.util.Random.nextInt(20) + 2
+    val numOutcomes = 8
     val outcomeHashes = DLCTestUtil.genOutcomes(numOutcomes)
     val (contractInfo, _) =
       DLCTestUtil.genContractInfos(outcomeHashes, Satoshis(10000))
