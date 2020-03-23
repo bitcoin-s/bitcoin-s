@@ -38,6 +38,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2WPKHV0SpendingInfo
 }
 import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
+import org.bitcoins.testkit.dlc.DLCTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 import org.scalatest.Assertion
