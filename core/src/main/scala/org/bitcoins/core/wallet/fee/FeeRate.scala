@@ -13,7 +13,6 @@ sealed abstract class FeeRate {
   def units: FeeUnit
   def baseAmount: Double
 
-  require(baseAmount >= 0, "FeeRate cannot be negative")
 }
 
 /**

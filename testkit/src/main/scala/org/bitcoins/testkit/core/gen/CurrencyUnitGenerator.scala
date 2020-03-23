@@ -59,7 +59,7 @@ trait CurrencyUnitGenerator {
     satoshis.suchThat(_ >= CurrencyUnits.zero)
 
   /**
-    * Generates a postiive satoshi value that is 'realistic'. This current 'realistic' range
+    * Generates a positive satoshi value that is 'realistic'. This current 'realistic' range
     * is from 0 to 1,000,000 bitcoin
     */
   def positiveRealistic: Gen[Satoshis] =
