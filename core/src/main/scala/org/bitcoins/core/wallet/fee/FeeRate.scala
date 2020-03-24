@@ -1,5 +1,6 @@
 package org.bitcoins.core.wallet.fee
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.transaction.Transaction
 
@@ -27,7 +28,7 @@ sealed abstract class BitcoinFeeRate extends FeeRate {
     val fee = tx.baseSize * baseAmount
 
     require(fee >= 0, "Fee cannot be negative")
-    require(fee < Satoshis.max.toDouble,
+    require(fee < Consensus.maxMoney.satoshis.toDouble,
             "Fee cannot be greater than the max value")
 
     Satoshis(fee.toLong)
@@ -83,8 +84,7 @@ case class SatoshisPerVirtualByte(sats: Double) extends BitcoinFeeRate {
   override def calc(tx: Transaction): CurrencyUnit = {
     val fee = tx.vsize * baseAmount
 
-    require(fee >= 0, "Fee cannot be negative")
-    require(fee < Satoshis.max.toDouble,
+    require(fee < Consensus.maxMoney.satoshis.toDouble,
             "Fee cannot be greater than the max value")
 
     Satoshis(fee.toLong)
@@ -105,6 +105,9 @@ object SatoshisPerVirtualByte {
 /** Represents how many satoshis to be paid for the transaction fee */
 case class FlatSatoshis(satoshis: Long) extends BitcoinFeeRate {
   override def sats: Double = satoshis.toDouble
+
+  require(satoshis <= Consensus.maxMoney.satoshis.toDouble,
+          "Fee cannot be greater than the max value")
 
   def currencyUnit: Satoshis = Satoshis(satoshis)
 

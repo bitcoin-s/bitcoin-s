@@ -92,7 +92,7 @@ val utxos: Vector[BitcoinUTXOSpendingInfoFull] = Vector(utxoSpendingInfo)
 
 // this is how much we are going to pay as a fee to the network
 // for this example, we are going to pay 1 satoshi per byte
-val feeRate = SatoshisPerByte(1.satoshi)
+val feeRate = SatoshisPerByte(1)
 
 val changePrivKey = ECPrivateKey.freshPrivateKey
 val changeSPK = P2PKHScriptPubKey(pubKey = changePrivKey.publicKey)

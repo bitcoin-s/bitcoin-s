@@ -56,4 +56,26 @@ class FeeRateTest extends BitcoinSUnitTest {
 
     assert(satoshisPerByte.calc(wtx) != satoshisPerVByte.calc(wtx))
   }
+
+  it must "fail to calculate a fee greater than a the max value for SatoshisPerByte" in {
+    val feeRate = SatoshisPerByte(Satoshis.max.toDouble)
+
+    assertThrows[IllegalArgumentException](feeRate.calc(tx))
+  }
+
+  it must "fail to calculate a fee greater than a the max value for SatoshisPerVirtualByte" in {
+    val feeRate = SatoshisPerVirtualByte(Satoshis.max.toDouble)
+
+    assertThrows[IllegalArgumentException](feeRate.calc(tx))
+  }
+
+  it must "fail to calculate a fee greater than a the max value for SatoshisPerKiloByte" in {
+    val feeRate = SatoshisPerKiloByte(Satoshis.max.toDouble)
+
+    assertThrows[IllegalArgumentException](feeRate.calc(tx))
+  }
+
+  it must "fail to calculate a fee greater than a the max value for FlatSatoshis" in {
+    assertThrows[IllegalArgumentException](FlatSatoshis(Satoshis.max.toLong))
+  }
 }
