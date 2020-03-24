@@ -35,8 +35,10 @@ case class NodeCallbacks(
     onTxReceived
       .foldLeft(FutureUtil.unit)((acc, callback) =>
         acc.flatMap(_ =>
-          callback(tx).recover(err =>
-            logger.error("onTxReceived Callback failed with error: ", err))))
+          callback(tx).recover {
+            case err: Throwable =>
+              logger.error("onTxReceived Callback failed with error: ", err)
+          }))
   }
 
   def executeOnBlockReceivedCallbacks(logger: MarkedLogger, block: Block)(
@@ -44,8 +46,10 @@ case class NodeCallbacks(
     onBlockReceived
       .foldLeft(FutureUtil.unit)((acc, callback) =>
         acc.flatMap(_ =>
-          callback(block).recover(err =>
-            logger.error("onBlockReceived Callback failed with error: ", err))))
+          callback(block).recover {
+            case err: Throwable =>
+              logger.error("onBlockReceived Callback failed with error: ", err)
+          }))
   }
 
   def executeOnMerkleBlockReceivedCallbacks(
@@ -53,12 +57,13 @@ case class NodeCallbacks(
       merkleBlock: MerkleBlock,
       txs: Vector[Transaction])(implicit ec: ExecutionContext): Future[Unit] = {
     onMerkleBlockReceived
-      .foldLeft(FutureUtil.unit)(
-        (acc, callback) =>
-          acc.flatMap(_ =>
-            callback(merkleBlock, txs).recover(err =>
+      .foldLeft(FutureUtil.unit)((acc, callback) =>
+        acc.flatMap(_ =>
+          callback(merkleBlock, txs).recover {
+            case err: Throwable =>
               logger.error("OnMerkleBlockReceived Callback failed with error: ",
-                           err))))
+                           err)
+          }))
   }
 
   def executeOnCompactFilterReceivedCallbacks(
@@ -69,9 +74,12 @@ case class NodeCallbacks(
     onCompactFilterReceived
       .foldLeft(FutureUtil.unit)((acc, callback) =>
         acc.flatMap(_ =>
-          callback(blockHash, blockFilter).recover(err =>
-            logger.error("onCompactFilterReceived Callback failed with error: ",
-                         err))))
+          callback(blockHash, blockFilter).recover {
+            case err: Throwable =>
+              logger.error(
+                "onCompactFilterReceived Callback failed with error: ",
+                err)
+          }))
   }
 }
 

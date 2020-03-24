@@ -90,17 +90,15 @@ val keyManager = keyManagerE match {
 // This function can be used to create a callback for when our chain api receives a transaction, block, or
 // a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks
 def createCallbacks(
-      processTransaction: Transaction => Unit,
-      processCompactFilter: (DoubleSha256Digest, GolombFilter) => Unit,
-      processBlock: Block => Unit): NodeCallbacks = {
+      processTransaction: Transaction => Future[Unit],
+      processCompactFilter: (DoubleSha256Digest, GolombFilter) => Future[Unit],
+      processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onTx: OnTxReceived = { tx =>
       processTransaction(tx)
-      ()
     }
     lazy val onCompactFilter: OnCompactFilterReceived = {
       (blockHash, blockFilter) =>
         processCompactFilter(blockHash, blockFilter)
-        ()
     }
     lazy val onBlock: OnBlockReceived = { block =>
       processBlock(block)
@@ -114,14 +112,14 @@ def createCallbacks(
 // relaying the block on the network, finding relevant wallet transactions, verifying the block,
 // or writing it to disk
 val exampleProcessTx = (tx: Transaction) =>
-    println(s"Received tx: ${tx.txIdBE}")
+    Future.successful(println(s"Received tx: ${tx.txIdBE}"))
 
 val exampleProcessBlock = (block: Block) =>
-    println(s"Received block: ${block.blockHeader.hashBE}")
+    Future.successful(println(s"Received block: ${block.blockHeader.hashBE}"))
 
 val exampleProcessFilter =
     (blockHash: DoubleSha256Digest, filter: GolombFilter) =>
-      println(s"Received filter: ${blockHash.flip.hex} ${filter.hash.flip.hex}")
+      Future.successful(println(s"Received filter: ${blockHash.flip.hex} ${filter.hash.flip.hex}"))
 
 val exampleCallbacks =
     createCallbacks(exampleProcessTx, exampleProcessFilter, exampleProcessBlock)
