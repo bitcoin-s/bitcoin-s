@@ -535,27 +535,8 @@ object ConsoleCli {
     )
   }
 
-  def exec(args: String*): Try[String] = {
-    val config = OParser.parse(parser, args.toVector, Config()) match {
-      case None       => sys.exit(1)
-      case Some(conf) => conf
-    }
-
-    import System.err.{println => printerr}
-
-    /** Prints the given message to stderr if debug is set */
-    def debug(message: Any): Unit = {
-      if (config.debug) {
-        printerr(s"DEBUG: $message")
-      }
-    }
-
-    /** Prints the given message to stderr and exist */
-    def error[T](message: String): Failure[T] = {
-      Failure(new RuntimeException(message))
-    }
-
-    val requestParam: RequestParam = config.command match {
+  def requestParamFromCommand(command: CliCommand): RequestParam = {
+    command match {
       // DLCs
       case CreateDLCOffer(oracleInfo,
                           contractInfo,
@@ -650,6 +631,33 @@ object ConsoleCli {
 
       case NoCommand => ???
     }
+  }
+
+  def exec(args: String*): Try[String] = {
+    val config = OParser.parse(parser, args.toVector, Config()) match {
+      case None       => sys.exit(1)
+      case Some(conf) => conf
+    }
+
+    exec(config.command, config.debug)
+  }
+
+  def exec(command: CliCommand, debugEnabled: Boolean = false): Try[String] = {
+    import System.err.{println => printerr}
+
+    /** Prints the given message to stderr if debug is set */
+    def debug(message: Any): Unit = {
+      if (debugEnabled) {
+        printerr(s"DEBUG: $message")
+      }
+    }
+
+    /** Prints the given message to stderr and exist */
+    def error[T](message: String): Failure[T] = {
+      Failure(new RuntimeException(message))
+    }
+
+    val requestParam: RequestParam = requestParamFromCommand(command)
 
     Try {
       import com.softwaremill.sttp._
