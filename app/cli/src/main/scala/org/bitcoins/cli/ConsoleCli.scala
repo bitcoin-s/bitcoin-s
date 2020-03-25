@@ -7,6 +7,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.picklers._
 import scopt.OParser
 import ujson.{Num, Str}
@@ -111,11 +112,11 @@ object ConsoleCli {
       cmd("sendtoaddress")
         .action(
           // TODO how to handle null here?
-          (_, conf) => conf.copy(command = SendToAddress(null, 0.bitcoin)))
+          (_, conf) => conf.copy(command = SendToAddress(null, 0.bitcoin, None)))
         .text("Send money to the given address")
         .children(
           arg[BitcoinAddress]("address")
-            .text("Adress to send to")
+            .text("Address to send to")
             .required()
             .action((addr, conf) =>
               conf.copy(command = conf.command match {
@@ -130,6 +131,15 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case send: SendToAddress =>
                   send.copy(amount = btc)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendToAddress =>
+                  send.copy(satoshisPerVirtualByte = Some(feeRate))
                 case other => other
               }))
         ),
@@ -249,9 +259,11 @@ object ConsoleCli {
                          up.writeJs(endBlock),
                          up.writeJs(force)))
 
-      case SendToAddress(address, bitcoins) =>
+      case SendToAddress(address, bitcoins, satoshisPerVirtualByte) =>
         RequestParam("sendtoaddress",
-                     Seq(up.writeJs(address), up.writeJs(bitcoins)))
+                     Seq(up.writeJs(address),
+                         up.writeJs(bitcoins),
+                         up.writeJs(satoshisPerVirtualByte)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -363,7 +375,10 @@ object CliCommand {
   case object NoCommand extends CliCommand
 
   // Wallet
-  case class SendToAddress(destination: BitcoinAddress, amount: Bitcoins)
+  case class SendToAddress(
+      destination: BitcoinAddress,
+      amount: Bitcoins,
+      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
       extends CliCommand
   case object GetNewAddress extends CliCommand
   case class GetBalance(isSats: Boolean) extends CliCommand

@@ -249,7 +249,8 @@ class RoutesSpec
         .anyNumberOfTimes()
 
       val route = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Num(100))))
+        ServerCommand("sendtoaddress",
+                      Arr(Str(testAddressStr), Num(100), Num(4))))
 
       Post() ~> route ~> check {
         contentType shouldEqual `application/json`
@@ -259,7 +260,7 @@ class RoutesSpec
       // negative cases
 
       val route1 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Null, Null)))
+        ServerCommand("sendtoaddress", Arr(Null, Null, Null)))
 
       Post() ~> route1 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -268,7 +269,7 @@ class RoutesSpec
       }
 
       val route2 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr("Null", Null)))
+        ServerCommand("sendtoaddress", Arr("Null", Null, Null)))
 
       Post() ~> route2 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -277,7 +278,7 @@ class RoutesSpec
       }
 
       val route3 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Null)))
+        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Null, Null)))
 
       Post() ~> route3 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -286,7 +287,8 @@ class RoutesSpec
       }
 
       val route4 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Str("abc"))))
+        ServerCommand("sendtoaddress",
+                      Arr(Str(testAddressStr), Str("abc"), Null)))
 
       Post() ~> route4 ~> check {
         rejection shouldEqual ValidationRejection(

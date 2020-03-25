@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import scopt._
 
 /** scopt readers for parsing CLI params and options */
@@ -42,6 +43,14 @@ object CliReaders {
     new Read[Bitcoins] {
       val arity: Int = 1
       val reads: String => Bitcoins = str => Bitcoins(BigDecimal(str))
+    }
+
+  implicit val satoshisPerVirtualByteReads: Read[SatoshisPerVirtualByte] =
+    new Read[SatoshisPerVirtualByte] {
+      val arity: Int = 1
+
+      val reads: String => SatoshisPerVirtualByte = str =>
+        SatoshisPerVirtualByte(Satoshis(BigInt(str)))
     }
 
   implicit val blockStampReads: Read[BlockStamp] =

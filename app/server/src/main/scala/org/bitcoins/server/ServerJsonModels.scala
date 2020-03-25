@@ -1,10 +1,11 @@
 package org.bitcoins.server
 
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import ujson._
 import upickle.default._
 
@@ -98,13 +99,6 @@ object Rescan extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[Rescan] = {
 
-    def nullToOpt(value: Value): Option[Value] = value match {
-      case Null                      => None
-      case Arr(arr) if arr.isEmpty   => None
-      case Arr(arr) if arr.size == 1 => Some(arr.head)
-      case _: Value                  => Some(value)
-    }
-
     def parseBlockStamp(value: Value): Option[BlockStamp] =
       nullToOpt(value).map {
         case Str(value) => BlockStamp.fromString(value).get
@@ -154,7 +148,10 @@ object Rescan extends ServerJsonModels {
 
 }
 
-case class SendToAddress(address: BitcoinAddress, amount: Bitcoins)
+case class SendToAddress(
+    address: BitcoinAddress,
+    amount: Bitcoins,
+    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
 
 object SendToAddress extends ServerJsonModels {
 
@@ -162,20 +159,24 @@ object SendToAddress extends ServerJsonModels {
   // custom akka-http directive?
   def fromJsArr(jsArr: ujson.Arr): Try[SendToAddress] = {
     jsArr.arr.toList match {
-      case addrJs :: bitcoinsJs :: Nil =>
+      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: Nil =>
         Try {
           val address = jsToBitcoinAddress(addrJs)
           val bitcoins = Bitcoins(bitcoinsJs.num)
-          SendToAddress(address, bitcoins)
+          val satoshisPerVirtualByte =
+            nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
+              SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
+          SendToAddress(address, bitcoins, satoshisPerVirtualByte)
         }
       case Nil =>
         Failure(
-          new IllegalArgumentException("Missing address and amount argument"))
+          new IllegalArgumentException(
+            "Missing address, amount, and fee rate arguments"))
 
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 
@@ -200,4 +201,10 @@ trait ServerJsonModels {
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 
+  def nullToOpt(value: Value): Option[Value] = value match {
+    case Null                      => None
+    case Arr(arr) if arr.isEmpty   => None
+    case Arr(arr) if arr.size == 1 => Some(arr.head)
+    case _: Value                  => Some(value)
+  }
 }
