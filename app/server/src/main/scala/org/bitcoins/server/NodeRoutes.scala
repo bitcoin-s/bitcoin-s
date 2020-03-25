@@ -19,11 +19,11 @@ case class NodeRoutes(node: Node)(implicit system: ActorSystem)
 
     case ServerCommand("stop", _) =>
       complete {
-        node.stop().map { _ =>
-          val success = Server.httpSuccess("Node successfully stopped")
-          system.terminate()
-          success
+        val nodeStopping = node.stop().map { _ =>
+          Server.httpSuccess("Node shutting down")
         }
+        system.terminate()
+        nodeStopping
       }
   }
 }
