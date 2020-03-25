@@ -47,12 +47,13 @@ case class NestedSegWitAddressDb(
     ecPublicKey: ECPublicKey,
     hashedPubKey: Sha256Hash160Digest,
     address: P2SHAddress,
+    witnessScript: ScriptWitness,
     scriptPubKey: ScriptPubKey
 ) extends AddressDb {
   override type PathType = NestedSegWitHDPath
 
   override val scriptType = ScriptType.SCRIPTHASH
-  override val witnessScriptOpt = None
+  override val witnessScriptOpt = Some(witnessScript)
 }
 
 /** P2PKH */
@@ -111,9 +112,16 @@ object AddressDbHelper {
       pub: ECPublicKey,
       path: NestedSegWitHDPath,
       np: NetworkParameters): NestedSegWitAddressDb = {
-    val _ = (pub, path, np)
-    throw new UnsupportedOperationException(
-      "Nested segwit is not implemented yet!")
+    val redeem = P2WPKHWitnessSPKV0(pub)
+    val spk = P2SHScriptPubKey(redeem)
+    val scriptWitness = P2WPKHWitnessV0(pub)
+    val addr = P2SHAddress(spk, np)
+    NestedSegWitAddressDb(path = path,
+                          ecPublicKey = pub,
+                          hashedPubKey = redeem.pubKeyHash,
+                          address = addr,
+                          witnessScript = scriptWitness,
+                          scriptPubKey = spk)
   }
 
   /** Gets an address. Derives the correct type by looking at the kind of path passed in */
@@ -211,10 +219,22 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
                           legacyAddr,
                           scriptPubKey = scriptPubKey)
 
+        case (HDPurposes.NestedSegWit,
+              address: P2SHAddress,
+              Some(scriptWitness)) =>
+          val path = NestedSegWitHDPath(coinType = accountCoin,
+                                        accountIndex = accountIndex,
+                                        chainType = accountChain,
+                                        addressIndex = addressIndex)
+          NestedSegWitAddressDb(path,
+                                pubKey,
+                                hashedPubKey,
+                                address,
+                                witnessScript = scriptWitness,
+                                scriptPubKey = scriptPubKey)
         case (purpose: HDPurpose, address: BitcoinAddress, scriptWitnessOpt) =>
           throw new IllegalArgumentException(
-            s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt" +
-              s"Note: Currently only segwit addreses are implemented")
+            s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt")
       }
   }
 
@@ -251,9 +271,24 @@ class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
         hashedPub,
         ScriptType.PUBKEYHASH
       )
-    case _: NestedSegWitAddressDb =>
-      throw new RuntimeException(s"Nested segwit is not implemented yet!")
-
+    case NestedSegWitAddressDb(path,
+                               pubKey,
+                               hashedPubKey,
+                               address,
+                               scriptWitness,
+                               scriptPubKey) =>
+      Some(
+        (path.purpose,
+         path.account.index,
+         path.coin.coinType,
+         path.chain.chainType,
+         address,
+         Some(scriptWitness),
+         scriptPubKey,
+         path.address.index,
+         pubKey,
+         hashedPubKey,
+         ScriptType.SCRIPTHASH))
   }
 
   override def * : ProvenShape[AddressDb] =
