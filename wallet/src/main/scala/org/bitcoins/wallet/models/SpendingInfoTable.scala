@@ -101,8 +101,8 @@ case class NestedSegwitV0SpendingInfo(
     scriptWitness: ScriptWitness,
     txid: DoubleSha256DigestBE,
     state: TxoState,
-    id: Option[Long] = None,
-    blockHash: Option[DoubleSha256DigestBE]
+    blockHash: Option[DoubleSha256DigestBE],
+    id: Option[Long] = None
 ) extends SpendingInfoDb {
   override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
   override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
@@ -301,8 +301,8 @@ case class SpendingInfoTable(tag: Tag)
                                  scriptWitness,
                                  txid,
                                  state,
-                                 id,
-                                 blockHash)
+                                 blockHash,
+                                 id)
 
     case (id,
           outpoint,
