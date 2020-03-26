@@ -49,6 +49,13 @@ object SatoshisPerByte {
 
   def apply(sats: BigDecimal): SatoshisPerByte = SatoshisPerByte(sats.toDouble)
 
+  def calc(tx: Transaction, inputAmount: CurrencyUnit): SatoshisPerByte = {
+    val feePaid = inputAmount - tx.outputs.map(_.value).sum
+    val feeRate = feePaid.satoshis.toLong / tx.baseSize.toDouble
+
+    SatoshisPerByte(feeRate)
+  }
+
   val zero: SatoshisPerByte = SatoshisPerByte(0)
   val one: SatoshisPerByte = SatoshisPerByte(1)
 }
@@ -69,6 +76,13 @@ object SatoshisPerKiloByte {
 
   def apply(sats: BigDecimal): SatoshisPerKiloByte =
     SatoshisPerKiloByte(sats.toDouble)
+
+  def calc(tx: Transaction, inputAmount: CurrencyUnit): SatoshisPerKiloByte = {
+    val feePaid = inputAmount - tx.outputs.map(_.value).sum
+    val feeRate = feePaid.satoshis.toLong / tx.baseSize.toDouble
+
+    SatoshisPerKiloByte(feeRate * 0.001)
+  }
 
   val zero: SatoshisPerKiloByte = SatoshisPerKiloByte(0)
   val one: SatoshisPerKiloByte = SatoshisPerKiloByte(1)
@@ -97,6 +111,15 @@ object SatoshisPerVirtualByte {
 
   def apply(sats: BigDecimal): SatoshisPerVirtualByte =
     SatoshisPerVirtualByte(sats.toDouble)
+
+  def calc(
+      tx: Transaction,
+      inputAmount: CurrencyUnit): SatoshisPerVirtualByte = {
+    val feePaid = inputAmount - tx.outputs.map(_.value).sum
+    val feeRate = feePaid.satoshis.toLong / tx.vsize.toDouble
+
+    SatoshisPerVirtualByte(feeRate)
+  }
 
   val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(0)
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(1)

@@ -1,6 +1,6 @@
 package org.bitcoins.core.wallet.fee
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
@@ -55,6 +55,17 @@ class FeeRateTest extends BitcoinSUnitTest {
     val satoshisPerVByte = SatoshisPerVirtualByte(3.7)
 
     assert(satoshisPerByte.calc(wtx) != satoshisPerVByte.calc(wtx))
+  }
+
+  it must "correctly calculate the correct fee rate for a transaction" in {
+    val inputAmount = Bitcoins(32.96382044)
+    val satsPerByte = SatoshisPerByte.calc(tx, inputAmount)
+    val satsPerVByte = SatoshisPerVirtualByte.calc(tx, inputAmount)
+    val satsPerKByte = SatoshisPerKiloByte.calc(tx, inputAmount)
+
+    assert(satsPerByte == SatoshisPerByte(8424.235294117647))
+    assert(satsPerVByte == SatoshisPerVirtualByte(6985.951219512195))
+    assert(satsPerKByte == SatoshisPerKiloByte(8.424235294117647))
   }
 
   it must "fail to calculate a fee greater than a the max value for SatoshisPerByte" in {
