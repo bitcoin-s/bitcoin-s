@@ -11,12 +11,14 @@ import slick.lifted.{PrimaryKey, ProvenShape}
   */
 case class IncomingTransactionDb(
     txIdBE: DoubleSha256DigestBE,
-    incomingAmount: CurrencyUnit) {
+    incomingAmount: CurrencyUnit)
+    extends TxDB {
   lazy val txId: DoubleSha256Digest = txIdBE.flip
 }
 
 class IncomingTransactionTable(tag: Tag)
-    extends Table[IncomingTransactionDb](tag, "wallet_incoming_txs") {
+    extends Table[IncomingTransactionDb](tag, "wallet_incoming_txs")
+    with TxTable[IncomingTransactionDb] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -40,9 +42,10 @@ class IncomingTransactionTable(tag: Tag)
   def primaryKey: PrimaryKey =
     primaryKey("pk_tx", sourceColumns = txIdBE)
 
-  def fk_txId0 = {
+  def fk_underlying_tx = {
     val txTable = TableQuery[TransactionTable]
-    foreignKey("fk_txId0", sourceColumns = txIdBE, targetTableQuery = txTable)(
-      _.txIdBE)
+    foreignKey("fk_underlying_tx",
+               sourceColumns = txIdBE,
+               targetTableQuery = txTable)(_.txIdBE)
   }
 }

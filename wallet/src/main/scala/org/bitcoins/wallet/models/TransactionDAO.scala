@@ -7,35 +7,34 @@ import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class TransactionDAO()(
-    implicit val ec: ExecutionContext,
-    val appConfig: WalletAppConfig)
-    extends CRUD[TransactionDb, DoubleSha256DigestBE] {
+trait TxDAO[DbEntryType <: TxDB, DbTable <: TxTable[DbEntryType]]
+    extends CRUD[DbEntryType, DoubleSha256DigestBE] {
+
+  implicit val ec: ExecutionContext
+
+  val appConfig: WalletAppConfig
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table: TableQuery[TransactionTable] =
-    TableQuery[TransactionTable]
+  override val table: TableQuery[DbTable]
 
-  override def createAll(
-      ts: Vector[TransactionDb]): Future[Vector[TransactionDb]] =
+  override def createAll(ts: Vector[DbEntryType]): Future[Vector[DbEntryType]] =
     SlickUtil.createAllNoAutoInc(ts, database, table)
 
   override protected def findByPrimaryKeys(txIdBEs: Vector[
-    DoubleSha256DigestBE]): Query[Table[_], TransactionDb, Seq] =
+    DoubleSha256DigestBE]): Query[Table[_], DbEntryType, Seq] =
     table.filter(_.txIdBE.inSet(txIdBEs))
 
   override def findByPrimaryKey(
-      txIdBE: DoubleSha256DigestBE): Query[Table[_], TransactionDb, Seq] = {
+      txIdBE: DoubleSha256DigestBE): Query[Table[_], DbEntryType, Seq] = {
     table.filter(_.txIdBE === txIdBE)
   }
 
   override def findAll(
-      txs: Vector[TransactionDb]): Query[Table[_], TransactionDb, Seq] =
+      txs: Vector[DbEntryType]): Query[Table[_], DbEntryType, Seq] =
     findByPrimaryKeys(txs.map(_.txIdBE))
 
-  def findByTxId(
-      txIdBE: DoubleSha256DigestBE): Future[Option[TransactionDb]] = {
+  def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {
     val q = table
       .filter(_.txIdBE === txIdBE)
 
@@ -44,13 +43,20 @@ case class TransactionDAO()(
         Some(h)
       case Vector() =>
         None
-      case txs: Vector[TransactionDb] =>
+      case txs: Vector[DbEntryType] =>
         // yikes, we should not have more the one transaction per id
         throw new RuntimeException(
           s"More than one transaction per id=${txIdBE.hex}, got=$txs")
     }
   }
 
-  def findByTxId(txId: DoubleSha256Digest): Future[Option[TransactionDb]] =
+  def findByTxId(txId: DoubleSha256Digest): Future[Option[DbEntryType]] =
     findByTxId(txId.flip)
+}
+
+case class TransactionDAO()(
+    implicit val ec: ExecutionContext,
+    val appConfig: WalletAppConfig)
+    extends TxDAO[TransactionDb, TransactionTable] {
+  override val table = TableQuery[TransactionTable]
 }

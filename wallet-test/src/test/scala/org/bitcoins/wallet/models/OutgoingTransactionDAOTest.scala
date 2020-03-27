@@ -14,8 +14,9 @@ class OutgoingTransactionDAOTest
 
   val outgoing: OutgoingTransactionDb = OutgoingTransactionDb.fromTransaction(
     WalletTestUtil.sampleTransaction,
-    SatoshisPerByte.fromLong(64),
-    Satoshis(250000000))
+    Satoshis(250000000),
+    WalletTestUtil.sampleTransaction.outputs.head.value,
+    Satoshis(10000))
 
   it should "insert and read an transaction into the database" in { daos =>
     val txDAO = daos.transactionDAO

@@ -48,10 +48,11 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
 
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
       tx <- bitcoind.getRawTransactionRaw(txId)
-      _ <- wallet.processOurTransaction(tx,
-                                        SatoshisPerByte(Satoshis(3)),
-                                        Satoshis(3000),
-                                        None)
+      _ <- wallet.processOurTransaction(transaction = tx,
+                                        feeRate = SatoshisPerByte(Satoshis(3)),
+                                        inputAmount = Satoshis(4000),
+                                        sentAmount = Satoshis(3000),
+                                        blockHashOpt = None)
 
       updatedCoin <- wallet.spendingInfoDAO.findByScriptPubKey(
         addr.scriptPubKey)

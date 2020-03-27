@@ -6,7 +6,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil
@@ -33,7 +33,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
   override def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: SatoshisPerByte,
+      feeRate: FeeUnit,
       fromAccount: AccountDb): Future[Transaction] = {
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
@@ -49,6 +49,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       _ <- processOurTransaction(transaction = signed,
                                  feeRate = feeRate,
                                  inputAmount = txBuilder.creditingAmount,
+                                 sentAmount = txBuilder.destinationAmount,
                                  blockHashOpt = None)
     } yield {
       logger.debug(

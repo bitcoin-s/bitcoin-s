@@ -231,10 +231,11 @@ case class SpendingInfoTable(tag: Tag)
   }
 
   /** All UTXOs must have a corresponding transaction in the wallet */
-  def fk_inc_txId = {
+  def fk_incoming_txId = {
     val txTable = TableQuery[IncomingTransactionTable]
-    foreignKey("fk_inc_txId", sourceColumns = txid, targetTableQuery = txTable)(
-      _.txIdBE)
+    foreignKey("fk_incoming_txId",
+               sourceColumns = txid,
+               targetTableQuery = txTable)(_.txIdBE)
   }
 
   private type UTXOTuple = (

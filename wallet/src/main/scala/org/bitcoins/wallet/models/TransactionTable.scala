@@ -14,6 +14,14 @@ import org.bitcoins.core.protocol.transaction.{
 import slick.jdbc.SQLiteProfile.api._
 import slick.lifted.{PrimaryKey, ProvenShape}
 
+trait TxDB {
+  def txIdBE: DoubleSha256DigestBE
+}
+
+trait TxTable[DbEntryType <: TxDB] extends Table[DbEntryType] {
+  def txIdBE: Rep[DoubleSha256DigestBE]
+}
+
 /**
   * Represents a relevant transaction for the wallet that we should be keeping track of
   * @param txIdBE Transaction ID
@@ -35,7 +43,8 @@ case class TransactionDb(
     totalOutput: CurrencyUnit,
     numInputs: Int,
     numOutputs: Int,
-    lockTime: UInt32) {
+    lockTime: UInt32)
+    extends TxDB {
   require(unsignedTx.inputs.forall(_.scriptSignature == EmptyScriptSignature),
           s"All ScriptSignatures must be empty, got $unsignedTx")
 
@@ -86,7 +95,9 @@ object TransactionDb {
   }
 }
 
-class TransactionTable(tag: Tag) extends Table[TransactionDb](tag, "tx_table") {
+class TransactionTable(tag: Tag)
+    extends Table[TransactionDb](tag, "tx_table")
+    with TxTable[TransactionDb] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
 

@@ -176,15 +176,17 @@ object WalletTestUtil {
 
   def insertDummyIncomingTransaction(daos: WalletDAOs, utxo: SpendingInfoDb)(
       implicit ec: ExecutionContext): Future[IncomingTransactionDb] = {
-    val txDb = TransactionDb(utxo.txid,
-                             EmptyTransaction,
-                             utxo.txid,
-                             EmptyTransaction,
-                             None,
-                             Satoshis.zero,
-                             1,
-                             1,
-                             UInt32.zero)
+    val txDb = TransactionDb(
+      txIdBE = utxo.txid,
+      transaction = EmptyTransaction,
+      unsignedTxIdBE = utxo.txid,
+      unsignedTx = EmptyTransaction,
+      wTxIdBEOpt = None,
+      totalOutput = Satoshis.zero,
+      numInputs = 1,
+      numOutputs = 1,
+      lockTime = UInt32.zero
+    )
     val incomingDb = IncomingTransactionDb(utxo.txid, utxo.output.value)
     for {
       _ <- daos.transactionDAO.upsert(txDb)

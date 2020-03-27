@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
-import org.bitcoins.core.api.CoreApi
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -20,7 +19,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerByte}
+import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
 import org.scalamock.scalatest.MockFactory
@@ -239,7 +238,7 @@ class RoutesSpec
       // positive cases
 
       (mockWalletApi
-        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: SatoshisPerByte))
+        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: FeeUnit))
         .expects(testAddress, Bitcoins(100), *)
         .returning(Future.successful(EmptyTransaction))
 

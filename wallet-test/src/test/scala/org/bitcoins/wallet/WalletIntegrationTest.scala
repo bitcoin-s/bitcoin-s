@@ -19,9 +19,9 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
   behavior of "Wallet - integration test"
 
-  val feeRate = SatoshisPerByte(Satoshis.one)
+  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
-  /** Checks that the given vaues are the same-ish, save for fee-level deviations */
+  /** Checks that the given values are the same-ish, save for fee-level deviations */
   private def isCloseEnough(
       first: CurrencyUnit,
       second: CurrencyUnit,
@@ -69,11 +69,11 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .getConfirmedBalance()
         .map(confirmed => assert(confirmed == 0.bitcoin))
       _ <- wallet
-        .getConfirmedBalance()
-        .map(confirmed => assert(confirmed == 0.bitcoin))
-      _ <- wallet
         .getUnconfirmedBalance()
         .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
+      incomingTx <- wallet.incomingTxDAO.findByTxId(tx.txIdBE)
+      _ = assert(incomingTx.isDefined)
+      _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind)
 
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
       rawTx <- bitcoind.getRawTransaction(txId)
@@ -108,6 +108,14 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
           assert(utxo.privKeyPath.chain.chainType == HDChainType.Change)
         case other => fail(s"Found ${other.length} utxos!")
       }
+
+      outgoingTx <- wallet.outgoingTxDAO.findByTxId(txid)
+      _ = assert(outgoingTx.isDefined)
+      _ = assert(outgoingTx.get.inputAmount == valueFromBitcoind)
+      _ = assert(outgoingTx.get.sentAmount == valueToBitcoind)
+      _ = assert(outgoingTx.get.feeRate == feeRate)
+      _ = assert(outgoingTx.get.expectedFee == Satoshis(223))
+      _ = assert(outgoingTx.get.actualFee == Satoshis(224))
 
       balancePostSend <- wallet.getBalance()
       _ = {
