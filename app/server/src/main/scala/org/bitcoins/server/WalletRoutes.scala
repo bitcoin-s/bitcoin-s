@@ -141,10 +141,15 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       AcceptDLCMutualClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(AcceptDLCMutualClose(mutualCloseSig)) =>
+        case Success(AcceptDLCMutualClose(mutualCloseSig, noBroadcast)) =>
           complete {
             wallet.acceptDLCMutualClose(mutualCloseSig).map { tx =>
-              Server.httpSuccess(tx.hex)
+              if (noBroadcast) {
+                Server.httpSuccess(tx.hex)
+              } else {
+                node.broadcastTransaction(tx)
+                Server.httpSuccess(tx.txIdBE)
+              }
             }
           }
       }
@@ -153,10 +158,15 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       GetDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetDLCFundingTx(eventId)) =>
+        case Success(GetDLCFundingTx(eventId, noBroadcast)) =>
           complete {
             wallet.getDLCFundingTx(eventId).map { tx =>
-              Server.httpSuccess(tx.hex)
+              if (noBroadcast) {
+                Server.httpSuccess(tx.hex)
+              } else {
+                node.broadcastTransaction(tx)
+                Server.httpSuccess(tx.txIdBE)
+              }
             }
           }
       }
@@ -165,14 +175,28 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       ExecuteDLCUnilateralClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ExecuteDLCUnilateralClose(eventId, oracleSig)) =>
+        case Success(
+            ExecuteDLCUnilateralClose(eventId, oracleSig, noBroadcast)) =>
           complete {
             wallet.executeDLCUnilateralClose(eventId, oracleSig).map { txs =>
               txs._2 match {
                 case Some(closingTx) =>
+                  if (noBroadcast) {
+                    Server.httpSuccess(s"${txs._1.hex}\n${closingTx.hex}")
+                  } else {
+                    node.broadcastTransaction(txs._1)
+                    node.broadcastTransaction(closingTx)
+                    Server.httpSuccess(s"${txs._1.txIdBE}\n${closingTx.txIdBE}")
+                  }
                   Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
                 case None =>
-                  Server.httpSuccess(txs._1.hex)
+                  val tx = txs._1
+                  if (noBroadcast) {
+                    Server.httpSuccess(tx.hex)
+                  } else {
+                    node.broadcastTransaction(tx)
+                    Server.httpSuccess(tx.txIdBE)
+                  }
               }
             }
           }
@@ -182,11 +206,17 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       ExecuteDLCRemoteUnilateralClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ExecuteDLCRemoteUnilateralClose(eventId, cet)) =>
+        case Success(
+            ExecuteDLCRemoteUnilateralClose(eventId, cet, noBroadcast)) =>
           complete {
             wallet.executeRemoteUnilateralDLC(eventId, cet).map {
               case Some(closingTx) =>
-                Server.httpSuccess(closingTx.hex)
+                if (noBroadcast) {
+                  Server.httpSuccess(closingTx.hex)
+                } else {
+                  node.broadcastTransaction(closingTx)
+                  Server.httpSuccess(closingTx.txIdBE)
+                }
               case None =>
                 Server.httpSuccess(
                   "Received would have only been dust, they have been used as fees")
@@ -198,14 +228,27 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       ExecuteDLCForceClose.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ExecuteDLCForceClose(eventId, oracleSig)) =>
+        case Success(ExecuteDLCForceClose(eventId, oracleSig, noBroadcast)) =>
           complete {
             wallet.executeDLCForceClose(eventId, oracleSig).map { txs =>
               txs._2 match {
                 case Some(closingTx) =>
+                  if (noBroadcast) {
+                    Server.httpSuccess(s"${txs._1.hex}\n${closingTx.hex}")
+                  } else {
+                    node.broadcastTransaction(txs._1)
+                    node.broadcastTransaction(closingTx)
+                    Server.httpSuccess(s"${txs._1.txIdBE}\n${closingTx.txIdBE}")
+                  }
                   Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
                 case None =>
-                  Server.httpSuccess(txs._1.hex)
+                  val tx = txs._1
+                  if (noBroadcast) {
+                    Server.httpSuccess(tx.hex)
+                  } else {
+                    node.broadcastTransaction(tx)
+                    Server.httpSuccess(tx.txIdBE)
+                  }
               }
             }
           }
@@ -215,11 +258,16 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       ClaimDLCRemoteFunds.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ClaimDLCRemoteFunds(eventId, tx)) =>
+        case Success(ClaimDLCRemoteFunds(eventId, tx, noBroadcast)) =>
           complete {
             wallet.claimDLCRemoteFunds(eventId, tx).map {
               case Some(closingTx) =>
-                Server.httpSuccess(closingTx.hex)
+                if (noBroadcast) {
+                  Server.httpSuccess(closingTx.hex)
+                } else {
+                  node.broadcastTransaction(closingTx)
+                  Server.httpSuccess(closingTx.txIdBE)
+                }
               case None =>
                 Server.httpSuccess(
                   "Received would have only been dust, they have been used as fees")
@@ -231,14 +279,27 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       ExecuteDLCRefund.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ExecuteDLCRefund(eventId)) =>
+        case Success(ExecuteDLCRefund(eventId, noBroadcast)) =>
           complete {
             wallet.executeDLCRefund(eventId).map { txs =>
               txs._2 match {
                 case Some(closingTx) =>
+                  if (noBroadcast) {
+                    Server.httpSuccess(s"${txs._1.hex}\n${closingTx.hex}")
+                  } else {
+                    node.broadcastTransaction(txs._1)
+                    node.broadcastTransaction(closingTx)
+                    Server.httpSuccess(s"${txs._1.txIdBE}\n${closingTx.txIdBE}")
+                  }
                   Server.httpSuccess(s"${txs._1.hex} \n ${closingTx.hex}")
                 case None =>
-                  Server.httpSuccess(txs._1.hex)
+                  val tx = txs._1
+                  if (noBroadcast) {
+                    Server.httpSuccess(tx.hex)
+                  } else {
+                    node.broadcastTransaction(tx)
+                    Server.httpSuccess(tx.txIdBE)
+                  }
               }
             }
           }
@@ -248,11 +309,16 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       ClaimDLCPenaltyFunds.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(ClaimDLCPenaltyFunds(eventId, tx)) =>
+        case Success(ClaimDLCPenaltyFunds(eventId, tx, noBroadcast)) =>
           complete {
             wallet.claimDLCPenaltyFunds(eventId, tx).map {
               case Some(closingTx) =>
-                Server.httpSuccess(closingTx.hex)
+                if (noBroadcast) {
+                  Server.httpSuccess(closingTx.hex)
+                } else {
+                  node.broadcastTransaction(closingTx)
+                  Server.httpSuccess(closingTx.txIdBE)
+                }
               case None =>
                 Server.httpSuccess(
                   "Received would have only been dust, they have been used as fees")
