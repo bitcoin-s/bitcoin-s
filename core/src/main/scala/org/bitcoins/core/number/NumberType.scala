@@ -344,7 +344,7 @@ object UInt32
   }
 
   /** Checks if we have the number cached, if not allocates a new object to represent the number */
-  private def checkCached(long: Long) : UInt32 = {
+  private def checkCached(long: Long): UInt32 = {
     if (long == 0) zero
     else if (long == 1) one
     else if (long == maxUnderlying) max
@@ -407,7 +407,7 @@ object Int32
 
   override def fromBytes(bytes: ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
-    Int32(bytes.toInt(true,ByteOrdering.BigEndian))
+    Int32(bytes.toInt(true, ByteOrdering.BigEndian))
   }
 
   def apply(int: Int): Int32 = {
@@ -416,7 +416,7 @@ object Int32
 
   def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
 
-  private def checkCached(int: Int) : Int32 = {
+  private def checkCached(int: Int): Int32 = {
     if (int == 0) zero
     else if (int == 1) one
     else if (int == 2) two
