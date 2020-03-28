@@ -127,7 +127,15 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
   }
 
-  it should "insert a nested segwit UTXO and read it" ignore { _ =>
-    ???
+  it should "insert a nested segwit UTXO and read it" in { daos =>
+    val utxoDAO = daos.utxoDAO
+    for {
+      created <- WalletTestUtil.insertNestedSegWitUTXO(daos)
+      read <- utxoDAO.read(created.id.get)
+    } yield read match {
+      case None                                => fail(s"Did not read back a UTXO")
+      case Some(_: NestedSegwitV0SpendingInfo) => succeed
+      case Some(other)                         => fail(s"did not get a nested segwit UTXO: $other")
+    }
   }
 }

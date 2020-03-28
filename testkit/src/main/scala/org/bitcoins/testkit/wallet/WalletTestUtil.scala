@@ -4,21 +4,16 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
   RegTestNetChainParams
 }
-import org.bitcoins.core.protocol.script.{
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0,
-  ScriptPubKey,
-  ScriptWitness
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
 import org.bitcoins.core.util.{CryptoUtil, NumberUtil}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
@@ -67,6 +62,12 @@ object WalletTestUtil {
                                            HDChainType.Change,
                                            addressIndex = 0)
 
+  lazy val sampleNestedSegwitPath: NestedSegWitHDPath =
+    NestedSegWitHDPath(hdCoinType,
+                       accountIndex = 0,
+                       HDChainType.External,
+                       addressIndex = 0)
+
   private def freshXpub(): ExtPublicKey =
     CryptoGenerators.extPublicKey.sampleSome
 
@@ -78,6 +79,10 @@ object WalletTestUtil {
   }
 
   def firstAccountDb = AccountDb(freshXpub(), defaultHdAccount)
+
+  def nestedSegWitAccountDb: AccountDb =
+    AccountDb(freshXpub(),
+              HDAccount(HDCoin(HDPurposes.NestedSegWit, hdCoinType), 0))
 
   private def randomScriptWitness: ScriptWitness =
     P2WPKHWitnessV0(freshXpub().key)
@@ -123,6 +128,26 @@ object WalletTestUtil {
                        blockHash = Some(randomBlockHash))
   }
 
+  def sampleNestedSegwitUTXO(
+      ecPublicKey: ECPublicKey): NestedSegwitV0SpendingInfo = {
+    val wpkh = P2WPKHWitnessSPKV0(ecPublicKey)
+    val outpoint = TransactionOutPoint(randomTXID, randomVout)
+    val output =
+      TransactionOutput(1.bitcoin, P2SHScriptPubKey(wpkh))
+    val scriptWitness = randomScriptWitness
+    val privkeyPath = WalletTestUtil.sampleNestedSegwitPath
+    NestedSegwitV0SpendingInfo(
+      state = randomState,
+      txid = randomTXID,
+      outPoint = outpoint,
+      output = output,
+      privKeyPath = privkeyPath,
+      redeemScript = wpkh,
+      scriptWitness = scriptWitness,
+      blockHash = Some(randomBlockHash)
+    )
+  }
+
   /** Given an account returns a sample address */
   def getAddressDb(account: AccountDb): AddressDb = {
     val path = SegWitHDPath(WalletTestUtil.hdCoinType,
@@ -143,6 +168,27 @@ object WalletTestUtil {
                     scriptPubKey = wspk)
   }
 
+  /** Given an account returns a sample address */
+  def getNestedSegwitAddressDb(account: AccountDb): AddressDb = {
+    val path = NestedSegWitHDPath(WalletTestUtil.hdCoinType,
+                                  chainType = HDChainType.External,
+                                  accountIndex = account.hdAccount.index,
+                                  addressIndex = 0)
+    val pubkey: ECPublicKey = ECPublicKey.freshPublicKey
+    val hashedPubkey = CryptoUtil.sha256Hash160(pubkey.bytes)
+    val wpkh = P2WPKHWitnessSPKV0(pubkey)
+    val witness = P2WPKHWitnessV0(pubkey)
+    val spk = P2SHScriptPubKey(wpkh)
+    val address = P2SHAddress.apply(spk, WalletTestUtil.networkParam)
+
+    NestedSegWitAddressDb(path = path,
+                          ecPublicKey = pubkey,
+                          hashedPubkey,
+                          address,
+                          witness,
+                          scriptPubKey = spk)
+  }
+
   /** Inserts an account, address and finally a UTXO */
   def insertLegacyUTXO(daos: WalletDAOs)(
       implicit ec: ExecutionContext): Future[LegacySpendingInfo] = {
@@ -161,5 +207,15 @@ object WalletTestUtil {
       addr <- daos.addressDAO.create(getAddressDb(account))
       utxo <- daos.utxoDAO.create(sampleSegwitUTXO(addr.scriptPubKey))
     } yield utxo.asInstanceOf[SegwitV0SpendingInfo]
+  }
+
+  /** Inserts an account, address and finally a UTXO */
+  def insertNestedSegWitUTXO(daos: WalletDAOs)(
+      implicit ec: ExecutionContext): Future[NestedSegwitV0SpendingInfo] = {
+    for {
+      account <- daos.accountDAO.create(WalletTestUtil.nestedSegWitAccountDb)
+      addr <- daos.addressDAO.create(getNestedSegwitAddressDb(account))
+      utxo <- daos.utxoDAO.create(sampleNestedSegwitUTXO(addr.ecPublicKey))
+    } yield utxo.asInstanceOf[NestedSegwitV0SpendingInfo]
   }
 }

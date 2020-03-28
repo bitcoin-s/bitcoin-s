@@ -2,8 +2,17 @@ package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sign}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.{HDPath, LegacyHDPath, SegWitHDPath}
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.hd.{
+  HDPath,
+  LegacyHDPath,
+  NestedSegWitHDPath,
+  SegWitHDPath
+}
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  ScriptWitness,
+  WitnessScriptPubKey
+}
 import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
@@ -80,7 +89,39 @@ case class LegacySpendingInfo(
     copy(blockHash = Some(blockHash))
 }
 
-// TODO add case for nested segwit
+/**
+  * DB representation of a nested segwit V0
+  * SegWit UTXO
+  */
+case class NestedSegwitV0SpendingInfo(
+    outPoint: TransactionOutPoint,
+    output: TransactionOutput,
+    privKeyPath: NestedSegWitHDPath,
+    redeemScript: ScriptPubKey,
+    scriptWitness: ScriptWitness,
+    txid: DoubleSha256DigestBE,
+    state: TxoState,
+    blockHash: Option[DoubleSha256DigestBE],
+    id: Option[Long] = None
+) extends SpendingInfoDb {
+  override val redeemScriptOpt: Option[ScriptPubKey] = Some(redeemScript)
+  override val scriptWitnessOpt: Option[ScriptWitness] = Some(scriptWitness)
+
+  override type PathType = NestedSegWitHDPath
+  override type SpendingInfoType = NestedSegwitV0SpendingInfo
+
+  override def copyWithState(state: TxoState): NestedSegwitV0SpendingInfo =
+    copy(state = state)
+
+  override def copyWithId(id: Long): NestedSegwitV0SpendingInfo =
+    copy(id = Some(id))
+
+  /** Updates the `blockHash` field */
+  override def copyWithBlockHash(
+      blockHash: DoubleSha256DigestBE): NestedSegwitV0SpendingInfo =
+    copy(blockHash = Some(blockHash))
+}
+
 /**
   * The database level representation of a UTXO.
   * When storing a UTXO we don't want to store
@@ -241,6 +282,28 @@ case class SpendingInfoTable(tag: Tag)
                          state = state,
                          txid = txid,
                          blockHash = blockHash)
+
+    case (id,
+          outpoint,
+          spk,
+          value,
+          path: NestedSegWitHDPath,
+          Some(redeemScript), // RedeemScript
+          Some(scriptWitness), // ScriptWitness
+          state,
+          txid,
+          blockHash)
+        if WitnessScriptPubKey.isWitnessScriptPubKey(redeemScript.asm) =>
+      NestedSegwitV0SpendingInfo(outpoint,
+                                 TransactionOutput(value, spk),
+                                 path,
+                                 redeemScript,
+                                 scriptWitness,
+                                 txid,
+                                 state,
+                                 blockHash,
+                                 id)
+
     case (id,
           outpoint,
           spk,
@@ -253,9 +316,7 @@ case class SpendingInfoTable(tag: Tag)
           blockHash) =>
       throw new IllegalArgumentException(
         "Could not construct UtxoSpendingInfoDb from bad tuple:"
-          + s" ($id, $outpoint, $spk, $value, $path, $spkOpt, $swOpt, $spent, $txid, $blockHash)."
-          + " Note: Nested Segwit is not implemented")
-
+          + s" ($id, $outpoint, $spk, $value, $path, $spkOpt, $swOpt, $spent, $txid, $blockHash).")
   }
 
   private val toTuple: SpendingInfoDb => Option[UTXOTuple] =
