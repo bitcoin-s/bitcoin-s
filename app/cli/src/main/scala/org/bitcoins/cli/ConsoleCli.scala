@@ -55,7 +55,7 @@ object ConsoleCli {
                                force = false)))
         .text(s"Rescan for wallet UTXOs")
         .children(
-          arg[Unit]("force")
+          opt[Unit]("force")
             .text("Clears existing wallet records. Warning! Use with caution!")
             .optional()
             .action((_, conf) =>
@@ -64,7 +64,7 @@ object ConsoleCli {
                   rescan.copy(force = true)
                 case other => other
               })),
-          arg[Int]("batch-size")
+          opt[Int]("batch-size")
             .text("Number of filters that can be matched in one batch")
             .optional()
             .action((batchSize, conf) =>
@@ -73,7 +73,7 @@ object ConsoleCli {
                   rescan.copy(addressBatchSize = Option(batchSize))
                 case other => other
               })),
-          arg[BlockStamp]("start")
+          opt[BlockStamp]("start")
             .text("Start height")
             .optional()
             .action((start, conf) =>
@@ -82,7 +82,7 @@ object ConsoleCli {
                   rescan.copy(startBlock = Option(start))
                 case other => other
               })),
-          arg[BlockStamp]("end")
+          opt[BlockStamp]("end")
             .text("End height")
             .optional()
             .action((end, conf) =>
@@ -96,7 +96,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
         .children(
-          arg[Unit]("sats")
+          opt[Unit]("sats")
+            .optional()
             .text("Display balance in satoshis")
             .action((_, conf) =>
               conf.copy(command = conf.command match {
