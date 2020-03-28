@@ -332,7 +332,7 @@ object UInt32
     require(
       bytes.size <= 4,
       "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
-    UInt32(bytes.toLong(false, ByteOrdering.BigEndian))
+    UInt32(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
   def apply(long: Long): UInt32 = {
@@ -407,7 +407,7 @@ object Int32
 
   override def fromBytes(bytes: ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
-    Int32(bytes.toInt(true, ByteOrdering.BigEndian))
+    Int32(bytes.toInt(signed = true, ordering = ByteOrdering.BigEndian))
   }
 
   def apply(int: Int): Int32 = {
