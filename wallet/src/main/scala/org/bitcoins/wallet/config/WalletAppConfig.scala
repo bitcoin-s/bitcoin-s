@@ -51,7 +51,7 @@ case class WalletAppConfig(
 
   lazy val defaultAccount: HDAccount = {
     val purpose = defaultAccountKind
-    HDAccount(coin = HDCoin(purpose, HDCoinType.Testnet), index = 0)
+    HDAccount(coin = HDCoin(purpose, HDCoinType.fromNetwork(network)), index = 0)
   }
 
   lazy val bloomFalsePositiveRate: Double =
