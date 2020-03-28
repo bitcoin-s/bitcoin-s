@@ -114,8 +114,11 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ = assert(outgoingTx.get.inputAmount == valueFromBitcoind)
       _ = assert(outgoingTx.get.sentAmount == valueToBitcoind)
       _ = assert(outgoingTx.get.feeRate == feeRate)
-      _ = assert(outgoingTx.get.expectedFee == Satoshis(223))
-      _ = assert(outgoingTx.get.actualFee == Satoshis(224))
+      _ = assert(outgoingTx.get.expectedFee == feeRate.calc(signedTx))
+      _ = assert(
+        isCloseEnough(feeRate.calc(signedTx),
+                      outgoingTx.get.actualFee,
+                      1.satoshi))
 
       balancePostSend <- wallet.getBalance()
       _ = {
