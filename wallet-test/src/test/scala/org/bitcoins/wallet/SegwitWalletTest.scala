@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.hd.{AddressType, HDPurposes}
-import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress}
+import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.scalatest.FutureOutcome
@@ -45,13 +45,11 @@ class SegwitWalletTest extends BitcoinSWalletTest {
     for {
       segwit <- wallet.getNewAddress(AddressType.SegWit)
       legacy <- wallet.getNewAddress(AddressType.Legacy)
-      // TODO: uncomment this once nested segwit is implemented
-      // nested <- wallet.getNewAddress(AddressType.NestedSegWit)
+      nested <- wallet.getNewAddress(AddressType.NestedSegWit)
     } yield {
       assert(segwit.isInstanceOf[Bech32Address])
       assert(legacy.isInstanceOf[P2PKHAddress])
-      // TODO: uncomment this once nested segwit is implemented
-      // assert(nested.isInstanceOf[P2SHAddress])
+      assert(nested.isInstanceOf[P2SHAddress])
     }
   }
 }

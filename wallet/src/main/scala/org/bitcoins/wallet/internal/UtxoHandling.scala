@@ -5,7 +5,11 @@ import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  ScriptPubKey
+}
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -82,8 +86,17 @@ private[wallet] trait UtxoHandling extends WalletLogger {
                            privKeyPath = path,
                            blockHash = blockHash)
       case nested: NestedSegWitAddressDb =>
-        throw new IllegalArgumentException(
-          s"Bad utxo $nested. Note: nested segwit is not implemented")
+        NestedSegwitV0SpendingInfo(
+          outPoint = outPoint,
+          output = output,
+          privKeyPath = nested.path,
+          redeemScript = P2WPKHWitnessSPKV0(nested.ecPublicKey),
+          scriptWitness = P2WPKHWitnessV0(nested.ecPublicKey),
+          txid = txid,
+          state = state,
+          id = None,
+          blockHash = blockHash
+        )
     }
 
     spendingInfoDAO.create(utxo).map { written =>
