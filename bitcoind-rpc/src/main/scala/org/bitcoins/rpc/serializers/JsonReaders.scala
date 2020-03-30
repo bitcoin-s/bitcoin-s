@@ -25,7 +25,7 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.fee.{BitcoinFeeRate, SatoshisPerByte}
+import org.bitcoins.core.wallet.fee.BitcoinsPerKiloByte
 import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonSerializers._
@@ -529,10 +529,10 @@ object JsonReaders {
   }
 
   // Currently takes in BTC/kB
-  implicit object BitcoinFeeUnitReads extends Reads[BitcoinFeeRate] {
-    override def reads(json: JsValue): JsResult[BitcoinFeeRate] =
-      SerializerUtil.processJsNumber[BitcoinFeeRate](num =>
-        SatoshisPerByte(num * 100000.0))(json)
+  implicit object BitcoinsPerKiloByteReads extends Reads[BitcoinsPerKiloByte] {
+    override def reads(json: JsValue): JsResult[BitcoinsPerKiloByte] =
+      SerializerUtil.processJsNumber[BitcoinsPerKiloByte](num =>
+        BitcoinsPerKiloByte(num))(json)
   }
 
   implicit object FileReads extends Reads[File] {

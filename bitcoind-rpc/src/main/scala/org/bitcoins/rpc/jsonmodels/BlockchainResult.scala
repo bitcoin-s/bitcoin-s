@@ -1,12 +1,12 @@
 package org.bitcoins.rpc.jsonmodels
 
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.wallet.fee.BitcoinFeeRate
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.gcs.GolombFilter
+import org.bitcoins.core.wallet.fee.BitcoinsPerKiloByte
 
 sealed abstract class BlockchainResult
 
@@ -200,10 +200,10 @@ case class GetMemPoolResultPostV19(
 }
 
 case class FeeInfo(
-    base: BitcoinFeeRate,
-    modified: BitcoinFeeRate,
-    ancestor: BitcoinFeeRate,
-    descendant: BitcoinFeeRate
+    base: BitcoinsPerKiloByte,
+    modified: BitcoinsPerKiloByte,
+    ancestor: BitcoinsPerKiloByte,
+    descendant: BitcoinsPerKiloByte
 )
 
 sealed trait GetMemPoolEntryResult extends BlockchainResult {
@@ -214,10 +214,10 @@ sealed trait GetMemPoolEntryResult extends BlockchainResult {
   def height: Int
   def descendantcount: Int
   def descendantsize: Int
-  def descendantfees: BitcoinFeeRate
+  def descendantfees: BitcoinsPerKiloByte
   def ancestorcount: Int
   def ancestorsize: Int
-  def ancestorfees: BitcoinFeeRate
+  def ancestorfees: BitcoinsPerKiloByte
   def wtxid: DoubleSha256DigestBE
   def fees: FeeInfo
   def depends: Option[Vector[DoubleSha256DigestBE]]
@@ -231,10 +231,10 @@ case class GetMemPoolEntryResultPreV19(
     height: Int,
     descendantcount: Int,
     descendantsize: Int,
-    descendantfees: BitcoinFeeRate,
+    descendantfees: BitcoinsPerKiloByte,
     ancestorcount: Int,
     ancestorsize: Int,
-    ancestorfees: BitcoinFeeRate,
+    ancestorfees: BitcoinsPerKiloByte,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
     depends: Option[Vector[DoubleSha256DigestBE]])
@@ -249,10 +249,10 @@ case class GetMemPoolEntryResultPostV19(
     height: Int,
     descendantcount: Int,
     descendantsize: Int,
-    descendantfees: BitcoinFeeRate,
+    descendantfees: BitcoinsPerKiloByte,
     ancestorcount: Int,
     ancestorsize: Int,
-    ancestorfees: BitcoinFeeRate,
+    ancestorfees: BitcoinsPerKiloByte,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
     depends: Option[Vector[DoubleSha256DigestBE]])
@@ -265,7 +265,7 @@ case class GetMemPoolInfoResult(
     bytes: Int,
     usage: Int,
     maxmempool: Int,
-    mempoolminfee: BitcoinFeeRate,
+    mempoolminfee: BitcoinsPerKiloByte,
     minrelaytxfee: Bitcoins)
     extends BlockchainResult
 

@@ -8,15 +8,15 @@ import org.bitcoins.core.crypto.{
   ECPrivateKey,
   ECPublicKey
 }
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.BitcoinsPerKiloByte
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
@@ -487,7 +487,7 @@ class WalletRpcTest extends BitcoindRpcTest {
       info <- client.getWalletInfo
     } yield {
       assert(success)
-      assert(info.paytxfee == SatoshisPerByte(1000))
+      assert(info.paytxfee == BitcoinsPerKiloByte(0.01))
     }
   }
 

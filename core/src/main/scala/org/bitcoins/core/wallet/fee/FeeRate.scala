@@ -1,7 +1,12 @@
 package org.bitcoins.core.wallet.fee
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{
+  Bitcoins,
+  CurrencyUnit,
+  CurrencyUnits,
+  Satoshis
+}
 import org.bitcoins.core.protocol.transaction.Transaction
 
 /**
@@ -82,6 +87,36 @@ object SatoshisPerKiloByte {
     val feeRate = feePaid.satoshis.toLong / tx.baseSize.toDouble
 
     SatoshisPerKiloByte(feeRate * 0.001)
+  }
+
+  val zero: SatoshisPerKiloByte = SatoshisPerKiloByte(0)
+  val one: SatoshisPerKiloByte = SatoshisPerKiloByte(1)
+}
+
+/** Represents how satoshis per kilobyte of the transaction fee */
+case class BitcoinsPerKiloByte(btc: Double) extends BitcoinFeeRate {
+
+  override def baseAmount: Double = sats * 0.001
+
+  override def sats: Double = btc * CurrencyUnits.btcToSatoshiScalar
+
+  def toSatPerByte: SatoshisPerByte = {
+    SatoshisPerByte(baseAmount)
+  }
+
+  override def units: FeeUnit = FeeUnit.PerKiloByte
+}
+
+object BitcoinsPerKiloByte {
+
+  def apply(sats: BigDecimal): BitcoinsPerKiloByte =
+    BitcoinsPerKiloByte(sats.toDouble)
+
+  def calc(tx: Transaction, inputAmount: CurrencyUnit): BitcoinsPerKiloByte = {
+    val feePaid = inputAmount - tx.outputs.map(_.value).sum
+    val feeRate = Bitcoins(feePaid.satoshis).toBigDecimal / tx.baseSize.toDouble
+
+    BitcoinsPerKiloByte(feeRate * 0.001)
   }
 
   val zero: SatoshisPerKiloByte = SatoshisPerKiloByte(0)

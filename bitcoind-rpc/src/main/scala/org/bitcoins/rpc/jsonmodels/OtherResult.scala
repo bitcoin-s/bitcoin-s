@@ -13,7 +13,7 @@ import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.SeqWrapper
-import org.bitcoins.core.wallet.fee.BitcoinFeeRate
+import org.bitcoins.core.wallet.fee.BitcoinsPerKiloByte
 import play.api.libs.json.JsObject
 
 sealed abstract class OtherResult
@@ -149,7 +149,7 @@ case class ValidateAddressResultImpl(
     extends ValidateAddressResult
 
 case class EstimateSmartFeeResult(
-    feerate: Option[BitcoinFeeRate],
+    feerate: Option[BitcoinsPerKiloByte],
     errors: Option[Vector[String]],
     blocks: Int)
     extends OtherResult

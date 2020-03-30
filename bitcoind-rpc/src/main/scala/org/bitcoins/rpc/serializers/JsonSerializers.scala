@@ -2,6 +2,7 @@ package org.bitcoins.rpc.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
+import java.time.LocalDateTime
 
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -21,12 +22,11 @@ import org.bitcoins.core.protocol.{
   P2SHAddress
 }
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.{BitcoinFeeRate, SatoshisPerKiloByte}
+import org.bitcoins.core.wallet.fee.{BitcoinsPerKiloByte, SatoshisPerKiloByte}
 import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.jsonmodels._
 import org.bitcoins.rpc.serializers.JsonReaders._
 import org.bitcoins.rpc.serializers.JsonWriters._
-import java.time.LocalDateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -69,7 +69,8 @@ object JsonSerializers {
   implicit val transactionReads: Reads[Transaction] = TransactionReads
   implicit val transactionOutPointReads: Reads[TransactionOutPoint] =
     TransactionOutPointReads
-  implicit val bitcoinFeeUnitReads: Reads[BitcoinFeeRate] = BitcoinFeeUnitReads
+  implicit val bitcoinsPerKiloByteReads: Reads[BitcoinsPerKiloByte] =
+    BitcoinsPerKiloByteReads
   implicit val fileReads: Reads[File] = FileReads
   implicit val uRIReads: Reads[URI] = URIReads
   implicit val scriptSignatureReads: Reads[ScriptSignature] =
