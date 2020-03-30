@@ -12,7 +12,7 @@
         "title": "CLI"
       },
       "applications/configuration": {
-        "title": "Application Configuration"
+        "title": "Application configuration"
       },
       "applications/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
@@ -20,8 +20,11 @@
       "applications/filter-sync": {
         "title": "Syncing Blockfilters"
       },
+      "applications/gui": {
+        "title": "GUI"
+      },
       "applications/node": {
-        "title": "Light Client"
+        "title": "Light client"
       },
       "applications/server": {
         "title": "Application Server"
