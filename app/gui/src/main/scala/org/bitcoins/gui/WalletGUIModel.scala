@@ -49,7 +49,8 @@ class WalletGUIModel() {
             ConsoleCli.exec(
               SendToAddress(BitcoinAddress(address).get,
                             Bitcoins(BigDecimal(amount)),
-                            satoshisPerVirtualByte = None)) match {
+                            satoshisPerVirtualByte = None,
+                            noBroadcast = false)) match {
               case Success(txid) =>
                 GlobalData.log.value =
                   s"Sent $amount to $address in tx: $txid\n\n${GlobalData.log()}"

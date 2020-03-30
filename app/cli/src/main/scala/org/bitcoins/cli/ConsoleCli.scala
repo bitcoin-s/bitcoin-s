@@ -496,7 +496,9 @@ object ConsoleCli {
       cmd("sendtoaddress")
         .action(
           // TODO how to handle null here?
-          (_, conf) => conf.copy(command = SendToAddress(null, 0.bitcoin, None)))
+          (_, conf) =>
+            conf.copy(command =
+              SendToAddress(null, 0.bitcoin, None, noBroadcast = false)))
         .text("Send money to the given address")
         .children(
           arg[BitcoinAddress]("address")
@@ -524,6 +526,13 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case send: SendToAddress =>
                   send.copy(satoshisPerVirtualByte = Some(feeRate))
+                case other => other
+              })),
+          opt[Unit]("noBroadcast").optional
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendToAddress =>
+                  send.copy(noBroadcast = true)
                 case other => other
               }))
         ),
@@ -715,11 +724,15 @@ object ConsoleCli {
                          up.writeJs(endBlock),
                          up.writeJs(force)))
 
-      case SendToAddress(address, bitcoins, satoshisPerVirtualByte) =>
+      case SendToAddress(address,
+                         bitcoins,
+                         satoshisPerVirtualByte,
+                         noBroadcast) =>
         RequestParam("sendtoaddress",
                      Seq(up.writeJs(address),
                          up.writeJs(bitcoins),
-                         up.writeJs(satoshisPerVirtualByte)))
+                         up.writeJs(satoshisPerVirtualByte),
+                         up.writeJs(noBroadcast)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -863,48 +876,61 @@ object CliCommand {
       noBroadcast: Boolean)
       extends CliCommand
 
+  trait Broadcastable {
+    def noBroadcast: Boolean
+  }
+
   case class GetDLCFundingTx(eventId: Sha256DigestBE, noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
 
   case class ExecuteDLCUnilateralClose(
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature,
       noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
 
   case class ExecuteDLCRemoteUnilateralClose(
       eventId: Sha256DigestBE,
       cet: Transaction,
       noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
 
   case class ExecuteDLCForceClose(
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature,
       noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
 
   case class ClaimDLCRemoteFunds(
       eventId: Sha256DigestBE,
       forceCloseTx: Transaction,
       noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
 
   case class ExecuteDLCRefund(eventId: Sha256DigestBE, noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
 
   case class ClaimDLCPenaltyFunds(
       eventId: Sha256DigestBE,
       forceCloseTx: Transaction,
       noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
 
   // Wallet
   case class SendToAddress(
       destination: BitcoinAddress,
       amount: Bitcoins,
-      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
+      noBroadcast: Boolean)
       extends CliCommand
+      with Broadcastable
   case object GetNewAddress extends CliCommand
   case class GetBalance(isSats: Boolean) extends CliCommand
 
