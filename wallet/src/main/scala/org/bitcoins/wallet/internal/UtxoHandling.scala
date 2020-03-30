@@ -92,7 +92,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
           privKeyPath = nested.path,
           redeemScript = P2WPKHWitnessSPKV0(nested.ecPublicKey),
           scriptWitness = P2WPKHWitnessV0(nested.ecPublicKey),
-          txid = txid,
+          txid = tx.txIdBE,
           state = state,
           id = None,
           blockHash = blockHash

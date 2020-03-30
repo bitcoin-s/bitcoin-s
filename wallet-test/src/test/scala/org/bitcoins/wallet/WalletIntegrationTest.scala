@@ -118,7 +118,7 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ = assert(
         isCloseEnough(feeRate.calc(signedTx),
                       outgoingTx.get.actualFee,
-                      1.satoshi))
+                      3.satoshi))
 
       balancePostSend <- wallet.getBalance()
       _ = {
