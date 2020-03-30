@@ -1,5 +1,7 @@
 package org.bitcoins.core.hd
 
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+
 /**
   * Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Coin_type BIP44]],
@@ -33,4 +35,11 @@ object HDCoinType {
       case _: Int =>
         throw new IllegalArgumentException(s"$int is not valid coin type!")
     }
+
+  def fromNetwork(np: NetworkParameters): HDCoinType = {
+    np match {
+      case MainNet => Bitcoin
+      case TestNet3 | RegTest => Testnet
+    }
+  }
 }
