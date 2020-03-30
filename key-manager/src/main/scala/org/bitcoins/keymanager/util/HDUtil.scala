@@ -74,8 +74,7 @@ object HDUtil {
     }
   }
 
-  def getCoinType(network: NetworkParameters): HDCoinType = network match {
-    case MainNet            => HDCoinType.Bitcoin
-    case TestNet3 | RegTest => HDCoinType.Testnet
+  def getCoinType(network: NetworkParameters): HDCoinType = {
+    HDCoinType.fromNetwork(network)
   }
 }
