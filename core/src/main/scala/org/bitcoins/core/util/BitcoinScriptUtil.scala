@@ -590,8 +590,8 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     val scriptPubKeyBytes =
       bytes.slice(compactSizeUInt.byteSize.toInt,
                   len + compactSizeUInt.byteSize.toInt)
-    val script: List[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
-    f(script.toVector)
+    val script: Vector[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
+    f(script)
   }
 }
 
