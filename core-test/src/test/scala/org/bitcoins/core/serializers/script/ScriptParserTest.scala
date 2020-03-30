@@ -220,7 +220,7 @@ class ScriptParserTest extends BitcoinSUnitTest {
     val rawScriptSig =
       "4730440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf225a802206a82685dbc2cf195d158c29309939d5a3cd41a889db6f766f3809fff35722305012103dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b"
 
-    val expectedAsm = List(
+    val expectedAsm = Vector(
       BytesToPushOntoStack(71),
       ScriptConstant(
         "30440220048e15422cf62349dc586ffb8c749d40280781edd5064ff27a5910ff5cf" +
@@ -230,7 +230,7 @@ class ScriptParserTest extends BitcoinSUnitTest {
         "03dcfc9882c1b3ae4e03fb6cac08bdb39e284e81d70c7aa8b27612457b2774509b")
     )
 
-    val scriptTokens: List[ScriptToken] = ScriptParser.fromHex(rawScriptSig)
+    val scriptTokens: Vector[ScriptToken] = ScriptParser.fromHex(rawScriptSig)
 
     scriptTokens must be(expectedAsm)
   }

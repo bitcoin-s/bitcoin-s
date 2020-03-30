@@ -12,11 +12,11 @@ import scala.util.Try
 /**
   * Created by chris on 1/7/16.
   */
-sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
+sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
 
   /** Parses a list of bytes into a list of script tokens */
-  def fromBytes(bytes: ByteVector): List[ScriptToken] = {
-    val scriptTokens: List[ScriptToken] = parse(bytes)
+  def fromBytes(bytes: ByteVector): Vector[ScriptToken] = {
+    val scriptTokens: Vector[ScriptToken] = parse(bytes)
     scriptTokens
   }
 
@@ -25,7 +25,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
     * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
     */
-  def fromString(str: String): List[ScriptToken] = {
+  def fromString(str: String): Vector[ScriptToken] = {
     if (str.size > 1 && str.substring(0, 2) == "0x" && str
           .split(" ")
           .size == 1) {
@@ -34,7 +34,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
       val hex = str.substring(2, str.size)
       fromBytes(BitcoinSUtil.decodeHex(hex))
     } else {
-      val scriptTokens: List[ScriptToken] = parse(str)
+      val scriptTokens: Vector[ScriptToken] = parse(str)
       scriptTokens
     }
   }
@@ -44,9 +44,9 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     * example: "OP_DUP OP_HASH160 e2e7c1ab3f807151e832dd1accb3d4f5d7d19b4b OP_EQUALVERIFY OP_CHECKSIG"
     * example: ["0", "IF 0x50 ENDIF 1", "P2SH,STRICTENC", "0x50 is reserved (ok if not executed)"] (from script_valid.json)
     */
-  private def parse(str: String): List[ScriptToken] = {
+  private def parse(str: String): Vector[ScriptToken] = {
     @tailrec
-    def loop(operations: List[String], accum: ByteVector): ByteVector = {
+    def loop(operations: Vector[String], accum: ByteVector): ByteVector = {
       /*      logger.debug("Attempting to parse: " + operations.headOption)
       logger.debug("Accum: " + accum)*/
       operations match {
@@ -62,7 +62,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
               BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(b))
             }
 
-            val bytesToPushOntoStack: List[ScriptToken] =
+            val bytesToPushOntoStack: Vector[ScriptToken] =
               (bytes.size > 75) match {
                 case true =>
                   val scriptNumber = ScriptNumber(
@@ -70,13 +70,13 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
                       ScriptNumberUtil.longToHex(bytes.size)))
                   bytes.size match {
                     case size if size < Byte.MaxValue =>
-                      List(scriptNumber, OP_PUSHDATA1)
+                      Vector(scriptNumber, OP_PUSHDATA1)
                     case size if size < Short.MaxValue =>
-                      List(scriptNumber, OP_PUSHDATA2)
+                      Vector(scriptNumber, OP_PUSHDATA2)
                     case size if size < Int.MaxValue =>
-                      List(scriptNumber, OP_PUSHDATA4)
+                      Vector(scriptNumber, OP_PUSHDATA4)
                   }
-                case false => List(BytesToPushOntoStack(bytes.size.toInt))
+                case false => Vector(BytesToPushOntoStack(bytes.size.toInt))
               }
 
             val pushOpBytes: ByteVector =
@@ -113,7 +113,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
             t,
             BitcoinSUtil
               .decodeHex(BitcoinSUtil.flipEndianness(h)) ++ bytesToPushOntoStack.bytes ++ accum)
-        case Nil => accum
+        case Vector() => accum
       }
     }
     if (tryParsingLong(str) && str.size > 1 && str.substring(0, 2) != "0x") {
@@ -121,7 +121,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
       //i.e. "8388607"
       val scriptNumber = ScriptNumber(parseLong(str))
       val bytesToPushOntoStack = BytesToPushOntoStack(scriptNumber.bytes.size)
-      List(bytesToPushOntoStack, scriptNumber)
+      Vector(bytesToPushOntoStack, scriptNumber)
     } else if (BitcoinSUtil.isHex(str) && str.toLowerCase == str) {
       //if the given string is hex, it is pretty straight forward to parse it
       //convert the hex string to a byte array and parse it
@@ -133,7 +133,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
       //for the offical parsing algorithm, for examples of weird formats look inside of
       //[[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json]]
       val parsedBytesFromString =
-        loop(str.split(" ").toList, ByteVector.empty).reverse
+        loop(str.split(" ").toVector, ByteVector.empty).reverse
       parse(parsedBytesFromString)
     }
   }
@@ -142,9 +142,9 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     * Parses a byte array into a the asm operations for a script
     * will throw an exception if it fails to parse a op code
     */
-  private def parse(bytes: ByteVector): List[ScriptToken] = {
+  private def parse(bytes: ByteVector): Vector[ScriptToken] = {
     @tailrec
-    def loop(bytes: ByteVector, accum: List[ScriptToken]): List[ScriptToken] = {
+    def loop(bytes: ByteVector, accum: Vector[ScriptToken]): Vector[ScriptToken] = {
       //logger.debug("Byte to be parsed: " + bytes.headOption)
       if (bytes.nonEmpty) {
         val op = ScriptOperation.fromByte(bytes.head)
@@ -155,13 +155,13 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
         accum
       }
     }
-    loop(bytes, Nil).reverse
+    loop(bytes, Vector.empty).reverse
 
   }
 
   /** Parses a redeem script from the given script token */
-  def parseRedeemScript(scriptToken: ScriptToken): Try[List[ScriptToken]] = {
-    val redeemScript: Try[List[ScriptToken]] = Try(parse(scriptToken.bytes))
+  def parseRedeemScript(scriptToken: ScriptToken): Try[Vector[ScriptToken]] = {
+    val redeemScript: Try[Vector[ScriptToken]] = Try(parse(scriptToken.bytes))
     redeemScript
   }
 
@@ -183,7 +183,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     * see [[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json#L21-L25]]
     * for examples of this
     */
-  def parseBytesFromString(s: String): List[ScriptConstant] = {
+  def parseBytesFromString(s: String): Vector[ScriptConstant] = {
     //logger.debug("Parsing bytes from string " + s)
     val scriptConstants = (raw"\b0x([0-9a-f]+)\b".r
       .findAllMatchIn(s.toLowerCase)
@@ -198,12 +198,12 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
           } else {
             ScriptConstant(g.group(1))
           }))
-    scriptConstants.toList
+    scriptConstants.toVector
   }
 
   sealed private case class ParsingHelper(
       tail: ByteVector,
-      accum: List[ScriptToken])
+      accum: Vector[ScriptToken])
 
   /**
     * Parses an operation if the tail is a scodec.bits.ByteVector
@@ -214,7 +214,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     */
   private def parseOperationByte(
       op: ScriptOperation,
-      accum: List[ScriptToken],
+      accum: Vector[ScriptToken],
       tail: ByteVector): ParsingHelper = {
     op match {
       case bytesToPushOntoStack: BytesToPushOntoStack =>
@@ -242,7 +242,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
     */
   private def parseOpPushData(
       op: ScriptOperation,
-      accum: List[ScriptToken],
+      accum: Vector[ScriptToken],
       tail: ByteVector): ParsingHelper = {
 
     def parseOpPushDataHelper(numBytes: Int): ParsingHelper = {
@@ -294,7 +294,7 @@ sealed abstract class ScriptParser extends Factory[List[ScriptToken]] {
       bytesToPushOntoStack: ScriptConstant,
       scriptConstant: ScriptConstant,
       restOfBytes: ByteVector,
-      accum: List[ScriptToken]): ParsingHelper = {
+      accum: Vector[ScriptToken]): ParsingHelper = {
     if (bytesToPushOntoStack.hex == "00") {
       //if we need to push 0 bytes onto the stack we do not add the script constant
       ParsingHelper(restOfBytes, bytesToPushOntoStack +: op +: accum)
