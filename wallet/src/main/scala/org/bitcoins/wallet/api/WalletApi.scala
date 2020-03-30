@@ -81,9 +81,11 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
   def processCompactFilter(
       blockHash: DoubleSha256Digest,
       blockFilter: GolombFilter): Future[LockedWalletApi] = {
+    val utxosF = listUtxos()
+    val addressesF = listAddresses()
     for {
-      utxos <- listUtxos()
-      addresses <- listAddresses()
+      utxos <- utxosF
+      addresses <- addressesF
       scriptPubKeys = utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
         .map(_.scriptPubKey)
         .toSet
