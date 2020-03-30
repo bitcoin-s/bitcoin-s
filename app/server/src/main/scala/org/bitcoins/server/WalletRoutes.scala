@@ -50,10 +50,12 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       SendToAddress.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(SendToAddress(address, bitcoins)) =>
+        case Success(
+            SendToAddress(address, bitcoins, satoshisPerVirtualByteOpt)) =>
           complete {
-            // TODO dynamic fees
-            val feeRate = SatoshisPerByte(100.sats)
+            // TODO dynamic fees based off mempool and recent blocks
+            val feeRate =
+              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
             wallet.sendToAddress(address, bitcoins, feeRate).map { tx =>
               node.broadcastTransaction(tx)
               Server.httpSuccess(tx.txIdBE)
