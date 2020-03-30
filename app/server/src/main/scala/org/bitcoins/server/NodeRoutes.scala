@@ -8,12 +8,22 @@ import org.bitcoins.node.Node
 
 case class NodeRoutes(node: Node)(implicit system: ActorSystem)
     extends ServerRoute {
-  implicit val materializer = ActorMaterializer()
+  import system.dispatcher
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand("getpeers", _) =>
       complete {
         Server.httpSuccess("TODO implement getpeers")
+      }
+
+    case ServerCommand("stop", _) =>
+      complete {
+        val nodeStopping = node.stop().map { _ =>
+          Server.httpSuccess("Node shutting down")
+        }
+        system.terminate()
+        nodeStopping
       }
   }
 }

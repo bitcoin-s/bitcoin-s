@@ -148,6 +148,9 @@ object ConsoleCli {
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
         .text(s"List the connected peers"),
+      cmd("stop")
+        .action((_, conf) => conf.copy(command = Stop))
+        .text("Request a graceful shutdown of Bitcoin-S"),
       note(sys.props("line.separator") + "=== PSBT ==="),
       cmd("combinepsbts")
         .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
@@ -275,6 +278,7 @@ object ConsoleCli {
       case GetBestBlockHash => RequestParam("getbestblockhash")
       // peers
       case GetPeers => RequestParam("getpeers")
+      case Stop     => RequestParam("stop")
       // PSBTs
       case CombinePSBTs(psbts) =>
         RequestParam("combinepsbts", Seq(up.writeJs(psbts)))
@@ -386,6 +390,7 @@ object CliCommand {
 
   // Node
   case object GetPeers extends CliCommand
+  case object Stop extends CliCommand
 
   // Chain
   case object GetBestBlockHash extends CliCommand
