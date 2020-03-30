@@ -2,7 +2,7 @@ package org.bitcoins.core.number
 
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{BitcoinSUtil, Factory, NumberUtil}
-import scodec.bits.ByteVector
+import scodec.bits.{ByteOrdering, ByteVector}
 
 import scala.util.{Failure, Success, Try}
 
@@ -315,13 +315,13 @@ object UInt32
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = UInt32(0)
-  lazy val one = UInt32(1)
+  lazy val zero = UInt32(BigInt(0))
+  lazy val one = UInt32(BigInt(1))
 
   private lazy val minUnderlying: A = 0
-  private lazy val maxUnderlying: A = 4294967295L
+  private lazy val maxUnderlying: A = BigInt(4294967295L)
 
-  lazy val min = UInt32(minUnderlying)
+  lazy val min = zero
   lazy val max = UInt32(maxUnderlying)
 
   override def isInBound(num: A): Boolean =
@@ -331,12 +331,26 @@ object UInt32
     require(
       bytes.size <= 4,
       "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
-    UInt32(NumberUtil.toUnsignedInt(bytes))
+    UInt32(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 
-  def apply(long: Long): UInt32 = UInt32(BigInt(long))
+  def apply(long: Long): UInt32 = {
+    checkCached(long)
+  }
 
-  def apply(bigInt: BigInt): UInt32 = UInt32Impl(bigInt)
+  def apply(bigInt: BigInt): UInt32 = {
+    UInt32Impl(bigInt)
+  }
+
+  /** Checks if we have the number cached, if not allocates a new object to represent the number */
+  private def checkCached(long: Long): UInt32 = {
+    if (long == 0) zero
+    else if (long == 1) one
+    else if (long == maxUnderlying) max
+    else {
+      UInt32(BigInt(long))
+    }
+  }
 }
 
 object UInt64
@@ -377,11 +391,12 @@ object Int32
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = Int32(0)
-  lazy val one = Int32(1)
+  val zero = Int32(BigInt(0))
+  val one = Int32(BigInt(1))
+  val two = Int32(BigInt(2))
 
-  private lazy val minUnderlying: A = -2147483648
-  private lazy val maxUnderlying: A = 2147483647
+  private lazy val minUnderlying: A = BigInt(-2147483648)
+  private lazy val maxUnderlying: A = BigInt(2147483647)
 
   lazy val min = Int32(minUnderlying)
   lazy val max = Int32(maxUnderlying)
@@ -391,12 +406,24 @@ object Int32
 
   override def fromBytes(bytes: ByteVector): Int32 = {
     require(bytes.size <= 4, "We cannot have an Int32 be larger than 4 bytes")
-    Int32(BigInt(bytes.toArray).toInt)
+    Int32(bytes.toInt(signed = true, ordering = ByteOrdering.BigEndian))
   }
 
-  def apply(int: Int): Int32 = Int32(BigInt(int))
+  def apply(int: Int): Int32 = {
+    checkCached(int)
+  }
 
   def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
+
+  private def checkCached(int: Int): Int32 = {
+    if (int == 0) zero
+    else if (int == 1) one
+    else if (int == 2) two
+    else if (int == maxUnderlying) max
+    else {
+      Int32(BigInt(int))
+    }
+  }
 }
 
 object Int64
