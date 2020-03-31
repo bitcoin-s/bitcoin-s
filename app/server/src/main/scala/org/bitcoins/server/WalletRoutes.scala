@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency._
+import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.dlc.DLCMessage
@@ -41,12 +42,11 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
 
   private def handleBroadcastable(
       tx: Transaction,
-      noBroadcast: Boolean): String = {
+      noBroadcast: Boolean): Future[NetworkElement] = {
     if (noBroadcast) {
-      tx.hex
+      Future.successful(tx)
     } else {
-      node.broadcastTransaction(tx)
-      tx.txIdBE.hex
+      node.broadcastTransaction(tx).map(_ => tx.txIdBE)
     }
   }
 
@@ -199,9 +199,10 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(AcceptDLCMutualClose(mutualCloseSig, noBroadcast)) =>
           complete {
-            wallet.acceptDLCMutualClose(mutualCloseSig).map { tx =>
-              val retStr = handleBroadcastable(tx, noBroadcast)
-              Server.httpSuccess(retStr)
+            wallet.acceptDLCMutualClose(mutualCloseSig).flatMap { tx =>
+              handleBroadcastable(tx, noBroadcast).map { retStr =>
+                Server.httpSuccess(retStr.hex)
+              }
             }
           }
       }
@@ -212,9 +213,10 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(GetDLCFundingTx(eventId, noBroadcast)) =>
           complete {
-            wallet.getDLCFundingTx(eventId).map { tx =>
-              val retStr = handleBroadcastable(tx, noBroadcast)
-              Server.httpSuccess(retStr)
+            wallet.getDLCFundingTx(eventId).flatMap { tx =>
+              handleBroadcastable(tx, noBroadcast).map { retStr =>
+                Server.httpSuccess(retStr.hex)
+              }
             }
           }
       }
@@ -226,17 +228,20 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(
             ExecuteDLCUnilateralClose(eventId, oracleSig, noBroadcast)) =>
           complete {
-            wallet.executeDLCUnilateralClose(eventId, oracleSig).map { txs =>
-              txs._2 match {
-                case Some(closingTx) =>
-                  val retStr = handleBroadcastable(txs._1, noBroadcast)
-                  val closingRetStr =
-                    handleBroadcastable(closingTx, noBroadcast)
-                  Server.httpSuccess(s"$retStr\n$closingRetStr")
-                case None =>
-                  val retStr = handleBroadcastable(txs._1, noBroadcast)
-                  Server.httpSuccess(retStr)
-              }
+            wallet.executeDLCUnilateralClose(eventId, oracleSig).flatMap {
+              txs =>
+                txs._2 match {
+                  case Some(closingTx) =>
+                    for {
+                      retStr <- handleBroadcastable(txs._1, noBroadcast)
+                      closingRetStr <- handleBroadcastable(closingTx,
+                                                           noBroadcast)
+                    } yield Server.httpSuccess(s"$retStr\n$closingRetStr")
+                  case None =>
+                    handleBroadcastable(txs._1, noBroadcast).map { retStr =>
+                      Server.httpSuccess(retStr.hex)
+                    }
+                }
             }
           }
       }
@@ -248,13 +253,16 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(
             ExecuteDLCRemoteUnilateralClose(eventId, cet, noBroadcast)) =>
           complete {
-            wallet.executeRemoteUnilateralDLC(eventId, cet).map {
+            wallet.executeRemoteUnilateralDLC(eventId, cet).flatMap {
               case Some(closingTx) =>
-                val retStr = handleBroadcastable(closingTx, noBroadcast)
-                Server.httpSuccess(retStr)
+                handleBroadcastable(closingTx, noBroadcast).map { retStr =>
+                  Server.httpSuccess(retStr.hex)
+                }
               case None =>
-                Server.httpSuccess(
-                  "Received would have only been dust, they have been used as fees")
+                Future.successful(
+                  Server.httpSuccess(
+                    "Received would have only been dust, they have been used as fees")
+                )
             }
           }
       }
@@ -268,13 +276,14 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             wallet.executeDLCForceClose(eventId, oracleSig).map { txs =>
               txs._2 match {
                 case Some(closingTx) =>
-                  val retStr = handleBroadcastable(txs._1, noBroadcast)
-                  val closingRetStr =
-                    handleBroadcastable(closingTx, noBroadcast)
-                  Server.httpSuccess(s"$retStr\n$closingRetStr")
+                  for {
+                    retStr <- handleBroadcastable(txs._1, noBroadcast)
+                    closingRetStr <- handleBroadcastable(closingTx, noBroadcast)
+                  } yield Server.httpSuccess(s"$retStr\n$closingRetStr")
                 case None =>
-                  val retStr = handleBroadcastable(txs._1, noBroadcast)
-                  Server.httpSuccess(retStr)
+                  handleBroadcastable(txs._1, noBroadcast).map { retStr =>
+                    Server.httpSuccess(retStr.hex)
+                  }
               }
             }
           }
@@ -286,13 +295,16 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ClaimDLCRemoteFunds(eventId, tx, noBroadcast)) =>
           complete {
-            wallet.claimDLCRemoteFunds(eventId, tx).map {
+            wallet.claimDLCRemoteFunds(eventId, tx).flatMap {
               case Some(closingTx) =>
-                val retStr = handleBroadcastable(closingTx, noBroadcast)
-                Server.httpSuccess(retStr)
+                handleBroadcastable(closingTx, noBroadcast).map { retStr =>
+                  Server.httpSuccess(retStr.hex)
+                }
               case None =>
-                Server.httpSuccess(
-                  "Received would have only been dust, they have been used as fees")
+                Future.successful(
+                  Server.httpSuccess(
+                    "Received would have only been dust, they have been used as fees")
+                )
             }
           }
       }
@@ -306,13 +318,14 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             wallet.executeDLCRefund(eventId).map { txs =>
               txs._2 match {
                 case Some(closingTx) =>
-                  val retStr = handleBroadcastable(txs._1, noBroadcast)
-                  val closingRetStr =
-                    handleBroadcastable(closingTx, noBroadcast)
-                  Server.httpSuccess(s"$retStr\n$closingRetStr")
+                  for {
+                    retStr <- handleBroadcastable(txs._1, noBroadcast)
+                    closingRetStr <- handleBroadcastable(closingTx, noBroadcast)
+                  } yield Server.httpSuccess(s"$retStr\n$closingRetStr")
                 case None =>
-                  val retStr = handleBroadcastable(txs._1, noBroadcast)
-                  Server.httpSuccess(retStr)
+                  handleBroadcastable(txs._1, noBroadcast).map { retStr =>
+                    Server.httpSuccess(retStr.hex)
+                  }
               }
             }
           }
@@ -324,13 +337,16 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ClaimDLCPenaltyFunds(eventId, tx, noBroadcast)) =>
           complete {
-            wallet.claimDLCPenaltyFunds(eventId, tx).map {
+            wallet.claimDLCPenaltyFunds(eventId, tx).flatMap {
               case Some(closingTx) =>
-                val retStr = handleBroadcastable(closingTx, noBroadcast)
-                Server.httpSuccess(retStr)
+                handleBroadcastable(closingTx, noBroadcast).map { retStr =>
+                  Server.httpSuccess(retStr.hex)
+                }
               case None =>
-                Server.httpSuccess(
-                  "Received would have only been dust, they have been used as fees")
+                Future.successful(
+                  Server.httpSuccess(
+                    "Received would have only been dust, they have been used as fees")
+                )
             }
           }
       }
@@ -350,8 +366,9 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             val feeRate =
               satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
             wallet.sendToAddress(address, bitcoins, feeRate).map { tx =>
-              val retStr = handleBroadcastable(tx, noBroadcast)
-              Server.httpSuccess(retStr)
+              handleBroadcastable(tx, noBroadcast).map { retStr =>
+                Server.httpSuccess(retStr.hex)
+              }
             }
           }
       }
