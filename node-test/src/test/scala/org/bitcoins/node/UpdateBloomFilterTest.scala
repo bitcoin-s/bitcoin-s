@@ -78,46 +78,6 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
                   onMerkleBlockReceived = Vector(txCallback))
   }
 
-  it must "update the bloom filter with an address" in { param =>
-    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
-
-    // we want to schedule a runnable that aborts
-    // the test after a timeout, but then
-    // we need to cancel that runnable once
-    // we get a result
-    var cancelable: Option[Cancellable] = None
-
-    for {
-      firstBloom <- wallet.getBloomFilter()
-
-      // this has to be generated after our bloom filter
-      // is calculated
-      addressFromWallet <- wallet.getNewAddress()
-      _ = addressFromWalletP.success(addressFromWallet)
-      _ <- spv.updateBloomFilter(addressFromWallet)
-      _ <- spv.sync()
-      _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
-      _ <- NodeTestUtil.awaitSync(spv, rpc)
-
-      _ = {
-        cancelable = Some {
-          system.scheduler.scheduleOnce(
-            testTimeout,
-            new Runnable {
-              override def run: Unit = {
-                if (!assertionP.isCompleted)
-                  assertionP.failure(new TestFailedException(
-                    s"Did not receive a merkle block message after $testTimeout!",
-                    failedCodeStackDepth = 0))
-              }
-            }
-          )
-        }
-      }
-      result <- assertionP.future
-    } yield assert(result)
-  }
-
   it must "update the bloom filter with a TX" in { param =>
     val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
 
@@ -164,5 +124,45 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       result <- assertionP.future
     } yield assert(result)
 
+  }
+
+  it must "update the bloom filter with an address" in { param =>
+    val SpvNodeFundedWalletBitcoind(spv, wallet, rpc) = param
+
+    // we want to schedule a runnable that aborts
+    // the test after a timeout, but then
+    // we need to cancel that runnable once
+    // we get a result
+    var cancelable: Option[Cancellable] = None
+
+    for {
+      firstBloom <- wallet.getBloomFilter()
+
+      // this has to be generated after our bloom filter
+      // is calculated
+      addressFromWallet <- wallet.getNewAddress()
+      _ = addressFromWalletP.success(addressFromWallet)
+      _ <- spv.updateBloomFilter(addressFromWallet)
+      _ <- spv.sync()
+      _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
+      _ <- NodeTestUtil.awaitSync(spv, rpc)
+
+      _ = {
+        cancelable = Some {
+          system.scheduler.scheduleOnce(
+            testTimeout,
+            new Runnable {
+              override def run: Unit = {
+                if (!assertionP.isCompleted)
+                  assertionP.failure(new TestFailedException(
+                    s"Did not receive a merkle block message after $testTimeout!",
+                    failedCodeStackDepth = 0))
+              }
+            }
+          )
+        }
+      }
+      result <- assertionP.future
+    } yield assert(result)
   }
 }
