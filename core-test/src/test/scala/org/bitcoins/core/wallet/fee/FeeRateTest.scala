@@ -25,6 +25,12 @@ class FeeRateTest extends BitcoinSUnitTest {
     assert(feeRate.calc(tx) == Satoshis(606))
   }
 
+  it must "calculate the correct fee with a BitcoinsPerKiloByte fee rate" in {
+    val feeRate = BitcoinsPerKiloByte(0.000037)
+
+    assert(feeRate.calc(tx) == Satoshis(503))
+  }
+
   it must "calculate the correct fee with a SatoshisPerKiloByte fee rate" in {
     val feeRate = SatoshisPerKiloByte(3700)
 
@@ -57,15 +63,49 @@ class FeeRateTest extends BitcoinSUnitTest {
     assert(satoshisPerByte.calc(wtx) != satoshisPerVByte.calc(wtx))
   }
 
+  it must "correctly convert SatoshisPerByte to SatoshisPerKiloByte" in {
+    val satoshisPerByte = SatoshisPerByte(3.7)
+
+    assert(satoshisPerByte.toSatPerKb == SatoshisPerKiloByte(3700))
+  }
+
+  it must "correctly convert SatoshisPerByte to BitcoinsPerKiloByte" in {
+    val satoshisPerByte = SatoshisPerByte(3.7)
+
+    assert(satoshisPerByte.toBTCPerKb == BitcoinsPerKiloByte(0.000037))
+  }
+
+  it must "correctly convert SatoshisPerKiloByte to SatoshisPerByte" in {
+    val satPerKb = SatoshisPerKiloByte(3700)
+
+    assert(satPerKb.toSatPerByte == SatoshisPerByte(3.7))
+  }
+
+  it must "correctly convert BitcoinsPerKiloByte to SatoshisPerByte" in {
+    val btcPerKb = BitcoinsPerKiloByte(0.000037)
+
+    assert(btcPerKb.toSatPerByte == SatoshisPerByte(3.7))
+  }
+
+  it must "correctly convert SatoshisPerKiloByte to BitcoinsPerKiloByte" in {
+    val satPerKb = SatoshisPerKiloByte(3700)
+    val btcPerKb = BitcoinsPerKiloByte(0.000037)
+
+    assert(satPerKb.toBTCPerKb == btcPerKb)
+    assert(btcPerKb.toSatPerKb == satPerKb)
+  }
+
   it must "correctly calculate the correct fee rate for a transaction" in {
     val inputAmount = Bitcoins(32.96382044)
     val satsPerByte = SatoshisPerByte.calc(tx, inputAmount)
     val satsPerVByte = SatoshisPerVirtualByte.calc(tx, inputAmount)
     val satsPerKByte = SatoshisPerKiloByte.calc(tx, inputAmount)
+    val btcPerKByte = BitcoinsPerKiloByte.calc(tx, inputAmount)
 
     assert(satsPerByte == SatoshisPerByte(8424.235294117647))
     assert(satsPerVByte == SatoshisPerVirtualByte(6985.951219512195))
     assert(satsPerKByte == SatoshisPerKiloByte(8.424235294117647))
+    assert(btcPerKByte == BitcoinsPerKiloByte(0.00000008424235294117647))
   }
 
   it must "fail to calculate a fee greater than a the max value for SatoshisPerByte" in {
@@ -82,6 +122,12 @@ class FeeRateTest extends BitcoinSUnitTest {
 
   it must "fail to calculate a fee greater than a the max value for SatoshisPerKiloByte" in {
     val feeRate = SatoshisPerKiloByte(Satoshis.max.toDouble)
+
+    assertThrows[IllegalArgumentException](feeRate.calc(tx))
+  }
+
+  it must "fail to calculate a fee greater than a the max value for BitcoinsPerKiloByte" in {
+    val feeRate = BitcoinsPerKiloByte(Satoshis.max.toDouble)
 
     assertThrows[IllegalArgumentException](feeRate.calc(tx))
   }

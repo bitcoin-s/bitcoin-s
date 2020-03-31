@@ -16,6 +16,10 @@ class FeeUnitTest extends BitcoinSUnitTest {
     assert(SatoshisPerKiloByte.one.units == FeeUnit.PerKiloByte)
   }
 
+  "BitcoinsPerKiloByte" must "have the correct FeeUnit" in {
+    assert(BitcoinsPerKiloByte.one.units == FeeUnit.PerKiloByte)
+  }
+
   "FlatSatoshis" must "have the correct FeeUnit" in {
     assert(FlatSatoshis(1000).units == FeeUnit.Flat)
   }

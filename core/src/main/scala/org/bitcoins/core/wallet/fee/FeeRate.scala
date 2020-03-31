@@ -47,6 +47,10 @@ case class SatoshisPerByte(sats: Double) extends BitcoinFeeRate {
     SatoshisPerKiloByte(sats * 1000)
   }
 
+  def toBTCPerKb: BitcoinsPerKiloByte = {
+    BitcoinsPerKiloByte(sats * 1000 * CurrencyUnits.satoshisToBTCScalar)
+  }
+
   override def units: FeeUnit = FeeUnit.PerByte
 }
 
@@ -72,6 +76,10 @@ case class SatoshisPerKiloByte(sats: Double) extends BitcoinFeeRate {
 
   def toSatPerByte: SatoshisPerByte = {
     SatoshisPerByte(baseAmount)
+  }
+
+  def toBTCPerKb: BitcoinsPerKiloByte = {
+    BitcoinsPerKiloByte(sats * CurrencyUnits.satoshisToBTCScalar)
   }
 
   override def units: FeeUnit = FeeUnit.PerKiloByte
@@ -104,6 +112,10 @@ case class BitcoinsPerKiloByte(btc: Double) extends BitcoinFeeRate {
     SatoshisPerByte(baseAmount)
   }
 
+  def toSatPerKb: SatoshisPerKiloByte = {
+    SatoshisPerKiloByte(sats)
+  }
+
   override def units: FeeUnit = FeeUnit.PerKiloByte
 }
 
@@ -119,8 +131,8 @@ object BitcoinsPerKiloByte {
     BitcoinsPerKiloByte(feeRate * 0.001)
   }
 
-  val zero: SatoshisPerKiloByte = SatoshisPerKiloByte(0)
-  val one: SatoshisPerKiloByte = SatoshisPerKiloByte(1)
+  val zero: BitcoinsPerKiloByte = BitcoinsPerKiloByte(0)
+  val one: BitcoinsPerKiloByte = BitcoinsPerKiloByte(1)
 }
 
 /**
