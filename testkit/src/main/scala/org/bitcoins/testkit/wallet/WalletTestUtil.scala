@@ -245,7 +245,9 @@ object WalletTestUtil {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.nestedSegWitAccountDb)
       addr <- daos.addressDAO.create(getNestedSegwitAddressDb(account))
-      utxo <- daos.utxoDAO.create(sampleNestedSegwitUTXO(addr.ecPublicKey))
-    } yield utxo.asInstanceOf[NestedSegwitV0SpendingInfo]
+      utxo = sampleNestedSegwitUTXO(addr.ecPublicKey)
+      _ <- insertDummyIncomingTransaction(daos, utxo)
+      utxoDb <- daos.utxoDAO.create(utxo)
+    } yield utxoDb.asInstanceOf[NestedSegwitV0SpendingInfo]
   }
 }
