@@ -6,7 +6,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -192,6 +192,20 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       address <- getNewAddress(walletConfig.defaultAddressType)
     } yield address
   }
+
+  def getAddress(
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb] = {
+    for {
+      account <- getDefaultAccount()
+      address <- getAddress(account, chainType, addressIndex)
+    } yield address
+  }
+
+  def getAddress(
+      account: AccountDb,
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb]
 
   /**
     * Mimics the `getaddressinfo` RPC call in Bitcoin Core
