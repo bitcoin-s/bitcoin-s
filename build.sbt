@@ -247,8 +247,7 @@ lazy val gui = project
   .in(file("app/gui"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    cli,
-    wallet
+    cli
   )
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
