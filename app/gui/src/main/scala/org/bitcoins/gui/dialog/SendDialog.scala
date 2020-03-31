@@ -32,7 +32,7 @@ object SendDialog {
         nextRow += 1
       }
 
-      addRow("Receiving Address", addressTF)
+      addRow("Address", addressTF)
       addRow("Amount (in BTC)", amountTF)
     }
 

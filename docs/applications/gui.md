@@ -13,6 +13,8 @@ At the time of writing this document, creating addresses and sending Bitcoin are
 
 ### Running the GUI
 
+The GUI will only function properly if it can connect to the [bitcoin-s server](server.md) which must be running in the background before running the GUI.
+
 To run the gui, simply execute
 
 ```bashrc
