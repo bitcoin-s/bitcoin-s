@@ -1,6 +1,6 @@
 package org.bitcoins.server
 
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -165,7 +165,7 @@ object SendToAddress extends ServerJsonModels {
           val bitcoins = Bitcoins(bitcoinsJs.num)
           val satoshisPerVirtualByte =
             nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
-              SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
+              SatoshisPerVirtualByte(satsPerVBytes.num.toLong))
           SendToAddress(address, bitcoins, satoshisPerVirtualByte)
         }
       case Nil =>
