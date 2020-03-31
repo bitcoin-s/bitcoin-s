@@ -103,7 +103,8 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
       tx <- bitcoind.getRawTransaction(txid)
 
-      _ <- wallet.listUtxos().map {
+      utxos <- wallet.listUtxos()
+      _ = utxos match {
         case utxo +: Vector() =>
           assert(utxo.privKeyPath.chain.chainType == HDChainType.Change)
         case other => fail(s"Found ${other.length} utxos!")
@@ -119,6 +120,9 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         isCloseEnough(feeRate.calc(signedTx),
                       outgoingTx.get.actualFee,
                       3.satoshi))
+      // Safe to use utxos.head because we've already asserted that we only have our change output
+      _ = assert(
+        outgoingTx.get.actualFee + outgoingTx.get.sentAmount == outgoingTx.get.inputAmount - utxos.head.output.value)
 
       balancePostSend <- wallet.getBalance()
       _ = {
