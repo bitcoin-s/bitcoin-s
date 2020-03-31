@@ -1,5 +1,6 @@
 package org.bitcoins.gui
 
+import javafx.event.{ActionEvent, EventHandler}
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
@@ -13,14 +14,16 @@ object WalletGUI extends JFXApp {
   Thread
     .currentThread()
     .setUncaughtExceptionHandler(
-      (_: Thread, ex: Throwable) => {
-        ex.printStackTrace()
-        val _ = new Alert(AlertType.Error) {
-          initOwner(owner)
-          title = "Unhandled exception"
-          headerText = "Exception: " + ex.getClass + ""
-          contentText = Option(ex.getMessage).getOrElse("")
-        }.showAndWait()
+      new Thread.UncaughtExceptionHandler {
+        override def uncaughtException(t: Thread, ex: Throwable): Unit = {
+          ex.printStackTrace()
+          val _ = new Alert(AlertType.Error) {
+            initOwner(owner)
+            title = "Unhandled exception"
+            headerText = "Exception: " + ex.getClass + ""
+            contentText = Option(ex.getMessage).getOrElse("")
+          }.showAndWait()
+        }
       }
     )
 
@@ -49,12 +52,16 @@ object WalletGUI extends JFXApp {
 
   private val getNewAddressButton = new Button {
     text = "Get New Addreses"
-    onAction = _ => model.onGetNewAddress()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onGetNewAddress()
+    }
   }
 
   private val sendButton = new Button {
     text = "Send"
-    onAction = _ => model.onSend()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onSend()
+    }
   }
 
   private val buttonBar = new HBox {
