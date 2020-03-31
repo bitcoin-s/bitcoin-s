@@ -52,6 +52,7 @@ lazy val `bitcoin-s` = project
     bench,
     eclairRpc,
     eclairRpcTest,
+    gui,
     keyManager,
     keyManagerTest,
     node,
@@ -240,6 +241,13 @@ lazy val cliTest = project
   .dependsOn(
     cli,
     testkit
+  )
+
+lazy val gui = project
+  .in(file("app/gui"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(
+    cli
   )
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")

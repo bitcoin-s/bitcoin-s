@@ -237,11 +237,15 @@ object ConsoleCli {
       case Some(conf) => conf
     }
 
+    exec(config.command, config.debug)
+  }
+
+  def exec(command: CliCommand, debugEnabled: Boolean = false): Try[String] = {
     import System.err.{println => printerr}
 
     /** Prints the given message to stderr if debug is set */
     def debug(message: Any): Unit = {
-      if (config.debug) {
+      if (debugEnabled) {
         printerr(s"DEBUG: $message")
       }
     }
@@ -251,7 +255,7 @@ object ConsoleCli {
       Failure(new RuntimeException(message))
     }
 
-    val requestParam: RequestParam = config.command match {
+    val requestParam: RequestParam = command match {
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
       case GetNewAddress =>
