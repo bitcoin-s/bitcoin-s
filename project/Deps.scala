@@ -20,6 +20,9 @@ object Deps {
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.4.0"
 
+    val scalaFxV = "12.0.2-R18"
+    val javaFxV = "12.0.2"
+
     // async dropped Scala 2.11 in 0.10.0
     val asyncOldScalaV = "0.9.7"
     val asyncNewScalaV = "0.10.0"
@@ -65,6 +68,23 @@ object Deps {
     val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
     val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
     val akkaActor = "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
+
+    val scalaFx = "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
+    lazy val osName = System.getProperty("os.name") match {
+      case n if n.startsWith("Linux") => "linux"
+      case n if n.startsWith("Mac") => "mac"
+      case n if n.startsWith("Windows") => "win"
+      case _ => throw new Exception("Unknown platform!")
+    }
+    // Not sure if all of these are needed, some might be possible to remove
+    lazy val javaFxBase = "org.openjfx" % s"javafx-base" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxControls = "org.openjfx" % s"javafx-controls" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxFxml = "org.openjfx" % s"javafx-fxml" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxGraphics = "org.openjfx" % s"javafx-graphics" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxMedia = "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxSwing = "org.openjfx" % s"javafx-swing" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxWeb = "org.openjfx" % s"javafx-web" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxDeps = List(javaFxBase, javaFxControls, javaFxFxml, javaFxGraphics, javaFxMedia, javaFxSwing, javaFxWeb)
 
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
@@ -198,6 +218,8 @@ object Deps {
     //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
     Compile.codehaus
   )
+
+  val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
 
   def picklers(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle

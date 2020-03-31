@@ -4,7 +4,8 @@
     "Getting Setup": ["getting-setup"],
     "Applications": [
       "applications/cli",
-      "applications/server"
+      "applications/server",
+      "applications/gui"
     ],
     "Chain": [
       "chain/chain",
