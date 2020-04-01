@@ -193,6 +193,10 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     } yield address
   }
 
+  def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress]
+
+  def getUnusedAddress: Future[BitcoinAddress]
+
   def getAddress(
       chainType: HDChainType,
       addressIndex: Int): Future[AddressDb] = {
