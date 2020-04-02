@@ -79,13 +79,11 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
-    - $PWD/binaries/bitcoind/
-    - $PWD/binaries/eclair/
+    - $HOME/.bitcoin-s/binaries/
 
 # https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
-  - rm -r $PWD/binaries/bitcoind/bitcoin-0.18.99
   - rm -fv $HOME/.ivy2/.sbt.ivy.lock
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete
