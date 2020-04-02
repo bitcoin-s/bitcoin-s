@@ -4,12 +4,15 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
   RegTestNetChainParams
 }
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  Transaction,
   TransactionOutPoint,
   TransactionOutput
 }
@@ -30,6 +33,9 @@ object WalletTestUtil {
   val networkParam: RegTest.type = RegTest
 
   val hdCoinType: HDCoinType = HDCoinType.Testnet
+
+  lazy val sampleTransaction: Transaction = Transaction(
+    "020000000258e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd750000000000ffffffff838d0427d0ec650a68aa46bb0b098aea4422c071b2ca78352a077959d07cea1d0100000000ffffffff0270aaf00800000000160014d85c2b71d0060b09c9886aeb815e50991dda124d00e1f5050000000016001400aea9a2e5f0f876a588df5546e8742d1d87008f00000000")
 
   /**
     * Useful if you want wallet test runs
@@ -168,6 +174,26 @@ object WalletTestUtil {
                     scriptPubKey = wspk)
   }
 
+  def insertDummyIncomingTransaction(daos: WalletDAOs, utxo: SpendingInfoDb)(
+      implicit ec: ExecutionContext): Future[IncomingTransactionDb] = {
+    val txDb = TransactionDb(
+      txIdBE = utxo.txid,
+      transaction = EmptyTransaction,
+      unsignedTxIdBE = utxo.txid,
+      unsignedTx = EmptyTransaction,
+      wTxIdBEOpt = None,
+      totalOutput = Satoshis.zero,
+      numInputs = 1,
+      numOutputs = 1,
+      lockTime = UInt32.zero
+    )
+    val incomingDb = IncomingTransactionDb(utxo.txid, utxo.output.value)
+    for {
+      _ <- daos.transactionDAO.upsert(txDb)
+      written <- daos.incomingTxDAO.upsert(incomingDb)
+    } yield written
+  }
+
   /** Given an account returns a sample address */
   def getNestedSegwitAddressDb(account: AccountDb): AddressDb = {
     val path = NestedSegWitHDPath(WalletTestUtil.hdCoinType,
@@ -195,8 +221,10 @@ object WalletTestUtil {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
-      utxo <- daos.utxoDAO.create(sampleLegacyUTXO(addr.scriptPubKey))
-    } yield utxo.asInstanceOf[LegacySpendingInfo]
+      utxo = sampleLegacyUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, utxo)
+      utxoDb <- daos.utxoDAO.create(utxo)
+    } yield utxoDb.asInstanceOf[LegacySpendingInfo]
   }
 
   /** Inserts an account, address and finally a UTXO */
@@ -205,8 +233,10 @@ object WalletTestUtil {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)
       addr <- daos.addressDAO.create(getAddressDb(account))
-      utxo <- daos.utxoDAO.create(sampleSegwitUTXO(addr.scriptPubKey))
-    } yield utxo.asInstanceOf[SegwitV0SpendingInfo]
+      utxo = sampleSegwitUTXO(addr.scriptPubKey)
+      _ <- insertDummyIncomingTransaction(daos, utxo)
+      utxoDb <- daos.utxoDAO.create(utxo)
+    } yield utxoDb.asInstanceOf[SegwitV0SpendingInfo]
   }
 
   /** Inserts an account, address and finally a UTXO */
@@ -215,7 +245,9 @@ object WalletTestUtil {
     for {
       account <- daos.accountDAO.create(WalletTestUtil.nestedSegWitAccountDb)
       addr <- daos.addressDAO.create(getNestedSegwitAddressDb(account))
-      utxo <- daos.utxoDAO.create(sampleNestedSegwitUTXO(addr.ecPublicKey))
-    } yield utxo.asInstanceOf[NestedSegwitV0SpendingInfo]
+      utxo = sampleNestedSegwitUTXO(addr.ecPublicKey)
+      _ <- insertDummyIncomingTransaction(daos, utxo)
+      utxoDb <- daos.utxoDAO.create(utxo)
+    } yield utxoDb.asInstanceOf[NestedSegwitV0SpendingInfo]
   }
 }

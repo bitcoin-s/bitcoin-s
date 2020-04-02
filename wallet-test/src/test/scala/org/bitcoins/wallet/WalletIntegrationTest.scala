@@ -19,9 +19,9 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
   behavior of "Wallet - integration test"
 
-  val feeRate = SatoshisPerByte(Satoshis.one)
+  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
-  /** Checks that the given vaues are the same-ish, save for fee-level deviations */
+  /** Checks that the given values are the same-ish, save for fee-level deviations */
   private def isCloseEnough(
       first: CurrencyUnit,
       second: CurrencyUnit,
@@ -69,11 +69,11 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
         .getConfirmedBalance()
         .map(confirmed => assert(confirmed == 0.bitcoin))
       _ <- wallet
-        .getConfirmedBalance()
-        .map(confirmed => assert(confirmed == 0.bitcoin))
-      _ <- wallet
         .getUnconfirmedBalance()
         .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
+      incomingTx <- wallet.incomingTxDAO.findByTxId(tx.txIdBE)
+      _ = assert(incomingTx.isDefined)
+      _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind)
 
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
       rawTx <- bitcoind.getRawTransaction(txId)
@@ -103,11 +103,26 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
       _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(1, _))
       tx <- bitcoind.getRawTransaction(txid)
 
-      _ <- wallet.listUtxos().map {
+      utxos <- wallet.listUtxos()
+      _ = utxos match {
         case utxo +: Vector() =>
           assert(utxo.privKeyPath.chain.chainType == HDChainType.Change)
         case other => fail(s"Found ${other.length} utxos!")
       }
+
+      outgoingTx <- wallet.outgoingTxDAO.findByTxId(txid)
+      _ = assert(outgoingTx.isDefined)
+      _ = assert(outgoingTx.get.inputAmount == valueFromBitcoind)
+      _ = assert(outgoingTx.get.sentAmount == valueToBitcoind)
+      _ = assert(outgoingTx.get.feeRate == feeRate)
+      _ = assert(outgoingTx.get.expectedFee == feeRate.calc(signedTx))
+      _ = assert(
+        isCloseEnough(feeRate.calc(signedTx),
+                      outgoingTx.get.actualFee,
+                      3.satoshi))
+      // Safe to use utxos.head because we've already asserted that we only have our change output
+      _ = assert(
+        outgoingTx.get.actualFee + outgoingTx.get.sentAmount == outgoingTx.get.inputAmount - utxos.head.output.value)
 
       balancePostSend <- wallet.getBalance()
       _ = {
