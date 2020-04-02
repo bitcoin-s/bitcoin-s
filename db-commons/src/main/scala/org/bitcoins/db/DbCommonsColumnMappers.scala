@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import scodec.bits.ByteVector
 import slick.jdbc.GetResult
@@ -165,6 +166,11 @@ abstract class DbCommonsColumnMappers {
   implicit val txoStateMapper: BaseColumnType[TxoState] = {
     MappedColumnType
       .base[TxoState, String](_.toString, TxoState.fromString(_).get)
+  }
+
+  implicit val satoshisPerByteMapper: BaseColumnType[SatoshisPerByte] = {
+    MappedColumnType
+      .base[SatoshisPerByte, Long](_.toLong, SatoshisPerByte.fromLong)
   }
 }
 

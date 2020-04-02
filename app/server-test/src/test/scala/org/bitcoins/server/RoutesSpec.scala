@@ -7,7 +7,6 @@ import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
-import org.bitcoins.core.api.CoreApi
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
