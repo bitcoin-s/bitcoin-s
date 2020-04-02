@@ -81,6 +81,9 @@ const siteConfig = {
   // "Edit this Doc" button to appear
   editUrl: "https://github.com/bitcoin-s/bitcoin-s/blob/master/docs/",
 
+  // Google analytics tracking id
+  gaTrackingId: "UA-61958686-2",
+
   // Used for publishing and more
   projectName,
   organizationName,
