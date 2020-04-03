@@ -30,6 +30,44 @@ object GetBalance extends ServerJsonModels {
   }
 }
 
+case class GetConfirmedBalance(isSats: Boolean)
+
+object GetConfirmedBalance extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetConfirmedBalance] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(GetConfirmedBalance(jsArr.arr.head.bool))
+  }
+}
+
+case class GetUnconfirmedBalance(isSats: Boolean)
+
+object GetUnconfirmedBalance extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetUnconfirmedBalance] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(GetUnconfirmedBalance(jsArr.arr.head.bool))
+  }
+}
+
+case class GetAddressInfo(address: BitcoinAddress)
+
+object GetAddressInfo extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressInfo] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    val address = jsToBitcoinAddress(jsArr.arr.head)
+
+    Try(GetAddressInfo(address))
+  }
+}
+
 case class CombinePSBTs(psbts: Seq[PSBT])
 
 object CombinePSBTs extends ServerJsonModels {
