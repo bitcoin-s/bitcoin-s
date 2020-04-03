@@ -6,6 +6,8 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 
+import scala.concurrent.Future
+
 class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
 
@@ -68,4 +70,16 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         assert(address2 != address3, "Must generate a new address")
       }
   }
+
+  it must "be safe to call getNewAddress multiple times in a row" in { wallet: Wallet =>
+    val addressesF = Future.sequence {
+      Vector.fill(3)(wallet.getNewAddress())
+    }
+
+    for {
+      addresses <- addressesF
+    } yield assert(addresses.distinct.length == addresses)
+
+  }
+
 }

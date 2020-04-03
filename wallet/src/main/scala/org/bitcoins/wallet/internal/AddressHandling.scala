@@ -5,16 +5,13 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
 
-import scala.concurrent.Future
+import scala.collection.mutable
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 /**
@@ -76,6 +73,46 @@ private[wallet] trait AddressHandling extends WalletLogger {
         (out, TransactionOutPoint(transaction.txId, UInt32(index)))
     }.toVector
 
+  private def drainQueue(): Runnable = new Runnable {
+    override def run(): Unit = {
+      if (queue.nonEmpty) {
+        while (queue.nonEmpty) {
+          val (account, chainType, promise) = queue.head
+          queue.remove(0)
+
+          logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
+
+            val addressDbF = getNewAddressDb(account,chainType)
+
+            val writeF = addressDbF.flatMap { adb =>
+              logger.debug(s"Writing $adb to DB")
+              addressDAO.create(adb)
+            }
+            writeF.foreach { written =>
+              logger.debug(
+                s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+            }
+
+            writeF.map { w =>
+              promise.success(w)
+            }.recover { case err =>
+              promise.failure(err)
+            }
+
+          Thread.sleep(100)
+        }
+      }
+
+    }
+  }
+
+  private lazy val walletThread = new Thread(drainQueue())
+
+  walletThread.setDaemon(true)
+  walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
+  walletThread.start()
+
+  private val queue = mutable.ArrayBuffer.empty[(AccountDb,HDChainType, Promise[AddressDb])]
   /**
     * Derives a new address in the wallet for the
     * given account and chain type (change/external).
@@ -150,14 +187,12 @@ private[wallet] trait AddressHandling extends WalletLogger {
       account: AccountDb,
       chainType: HDChainType
   ): Future[BitcoinAddress] = {
+    val p = Promise[AddressDb]
+    queue.append((account, chainType, p))
     for {
-      addressDb <- getNewAddressDb(account, chainType)
-      _ = logger.debug(s"Writing $addressDb to DB")
-      written <- addressDAO.create(addressDb)
+      addressDb <- p.future
     } yield {
-      logger.debug(
-        s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
-      written.address
+      addressDb.address
     }
   }
 
