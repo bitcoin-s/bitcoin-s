@@ -21,7 +21,9 @@ Bitcoin-S support call backs for the following events that happen on the bitcoin
 4. onCompactFilterReceived
 
 That means every time one of these events happens on the p2p network, we will call your callback
-so that you can be notified of the event. Let's make a easy one
+so that you can be notified of the event. These callbacks will be run after the message has been
+recieved and will execute sequentially. If any of them failan error log will be output and the remainder of the callbacks will continue.
+Let's make a easy one
 
 #### Example
 
@@ -115,7 +117,8 @@ val startedNodeF = nodeF.flatMap(_.start())
 //let's make a simple callback that print's the
 //blockhash everytime we receive a block on the network
 val blockReceivedFunc = { block: Block =>
-  println(s"Received blockhash=${block.blockHeader.hashBE}")
+Future.successful(
+  println(s"Received blockhash=${block.blockHeader.hashBE}"))
 }
 
 val nodeCallbacks = NodeCallbacks.onBlockReceived(blockReceivedFunc)

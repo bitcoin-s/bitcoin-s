@@ -1,6 +1,14 @@
 package org.bitcoins.node
 
+import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.core.gcs.GolombFilter
+import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.db.MarkedLogger
 import org.bitcoins.node.networking.peer.DataMessageHandler._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Callbacks for responding to events in the SPV node.
@@ -21,6 +29,58 @@ case class NodeCallbacks(
     onBlockReceived = onBlockReceived ++ other.onBlockReceived,
     onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived
   )
+
+  def executeOnTxReceivedCallbacks(logger: MarkedLogger, tx: Transaction)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    onTxReceived
+      .foldLeft(FutureUtil.unit)((acc, callback) =>
+        acc.flatMap(_ =>
+          callback(tx).recover {
+            case err: Throwable =>
+              logger.error("onTxReceived Callback failed with error: ", err)
+          }))
+  }
+
+  def executeOnBlockReceivedCallbacks(logger: MarkedLogger, block: Block)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    onBlockReceived
+      .foldLeft(FutureUtil.unit)((acc, callback) =>
+        acc.flatMap(_ =>
+          callback(block).recover {
+            case err: Throwable =>
+              logger.error("onBlockReceived Callback failed with error: ", err)
+          }))
+  }
+
+  def executeOnMerkleBlockReceivedCallbacks(
+      logger: MarkedLogger,
+      merkleBlock: MerkleBlock,
+      txs: Vector[Transaction])(implicit ec: ExecutionContext): Future[Unit] = {
+    onMerkleBlockReceived
+      .foldLeft(FutureUtil.unit)((acc, callback) =>
+        acc.flatMap(_ =>
+          callback(merkleBlock, txs).recover {
+            case err: Throwable =>
+              logger.error("OnMerkleBlockReceived Callback failed with error: ",
+                           err)
+          }))
+  }
+
+  def executeOnCompactFilterReceivedCallbacks(
+      logger: MarkedLogger,
+      blockHash: DoubleSha256Digest,
+      blockFilter: GolombFilter)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    onCompactFilterReceived
+      .foldLeft(FutureUtil.unit)((acc, callback) =>
+        acc.flatMap(_ =>
+          callback(blockHash, blockFilter).recover {
+            case err: Throwable =>
+              logger.error(
+                "onCompactFilterReceived Callback failed with error: ",
+                err)
+          }))
+  }
 }
 
 object NodeCallbacks {

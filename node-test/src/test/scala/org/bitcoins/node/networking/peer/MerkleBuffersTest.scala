@@ -3,18 +3,20 @@ package org.bitcoins.node.networking.peer
 import _root_.org.scalatest.compatible.Assertion
 import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.core.gen.{
   BlockchainElementsGenerator,
   TransactionGenerators
 }
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 
 import scala.util.{Failure, Success, Try}
 
-class MerkleBuffersTest extends BitcoinSUnitTest {
+class MerkleBuffersTest extends BitcoinSAsyncTest {
 
   implicit private val config: NodeAppConfig =
     BitcoinSTestAppConfig.getSpvTestConfig().nodeConf
@@ -41,24 +43,29 @@ class MerkleBuffersTest extends BitcoinSUnitTest {
                 assert(txs == merkleTxs,
                        "Received TXs in callback was not the ones we put in")))
             callbackCount = callbackCount + 1
+            FutureUtil.unit
         }
+        val callbacks = NodeCallbacks(onMerkleBlockReceived = Seq(callback))
 
         val merkle = MerkleBlock(block, txs.map(_.txId))
         val _ = MerkleBuffers.putMerkle(merkle)
 
         txs.map { tx =>
-          val matches = MerkleBuffers.putTx(tx, Seq(callback))
-          assert(
-            matches,
-            s"TX ${tx.txIdBE} did not match any merkle block in MerkleBuffers")
+          MerkleBuffers
+            .putTx(tx, callbacks)
+            .map(matches =>
+              assert(
+                matches,
+                s"TX ${tx.txIdBE} did not match any merkle block in MerkleBuffers"))
         }
 
         otherTxs.map { tx =>
-          val matches = MerkleBuffers.putTx(tx, Seq(callback))
-          assert(
-            !matches,
-            s"Unrelated TX ${tx.txIdBE} did match merkle block in MerkleBuffers")
-
+          MerkleBuffers
+            .putTx(tx, callbacks)
+            .map(matches =>
+              assert(
+                !matches,
+                s"Unrelated TX ${tx.txIdBE} did match merkle block in MerkleBuffers"))
         }
 
         assert(callbackCount != 0,

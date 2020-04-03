@@ -40,12 +40,13 @@ class NeutrinoNodeTest extends NodeUnitTest {
   }
   private var utxos: Set[ScriptPubKey] = _
 
-  private def blockCallback(block: Block): Unit = {
-    if (!assertionP.isCompleted) {
-      val scriptPubKeys =
-        block.transactions.flatMap(tx => tx.outputs.map(_.scriptPubKey)).toSet
-      assertionP.success(utxos.intersect(scriptPubKeys) == utxos)
-    }
+  private def blockCallback(block: Block): Future[Unit] = {
+    val scriptPubKeys =
+      block.transactions.flatMap(tx => tx.outputs.map(_.scriptPubKey)).toSet
+    assertionP
+      .success(utxos.intersect(scriptPubKeys) == utxos)
+      .future
+      .map(_ => ())
   }
 
   def callbacks: NodeCallbacks = {
