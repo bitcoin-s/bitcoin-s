@@ -2,7 +2,7 @@ package org.bitcoins.chain.config
 
 import java.nio.file.Path
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigException}
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
 import org.bitcoins.core.util.FutureUtil
@@ -77,8 +77,16 @@ case class ChainAppConfig(
     }
   }
 
-  lazy val filterHeaderBatchSize: Int =
-    config.getInt(s"${moduleName}.neutrino.filter-header-batch-size")
+  lazy val filterHeaderBatchSize: Int = {
+    // try by network, if that fails, try general
+    try {
+      config.getInt(
+        s"$moduleName.neutrino.filter-header-batch-size.${chain.network.chainParams.networkId}")
+    } catch {
+      case _: ConfigException.Missing | _: ConfigException.WrongType =>
+        config.getInt(s"$moduleName.neutrino.filter-header-batch-size")
+    }
+  }
 
   lazy val filterBatchSize: Int =
     config.getInt(s"${moduleName}.neutrino.filter-batch-size")
