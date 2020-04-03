@@ -7,23 +7,38 @@ import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.crypto.{
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  ExtPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
-import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BlockStamp.{
   BlockHash,
   BlockHeight,
   BlockTime,
   InvalidBlockStamp
 }
-import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
+import org.bitcoins.core.protocol.script.EmptyScriptWitness
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  EmptyTransactionOutPoint,
+  EmptyTransactionOutput,
+  Transaction
+}
+import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockUnlockedWalletApi
+import org.bitcoins.wallet.models._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
+import scodec.bits.ByteVector
 import ujson.Value.InvalidData
 import ujson._
 
@@ -217,6 +232,150 @@ class RoutesSpec
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
         responseAs[String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+      }
+    }
+
+    "return the wallet's confirmed balance" in {
+      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getconfirmedbalance", Arr(Bool(false))))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+      }
+    }
+
+    "return the wallet's confirmed balance in sats" in {
+      (mockWalletApi.getConfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getconfirmedbalance", Arr(Bool(true))))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+      }
+    }
+
+    "return the wallet's unconfirmed balance" in {
+      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getunconfirmedbalance", Arr(Bool(false))))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"50.00000000 BTC","error":null}"""
+      }
+    }
+
+    "return the wallet's unconfirmed balance in sats" in {
+      (mockWalletApi.getUnconfirmedBalance: () => Future[CurrencyUnit])
+        .expects()
+        .returning(Future.successful(Bitcoins(50)))
+
+      val route =
+        walletRoutes.handleCommand(
+          ServerCommand("getunconfirmedbalance", Arr(Bool(true))))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"5000000000 sats","error":null}"""
+      }
+    }
+
+    "check if the wallet is empty" in {
+      (mockWalletApi.isEmpty: () => Future[Boolean])
+        .expects()
+        .returning(Future.successful(true))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("isempty", Arr()))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":true,"error":null}"""
+      }
+    }
+
+    "return the wallet utxos" in {
+      val spendingInfoDb = SegwitV0SpendingInfo(
+        EmptyTransactionOutPoint,
+        EmptyTransactionOutput,
+        SegWitHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        EmptyScriptWitness,
+        DoubleSha256DigestBE.empty,
+        TxoState.PendingConfirmationsSpent,
+        None,
+        None
+      )
+
+      (mockWalletApi.listUtxos: () => Future[Vector[SpendingInfoDb]])
+        .expects()
+        .returning(Future.successful(Vector(spendingInfoDb)))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("getutxos", Arr()))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000ffffffff -1 sats\n","error":null}"""
+      }
+    }
+
+    "return the wallet addresses" in {
+      val addressDb = LegacyAddressDb(
+        LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        ECPublicKey.freshPublicKey,
+        Sha256Hash160Digest.fromBytes(ByteVector.low(20)),
+        testAddress.asInstanceOf[P2PKHAddress],
+        testAddress.scriptPubKey
+      )
+
+      (mockWalletApi.listAddresses: () => Future[Vector[AddressDb]])
+        .expects()
+        .returning(Future.successful(Vector(addressDb)))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("getaddresses", Arr()))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":["""" + testAddressStr + """"],"error":null}"""
+      }
+    }
+
+    "return the wallet accounts" in {
+      val xpub = ExtPublicKey
+        .fromString(
+          "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8")
+        .get
+
+      val accountDb =
+        AccountDb(xpub,
+                  HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Testnet), 0))
+
+      (mockWalletApi.listAccounts: () => Future[Vector[AccountDb]])
+        .expects()
+        .returning(Future.successful(Vector(accountDb)))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("getaccounts", Arr()))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":["""" + xpub.toString + """"],"error":null}"""
       }
     }
 

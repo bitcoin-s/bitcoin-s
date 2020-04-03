@@ -20,6 +20,14 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
   implicit val materializer = ActorMaterializer()
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
+
+    case ServerCommand("isempty", _) =>
+      complete {
+        wallet.isEmpty().map { empty =>
+          Server.httpSuccess(empty)
+        }
+      }
+
     case ServerCommand("getbalance", arr) =>
       GetBalance.fromJsArr(arr) match {
         case Failure(exception) =>
@@ -27,6 +35,42 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(GetBalance(isSats)) =>
           complete {
             wallet.getBalance().map { balance =>
+              Server.httpSuccess(
+                if (isSats) {
+                  balance.satoshis.toString
+                } else {
+                  Bitcoins(balance.satoshis).toString
+                }
+              )
+            }
+          }
+      }
+
+    case ServerCommand("getconfirmedbalance", arr) =>
+      GetBalance.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetBalance(isSats)) =>
+          complete {
+            wallet.getConfirmedBalance().map { balance =>
+              Server.httpSuccess(
+                if (isSats) {
+                  balance.satoshis.toString
+                } else {
+                  Bitcoins(balance.satoshis).toString
+                }
+              )
+            }
+          }
+      }
+
+    case ServerCommand("getunconfirmedbalance", arr) =>
+      GetBalance.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetBalance(isSats)) =>
+          complete {
+            wallet.getUnconfirmedBalance().map { balance =>
               Server.httpSuccess(
                 if (isSats) {
                   balance.satoshis.toString
@@ -88,6 +132,42 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
             } yield msg
             res.map(msg => Server.httpSuccess(msg))
           }
+      }
+
+    case ServerCommand("getutxos", _) =>
+      complete {
+        wallet.listUtxos().map { utxos =>
+          val retStr = utxos.foldLeft("")((accum, spendInfo) =>
+            accum + s"${spendInfo.outPoint.hex} ${spendInfo.output.value}\n")
+          Server.httpSuccess(retStr)
+        }
+      }
+
+    case ServerCommand("getaddresses", _) =>
+      complete {
+        wallet.listAddresses().map { addressDbs =>
+          val addresses = addressDbs.map(_.address)
+          Server.httpSuccess(addresses)
+        }
+      }
+
+    case ServerCommand("getaccounts", _) =>
+      complete {
+        wallet.listAccounts().map { accounts =>
+          val xpubs = accounts.map(_.xpub)
+          Server.httpSuccess(xpubs)
+        }
+      }
+
+    case ServerCommand("createnewaccount", _) =>
+      complete {
+        for {
+          newWallet <- wallet.createNewAccount(wallet.keyManager.kmParams)
+          accounts <- newWallet.listAccounts()
+        } yield {
+          val xpubs = accounts.map(_.xpub)
+          Server.httpSuccess(xpubs)
+        }
       }
 
   }

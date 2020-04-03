@@ -93,6 +93,9 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("isempty")
+        .action((_, conf) => conf.copy(command = IsEmpty))
+        .text("Checks if the wallet contains any data"),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -104,6 +107,60 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case getBalance: GetBalance =>
                   getBalance.copy(isSats = true)
+                case other => other
+              }))
+        ),
+      cmd("getconfirmedbalance")
+        .action((_, conf) => conf.copy(command = GetConfirmedBalance(false)))
+        .text("Get the wallet balance of confirmed utxos")
+        .children(
+          opt[Unit]("sats")
+            .optional()
+            .text("Display balance in satoshis")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case getBalance: GetConfirmedBalance =>
+                  getBalance.copy(isSats = true)
+                case other => other
+              }))
+        ),
+      cmd("getunconfirmedbalance")
+        .action((_, conf) => conf.copy(command = GetUnconfirmedBalance(false)))
+        .text("Get the wallet balance of unconfirmed utxos")
+        .children(
+          opt[Unit]("sats")
+            .optional()
+            .text("Display balance in satoshis")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case getBalance: GetUnconfirmedBalance =>
+                  getBalance.copy(isSats = true)
+                case other => other
+              }))
+        ),
+      cmd("getutxos")
+        .action((_, conf) => conf.copy(command = GetUtxos))
+        .text("Returns list of all wallet utxos"),
+      cmd("getaddresses")
+        .action((_, conf) => conf.copy(command = GetAddresses))
+        .text("Returns list of all wallet addresses currently being watched"),
+      cmd("getaccounts")
+        .action((_, conf) => conf.copy(command = GetAccounts))
+        .text("Returns list of all wallet accounts"),
+      cmd("createnewaccount")
+        .action((_, conf) => conf.copy(command = CreateNewAccount))
+        .text("Creates a new wallet account"),
+      cmd("getaddressinfo")
+        .action((_, conf) => conf.copy(command = GetAddressInfo(null)))
+        .text("Returns list of all wallet accounts")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("Address to get information about")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case getAddressInfo: GetAddressInfo =>
+                  getAddressInfo.copy(address = addr)
                 case other => other
               }))
         ),
@@ -256,8 +313,24 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = command match {
+      case GetUtxos =>
+        RequestParam("getutxos")
+      case GetAddresses =>
+        RequestParam("getaddresses")
+      case GetAccounts =>
+        RequestParam("getaccounts")
+      case CreateNewAccount =>
+        RequestParam("createnewaccount")
+      case IsEmpty =>
+        RequestParam("isempty")
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
+      case GetConfirmedBalance(isSats) =>
+        RequestParam("getconfirmedbalance", Seq(up.writeJs(isSats)))
+      case GetUnconfirmedBalance(isSats) =>
+        RequestParam("getunconfirmedbalance", Seq(up.writeJs(isSats)))
+      case GetAddressInfo(address) =>
+        RequestParam("getaddressinfo", Seq(up.writeJs(address)))
       case GetNewAddress =>
         RequestParam("getnewaddress")
       case Rescan(addressBatchSize, startBlock, endBlock, force) =>
@@ -300,7 +373,8 @@ object ConsoleCli {
 
     Try {
       import com.softwaremill.sttp._
-      implicit val backend = HttpURLConnectionBackend()
+      implicit val backend: SttpBackend[Id, Nothing] =
+        HttpURLConnectionBackend()
       val request =
         sttp
           .post(uri"http://$host:$port/")
@@ -390,7 +464,15 @@ object CliCommand {
       satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
       extends CliCommand
   case object GetNewAddress extends CliCommand
+  case object GetUtxos extends CliCommand
+  case object GetAddresses extends CliCommand
+  case object GetAccounts extends CliCommand
+  case object CreateNewAccount extends CliCommand
+  case object IsEmpty extends CliCommand
   case class GetBalance(isSats: Boolean) extends CliCommand
+  case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
+  case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
+  case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand
