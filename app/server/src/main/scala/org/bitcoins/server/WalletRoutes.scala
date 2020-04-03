@@ -167,11 +167,23 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
       GetDLCFundingTx.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(GetDLCFundingTx(eventId, noBroadcast)) =>
+        case Success(GetDLCFundingTx(eventId)) =>
+          complete {
+            wallet.getDLCFundingTx(eventId).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("broadcastdlcfundingtx", arr) =>
+      BroadcastDLCFundingTx.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(BroadcastDLCFundingTx(eventId)) =>
           complete {
             wallet.getDLCFundingTx(eventId).flatMap { tx =>
-              handleBroadcastable(tx, noBroadcast).map { retStr =>
-                Server.httpSuccess(retStr.hex)
+              node.broadcastTransaction(tx).map { _ =>
+                Server.httpSuccess(tx.txIdBE.hex)
               }
             }
           }

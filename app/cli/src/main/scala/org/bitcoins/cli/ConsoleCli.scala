@@ -284,8 +284,7 @@ object ConsoleCli {
         ),
       cmd("getdlcfundingtx")
         .hidden()
-        .action((_, conf) =>
-          conf.copy(command = GetDLCFundingTx(null, noBroadcast = false)))
+        .action((_, conf) => conf.copy(command = GetDLCFundingTx(null)))
         .text("Returns the Funding Tx corresponding to the DLC with the given eventId")
         .children(
           opt[Sha256DigestBE]("eventid").required
@@ -294,12 +293,18 @@ object ConsoleCli {
                 case getDLCFundingTx: GetDLCFundingTx =>
                   getDLCFundingTx.copy(eventId = eventId)
                 case other => other
-              })),
-          opt[Unit]("noBroadcast").optional
-            .action((_, conf) =>
+              }))
+        ),
+      cmd("broadcastdlcfundingtx")
+        .hidden()
+        .action((_, conf) => conf.copy(command = BroadcastDLCFundingTx(null)))
+        .text("Broadcasts the funding Tx corresponding to the DLC with the given eventId")
+        .children(
+          opt[Sha256DigestBE]("eventid").required
+            .action((eventId, conf) =>
               conf.copy(command = conf.command match {
-                case getDLCFundingTx: GetDLCFundingTx =>
-                  getDLCFundingTx.copy(noBroadcast = true)
+                case broadcastDLCFundingTx: BroadcastDLCFundingTx =>
+                  broadcastDLCFundingTx.copy(eventId = eventId)
                 case other => other
               }))
         ),
@@ -691,9 +696,10 @@ object ConsoleCli {
         RequestParam(
           "executedlcremoteunilateralclose",
           Seq(up.writeJs(eventId), up.writeJs(cet), up.writeJs(noBroadcast)))
-      case GetDLCFundingTx(eventId, noBroadcast) =>
-        RequestParam("getdlcfundingtx",
-                     Seq(up.writeJs(eventId), up.writeJs(noBroadcast)))
+      case GetDLCFundingTx(eventId) =>
+        RequestParam("getdlcfundingtx", Seq(up.writeJs(eventId)))
+      case BroadcastDLCFundingTx(eventId) =>
+        RequestParam("broadcastdlcfundingtx", Seq(up.writeJs(eventId)))
       case ExecuteDLCForceClose(eventId, oracleSig, noBroadcast) =>
         RequestParam("executedlcforceclose",
                      Seq(up.writeJs(eventId),
@@ -880,9 +886,9 @@ object CliCommand {
     def noBroadcast: Boolean
   }
 
-  case class GetDLCFundingTx(eventId: Sha256DigestBE, noBroadcast: Boolean)
-      extends CliCommand
-      with Broadcastable
+  case class GetDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
+
+  case class BroadcastDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
 
   case class ExecuteDLCUnilateralClose(
       eventId: Sha256DigestBE,

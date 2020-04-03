@@ -359,17 +359,37 @@ object AcceptDLCMutualClose extends ServerJsonModels {
   }
 }
 
-case class GetDLCFundingTx(eventId: Sha256DigestBE, noBroadcast: Boolean)
+case class GetDLCFundingTx(eventId: Sha256DigestBE)
 
 object GetDLCFundingTx extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[GetDLCFundingTx] = {
     jsArr.arr.toList match {
-      case eventIdJs :: noBroadcastJs :: Nil =>
+      case eventIdJs :: Nil =>
         Try {
           val eventId = Sha256DigestBE(eventIdJs.str)
-          val noBroadcast = noBroadcastJs.bool
-          GetDLCFundingTx(eventId, noBroadcast)
+          GetDLCFundingTx(eventId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing eventId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class BroadcastDLCFundingTx(eventId: Sha256DigestBE)
+
+object BroadcastDLCFundingTx extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[BroadcastDLCFundingTx] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          BroadcastDLCFundingTx(eventId)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing eventId argument"))
@@ -405,7 +425,7 @@ object ExecuteDLCUnilateralClose extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 }
@@ -433,7 +453,7 @@ object ExecuteDLCRemoteUnilateralClose extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 }
@@ -462,7 +482,7 @@ object ExecuteDLCForceClose extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 }
@@ -491,7 +511,7 @@ object ClaimDLCRemoteFunds extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 }
@@ -514,7 +534,7 @@ object ExecuteDLCRefund extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 1"))
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
     }
   }
 }
@@ -543,7 +563,7 @@ object ClaimDLCPenaltyFunds extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 2"))
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
     }
   }
 }

@@ -411,6 +411,41 @@ class RoutesSpec
       }
     }
 
+    "get dlc funding tx" in {
+      (mockWalletApi
+        .getDLCFundingTx(_: Sha256DigestBE))
+        .expects(eventId)
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("getdlcfundingtx", Arr(Str(eventId.hex))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual s"""{"result":"${EmptyTransaction.hex}","error":null}"""
+      }
+    }
+
+    "broadcast dlc funding tx" in {
+      (mockWalletApi
+        .getDLCFundingTx(_: Sha256DigestBE))
+        .expects(eventId)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockNode.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("broadcastdlcfundingtx", Arr(Str(eventId.hex))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}"""
+      }
+    }
+
     "send to an address" in {
       // positive cases
 
