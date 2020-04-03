@@ -100,7 +100,7 @@ want.</p>
 <span class="hljs-comment">// This function can be used to create a callback for when our node api calls downloadBlocks,</span>
 <span class="hljs-comment">// more specifically it will call the function every time we receive a block, the returned</span>
 <span class="hljs-comment">// NodeCallbacks will contain the necessary items to initialize the callbacks</span>
-<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">createCallback</span></span>(processBlock: <span class="hljs-type">Block</span> =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>]): <span class="hljs-type">NodeCallbacks</span> = {
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">createCallback</span></span>(processBlock: <span class="hljs-type">Block</span> =&gt; <span class="hljs-type">Unit</span>): <span class="hljs-type">NodeCallbacks</span> = {
     <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> onBlock: <span class="hljs-type">OnBlockReceived</span> = { block =&gt;
       processBlock(block)
     }
@@ -111,7 +111,7 @@ want.</p>
 <span class="hljs-comment">// relaying the block on the network, finding relevant wallet transactions, verifying the block,</span>
 <span class="hljs-comment">// or writing it to disk</span>
 <span class="hljs-keyword">val</span> exampleProcessBlock = (block: <span class="hljs-type">Block</span>) =&gt;
-    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>"</span>))
+    println(<span class="hljs-string">s"Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>"</span>)
 <span class="hljs-keyword">val</span> exampleCallback = createCallback(exampleProcessBlock)
 
 <span class="hljs-comment">// Here is where we are defining our actual node api, Ideally this could be it's own class</span>

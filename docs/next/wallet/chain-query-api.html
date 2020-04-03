@@ -118,15 +118,17 @@ want.</p>
 <span class="hljs-comment">// This function can be used to create a callback for when our chain api receives a transaction, block, or</span>
 <span class="hljs-comment">// a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks</span>
 <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">createCallbacks</span></span>(
-      processTransaction: <span class="hljs-type">Transaction</span> =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>],
-      processCompactFilter: (<span class="hljs-type">DoubleSha256Digest</span>, <span class="hljs-type">GolombFilter</span>) =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>],
-      processBlock: <span class="hljs-type">Block</span> =&gt; <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>]): <span class="hljs-type">NodeCallbacks</span> = {
+      processTransaction: <span class="hljs-type">Transaction</span> =&gt; <span class="hljs-type">Unit</span>,
+      processCompactFilter: (<span class="hljs-type">DoubleSha256Digest</span>, <span class="hljs-type">GolombFilter</span>) =&gt; <span class="hljs-type">Unit</span>,
+      processBlock: <span class="hljs-type">Block</span> =&gt; <span class="hljs-type">Unit</span>): <span class="hljs-type">NodeCallbacks</span> = {
     <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> onTx: <span class="hljs-type">OnTxReceived</span> = { tx =&gt;
       processTransaction(tx)
+      ()
     }
     <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> onCompactFilter: <span class="hljs-type">OnCompactFilterReceived</span> = {
       (blockHash, blockFilter) =&gt;
         processCompactFilter(blockHash, blockFilter)
+        ()
     }
     <span class="hljs-keyword">lazy</span> <span class="hljs-keyword">val</span> onBlock: <span class="hljs-type">OnBlockReceived</span> = { block =&gt;
       processBlock(block)
@@ -140,14 +142,14 @@ want.</p>
 <span class="hljs-comment">// relaying the block on the network, finding relevant wallet transactions, verifying the block,</span>
 <span class="hljs-comment">// or writing it to disk</span>
 <span class="hljs-keyword">val</span> exampleProcessTx = (tx: <span class="hljs-type">Transaction</span>) =&gt;
-    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received tx: <span class="hljs-subst">${tx.txIdBE}</span>"</span>))
+    println(<span class="hljs-string">s"Received tx: <span class="hljs-subst">${tx.txIdBE}</span>"</span>)
 
 <span class="hljs-keyword">val</span> exampleProcessBlock = (block: <span class="hljs-type">Block</span>) =&gt;
-    <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>"</span>))
+    println(<span class="hljs-string">s"Received block: <span class="hljs-subst">${block.blockHeader.hashBE}</span>"</span>)
 
 <span class="hljs-keyword">val</span> exampleProcessFilter =
     (blockHash: <span class="hljs-type">DoubleSha256Digest</span>, filter: <span class="hljs-type">GolombFilter</span>) =&gt;
-      <span class="hljs-type">Future</span>.successful(println(<span class="hljs-string">s"Received filter: <span class="hljs-subst">${blockHash.flip.hex}</span> <span class="hljs-subst">${filter.hash.flip.hex}</span>"</span>))
+      println(<span class="hljs-string">s"Received filter: <span class="hljs-subst">${blockHash.flip.hex}</span> <span class="hljs-subst">${filter.hash.flip.hex}</span>"</span>)
 
 <span class="hljs-keyword">val</span> exampleCallbacks =
     createCallbacks(exampleProcessTx, exampleProcessFilter, exampleProcessBlock)
