@@ -68,7 +68,7 @@ val keyManager = keyManagerE match {
 // This function can be used to create a callback for when our node api calls downloadBlocks,
 // more specifically it will call the function every time we receive a block, the returned
 // NodeCallbacks will contain the necessary items to initialize the callbacks
-def createCallback(processBlock: Block => Unit): NodeCallbacks = {
+def createCallback(processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onBlock: OnBlockReceived = { block =>
       processBlock(block)
     }
@@ -79,7 +79,7 @@ def createCallback(processBlock: Block => Unit): NodeCallbacks = {
 // relaying the block on the network, finding relevant wallet transactions, verifying the block,
 // or writing it to disk
 val exampleProcessBlock = (block: Block) =>
-    println(s"Received block: ${block.blockHeader.hashBE}")
+    Future.successful(println(s"Received block: ${block.blockHeader.hashBE}"))
 val exampleCallback = createCallback(exampleProcessBlock)
 
 // Here is where we are defining our actual node api, Ideally this could be it's own class
