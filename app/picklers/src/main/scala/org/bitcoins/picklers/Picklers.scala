@@ -1,5 +1,6 @@
 package org.bitcoins
 
+import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -32,4 +33,7 @@ package object picklers {
     SatoshisPerVirtualByte] =
     readwriter[Long].bimap(_.currencyUnit.satoshis.toLong,
                            l => SatoshisPerVirtualByte(Satoshis(l)))
+
+  implicit val extPubKeyPickler: ReadWriter[ExtPublicKey] =
+    readwriter[String].bimap(_.toString, ExtPublicKey.fromString(_).get)
 }
