@@ -1,11 +1,7 @@
 package org.bitcoins.core.protocol.script.ptlc
 
 import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  ECPublicKey
-}
+import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -37,44 +33,53 @@ case class PTLCTxBuilder(
     paymentAmt: CurrencyUnit,
     payerFundingKey: ECPublicKey,
     receiverFundingKey: ECPublicKey,
-    fundingUtxos: Vector[BitcoinUTXOSpendingInfoFull],
+    fundingUtxosOpt: Option[Vector[BitcoinUTXOSpendingInfoFull]],
+    unsignedFundingTxOpt: Option[Transaction],
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey,
     network: BitcoinNetwork,
     spendingVBytes: Long = 244)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
-  val fundingAmt: Long = fundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
+  require(fundingUtxosOpt.isEmpty != unsignedFundingTxOpt.isEmpty,
+          "One of fundingUtxosOpt or unsignedFundingTxOpt must be defined")
 
   val fundingSPK: MultiSignatureScriptPubKey = {
     MultiSignatureScriptPubKey(2, Vector(payerFundingKey, receiverFundingKey))
   }
 
-  lazy val txBuilderF: Future[BitcoinTxBuilder] = {
-    val spendingFee = spendingVBytes * feeRate.toLong
+  lazy val (unsignedFundingTransaction, signedFundingTransaction) = {
+    (fundingUtxosOpt, unsignedFundingTxOpt) match {
+      case (Some(fundingUtxos), _) =>
+        val txBuilderF: Future[BitcoinTxBuilder] = {
+          val spendingFee = spendingVBytes * feeRate.toLong
 
-    val output: TransactionOutput =
-      TransactionOutput(paymentAmt + Satoshis(spendingFee),
-                        P2WSHWitnessSPKV0(fundingSPK))
+          val output: TransactionOutput =
+            TransactionOutput(paymentAmt + Satoshis(spendingFee),
+                              P2WSHWitnessSPKV0(fundingSPK))
 
-    val changeOutput =
-      TransactionOutput(Satoshis(fundingAmt) - output.value, changeSPK)
+          BitcoinTxBuilder(Vector(output),
+                           fundingUtxos,
+                           feeRate,
+                           changeSPK,
+                           network)
+        }
 
-    val outputs: Vector[TransactionOutput] =
-      Vector(output, changeOutput)
+        val unsignedFundingTransaction: Future[Transaction] = {
+          txBuilderF.flatMap(_.unsignedTx)
+        }
 
-    BitcoinTxBuilder(outputs, fundingUtxos, feeRate, changeSPK, network)
-  }
+        val signedFundingTransaction: Future[Transaction] = {
+          txBuilderF.flatMap(_.sign)
+        }
 
-  lazy val unsignedFundingTransaction: Future[Transaction] = {
-    txBuilderF.flatMap(_.unsignedTx)
-  }
-
-  lazy val fundingTxid: Future[DoubleSha256DigestBE] = {
-    unsignedFundingTransaction.map(_.txIdBE)
-  }
-
-  lazy val signedFundingTransaction: Future[Transaction] = {
-    txBuilderF.flatMap(_.sign)
+        (unsignedFundingTransaction, signedFundingTransaction)
+      case (None, Some(unsignedFundingTx)) =>
+        // This party does not get or need the signed funding tx
+        (Future.successful(unsignedFundingTx),
+         Future.successful(unsignedFundingTx))
+      case (None, None) =>
+        throw new IllegalArgumentException("This can't happen")
+    }
   }
 
   private def createSpendingTxAndSpendingInfo(
@@ -124,6 +129,7 @@ case class PTLCTxBuilder(
       PSBT
         .fromUnsignedTx(tx)
         .addWitnessUTXOToInput(fundingTx.outputs.head, 0)
+        //.addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), 0)
         .addSignatures(Vector(remoteSig), 0)
         .sign(0, fundingPrivKey) // TODO This sometimes needs to be adapted
         .flatMap { signedSpendingPSBT =>
