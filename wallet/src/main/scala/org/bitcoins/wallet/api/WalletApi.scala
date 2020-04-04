@@ -30,7 +30,7 @@ import scala.util.{Failure, Success}
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-sealed trait  WalletApi {
+sealed trait WalletApi {
 
   implicit val walletConfig: WalletAppConfig
   implicit val ec: ExecutionContext

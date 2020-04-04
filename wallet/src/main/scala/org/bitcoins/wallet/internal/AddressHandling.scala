@@ -5,7 +5,11 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
@@ -309,26 +313,28 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   /** Background thread meant to ensure safety when calling [[getNewAddress()]]
-   * We to ensure independent calls to getNewAddress don't result in a race condition
-   * to the database that would generate the same address and cause an error.
-   * With this background thread, we poll the [[addressRequestQueue]] seeing if there
-   * are any elements in it, if there are, we process them and complete the Promise in the queue. */
+    * We to ensure independent calls to getNewAddress don't result in a race condition
+    * to the database that would generate the same address and cause an error.
+    * With this background thread, we poll the [[addressRequestQueue]] seeing if there
+    * are any elements in it, if there are, we process them and complete the Promise in the queue. */
   lazy val walletThread = new Thread(AddressQueueRunnable)
 
-  val addressRequestQueue = mutable.ArrayBuffer.empty[(AccountDb,HDChainType, Promise[BitcoinAddress])]
+  val addressRequestQueue =
+    mutable.ArrayBuffer.empty[(AccountDb, HDChainType, Promise[BitcoinAddress])]
 
   /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
-   * seeing if things are in the queue. This is needed because otherwise
-   * wallet address generation is not async safe.
-   * @see https://github.com/bitcoin-s/bitcoin-s/issues/1009
-   * */
+    * seeing if things are in the queue. This is needed because otherwise
+    * wallet address generation is not async safe.
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1009
+    * */
   private case object AddressQueueRunnable extends Runnable {
     override def run(): Unit = {
       while (true) {
         while (addressRequestQueue.nonEmpty) {
           try {
             val (account, chainType, promise) = addressRequestQueue.head
-            logger.debug(s"Processing $account $chainType in our address request queue")
+            logger.debug(
+              s"Processing $account $chainType in our address request queue")
             addressRequestQueue.remove(0)
 
             val lastAddrOptF = chainType match {
@@ -338,74 +344,78 @@ private[wallet] trait AddressHandling extends WalletLogger {
                 addressDAO.findMostRecentChange(account.hdAccount)
             }
 
-            val resultF: Future[BitcoinAddress] = lastAddrOptF.flatMap { lastAddrOpt =>
-              val addrPath: HDPath = lastAddrOpt match {
-                case Some(addr) =>
-                  val next = addr.path.next
-                  logger.debug(
-                    s"Found previous address at path=${addr.path}, next=$next")
-                  next
-                case None =>
-                  val chain = account.hdAccount.toChain(chainType)
-                  val address = HDAddress(chain, 0)
-                  val path = address.toPath
-                  logger.debug(s"Did not find previous address, next=$path")
-                  path
-              }
+            val resultF: Future[BitcoinAddress] = lastAddrOptF.flatMap {
+              lastAddrOpt =>
+                val addrPath: HDPath = lastAddrOpt match {
+                  case Some(addr) =>
+                    val next = addr.path.next
+                    logger.debug(
+                      s"Found previous address at path=${addr.path}, next=$next")
+                    next
+                  case None =>
+                    val chain = account.hdAccount.toChain(chainType)
+                    val address = HDAddress(chain, 0)
+                    val path = address.toPath
+                    logger.debug(s"Did not find previous address, next=$path")
+                    path
+                }
 
-              val addressDb = {
-                val pathDiff =
-                  account.hdAccount.diff(addrPath) match {
-                    case Some(value) => value
-                    case None =>
-                      throw new RuntimeException(
-                        s"Could not diff ${account.hdAccount} and $addrPath")
+                val addressDb = {
+                  val pathDiff =
+                    account.hdAccount.diff(addrPath) match {
+                      case Some(value) => value
+                      case None =>
+                        throw new RuntimeException(
+                          s"Could not diff ${account.hdAccount} and $addrPath")
+                    }
+
+                  val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+                    case Failure(exception) => throw exception
+                    case Success(value)     => value.key
                   }
 
-                val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
-                  case Failure(exception) => throw exception
-                  case Success(value) => value.key
+                  addrPath match {
+                    case segwitPath: SegWitHDPath =>
+                      AddressDbHelper
+                        .getSegwitAddress(pubkey, segwitPath, networkParameters)
+                    case legacyPath: LegacyHDPath =>
+                      AddressDbHelper.getLegacyAddress(pubkey,
+                                                       legacyPath,
+                                                       networkParameters)
+                    case nestedPath: NestedSegWitHDPath =>
+                      AddressDbHelper.getNestedSegwitAddress(pubkey,
+                                                             nestedPath,
+                                                             networkParameters)
+                  }
+                }
+                logger.debug(s"Writing $addressDb to DB")
+                val writeF = addressDAO.create(addressDb)
+                writeF.foreach { written =>
+                  logger.debug(
+                    s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
                 }
 
-                addrPath match {
-                  case segwitPath: SegWitHDPath =>
-                    AddressDbHelper
-                      .getSegwitAddress(pubkey, segwitPath, networkParameters)
-                  case legacyPath: LegacyHDPath =>
-                    AddressDbHelper.getLegacyAddress(pubkey,
-                      legacyPath,
-                      networkParameters)
-                  case nestedPath: NestedSegWitHDPath =>
-                    AddressDbHelper.getNestedSegwitAddress(pubkey,
-                      nestedPath,
-                      networkParameters)
+                val addrF = writeF.map { w =>
+                  promise.success(w.address)
+                  w.address
                 }
-              }
-              logger.debug(s"Writing $addressDb to DB")
-              val writeF = addressDAO.create(addressDb)
-              writeF.foreach { written =>
-                logger.debug(
-                  s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
-              }
 
-              val addrF = writeF.map { w =>
-                promise.success(w.address)
-                w.address
-              }
+                addrF.failed.foreach {
+                  case err =>
+                    logger.warn(
+                      s"Failed to generate address for $account $chainType",
+                      err)
+                    promise.failure(err)
+                }
 
-              addrF.failed.foreach { case err =>
-                logger.warn(s"Failed to generate address for $account $chainType",err)
-                promise.failure(err)
-              }
-
-              addrF
+                addrF
             }
             //make sure this is completed before we iterate to the next one
             //otherwise we will possibly have a race condition
-            Await.result(resultF,1.second)
+            Await.result(resultF, 1.second)
           } catch {
             case NonFatal(exn) =>
-              logger.error(s"Failed to generate address in queue",exn)
+              logger.error(s"Failed to generate address in queue", exn)
           }
         }
         //is this fair? sleep 100 milliseconds between polling for addresses
