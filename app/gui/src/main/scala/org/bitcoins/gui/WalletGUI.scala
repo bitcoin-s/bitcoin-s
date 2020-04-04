@@ -1,11 +1,13 @@
 package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
+import org.bitcoins.gui.ptlc.PTLCPane
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
+import scalafx.scene.control.TabPane.TabClosingPolicy
 import scalafx.scene.control._
 import scalafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
 
@@ -39,6 +41,7 @@ object WalletGUI extends JFXApp {
   private val statusLabel = new Label {
     maxWidth = Double.MaxValue
     padding = Insets(0, 10, 10, 10)
+    text <== GlobalData.statusText
   }
 
   private val resultArea = new TextArea {
@@ -76,9 +79,28 @@ object WalletGUI extends JFXApp {
     bottom = statusLabel
   }
 
+  private val ptlcPane = new PTLCPane(glassPane)
+
+  private val tabPane: TabPane = new TabPane {
+
+    val walletTab: Tab = new Tab {
+      text = "Wallet"
+      content = borderPane
+    }
+
+    val ptlcTab: Tab = new Tab {
+      text = "PTLC"
+      content = ptlcPane.borderPane
+    }
+
+    tabs = Seq(walletTab, ptlcTab)
+
+    tabClosingPolicy = TabClosingPolicy.Unavailable
+  }
+
   private val rootView = new StackPane {
     children = Seq(
-      borderPane,
+      tabPane,
       glassPane
     )
   }
@@ -88,7 +110,7 @@ object WalletGUI extends JFXApp {
     scene = new Scene(rootView)
   }
 
-  private val taskRunner = new TaskRunner(resultArea, glassPane, statusLabel)
+  private val taskRunner = new TaskRunner(resultArea, glassPane)
   model.taskRunner = taskRunner
 
   Platform.runLater(sendButton.requestFocus())

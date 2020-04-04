@@ -6,4 +6,6 @@ object GlobalData {
   val currentBalance: DoubleProperty = DoubleProperty(0)
 
   val log: StringProperty = StringProperty("")
+
+  val statusText: StringProperty = StringProperty("")
 }
