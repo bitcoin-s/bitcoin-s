@@ -1,7 +1,7 @@
 package org.bitcoins.gui.ptlc.dialog
 
 import org.bitcoins.cli.CliCommand.AddPTLCSig
-import org.bitcoins.cli.PTLCMessage.PTLCRefundSignature
+import org.bitcoins.wallet.ptlc.PTLCMessage.PTLCRefundSignature
 
 object AddSigPTLCDialog
     extends PTLCDialog[AddPTLCSig](

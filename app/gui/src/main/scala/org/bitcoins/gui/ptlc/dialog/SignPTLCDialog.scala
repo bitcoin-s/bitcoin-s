@@ -1,7 +1,7 @@
 package org.bitcoins.gui.ptlc.dialog
 
 import org.bitcoins.cli.CliCommand.SignPTLC
-import org.bitcoins.cli.PTLCMessage.PTLCAccept
+import org.bitcoins.wallet.ptlc.PTLCMessage.PTLCAccept
 
 object SignPTLCDialog
     extends PTLCDialog[SignPTLC](
