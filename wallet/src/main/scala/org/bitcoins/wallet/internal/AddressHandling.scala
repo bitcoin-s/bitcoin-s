@@ -74,8 +74,6 @@ private[wallet] trait AddressHandling extends WalletLogger {
         (out, TransactionOutPoint(transaction.txId, UInt32(index)))
     }.toVector
 
-  private val queue = mutable.ArrayBuffer.empty[(AccountDb,HDChainType, Promise[AddressDb])]
-
   /**
     * Derives a new address in the wallet for the
     * given account and chain type (change/external).
@@ -316,6 +314,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
   lazy val addressRequestQueue = new java.util.concurrent.ConcurrentLinkedQueue[(AccountDb, HDChainType, Promise[AddressDb])]()
 
+  walletThread.setDaemon(true)
+  walletThread.setName(
+    s"wallet-address-queue-${System.currentTimeMillis()}")
+  walletThread.start()
+  
   /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
     * seeing if things are in the queue. This is needed because otherwise
     * wallet address generation is not async safe.
@@ -330,66 +333,16 @@ private[wallet] trait AddressHandling extends WalletLogger {
           logger.debug(
             s"Processing $account $chainType in our address request queue")
 
-          val lastAddrOptF = chainType match {
-            case HDChainType.External =>
-              addressDAO.findMostRecentExternal(account.hdAccount)
-            case HDChainType.Change =>
-              addressDAO.findMostRecentChange(account.hdAccount)
-          }
-
-          val resultF: Future[BitcoinAddress] = lastAddrOptF.flatMap {
-            lastAddrOpt =>
-              val addrPath: HDPath = lastAddrOpt match {
-                case Some(addr) =>
-                  val next = addr.path.next
-                  logger.debug(
-                    s"Found previous address at path=${addr.path}, next=$next")
-                  next
-                case None =>
-                  val chain = account.hdAccount.toChain(chainType)
-                  val address = HDAddress(chain, 0)
-                  val path = address.toPath
-                  logger.debug(s"Did not find previous address, next=$path")
-                  path
-              }
-
-              val addressDb = {
-                val pathDiff =
-                  account.hdAccount.diff(addrPath) match {
-                    case Some(value) => value
-                    case None =>
-                      throw new RuntimeException(
-                        s"Could not diff ${account.hdAccount} and $addrPath")
-                  }
-
-                val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
-                  case Failure(exception) => throw exception
-                  case Success(value)     => value.key
-                }
-
-                addrPath match {
-                  case segwitPath: SegWitHDPath =>
-                    AddressDbHelper
-                      .getSegwitAddress(pubkey, segwitPath, networkParameters)
-                  case legacyPath: LegacyHDPath =>
-                    AddressDbHelper.getLegacyAddress(pubkey,
-                                                     legacyPath,
-                                                     networkParameters)
-                  case nestedPath: NestedSegWitHDPath =>
-                    AddressDbHelper.getNestedSegwitAddress(pubkey,
-                                                           nestedPath,
-                                                           networkParameters)
-                }
-              }
-              logger.debug(s"Writing $addressDb to DB")
-              val writeF = addressDAO.create(addressDb)
+          val addressDbF = getNewAddressDb(account,chainType)
+          val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
+          val writeF = addressDAO.create(addressDb)
               writeF.foreach { written =>
                 logger.debug(
                   s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
               }
 
               val addrF = writeF.map { w =>
-                promise.success(w.address)
+                promise.success(w)
                 w.address
               }
 
