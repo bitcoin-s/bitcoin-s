@@ -323,96 +323,92 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * */
   private case object AddressQueueRunnable extends Runnable {
     override def run(): Unit = {
-      while (true) {
+      while (!walletThread.isInterrupted) {
         while (!addressRequestQueue.isEmpty) {
-          try {
-            val (account, chainType, promise) = addressRequestQueue.poll()
-            logger.debug(
-              s"Processing $account $chainType in our address request queue")
 
-            val lastAddrOptF = chainType match {
-              case HDChainType.External =>
-                addressDAO.findMostRecentExternal(account.hdAccount)
-              case HDChainType.Change =>
-                addressDAO.findMostRecentChange(account.hdAccount)
-            }
+          val (account, chainType, promise) = addressRequestQueue.poll()
+          logger.debug(
+            s"Processing $account $chainType in our address request queue")
 
-            val resultF: Future[BitcoinAddress] = lastAddrOptF.flatMap {
-              lastAddrOpt =>
-                val addrPath: HDPath = lastAddrOpt match {
-                  case Some(addr) =>
-                    val next = addr.path.next
-                    logger.debug(
-                      s"Found previous address at path=${addr.path}, next=$next")
-                    next
-                  case None =>
-                    val chain = account.hdAccount.toChain(chainType)
-                    val address = HDAddress(chain, 0)
-                    val path = address.toPath
-                    logger.debug(s"Did not find previous address, next=$path")
-                    path
-                }
-
-                val addressDb = {
-                  val pathDiff =
-                    account.hdAccount.diff(addrPath) match {
-                      case Some(value) => value
-                      case None =>
-                        throw new RuntimeException(
-                          s"Could not diff ${account.hdAccount} and $addrPath")
-                    }
-
-                  val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
-                    case Failure(exception) => throw exception
-                    case Success(value)     => value.key
-                  }
-
-                  addrPath match {
-                    case segwitPath: SegWitHDPath =>
-                      AddressDbHelper
-                        .getSegwitAddress(pubkey, segwitPath, networkParameters)
-                    case legacyPath: LegacyHDPath =>
-                      AddressDbHelper.getLegacyAddress(pubkey,
-                                                       legacyPath,
-                                                       networkParameters)
-                    case nestedPath: NestedSegWitHDPath =>
-                      AddressDbHelper.getNestedSegwitAddress(pubkey,
-                                                             nestedPath,
-                                                             networkParameters)
-                  }
-                }
-                logger.debug(s"Writing $addressDb to DB")
-                val writeF = addressDAO.create(addressDb)
-                writeF.foreach { written =>
-                  logger.debug(
-                    s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
-                }
-
-                val addrF = writeF.map { w =>
-                  promise.success(w.address)
-                  w.address
-                }
-
-                addrF.failed.foreach {
-                  case err =>
-                    logger.warn(
-                      s"Failed to generate address for $account $chainType",
-                      err)
-                    promise.failure(err)
-                }
-
-                addrF
-            }
-            //make sure this is completed before we iterate to the next one
-            //otherwise we will possibly have a race condition
-            Await.result(resultF, 1.second)
-          } catch {
-            case NonFatal(exn) =>
-              logger.error(s"Failed to generate address in queue", exn)
+          val lastAddrOptF = chainType match {
+            case HDChainType.External =>
+              addressDAO.findMostRecentExternal(account.hdAccount)
+            case HDChainType.Change =>
+              addressDAO.findMostRecentChange(account.hdAccount)
           }
+
+          val resultF: Future[BitcoinAddress] = lastAddrOptF.flatMap {
+            lastAddrOpt =>
+              val addrPath: HDPath = lastAddrOpt match {
+                case Some(addr) =>
+                  val next = addr.path.next
+                  logger.debug(
+                    s"Found previous address at path=${addr.path}, next=$next")
+                  next
+                case None =>
+                  val chain = account.hdAccount.toChain(chainType)
+                  val address = HDAddress(chain, 0)
+                  val path = address.toPath
+                  logger.debug(s"Did not find previous address, next=$path")
+                  path
+              }
+
+              val addressDb = {
+                val pathDiff =
+                  account.hdAccount.diff(addrPath) match {
+                    case Some(value) => value
+                    case None =>
+                      throw new RuntimeException(
+                        s"Could not diff ${account.hdAccount} and $addrPath")
+                  }
+
+                val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+                  case Failure(exception) => throw exception
+                  case Success(value)     => value.key
+                }
+
+                addrPath match {
+                  case segwitPath: SegWitHDPath =>
+                    AddressDbHelper
+                      .getSegwitAddress(pubkey, segwitPath, networkParameters)
+                  case legacyPath: LegacyHDPath =>
+                    AddressDbHelper.getLegacyAddress(pubkey,
+                                                     legacyPath,
+                                                     networkParameters)
+                  case nestedPath: NestedSegWitHDPath =>
+                    AddressDbHelper.getNestedSegwitAddress(pubkey,
+                                                           nestedPath,
+                                                           networkParameters)
+                }
+              }
+              logger.debug(s"Writing $addressDb to DB")
+              val writeF = addressDAO.create(addressDb)
+              writeF.foreach { written =>
+                logger.debug(
+                  s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+              }
+
+              val addrF = writeF.map { w =>
+                promise.success(w.address)
+                w.address
+              }
+
+              addrF.failed.foreach {
+                case err =>
+                  logger.warn(
+                    s"Failed to generate address for $account $chainType",
+                    err)
+                  promise.failure(err)
+              }
+
+              addrF
+          }
+          //make sure this is completed before we iterate to the next one
+          //otherwise we will possibly have a race condition
+          Await.result(resultF, 1.second)
         }
-        //is this fair? sleep 100 milliseconds between polling for addresses
-        Thread.sleep(100)
+        //is this fair? sleep 25 milliseconds between polling for addresses
+        Thread.sleep(25)
       }
     }
   }
