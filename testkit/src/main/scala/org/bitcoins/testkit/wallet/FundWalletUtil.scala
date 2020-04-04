@@ -20,7 +20,7 @@ trait FundWalletUtil {
       amts: Vector[CurrencyUnit],
       account: HDAccount,
       wallet: Wallet)(implicit ec: ExecutionContext): Future[Wallet] = {
-    
+
     val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
       Vector.fill(3)(wallet.getNewAddress(account))
     }

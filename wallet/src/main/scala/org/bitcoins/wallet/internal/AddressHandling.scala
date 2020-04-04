@@ -5,16 +5,11 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
 
-import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.control.NonFatal
@@ -156,7 +151,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
       chainType: HDChainType
   ): Future[BitcoinAddress] = {
     val p = Promise[AddressDb]
-    queue.append((account, chainType, p))
+    addressRequestQueue.add((account, chainType, p))
     for {
       addressDb <- p.future
     } yield {
@@ -319,8 +314,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * are any elements in it, if there are, we process them and complete the Promise in the queue. */
   lazy val walletThread = new Thread(AddressQueueRunnable)
 
-  val addressRequestQueue =
-    mutable.ArrayBuffer.empty[(AccountDb, HDChainType, Promise[BitcoinAddress])]
+  lazy val addressRequestQueue = new java.util.concurrent.ConcurrentLinkedQueue[(AccountDb, HDChainType, Promise[AddressDb])]()
 
   /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
     * seeing if things are in the queue. This is needed because otherwise
@@ -330,12 +324,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
   private case object AddressQueueRunnable extends Runnable {
     override def run(): Unit = {
       while (true) {
-        while (addressRequestQueue.nonEmpty) {
+        while (!addressRequestQueue.isEmpty) {
           try {
-            val (account, chainType, promise) = addressRequestQueue.head
+            val (account, chainType, promise) = addressRequestQueue.poll()
             logger.debug(
               s"Processing $account $chainType in our address request queue")
-            addressRequestQueue.remove(0)
 
             val lastAddrOptF = chainType match {
               case HDChainType.External =>
