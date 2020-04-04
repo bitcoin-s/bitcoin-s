@@ -73,12 +73,12 @@ class AddressHandlingTest extends BitcoinSWalletTest {
 
   it must "be safe to call getNewAddress multiple times in a row" in { wallet: Wallet =>
     val addressesF = Future.sequence {
-      Vector.fill(3)(wallet.getNewAddress())
+      Vector.fill(10)(wallet.getNewAddress())
     }
 
     for {
       addresses <- addressesF
-    } yield assert(addresses.distinct.length == addresses)
+    } yield assert(addresses.distinct.length == addresses.length,s"We receive an identical address!")
 
   }
 

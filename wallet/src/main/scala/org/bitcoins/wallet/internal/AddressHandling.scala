@@ -11,7 +11,9 @@ import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
 
 import scala.collection.mutable
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future, Promise}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 /**
@@ -73,46 +75,8 @@ private[wallet] trait AddressHandling extends WalletLogger {
         (out, TransactionOutPoint(transaction.txId, UInt32(index)))
     }.toVector
 
-  private def drainQueue(): Runnable = new Runnable {
-    override def run(): Unit = {
-      if (queue.nonEmpty) {
-        while (queue.nonEmpty) {
-          val (account, chainType, promise) = queue.head
-          queue.remove(0)
-
-          logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
-
-            val addressDbF = getNewAddressDb(account,chainType)
-
-            val writeF = addressDbF.flatMap { adb =>
-              logger.debug(s"Writing $adb to DB")
-              addressDAO.create(adb)
-            }
-            writeF.foreach { written =>
-              logger.debug(
-                s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
-            }
-
-            writeF.map { w =>
-              promise.success(w)
-            }.recover { case err =>
-              promise.failure(err)
-            }
-
-          Thread.sleep(100)
-        }
-      }
-
-    }
-  }
-
-  private lazy val walletThread = new Thread(drainQueue())
-
-  walletThread.setDaemon(true)
-  walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
-  walletThread.start()
-
   private val queue = mutable.ArrayBuffer.empty[(AccountDb,HDChainType, Promise[AddressDb])]
+
   /**
     * Derives a new address in the wallet for the
     * given account and chain type (change/external).
@@ -344,4 +308,109 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  /** Background thread meant to ensure safety when calling [[getNewAddress()]]
+   * We to ensure independent calls to getNewAddress don't result in a race condition
+   * to the database that would generate the same address and cause an error.
+   * With this background thread, we poll the [[addressRequestQueue]] seeing if there
+   * are any elements in it, if there are, we process them and complete the Promise in the queue. */
+  lazy val walletThread = new Thread(AddressQueueRunnable)
+
+  val addressRequestQueue = mutable.ArrayBuffer.empty[(AccountDb,HDChainType, Promise[BitcoinAddress])]
+
+  /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
+   * seeing if things are in the queue. This is needed because otherwise
+   * wallet address generation is not async safe.
+   * @see https://github.com/bitcoin-s/bitcoin-s/issues/1009
+   * */
+  private case object AddressQueueRunnable extends Runnable {
+    override def run(): Unit = {
+      while (true) {
+        while (addressRequestQueue.nonEmpty) {
+          try {
+            val (account, chainType, promise) = addressRequestQueue.head
+            logger.debug(s"Processing $account $chainType in our address request queue")
+            addressRequestQueue.remove(0)
+
+            val lastAddrOptF = chainType match {
+              case HDChainType.External =>
+                addressDAO.findMostRecentExternal(account.hdAccount)
+              case HDChainType.Change =>
+                addressDAO.findMostRecentChange(account.hdAccount)
+            }
+
+            val resultF: Future[BitcoinAddress] = lastAddrOptF.flatMap { lastAddrOpt =>
+              val addrPath: HDPath = lastAddrOpt match {
+                case Some(addr) =>
+                  val next = addr.path.next
+                  logger.debug(
+                    s"Found previous address at path=${addr.path}, next=$next")
+                  next
+                case None =>
+                  val chain = account.hdAccount.toChain(chainType)
+                  val address = HDAddress(chain, 0)
+                  val path = address.toPath
+                  logger.debug(s"Did not find previous address, next=$path")
+                  path
+              }
+
+              val addressDb = {
+                val pathDiff =
+                  account.hdAccount.diff(addrPath) match {
+                    case Some(value) => value
+                    case None =>
+                      throw new RuntimeException(
+                        s"Could not diff ${account.hdAccount} and $addrPath")
+                  }
+
+                val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+                  case Failure(exception) => throw exception
+                  case Success(value) => value.key
+                }
+
+                addrPath match {
+                  case segwitPath: SegWitHDPath =>
+                    AddressDbHelper
+                      .getSegwitAddress(pubkey, segwitPath, networkParameters)
+                  case legacyPath: LegacyHDPath =>
+                    AddressDbHelper.getLegacyAddress(pubkey,
+                      legacyPath,
+                      networkParameters)
+                  case nestedPath: NestedSegWitHDPath =>
+                    AddressDbHelper.getNestedSegwitAddress(pubkey,
+                      nestedPath,
+                      networkParameters)
+                }
+              }
+              logger.debug(s"Writing $addressDb to DB")
+              val writeF = addressDAO.create(addressDb)
+              writeF.foreach { written =>
+                logger.debug(
+                  s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+              }
+
+              val addrF = writeF.map { w =>
+                promise.success(w.address)
+                w.address
+              }
+
+              addrF.failed.foreach { case err =>
+                logger.warn(s"Failed to generate address for $account $chainType",err)
+                promise.failure(err)
+              }
+
+              addrF
+            }
+            //make sure this is completed before we iterate to the next one
+            //otherwise we will possibly have a race condition
+            Await.result(resultF,1.second)
+          } catch {
+            case NonFatal(exn) =>
+              logger.error(s"Failed to generate address in queue",exn)
+          }
+        }
+        //is this fair? sleep 100 milliseconds between polling for addresses
+        Thread.sleep(100)
+      }
+    }
+  }
 }
