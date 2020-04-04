@@ -129,7 +129,7 @@ case class PTLCTxBuilder(
       PSBT
         .fromUnsignedTx(tx)
         .addWitnessUTXOToInput(fundingTx.outputs.head, 0)
-        //.addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), 0)
+        .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), 0)
         .addSignatures(Vector(remoteSig), 0)
         .sign(0, fundingPrivKey) // TODO This sometimes needs to be adapted
         .flatMap { signedSpendingPSBT =>
