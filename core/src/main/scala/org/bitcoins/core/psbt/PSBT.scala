@@ -196,6 +196,12 @@ case class PSBT(
 
   }
 
+  /**
+    * Adds the TransactionOutput to the indexed InputPSBTMap to the WitnessUTXO field
+    * @param output TransactionOutput to add to PSBT
+    * @param index index of the InputPSBTMap to add tx to
+    * @return PSBT with added tx
+    */
   def addWitnessUTXOToInput(output: TransactionOutput, index: Int): PSBT = {
     require(WitnessScriptPubKey.isWitnessScriptPubKey(output.scriptPubKey.asm),
             s"Given output was not a Witness UTXO: $output")
@@ -512,6 +518,7 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
+  /** Adds all the PartialSignatures to the input map at the given index */
   def addSignatures(
       partialSignatures: Vector[PartialSignature],
       inputIndex: Int): PSBT = {
@@ -521,12 +528,13 @@ case class PSBT(
     require(
       !inputMaps(inputIndex).isFinalized,
       s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
-    val intersect = inputMaps(inputIndex).partialSignatures
-      .map(_.pubKey)
-      .intersect(partialSignatures.map(_.pubKey))
+    val intersect =
+      inputMaps(inputIndex).partialSignatures.intersect(partialSignatures)
+    val allSigs = inputMaps(inputIndex).partialSignatures ++ partialSignatures
+
     require(
-      intersect.isEmpty,
-      s"Input has already been signed by one or more of the associated public keys given ${intersect}"
+      allSigs.groupBy(_.pubKey).values.forall(_.length == 1),
+      s"Cannot add differing signatures for associated public keys, got: $intersect"
     )
     val newElements = inputMaps(inputIndex).elements ++ partialSignatures
 

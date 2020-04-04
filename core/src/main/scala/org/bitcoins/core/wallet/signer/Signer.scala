@@ -793,10 +793,10 @@ sealed abstract class P2WSHSignerSingle
       isDummySignature: Boolean,
       spendingInfoToSatisfy: P2WSHV0SpendingInfoSingle)(
       implicit ec: ExecutionContext): Future[PartialSignature] = {
-    val inputIndex = inputIndex(spendingInfo, unsignedTx)
+    val idx = inputIndex(spendingInfo, unsignedTx)
     val wtx = WitnessTransaction
       .toWitnessTx(unsignedTx)
-      .updateWitness(inputIndex, spendingInfoToSatisfy.scriptWitness)
+      .updateWitness(idx.toInt, spendingInfoToSatisfy.scriptWitness)
 
     BitcoinSignerSingle.signSingle(spendingInfo,
                                    wtx,
