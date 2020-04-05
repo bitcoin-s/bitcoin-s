@@ -1,6 +1,7 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.config.{BitcoinNetwork, BitcoinNetworks}
+import org.bitcoins.core.crypto.{ECAdaptorSignature, _}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.hd._
@@ -12,9 +13,10 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import scodec.bits.ByteVector
 import slick.jdbc.GetResult
@@ -60,6 +62,12 @@ abstract class DbCommonsColumnMappers {
       _.hex,
       DoubleSha256DigestBE.fromHex
     )
+
+  implicit val sha256DigestBEMapper: BaseColumnType[Sha256DigestBE] =
+    MappedColumnType.base[Sha256DigestBE, String](_.hex, Sha256DigestBE.fromHex)
+
+  implicit val ecPrivateKeyMapper: BaseColumnType[ECPrivateKey] =
+    MappedColumnType.base[ECPrivateKey, String](_.hex, ECPrivateKey.fromHex)
 
   implicit val ecPublicKeyMapper: BaseColumnType[ECPublicKey] =
     MappedColumnType.base[ECPublicKey, String](_.hex, ECPublicKey.fromHex)
@@ -171,6 +179,34 @@ abstract class DbCommonsColumnMappers {
   implicit val satoshisPerByteMapper: BaseColumnType[SatoshisPerByte] = {
     MappedColumnType
       .base[SatoshisPerByte, Long](_.toLong, SatoshisPerByte.fromLong)
+  }
+
+  implicit val satoshisPerVirtualByteMapper: BaseColumnType[
+    SatoshisPerVirtualByte] = {
+    MappedColumnType
+      .base[SatoshisPerVirtualByte, Long](_.toLong,
+                                          SatoshisPerVirtualByte.fromLong)
+  }
+
+  implicit val bitcoinNetworkMapper: BaseColumnType[BitcoinNetwork] = {
+    MappedColumnType
+      .base[BitcoinNetwork, String](_.name, BitcoinNetworks.fromString(_).get)
+  }
+
+  implicit val partialSigMapper: BaseColumnType[PartialSignature] = {
+    MappedColumnType
+      .base[PartialSignature, String](_.hex, PartialSignature.fromHex)
+  }
+
+  implicit val ecAdaptorSignatureMapper: BaseColumnType[ECAdaptorSignature] = {
+    MappedColumnType
+      .base[ECAdaptorSignature, String](_.hex, ECAdaptorSignature.fromHex)
+  }
+
+  implicit val hdAccountMapper: BaseColumnType[HDAccount] = {
+    MappedColumnType.base[HDAccount, String](
+      _.toString,
+      str => HDAccount.fromPath(BIP32Path.fromString(str)).get)
   }
 }
 

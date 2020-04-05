@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
 case class ECAdaptorSignature(adaptedSig: ByteVector, dleqProof: ByteVector)
@@ -11,7 +12,7 @@ case class ECAdaptorSignature(adaptedSig: ByteVector, dleqProof: ByteVector)
   def bytes: ByteVector = adaptedSig ++ dleqProof
 }
 
-object ECAdaptorSignature {
+object ECAdaptorSignature extends Factory[ECAdaptorSignature] {
 
   def fromBytes(bytes: ByteVector): ECAdaptorSignature = {
     require(bytes.length == 65 + 97)

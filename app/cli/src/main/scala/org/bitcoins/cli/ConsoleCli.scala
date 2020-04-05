@@ -3,12 +3,15 @@ package org.bitcoins.cli
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.Sha256DigestBE
 import org.bitcoins.core.currency._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.picklers._
+import org.bitcoins.core.protocol.ptlc.PTLCMessage._
 import scopt.OParser
 import ujson.{Num, Str}
 import upickle.{default => up}
@@ -201,6 +204,185 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      note(sys.props("line.separator") + "=== PTLCs ==="),
+      cmd("createptlc")
+        .action((_, conf) =>
+          conf.copy(
+            command = CreatePTLC(0.satoshi, UInt32.zero, escaped = false)))
+        .text("Generates a PTLC invoice")
+        .children(
+          arg[Satoshis]("amount")
+            .text("Amount to receive in satoshis")
+            .required()
+            .action((sats, conf) =>
+              conf.copy(command = conf.command match {
+                case createPTLC: CreatePTLC =>
+                  createPTLC.copy(amount = sats)
+                case other => other
+              })),
+          arg[UInt32]("timeout")
+            .text("When this PTLC will expire")
+            .required()
+            .action((timeout, conf) =>
+              conf.copy(command = conf.command match {
+                case createPTLC: CreatePTLC =>
+                  createPTLC.copy(timeout = timeout)
+                case other => other
+              })),
+          opt[Unit]("escaped")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case createPTLC: CreatePTLC =>
+                  createPTLC.copy(escaped = true)
+                case other => other
+              }))
+        ),
+      cmd("acceptptlc")
+        .action((_, conf) =>
+          conf.copy(command = AcceptPTLC(null, None, escaped = false)))
+        .text("Accepts a PTLC invoice")
+        .children(
+          arg[PTLCInvoice]("invoice")
+            .text("PTLC Invoice to accept")
+            .required()
+            .action((invoice, conf) =>
+              conf.copy(command = conf.command match {
+                case acceptPTLC: AcceptPTLC =>
+                  acceptPTLC.copy(ptlcInvoice = invoice)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case acceptPTLC: AcceptPTLC =>
+                  acceptPTLC.copy(satoshisPerVirtualByte = Some(feeRate))
+                case other => other
+              })),
+          opt[Unit]("escaped")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case acceptPTLC: AcceptPTLC =>
+                  acceptPTLC.copy(escaped = true)
+                case other => other
+              }))
+        ),
+      cmd("signptlc")
+        .action((_, conf) =>
+          conf.copy(command = SignPTLC(null, escaped = false)))
+        .text("Signs a PTLC invoice")
+        .children(
+          arg[PTLCAccept]("accept")
+            .text("PTLC Invoice to sign")
+            .required()
+            .action((accept, conf) =>
+              conf.copy(command = conf.command match {
+                case signPTLC: SignPTLC =>
+                  signPTLC.copy(ptlcAccept = accept)
+                case other => other
+              })),
+          opt[Unit]("escaped")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case signPTLC: SignPTLC =>
+                  signPTLC.copy(escaped = true)
+                case other => other
+              }))
+        ),
+      cmd("addptlcsig")
+        .action((_, conf) => conf.copy(command = AddPTLCSig(null)))
+        .text("Adds PTLC Signature into the database")
+        .children(
+          arg[PTLCRefundSignature]("sig")
+            .text("PTLC signature")
+            .required()
+            .action((sig, conf) =>
+              conf.copy(command = conf.command match {
+                case addPTLCSig: AddPTLCSig =>
+                  addPTLCSig.copy(ptlcRefundSig = sig)
+                case other => other
+              }))
+        ),
+      cmd("claimptlc")
+        .action((_, conf) => conf.copy(command = ClaimPTLC(null)))
+        .text("Claims a PTLC")
+        .children(
+          arg[Sha256DigestBE]("invoiceId")
+            .text("Invoice Id of PTLC to broadcast")
+            .required()
+            .action((id, conf) =>
+              conf.copy(command = conf.command match {
+                case claimPTLC: ClaimPTLC =>
+                  claimPTLC.copy(invoiceId = id)
+                case other => other
+              }))
+        ),
+      cmd("broadcastptlc")
+        .action((_, conf) => conf.copy(command = BroadcastPTLC(null)))
+        .text("Broadcasts a fully signed PTLC")
+        .children(
+          arg[Sha256DigestBE]("invoiceId")
+            .text("Invoice Id of PTLC to broadcast")
+            .required()
+            .action((id, conf) =>
+              conf.copy(command = conf.command match {
+                case broadcastPTLC: BroadcastPTLC =>
+                  broadcastPTLC.copy(invoiceId = id)
+                case other => other
+              }))
+        ),
+      cmd("getptlc")
+        .action((_, conf) => conf.copy(command = GetPTLC(null)))
+        .text("Returns a fully signed PTLC")
+        .children(
+          arg[Sha256DigestBE]("invoiceId")
+            .text("Invoice Id of PTLC to broadcast")
+            .required()
+            .action((id, conf) =>
+              conf.copy(command = conf.command match {
+                case getPTLC: GetPTLC =>
+                  getPTLC.copy(invoiceId = id)
+                case other => other
+              }))
+        ),
+      cmd("getptlcsecret")
+        .action((_, conf) => conf.copy(command = GetPTLCSecret(null, null)))
+        .text("Returns the scalar of the point used in the PTLC")
+        .children(
+          arg[Sha256DigestBE]("invoiceId")
+            .text("Invoice Id of PTLC to broadcast")
+            .required()
+            .action((id, conf) =>
+              conf.copy(command = conf.command match {
+                case getPTLCSecret: GetPTLCSecret =>
+                  getPTLCSecret.copy(invoiceId = id)
+                case other => other
+              })),
+          arg[Transaction]("ptlcSpendTx")
+            .text("Spending Transaction of the PTLC")
+            .required()
+            .action((ptlcSpendTx, conf) =>
+              conf.copy(command = conf.command match {
+                case getPTLCSecret: GetPTLCSecret =>
+                  getPTLCSecret.copy(ptlcSpendTx = ptlcSpendTx)
+                case other => other
+              }))
+        ),
+      cmd("refundptlc")
+        .action((_, conf) => conf.copy(command = RefundPTLC(null)))
+        .text("Refunds a PTLC after it has expired")
+        .children(
+          arg[Sha256DigestBE]("invoiceId")
+            .text("Invoice Id of PTLC to refund")
+            .required()
+            .action((id, conf) =>
+              conf.copy(command = conf.command match {
+                case refundPTLC: RefundPTLC =>
+                  refundPTLC.copy(invoiceId = id)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -345,6 +527,33 @@ object ConsoleCli {
                      Seq(up.writeJs(address),
                          up.writeJs(bitcoins),
                          up.writeJs(satoshisPerVirtualByte)))
+      // PLTCs
+      case CreatePTLC(amount, timeout, escaped) =>
+        RequestParam(
+          "createptlc",
+          Seq(up.writeJs(amount), up.writeJs(timeout), up.writeJs(escaped)))
+      case AcceptPTLC(ptlcInvoice, feeRateOpt, escaped) =>
+        RequestParam("acceptptlc",
+                     Seq(up.writeJs(ptlcInvoice),
+                         up.writeJs(feeRateOpt),
+                         up.writeJs(escaped)))
+      case SignPTLC(ptlcAccept, escaped) =>
+        RequestParam("signptlc",
+                     Seq(up.writeJs(ptlcAccept), up.writeJs(escaped)))
+      case AddPTLCSig(ptlcRefundSig) =>
+        RequestParam("addptlcsig", Seq(up.writeJs(ptlcRefundSig)))
+      case ClaimPTLC(invoiceId) =>
+        RequestParam("claimptlc", Seq(up.writeJs(invoiceId)))
+      case BroadcastPTLC(invoiceId) =>
+        RequestParam("broadcastptlc", Seq(up.writeJs(invoiceId)))
+      case GetPTLC(invoiceId) =>
+        RequestParam("getptlc", Seq(up.writeJs(invoiceId)))
+      case GetPTLCSecret(invoiceId, ptlcSpendTx) =>
+        RequestParam("getptlcsecret",
+                     Seq(up.writeJs(invoiceId), up.writeJs(ptlcSpendTx)))
+      case RefundPTLC(invoiceId) =>
+        RequestParam("refundptlc", Seq(up.writeJs(invoiceId)))
+
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -454,6 +663,10 @@ case class Config(
 
 sealed abstract class CliCommand
 
+trait JsonResponse {
+  def escaped: Boolean
+}
+
 object CliCommand {
   case object NoCommand extends CliCommand
 
@@ -473,6 +686,27 @@ object CliCommand {
   case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
   case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
+
+  // PTLCs
+  case class CreatePTLC(amount: Satoshis, timeout: UInt32, escaped: Boolean)
+      extends CliCommand
+      with JsonResponse
+  case class AcceptPTLC(
+      ptlcInvoice: PTLCInvoice,
+      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
+      escaped: Boolean)
+      extends CliCommand
+      with JsonResponse
+  case class SignPTLC(ptlcAccept: PTLCAccept, escaped: Boolean)
+      extends CliCommand
+      with JsonResponse
+  case class AddPTLCSig(ptlcRefundSig: PTLCRefundSignature) extends CliCommand
+  case class BroadcastPTLC(invoiceId: Sha256DigestBE) extends CliCommand
+  case class GetPTLC(invoiceId: Sha256DigestBE) extends CliCommand
+  case class ClaimPTLC(invoiceId: Sha256DigestBE) extends CliCommand
+  case class RefundPTLC(invoiceId: Sha256DigestBE) extends CliCommand
+  case class GetPTLCSecret(invoiceId: Sha256DigestBE, ptlcSpendTx: Transaction)
+      extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand

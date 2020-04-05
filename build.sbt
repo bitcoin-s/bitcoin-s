@@ -201,6 +201,13 @@ lazy val coreTest = project
     testkit
   )
 
+lazy val appCommons = project
+  .in(file("app/app-commons"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(
+    core % testAndCompile
+  )
+
 lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.prodSettings: _*)
@@ -226,13 +233,14 @@ lazy val appServerTest = project
 lazy val picklers = project
   .in(file("app/picklers"))
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(core % testAndCompile)
+  .dependsOn(core % testAndCompile, appCommons)
 
 lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    picklers
+    picklers,
+    appCommons
   )
 
 lazy val cliTest = project

@@ -32,6 +32,11 @@ abstract class LockedWallet
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
 
+  private[wallet] val ptlcDAO = PTLCDAO()
+  private[wallet] val ptlcInvoiceDAO = PTLCInvoiceDAO()
+  private[wallet] val ptlcAcceptDAO = PTLCAcceptDAO()
+  private[wallet] val ptlcFundingInputsDAO = PTLCFundingInputDAO()
+
   override def isEmpty(): Future[Boolean] =
     for {
       addressCount <- addressDAO.count()

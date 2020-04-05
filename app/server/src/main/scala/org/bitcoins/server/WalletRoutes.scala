@@ -1,11 +1,14 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
+import org.bitcoins.appCommons.JsonSerializers
 import org.bitcoins.core.currency._
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.protocol.ptlc.PTLCMessage
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.node.Node
 import org.bitcoins.picklers._
 import org.bitcoins.wallet.api.UnlockedWalletApi
@@ -18,6 +21,21 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
     extends ServerRoute {
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
+
+  /** Takes a string and turns into an escaped version of itself */
+  private def escape(raw: String): String = {
+    import scala.reflect.runtime.universe._
+    Literal(Constant(raw)).toString
+  }
+
+  private def handlePTLCMessage(
+      ptlcMessage: PTLCMessage,
+      escaped: Boolean): HttpEntity.Strict = {
+    val json = JsonSerializers.toJson(ptlcMessage)
+    val sendString =
+      if (escaped) escape(json.toString()) else json.render(indent = 2)
+    Server.httpSuccess(sendString)
+  }
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
 
@@ -170,5 +188,117 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         }
       }
 
+    // PLTCs
+    case ServerCommand("createptlc", arr) =>
+      CreatePTLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(CreatePTLC(amount, timeout, escaped)) =>
+          complete {
+            wallet.createPTLCInvoice(amount, timeout).map { invoice =>
+              handlePTLCMessage(invoice, escaped)
+            }
+          }
+      }
+
+    case ServerCommand("acceptptlc", arr) =>
+      AcceptPTLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AcceptPTLC(invoice, feeRateOpt, escaped)) =>
+          complete {
+            val feeRate =
+              feeRateOpt.getOrElse(SatoshisPerVirtualByte(Satoshis(3)))
+            wallet.acceptPTLCInvoice(invoice, feeRate).map { accept =>
+              handlePTLCMessage(accept, escaped)
+            }
+          }
+      }
+
+    case ServerCommand("signptlc", arr) =>
+      SignPTLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(SignPTLC(accept, escaped)) =>
+          complete {
+            wallet.signPTLC(accept).map { sig =>
+              handlePTLCMessage(sig, escaped)
+            }
+          }
+      }
+
+    case ServerCommand("addptlcsig", arr) =>
+      AddPTLCSig.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(AddPTLCSig(sig)) =>
+          complete {
+            wallet.addPTLCSig(sig).map { db =>
+              Server.httpSuccess(s"Added signatures for PTLC ${db.invoiceId}")
+            }
+          }
+      }
+
+    case ServerCommand("broadcastptlc", arr) =>
+      BroadcastPTLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(BroadcastPTLC(id)) =>
+          complete {
+            wallet.getPTLC(id).flatMap { tx =>
+              node
+                .broadcastTransaction(tx)
+                .map(_ => Server.httpSuccess(tx.txIdBE.hex))
+            }
+          }
+      }
+
+    case ServerCommand("getptlc", arr) =>
+      GetPTLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetPTLC(id)) =>
+          complete {
+            wallet.getPTLC(id).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("claimptlc", arr) =>
+      ClaimPTLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(ClaimPTLC(id)) =>
+          complete {
+            wallet.claimPTLC(id).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
+
+    case ServerCommand("getptlcsecret", arr) =>
+      GetPTLCSecret.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(GetPTLCSecret(id, ptlcSpendTx)) =>
+          complete {
+            wallet.getPTLCSecret(id, ptlcSpendTx).map { key =>
+              Server.httpSuccess(key)
+            }
+          }
+      }
+
+    case ServerCommand("refundptlc", arr) =>
+      RefundPTLC.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(RefundPTLC(id)) =>
+          complete {
+            wallet.refundPTLC(id).map { tx =>
+              Server.httpSuccess(tx.hex)
+            }
+          }
+      }
   }
 }

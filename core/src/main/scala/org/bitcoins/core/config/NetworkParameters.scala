@@ -148,17 +148,36 @@ final case object RegTest extends RegTest
 // $COVERAGE-ON$
 
 object Networks {
+  val knownNetworks: Seq[NetworkParameters] = BitcoinNetworks.knownNetworks
+  val secretKeyBytes: Seq[ByteVector] = BitcoinNetworks.secretKeyBytes
+  val p2pkhNetworkBytes: Seq[ByteVector] = BitcoinNetworks.p2pkhNetworkBytes
+  val p2shNetworkBytes: Seq[ByteVector] = BitcoinNetworks.p2shNetworkBytes
+
+  def fromString(string: String): Option[NetworkParameters] =
+    BitcoinNetworks.fromString(string)
+
+  def magicToNetwork: Map[ByteVector, NetworkParameters] =
+    BitcoinNetworks.magicToNetwork
+
+  def bytesToNetwork: Map[ByteVector, NetworkParameters] =
+    BitcoinNetworks.bytesToNetwork
+}
+
+object BitcoinNetworks {
   val knownNetworks: Seq[NetworkParameters] = Seq(MainNet, TestNet3, RegTest)
   val secretKeyBytes: Seq[ByteVector] = knownNetworks.map(_.privateKey)
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
 
   /** Uses the notation used in `bitcoin.conf` */
-  def fromString(string: String): Option[NetworkParameters] = string match {
-    case "mainnet" => Some(MainNet)
-    case "testnet" => Some(TestNet3)
-    case "regtest" => Some(RegTest)
-    case _: String => None
+  def fromString(string: String): Option[BitcoinNetwork] = string match {
+    case "mainnet"  => Some(MainNet)
+    case "main"     => Some(MainNet)
+    case "testnet3" => Some(TestNet3)
+    case "testnet"  => Some(TestNet3)
+    case "test"     => Some(TestNet3)
+    case "regtest"  => Some(RegTest)
+    case _: String  => None
   }
 
   /** Map of magic network bytes to the corresponding network */

@@ -89,10 +89,10 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * @param account Account to generate address from
     * @param chainType What chain do we generate from? Internal change vs. external
     */
-  private def getNewAddressHelper(
+  private def getNewAddressDb(
       account: AccountDb,
       chainType: HDChainType
-  ): Future[BitcoinAddress] = {
+  ): Future[AddressDb] = {
     logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
 
     val lastAddrOptF = chainType match {
@@ -102,7 +102,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
         addressDAO.findMostRecentChange(account.hdAccount)
     }
 
-    lastAddrOptF.flatMap { lastAddrOpt =>
+    lastAddrOptF.map { lastAddrOpt =>
       val addrPath: HDPath = lastAddrOpt match {
         case Some(addr) =>
           val next = addr.path.next
@@ -117,43 +117,54 @@ private[wallet] trait AddressHandling extends WalletLogger {
           path
       }
 
-      val addressDb = {
-        val pathDiff =
-          account.hdAccount.diff(addrPath) match {
-            case Some(value) => value
-            case None =>
-              throw new RuntimeException(
-                s"Could not diff ${account.hdAccount} and $addrPath")
-          }
-
-        val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
-          case Failure(exception) => throw exception
-          case Success(value)     => value.key
+      val pathDiff =
+        account.hdAccount.diff(addrPath) match {
+          case Some(value) => value
+          case None =>
+            throw new RuntimeException(
+              s"Could not diff ${account.hdAccount} and $addrPath")
         }
 
-        addrPath match {
-          case segwitPath: SegWitHDPath =>
-            AddressDbHelper
-              .getSegwitAddress(pubkey, segwitPath, networkParameters)
-          case legacyPath: LegacyHDPath =>
-            AddressDbHelper.getLegacyAddress(pubkey,
-                                             legacyPath,
-                                             networkParameters)
-          case nestedPath: NestedSegWitHDPath =>
-            AddressDbHelper.getNestedSegwitAddress(pubkey,
-                                                   nestedPath,
-                                                   networkParameters)
-        }
-      }
-      logger.debug(s"Writing $addressDb to DB")
-      val writeF = addressDAO.create(addressDb)
-      writeF.foreach { written =>
-        logger.debug(
-          s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+      val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+        case Failure(exception) => throw exception
+        case Success(value)     => value.key
       }
 
-      writeF.map(_.address)
+      addrPath match {
+        case segwitPath: SegWitHDPath =>
+          AddressDbHelper
+            .getSegwitAddress(pubkey, segwitPath, networkParameters)
+        case legacyPath: LegacyHDPath =>
+          AddressDbHelper.getLegacyAddress(pubkey,
+                                           legacyPath,
+                                           networkParameters)
+        case nestedPath: NestedSegWitHDPath =>
+          AddressDbHelper.getNestedSegwitAddress(pubkey,
+                                                 nestedPath,
+                                                 networkParameters)
+      }
     }
+  }
+
+  private def getNewAddressHelper(
+      account: AccountDb,
+      chainType: HDChainType
+  ): Future[BitcoinAddress] = {
+    for {
+      addressDb <- getNewAddressDb(account, chainType)
+      _ = logger.debug(s"Writing $addressDb to DB")
+      written <- addressDAO.create(addressDb)
+    } yield {
+      logger.debug(
+        s"Got $chainType address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+      written.address
+    }
+  }
+
+  def getNextAvailableIndex(
+      accountDb: AccountDb,
+      chainType: HDChainType): Future[Int] = {
+    getNewAddressDb(accountDb, chainType).map(_.path.path.last.index)
   }
 
   def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
@@ -171,6 +182,63 @@ private[wallet] trait AddressHandling extends WalletLogger {
     val addrF =
       getNewAddressHelper(account, HDChainType.External)
     addrF
+  }
+
+  def getAddress(
+      account: AccountDb,
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb] = {
+
+    val coinType = account.hdAccount.coin.coinType
+    val accountIndex = account.hdAccount.index
+
+    val path = account.hdAccount.purpose match {
+      case HDPurposes.Legacy =>
+        LegacyHDPath(coinType, accountIndex, chainType, addressIndex)
+      case HDPurposes.NestedSegWit =>
+        NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex)
+      case HDPurposes.SegWit =>
+        SegWitHDPath(coinType, accountIndex, chainType, addressIndex)
+    }
+
+    val pathDiff =
+      account.hdAccount.diff(path) match {
+        case Some(value) => value
+        case None =>
+          throw new IllegalArgumentException(
+            s"Could not diff ${account.hdAccount} and $path")
+      }
+
+    val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+      case Failure(exception) => throw exception
+      case Success(value)     => value.key
+    }
+
+    val addressDb = account.hdAccount.purpose match {
+      case HDPurposes.SegWit =>
+        AddressDbHelper.getSegwitAddress(
+          pubkey,
+          SegWitHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+      case HDPurposes.NestedSegWit =>
+        AddressDbHelper.getNestedSegwitAddress(
+          pubkey,
+          NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+      case HDPurposes.Legacy =>
+        AddressDbHelper.getLegacyAddress(
+          pubkey,
+          LegacyHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+    }
+
+    logger.debug(s"Writing $addressDb to DB")
+
+    addressDAO.upsert(addressDb).map { written =>
+      logger.debug(
+        s"Got $chainType address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+      written
+    }
   }
 
   def findAccount(account: HDAccount): Future[Option[AccountDb]] = {

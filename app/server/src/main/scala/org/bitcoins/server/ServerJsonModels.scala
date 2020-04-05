@@ -1,7 +1,11 @@
 package org.bitcoins.server
 
+import org.bitcoins.appCommons.JsonSerializers
+import org.bitcoins.core.crypto.Sha256DigestBE
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
+import org.bitcoins.core.protocol.ptlc.PTLCMessage._
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
@@ -220,7 +224,248 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
+trait JsonResponse {
+  def escaped: Boolean
+}
+
+case class CreatePTLC(amount: Satoshis, timeout: UInt32, escaped: Boolean)
+    extends JsonResponse
+
+object CreatePTLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreatePTLC] = {
+    jsArr.arr.toList match {
+      case amountJs :: timeoutJs :: escapedJs :: Nil =>
+        Try {
+          val amount = jsToSatoshis(amountJs)
+          val timeout = jsToUInt32(timeoutJs)
+          val escaped = escapedJs.bool
+
+          CreatePTLC(amount, timeout, escaped)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing amount, timeout, and escaped arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class AcceptPTLC(
+    ptlcInvoice: PTLCInvoice,
+    feeRateOpt: Option[SatoshisPerVirtualByte],
+    escaped: Boolean)
+    extends JsonResponse
+
+object AcceptPTLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AcceptPTLC] = {
+    jsArr.arr.toList match {
+      case ptlcInvoiceJs :: satsPerVBytesJs :: escapedJs :: Nil =>
+        Try {
+          val ptlcInvoice =
+            JsonSerializers.getPTLCInvoice(ujson.read(ptlcInvoiceJs.str))
+          val satoshisPerVirtualByte =
+            nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
+              SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
+          val escaped = escapedJs.bool
+
+          AcceptPTLC(ptlcInvoice, satoshisPerVirtualByte, escaped)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing ptlcInvoice and escaped argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class SignPTLC(ptlcAccept: PTLCAccept, escaped: Boolean)
+    extends JsonResponse
+
+object SignPTLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignPTLC] = {
+    jsArr.arr.toList match {
+      case ptlcAcceptJs :: escapedJs :: Nil =>
+        Try {
+          val ptlcAccept =
+            JsonSerializers.getPTLCAccept(ujson.read(ptlcAcceptJs.str))
+          val escaped = escapedJs.bool
+
+          SignPTLC(ptlcAccept, escaped)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing ptlcAccept and escaped argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class AddPTLCSig(ptlcRefundSig: PTLCRefundSignature)
+
+object AddPTLCSig extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AddPTLCSig] = {
+    jsArr.arr.toList match {
+      case ptlcRefundSigJs :: Nil =>
+        Try {
+          val ptlcRefundSig = JsonSerializers.getPTLCRefundSignature(
+            ujson.read(ptlcRefundSigJs.str))
+
+          AddPTLCSig(ptlcRefundSig)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing ptlcRefundSig argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class BroadcastPTLC(invoiceId: Sha256DigestBE)
+
+object BroadcastPTLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[BroadcastPTLC] = {
+    jsArr.arr.toList match {
+      case invoiceIdJs :: Nil =>
+        Try {
+          val invoiceId = Sha256DigestBE(invoiceIdJs.str)
+          BroadcastPTLC(invoiceId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing invoiceId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class GetPTLC(invoiceId: Sha256DigestBE)
+
+object GetPTLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetPTLC] = {
+    jsArr.arr.toList match {
+      case invoiceIdJs :: Nil =>
+        Try {
+          val invoiceId = Sha256DigestBE(invoiceIdJs.str)
+          GetPTLC(invoiceId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing invoiceId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class ClaimPTLC(invoiceId: Sha256DigestBE)
+
+object ClaimPTLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ClaimPTLC] = {
+    jsArr.arr.toList match {
+      case invoiceIdJs :: Nil =>
+        Try {
+          val invoiceId = Sha256DigestBE(invoiceIdJs.str)
+          ClaimPTLC(invoiceId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing invoiceId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class GetPTLCSecret(invoiceId: Sha256DigestBE, ptlcSpendTx: Transaction)
+
+object GetPTLCSecret extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetPTLCSecret] = {
+    jsArr.arr.toList match {
+      case invoiceIdJs :: ptlcSpendTxJs :: Nil =>
+        Try {
+          val invoiceId = Sha256DigestBE(invoiceIdJs.str)
+          val ptlcSpendTx = jsToTx(ptlcSpendTxJs)
+
+          GetPTLCSecret(invoiceId, ptlcSpendTx)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing invoiceId and ptlcSpendTx argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class RefundPTLC(invoiceId: Sha256DigestBE)
+
+object RefundPTLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[RefundPTLC] = {
+    jsArr.arr.toList match {
+      case invoiceIdJs :: Nil =>
+        Try {
+          val invoiceId = Sha256DigestBE(invoiceIdJs.str)
+          RefundPTLC(invoiceId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing invoiceId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
 trait ServerJsonModels {
+
+  def jsToSatoshis(js: Value): Satoshis = js match {
+    case str: Str =>
+      Satoshis(BigInt(str.value))
+    case num: Num =>
+      Satoshis(num.value.toLong)
+    case _: Value =>
+      throw Value.InvalidData(js, "Expected value in Satoshis")
+  }
+
+  def jsToUInt32(js: Value): UInt32 = js match {
+    case str: Str =>
+      UInt32(BigInt(str.value))
+    case num: Num =>
+      UInt32(num.value.toLong)
+    case _: Value =>
+      throw Value.InvalidData(js, "Expected a UInt32")
+  }
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {

@@ -60,6 +60,9 @@ case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
 
 object SatoshisPerVirtualByte {
 
+  def fromLong(sats: Long): SatoshisPerVirtualByte =
+    SatoshisPerVirtualByte(Satoshis(sats))
+
   val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(CurrencyUnits.zero)
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 }

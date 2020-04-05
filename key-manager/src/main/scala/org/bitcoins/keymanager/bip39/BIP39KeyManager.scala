@@ -37,7 +37,8 @@ case class BIP39KeyManager(
   private val privVersion: ExtKeyPrivVersion =
     HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
 
-  private val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
+  //fixme change to private
+  val rootExtPrivKey: ExtPrivateKey = seed.toExtPrivateKey(privVersion)
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO

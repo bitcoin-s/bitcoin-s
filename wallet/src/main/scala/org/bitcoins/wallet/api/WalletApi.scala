@@ -7,17 +7,19 @@ import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
+import org.bitcoins.core.protocol.ptlc.PTLCMessage._
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.{AccountDb, AddressDb, PTLCDb, SpendingInfoDb}
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -343,6 +345,28 @@ trait UnlockedWalletApi extends LockedWalletApi {
     * encrypted and unaccessible
     */
   def lock(): LockedWalletApi
+
+  def createPTLCInvoice(
+      amount: CurrencyUnit,
+      timeout: UInt32): Future[PTLCInvoice]
+
+  def acceptPTLCInvoice(
+      ptlcInvoice: PTLCInvoice,
+      feeRate: SatoshisPerVirtualByte): Future[PTLCAccept]
+
+  def signPTLC(ptlcCAccept: PTLCAccept): Future[PTLCRefundSignature]
+
+  def addPTLCSig(ptlcRefundSignature: PTLCRefundSignature): Future[PTLCDb]
+
+  def claimPTLC(invoiceId: Sha256DigestBE): Future[Transaction]
+
+  def getPTLC(invoiceId: Sha256DigestBE): Future[Transaction]
+
+  def refundPTLC(invoiceId: Sha256DigestBE): Future[Transaction]
+
+  def getPTLCSecret(
+      invoiceId: Sha256DigestBE,
+      ptlcSpendTx: Transaction): Future[ECPrivateKey]
 
   /**
     *
