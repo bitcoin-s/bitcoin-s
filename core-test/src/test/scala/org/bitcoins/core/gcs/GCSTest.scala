@@ -185,38 +185,6 @@ class GCSTest extends BitcoinSUnitTest {
     assert(decodedSet == sortedItems)
   }
 
-  it must "encode and decode arbitrary sets of elements for arbitrary p" in {
-
-    val upperBoundGen = Gen.choose(10, 20) //what are these numbers?
-
-    val itemsGen: Gen[(Vector[UInt64], UInt8)] = {
-      NumberGenerator.genP.flatMap { p =>
-        upperBoundGen.flatMap { size =>
-          // If hash's quotient when divided by 2^p is too large, we hang converting to unary
-          val upperBound: Long = 1L << (p.toInt * 1.75).toInt
-
-          val hashGen = Gen
-            .chooseNum(0L, upperBound)
-            .map(UInt64(_))
-
-          Gen.listOfN(size, hashGen).map(_.toVector).map { vec =>
-            (vec, p)
-          }
-        }
-      }
-    }
-
-    forAll(itemsGen) {
-      case (items, p) =>
-        val sorted = items.sortWith(_ < _)
-
-        val codedSet = GCS.encodeSortedSet(sorted, p)
-        val decodedSet = GCS.golombDecodeSet(codedSet, p)
-
-        assert(decodedSet == sorted)
-    }
-  }
-
   it must "encode and decode arbitrary ByteVectors for arbitrary p" in {
 
     def genP: Gen[UInt8] = {
