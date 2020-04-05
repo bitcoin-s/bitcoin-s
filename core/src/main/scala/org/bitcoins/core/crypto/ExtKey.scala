@@ -358,12 +358,14 @@ sealed abstract class ExtPublicKey extends ExtKey {
       val hmac = CryptoUtil.hmac512(chainCode.bytes, data)
       val (il, ir) = hmac.splitAt(32)
       val priv = ECPrivateKey(il)
-      val childPubKey = if (Secp256k1Context.isEnabled) {
-        val tweaked = NativeSecp256k1.pubKeyTweakAdd(key.bytes.toArray,
-                                                     il.toArray,
-                                                     priv.isCompressed)
-        ECPublicKey(ByteVector(tweaked))
-      } else {
+      val childPubKey =
+//        if (Secp256k1Context.isEnabled) {
+//        val tweaked = NativeSecp256k1.pubKeyTweakAdd(key.bytes.toArray,
+//                                                     il.toArray,
+//                                                     priv.isCompressed)
+//        ECPublicKey(ByteVector(tweaked))
+//      } else
+        {
         val tweak = ECPrivateKey.fromBytes(il).publicKey
         key.add(tweak)
       }

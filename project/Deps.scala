@@ -61,6 +61,8 @@ object Deps {
 
   object Compile {
 
+    val guava = "com.google.guava" % "guava" % "18.0" withSources () withJavadoc ()
+
     val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
     val scodec = "org.scodec" %% "scodec-bits" % V.scodecV withSources () withJavadoc ()
     val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided" withSources () withJavadoc ()
@@ -154,6 +156,7 @@ object Deps {
   )
 
   val secp256k1jni = List(
+    Compile.guava,
     Compile.nativeLoader,
     Test.junitInterface
   )

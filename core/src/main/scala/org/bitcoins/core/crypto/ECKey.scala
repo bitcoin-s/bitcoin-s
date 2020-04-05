@@ -81,23 +81,23 @@ sealed abstract class ECPrivateKey
 
   /** Derives the public for a the private key */
   def publicKey(useSecp: Boolean): ECPublicKey = {
-    if (useSecp) {
-      publicKeyWithSecp
-    } else {
+//    if (useSecp) {
+//      publicKeyWithSecp
+//    } else {
       publicKeyWithBouncyCastle
-    }
+//    }
   }
 
-  def publicKeyWithSecp: ECPublicKey = {
-    val pubKeyBytes: Array[Byte] =
-      NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
-    val pubBytes = ByteVector(pubKeyBytes)
-    require(
-      ECPublicKey.isFullyValid(pubBytes),
-      s"secp256k1 failed to generate a valid public key, got: ${BitcoinSUtil
-        .encodeHex(pubBytes)}")
-    ECPublicKey(pubBytes)
-  }
+//  def publicKeyWithSecp: ECPublicKey = {
+//    val pubKeyBytes: Array[Byte] =
+//      NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
+//    val pubBytes = ByteVector(pubKeyBytes)
+//    require(
+//      ECPublicKey.isFullyValid(pubBytes),
+//      s"secp256k1 failed to generate a valid public key, got: ${BitcoinSUtil
+//        .encodeHex(pubBytes)}")
+//    ECPublicKey(pubBytes)
+//  }
 
   def publicKeyWithBouncyCastle: ECPublicKey = {
     BouncyCastleUtil.computePublicKey(this)
@@ -339,20 +339,20 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def decompressed: ECPublicKey = decompressed(Secp256k1Context.isEnabled)
 
   def decompressed(useSecp: Boolean): ECPublicKey = {
-    if (useSecp) {
-      decompressedWithSecp
-    } else {
+//    if (useSecp) {
+//      decompressedWithSecp
+//    } else {
       decompressedWithBouncyCastle
-    }
+//    }
   }
 
-  def decompressedWithSecp: ECPublicKey = {
-    if (isCompressed) {
-      val decompressed = NativeSecp256k1.decompress(bytes.toArray)
-      ECPublicKey.fromBytes(ByteVector(decompressed))
-    } else this
-  }
-
+//  def decompressedWithSecp: ECPublicKey = {
+//    if (isCompressed) {
+//      val decompressed = NativeSecp256k1.decompress(bytes.toArray)
+//      ECPublicKey.fromBytes(ByteVector(decompressed))
+//    } else this
+//  }
+//
   def decompressedWithBouncyCastle: ECPublicKey = {
     BouncyCastleUtil.decompressPublicKey(this)
   }
@@ -415,17 +415,17 @@ object ECPublicKey extends Factory[ECPublicKey] {
   }
 
   def isFullyValid(bytes: ByteVector, useSecp: Boolean): Boolean = {
-    if (useSecp) {
-      isFullyValidWithSecp(bytes)
-    } else {
+//    if (useSecp) {
+//      isFullyValidWithSecp(bytes)
+//    } else {
       isFullyValidWithBouncyCastle(bytes)
-    }
+//    }
   }
 
-  def isFullyValidWithSecp(bytes: ByteVector): Boolean = {
-    Try(NativeSecp256k1.isValidPubKey(bytes.toArray))
-      .getOrElse(false) && isValid(bytes)
-  }
+//  def isFullyValidWithSecp(bytes: ByteVector): Boolean = {
+//    Try(NativeSecp256k1.isValidPubKey(bytes.toArray))
+//      .getOrElse(false) && isValid(bytes)
+//  }
 
   def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = {
     BouncyCastleUtil.validatePublicKey(bytes) && isValid(bytes)

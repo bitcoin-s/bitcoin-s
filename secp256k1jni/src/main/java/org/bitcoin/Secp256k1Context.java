@@ -16,8 +16,6 @@
 
 package org.bitcoin;
 
-import org.scijava.nativelib.NativeLoader;
-
 /**
  * This class holds the context reference used in native methods 
  * to handle ECDSA operations.
@@ -30,14 +28,9 @@ public class Secp256k1Context {
       boolean isEnabled = true;
       long contextRef = -1;
       try {
-          if (System.getProperty("os.name").startsWith("Windows")) {
-              //our binary for windows has a different name than the linux/mac binary
-              NativeLoader.loadLibrary("libsecp256k1-0");
-          } else {
-              NativeLoader.loadLibrary("secp256k1");
-          }
+          System.loadLibrary("secp256k1");
           contextRef = secp256k1_init_context();
-      } catch (java.io.IOException | UnsatisfiedLinkError e) {
+      } catch (UnsatisfiedLinkError e) {
           System.out.println("UnsatisfiedLinkError: " + e.toString());
           isEnabled = false;
       }
@@ -45,20 +38,8 @@ public class Secp256k1Context {
       context = contextRef;
   }
 
-  /**
-   * Detects whether or not the libsecp256k1 binaries were successfully
-   * loaded in static initialization above. Useful in enabling a fallback
-   * to Bouncy Castle implementations in the case of having no libsecp present.
-   */
   public static boolean isEnabled() {
-      String secpDisabled = System.getenv("DISABLE_SECP256K1");
-      if (secpDisabled != null &&
-              (secpDisabled.toLowerCase().equals("true") ||
-                      secpDisabled.equals("1"))) {
-          return false;
-      } else {
-          return enabled;
-      }
+     return enabled;
   }
 
   public static long getContext() {

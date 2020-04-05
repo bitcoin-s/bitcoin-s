@@ -36,42 +36,42 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     }
   }
 
-  it must "add public keys the same" in {
-    forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
-      case (pubKey, privKey) =>
-        val sumKeyBytes =
-          NativeSecp256k1.pubKeyTweakAdd(pubKey.bytes.toArray,
-                                         privKey.bytes.toArray,
-                                         true)
-        val sumKeyExpected = ECPublicKey.fromBytes(ByteVector(sumKeyBytes))
-        val sumKey = pubKey.addWithBouncyCastle(privKey.publicKey)
-
-        assert(sumKey == sumKeyExpected)
-    }
-  }
-
-  it must "validate keys the same" in {
-    val keyOrGarbageGen = Gen.oneOf(CryptoGenerators.publicKey.map(_.bytes),
-                                    NumberGenerator.bytevector(33))
-    forAll(keyOrGarbageGen) { bytes =>
-      assert(
-        ECPublicKey.isFullyValidWithBouncyCastle(bytes) ==
-          ECPublicKey.isFullyValidWithSecp(bytes)
-      )
-    }
-  }
-
-  it must "decompress keys the same" in {
-    forAll(CryptoGenerators.publicKey) { pubKey =>
-      assert(pubKey.decompressedWithBouncyCastle == pubKey.decompressedWithSecp)
-    }
-  }
-
-  it must "compute public keys the same" in {
-    forAll(CryptoGenerators.privateKey) { privKey =>
-      assert(privKey.publicKeyWithBouncyCastle == privKey.publicKeyWithSecp)
-    }
-  }
+//  it must "add public keys the same" in {
+//    forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
+//      case (pubKey, privKey) =>
+//        val sumKeyBytes =
+//          NativeSecp256k1.pubKeyTweakAdd(pubKey.bytes.toArray,
+//                                         privKey.bytes.toArray,
+//                                         true)
+//        val sumKeyExpected = ECPublicKey.fromBytes(ByteVector(sumKeyBytes))
+//        val sumKey = pubKey.addWithBouncyCastle(privKey.publicKey)
+//
+//        assert(sumKey == sumKeyExpected)
+//    }
+//  }
+//
+//  it must "validate keys the same" in {
+//    val keyOrGarbageGen = Gen.oneOf(CryptoGenerators.publicKey.map(_.bytes),
+//                                    NumberGenerator.bytevector(33))
+//    forAll(keyOrGarbageGen) { bytes =>
+//      assert(
+//        ECPublicKey.isFullyValidWithBouncyCastle(bytes) ==
+//          ECPublicKey.isFullyValidWithSecp(bytes)
+//      )
+//    }
+//  }
+//
+//  it must "decompress keys the same" in {
+//    forAll(CryptoGenerators.publicKey) { pubKey =>
+//      assert(pubKey.decompressedWithBouncyCastle == pubKey.decompressedWithSecp)
+//    }
+//  }
+//
+//  it must "compute public keys the same" in {
+//    forAll(CryptoGenerators.privateKey) { privKey =>
+//      assert(privKey.publicKeyWithBouncyCastle == privKey.publicKeyWithSecp)
+//    }
+//  }
 
   it must "compute signatures the same" in {
     forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
