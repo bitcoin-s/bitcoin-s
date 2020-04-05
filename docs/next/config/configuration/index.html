@@ -165,6 +165,13 @@ to ensure the entire module is initialized correctly.</p>
     chain {
         neutrino {
             filter-header-batch-size = 2000
+            filter-header-batch-size.regtest = 10
+            # You can <span class="hljs-builtin-name">set</span> a<span class="hljs-built_in"> network </span>specific filter-header-batch-size
+            # by adding a trailing `.networkId` (main, test, regtest)
+            # It is recommended <span class="hljs-keyword">to</span> keep the main <span class="hljs-keyword">and</span> test batch size high
+            # <span class="hljs-keyword">to</span> keep the sync time fast, however, <span class="hljs-keyword">for</span> regtest it should be small
+            # so it does <span class="hljs-keyword">not</span> exceed the chain size.
+
             filter-batch-size = 100
         }
     }
