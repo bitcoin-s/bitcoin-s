@@ -113,4 +113,5 @@ object PTLCDialog {
   val acceptStr = "PTLCAccept Message"
   val refundSigStr = "Refund Signature Message"
   val spendTxStr = "PTLC Claim Transaction"
+  val feeRateStr = "Fee Rate"
 }
