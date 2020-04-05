@@ -1,7 +1,7 @@
 package org.bitcoins.gui.ptlc.dialog
 
 import org.bitcoins.cli.CliCommand.AddPTLCSig
-import org.bitcoins.wallet.ptlc.PTLCMessage.PTLCRefundSignature
+import org.bitcoins.appCommons.JsonSerializers
 
 object AddSigPTLCDialog
     extends PTLCDialog[AddPTLCSig](
@@ -12,7 +12,7 @@ object AddSigPTLCDialog
 
   override def constructFromInput(inputs: Map[String, String]): AddPTLCSig = {
     val refundSig =
-      PTLCRefundSignature.fromJson(ujson.read(inputs(refundSigStr)))
+      JsonSerializers.getPTLCRefundSignature(ujson.read(inputs(refundSigStr)))
     AddPTLCSig(refundSig)
   }
 }

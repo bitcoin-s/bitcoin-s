@@ -1,7 +1,7 @@
 package org.bitcoins.gui.ptlc.dialog
 
 import org.bitcoins.cli.CliCommand.AcceptPTLC
-import org.bitcoins.wallet.ptlc.PTLCMessage.PTLCInvoice
+import org.bitcoins.appCommons.JsonSerializers
 
 object AcceptPTLCDialog
     extends PTLCDialog[AcceptPTLC](
@@ -11,7 +11,7 @@ object AcceptPTLCDialog
   import PTLCDialog._
 
   override def constructFromInput(inputs: Map[String, String]): AcceptPTLC = {
-    val invoice = PTLCInvoice.fromJson(ujson.read(inputs(invoiceStr)))
+    val invoice = JsonSerializers.getPTLCInvoice(ujson.read(inputs(invoiceStr)))
     AcceptPTLC(invoice, escaped = false)
   }
 }
