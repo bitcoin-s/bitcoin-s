@@ -60,21 +60,14 @@ sealed abstract class SignerUtils {
 
     spendingInfo.output.scriptPubKey match {
       case _: WitnessScriptPubKey =>
-        val wtx = unsignedTx match {
-          case btx: BaseTransaction =>
-            val transactionWitnessOpt =
-              spendingInfo.scriptWitnessOpt.map(scriptWit =>
-                TransactionWitness(Vector(scriptWit)))
-            val transactionWitness =
-              transactionWitnessOpt.getOrElse(
-                EmptyWitness.fromInputs(btx.inputs))
-
-            WitnessTransaction(btx.version,
-                               btx.inputs,
-                               btx.outputs,
-                               btx.lockTime,
-                               transactionWitness)
-          case wtx: WitnessTransaction => wtx
+        val wtx = {
+          val noWitnessWtx = WitnessTransaction.toWitnessTx(unsignedTx)
+          spendingInfo.scriptWitnessOpt match {
+            case None =>
+              noWitnessWtx
+            case Some(scriptWitness) =>
+              noWitnessWtx.updateWitness(index.toInt, scriptWitness)
+          }
         }
 
         WitnessTxSigComponent(wtx, index, spendingInfo.output, flags)
@@ -800,7 +793,10 @@ sealed abstract class P2WSHSignerSingle
       isDummySignature: Boolean,
       spendingInfoToSatisfy: P2WSHV0SpendingInfoSingle)(
       implicit ec: ExecutionContext): Future[PartialSignature] = {
-    val wtx = WitnessTransaction.toWitnessTx(unsignedTx)
+    val idx = inputIndex(spendingInfo, unsignedTx)
+    val wtx = WitnessTransaction
+      .toWitnessTx(unsignedTx)
+      .updateWitness(idx.toInt, spendingInfoToSatisfy.scriptWitness)
 
     BitcoinSignerSingle.signSingle(spendingInfo,
                                    wtx,
@@ -825,7 +821,9 @@ sealed abstract class P2WSHSigner
     } else {
       val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-      val wtx = WitnessTransaction.toWitnessTx(unsignedTx)
+      val wtx = WitnessTransaction
+        .toWitnessTx(unsignedTx)
+        .updateWitness(inputIndex.toInt, spendingInfoToSatisfy.scriptWitness)
 
       val signedSigComponentF = BitcoinSigner.sign(
         spendingInfo,
