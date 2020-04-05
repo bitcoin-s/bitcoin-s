@@ -1,9 +1,18 @@
 package org.bitcoins.core.protocol.script.ptlc
 
 import org.bitcoins.core.config.BitcoinNetwork
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{
+  ECAdaptorSignature,
+  ECDigitalSignature,
+  ECPrivateKey,
+  ECPublicKey,
+  TransactionSignatureCreator,
+  TransactionSignatureSerializer,
+  WitnessTxSigComponent
+}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{
   EmptyScriptSignature,
@@ -131,7 +140,7 @@ case class PTLCTxBuilder(
         .addWitnessUTXOToInput(fundingTx.outputs.head, 0)
         .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), 0)
         .addSignatures(Vector(remoteSig), 0)
-        .sign(0, fundingPrivKey) // TODO This sometimes needs to be adapted
+        .sign(0, fundingPrivKey)
         .flatMap { signedSpendingPSBT =>
           val txT =
             signedSpendingPSBT.finalizePSBT.flatMap(
@@ -143,23 +152,71 @@ case class PTLCTxBuilder(
 
   def createAdaptorSig(
       remoteFinalAddress: BitcoinAddress,
-      fundingPrivKey: ECPrivateKey): Future[PartialSignature] = {
-    unsignedFundingTransaction.flatMap { fundingTx =>
+      adaptorPoint: ECPublicKey,
+      fundingPrivKey: ECPrivateKey): Future[ECAdaptorSignature] = {
+    unsignedFundingTransaction.map { fundingTx =>
       val (tx, spendingInfo) =
         createSpendingTxAndSpendingInfo(fundingTx,
                                         remoteFinalAddress,
                                         fundingPrivKey)
 
-      // TODO: This needs to be adapted
-      BitcoinSignerSingle.signSingle(spendingInfo, tx, isDummySignature = false)
+      val wtx = {
+        val noWitnessWtx = WitnessTransaction.toWitnessTx(tx)
+        spendingInfo.scriptWitnessOpt match {
+          case None =>
+            noWitnessWtx
+          case Some(scriptWitness) =>
+            noWitnessWtx.updateWitness(idx = 0, scriptWitness)
+        }
+      }
+
+      val sigComponent = WitnessTxSigComponent(wtx,
+                                               UInt32.zero,
+                                               spendingInfo.output,
+                                               Policy.standardFlags)
+
+      TransactionSignatureCreator.createSig(
+        sigComponent,
+        adaptorSign = ???, // TODO: Adapt here
+        HashType.sigHashAll)
     }
   }
 
   def createNormalSpendingTx(
-      remoteSig: PartialSignature,
+      remoteSig: ECAdaptorSignature,
       finalAddress: BitcoinAddress,
-      fundingPrivKey: ECPrivateKey): Future[Transaction] = {
-    createSignedSpendingTx(remoteSig, finalAddress, fundingPrivKey)
+      fundingPrivKey: ECPrivateKey,
+      adaptorSecret: ECPrivateKey): Future[Transaction] = {
+    unsignedFundingTransaction.flatMap { fundingTx =>
+      val (tx, spendingInfo) =
+        createSpendingTxAndSpendingInfo(fundingTx, finalAddress, fundingPrivKey)
+
+      val wtx = {
+        val noWitnessWtx = WitnessTransaction.toWitnessTx(tx)
+        spendingInfo.scriptWitnessOpt match {
+          case None =>
+            noWitnessWtx
+          case Some(scriptWitness) =>
+            noWitnessWtx.updateWitness(idx = 0, scriptWitness)
+        }
+      }
+
+      val sigComponent = WitnessTxSigComponent(wtx,
+                                               UInt32.zero,
+                                               spendingInfo.output,
+                                               Policy.standardFlags)
+
+      val hash =
+        TransactionSignatureSerializer.hashForSignature(sigComponent,
+                                                        HashType.sigHashAll)
+      // TODO: Verify remoteSig of hash
+
+      // TODO: Complete remoteSig
+      val completeRemoteSig: ECDigitalSignature = ???
+      val partialSig = PartialSignature(payerFundingKey, completeRemoteSig)
+
+      createSignedSpendingTx(partialSig, finalAddress, fundingPrivKey)
+    }
   }
 
   def createRefundSig(

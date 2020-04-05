@@ -69,6 +69,9 @@ class PTLCTxBuilderTest extends BitcoinSAsyncTest {
   val receiverPrivKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
   val receiverPubKey: ECPublicKey = receiverPrivKey.publicKey
 
+  val adaptorSecret: ECPrivateKey = ECPrivateKey.freshPrivateKey
+  val adaptorPoint: ECPublicKey = adaptorSecret.publicKey
+
   val blockTimeToday: UInt32 =
     UInt32(System.currentTimeMillis() / 1000)
 
@@ -187,14 +190,17 @@ class PTLCTxBuilderTest extends BitcoinSAsyncTest {
   it should "execute everything correctly" in {
     for {
       (payerTxBuilder, receiverTxBuilder) <- constructPTLCTxBuilders
-      payerSig <- payerTxBuilder.createAdaptorSig(finalAddress, payerPrivKey)
+      payerSig <- payerTxBuilder.createAdaptorSig(finalAddress,
+                                                  adaptorPoint,
+                                                  payerPrivKey)
       refundSig <- receiverTxBuilder.createRefundSig(refundAddress,
                                                      receiverPrivKey,
                                                      timeout)
       fundingTx <- payerTxBuilder.signedFundingTransaction
       spendingTx <- receiverTxBuilder.createNormalSpendingTx(payerSig,
                                                              finalAddress,
-                                                             receiverPrivKey)
+                                                             receiverPrivKey,
+                                                             adaptorSecret)
       refundTx <- payerTxBuilder.createRefundTx(refundSig,
                                                 refundAddress,
                                                 payerPrivKey,

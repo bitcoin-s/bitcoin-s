@@ -72,6 +72,15 @@ sealed abstract class TransactionSignatureCreator {
       s
     }
   }
+
+  def createSig(
+      component: TxSigComponent,
+      adaptorSign: ByteVector => ECAdaptorSignature,
+      hashType: HashType): ECAdaptorSignature = {
+    val hash =
+      TransactionSignatureSerializer.hashForSignature(component, hashType)
+    adaptorSign(hash.bytes)
+  }
 }
 
 object TransactionSignatureCreator extends TransactionSignatureCreator
