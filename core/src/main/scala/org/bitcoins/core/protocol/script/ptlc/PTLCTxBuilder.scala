@@ -240,4 +240,19 @@ case class PTLCTxBuilder(
       timeout: UInt32): Future[Transaction] = {
     createSignedSpendingTx(remoteSig, refundAddress, fundingPrivKey, timeout)
   }
+
+  def getSecret(
+      adaptor: ECPublicKey,
+      adaptorSig: ECAdaptorSignature,
+      spendingTx: Transaction): ECPrivateKey = {
+    val witness = spendingTx
+      .asInstanceOf[WitnessTransaction]
+      .witness
+      .witnesses
+      .head
+      .asInstanceOf[P2WSHWitnessV0]
+    val sig = witness.signatures.find(???)
+    // TOOD: Extract secret
+    ???
+  }
 }
