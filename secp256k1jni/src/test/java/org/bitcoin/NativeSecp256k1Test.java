@@ -229,6 +229,58 @@ public class NativeSecp256k1Test {
         assertEquals( ecdhString, "2A2A67007A926E6594AF3EB564FC74005B37A9C8AEF2033C4552051B5C87F043" , "testCreateECDHSecret");
     }
 
+    @Test
+    public void testAdaptorSign() throws AssertFailException {
+        byte[] msg = toByteArray("");
+        byte[] adaptor = toByteArray("");
+        byte[] seckey = toByteArray("");
+        String expectedAdaptorSig = "";
+        String expectedAdaptorProof = "";
+
+        byte[] resultArr = NativeSecp256k1.adaptorSign(seckey, adaptor, msg);
+
+        assertEquals(resultArr.length, 2, "testAdaptorSign");
+
+        String adaptorSig = toHex(resultArr).toLowerCase();
+        assertEquals(adaptorSig, expectedAdaptorSig + expectedAdaptorProof, "testAdaptorSign");
+    }
+
+    @Test
+    public void testAdaptorVeirfy() throws AssertFailException {
+        byte[] msg = toByteArray("");
+        byte[] adaptorSig = toByteArray("");
+        byte[] adaptorProof = toByteArray("");
+        byte[] adaptor = toByteArray("");
+        byte[] pubkey = toByteArray("");
+
+        boolean result = NativeSecp256k1.adaptorVerify(adaptorSig, pubkey, msg, adaptor, adaptorProof);
+
+        assertEquals( result, true , "testAdaptorVeirfy");
+    }
+
+    @Test
+    public void testAdaptorAdapt() throws AssertFailException {
+        byte[] secret = toByteArray("");
+        byte[] adaptorSig = toByteArray("");
+
+        byte[] resultArr = NativeSecp256k1.adaptorAdapt(secret, adaptorSig);
+
+        String sigString = toHex(resultArr);
+        assertEquals(sigString , "" , "testAdaptorAdapt");
+    }
+
+    @Test
+    public void testAdaptorExtractSecret() throws AssertFailException {
+        byte[] sig = toByteArray("".toLowerCase());
+        byte[] adaptorSig = toByteArray("");
+        byte[] adaptor = toByteArray("");
+
+        byte[] resultArr = NativeSecp256k1.adaptorExtractSecret(sig, adaptorSig, adaptor);
+
+        String sigString = toHex(resultArr);
+        assertEquals(sigString , "" , "testAdaptorExtractSecret");
+    }
+
 
     //https://stackoverflow.com/a/19119453/967713
     private static byte[] toByteArray(final String hex) {
