@@ -136,9 +136,9 @@ class SignerTest extends BitcoinSAsyncTest {
             val sigVecFs = singleInfosVec.map { singleInfos =>
               val sigFs = singleInfos.map { singleInfo =>
                 val keyAndSigF =
-                  BitcoinSignerSingle.signSingle(singleInfo,
-                                                 unsignedTx,
-                                                 isDummySignature = false)
+                  BitcoinSigner.signSingle(singleInfo,
+                                           unsignedTx,
+                                           isDummySignature = false)
 
                 keyAndSigF.map(_.signature)
               }
@@ -273,9 +273,9 @@ class SignerTest extends BitcoinSAsyncTest {
                                      unsignedTx.outputs,
                                      unsignedTx.lockTime,
                                      EmptyWitness.fromInputs(unsignedTx.inputs))
-                BitcoinSignerSingle.signSingle(singleInfo,
-                                               wtx,
-                                               isDummySignature = false)
+                BitcoinSigner.signSingle(singleInfo,
+                                         wtx,
+                                         isDummySignature = false)
 
               }
 

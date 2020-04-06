@@ -13,7 +13,7 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.Factory
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
 
@@ -125,11 +125,11 @@ case class PSBT(
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
       isDummySignature: Boolean = false)(
       implicit ec: ExecutionContext): Future[PSBT] = {
-    BitcoinSignerSingle.sign(psbt = this,
-                             inputIndex = inputIndex,
-                             signer = signer,
-                             conditionalPath = conditionalPath,
-                             isDummySignature = isDummySignature)
+    BitcoinSigner.sign(psbt = this,
+                       inputIndex = inputIndex,
+                       signer = signer,
+                       conditionalPath = conditionalPath,
+                       isDummySignature = isDummySignature)
   }
 
   /**
