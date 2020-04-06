@@ -149,7 +149,8 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         Future.failed(
           new RuntimeException(s"Failed to initialize km with err=${err}"))
       case Right(km) =>
-        val wallet = Wallet(km, MockNodeApi, MockChainQueryApi)(config, ec)
+        val wallet =
+          Wallet(km, MockNodeApi, MockChainQueryApi, Vector.empty)(config, ec)
         val walletF =
           Wallet.initialize(wallet = wallet,
                             bip39PasswordOpt = bip39PasswordOpt)(config, ec)

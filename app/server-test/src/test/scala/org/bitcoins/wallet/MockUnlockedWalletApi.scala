@@ -3,7 +3,7 @@ package org.bitcoins.wallet
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.bitcoins.wallet.models.AccountDb
+import org.bitcoins.wallet.models.{AccountDb, AddressTagDAO}
 
 import scala.concurrent.Future
 
@@ -23,5 +23,8 @@ abstract class MockUnlockedWalletApi extends UnlockedWalletApi {
 
   private def stub[T] =
     Future.failed[T](new RuntimeException("Not implemented"))
+
+  override private[wallet] val addressTagDAOs: Vector[AddressTagDAO[_, _, _]] =
+    Vector.empty
 
 }

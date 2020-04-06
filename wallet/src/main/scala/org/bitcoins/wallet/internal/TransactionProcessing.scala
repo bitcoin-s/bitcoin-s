@@ -3,11 +3,12 @@ package org.bitcoins.wallet.internal
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
@@ -31,7 +32,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       blockHashOpt: Option[DoubleSha256DigestBE]
   ): Future[LockedWallet] = {
     for {
-      result <- processTransactionImpl(transaction, blockHashOpt)
+      result <- processTransactionImpl(transaction, blockHashOpt, Vector.empty) //todo maybe change Vector.empty
     } yield {
       logger.debug(
         s"Finished processing of transaction=${transaction.txIdBE}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}")
@@ -97,7 +98,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
     logger.info(
       s"Processing TX from our wallet, transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
     for {
@@ -105,7 +107,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
                                      feeRate,
                                      inputAmount,
                                      sentAmount)
-      result <- processTransactionImpl(transaction, blockHashOpt)
+      result <- processTransactionImpl(transaction, blockHashOpt, newTags)
     } yield {
       val txid = transaction.txIdBE
       val changeOutputs = result.updatedIncoming.length
@@ -159,7 +161,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processTransactionImpl(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[ProcessTxResult] = {
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
 
     logger.debug(
       s"Processing transaction=${transaction.txIdBE} with blockHash=$blockHashOpt")
@@ -172,7 +175,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
             .flatMap {
               // no existing elements found
               case Vector() =>
-                processNewIncomingTx(transaction, blockHashOpt)
+                processNewIncomingTx(transaction, blockHashOpt, newTags)
                   .map(_.toVector)
 
               case txos: Vector[SpendingInfoDb] =>
@@ -366,7 +369,8 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     */
   private def processNewIncomingTx(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Seq[SpendingInfoDb]] = {
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[Seq[SpendingInfoDb]] = {
     addressDAO.findAll().flatMap { addrs =>
       val relevantOutsWithIdx: Seq[OutputWithIndex] = {
         val withIndex =
@@ -400,6 +404,46 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
           for {
             _ <- insertIncomingTransaction(transaction, totalIncoming)
+            addTagFs = addressTagDAOs.map { dao =>
+              newTags.find(_.typeName == dao.typeName) match {
+                case Some(newTag) =>
+                  val x = relevantOutsWithIdx.map { out =>
+                    val address = BitcoinAddress
+                      .fromScriptPubKey(out.output.scriptPubKey,
+                                        networkParameters)
+                      .get
+                    dao.create(address, newTag)
+                  }
+                  Future.sequence(x)
+                case None =>
+                  for {
+                    outputs <- spendingInfoDAO.findOutputsBeingSpent(
+                      transaction)
+                    address = BitcoinAddress
+                      .fromScriptPubKey(outputs.head.output.scriptPubKey,
+                                        networkParameters)
+                      .get
+                    tag <- dao.read(address)
+
+                  } yield {
+                    val addedTagFs = relevantOutsWithIdx
+                      .map { out =>
+                        val address = BitcoinAddress
+                          .fromScriptPubKey(out.output.scriptPubKey,
+                                            networkParameters)
+                          .get
+                        dao.create(address,
+                                   tag.get
+                                     .asInstanceOf[AddressTagDb[_]]
+                                     .tag
+                                     .asInstanceOf[AddressTag])
+                      }
+                    Future.sequence(addedTagFs)
+                  }
+              }
+
+            }
+            _ <- Future.sequence(addTagFs)
             utxos <- addUTXOsFut(outputsWithIndex, transaction, blockHashOpt)
           } yield utxos
       }

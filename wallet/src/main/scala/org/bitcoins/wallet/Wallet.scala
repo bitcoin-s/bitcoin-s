@@ -7,6 +7,7 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil
@@ -27,14 +28,22 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     */
   override def lock(): LockedWalletApi = {
     logger.debug(s"Locking wallet")
-    LockedWallet(nodeApi, chainQueryApi)
+    LockedWallet(nodeApi, chainQueryApi, addressTagDAOs)
   }
 
   override def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] = {
+      fromAccount: AccountDb): Future[Transaction] =
+    sendToAddress(address, amount, feeRate, fromAccount, Vector.empty)
+
+  def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      newTags: Vector[AddressTag]): Future[Transaction] = {
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
@@ -50,7 +59,8 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
                                  feeRate = feeRate,
                                  inputAmount = txBuilder.creditingAmount,
                                  sentAmount = txBuilder.destinationAmount,
-                                 blockHashOpt = None)
+                                 blockHashOpt = None,
+                                 newTags = newTags)
     } yield {
       logger.debug(
         s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")
@@ -116,7 +126,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
     accountCreationF
-      .map(_ => Wallet(keyManager, nodeApi, chainQueryApi))
+      .map(_ => Wallet(keyManager, nodeApi, chainQueryApi, addressTagDAOs))
   }
 }
 
@@ -126,7 +136,8 @@ object Wallet extends WalletLogger {
   private case class WalletImpl(
       override val keyManager: BIP39KeyManager,
       override val nodeApi: NodeApi,
-      override val chainQueryApi: ChainQueryApi
+      override val chainQueryApi: ChainQueryApi,
+      override val addressTagDAOs: Vector[AddressTagDAO[_, _, _]]
   )(
       implicit override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
@@ -135,10 +146,11 @@ object Wallet extends WalletLogger {
   def apply(
       keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi)(
+      chainQueryApi: ChainQueryApi,
+      addressTagDAOs: Vector[AddressTagDAO[_, _, _]])(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet = {
-    WalletImpl(keyManager, nodeApi, chainQueryApi)
+    WalletImpl(keyManager, nodeApi, chainQueryApi, addressTagDAOs)
   }
 
   /** Creates the level 0 account for the given HD purpose */

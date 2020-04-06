@@ -52,7 +52,8 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
                                         feeRate = SatoshisPerByte(Satoshis(3)),
                                         inputAmount = Satoshis(4000),
                                         sentAmount = Satoshis(3000),
-                                        blockHashOpt = None)
+                                        blockHashOpt = None,
+                                        Vector.empty)
 
       updatedCoin <- wallet.spendingInfoDAO.findByScriptPubKey(
         addr.scriptPubKey)

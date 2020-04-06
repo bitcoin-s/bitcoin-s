@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
@@ -183,6 +184,28 @@ private[wallet] trait AddressHandling extends WalletLogger {
     for {
       account <- getDefaultAccountForType(addressType)
       address <- getNewAddressHelper(account, HDChainType.External)
+    } yield address
+  }
+
+  /** @inheritdoc */
+  override def getNewAddress(
+      addressType: AddressType,
+      tags: Vector[AddressTag]): Future[BitcoinAddress] = {
+    for {
+      account <- getDefaultAccountForType(addressType)
+      address <- getNewAddressHelper(account, HDChainType.External)
+
+      addTagFs = tags.map { tag =>
+        addressTagDAOs.find(_.typeName == tag.typeName) match {
+          case Some(dao) =>
+            dao.create(address, tag)
+          case None =>
+            throw new IllegalArgumentException(
+              s"AddressTag type ${tag.typeName} does not have a corresponding AddressTagDAO")
+        }
+      }
+
+      _ <- Future.sequence(addTagFs)
     } yield address
   }
 

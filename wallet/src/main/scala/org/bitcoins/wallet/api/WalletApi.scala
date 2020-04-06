@@ -3,7 +3,7 @@ package org.bitcoins.wallet.api
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
@@ -13,11 +13,17 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.{
+  AccountDb,
+  AddressDb,
+  AddressTagDAO,
+  SpendingInfoDb
+}
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -26,7 +32,7 @@ import scala.util.{Failure, Success}
 /**
   * API for the wallet project.
   *
-  * This wallet API is BIP344 compliant.
+  * This wallet API is BIP44 compliant.
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
@@ -37,6 +43,8 @@ sealed trait WalletApi {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
+
+  private[wallet] val addressTagDAOs: Vector[AddressTagDAO[_, _, _]]
 
   def chainParams: ChainParams = walletConfig.chain
 
@@ -186,6 +194,16 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     } yield address
   }
 
+  def getNewAddress(
+      addressType: AddressType,
+      tags: Vector[AddressTag]): Future[BitcoinAddress]
+
+  def getNewAddress(tags: Vector[AddressTag]): Future[BitcoinAddress] = {
+    for {
+      address <- getNewAddress(walletConfig.defaultAddressType, tags)
+    } yield address
+  }
+
   /**
     * Mimics the `getaddressinfo` RPC call in Bitcoin Core
     *
@@ -250,7 +268,8 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       case Right(km) =>
         val w = Wallet(keyManager = km,
                        nodeApi = nodeApi,
-                       chainQueryApi = chainQueryApi)
+                       chainQueryApi = chainQueryApi,
+                       addressTagDAOs = addressTagDAOs)
         Right(w)
       case Left(err) => Left(err)
     }

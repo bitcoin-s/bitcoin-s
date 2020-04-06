@@ -32,6 +32,8 @@ abstract class LockedWallet
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
 
+  private[wallet] val addressTagDAOs: Vector[AddressTagDAO[_, _, _]]
+
   override def isEmpty(): Future[Boolean] =
     for {
       addressCount <- addressDAO.count()
@@ -167,14 +169,18 @@ abstract class LockedWallet
 object LockedWallet {
   private case class LockedWalletImpl(
       override val nodeApi: NodeApi,
-      override val chainQueryApi: ChainQueryApi)(
+      override val chainQueryApi: ChainQueryApi,
+      override val addressTagDAOs: Vector[AddressTagDAO[_, _, _]])(
       implicit val ec: ExecutionContext,
       val walletConfig: WalletAppConfig)
-      extends LockedWallet {}
+      extends LockedWallet
 
-  def apply(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
+  def apply(
+      nodeApi: NodeApi,
+      chainQueryApi: ChainQueryApi,
+      addressTagDAO: Vector[AddressTagDAO[_, _, _]])(
       implicit ec: ExecutionContext,
       config: WalletAppConfig): LockedWallet =
-    LockedWalletImpl(nodeApi, chainQueryApi)
+    LockedWalletImpl(nodeApi, chainQueryApi, addressTagDAO)
 
 }
