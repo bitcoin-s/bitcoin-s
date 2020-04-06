@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.script.ptlc
 
+import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   ECAdaptorSignature,
@@ -34,8 +35,10 @@ import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   P2WSHV0SpendingInfoSingle
 }
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 /** 222 (witness) + 22 (p2wpkh output) */
 case class PTLCTxBuilder(
@@ -177,8 +180,15 @@ case class PTLCTxBuilder(
 
       TransactionSignatureCreator.createSig(
         sigComponent,
-        adaptorSign = ???, // TODO: Adapt here
-        HashType.sigHashAll)
+        adaptorSign = { bytes =>
+          ECAdaptorSignature(
+            ByteVector(
+              NativeSecp256k1.adaptorSign(bytes.toArray,
+                                          adaptorPoint.bytes.toArray,
+                                          fundingPrivKey.bytes.toArray)))
+        }, // TODO: Adapt here
+        HashType.sigHashAll
+      )
     }
   }
 
@@ -211,8 +221,11 @@ case class PTLCTxBuilder(
                                                         HashType.sigHashAll)
       // TODO: Verify remoteSig of hash
 
-      // TODO: Complete remoteSig
-      val completeRemoteSig: ECDigitalSignature = ???
+      val completeRemoteSig: ECDigitalSignature =
+        ECDigitalSignature.fromBytes(
+          ByteVector(
+            NativeSecp256k1.adaptorAdapt(adaptorSecret.bytes.toArray,
+                                         remoteSig.adaptedSig.toArray)))
       val partialSig = PartialSignature(payerFundingKey, completeRemoteSig)
 
       createSignedSpendingTx(partialSig, finalAddress, fundingPrivKey)
@@ -251,8 +264,14 @@ case class PTLCTxBuilder(
       .witnesses
       .head
       .asInstanceOf[P2WSHWitnessV0]
-    val sig = witness.signatures.find(???)
+
     // TOOD: Extract secret
-    ???
+    val tryComputes = witness.signatures.map { sig =>
+      Try(
+        NativeSecp256k1.adaptorExtractSecret(sig.bytes.toArray,
+                                             adaptorSig.bytes.toArray,
+                                             adaptor.bytes.toArray))
+    }
+    ECPrivateKey.fromBytes(ByteVector(tryComputes.filter(_.isSuccess).head.get))
   }
 }
