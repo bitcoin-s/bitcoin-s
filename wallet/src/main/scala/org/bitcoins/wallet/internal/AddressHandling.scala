@@ -242,14 +242,24 @@ private[wallet] trait AddressHandling extends WalletLogger {
     for {
       account <- getDefaultAccountForType(addressType)
       addresses <- addressDAO.getUnusedAddresses(account.hdAccount)
-    } yield addresses.head.address
+      address <- if (addresses.isEmpty) {
+        getNewAddress(account.hdAccount)
+      } else {
+        Future.successful(addresses.head.address)
+      }
+    } yield address
   }
 
   def getUnusedAddress: Future[BitcoinAddress] = {
     for {
       account <- getDefaultAccount()
       addresses <- addressDAO.getUnusedAddresses(account.hdAccount)
-    } yield addresses.head.address
+      address <- if (addresses.isEmpty) {
+        getNewAddress(account.hdAccount)
+      } else {
+        Future.successful(addresses.head.address)
+      }
+    } yield address
   }
 
   def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
