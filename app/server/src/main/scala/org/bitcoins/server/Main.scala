@@ -16,7 +16,7 @@ import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.AccountDAO
+import org.bitcoins.wallet.models.{AccountDAO, StorageLocationTagDAO}
 import org.bitcoins.wallet.{LockedWallet, Wallet}
 
 import scala.concurrent.duration._
@@ -89,6 +89,8 @@ object Main extends App {
     logger.error(s"Error on server startup!", err)
   }
 
+  private val storageLocationTagDAO = StorageLocationTagDAO()
+
   /** Checks if the user already has a wallet */
   private def hasWallet(): Future[Boolean] = {
     val walletDB = walletConf.dbPath resolve walletConf.dbName
@@ -118,7 +120,8 @@ object Main extends App {
     hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
-        val locked = LockedWallet(nodeApi, chainQueryApi)
+        val locked =
+          LockedWallet(nodeApi, chainQueryApi, Vector(storageLocationTagDAO))
 
         // TODO change me when we implement proper password handling
         locked.unlock(BIP39KeyManager.badPassphrase, bip39PasswordOpt) match {
@@ -141,7 +144,11 @@ object Main extends App {
         }
 
         logger.info(s"Creating new wallet")
-        val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
+        val unInitializedWallet =
+          Wallet(keyManager,
+                 nodeApi,
+                 chainQueryApi,
+                 Vector(storageLocationTagDAO))
 
         Wallet.initialize(wallet = unInitializedWallet,
                           bip39PasswordOpt = bip39PasswordOpt)
