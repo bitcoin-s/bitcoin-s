@@ -140,6 +140,8 @@ bitcoin-s {
         addressGapLimit = 20
 
         discoveryBatchSize = 100
+
+        requiredConfirmations = 6
     }
 }
 
