@@ -167,6 +167,14 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** Updates the `blockHash` field */
   def copyWithBlockHash(blockHash: DoubleSha256DigestBE): SpendingInfoType
 
+  state match {
+    case TxoState.ConfirmedSpent | TxoState.ConfirmedReceived =>
+      require(blockHash.isDefined,
+              "Transaction cannot be confirmed without a blockHash")
+    case _: TxoState =>
+      ()
+  }
+
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
     */

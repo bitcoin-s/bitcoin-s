@@ -43,6 +43,45 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     spendingInfoDAO.findAllUnspentForAccount(hdAccount)
   }
 
+  protected def updateUtxoConfirmedState(
+      txo: SpendingInfoDb,
+      blockHash: DoubleSha256DigestBE): Future[SpendingInfoDb] = {
+    for {
+      confsOpt <- chainQueryApi.getNumberOfConfirmations(blockHash)
+      stateChange <- {
+        confsOpt match {
+          case None =>
+            Future.successful(txo)
+          case Some(confs) =>
+            txo.state match {
+              case TxoState.PendingConfirmationsReceived |
+                  TxoState.DoesNotExist =>
+                if (confs >= walletConfig.requiredConfirmations) {
+                  spendingInfoDAO.update(
+                    txo.copyWithState(TxoState.ConfirmedReceived))
+                } else {
+                  Future.successful(
+                    txo.copyWithState(TxoState.PendingConfirmationsReceived))
+                }
+              case TxoState.PendingConfirmationsSpent =>
+                if (confs >= walletConfig.requiredConfirmations) {
+                  spendingInfoDAO.update(
+                    txo.copyWithState(TxoState.ConfirmedSpent))
+                } else {
+                  Future.successful(txo)
+                }
+              case TxoState.Reserved =>
+                // We should keep the utxo as reserved so it is not used in
+                // a future transaction that it should not be in
+                Future.successful(txo)
+              case TxoState.ConfirmedReceived | TxoState.ConfirmedSpent =>
+                Future.successful(txo)
+            }
+        }
+      }
+    } yield stateChange
+  }
+
   /**
     * Tries to convert the provided spk to an address, and then checks if we have
     * it in our address table
