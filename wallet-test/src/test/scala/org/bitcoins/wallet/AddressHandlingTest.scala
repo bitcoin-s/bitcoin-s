@@ -1,19 +1,23 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.scalatest.FutureOutcome
 
 class AddressHandlingTest extends BitcoinSWalletTest {
-  type FixtureParam = Wallet
+  type FixtureParam = FundedWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNewWallet2Accounts(test)
+    withFundedWallet(test)
   }
 
   behavior of "AddressHandling"
 
   it must "generate a new address for the default account and then find it" in {
-    wallet: Wallet =>
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
       val addressF = wallet.getNewAddress()
 
       for {
@@ -25,7 +29,8 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "generate an address for a non default account and then find it" in {
-    wallet: Wallet =>
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
       val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       val addressF = wallet.getNewAddress(account1)
       for {
@@ -44,4 +49,23 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       }
   }
 
+  it must "generate the same unused address until it receives funds" in {
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
+
+      for {
+        address1 <- wallet.getUnusedAddress
+        exists <- wallet.contains(address1, None)
+        _ = assert(exists, s"Wallet must contain address after generating it")
+        address2 <- wallet.getUnusedAddress
+        _ = assert(address1 == address2, "Must generate same address")
+        _ <- wallet.sendToAddress(address1,
+                                  Satoshis(10000),
+                                  SatoshisPerVirtualByte.one)
+        address3 <- wallet.getUnusedAddress
+      } yield {
+        assert(address1 != address3, "Must generate a new address")
+        assert(address2 != address3, "Must generate a new address")
+      }
+  }
 }
