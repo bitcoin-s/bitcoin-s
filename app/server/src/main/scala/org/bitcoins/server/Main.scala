@@ -163,7 +163,7 @@ object Main extends App {
       wallet.processBlock(block).map(_ => ())
     }
     lazy val onHeaders: OnBlockHeadersReceived = { headers =>
-      wallet.updateTxoStatesFromHeader(headers.last).map(_ => ())
+      wallet.updateUtxoPendingStates(headers.last).map(_ => ())
     }
     if (nodeConf.isSPVEnabled) {
       Future.successful(
