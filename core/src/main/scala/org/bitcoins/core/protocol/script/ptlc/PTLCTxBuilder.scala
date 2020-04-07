@@ -1,6 +1,5 @@
 package org.bitcoins.core.protocol.script.ptlc
 
-import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.{
   ECAdaptorSignature,
@@ -35,7 +34,6 @@ import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   P2WSHV0SpendingInfoSingle
 }
-import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
