@@ -272,9 +272,11 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
           reject(ValidationRejection("failure", Some(exception)))
         case Success(ClaimPTLC(id)) =>
           complete {
-            wallet.claimPTLC(id).map { tx =>
-              Server.httpSuccess(tx.hex)
-            }
+            for {
+              tx <- wallet.claimPTLC(id)
+              _ <- node.broadcastTransaction(tx)
+            } yield Server.httpSuccess(
+              s"Successfully broadcasted tx: ${tx.txIdBE.hex}\n\n${tx.hex}")
           }
       }
 
