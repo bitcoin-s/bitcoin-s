@@ -173,6 +173,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     addrF
   }
 
+  /** @inheritdoc */
   def getAddress(
       account: AccountDb,
       chainType: HDChainType,
@@ -238,6 +239,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  /** @inheritdoc */
   def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress] = {
     for {
       account <- getDefaultAccountForType(addressType)
@@ -250,6 +252,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
     } yield address
   }
 
+  /** @inheritdoc */
   def getUnusedAddress: Future[BitcoinAddress] = {
     for {
       account <- getDefaultAccount()
