@@ -18,4 +18,7 @@ object ECAdaptorSignature extends Factory[ECAdaptorSignature] {
     require(bytes.length == 65 + 97)
     ECAdaptorSignature(bytes.take(65), bytes.drop(65))
   }
+
+  def empty(): ECAdaptorSignature =
+    fromBytes(ByteVector.fill(65 + 97)(0.toByte))
 }

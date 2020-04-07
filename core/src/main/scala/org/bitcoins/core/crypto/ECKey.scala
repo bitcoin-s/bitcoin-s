@@ -6,6 +6,7 @@ import java.security.SecureRandom
 import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinSUtil, _}
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator
@@ -90,6 +91,13 @@ sealed abstract class ECPrivateKey
       bytes.toArray,
       adaptorSignature.adaptedSig.toArray)
     ECDigitalSignature.fromBytes(ByteVector(sigBytes))
+  }
+
+  def completeAdaptorSignature(
+      adaptorSignature: ECAdaptorSignature,
+      hashType: HashType): ECDigitalSignature = {
+    val completedSig = completeAdaptorSignature(adaptorSignature)
+    ECDigitalSignature(completedSig.bytes ++ ByteVector.fromByte(hashType.byte))
   }
 
   /** Signifies if the this private key corresponds to a compressed public key */

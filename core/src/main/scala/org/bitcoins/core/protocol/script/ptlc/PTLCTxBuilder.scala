@@ -178,7 +178,7 @@ case class PTLCTxBuilder(
 
       TransactionSignatureCreator.createSig(
         sigComponent,
-        adaptorSign = fundingPrivKey.adaptorSign(adaptorPoint, _),
+        fundingPrivKey.adaptorSign(adaptorPoint, _),
         HashType.sigHashAll
       )
     }
@@ -220,8 +220,9 @@ case class PTLCTxBuilder(
       )
 
       val completeRemoteSig: ECDigitalSignature =
-        adaptorSecret.completeAdaptorSignature(remoteSig)
-      val partialSig = PartialSignature(payerFundingKey, completeRemoteSig)
+        adaptorSecret.completeAdaptorSignature(remoteSig, HashType.sigHashAll)
+      val partialSig =
+        PartialSignature(payerFundingKey, completeRemoteSig)
 
       createSignedSpendingTx(partialSig, finalAddress, fundingPrivKey)
     }
