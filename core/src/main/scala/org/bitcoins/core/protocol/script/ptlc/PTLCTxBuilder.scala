@@ -180,13 +180,7 @@ case class PTLCTxBuilder(
 
       TransactionSignatureCreator.createSig(
         sigComponent,
-        adaptorSign = { bytes =>
-          ECAdaptorSignature(
-            ByteVector(
-              NativeSecp256k1.adaptorSign(fundingPrivKey.bytes.toArray,
-                                          adaptorPoint.bytes.toArray,
-                                          bytes.toArray)))
-        },
+        adaptorSign = fundingPrivKey.adaptorSign(adaptorPoint, _),
         HashType.sigHashAll
       )
     }
@@ -221,19 +215,14 @@ case class PTLCTxBuilder(
                                                         HashType.sigHashAll)
 
       require(
-        NativeSecp256k1.adaptorVerify(remoteSig.adaptedSig.toArray,
-                                      payerFundingKey.bytes.toArray,
-                                      hash.bytes.toArray,
-                                      adaptorSecret.publicKey.bytes.toArray,
-                                      remoteSig.dleqProof.toArray),
+        payerFundingKey.adaptorVerify(hash.bytes,
+                                      adaptorSecret.publicKey,
+                                      remoteSig),
         "Counter-party has given an incorrect adaptor signature"
       )
 
       val completeRemoteSig: ECDigitalSignature =
-        ECDigitalSignature.fromBytes(
-          ByteVector(
-            NativeSecp256k1.adaptorAdapt(adaptorSecret.bytes.toArray,
-                                         remoteSig.adaptedSig.toArray)))
+        adaptorSecret.completeAdaptorSignature(remoteSig)
       val partialSig = PartialSignature(payerFundingKey, completeRemoteSig)
 
       createSignedSpendingTx(partialSig, finalAddress, fundingPrivKey)
@@ -274,11 +263,9 @@ case class PTLCTxBuilder(
       .asInstanceOf[P2WSHWitnessV0]
 
     val tryComputes = witness.signatures.map { sig =>
-      Try(
-        NativeSecp256k1.adaptorExtractSecret(sig.bytes.toArray,
-                                             adaptorSig.bytes.toArray,
-                                             adaptor.bytes.toArray))
+      Try(adaptor.extractAdaptorSecret(adaptorSig, sig))
     }
-    ECPrivateKey.fromBytes(ByteVector(tryComputes.filter(_.isSuccess).head.get))
+
+    tryComputes.filter(_.isSuccess).head.get
   }
 }

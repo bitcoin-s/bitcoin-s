@@ -88,7 +88,7 @@ sealed abstract class ECPrivateKey
       adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
     val sigBytes = NativeSecp256k1.adaptorAdapt(
       bytes.toArray,
-      adaptorSignature.sigBytes.toArray)
+      adaptorSignature.adaptedSig.toArray)
     ECDigitalSignature.fromBytes(ByteVector(sigBytes))
   }
 
@@ -349,11 +349,11 @@ sealed abstract class ECPublicKey extends BaseECKey {
       msg: ByteVector,
       adaptorPoint: ECPublicKey,
       adaptorSignature: ECAdaptorSignature): Boolean = {
-    NativeSecp256k1.adaptorVerify(adaptorSignature.sigBytes.toArray,
+    NativeSecp256k1.adaptorVerify(adaptorSignature.adaptedSig.toArray,
                                   bytes.toArray,
                                   msg.toArray,
                                   adaptorPoint.bytes.toArray,
-                                  adaptorSignature.proofBytes.toArray)
+                                  adaptorSignature.dleqProof.toArray)
   }
 
   def extractAdaptorSecret(
@@ -361,7 +361,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
       signature: ECDigitalSignature): ECPrivateKey = {
     val secretBytes = NativeSecp256k1.adaptorExtractSecret(
       signature.bytes.toArray,
-      adaptorSignature.sigBytes.toArray,
+      adaptorSignature.adaptedSig.toArray,
       bytes.toArray)
 
     ECPrivateKey(ByteVector(secretBytes))
