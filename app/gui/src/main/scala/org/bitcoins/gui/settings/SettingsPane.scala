@@ -2,7 +2,6 @@ package org.bitcoins.gui.settings
 
 import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.gui.GlobalData
-import org.bitcoins.gui.WalletGUI.stage
 import scalafx.scene.control.CheckBox
 import scalafx.scene.layout.StackPane
 
@@ -14,9 +13,9 @@ class SettingsPane {
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = {
         if (!selected.value) {
-          stage.scene.value.getStylesheets.removeAll("/themes/dark-theme.css")
+          Themes.DarkTheme.undoTheme
         } else {
-          stage.scene.value.getStylesheets.add("/themes/dark-theme.css")
+          Themes.DarkTheme.applyTheme
         }
         ()
       }
