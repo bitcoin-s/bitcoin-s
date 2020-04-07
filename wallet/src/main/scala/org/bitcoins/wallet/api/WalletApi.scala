@@ -372,6 +372,34 @@ trait UnlockedWalletApi extends LockedWalletApi {
     } yield tx
   }
 
+  /**
+    *
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction]
+
+  /**
+    * Sends money from the default account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRate: FeeUnit
+  ): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendToAddresses(addresses, amounts, feeRate, account)
+    } yield tx
+  }
+
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[Wallet]
 
   /**

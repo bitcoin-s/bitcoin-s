@@ -63,6 +63,42 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
+  override def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction] = {
+    require(amounts.size == addresses.size,
+            "Must have an amount for every address")
+    val destinations = addresses.zip(amounts).map {
+      case (address, amount) =>
+        logger.info(s"Sending $amount to $address at feerate $feeRate")
+        TransactionOutput(amount, address.scriptPubKey)
+    }
+    for {
+      txBuilder <- fundRawTransactionInternal(destinations = destinations,
+                                              feeRate = feeRate,
+                                              fromAccount = fromAccount,
+                                              keyManagerOpt = Some(keyManager))
+      signed <- txBuilder.sign
+      ourOuts <- findOurOuts(signed)
+      _ <- processOurTransaction(transaction = signed,
+                                 feeRate = feeRate,
+                                 inputAmount = txBuilder.creditingAmount,
+                                 sentAmount = txBuilder.destinationAmount,
+                                 blockHashOpt = None)
+    } yield {
+      logger.debug(
+        s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")
+
+      logger.trace(s"Change output(s) for transaction=${signed.txIdBE.hex}")
+      ourOuts.foreach { out =>
+        logger.trace(s"    $out")
+      }
+      signed
+    }
+  }
+
   /** Creates a new account my reading from our account database, finding the last account,
     * and then incrementing the account index by one, and then creating that account
     *
