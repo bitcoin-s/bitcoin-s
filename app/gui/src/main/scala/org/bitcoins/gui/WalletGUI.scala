@@ -1,11 +1,13 @@
 package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
+import org.bitcoins.gui.settings.SettingsPane
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
+import scalafx.scene.control.TabPane.TabClosingPolicy
 import scalafx.scene.control._
 import scalafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
 
@@ -51,7 +53,7 @@ object WalletGUI extends JFXApp {
   private val model = new WalletGUIModel()
 
   private val getNewAddressButton = new Button {
-    text = "Get New Addreses"
+    text = "Get New Address"
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onGetNewAddress()
     }
@@ -76,9 +78,28 @@ object WalletGUI extends JFXApp {
     bottom = statusLabel
   }
 
+  private val settingsPane = new SettingsPane
+
+  private val tabPane: TabPane = new TabPane {
+
+    val walletTab: Tab = new Tab {
+      text = "Wallet"
+      content = borderPane
+    }
+
+    val settingsTab: Tab = new Tab {
+      text = "Settings"
+      content = settingsPane.view
+    }
+
+    tabs = Seq(walletTab, settingsTab)
+
+    tabClosingPolicy = TabClosingPolicy.Unavailable
+  }
+
   private val rootView = new StackPane {
     children = Seq(
-      borderPane,
+      tabPane,
       glassPane
     )
   }
@@ -88,7 +109,11 @@ object WalletGUI extends JFXApp {
     scene = new Scene(rootView)
   }
 
-  private val taskRunner = new TaskRunner(resultArea, glassPane, statusLabel)
+  if (GlobalData.defaultDarkTheme) {
+    stage.scene.value.getStylesheets.add("/themes/dark-theme.css")
+  }
+
+  private val taskRunner = new TaskRunner(resultArea, glassPane)
   model.taskRunner = taskRunner
 
   Platform.runLater(sendButton.requestFocus())
