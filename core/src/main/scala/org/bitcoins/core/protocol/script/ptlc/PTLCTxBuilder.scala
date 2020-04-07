@@ -261,10 +261,8 @@ case class PTLCTxBuilder(
       .head
       .asInstanceOf[P2WSHWitnessV0]
 
-    val tryComputes = witness.signatures.map { sig =>
-      Try(adaptor.extractAdaptorSecret(adaptorSig, sig))
-    }
-
-    tryComputes.filter(_.isSuccess).head.get
+    val sig = witness.signatures.last
+    val sigWithoutHashType = ECDigitalSignature(sig.bytes.init)
+    adaptor.extractAdaptorSecret(adaptorSig, sigWithoutHashType)
   }
 }
