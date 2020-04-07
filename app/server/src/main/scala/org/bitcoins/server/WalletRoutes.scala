@@ -234,7 +234,8 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
         case Success(AddPTLCSig(sig)) =>
           complete {
             wallet.addPTLCSig(sig).map { db =>
-              Server.httpSuccess(s"Added signatures for PTLC ${db.invoiceId}")
+              Server.httpSuccess(
+                s"Added signatures for PTLC ${db.invoiceId.hex}")
             }
           }
       }
