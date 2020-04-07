@@ -28,12 +28,13 @@ object Deps {
     val asyncNewScalaV = "0.10.0"
 
     val flywayV = "6.3.2"
-    val postgresV = "9.4.1210"
+    val postgresV = "42.2.12"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
     val sqliteV = "3.30.1"
     val scalameterV = "0.17"
     val scalamockV = "4.4.0"
+    val pgEmbeddedV = "0.13.3"
 
     // Wallet/node/chain server deps
     val oldMicroPickleV = "0.7.4"
@@ -71,10 +72,10 @@ object Deps {
 
     val scalaFx = "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
     lazy val osName = System.getProperty("os.name") match {
-      case n if n.startsWith("Linux") => "linux"
-      case n if n.startsWith("Mac") => "mac"
+      case n if n.startsWith("Linux")   => "linux"
+      case n if n.startsWith("Mac")     => "mac"
       case n if n.startsWith("Windows") => "win"
-      case _ => throw new Exception("Unknown platform!")
+      case _                            => throw new Exception("Unknown platform!")
     }
     // Not sure if all of these are needed, some might be possible to remove
     lazy val javaFxBase = "org.openjfx" % s"javafx-base" % V.javaFxV classifier osName withSources () withJavadoc ()
@@ -84,7 +85,13 @@ object Deps {
     lazy val javaFxMedia = "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
     lazy val javaFxSwing = "org.openjfx" % s"javafx-swing" % V.javaFxV classifier osName withSources () withJavadoc ()
     lazy val javaFxWeb = "org.openjfx" % s"javafx-web" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxDeps = List(javaFxBase, javaFxControls, javaFxFxml, javaFxGraphics, javaFxMedia, javaFxSwing, javaFxWeb)
+    lazy val javaFxDeps = List(javaFxBase,
+                               javaFxControls,
+                               javaFxFxml,
+                               javaFxGraphics,
+                               javaFxMedia,
+                               javaFxSwing,
+                               javaFxWeb)
 
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
@@ -122,7 +129,7 @@ object Deps {
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
-    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources() withJavadoc()
+    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
   }
 
   object Test {
@@ -139,6 +146,7 @@ object Deps {
     val playJson = Compile.playJson % "test"
     val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
     val scalameter = "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
+    val pgEmbedded = "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
   }
 
   val chain = List(
@@ -202,8 +210,8 @@ object Deps {
     Compile.sourcecode,
     Compile.logback,
     Compile.sqlite,
+    Compile.postgres,
     Compile.slickHikari,
-
     Test.scalaTest
   )
 
@@ -272,7 +280,7 @@ object Deps {
 
   def keyManager(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
-    else Compile.newMicroJson,
+    else Compile.newMicroJson
   )
 
   val keyManagerTest = List(
@@ -287,7 +295,8 @@ object Deps {
   )
 
   val walletTest = List(
-    Test.akkaTestkit
+    Test.akkaTestkit,
+    Test.pgEmbedded
   )
 
   val docs = List(

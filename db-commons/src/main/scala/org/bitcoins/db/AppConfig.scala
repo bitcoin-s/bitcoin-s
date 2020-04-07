@@ -1,32 +1,24 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.protocol.blockchain.ChainParams
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{Files, Path, Paths}
 
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.config.RegTest
+import ch.qos.logback.classic.Level
 import com.typesafe.config._
+import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.protocol.blockchain.{
+  ChainParams,
+  MainNetChainParams,
+  RegTestNetChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.core.util.BitcoinSLogger
+import slick.basic.DatabaseConfig
 import slick.jdbc.SQLiteProfile
 import slick.jdbc.SQLiteProfile.api._
 
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
-import slick.basic.DatabaseConfig
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
-import org.bitcoins.core.protocol.blockchain.TestNetChainParams
-import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
-import java.nio.file.Files
-
-import scala.util.Properties
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Properties, Success, Try}
 import scala.util.matching.Regex
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import ch.qos.logback.classic.Level
 
 /**
   * Everything needed to configure functionality
@@ -128,6 +120,17 @@ abstract class AppConfig extends BitcoinSLogger {
   lazy val jdbcUrl: String = {
     dbConfig.config.getString("db.url")
   }
+
+  lazy val driverName: String = {
+    val parts = jdbcUrl.split(":")
+    require(parts.size >= 2 && parts(0) == "jdbc",
+            s"`${jdbcUrl}` must be a valid JDBC URL")
+    parts(1)
+  }
+
+  lazy val username: String = dbConfig.config.getString("db.username")
+
+  lazy val password: String = dbConfig.config.getString("db.password")
 
   /**
     * The configuration details for connecting/using the database for our projects
