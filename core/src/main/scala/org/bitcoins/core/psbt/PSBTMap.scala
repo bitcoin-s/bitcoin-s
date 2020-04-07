@@ -14,7 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{CryptoUtil, Factory, SeqWrapper}
-import org.bitcoins.core.wallet.signer.{BitcoinSigner, BitcoinSignerSingle}
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits.ByteVector
 
@@ -670,9 +670,9 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       nonWitnessTxOpt: Option[Transaction])(
       implicit ec: ExecutionContext): Future[InputPSBTMap] = {
     val sigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
-      BitcoinSignerSingle.signSingle(spendingInfoSingle,
-                                     unsignedTx,
-                                     isDummySignature = false)
+      BitcoinSigner.signSingle(spendingInfoSingle,
+                               unsignedTx,
+                               isDummySignature = false)
     }
 
     val sigFs = Future.sequence(sigsF)

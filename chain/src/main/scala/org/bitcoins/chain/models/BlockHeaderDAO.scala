@@ -159,11 +159,13 @@ case class BlockHeaderDAO()(
           Future.successful(Vector.empty)
       }
     } yield {
-      headerOpt.map { header =>
-        val connectedHeaders =
-          Blockchain.connectWalkBackwards(header, headers)
-        connectedHeaders.reverse
-      }.getOrElse(Vector.empty)
+      headerOpt
+        .map { header =>
+          val connectedHeaders =
+            Blockchain.connectWalkBackwards(header, headers)
+          connectedHeaders.reverse
+        }
+        .getOrElse(Vector.empty)
     }
   }
 
