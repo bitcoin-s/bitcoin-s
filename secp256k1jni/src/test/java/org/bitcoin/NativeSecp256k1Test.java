@@ -231,27 +231,25 @@ public class NativeSecp256k1Test {
 
     @Test
     public void testAdaptorSign() throws AssertFailException {
-        byte[] msg = toByteArray("");
-        byte[] adaptor = toByteArray("");
-        byte[] seckey = toByteArray("");
-        String expectedAdaptorSig = "";
-        String expectedAdaptorProof = "";
+        byte[] msg = toByteArray("024BDD11F2144E825DB05759BDD9041367A420FAD14B665FD08AF5B42056E5E2");
+        byte[] adaptor = toByteArray("038D48057FC4CE150482114D43201B333BF3706F3CD527E8767CEB4B443AB5D349");
+        byte[] seckey = toByteArray("90AC0D5DC0A1A9AB352AFB02005A5CC6C4DF0DA61D8149D729FF50DB9B5A5215");
+        String expectedAdaptorSig = "01099C91AA1FE7F25C41085C1D3C9E73FE04A9D24DAC3F9C2172D6198628E57F47BB90E2AD6630900B69F55674C8AD74A419E6CE113C10A21A79345A6E47BC74C1";
+        String expectedAdaptorProof = "00AB34C2BF4EF119940CA374A8C5C7D5A244913E91FBC6A1FB77B5CD0F5DD33B07E96C2BE88A93C82C81D3FE246B7F8C4DF639C7DE77C48CF6FEB413C5CB7240FE708F403BA46194B3725280FC38E36CA97278BCDD8E3AD3C1EEF085CDA5AA4A0E";
 
         byte[] resultArr = NativeSecp256k1.adaptorSign(seckey, adaptor, msg);
 
-        assertEquals(resultArr.length, 2, "testAdaptorSign");
-
-        String adaptorSig = toHex(resultArr).toLowerCase();
+        String adaptorSig = toHex(resultArr);
         assertEquals(adaptorSig, expectedAdaptorSig + expectedAdaptorProof, "testAdaptorSign");
     }
 
     @Test
     public void testAdaptorVeirfy() throws AssertFailException {
-        byte[] msg = toByteArray("");
-        byte[] adaptorSig = toByteArray("");
-        byte[] adaptorProof = toByteArray("");
-        byte[] adaptor = toByteArray("");
-        byte[] pubkey = toByteArray("");
+        byte[] msg = toByteArray("024BDD11F2144E825DB05759BDD9041367A420FAD14B665FD08AF5B42056E5E2");
+        byte[] adaptorSig = toByteArray("01099C91AA1FE7F25C41085C1D3C9E73FE04A9D24DAC3F9C2172D6198628E57F47BB90E2AD6630900B69F55674C8AD74A419E6CE113C10A21A79345A6E47BC74C1");
+        byte[] adaptorProof = toByteArray("00AB34C2BF4EF119940CA374A8C5C7D5A244913E91FBC6A1FB77B5CD0F5DD33B07E96C2BE88A93C82C81D3FE246B7F8C4DF639C7DE77C48CF6FEB413C5CB7240FE708F403BA46194B3725280FC38E36CA97278BCDD8E3AD3C1EEF085CDA5AA4A0E");
+        byte[] adaptor = toByteArray("038D48057FC4CE150482114D43201B333BF3706F3CD527E8767CEB4B443AB5D349");
+        byte[] pubkey = toByteArray("03490CEC9A53CD8F2F664AEA61922F26EE920C42D2489778BB7C9D9ECE44D149A7");
 
         boolean result = NativeSecp256k1.adaptorVerify(adaptorSig, pubkey, msg, adaptor, adaptorProof);
 
@@ -260,25 +258,27 @@ public class NativeSecp256k1Test {
 
     @Test
     public void testAdaptorAdapt() throws AssertFailException {
-        byte[] secret = toByteArray("");
-        byte[] adaptorSig = toByteArray("");
+        byte[] secret = toByteArray("475697A71A74FF3F2A8F150534E9B67D4B0B6561FAB86FCAA51F8C9D6C9DB8C6");
+        byte[] adaptorSig = toByteArray("01099C91AA1FE7F25C41085C1D3C9E73FE04A9D24DAC3F9C2172D6198628E57F47BB90E2AD6630900B69F55674C8AD74A419E6CE113C10A21A79345A6E47BC74C1");
 
         byte[] resultArr = NativeSecp256k1.adaptorAdapt(secret, adaptorSig);
-
         String sigString = toHex(resultArr);
-        assertEquals(sigString , "" , "testAdaptorAdapt");
+        String expectedSig = "30440220099C91AA1FE7F25C41085C1D3C9E73FE04A9D24DAC3F9C2172D6198628E57F4702204D13456E98D8989043FD4674302CE90C432E2F8BB0269F02C72AAFEC60B72DE1";
+
+        assertEquals(sigString , expectedSig , "testAdaptorAdapt");
     }
 
     @Test
     public void testAdaptorExtractSecret() throws AssertFailException {
-        byte[] sig = toByteArray("".toLowerCase());
-        byte[] adaptorSig = toByteArray("");
-        byte[] adaptor = toByteArray("");
+        byte[] sig = toByteArray("30440220099C91AA1FE7F25C41085C1D3C9E73FE04A9D24DAC3F9C2172D6198628E57F4702204D13456E98D8989043FD4674302CE90C432E2F8BB0269F02C72AAFEC60B72DE1");
+        byte[] adaptorSig = toByteArray("01099C91AA1FE7F25C41085C1D3C9E73FE04A9D24DAC3F9C2172D6198628E57F47BB90E2AD6630900B69F55674C8AD74A419E6CE113C10A21A79345A6E47BC74C1");
+        byte[] adaptor = toByteArray("038D48057FC4CE150482114D43201B333BF3706F3CD527E8767CEB4B443AB5D349");
 
         byte[] resultArr = NativeSecp256k1.adaptorExtractSecret(sig, adaptorSig, adaptor);
 
-        String sigString = toHex(resultArr);
-        assertEquals(sigString , "" , "testAdaptorExtractSecret");
+        String expectedSecret = "475697A71A74FF3F2A8F150534E9B67D4B0B6561FAB86FCAA51F8C9D6C9DB8C6";
+        String secretString = toHex(resultArr);
+        assertEquals(secretString , expectedSecret , "testAdaptorExtractSecret");
     }
 
 
