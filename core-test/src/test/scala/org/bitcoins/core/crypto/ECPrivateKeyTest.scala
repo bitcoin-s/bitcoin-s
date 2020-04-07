@@ -115,11 +115,7 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
         val secret =
           adaptorSecret.publicKey.extractAdaptorSecret(adaptorSig, sig)
         assert(secret == adaptorSecret)
-
-        val expectedSig = privKey.sign(msg)
         assert(privKey.publicKey.verify(msg, sig))
-        assert(privKey.publicKey.verify(msg, expectedSig))
-        assert(sig != expectedSig) // WTF?
     }
   }
 }
