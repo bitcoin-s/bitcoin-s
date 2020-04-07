@@ -183,10 +183,10 @@ case class PTLCTxBuilder(
         adaptorSign = { bytes =>
           ECAdaptorSignature(
             ByteVector(
-              NativeSecp256k1.adaptorSign(bytes.toArray,
+              NativeSecp256k1.adaptorSign(fundingPrivKey.bytes.toArray,
                                           adaptorPoint.bytes.toArray,
-                                          fundingPrivKey.bytes.toArray)))
-        }, // TODO: Adapt here
+                                          bytes.toArray)))
+        },
         HashType.sigHashAll
       )
     }
@@ -219,7 +219,15 @@ case class PTLCTxBuilder(
       val hash =
         TransactionSignatureSerializer.hashForSignature(sigComponent,
                                                         HashType.sigHashAll)
-      // TODO: Verify remoteSig of hash
+
+      require(
+        NativeSecp256k1.adaptorVerify(remoteSig.adaptedSig.toArray,
+                                      payerFundingKey.bytes.toArray,
+                                      hash.bytes.toArray,
+                                      adaptorSecret.publicKey.bytes.toArray,
+                                      remoteSig.dleqProof.toArray),
+        "Counter-party has given an incorrect adaptor signature"
+      )
 
       val completeRemoteSig: ECDigitalSignature =
         ECDigitalSignature.fromBytes(
@@ -265,7 +273,6 @@ case class PTLCTxBuilder(
       .head
       .asInstanceOf[P2WSHWitnessV0]
 
-    // TOOD: Extract secret
     val tryComputes = witness.signatures.map { sig =>
       Try(
         NativeSecp256k1.adaptorExtractSecret(sig.bytes.toArray,
