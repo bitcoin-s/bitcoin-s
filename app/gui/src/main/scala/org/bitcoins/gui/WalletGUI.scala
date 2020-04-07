@@ -2,6 +2,7 @@ package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.gui.ptlc.PTLCPane
+import org.bitcoins.gui.temp.DemoPane
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
@@ -81,6 +82,8 @@ object WalletGUI extends JFXApp {
 
   private val ptlcPane = new PTLCPane(glassPane)
 
+  private val demoPane = new DemoPane()
+
   private val tabPane: TabPane = new TabPane {
 
     val walletTab: Tab = new Tab {
@@ -93,7 +96,12 @@ object WalletGUI extends JFXApp {
       content = ptlcPane.borderPane
     }
 
-    tabs = Seq(walletTab, ptlcTab)
+    val demoTab: Tab = new Tab {
+      text = "Compute Point"
+      content = demoPane.borderPane
+    }
+
+    tabs = Seq(walletTab, ptlcTab, demoTab)
 
     tabClosingPolicy = TabClosingPolicy.Unavailable
   }
