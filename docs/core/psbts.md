@@ -23,7 +23,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoSingle,
   ConditionalPath
@@ -111,7 +111,7 @@ val psbtFirstSigF =
       .flatMap(_.sign(inputIndex = 0, signer = privKey1))
 
 // Alternatively, you can use produce a signature with a BitcoinUTXOSpendingInfoSingle
-// using the BitcoinSingleSigner will return a PartialSignature that can be added to a PSBT
+// using the BitcoinSigner will return a PartialSignature that can be added to a PSBT
 
 // First we need to declare out spendingInfoSingle
 val outPoint = unsignedTransaction.inputs.head.previousOutput
@@ -128,7 +128,7 @@ val spendingInfoSingle = BitcoinUTXOSpendingInfoSingle(
   )
 
 // Then we can sign the transaction
-val signatureF = BitcoinSignerSingle.signSingle(
+val signatureF = BitcoinSigner.signSingle(
     spendingInfo = spendingInfoSingle,
     unsignedTx = unsignedTransaction,
     isDummySignature = false)

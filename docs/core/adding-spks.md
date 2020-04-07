@@ -80,20 +80,18 @@ sealed trait RawScriptUTXOSpendingInfoSingle extends RawScriptUTXOSpendingInfo {
   override def signers: Vector[Sign] = Vector(signer)
   override def requiredSigs: Int = 1
 }
-sealed trait BitcoinSignerFull[-SpendingInfo] {
+sealed trait BitcoinSigner[-SpendingInfo] {
   def sign(
         spendingInfo: UTXOSpendingInfoFull,
         unsignedTx: Transaction,
         isDummySignature: Boolean,
         spendingInfoToSatisfy: SpendingInfo)(
         implicit ec: ExecutionContext): Future[TxSigComponent]
-}
-sealed trait BitcoinSignerSingle[-SpendingInfo] {
+
   def signSingle(
         spendingInfo: UTXOSpendingInfoSingle,
         unsignedTx: Transaction,
-        isDummySignature: Boolean,
-        spendingInfoToSatisfy: SpendingInfo)(
+        isDummySignature: Boolean)(
         implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 sealed trait RawSingleKeyBitcoinSigner[-SpendingInfo <: RawScriptUTXOSpendingInfoFull with RawScriptUTXOSpendingInfoSingle] {
@@ -143,14 +141,11 @@ object BitcoinSigner {
         isDummySignature: Boolean,
         spendingInfoToSatisfy: UTXOSpendingInfoFull)(
         implicit ec: ExecutionContext): Future[TxSigComponent] = ???
-}
 
-object BitcoinSignerSingle {
   def signSingle(
       spendingInfo: UTXOSpendingInfoSingle,
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
-      spendingInfoToSatisfy: UTXOSpendingInfoSingle)(
+      isDummySignature: Boolean)(
       implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 
@@ -623,16 +618,11 @@ object P2PKWithTimeoutSigner extends P2PKWithTimeoutSigner
 
 ### Non-Nested Multi-Key Spending Info
 
-In this case we must create a new `BitcoinSignerSingle` and a normal `BitcoinSignerFull`, the latter of which requires implementing the `sign` function. For `MultiSignature` this looks like the following:
+In this case we must create a new `BitcoinSignerFull`, which requires implementing the `sign` function. For `MultiSignature` this looks like the following:
 
 ```scala mdoc:compile-only
-sealed abstract class MultiSigSignerSingle
-    extends BitcoinSignerSingle[MultiSignatureSpendingInfoSingle]
-
-object MultiSigSignerSingle extends MultiSigSignerSingle
-
 sealed abstract class MultiSigSigner
-    extends BitcoinSignerFull[MultiSignatureSpendingInfoFull] {
+    extends BitcoinSigner[MultiSignatureSpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfoFull,
@@ -643,13 +633,8 @@ sealed abstract class MultiSigSigner
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
-    val keysAndSigsF: Seq[Future[PartialSignature]] = spendingInfoToSatisfy.toSingles.zipWithIndex.map {
-      case (infoSingle, index) =>
-        MultiSigSignerSingle
-          .signSingle(spendingInfo.toSingle(index),
-                      unsignedTx,
-                      isDummySignature,
-                      infoSingle)
+    val keysAndSigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
+      signSingle(spendingInfoSingle, unsignedTx, isDummySignature)
     }
 
     val signaturesF = Future.sequence(keysAndSigsF).map(_.map(_.signature))
@@ -670,32 +655,14 @@ object MultiSigSigner extends MultiSigSigner
 
 ### Nested Spending Info
 
-When signing for a nested script structure, we must create a new `BitcoinSignerSingle` and a normal `BitcoinSignerFull`. For the single signer, you will likely only need to delegate with a call to `BitcoinSignerSingle.signSingle` because we only need a signature which will not likely require anything other than doing the signing on `spendingInfoToSatisfy.nestedSpendingInfo`. For the full signer, you will also need to make a delegating call with the `nestedSpendingInfo` to `BitcoinSigner.sign`, but you may also need to do whatever else is needed with the nested result to construct a correct `ScriptSignature`. For `ConditionalScriptSignature`, this all looks like:
+When signing for a nested script structure, we must create a new `BitcoinSignerFull`. You will need to make a delegating call with the `nestedSpendingInfo` to `BitcoinSigner.sign`, but you may also need to do whatever else is needed with the nested result to construct a correct `ScriptSignature`. For `ConditionalScriptSignature`, this all looks like:
 
 ```scala mdoc:compile-only
-sealed abstract class ConditionalSignerSingle
-    extends BitcoinSignerSingle[ConditionalSpendingInfoSingle] {
-
-  override def signSingle(
-      spendingInfo: UTXOSpendingInfoSingle,
-      unsignedTx: Transaction,
-      isDummySignature: Boolean,
-      spendingInfoToSatisfy: ConditionalSpendingInfoSingle)(
-      implicit ec: ExecutionContext): Future[PartialSignature] = {
-    BitcoinSignerSingle.signSingle(spendingInfo,
-                                   unsignedTx,
-                                   isDummySignature,
-                                   spendingInfoToSatisfy.nestedSpendingInfo)
-  }
-}
-
-object ConditionalSignerSingle extends ConditionalSignerSingle
-
 /** Delegates to get a ScriptSignature for the case being
   * spent and then adds an OP_TRUE or OP_FALSE
   */
 sealed abstract class ConditionalSigner
-    extends BitcoinSignerFull[ConditionalSpendingInfoFull] {
+    extends BitcoinSigner[ConditionalSpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfoFull,
