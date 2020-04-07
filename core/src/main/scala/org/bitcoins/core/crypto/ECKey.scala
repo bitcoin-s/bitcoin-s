@@ -74,6 +74,24 @@ sealed abstract class ECPrivateKey
       implicit ec: ExecutionContext): Future[ECDigitalSignature] =
     Future(sign(hash))
 
+  def adaptorSign(
+      adaptorPoint: ECPublicKey,
+      msg: ByteVector): ECAdaptorSignature = {
+    val sigWithProof = NativeSecp256k1.adaptorSign(bytes.toArray,
+                                                   adaptorPoint.bytes.toArray,
+                                                   msg.toArray)
+    val sigWithProofBytes = ByteVector(sigWithProof)
+    ECAdaptorSignature(sigWithProofBytes.take(65), sigWithProofBytes.drop(65))
+  }
+
+  def completeAdaptorSignature(
+      adaptorSignature: ECAdaptorSignature): ECDigitalSignature = {
+    val sigBytes = NativeSecp256k1.adaptorAdapt(
+      bytes.toArray,
+      adaptorSignature.sigBytes.toArray)
+    ECDigitalSignature.fromBytes(ByteVector(sigBytes))
+  }
+
   /** Signifies if the this private key corresponds to a compressed public key */
   def isCompressed: Boolean
 
@@ -326,6 +344,28 @@ sealed abstract class ECPublicKey extends BaseECKey {
 
   def verify(hex: String, signature: ECDigitalSignature): Boolean =
     verify(BitcoinSUtil.decodeHex(hex), signature)
+
+  def adaptorVerify(
+      msg: ByteVector,
+      adaptorPoint: ECPublicKey,
+      adaptorSignature: ECAdaptorSignature): Boolean = {
+    NativeSecp256k1.adaptorVerify(adaptorSignature.sigBytes.toArray,
+                                  bytes.toArray,
+                                  msg.toArray,
+                                  adaptorPoint.bytes.toArray,
+                                  adaptorSignature.proofBytes.toArray)
+  }
+
+  def extractAdaptorSecret(
+      adaptorSignature: ECAdaptorSignature,
+      signature: ECDigitalSignature): ECPrivateKey = {
+    val secretBytes = NativeSecp256k1.adaptorExtractSecret(
+      signature.bytes.toArray,
+      adaptorSignature.sigBytes.toArray,
+      bytes.toArray)
+
+    ECPrivateKey(ByteVector(secretBytes))
+  }
 
   override def toString = "ECPublicKey(" + hex + ")"
 

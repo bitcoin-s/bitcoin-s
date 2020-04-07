@@ -2,8 +2,11 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.TestNet3
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.core.gen.ChainParamsGenerator
+import org.bitcoins.testkit.core.gen.{
+  ChainParamsGenerator,
+  CryptoGenerators,
+  NumberGenerator
+}
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.config.RegTest
 
@@ -99,4 +102,24 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
     ECPrivateKey().toString must be("Masked(ECPrivateKeyImpl)")
   }
 
+  it must "correctly execute the ecdsa single signer adaptor signature protocol" in {
+    forAll(CryptoGenerators.privateKey,
+           CryptoGenerators.privateKey,
+           NumberGenerator.bytevector(32)) {
+      case (privKey, adaptorSecret, msg) =>
+        val adaptorSig = privKey.adaptorSign(adaptorSecret.publicKey, msg)
+        assert(
+          privKey.publicKey
+            .adaptorVerify(msg, adaptorSecret.publicKey, adaptorSig))
+        val sig = adaptorSecret.completeAdaptorSignature(adaptorSig)
+        val secret =
+          adaptorSecret.publicKey.extractAdaptorSecret(adaptorSig, sig)
+        assert(secret == adaptorSecret)
+
+        val expectedSig = privKey.sign(msg)
+        assert(privKey.publicKey.verify(msg, sig))
+        assert(privKey.publicKey.verify(msg, expectedSig))
+        assert(sig != expectedSig) // WTF?
+    }
+  }
 }
