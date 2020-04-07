@@ -168,7 +168,8 @@ abstract class LockedWallet
     spendingInfoDAO.updateAll(updated)
   }
 
-  override def updateTxoStatesFromHeader(
+  /** @inheritdoc */
+  def updateUtxoPendingStates(
       blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
     for {
       infos <- spendingInfoDAO.findAllPendingConfirmation

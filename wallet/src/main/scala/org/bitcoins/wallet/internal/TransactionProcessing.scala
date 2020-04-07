@@ -293,7 +293,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
           val unreservedTxo = txoWithHash.state match {
             case TxoState.Reserved =>
               txoWithHash.copyWithState(TxoState.PendingConfirmationsSpent)
-            case _: TxoState =>
+            case TxoState.PendingConfirmationsReceived |
+                TxoState.ConfirmedReceived |
+                TxoState.PendingConfirmationsSpent | TxoState.ConfirmedSpent |
+                TxoState.DoesNotExist =>
               txoWithHash
           }
 

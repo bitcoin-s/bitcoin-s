@@ -125,14 +125,10 @@ case class SpendingInfoDAO()(
     }
   }
 
-  private val pendingConfStates: Set[TxoState] =
-    Set(TxoState.PendingConfirmationsReceived,
-        TxoState.PendingConfirmationsSpent)
-
   /** Enumerates all TX outputs in the wallet with the state
     * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.PendingConfirmationsSpent]] */
   def findAllPendingConfirmation: Future[Vector[SpendingInfoDb]] = {
-    val query = table.filter(_.state.inSet(pendingConfStates))
+    val query = table.filter(_.state.inSet(TxoState.pendingConfStates))
 
     database.run(query.result).map(_.toVector)
   }

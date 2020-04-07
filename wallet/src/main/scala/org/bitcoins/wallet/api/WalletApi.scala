@@ -73,10 +73,10 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
   }
 
   /**
-    * Takes in a block header and updates our DB state to the new chain tip
+    * Takes in a block header and updates our TxoStates to the new chain tip
     * @param blockHeader Block header we are processing
     */
-  def updateTxoStatesFromHeader(
+  def updateUtxoPendingStates(
       blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]]
 
   /**
