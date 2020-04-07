@@ -10,9 +10,7 @@ import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future, Promise}
-import scala.util.control.NonFatal
+import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}
 
 /**
@@ -312,8 +310,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * are any elements in it, if there are, we process them and complete the Promise in the queue. */
   lazy val walletThread = new Thread(AddressQueueRunnable)
 
-  lazy val addressRequestQueue = new java.util.concurrent.ConcurrentLinkedQueue[(AccountDb, HDChainType, Promise[AddressDb])]()
-
+  lazy val addressRequestQueue = {
+    new java.util.concurrent.ArrayBlockingQueue[(AccountDb, HDChainType, Promise[AddressDb])](
+      walletConfig.addressQueueSize
+    )
+  }
   walletThread.setDaemon(true)
   walletThread.setName(
     s"wallet-address-queue-${System.currentTimeMillis()}")
@@ -327,41 +328,34 @@ private[wallet] trait AddressHandling extends WalletLogger {
   private case object AddressQueueRunnable extends Runnable {
     override def run(): Unit = {
       while (!walletThread.isInterrupted) {
-        while (!addressRequestQueue.isEmpty) {
-
-          val (account, chainType, promise) = addressRequestQueue.poll()
+          val (account, chainType, promise) = addressRequestQueue.take()
           logger.debug(
             s"Processing $account $chainType in our address request queue")
 
           val addressDbF = getNewAddressDb(account,chainType)
           val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
           val writeF = addressDAO.create(addressDb)
-              writeF.foreach { written =>
-                logger.debug(
-                  s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
-              }
 
-              val addrF = writeF.map { w =>
-                promise.success(w)
-                w.address
-              }
-
-              addrF.failed.foreach {
-                case err =>
-                  logger.warn(
-                    s"Failed to generate address for $account $chainType",
-                    err)
-                  promise.failure(err)
-              }
-
-              addrF
+          val addrF = writeF.map { w =>
+            promise.success(w)
+            w.address
           }
-          //make sure this is completed before we iterate to the next one
-          //otherwise we will possibly have a race condition
-          Await.result(resultF, 1.second)
+          addrF.failed.foreach { exn => promise.failure(exn) }
+          addrF
         }
-        //is this fair? sleep 25 milliseconds between polling for addresses
-        Thread.sleep(25)
+        //make sure this is completed before we iterate to the next one
+        //otherwise we will possibly have a race condition
+
+        try {
+          Await.result(resultF, walletConfig.addressQueueTimeout)
+        } catch {
+          case timeout: TimeoutException =>
+            logger.error(s"Timeout for generating address account=$account chainType=$chainType!",timeout)
+            //continue executing
+          case scala.util.control.NonFatal(exn) =>
+            logger.error(
+              s"Failed to generate address for $account $chainType", exn)
+        }
       }
     }
   }
