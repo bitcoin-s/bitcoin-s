@@ -125,7 +125,6 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
     }
   }
 
-  /*
   it must "compute schnorr signatures the same" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),
@@ -185,5 +184,4 @@ class BouncyCastleSecp256k1Test extends BitcoinSCryptoTest {
         assert(bouncyCastleSigPoint == secpSigPoint)
     }
   }
-   */
 }

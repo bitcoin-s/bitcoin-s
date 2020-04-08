@@ -162,52 +162,48 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
     }
   }
 
-  // TODO: add a native implementation
   override def schnorrSign(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
       auxRand: ByteVector): SchnorrDigitalSignature = {
-//    val sigBytes =
-//      NativeSecp256k1.schnorrSign(dataToSign.toArray,
-//                                  privateKey.bytes.toArray,
-//                                  auxRand.toArray)
-//    SchnorrDigitalSignature(ByteVector(sigBytes))
-    BouncycastleCryptoRuntime.schnorrSign(dataToSign, privateKey, auxRand)
+    val sigBytes =
+      NativeSecp256k1.schnorrSign(dataToSign.toArray,
+                                  privateKey.bytes.toArray,
+                                  auxRand.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
-  // TODO: add a native implementation
   override def schnorrSignWithNonce(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
       nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
-//    val sigBytes =
-//      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
-//                                           privateKey.bytes.toArray,
-//                                           nonceKey.bytes.toArray)
-//    SchnorrDigitalSignature(ByteVector(sigBytes))
-    BouncycastleCryptoRuntime.schnorrSignWithNonce(dataToSign,
-                                                   privateKey,
-                                                   nonceKey)
+    val sigBytes =
+      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
+                                           privateKey.bytes.toArray,
+                                           nonceKey.bytes.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
-  // TODO: add a native implementation
   override def schnorrVerify(
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
       signature: SchnorrDigitalSignature): Boolean = {
-    BouncycastleCryptoRuntime.schnorrVerify(data, schnorrPubKey, signature)
+    NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
+                                  data.toArray,
+                                  schnorrPubKey.bytes.toArray)
   }
 
-  // TODO: add a native implementation
   override def schnorrComputeSigPoint(
       data: ByteVector,
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey = {
-    BouncycastleCryptoRuntime.schnorrComputeSigPoint(data,
-                                                     nonce,
-                                                     pubKey,
-                                                     compressed)
+    val sigPointBytes = NativeSecp256k1.schnorrComputeSigPoint(
+      data.toArray,
+      nonce.bytes.toArray,
+      pubKey.bytes.toArray,
+      compressed)
+    ECPublicKey(ByteVector(sigPointBytes))
   }
 
   // TODO: add a native implementation
