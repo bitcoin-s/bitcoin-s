@@ -80,6 +80,7 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "have serialization symmetry" in {
     forAll(CryptoGenerators.privateKey) { privKey =>
       assert(ECPrivateKey(privKey.hex) == privKey)
+      assert(ECPrivateKey.fromFieldElement(privKey.fieldElement) == privKey)
     }
   }
 
@@ -102,6 +103,18 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
 
   it must "not serialize a ECPrivateKey toString" in {
     ECPrivateKey().toString must be("Masked(ECPrivateKeyImpl)")
+  }
+
+  it must "successfully negate itself" in {
+    forAll(CryptoGenerators.nonZeroPrivKey) { privKey =>
+      val negPrivKey = privKey.negate
+      val pubKey = privKey.publicKey
+      val negPubKey = negPrivKey.publicKey
+      assert(pubKey.bytes.tail == negPubKey.bytes.tail)
+      assert(pubKey.bytes.head != negPubKey.bytes.head)
+      assert(
+        privKey.fieldElement.add(negPrivKey.fieldElement) == FieldElement.zero)
+    }
   }
 
 }
