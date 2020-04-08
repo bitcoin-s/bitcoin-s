@@ -463,18 +463,19 @@ public class NativeSecp256k1 {
      * @param data message to sign
      * @param secKey key to sign with
      */
-    public static byte[] schnorrSign(byte[] data, byte[] secKey) throws AssertFailException{
-        checkArgument(data.length == 32 && secKey.length == 32);
+    public static byte[] schnorrSign(byte[] data, byte[] secKey, byte[] auxRand) throws AssertFailException {
+        checkArgument(data.length == 32 && secKey.length == 32 && auxRand.length == 32);
 
         ByteBuffer byteBuff = nativeECDSABuffer.get();
-        if (byteBuff == null || byteBuff.capacity() < 32 + 32) {
-            byteBuff = ByteBuffer.allocateDirect(32 + 32);
+        if (byteBuff == null || byteBuff.capacity() < 32 + 32 + 32) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 32 + 32);
             byteBuff.order(ByteOrder.nativeOrder());
             nativeECDSABuffer.set(byteBuff);
         }
         byteBuff.rewind();
         byteBuff.put(data);
         byteBuff.put(secKey);
+        byteBuff.put(auxRand);
 
         byte[][] retByteArray;
         r.lock();

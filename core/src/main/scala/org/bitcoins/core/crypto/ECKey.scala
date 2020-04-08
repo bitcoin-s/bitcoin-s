@@ -75,8 +75,17 @@ sealed abstract class ECPrivateKey
     Future(sign(hash))
 
   def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
+    val auxRand = ECPrivateKey.freshPrivateKey.bytes
+    schnorrSign(dataToSign, auxRand)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
     val sigBytes =
-      NativeSecp256k1.schnorrSign(dataToSign.toArray, bytes.toArray)
+      NativeSecp256k1.schnorrSign(dataToSign.toArray,
+                                  bytes.toArray,
+                                  auxRand.toArray)
     SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
