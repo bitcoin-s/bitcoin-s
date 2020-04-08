@@ -239,6 +239,18 @@ public class NativeSecp256k1Test {
         String expectedSig = "6679441EA2A26D8723114C9288B850E9E9906F397C7C546CF805833C6ED8BF43DE89C69C3E21E4E44EF75B6BE4A3AC9FA72A6ECD47EDED3780A7BCDA7028288D";
         assertEquals(sigStr, expectedSig, "testSchnorrSign");
     }
+
+    @Test
+    public void testSchnorrSignWithNonce() throws AssertFailException{
+        byte[] data = toByteArray("E48441762FB75010B2AA31A512B62B4148AA3FB08EB0765D76B252559064A614");
+        byte[] secKey = toByteArray("688C77BC2D5AAFF5491CF309D4753B732135470D05B7B2CD21ADD0744FE97BEF");
+        byte[] nonce = toByteArray("8C8CA771D3C25EB38DE7401818EEDA281AC5446F5C1396148F8D9D67592440FE");
+
+        byte[] sigArr = NativeSecp256k1.schnorrSignWithNonce(data, secKey, nonce);
+        String sigStr = toHex(sigArr);
+        String expectedSig = "5DA618C1936EC728E5CCFF29207F1680DCF4146370BDCFAB0039951B91E3637A50A2A860B130D009405511C3EAFE943E157A0DF2C2020E3E50DF05ADB175332F";
+        assertEquals(sigStr, expectedSig, "testSchnorrSignWithNonce");
+    }
     
     @Test
     public void testSchnorrVerify() throws AssertFailException{

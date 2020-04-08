@@ -37,6 +37,12 @@ trait CryptoUtil extends BitcoinSLogger {
   def sha256(bits: BitVector): Sha256Digest = {
     sha256(bits.toByteVector)
   }
+  /*
+  def taggedSha256(bytes: ByteVector, tag: String): Sha256Digest = {
+    val tagHash = sha256(ByteVector(tag.getBytes())).flip
+    val tagBytes = tagHash.bytes ++ tagHash.bytes
+    sha256(tagBytes ++ bytes)
+  }*/
 
   /** Performs SHA1(bytes). */
   def sha1(bytes: ByteVector): Sha1Digest = {

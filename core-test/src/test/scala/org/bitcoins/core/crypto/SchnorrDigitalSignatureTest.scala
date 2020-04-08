@@ -1,5 +1,6 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
@@ -35,4 +36,19 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         assert(sig1.rx != sig2.rx)
     }
   }
+  /*
+  it must "generate R values correctly" in {
+    forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
+      case (privKey, bytes) =>
+        val nonceHash = CryptoUtil.taggedSha256(
+          privKey.bytes ++ privKey.publicKey.bytes.tail ++ bytes,
+          "BIP340/nonce")
+        val nonce = ECPrivateKey(nonceHash.flip.bytes)
+
+        val sig1 = privKey.schnorrSign(bytes)
+        val sig2 = privKey.schnorrSignWithNonce(bytes, nonce)
+
+        assert(sig1 == sig2)
+    }
+  }*/
 }

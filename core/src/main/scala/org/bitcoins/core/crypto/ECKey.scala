@@ -80,6 +80,16 @@ sealed abstract class ECPrivateKey
     SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    val sigBytes =
+      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
+                                           bytes.toArray,
+                                           nonce.bytes.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
+  }
+
   /** Signifies if the this private key corresponds to a compressed public key */
   def isCompressed: Boolean
 

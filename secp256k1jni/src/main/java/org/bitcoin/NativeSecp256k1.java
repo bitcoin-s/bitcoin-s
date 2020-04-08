@@ -493,6 +493,43 @@ public class NativeSecp256k1 {
     }
 
     /**
+     * libsecp256k1 schnorr sign - generates a BIP 340 Schnorr signature
+     *
+     * @param data message to sign
+     * @param secKey key to sign with
+     * @param nonce the nonce (k value) used in signing
+     */
+    public static byte[] schnorrSignWithNonce(byte[] data, byte[] secKey, byte[] nonce) throws AssertFailException {
+        checkArgument(data.length == 32 && secKey.length == 32 && nonce.length == 32);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < 32 + 32 + 32) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 32 + 32);
+            byteBuff.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(data);
+        byteBuff.put(secKey);
+        byteBuff.put(nonce);
+
+        byte[][] retByteArray;
+        r.lock();
+        try {
+            retByteArray = secp256k1_schnorrsig_sign_with_nonce(byteBuff, Secp256k1Context.getContext());
+        } finally {
+            r.unlock();
+        }
+
+        byte[] sigArray = retByteArray[0];
+        int retVal = new BigInteger(new byte[]{retByteArray[1][0]}).intValue();
+
+        assertEquals(retVal, 1, "Failed return value check.");
+
+        return sigArray;
+    }
+
+    /**
      * libsecp256k1 schnorr verify - verifies BIP 340 Schnorr signatures
      *
      * @param sig signature to verify
@@ -573,6 +610,8 @@ public class NativeSecp256k1 {
     private static native byte[][] secp256k1_ecdh(ByteBuffer byteBuff, long context, int inputLen);
 
     private static native byte[][] secp256k1_schnorrsig_sign(ByteBuffer byteBuff, long context);
+
+    private static native byte[][] secp256k1_schnorrsig_sign_with_nonce(ByteBuffer byteBuff, long context);
 
     private static native int secp256k1_schnorrsig_verify(ByteBuffer byteBuffer, long context);
 }
