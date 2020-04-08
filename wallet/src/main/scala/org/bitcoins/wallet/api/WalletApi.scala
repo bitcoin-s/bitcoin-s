@@ -7,7 +7,7 @@ import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
-import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
@@ -71,6 +71,13 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
         wallet.flatMap(_.processTransaction(tx, blockHash))
     }
   }
+
+  /**
+    * Takes in a block header and updates our TxoStates to the new chain tip
+    * @param blockHeader Block header we are processing
+    */
+  def updateUtxoPendingStates(
+      blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]]
 
   /**
     * Processes the give block, updating our DB state if it's relevant to us.

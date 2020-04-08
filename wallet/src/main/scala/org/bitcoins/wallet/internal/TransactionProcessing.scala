@@ -284,15 +284,28 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
       (foundTxo.blockHash, blockHashOpt) match {
         case (None, Some(blockHash)) =>
           logger.debug(
-            s"Updating block_hash of txo=${transaction.txIdBE}, new block hash=${blockHash}")
-          val updateF =
-            spendingInfoDAO.update(
-              foundTxo
-                .copyWithBlockHash(blockHash = blockHash))
+            s"Updating block_hash of txo=${transaction.txIdBE}, new block hash=$blockHash")
+          // update block hash
+          val txoWithHash = foundTxo.copyWithBlockHash(blockHash = blockHash)
+
+          // If the utxo was marked reserved we want to update it to spent now
+          // since it has been included in a block
+          val unreservedTxo = txoWithHash.state match {
+            case TxoState.Reserved =>
+              txoWithHash.copyWithState(TxoState.PendingConfirmationsSpent)
+            case TxoState.PendingConfirmationsReceived |
+                TxoState.ConfirmedReceived |
+                TxoState.PendingConfirmationsSpent | TxoState.ConfirmedSpent |
+                TxoState.DoesNotExist =>
+              txoWithHash
+          }
+
+          // Update Txo State
+          val updateF = updateUtxoConfirmedState(unreservedTxo, blockHash)
 
           updateF.foreach(tx =>
             logger.debug(
-              s"Updated block_hash of txo=${tx.txid} new block hash=${blockHash}"))
+              s"Updated block_hash of txo=${tx.txid} new block hash=$blockHash"))
           updateF.failed.foreach(err =>
             logger.error(
               s"Failed to update confirmation count of transaction=${transaction.txIdBE}",

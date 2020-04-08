@@ -132,6 +132,15 @@ case class NestedSegwitV0SpendingInfo(
   */
 sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
 
+  state match {
+    case TxoState.ConfirmedSpent | TxoState.ConfirmedReceived =>
+      require(blockHash.isDefined,
+              "Transaction cannot be confirmed without a blockHash")
+    case TxoState.DoesNotExist | TxoState.PendingConfirmationsSpent |
+        TxoState.PendingConfirmationsReceived | TxoState.Reserved =>
+      ()
+  }
+
   protected type PathType <: HDPath
 
   /** This type is here to ensure copyWithSpent returns the same

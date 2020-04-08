@@ -125,6 +125,14 @@ case class SpendingInfoDAO()(
     }
   }
 
+  /** Enumerates all TX outputs in the wallet with the state
+    * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.PendingConfirmationsSpent]] */
+  def findAllPendingConfirmation: Future[Vector[SpendingInfoDb]] = {
+    val query = table.filter(_.state.inSet(TxoState.pendingConfStates))
+
+    database.run(query.result).map(_.toVector)
+  }
+
   /** Enumerates all TX outpoints in the wallet */
   def findAllOutpoints(): Future[Vector[TransactionOutPoint]] = {
     val query = table.map(_.outPoint)

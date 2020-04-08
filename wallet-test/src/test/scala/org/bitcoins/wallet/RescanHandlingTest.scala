@@ -69,12 +69,12 @@ class RescanHandlingTest extends BitcoinSWalletTest {
                                                  blockHashOpt =
                                                    blockHashes.headOption)
         balance <- newTxWallet.getBalance()
-        confirmedBalance <- newTxWallet.getConfirmedBalance()
+        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
         //balance doesn't have to exactly equal, as there was money in the
         //wallet before hand.
         assert(balance >= amt)
-        assert(balance == confirmedBalance)
+        assert(balance == unconfirmedBalance)
         newTxWallet
       }
 

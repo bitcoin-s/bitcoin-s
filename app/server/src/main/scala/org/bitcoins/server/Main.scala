@@ -162,12 +162,18 @@ object Main extends App {
     lazy val onBlock: OnBlockReceived = { block =>
       wallet.processBlock(block).map(_ => ())
     }
+    lazy val onHeaders: OnBlockHeadersReceived = { headers =>
+      wallet.updateUtxoPendingStates(headers.last).map(_ => ())
+    }
     if (nodeConf.isSPVEnabled) {
-      Future.successful(NodeCallbacks(onTxReceived = Seq(onTx)))
+      Future.successful(
+        NodeCallbacks(onTxReceived = Seq(onTx),
+                      onBlockHeadersReceived = Seq(onHeaders)))
     } else if (nodeConf.isNeutrinoEnabled) {
       Future.successful(
         NodeCallbacks(onBlockReceived = Seq(onBlock),
-                      onCompactFilterReceived = Seq(onCompactFilter)))
+                      onCompactFilterReceived = Seq(onCompactFilter),
+                      onBlockHeadersReceived = Seq(onHeaders)))
     } else {
       Future.failed(new RuntimeException("Unexpected node type"))
     }

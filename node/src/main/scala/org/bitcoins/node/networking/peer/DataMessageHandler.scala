@@ -194,6 +194,7 @@ case class DataMessageHandler(
         for {
           newApi <- chainApiF
           newSyncing <- getHeadersF
+          _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(logger, headers)
         } yield {
           this.copy(chainApi = newApi, syncing = newSyncing)
         }

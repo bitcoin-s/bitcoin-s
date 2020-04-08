@@ -90,10 +90,13 @@ class WalletIntegrationTest extends BitcoinSWalletTest {
 
       _ <- wallet
         .getBalance()
-        .map(confirmed => assert(confirmed == valueFromBitcoind))
+        .map(balance => assert(balance == valueFromBitcoind))
+      _ <- wallet
+        .getConfirmedBalance()
+        .map(confirmed => assert(confirmed == 0.bitcoin))
       _ <- wallet
         .getUnconfirmedBalance()
-        .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
+        .map(unconfirmed => assert(unconfirmed == valueFromBitcoind))
 
       signedTx <- bitcoind.getNewAddress.flatMap {
         wallet.sendToAddress(_, valueToBitcoind, feeRate)
