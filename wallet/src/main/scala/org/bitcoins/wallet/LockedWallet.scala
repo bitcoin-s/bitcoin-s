@@ -5,8 +5,13 @@ import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.HDAccount
+import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.TxoState.{
+  ConfirmedReceived,
+  PendingConfirmationsReceived
+}
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
@@ -71,7 +76,7 @@ abstract class LockedWallet
   }
 
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
-    val confirmed = filterThenSum(_.blockHash.isDefined)
+    val confirmed = filterThenSum(_.state == ConfirmedReceived)
     confirmed.foreach(balance =>
       logger.trace(s"Confirmed balance=${balance.satoshis}"))
     confirmed
@@ -92,7 +97,7 @@ abstract class LockedWallet
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    val unconfirmed = filterThenSum(_.blockHash.isEmpty)
+    val unconfirmed = filterThenSum(_.state == PendingConfirmationsReceived)
     unconfirmed.foreach(balance =>
       logger.trace(s"Unconfirmed balance=${balance.satoshis}"))
     unconfirmed
@@ -161,6 +166,19 @@ abstract class LockedWallet
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     val updated = utxos.map(_.copyWithState(TxoState.Reserved))
     spendingInfoDAO.updateAll(updated)
+  }
+
+  /** @inheritdoc */
+  def updateUtxoPendingStates(
+      blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
+    for {
+      infos <- spendingInfoDAO.findAllPendingConfirmation
+      updatedInfos <- {
+        val updatedInfoFs =
+          infos.map(info => updateUtxoConfirmedState(info, blockHeader.hashBE))
+        Future.sequence(updatedInfoFs)
+      }
+    } yield updatedInfos
   }
 }
 

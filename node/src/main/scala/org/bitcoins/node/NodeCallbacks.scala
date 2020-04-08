@@ -2,7 +2,7 @@ package org.bitcoins.node
 
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.GolombFilter
-import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.MarkedLogger
@@ -20,14 +20,16 @@ case class NodeCallbacks(
     onCompactFilterReceived: Seq[OnCompactFilterReceived] = Seq.empty,
     onTxReceived: Seq[OnTxReceived] = Seq.empty,
     onBlockReceived: Seq[OnBlockReceived] = Seq.empty,
-    onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty
+    onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty,
+    onBlockHeadersReceived: Seq[OnBlockHeadersReceived] = Seq.empty
 ) {
 
   def +(other: NodeCallbacks): NodeCallbacks = copy(
     onCompactFilterReceived = onCompactFilterReceived ++ other.onCompactFilterReceived,
     onTxReceived = onTxReceived ++ other.onTxReceived,
     onBlockReceived = onBlockReceived ++ other.onBlockReceived,
-    onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived
+    onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived,
+    onBlockHeadersReceived = onBlockHeadersReceived ++ other.onBlockHeadersReceived
   )
 
   def executeOnTxReceivedCallbacks(logger: MarkedLogger, tx: Transaction)(
@@ -81,6 +83,21 @@ case class NodeCallbacks(
                 err)
           }))
   }
+
+  def executeOnBlockHeadersReceivedCallbacks(
+      logger: MarkedLogger,
+      headers: Vector[BlockHeader])(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    onBlockHeadersReceived
+      .foldLeft(FutureUtil.unit)((acc, callback) =>
+        acc.flatMap(_ =>
+          callback(headers).recover {
+            case err: Throwable =>
+              logger.error(
+                "onBlockHeadersReceived Callback failed with error: ",
+                err)
+          }))
+  }
 }
 
 object NodeCallbacks {
@@ -101,12 +118,17 @@ object NodeCallbacks {
   def onCompactFilterReceived(f: OnCompactFilterReceived): NodeCallbacks =
     NodeCallbacks(onCompactFilterReceived = Seq(f))
 
+  /** Constructs a set of callbacks that only acts on block headers received */
+  def onBlockHeadersReceived(f: OnBlockHeadersReceived): NodeCallbacks =
+    NodeCallbacks(onBlockHeadersReceived = Seq(f))
+
   /** Empty callbacks that does nothing with the received data */
   val empty: NodeCallbacks =
     NodeCallbacks(
       onTxReceived = Seq.empty,
       onBlockReceived = Seq.empty,
       onMerkleBlockReceived = Seq.empty,
-      onCompactFilterReceived = Seq.empty
+      onCompactFilterReceived = Seq.empty,
+      onBlockHeadersReceived = Seq.empty
     )
 }

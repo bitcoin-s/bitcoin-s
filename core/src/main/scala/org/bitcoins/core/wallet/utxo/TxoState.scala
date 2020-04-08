@@ -27,6 +27,13 @@ object TxoState {
   /** Means we have spent this utxo, and it is fully confirmed */
   final case object ConfirmedSpent extends SpentState
 
+  val pendingConfStates: Set[TxoState] =
+    Set(TxoState.PendingConfirmationsReceived,
+        TxoState.PendingConfirmationsSpent)
+
+  val confirmedStates: Set[TxoState] =
+    Set(TxoState.ConfirmedReceived, TxoState.ConfirmedSpent)
+
   val all: Vector[TxoState] = Vector(DoesNotExist,
                                      PendingConfirmationsReceived,
                                      ConfirmedReceived,

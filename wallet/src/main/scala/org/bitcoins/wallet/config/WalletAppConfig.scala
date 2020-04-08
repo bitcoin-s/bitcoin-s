@@ -62,6 +62,13 @@ case class WalletAppConfig(
 
   lazy val discoveryBatchSize: Int = config.getInt("wallet.discoveryBatchSize")
 
+  lazy val requiredConfirmations: Int =
+    config.getInt("wallet.requiredConfirmations")
+
+  require(
+    requiredConfirmations >= 1,
+    s"requiredConfirmations cannot be less than 1, got: $requiredConfirmations")
+
   override def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Initializing wallet setup")
 
