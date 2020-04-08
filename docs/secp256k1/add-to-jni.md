@@ -5,6 +5,20 @@ title: Adding to Secp256k1 JNI
 
 Bitcoin-S uses a Java Native Interface (JNI) to execute functions in [secp256k1](https://github.com/bitcoin-core/secp256k1) from java/scala. The native java bindings used to be a part of the secp256k1 library that was maintained by bitcoin-core, but it was [removed in October 2019](https://github.com/bitcoin-core/secp256k1/pull/682). We maintain a [fork of secp256k1](https://github.com/bitcoin-s/secp256k1) which forks off of bitcoin-core's `master` but re-introduces the jni. This is also the easiest way to add functionality from new projects such as [Schnorr signatures](https://github.com/bitcoin-core/secp256k1/pull/558) and [ECDSA adaptor signatures](https://github.com/jonasnick/secp256k1/pull/14) by rebasing the bitcoin-s branch with the JNI on top of these experimental branches. That said, it is quite tricky to hook up new functionality in secp256k1 into bitcoin-s and specifically `NativeSecp256k1.java`. The following is a description of this process.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<!-- END doctoc -->
+
+- [Adding a new function to NativeSecp256k1.java](#adding-a-new-function-to-nativesecp256k1java)
+  - [Adding to `src/java/org_bitcoin_NativeSecp256k1.c`](#adding-to-srcjavaorg_bitcoin_nativesecp256k1c)
+  - [Adding to `src/java/org_bitcoin_NativeSecp256k1.h`](#adding-to-srcjavaorg_bitcoin_nativesecp256k1h)
+  - [Adding to `src/java/org/bitcoin/NativeSecp256k1.java`](#adding-to-srcjavaorgbitcoinnativesecp256k1java)
+  - [Adding to `src/java/org/bitcoin/NativeSecp256k1Test.java`](#adding-to-srcjavaorgbitcoinnativesecp256k1testjava)
+  - [Adding to Bitcoin-S](#adding-to-bitcoin-s)
+  - [Further Work to Enable Typed Invocations and Nice Tests](#further-work-to-enable-typed-invocations-and-nice-tests)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Adding a new function to NativeSecp256k1.java
 
  ### Adding to `src/java/org_bitcoin_NativeSecp256k1.c`
