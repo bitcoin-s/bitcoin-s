@@ -9,7 +9,7 @@ import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -369,6 +369,32 @@ trait UnlockedWalletApi extends LockedWalletApi {
     for {
       account <- getDefaultAccount()
       tx <- sendToAddress(address, amount, feeRate, account)
+    } yield tx
+  }
+
+  /**
+    *
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction]
+
+  /**
+    * Sends money from the default account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit
+  ): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendToOutputs(outputs, feeRate, account)
     } yield tx
   }
 
