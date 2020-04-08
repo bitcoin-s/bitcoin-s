@@ -15,6 +15,10 @@ import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
+  FieldElement,
+  SchnorrDigitalSignature,
+  SchnorrNonce,
+  SchnorrPublicKey,
   Sha256Digest,
   Sha256Hash160Digest
 }
@@ -131,6 +135,36 @@ sealed abstract class CryptoGenerators {
 
   def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
 
+  def fieldElement: Gen[FieldElement] = privateKey.map(_.fieldElement)
+
+  def smallFieldElement: Gen[FieldElement] =
+    NumberGenerator
+      .bytevector(30)
+      .map(bytes => FieldElement(ByteVector.fill(2)(0) ++ bytes))
+
+  def reallySmallFieldElement: Gen[FieldElement] =
+    NumberGenerator
+      .bytevector(15)
+      .map(bytes => FieldElement(ByteVector.fill(17)(0) ++ bytes))
+
+  def largeFieldElement: Gen[FieldElement] =
+    NumberGenerator
+      .bytevector(30)
+      .map(bytes => FieldElement(ByteVector.fill(2)(Byte.MinValue) ++ bytes))
+
+  def nonZeroFieldElement: Gen[FieldElement] =
+    nonZeroPrivKey.map(_.fieldElement)
+
+  /** Generates a random non-zero private key */
+  def nonZeroPrivKey: Gen[ECPrivateKey] =
+    privateKey.filter(_.bytes.toArray.exists(_ != 0.toByte))
+
+  def schnorrNonce: Gen[SchnorrNonce] =
+    nonZeroPrivKey.map(_.publicKey.bytes.tail).map(SchnorrNonce.fromBytes)
+
+  def schnorrPublicKey: Gen[SchnorrPublicKey] =
+    publicKey.map(_.schnorrPublicKey)
+
   /**
     * Generate a sequence of private keys
     * @param num maximum number of keys to generate
@@ -186,6 +220,13 @@ sealed abstract class CryptoGenerators {
       privKey <- privateKey
       hash <- CryptoGenerators.doubleSha256Digest
     } yield privKey.sign(hash)
+
+  def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
+    for {
+      privKey <- privateKey
+      hash <- CryptoGenerators.doubleSha256Digest
+    } yield privKey.schnorrSign(hash.bytes)
+  }
 
   def sha256Digest: Gen[Sha256Digest] =
     for {

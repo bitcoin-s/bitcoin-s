@@ -71,6 +71,128 @@ sealed abstract class ECPrivateKey
       implicit ec: ExecutionContext): Future[ECDigitalSignature] =
     Future(sign(hash))
 
+  def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
+    schnorrSign(dataToSign, CryptoContext.default)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      context: CryptoContext): SchnorrDigitalSignature = {
+    val auxRand = ECPrivateKey.freshPrivateKey.bytes
+    schnorrSign(dataToSign, auxRand, context)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    schnorrSign(dataToSign, auxRand, CryptoContext.default)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector,
+      context: CryptoContext): SchnorrDigitalSignature = {
+    context match {
+      case CryptoContext.LibSecp256k1 =>
+        schnorrSignWithSecp(dataToSign, auxRand)
+      case CryptoContext.BouncyCastle =>
+        schnorrSignWithBouncyCastle(dataToSign, auxRand)
+    }
+  }
+
+  def schnorrSignWithSecp(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    val sigBytes =
+      NativeSecp256k1.schnorrSign(dataToSign.toArray,
+                                  bytes.toArray,
+                                  auxRand.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
+  }
+
+  def schnorrSignWithBouncyCastle(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    BouncyCastleUtil.schnorrSign(dataToSign, this, auxRand)
+  }
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    schnorrSignWithNonce(dataToSign, nonce, CryptoContext.default)
+  }
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey,
+      context: CryptoContext): SchnorrDigitalSignature = {
+    context match {
+      case CryptoContext.LibSecp256k1 =>
+        schnorrSignWithNonceWithSecp(dataToSign, nonce)
+      case CryptoContext.BouncyCastle =>
+        schnorrSignWithNonceWithBouncyCastle(dataToSign, nonce)
+    }
+  }
+
+  def schnorrSignWithNonceWithSecp(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    val sigBytes =
+      NativeSecp256k1.schnorrSignWithNonce(dataToSign.toArray,
+                                           bytes.toArray,
+                                           nonce.bytes.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
+  }
+
+  def schnorrSignWithNonceWithBouncyCastle(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    BouncyCastleUtil.schnorrSignWithNonce(dataToSign, this, nonce)
+  }
+
+  def nonceKey: ECPrivateKey = {
+    if (schnorrNonce.publicKey == publicKey) {
+      this
+    } else {
+      this.negate
+    }
+  }
+
+  def schnorrKey: ECPrivateKey = {
+    if (schnorrPublicKey.publicKey == publicKey) {
+      this
+    } else {
+      this.negate
+    }
+  }
+
+  def negate: ECPrivateKey = {
+    val negPrivKeyNum = CryptoParams.curve.getN
+      .subtract(new BigInteger(1, bytes.toArray))
+    ECPrivateKey(ByteVector(negPrivKeyNum.toByteArray))
+  }
+
+  def add(other: ECPrivateKey): ECPrivateKey = {
+    add(other, CryptoContext.default)
+  }
+
+  def add(other: ECPrivateKey, context: CryptoContext): ECPrivateKey = {
+    context match {
+      case CryptoContext.LibSecp256k1 => addWithSecp(other)
+      case CryptoContext.BouncyCastle => addWithBouncyCastle(other)
+    }
+  }
+
+  def addWithSecp(other: ECPrivateKey): ECPrivateKey = {
+    val sumBytes =
+      NativeSecp256k1.privKeyTweakAdd(bytes.toArray, other.bytes.toArray)
+    ECPrivateKey(ByteVector(sumBytes))
+  }
+
+  def addWithBouncyCastle(other: ECPrivateKey): ECPrivateKey = {
+    fieldElement.add(other.fieldElement).toPrivateKey
+  }
+
   /** Signifies if the this private key corresponds to a compressed public key */
   def isCompressed: Boolean
 
@@ -98,6 +220,16 @@ sealed abstract class ECPrivateKey
   def publicKeyWithBouncyCastle: ECPublicKey = {
     BouncyCastleUtil.computePublicKey(this)
   }
+
+  def schnorrPublicKey: SchnorrPublicKey = {
+    SchnorrPublicKey(publicKey.bytes)
+  }
+
+  def schnorrNonce: SchnorrNonce = {
+    SchnorrNonce(publicKey.bytes)
+  }
+
+  def fieldElement: FieldElement = FieldElement(bytes)
 
   override def toStringSensitive: String = s"ECPrivateKey($hex,$isCompressed)"
 }
@@ -147,6 +279,10 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
 
   def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey =
     fromBytes(CryptoBytesUtil.decodeHex(hex), isCompressed)
+
+  def fromFieldElement(fieldElement: FieldElement): ECPrivateKey = {
+    fieldElement.toPrivateKey
+  }
 
   /** Generates a fresh [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] that has not been used before. */
   def apply(): ECPrivateKey = ECPrivateKey(true)
@@ -223,6 +359,23 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def verify(hex: String, signature: ECDigitalSignature): Boolean =
     verify(CryptoBytesUtil.decodeHex(hex), signature)
 
+  def schnorrVerify(
+      data: ByteVector,
+      signature: SchnorrDigitalSignature): Boolean = {
+    schnorrPublicKey.verify(data, signature)
+  }
+
+  def schnorrComputePoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      compressed: Boolean = isCompressed): ECPublicKey = {
+    schnorrPublicKey.computeSigPoint(data, nonce, compressed)
+  }
+
+  def schnorrPublicKey: SchnorrPublicKey = SchnorrPublicKey(bytes)
+
+  def schnorrNonce: SchnorrNonce = SchnorrNonce(bytes)
+
   override def toString: String = "ECPublicKey(" + hex + ")"
 
   /** Checks if the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] is compressed */
@@ -274,6 +427,30 @@ sealed abstract class ECPublicKey extends BaseECKey {
     val sumPoint = toPoint.add(otherKey.toPoint)
 
     ECPublicKey.fromPoint(sumPoint)
+  }
+
+  def tweakMultiply(tweak: FieldElement): ECPublicKey = {
+    tweakMultiply(tweak, CryptoContext.default)
+  }
+
+  def tweakMultiply(
+      tweak: FieldElement,
+      context: CryptoContext): ECPublicKey = {
+    context match {
+      case CryptoContext.LibSecp256k1 => tweakMultiplyWithSecp(tweak)
+      case CryptoContext.BouncyCastle => tweakMultiplyWithBouncyCastle(tweak)
+    }
+  }
+
+  def tweakMultiplyWithSecp(tweak: FieldElement): ECPublicKey = {
+    val mulBytes = NativeSecp256k1.pubKeyTweakMul(bytes.toArray,
+                                                  tweak.bytes.toArray,
+                                                  isCompressed)
+    ECPublicKey(ByteVector(mulBytes))
+  }
+
+  def tweakMultiplyWithBouncyCastle(tweak: FieldElement): ECPublicKey = {
+    BouncyCastleUtil.pubKeyTweakMul(this, tweak.bytes)
   }
 }
 
