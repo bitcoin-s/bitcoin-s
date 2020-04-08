@@ -2,6 +2,7 @@ package org.bitcoins.core.util
 
 import java.math.BigInteger
 
+import org.bitcoins.core.crypto.FieldElement
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
@@ -26,6 +27,10 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   /** Converts a sequence of bytes to a **big endian** unsigned integer */
   def toUnsignedInt(bytes: ByteVector): BigInt = {
     toUnsignedInt(bytes.toArray)
+  }
+
+  def uintToFieldElement(bytes: ByteVector): FieldElement = {
+    FieldElement(toUnsignedInt(bytes))
   }
 
   /** Converts a sequence of bytes to a **big endian** unsigned integer */

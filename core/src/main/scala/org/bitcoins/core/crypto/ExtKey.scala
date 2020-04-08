@@ -201,12 +201,14 @@ sealed abstract class ExtPrivateKey
     //should be ECGroup addition
     //parse256(IL) + kpar (mod n)
     val tweak = if (Secp256k1Context.isEnabled) {
-      NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
+      val tweakByteArr =
+        NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
+      ByteVector(tweakByteArr)
     } else {
-      val sum = BouncyCastleUtil.addNumbers(key.bytes, il)
-      sum.toByteArray
+      val sum = key.fieldElement.add(FieldElement(il))
+      sum.bytes
     }
-    val childKey = ECPrivateKey(ByteVector(tweak))
+    val childKey = ECPrivateKey(tweak)
     val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)
     ExtPrivateKey(version, depth + UInt8.one, fp, idx, ChainCode(ir), childKey)
   }
