@@ -152,7 +152,7 @@ and transaction extraction.</p>
       .flatMap(_.sign(inputIndex = <span class="hljs-number">0</span>, signer = privKey1))
 
 <span class="hljs-comment">// Alternatively, you can use produce a signature with a BitcoinUTXOSpendingInfoSingle</span>
-<span class="hljs-comment">// using the BitcoinSingleSigner will return a PartialSignature that can be added to a PSBT</span>
+<span class="hljs-comment">// using the BitcoinSigner will return a PartialSignature that can be added to a PSBT</span>
 
 <span class="hljs-comment">// First we need to declare out spendingInfoSingle</span>
 <span class="hljs-keyword">val</span> outPoint = unsignedTransaction.inputs.head.previousOutput
@@ -169,7 +169,7 @@ and transaction extraction.</p>
   )
 
 <span class="hljs-comment">// Then we can sign the transaction</span>
-<span class="hljs-keyword">val</span> signatureF = <span class="hljs-type">BitcoinSignerSingle</span>.signSingle(
+<span class="hljs-keyword">val</span> signatureF = <span class="hljs-type">BitcoinSigner</span>.signSingle(
     spendingInfo = spendingInfoSingle,
     unsignedTx = unsignedTransaction,
     isDummySignature = <span class="hljs-literal">false</span>)
