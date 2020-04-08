@@ -229,6 +229,17 @@ public class NativeSecp256k1Test {
         assertEquals( ecdhString, "2A2A67007A926E6594AF3EB564FC74005B37A9C8AEF2033C4552051B5C87F043" , "testCreateECDHSecret");
     }
 
+    @Test
+    public void testSchnorrSign() throws AssertFailException{
+        byte[] data = toByteArray("E48441762FB75010B2AA31A512B62B4148AA3FB08EB0765D76B252559064A614");
+        byte[] secKey = toByteArray("688C77BC2D5AAFF5491CF309D4753B732135470D05B7B2CD21ADD0744FE97BEF");
+
+        byte[] sigArr = NativeSecp256k1.schnorrSign(data, secKey);
+        String sigStr = toHex(sigArr);
+        String expectedSig = "6679441EA2A26D8723114C9288B850E9E9906F397C7C546CF805833C6ED8BF43DE89C69C3E21E4E44EF75B6BE4A3AC9FA72A6ECD47EDED3780A7BCDA7028288D";
+        assertEquals(sigStr, expectedSig, "testSchnorrSign");
+    }
+
 
     //https://stackoverflow.com/a/19119453/967713
     private static byte[] toByteArray(final String hex) {

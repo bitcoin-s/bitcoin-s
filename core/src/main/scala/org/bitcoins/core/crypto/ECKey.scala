@@ -74,6 +74,12 @@ sealed abstract class ECPrivateKey
       implicit ec: ExecutionContext): Future[ECDigitalSignature] =
     Future(sign(hash))
 
+  def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
+    val sigBytes =
+      NativeSecp256k1.schnorrSign(dataToSign.toArray, bytes.toArray)
+    SchnorrDigitalSignature(ByteVector(sigBytes))
+  }
+
   /** Signifies if the this private key corresponds to a compressed public key */
   def isCompressed: Boolean
 
