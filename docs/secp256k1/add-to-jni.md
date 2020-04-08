@@ -324,7 +324,7 @@ We are now done writing C code! We have completed an interface in C for the JNI 
 
    Finally, we return `resultArr`.
 
-### Adding `src/java/org/bitcoin/NativeSecp256k1Test.java`
+### Adding to `src/java/org/bitcoin/NativeSecp256k1Test.java`
 
 I normally first build the C binaries and add to Bitcoin-S before coming back to this section because I use `sbt core/console` to generate values and make calls below, but this is not a requirement.
 
