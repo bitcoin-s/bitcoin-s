@@ -26,6 +26,8 @@ import scala.collection.mutable
 sealed trait DLCMessage {
   def toJson: Value
   def toJsonStr: String = toJson.toString()
+
+  def eventId: Sha256DigestBE
 }
 
 object DLCMessage {
@@ -138,6 +140,9 @@ object DLCMessage {
       feeRate: SatoshisPerVirtualByte,
       timeouts: DLCTimeouts)
       extends DLCSetupMessage {
+
+    val eventId: Sha256DigestBE =
+      calcEventId(oracleInfo, contractInfo, timeouts)
 
     override def toJson: Value = {
       val contractInfosJson =

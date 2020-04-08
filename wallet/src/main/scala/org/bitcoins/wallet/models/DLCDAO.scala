@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.Sha256DigestBE
+import org.bitcoins.core.crypto.{Sha256Digest, Sha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
@@ -45,4 +45,7 @@ case class DLCDAO()(
           s"More than one DLC per eventId ($eventId), got: $dlcs")
     }
   }
+
+  def findByEventId(eventId: Sha256Digest): Future[Option[DLCDb]] =
+    findByEventId(eventId.flip)
 }

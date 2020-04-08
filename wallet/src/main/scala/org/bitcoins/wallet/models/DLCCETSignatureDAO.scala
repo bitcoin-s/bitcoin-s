@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.Sha256DigestBE
+import org.bitcoins.core.crypto.{Sha256Digest, Sha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
 import slick.jdbc.SQLiteProfile.api._
@@ -47,4 +47,7 @@ case class DLCCETSignatureDAO()(
     val q = table.filter(_.eventId === eventId)
     database.run(q.result).map(_.toVector)
   }
+
+  def findByEventId(eventId: Sha256Digest): Future[Vector[DLCCETSignatureDb]] =
+    findByEventId(eventId.flip)
 }

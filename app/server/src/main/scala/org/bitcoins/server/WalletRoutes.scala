@@ -34,9 +34,9 @@ case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
   private def handleDLCMessage(
       dlcMessage: DLCMessage,
       escaped: Boolean): HttpEntity.Strict = {
-    val str = dlcMessage.toJsonStr
+    val json = dlcMessage.toJson
     val sendString =
-      if (escaped) escape(str) else ujson.read(str).render(indent = 2)
+      if (escaped) escape(json.toString()) else json.render(indent = 2)
     Server.httpSuccess(sendString)
   }
 

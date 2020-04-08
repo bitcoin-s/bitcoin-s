@@ -207,11 +207,16 @@ object Rescan extends ServerJsonModels {
 
 }
 
+trait Broadcastable {
+  def noBroadcast: Boolean
+}
+
 case class SendToAddress(
     address: BitcoinAddress,
     amount: Bitcoins,
     satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object SendToAddress extends ServerJsonModels {
 
@@ -244,6 +249,10 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
+trait JsonResponse {
+  def escaped: Boolean
+}
+
 case class CreateDLCOffer(
     oracleInfo: OracleInfo,
     contractInfo: ContractInfo,
@@ -252,6 +261,7 @@ case class CreateDLCOffer(
     locktime: UInt32,
     refundLocktime: UInt32,
     escaped: Boolean)
+    extends JsonResponse
 
 object CreateDLCOffer extends ServerJsonModels {
 
@@ -284,6 +294,7 @@ object CreateDLCOffer extends ServerJsonModels {
 }
 
 case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
+    extends JsonResponse
 
 object AcceptDLCOffer extends ServerJsonModels {
 
@@ -306,7 +317,7 @@ object AcceptDLCOffer extends ServerJsonModels {
   }
 }
 
-case class SignDLC(accept: DLCAccept, escaped: Boolean)
+case class SignDLC(accept: DLCAccept, escaped: Boolean) extends JsonResponse
 
 object SignDLC extends ServerJsonModels {
 
@@ -354,6 +365,7 @@ case class InitDLCMutualClose(
     eventId: Sha256DigestBE,
     oracleSig: SchnorrDigitalSignature,
     escaped: Boolean)
+    extends JsonResponse
 
 object InitDLCMutualClose extends ServerJsonModels {
 
@@ -377,6 +389,7 @@ object InitDLCMutualClose extends ServerJsonModels {
 case class AcceptDLCMutualClose(
     mutualCloseSig: DLCMutualCloseSig,
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object AcceptDLCMutualClose extends ServerJsonModels {
 
@@ -443,6 +456,7 @@ case class ExecuteDLCUnilateralClose(
     eventId: Sha256DigestBE,
     oracleSig: SchnorrDigitalSignature,
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object ExecuteDLCUnilateralClose extends ServerJsonModels {
 
@@ -472,6 +486,7 @@ case class ExecuteDLCRemoteUnilateralClose(
     eventId: Sha256DigestBE,
     cet: Transaction,
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object ExecuteDLCRemoteUnilateralClose extends ServerJsonModels {
 
@@ -500,6 +515,7 @@ case class ExecuteDLCForceClose(
     eventId: Sha256DigestBE,
     oracleSig: SchnorrDigitalSignature,
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object ExecuteDLCForceClose extends ServerJsonModels {
 
@@ -529,6 +545,7 @@ case class ClaimDLCRemoteFunds(
     eventId: Sha256DigestBE,
     forceCloseTx: Transaction,
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object ClaimDLCRemoteFunds extends ServerJsonModels {
 
@@ -555,6 +572,7 @@ object ClaimDLCRemoteFunds extends ServerJsonModels {
 }
 
 case class ExecuteDLCRefund(eventId: Sha256DigestBE, noBroadcast: Boolean)
+    extends Broadcastable
 
 object ExecuteDLCRefund extends ServerJsonModels {
 
@@ -581,6 +599,7 @@ case class ClaimDLCPenaltyFunds(
     eventId: Sha256DigestBE,
     forceCloseTx: Transaction,
     noBroadcast: Boolean)
+    extends Broadcastable
 
 object ClaimDLCPenaltyFunds extends ServerJsonModels {
 

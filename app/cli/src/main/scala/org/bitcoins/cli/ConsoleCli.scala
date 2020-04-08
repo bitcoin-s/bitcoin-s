@@ -927,6 +927,14 @@ sealed abstract class CliCommand
 object CliCommand {
   case object NoCommand extends CliCommand
 
+  trait JsonResponse {
+    def escaped: Boolean
+  }
+
+  trait Broadcastable {
+    def noBroadcast: Boolean
+  }
+
   // DLC
   case class CreateDLCOffer(
       oracleInfo: OracleInfo,
@@ -937,11 +945,15 @@ object CliCommand {
       refundLT: UInt32,
       escaped: Boolean)
       extends CliCommand
+      with JsonResponse
 
   case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
       extends CliCommand
+      with JsonResponse
 
-  case class SignDLC(accept: DLCAccept, escaped: Boolean) extends CliCommand
+  case class SignDLC(accept: DLCAccept, escaped: Boolean)
+      extends CliCommand
+      with JsonResponse
 
   case class AddDLCSigs(sigs: DLCSign) extends CliCommand
 
@@ -950,15 +962,13 @@ object CliCommand {
       oracleSig: SchnorrDigitalSignature,
       escaped: Boolean)
       extends CliCommand
+      with JsonResponse
 
   case class AcceptDLCMutualClose(
       mutualCloseSig: DLCMutualCloseSig,
       noBroadcast: Boolean)
       extends CliCommand
-
-  trait Broadcastable {
-    def noBroadcast: Boolean
-  }
+      with Broadcastable
 
   case class GetDLCFundingTx(eventId: Sha256DigestBE) extends CliCommand
 

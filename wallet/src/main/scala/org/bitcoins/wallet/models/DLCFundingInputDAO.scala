@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.Sha256DigestBE
+import org.bitcoins.core.crypto.{Sha256Digest, Sha256DigestBE}
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
@@ -46,6 +46,9 @@ case class DLCFundingInputDAO()(
     database.run(q.result).map(_.toVector)
   }
 
+  def findByEventId(eventId: Sha256Digest): Future[Vector[DLCFundingInputDb]] =
+    findByEventId(eventId.flip)
+
   def findByEventId(
       eventId: Sha256DigestBE,
       isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] = {
@@ -55,4 +58,9 @@ case class DLCFundingInputDAO()(
 
     database.run(q.result).map(_.toVector)
   }
+
+  def findByEventId(
+      eventId: Sha256Digest,
+      isInitiator: Boolean): Future[Vector[DLCFundingInputDb]] =
+    findByEventId(eventId.flip, isInitiator)
 }
