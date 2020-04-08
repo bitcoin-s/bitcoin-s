@@ -75,8 +75,15 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
         logger.info(s"Sending $amount to $address at feerate $feeRate")
         TransactionOutput(amount, address.scriptPubKey)
     }
+    sendToOutputs(destinations, feeRate, fromAccount)
+  }
+
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction] = {
     for {
-      txBuilder <- fundRawTransactionInternal(destinations = destinations,
+      txBuilder <- fundRawTransactionInternal(destinations = outputs,
                                               feeRate = feeRate,
                                               fromAccount = fromAccount,
                                               keyManagerOpt = Some(keyManager))
