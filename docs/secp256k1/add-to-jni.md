@@ -344,13 +344,46 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
 
 2. Configure and build `secp256k1`
 
-   You will need to go to the `bitcoin-s/secp256k1` directory in a terminal and running the following where you may need to add to the `./configure` command if you are introducing a new module
+   You will need to go to the `bitcoin-s/secp256k1` directory in a terminal and running the following where you may need to add to the `./configure` command if you are introducing a new module.
+
+   __For Linux or OSx (64-bit)__
+
+   You will have to make sure `JAVA_HOME` is set, and build tools are installed, for Linux this requires:
 
    ```bashrc
-   $ ./autogen.sh
-   $ ./configure --enable-jni --enable-experimental --enable-module-ecdh
-   $ make
-   $ make check
+   echo JAVA_HOME
+   sudo apt install build-essential autotools-dev libtool automake
+   ```
+
+   and for Mac this requires:
+
+   ```bashrc
+   brew install automake libtool
+   ```
+
+   You should then be able to build `libsecp256k1` with the following:
+
+   ```bashrc
+   ./autogen.sh
+   ./configure --enable-jni --enable-experimental --enable-module-ecdh
+   make
+   make check
+   ```
+
+   __For Windows (64-bit)__
+
+   Windows bindings are cross-built on Linux. You need to install the `mingw` toolchain and have `JAVA_HOME` point to a Windows JDK:
+
+   ```bashrc
+   sudo apt install g++-mingw-w64-x86-64
+   sudo update-alternatives --config x86_64-w64-mingw32-g++
+   ```
+
+   You should then be able to build `libsecp256k1` with the following:
+
+   ```bashrc
+   echo "LDFLAGS = -no-undefined" >> Makefile.am
+   ./configure --host=x86_64-w64-mingw32 --enable-experimental --enable-module_ecdh --enable-jni && make clean && make CFLAGS="-std=c99"
    ```
 
 3. Copy binaries into bitcoin-s natives for your system
