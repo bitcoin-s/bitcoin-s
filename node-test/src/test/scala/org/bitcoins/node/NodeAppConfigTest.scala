@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.config.TestNet3
 import com.typesafe.config.Config
@@ -10,7 +10,7 @@ import org.bitcoins.core.config.MainNet
 import ch.qos.logback.classic.Level
 import java.nio.file.Files
 
-class NodeAppConfigTest extends BitcoinSUnitTest {
+class NodeAppConfigTest extends BitcoinSAsyncTest {
   val tempDir = Files.createTempDirectory("bitcoin-s")
   val config = NodeAppConfig(directory = tempDir)
 

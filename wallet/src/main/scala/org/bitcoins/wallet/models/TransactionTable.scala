@@ -11,15 +11,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   WitnessTransaction
 }
-import slick.jdbc.SQLiteProfile.api._
-import slick.lifted.{PrimaryKey, ProvenShape}
 
 trait TxDB {
   def txIdBE: DoubleSha256DigestBE
-}
-
-trait TxTable[DbEntryType <: TxDB] extends Table[DbEntryType] {
-  def txIdBE: Rep[DoubleSha256DigestBE]
 }
 
 /**
@@ -93,90 +87,4 @@ object TransactionDb {
                   tx.outputs.size,
                   tx.lockTime)
   }
-}
-
-class TransactionTable(tag: Tag)
-    extends Table[TransactionDb](tag, "tx_table")
-    with TxTable[TransactionDb] {
-
-  import org.bitcoins.db.DbCommonsColumnMappers._
-
-  def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
-
-  def transaction: Rep[Transaction] = column("transaction")
-
-  def unsignedTxIdBE: Rep[DoubleSha256DigestBE] = column("unsignedTxIdBE")
-
-  def unsignedTx: Rep[Transaction] = column("unsignedTx")
-
-  def wTxIdBEOpt: Rep[Option[DoubleSha256DigestBE]] =
-    column("wTxIdBE")
-
-  def totalOutput: Rep[CurrencyUnit] = column("totalOutput")
-
-  def numInputs: Rep[Int] = column("numInputs")
-
-  def numOutputs: Rep[Int] = column("numOutputs")
-
-  def locktime: Rep[UInt32] = column("locktime")
-
-  private type TransactionTuple =
-    (
-        DoubleSha256DigestBE,
-        Transaction,
-        DoubleSha256DigestBE,
-        Transaction,
-        Option[DoubleSha256DigestBE],
-        CurrencyUnit,
-        Int,
-        Int,
-        UInt32)
-
-  private val fromTuple: TransactionTuple => TransactionDb = {
-    case (txId,
-          transaction,
-          unsignedTxIdBE,
-          unsignedTx,
-          wTxIdBEOpt,
-          totalOutput,
-          numInputs,
-          numOutputs,
-          locktime) =>
-      TransactionDb(txId,
-                    transaction,
-                    unsignedTxIdBE,
-                    unsignedTx,
-                    wTxIdBEOpt,
-                    totalOutput,
-                    numInputs,
-                    numOutputs,
-                    locktime)
-  }
-
-  private val toTuple: TransactionDb => Option[TransactionTuple] = tx =>
-    Some(
-      (tx.txIdBE,
-       tx.transaction,
-       tx.unsignedTxIdBE,
-       tx.unsignedTx,
-       tx.wTxIdBEOpt,
-       tx.totalOutput,
-       tx.numInputs,
-       tx.numOutputs,
-       tx.lockTime))
-
-  def * : ProvenShape[TransactionDb] =
-    (txIdBE,
-     transaction,
-     unsignedTxIdBE,
-     unsignedTx,
-     wTxIdBEOpt,
-     totalOutput,
-     numInputs,
-     numOutputs,
-     locktime) <> (fromTuple, toTuple)
-
-  def primaryKey: PrimaryKey =
-    primaryKey("pk_tx", sourceColumns = txIdBE)
-
 }

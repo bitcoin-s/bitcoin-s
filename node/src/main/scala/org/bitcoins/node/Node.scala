@@ -3,29 +3,17 @@ package org.bitcoins.node
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDAO,
-  CompactFilterDAO,
-  CompactFilterHeaderDAO
-}
+import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.models.{
-  BroadcastAbleTransaction,
-  BroadcastAbleTransactionDAO,
-  Peer
-}
+import org.bitcoins.node.models.{BroadcastAbleTransaction, BroadcastAbleTransactionDAO, Peer}
 import org.bitcoins.node.networking.P2PClient
-import org.bitcoins.node.networking.peer.{
-  PeerMessageReceiver,
-  PeerMessageSender
-}
+import org.bitcoins.node.networking.peer.{PeerMessageReceiver, PeerMessageSender}
 import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
 import org.bitcoins.rpc.util.AsyncUtil
-import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +43,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     this
   }
 
-  lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
+  lazy val txDAO = BroadcastAbleTransactionDAO()
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
