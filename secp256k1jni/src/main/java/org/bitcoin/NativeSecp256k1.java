@@ -530,6 +530,38 @@ public class NativeSecp256k1 {
         return sigArray;
     }
 
+    public static byte[] schnorrComputeSigPoint(byte[] data, byte[] nonce, byte[] pubkey, boolean compressed) throws AssertFailException {
+        checkArgument(data.length == 32 && nonce.length == 32 && pubkey.length == 32);
+
+        ByteBuffer byteBuff = nativeECDSABuffer.get();
+        if (byteBuff == null || byteBuff.capacity() < 32 + 32 + 32) {
+            byteBuff = ByteBuffer.allocateDirect(32 + 32 + 32);
+            byteBuff.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuff);
+        }
+        byteBuff.rewind();
+        byteBuff.put(data);
+        byteBuff.put(nonce);
+        byteBuff.put(pubkey);
+
+        byte[][] retByteArray;
+        r.lock();
+        try {
+            retByteArray = secp256k1_schnorrsig_compute_sigpoint(byteBuff, Secp256k1Context.getContext(), compressed);
+        } finally {
+            r.unlock();
+        }
+
+        byte[] pointArray = retByteArray[0];
+        int outputLen = new BigInteger(new byte[] { retByteArray[1][0] }).intValue() & 0xFF;
+        int retVal = new BigInteger(new byte[] { retByteArray[1][1] }).intValue();
+
+        assertEquals(pointArray.length, outputLen, "Got bad point length.");
+        assertEquals(retVal, 1, "Failed return value check.");
+
+        return pointArray;
+    }
+
     /**
      * libsecp256k1 schnorr verify - verifies BIP 340 Schnorr signatures
      *
@@ -613,6 +645,8 @@ public class NativeSecp256k1 {
     private static native byte[][] secp256k1_schnorrsig_sign(ByteBuffer byteBuff, long context);
 
     private static native byte[][] secp256k1_schnorrsig_sign_with_nonce(ByteBuffer byteBuff, long context);
+
+    private static native byte[][] secp256k1_schnorrsig_compute_sigpoint(ByteBuffer byteBuff, long context, boolean compressed);
 
     private static native int secp256k1_schnorrsig_verify(ByteBuffer byteBuffer, long context);
 }
