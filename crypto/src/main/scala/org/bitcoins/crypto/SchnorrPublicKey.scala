@@ -12,12 +12,20 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   require(Try(publicKey).isSuccess,
           s"Schnorr public key must be a valid x coordinate, got $bytes")
 
-  // TODO: match on CryptoContext once secp version is added
   def verify(data: ByteVector, signature: SchnorrDigitalSignature): Boolean = {
-    verifyWithBouncyCastle(data, signature)
+    verify(data, signature, CryptoContext.default)
   }
 
-  /*
+  def verify(
+      data: ByteVector,
+      signature: SchnorrDigitalSignature,
+      context: CryptoContext): Boolean = {
+    context match {
+      case CryptoContext.LibSecp256k1 => verifyWithSecp(data, signature)
+      case CryptoContext.BouncyCastle => verifyWithBouncyCastle(data, signature)
+    }
+  }
+
   def verifyWithSecp(
       data: ByteVector,
       signature: SchnorrDigitalSignature): Boolean = {
@@ -25,7 +33,6 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
                                   data.toArray,
                                   bytes.toArray)
   }
-   */
 
   def verifyWithBouncyCastle(
       data: ByteVector,
@@ -34,18 +41,29 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   }
 
   def computeSigPoint(data: ByteVector, nonce: SchnorrNonce): ECPublicKey = {
-    computeSigPoint(data, nonce, compressed = true)
+    computeSigPoint(data, nonce, compressed = true, CryptoContext.default)
   }
 
-  // TODO: match on CryptoContext once secp version is added
   def computeSigPoint(
       data: ByteVector,
       nonce: SchnorrNonce,
       compressed: Boolean): ECPublicKey = {
-    computeSigPointWithBouncyCastle(data, nonce, compressed)
+    computeSigPoint(data, nonce, compressed, CryptoContext.default)
   }
 
-  /*
+  def computeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      compressed: Boolean,
+      context: CryptoContext): ECPublicKey = {
+    context match {
+      case CryptoContext.LibSecp256k1 =>
+        computeSigPointWithSecp(data, nonce, compressed)
+      case CryptoContext.BouncyCastle =>
+        computeSigPointWithBouncyCastle(data, nonce, compressed)
+    }
+  }
+
   def computeSigPointWithSecp(
       data: ByteVector,
       nonce: SchnorrNonce,
@@ -57,7 +75,6 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
       compressed)
     ECPublicKey(ByteVector(sigPointBytes))
   }
-   */
 
   def computeSigPointWithBouncyCastle(
       data: ByteVector,
