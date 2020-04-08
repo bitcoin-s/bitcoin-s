@@ -5,6 +5,19 @@ title: Getting Bitcoin-S installed on your machine
 
 ## Getting Setup With Bitcoin-S
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<!-- END doctoc -->
+
+- [Step 1: Java and Scala](#step-1-java-and-scala)
+- [Step 2: Bitcoin-S Repository](#step-2-bitcoin-s-repository)
+- [Step 3: Configuration](#step-3-configuration)
+- [Step 4 (Optional): Discreet Log Contract Branch](#step-4-optional-discreet-log-contract-branch)
+- [Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)](#step-5-setting-up-a-bitcoin-s-server-neutrino-node)
+- [Step 6 (Optional): Moving To Testnet](#step-6-optional-moving-to-testnet)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Step 1: Java and Scala
 
 The first step in getting setup will be getting the [Java Development Kit](https://www.oracle.com/java/technologies/javase-downloads.html) (JDK) installed on your machine. Bitcoin-S works best with Java 8 but _should_ also work with Java 11 and Java 13.

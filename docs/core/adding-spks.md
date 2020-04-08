@@ -179,6 +179,37 @@ def build(
       scriptWitness: Option[ScriptWitness]): Gen[BitcoinUTXOSpendingInfoFull] = ???
 ```
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<!-- END doctoc -->
+
+- [Adding a New ScriptPubKey Type](#adding-a-new-scriptpubkey-type)
+  - [Step 0: Design Philosophy](#step-0-design-philosophy)
+  - [Step 1: Create a New ScriptPubKey Trait](#step-1-create-a-new-scriptpubkey-trait)
+  - [Step 2: Create Companion Object](#step-2-create-companion-object)
+  - [Step 3: Add to Relevant fromAsm Methods](#step-3-add-to-relevant-fromasm-methods)
+  - [Step 4: Create a ScriptSignature If Necessary](#step-4-create-a-scriptsignature-if-necessary)
+  - [Step 5: Add to ScriptSignature.fromAsm If Applicable](#step-5-add-to-scriptsignaturefromasm-if-applicable)
+  - [Step 6: Create Relevant BitcoinUTXOSpendingInfo](#step-6-create-relevant-bitcoinutxospendinginfo)
+    - [Non-Nested Single-Key Spending Info](#non-nested-single-key-spending-info)
+    - [Non-Nested Multi-Key Spending Info](#non-nested-multi-key-spending-info)
+    - [Nested Spending Info](#nested-spending-info)
+  - [Step 7: Add to Relevant Apply Methods](#step-7-add-to-relevant-apply-methods)
+  - [Step 8: Create a Signer](#step-8-create-a-signer)
+    - [Non-Nested Single-Key Spending Info](#non-nested-single-key-spending-info-1)
+    - [Non-Nested Multi-Key Spending Info](#non-nested-multi-key-spending-info-1)
+    - [Nested Spending Info](#nested-spending-info-1)
+  - [Step 9: Add to BitcoinSigner.sign](#step-9-add-to-bitcoinsignersign)
+  - [Step 10: Add to ScriptGenerators](#step-10-add-to-scriptgenerators)
+    - [ScriptPubKey Generator](#scriptpubkey-generator)
+    - [ScriptSignature Generator](#scriptsignature-generator)
+    - [ScriptPubKey with Paired ScriptSignature Generator](#scriptpubkey-with-paired-scriptsignature-generator)
+  - [Step 11: Add to CreditingTxGen](#step-11-add-to-creditingtxgen)
+  - [Step 12: Fix all Non-Exhaustive Matches](#step-12-fix-all-non-exhaustive-matches)
+  - [Step 13: Run tests and debug](#step-13-run-tests-and-debug)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Adding a New ScriptPubKey Type
 
 In this document, we will describe how to add new script implementations and types in Bitcoin-S. We will use the following script template example which we have called P2PK with Timeout to illustrate the process:
