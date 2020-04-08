@@ -333,6 +333,14 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def verify(hex: String, signature: ECDigitalSignature): Boolean =
     verify(BitcoinSUtil.decodeHex(hex), signature)
 
+  def schnorrVerify(
+      data: ByteVector,
+      signature: SchnorrDigitalSignature): Boolean = {
+    NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
+                                  data.toArray,
+                                  bytes.tail.toArray)
+  }
+
   override def toString = "ECPublicKey(" + hex + ")"
 
   /** Checks if the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] is compressed */

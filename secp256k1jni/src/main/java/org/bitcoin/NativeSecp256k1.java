@@ -493,6 +493,35 @@ public class NativeSecp256k1 {
     }
 
     /**
+     * libsecp256k1 schnorr verify - verifies BIP 340 Schnorr signatures
+     *
+     * @param sig signature to verify
+     * @param data message the signature has signed
+     * @param pubx the key that did the signing
+     */
+    public static boolean schnorrVerify(byte[] sig, byte[] data, byte[] pubx) throws AssertFailException {
+        checkArgument(sig.length == 64 && data.length == 32 && pubx.length == 32);
+
+        ByteBuffer byteBuffer = nativeECDSABuffer.get();
+        if (byteBuffer == null || byteBuffer.capacity() < 64 + 32 + 32) {
+            byteBuffer = ByteBuffer.allocateDirect(64 + 32 + 32);
+            byteBuffer.order(ByteOrder.nativeOrder());
+            nativeECDSABuffer.set(byteBuffer);
+        }
+        byteBuffer.rewind();
+        byteBuffer.put(sig);
+        byteBuffer.put(data);
+        byteBuffer.put(pubx);
+
+        r.lock();
+        try {
+            return secp256k1_schnorrsig_verify(byteBuffer, Secp256k1Context.getContext()) == 1;
+        } finally {
+            r.unlock();
+        }
+    }
+
+    /**
      * libsecp256k1 randomize - updates the context randomization
      *
      * @param seed 32-byte random seed
@@ -544,4 +573,6 @@ public class NativeSecp256k1 {
     private static native byte[][] secp256k1_ecdh(ByteBuffer byteBuff, long context, int inputLen);
 
     private static native byte[][] secp256k1_schnorrsig_sign(ByteBuffer byteBuff, long context);
+
+    private static native int secp256k1_schnorrsig_verify(ByteBuffer byteBuffer, long context);
 }

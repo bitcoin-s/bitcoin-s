@@ -239,7 +239,17 @@ public class NativeSecp256k1Test {
         String expectedSig = "6679441EA2A26D8723114C9288B850E9E9906F397C7C546CF805833C6ED8BF43DE89C69C3E21E4E44EF75B6BE4A3AC9FA72A6ECD47EDED3780A7BCDA7028288D";
         assertEquals(sigStr, expectedSig, "testSchnorrSign");
     }
+    
+    @Test
+    public void testSchnorrVerify() throws AssertFailException{
+        byte[] sig = toByteArray("6679441EA2A26D8723114C9288B850E9E9906F397C7C546CF805833C6ED8BF43DE89C69C3E21E4E44EF75B6BE4A3AC9FA72A6ECD47EDED3780A7BCDA7028288D");
+        byte[] data = toByteArray("E48441762FB75010B2AA31A512B62B4148AA3FB08EB0765D76B252559064A614");
+        byte[] pubx = toByteArray("B33CC9EDC096D0A83416964BD3C6247B8FECD256E4EFA7870D2C854BDEB33390");
 
+        boolean result = NativeSecp256k1.schnorrVerify(sig, data, pubx);
+
+        assertEquals(result, true, "testSchnorrVerify");
+    }
 
     //https://stackoverflow.com/a/19119453/967713
     private static byte[] toByteArray(final String hex) {
