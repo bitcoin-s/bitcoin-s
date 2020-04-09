@@ -32,6 +32,7 @@
     ],
     "Wallet": [
       "wallet/wallet",
+      "wallet/wallet-get-address",
       "wallet/chain-query-api",
       "wallet/node-api",
       "wallet/dlc",
