@@ -206,7 +206,7 @@ lazy val coreTest = project
   )
 
 lazy val appCommons = project
-  .in(file("app/app-commons"))
+  .in(file("app-commons"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     core % testAndCompile

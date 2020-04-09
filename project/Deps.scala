@@ -153,7 +153,7 @@ object Deps {
 
   val chainTest = List()
 
-  def commons(scalaVersion: String) = List(
+  def appCommons(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
     else Compile.newMicroPickle,
     Compile.playJson,
