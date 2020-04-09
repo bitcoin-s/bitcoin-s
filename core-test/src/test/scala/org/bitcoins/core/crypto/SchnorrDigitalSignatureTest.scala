@@ -2,6 +2,7 @@ package org.bitcoins.core.crypto
 
 import java.math.BigInteger
 
+import org.bitcoin.NativeSecp256k1
 import org.bitcoins.core.util.CryptoUtil
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
@@ -68,6 +69,37 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         val sig2 = privKey.schnorrSignWithNonce(bytes, nonce)
 
         assert(sig1 == sig2)
+    }
+  }
+
+  it must "correctly compute signature points" in {
+    forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
+      case (privKey, data) =>
+        val pubKey = privKey.publicKey
+        val sig = privKey.schnorrSign(data)
+        val pointBytes =
+          NativeSecp256k1.schnorrComputeSigPoint(data.toArray,
+                                                 sig.rx.toArray,
+                                                 pubKey.bytes.tail.toArray,
+                                                 true)
+        assert(ByteVector(pointBytes) == ECPrivateKey(sig.sig).publicKey.bytes)
+    }
+  }
+
+  it must "correctly compute signature points for sigs with fixed nonces" in {
+    forAll(CryptoGenerators.privateKey,
+           NumberGenerator.bytevector(32),
+           CryptoGenerators.privateKey) {
+      case (privKey, data, nonce) =>
+        val pubKey = privKey.publicKey
+        val sig = privKey.schnorrSignWithNonce(data, nonce)
+        assert(sig.rx == nonce.publicKey.bytes.tail)
+        val pointBytes =
+          NativeSecp256k1.schnorrComputeSigPoint(data.toArray,
+                                                 sig.rx.toArray,
+                                                 pubKey.bytes.tail.toArray,
+                                                 true)
+        assert(ByteVector(pointBytes) == ECPrivateKey(sig.sig).publicKey.bytes)
     }
   }
 }
