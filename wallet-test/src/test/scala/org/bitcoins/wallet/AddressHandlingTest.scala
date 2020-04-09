@@ -83,7 +83,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       } yield {
         assert(addresses.size == 10)
         assert(addresses.distinct.length == addresses.length,
-          s"We receive an identical address!")
+               s"We receive an identical address!")
 
       }
   }
@@ -99,7 +99,8 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       //when the thread gets killed while processing things in the queue
       //we want to make sure everything                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              is done processing before we assert
       //we failed
-      val allCompletedF = AsyncUtil.retryUntilSatisfied(generatedF.forall(_.isCompleted))
+      val allCompletedF =
+        AsyncUtil.retryUntilSatisfied(generatedF.forall(_.isCompleted))
       val addressesF = allCompletedF.flatMap { _ =>
         Future.sequence {
           generatedF
