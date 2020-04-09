@@ -1,10 +1,10 @@
 package org.bitcoins.rpc.client.v19
 
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
+import org.bitcoins.commons.serializers.JsonReaders.DoubleSha256DigestBEReads
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.rpc.client.common.Client
-import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
-import org.bitcoins.rpc.serializers.JsonReaders.DoubleSha256DigestBEReads
 import play.api.libs.json._
 
 import scala.concurrent.Future

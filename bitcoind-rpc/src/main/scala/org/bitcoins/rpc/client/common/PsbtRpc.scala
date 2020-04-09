@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.rpc.jsonmodels.AnalyzePsbtResult
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.commons.jsonmodels.bitcoind.AnalyzePsbtResult
+import org.bitcoins.commons.serializers.JsonSerializers._
 import play.api.libs.json.{JsString, Json}
 
 import scala.concurrent.Future

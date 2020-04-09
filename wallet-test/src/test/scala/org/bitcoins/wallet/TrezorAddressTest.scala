@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress

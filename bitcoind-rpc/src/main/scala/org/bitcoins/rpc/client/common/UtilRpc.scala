@@ -1,13 +1,13 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.rpc.jsonmodels.{
+import org.bitcoins.commons.jsonmodels.bitcoind.{
   DecodeScriptResult,
   ValidateAddressResult,
   ValidateAddressResultImpl
 }
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import play.api.libs.json.{JsString, Json}
 
 import scala.concurrent.Future

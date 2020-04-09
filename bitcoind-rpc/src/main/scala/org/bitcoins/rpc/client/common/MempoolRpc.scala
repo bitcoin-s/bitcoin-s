@@ -1,18 +1,10 @@
 package org.bitcoins.rpc.client.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.rpc.client.common.BitcoindVersion._
-import org.bitcoins.rpc.jsonmodels.{
-  GetMemPoolEntryResult,
-  GetMemPoolEntryResultPostV19,
-  GetMemPoolEntryResultPreV19,
-  GetMemPoolInfoResult,
-  GetMemPoolResult,
-  GetMemPoolResultPostV19,
-  GetMemPoolResultPreV19
-}
-import org.bitcoins.rpc.serializers.JsonReaders._
-import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.{JsBoolean, JsString}
 
 import scala.concurrent.Future

@@ -1,23 +1,22 @@
 package org.bitcoins.rpc.client.v17
 
-import org.bitcoins.core.currency.Bitcoins
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.rpc.client.common.Client
-import org.bitcoins.rpc.client.common.RpcOpts.WalletCreateFundedPsbtOptions
-import org.bitcoins.rpc.jsonmodels.{
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletCreateFundedPsbtOptions
+import org.bitcoins.commons.jsonmodels.bitcoind.{
   DecodePsbtResult,
   FinalizePsbtResult,
   WalletCreateFundedPsbtResult,
   WalletProcessPsbtResult
 }
-import org.bitcoins.rpc.serializers.JsonWriters._
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
+import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.rpc.client.common.Client
 import play.api.libs.json._
 
 import scala.concurrent.Future
-import org.bitcoins.core.currency.CurrencyUnit
 
 /**
   * RPC calls related to PSBT (partially signed bitcoin transactions)

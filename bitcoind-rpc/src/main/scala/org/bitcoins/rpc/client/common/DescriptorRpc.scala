@@ -1,11 +1,11 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.rpc.jsonmodels.{
+import org.bitcoins.commons.jsonmodels.bitcoind.{
   DeriveAddressesResult,
   GetDescriptorInfoResult
 }
+import org.bitcoins.commons.serializers.JsonSerializers._
 import play.api.libs.json.{JsString, Json}
-import org.bitcoins.rpc.serializers.JsonSerializers._
 
 import scala.concurrent.Future
 

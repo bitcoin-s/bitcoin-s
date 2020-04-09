@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import org.bitcoins.chain.api.ChainApi
 
-import org.bitcoins.picklers._
+import org.bitcoins.commons.serializers.Picklers._
 
 case class ChainRoutes(chain: ChainApi)(implicit system: ActorSystem)
     extends ServerRoute {

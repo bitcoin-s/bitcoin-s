@@ -51,7 +51,7 @@ class ChainHandlerTest extends ChainUnitTest {
   val arrStr = source.getLines.next
   source.close()
 
-  import org.bitcoins.rpc.serializers.JsonReaders.BlockHeaderReads
+  import org.bitcoins.commons.serializers.JsonReaders.BlockHeaderReads
 
   val headersResult: Vector[BlockHeader] =
     Json.parse(arrStr).validate[Vector[BlockHeader]].get
@@ -82,7 +82,7 @@ class ChainHandlerTest extends ChainUnitTest {
     val arrStr = source.getLines.next
     source.close()
 
-    import org.bitcoins.rpc.serializers.JsonReaders.BlockHeaderReads
+    import org.bitcoins.commons.serializers.JsonReaders.BlockHeaderReads
     val headersResult = Json.parse(arrStr).validate[Vector[BlockHeader]]
     if (headersResult.isError) {
       fail(headersResult.toString)
