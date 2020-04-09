@@ -41,6 +41,7 @@ object WalletGUI extends JFXApp {
   private val statusLabel = new Label {
     maxWidth = Double.MaxValue
     padding = Insets(0, 10, 10, 10)
+    text <== GlobalData.statusText
   }
 
   private val resultArea = new TextArea {
