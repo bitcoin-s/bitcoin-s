@@ -252,6 +252,18 @@ public class NativeSecp256k1Test {
         String expectedSig = "5DA618C1936EC728E5CCFF29207F1680DCF4146370BDCFAB0039951B91E3637A50A2A860B130D009405511C3EAFE943E157A0DF2C2020E3E50DF05ADB175332F";
         assertEquals(sigStr, expectedSig, "testSchnorrSignWithNonce");
     }
+
+    @Test
+    public void testSchnorrComputeSigPoint() throws AssertFailException{
+        byte[] data = toByteArray("E48441762FB75010B2AA31A512B62B4148AA3FB08EB0765D76B252559064A614");
+        byte[] nonce = toByteArray("F14D7E54FF58C5D019CE9986BE4A0E8B7D643BD08EF2CDF1099E1A457865B547");
+        byte[] pubKey = toByteArray("B33CC9EDC096D0A83416964BD3C6247B8FECD256E4EFA7870D2C854BDEB33390");
+
+        byte[] pointArr = NativeSecp256k1.schnorrComputeSigPoint(data, nonce, pubKey, true);
+        String pointStr = toHex(pointArr);
+        String expectedPoint = "020D17280B8D2C2BD3B597B4446419C151DC237353D0FB9EC03D4EB7E8DE7EE0A8";
+        assertEquals(pointStr, expectedPoint, "testSchnorrComputeSigPoint");
+    }
     
     @Test
     public void testSchnorrVerify() throws AssertFailException{

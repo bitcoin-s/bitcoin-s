@@ -360,6 +360,18 @@ sealed abstract class ECPublicKey extends BaseECKey {
                                   bytes.tail.toArray)
   }
 
+  def schnorrComputePoint(
+      data: ByteVector,
+      nonce: ByteVector,
+      compressed: Boolean = isCompressed): ECPublicKey = {
+    val sigPointBytes = NativeSecp256k1.schnorrComputeSigPoint(
+      data.toArray,
+      nonce.toArray,
+      bytes.tail.toArray,
+      compressed)
+    ECPublicKey(ByteVector(sigPointBytes))
+  }
+
   override def toString = "ECPublicKey(" + hex + ")"
 
   /** Checks if the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] is compressed */
