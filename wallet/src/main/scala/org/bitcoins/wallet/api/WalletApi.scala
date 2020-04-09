@@ -9,7 +9,7 @@ import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -376,6 +376,62 @@ trait UnlockedWalletApi extends LockedWalletApi {
     for {
       account <- getDefaultAccount()
       tx <- sendToAddress(address, amount, feeRate, account)
+    } yield tx
+  }
+
+  /**
+    *
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction]
+
+  /**
+    * Sends money from the default account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      reserveUtxos: Boolean): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendToOutputs(outputs, feeRate, account, reserveUtxos)
+    } yield tx
+  }
+
+  /**
+    *
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction]
+
+  /**
+    * Sends money from the default account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRate: FeeUnit,
+      reserveUtxos: Boolean): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendToAddresses(addresses, amounts, feeRate, account, reserveUtxos)
     } yield tx
   }
 
