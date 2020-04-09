@@ -67,7 +67,8 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] = {
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction] = {
     require(amounts.size == addresses.size,
             "Must have an amount for every address")
     val destinations = addresses.zip(amounts).map {
@@ -75,18 +76,20 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
         logger.info(s"Sending $amount to $address at feerate $feeRate")
         TransactionOutput(amount, address.scriptPubKey)
     }
-    sendToOutputs(destinations, feeRate, fromAccount)
+    sendToOutputs(destinations, feeRate, fromAccount, reserveUtxos)
   }
 
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction] = {
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction] = {
     for {
       txBuilder <- fundRawTransactionInternal(destinations = outputs,
                                               feeRate = feeRate,
                                               fromAccount = fromAccount,
-                                              keyManagerOpt = Some(keyManager))
+                                              keyManagerOpt = Some(keyManager),
+                                              markAsReserved = reserveUtxos)
       signed <- txBuilder.sign
       ourOuts <- findOurOuts(signed)
       _ <- processOurTransaction(transaction = signed,

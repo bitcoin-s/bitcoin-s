@@ -381,7 +381,8 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction]
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction]
 
   /**
     * Sends money from the default account
@@ -390,11 +391,11 @@ trait UnlockedWalletApi extends LockedWalletApi {
     */
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit
-  ): Future[Transaction] = {
+      feeRate: FeeUnit,
+      reserveUtxos: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendToOutputs(outputs, feeRate, account)
+      tx <- sendToOutputs(outputs, feeRate, account, reserveUtxos)
     } yield tx
   }
 
@@ -408,7 +409,8 @@ trait UnlockedWalletApi extends LockedWalletApi {
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,
-      fromAccount: AccountDb): Future[Transaction]
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction]
 
   /**
     * Sends money from the default account
@@ -418,11 +420,11 @@ trait UnlockedWalletApi extends LockedWalletApi {
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit
-  ): Future[Transaction] = {
+      feeRate: FeeUnit,
+      reserveUtxos: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendToAddresses(addresses, amounts, feeRate, account)
+      tx <- sendToAddresses(addresses, amounts, feeRate, account, reserveUtxos)
     } yield tx
   }
 
