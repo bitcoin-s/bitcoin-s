@@ -14,6 +14,7 @@ import org.bitcoins.testkit.core.gen.{
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 class MerkleBuffersTest extends BitcoinSAsyncTest {
@@ -31,7 +32,7 @@ class MerkleBuffersTest extends BitcoinSAsyncTest {
       block <- BlockchainElementsGenerator.block(txs)
     } yield (txs, otherTxs, block)
 
-    forAll(txsAndBlockGen) {
+    forAllAsync(txsAndBlockGen) {
 
       case (txs, otherTxs, block) =>
         var receivedExpectedTXs: Option[Try[Assertion]] = None
@@ -50,7 +51,7 @@ class MerkleBuffersTest extends BitcoinSAsyncTest {
         val merkle = MerkleBlock(block, txs.map(_.txId))
         val _ = MerkleBuffers.putMerkle(merkle)
 
-        txs.map { tx =>
+        val txFs = txs.map { tx =>
           MerkleBuffers
             .putTx(tx, callbacks)
             .map(matches =>
@@ -59,7 +60,7 @@ class MerkleBuffersTest extends BitcoinSAsyncTest {
                 s"TX ${tx.txIdBE} did not match any merkle block in MerkleBuffers"))
         }
 
-        otherTxs.map { tx =>
+        val otherTxFs = otherTxs.map { tx =>
           MerkleBuffers
             .putTx(tx, callbacks)
             .map(matches =>
@@ -68,16 +69,21 @@ class MerkleBuffersTest extends BitcoinSAsyncTest {
                 s"Unrelated TX ${tx.txIdBE} did match merkle block in MerkleBuffers"))
         }
 
-        assert(callbackCount != 0,
-               "Callback was not called after processing all TXs!")
+        for {
+          _ <- Future.sequence(txFs)
+          _ <- Future.sequence(otherTxFs)
+        } yield {
+          assert(callbackCount != 0,
+                 "Callback was not called after processing all TXs!")
 
-        assert(callbackCount == 1,
-               s"Callback was called multiple times: $callbackCount")
+          assert(callbackCount == 1,
+                 s"Callback was called multiple times: $callbackCount")
 
-        receivedExpectedTXs match {
-          case None                     => fail("Callback was never called")
-          case Some(Success(assertion)) => assertion
-          case Some(Failure(exc))       => fail(exc)
+          receivedExpectedTXs match {
+            case None                     => fail("Callback was never called")
+            case Some(Success(assertion)) => assertion
+            case Some(Failure(exc))       => fail(exc)
+          }
         }
 
     }
