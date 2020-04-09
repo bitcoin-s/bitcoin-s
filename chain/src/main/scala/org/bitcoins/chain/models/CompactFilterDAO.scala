@@ -64,7 +64,7 @@ case class CompactFilterDAO()(
     result
   }
 
-  private def maxHeightQuery: SQLiteProfile.ProfileAction[
+  private val maxHeightQuery: SQLiteProfile.ProfileAction[
     Int,
     NoStream,
     Effect.Read] = {
