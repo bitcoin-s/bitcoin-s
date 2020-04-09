@@ -79,7 +79,9 @@ class AddressHandlingTest extends BitcoinSWalletTest {
 
       for {
         addresses <- addressesF
-      } yield assert(addresses.distinct.length == addresses.length,
+      } yield {
+        assert(addresses.size == 10)
+        assert(addresses.distinct.length == addresses.length,
                      s"We receive an identical address!")
 
   }
