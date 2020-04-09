@@ -6,7 +6,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
@@ -172,11 +172,7 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
 
   /**
     * Gets a new external address with the specified
-    * type. Calling this method multiple
-    * times will return the same address, until it has
-    * received funds.
-    *  TODO: Last sentence is not true, implement that
-    *  https://github.com/bitcoin-s/bitcoin-s/issues/628
+    * type.
     *  @param addressType
     */
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
@@ -192,6 +188,44 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       address <- getNewAddress(walletConfig.defaultAddressType)
     } yield address
   }
+
+  /**
+    * Gets a external address from the account associated with
+    * the given AddressType. Calling this method multiple
+    * times will return the same address, until it has
+    * received funds.
+    */
+  def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress]
+
+  /**
+    * Gets a external address from the default account.
+    * Calling this method multiple
+    * times will return the same address, until it has
+    * received funds.
+    */
+  def getUnusedAddress: Future[BitcoinAddress]
+
+  /** Gets the address associated with the pubkey at
+    * the resulting `BIP32Path` determined by the
+    * default account and the given chainType and addressIndex
+    */
+  def getAddress(
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb] = {
+    for {
+      account <- getDefaultAccount()
+      address <- getAddress(account, chainType, addressIndex)
+    } yield address
+  }
+
+  /** Gets the address associated with the pubkey at
+    * the resulting `BIP32Path` determined the given
+    * account, chainType, and addressIndex
+    */
+  def getAddress(
+      account: AccountDb,
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb]
 
   /**
     * Mimics the `getaddressinfo` RPC call in Bitcoin Core

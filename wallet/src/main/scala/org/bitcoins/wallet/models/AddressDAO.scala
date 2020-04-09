@@ -20,6 +20,7 @@ case class AddressDAO()(
   import org.bitcoins.db.DbCommonsColumnMappers._
 
   override val table: TableQuery[AddressTable] = TableQuery[AddressTable]
+  private val spendingInfoTable = TableQuery[SpendingInfoTable]
 
   override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
     SlickUtil.createAllNoAutoInc(ts, database, table)
@@ -61,6 +62,20 @@ case class AddressDAO()(
   def findAllSPKs(): Future[Vector[ScriptPubKey]] = {
     val query = table.map(_.scriptPubKey).distinct
     database.run(query.result).map(_.toVector)
+  }
+
+  def getUnusedAddresses: Future[Vector[AddressDb]] = {
+    val query = {
+      val joined =
+        table.joinLeft(spendingInfoTable).on(_.scriptPubKey === _.scriptPubKey)
+      joined.filter(_._2.isEmpty)
+    }
+
+    database.runVec(query.result).map(_.map(_._1))
+  }
+
+  def getUnusedAddresses(hdAccount: HDAccount): Future[Vector[AddressDb]] = {
+    getUnusedAddresses.map(_.filter(_.path.account == hdAccount))
   }
 
   private def findMostRecentForChain(
