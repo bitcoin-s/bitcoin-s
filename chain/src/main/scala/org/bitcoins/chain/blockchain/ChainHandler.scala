@@ -142,9 +142,10 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
+    val blockCountF = getBlockCount
     for {
       startHeight <- startHeightF
-      blockCount <- getBlockCount
+      blockCount <- blockCountF
       stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount
       else startHeight - 1 + batchSize
       stopBlockOpt <- getHeadersAtHeight(stopHeight).map(_.headOption)
@@ -162,6 +163,7 @@ case class ChainHandler(
   override def nextFilterHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
+    val filterHeaderCountF = getFilterHeaderCount
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -171,9 +173,10 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
+
     for {
       startHeight <- startHeightF
-      filterHeaderCount <- getFilterHeaderCount
+      filterHeaderCount <- filterHeaderCountF
       stopHeight = if (startHeight - 1 + batchSize > filterHeaderCount)
         filterHeaderCount
       else startHeight - 1 + batchSize
