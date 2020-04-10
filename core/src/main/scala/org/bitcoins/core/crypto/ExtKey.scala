@@ -203,8 +203,8 @@ sealed abstract class ExtPrivateKey
     val tweak = if (Secp256k1Context.isEnabled) {
       NativeSecp256k1.privKeyTweakAdd(il.toArray, key.bytes.toArray)
     } else {
-      val sum = BouncyCastleUtil.addNumbers(key.bytes, il)
-      sum.toByteArray
+      val sum = key.fieldElement.add(FieldElement(il))
+      sum.bytes.toArray
     }
     val childKey = ECPrivateKey(ByteVector(tweak))
     val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)

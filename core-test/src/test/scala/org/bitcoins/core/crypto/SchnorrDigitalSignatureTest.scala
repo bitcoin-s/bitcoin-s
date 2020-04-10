@@ -12,9 +12,8 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
   behavior of "SchnorrDigitalSignature"
 
   it must "have serialization symmetry" in {
-    forAll(NumberGenerator.bytevector(64)) { bytes =>
-      val sig = SchnorrDigitalSignature(bytes)
-      assert(sig.bytes == bytes)
+    forAll(CryptoGenerators.schnorrDigitalSignature) { sig =>
+      assert(SchnorrDigitalSignature(sig.bytes) == sig)
     }
   }
 
@@ -86,55 +85,6 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
     * => privKey = (sig1 - sig2) * inverse(message1 - message2)
     */
   it must "leak keys if two messages are signed" in {
-    // The order of the secp256k1 curve (and thus the modulus of the field elements)
-    val N = BigInt(CryptoParams.params.getN)
-
-    /** Returns num % N as a positive integer */
-    def modN(num: BigInt): BigInt = {
-      if (num < 0) {
-        (num % N) + N
-      } else {
-        num % N
-      }
-    }
-
-    /** Computes the inverse (mod M) of the input using the Euclidean Algorithm (log time)
-      * Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]
-      */
-    def modInverse(aInit: BigInt): BigInt = {
-      var a = modN(aInit)
-      var m = N
-      var m0 = m
-      var y = BigInt(0)
-      var x = BigInt(1)
-
-      if (m == 1)
-        return 0
-
-      while (a > 1) {
-        // q is quotient
-        val q = a / m
-
-        var t = m
-
-        // m is remainder now, process
-        // same as Euclid's algo
-        m = a % m
-        a = t
-        t = y
-
-        // Update x and y
-        y = x - q * y
-        x = t
-      }
-
-      if (x < 0) {
-        x += m0
-      }
-
-      modN(x)
-    }
-
     forAll(CryptoGenerators.nonZeroPrivKey,
            CryptoGenerators.nonZeroPrivKey,
            NumberGenerator.bytevector(32),
@@ -148,9 +98,9 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         val sig2 = privKey.schnorrSignWithNonce(message2, nonce)
 
         // s1 = nonce + e1*privKey
-        val s1 = NumberUtil.toUnsignedInt(sig1.sig)
+        val s1 = NumberUtil.uintToFieldElement(sig1.sig)
         // s2 = nonce + e2*privKey
-        val s2 = NumberUtil.toUnsignedInt(sig2.sig)
+        val s2 = NumberUtil.uintToFieldElement(sig2.sig)
 
         // When signing a message you actually sign SHA256_challenge(Rx || pubKey || message)
         val e1Bytes =
@@ -166,23 +116,20 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
               "BIP340/challenge")
             .bytes
 
-        val e1 = NumberUtil.toUnsignedInt(e1Bytes)
-        val e2 = NumberUtil.toUnsignedInt(e2Bytes)
+        val e1 = NumberUtil.uintToFieldElement(e1Bytes)
+        val e2 = NumberUtil.uintToFieldElement(e2Bytes)
 
-        val k = NumberUtil.toUnsignedInt(nonce.nonceKey.bytes)
-        val x = NumberUtil.toUnsignedInt(privKey.schnorrKey.bytes)
-
-        // This tests that modInverse is working
-        assert(modN(modInverse(e1 - e2) * modN(e1 - e2)) == BigInt(1))
+        val k = NumberUtil.uintToFieldElement(nonce.nonceKey.bytes)
+        val x = NumberUtil.uintToFieldElement(privKey.schnorrKey.bytes)
 
         // Test that we have correctly computed the components
-        assert(modN(k + (e1 * x)) == s1)
-        assert(modN(k + (e2 * x)) == s2)
+        assert(k.add(e1.multiply(x)) == s1)
+        assert(k.add(e2.multiply(x)) == s2)
 
         // Note that all of s1, s2, e1, and e2 are public information:
         // s1 - s2 = nonce + e1*privKey - (nonce + e2*privKey) = privKey*(e1-e2)
         // => privKey = (s1 - s2) * modInverse(e1 - e2)
-        val privNum = modN(modN(s1 - s2) * modInverse(e1 - e2))
+        val privNum = s1.subtract(s2).multInv(e1.subtract(e2))
 
         // Assert that we've correctly recovered the private key form public info
         assert(privNum == x)

@@ -118,6 +118,26 @@ sealed abstract class CryptoGenerators {
 
   def privateKey: Gen[ECPrivateKey] = Gen.delay(ECPrivateKey())
 
+  def fieldElement: Gen[FieldElement] = privateKey.map(_.fieldElement)
+
+  def smallFieldElement: Gen[FieldElement] =
+    NumberGenerator
+      .bytevector(30)
+      .map(bytes => FieldElement(ByteVector.fill(2)(0) ++ bytes))
+
+  def reallySmallFieldElement: Gen[FieldElement] =
+    NumberGenerator
+      .bytevector(15)
+      .map(bytes => FieldElement(ByteVector.fill(17)(0) ++ bytes))
+
+  def largeFieldElement: Gen[FieldElement] =
+    NumberGenerator
+      .bytevector(30)
+      .map(bytes => FieldElement(ByteVector.fill(2)(Byte.MinValue) ++ bytes))
+
+  def nonZeroFieldElement: Gen[FieldElement] =
+    nonZeroPrivKey.map(_.fieldElement)
+
   /** Generates a random non-zero private key */
   def nonZeroPrivKey: Gen[ECPrivateKey] =
     privateKey.filter(_.bytes.toArray.exists(_ != 0.toByte))

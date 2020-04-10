@@ -5,6 +5,7 @@ import org.bitcoins.core.util.{BitcoinSUtil, CryptoUtil, Factory}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 32, s"Schnorr nonce must be 32 bytes, get $bytes")
@@ -12,20 +13,26 @@ case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
   private val evenKey: ECPublicKey = ECPublicKey(s"02$hex")
   private val oddKey: ECPublicKey = ECPublicKey(s"03$hex")
 
-  private lazy val yCoordEven: Boolean = {
+  private val yCoordEven: Boolean = {
     evenKey.toPoint.getRawYCoord.sqrt() != null
   }
 
   /** Computes the public key associated with a SchnorrNonce as specified in bip-schnorr.
     * They y-coordinate is chosen to be a quadratic residue.
     */
-  lazy val publicKey: ECPublicKey = {
+  val publicKey: ECPublicKey = {
     if (yCoordEven) {
       evenKey
     } else {
       oddKey
     }
   }
+
+  require(Try(publicKey).isSuccess,
+          s"Schnorr nonce must be a valid x coordinate, got $bytes")
+  require(
+    publicKey.toPoint.getRawYCoord.sqrt != null,
+    "Schnorr nonce must be an x coordinate for which a quadratic residue y coordinate exists")
 }
 
 object SchnorrNonce extends Factory[SchnorrNonce] {

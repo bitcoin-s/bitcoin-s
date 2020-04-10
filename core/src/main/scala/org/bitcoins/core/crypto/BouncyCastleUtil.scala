@@ -18,24 +18,9 @@ object BouncyCastleUtil {
 
   private val curve: ECCurve = CryptoParams.curve.getCurve
   private val G: ECPoint = CryptoParams.curve.getG
-  private val N: BigInteger = CryptoParams.curve.getN
 
   private def getBigInteger(bytes: ByteVector): BigInteger = {
     new BigInteger(1, bytes.toArray)
-  }
-
-  def addNumbers(num1: ByteVector, num2: ByteVector): BigInteger = {
-    val bigInteger1 = getBigInteger(num1)
-    val bigInteger2 = getBigInteger(num2)
-
-    bigInteger1.add(bigInteger2).mod(N)
-  }
-
-  def multiplyNumbers(num1: ByteVector, num2: ByteVector): BigInteger = {
-    val bigInteger1 = getBigInteger(num1)
-    val bigInteger2 = getBigInteger(num2)
-
-    bigInteger1.multiply(bigInteger2).mod(N)
   }
 
   def pubKeyTweakMul(publicKey: ECPublicKey, tweak: ByteVector): ECPublicKey = {
@@ -139,17 +124,17 @@ object BouncyCastleUtil {
       privateKey: ECPrivateKey,
       nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
     val rx = nonceKey.schnorrNonce
-    val k = nonceKey.bytes
-    val x = privateKey.schnorrKey.bytes
+    val k = nonceKey.fieldElement
+    val x = privateKey.schnorrKey.fieldElement
     val e = CryptoUtil
       .taggedSha256(rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign,
                     "BIP340/challenge")
       .bytes
 
-    val challenge = ByteVector(multiplyNumbers(e, x).toByteArray)
-    val sig = addNumbers(k, challenge)
+    val challenge = x.multiply(FieldElement(e))
+    val sig = k.add(challenge)
 
-    SchnorrDigitalSignature(rx, ByteVector(sig.toByteArray).takeRight(32))
+    SchnorrDigitalSignature(rx, sig.bytes)
   }
 
   def schnorrVerify(
@@ -161,22 +146,20 @@ object BouncyCastleUtil {
 
     sT match {
       case Success(s) =>
-        val e = CryptoUtil
+        val eBytes = CryptoUtil
           .taggedSha256(rx.bytes ++ schnorrPubKey.bytes ++ data,
                         "BIP340/challenge")
           .bytes
-        val negE = ECPrivateKey(e).negate.bytes
+
+        val e = FieldElement(eBytes)
+        val negE = e.negate
 
         val sigPoint = s.publicKey
-        val challengePointT = Try(pubKeyTweakMul(schnorrPubKey.publicKey, negE))
+        val challengePoint = schnorrPubKey.publicKey.tweakMultiply(negE)
+        val computedR = challengePoint.add(sigPoint)
+        val yCoord = computedR.toPoint.getRawYCoord
 
-        val resultT = challengePointT.map { challengePoint =>
-          val computedR = challengePoint.add(sigPoint)
-          computedR.toPoint.getRawYCoord.sqrt() != null &&
-          computedR.schnorrNonce == rx
-        }
-
-        resultT.getOrElse(false)
+        yCoord != null && yCoord.sqrt() != null && computedR.schnorrNonce == rx
       case Failure(_) => false
     }
   }
@@ -186,12 +169,14 @@ object BouncyCastleUtil {
       nonce: SchnorrNonce,
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey = {
-    val e = CryptoUtil
+    val eBytes = CryptoUtil
       .taggedSha256(nonce.bytes ++ pubKey.bytes ++ data, "BIP340/challenge")
       .bytes
 
+    val e = FieldElement(eBytes)
+
     val compressedSigPoint =
-      nonce.publicKey.add(pubKeyTweakMul(pubKey.publicKey, e))
+      nonce.publicKey.add(pubKey.publicKey.tweakMultiply(e))
 
     if (compressed) {
       compressedSigPoint

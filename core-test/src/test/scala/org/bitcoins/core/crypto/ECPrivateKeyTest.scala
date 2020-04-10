@@ -106,8 +106,8 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
       val negPubKey = negPrivKey.publicKey
       assert(pubKey.bytes.tail == negPubKey.bytes.tail)
       assert(pubKey.bytes.head != negPubKey.bytes.head)
-      assert(BouncyCastleUtil
-        .addNumbers(privKey.bytes, negPrivKey.bytes) == java.math.BigInteger.ZERO)
+      assert(
+        privKey.fieldElement.add(negPrivKey.fieldElement) == FieldElement.zero)
     }
   }
 

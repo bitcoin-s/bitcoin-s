@@ -23,16 +23,7 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   it must "add private keys the same" in {
     forAll(CryptoGenerators.privateKey, CryptoGenerators.privateKey) {
       case (priv1, priv2) =>
-        val sumWithBouncyCastle =
-          BouncyCastleUtil.addNumbers(priv1.bytes, priv2.bytes)
-        val sumWithSecp = NativeSecp256k1.privKeyTweakAdd(priv1.bytes.toArray,
-                                                          priv2.bytes.toArray)
-
-        val sumKeyWithBouncyCastle =
-          ECPrivateKey(ByteVector(sumWithBouncyCastle.toByteArray))
-        val sumKeyWithSecp = ECPrivateKey(ByteVector(sumWithSecp))
-
-        assert(sumKeyWithBouncyCastle == sumKeyWithSecp)
+        assert(priv1.addWithBouncyCastle(priv2) == priv1.addWithSecp(priv2))
     }
   }
 
@@ -51,15 +42,11 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   }
 
   it must "multiply keys the same" in {
-    forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
+    forAll(CryptoGenerators.publicKey, CryptoGenerators.fieldElement) {
       case (pubKey, tweak) =>
-        val multKeyBytes = NativeSecp256k1.pubKeyTweakMul(pubKey.bytes.toArray,
-                                                          tweak.bytes.toArray,
-                                                          pubKey.isCompressed)
-        val multKeyExpected = ECPublicKey.fromBytes(ByteVector(multKeyBytes))
-        val multKey = BouncyCastleUtil.pubKeyTweakMul(pubKey, tweak.bytes)
-
-        assert(multKey == multKeyExpected)
+        assert(
+          pubKey.tweakMultiplyWithSecp(tweak) == pubKey
+            .tweakMultiplyWithBouncyCastle(tweak))
     }
   }
 

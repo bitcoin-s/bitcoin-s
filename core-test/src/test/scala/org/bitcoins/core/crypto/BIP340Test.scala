@@ -4,6 +4,8 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 import scodec.bits.ByteVector
 
+import scala.util.{Failure, Success, Try}
+
 /** Tests from https://github.com/sipa/bips/blob/bip-taproot/bip-0340/test-vectors.csv */
 class BIP340Test extends BitcoinSUnitTest {
   behavior of "Schnorr Signing"
@@ -46,20 +48,28 @@ class BIP340Test extends BitcoinSUnitTest {
       sig: String,
       result: Boolean,
       comment: String): Assertion = {
-    val pk = SchnorrPublicKey(pubKey)
+    val pkT = Try(SchnorrPublicKey(pubKey))
     val msgBytes = ByteVector.fromHex(msg).get
-    val schnorrSig = SchnorrDigitalSignature(sig)
+    val schnorrSigT = Try(SchnorrDigitalSignature(sig))
 
-    (secKeyOpt, auxRandOpt) match {
-      case (Some(secKeyStr), Some(auxRandStr)) =>
-        val secKey = ECPrivateKey(secKeyStr)
-        assert(secKey.schnorrPublicKey == pk)
-        val auxRand = ByteVector.fromHex(auxRandStr).get
-        testSign(index, secKey, auxRand, msgBytes, schnorrSig)
-      case _ => ()
+    (pkT, schnorrSigT) match {
+      case (Success(pk), Success(schnorrSig)) =>
+        (secKeyOpt, auxRandOpt) match {
+          case (Some(secKeyStr), Some(auxRandStr)) =>
+            val secKey = ECPrivateKey(secKeyStr)
+            assert(secKey.schnorrPublicKey == pk)
+            val auxRand = ByteVector.fromHex(auxRandStr).get
+            testSign(index, secKey, auxRand, msgBytes, schnorrSig)
+          case _ => ()
+        }
+
+        testVerify(index, pk, msgBytes, schnorrSig, result, comment)
+      case (Failure(_), _) |
+          (_, Failure(_)) => // Must be verify only test resulting in false
+        assert(secKeyOpt.isEmpty)
+        assert(auxRandOpt.isEmpty)
+        assert(!result, s"Test $index failed to parse signature: $comment")
     }
-
-    testVerify(index, pk, msgBytes, schnorrSig, result, comment)
   }
 
   it must "pass the BIP 340 test-vectors" in {

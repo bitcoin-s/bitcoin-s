@@ -6,10 +6,13 @@ import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 32,
           s"Schnorr public keys must be 32 bytes, got $bytes")
+  require(Try(publicKey).isSuccess,
+          s"Schnorr public key must be a valid x coordinate, got $bytes")
 
   def verify(data: ByteVector, signature: SchnorrDigitalSignature): Boolean = {
     verify(data, signature, Secp256k1Context.isEnabled)
@@ -83,7 +86,19 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   }
 
   def publicKey: ECPublicKey = {
-    ECPublicKey(s"02$hex")
+    val pubKeyBytes = ByteVector.fromByte(2) ++ bytes
+
+    val validPubKey = if (Secp256k1Context.isEnabled) {
+      NativeSecp256k1.isValidPubKey(pubKeyBytes.toArray)
+    } else {
+      BouncyCastleUtil.validatePublicKey(pubKeyBytes)
+    }
+
+    require(
+      validPubKey,
+      s"Cannot construct schnorr public key from invalid x coordinate: $bytes")
+
+    ECPublicKey(pubKeyBytes)
   }
 }
 
