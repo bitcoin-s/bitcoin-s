@@ -142,7 +142,16 @@ bitcoin-s {
         discoveryBatchSize = 100
 
         requiredConfirmations = 6
-    }
+
+        # How big the address queue size is before we throw an exception
+        # because of an overflow
+        addressQueueSize = 10
+
+        # How long we attempt to generate an address for
+        # before we timeout
+        addressQueueTimeout = 5 seconds
+
+   }
 }
 
 

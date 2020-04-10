@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.config
 
 import java.nio.file.{Files, Path}
+import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.Config
 import org.bitcoins.core.hd._
@@ -9,6 +10,7 @@ import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
 
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S wallet
@@ -98,6 +100,26 @@ case class WalletAppConfig(
   def kmParams: KeyManagerParams =
     KeyManagerParams(seedPath, defaultAccountKind, network)
 
+  /** How much elements we can have in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
+    * before we throw an exception */
+  def addressQueueSize: Int = {
+    if (config.hasPath("wallet.addressQueueSize")) {
+      config.getInt("wallet.addressQueueSize")
+    } else {
+      100
+    }
+  }
+
+  /** How long we wait while generating an address in [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
+    * before we timeout */
+  def addressQueueTimeout: scala.concurrent.duration.Duration = {
+    if (config.hasPath("wallet.addressQueueTimeout")) {
+      val javaDuration = config.getDuration("wallet.addressQueueTimeout")
+      new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
+    } else {
+      5.second
+    }
+  }
 }
 
 object WalletAppConfig {

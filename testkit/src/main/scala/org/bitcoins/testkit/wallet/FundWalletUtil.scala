@@ -21,18 +21,8 @@ trait FundWalletUtil {
       account: HDAccount,
       wallet: Wallet)(implicit ec: ExecutionContext): Future[Wallet] = {
 
-    val init = Future.successful(Vector.empty[BitcoinAddress])
-    val addressesF: Future[Vector[BitcoinAddress]] = 0.until(3).foldLeft(init) {
-      case (accumF, _) =>
-        //this Thread.sleep is needed because of
-        //https://github.com/bitcoin-s/bitcoin-s/issues/1009
-        //once that is resolved we should be able to remove this
-        for {
-          accum <- accumF
-          address <- wallet.getNewAddress(account)
-        } yield {
-          accum.:+(address)
-        }
+    val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
+      Vector.fill(3)(wallet.getNewAddress(account))
     }
 
     //construct three txs that send money to these addresses
