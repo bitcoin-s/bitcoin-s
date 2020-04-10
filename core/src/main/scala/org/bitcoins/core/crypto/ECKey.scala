@@ -99,6 +99,28 @@ sealed abstract class ECPrivateKey
     SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
+  def nonceKey: ECPrivateKey = {
+    if (schnorrNonce.publicKey == publicKey) {
+      this
+    } else {
+      this.negate
+    }
+  }
+
+  def schnorrKey: ECPrivateKey = {
+    if (schnorrPublicKey.publicKey == publicKey) {
+      this
+    } else {
+      this.negate
+    }
+  }
+
+  def negate: ECPrivateKey = {
+    val negPrivKeyNum = CryptoParams.curve.getN
+      .subtract(new BigInteger(1, bytes.toArray))
+    ECPrivateKey(ByteVector(negPrivKeyNum.toByteArray))
+  }
+
   /** Signifies if the this private key corresponds to a compressed public key */
   def isCompressed: Boolean
 
@@ -126,6 +148,14 @@ sealed abstract class ECPrivateKey
 
   def publicKeyWithBouncyCastle: ECPublicKey = {
     BouncyCastleUtil.computePublicKey(this)
+  }
+
+  def schnorrPublicKey: SchnorrPublicKey = {
+    SchnorrPublicKey(publicKey.bytes)
+  }
+
+  def schnorrNonce: SchnorrNonce = {
+    SchnorrNonce(publicKey.bytes)
   }
 
   /**
@@ -355,22 +385,19 @@ sealed abstract class ECPublicKey extends BaseECKey {
   def schnorrVerify(
       data: ByteVector,
       signature: SchnorrDigitalSignature): Boolean = {
-    NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
-                                  data.toArray,
-                                  bytes.tail.toArray)
+    schnorrPublicKey.verify(data, signature)
   }
 
   def schnorrComputePoint(
       data: ByteVector,
-      nonce: ByteVector,
+      nonce: SchnorrNonce,
       compressed: Boolean = isCompressed): ECPublicKey = {
-    val sigPointBytes = NativeSecp256k1.schnorrComputeSigPoint(
-      data.toArray,
-      nonce.toArray,
-      bytes.tail.toArray,
-      compressed)
-    ECPublicKey(ByteVector(sigPointBytes))
+    schnorrPublicKey.computeSigPoint(data, nonce, compressed)
   }
+
+  def schnorrPublicKey: SchnorrPublicKey = SchnorrPublicKey(bytes)
+
+  def schnorrNonce: SchnorrNonce = SchnorrNonce(bytes)
 
   override def toString = "ECPublicKey(" + hex + ")"
 

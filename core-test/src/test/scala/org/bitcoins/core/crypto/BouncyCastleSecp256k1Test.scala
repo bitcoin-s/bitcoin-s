@@ -50,6 +50,19 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     }
   }
 
+  it must "multiply keys the same" in {
+    forAll(CryptoGenerators.publicKey, CryptoGenerators.privateKey) {
+      case (pubKey, tweak) =>
+        val multKeyBytes = NativeSecp256k1.pubKeyTweakMul(pubKey.bytes.toArray,
+                                                          tweak.bytes.toArray,
+                                                          pubKey.isCompressed)
+        val multKeyExpected = ECPublicKey.fromBytes(ByteVector(multKeyBytes))
+        val multKey = BouncyCastleUtil.pubKeyTweakMul(pubKey, tweak.bytes)
+
+        assert(multKey == multKeyExpected)
+    }
+  }
+
   it must "validate keys the same" in {
     val keyOrGarbageGen = Gen.oneOf(CryptoGenerators.publicKey.map(_.bytes),
                                     NumberGenerator.bytevector(33))
@@ -94,6 +107,50 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         assert(
           pubKey.verifyWithBouncyCastle(bytes, badSig) == pubKey
             .verifyWithSecp(bytes, badSig))
+    }
+  }
+
+  it must "compute schnorr signatures the same" in {
+    forAll(CryptoGenerators.privateKey,
+           NumberGenerator.bytevector(32),
+           NumberGenerator.bytevector(32)) {
+      case (privKey, bytes, auxRand) =>
+        assert(
+          BouncyCastleUtil.schnorrSign(bytes, privKey, auxRand) == privKey
+            .schnorrSign(bytes, auxRand))
+    }
+  }
+
+  it must "validate schnorr signatures the same" in {
+    forAll(CryptoGenerators.privateKey,
+           NumberGenerator.bytevector(32),
+           CryptoGenerators.schnorrDigitalSignature) {
+      case (privKey, bytes, badSig) =>
+        val sig = privKey.schnorrSign(bytes)
+        val pubKey = privKey.schnorrPublicKey
+        assert(
+          BouncyCastleUtil
+            .schnorrVerify(bytes, privKey.schnorrPublicKey, sig) == pubKey
+            .verify(bytes, sig))
+        assert(
+          BouncyCastleUtil.schnorrVerify(bytes,
+                                         privKey.schnorrPublicKey,
+                                         badSig) == pubKey
+            .verify(bytes, badSig))
+    }
+  }
+
+  it must "compute schnorr signature points the same" in {
+    forAll(CryptoGenerators.publicKey,
+           CryptoGenerators.schnorrNonce,
+           NumberGenerator.bytevector(32)) {
+      case (pubKey, nonce, bytes) =>
+        assert(
+          BouncyCastleUtil.schnorrComputeSigPoint(
+            bytes,
+            nonce,
+            pubKey.schnorrPublicKey,
+            pubKey.isCompressed) == pubKey.schnorrComputePoint(bytes, nonce))
     }
   }
 }

@@ -14,20 +14,27 @@ class BIP340Test extends BitcoinSUnitTest {
       auxRand: ByteVector,
       msg: ByteVector,
       expectedSig: SchnorrDigitalSignature): Assertion = {
-    val sig = secKey.schnorrSign(msg, auxRand)
-    assert(sig == expectedSig, s"Test $index failed signing")
+    val secpSig = secKey.schnorrSign(msg, auxRand)
+    val bouncyCastleSig = BouncyCastleUtil.schnorrSign(msg, secKey, auxRand)
+    assert(secpSig == expectedSig,
+           s"Test $index failed signing for libsecp256k1")
+    assert(bouncyCastleSig == expectedSig,
+           s"Test $index failed signing for Bouncy Castle")
   }
 
   def testVerify(
       index: Int,
-      pubKey: ECPublicKey,
+      pubKey: SchnorrPublicKey,
       msg: ByteVector,
       sig: SchnorrDigitalSignature,
       expectedResult: Boolean,
       comment: String): Assertion = {
-    val result = pubKey.schnorrVerify(msg, sig)
-    assert(result == expectedResult,
-           s"Test $index failed verification: $comment")
+    val secpResult = pubKey.verify(msg, sig)
+    val bouncyCastleResult = BouncyCastleUtil.schnorrVerify(msg, pubKey, sig)
+    assert(secpResult == expectedResult,
+           s"Test $index failed verification for libsecp256k1: $comment")
+    assert(bouncyCastleResult == expectedResult,
+           s"Test $index failed verification for Bouncy Castle: $comment")
   }
 
   def test(
@@ -39,14 +46,14 @@ class BIP340Test extends BitcoinSUnitTest {
       sig: String,
       result: Boolean,
       comment: String): Assertion = {
-    val pk = ECPublicKey(s"02$pubKey") // TODO: Introduce x-only pubkey type
+    val pk = SchnorrPublicKey(pubKey)
     val msgBytes = ByteVector.fromHex(msg).get
     val schnorrSig = SchnorrDigitalSignature(sig)
 
     (secKeyOpt, auxRandOpt) match {
       case (Some(secKeyStr), Some(auxRandStr)) =>
         val secKey = ECPrivateKey(secKeyStr)
-        assert(secKey.publicKey.bytes.tail == pk.bytes.tail)
+        assert(secKey.schnorrPublicKey == pk)
         val auxRand = ByteVector.fromHex(auxRandStr).get
         testSign(index, secKey, auxRand, msgBytes, schnorrSig)
       case _ => ()
