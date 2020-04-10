@@ -73,7 +73,8 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "be safe to call getNewAddress multiple times in a row" in {
-    wallet: Wallet =>
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
       val addressesF = Future.sequence {
         Vector.fill(10)(wallet.getNewAddress())
       }
@@ -89,7 +90,8 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "fail with an illegal state exception if the queue is full" in {
-    wallet: Wallet =>
+    fundedWallet: FundedWallet =>
+      val wallet = fundedWallet.wallet
       //attempt to generate 20 addresses simultaneously
       //this should overwhelm our buffer size of 10
       val numAddress = 20
