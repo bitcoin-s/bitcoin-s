@@ -187,7 +187,16 @@ to ensure the entire module is initialized correctly.</p>
         discoveryBatchSize = 100
 
         requiredConfirmations = 6
-    }
+
+        # How big the<span class="hljs-built_in"> address queue </span>size is before we throw an exception
+        # because of an overflow
+        addressQueueSize = 10
+
+        # How long we attempt <span class="hljs-keyword">to</span> generate an<span class="hljs-built_in"> address </span><span class="hljs-keyword">for</span>
+        # before we timeout
+        addressQueueTimeout = 5 seconds
+
+   }
 }
 
 
