@@ -100,6 +100,8 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
 
     ECPublicKey(pubKeyBytes)
   }
+
+  def xCoord: FieldElement = FieldElement(bytes)
 }
 
 object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
@@ -122,5 +124,9 @@ object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
         "XOnlyPublicKey cannot be greater than 33 bytes in size, got: " +
           BitcoinSUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
     }
+  }
+
+  def apply(xCoor: FieldElement): SchnorrPublicKey = {
+    SchnorrPublicKey(xCoor.bytes)
   }
 }

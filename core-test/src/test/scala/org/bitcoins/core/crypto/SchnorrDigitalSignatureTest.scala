@@ -57,7 +57,7 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         val sig = privKey.schnorrSign(data)
 
         val sigPoint = pubKey.schnorrComputePoint(data, sig.rx)
-        assert(sigPoint == ECPrivateKey(sig.sig).publicKey)
+        assert(sigPoint == sig.sig.toPrivateKey.publicKey)
     }
   }
 
@@ -71,7 +71,7 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         assert(sig.rx == nonce.schnorrNonce)
 
         val sigPoint = pubKey.schnorrComputePoint(data, sig.rx)
-        assert(sigPoint == ECPrivateKey(sig.sig).publicKey)
+        assert(sigPoint == sig.sig.toPrivateKey.publicKey)
     }
   }
 
@@ -98,9 +98,9 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         val sig2 = privKey.schnorrSignWithNonce(message2, nonce)
 
         // s1 = nonce + e1*privKey
-        val s1 = NumberUtil.uintToFieldElement(sig1.sig)
+        val s1 = sig1.sig
         // s2 = nonce + e2*privKey
-        val s2 = NumberUtil.uintToFieldElement(sig2.sig)
+        val s2 = sig2.sig
 
         // When signing a message you actually sign SHA256_challenge(Rx || pubKey || message)
         val e1Bytes =

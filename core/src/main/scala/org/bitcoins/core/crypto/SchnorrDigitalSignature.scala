@@ -4,14 +4,14 @@ import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
-case class SchnorrDigitalSignature(rx: SchnorrNonce, sig: ByteVector)
+case class SchnorrDigitalSignature(rx: SchnorrNonce, sig: FieldElement)
     extends NetworkElement {
-  require(sig.length == 32, "s value must be 32 bytes")
-  override def bytes: ByteVector = rx.bytes ++ sig
+  override def bytes: ByteVector = rx.bytes ++ sig.bytes
 }
 
 object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
   override def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
-    SchnorrDigitalSignature(SchnorrNonce(bytes.take(32)), bytes.drop(32))
+    SchnorrDigitalSignature(SchnorrNonce(bytes.take(32)),
+                            FieldElement(bytes.drop(32)))
   }
 }

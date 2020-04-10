@@ -33,6 +33,10 @@ case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
   require(
     publicKey.toPoint.getRawYCoord.sqrt != null,
     "Schnorr nonce must be an x coordinate for which a quadratic residue y coordinate exists")
+
+  def xCoor: FieldElement = {
+    FieldElement(bytes)
+  }
 }
 
 object SchnorrNonce extends Factory[SchnorrNonce] {
@@ -83,5 +87,9 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
       auxRand: ByteVector): SchnorrNonce = {
     val k = kFromBipSchnorr(privKey, message, auxRand)
     k.publicKey.schnorrNonce
+  }
+
+  def apply(xCoor: FieldElement): SchnorrNonce = {
+    SchnorrNonce(xCoor.bytes)
   }
 }

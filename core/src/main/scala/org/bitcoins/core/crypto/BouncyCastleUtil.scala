@@ -134,7 +134,7 @@ object BouncyCastleUtil {
     val challenge = x.multiply(FieldElement(e))
     val sig = k.add(challenge)
 
-    SchnorrDigitalSignature(rx, sig.bytes)
+    SchnorrDigitalSignature(rx, sig)
   }
 
   def schnorrVerify(
@@ -142,7 +142,7 @@ object BouncyCastleUtil {
       schnorrPubKey: SchnorrPublicKey,
       signature: SchnorrDigitalSignature): Boolean = {
     val rx = signature.rx
-    val sT = Try(ECPrivateKey(signature.sig))
+    val sT = Try(signature.sig.toPrivateKey)
 
     sT match {
       case Success(s) =>
