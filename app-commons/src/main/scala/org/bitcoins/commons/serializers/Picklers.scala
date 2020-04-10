@@ -1,18 +1,18 @@
-package org.bitcoins
+package org.bitcoins.commons.serializers
 
 import org.bitcoins.core.crypto.ExtPublicKey
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import upickle.default._
 
-package object picklers {
+object Picklers {
   import org.bitcoins.core.crypto.DoubleSha256DigestBE
   implicit val bitcoinAddressPickler: ReadWriter[BitcoinAddress] =
     readwriter[String]
-      .bimap(_.value, BitcoinAddress.fromStringExn(_))
+      .bimap(_.value, BitcoinAddress.fromStringExn)
 
   implicit val bitcoinsPickler: ReadWriter[Bitcoins] =
     readwriter[Double].bimap(_.toBigDecimal.toDouble, Bitcoins(_))

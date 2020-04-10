@@ -1,8 +1,9 @@
-package org.bitcoins.rpc.jsonmodels
+package org.bitcoins.commons.jsonmodels.bitcoind
 
 import java.io.File
 import java.time.ZonedDateTime
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
   ECPublicKey,
@@ -17,7 +18,6 @@ import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
-import org.bitcoins.rpc.client.common.RpcOpts.LabelPurpose
 
 sealed abstract class WalletResult
 

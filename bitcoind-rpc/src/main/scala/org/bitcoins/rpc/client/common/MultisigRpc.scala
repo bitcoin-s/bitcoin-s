@@ -1,11 +1,11 @@
 package org.bitcoins.rpc.client.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.MultiSigResult
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.protocol.P2PKHAddress
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.jsonmodels.MultiSigResult
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonWriters._
 import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future

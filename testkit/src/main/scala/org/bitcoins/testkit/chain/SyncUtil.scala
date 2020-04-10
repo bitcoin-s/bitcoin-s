@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -4,8 +4,8 @@ import java.io.File
 import java.nio.file.{Files, StandardOpenOption}
 
 import akka.actor.ActorSystem
+import org.bitcoins.commons.jsonmodels.eclair.PaymentId
 import org.bitcoins.core.protocol.ln.currency._
-import org.bitcoins.eclair.rpc.api.PaymentId
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.eclair.rpc.EclairRpcTestUtil
 

@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.serializers
+package org.bitcoins.commons.serializers
 
 import java.io.File
 import java.net.{InetAddress, URI}
@@ -22,11 +22,105 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerKiloByte}
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonReaders._
-import org.bitcoins.rpc.serializers.JsonWriters._
+import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.commons.serializers.JsonWriters._
 import java.time.LocalDateTime
+
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  AddressInfoResult,
+  AnalyzePsbtInput,
+  AnalyzePsbtResult,
+  ArrayOfWalletsInput,
+  BalanceInfo,
+  Bip9Softfork,
+  BlockTransaction,
+  BumpFeeResult,
+  ChainTip,
+  CreateWalletResult,
+  DecodePsbtResult,
+  DecodeScriptResult,
+  DeriveAddressesResult,
+  DumpWalletResult,
+  EmbeddedResult,
+  EstimateSmartFeeResult,
+  FeeInfo,
+  FinalizePsbtResult,
+  FinalizedPsbt,
+  FundRawTransactionResult,
+  GetBalancesResult,
+  GetBlockChainInfoResult,
+  GetBlockHeaderResult,
+  GetBlockResult,
+  GetBlockTemplateResult,
+  GetBlockWithTransactionsResult,
+  GetChainTxStatsResult,
+  GetDescriptorInfoResult,
+  GetMemPoolEntryResultPostV19,
+  GetMemPoolEntryResultPreV19,
+  GetMemPoolInfoResult,
+  GetMemPoolResultPostV19,
+  GetMemPoolResultPreV19,
+  GetMemoryInfoResult,
+  GetMiningInfoResult,
+  GetNetTotalsResult,
+  GetNetworkInfoResult,
+  GetNodeAddressesResult,
+  GetRawTransactionResult,
+  GetRawTransactionScriptSig,
+  GetRawTransactionVin,
+  GetRpcInfoResult,
+  GetTransactionResult,
+  GetTxOutResult,
+  GetTxOutSetInfoResult,
+  GetWalletInfoResult,
+  ImportMultiError,
+  ImportMultiResult,
+  LabelResult,
+  ListSinceBlockResult,
+  ListTransactionsResult,
+  ListWalletDirResult,
+  MemoryManager,
+  MultiSigResult,
+  NetTarget,
+  Network,
+  NetworkAddress,
+  Node,
+  NodeAddress,
+  NodeBan,
+  NonFinalizedPsbt,
+  Payment,
+  Peer,
+  PeerNetworkInfo,
+  PsbtBIP32Deriv,
+  PsbtMissingData,
+  PsbtWitnessUtxoInput,
+  ReceivedAccount,
+  ReceivedAddress,
+  ReceivedLabel,
+  RescanBlockChainResult,
+  RpcAccount,
+  RpcAddress,
+  RpcCommands,
+  RpcPsbtInput,
+  RpcPsbtOutput,
+  RpcPsbtScript,
+  RpcScriptPubKey,
+  RpcTransaction,
+  RpcTransactionOutput,
+  SetWalletFlagResult,
+  SignRawTransactionError,
+  SignRawTransactionResult,
+  Softfork,
+  SoftforkProgress,
+  SubmitHeaderResult,
+  TestMempoolAcceptResult,
+  TransactionDetails,
+  UnspentOutput,
+  ValidateAddressResultImpl,
+  WalletCreateFundedPsbtResult,
+  WalletProcessPsbtResult
+}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
@@ -75,6 +169,7 @@ object JsonSerializers {
   implicit val scriptSignatureReads: Reads[ScriptSignature] =
     ScriptSignatureReads
 
+  implicit val addressTypeWrites: Writes[AddressType] = AddressTypeWrites
   implicit val bitcoinsWrites: Writes[Bitcoins] = BitcoinsWrites
   implicit val bitcoinAddressWrites: Writes[BitcoinAddress] =
     BitcoinAddressWrites
@@ -224,8 +319,6 @@ object JsonSerializers {
 
   implicit val getTxOutSetInfoResultReads: Reads[GetTxOutSetInfoResult] =
     Json.reads[GetTxOutSetInfoResult]
-
-  implicit val addressTypeWrites: Writes[AddressType] = AddressTypeWrites
 
   implicit object Bip32PathFormats extends Format[BIP32Path] {
     override def reads(json: JsValue): JsResult[BIP32Path] =

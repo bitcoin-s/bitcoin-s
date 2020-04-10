@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.client.common
+package org.bitcoins.commons.jsonmodels.bitcoind
 
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.core.currency.Bitcoins
@@ -6,7 +6,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessScriptPubKey}
 import org.bitcoins.core.protocol.transaction.TransactionInput
-import org.bitcoins.rpc.serializers.JsonWriters._
+import org.bitcoins.commons.serializers.JsonWriters._
 import play.api.libs.json.{Json, Writes}
 
 object RpcOpts {

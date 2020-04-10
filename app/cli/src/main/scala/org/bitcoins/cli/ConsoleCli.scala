@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.picklers._
+import org.bitcoins.commons.serializers.Picklers._
 import scopt.OParser
 import ujson.{Num, Str}
 import upickle.{default => up}

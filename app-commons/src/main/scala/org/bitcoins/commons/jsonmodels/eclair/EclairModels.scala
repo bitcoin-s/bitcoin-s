@@ -1,9 +1,10 @@
-package org.bitcoins.eclair.rpc.api
+package org.bitcoins.commons.jsonmodels.eclair
 
 import java.net.InetSocketAddress
 import java.time.Instant
 import java.util.UUID
 
+import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -20,7 +21,6 @@ import org.bitcoins.core.protocol.ln.{
   PaymentPreimage,
   ShortChannelId
 }
-import org.bitcoins.eclair.rpc.network.PeerState
 import play.api.libs.json.JsObject
 
 import scala.concurrent.duration.FiniteDuration
@@ -185,7 +185,6 @@ case class ChannelResult(
     feeBaseMsat: Option[MilliSatoshis],
     feeProportionalMillionths: Option[FeeProportionalMillionths],
     data: JsObject) {
-  import org.bitcoins.eclair.rpc.client.JsonReaders._
   lazy val shortChannelId: Option[ShortChannelId] =
     (data \ "shortChannelId").validate[ShortChannelId].asOpt
 }

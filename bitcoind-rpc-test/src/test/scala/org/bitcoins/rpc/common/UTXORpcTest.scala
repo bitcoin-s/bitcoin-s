@@ -1,6 +1,7 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, RpcOpts}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 

@@ -1,5 +1,9 @@
-package org.bitcoins.rpc.serializers
+package org.bitcoins.commons.serializers
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  WalletCreateFundedPsbtOptions
+}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
@@ -9,10 +13,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.util.BitcoinSUtil
-import org.bitcoins.rpc.client.common.RpcOpts.{
-  AddressType,
-  WalletCreateFundedPsbtOptions
-}
 import play.api.libs.json._
 
 import scala.collection.mutable

@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.v16
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.SignRawTransactionOutputParameter
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
@@ -10,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.rpc.client.common.RpcOpts.SignRawTransactionOutputParameter
+import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -20,7 +21,6 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Properties
-import org.bitcoins.rpc.client.common.BitcoindVersion
 
 class BitcoindV16RpcClientTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindV16RpcClient, BitcoindV16RpcClient)] =
