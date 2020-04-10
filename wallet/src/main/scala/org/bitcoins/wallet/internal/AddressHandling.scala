@@ -142,6 +142,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  /** Queues a request to generate an address and returns a Future that will
+   * be completed when the request is processed in the queue. If the queue
+   * is full it throws an exception.
+   * @throws IllegalStateException
+   * */
   private def getNewAddressHelper(
       account: AccountDb,
       chainType: HDChainType
@@ -334,15 +339,15 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
           val addressDbF = getNewAddressDb(account,chainType)
           val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
-          val writeF = addressDAO.create(addressDb)
+            val writeF = addressDAO.create(addressDb)
 
-          val addrF = writeF.map { w =>
-            promise.success(w)
-            w.address
+            val addrF = writeF.map { w =>
+              promise.success(w)
+              w.address
+            }
+            addrF.failed.foreach { exn => promise.failure(exn) }
+            addrF
           }
-          addrF.failed.foreach { exn => promise.failure(exn) }
-          addrF
-        }
         //make sure this is completed before we iterate to the next one
         //otherwise we will possibly have a race condition
 
