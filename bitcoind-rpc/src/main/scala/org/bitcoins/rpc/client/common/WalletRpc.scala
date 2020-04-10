@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.client.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
@@ -11,9 +12,9 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.rpc.client.common.BitcoindVersion._
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonWriters._
 import play.api.libs.json._
 
 import scala.concurrent.Future

@@ -30,7 +30,12 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
 
 import Projects._
 lazy val core = project in file("core")
-lazy val bitcoindRpc = project in file("bitcoind-rpc")
+lazy val bitcoindRpc = project
+  .in(file("bitcoind-rpc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(
+    appCommons
+  )
 lazy val eclairRpc = project in file("eclair-rpc")
 
 // quoting the val name this way makes it appear as
@@ -57,7 +62,6 @@ lazy val `bitcoin-s` = project
     keyManagerTest,
     node,
     nodeTest,
-    picklers,
     wallet,
     walletTest,
     appServer,
@@ -201,11 +205,18 @@ lazy val coreTest = project
     testkit
   )
 
+lazy val appCommons = project
+  .in(file("app-commons"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(
+    core % testAndCompile
+  )
+
 lazy val appServer = project
   .in(file("app/server"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    picklers,
+    appCommons,
     node,
     chain,
     wallet,
@@ -221,18 +232,11 @@ lazy val appServerTest = project
     testkit
   )
 
-// internal picklers used by server
-// and CLI
-lazy val picklers = project
-  .in(file("app/picklers"))
-  .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(core % testAndCompile)
-
 lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    picklers
+    appCommons
   )
 
 lazy val cliTest = project

@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.jsonmodels
+package org.bitcoins.commons.jsonmodels.bitcoind
 
 import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.currency.Bitcoins

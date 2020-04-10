@@ -1,12 +1,15 @@
 package org.bitcoins.rpc.client.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddressType,
+  FeeEstimationMode
+}
+import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.rpc.client.common.RpcOpts.{AddressType, FeeEstimationMode}
-import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.concurrent.Future

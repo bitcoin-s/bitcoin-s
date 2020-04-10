@@ -6,6 +6,12 @@ import java.nio.file.Files
 
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
+import org.bitcoins.commons.jsonmodels.eclair.{
+  IncomingPaymentStatus,
+  OutgoingPayment,
+  OutgoingPaymentStatus,
+  PaymentId
+}
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.Sha256Digest

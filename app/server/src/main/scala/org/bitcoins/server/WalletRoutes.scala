@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.Node
-import org.bitcoins.picklers._
+import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.wallet.api.UnlockedWalletApi
 
 import scala.concurrent.Future

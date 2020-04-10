@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.v19
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.client.common.RpcOpts.WalletFlag
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest

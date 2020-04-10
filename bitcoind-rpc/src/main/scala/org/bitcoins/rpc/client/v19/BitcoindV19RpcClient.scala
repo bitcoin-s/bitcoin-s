@@ -1,27 +1,26 @@
 package org.bitcoins.rpc.client.v19
 
 import akka.actor.ActorSystem
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.WalletFlag
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetBalancesResult,
+  RpcOpts,
+  SetWalletFlagResult,
+  SignRawTransactionResult
+}
+import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonWriters._
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.rpc.client.common.RpcOpts.WalletFlag
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
   DescriptorRpc,
-  PsbtRpc,
-  RpcOpts
+  PsbtRpc
 }
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.{
-  GetBalancesResult,
-  SetWalletFlagResult,
-  SignRawTransactionResult
-}
-import play.api.libs.json.Json
-import play.api.libs.json.JsString
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonWriters._
+import play.api.libs.json._
 
 import scala.concurrent.Future
 import scala.util.Try

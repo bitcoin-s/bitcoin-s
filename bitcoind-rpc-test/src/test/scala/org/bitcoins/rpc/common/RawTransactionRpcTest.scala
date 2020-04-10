@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
@@ -11,12 +12,12 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, RpcOpts}
+import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
-import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
 
 class RawTransactionRpcTest extends BitcoindRpcTest {
   lazy val clientsF: Future[(BitcoindRpcClient, BitcoindRpcClient)] =

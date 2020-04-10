@@ -1,22 +1,19 @@
 package org.bitcoins.rpc.client.v17
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.rpc.client.common.{
-  BitcoindRpcClient,
-  BitcoindVersion,
-  RpcOpts
-}
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.jsonmodels.{
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  RpcOpts,
   SignRawTransactionResult,
   TestMempoolAcceptResult
 }
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonWriters._
-import play.api.libs.json.{JsArray, JsBoolean, JsString, Json}
+import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.config.BitcoindInstance
+import play.api.libs.json._
 
 import scala.concurrent.Future
 import scala.util.Try

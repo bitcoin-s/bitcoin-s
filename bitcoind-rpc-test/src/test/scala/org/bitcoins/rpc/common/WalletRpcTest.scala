@@ -3,6 +3,7 @@ package org.bitcoins.rpc.common
 import java.io.File
 import java.util.Scanner
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.core.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey,
@@ -17,12 +18,8 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
-import org.bitcoins.rpc.client.common.{
-  BitcoindRpcClient,
-  BitcoindVersion,
-  RpcOpts
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest

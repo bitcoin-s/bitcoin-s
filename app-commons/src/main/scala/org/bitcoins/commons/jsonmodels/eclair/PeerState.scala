@@ -1,4 +1,4 @@
-package org.bitcoins.eclair.rpc.network
+package org.bitcoins.commons.jsonmodels.eclair
 
 sealed abstract class PeerState
 

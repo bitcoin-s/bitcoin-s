@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.serializers
+package org.bitcoins.commons.serializers
 
 import play.api.libs.json._
 

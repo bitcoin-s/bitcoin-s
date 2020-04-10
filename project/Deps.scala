@@ -71,10 +71,10 @@ object Deps {
 
     val scalaFx = "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
     lazy val osName = System.getProperty("os.name") match {
-      case n if n.startsWith("Linux") => "linux"
-      case n if n.startsWith("Mac") => "mac"
+      case n if n.startsWith("Linux")   => "linux"
+      case n if n.startsWith("Mac")     => "mac"
       case n if n.startsWith("Windows") => "win"
-      case _ => throw new Exception("Unknown platform!")
+      case _                            => throw new Exception("Unknown platform!")
     }
     // Not sure if all of these are needed, some might be possible to remove
     lazy val javaFxBase = "org.openjfx" % s"javafx-base" % V.javaFxV classifier osName withSources () withJavadoc ()
@@ -84,7 +84,13 @@ object Deps {
     lazy val javaFxMedia = "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
     lazy val javaFxSwing = "org.openjfx" % s"javafx-swing" % V.javaFxV classifier osName withSources () withJavadoc ()
     lazy val javaFxWeb = "org.openjfx" % s"javafx-web" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxDeps = List(javaFxBase, javaFxControls, javaFxFxml, javaFxGraphics, javaFxMedia, javaFxSwing, javaFxWeb)
+    lazy val javaFxDeps = List(javaFxBase,
+                               javaFxControls,
+                               javaFxFxml,
+                               javaFxGraphics,
+                               javaFxMedia,
+                               javaFxSwing,
+                               javaFxWeb)
 
     val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
     val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
@@ -122,7 +128,7 @@ object Deps {
 
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
-    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources() withJavadoc()
+    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
   }
 
   object Test {
@@ -146,6 +152,13 @@ object Deps {
   )
 
   val chainTest = List()
+
+  def appCommons(scalaVersion: String) = List(
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
+    else Compile.newMicroPickle,
+    Compile.playJson,
+    Compile.slf4j
+  )
 
   val core = List(
     Compile.bouncycastle,
@@ -177,8 +190,6 @@ object Deps {
   val bitcoindRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
-    Compile.playJson,
-    Compile.slf4j,
     Compile.typesafeConfig
   )
 
@@ -203,7 +214,6 @@ object Deps {
     Compile.logback,
     Compile.sqlite,
     Compile.slickHikari,
-
     Test.scalaTest
   )
 
@@ -220,11 +230,6 @@ object Deps {
   )
 
   val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
-
-  def picklers(scalaVersion: String) = List(
-    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
-    else Compile.newMicroPickle
-  )
 
   def server(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
@@ -272,7 +277,7 @@ object Deps {
 
   def keyManager(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
-    else Compile.newMicroJson,
+    else Compile.newMicroJson
   )
 
   val keyManagerTest = List(

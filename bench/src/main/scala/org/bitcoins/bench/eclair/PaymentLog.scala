@@ -3,13 +3,13 @@ package org.bitcoins.bench.eclair
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
 
-import org.bitcoins.core.crypto.Sha256Digest
-import org.bitcoins.eclair.rpc.api.WebSocketEvent.{
+import org.bitcoins.commons.jsonmodels.eclair.{PaymentId, WebSocketEvent}
+import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.{
   PaymentFailed,
   PaymentReceived,
   PaymentSent
 }
-import org.bitcoins.eclair.rpc.api.{PaymentId, WebSocketEvent}
+import org.bitcoins.core.crypto.Sha256Digest
 
 import scala.concurrent.Promise
 

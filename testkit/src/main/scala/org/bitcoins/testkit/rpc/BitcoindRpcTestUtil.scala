@@ -6,6 +6,13 @@ import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetBlockWithTransactionsResult,
+  GetTransactionResult,
+  RpcOpts,
+  SignRawTransactionResult
+}
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.{
@@ -31,12 +38,7 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.{
   V18,
   _
 }
-import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
-import org.bitcoins.rpc.client.common.{
-  BitcoindRpcClient,
-  BitcoindVersion,
-  RpcOpts
-}
+import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
@@ -46,11 +48,6 @@ import org.bitcoins.rpc.config.{
   BitcoindConfig,
   BitcoindInstance,
   ZmqConfig
-}
-import org.bitcoins.rpc.jsonmodels.{
-  GetBlockWithTransactionsResult,
-  GetTransactionResult,
-  SignRawTransactionResult
 }
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import org.bitcoins.testkit.util.{FileUtil, TestkitBinaries}

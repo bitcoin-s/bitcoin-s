@@ -1,31 +1,25 @@
 package org.bitcoins.rpc.client.v18
 import akka.actor.ActorSystem
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  RpcOpts,
+  SignRawTransactionResult
+}
+import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.rpc.client.common.{
   BitcoindRpcClient,
   BitcoindVersion,
   DescriptorRpc,
-  RpcOpts
-}
-import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.common.{
-  BitcoindRpcClient,
-  BitcoindVersion,
-  PsbtRpc,
-  RpcOpts
+  PsbtRpc
 }
 import org.bitcoins.rpc.config.BitcoindInstance
-
-import scala.util.Try
-import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.crypto.ECPrivateKey
-import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.rpc.jsonmodels.SignRawTransactionResult
-import play.api.libs.json.Json
-import play.api.libs.json.JsString
+import play.api.libs.json._
 
 import scala.concurrent.Future
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import org.bitcoins.rpc.serializers.JsonWriters._
+import scala.util.Try
 
 /**
   * Class for creating a BitcoindV18 instance that can access RPCs

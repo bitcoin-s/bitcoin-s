@@ -1,4 +1,4 @@
-package org.bitcoins.rpc.jsonmodels
+package org.bitcoins.commons.jsonmodels.bitcoind
 
 import java.net.URI
 
