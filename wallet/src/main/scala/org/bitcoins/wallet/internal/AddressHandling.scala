@@ -5,7 +5,11 @@ import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
@@ -143,10 +147,10 @@ private[wallet] trait AddressHandling extends WalletLogger {
   }
 
   /** Queues a request to generate an address and returns a Future that will
-   * be completed when the request is processed in the queue. If the queue
-   * is full it throws an exception.
-   * @throws IllegalStateException
-   * */
+    * be completed when the request is processed in the queue. If the queue
+    * is full it throws an exception.
+    * @throws IllegalStateException
+    * */
   private def getNewAddressHelper(
       account: AccountDb,
       chainType: HDChainType
@@ -316,15 +320,17 @@ private[wallet] trait AddressHandling extends WalletLogger {
   lazy val walletThread = new Thread(AddressQueueRunnable)
 
   lazy val addressRequestQueue = {
-    new java.util.concurrent.ArrayBlockingQueue[(AccountDb, HDChainType, Promise[AddressDb])](
+    new java.util.concurrent.ArrayBlockingQueue[(
+        AccountDb,
+        HDChainType,
+        Promise[AddressDb])](
       walletConfig.addressQueueSize
     )
   }
   walletThread.setDaemon(true)
-  walletThread.setName(
-    s"wallet-address-queue-${System.currentTimeMillis()}")
+  walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
   walletThread.start()
-  
+
   /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
     * seeing if things are in the queue. This is needed because otherwise
     * wallet address generation is not async safe.
@@ -333,21 +339,23 @@ private[wallet] trait AddressHandling extends WalletLogger {
   private case object AddressQueueRunnable extends Runnable {
     override def run(): Unit = {
       while (!walletThread.isInterrupted) {
-          val (account, chainType, promise) = addressRequestQueue.take()
-          logger.debug(
-            s"Processing $account $chainType in our address request queue")
+        val (account, chainType, promise) = addressRequestQueue.take()
+        logger.debug(
+          s"Processing $account $chainType in our address request queue")
 
-          val addressDbF = getNewAddressDb(account,chainType)
-          val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
-            val writeF = addressDAO.create(addressDb)
+        val addressDbF = getNewAddressDb(account, chainType)
+        val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
+          val writeF = addressDAO.create(addressDb)
 
-            val addrF = writeF.map { w =>
-              promise.success(w)
-              w.address
-            }
-            addrF.failed.foreach { exn => promise.failure(exn) }
-            addrF
+          val addrF = writeF.map { w =>
+            promise.success(w)
+            w.address
           }
+          addrF.failed.foreach { exn =>
+            promise.failure(exn)
+          }
+          addrF
+        }
         //make sure this is completed before we iterate to the next one
         //otherwise we will possibly have a race condition
 
@@ -355,11 +363,13 @@ private[wallet] trait AddressHandling extends WalletLogger {
           Await.result(resultF, walletConfig.addressQueueTimeout)
         } catch {
           case timeout: TimeoutException =>
-            logger.error(s"Timeout for generating address account=$account chainType=$chainType!",timeout)
-            //continue executing
-          case scala.util.control.NonFatal(exn) =>
             logger.error(
-              s"Failed to generate address for $account $chainType", exn)
+              s"Timeout for generating address account=$account chainType=$chainType!",
+              timeout)
+          //continue executing
+          case scala.util.control.NonFatal(exn) =>
+            logger.error(s"Failed to generate address for $account $chainType",
+                         exn)
         }
       }
     }
