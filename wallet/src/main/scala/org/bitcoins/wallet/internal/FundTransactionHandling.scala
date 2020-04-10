@@ -59,7 +59,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
       keyManagerOpt: Option[BIP39KeyManager],
       markAsReserved: Boolean = false): Future[BitcoinTxBuilder] = {
     val utxosF = listUtxos(fromAccount.hdAccount)
-    val changeAddrF = getNewChangeAddress(fromAccount)
+
     val selectedUtxosF = for {
       walletUtxos <- utxosF
       //currently just grab the biggest utxos
@@ -82,7 +82,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
 
     val txBuilderF = for {
       addrInfosWithUtxo <- addrInfosWithUtxoF
-      change <- changeAddrF
+      change <- getNewChangeAddress(fromAccount)
       utxoSpendingInfos = {
         addrInfosWithUtxo.map {
           case (utxo, addrInfo) =>

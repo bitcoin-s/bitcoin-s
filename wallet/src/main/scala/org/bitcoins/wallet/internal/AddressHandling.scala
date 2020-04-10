@@ -14,7 +14,7 @@ import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}
 
 /**
@@ -146,18 +146,21 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  /** Queues a request to generate an address and returns a Future that will
+    * be completed when the request is processed in the queue. If the queue
+    * is full it throws an exception.
+    * @throws IllegalStateException
+    * */
   private def getNewAddressHelper(
       account: AccountDb,
       chainType: HDChainType
   ): Future[BitcoinAddress] = {
+    val p = Promise[AddressDb]
+    addressRequestQueue.add((account, chainType, p))
     for {
-      addressDb <- getNewAddressDb(account, chainType)
-      _ = logger.debug(s"Writing $addressDb to DB")
-      written <- addressDAO.create(addressDb)
+      addressDb <- p.future
     } yield {
-      logger.debug(
-        s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
-      written.address
+      addressDb.address
     }
   }
 
@@ -309,4 +312,66 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  /** Background thread meant to ensure safety when calling [[getNewAddress()]]
+    * We to ensure independent calls to getNewAddress don't result in a race condition
+    * to the database that would generate the same address and cause an error.
+    * With this background thread, we poll the [[addressRequestQueue]] seeing if there
+    * are any elements in it, if there are, we process them and complete the Promise in the queue. */
+  lazy val walletThread = new Thread(AddressQueueRunnable)
+
+  lazy val addressRequestQueue = {
+    new java.util.concurrent.ArrayBlockingQueue[(
+        AccountDb,
+        HDChainType,
+        Promise[AddressDb])](
+      walletConfig.addressQueueSize
+    )
+  }
+  walletThread.setDaemon(true)
+  walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
+  walletThread.start()
+
+  /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
+    * seeing if things are in the queue. This is needed because otherwise
+    * wallet address generation is not async safe.
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1009
+    * */
+  private case object AddressQueueRunnable extends Runnable {
+    override def run(): Unit = {
+      while (!walletThread.isInterrupted) {
+        val (account, chainType, promise) = addressRequestQueue.take()
+        logger.debug(
+          s"Processing $account $chainType in our address request queue")
+
+        val addressDbF = getNewAddressDb(account, chainType)
+        val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
+          val writeF = addressDAO.create(addressDb)
+
+          val addrF = writeF.map { w =>
+            promise.success(w)
+            w.address
+          }
+          addrF.failed.foreach { exn =>
+            promise.failure(exn)
+          }
+          addrF
+        }
+        //make sure this is completed before we iterate to the next one
+        //otherwise we will possibly have a race condition
+
+        try {
+          Await.result(resultF, walletConfig.addressQueueTimeout)
+        } catch {
+          case timeout: TimeoutException =>
+            logger.error(
+              s"Timeout for generating address account=$account chainType=$chainType!",
+              timeout)
+          //continue executing
+          case scala.util.control.NonFatal(exn) =>
+            logger.error(s"Failed to generate address for $account $chainType",
+                         exn)
+        }
+      }
+    }
+  }
 }
