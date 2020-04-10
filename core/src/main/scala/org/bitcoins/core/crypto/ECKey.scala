@@ -75,11 +75,34 @@ sealed abstract class ECPrivateKey
     Future(sign(hash))
 
   def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
-    val auxRand = ECPrivateKey.freshPrivateKey.bytes
-    schnorrSign(dataToSign, auxRand)
+    schnorrSign(dataToSign, Secp256k1Context.isEnabled)
   }
 
   def schnorrSign(
+      dataToSign: ByteVector,
+      useSecp: Boolean): SchnorrDigitalSignature = {
+    val auxRand = ECPrivateKey.freshPrivateKey.bytes
+    schnorrSign(dataToSign, auxRand, useSecp)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    schnorrSign(dataToSign, auxRand, Secp256k1Context.isEnabled)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector,
+      useSecp: Boolean): SchnorrDigitalSignature = {
+    if (useSecp) {
+      schnorrSignWithSecp(dataToSign, auxRand)
+    } else {
+      schnorrSignWithBouncyCastle(dataToSign, auxRand)
+    }
+  }
+
+  def schnorrSignWithSecp(
       dataToSign: ByteVector,
       auxRand: ByteVector): SchnorrDigitalSignature = {
     val sigBytes =
@@ -89,7 +112,30 @@ sealed abstract class ECPrivateKey
     SchnorrDigitalSignature(ByteVector(sigBytes))
   }
 
+  def schnorrSignWithBouncyCastle(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    BouncyCastleUtil.schnorrSign(dataToSign, this, auxRand)
+  }
+
   def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    schnorrSignWithNonce(dataToSign, nonce, Secp256k1Context.isEnabled)
+  }
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey,
+      useSecp: Boolean): SchnorrDigitalSignature = {
+    if (useSecp) {
+      schnorrSignWithNonceWithSecp(dataToSign, nonce)
+    } else {
+      schnorrSignWithNonceWithBouncyCastle(dataToSign, nonce)
+    }
+  }
+
+  def schnorrSignWithNonceWithSecp(
       dataToSign: ByteVector,
       nonce: ECPrivateKey): SchnorrDigitalSignature = {
     val sigBytes =
@@ -97,6 +143,12 @@ sealed abstract class ECPrivateKey
                                            bytes.toArray,
                                            nonce.bytes.toArray)
     SchnorrDigitalSignature(ByteVector(sigBytes))
+  }
+
+  def schnorrSignWithNonceWithBouncyCastle(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    BouncyCastleUtil.schnorrSignWithNonce(dataToSign, this, nonce)
   }
 
   def nonceKey: ECPrivateKey = {

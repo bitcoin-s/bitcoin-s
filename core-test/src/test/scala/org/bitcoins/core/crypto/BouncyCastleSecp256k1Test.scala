@@ -116,8 +116,8 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
            NumberGenerator.bytevector(32)) {
       case (privKey, bytes, auxRand) =>
         assert(
-          BouncyCastleUtil.schnorrSign(bytes, privKey, auxRand) == privKey
-            .schnorrSign(bytes, auxRand))
+          privKey.schnorrSignWithBouncyCastle(bytes, auxRand) == privKey
+            .schnorrSignWithSecp(bytes, auxRand))
     }
   }
 
@@ -129,28 +129,22 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         val sig = privKey.schnorrSign(bytes)
         val pubKey = privKey.schnorrPublicKey
         assert(
-          BouncyCastleUtil
-            .schnorrVerify(bytes, privKey.schnorrPublicKey, sig) == pubKey
-            .verify(bytes, sig))
+          pubKey.verifyWithBouncyCastle(bytes, sig) == pubKey
+            .verifyWithSecp(bytes, sig))
         assert(
-          BouncyCastleUtil.schnorrVerify(bytes,
-                                         privKey.schnorrPublicKey,
-                                         badSig) == pubKey
-            .verify(bytes, badSig))
+          pubKey.verifyWithBouncyCastle(bytes, badSig) == pubKey
+            .verifyWithSecp(bytes, badSig))
     }
   }
 
   it must "compute schnorr signature points the same" in {
-    forAll(CryptoGenerators.publicKey,
+    forAll(CryptoGenerators.schnorrPublicKey,
            CryptoGenerators.schnorrNonce,
            NumberGenerator.bytevector(32)) {
       case (pubKey, nonce, bytes) =>
         assert(
-          BouncyCastleUtil.schnorrComputeSigPoint(
-            bytes,
-            nonce,
-            pubKey.schnorrPublicKey,
-            pubKey.isCompressed) == pubKey.schnorrComputePoint(bytes, nonce))
+          pubKey.computeSigPointWithBouncyCastle(bytes, nonce) == pubKey
+            .computeSigPointWithSecp(bytes, nonce))
     }
   }
 }

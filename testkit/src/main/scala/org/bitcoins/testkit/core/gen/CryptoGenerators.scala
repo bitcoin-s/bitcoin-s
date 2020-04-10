@@ -125,6 +125,9 @@ sealed abstract class CryptoGenerators {
   def schnorrNonce: Gen[SchnorrNonce] =
     nonZeroPrivKey.map(_.publicKey.bytes.tail).map(SchnorrNonce.fromBytes)
 
+  def schnorrPublicKey: Gen[SchnorrPublicKey] =
+    publicKey.map(_.schnorrPublicKey)
+
   /**
     * Generate a sequence of private keys
     * @param num maximum number of keys to generate

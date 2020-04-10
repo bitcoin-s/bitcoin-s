@@ -99,4 +99,16 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
     ECPrivateKey().toString must be("Masked(ECPrivateKeyImpl)")
   }
 
+  it must "successfully negate itself" in {
+    forAll(CryptoGenerators.nonZeroPrivKey) { privKey =>
+      val negPrivKey = privKey.negate
+      val pubKey = privKey.publicKey
+      val negPubKey = negPrivKey.publicKey
+      assert(pubKey.bytes.tail == negPubKey.bytes.tail)
+      assert(pubKey.bytes.head != negPubKey.bytes.head)
+      assert(BouncyCastleUtil
+        .addNumbers(privKey.bytes, negPrivKey.bytes) == java.math.BigInteger.ZERO)
+    }
+  }
+
 }

@@ -130,8 +130,15 @@ object BouncyCastleUtil {
       auxRand: ByteVector): SchnorrDigitalSignature = {
     val nonceKey =
       SchnorrNonce.kFromBipSchnorr(privateKey, dataToSign, auxRand)
-    val rx = nonceKey.schnorrNonce
 
+    schnorrSignWithNonce(dataToSign, privateKey, nonceKey)
+  }
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      privateKey: ECPrivateKey,
+      nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
+    val rx = nonceKey.schnorrNonce
     val k = nonceKey.bytes
     val x = privateKey.schnorrKey.bytes
     val e = CryptoUtil

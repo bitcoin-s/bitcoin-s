@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoin.NativeSecp256k1
+import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util.{BitcoinSUtil, Factory}
 import scodec.bits.ByteVector
@@ -12,12 +12,58 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
           s"Schnorr public keys must be 32 bytes, got $bytes")
 
   def verify(data: ByteVector, signature: SchnorrDigitalSignature): Boolean = {
+    verify(data, signature, Secp256k1Context.isEnabled)
+  }
+
+  def verify(
+      data: ByteVector,
+      signature: SchnorrDigitalSignature,
+      useSecp: Boolean): Boolean = {
+    if (useSecp) {
+      verifyWithSecp(data, signature)
+    } else {
+      verifyWithBouncyCastle(data, signature)
+    }
+  }
+
+  def verifyWithSecp(
+      data: ByteVector,
+      signature: SchnorrDigitalSignature): Boolean = {
     NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
                                   data.toArray,
                                   bytes.toArray)
   }
 
+  def verifyWithBouncyCastle(
+      data: ByteVector,
+      signature: SchnorrDigitalSignature): Boolean = {
+    BouncyCastleUtil.schnorrVerify(data, this, signature)
+  }
+
+  def computeSigPoint(data: ByteVector, nonce: SchnorrNonce): ECPublicKey = {
+    computeSigPoint(data, nonce, compressed = true, Secp256k1Context.isEnabled)
+  }
+
   def computeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      compressed: Boolean): ECPublicKey = {
+    computeSigPoint(data, nonce, compressed, Secp256k1Context.isEnabled)
+  }
+
+  def computeSigPoint(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      compressed: Boolean,
+      useSecp: Boolean): ECPublicKey = {
+    if (useSecp) {
+      computeSigPointWithSecp(data, nonce, compressed)
+    } else {
+      computeSigPointWithBouncyCastle(data, nonce, compressed)
+    }
+  }
+
+  def computeSigPointWithSecp(
       data: ByteVector,
       nonce: SchnorrNonce,
       compressed: Boolean = true): ECPublicKey = {
@@ -27,6 +73,13 @@ case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
       bytes.toArray,
       compressed)
     ECPublicKey(ByteVector(sigPointBytes))
+  }
+
+  def computeSigPointWithBouncyCastle(
+      data: ByteVector,
+      nonce: SchnorrNonce,
+      compressed: Boolean = true): ECPublicKey = {
+    BouncyCastleUtil.schnorrComputeSigPoint(data, nonce, this, compressed)
   }
 
   def publicKey: ECPublicKey = {
