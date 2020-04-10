@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -163,7 +164,11 @@ object Main extends App {
       wallet.processBlock(block).map(_ => ())
     }
     lazy val onHeaders: OnBlockHeadersReceived = { headers =>
-      wallet.updateUtxoPendingStates(headers.last).map(_ => ())
+      if (headers.isEmpty) {
+        FutureUtil.unit
+      } else {
+        wallet.updateUtxoPendingStates(headers.last).map(_ => ())
+      }
     }
     if (nodeConf.isSPVEnabled) {
       Future.successful(
