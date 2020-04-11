@@ -9,6 +9,9 @@ import scodec.bits.ByteVector
 
 class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
 
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
+
   behavior of "CryptoLibraries"
 
   override def withFixture(test: NoArgTest): Outcome = {
@@ -105,6 +108,19 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         assert(
           privKey.schnorrSignWithBouncyCastle(bytes, auxRand) == privKey
             .schnorrSignWithSecp(bytes, auxRand))
+    }
+  }
+
+  it must "compute schnorr signature for fixed nonce the same" in {
+    forAll(CryptoGenerators.privateKey,
+           CryptoGenerators.privateKey,
+           NumberGenerator.bytevector(32)) {
+      case (privKey, nonceKey, bytes) =>
+        val sigBC = privKey
+          .schnorrSignWithNonceWithBouncyCastle(bytes, nonceKey)
+        val sigSecP = privKey
+          .schnorrSignWithNonceWithSecp(bytes, nonceKey)
+        assert(sigBC.bytes == sigSecP.bytes)
     }
   }
 

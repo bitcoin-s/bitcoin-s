@@ -119,8 +119,8 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         val e1 = NumberUtil.uintToFieldElement(e1Bytes)
         val e2 = NumberUtil.uintToFieldElement(e2Bytes)
 
-        val k = NumberUtil.uintToFieldElement(nonce.nonceKey.bytes)
-        val x = NumberUtil.uintToFieldElement(privKey.schnorrKey.bytes)
+        val k = nonce.nonceKey.fieldElement
+        val x = privKey.schnorrKey.fieldElement
 
         // Test that we have correctly computed the components
         assert(k.add(e1.multiply(x)) == s1)

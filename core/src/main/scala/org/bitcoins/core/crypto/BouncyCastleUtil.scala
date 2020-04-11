@@ -124,7 +124,7 @@ object BouncyCastleUtil {
       privateKey: ECPrivateKey,
       nonceKey: ECPrivateKey): SchnorrDigitalSignature = {
     val rx = nonceKey.schnorrNonce
-    val k = nonceKey.fieldElement
+    val k = nonceKey.nonceKey.fieldElement
     val x = privateKey.schnorrKey.fieldElement
     val e = CryptoUtil
       .taggedSha256(rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign,

@@ -75,6 +75,7 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "have serialization symmetry" in {
     forAll(CryptoGenerators.privateKey) { privKey =>
       assert(ECPrivateKey(privKey.hex) == privKey)
+      assert(ECPrivateKey.fromFieldElement(privKey.fieldElement) == privKey)
     }
   }
 

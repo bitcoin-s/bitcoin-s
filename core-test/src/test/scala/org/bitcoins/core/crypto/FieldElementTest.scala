@@ -4,6 +4,10 @@ import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class FieldElementTest extends BitcoinSUnitTest {
+
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+    generatorDrivenConfigNewCode
+
   behavior of "FieldElement"
 
   private val N = CryptoParams.curve.getN
@@ -41,10 +45,26 @@ class FieldElementTest extends BitcoinSUnitTest {
     }
   }
 
+  it must "subtract numbers correctly" in {
+    forAll(CryptoGenerators.fieldElement, CryptoGenerators.fieldElement) {
+      case (fe1, fe2) =>
+        if (fe1.toBigInteger.compareTo(fe2.toBigInteger) > 0) {
+          assert(
+            fe1.subtract(fe2).toBigInteger == fe1.toBigInteger.subtract(
+              fe2.toBigInteger))
+        } else {
+          assert(
+            fe2.subtract(fe1).toBigInteger == fe2.toBigInteger.subtract(
+              fe1.toBigInteger))
+        }
+    }
+  }
+
   it must "wrap around correctly" in {
     val nMinusOne = FieldElement(
       "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140")
     assert(nMinusOne.add(FieldElement.one) == FieldElement.zero)
+    assert(FieldElement.zero.subtract(FieldElement.one) == nMinusOne)
   }
 
   it must "multiply small numbers correctly" in {

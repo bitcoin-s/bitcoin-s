@@ -34,7 +34,7 @@ case class SchnorrNonce(bytes: ByteVector) extends NetworkElement {
     publicKey.toPoint.getRawYCoord.sqrt != null,
     "Schnorr nonce must be an x coordinate for which a quadratic residue y coordinate exists")
 
-  def xCoor: FieldElement = {
+  def xCoord: FieldElement = {
     FieldElement(bytes)
   }
 }
