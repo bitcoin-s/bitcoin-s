@@ -76,7 +76,8 @@ trait WalletRpc { self: Client =>
     val params =
       List(JsString(accountOrLabel)) ++ addressType.map(Json.toJson(_)).toList
 
-    bitcoindCall[BitcoinAddress]("getnewaddress", params)
+    bitcoindCall[BitcoinAddress]("getnewaddress", params).map(addr =>
+      BitcoinAddress.fromScriptPubKey(addr.scriptPubKey, instance.network).get)
   }
 
   def getNewAddress: Future[BitcoinAddress] =
