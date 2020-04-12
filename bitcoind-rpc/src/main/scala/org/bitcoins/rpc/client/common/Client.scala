@@ -25,6 +25,7 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import java.nio.file.Path
 
+import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 import org.bitcoins.rpc.BitcoindException
@@ -195,6 +196,9 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
       parsedF.recover {
         case exc: StreamTcpException
             if exc.getMessage.contains("Connection refused") =>
+          false
+        case _: JsonParseException =>
+          //see https://github.com/bitcoin-s/bitcoin-s/issues/527
           false
       }
     }
