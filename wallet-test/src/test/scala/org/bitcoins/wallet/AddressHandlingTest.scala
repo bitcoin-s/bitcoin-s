@@ -92,9 +92,9 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   it must "fail with an illegal state exception if the queue is full" in {
     fundedWallet: FundedWallet =>
       val wallet = fundedWallet.wallet
-      //attempt to generate 20 addresses simultaneously
+      //attempt to generate 50 addresses simultaneously
       //this should overwhelm our buffer size of 10
-      val numAddress = 20
+      val numAddress = 50
       val generatedF = Vector.fill(numAddress)(wallet.getNewAddress())
 
       //some hacking here so we don't get an ugly stack trace
