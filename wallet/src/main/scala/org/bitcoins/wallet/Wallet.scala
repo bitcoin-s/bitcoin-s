@@ -37,7 +37,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       feeRate: FeeUnit,
       fromAccount: AccountDb): Future[Transaction] = {
     require(
-      address.networkParameters.p2pkhNetworkByte == networkParameters.p2pkhNetworkByte,
+      address.networkParameters.isSameNetworkBytes(networkParameters),
       s"Cannot send to address on other network, got ${address.networkParameters}"
     )
     logger.info(s"Sending $amount to $address at feerate $feeRate")
@@ -78,7 +78,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
             "Must have an amount for every address")
     require(
       addresses.forall(
-        _.networkParameters.p2pkhNetworkByte == networkParameters.p2pkhNetworkByte),
+        _.networkParameters.isSameNetworkBytes(networkParameters)),
       s"Cannot send to address on other network, got ${addresses.map(_.networkParameters)}"
     )
     val destinations = addresses.zip(amounts).map {

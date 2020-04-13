@@ -42,6 +42,11 @@ sealed abstract class NetworkParameters {
     */
   def magicBytes: ByteVector
 
+  def isSameNetworkBytes(other: NetworkParameters): Boolean = {
+    p2pkhNetworkByte == other.p2pkhNetworkByte &&
+    p2shNetworkByte == other.p2shNetworkByte
+  }
+
 }
 
 sealed abstract class BitcoinNetwork extends NetworkParameters {
