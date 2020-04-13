@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
@@ -35,6 +36,10 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       fromAccount: AccountDb): Future[Transaction] = {
+    require(
+      address.networkParameters.isSameNetworkBytes(networkParameters),
+      s"Cannot send to address on other network, got ${address.networkParameters}"
+    )
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
@@ -71,6 +76,11 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
       reserveUtxos: Boolean): Future[Transaction] = {
     require(amounts.size == addresses.size,
             "Must have an amount for every address")
+    require(
+      addresses.forall(
+        _.networkParameters.isSameNetworkBytes(networkParameters)),
+      s"Cannot send to address on other network, got ${addresses.map(_.networkParameters)}"
+    )
     val destinations = addresses.zip(amounts).map {
       case (address, amount) =>
         logger.info(s"Sending $amount to $address at feerate $feeRate")

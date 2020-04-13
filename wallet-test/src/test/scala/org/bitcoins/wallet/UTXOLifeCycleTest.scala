@@ -20,7 +20,9 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
   override type FixtureParam = WalletWithBitcoind
 
   val testAddr: BitcoinAddress =
-    BitcoinAddress.fromString("n4MN27Lk7Yh3pwfjCiAbRXtRVjs4Uk67fG").get
+    BitcoinAddress
+      .fromString("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq")
+      .get
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withFundedWalletAndBitcoind(test)
