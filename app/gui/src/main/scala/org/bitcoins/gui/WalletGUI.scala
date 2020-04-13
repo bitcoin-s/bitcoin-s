@@ -1,11 +1,13 @@
 package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
+import org.bitcoins.gui.settings.{SettingsPane, Themes}
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.Alert.AlertType
+import scalafx.scene.control.TabPane.TabClosingPolicy
 import scalafx.scene.control._
 import scalafx.scene.layout.{BorderPane, HBox, StackPane, VBox}
 
@@ -39,6 +41,7 @@ object WalletGUI extends JFXApp {
   private val statusLabel = new Label {
     maxWidth = Double.MaxValue
     padding = Insets(0, 10, 10, 10)
+    text <== GlobalData.statusText
   }
 
   private val resultArea = new TextArea {
@@ -51,7 +54,7 @@ object WalletGUI extends JFXApp {
   private val model = new WalletGUIModel()
 
   private val getNewAddressButton = new Button {
-    text = "Get New Addreses"
+    text = "Get New Address"
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = model.onGetNewAddress()
     }
@@ -76,19 +79,49 @@ object WalletGUI extends JFXApp {
     bottom = statusLabel
   }
 
+  private val settingsPane = new SettingsPane
+
+  private val tabPane: TabPane = new TabPane {
+
+    val walletTab: Tab = new Tab {
+      text = "Wallet"
+      content = borderPane
+    }
+
+    val settingsTab: Tab = new Tab {
+      text = "Settings"
+      content = settingsPane.view
+    }
+
+    tabs = Seq(walletTab, settingsTab)
+
+    tabClosingPolicy = TabClosingPolicy.Unavailable
+  }
+
   private val rootView = new StackPane {
     children = Seq(
-      borderPane,
+      tabPane,
       glassPane
     )
   }
 
-  stage = new JFXApp.PrimaryStage {
-    title = "Bitcoin-S Wallet"
-    scene = new Scene(rootView)
+  private val styleSheets = if (GlobalData.defaultDarkTheme) {
+    Seq(Themes.DarkTheme.fileLocation)
+  } else {
+    Seq.empty
   }
 
-  private val taskRunner = new TaskRunner(resultArea, glassPane, statusLabel)
+  private val walletScene = new Scene {
+    root = rootView
+    stylesheets = styleSheets
+  }
+
+  stage = new JFXApp.PrimaryStage {
+    title = "Bitcoin-S Wallet"
+    scene = walletScene
+  }
+
+  private val taskRunner = new TaskRunner(resultArea, glassPane)
   model.taskRunner = taskRunner
 
   Platform.runLater(sendButton.requestFocus())
