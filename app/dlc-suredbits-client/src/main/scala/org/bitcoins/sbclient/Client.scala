@@ -5,6 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
+import org.bitcoins.commons.jsonmodels.eclair.OutgoingPaymentStatus
 import org.bitcoins.core.crypto.{
   AesCrypt,
   AesEncryptedData,
@@ -13,7 +14,7 @@ import org.bitcoins.core.crypto.{
   SchnorrDigitalSignature
 }
 import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
-import org.bitcoins.eclair.rpc.api.{EclairApi, OutgoingPaymentStatus}
+import org.bitcoins.eclair.rpc.api.EclairApi
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json, Reads}
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -39,7 +40,7 @@ object Client {
     rawRestCall(uri).map(Json.parse)(system.dispatcher)
   }
 
-  import org.bitcoins.eclair.rpc.client.JsonReaders.lnInvoiceReads
+  import org.bitcoins.commons.serializers.JsonReaders.lnInvoiceReads
   implicit val invoiceAndDataResponseReads: Reads[InvoiceAndDataResponse] =
     Json.reads[InvoiceAndDataResponse]
 
