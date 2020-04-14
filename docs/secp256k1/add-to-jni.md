@@ -382,6 +382,7 @@ I normally first build the C binaries and add to Bitcoin-S before coming back to
    ./configure --enable-jni --enable-experimental --enable-module-ecdh
    make
    make check
+   make check-java
    ```
 
    __For Windows (64-bit)__
