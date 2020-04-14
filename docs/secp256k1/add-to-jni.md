@@ -155,7 +155,7 @@ Bitcoin-S uses a Java Native Interface (JNI) to execute functions in [secp256k1]
 
 8. Populate return array when applicable
 
-   We now being translating our serialized results back into Java entities. If you are returning any `int`s containing meta-data (usually `ret` is included here, as are the variable lengths of outputs when applicable), you will want an `unsigned char intsarray[n]` to be already declared where `n`  is the number of pieces of meta-data. For example, in `secp256k1_ecdsa_sign`, we wish to return whether there were any errors (stored in `int ret`) and the output signature's length, `size_t outputLen`. Hence we have an `unsigned char intsarray[2]` and we populate it as follows
+   We now begin translating our serialized results back into Java entities. If you are returning any `int`s containing meta-data (usually `ret` is included here, as are the variable lengths of outputs when applicable), you will want an `unsigned char intsarray[n]` to be already declared where `n`  is the number of pieces of meta-data. For example, in `secp256k1_ecdsa_sign`, we wish to return whether there were any errors (stored in `int ret`) and the output signature's length, `size_t outputLen`. Hence we have an `unsigned char intsarray[2]` and we populate it as follows
 
    ```c
    intsarray[0] = outputLen;
