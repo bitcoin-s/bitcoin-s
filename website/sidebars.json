@@ -44,7 +44,8 @@
       "rpc/rpc-bitcoind"
     ],
     "Secp256k1": [
-      "secp256k1/secp256k1"
+      "secp256k1/secp256k1",
+      "secp256k1/jni-modify"
     ],
     "Testkit": [
       "testkit/testkit"
