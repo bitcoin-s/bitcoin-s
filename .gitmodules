@@ -1,4 +1,4 @@
 [submodule "secp256k1"]
 	path = secp256k1
 	url = https://github.com/bitcoin-s/secp256k1.git
-	branch = parse
+	branch = bitcoin-s-master

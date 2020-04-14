@@ -92,6 +92,9 @@
       "rpc/rpc-clients-intro": {
         "title": "Introduction"
       },
+      "secp256k1/jni-modify": {
+        "title": "Adding to Secp256k1 JNI"
+      },
       "secp256k1/secp256k1": {
         "title": "Secp256k1"
       },
