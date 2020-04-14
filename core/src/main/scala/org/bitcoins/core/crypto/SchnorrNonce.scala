@@ -46,9 +46,9 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
     require(bytes.length <= 33,
             s"Schnorr Nonce must be less than 33 bytes, got $bytes")
 
-    if (bytes.length == 32)
+    if (bytes.length == 32) {
       new SchnorrNonce(bytes)
-    else if (bytes.length < 32) {
+    } else if (bytes.length < 32) {
       // means we need to pad the private key with 0 bytes so we have 32 bytes
       SchnorrNonce.fromBytes(bytes.padLeft(32))
     } else if (bytes.length == 33) {

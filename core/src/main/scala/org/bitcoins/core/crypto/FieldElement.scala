@@ -71,7 +71,7 @@ object FieldElement extends Factory[FieldElement] {
   }
 
   def apply(num: BigInt): FieldElement = {
-    FieldElement.fromByteArray((num % N).toByteArray)
+    FieldElement(num.underlying())
   }
 
   def apply(num: BigInteger): FieldElement = {
@@ -84,6 +84,9 @@ object FieldElement extends Factory[FieldElement] {
 
   val zero: FieldElement = FieldElement(ByteVector.empty)
   val one: FieldElement = FieldElement(ByteVector.fromByte(1))
+
+  val nMinusOne: FieldElement = FieldElement(
+    "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140")
 
   private val G: ECPoint = CryptoParams.curve.getG
   private val N: BigInteger = CryptoParams.curve.getN

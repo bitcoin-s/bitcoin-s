@@ -20,7 +20,7 @@ class SchnorrPublicKeyTest extends BitcoinSUnitTest {
         "676f8c22de526e0c0904719847e63bda47b4eceb6986bdbaf8695db362811a010203"))
   }
 
-  it must "fail for invalid x coordinate in" in {
+  it must "fail for invalid x coordinate" in {
     assertThrows[IllegalArgumentException](
       SchnorrPublicKey(
         "EEFDEA4CDB677750A420FEE807EACF21EB9898AE79B9768766E4FAA04A2D4A34"))

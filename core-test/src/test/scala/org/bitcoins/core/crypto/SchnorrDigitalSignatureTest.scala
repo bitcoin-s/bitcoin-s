@@ -32,6 +32,7 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
       case (privKey, bytes1, bytes2) =>
         val sig1 = privKey.schnorrSign(bytes1)
         val sig2 = privKey.schnorrSign(bytes2)
+        assert(sig1.bytes != sig2.bytes)
         assert(sig1.rx != sig2.rx)
     }
   }

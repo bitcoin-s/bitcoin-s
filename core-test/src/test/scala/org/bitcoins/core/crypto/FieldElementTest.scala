@@ -61,10 +61,9 @@ class FieldElementTest extends BitcoinSUnitTest {
   }
 
   it must "wrap around correctly" in {
-    val nMinusOne = FieldElement(
-      "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140")
-    assert(nMinusOne.add(FieldElement.one) == FieldElement.zero)
-    assert(FieldElement.zero.subtract(FieldElement.one) == nMinusOne)
+    assert(FieldElement.nMinusOne.add(FieldElement.one) == FieldElement.zero)
+    assert(
+      FieldElement.zero.subtract(FieldElement.one) == FieldElement.nMinusOne)
   }
 
   it must "multiply small numbers correctly" in {
