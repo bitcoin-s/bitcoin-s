@@ -29,11 +29,11 @@ class MockEclairClient()(
     with BitcoinSLogger {
   private def now: Instant = Instant.now
 
+  private val privKey: ECPrivateKey = ECPrivateKey.freshPrivateKey
+
   private val readWriteLock = new ReentrantReadWriteLock
   private val readLock = readWriteLock.readLock
   private val writeLock = readWriteLock.writeLock
-
-  private var lastSentPayment: Option[OutgoingPayment] = None
 
   private var paymentsById =
     Map.empty[PaymentId, Vector[OutgoingPayment]].withDefaultValue(Vector.empty)
@@ -45,24 +45,34 @@ class MockEclairClient()(
   private var preImagesByHash: Map[LnTag.PaymentHashTag, PaymentPreimage] =
     Map.empty
 
-  private var outgoingPaymets: Vector[OutgoingPayment] = Vector.empty
+  private var outgoingPayments: Vector[OutgoingPayment] = Vector.empty
 
-  private var incomingPaymets: Vector[IncomingPayment] = Vector.empty
+  private var incomingPayments: Vector[IncomingPayment] = Vector.empty
 
   var otherClient: Option[MockEclairClient] = None
-
-  def lastSent(): Option[OutgoingPayment] = {
-    readLock.lock()
-    val payment = lastSentPayment
-    readLock.unlock()
-
-    payment
-  }
 
   def preImage(hashTag: LnTag.PaymentHashTag): PaymentPreimage = {
     readLock.lock()
     try {
       preImagesByHash(hashTag)
+    } finally {
+      readLock.unlock()
+    }
+  }
+
+  def outgoingPayment(hash: LnTag.PaymentHashTag): OutgoingPayment = {
+    readLock.lock()
+    try {
+      paymentsByHash(hash.hash).head
+    } finally {
+      readLock.unlock()
+    }
+  }
+
+  def incomingPayment(hash: LnTag.PaymentHashTag): IncomingPayment = {
+    readLock.lock()
+    try {
+      incomingPayments.find(_.paymentRequest.paymentHash == hash.hash).get
     } finally {
       readLock.unlock()
     }
@@ -98,7 +108,7 @@ class MockEclairClient()(
     }
 
     writeLock.lock()
-    incomingPaymets = incomingPaymets.appended(incoming)
+    incomingPayments = incomingPayments.appended(incoming)
     writeLock.unlock()
   }
 
@@ -141,28 +151,29 @@ class MockEclairClient()(
     val hash = CryptoUtil.sha256(preImage.bytes)
     val hashTag = LnTag.PaymentHashTag(hash)
 
-    val taggedFields = LnTaggedFields(
-      paymentHash = hashTag,
-      descriptionOrHash = Left(LnTag.DescriptionTag(description)),
-      nodeId = None,
-      expiryTime = expireIn.map(x => LnTag.ExpiryTimeTag(UInt32(x.toSeconds))),
-      cltvExpiry = None,
-      fallbackAddress = None,
-      routingInfo = None
-    )
+    nodeId().map { id =>
+      val taggedFields = LnTaggedFields(
+        paymentHash = hashTag,
+        descriptionOrHash = Left(LnTag.DescriptionTag(description)),
+        nodeId = Some(LnTag.NodeIdTag(id)),
+        expiryTime = expireIn.map(x => LnTag.ExpiryTimeTag(UInt32(x.toSeconds))),
+        cltvExpiry = None,
+        fallbackAddress = None,
+        routingInfo = None
+      )
 
-    val privateKey = ECPrivateKey.freshPrivateKey
-    val invoice = LnInvoice.build(
-      hrp = hrp,
-      lnTags = taggedFields,
-      privateKey = privateKey
-    )
+      val invoice = LnInvoice.build(
+        hrp = hrp,
+        lnTags = taggedFields,
+        privateKey = privKey
+      )
 
-    writeLock.lock()
-    preImagesByHash = preImagesByHash.updated(hashTag, preImage)
-    writeLock.unlock()
+      writeLock.lock()
+      preImagesByHash = preImagesByHash.updated(hashTag, preImage)
+      writeLock.unlock()
 
-    Future.successful(invoice)
+      invoice
+    }
   }
 
   /**
@@ -193,7 +204,7 @@ class MockEclairClient()(
     val amountMsat = invoice.amount.getOrElse(LnCurrencyUnits.zero).toMSat
     val paymentHash = invoice.lnTags.paymentHash.hash
 
-    val outgoingPayment: OutgoingPayment = otherClient match {
+    val outgoingPaymentStatus = otherClient match {
       case Some(payee) =>
         val status = OutgoingPaymentStatus.Succeeded(
           paymentPreimage = payee.preImagesByHash(invoice.lnTags.paymentHash),
@@ -203,39 +214,27 @@ class MockEclairClient()(
 
         payee.receiveIncomingPayment(invoice)
 
-        OutgoingPayment(
-          id = paymentId,
-          parentId = paymentId,
-          externalId = Some(paymentId.toString()),
-          paymentHash = paymentHash,
-          amount = amountMsat,
-          createdAt = now,
-          paymentRequest = None,
-          status = status,
-          recipientAmount = amountMsat,
-          recipientNodeId = nodeId,
-          paymentType = PaymentType.Standard
-        )
+        status
       case None =>
-        val status = OutgoingPaymentStatus.Failed(failures = Vector.empty)
-        OutgoingPayment(
-          id = paymentId,
-          parentId = paymentId,
-          externalId = Some(paymentId.toString()),
-          paymentHash = paymentHash,
-          amount = amountMsat,
-          createdAt = now,
-          paymentRequest = None,
-          status = status,
-          recipientAmount = amountMsat,
-          recipientNodeId = nodeId,
-          paymentType = PaymentType.Standard
-        )
+        OutgoingPaymentStatus.Failed(failures = Vector.empty)
     }
 
+    val outgoingPayment = OutgoingPayment(
+      id = paymentId,
+      parentId = paymentId,
+      externalId = Some(paymentId.toString()),
+      paymentHash = paymentHash,
+      amount = amountMsat,
+      createdAt = now,
+      paymentRequest = Some(toPaymentRequest(invoice)),
+      status = outgoingPaymentStatus,
+      recipientAmount = amountMsat,
+      recipientNodeId = nodeId,
+      paymentType = PaymentType.Standard
+    )
+
     writeLock.lock()
-    lastSentPayment = Some(outgoingPayment)
-    outgoingPaymets = outgoingPaymets.appended(outgoingPayment)
+    outgoingPayments = outgoingPayments.appended(outgoingPayment)
     paymentsById = paymentsById.updated(paymentId, Vector(outgoingPayment))
     paymentsByHash = paymentsByHash
       .updated(paymentHash, outgoingPayment +: paymentsByHash(paymentHash))
@@ -248,20 +247,7 @@ class MockEclairClient()(
       invoice: LnInvoice,
       amt: MilliSatoshis
   ): Future[PaymentId] = {
-    val newHrp = LnHumanReadablePart(
-      network = invoice.hrp.network,
-      amount = Some(amt.toLnCurrencyUnit)
-    )
-
-    val privateKey = ECPrivateKey.freshPrivateKey
-
-    val newInvoice = LnInvoice.build(
-      hrp = newHrp,
-      lnTags = invoice.lnTags,
-      privateKey = privateKey
-    )
-
-    payInvoice(newInvoice)
+    unsupportedFailure
   }
 
   override def createInvoice(description: String): Future[LnInvoice] =
@@ -324,7 +310,7 @@ class MockEclairClient()(
       interval: FiniteDuration,
       maxAttempts: Int
   ): Future[IncomingPayment] = {
-    val paymentOpt = incomingPaymets.find(incoming =>
+    val paymentOpt = incomingPayments.find(incoming =>
       incoming.paymentRequest.paymentHash == lnInvoice.lnTags.paymentHash.hash)
     paymentOpt match {
       case Some(payment) => Future.successful(payment)
@@ -502,8 +488,11 @@ class MockEclairClient()(
   override def usableBalances(): Future[Vector[UsableBalancesResult]] =
     unsupportedFailure
 
-  override def getNodeURI: Future[NodeUri] =
-    unsupportedFailure
+  override lazy val getNodeURI: Future[NodeUri] = {
+    val uri =
+      NodeUri(NodeId(privKey.publicKey), "MOCK", scala.util.Random.nextInt())
+    Future.successful(uri)
+  }
 
   override def networkFees(
       from: Option[FiniteDuration],
