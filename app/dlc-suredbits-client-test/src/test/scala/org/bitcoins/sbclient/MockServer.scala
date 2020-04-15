@@ -11,6 +11,7 @@ import akka.http.scaladsl.server.Route
 import org.bitcoins.core.crypto.{AesCrypt, AesEncryptedData, AesKey}
 import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
+import org.bitcoins.testkit.eclair.MockEclairClient
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

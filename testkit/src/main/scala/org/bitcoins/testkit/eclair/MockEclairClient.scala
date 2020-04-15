@@ -1,4 +1,4 @@
-package org.bitcoins.sbclient
+package org.bitcoins.testkit.eclair
 
 import java.net.InetSocketAddress
 import java.time.Instant
@@ -8,20 +8,20 @@ import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey, Sha256Digest}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.protocol.ln.LnParams.LnBitcoinRegTest
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnits, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.network.NodeUri
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.{ExecutionContext, Future}
 
 class MockEclairClient()(
     implicit override val executionContext: ExecutionContext)

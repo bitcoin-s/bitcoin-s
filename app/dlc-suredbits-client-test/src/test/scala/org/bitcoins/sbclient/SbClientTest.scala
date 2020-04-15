@@ -5,6 +5,7 @@ import org.bitcoins.commons.jsonmodels.eclair.{
   OutgoingPaymentStatus
 }
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.testkit.eclair.MockEclairClient
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
 
