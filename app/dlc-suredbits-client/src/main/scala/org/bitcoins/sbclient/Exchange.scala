@@ -2,6 +2,8 @@ package org.bitcoins.sbclient
 
 sealed trait Exchange {
 
+  def pairs: Vector[TradingPair]
+
   /**
     * The unique string representation of of this exchange.
     * Used to differentiate between spot and futures exchanges,
@@ -48,41 +50,49 @@ object Exchange {
   case object Bitfinex extends SpotExchange {
     override def toString: String = "bitfinex"
     override def toLongString: String = "bitfinex"
+    override def pairs: Vector[TradingPair] = BitfinexTradingPair.all
   }
 
   case object Binance extends SpotExchange {
     override def toString: String = "binance"
     override def toLongString: String = "binance"
+    override def pairs: Vector[TradingPair] = BinanceTradingPair.all
   }
 
   case object Coinbase extends SpotExchange {
     override def toString: String = "coinbase"
     override def toLongString: String = "coinbase"
+    override def pairs: Vector[TradingPair] = CoinbaseTradingPair.all
   }
 
   case object Bitstamp extends SpotExchange {
     override def toString: String = "bitstamp"
     override def toLongString: String = "bitstamp"
+    override def pairs: Vector[TradingPair] = BitstampTradingPair.all
   }
 
   case object Bitmex extends FuturesExchange {
     override def toString: String = "bitmex"
     override def toLongString: String = "bitmexfut"
+    override def pairs: Vector[TradingPair] = BitmexTradingPair.all
   }
 
   case object Gemini extends SpotExchange {
     override def toString: String = "gemini"
     override def toLongString: String = "gemini"
+    override def pairs: Vector[TradingPair] = GeminiTradingPair.all
   }
 
   case object Kraken extends SpotExchange {
     override def toString: String = "kraken"
     override def toLongString: String = "kraken"
+    override def pairs: Vector[TradingPair] = KrakenTradingPair.all
   }
 
   case object KrakenFut extends FuturesExchange {
     override def toString: String = "kraken"
     override def toLongString: String = "krakenfut"
+    override def pairs: Vector[TradingPair] = KrakenFutTradingPair.all
   }
 }
 

@@ -12,4 +12,6 @@ object RequestType {
   case object LastSig extends RequestType {
     override def requestString: String = "lastsig"
   }
+
+  val all: Vector[RequestType] = Vector(RValue, LastSig)
 }

@@ -101,13 +101,16 @@ object Client {
       exchange: Exchange,
       tradingPair: TradingPair,
       requestType: RequestType,
-      eclairApi: EclairApi)(implicit system: ActorSystem): Future[String] = {
+      eclairApi: EclairApi,
+      endpoint: String = "https://test.api.suredbits.com/dlc/v0")(
+      implicit system: ActorSystem): Future[String] = {
     implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     for {
       InvoiceAndDataResponse(invoice, encryptedData) <- request(exchange,
                                                                 tradingPair,
-                                                                requestType)
+                                                                requestType,
+                                                                endpoint)
       preImage <- makePayment(eclairApi, invoice)
     } yield decryptData(encryptedData, preImage)
   }

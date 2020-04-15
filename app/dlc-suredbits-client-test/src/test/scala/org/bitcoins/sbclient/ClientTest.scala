@@ -6,12 +6,16 @@ import org.bitcoins.commons.jsonmodels.eclair.{
 }
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
+import org.scalacheck.Gen
+
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 class ClientTest extends BitcoinSAsyncTest {
   behavior of "Client"
 
   val str = "Never gonna give you up, never gonna let you down"
-  val amt = MilliSatoshis(10000)
+  val amt: MilliSatoshis = MilliSatoshis(10000)
   val server = new MockServer()
   val client = new MockEclairClient()
 
@@ -19,6 +23,12 @@ class ClientTest extends BitcoinSAsyncTest {
     super.beforeAll()
     client.otherClient = Some(server.mockEclair)
     server.mockEclair.otherClient = Some(client)
+    val _ = Await.result(server.start(), 5.seconds)
+  }
+
+  override def afterAll: Unit = {
+    Await.result(server.stop(), 5.seconds)
+    super.afterAll
   }
 
   it should "successfully decrypt data from server" in {
@@ -52,6 +62,45 @@ class ClientTest extends BitcoinSAsyncTest {
           .paymentPreimage == preImage)
       assert(outgoing.amount == amt)
       assert(outgoing.recipientNodeId == serverNodeId)
+    }
+  }
+
+  def exchangeAndPairGen: Gen[(Exchange, TradingPair)] =
+    Gen.oneOf(Exchange.all).flatMap { exchange =>
+      Gen.oneOf(exchange.pairs).map { pair =>
+        (exchange, pair)
+      }
+    }
+
+  it should "successfully request and decrypt an R value" in {
+    forAllAsync(exchangeAndPairGen) {
+      case (exchange, pair) =>
+        Client
+          .requestAndPay(exchange,
+                         pair,
+                         RequestType.RValue,
+                         client,
+                         server.endpoint)
+          .map { decrypted =>
+            assert(
+              decrypted == s"${exchange.toLongString}|${pair.toLowerString}|rvalue")
+          }
+    }
+  }
+
+  it should "successfully request and decrypt the last signature" in {
+    forAllAsync(exchangeAndPairGen) {
+      case (exchange, pair) =>
+        Client
+          .requestAndPay(exchange,
+                         pair,
+                         RequestType.LastSig,
+                         client,
+                         server.endpoint)
+          .map { decrypted =>
+            assert(
+              decrypted == s"${exchange.toLongString}|${pair.toLowerString}|lastsig")
+          }
     }
   }
 }
