@@ -11,8 +11,8 @@ import org.scalacheck.Gen
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-class ClientTest extends BitcoinSAsyncTest {
-  behavior of "Client"
+class SbClientTest extends BitcoinSAsyncTest {
+  behavior of "SbClient"
 
   val str = "Never gonna give you up, never gonna let you down"
   val amt: MilliSatoshis = MilliSatoshis(10000)
@@ -35,7 +35,7 @@ class ClientTest extends BitcoinSAsyncTest {
     server.encryptData(str, amt.toLnCurrencyUnit).map {
       case (invoice, encrypted) =>
         val preImage = server.preImage(invoice)
-        val decrypted = Client.decryptData(encrypted, preImage)
+        val decrypted = SbClient.decryptData(encrypted, preImage)
         assert(decrypted == str)
     }
   }
@@ -43,7 +43,7 @@ class ClientTest extends BitcoinSAsyncTest {
   it should "successfully make a payment" in {
     for {
       invoice <- server.mockEclair.createInvoice(str, amt)
-      preImage <- Client.makePayment(client, invoice)
+      preImage <- SbClient.makePayment(client, invoice)
       serverNodeId <- server.mockEclair.nodeId()
     } yield {
       assert(server.preImage(invoice) == preImage)
@@ -75,7 +75,7 @@ class ClientTest extends BitcoinSAsyncTest {
   it should "successfully request and decrypt an R value" in {
     forAllAsync(exchangeAndPairGen) {
       case (exchange, pair) =>
-        Client
+        SbClient
           .requestAndPay(exchange,
                          pair,
                          RequestType.RValue,
@@ -91,7 +91,7 @@ class ClientTest extends BitcoinSAsyncTest {
   it should "successfully request and decrypt the last signature" in {
     forAllAsync(exchangeAndPairGen) {
       case (exchange, pair) =>
-        Client
+        SbClient
           .requestAndPay(exchange,
                          pair,
                          RequestType.LastSig,

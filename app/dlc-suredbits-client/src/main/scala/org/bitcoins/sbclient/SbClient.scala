@@ -20,7 +20,7 @@ import play.api.libs.json.{JsError, JsSuccess, JsValue, Json, Reads}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-object Client {
+object SbClient {
 
   def rawRestCall(uri: Uri)(implicit system: ActorSystem): Future[String] = {
     implicit val m: ActorMaterializer = ActorMaterializer.create(system)
