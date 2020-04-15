@@ -108,7 +108,7 @@ class MockEclairClient()(
     }
 
     writeLock.lock()
-    incomingPayments = incomingPayments.appended(incoming)
+    incomingPayments = incomingPayments.:+(incoming)
     writeLock.unlock()
   }
 
@@ -234,7 +234,7 @@ class MockEclairClient()(
     )
 
     writeLock.lock()
-    outgoingPayments = outgoingPayments.appended(outgoingPayment)
+    outgoingPayments = outgoingPayments.:+(outgoingPayment)
     paymentsById = paymentsById.updated(paymentId, Vector(outgoingPayment))
     paymentsByHash = paymentsByHash
       .updated(paymentHash, outgoingPayment +: paymentsByHash(paymentHash))
@@ -466,7 +466,7 @@ class MockEclairClient()(
 
   override def sendToRoute(
       invoice: LnInvoice,
-      route: Seq[NodeId],
+      route: scala.collection.immutable.Seq[NodeId],
       amountMsat: MilliSatoshis,
       paymentHash: Sha256Digest,
       finalCltvExpiry: Long,
