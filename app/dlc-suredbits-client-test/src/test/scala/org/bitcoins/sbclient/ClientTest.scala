@@ -12,7 +12,7 @@ class ClientTest extends BitcoinSAsyncTest {
   it should "successfully decrypt data from server" in {
     server.encryptData(str, MilliSatoshis(1000).toLnCurrencyUnit).map {
       case (invoice, encrypted) =>
-        val preImage = server.preImages(invoice)
+        val preImage = server.preImage(invoice)
         val decrypted = Client.decryptData(encrypted, preImage)
         assert(decrypted == str)
     }

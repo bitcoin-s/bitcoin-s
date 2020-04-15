@@ -2,16 +2,8 @@ package org.bitcoins.sbclient
 
 import java.net.InetSocketAddress
 import java.time.Instant
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
-import akka.stream.scaladsl.{
-  Keep,
-  Sink,
-  SinkQueueWithCancel,
-  Source,
-  SourceQueueWithComplete
-}
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey, Sha256Digest}
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
@@ -23,7 +15,7 @@ import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnits, MilliSatoshis}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api.EclairApi
 import org.bitcoins.eclair.rpc.network.NodeUri
@@ -31,30 +23,17 @@ import org.bitcoins.eclair.rpc.network.NodeUri
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{FiniteDuration, _}
 
-class MockEclairClient()(implicit system: ActorSystem)
+class MockEclairClient()(
+    implicit override val executionContext: ExecutionContext)
     extends EclairApi
     with BitcoinSLogger {
-  implicit private val m: ActorMaterializer = ActorMaterializer.create(system)
-
-  implicit override val executionContext: ExecutionContext = system.dispatcher
-
   private def now: Instant = Instant.now
 
-  private val paymentSource: Source[
-    LnInvoice,
-    SourceQueueWithComplete[
-      LnInvoice
-    ]] =
-    Source.queue(16, OverflowStrategy.backpressure)
+  private val readWriteLock = new ReentrantReadWriteLock
+  private val readLock = readWriteLock.readLock
+  private val writeLock = readWriteLock.writeLock
 
-  private val paymentSink: Sink[LnInvoice, SinkQueueWithCancel[LnInvoice]] =
-    Sink.queue()
-
-  private val queues = paymentSource.toMat(paymentSink)(Keep.both).run()
-
-  private val paymentSender: SourceQueueWithComplete[LnInvoice] = queues._1
-
-  private val sentPaymentQueue: SinkQueueWithCancel[LnInvoice] = queues._2
+  private var lastSentPayment: Option[OutgoingPayment] = None
 
   private var paymentsById =
     Map.empty[PaymentId, Vector[OutgoingPayment]].withDefaultValue(Vector.empty)
@@ -63,16 +42,29 @@ class MockEclairClient()(implicit system: ActorSystem)
     .empty[Sha256Digest, Vector[OutgoingPayment]]
     .withDefaultValue(Vector.empty)
 
-  def lastSent(): Future[Option[LnInvoice]] = {
-    sentPaymentQueue.pull()
+  private var preImagesByHash: Map[LnTag.PaymentHashTag, PaymentPreimage] =
+    Map.empty
+
+  private var outgoingPaymets: Vector[OutgoingPayment] = Vector.empty
+
+  private var incomingPaymets: Vector[IncomingPayment] = Vector.empty
+
+  var otherClient: Option[MockEclairClient] = None
+
+  def lastSent(): Option[OutgoingPayment] = {
+    readLock.lock()
+    val payment = lastSentPayment
+    readLock.unlock()
+
+    payment
   }
 
-  def publishReceivedFromLastSent(system: ActorSystem): Future[Unit] = {
-    lastSent().flatMap {
-      case Some(paymentSent) =>
-        Future.successful(publishReceivedFromSent(paymentSent, system))
-      case None =>
-        Future.failed(new RuntimeException("No last sent to be received"))
+  def preImage(hashTag: LnTag.PaymentHashTag): PaymentPreimage = {
+    readLock.lock()
+    try {
+      preImagesByHash(hashTag)
+    } finally {
+      readLock.unlock()
     }
   }
 
@@ -89,18 +81,25 @@ class MockEclairClient()(implicit system: ActorSystem)
     )
   }
 
-  private def publishReceivedFromSent(
-      invoice: LnInvoice,
-      system: ActorSystem
+  def receiveIncomingPayment(
+      invoice: LnInvoice
   ): Unit = {
-    val succeed = IncomingPayment(
-      toPaymentRequest(invoice),
-      paymentPreimage = PaymentPreimage.random,
-      createdAt = now,
-      status = IncomingPaymentStatus
-        .Received(invoice.amount.getOrElse(LnCurrencyUnits.zero).toMSat, now)
-    )
-    system.eventStream.publish(succeed)
+    readLock.lock()
+    val incoming = try {
+      IncomingPayment(
+        toPaymentRequest(invoice),
+        paymentPreimage = preImagesByHash(invoice.lnTags.paymentHash),
+        createdAt = now,
+        status = IncomingPaymentStatus
+          .Received(invoice.amount.getOrElse(LnCurrencyUnits.zero).toMSat, now)
+      )
+    } finally {
+      readLock.unlock()
+    }
+
+    writeLock.lock()
+    incomingPaymets = incomingPaymets.appended(incoming)
+    writeLock.unlock()
   }
 
   private val unsupportedFailure: Future[Nothing] = {
@@ -138,11 +137,12 @@ class MockEclairClient()(implicit system: ActorSystem)
       amount = amountMsat.map(_.toLnCurrencyUnit)
     )
 
-    val hash = ECPrivateKey().bytes
-    val emptyHash = Sha256Digest.fromBytes(hash)
+    val preImage = paymentPreimage.getOrElse(PaymentPreimage.random)
+    val hash = CryptoUtil.sha256(preImage.bytes)
+    val hashTag = LnTag.PaymentHashTag(hash)
 
     val taggedFields = LnTaggedFields(
-      paymentHash = LnTag.PaymentHashTag(emptyHash),
+      paymentHash = hashTag,
       descriptionOrHash = Left(LnTag.DescriptionTag(description)),
       nodeId = None,
       expiryTime = expireIn.map(x => LnTag.ExpiryTimeTag(UInt32(x.toSeconds))),
@@ -157,6 +157,10 @@ class MockEclairClient()(implicit system: ActorSystem)
       lnTags = taggedFields,
       privateKey = privateKey
     )
+
+    writeLock.lock()
+    preImagesByHash = preImagesByHash.updated(hashTag, preImage)
+    writeLock.unlock()
 
     Future.successful(invoice)
   }
@@ -185,57 +189,59 @@ class MockEclairClient()(implicit system: ActorSystem)
 
   override def payInvoice(invoice: LnInvoice): Future[PaymentId] = {
     val paymentId = PaymentId(java.util.UUID.randomUUID())
-    val randomNodeId = NodeId(ECPublicKey.freshPublicKey)
+    val nodeId = invoice.nodeId
     val amountMsat = invoice.amount.getOrElse(LnCurrencyUnits.zero).toMSat
     val paymentHash = invoice.lnTags.paymentHash.hash
 
-    paymentSender.offer(invoice).map { queueOfferResult =>
-      val paymentResult: OutgoingPayment = queueOfferResult match {
-        case QueueOfferResult.Enqueued =>
-          val status = OutgoingPaymentStatus.Succeeded(
-            paymentPreimage = PaymentPreimage.random,
-            feesPaid = MilliSatoshis.zero,
-            route = Vector.empty,
-            completedAt = now)
+    val outgoingPayment: OutgoingPayment = otherClient match {
+      case Some(payee) =>
+        val status = OutgoingPaymentStatus.Succeeded(
+          paymentPreimage = payee.preImagesByHash(invoice.lnTags.paymentHash),
+          feesPaid = MilliSatoshis.zero,
+          route = Vector.empty,
+          completedAt = now)
 
-          OutgoingPayment(
-            id = paymentId,
-            parentId = paymentId,
-            externalId = Some(paymentId.toString()),
-            paymentHash = paymentHash,
-            amount = amountMsat,
-            createdAt = now,
-            paymentRequest = None,
-            status = status,
-            recipientAmount = amountMsat,
-            recipientNodeId = randomNodeId,
-            paymentType = PaymentType.Standard
-          )
-        case _: QueueOfferResult =>
-          val status = OutgoingPaymentStatus.Failed(failures = Vector.empty)
-          OutgoingPayment(
-            id = paymentId,
-            parentId = paymentId,
-            externalId = Some(paymentId.toString()),
-            paymentHash = paymentHash,
-            amount = amountMsat,
-            createdAt = now,
-            paymentRequest = None,
-            status = status,
-            recipientAmount = amountMsat,
-            recipientNodeId = randomNodeId,
-            paymentType = PaymentType.Standard
-          )
-      }
+        payee.receiveIncomingPayment(invoice)
 
-      synchronized {
-        paymentsById = paymentsById.updated(paymentId, Vector(paymentResult))
-        paymentsByHash = paymentsByHash
-          .updated(paymentHash, paymentResult +: paymentsByHash(paymentHash))
-      }
-
-      paymentId
+        OutgoingPayment(
+          id = paymentId,
+          parentId = paymentId,
+          externalId = Some(paymentId.toString()),
+          paymentHash = paymentHash,
+          amount = amountMsat,
+          createdAt = now,
+          paymentRequest = None,
+          status = status,
+          recipientAmount = amountMsat,
+          recipientNodeId = nodeId,
+          paymentType = PaymentType.Standard
+        )
+      case None =>
+        val status = OutgoingPaymentStatus.Failed(failures = Vector.empty)
+        OutgoingPayment(
+          id = paymentId,
+          parentId = paymentId,
+          externalId = Some(paymentId.toString()),
+          paymentHash = paymentHash,
+          amount = amountMsat,
+          createdAt = now,
+          paymentRequest = None,
+          status = status,
+          recipientAmount = amountMsat,
+          recipientNodeId = nodeId,
+          paymentType = PaymentType.Standard
+        )
     }
+
+    writeLock.lock()
+    lastSentPayment = Some(outgoingPayment)
+    outgoingPaymets = outgoingPaymets.appended(outgoingPayment)
+    paymentsById = paymentsById.updated(paymentId, Vector(outgoingPayment))
+    paymentsByHash = paymentsByHash
+      .updated(paymentHash, outgoingPayment +: paymentsByHash(paymentHash))
+    writeLock.unlock()
+
+    Future.successful(paymentId)
   }
 
   override def payInvoice(
@@ -295,15 +301,21 @@ class MockEclairClient()(implicit system: ActorSystem)
 
   override def getSentInfo(
       paymentHash: Sha256Digest): Future[Vector[OutgoingPayment]] = Future {
-    synchronized {
+    readLock.lock()
+    try {
       paymentsByHash(paymentHash)
+    } finally {
+      readLock.unlock()
     }
   }
 
   override def getSentInfo(id: PaymentId): Future[Vector[OutgoingPayment]] =
     Future {
-      synchronized {
+      readLock.lock()
+      try {
         paymentsById(id)
+      } finally {
+        readLock.unlock()
       }
     }
 
@@ -312,19 +324,19 @@ class MockEclairClient()(implicit system: ActorSystem)
       interval: FiniteDuration,
       maxAttempts: Int
   ): Future[IncomingPayment] = {
-    val amt = lnInvoice.amount.getOrElse(LnCurrencyUnits.zero).toMSat
-    //??? is this right ???
-    val preimage: PaymentPreimage = PaymentPreimage.random
-    val paymentRequest = toPaymentRequest(lnInvoice)
-
-    val createdAt = now
-    val timeReceived = now
-    val incoming = IncomingPayment(
-      paymentRequest = paymentRequest,
-      paymentPreimage = preimage,
-      createdAt = createdAt,
-      status = IncomingPaymentStatus.Received(amt, timeReceived))
-    Future.successful(incoming)
+    val paymentOpt = incomingPaymets.find(incoming =>
+      incoming.paymentRequest.paymentHash == lnInvoice.lnTags.paymentHash.hash)
+    paymentOpt match {
+      case Some(payment) => Future.successful(payment)
+      case None =>
+        if (maxAttempts <= 0) {
+          Future.failed(
+            new RuntimeException(s"No incoming payment for $lnInvoice"))
+        } else {
+          Thread.sleep(interval.toMillis)
+          monitorInvoice(lnInvoice, interval, maxAttempts - 1)
+        }
+    }
   }
 
   override def monitorSentPayment(
@@ -336,7 +348,6 @@ class MockEclairClient()(implicit system: ActorSystem)
     } yield {
 
       val result = results.filter(_.parentId == paymentId)
-      system.eventStream.publish(result.last)
       result.last
     }
   }
@@ -348,7 +359,12 @@ class MockEclairClient()(implicit system: ActorSystem)
       maxAttempts: Int): Future[OutgoingPayment] = {
     val paidF = payInvoice(invoice)
     paidF.map { id =>
-      paymentsById(id).head
+      readLock.lock()
+      try {
+        paymentsById(id).head
+      } finally {
+        readLock.unlock()
+      }
     }
 
   }
@@ -361,7 +377,12 @@ class MockEclairClient()(implicit system: ActorSystem)
       maxAttempts: Int): Future[OutgoingPayment] = {
     val paidF = payInvoice(invoice, amount)
     paidF.map { id =>
-      paymentsById(id).head
+      readLock.lock()
+      try {
+        paymentsById(id).head
+      } finally {
+        readLock.unlock()
+      }
     }
   }
 
