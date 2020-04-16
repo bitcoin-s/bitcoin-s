@@ -29,8 +29,10 @@ class FieldElementTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.smallFieldElement,
            CryptoGenerators.smallFieldElement) {
       case (fe1, fe2) =>
-        assert(
-          fe1.add(fe2).toBigInteger == fe1.toBigInteger.add(fe2.toBigInteger))
+        val feSum = fe1.add(fe2).toBigInteger
+        val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger)
+
+        assert(feSum == bigIntSum)
     }
   }
 
@@ -38,10 +40,10 @@ class FieldElementTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.largeFieldElement,
            CryptoGenerators.largeFieldElement) {
       case (fe1, fe2) =>
-        assert(
-          fe1
-            .add(fe2)
-            .toBigInteger == fe1.toBigInteger.add(fe2.toBigInteger).subtract(N))
+        val feSum = fe1.add(fe2).toBigInteger
+        val bigIntSum = fe1.toBigInteger.add(fe2.toBigInteger).subtract(N)
+
+        assert(feSum == bigIntSum)
     }
   }
 
@@ -49,13 +51,15 @@ class FieldElementTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.fieldElement, CryptoGenerators.fieldElement) {
       case (fe1, fe2) =>
         if (fe1.toBigInteger.compareTo(fe2.toBigInteger) > 0) {
-          assert(
-            fe1.subtract(fe2).toBigInteger == fe1.toBigInteger.subtract(
-              fe2.toBigInteger))
+          val feDiff = fe1.subtract(fe2).toBigInteger
+          val bigIntDiff = fe1.toBigInteger.subtract(fe2.toBigInteger)
+
+          assert(feDiff == bigIntDiff)
         } else {
-          assert(
-            fe2.subtract(fe1).toBigInteger == fe2.toBigInteger.subtract(
-              fe1.toBigInteger))
+          val feDiff = fe2.subtract(fe1).toBigInteger
+          val bigIntDiff = fe2.toBigInteger.subtract(fe1.toBigInteger)
+
+          assert(feDiff == bigIntDiff)
         }
     }
   }
@@ -70,9 +74,10 @@ class FieldElementTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.reallySmallFieldElement,
            CryptoGenerators.reallySmallFieldElement) {
       case (fe1, fe2) =>
-        assert(
-          fe1.multiply(fe2).toBigInteger == fe1.toBigInteger.multiply(
-            fe2.toBigInteger))
+        val feProduct = fe1.multiply(fe2).toBigInteger
+        val bigIntProduct = fe1.toBigInteger.multiply(fe2.toBigInteger)
+
+        assert(feProduct == bigIntProduct)
     }
   }
 

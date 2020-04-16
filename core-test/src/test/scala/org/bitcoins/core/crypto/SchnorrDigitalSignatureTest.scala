@@ -104,18 +104,11 @@ class SchnorrDigitalSignatureTest extends BitcoinSUnitTest {
         val s2 = sig2.sig
 
         // When signing a message you actually sign SHA256_challenge(Rx || pubKey || message)
-        val e1Bytes =
-          CryptoUtil
-            .taggedSha256(
-              sig1.rx.bytes ++ privKey.schnorrPublicKey.bytes ++ message1,
-              "BIP340/challenge")
-            .bytes
-        val e2Bytes =
-          CryptoUtil
-            .taggedSha256(
-              sig2.rx.bytes ++ privKey.schnorrPublicKey.bytes ++ message2,
-              "BIP340/challenge")
-            .bytes
+        val bytesToHash1 = sig1.rx.bytes ++ privKey.schnorrPublicKey.bytes ++ message1
+        val e1Bytes = CryptoUtil.sha256SchnorrChallenge(bytesToHash1).bytes
+
+        val bytesToHash2 = sig2.rx.bytes ++ privKey.schnorrPublicKey.bytes ++ message2
+        val e2Bytes = CryptoUtil.sha256SchnorrChallenge(bytesToHash2).bytes
 
         val e1 = NumberUtil.uintToFieldElement(e1Bytes)
         val e2 = NumberUtil.uintToFieldElement(e2Bytes)

@@ -127,8 +127,8 @@ object BouncyCastleUtil {
     val k = nonceKey.nonceKey.fieldElement
     val x = privateKey.schnorrKey.fieldElement
     val e = CryptoUtil
-      .taggedSha256(rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign,
-                    "BIP340/challenge")
+      .sha256SchnorrChallenge(
+        rx.bytes ++ privateKey.schnorrPublicKey.bytes ++ dataToSign)
       .bytes
 
     val challenge = x.multiply(FieldElement(e))
@@ -147,8 +147,7 @@ object BouncyCastleUtil {
     sT match {
       case Success(s) =>
         val eBytes = CryptoUtil
-          .taggedSha256(rx.bytes ++ schnorrPubKey.bytes ++ data,
-                        "BIP340/challenge")
+          .sha256SchnorrChallenge(rx.bytes ++ schnorrPubKey.bytes ++ data)
           .bytes
 
         val e = FieldElement(eBytes)
@@ -170,7 +169,7 @@ object BouncyCastleUtil {
       pubKey: SchnorrPublicKey,
       compressed: Boolean): ECPublicKey = {
     val eBytes = CryptoUtil
-      .taggedSha256(nonce.bytes ++ pubKey.bytes ++ data, "BIP340/challenge")
+      .sha256SchnorrChallenge(nonce.bytes ++ pubKey.bytes ++ data)
       .bytes
 
     val e = FieldElement(eBytes)
