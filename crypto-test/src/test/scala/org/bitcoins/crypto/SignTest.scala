@@ -39,13 +39,19 @@ class SignTest extends BitcoinSAsyncTest {
   it must "sign arbitrary data correctly with low R values" in {
     forAllAsync(CryptoGenerators.sha256Digest) { hash =>
       val bytes = hash.bytes
-      val sigF = privKey.signLowRFuture(bytes)
+      val sigF1 = privKey.signLowRFuture(bytes)
+      val sigF2 = privKey.signLowRFuture(bytes) // Check for determinism
 
-      sigF.map { sig =>
-        assert(pubKey.verify(bytes, sig))
+      sigF1.flatMap { sig1 =>
+        assert(pubKey.verify(bytes, sig1))
         assert(
-          sig.bytes.length <= 70
+          sig1.bytes.length <= 70
         ) // This assertion fails if Low R is not used
+
+        sigF2.map { sig2 =>
+          assert(sig1.bytes == sig2.bytes)
+          assert(sig1 == sig2)
+        }
       }
     }
   }
