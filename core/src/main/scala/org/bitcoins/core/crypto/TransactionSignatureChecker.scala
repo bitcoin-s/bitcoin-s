@@ -32,8 +32,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     checkSignature(txSignatureComponent,
                    txSignatureComponent.output.scriptPubKey.asm.toList,
                    partialSignature.pubKey,
-                   partialSignature.signature,
-                   Policy.standardFlags)
+                   partialSignature.signature)
   }
 
   def checkSignature(
@@ -43,8 +42,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     checkSignature(txSignatureComponent,
                    script,
                    partialSignature.pubKey,
-                   partialSignature.signature,
-                   Policy.standardFlags)
+                   partialSignature.signature)
 
   /**
     * Checks the signature of a scriptSig in the spending transaction against the
@@ -157,6 +155,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       pubKeys: List[ECPublicKey],
       flags: Seq[ScriptFlag],
       requiredSigs: Long): TransactionSignatureCheckerResult = {
+    require(requiredSigs >= 0,
+            s"requiredSigs cannot be negative, got $requiredSigs")
     logger.trace("Signatures inside of helper: " + sigs)
     logger.trace("Public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
