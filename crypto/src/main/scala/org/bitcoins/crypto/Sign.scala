@@ -3,7 +3,7 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
   * This is meant to be an abstraction for a [[org.bitcoins.crypto.ECPrivateKey]], sometimes we will not
@@ -24,8 +24,57 @@ trait Sign {
   def signFuture(bytes: ByteVector): Future[ECDigitalSignature] =
     signFunction(bytes)
 
+  def signWithEntropyFunction: (
+      ByteVector,
+      ByteVector) => Future[ECDigitalSignature]
+
+  def signWithEntropyFuture(
+      bytes: ByteVector,
+      entropy: ByteVector): Future[ECDigitalSignature] =
+    signWithEntropyFunction(bytes, entropy)
+
+  private def signLowRFuture(bytes: ByteVector, startAt: Long)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
+    val startBytes = ByteVector.fromLong(startAt).padLeft(32)
+    val startPlusOneBytes = ByteVector.fromLong(startAt + 1).padLeft(32)
+
+    val sig1F: Future[ECDigitalSignature] =
+      signWithEntropyFunction(bytes, startBytes)
+    val sig2F: Future[ECDigitalSignature] =
+      signWithEntropyFunction(bytes, startPlusOneBytes)
+    sig1F.flatMap { sig1 =>
+      if (sig1.bytes.length <= 70) {
+        Future.successful(sig1)
+      } else {
+        sig2F.flatMap { sig2 =>
+          if (sig2.bytes.length <= 70) {
+            Future.successful(sig2)
+          } else {
+            signLowRFuture(bytes, startAt + 2)
+          }
+        }
+      }
+    }
+  }
+
+  def signLowRFuture(bytes: ByteVector)(implicit
+      ec: ExecutionContext): Future[ECDigitalSignature] = {
+    signLowRFuture(bytes, startAt = 0)
+  }
+
   def sign(bytes: ByteVector): ECDigitalSignature = {
     Await.result(signFuture(bytes), 30.seconds)
+  }
+
+  def signLowR(bytes: ByteVector)(implicit
+      ec: ExecutionContext): ECDigitalSignature = {
+    Await.result(signLowRFuture(bytes), 30.seconds)
+  }
+
+  def signWithEntropy(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature = {
+    Await.result(signWithEntropyFuture(bytes, entropy), 30.seconds)
   }
 
   def publicKey: ECPublicKey
@@ -35,17 +84,25 @@ object Sign {
 
   private case class SignImpl(
       signFunction: ByteVector => Future[ECDigitalSignature],
+      signWithEntropyFunction: (
+          ByteVector,
+          ByteVector) => Future[ECDigitalSignature],
       publicKey: ECPublicKey)
       extends Sign
 
   def apply(
       signFunction: ByteVector => Future[ECDigitalSignature],
+      signWithEntropyFunction: (
+          ByteVector,
+          ByteVector) => Future[ECDigitalSignature],
       pubKey: ECPublicKey): Sign = {
-    SignImpl(signFunction, pubKey)
+    SignImpl(signFunction, signWithEntropyFunction, pubKey)
   }
 
   def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
-    SignImpl(_ => Future.successful(sig), pubKey)
+    SignImpl(_ => Future.successful(sig),
+             (_, _) => Future.successful(sig),
+             pubKey)
   }
 
   /**
@@ -57,9 +114,6 @@ object Sign {
     * a specific private key on another server
     */
   def dummySign(publicKey: ECPublicKey): Sign = {
-    SignImpl({ _: ByteVector =>
-               Future.successful(EmptyDigitalSignature)
-             },
-             publicKey)
+    constant(EmptyDigitalSignature, publicKey)
   }
 }

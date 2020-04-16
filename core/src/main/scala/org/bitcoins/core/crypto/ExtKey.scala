@@ -249,6 +249,12 @@ sealed abstract class ExtPrivateKey
     key.signFunction
   }
 
+  override def signWithEntropyFunction: (
+      ByteVector,
+      ByteVector) => Future[ECDigitalSignature] = {
+    key.signWithEntropyFunction
+  }
+
   /** Signs the given bytes with the given [[BIP32Path path]] */
   override def deriveAndSignFuture: (
       ByteVector,
