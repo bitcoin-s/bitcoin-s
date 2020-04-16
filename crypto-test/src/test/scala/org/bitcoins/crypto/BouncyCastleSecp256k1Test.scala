@@ -90,6 +90,17 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     }
   }
 
+  it must "compute signatures with entropy the same" in {
+    forAll(CryptoGenerators.privateKey,
+           NumberGenerator.bytevector(32),
+           NumberGenerator.bytevector(32)) {
+      case (privKey, bytes, entropy) =>
+        assert(
+          privKey.signWithEntropy(bytes, entropy) == BouncyCastleUtil
+            .signWithEntropy(bytes, privKey, entropy))
+    }
+  }
+
   it must "verify signatures the same" in {
     forAll(CryptoGenerators.privateKey,
            NumberGenerator.bytevector(32),

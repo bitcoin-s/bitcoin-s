@@ -74,10 +74,34 @@ sealed abstract class ECPrivateKey
   override def signWithEntropy(
       bytes: ByteVector,
       entropy: ByteVector): ECDigitalSignature = {
+    signWithEntropy(bytes, entropy, Secp256k1Context.isEnabled)
+  }
+
+  def signWithEntropy(
+      bytes: ByteVector,
+      entropy: ByteVector,
+      useSecp: Boolean): ECDigitalSignature = {
+    if (useSecp) {
+      signWithEntropyWithSecp(bytes, entropy)
+    } else {
+      signWithEntropyWithBouncyCastle(bytes, entropy)
+    }
+  }
+
+  def signWithEntropyWithSecp(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature = {
     val sigBytes = NativeSecp256k1.signWithEntropy(bytes.toArray,
                                                    this.bytes.toArray,
                                                    entropy.toArray)
+
     ECDigitalSignature(ByteVector(sigBytes))
+  }
+
+  def signWithEntropyWithBouncyCastle(
+      bytes: ByteVector,
+      entropy: ByteVector): ECDigitalSignature = {
+    BouncyCastleUtil.signWithEntropy(bytes, this, entropy)
   }
 
   override def signWithEntropyFunction: (
