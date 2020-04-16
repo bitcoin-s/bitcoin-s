@@ -87,6 +87,4 @@ println(s"Verified with bouncy castle=${verified}")
 
 ### Building libsecp256k1
 
-For information on how to build libsecp256k1 for various OS's see ACINQ's guide to building libsecp256k1 with the jni:
-
-https://github.com/ACINQ/bitcoin-lib/blob/master/BUILDING.md#building-jni-bindings-for-libsecp256k1
+[See instructions here](add-to-jni.md#adding-to-bitcoin-s)
