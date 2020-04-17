@@ -43,9 +43,6 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
 
   @tailrec
   def fromBytes(bytes: ByteVector): SchnorrNonce = {
-    require(bytes.length <= 33,
-            s"Schnorr Nonce must be less than 33 bytes, got $bytes")
-
     if (bytes.length == 32) {
       new SchnorrNonce(bytes)
     } else if (bytes.length < 32) {

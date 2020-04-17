@@ -106,8 +106,8 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
            NumberGenerator.bytevector(32)) {
       case (privKey, bytes, auxRand) =>
         assert(
-          privKey.schnorrSignWithBouncyCastle(bytes, auxRand) == privKey
-            .schnorrSignWithSecp(bytes, auxRand))
+          privKey.schnorrSign(bytes, auxRand, useSecp = false) == privKey
+            .schnorrSign(bytes, auxRand, useSecp = true))
     }
   }
 
@@ -117,9 +117,9 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
            NumberGenerator.bytevector(32)) {
       case (privKey, nonceKey, bytes) =>
         val sigBC = privKey
-          .schnorrSignWithNonceWithBouncyCastle(bytes, nonceKey)
+          .schnorrSignWithNonce(bytes, nonceKey, useSecp = false)
         val sigSecP = privKey
-          .schnorrSignWithNonceWithSecp(bytes, nonceKey)
+          .schnorrSignWithNonce(bytes, nonceKey, useSecp = true)
         assert(sigBC.bytes == sigSecP.bytes)
     }
   }
@@ -132,11 +132,11 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         val sig = privKey.schnorrSign(bytes)
         val pubKey = privKey.schnorrPublicKey
         assert(
-          pubKey.verifyWithBouncyCastle(bytes, sig) == pubKey
-            .verifyWithSecp(bytes, sig))
+          pubKey.verify(bytes, sig, useSecp = false) == pubKey
+            .verify(bytes, sig, useSecp = true))
         assert(
-          pubKey.verifyWithBouncyCastle(bytes, badSig) == pubKey
-            .verifyWithSecp(bytes, badSig))
+          pubKey.verify(bytes, badSig, useSecp = false) == pubKey
+            .verify(bytes, badSig, useSecp = true))
     }
   }
 
@@ -145,9 +145,17 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
            CryptoGenerators.schnorrNonce,
            NumberGenerator.bytevector(32)) {
       case (pubKey, nonce, bytes) =>
-        assert(
-          pubKey.computeSigPointWithBouncyCastle(bytes, nonce) == pubKey
-            .computeSigPointWithSecp(bytes, nonce))
+        val bouncyCastleSigPoint = pubKey.computeSigPoint(bytes,
+                                                          nonce,
+                                                          compressed = true,
+                                                          useSecp = false)
+
+        val secpSigPoint = pubKey.computeSigPoint(bytes,
+                                                  nonce,
+                                                  compressed = true,
+                                                  useSecp = true)
+
+        assert(bouncyCastleSigPoint == secpSigPoint)
     }
   }
 }
