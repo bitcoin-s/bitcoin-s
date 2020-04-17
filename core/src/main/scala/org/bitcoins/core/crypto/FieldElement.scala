@@ -102,23 +102,23 @@ object FieldElement extends Factory[FieldElement] {
   }
 
   def add(fe1: FieldElement, fe2: FieldElement): FieldElement = {
-    val num1 = getBigInteger(fe1.bytes)
-    val num2 = getBigInteger(fe2.bytes)
+    val num1 = fe1.toBigInteger
+    val num2 = fe2.toBigInteger
 
     val sum = num1.add(num2).mod(N)
     FieldElement(sum)
   }
 
   def multiply(fe1: FieldElement, fe2: FieldElement): FieldElement = {
-    val num1 = getBigInteger(fe1.bytes)
-    val num2 = getBigInteger(fe2.bytes)
+    val num1 = fe1.toBigInteger
+    val num2 = fe2.toBigInteger
 
     val sum = num1.multiply(num2).mod(N)
     FieldElement(sum)
   }
 
   def negate(fe: FieldElement): FieldElement = {
-    val neg = N.subtract(getBigInteger(fe.bytes))
+    val neg = N.subtract(fe.toBigInteger)
     FieldElement(neg)
   }
 
@@ -128,33 +128,7 @@ object FieldElement extends Factory[FieldElement] {
     * Cribbed from [[https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/]]
     */
   def computeInverse(fe: FieldElement): FieldElement = {
-    var a = fe.toBigInteger
-    var m = N
-    val m0 = m
-    var y = BigInteger.ZERO
-    var x = BigInteger.ONE
-
-    while (a.compareTo(BigInteger.ONE) > 0) {
-      // q is quotient
-      val q = a.divide(m)
-
-      var t = m
-
-      // m is remainder now, process
-      // same as Euclid's algo
-      m = a.mod(m)
-      a = t
-      t = y
-
-      // Update x and y
-      y = x.subtract(q.multiply(y))
-      x = t
-    }
-
-    if (x.compareTo(BigInteger.ZERO) < 0) {
-      x = x.add(m0)
-    }
-
-    FieldElement(x)
+    val inv = fe.toBigInteger.modInverse(N)
+    FieldElement(inv)
   }
 }
