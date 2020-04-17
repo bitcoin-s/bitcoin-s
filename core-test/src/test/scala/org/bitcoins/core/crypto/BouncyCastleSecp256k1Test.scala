@@ -55,21 +55,24 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
                                     NumberGenerator.bytevector(33))
     forAll(keyOrGarbageGen) { bytes =>
       assert(
-        ECPublicKey.isFullyValidWithBouncyCastle(bytes) ==
-          ECPublicKey.isFullyValidWithSecp(bytes)
+        ECPublicKey.isFullyValid(bytes, useSecp = false) ==
+          ECPublicKey.isFullyValid(bytes, useSecp = true)
       )
     }
   }
 
   it must "decompress keys the same" in {
     forAll(CryptoGenerators.publicKey) { pubKey =>
-      assert(pubKey.decompressedWithBouncyCastle == pubKey.decompressedWithSecp)
+      assert(
+        pubKey.decompressed(useSecp = false) == pubKey.decompressed(
+          useSecp = true))
     }
   }
 
   it must "compute public keys the same" in {
     forAll(CryptoGenerators.privateKey) { privKey =>
-      assert(privKey.publicKeyWithBouncyCastle == privKey.publicKeyWithSecp)
+      assert(
+        privKey.publicKey(useSecp = false) == privKey.publicKey(useSecp = true))
     }
   }
 
@@ -77,7 +80,8 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
       case (privKey, bytes) =>
         assert(
-          privKey.signWithBouncyCastle(bytes) == privKey.signWithSecp(bytes))
+          privKey.sign(bytes, useSecp = false) == privKey.sign(bytes,
+                                                               useSecp = true))
     }
   }
 
@@ -89,11 +93,11 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         val sig = privKey.sign(bytes)
         val pubKey = privKey.publicKey
         assert(
-          pubKey.verifyWithBouncyCastle(bytes, sig) == pubKey
-            .verifyWithSecp(bytes, sig))
+          pubKey.verify(bytes, sig, useSecp = false) == pubKey
+            .verify(bytes, sig, useSecp = true))
         assert(
-          pubKey.verifyWithBouncyCastle(bytes, badSig) == pubKey
-            .verifyWithSecp(bytes, badSig))
+          pubKey.verify(bytes, badSig, useSecp = false) == pubKey
+            .verify(bytes, badSig, useSecp = true))
     }
   }
 }

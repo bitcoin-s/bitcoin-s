@@ -3,7 +3,7 @@ package org.bitcoins.gui
 import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.{Alert, Label}
+import scalafx.scene.control.Alert
 
 /**
   * Runs a background task disabling the `mainView` and main visible `glassPane`.
