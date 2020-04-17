@@ -116,6 +116,12 @@ public class NativeSecp256k1 {
     /**
      * libsecp256k1 Create an ECDSA signature adding specified entropy.
      *
+     * This can be used to include your own entropy to nonce generation
+     * in addition to the message and private key, while still doing so deterministically.
+     *
+     * In particular, this is used when generating low R signatures.
+     * See https://github.com/bitcoin/bitcoin/pull/13666/
+     *
      * @param data Message hash, 32 bytes
      * @param seckey ECDSA Secret key, 32 bytes
      * @param entropy 32 bytes of entropy

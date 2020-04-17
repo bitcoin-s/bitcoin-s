@@ -83,6 +83,14 @@ object BouncyCastleUtil {
     signatureLowS
   }
 
+  /** Create an ECDSA signature adding specified entropy.
+    *
+    * This can be used to include your own entropy to nonce generation
+    * in addition to the message and private key, while still doing so deterministically.
+    *
+    * In particular, this is used when generating low R signatures.
+    * @see [[https://github.com/bitcoin/bitcoin/pull/13666/]]
+    * */
   def signWithEntropy(
       dataToSign: ByteVector,
       privateKey: ECPrivateKey,
