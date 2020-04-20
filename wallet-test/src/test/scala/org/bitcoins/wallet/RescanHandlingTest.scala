@@ -38,7 +38,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         _ = assert(
           initBalance > CurrencyUnits.zero,
           s"Cannot run rescan test if our init wallet balance is zero!")
-        _ <- wallet.fullRescanNeurinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        _ <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == initBalance)

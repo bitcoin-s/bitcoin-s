@@ -43,7 +43,25 @@ abstract class LockedWallet
       spendingInfoCount <- spendingInfoDAO.count()
     } yield addressCount == 0 && spendingInfoCount == 0
 
-  override def clearUtxosAndAddresses(): Future[LockedWallet] = {
+  override def clearUtxosAndAddresses(
+      account: HDAccount): Future[LockedWallet] = {
+    for {
+      allUtxos <- spendingInfoDAO.findAll()
+      accountUtxos = allUtxos.filter(
+        utxo =>
+          HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                                  account = account))
+      deleteUtxoFs = accountUtxos.map(spendingInfoDAO.delete)
+      _ <- Future.sequence(deleteUtxoFs)
+      allAddresses <- addressDAO.findAll()
+      accountAddresses = allAddresses.filter(address =>
+        HDAccount.isSameAccount(bip32Path = address.path, account = account))
+      deleteAddrFs = accountAddresses.map(addressDAO.delete)
+      _ <- Future.sequence(deleteAddrFs)
+    } yield this
+  }
+
+  override def clearAllUtxosAndAddresses(): Future[LockedWallet] = {
     for {
       _ <- spendingInfoDAO.deleteAll()
       _ <- addressDAO.deleteAll()
