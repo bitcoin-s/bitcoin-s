@@ -17,7 +17,7 @@ In bitcoin-s, we support native binaries for libsecp256k1
 Bitcoin-s uses a zero dependency library called [`native-lib-loader`](https://github.com/scijava/native-lib-loader). 
 That does the appropriate loading of the library onto your classpath to be accessed.
 
-#### Using libsecp256k1
+### Using libsecp256k1
 
 To tell if you have access to libsecp256k1 you can do the following
 
@@ -85,3 +85,6 @@ println(s"Verified with bouncy castle=${verified}")
 
 ```
 
+### Building libsecp256k1
+
+[See instructions here](add-to-jni.md#adding-to-bitcoin-s)
