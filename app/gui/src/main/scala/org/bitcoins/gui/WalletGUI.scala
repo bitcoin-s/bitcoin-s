@@ -2,6 +2,7 @@ package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
 import javafx.scene.image.Image
+import org.bitcoins.gui.dlc.DLCPane
 import org.bitcoins.gui.settings.SettingsPane
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
@@ -80,6 +81,8 @@ object WalletGUI extends JFXApp {
     bottom = statusLabel
   }
 
+  private val dlcPane = new DLCPane(glassPane)
+
   private val settingsPane = new SettingsPane
 
   private val tabPane: TabPane = new TabPane {
@@ -89,12 +92,17 @@ object WalletGUI extends JFXApp {
       content = borderPane
     }
 
+    val dlcTab: Tab = new Tab {
+      text = "DLC"
+      content = dlcPane.borderPane
+    }
+
     val settingsTab: Tab = new Tab {
       text = "Settings"
       content = settingsPane.view
     }
 
-    tabs = Seq(walletTab, settingsTab)
+    tabs = Seq(walletTab, dlcTab, settingsTab)
 
     tabClosingPolicy = TabClosingPolicy.Unavailable
   }
