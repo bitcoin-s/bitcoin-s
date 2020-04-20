@@ -126,4 +126,36 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
       assert(num.msat == MilliSatoshis(num))
     }
   }
+
+  it must "toString msat and msats correctly" in {
+    assert(MilliSatoshis(1).toString == "1 msat")
+    assert(MilliSatoshis(2).toString == "2 msats")
+  }
+
+  it must "convert Millisatoshis toBigDecimal and back" in {
+    forAll(LnCurrencyUnitGen.milliSatoshis) { milliSats =>
+      assert(milliSats.toBigDecimal.toBigIntExact.contains(milliSats.toBigInt))
+    }
+  }
+
+  it must "compare Millisatoshis correctly" in {
+    forAll(LnCurrencyUnitGen.milliSatoshis) { msat =>
+      val msatPlusOne = msat + MilliSatoshis.one
+
+      assert(msat == msat)
+      assert(msat != msatPlusOne)
+      assert(msat < msatPlusOne)
+      assert(msat <= msatPlusOne)
+      assert(msat <= msat)
+      assert(msatPlusOne > msat)
+      assert(msatPlusOne >= msat)
+      assert(msat >= msat)
+    }
+  }
+
+  it must "convert to and from UInt64 correctly" in {
+    forAll(LnCurrencyUnitGen.milliSatoshis) { msat =>
+      assert(MilliSatoshis(msat.toUInt64.toBigInt) == msat)
+    }
+  }
 }

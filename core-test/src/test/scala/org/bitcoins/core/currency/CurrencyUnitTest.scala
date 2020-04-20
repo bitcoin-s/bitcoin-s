@@ -1,11 +1,13 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.currency._
-
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
+
 import scala.util.Try
 import org.bitcoins.core.number.Int64
+import org.bitcoins.core.util.CryptoUtil
+
 import scala.util.Success
 import scala.util.Failure
 import org.scalacheck.Gen
@@ -175,6 +177,45 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
           assert(num1.compare(num2) == -1)
         else
           assert(num1.compare(num2) == 0)
+    }
+  }
+
+  private val smallSatGen = Gen.choose(0, 10000).map { n =>
+    Satoshis(n)
+  }
+
+  it must "have correct/consistent Numeric functions" in {
+    forAll(smallSatGen, smallSatGen) {
+      case (num1, num2) =>
+        assert(num1 + num2 == CurrencyUnits.plus(num1, num2))
+        assert(num1 - num2 == CurrencyUnits.minus(num1, num2))
+        assert(num1 * num2 == CurrencyUnits.times(num1, num2))
+        assert(-num1 == CurrencyUnits.negate(num1))
+        assert(CurrencyUnits.fromInt(CurrencyUnits.toInt(num1)) == num1)
+        assert(CurrencyUnits.fromInt(CurrencyUnits.toLong(num1).toInt) == num1)
+        assert(CurrencyUnits.fromInt(CurrencyUnits.toFloat(num1).toInt) == num1)
+        assert(
+          CurrencyUnits.fromInt(CurrencyUnits.toDouble(num1).toInt) == num1)
+
+        assert(CurrencyUnits.parseString("").isEmpty)
+        val str = "Never gonna give you up, never gonna let you down"
+        assert(CurrencyUnits.parseString(str).isEmpty)
+        assert(
+          CurrencyUnits
+            .parseString("12345678900")
+            .contains(Satoshis(12345678900L)))
+    }
+  }
+
+  it must "convert to and from BigDemimals correctly" in {
+    forAll(CurrencyUnitGenerator.bitcoins) { num =>
+      assert(Bitcoins(num.toBigDecimal) == num)
+    }
+  }
+
+  it must "convert to and from hex correctly" in {
+    forAll(CurrencyUnitGenerator.bitcoins) { num =>
+      assert(Satoshis.fromHex(num.hex) == num)
     }
   }
 }

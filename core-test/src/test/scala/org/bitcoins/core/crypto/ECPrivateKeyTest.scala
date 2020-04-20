@@ -6,6 +6,7 @@ import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.core.gen.ChainParamsGenerator
 import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.config.RegTest
+import scodec.bits.ByteVector
 
 class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "create a private key from its hex representation" in {
@@ -27,11 +28,19 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   }
 
   it must "serialize a private key to WIF and then be able to deserialize it" in {
+    import scala.concurrent.ExecutionContext.Implicits.global
+
     val hex = "2cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
     val privKey = ECPrivateKey(hex)
     val wif = privKey.toWIF(TestNet3)
     val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
     privKeyFromWIF must be(privKey)
+
+    val privKeyDecompressed = ECPrivateKey.fromHex(hex, isCompressed = false)
+    val wifDecompressed = privKeyDecompressed.toWIF(TestNet3)
+    val privKeyDecompressedFromWIF =
+      ECPrivateKey.fromWIFToPrivateKey(wifDecompressed)
+    privKeyDecompressedFromWIF must be(privKeyDecompressed)
   }
 
   it must "serialize a private key to WIF when the private key is prefixed with 0 bytes" in {
