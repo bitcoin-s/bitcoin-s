@@ -132,7 +132,7 @@ class MockServer()(implicit ec: ExecutionContext) {
   def stop(): Future[Done] = {
     if (stoppedP.isCompleted || !serverBindingP.isCompleted) {
       Future.failed(new RuntimeException(
-        "Cannot stop server of it has not been started or has already been stopped"))
+        "Cannot stop server if it has not been started or has already been stopped"))
     } else {
       val resultF = serverBindingF.flatMap(_.unbind())
 
