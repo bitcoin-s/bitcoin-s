@@ -6,6 +6,7 @@ import akka.io.{IO, Tcp}
 import akka.util.{ByteString, CompactByteString, Timeout}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.p2p.{NetworkMessage, NetworkPayload}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -205,16 +206,17 @@ case class P2PClientActor(
           logger.trace(s"Unaligned bytes: ${newUnalignedBytes.toHex}")
         }
 
-        val f: (PeerMessageReceiver, NetworkMessage) => PeerMessageReceiver = {
+        val f: (PeerMessageReceiver, NetworkMessage) => Future[PeerMessageReceiver] = {
           case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
             logger.trace(s"Processing message=${m}")
             val msg = NetworkMessageReceived(m, P2PClient(self, peer))
-            Await.result(peerMsgRecv.handleNetworkMessageReceived(msg), timeout)
+            peerMsgRecv.handleNetworkMessageReceived(msg)
         }
 
         logger.trace(s"About to process ${messages.length} messages")
-        val newMsgReceiver = messages.foldLeft(currentPeerMsgHandlerRecv)(f)
+        val newMsgReceiverF = FutureUtil.foldLeftAsync(currentPeerMsgHandlerRecv,messages)(f)(context.dispatcher)
 
+        val newMsgReceiver = Await.result(newMsgReceiverF, timeout)
         currentPeerMsgHandlerRecv = newMsgReceiver
         newUnalignedBytes
     }
