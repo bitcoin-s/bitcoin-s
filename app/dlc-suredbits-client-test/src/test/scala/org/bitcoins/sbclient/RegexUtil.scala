@@ -21,7 +21,7 @@ object RegexUtil {
         case (rx, t) =>
           rx + t + "|"
       }
-      .dropRight(1)
+      .init
 
     noCaseRegex(orStr)
   }

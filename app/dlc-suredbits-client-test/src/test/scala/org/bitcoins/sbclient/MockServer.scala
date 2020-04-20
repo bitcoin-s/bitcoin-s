@@ -39,7 +39,7 @@ class MockServer()(implicit ec: ExecutionContext) {
 
       val dataBytes: ByteVector = ByteVector.encodeUtf8(data) match {
         case Left(err) =>
-          throw new RuntimeException(s"Could not UTF8 encode data!", err)
+          throw new RuntimeException(s"Could not encode data to UTF-8!", err)
         case Right(bytes) => bytes
       }
 
