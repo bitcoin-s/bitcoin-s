@@ -3,7 +3,7 @@ package org.bitcoins.core.util
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.BtcHumanReadablePart
 import org.bitcoins.core.protocol.ln.LnHumanReadablePart
-import scodec.bits.{BitVector, ByteVector}
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -143,17 +143,10 @@ sealed abstract class Bech32 {
           } else {
             val byte = Bech32.charset.indexOf(h.toLower).toByte
 
-            if (byte >= 0 && byte < 32) {
-              loop(remaining = t,
-                   accum = UInt5.fromByte(byte) +: accum,
-                   hasUpper = h.isUpper || hasUpper,
-                   hasLower = h.isLower || hasLower)
-            } else {
-              Failure(
-                new IllegalArgumentException(
-                  s"Byte was not in a valid range, got $byte"))
-            }
-
+            loop(remaining = t,
+                 accum = UInt5.fromByte(byte) +: accum,
+                 hasUpper = h.isUpper || hasUpper,
+                 hasLower = h.isLower || hasLower)
           }
         }
     }
@@ -163,31 +156,6 @@ sealed abstract class Bech32 {
                                            hasLower = false)
 
     payload
-  }
-
-  /** Encodes a bitvector to a bech32 string */
-  def encodeBitVec(bitVec: BitVector): String = {
-    @tailrec
-    def loop(remaining: BitVector, accum: Vector[UInt5]): Vector[UInt5] = {
-      if (remaining.length > 5) {
-
-        val u5 = UInt5(remaining.take(5).toByte())
-
-        val newRemaining = remaining.slice(5, remaining.size)
-
-        loop(newRemaining, accum.:+(u5))
-
-      } else {
-
-        val u5 = UInt5(remaining.toByte())
-
-        accum.:+(u5)
-      }
-    }
-
-    val u5s = loop(bitVec, Vector.empty)
-
-    encode5bitToString(u5s)
   }
 
   /**

@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.Bech32
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success}
 
@@ -170,6 +171,12 @@ class Bech32Test extends BitcoinSUnitTest {
 
     Bech32.encode5bitToString(encoded) must be("qq")
 
+    val eightBitEncoded = Bech32.from5bitTo8bit(encoded)
+    Bech32.encode8bitToString(eightBitEncoded) must be("qq")
+    val byteVectorEncoded =
+      eightBitEncoded.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    Bech32.encode8bitToString(byteVectorEncoded) must be("qq")
+
     val encoded1 = Bech32.from8bitTo5bit(Vector(z, UInt8.one))
     encoded1 must be(Seq(fz, fz, fz, UInt5(16.toByte)))
     //130.toByte == -126
@@ -217,5 +224,18 @@ class Bech32Test extends BitcoinSUnitTest {
     val failsAll = invalidBech32.forall(invalid =>
       Bech32.splitToHrpAndData(invalid).isSuccess)
     assert(failsAll)
+  }
+
+  it must "fail hrp if out of range" in {
+    assert(Bech32.checkHrpValidity(s"${32.toChar}").isFailure)
+    assert(Bech32.checkHrpValidity(s"${127.toChar}").isFailure)
+  }
+
+  it must "fail if character is not in charset" in {
+    // b is not allowed in data
+    assert(
+      Bech32
+        .checkDataValidity("bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf")
+        .isFailure)
   }
 }

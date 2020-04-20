@@ -1,7 +1,6 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.config.MainNet
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._

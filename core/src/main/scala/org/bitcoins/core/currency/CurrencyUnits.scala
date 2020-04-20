@@ -12,34 +12,10 @@ import scala.util.{Failure, Success, Try}
 
 sealed abstract class CurrencyUnit
     extends NetworkElement
-    with BasicArithmetic[CurrencyUnit]
-    with Numeric[CurrencyUnit] {
+    with BasicArithmetic[CurrencyUnit] {
   type A
 
   def satoshis: Satoshis
-
-  override def plus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x + y
-
-  override def minus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x - y
-
-  override def times(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x * y
-
-  override def negate(x: CurrencyUnit): CurrencyUnit = -x
-
-  override def fromInt(x: Int): CurrencyUnit = Satoshis(x.toLong)
-
-  override def toInt(x: CurrencyUnit): Int = x.satoshis.underlying.toInt
-
-  override def toLong(x: CurrencyUnit): Long = x.satoshis.underlying.toLong
-
-  override def toFloat(x: CurrencyUnit): Float =
-    x.satoshis.underlying.toBigInt.toFloat
-
-  override def toDouble(x: CurrencyUnit): Double =
-    x.satoshis.underlying.toBigInt.toDouble
-
-  override def compare(x: CurrencyUnit, y: CurrencyUnit): Int =
-    x.satoshis.underlying compare y.satoshis.underlying
 
   // Cannot use the override modifier because this method was added in scala version 2.13
   def parseString(str: String): Option[CurrencyUnit] = {
@@ -54,7 +30,7 @@ sealed abstract class CurrencyUnit
   }
 
   def compare(c: CurrencyUnit): Int =
-    compare(this, c)
+    CurrencyUnits.compare(this, c)
 
   def !=(c: CurrencyUnit): Boolean = !(this == c)
 
@@ -169,14 +145,50 @@ object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
   private case class BitcoinsImpl(underlying: BigDecimal) extends Bitcoins
 }
 
-object CurrencyUnits {
+object CurrencyUnits extends Numeric[CurrencyUnit] {
+
+  override def plus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x + y
+
+  override def minus(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x - y
+
+  override def times(x: CurrencyUnit, y: CurrencyUnit): CurrencyUnit = x * y
+
+  override def negate(x: CurrencyUnit): CurrencyUnit = -x
+
+  override def fromInt(x: Int): CurrencyUnit = Satoshis(x.toLong)
+
+  // Must go through toLong to avoid infinite recursion
+  override def toInt(x: CurrencyUnit): Int = x.satoshis.toLong.toInt
+
+  override def toLong(x: CurrencyUnit): Long = x.satoshis.toLong
+
+  override def toFloat(x: CurrencyUnit): Float =
+    x.satoshis.toBigInt.toFloat
+
+  override def toDouble(x: CurrencyUnit): Double =
+    x.satoshis.toBigInt.toDouble
+
+  override def compare(x: CurrencyUnit, y: CurrencyUnit): Int =
+    x.satoshis.toBigInt compare y.satoshis.toBigInt
+
+  // Cannot use the override modifier because this method was added in scala version 2.13
+  def parseString(str: String): Option[CurrencyUnit] = {
+    if (str.isEmpty) {
+      None
+    } else {
+      Try(str.toLong) match {
+        case Success(num) => Some(Satoshis(num))
+        case Failure(_)   => None
+      }
+    }
+  }
 
   /** The number you need to multiply BTC by to get it's satoshis */
   val btcToSatoshiScalar: Long = 100000000
   val satoshisToBTCScalar: BigDecimal = BigDecimal(1.0) / btcToSatoshiScalar
   val oneBTC: CurrencyUnit = Satoshis(btcToSatoshiScalar)
   val oneMBTC: CurrencyUnit = Satoshis(btcToSatoshiScalar / 1000)
-  val zero: CurrencyUnit = Satoshis.zero
+  override val zero: CurrencyUnit = Satoshis.zero
   val negativeSatoshi = Satoshis(-1)
 
   def toSatoshis(unit: CurrencyUnit): Satoshis = unit match {
