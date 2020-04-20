@@ -539,6 +539,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                                   fundingInputs,
                                   outcomeSigs)
 
+      (payout, _) = client.getPayouts(oracleSig)
+      _ = if (payout <= 0.satoshis)
+        throw new UnsupportedOperationException(
+          "Cannot execute a losing outcome")
+
       sigMessage <- client.createMutualCloseSig(eventId, oracleSig)
     } yield sigMessage
   }
@@ -558,6 +563,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                                       dlcAccept,
                                       fundingInputs,
                                       outcomeSigs)
+
+      (payout, _) = client.getPayouts(oracleSig)
+      _ = if (payout <= 0.satoshis)
+        throw new UnsupportedOperationException(
+          "Cannot execute a losing outcome")
 
       outcome <- client.executeUnilateralDLC(setup, oracleSig)
     } yield {
