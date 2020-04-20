@@ -66,6 +66,7 @@ lazy val `bitcoin-s` = project
     walletTest,
     appServer,
     appServerTest,
+    appCommons,
     testkit,
     zmq
   )
