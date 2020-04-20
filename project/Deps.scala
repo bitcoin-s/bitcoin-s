@@ -21,7 +21,7 @@ object Deps {
     val typesafeConfigV = "1.4.0"
 
     val scalaFxV = "12.0.2-R18"
-    val javaFxV = "14"
+    val javaFxV = "14.0.1"
 
     // async dropped Scala 2.11 in 0.10.0
     val asyncOldScalaV = "0.9.7"
