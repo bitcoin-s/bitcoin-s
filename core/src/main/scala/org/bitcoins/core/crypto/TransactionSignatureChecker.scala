@@ -2,10 +2,12 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
 import scodec.bits.ByteVector
 
@@ -17,6 +19,30 @@ import scala.annotation.tailrec
   * public keys
   */
 trait TransactionSignatureChecker extends BitcoinSLogger {
+
+  def checkSignature(
+      txSignatureComponent: TxSigComponent,
+      pubKey: ECPublicKey,
+      signature: ECDigitalSignature): TransactionSignatureCheckerResult =
+    checkSignature(txSignatureComponent, PartialSignature(pubKey, signature))
+
+  def checkSignature(
+      txSignatureComponent: TxSigComponent,
+      partialSignature: PartialSignature): TransactionSignatureCheckerResult = {
+    checkSignature(txSignatureComponent,
+                   txSignatureComponent.output.scriptPubKey.asm.toList,
+                   partialSignature.pubKey,
+                   partialSignature.signature)
+  }
+
+  def checkSignature(
+      txSignatureComponent: TxSigComponent,
+      script: Seq[ScriptToken],
+      partialSignature: PartialSignature): TransactionSignatureCheckerResult =
+    checkSignature(txSignatureComponent,
+                   script,
+                   partialSignature.pubKey,
+                   partialSignature.signature)
 
   /**
     * Checks the signature of a scriptSig in the spending transaction against the
@@ -35,7 +61,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       script: Seq[ScriptToken],
       pubKey: ECPublicKey,
       signature: ECDigitalSignature,
-      flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
+      flags: Seq[ScriptFlag] = Policy.standardFlags): TransactionSignatureCheckerResult = {
     logger.debug("Signature: " + signature)
     val pubKeyEncodedCorrectly = BitcoinScriptUtil.isValidPubKeyEncoding(
       pubKey,
@@ -75,21 +101,14 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
         ByteVector(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
       val spk = ScriptPubKey.fromAsm(sigsRemovedScript)
       val hashForSignature = txSignatureComponent match {
+        case w: WitnessTxSigComponent =>
+          TransactionSignatureSerializer.hashForSignature(w, hashType)
         case b: BaseTxSigComponent =>
           val sigsRemovedTxSigComponent = BaseTxSigComponent(
             b.transaction,
             b.inputIndex,
             TransactionOutput(b.output.value, spk),
             b.flags)
-          TransactionSignatureSerializer.hashForSignature(
-            sigsRemovedTxSigComponent,
-            hashType)
-        case w: WitnessTxSigComponent =>
-          val sigsRemovedTxSigComponent = WitnessTxSigComponent(
-            w.transaction,
-            w.inputIndex,
-            TransactionOutput(w.output.value, spk),
-            w.flags)
           TransactionSignatureSerializer.hashForSignature(
             sigsRemovedTxSigComponent,
             hashType)
@@ -136,6 +155,8 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       pubKeys: List[ECPublicKey],
       flags: Seq[ScriptFlag],
       requiredSigs: Long): TransactionSignatureCheckerResult = {
+    require(requiredSigs >= 0,
+            s"requiredSigs cannot be negative, got $requiredSigs")
     logger.trace("Signatures inside of helper: " + sigs)
     logger.trace("Public keys inside of helper: " + pubKeys)
     if (sigs.size > pubKeys.size) {
