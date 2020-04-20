@@ -1,96 +1,148 @@
 package org.bitcoins.wallet.dlc
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage
+import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCMessage}
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{DLCOffer, DLCSign}
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, DLCWalletUtil}
-import org.scalatest.FutureOutcome
+import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
+import org.bitcoins.wallet.Wallet
+import org.scalatest.{Assertion, FutureOutcome}
 
-class WalletDLCSetupTest extends BitcoinSWalletTest {
-  type FixtureParam = FundedWallet
+import scala.concurrent.Future
+
+class WalletDLCSetupTest extends BitcoinSDualWalletTest {
+  type FixtureParam = (FundedWallet, FundedWallet)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedSegwitWallet(test)
+    withDualFundedSegwitWallets(test)
   }
 
   behavior of "DLCWallet"
 
-  it must "create a dlc offer" in { funded: FundedWallet =>
-    val fundedWallet = funded.wallet
+  it must "correctly negotiate a dlc" in {
+    fundedWallets: (FundedWallet, FundedWallet) =>
+      val walletA = fundedWallets._1.wallet
+      val walletB = fundedWallets._2.wallet
 
-    val offerData = DLCWalletUtil.sampleDLCOffer
+      val offerData = DLCWalletUtil.sampleDLCOffer
+      val eventId = DLCMessage.calcEventId(offerData.oracleInfo,
+                                           offerData.contractInfo,
+                                           offerData.timeouts)
 
-    for {
-      offer <- fundedWallet.registerDLCOffer(offerData)
-    } yield {
-      assert(offer.oracleInfo == offerData.oracleInfo)
-      assert(offer.contractInfo == offerData.contractInfo)
-      assert(offer.totalCollateral == offerData.totalCollateral)
-      assert(offer.feeRate == offerData.feeRate)
-      assert(offer.timeouts == offerData.timeouts)
-      assert(offer.fundingInputs.nonEmpty)
-      assert(offer.changeAddress.value.nonEmpty)
-    }
+      for {
+        offer <- walletA.createDLCOffer(
+          offerData.oracleInfo,
+          offerData.contractInfo,
+          offerData.totalCollateral,
+          Some(offerData.feeRate),
+          offerData.timeouts.contractMaturity.toUInt32,
+          offerData.timeouts.contractTimeout.toUInt32
+        )
+        _ = {
+          assert(offer.oracleInfo == offerData.oracleInfo)
+          assert(offer.contractInfo == offerData.contractInfo)
+          assert(offer.totalCollateral == offerData.totalCollateral)
+          assert(offer.feeRate == offerData.feeRate)
+          assert(offer.timeouts == offerData.timeouts)
+          assert(offer.fundingInputs.nonEmpty)
+          assert(offer.changeAddress.value.nonEmpty)
+        }
+
+        accept <- walletB.acceptDLCOffer(offer)
+        _ = {
+          assert(accept.fundingInputs.nonEmpty)
+          assert(accept.eventId == eventId)
+          assert(
+            accept.totalCollateral == offer.contractInfo.values.max - offer.totalCollateral)
+          assert(accept.changeAddress.value.nonEmpty)
+        }
+
+        sign <- walletA.signDLC(accept)
+        _ = {
+          assert(sign.eventId == accept.eventId)
+          assert(sign.fundingSigs.keys.size == offerData.fundingInputs.size)
+        }
+
+        dlcDb <- walletB.addDLCSigs(sign)
+        outcomeSigs <- walletB.dlcSigsDAO.findByEventId(sign.eventId)
+
+      } yield {
+        assert(dlcDb.eventId == sign.eventId)
+        assert(dlcDb.refundSigOpt.isDefined)
+        assert(dlcDb.refundSigOpt.get === sign.cetSigs.refundSig)
+        assert(sign.cetSigs.outcomeSigs.forall(sig =>
+          outcomeSigs.exists(_.toTuple == sig)))
+      }
   }
 
-  it must "accept a dlc offer" in { funded: FundedWallet =>
-    val fundedWallet = funded.wallet
-
-    val offer = DLCWalletUtil.sampleDLCOffer
-    val eventId = DLCMessage.calcEventId(offer.oracleInfo,
-                                         offer.contractInfo,
-                                         offer.timeouts)
-
+  def getDLCReadyToAddSigs(
+      walletA: Wallet,
+      walletB: Wallet,
+      offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer): Future[DLCSign] = {
     for {
-      accept <- fundedWallet.acceptDLCOffer(offer)
-    } yield {
-      assert(accept.fundingInputs.nonEmpty)
-      assert(accept.eventId == eventId)
-      assert(
-        accept.totalCollateral == offer.contractInfo.values.max - offer.totalCollateral)
-      assert(accept.changeAddress.value.nonEmpty)
-    }
-  }
-
-  it must "sign a dlc" in { funded: FundedWallet =>
-    val fundedWallet = funded.wallet
-
-    val offerData = DLCWalletUtil.sampleDLCOffer
-    val accept = DLCWalletUtil.sampleDLCAccept
-
-    for {
-      _ <- fundedWallet.createDLCOffer(
+      offer <- walletA.createDLCOffer(
         offerData.oracleInfo,
         offerData.contractInfo,
         offerData.totalCollateral,
         Some(offerData.feeRate),
         offerData.timeouts.contractMaturity.toUInt32,
         offerData.timeouts.contractTimeout.toUInt32
-      ) // must initialize the dlc in the database
+      )
 
-      sign <- fundedWallet.signDLC(accept)
-    } yield {
-      assert(sign.eventId == accept.eventId)
-      assert(sign.fundingSigs.keys.size == offerData.fundingInputs.size)
-    }
+      accept <- walletB.acceptDLCOffer(offer)
+      sign <- walletA.signDLC(accept)
+    } yield sign
   }
 
-  it must "add dlc sigs" in { funded: FundedWallet =>
-    val fundedWallet = funded.wallet
+  def testDLCSignVerification(
+      walletA: Wallet,
+      walletB: Wallet,
+      makeDLCSignInvalid: DLCSign => DLCSign): Future[Assertion] = {
+    val failedAddSigsF = for {
+      sign <- getDLCReadyToAddSigs(walletA, walletB)
+      invalidSign = makeDLCSignInvalid(sign)
+      dlcDb <- walletB.addDLCSigs(invalidSign)
+    } yield dlcDb
 
-    val offer = DLCWalletUtil.sampleDLCOffer
-    val sigs = DLCWalletUtil.sampleDLCSign
+    recoverToSucceededIf[IllegalArgumentException](failedAddSigsF)
+  }
 
-    for {
-      _ <- fundedWallet.acceptDLCOffer(offer) // must initialize the dlc in the database
+  it must "fail to add dlc funding sigs that are invalid" in {
+    fundedWallets: (FundedWallet, FundedWallet) =>
+      val walletA = fundedWallets._1.wallet
+      val walletB = fundedWallets._2.wallet
 
-      dlcDb <- fundedWallet.addDLCSigs(sigs)
-      outcomeSigs <- fundedWallet.dlcSigsDAO.findByEventId(sigs.eventId)
-    } yield {
-      assert(dlcDb.eventId == sigs.eventId)
-      assert(dlcDb.refundSigOpt.isDefined)
-      assert(dlcDb.refundSigOpt.get === sigs.cetSigs.refundSig)
-      assert(sigs.cetSigs.outcomeSigs.forall(sig =>
-        outcomeSigs.exists(_.toTuple == sig)))
-    }
+      testDLCSignVerification(
+        walletA,
+        walletB,
+        (sign: DLCSign) =>
+          sign.copy(fundingSigs = DLCWalletUtil.dummyFundingSignatures))
+  }
+
+  it must "fail to add dlc cet sigs that are invalid" in {
+    fundedWallets: (FundedWallet, FundedWallet) =>
+      val walletA = fundedWallets._1.wallet
+      val walletB = fundedWallets._2.wallet
+
+      testDLCSignVerification(
+        walletA,
+        walletB,
+        (sign: DLCSign) =>
+          sign.copy(
+            cetSigs = CETSignatures(DLCWalletUtil.dummyOutcomeSigs,
+                                    sign.cetSigs.refundSig)))
+  }
+
+  it must "fail to add an invalid dlc refund sig" in {
+    fundedWallets: (FundedWallet, FundedWallet) =>
+      val walletA = fundedWallets._1.wallet
+      val walletB = fundedWallets._2.wallet
+
+      testDLCSignVerification(
+        walletA,
+        walletB,
+        (sign: DLCSign) =>
+          sign.copy(
+            cetSigs = CETSignatures(sign.cetSigs.outcomeSigs,
+                                    DLCWalletUtil.dummyPartialSig)))
   }
 }

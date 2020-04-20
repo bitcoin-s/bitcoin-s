@@ -376,11 +376,70 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     }
   }
 
+  def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+        sign.eventId)
+
+      client <- clientFromDb(dlcDb,
+                             dlcOffer,
+                             dlcAccept,
+                             fundingInputs,
+                             outcomeSigs)
+    } yield {
+      val correctNumberOfSigs = sign.cetSigs.outcomeSigs.size == client.outcomes.size
+
+      correctNumberOfSigs && sign.cetSigs.outcomeSigs.foldLeft(true) {
+        case (ret, (outcome, sig)) =>
+          ret && client.verifyCETSig(outcome, sig)
+      }
+    }
+  }
+
+  def verifyRefundSig(sign: DLCSign): Future[Boolean] = {
+    for {
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+        sign.eventId)
+
+      client <- clientFromDb(dlcDb,
+                             dlcOffer,
+                             dlcAccept,
+                             fundingInputs,
+                             outcomeSigs)
+    } yield client.verifyRefundSig(sign.cetSigs.refundSig)
+  }
+
+  def verifyFundingSigs(
+      inputs: Vector[DLCFundingInputDb],
+      sign: DLCSign): Future[Boolean] = {
+    if (inputs.count(!_.isInitiator) == sign.fundingSigs.keys.size) {
+      for {
+        (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+          sign.eventId)
+
+        client <- clientFromDb(dlcDb,
+                               dlcOffer,
+                               dlcAccept,
+                               fundingInputs,
+                               outcomeSigs)
+
+      } yield client.verifyRemoteFundingSigs(sign.fundingSigs)
+    } else {
+      logger.info(
+        "Funding Signatures provided did not have the correct amount of inputs")
+      Future.successful(false)
+    }
+  }
+
   /** Takes a DLCSign an inserts the funding signatures into the database
     * This is the only way one should insert sigs to the database */
   def addFundingSigs(sign: DLCSign): Future[Vector[DLCFundingInputDb]] = {
     for {
       inputs <- dlcInputsDAO.findByEventId(sign.eventId)
+      isValid <- verifyFundingSigs(inputs, sign)
+      _ = if (!isValid)
+        throw new IllegalArgumentException(
+          s"Funding Signatures provided are not valid! got ${sign.fundingSigs}")
       updatedInputs = sign.fundingSigs.map {
         case (outPoint, sigs) =>
           inputs.find(_.outPoint == outPoint) match {
@@ -402,7 +461,6 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     */
   override def addDLCSigs(sign: DLCSign): Future[DLCDb] = {
     for {
-      _ <- addFundingSigs(sign)
       dlcDb <- dlcDAO.findByEventId(sign.eventId).flatMap {
         case Some(dlc) =>
           val newDLCDb = dlc.copy(
@@ -413,8 +471,19 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
             .toVector
 
           for {
-            _ <- dlcSigsDAO.createAll(sigsDbs)
+            isRefundSigValid <- verifyRefundSig(sign)
+            _ = if (!isRefundSigValid)
+              throw new IllegalArgumentException(
+                s"Refund sig provided is not valid! got ${sign.cetSigs.refundSig}")
             dlcDb <- dlcDAO.update(newDLCDb)
+
+            isCETSigsValid <- verifyCETSigs(sign)
+            _ = if (!isCETSigsValid)
+              throw new IllegalArgumentException(
+                s"CET sigs provided are not valid! got ${sign.cetSigs.outcomeSigs}")
+            _ <- dlcSigsDAO.createAll(sigsDbs)
+
+            _ <- addFundingSigs(sign)
           } yield dlcDb
         case None =>
           Future.failed(
@@ -448,7 +517,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
       fundingInputs: Vector[DLCFundingInputDb],
-      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[(DLCClient, SetupDLC)] = {
+      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[DLCClient] = {
     val extPrivKey = keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
 
     val offerInputs =
@@ -470,7 +539,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
     val utxosF = listUtxos(setupMsg.fundingInputs.map(_.outPoint))
       .map(_.map(info => info.toUTXOSpendingInfo(keyManager)))
 
-    utxosF.flatMap { fundingUtxos =>
+    utxosF.map { fundingUtxos =>
       val timeouts = DLCTimeouts(dlcOffer.penaltyTimeout,
                                  dlcOffer.contractMaturity,
                                  dlcOffer.contractTimeout)
@@ -484,7 +553,7 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
                (accept.totalCollateral + offer.totalCollateral - amt).satoshis)
           })
 
-      val client = DLCClient(
+      DLCClient(
         outcomes = outcomes,
         oraclePubKey = dlcOffer.oraclePubKey,
         preCommittedR = dlcOffer.oracleRValue,
@@ -502,28 +571,41 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
         remoteChangeSPK = remoteSetupMsg.changeAddress.scriptPubKey,
         network = dlcOffer.network
       )
-
-      val setupF = if (dlcDb.isInitiator) {
-        // TODO: Note that the funding tx in this setup is not signed
-        val cetSigs = CETSignatures(outcomeSigs, dlcAccept.refundSig)
-        client.setupDLCOffer(
-          Future.successful(cetSigs),
-          (_, _) => FutureUtil.unit,
-          Future.successful(client.createUnsignedFundingTransaction))
-      } else {
-        val cetSigs = CETSignatures(outcomeSigs, dlcDb.refundSigOpt.get)
-        val fundingSigs =
-          fundingInputs
-            .filter(_.isInitiator)
-            .map(input => (input.outPoint, input.sigs))
-            .toMap
-        client.setupDLCAccept(
-          _ => FutureUtil.unit,
-          Future.successful((cetSigs, FundingSignatures(fundingSigs))))
-      }
-
-      setupF.map((client, _))
     }
+  }
+
+  private def clientAndSetupFromDb(
+      dlcDb: DLCDb,
+      dlcOffer: DLCOfferDb,
+      dlcAccept: DLCAcceptDb,
+      fundingInputs: Vector[DLCFundingInputDb],
+      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[(DLCClient, SetupDLC)] = {
+
+    clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigDbs)
+      .flatMap { client =>
+        val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
+
+        val setupF = if (dlcDb.isInitiator) {
+          // TODO: Note that the funding tx in this setup is not signed
+          val cetSigs = CETSignatures(outcomeSigs, dlcAccept.refundSig)
+          client.setupDLCOffer(
+            Future.successful(cetSigs),
+            (_, _) => FutureUtil.unit,
+            Future.successful(client.createUnsignedFundingTransaction))
+        } else {
+          val cetSigs = CETSignatures(outcomeSigs, dlcDb.refundSigOpt.get)
+          val fundingSigs =
+            fundingInputs
+              .filter(_.isInitiator)
+              .map(input => (input.outPoint, input.sigs))
+              .toMap
+          client.setupDLCAccept(
+            _ => FutureUtil.unit,
+            Future.successful((cetSigs, FundingSignatures(fundingSigs))))
+        }
+
+        setupF.map((client, _))
+      }
   }
 
   override def initDLCMutualClose(
@@ -533,11 +615,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
         eventId)
 
-      (client, _) <- clientFromDb(dlcDb,
-                                  dlcOffer,
-                                  dlcAccept,
-                                  fundingInputs,
-                                  outcomeSigs)
+      client <- clientFromDb(dlcDb,
+                             dlcOffer,
+                             dlcAccept,
+                             fundingInputs,
+                             outcomeSigs)
 
       sigMessage <- client.createMutualCloseSig(eventId, oracleSig)
     } yield sigMessage
@@ -553,11 +635,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
         eventId)
 
-      (client, setup) <- clientFromDb(dlcDb,
-                                      dlcOffer,
-                                      dlcAccept,
-                                      fundingInputs,
-                                      outcomeSigs)
+      (client, setup) <- clientAndSetupFromDb(dlcDb,
+                                              dlcOffer,
+                                              dlcAccept,
+                                              fundingInputs,
+                                              outcomeSigs)
 
       outcome <- client.executeUnilateralDLC(setup, oracleSig)
     } yield {
@@ -577,11 +659,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
         eventId)
 
-      (client, setup) <- clientFromDb(dlcDb,
-                                      dlcOffer,
-                                      dlcAccept,
-                                      fundingInputs,
-                                      outcomeSigs)
+      (client, setup) <- clientAndSetupFromDb(dlcDb,
+                                              dlcOffer,
+                                              dlcAccept,
+                                              fundingInputs,
+                                              outcomeSigs)
 
       newAddr <- getNewAddress(AddressType.SegWit)
 
@@ -606,11 +688,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
         mutualCloseSig.eventId)
 
-      (client, _) <- clientFromDb(dlcDb,
-                                  dlcOffer,
-                                  dlcAccept,
-                                  fundingInputs,
-                                  outcomeSigs)
+      client <- clientFromDb(dlcDb,
+                             dlcOffer,
+                             dlcAccept,
+                             fundingInputs,
+                             outcomeSigs)
 
       tx <- client.createMutualCloseTx(mutualCloseSig.oracleSig,
                                        mutualCloseSig.mutualSig)
@@ -622,11 +704,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
         eventId)
 
-      (_, setup) <- clientFromDb(dlcDb,
-                                 dlcOffer,
-                                 dlcAccept,
-                                 fundingInputs,
-                                 outcomeSigs)
+      (_, setup) <- clientAndSetupFromDb(dlcDb,
+                                         dlcOffer,
+                                         dlcAccept,
+                                         fundingInputs,
+                                         outcomeSigs)
     } yield setup.fundingTx
   }
 
@@ -647,11 +729,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
         eventId)
 
-      (client, setup) <- clientFromDb(dlcDb,
-                                      dlcOffer,
-                                      dlcAccept,
-                                      fundingInputs,
-                                      outcomeSigs)
+      (client, setup) <- clientAndSetupFromDb(dlcDb,
+                                              dlcOffer,
+                                              dlcAccept,
+                                              fundingInputs,
+                                              outcomeSigs)
 
       outcome <- client.executeRefundDLC(setup)
     } yield {
@@ -671,11 +753,11 @@ abstract class DLCWallet extends LockedWallet with UnlockedWalletApi {
       (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
         eventId)
 
-      (client, setup) <- clientFromDb(dlcDb,
-                                      dlcOffer,
-                                      dlcAccept,
-                                      fundingInputs,
-                                      outcomeSigs)
+      (client, setup) <- clientAndSetupFromDb(dlcDb,
+                                              dlcOffer,
+                                              dlcAccept,
+                                              fundingInputs,
+                                              outcomeSigs)
 
       outcome <- client.executeJusticeDLC(setup, forceCloseTx)
     } yield {
