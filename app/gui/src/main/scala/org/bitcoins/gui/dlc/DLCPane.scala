@@ -1,5 +1,6 @@
 package org.bitcoins.gui.dlc
 
+import javafx.event.{ActionEvent, EventHandler}
 import org.bitcoins.gui.{GlobalData, TaskRunner}
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{Button, ButtonBar, Label, TextArea, TextField}
@@ -39,7 +40,9 @@ class DLCPane(glassPane: VBox) {
 
   private val demoOracleButton = new Button {
     text = "Init Demo Oracle"
-    onAction = _ => model.onInitOracle()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onInitOracle()
+    }
   }
 
   private val oracleButtonHBox = new HBox {
@@ -54,52 +57,72 @@ class DLCPane(glassPane: VBox) {
 
   private val offerButton = new Button {
     text = "Offer"
-    onAction = _ => model.onOffer()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onOffer()
+    }
   }
 
   private val acceptButton = new Button {
     text = "Accept"
-    onAction = _ => model.onAccept()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onAccept()
+    }
   }
 
   private val signButton = new Button {
     text = "Sign"
-    onAction = _ => model.onSign()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onSign()
+    }
   }
 
   private val addSigsButton = new Button {
     text = "Add Sigs"
-    onAction = _ => model.onAddSigs()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onAddSigs()
+    }
   }
 
   private val getFundingButton = new Button {
     text = "Get Funding Tx"
-    onAction = _ => model.onGetFunding()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onGetFunding()
+    }
   }
 
   private val initCloseButton = new Button {
     text = "Init Close"
-    onAction = _ => model.onInitClose()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onInitClose()
+    }
   }
 
   private val acceptCloseButton = new Button {
     text = "Accept Close"
-    onAction = _ => model.onAcceptClose()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onAcceptClose()
+    }
   }
 
   private val refundButton = new Button {
     text = "Refund"
-    onAction = _ => model.onRefund()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onRefund()
+    }
   }
 
   private val forceCloseButton = new Button {
     text = "Force Close"
-    onAction = _ => model.onForceClose()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onForceClose()
+    }
   }
 
   private val punishButton = new Button {
     text = "Punish"
-    onAction = _ => model.onPunish()
+    onAction = new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent): Unit = model.onPunish()
+    }
   }
 
   private val initButtonBar = new ButtonBar {
