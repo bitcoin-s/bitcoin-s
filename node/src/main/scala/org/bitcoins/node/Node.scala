@@ -189,7 +189,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   /** Broadcasts the given transaction over the P2P network */
-  def broadcastTransaction(transaction: Transaction): Future[Unit] = {
+  override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
     val broadcastTx = BroadcastAbleTransaction(transaction)
 
     txDAO.create(broadcastTx).onComplete {

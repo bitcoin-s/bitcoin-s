@@ -68,6 +68,18 @@ object GetAddressInfo extends ServerJsonModels {
   }
 }
 
+case class SendRawTransaction(tx: Transaction)
+
+object SendRawTransaction extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SendRawTransaction] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(SendRawTransaction(jsToTx(jsArr.arr.head)))
+  }
+}
+
 case class CombinePSBTs(psbts: Seq[PSBT])
 
 object CombinePSBTs extends ServerJsonModels {
