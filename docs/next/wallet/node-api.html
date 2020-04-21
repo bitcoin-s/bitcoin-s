@@ -117,6 +117,11 @@ want.</p>
 <span class="hljs-comment">// Here is where we are defining our actual node api, Ideally this could be it's own class</span>
 <span class="hljs-comment">// but for the examples sake we will keep it small.</span>
   <span class="hljs-keyword">val</span> nodeApi = <span class="hljs-keyword">new</span> <span class="hljs-type">NodeApi</span> {
+
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">broadcastTransaction</span></span>(transaction: <span class="hljs-type">Transaction</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>] = {
+        bitcoind.sendRawTransaction(transaction).map(_ =&gt; ())
+    }
+
     <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">downloadBlocks</span></span>(
         blockHashes: <span class="hljs-type">Vector</span>[<span class="hljs-type">DoubleSha256Digest</span>]): <span class="hljs-type">Future</span>[<span class="hljs-type">Unit</span>] = {
       <span class="hljs-keyword">val</span> blockFs = blockHashes.map(hash =&gt; bitcoind.getBlockRaw(hash))
