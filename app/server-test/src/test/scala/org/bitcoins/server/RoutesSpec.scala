@@ -404,7 +404,7 @@ class RoutesSpec
         .anyNumberOfTimes()
 
       val route =
-        walletRoutes.handleCommand(
+        nodeRoutes.handleCommand(
           ServerCommand("sendrawtransaction", Arr(Str(tx.hex))))
 
       Get() ~> route ~> check {
