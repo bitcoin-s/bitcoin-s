@@ -53,7 +53,8 @@ object ConsoleCli {
               command = Rescan(addressBatchSize = Option.empty,
                                startBlock = Option.empty,
                                endBlock = Option.empty,
-                               force = false)))
+                               force = false,
+                               ignoreCreationTime = false)))
         .text(s"Rescan for wallet UTXOs")
         .children(
           opt[Unit]("force")
@@ -80,7 +81,11 @@ object ConsoleCli {
             .action((start, conf) =>
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
-                  rescan.copy(startBlock = Option(start))
+                  // Need to ignoreCreationTime so we try to call
+                  // rescan with rescanNeutrinoWallet with a block
+                  // and a creation time
+                  rescan.copy(startBlock = Option(start),
+                              ignoreCreationTime = true)
                 case other => other
               })),
           opt[BlockStamp]("end")
@@ -90,6 +95,15 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
                   rescan.copy(endBlock = Option(end))
+                case other => other
+              })),
+          opt[Unit]("ignorecreationtime")
+            .text("Ignores the wallet creation date and will instead do a full rescan")
+            .optional()
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case rescan: Rescan =>
+                  rescan.copy(ignoreCreationTime = true)
                 case other => other
               }))
         ),
@@ -348,12 +362,17 @@ object ConsoleCli {
         RequestParam("getaddressinfo", Seq(up.writeJs(address)))
       case GetNewAddress =>
         RequestParam("getnewaddress")
-      case Rescan(addressBatchSize, startBlock, endBlock, force) =>
+      case Rescan(addressBatchSize,
+                  startBlock,
+                  endBlock,
+                  force,
+                  ignoreCreationTime) =>
         RequestParam("rescan",
                      Seq(up.writeJs(addressBatchSize),
                          up.writeJs(startBlock),
                          up.writeJs(endBlock),
-                         up.writeJs(force)))
+                         up.writeJs(force),
+                         up.writeJs(ignoreCreationTime)))
 
       case SendToAddress(address, bitcoins, satoshisPerVirtualByte) =>
         RequestParam("sendtoaddress",
@@ -505,7 +524,8 @@ object CliCommand {
       addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],
       endBlock: Option[BlockStamp],
-      force: Boolean)
+      force: Boolean,
+      ignoreCreationTime: Boolean)
       extends CliCommand
 
   // PSBT

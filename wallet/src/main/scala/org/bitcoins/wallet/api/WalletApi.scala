@@ -37,6 +37,7 @@ trait WalletApi extends WalletLogger {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
+  val creationTime: Long
 
   def chainParams: ChainParams = walletConfig.chain
 
@@ -370,16 +371,19 @@ trait WalletApi extends WalletLogger {
       account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[Unit]
+      addressBatchSize: Int,
+      useCreationTime: Boolean): Future[Unit]
 
   def rescanNeutrinoWallet(
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[Unit] =
+      addressBatchSize: Int,
+      useCreationTime: Boolean): Future[Unit] =
     rescanNeutrinoWallet(account = walletConfig.defaultAccount,
                          startOpt = startOpt,
                          endOpt = endOpt,
-                         addressBatchSize = addressBatchSize)
+                         addressBatchSize = addressBatchSize,
+                         useCreationTime = useCreationTime)
 
   /** Helper method to rescan the ENTIRE blockchain. */
   def fullRescanNeutrinoWallet(addressBatchSize: Int): Future[Unit] =
@@ -392,7 +396,8 @@ trait WalletApi extends WalletLogger {
     rescanNeutrinoWallet(account = account,
                          startOpt = None,
                          endOpt = None,
-                         addressBatchSize = addressBatchSize)
+                         addressBatchSize = addressBatchSize,
+                         useCreationTime = false)
 
   /**
     * Recreates the account using BIP-44 approach

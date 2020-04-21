@@ -84,7 +84,7 @@ abstract class SyncUtil extends BitcoinSLogger {
           case BlockStamp.BlockHeight(height) =>
             Future.successful(height)
           case BlockStamp.BlockTime(_) =>
-            Future.failed(new RuntimeException(s"Cannot query by block time"))
+            Future.successful(0)
         }
       }
 

@@ -29,13 +29,15 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   val passphrase = AesPassword.fromNonEmptyString("this_is_secret")
   val badPassphrase = AesPassword.fromNonEmptyString("this_is_also_secret")
 
-  def getAndWriteMnemonic(walletConf: WalletAppConfig): MnemonicCode = {
-    val mnemonic = CryptoGenerators.mnemonicCode.sampleSome
-    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
+  def getAndWriteMnemonic(walletConf: WalletAppConfig): DecryptedMnemonic = {
+    val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+    val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, 0)
+    val encrypted =
+      EncryptedMnemonicHelper.encrypt(decryptedMnemonic, passphrase)
     val seedPath = getSeedPath(walletConf)
     val _ =
       WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
-    mnemonic
+    decryptedMnemonic
   }
 
   it must "write and read a mnemonic to disk" in {
@@ -51,7 +53,8 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         WalletStorage.decryptMnemonicFromDisk(seedPath, passphrase)
       read match {
         case Right(readMnemonic) =>
-          assert(writtenMnemonic == readMnemonic)
+          assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
+          assert(writtenMnemonic.creationTime == readMnemonic.creationTime)
         case Left(err) => fail(err.toString)
       }
   }

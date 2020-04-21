@@ -185,6 +185,28 @@ case class BlockHeaderDAO()(
     table.filter(header => header.height >= from && header.height <= to).result
   }
 
+  def findAllBeforeTime(time: UInt32): Future[Vector[BlockHeaderDb]] = {
+    val query = table.filter(_.time < time)
+
+    database.run(query.result).map(_.toVector)
+  }
+
+  def findClosestToTime(time: UInt32): Future[BlockHeaderDb] = {
+    require(time >= UInt32(1231006505),
+            s"Time must be after the genesis block (1231006505), got $time")
+
+    val query = table.filter(_.time === time)
+
+    val opt = database.run(query.result).map(_.headOption)
+
+    opt.flatMap {
+      case None =>
+        findAllBeforeTime(time).map(_.maxBy(_.time))
+      case Some(header) =>
+        Future.successful(header)
+    }
+  }
+
   /** Returns the maximum block height from our database */
   def maxHeight: Future[Int] = {
     val query = maxHeightQuery

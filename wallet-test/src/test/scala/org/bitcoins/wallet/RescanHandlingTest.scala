@@ -132,7 +132,8 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         _ <- newTxWallet.rescanNeutrinoWallet(startOpt = txInBlockHeightOpt,
                                               endOpt = None,
                                               addressBatchSize =
-                                                DEFAULT_ADDR_BATCH_SIZE)
+                                                DEFAULT_ADDR_BATCH_SIZE,
+                                              useCreationTime = false)
         balance <- newTxWallet.getBalance()
       } yield {
         assert(balance == amt)
@@ -167,7 +168,8 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         _ <- wallet.rescanNeutrinoWallet(startOpt = BlockStamp.height0Opt,
                                          endOpt = end,
                                          addressBatchSize =
-                                           DEFAULT_ADDR_BATCH_SIZE)
+                                           DEFAULT_ADDR_BATCH_SIZE,
+                                         useCreationTime = false)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == CurrencyUnits.zero)

@@ -1,13 +1,14 @@
 package org.bitcoins.keymanager.bip39
 
 import java.nio.file.Files
+import java.time.{ZoneId, ZonedDateTime}
 
 import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.{HDAccount, HDPath}
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.keymanager.util.HDUtil
 import org.bitcoins.keymanager._
+import org.bitcoins.keymanager.util.HDUtil
 import scodec.bits.BitVector
 
 import scala.util.{Failure, Success, Try}
@@ -23,9 +24,9 @@ import scala.util.{Failure, Success, Try}
 case class BIP39KeyManager(
     private val mnemonic: MnemonicCode,
     kmParams: KeyManagerParams,
-    private val bip39PasswordOpt: Option[String])
+    private val bip39PasswordOpt: Option[String],
+    birthday: Long)
     extends KeyManager {
-
   private val seed = bip39PasswordOpt match {
     case Some(pw) =>
       BIP39Seed.fromMnemonic(mnemonic = mnemonic, password = pw)
@@ -62,6 +63,9 @@ case class BIP39KeyManager(
 object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
   val badPassphrase = AesPassword.fromString("changeMe").get
 
+  private def getCurrentTimeUTC: Long =
+    ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
+
   /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(
       entropy: BitVector,
@@ -71,6 +75,8 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
     BIP39KeyManager] = {
     val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=${seedPath}")
+
+    val time = getCurrentTimeUTC
 
     val writtenToDiskE: CompatEither[KeyManagerInitializeError, KeyManager] =
       if (Files.notExists(seedPath)) {
@@ -92,8 +98,9 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
         val encryptedMnemonicE: CompatEither[
           KeyManagerInitializeError,
           EncryptedMnemonic] =
-          mnemonicE.map {
-            EncryptedMnemonicHelper.encrypt(_, badPassphrase)
+          mnemonicE.map { mnemonic =>
+            EncryptedMnemonicHelper.encrypt(DecryptedMnemonic(mnemonic, time),
+                                            badPassphrase)
           }
 
         for {
@@ -108,7 +115,8 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
         } yield {
           BIP39KeyManager(mnemonic = mnemonic,
                           kmParams = kmParams,
-                          bip39PasswordOpt = bip39PasswordOpt)
+                          bip39PasswordOpt = bip39PasswordOpt,
+                          birthday = time)
         }
       } else {
         logger.info(
@@ -117,9 +125,10 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
         WalletStorage.decryptMnemonicFromDisk(kmParams.seedPath, badPassphrase) match {
           case Right(mnemonic) =>
             CompatRight(
-              BIP39KeyManager(mnemonic = mnemonic,
+              BIP39KeyManager(mnemonic = mnemonic.mnemonicCode,
                               kmParams = kmParams,
-                              bip39PasswordOpt = bip39PasswordOpt))
+                              bip39PasswordOpt = bip39PasswordOpt,
+                              birthday = mnemonic.creationTime))
           case Left(err) =>
             CompatLeft(
               InitializeKeyManagerError.FailedToReadWrittenSeed(
@@ -171,7 +180,11 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
 
     mnemonicCodeE match {
       case Right(mnemonic) =>
-        Right(new BIP39KeyManager(mnemonic, kmParams, bip39PasswordOpt))
+        Right(
+          new BIP39KeyManager(mnemonic.mnemonicCode,
+                              kmParams,
+                              bip39PasswordOpt,
+                              mnemonic.creationTime))
       case Left(v) => Left(v)
     }
   }

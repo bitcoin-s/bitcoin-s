@@ -6,7 +6,16 @@ import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-case class EncryptedMnemonic(value: AesEncryptedData, salt: AesSalt) {
+case class DecryptedMnemonic(mnemonicCode: MnemonicCode, creationTime: Long) {
+
+  def encrypt(password: AesPassword): EncryptedMnemonic =
+    EncryptedMnemonicHelper.encrypt(this, password)
+}
+
+case class EncryptedMnemonic(
+    value: AesEncryptedData,
+    salt: AesSalt,
+    creationTime: Long) {
 
   def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
     val key = password.toKey(salt)
@@ -29,9 +38,9 @@ case class EncryptedMnemonic(value: AesEncryptedData, salt: AesSalt) {
 object EncryptedMnemonicHelper {
 
   def encrypt(
-      mnemonicCode: MnemonicCode,
+      mnemonic: DecryptedMnemonic,
       password: AesPassword): EncryptedMnemonic = {
-    val wordsStr = mnemonicCode.words.mkString(" ")
+    val wordsStr = mnemonic.mnemonicCode.words.mkString(" ")
     val Right(clearText) = ByteVector.encodeUtf8(wordsStr)
 
     val (key, salt) = password.toKey
@@ -39,6 +48,6 @@ object EncryptedMnemonicHelper {
     val encryted = AesCrypt
       .encrypt(clearText, key)
 
-    EncryptedMnemonic(encryted, salt)
+    EncryptedMnemonic(encryted, salt, mnemonic.creationTime)
   }
 }

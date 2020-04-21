@@ -415,7 +415,7 @@ case class ChainHandler(
               throw UnknownBlockHash(s"Unknown block hash ${blockHash.hash}"))
         }
       case blockTime: BlockStamp.BlockTime =>
-        Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
+        blockHeaderDAO.findClosestToTime(time = blockTime.time).map(_.height)
     }
 
   /** @inheritdoc */

@@ -1,5 +1,7 @@
 package org.bitcoins.testkit.wallet
 
+import java.time.{ZoneId, ZonedDateTime}
+
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -84,11 +86,15 @@ object WalletTestUtil {
     HDAccount(coin = HDCoin(purpose, HDCoinType.Testnet), index = 1)
   }
 
-  def firstAccountDb = AccountDb(freshXpub(), defaultHdAccount)
+  def firstAccountDb: AccountDb =
+    AccountDb(freshXpub(),
+              defaultHdAccount,
+              ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond)
 
   def nestedSegWitAccountDb: AccountDb =
     AccountDb(freshXpub(),
-              HDAccount(HDCoin(HDPurposes.NestedSegWit, hdCoinType), 0))
+              HDAccount(HDCoin(HDPurposes.NestedSegWit, hdCoinType), 0),
+              ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond)
 
   private def randomScriptWitness: ScriptWitness =
     P2WPKHWitnessV0(freshXpub().key)

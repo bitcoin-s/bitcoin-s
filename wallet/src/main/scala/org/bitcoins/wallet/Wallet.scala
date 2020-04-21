@@ -1,5 +1,7 @@
 package org.bitcoins.wallet
 
+import java.time.{ZoneId, ZonedDateTime}
+
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
@@ -332,7 +334,7 @@ abstract class Wallet
         case Success(xpub) => xpub
       }
     }
-    val newAccountDb = AccountDb(xpub, hdAccount)
+    val newAccountDb = AccountDb(xpub, hdAccount, Wallet.getCurrentTimeUTC)
     val accountCreationF = accountDAO.create(newAccountDb)
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
@@ -347,7 +349,8 @@ object Wallet extends WalletLogger {
   private case class WalletImpl(
       override val keyManager: BIP39KeyManager,
       override val nodeApi: NodeApi,
-      override val chainQueryApi: ChainQueryApi
+      override val chainQueryApi: ChainQueryApi,
+      override val creationTime: Long
   )(
       implicit override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
@@ -356,11 +359,15 @@ object Wallet extends WalletLogger {
   def apply(
       keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi)(
+      chainQueryApi: ChainQueryApi,
+      creationTime: Long)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet = {
-    WalletImpl(keyManager, nodeApi, chainQueryApi)
+    WalletImpl(keyManager, nodeApi, chainQueryApi, creationTime)
   }
+
+  private def getCurrentTimeUTC: Long =
+    ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
 
   /** Creates the level 0 account for the given HD purpose */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
@@ -372,7 +379,7 @@ object Wallet extends WalletLogger {
     val account = HDAccount(coin = coin, index = 0)
     // safe since we're deriving from a priv
     val xpub = keyManager.deriveXPub(account).get
-    val accountDb = AccountDb(xpub, account)
+    val accountDb = AccountDb(xpub, account, getCurrentTimeUTC)
     logger.debug(
       s"Creating account with constant prefix ${keyManager.kmParams.purpose}")
     wallet.accountDAO
