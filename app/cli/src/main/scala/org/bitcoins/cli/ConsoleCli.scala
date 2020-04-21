@@ -208,6 +208,21 @@ object ConsoleCli {
       cmd("stop")
         .action((_, conf) => conf.copy(command = Stop))
         .text("Request a graceful shutdown of Bitcoin-S"),
+      cmd("sendrawtransaction")
+        .action((_, conf) =>
+          conf.copy(command = SendRawTransaction(EmptyTransaction)))
+        .text("Broadcasts the raw transaction")
+        .children(
+          arg[Transaction]("tx")
+            .text("Transaction serialized in hex")
+            .required()
+            .action((tx, conf) =>
+              conf.copy(command = conf.command match {
+                case sendRawTransaction: SendRawTransaction =>
+                  sendRawTransaction.copy(tx = tx)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== PSBT ==="),
       cmd("combinepsbts")
         .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
@@ -356,6 +371,8 @@ object ConsoleCli {
       // peers
       case GetPeers => RequestParam("getpeers")
       case Stop     => RequestParam("stop")
+      case SendRawTransaction(tx) =>
+        RequestParam("sendrawtransaction", Seq(up.writeJs(tx)))
       // PSBTs
       case CombinePSBTs(psbts) =>
         RequestParam("combinepsbts", Seq(up.writeJs(psbts)))
@@ -477,6 +494,7 @@ object CliCommand {
   // Node
   case object GetPeers extends CliCommand
   case object Stop extends CliCommand
+  case class SendRawTransaction(tx: Transaction) extends CliCommand
 
   // Chain
   case object GetBestBlockHash extends CliCommand

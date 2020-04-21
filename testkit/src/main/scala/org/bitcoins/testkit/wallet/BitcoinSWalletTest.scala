@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -248,6 +249,9 @@ object BitcoinSWalletTest extends WalletLogger {
   lazy val initialFunds = 25.bitcoins
 
   object MockNodeApi extends NodeApi {
+
+    override def broadcastTransaction(transaction: Transaction): Future[Unit] =
+      FutureUtil.unit
 
     override def downloadBlocks(
         blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = FutureUtil.unit
