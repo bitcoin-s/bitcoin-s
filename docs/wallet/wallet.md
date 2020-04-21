@@ -141,6 +141,7 @@ val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams, bip39Password
 // once this future completes, we have a initialized
 // wallet
 val wallet = Wallet(keyManager, new NodeApi {
+    override def broadcastTransaction(tx: Transaction): Future[Unit] = Future.successful(())
     override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
   }, new ChainQueryApi {
     override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)

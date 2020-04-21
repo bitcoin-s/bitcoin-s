@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.networking.peer.DataMessageHandler._
@@ -85,6 +86,11 @@ val exampleCallback = createCallback(exampleProcessBlock)
 // Here is where we are defining our actual node api, Ideally this could be it's own class
 // but for the examples sake we will keep it small.
   val nodeApi = new NodeApi {
+
+    override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
+        bitcoind.sendRawTransaction(transaction).map(_ => ())
+    }
+
     override def downloadBlocks(
         blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
       val blockFs = blockHashes.map(hash => bitcoind.getBlockRaw(hash))
