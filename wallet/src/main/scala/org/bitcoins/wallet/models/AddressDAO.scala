@@ -20,7 +20,7 @@ case class AddressDAO()(
   import org.bitcoins.db.DbCommonsColumnMappers._
 
   override val table: TableQuery[AddressTable] = TableQuery[AddressTable]
-  private val spendingInfoTable = TableQuery[SpendingInfoTable]
+  private lazy val spendingInfoTable = SpendingInfoDAO().table
 
   override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
     createAllNoAutoInc(ts, safeDatabase)
@@ -79,7 +79,7 @@ case class AddressDAO()(
       joined.filter(_._2.isEmpty)
     }
 
-    database.runVec(query.result).map(_.map(_._1))
+    safeDatabase.runVec(query.result).map(_.map(_._1))
   }
 
   def getUnusedAddresses(hdAccount: HDAccount): Future[Vector[AddressDb]] = {
