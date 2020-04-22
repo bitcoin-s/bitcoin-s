@@ -35,7 +35,7 @@ case class NodeRoutes(node: Node)(implicit system: ActorSystem)
         case Success(SendRawTransaction(tx)) =>
           complete {
             node.broadcastTransaction(tx).map { _ =>
-              Server.httpSuccess(s"${tx.txIdBE}")
+              Server.httpSuccess(s"${tx.txIdBE.hex}")
             }
           }
       }
