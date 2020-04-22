@@ -409,7 +409,7 @@ class RoutesSpec
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual s"""{"result":"${tx.txIdBE}","error":null}"""
+        responseAs[String] shouldEqual s"""{"result":"${tx.txIdBE.hex}","error":null}"""
       }
     }
 
