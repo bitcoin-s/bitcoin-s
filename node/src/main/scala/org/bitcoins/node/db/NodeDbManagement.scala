@@ -15,7 +15,8 @@ trait NodeDbManagement extends DbManagement { _: JdbcProfileComponent =>
   override def appConfig: NodeAppConfig
 
   private lazy val txTable: TableQuery[Table[_]] = {
-    BroadcastAbleTransactionDAO()(appConfig.asInstanceOf[NodeAppConfig],ec).table.asInstanceOf[TableQuery[Table[_]]]
+    BroadcastAbleTransactionDAO()(appConfig.asInstanceOf[NodeAppConfig], ec).table
+      .asInstanceOf[TableQuery[Table[_]]]
   }
 
   override val allTables = List(txTable)

@@ -559,8 +559,9 @@ object BitcoinSWalletTest extends WalletLogger {
   def destroyWallet(wallet: LockedWalletApi): Future[Unit] = {
     import wallet.walletConfig.ec
     val destroyWalletF =
-      wallet.walletConfig.dropAll()
-      .map(_ => ())
+      wallet.walletConfig
+        .dropAll()
+        .map(_ => ())
     destroyWalletF
   }
 

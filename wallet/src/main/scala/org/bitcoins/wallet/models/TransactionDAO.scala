@@ -10,21 +10,22 @@ import slick.lifted.{PrimaryKey, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
-trait TxCRUDComponent[DbEntryType <: TxDB] { self: CRUD[DbEntryType, DoubleSha256DigestBE] =>
+trait TxCRUDComponent[DbEntryType <: TxDB] {
+  self: CRUD[DbEntryType, DoubleSha256DigestBE] =>
   import profile.api._
 
-  abstract class TxTable[DbEntryType <: TxDB](tag: profile.api.Tag, tableName: String) extends Table[DbEntryType](tag,tableName) {
+  abstract class TxTable[DbEntryType <: TxDB](
+      tag: profile.api.Tag,
+      tableName: String)
+      extends Table[DbEntryType](tag, tableName) {
     def txIdBE: Rep[DoubleSha256DigestBE]
   }
 }
 
-
-
 trait TxDAO[DbEntryType <: TxDB]
     extends CRUD[DbEntryType, DoubleSha256DigestBE]
     with TxCRUDComponent[DbEntryType]
-    with SlickUtil[DbEntryType,DoubleSha256DigestBE] {
+    with SlickUtil[DbEntryType, DoubleSha256DigestBE] {
   import profile.api._
   implicit val ec: ExecutionContext
 
@@ -36,8 +37,8 @@ trait TxDAO[DbEntryType <: TxDB]
   override def createAll(ts: Vector[DbEntryType]): Future[Vector[DbEntryType]] =
     createAllNoAutoInc(ts, safeDatabase)
 
-  override protected def findByPrimaryKeys(txIdBEs: Vector[
-    DoubleSha256DigestBE]): Query[DbTable, DbEntryType, Seq] =
+  override protected def findByPrimaryKeys(
+      txIdBEs: Vector[DoubleSha256DigestBE]): Query[DbTable, DbEntryType, Seq] =
     table.filter(_.txIdBE.inSet(txIdBEs))
 
   override def findByPrimaryKey(
@@ -79,7 +80,7 @@ case class TransactionDAO()(
   override val table = TableQuery[TransactionTable]
 
   class TransactionTable(tag: Tag)
-    extends TxTable[TransactionDb] (tag, "tx_table") {
+      extends TxTable[TransactionDb](tag, "tx_table") {
 
     import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -104,7 +105,7 @@ case class TransactionDAO()(
 
     private type TransactionTuple =
       (
-        DoubleSha256DigestBE,
+          DoubleSha256DigestBE,
           Transaction,
           DoubleSha256DigestBE,
           Transaction,
@@ -116,47 +117,47 @@ case class TransactionDAO()(
 
     private val fromTuple: TransactionTuple => TransactionDb = {
       case (txId,
-      transaction,
-      unsignedTxIdBE,
-      unsignedTx,
-      wTxIdBEOpt,
-      totalOutput,
-      numInputs,
-      numOutputs,
-      locktime) =>
+            transaction,
+            unsignedTxIdBE,
+            unsignedTx,
+            wTxIdBEOpt,
+            totalOutput,
+            numInputs,
+            numOutputs,
+            locktime) =>
         TransactionDb(txId,
-          transaction,
-          unsignedTxIdBE,
-          unsignedTx,
-          wTxIdBEOpt,
-          totalOutput,
-          numInputs,
-          numOutputs,
-          locktime)
+                      transaction,
+                      unsignedTxIdBE,
+                      unsignedTx,
+                      wTxIdBEOpt,
+                      totalOutput,
+                      numInputs,
+                      numOutputs,
+                      locktime)
     }
 
     private val toTuple: TransactionDb => Option[TransactionTuple] = tx =>
       Some(
         (tx.txIdBE,
-          tx.transaction,
-          tx.unsignedTxIdBE,
-          tx.unsignedTx,
-          tx.wTxIdBEOpt,
-          tx.totalOutput,
-          tx.numInputs,
-          tx.numOutputs,
-          tx.lockTime))
+         tx.transaction,
+         tx.unsignedTxIdBE,
+         tx.unsignedTx,
+         tx.wTxIdBEOpt,
+         tx.totalOutput,
+         tx.numInputs,
+         tx.numOutputs,
+         tx.lockTime))
 
     def * : ProvenShape[TransactionDb] =
       (txIdBE,
-        transaction,
-        unsignedTxIdBE,
-        unsignedTx,
-        wTxIdBEOpt,
-        totalOutput,
-        numInputs,
-        numOutputs,
-        locktime) <> (fromTuple, toTuple)
+       transaction,
+       unsignedTxIdBE,
+       unsignedTx,
+       wTxIdBEOpt,
+       totalOutput,
+       numInputs,
+       numOutputs,
+       locktime) <> (fromTuple, toTuple)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)

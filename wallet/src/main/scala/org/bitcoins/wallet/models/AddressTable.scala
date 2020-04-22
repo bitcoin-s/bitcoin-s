@@ -4,7 +4,12 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.script.ScriptType
 
 sealed trait AddressDb {

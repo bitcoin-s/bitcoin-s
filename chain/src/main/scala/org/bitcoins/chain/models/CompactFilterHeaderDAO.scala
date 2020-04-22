@@ -10,12 +10,12 @@ case class CompactFilterHeaderDAO()(
     implicit ec: ExecutionContext,
     override val appConfig: ChainAppConfig)
     extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE]
-      with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
+    with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
   import profile.api._
   import org.bitcoins.db.DbCommonsColumnMappers._
 
   class CompactFilterHeaderTable(tag: Tag)
-    extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
+      extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
 
     def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
 
@@ -43,8 +43,7 @@ case class CompactFilterHeaderDAO()(
 
   override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
     Vector[CompactFilterHeaderDb]] = {
-    createAllNoAutoInc(ts = filterHeaders,
-                                 database = safeDatabase)
+    createAllNoAutoInc(ts = filterHeaders, database = safeDatabase)
   }
 
   /** Finds the rows that correlate to the given primary keys */
@@ -84,8 +83,7 @@ case class CompactFilterHeaderDAO()(
     safeDatabase.runVec(query)
   }
 
-  private def getAtHeightQuery(
-      height: Int): slick.sql.FixedSqlStreamingAction[
+  private def getAtHeightQuery(height: Int): slick.sql.FixedSqlStreamingAction[
     Seq[CompactFilterHeaderDb],
     CompactFilterHeaderDb,
     Effect.Read] = {

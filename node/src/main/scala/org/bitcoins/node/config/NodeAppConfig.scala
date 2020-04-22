@@ -17,8 +17,8 @@ case class NodeAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
-      with NodeDbManagement
-      with JdbcProfileComponent{
+    with NodeDbManagement
+    with JdbcProfileComponent {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = "node"
   override protected[bitcoins] type ConfigType = NodeAppConfig
@@ -74,7 +74,8 @@ object NodeAppConfig {
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(implicit ec: ExecutionContext): NodeAppConfig =
+  def fromDefaultDatadir(confs: Config*)(
+      implicit ec: ExecutionContext): NodeAppConfig =
     NodeAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 
 }

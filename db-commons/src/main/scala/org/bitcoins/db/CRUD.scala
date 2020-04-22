@@ -16,14 +16,14 @@ trait JdbcProfileComponent extends BitcoinSLogger {
   def appConfig: AppConfig
 
   /**
-   * The configuration details for connecting/using the database for our projects
-   * that require datbase connections
-   */
+    * The configuration details for connecting/using the database for our projects
+    * that require datbase connections
+    */
   val dbConfig: DatabaseConfig[JdbcProfile] = {
     val slickDbConfig = {
       Try {
         DatabaseConfig.forConfig[JdbcProfile](path = appConfig.moduleName,
-          config = appConfig.config)
+                                              config = appConfig.config)
       } match {
         case Success(value) =>
           value
@@ -95,7 +95,8 @@ trait JdbcProfileComponent extends BitcoinSLogger {
   * the table and the database you are connecting to.
   */
 abstract class CRUD[T, PrimaryKeyType](
-    private implicit val ec: ExecutionContext, override val appConfig: AppConfig)
+    implicit private val ec: ExecutionContext,
+    override val appConfig: AppConfig)
     extends JdbcProfileComponent {
 
   import profile.api._
@@ -146,7 +147,8 @@ abstract class CRUD[T, PrimaryKeyType](
   def updateAll(ts: Vector[T]): Future[Vector[T]] = {
     val query = findAll(ts)
     val actions = ts.map(t => query.update(t))
-    val affectedRows: Future[Vector[Int]] = safeDatabase.run(DBIO.sequence(actions))
+    val affectedRows: Future[Vector[Int]] =
+      safeDatabase.run(DBIO.sequence(actions))
     val updatedTs = findAll(ts)
     affectedRows.flatMap { _ =>
       safeDatabase.runVec(updatedTs.result)
@@ -218,7 +220,8 @@ abstract class CRUD[T, PrimaryKeyType](
   def count(): Future[Int] = safeDatabase.run(table.length.result)
 }
 
-case class SafeDatabase(jdbcProfile: JdbcProfileComponent) extends BitcoinSLogger {
+case class SafeDatabase(jdbcProfile: JdbcProfileComponent)
+    extends BitcoinSLogger {
 
   import jdbcProfile.database
 

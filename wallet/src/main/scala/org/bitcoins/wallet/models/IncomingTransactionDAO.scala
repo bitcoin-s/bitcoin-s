@@ -14,9 +14,8 @@ case class IncomingTransactionDAO()(
   import profile.api._
   override val table = TableQuery[IncomingTransactionTable]
 
-
   class IncomingTransactionTable(tag: Tag)
-    extends TxTable[IncomingTransactionDb](tag, "wallet_incoming_txs") {
+      extends TxTable[IncomingTransactionDb](tag, "wallet_incoming_txs") {
 
     import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -43,8 +42,8 @@ case class IncomingTransactionDAO()(
     def fk_underlying_tx = {
       val txTable = TransactionDAO().table
       foreignKey("fk_underlying_tx",
-        sourceColumns = txIdBE,
-        targetTableQuery = txTable)(_.txIdBE)
+                 sourceColumns = txIdBE,
+                 targetTableQuery = txTable)(_.txIdBE)
     }
   }
 }

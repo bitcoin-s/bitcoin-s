@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class ChainAppConfig(
     private val directory: Path,
-    private val confs: Config*)(override implicit val ec: ExecutionContext)
+    private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with ChainDbManagement
     with JdbcProfileComponent {
@@ -37,7 +37,7 @@ case class ChainAppConfig(
     * header table
     */
   def isInitialized()(implicit ec: ExecutionContext): Future[Boolean] = {
-    val bhDAO = BlockHeaderDAO()(ec,appConfig)
+    val bhDAO = BlockHeaderDAO()(ec, appConfig)
     val isDefinedOptF = {
       bhDAO.read(chain.genesisBlock.blockHeader.hashBE).map(_.isDefined)
     }
@@ -69,7 +69,7 @@ case class ChainAppConfig(
           BlockHeaderDbHelper.fromBlockHeader(height = 0,
                                               bh =
                                                 chain.genesisBlock.blockHeader)
-        val blockHeaderDAO = BlockHeaderDAO()(ec,appConfig)
+        val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
         val bhCreatedF = blockHeaderDAO.create(genesisHeader)
         bhCreatedF.flatMap { _ =>
           logger.info(s"Inserted genesis block header into DB")
@@ -99,6 +99,7 @@ object ChainAppConfig {
   /** Constructs a chain verification configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(implicit ec: ExecutionContext): ChainAppConfig =
+  def fromDefaultDatadir(confs: Config*)(
+      implicit ec: ExecutionContext): ChainAppConfig =
     ChainAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 }

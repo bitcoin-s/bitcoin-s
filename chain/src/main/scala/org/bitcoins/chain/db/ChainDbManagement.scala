@@ -1,7 +1,11 @@
 package org.bitcoins.chain.db
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderDAO, CompactFilterDAO, CompactFilterHeaderDAO}
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -18,14 +22,17 @@ trait ChainDbManagement extends DbManagement { _: JdbcProfileComponent =>
   override def appConfig: ChainAppConfig
 
   private lazy val chainTable: TableQuery[Table[_]] =
-    BlockHeaderDAO()(ec,appConfig.asInstanceOf[ChainAppConfig]).table.asInstanceOf[TableQuery[Table[_]]]
+    BlockHeaderDAO()(ec, appConfig.asInstanceOf[ChainAppConfig]).table
+      .asInstanceOf[TableQuery[Table[_]]]
 
   private lazy val filterHeaderTable: TableQuery[Table[_]] = {
-    CompactFilterHeaderDAO()(ec,appConfig.asInstanceOf[ChainAppConfig]).table.asInstanceOf[TableQuery[Table[_]]]
+    CompactFilterHeaderDAO()(ec, appConfig.asInstanceOf[ChainAppConfig]).table
+      .asInstanceOf[TableQuery[Table[_]]]
   }
 
   private lazy val filterTable: TableQuery[Table[_]] = {
-    CompactFilterDAO()(ec, appConfig.asInstanceOf[ChainAppConfig]).table.asInstanceOf[TableQuery[Table[_]]]
+    CompactFilterDAO()(ec, appConfig.asInstanceOf[ChainAppConfig]).table
+      .asInstanceOf[TableQuery[Table[_]]]
   }
 
   override lazy val allTables = List(chainTable, filterHeaderTable, filterTable)

@@ -12,7 +12,7 @@ case class AccountDAO()(
     implicit val ec: ExecutionContext,
     override val appConfig: WalletAppConfig)
     extends CRUD[AccountDb, (HDCoin, Int)]
-    with SlickUtil[AccountDb, (HDCoin, Int)]{
+    with SlickUtil[AccountDb, (HDCoin, Int)] {
   import org.bitcoins.db.DbCommonsColumnMappers._
   import profile.api._
 
@@ -56,7 +56,8 @@ case class AccountDAO()(
     }
   }
 
-  class AccountTable(tag: Tag) extends Table[AccountDb](tag, "wallet_accounts") {
+  class AccountTable(tag: Tag)
+      extends Table[AccountDb](tag, "wallet_accounts") {
 
     import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -78,9 +79,9 @@ case class AccountDAO()(
     private val toTuple: AccountDb => Option[AccountTuple] = account =>
       Some(
         (account.hdAccount.purpose,
-          account.xpub,
-          account.hdAccount.coin.coinType,
-          account.hdAccount.index))
+         account.xpub,
+         account.hdAccount.coin.coinType,
+         account.hdAccount.index))
 
     def * : ProvenShape[AccountDb] =
       (purpose, xpub, coinType, index) <> (fromTuple, toTuple)

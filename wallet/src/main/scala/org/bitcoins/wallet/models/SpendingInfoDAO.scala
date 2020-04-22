@@ -3,8 +3,16 @@ package org.bitcoins.wallet.models
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness, WitnessScriptPubKey}
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  ScriptWitness,
+  WitnessScriptPubKey
+}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
@@ -21,7 +29,7 @@ case class SpendingInfoDAO()(
 
   /** The table inside our database we are inserting into */
   override val table = profile.api.TableQuery[SpendingInfoTable]
-  private val addrTable = AddressDAO()(ec,appConfig).table
+  private val addrTable = AddressDAO()(ec, appConfig).table
 
   /**
     * Fetches all the incoming TXOs in our DB that are in
@@ -147,14 +155,14 @@ case class SpendingInfoDAO()(
   }
 
   /**
-   * This table stores the necessary information to spend
-   * a transaction output (TXO) at a later point in time. It
-   * also stores how many confirmations it has, whether
-   * or not it is spent (i.e. if it is a UTXO or not) and the
-   * TXID of the transaction that created this output.
-   */
+    * This table stores the necessary information to spend
+    * a transaction output (TXO) at a later point in time. It
+    * also stores how many confirmations it has, whether
+    * or not it is spent (i.e. if it is a UTXO or not) and the
+    * TXID of the transaction that created this output.
+    */
   case class SpendingInfoTable(tag: Tag)
-    extends TableAutoInc[SpendingInfoDb](tag, "txo_spending_info") {
+      extends TableAutoInc[SpendingInfoDb](tag, "txo_spending_info") {
     import org.bitcoins.db.DbCommonsColumnMappers._
 
     def outPoint: Rep[TransactionOutPoint] =
@@ -181,20 +189,20 @@ case class SpendingInfoDAO()(
     def fk_scriptPubKey = {
       val addressTable = addrTable
       foreignKey("fk_scriptPubKey",
-        sourceColumns = scriptPubKey,
-        targetTableQuery = addressTable)(_.scriptPubKey)
+                 sourceColumns = scriptPubKey,
+                 targetTableQuery = addressTable)(_.scriptPubKey)
     }
 
     /** All UTXOs must have a corresponding transaction in the wallet */
     def fk_incoming_txId = {
       val txTable = IncomingTransactionDAO().table
       foreignKey("fk_incoming_txId",
-        sourceColumns = txid,
-        targetTableQuery = txTable)(_.txIdBE)
+                 sourceColumns = txid,
+                 targetTableQuery = txTable)(_.txIdBE)
     }
 
     private type UTXOTuple = (
-      Option[Long], // ID
+        Option[Long], // ID
         TransactionOutPoint,
         ScriptPubKey, // output SPK
         CurrencyUnit, // output value
@@ -204,19 +212,19 @@ case class SpendingInfoDAO()(
         TxoState, // state
         DoubleSha256DigestBE, // TXID
         Option[DoubleSha256DigestBE] // block hash
-      )
+    )
 
     private val fromTuple: UTXOTuple => SpendingInfoDb = {
       case (id,
-      outpoint,
-      spk,
-      value,
-      path: SegWitHDPath,
-      None, // ReedemScript
-      Some(scriptWitness),
-      state,
-      txid,
-      blockHash) =>
+            outpoint,
+            spk,
+            value,
+            path: SegWitHDPath,
+            None, // ReedemScript
+            Some(scriptWitness),
+            state,
+            txid,
+            blockHash) =>
         SegwitV0SpendingInfo(
           outPoint = outpoint,
           output = TransactionOutput(value, spk),
@@ -229,54 +237,54 @@ case class SpendingInfoDAO()(
         )
 
       case (id,
-      outpoint,
-      spk,
-      value,
-      path: LegacyHDPath,
-      None, // RedeemScript
-      None, // ScriptWitness
-      state,
-      txid,
-      blockHash) =>
+            outpoint,
+            spk,
+            value,
+            path: LegacyHDPath,
+            None, // RedeemScript
+            None, // ScriptWitness
+            state,
+            txid,
+            blockHash) =>
         LegacySpendingInfo(outPoint = outpoint,
-          output = TransactionOutput(value, spk),
-          privKeyPath = path,
-          id = id,
-          state = state,
-          txid = txid,
-          blockHash = blockHash)
+                           output = TransactionOutput(value, spk),
+                           privKeyPath = path,
+                           id = id,
+                           state = state,
+                           txid = txid,
+                           blockHash = blockHash)
 
       case (id,
-      outpoint,
-      spk,
-      value,
-      path: NestedSegWitHDPath,
-      Some(redeemScript), // RedeemScript
-      Some(scriptWitness), // ScriptWitness
-      state,
-      txid,
-      blockHash)
-        if WitnessScriptPubKey.isWitnessScriptPubKey(redeemScript.asm) =>
+            outpoint,
+            spk,
+            value,
+            path: NestedSegWitHDPath,
+            Some(redeemScript), // RedeemScript
+            Some(scriptWitness), // ScriptWitness
+            state,
+            txid,
+            blockHash)
+          if WitnessScriptPubKey.isWitnessScriptPubKey(redeemScript.asm) =>
         NestedSegwitV0SpendingInfo(outpoint,
-          TransactionOutput(value, spk),
-          path,
-          redeemScript,
-          scriptWitness,
-          txid,
-          state,
-          blockHash,
-          id)
+                                   TransactionOutput(value, spk),
+                                   path,
+                                   redeemScript,
+                                   scriptWitness,
+                                   txid,
+                                   state,
+                                   blockHash,
+                                   id)
 
       case (id,
-      outpoint,
-      spk,
-      value,
-      path,
-      spkOpt,
-      swOpt,
-      spent,
-      txid,
-      blockHash) =>
+            outpoint,
+            spk,
+            value,
+            path,
+            spkOpt,
+            swOpt,
+            spent,
+            txid,
+            blockHash) =>
         throw new IllegalArgumentException(
           "Could not construct UtxoSpendingInfoDb from bad tuple:"
             + s" ($id, $outpoint, $spk, $value, $path, $spkOpt, $swOpt, $spent, $txid, $blockHash).")
@@ -286,26 +294,26 @@ case class SpendingInfoDAO()(
       utxo =>
         Some(
           (utxo.id,
-            utxo.outPoint,
-            utxo.output.scriptPubKey,
-            utxo.output.value,
-            utxo.privKeyPath,
-            utxo.redeemScriptOpt,
-            utxo.scriptWitnessOpt,
-            utxo.state,
-            utxo.txid,
-            utxo.blockHash))
+           utxo.outPoint,
+           utxo.output.scriptPubKey,
+           utxo.output.value,
+           utxo.privKeyPath,
+           utxo.redeemScriptOpt,
+           utxo.scriptWitnessOpt,
+           utxo.state,
+           utxo.txid,
+           utxo.blockHash))
 
     def * : ProvenShape[SpendingInfoDb] =
       (id.?,
-        outPoint,
-        scriptPubKey,
-        value,
-        privKeyPath,
-        redeemScriptOpt,
-        scriptWitnessOpt,
-        state,
-        txid,
-        blockHash) <> (fromTuple, toTuple)
+       outPoint,
+       scriptPubKey,
+       value,
+       privKeyPath,
+       redeemScriptOpt,
+       scriptWitnessOpt,
+       state,
+       txid,
+       blockHash) <> (fromTuple, toTuple)
   }
 }

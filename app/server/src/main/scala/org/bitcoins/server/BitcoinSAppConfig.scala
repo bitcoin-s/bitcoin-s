@@ -55,7 +55,8 @@ object BitcoinSAppConfig {
   /** Constructs an app configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig =
+  def fromDefaultDatadir(confs: Config*)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig =
     BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 
   import scala.language.implicitConversions

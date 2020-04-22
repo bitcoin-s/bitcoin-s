@@ -44,5 +44,3 @@ object BlockHeaderDbHelper {
     )
   }
 }
-
-

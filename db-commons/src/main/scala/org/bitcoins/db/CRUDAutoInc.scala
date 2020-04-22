@@ -3,8 +3,11 @@ package org.bitcoins.db
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
-abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit ec: ExecutionContext, override val appConfig: AppConfig)
-    extends CRUD[T, Long]()(ec, appConfig) with TableAutoIncComponent[T] {
+abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](
+    implicit ec: ExecutionContext,
+    override val appConfig: AppConfig)
+    extends CRUD[T, Long]()(ec, appConfig)
+    with TableAutoIncComponent[T] {
   import profile.api._
 
   /** The table inside our database we are inserting into */
@@ -20,7 +23,8 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit ec: ExecutionContext, 
     safeDatabase.runVec(actions)
   }
 
-  override def findByPrimaryKeys(ids: Vector[Long]): Query[TableAutoInc[T], T, Seq] = {
+  override def findByPrimaryKeys(
+      ids: Vector[Long]): Query[TableAutoInc[T], T, Seq] = {
     table.filter { t =>
       t.id.inSet(ids)
     }
@@ -32,21 +36,18 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit ec: ExecutionContext, 
   }
 }
 
-
 /** Defines a table that has an auto incremented fields that is named id.
- * This is useful for things we want to store that don't have an
- * inherent id such as a hash.
- * @param tag
- * @param tableName
- * @tparam T
- */
+  * This is useful for things we want to store that don't have an
+  * inherent id such as a hash.
+  * @param tag
+  * @param tableName
+  * @tparam T
+  */
 trait TableAutoIncComponent[T <: DbRowAutoInc[T]] { self: CRUDAutoInc[T] =>
   import profile.api._
 
-  abstract class TableAutoInc[T](tag: profile.api.Tag, tableName: String) extends
-    profile.api.Table[T](tag,tableName) {
+  abstract class TableAutoInc[T](tag: profile.api.Tag, tableName: String)
+      extends profile.api.Table[T](tag, tableName) {
     def id: Rep[Long] = column[Long]("id", O.PrimaryKey, O.AutoInc)
   }
 }
-
-

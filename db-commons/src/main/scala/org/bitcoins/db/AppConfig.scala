@@ -32,6 +32,7 @@ import ch.qos.logback.classic.Level
 abstract class AppConfig {
 
   private val logger = BitcoinSLogger.logger
+
   /**
     * Initializes this project.
     * After this future resolves, all operations should be

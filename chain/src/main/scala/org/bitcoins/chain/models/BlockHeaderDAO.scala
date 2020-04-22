@@ -15,7 +15,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * our chain project
   */
 case class BlockHeaderDAO()(
-    implicit ec: ExecutionContext, override val appConfig: ChainAppConfig)
+    implicit ec: ExecutionContext,
+    override val appConfig: ChainAppConfig)
     extends CRUD[BlockHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[BlockHeaderDb, DoubleSha256DigestBE] {
 
@@ -28,12 +29,13 @@ case class BlockHeaderDAO()(
   /** Creates all of the given [[BlockHeaderDb]] in the database */
   override def createAll(
       headers: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
-    createAllNoAutoInc(ts = headers,
-                                 database = safeDatabase)
+    createAllNoAutoInc(ts = headers, database = safeDatabase)
   }
 
-  override protected def findAll(
-      ts: Vector[BlockHeaderDb]): Query[BlockHeaderTable, BlockHeaderDb, Seq] = {
+  override protected def findAll(ts: Vector[BlockHeaderDb]): Query[
+    BlockHeaderTable,
+    BlockHeaderDb,
+    Seq] = {
     findByPrimaryKeys(ts.map(_.hashBE))
   }
 
@@ -190,7 +192,10 @@ case class BlockHeaderDAO()(
     result
   }
 
-  private val maxHeightQuery: profile.ProfileAction[Int,NoStream, Effect.Read] = {
+  private val maxHeightQuery: profile.ProfileAction[
+    Int,
+    NoStream,
+    Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
   }
@@ -260,10 +265,9 @@ case class BlockHeaderDAO()(
     }
   }
 
-
   /** A table that stores block headers related to a blockchain */
   class BlockHeaderTable(tag: Tag)
-    extends Table[BlockHeaderDb](tag, "block_headers") {
+      extends Table[BlockHeaderDb](tag, "block_headers") {
     import org.bitcoins.db.DbCommonsColumnMappers._
 
     def height = column[Int]("height")
@@ -291,14 +295,14 @@ case class BlockHeaderDAO()(
 
     def * = {
       (height,
-        hash,
-        version,
-        previousBlockHash,
-        merkleRootHash,
-        time,
-        nBits,
-        nonce,
-        hex).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
+       hash,
+       version,
+       previousBlockHash,
+       merkleRootHash,
+       time,
+       nBits,
+       nonce,
+       hex).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
     }
 
   }

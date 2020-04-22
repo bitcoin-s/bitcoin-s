@@ -19,10 +19,10 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class WalletAppConfig(
     private val directory: Path,
-    private val conf: Config*)(override implicit val ec: ExecutionContext)
+    private val conf: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
-      with WalletDbManagement
-      with JdbcProfileComponent{
+    with WalletDbManagement
+    with JdbcProfileComponent {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
   override protected[bitcoins] def moduleName: String = "wallet"
   override protected[bitcoins] type ConfigType = WalletAppConfig
@@ -131,6 +131,7 @@ object WalletAppConfig {
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(implicit ec: ExecutionContext): WalletAppConfig =
+  def fromDefaultDatadir(confs: Config*)(
+      implicit ec: ExecutionContext): WalletAppConfig =
     WalletAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 }

@@ -30,10 +30,9 @@ final case class BroadcastAbleTransactionDAO()(
     database.run(query.result).map(_.headOption)
   }
 
-
   /** Table over TXs we can broadcast over the P2P network */
   class BroadcastAbleTransactionTable(tag: Tag)
-    extends TableAutoInc[BroadcastAbleTransaction](tag, "broadcast_elements") {
+      extends TableAutoInc[BroadcastAbleTransaction](tag, "broadcast_elements") {
     private type Tuple = (DoubleSha256DigestBE, ByteVector, Option[Long])
 
     private val fromTuple: (Tuple => BroadcastAbleTransaction) = {
@@ -55,6 +54,5 @@ final case class BroadcastAbleTransactionDAO()(
       (txid, bytes, id.?) <>
         (fromTuple, toTuple)
   }
-
 
 }

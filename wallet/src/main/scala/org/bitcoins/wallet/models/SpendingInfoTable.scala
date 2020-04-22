@@ -1,11 +1,23 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, Sign}
-import org.bitcoins.core.hd.{HDPath, LegacyHDPath, NestedSegWitHDPath, SegWitHDPath}
+import org.bitcoins.core.hd.{
+  HDPath,
+  LegacyHDPath,
+  NestedSegWitHDPath,
+  SegWitHDPath
+}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
-import org.bitcoins.core.protocol.transaction.{TransactionOutPoint, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.utxo.{BitcoinUTXOSpendingInfoFull, ConditionalPath, TxoState}
+import org.bitcoins.core.wallet.utxo.{
+  BitcoinUTXOSpendingInfoFull,
+  ConditionalPath,
+  TxoState
+}
 import org.bitcoins.db.DbRowAutoInc
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 
@@ -180,5 +192,3 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   }
 
 }
-
-

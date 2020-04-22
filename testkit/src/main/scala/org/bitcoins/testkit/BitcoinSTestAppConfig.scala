@@ -19,7 +19,8 @@ object BitcoinSTestAppConfig {
     * 1) Data directory is set to user temp directory
     * 2) Logging is turned down to WARN
     */
-  def getSpvTestConfig(config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
+  def getSpvTestConfig(config: Config*)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {
@@ -32,7 +33,8 @@ object BitcoinSTestAppConfig {
     BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
   }
 
-  def getNeutrinoTestConfig(config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
+  def getNeutrinoTestConfig(config: Config*)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {

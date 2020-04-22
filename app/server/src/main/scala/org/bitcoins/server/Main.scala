@@ -48,8 +48,6 @@ object Main extends App {
           "Either Neutrino or SPV mode should be enabled")
   implicit val chainConf: ChainAppConfig = conf.chainConf
 
-
-
   val peerSocket =
     parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
   val peer = Peer.fromSocket(peerSocket)

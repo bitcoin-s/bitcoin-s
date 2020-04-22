@@ -21,7 +21,7 @@ trait DbManagement extends BitcoinSLogger { _: JdbcProfileComponent =>
 
   /** Creates all tables in our table list, in one SQL transaction */
   def createAll()(implicit ec: ExecutionContext): Future[Unit] = {
-/*    val tables = allTables.map(_.baseTableRow.tableName).mkString(", ")
+    /*    val tables = allTables.map(_.baseTableRow.tableName).mkString(", ")
     logger.debug(s"Creating tables: $tables")*/
 
     val query = {
@@ -58,7 +58,8 @@ trait DbManagement extends BitcoinSLogger { _: JdbcProfileComponent =>
   /** Creates the given table */
   def createTable(
       table: TableQuery[_ <: Table[_]],
-      createIfNotExists: Boolean = true)(implicit ec: ExecutionContext): Future[Unit] = {
+      createIfNotExists: Boolean = true)(
+      implicit ec: ExecutionContext): Future[Unit] = {
     val tableName = table.baseTableRow.tableName
     logger.debug(
       s"Creating table $tableName with DB config: ${appConfig.config} ")

@@ -18,7 +18,7 @@ case class OutgoingTransactionDAO()(
   override val table = TableQuery[OutgoingTransactionTable]
 
   class OutgoingTransactionTable(tag: Tag)
-    extends TxTable[OutgoingTransactionDb](tag, "wallet_outgoing_txs") {
+      extends TxTable[OutgoingTransactionDb](tag, "wallet_outgoing_txs") {
 
     import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -36,7 +36,7 @@ case class OutgoingTransactionDAO()(
 
     private type OutgoingTransactionTuple =
       (
-        DoubleSha256DigestBE,
+          DoubleSha256DigestBE,
           CurrencyUnit,
           CurrencyUnit,
           CurrencyUnit,
@@ -46,22 +46,22 @@ case class OutgoingTransactionDAO()(
     private val fromTuple: OutgoingTransactionTuple => OutgoingTransactionDb = {
       case (txId, inputAmount, sentAmount, actualFee, expectedFee, feeRate) =>
         OutgoingTransactionDb(txId,
-          inputAmount,
-          sentAmount,
-          actualFee,
-          expectedFee,
-          feeRate)
+                              inputAmount,
+                              sentAmount,
+                              actualFee,
+                              expectedFee,
+                              feeRate)
     }
 
     private val toTuple: OutgoingTransactionDb => Option[
       OutgoingTransactionTuple] = tx =>
       Some(
         (tx.txIdBE,
-          tx.inputAmount,
-          tx.sentAmount,
-          tx.actualFee,
-          tx.expectedFee,
-          tx.feeRate))
+         tx.inputAmount,
+         tx.sentAmount,
+         tx.actualFee,
+         tx.expectedFee,
+         tx.feeRate))
 
     def * : ProvenShape[OutgoingTransactionDb] =
       (txIdBE, inputAmount, sentAmount, actualFee, expectedFee, feeRate) <> (fromTuple, toTuple)
@@ -72,8 +72,8 @@ case class OutgoingTransactionDAO()(
     def fk_underlying_tx = {
       val txTable = TransactionDAO().table
       foreignKey("fk_underlying_tx",
-        sourceColumns = txIdBE,
-        targetTableQuery = txTable)(_.txIdBE)
+                 sourceColumns = txIdBE,
+                 targetTableQuery = txTable)(_.txIdBE)
     }
   }
 }

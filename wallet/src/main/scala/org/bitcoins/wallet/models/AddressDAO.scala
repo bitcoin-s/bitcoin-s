@@ -1,8 +1,22 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
-import org.bitcoins.core.hd.{HDAccount, HDChainType, HDCoinType, HDPurpose, HDPurposes, LegacyHDPath, NestedSegWitHDPath, SegWitHDPath}
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.hd.{
+  HDAccount,
+  HDChainType,
+  HDCoinType,
+  HDPurpose,
+  HDPurposes,
+  LegacyHDPath,
+  NestedSegWitHDPath,
+  SegWitHDPath
+}
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.db.{CRUD, SlickUtil}
@@ -15,7 +29,7 @@ case class AddressDAO()(
     implicit ec: ExecutionContext,
     config: WalletAppConfig
 ) extends CRUD[AddressDb, BitcoinAddress]
-  with SlickUtil[AddressDb, BitcoinAddress] {
+    with SlickUtil[AddressDb, BitcoinAddress] {
   import profile.api._
   import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -30,7 +44,8 @@ case class AddressDAO()(
       addresses: Vector[BitcoinAddress]): Query[AddressTable, AddressDb, Seq] =
     table.filter(_.address.inSet(addresses))
 
-  override def findAll(ts: Vector[AddressDb]): Query[AddressTable, AddressDb, Seq] =
+  override def findAll(
+      ts: Vector[AddressDb]): Query[AddressTable, AddressDb, Seq] =
     findByPrimaryKeys(ts.map(_.address))
 
   def findAddress(addr: BitcoinAddress): Future[Option[AddressDb]] = {
@@ -88,7 +103,10 @@ case class AddressDAO()(
 
   private def findMostRecentForChain(
       account: HDAccount,
-      chain: HDChainType): slick.sql.SqlAction[Option[AddressDb], NoStream, Effect.Read] = {
+      chain: HDChainType): slick.sql.SqlAction[
+    Option[AddressDb],
+    NoStream,
+    Effect.Read] = {
     addressesForAccountQuery(account.index)
       .filter(_.purpose === account.purpose)
       .filter(_.accountCoin === account.coin.coinType)
@@ -109,11 +127,10 @@ case class AddressDAO()(
     safeDatabase.run(query)
   }
 
-
   /**
-   * todo: this needs design rework.
-   * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
-   */
+    * todo: this needs design rework.
+    * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
+    */
   class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
     import org.bitcoins.db.DbCommonsColumnMappers._
 
@@ -140,7 +157,7 @@ case class AddressDAO()(
     def scriptWitness: Rep[Option[ScriptWitness]] = column("script_witness")
 
     private type AddressTuple = (
-      HDPurpose,
+        HDPurpose,
         Int,
         HDCoinType,
         HDChainType,
@@ -154,60 +171,62 @@ case class AddressDAO()(
 
     private val fromTuple: AddressTuple => AddressDb = {
       case (
-        purpose,
-        accountIndex,
-        accountCoin,
-        accountChain,
-        address,
-        scriptWitnessOpt,
-        scriptPubKey,
-        addressIndex,
-        pubKey,
-        hashedPubKey,
-        scriptType @ _ // what should we do about this? scriptType is inferrable from purpose
-        ) =>
+          purpose,
+          accountIndex,
+          accountCoin,
+          accountChain,
+          address,
+          scriptWitnessOpt,
+          scriptPubKey,
+          addressIndex,
+          pubKey,
+          hashedPubKey,
+          scriptType @ _ // what should we do about this? scriptType is inferrable from purpose
+          ) =>
         (purpose, address, scriptWitnessOpt) match {
           case (HDPurposes.SegWit,
-          bechAddr: Bech32Address,
-          Some(scriptWitness)) =>
+                bechAddr: Bech32Address,
+                Some(scriptWitness)) =>
             val path =
               SegWitHDPath(coinType = accountCoin,
-                accountIndex = accountIndex,
-                chainType = accountChain,
-                addressIndex = addressIndex)
+                           accountIndex = accountIndex,
+                           chainType = accountChain,
+                           addressIndex = addressIndex)
 
             SegWitAddressDb(path,
-              ecPublicKey = pubKey,
-              hashedPubKey = hashedPubKey,
-              address = bechAddr,
-              witnessScript = scriptWitness,
-              scriptPubKey = scriptPubKey)
+                            ecPublicKey = pubKey,
+                            hashedPubKey = hashedPubKey,
+                            address = bechAddr,
+                            witnessScript = scriptWitness,
+                            scriptPubKey = scriptPubKey)
 
           case (HDPurposes.Legacy, legacyAddr: P2PKHAddress, None) =>
             val path = LegacyHDPath(coinType = accountCoin,
-              accountIndex = accountIndex,
-              chainType = accountChain,
-              addressIndex = addressIndex)
+                                    accountIndex = accountIndex,
+                                    chainType = accountChain,
+                                    addressIndex = addressIndex)
             LegacyAddressDb(path,
-              pubKey,
-              hashedPubKey,
-              legacyAddr,
-              scriptPubKey = scriptPubKey)
+                            pubKey,
+                            hashedPubKey,
+                            legacyAddr,
+                            scriptPubKey = scriptPubKey)
 
           case (HDPurposes.NestedSegWit,
-          address: P2SHAddress,
-          Some(scriptWitness)) =>
+                address: P2SHAddress,
+                Some(scriptWitness)) =>
             val path = NestedSegWitHDPath(coinType = accountCoin,
-              accountIndex = accountIndex,
-              chainType = accountChain,
-              addressIndex = addressIndex)
+                                          accountIndex = accountIndex,
+                                          chainType = accountChain,
+                                          addressIndex = addressIndex)
             NestedSegWitAddressDb(path,
-              pubKey,
-              hashedPubKey,
-              address,
-              witnessScript = scriptWitness,
-              scriptPubKey = scriptPubKey)
-          case (purpose: HDPurpose, address: BitcoinAddress, scriptWitnessOpt) =>
+                                  pubKey,
+                                  hashedPubKey,
+                                  address,
+                                  witnessScript = scriptWitness,
+                                  scriptPubKey = scriptPubKey)
+          case (purpose: HDPurpose,
+                address: BitcoinAddress,
+                scriptWitnessOpt) =>
             throw new IllegalArgumentException(
               s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt")
         }
@@ -215,23 +234,23 @@ case class AddressDAO()(
 
     private val toTuple: AddressDb => Option[AddressTuple] = {
       case SegWitAddressDb(path,
-      pubKey,
-      hashedPubKey,
-      address,
-      scriptWitness,
-      scriptPubKey) =>
+                           pubKey,
+                           hashedPubKey,
+                           address,
+                           scriptWitness,
+                           scriptPubKey) =>
         Some(
           (path.purpose,
-            path.account.index,
-            path.coin.coinType,
-            path.chain.chainType,
-            address,
-            Some(scriptWitness),
-            scriptPubKey,
-            path.address.index,
-            pubKey,
-            hashedPubKey,
-            ScriptType.WITNESS_V0_KEYHASH))
+           path.account.index,
+           path.coin.coinType,
+           path.chain.chainType,
+           address,
+           Some(scriptWitness),
+           scriptPubKey,
+           path.address.index,
+           pubKey,
+           hashedPubKey,
+           ScriptType.WITNESS_V0_KEYHASH))
       case LegacyAddressDb(path, pubkey, hashedPub, address, scriptPubKey) =>
         Some(
           path.purpose,
@@ -247,45 +266,45 @@ case class AddressDAO()(
           ScriptType.PUBKEYHASH
         )
       case NestedSegWitAddressDb(path,
-      pubKey,
-      hashedPubKey,
-      address,
-      scriptWitness,
-      scriptPubKey) =>
+                                 pubKey,
+                                 hashedPubKey,
+                                 address,
+                                 scriptWitness,
+                                 scriptPubKey) =>
         Some(
           (path.purpose,
-            path.account.index,
-            path.coin.coinType,
-            path.chain.chainType,
-            address,
-            Some(scriptWitness),
-            scriptPubKey,
-            path.address.index,
-            pubKey,
-            hashedPubKey,
-            ScriptType.SCRIPTHASH))
+           path.account.index,
+           path.coin.coinType,
+           path.chain.chainType,
+           address,
+           Some(scriptWitness),
+           scriptPubKey,
+           path.address.index,
+           pubKey,
+           hashedPubKey,
+           ScriptType.SCRIPTHASH))
     }
 
     override def * : ProvenShape[AddressDb] =
       (purpose,
-        accountIndex,
-        accountCoin,
-        accountChainType,
-        address,
-        scriptWitness,
-        scriptPubKey,
-        addressIndex,
-        ecPublicKey,
-        hashedPubKey,
-        scriptType) <> (fromTuple, toTuple)
+       accountIndex,
+       accountCoin,
+       accountChainType,
+       address,
+       scriptWitness,
+       scriptPubKey,
+       addressIndex,
+       ecPublicKey,
+       hashedPubKey,
+       scriptType) <> (fromTuple, toTuple)
 
     val accounts = AccountDAO().table
 
     // for some reason adding a type annotation here causes compile error
     def fk =
       foreignKey("fk_account",
-        sourceColumns = (purpose, accountCoin, accountIndex),
-        targetTableQuery = accounts) { accountTable =>
+                 sourceColumns = (purpose, accountCoin, accountIndex),
+                 targetTableQuery = accounts) { accountTable =>
         (accountTable.purpose, accountTable.coinType, accountTable.index)
       }
   }
