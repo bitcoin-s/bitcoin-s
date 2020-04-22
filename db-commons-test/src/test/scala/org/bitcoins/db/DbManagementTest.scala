@@ -19,23 +19,28 @@ class DbManagementTest extends BitcoinSAsyncTest {
     BitcoinSTestAppConfig.configWithMemoryDb(Some(project))
   }
 
-  def createChainDbManagement(chainAppConfig: ChainAppConfig): ChainDbManagement = new ChainDbManagement with JdbcProfileComponent {
-    override val ec: ExecutionContext = system.dispatcher
+  def createChainDbManagement(
+      chainAppConfig: ChainAppConfig): ChainDbManagement =
+    new ChainDbManagement with JdbcProfileComponent {
+      override val ec: ExecutionContext = system.dispatcher
 
-    override def appConfig: ChainAppConfig = chainAppConfig
-  }
+      override def appConfig: ChainAppConfig = chainAppConfig
+    }
 
-  def createWalletDbManagement(walletAppConfig: WalletAppConfig): WalletDbManagement = new WalletDbManagement with JdbcProfileComponent {
-    override val ec: ExecutionContext = system.dispatcher
+  def createWalletDbManagement(
+      walletAppConfig: WalletAppConfig): WalletDbManagement =
+    new WalletDbManagement with JdbcProfileComponent {
+      override val ec: ExecutionContext = system.dispatcher
 
-    override def appConfig: WalletAppConfig = walletAppConfig
-  }
+      override def appConfig: WalletAppConfig = walletAppConfig
+    }
 
-  def createNodeDbManagement(nodeAppConfig: NodeAppConfig): NodeDbManagement = new NodeDbManagement with JdbcProfileComponent {
-    override val ec: ExecutionContext = system.dispatcher
+  def createNodeDbManagement(nodeAppConfig: NodeAppConfig): NodeDbManagement =
+    new NodeDbManagement with JdbcProfileComponent {
+      override val ec: ExecutionContext = system.dispatcher
 
-    override def appConfig: NodeAppConfig = nodeAppConfig
-  }
+      override def appConfig: NodeAppConfig = nodeAppConfig
+    }
 
   it must "run migrations for chain db" in {
     val chainAppConfig = ChainAppConfig(BitcoinSTestAppConfig.tmpDir(),
