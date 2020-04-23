@@ -28,7 +28,8 @@ case class SpendingInfoDAO()(
   import profile.api._
 
   /** The table inside our database we are inserting into */
-  override val table = profile.api.TableQuery[SpendingInfoTable]
+  override val table: profile.api.TableQuery[SpendingInfoTable] = profile.api.TableQuery[SpendingInfoTable]
+
   private val addrTable = AddressDAO()(ec, appConfig).table
 
   /**
@@ -186,7 +187,7 @@ case class SpendingInfoDAO()(
     def blockHash: Rep[Option[DoubleSha256DigestBE]] = column("block_hash")
 
     /** All UTXOs must have a SPK in the wallet that gets spent to */
-    def fk_scriptPubKey = {
+    def fk_scriptPubKey: slick.lifted.ForeignKeyQuery[_,AddressDb] = {
       val addressTable = addrTable
       foreignKey("fk_scriptPubKey",
                  sourceColumns = scriptPubKey,
@@ -194,7 +195,7 @@ case class SpendingInfoDAO()(
     }
 
     /** All UTXOs must have a corresponding transaction in the wallet */
-    def fk_incoming_txId = {
+    def fk_incoming_txId: slick.lifted.ForeignKeyQuery[_,IncomingTransactionDb] = {
       val txTable = IncomingTransactionDAO().table
       foreignKey("fk_incoming_txId",
                  sourceColumns = txid,

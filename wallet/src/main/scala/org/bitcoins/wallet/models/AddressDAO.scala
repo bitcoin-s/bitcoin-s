@@ -1,27 +1,13 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
-import org.bitcoins.core.hd.{
-  HDAccount,
-  HDChainType,
-  HDCoinType,
-  HDPurpose,
-  HDPurposes,
-  LegacyHDPath,
-  NestedSegWitHDPath,
-  SegWitHDPath
-}
-import org.bitcoins.core.protocol.{
-  Bech32Address,
-  BitcoinAddress,
-  P2PKHAddress,
-  P2SHAddress
-}
+import org.bitcoins.core.hd.{HDAccount, HDChainType, HDCoinType, HDPurpose, HDPurposes, LegacyHDPath, NestedSegWitHDPath, SegWitHDPath}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config.WalletAppConfig
-import slick.lifted.ProvenShape
+import slick.lifted.{ForeignKeyQuery, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,7 +19,7 @@ case class AddressDAO()(
   import profile.api._
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table: TableQuery[AddressTable] = TableQuery[AddressTable]
+  override val table: profile.api.TableQuery[AddressTable] = TableQuery[AddressTable]
   private lazy val spendingInfoTable = SpendingInfoDAO().table
 
   override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
@@ -88,9 +74,11 @@ case class AddressDAO()(
   }
 
   def getUnusedAddresses: Future[Vector[AddressDb]] = {
-    val query = {
+    val query: slick.lifted.Query[(AddressTable,_),
+        (AddressTable#TableElementType, Option[SpendingInfoDb]), Seq] = {
       val joined =
-        table.joinLeft(spendingInfoTable).on(_.scriptPubKey === _.scriptPubKey)
+        table.joinLeft(spendingInfoTable)
+          .on(_.scriptPubKey === _.scriptPubKey)
       joined.filter(_._2.isEmpty)
     }
 
@@ -301,7 +289,7 @@ case class AddressDAO()(
     val accounts = AccountDAO().table
 
     // for some reason adding a type annotation here causes compile error
-    def fk =
+    def fk: ForeignKeyQuery[_, AccountDb] =
       foreignKey("fk_account",
                  sourceColumns = (purpose, accountCoin, accountIndex),
                  targetTableQuery = accounts) { accountTable =>

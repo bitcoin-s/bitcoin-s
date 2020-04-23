@@ -69,7 +69,7 @@ case class OutgoingTransactionDAO()(
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)
 
-    def fk_underlying_tx = {
+    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_,TransactionDb] = {
       val txTable = TransactionDAO().table
       foreignKey("fk_underlying_tx",
                  sourceColumns = txIdBE,
