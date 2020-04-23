@@ -12,11 +12,11 @@ case class IncomingTransactionDAO()(
     override val appConfig: WalletAppConfig)
     extends TxDAO[IncomingTransactionDb] {
   import profile.api._
-  override val table: slick.lifted.TableQuery[IncomingTransactionTable] = {
+  override val table: profile.api.TableQuery[IncomingTransactionTable] = {
     TableQuery[IncomingTransactionTable]
   }
 
-  private lazy val txTable: slick.lifted.TableQuery[TransactionDAO#TransactionTable] = {
+  private lazy val txTable: profile.api.TableQuery[TransactionDAO#TransactionTable] = {
     TransactionDAO().table
       .asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
   }

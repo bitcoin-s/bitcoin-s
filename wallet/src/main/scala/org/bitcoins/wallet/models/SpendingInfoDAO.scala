@@ -28,14 +28,14 @@ case class SpendingInfoDAO()(
   import profile.api._
 
   /** The table inside our database we are inserting into */
-  override val table: slick.lifted.TableQuery[SpendingInfoTable] = profile.api.TableQuery[SpendingInfoTable]
+  override val table: profile.api.TableQuery[SpendingInfoTable] = profile.api.TableQuery[SpendingInfoTable]
 
-  private lazy val addrTable: slick.lifted.TableQuery[AddressDAO#AddressTable] = {
+  private lazy val addrTable: profile.api.TableQuery[AddressDAO#AddressTable] = {
     AddressDAO()(ec, appConfig).table
       .asInstanceOf[TableQuery[AddressDAO#AddressTable]]
   }
 
-  private lazy val txTable: slick.lifted.TableQuery[IncomingTransactionDAO#IncomingTransactionTable] = {
+  private lazy val txTable: profile.api.TableQuery[IncomingTransactionDAO#IncomingTransactionTable] = {
     IncomingTransactionDAO().table
       .asInstanceOf[TableQuery[IncomingTransactionDAO#IncomingTransactionTable]]
   }

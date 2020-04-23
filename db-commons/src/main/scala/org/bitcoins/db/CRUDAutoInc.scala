@@ -11,7 +11,7 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](
   import profile.api._
 
   /** The table inside our database we are inserting into */
-  override val table: slick.lifted.TableQuery[_ <: TableAutoInc[T]]
+  override val table: profile.api.TableQuery[_ <: TableAutoInc[T]]
 
   override def createAll(ts: Vector[T]): Future[Vector[T]] = {
     val idQuery = table.map(_.id)

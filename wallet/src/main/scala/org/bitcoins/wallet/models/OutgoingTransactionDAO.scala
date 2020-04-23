@@ -15,9 +15,9 @@ case class OutgoingTransactionDAO()(
 
   import profile.api._
 
-  override val table = TableQuery[OutgoingTransactionTable]
+  override val table: profile.api.TableQuery[OutgoingTransactionTable] = TableQuery[OutgoingTransactionTable]
 
-  val txTable: slick.lifted.TableQuery[TransactionDAO#TransactionTable] = {
+  val txTable: profile.api.TableQuery[TransactionDAO#TransactionTable] = {
     TransactionDAO().table.asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
   }
 

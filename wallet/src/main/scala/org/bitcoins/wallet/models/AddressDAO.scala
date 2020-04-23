@@ -19,8 +19,8 @@ case class AddressDAO()(
   import profile.api._
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table: slick.lifted.TableQuery[AddressTable] = TableQuery[AddressTable]
-  private lazy val spendingInfoTable: slick.lifted.TableQuery[SpendingInfoDAO#SpendingInfoTable] = {
+  override val table: profile.api.TableQuery[AddressTable] = TableQuery[AddressTable]
+  private lazy val spendingInfoTable: profile.api.TableQuery[SpendingInfoDAO#SpendingInfoTable] = {
     SpendingInfoDAO().table
       .asInstanceOf[TableQuery[SpendingInfoDAO#SpendingInfoTable]]
   }

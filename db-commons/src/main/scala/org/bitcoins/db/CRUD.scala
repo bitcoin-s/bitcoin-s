@@ -102,7 +102,7 @@ abstract class CRUD[T, PrimaryKeyType](
   import profile.api._
 
   /** The table inside our database we are inserting into */
-  val table: slick.lifted.TableQuery[_ <: profile.api.Table[T]]
+  val table: profile.api.TableQuery[_ <: profile.api.Table[T]]
 
   /** Binding to the actual database itself, this is what is used to run querys */
   def safeDatabase: SafeDatabase = SafeDatabase(this)
