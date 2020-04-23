@@ -53,6 +53,7 @@ lazy val `bitcoin-s` = project
     dbCommons,
     dbCommonsTest,
     dlc,
+    dlcSuredbitsClient,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -255,6 +256,19 @@ lazy val gui = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
     cli
+  )
+
+lazy val dlcSuredbitsClient = project
+  .in(file("app/dlc-suredbits-client"))
+  .settings(CommonSettings.prodSettings: _*)
+  .dependsOn(eclairRpc, wallet)
+
+lazy val dlcSuredbitsClientTest = project
+  .in(file("app/dlc-suredbits-client-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .dependsOn(
+    dlcSuredbitsClient,
+    testkit
   )
 
 lazy val chainDbSettings = dbFlywaySettings("chaindb")
