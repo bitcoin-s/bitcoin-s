@@ -50,6 +50,15 @@ trait BaseAsyncTest
 
   override lazy val timeLimit: Span = 5.minutes
 
+  lazy val isLinux: Boolean =
+    System.getProperty("os.name").startsWith("Linux")
+
+  lazy val isMac: Boolean =
+    System.getProperty("os.name").startsWith("Mac")
+
+  lazy val isWindows: Boolean =
+    System.getProperty("os.name").startsWith("Windows")
+
   /** This def ensures that shrinks are disabled for all calls to forAll.
     *
     * If you want to enable shrinking for a specific test, introduce an
