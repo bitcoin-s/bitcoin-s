@@ -257,6 +257,12 @@ object Deps {
     Compile.akkaHttp
   )
 
+  val dlcSuredbitsClient = List(
+    Compile.akkaStream,
+    Compile.akkaHttp,
+    Compile.playJson
+  )
+
   val eclairRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
