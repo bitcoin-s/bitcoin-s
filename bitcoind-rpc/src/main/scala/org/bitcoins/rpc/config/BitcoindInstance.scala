@@ -9,12 +9,6 @@ import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.client.common.BitcoindVersion
 
 import scala.sys.process._
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.config.NetworkParameters
-
-import scala.util.Properties
-import java.nio.file.Files
-
 import scala.util.Properties
 
 /**

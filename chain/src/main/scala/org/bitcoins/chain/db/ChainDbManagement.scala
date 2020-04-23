@@ -1,17 +1,11 @@
 package org.bitcoins.chain.db
 
-import org.bitcoins.db._
-import org.bitcoins.chain.models.{
-  BlockHeaderTable,
-  CompactFilterHeaderTable,
-  CompactFilterTable
-}
+import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.chain.models.{BlockHeaderTable, CompactFilterHeaderTable, CompactFilterTable}
 import org.bitcoins.db.DbManagement
 import slick.lifted.TableQuery
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import org.bitcoins.chain.config.ChainAppConfig
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Responsible for creating and destroying database
