@@ -81,7 +81,8 @@ object SbClient {
         val errMsgs = errs.map(_.failureMessage).mkString(",\n")
         throw new RuntimeException(s"Payment failed: $errMsgs")
       case OutgoingPaymentStatus.Pending =>
-        throw new IllegalStateException("This should not be possible.")
+        throw new IllegalStateException(
+          "This should not be possible because invoice monitoring should only return on Succeeded or Failed.")
     }
   }
 

@@ -1,7 +1,5 @@
 package org.bitcoins.sbclient
 
-import java.net.ServerSocket
-
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -11,12 +9,11 @@ import akka.http.scaladsl.server.Route
 import org.bitcoins.core.crypto.{AesCrypt, AesEncryptedData, AesKey}
 import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.eclair.MockEclairClient
 import scodec.bits.ByteVector
 
-import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Random, Success, Try}
 import scala.util.matching.Regex
 
 class MockServer()(implicit ec: ExecutionContext) {
@@ -78,27 +75,7 @@ class MockServer()(implicit ec: ExecutionContext) {
     }
   }
 
-  /**
-    * Generates a random port not in use
-    */
-  @tailrec
-  private def randomPort: Int = {
-    val MAX = 65535 // max tcp port number
-    val MIN = 1025 // lowest port not requiring sudo
-    val port = Math.abs(Random.nextInt(MAX - MIN) + (MIN + 1))
-    val attempt = Try {
-      val socket = new ServerSocket(port)
-      socket.close()
-      socket.getLocalPort
-    }
-
-    attempt match {
-      case Success(value) => value
-      case Failure(_)     => randomPort
-    }
-  }
-
-  val port: Int = randomPort
+  val port: Int = RpcUtil.randomPort
 
   val endpoint: String = s"http://localhost:$port"
 
