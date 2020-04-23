@@ -5,22 +5,22 @@ import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.util.TestUtil
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest.WalletWithBitcoind
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
-import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.scalatest.FutureOutcome
 
 class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
-  override type FixtureParam = FundedWallet
+  override type FixtureParam = WalletWithBitcoind
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWallet(test)
+    withFundedWalletAndBitcoind(test)
   }
 
   val destination = TransactionOutput(Bitcoins(0.5), TestUtil.p2pkhScriptPubKey)
   val feeRate = SatoshisPerVirtualByte.one
 
   it must "fund a simple raw transaction that requires one utxo" in {
-    fundedWallet: FundedWallet =>
+    fundedWallet: WalletWithBitcoind =>
       val wallet = fundedWallet.wallet
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(destination),
@@ -38,7 +38,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "fund a transaction that requires all utxos in our wallet" in {
-    fundedWallet: FundedWallet =>
+    fundedWallet: WalletWithBitcoind =>
       val amt = Bitcoins(5.5)
       val newDestination = destination.copy(value = amt)
       val wallet = fundedWallet.wallet
@@ -58,7 +58,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "not care about the number of destinations" in {
-    fundedWallet: FundedWallet =>
+    fundedWallet: WalletWithBitcoind =>
       val destinations = Vector.fill(5)(destination)
 
       val wallet = fundedWallet.wallet
@@ -79,7 +79,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "fail to fund a raw transaction if we don't have enough money in our wallet" in {
-    fundedWallet: FundedWallet =>
+    fundedWallet: WalletWithBitcoind =>
       //our wallet should only have 6 bitcoin in it
       val tooMuchMoney = Bitcoins(10)
       val tooBigOutput = destination.copy(value = tooMuchMoney)
@@ -95,7 +95,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
   }
 
   it must "fail to fund a raw transaction if we have the _exact_ amount of money in the wallet because of the fee" in {
-    fundedWallet: FundedWallet =>
+    fundedWallet: WalletWithBitcoind =>
       //our wallet should only have 6 bitcoin in it
       val tooMuchMoney = Bitcoins(6)
       val tooBigOutput = destination.copy(value = tooMuchMoney)
@@ -113,30 +113,31 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       }
   }
 
-  it must "fund from a specific account" in { fundedWallet: FundedWallet =>
-    //we want to fund from account 1, not hte default account
-    //account 1 has 1 btc in it
-    val amt = Bitcoins(0.1)
+  it must "fund from a specific account" in {
+    fundedWallet: WalletWithBitcoind =>
+      //we want to fund from account 1, not hte default account
+      //account 1 has 1 btc in it
+      val amt = Bitcoins(0.1)
 
-    val newDestination = destination.copy(value = amt)
-    val wallet = fundedWallet.wallet
-    val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-    val account1DbF = wallet.accountDAO.findByAccount(account1)
-    for {
-      account1DbOpt <- account1DbF
-      fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
-                                            feeRate,
-                                            account1DbOpt.get,
-                                            false)
-    } yield {
-      assert(fundedTx.inputs.nonEmpty)
-      assert(fundedTx.outputs.contains(newDestination))
-      assert(fundedTx.outputs.length == 2)
-    }
+      val newDestination = destination.copy(value = amt)
+      val wallet = fundedWallet.wallet
+      val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+      val account1DbF = wallet.accountDAO.findByAccount(account1)
+      for {
+        account1DbOpt <- account1DbF
+        fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
+                                              feeRate,
+                                              account1DbOpt.get,
+                                              false)
+      } yield {
+        assert(fundedTx.inputs.nonEmpty)
+        assert(fundedTx.outputs.contains(newDestination))
+        assert(fundedTx.outputs.length == 2)
+      }
   }
 
   it must "fail to fund from an account that does not have the funds" in {
-    fundedWallet: FundedWallet =>
+    fundedWallet: WalletWithBitcoind =>
       //account 1 should only have 1 btc in it
       val amt = Bitcoins(1.1)
 
@@ -157,8 +158,31 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       }
   }
 
+  it must "fail to fund from an account with only immature coinbases" in {
+    fundedWallet: WalletWithBitcoind =>
+      val wallet = fundedWallet.wallet
+      val bitcoind = fundedWallet.bitcoind
+
+      val fundedTxF = for {
+        _ <- wallet.createNewAccount(wallet.keyManager.kmParams)
+        accounts <- wallet.accountDAO.findAll()
+        account2 = accounts.find(_.hdAccount.index == 2).get
+
+        addr <- wallet.getNewAddress(account2)
+        _ <- bitcoind.generateToAddress(1, addr)
+
+        fundedTx <- wallet.fundRawTransaction(Vector(destination),
+                                              feeRate,
+                                              account2)
+      } yield fundedTx
+
+      recoverToSucceededIf[RuntimeException] {
+        fundedTxF
+      }
+  }
+
   it must "mark utxos as reserved after building a transaction" in {
-    fundedWallet: FundedWallet =>
+    fundedWallet: WalletWithBitcoind =>
       val wallet = fundedWallet.wallet
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(destination),
