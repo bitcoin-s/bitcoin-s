@@ -1,9 +1,8 @@
 package org.bitcoins.core.serializers.p2p.messages
 
+import org.bitcoins.core.p2p.RejectMessage
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.p2p.RejectMessage
-import org.bitcoins.core.p2p.RejectMessage
 import scodec.bits.ByteVector
 
 trait RawRejectMessageSerializer extends RawBitcoinSerializer[RejectMessage] {

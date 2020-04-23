@@ -3,22 +3,12 @@ package org.bitcoins.testkit.core.gen.p2p
 import java.net.{InetAddress, InetSocketAddress}
 
 import org.bitcoins.core.number.{UInt32, UInt64}
-import org.bitcoins.core.p2p.ProtocolVersion
+import org.bitcoins.core.p2p.{ProtocolVersion, _}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.p2p._
-import org.bitcoins.core.p2p._
-import org.bitcoins.testkit.core.gen.{
-  BloomFilterGenerator,
-  CryptoGenerators,
-  NumberGenerator,
-  StringGenerators
-}
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerKiloByte, SatoshisPerVirtualByte}
+import org.bitcoins.testkit.core.gen._
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
-import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.fee.SatoshisPerKiloByte
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 
 object ControlMessageGenerator {
 
