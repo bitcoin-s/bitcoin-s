@@ -149,15 +149,11 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
   override def createNewAccount(
       hdAccount: HDAccount,
       kmParams: KeyManagerParams): Future[Wallet] = {
-    val accountIndex = hdAccount.index
     logger.info(
-      s"Creating new account at index $accountIndex for purpose ${kmParams.purpose}")
-    val hdCoin =
-      HDCoin(purpose = keyManager.kmParams.purpose,
-             coinType = HDUtil.getCoinType(keyManager.kmParams.network))
-    val newAccount = HDAccount(hdCoin, accountIndex)
+      s"Creating new account at index ${hdAccount.index} for purpose ${kmParams.purpose}")
+
     val xpub: ExtPublicKey = {
-      keyManager.deriveXPub(newAccount) match {
+      keyManager.deriveXPub(hdAccount) match {
         case Failure(exception) =>
           // this won't happen, because we're deriving from a privkey
           // this should really be changed in the method signature
@@ -166,7 +162,7 @@ sealed abstract class Wallet extends LockedWallet with UnlockedWalletApi {
         case Success(xpub) => xpub
       }
     }
-    val newAccountDb = AccountDb(xpub, newAccount)
+    val newAccountDb = AccountDb(xpub, hdAccount)
     val accountCreationF = accountDAO.create(newAccountDb)
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
