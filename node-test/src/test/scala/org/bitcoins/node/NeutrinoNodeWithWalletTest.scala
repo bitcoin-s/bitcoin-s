@@ -26,7 +26,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    if (isLinux || isWindows) {
+    if (isLinux) {
       withNeutrinoNodeFundedWalletBitcoind(test,
                                            callbacks,
                                            Some(BitcoindVersion.Experimental))
