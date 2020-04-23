@@ -17,6 +17,10 @@ case class OutgoingTransactionDAO()(
 
   override val table = TableQuery[OutgoingTransactionTable]
 
+  val txTable: slick.lifted.TableQuery[TransactionDAO#TransactionTable] = {
+    TransactionDAO().table.asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
+  }
+
   class OutgoingTransactionTable(tag: Tag)
       extends TxTable[OutgoingTransactionDb](tag, "wallet_outgoing_txs") {
 
@@ -70,7 +74,6 @@ case class OutgoingTransactionDAO()(
       primaryKey("pk_tx", sourceColumns = txIdBE)
 
     def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_,TransactionDb] = {
-      val txTable = TransactionDAO().table
       foreignKey("fk_underlying_tx",
                  sourceColumns = txIdBE,
                  targetTableQuery = txTable)(_.txIdBE)

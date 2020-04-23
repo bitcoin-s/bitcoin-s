@@ -28,10 +28,17 @@ case class SpendingInfoDAO()(
   import profile.api._
 
   /** The table inside our database we are inserting into */
-  override val table: profile.api.TableQuery[SpendingInfoTable] = profile.api.TableQuery[SpendingInfoTable]
+  override val table: slick.lifted.TableQuery[SpendingInfoTable] = profile.api.TableQuery[SpendingInfoTable]
 
-  private val addrTable = AddressDAO()(ec, appConfig).table
+  private lazy val addrTable: slick.lifted.TableQuery[AddressDAO#AddressTable] = {
+    AddressDAO()(ec, appConfig).table
+      .asInstanceOf[TableQuery[AddressDAO#AddressTable]]
+  }
 
+  private lazy val txTable: slick.lifted.TableQuery[IncomingTransactionDAO#IncomingTransactionTable] = {
+    IncomingTransactionDAO().table
+      .asInstanceOf[TableQuery[IncomingTransactionDAO#IncomingTransactionTable]]
+  }
   /**
     * Fetches all the incoming TXOs in our DB that are in
     * the given TX
@@ -196,7 +203,6 @@ case class SpendingInfoDAO()(
 
     /** All UTXOs must have a corresponding transaction in the wallet */
     def fk_incoming_txId: slick.lifted.ForeignKeyQuery[_,IncomingTransactionDb] = {
-      val txTable = IncomingTransactionDAO().table
       foreignKey("fk_incoming_txId",
                  sourceColumns = txid,
                  targetTableQuery = txTable)(_.txIdBE)

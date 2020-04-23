@@ -19,8 +19,16 @@ case class AddressDAO()(
   import profile.api._
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table: profile.api.TableQuery[AddressTable] = TableQuery[AddressTable]
-  private lazy val spendingInfoTable = SpendingInfoDAO().table
+  override val table: slick.lifted.TableQuery[AddressTable] = TableQuery[AddressTable]
+  private lazy val spendingInfoTable: slick.lifted.TableQuery[SpendingInfoDAO#SpendingInfoTable] = {
+    SpendingInfoDAO().table
+      .asInstanceOf[TableQuery[SpendingInfoDAO#SpendingInfoTable]]
+  }
+
+  private lazy val accountTable: slick.lifted.TableQuery[AccountDAO#AccountTable] = {
+    AccountDAO().table
+      .asInstanceOf[TableQuery[AccountDAO#AccountTable]]
+  }
 
   override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
     createAllNoAutoInc(ts, safeDatabase)
@@ -286,13 +294,13 @@ case class AddressDAO()(
        hashedPubKey,
        scriptType) <> (fromTuple, toTuple)
 
-    val accounts = AccountDAO().table
+
 
     // for some reason adding a type annotation here causes compile error
     def fk: ForeignKeyQuery[_, AccountDb] =
       foreignKey("fk_account",
                  sourceColumns = (purpose, accountCoin, accountIndex),
-                 targetTableQuery = accounts) { accountTable =>
+                 targetTableQuery = accountTable) { accountTable =>
         (accountTable.purpose, accountTable.coinType, accountTable.index)
       }
   }

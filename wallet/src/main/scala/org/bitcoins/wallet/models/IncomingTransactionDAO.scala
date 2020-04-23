@@ -12,7 +12,14 @@ case class IncomingTransactionDAO()(
     override val appConfig: WalletAppConfig)
     extends TxDAO[IncomingTransactionDb] {
   import profile.api._
-  override val table = TableQuery[IncomingTransactionTable]
+  override val table: slick.lifted.TableQuery[IncomingTransactionTable] = {
+    TableQuery[IncomingTransactionTable]
+  }
+
+  private lazy val txTable: slick.lifted.TableQuery[TransactionDAO#TransactionTable] = {
+    TransactionDAO().table
+      .asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
+  }
 
   class IncomingTransactionTable(tag: Tag)
       extends TxTable[IncomingTransactionDb](tag, "wallet_incoming_txs") {
@@ -40,7 +47,6 @@ case class IncomingTransactionDAO()(
       primaryKey("pk_tx", sourceColumns = txIdBE)
 
     def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_,TransactionDb] = {
-      val txTable = TransactionDAO().table
       foreignKey("fk_underlying_tx",
                  sourceColumns = txIdBE,
                  targetTableQuery = txTable)(_.txIdBE)
