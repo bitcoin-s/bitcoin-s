@@ -7,6 +7,7 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits, _}
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.TransactionTestUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
@@ -43,6 +44,32 @@ trait FundWalletUtil {
       txsF.flatMap(txs => wallet.processTransactions(txs, None))
 
     fundedWalletF.map(_.asInstanceOf[Wallet])
+  }
+
+  def fundAccountForWalletWithBitcoind(
+      amts: Vector[CurrencyUnit],
+      account: HDAccount,
+      wallet: Wallet,
+      bitcoind: BitcoindRpcClient)(
+      implicit ec: ExecutionContext): Future[Wallet] = {
+
+    val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
+      Vector.fill(3)(wallet.getNewAddress(account))
+    }
+
+    val txAndHashF = for {
+      addresses <- addressesF
+      addressAmountMap = addresses.zip(amts).toMap
+      txId <- bitcoind.sendMany(addressAmountMap)
+      tx <- bitcoind.getRawTransactionRaw(txId)
+      hashes <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
+    } yield (tx, hashes.head)
+
+    val fundedWalletF =
+      txAndHashF.map(txAndHash =>
+        wallet.processTransaction(txAndHash._1, Some(txAndHash._2)))
+
+    fundedWalletF.flatMap(_.map(_.asInstanceOf[Wallet]))
   }
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos */
