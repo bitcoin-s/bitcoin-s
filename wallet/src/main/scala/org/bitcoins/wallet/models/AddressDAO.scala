@@ -294,9 +294,6 @@ case class AddressDAO()(
        hashedPubKey,
        scriptType) <> (fromTuple, toTuple)
 
-
-
-    // for some reason adding a type annotation here causes compile error
     def fk: ForeignKeyQuery[_, AccountDb] =
       foreignKey("fk_account",
                  sourceColumns = (purpose, accountCoin, accountIndex),

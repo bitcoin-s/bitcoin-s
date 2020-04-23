@@ -35,7 +35,7 @@ trait ChainDbManagement extends DbManagement { _: JdbcProfileComponent =>
       .asInstanceOf[TableQuery[Table[_]]]
   }
 
-  override lazy val allTables = List(chainTable, filterHeaderTable, filterTable)
+  override lazy val allTables: List[TableQuery[Table[_]]] = List(chainTable, filterHeaderTable, filterTable)
 
   def createHeaderTable(createIfNotExists: Boolean = true): Future[Unit] = {
     createTable(chainTable, createIfNotExists)(ec)

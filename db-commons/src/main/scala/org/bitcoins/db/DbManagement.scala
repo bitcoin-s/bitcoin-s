@@ -21,9 +21,6 @@ trait DbManagement extends BitcoinSLogger { _: JdbcProfileComponent =>
 
   /** Creates all tables in our table list, in one SQL transaction */
   def createAll()(implicit ec: ExecutionContext): Future[Unit] = {
-    /*    val tables = allTables.map(_.baseTableRow.tableName).mkString(", ")
-    logger.debug(s"Creating tables: $tables")*/
-
     val query = {
       val querySeq =
         allTables

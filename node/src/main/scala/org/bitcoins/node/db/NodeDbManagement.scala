@@ -19,6 +19,6 @@ trait NodeDbManagement extends DbManagement { _: JdbcProfileComponent =>
       .asInstanceOf[TableQuery[Table[_]]]
   }
 
-  override val allTables = List(txTable)
+  override val allTables: List[TableQuery[Table[_]]] = List(txTable)
 
 }

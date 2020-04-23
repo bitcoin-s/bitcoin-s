@@ -46,7 +46,7 @@ trait WalletDbManagement extends DbManagement { _: JdbcProfileComponent =>
       .asInstanceOf[TableQuery[Table[_]]]
   }
 
-  override lazy val allTables = {
+  override lazy val allTables: List[TableQuery[Table[_]]] = {
     List(accountTable,
          addressTable,
          utxoTable,
