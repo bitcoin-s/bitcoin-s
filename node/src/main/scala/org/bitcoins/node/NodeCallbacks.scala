@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   */
 case class NodeCallbacks(
-    onCompactFilterReceived: Seq[OnCompactFilterReceived] = Seq.empty,
+    onCompactFilterReceived: Seq[OnCompactFiltersReceived] = Seq.empty,
     onTxReceived: Seq[OnTxReceived] = Seq.empty,
     onBlockReceived: Seq[OnBlockReceived] = Seq.empty,
     onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty,
@@ -68,18 +68,21 @@ case class NodeCallbacks(
           }))
   }
 
-  def executeOnCompactFilterReceivedCallbacks(
+  def executeOnCompactFiltersReceivedCallbacks(
       logger: MarkedLogger,
-      blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter)(
+      blockHashes: Vector[DoubleSha256Digest],
+      blockFilters: Vector[GolombFilter])(
       implicit ec: ExecutionContext): Future[Unit] = {
+    require(
+      blockHashes.size == blockFilters.size,
+      s"every filter must have a block hash, ${blockHashes.size} != ${blockFilters.size}")
     onCompactFilterReceived
       .foldLeft(FutureUtil.unit)((acc, callback) =>
         acc.flatMap(_ =>
-          callback(blockHash, blockFilter).recover {
+          callback(blockHashes, blockFilters).recover {
             case err: Throwable =>
               logger.error(
-                "onCompactFilterReceived Callback failed with error: ",
+                "onCompactFiltersReceived Callback failed with error: ",
                 err)
           }))
   }
@@ -115,7 +118,7 @@ object NodeCallbacks {
     NodeCallbacks(onMerkleBlockReceived = Seq(f))
 
   /** Constructs a set of callbacks that only acts on compact filter received */
-  def onCompactFilterReceived(f: OnCompactFilterReceived): NodeCallbacks =
+  def onCompactFilterReceived(f: OnCompactFiltersReceived): NodeCallbacks =
     NodeCallbacks(onCompactFilterReceived = Seq(f))
 
   /** Constructs a set of callbacks that only acts on block headers received */

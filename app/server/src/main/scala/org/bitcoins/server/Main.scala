@@ -156,9 +156,11 @@ object Main extends App {
     lazy val onTx: OnTxReceived = { tx =>
       wallet.processTransaction(tx, blockHash = None).map(_ => ())
     }
-    lazy val onCompactFilter: OnCompactFilterReceived = {
+    lazy val onCompactFilter: OnCompactFiltersReceived = {
       (blockHash, blockFilter) =>
-        wallet.processCompactFilter(blockHash, blockFilter).map(_ => ())
+        wallet
+          .processCompactFilter(blockHash.head, blockFilter.head)
+          .map(_ => ())
     }
     lazy val onBlock: OnBlockReceived = { block =>
       wallet.processBlock(block).map(_ => ())
