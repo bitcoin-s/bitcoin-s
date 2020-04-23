@@ -18,6 +18,9 @@ import scala.concurrent.{ExecutionContext, Future}
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
+  *
+  * @param currentFilterBatch holds the current batch of filters to be processed, after its size reaches
+  *                           chainConfig.filterBatchSize they will be processed and then emptied
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
@@ -99,12 +102,11 @@ case class DataMessageHandler(
           newChainApi <- chainApi.processFilter(filter)
           // If we are not syncing or our filter batch is full, process the filters
           _ <- if (!syncing || batchSizeFull) {
-            val blockHashes = currentFilterBatch.map(_.blockHash)
             val blockFilters = currentFilterBatch.map { filter =>
-              BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
+              (filter.blockHash,
+               BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
             }
             callbacks.executeOnCompactFiltersReceivedCallbacks(logger,
-                                                               blockHashes,
                                                                blockFilters)
           } else FutureUtil.unit
 
@@ -328,7 +330,7 @@ object DataMessageHandler {
 
   /** Callback for handling a received compact block filter */
   type OnCompactFiltersReceived =
-    (Vector[DoubleSha256Digest], Vector[GolombFilter]) => Future[Unit]
+    (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit]
 
   /** Callback for handling a received block header */
   type OnBlockHeadersReceived = Vector[BlockHeader] => Future[Unit]

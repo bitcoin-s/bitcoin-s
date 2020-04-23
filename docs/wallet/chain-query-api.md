@@ -91,21 +91,21 @@ val keyManager = keyManagerE match {
 // a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks
 def createCallbacks(
       processTransaction: Transaction => Future[Unit],
-      processCompactFilters: (Vector[DoubleSha256Digest], Vector[GolombFilter]) => Future[Unit],
+      processCompactFilters: (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit],
       processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onTx: OnTxReceived = { tx =>
       processTransaction(tx)
     }
     lazy val onCompactFilters: OnCompactFiltersReceived = {
-      (blockHashes, blockFilters) =>
-        processCompactFilters(blockHashes, blockFilters)
+      blockFilters =>
+        processCompactFilters(blockFilters)
     }
     lazy val onBlock: OnBlockReceived = { block =>
       processBlock(block)
     }
     NodeCallbacks(onTxReceived = Seq(onTx),
                   onBlockReceived = Seq(onBlock),
-                  onCompactFilterReceived = Seq(onCompactFilters))
+                  onCompactFiltersReceived = Seq(onCompactFilters))
   }
 
 // Here is a super simple example of a callback, this could be replaced with anything, from
@@ -118,8 +118,8 @@ val exampleProcessBlock = (block: Block) =>
     Future.successful(println(s"Received block: ${block.blockHeader.hashBE}"))
 
 val exampleProcessFilters =
-    (blockHashes: Vector[DoubleSha256Digest], filters: Vector[GolombFilter]) =>
-      Future.successful(println(s"Received filter: ${blockHashes.head.flip.hex} ${filters.head.hash.flip.hex}"))
+    (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
+      Future.successful(println(s"Received filter: ${filters.head._1.flip.hex} ${filters.head._2.hash.flip.hex}"))
 
 val exampleCallbacks =
     createCallbacks(exampleProcessTx, exampleProcessFilters, exampleProcessBlock)

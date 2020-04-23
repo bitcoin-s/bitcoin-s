@@ -56,17 +56,16 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- wallet.processBlock(block)
       } yield ()
     }
-    val onCompactFilter: OnCompactFiltersReceived = {
-      (blockHashes, blockFilters) =>
-        for {
-          wallet <- walletF
-          _ <- wallet.processCompactFilters(blockHashes, blockFilters)
-        } yield ()
+    val onCompactFilter: OnCompactFiltersReceived = { blockFilters =>
+      for {
+        wallet <- walletF
+        _ <- wallet.processCompactFilters(blockFilters)
+      } yield ()
     }
 
     NodeCallbacks(
       onBlockReceived = Seq(onBlock),
-      onCompactFilterReceived = Seq(onCompactFilter)
+      onCompactFiltersReceived = Seq(onCompactFilter)
     )
   }
 
