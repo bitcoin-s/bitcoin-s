@@ -26,6 +26,50 @@ class RescanHandlingTest extends BitcoinSWalletTest {
 
   behavior of "Wallet rescans"
 
+  it must "properly clear utxos and address for an account" in {
+    fixture: WalletWithBitcoind =>
+      val wallet = fixture.wallet
+
+      for {
+        accountDb <- wallet.getDefaultAccount()
+        account = accountDb.hdAccount
+        utxos <- wallet.spendingInfoDAO.findAllForAccount(account)
+        _ = assert(utxos.nonEmpty)
+
+        addresses <- wallet.addressDAO.findAllForAccount(account)
+        _ = assert(addresses.nonEmpty)
+
+        _ <- wallet.clearUtxosAndAddresses(account)
+
+        clearedUtxos <- wallet.spendingInfoDAO.findAllForAccount(account)
+        clearedAddresses <- wallet.addressDAO.findAllForAccount(account)
+      } yield {
+        assert(clearedUtxos.isEmpty)
+        assert(clearedAddresses.isEmpty)
+      }
+  }
+
+  it must "properly clear all utxos and address" in {
+    fixture: WalletWithBitcoind =>
+      val wallet = fixture.wallet
+
+      for {
+        utxos <- wallet.spendingInfoDAO.findAll()
+        _ = assert(utxos.nonEmpty)
+
+        addresses <- wallet.addressDAO.findAll()
+        _ = assert(addresses.nonEmpty)
+
+        _ <- wallet.clearAllUtxosAndAddresses()
+
+        clearedUtxos <- wallet.spendingInfoDAO.findAll()
+        clearedAddresses <- wallet.addressDAO.findAll()
+      } yield {
+        assert(clearedUtxos.isEmpty)
+        assert(clearedAddresses.isEmpty)
+      }
+  }
+
   val DEFAULT_ADDR_BATCH_SIZE = 10
   it must "be able to discover funds that belong to the wallet using WalletApi.rescanNeutrinoWallet" in {
     fixture: WalletWithBitcoind =>
@@ -38,7 +82,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         _ = assert(
           initBalance > CurrencyUnits.zero,
           s"Cannot run rescan test if our init wallet balance is zero!")
-        _ <- wallet.fullRescanNeurinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        _ <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == initBalance)

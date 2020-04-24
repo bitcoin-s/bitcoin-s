@@ -42,6 +42,14 @@ case class AddressDAO()(
       accountIndex: Int): Query[AddressTable, AddressDb, Seq] =
     table.filter(_.accountIndex === accountIndex)
 
+  def findAllForAccount(account: HDAccount): Future[Vector[AddressDb]] = {
+    val query = table
+      .filter(_.accountIndex === account.index)
+      .filter(_.accountCoin === account.coin.coinType)
+
+    database.run(query.result).map(_.toVector)
+  }
+
   /**
     * Finds the most recent change address in the wallet, if any
     */

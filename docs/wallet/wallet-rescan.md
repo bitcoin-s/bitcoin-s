@@ -55,7 +55,7 @@ val initBalanceF = for {
 val clearedWalletF = for {
   w <- walletF
   _ <- initBalanceF
-  clearedWallet <- w.clearUtxosAndAddresses()
+  clearedWallet <- w.clearAllUtxosAndAddresses()
   zeroBalance <- clearedWallet.getBalance()
 } yield {
   println(s"Balance after clearing utxos: ${zeroBalance}")
@@ -71,7 +71,7 @@ val addrBatchSize = 100
 //ok now that we have a cleared wallet, we need to rescan and find our fudns again!
 val rescannedBalanceF = for {
   w <- clearedWalletF
-  _ <- w.fullRescanNeurinoWallet(addrBatchSize)
+  _ <- w.fullRescanNeutrinoWallet(addrBatchSize)
   balanceAfterRescan <- w.getBalance()
 } yield {
   println(s"Wallet balance after rescan: ${balanceAfterRescan}")
