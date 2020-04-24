@@ -96,7 +96,7 @@ case class DataMessageHandler(
               if (!syncing) {
                 logger.info(s"We are synced")
               }
-              (currentFilterBatch.appended(filter), syncing)
+              (currentFilterBatch :+ filter, syncing)
             }
           }
           newChainApi <- chainApi.processFilter(filter)
