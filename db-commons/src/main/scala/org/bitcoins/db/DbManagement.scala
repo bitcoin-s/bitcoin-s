@@ -26,7 +26,7 @@ trait DbManagement extends BitcoinSLogger {
     * The above conditions are always the case when this is called in the current code base and will
     * stay that way so long as no one tries anything too fancy.
     */
-  implicit def tableQueryToWithSchema(
+  implicit protected def tableQueryToWithSchema(
       tableQuery: TableQuery[_]): TableQuery[Table[_]] = {
     tableQuery.asInstanceOf[TableQuery[Table[_]]]
   }

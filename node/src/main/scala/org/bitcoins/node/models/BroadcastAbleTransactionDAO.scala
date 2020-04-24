@@ -18,7 +18,7 @@ final case class BroadcastAbleTransactionDAO()(
 
   import profile.api._
 
-  val table: profile.api.TableQuery[BroadcastAbleTransactionTable] =
+  override val table: profile.api.TableQuery[BroadcastAbleTransactionTable] =
     profile.api.TableQuery[BroadcastAbleTransactionTable]
 
   /** Searches for a TX by its TXID */
