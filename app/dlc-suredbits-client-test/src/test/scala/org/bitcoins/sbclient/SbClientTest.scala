@@ -4,10 +4,12 @@ import org.bitcoins.commons.jsonmodels.eclair.{
   IncomingPaymentStatus,
   OutgoingPaymentStatus
 }
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.testkit.eclair.MockEclairClient
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalacheck.Gen
+import scodec.bits.ByteVector
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -101,6 +103,23 @@ class SbClientTest extends BitcoinSAsyncTest {
           .map { decrypted =>
             assert(
               decrypted == s"${exchange.toLongString}|${pair.toLowerString}|lastsig")
+          }
+    }
+  }
+
+  it should "successfully request and receive a public key" in {
+    forAllAsync(exchangeAndPairGen) {
+      case (exchange, pair) =>
+        SbClient
+          .getPublicKey(exchange, pair, server.endpoint)
+          .map { response =>
+            val hash = CryptoUtil.sha256(
+              ByteVector(
+                s"${exchange.toLongString}|${pair.toLowerString}|pubkey"
+                  .getBytes()))
+            val expected = ECPrivateKey(hash.bytes).schnorrPublicKey
+
+            assert(response == expected)
           }
     }
   }

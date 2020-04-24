@@ -6,9 +6,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import org.bitcoins.crypto.{AesCrypt, AesEncryptedData, AesKey}
-import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
+import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
+import org.bitcoins.crypto._
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.eclair.MockEclairClient
 import scodec.bits.ByteVector
@@ -51,21 +51,34 @@ class MockServer()(implicit ec: ExecutionContext) {
   val exchangeRegex: Regex =
     RegexUtil.noCaseOrRegex(Exchange.all.map(_.toLongString).:+("bitmex"))
   val tradingPairRegex: Regex = RegexUtil.noCaseOrRegex(TradingPair.all)
-  val requestTypeRegex: Regex = RegexUtil.noCaseOrRegex(RequestType.all)
+
+  val requestTypeRegex: Regex =
+    RegexUtil.noCaseOrRegex(RequestType.all :+ "PublicKey")
 
   def route: Route = {
     path(exchangeRegex / tradingPairRegex / requestTypeRegex) {
       case (exchangeStr, pairStr, requestTypeStr) =>
-        val data = Vector(exchangeStr, pairStr, requestTypeStr).mkString("|")
-        val encryptedF =
-          encryptData(data, MilliSatoshis(10000).toLnCurrencyUnit)
-        val responseF = encryptedF.map {
-          case (invoice, encrypted) =>
-            InvoiceAndDataResponse(invoice, encrypted).toJsonString
-        }
-        complete {
-          responseF.map { response =>
-            HttpEntity(ContentTypes.`application/json`, response)
+        if (requestTypeStr.toLowerCase == "publickey") {
+          val hash = CryptoUtil.sha256(
+            ByteVector(s"$exchangeStr|$pairStr|pubkey"
+              .getBytes()))
+          val pubKey = ECPrivateKey(hash.bytes).schnorrPublicKey
+
+          complete {
+            HttpEntity(ContentTypes.`text/plain(UTF-8)`, pubKey.hex)
+          }
+        } else {
+          val data = Vector(exchangeStr, pairStr, requestTypeStr).mkString("|")
+          val encryptedF =
+            encryptData(data, MilliSatoshis(10000).toLnCurrencyUnit)
+          val responseF = encryptedF.map {
+            case (invoice, encrypted) =>
+              InvoiceAndDataResponse(invoice, encrypted).toJsonString
+          }
+          complete {
+            responseF.map { response =>
+              HttpEntity(ContentTypes.`application/json`, response)
+            }
           }
         }
     } ~ path("ping") {

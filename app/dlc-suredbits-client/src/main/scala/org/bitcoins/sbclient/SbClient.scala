@@ -11,7 +11,8 @@ import org.bitcoins.crypto.{
   AesEncryptedData,
   AesKey,
   ECPublicKey,
-  SchnorrDigitalSignature
+  SchnorrDigitalSignature,
+  SchnorrPublicKey
 }
 import org.bitcoins.core.protocol.ln.{LnInvoice, PaymentPreimage}
 import org.bitcoins.eclair.rpc.api.EclairApi
@@ -34,6 +35,19 @@ object SbClient {
             .runFold(ByteString.empty)(_ ++ _)
             .map(payload => payload.decodeString(ByteString.UTF_8))
       )
+  }
+
+  def getPublicKey(
+      exchange: Exchange,
+      pair: TradingPair,
+      endpoint: String = "https://test.api.suredbits.com/dlc/v0")(
+      implicit system: ActorSystem): Future[SchnorrPublicKey] = {
+    val uri =
+      s"$endpoint/${exchange.toLongString}/${pair.toLowerString}/PublicKey"
+
+    import system.dispatcher
+
+    rawRestCall(uri).map(SchnorrPublicKey.fromHex)
   }
 
   def restCall(uri: Uri)(implicit system: ActorSystem): Future[JsValue] = {
