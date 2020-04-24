@@ -94,11 +94,13 @@ trait BitcoinSUtil {
     h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
 
-  lazy val isLinux: Boolean = scala.util.Properties.isLinux
+  private val osName = System.getProperty("os.name")
 
-  lazy val isMac: Boolean = scala.util.Properties.isMac
+  lazy val isLinux: Boolean = osName.startsWith("Linux")
 
-  lazy val isWindows: Boolean = scala.util.Properties.isWin
+  lazy val isMac: Boolean = osName.startsWith("Mac")
+
+  lazy val isWindows: Boolean = osName.startsWith("Windows")
 
   lazy val isCI: Boolean = {
     val prop = System.getProperty("TEST_COMMAND")
