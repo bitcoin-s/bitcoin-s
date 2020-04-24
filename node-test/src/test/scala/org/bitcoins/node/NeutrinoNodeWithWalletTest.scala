@@ -1,6 +1,7 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
+import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.networking.peer.DataMessageHandler.OnCompactFiltersReceived
@@ -26,12 +27,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    if (isLinux) {
+    // We need to disable the test on non-linux CI runs
+    // because we do not have a mac binary of the BIP 157
+    // compatible version of bitcoin core
+    val prop = System.getProperty("TEST_COMMAND")
+    val isCI = prop != null && prop.nonEmpty
+    if (isCI && !BitcoinSUtil.isLinux) {
+      FutureOutcome.succeeded
+    } else {
       withNeutrinoNodeFundedWalletBitcoind(test,
                                            callbacks,
                                            Some(BitcoindVersion.Experimental))
-    } else {
-      FutureOutcome.succeeded
     }
   }
 

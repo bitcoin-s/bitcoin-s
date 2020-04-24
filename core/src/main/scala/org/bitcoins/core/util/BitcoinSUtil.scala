@@ -94,6 +94,11 @@ trait BitcoinSUtil {
     h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
 
+  lazy val isLinux: Boolean = scala.util.Properties.isLinux
+
+  lazy val isMac: Boolean = scala.util.Properties.isMac
+
+  lazy val isWindows: Boolean = scala.util.Properties.isWin
 }
 
 object BitcoinSUtil extends BitcoinSUtil
