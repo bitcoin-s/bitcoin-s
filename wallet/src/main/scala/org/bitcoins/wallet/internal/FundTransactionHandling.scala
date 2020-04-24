@@ -1,8 +1,13 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.Sign
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransactionOutPoint,
+  Transaction,
+  TransactionOutput
+}
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -58,7 +63,24 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
       fromAccount: AccountDb,
       keyManagerOpt: Option[BIP39KeyManager],
       markAsReserved: Boolean = false): Future[BitcoinTxBuilder] = {
-    val utxosF = listUtxos(fromAccount.hdAccount)
+    val utxosF = for {
+      utxos <- listUtxos(fromAccount.hdAccount)
+
+      // Need to remove immature coinbase inputs
+      coinbaseUtxos = utxos.filter(_.outPoint == EmptyTransactionOutPoint)
+      confFs = coinbaseUtxos.map(
+        utxo =>
+          chainQueryApi
+            .getNumberOfConfirmations(utxo.blockHash.get)
+            .map((utxo, _)))
+      confs <- Future.sequence(confFs)
+      immatureCoinbases = confs
+        .filter {
+          case (_, confsOpt) =>
+            confsOpt.isDefined && confsOpt.get > Consensus.coinbaseMaturity
+        }
+        .map(_._1)
+    } yield utxos.diff(immatureCoinbases)
 
     val selectedUtxosF = for {
       walletUtxos <- utxosF
