@@ -215,9 +215,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         false
       case token: ScriptToken =>
         token.bytes.size match {
-          case size if (size == 0) => pushOp == OP_0
-          case size if (size == 1 && token.bytes.head == OP_1NEGATE.opCode) =>
-            pushOp == OP_1NEGATE
+          case size if (size == 0)     => pushOp == OP_0
           case size if (size <= 75)    => token.bytes.size == pushOp.toLong
           case size if (size <= 255)   => pushOp == OP_PUSHDATA1
           case size if (size <= 65535) => pushOp == OP_PUSHDATA2

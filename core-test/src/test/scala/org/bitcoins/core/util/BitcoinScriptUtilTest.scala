@@ -183,6 +183,20 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
       false)
   }
 
+  it must "determine that a script is not minimal push when pushing 4f (-1)" in {
+    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1),
+                                    ScriptConstant("81")) must be(false)
+  }
+
+  it must "determine that a script is minimal push when pushing 4f (79)" in {
+    BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1),
+                                    ScriptConstant("4f")) must be(true)
+  }
+
+  it must "determine that a script is minimal push when pushing OP_1NEGATE (-1)" in {
+    BitcoinScriptUtil.isMinimalPush(OP_1NEGATE, OP_1NEGATE) must be(true)
+  }
+
   it must "determine that a script is push only if it only contains pushing an empty script constant" in {
     BitcoinScriptUtil.isMinimalPush(OP_0, ScriptConstant("")) must be(true)
   }
