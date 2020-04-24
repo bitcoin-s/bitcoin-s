@@ -206,7 +206,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     val builder: () => Future[WalletWithBitcoind] =
       composeBuildersAndWrapFuture(
         builder = { () =>
-          createDefaultWallet(nodeApi, chainQueryApi)
+          BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi)
         },
         dependentBuilder = { (wallet: Wallet) =>
           createWalletWithBitcoind(wallet)
@@ -378,7 +378,9 @@ object BitcoinSWalletTest extends WalletLogger {
     val walletWithBitcoindV19F = for {
       bitcoind <- bitcoindF
       api <- nodeChainQueryApiF
-      wallet <- createDefaultWallet(api.nodeApi, api.chainQueryApi, extraConfig)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(api.nodeApi,
+                                                         api.chainQueryApi,
+                                                         extraConfig)
 
       //we need to create a promise so we can inject the wallet with the callback
       //after we have created it into SyncUtil.getNodeChainQueryApiWalletCallback
@@ -471,7 +473,7 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
-      wallet <- createDefaultWallet(nodeApi, chainQueryApi)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi)
       withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -485,7 +487,7 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
-      wallet <- createDefaultWallet(nodeApi, chainQueryApi)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -495,17 +497,48 @@ object BitcoinSWalletTest extends WalletLogger {
   def fundWalletWithBitcoind[T <: WalletWithBitcoind](pair: T)(
       implicit ec: ExecutionContext): Future[T] = {
     val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
+
+    val defaultAcctAmts = Vector(1.bitcoin, 2.bitcoin, 3.bitcoin)
+    val expectedDefaultAmt = defaultAcctAmts.fold(CurrencyUnits.zero)(_ + _)
+    val account1Amt = Vector(Bitcoins(0.2), Bitcoins(0.3), Bitcoins(0.5))
+    val expectedAccount1Amt = account1Amt.fold(CurrencyUnits.zero)(_ + _)
+
+    val defaultAccount = wallet.walletConfig.defaultAccount
+    val fundedDefaultAccountWalletF =
+      FundWalletUtil.fundAccountForWalletWithBitcoind(
+        amts = defaultAcctAmts,
+        account = defaultAccount,
+        wallet = wallet,
+        bitcoind = bitcoind
+      )
+
+    val hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+    val fundedAccount1WalletF = for {
+      fundedDefaultAcct <- fundedDefaultAccountWalletF
+      fundedAcct1 <- FundWalletUtil.fundAccountForWalletWithBitcoind(
+        amts = account1Amt,
+        account = hdAccount1,
+        wallet = fundedDefaultAcct,
+        bitcoind = bitcoind
+      )
+    } yield fundedAcct1
+
+    //sanity check to make sure we have money
     for {
-      addr <- wallet.getNewAddress()
-      txId <- bitcoind.sendToAddress(addr, initialFunds)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
-      tx <- bitcoind.getRawTransaction(txId)
-      _ <- wallet.processTransaction(tx.hex, tx.blockhash)
-      balance <- wallet.getBalance()
-    } yield {
-      assert(balance >= initialFunds)
-      pair
-    }
+      fundedWallet <- fundedAccount1WalletF
+      balance <- fundedWallet.getBalance(defaultAccount)
+      _ = require(
+        balance == expectedDefaultAmt,
+        s"Funding wallet fixture failed to fund the wallet, got balance=$balance expected=$expectedDefaultAmt")
+
+      account1Balance <- fundedWallet.getBalance(hdAccount1)
+      _ = require(
+        account1Balance == expectedAccount1Amt,
+        s"Funding wallet fixture failed to fund account 1, " +
+          s"got balance=$hdAccount1 expected=$expectedAccount1Amt"
+      )
+
+    } yield pair
   }
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(
