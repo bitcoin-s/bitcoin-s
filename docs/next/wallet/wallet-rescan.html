@@ -98,7 +98,7 @@ an API with the ability to query for filters.</p>
 <span class="hljs-keyword">val</span> clearedWalletF = <span class="hljs-keyword">for</span> {
   w &lt;- walletF
   _ &lt;- initBalanceF
-  clearedWallet &lt;- w.clearUtxosAndAddresses()
+  clearedWallet &lt;- w.clearAllUtxosAndAddresses()
   zeroBalance &lt;- clearedWallet.getBalance()
 } <span class="hljs-keyword">yield</span> {
   println(<span class="hljs-string">s"Balance after clearing utxos: <span class="hljs-subst">${zeroBalance}</span>"</span>)
@@ -114,7 +114,7 @@ an API with the ability to query for filters.</p>
 <span class="hljs-comment">//ok now that we have a cleared wallet, we need to rescan and find our fudns again!</span>
 <span class="hljs-keyword">val</span> rescannedBalanceF = <span class="hljs-keyword">for</span> {
   w &lt;- clearedWalletF
-  _ &lt;- w.fullRescanNeurinoWallet(addrBatchSize)
+  _ &lt;- w.fullRescanNeutrinoWallet(addrBatchSize)
   balanceAfterRescan &lt;- w.getBalance()
 } <span class="hljs-keyword">yield</span> {
   println(<span class="hljs-string">s"Wallet balance after rescan: <span class="hljs-subst">${balanceAfterRescan}</span>"</span>)
