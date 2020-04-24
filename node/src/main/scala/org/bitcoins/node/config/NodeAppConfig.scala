@@ -18,7 +18,7 @@ case class NodeAppConfig(
     private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with NodeDbManagement
-    with JdbcProfileComponent {
+    with JdbcProfileComponent[NodeAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = "node"
   override protected[bitcoins] type ConfigType = NodeAppConfig

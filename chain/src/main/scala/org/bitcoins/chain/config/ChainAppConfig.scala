@@ -19,7 +19,7 @@ case class ChainAppConfig(
     private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with ChainDbManagement
-    with JdbcProfileComponent {
+    with JdbcProfileComponent[ChainAppConfig] {
 
   override protected[bitcoins] def configOverrides: List[Config] = confs.toList
   override protected[bitcoins] def moduleName: String = "chain"

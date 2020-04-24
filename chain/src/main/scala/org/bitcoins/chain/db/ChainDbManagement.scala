@@ -14,28 +14,25 @@ import scala.concurrent.{ExecutionContext, Future}
   * Responsible for creating and destroying database
   * tables inside of the Chain project.
   */
-trait ChainDbManagement extends DbManagement { _: JdbcProfileComponent =>
+trait ChainDbManagement extends DbManagement {
+  _: JdbcProfileComponent[ChainAppConfig] =>
   import profile.api._
 
   def ec: ExecutionContext
 
-  override def appConfig: ChainAppConfig
-
   private lazy val chainTable: TableQuery[Table[_]] =
-    BlockHeaderDAO()(ec, appConfig.asInstanceOf[ChainAppConfig]).table
-      .asInstanceOf[TableQuery[Table[_]]]
+    BlockHeaderDAO()(ec, appConfig).table
 
   private lazy val filterHeaderTable: TableQuery[Table[_]] = {
-    CompactFilterHeaderDAO()(ec, appConfig.asInstanceOf[ChainAppConfig]).table
-      .asInstanceOf[TableQuery[Table[_]]]
+    CompactFilterHeaderDAO()(ec, appConfig).table
   }
 
   private lazy val filterTable: TableQuery[Table[_]] = {
-    CompactFilterDAO()(ec, appConfig.asInstanceOf[ChainAppConfig]).table
-      .asInstanceOf[TableQuery[Table[_]]]
+    CompactFilterDAO()(ec, appConfig).table
   }
 
-  override lazy val allTables: List[TableQuery[Table[_]]] = List(chainTable, filterHeaderTable, filterTable)
+  override lazy val allTables: List[TableQuery[Table[_]]] =
+    List(chainTable, filterHeaderTable, filterTable)
 
   def createHeaderTable(createIfNotExists: Boolean = true): Future[Unit] = {
     createTable(chainTable, createIfNotExists)(ec)

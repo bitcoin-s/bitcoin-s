@@ -21,7 +21,7 @@ class DbManagementTest extends BitcoinSAsyncTest {
 
   def createChainDbManagement(
       chainAppConfig: ChainAppConfig): ChainDbManagement =
-    new ChainDbManagement with JdbcProfileComponent {
+    new ChainDbManagement with JdbcProfileComponent[ChainAppConfig] {
       override val ec: ExecutionContext = system.dispatcher
 
       override def appConfig: ChainAppConfig = chainAppConfig
@@ -29,14 +29,14 @@ class DbManagementTest extends BitcoinSAsyncTest {
 
   def createWalletDbManagement(
       walletAppConfig: WalletAppConfig): WalletDbManagement =
-    new WalletDbManagement with JdbcProfileComponent {
+    new WalletDbManagement with JdbcProfileComponent[WalletAppConfig] {
       override val ec: ExecutionContext = system.dispatcher
 
       override def appConfig: WalletAppConfig = walletAppConfig
     }
 
   def createNodeDbManagement(nodeAppConfig: NodeAppConfig): NodeDbManagement =
-    new NodeDbManagement with JdbcProfileComponent {
+    new NodeDbManagement with JdbcProfileComponent[NodeAppConfig] {
       override val ec: ExecutionContext = system.dispatcher
 
       override def appConfig: NodeAppConfig = nodeAppConfig

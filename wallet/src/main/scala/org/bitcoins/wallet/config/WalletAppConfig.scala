@@ -22,7 +22,7 @@ case class WalletAppConfig(
     private val conf: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with WalletDbManagement
-    with JdbcProfileComponent {
+    with JdbcProfileComponent[WalletAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
   override protected[bitcoins] def moduleName: String = "wallet"
   override protected[bitcoins] type ConfigType = WalletAppConfig

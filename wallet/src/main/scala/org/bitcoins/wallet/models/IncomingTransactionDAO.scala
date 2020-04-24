@@ -16,9 +16,9 @@ case class IncomingTransactionDAO()(
     TableQuery[IncomingTransactionTable]
   }
 
-  private lazy val txTable: profile.api.TableQuery[TransactionDAO#TransactionTable] = {
+  private lazy val txTable: profile.api.TableQuery[
+    TransactionDAO#TransactionTable] = {
     TransactionDAO().table
-      .asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
   }
 
   class IncomingTransactionTable(tag: Tag)
@@ -46,7 +46,7 @@ case class IncomingTransactionDAO()(
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)
 
-    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_,TransactionDb] = {
+    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_, TransactionDb] = {
       foreignKey("fk_underlying_tx",
                  sourceColumns = txIdBE,
                  targetTableQuery = txTable)(_.txIdBE)

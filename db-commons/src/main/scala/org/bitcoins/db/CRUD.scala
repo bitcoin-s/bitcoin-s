@@ -11,9 +11,9 @@ import slick.jdbc.{JdbcProfile}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-trait JdbcProfileComponent extends BitcoinSLogger {
+trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
 
-  def appConfig: AppConfig
+  def appConfig: ConfigType
 
   /**
     * The configuration details for connecting/using the database for our projects
@@ -97,9 +97,29 @@ trait JdbcProfileComponent extends BitcoinSLogger {
 abstract class CRUD[T, PrimaryKeyType](
     implicit private val ec: ExecutionContext,
     override val appConfig: AppConfig)
-    extends JdbcProfileComponent {
+    extends JdbcProfileComponent[AppConfig] {
 
   import profile.api._
+
+  import scala.language.implicitConversions
+
+  /** We need to cast from TableQuery's of internal types (e.g. AddressDAO#AddressTable) to external
+    * versions of them (e.g. AddressDAO().table). You'll notice that although the latter is a subtype
+    * of the first, this requires a cast since TableQuery is not covariant in its type parameter.
+    *
+    * However, since Query is covariant in its first type parameter, I believe the cast from
+    * TableQuery[T1] to TableQuery[T2] will always be safe so long as T1 is a subtype of T2
+    * AND T1#TableElementType is equal to T2#TableElementType.
+    *
+    * The above conditions are always the case when this is called within DAOs as it is only
+    * ever used for things of the form TableQuery[XDAO().table] -> TableQuery[XDAO#XTable].
+    */
+  implicit def tableQuerySafeSubtypeCast[
+      SpecificT <: slick.lifted.AbstractTable[_],
+      SomeT <: SpecificT](
+      tableQuery: TableQuery[SomeT]): TableQuery[SpecificT] = {
+    tableQuery.asInstanceOf[TableQuery[SpecificT]]
+  }
 
   /** The table inside our database we are inserting into */
   val table: profile.api.TableQuery[_ <: profile.api.Table[T]]
@@ -220,7 +240,7 @@ abstract class CRUD[T, PrimaryKeyType](
   def count(): Future[Int] = safeDatabase.run(table.length.result)
 }
 
-case class SafeDatabase(jdbcProfile: JdbcProfileComponent)
+case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
     extends BitcoinSLogger {
 
   import jdbcProfile.database

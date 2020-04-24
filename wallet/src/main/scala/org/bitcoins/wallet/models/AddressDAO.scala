@@ -1,8 +1,22 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
-import org.bitcoins.core.hd.{HDAccount, HDChainType, HDCoinType, HDPurpose, HDPurposes, LegacyHDPath, NestedSegWitHDPath, SegWitHDPath}
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress, P2PKHAddress, P2SHAddress}
+import org.bitcoins.core.hd.{
+  HDAccount,
+  HDChainType,
+  HDCoinType,
+  HDPurpose,
+  HDPurposes,
+  LegacyHDPath,
+  NestedSegWitHDPath,
+  SegWitHDPath
+}
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  P2PKHAddress,
+  P2SHAddress
+}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.db.{CRUD, SlickUtil}
@@ -19,15 +33,16 @@ case class AddressDAO()(
   import profile.api._
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table: profile.api.TableQuery[AddressTable] = TableQuery[AddressTable]
-  private lazy val spendingInfoTable: profile.api.TableQuery[SpendingInfoDAO#SpendingInfoTable] = {
+  override val table: profile.api.TableQuery[AddressTable] =
+    TableQuery[AddressTable]
+  private lazy val spendingInfoTable: profile.api.TableQuery[
+    SpendingInfoDAO#SpendingInfoTable] = {
     SpendingInfoDAO().table
-      .asInstanceOf[TableQuery[SpendingInfoDAO#SpendingInfoTable]]
   }
 
-  private lazy val accountTable: slick.lifted.TableQuery[AccountDAO#AccountTable] = {
+  private lazy val accountTable: slick.lifted.TableQuery[
+    AccountDAO#AccountTable] = {
     AccountDAO().table
-      .asInstanceOf[TableQuery[AccountDAO#AccountTable]]
   }
 
   override def createAll(ts: Vector[AddressDb]): Future[Vector[AddressDb]] =
@@ -82,10 +97,13 @@ case class AddressDAO()(
   }
 
   def getUnusedAddresses: Future[Vector[AddressDb]] = {
-    val query: slick.lifted.Query[(AddressTable,_),
-        (AddressTable#TableElementType, Option[SpendingInfoDb]), Seq] = {
+    val query: slick.lifted.Query[
+      (AddressTable, _),
+      (AddressTable#TableElementType, Option[SpendingInfoDb]),
+      Seq] = {
       val joined =
-        table.joinLeft(spendingInfoTable)
+        table
+          .joinLeft(spendingInfoTable)
           .on(_.scriptPubKey === _.scriptPubKey)
       joined.filter(_._2.isEmpty)
     }

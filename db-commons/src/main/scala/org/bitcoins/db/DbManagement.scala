@@ -6,8 +6,30 @@ import org.flywaydb.core.api.FlywayException
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait DbManagement extends BitcoinSLogger { _: JdbcProfileComponent =>
+trait DbManagement extends BitcoinSLogger {
+  _: JdbcProfileComponent[AppConfig] =>
   import profile.api._
+
+  import scala.language.implicitConversions
+
+  /** Internally, slick defines the schema member as
+    *
+    * def schema: SchemaDescription = buildTableSchemaDescription(q.shaped.value.asInstanceOf[Table[_]])
+    *
+    * we need to cast between TableQuery's of specific table types to the more generic TableQuery[Table[_]]
+    * to get methods in this trait working as they require schema (which essentially does this cast anyway)
+    *
+    * This cast is needed because TableQuery is not covariant in its type parameter. However, since Query
+    * is covariant in its first type parameter, I believe the cast from TableQuery[T1] to TableQuery[T2] will
+    * always be safe so long as T1 is a subtype of T2 AND T1#TableElementType is equal to T2#TableElementType.
+    *
+    * The above conditions are always the case when this is called in the current code base and will
+    * stay that way so long as no one tries anything too fancy.
+    */
+  implicit def tableQueryToWithSchema(
+      tableQuery: TableQuery[_]): TableQuery[Table[_]] = {
+    tableQuery.asInstanceOf[TableQuery[Table[_]]]
+  }
 
   def allTables: List[TableQuery[Table[_]]]
 
