@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutPoint,
@@ -76,7 +77,7 @@ trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
       immatureCoinbases = confs
         .filter {
           case (_, confsOpt) =>
-            confsOpt.isDefined && confsOpt.get > 100
+            confsOpt.isDefined && confsOpt.get > Consensus.coinbaseMaturity
         }
         .map(_._1)
     } yield utxos.diff(immatureCoinbases)

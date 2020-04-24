@@ -24,7 +24,7 @@ case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
   def ==(outPoint: TransactionOutPoint): Boolean =
     txId == outPoint.txId && vout == outPoint.vout
 
-  def !==(outPoint: TransactionOutPoint): Boolean =
+  def !=(outPoint: TransactionOutPoint): Boolean =
     !(this == outPoint)
 }
 
