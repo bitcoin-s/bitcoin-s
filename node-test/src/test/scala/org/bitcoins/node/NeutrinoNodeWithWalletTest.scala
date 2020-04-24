@@ -30,9 +30,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     // We need to disable the test on non-linux CI runs
     // because we do not have a mac binary of the BIP 157
     // compatible version of bitcoin core
-    val prop = System.getProperty("TEST_COMMAND")
-    val isCI = prop != null && prop.nonEmpty
-    if (isCI && !BitcoinSUtil.isLinux) {
+    if (BitcoinSUtil.isCI && !BitcoinSUtil.isLinux) {
       FutureOutcome.succeeded
     } else {
       withNeutrinoNodeFundedWalletBitcoind(test,

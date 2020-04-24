@@ -99,6 +99,11 @@ trait BitcoinSUtil {
   lazy val isMac: Boolean = scala.util.Properties.isMac
 
   lazy val isWindows: Boolean = scala.util.Properties.isWin
+
+  lazy val isCI: Boolean = {
+    val prop = System.getProperty("TEST_COMMAND")
+    prop != null && prop.nonEmpty
+  }
 }
 
 object BitcoinSUtil extends BitcoinSUtil
