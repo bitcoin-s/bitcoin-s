@@ -28,7 +28,7 @@ import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutput,
   Transaction
 }
-import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -496,7 +496,10 @@ class RoutesSpec
       (mockWalletApi.isEmpty: () => Future[Boolean])
         .expects()
         .returning(Future.successful(false))
-      (mockWalletApi.rescanNeutrinoWallet _)
+      (mockWalletApi
+        .rescanNeutrinoWallet(_: Option[BlockStamp],
+                              _: Option[BlockStamp],
+                              _: Int))
         .expects(None, None, 100)
         .returning(FutureUtil.unit)
 
@@ -512,7 +515,10 @@ class RoutesSpec
       (mockWalletApi.isEmpty: () => Future[Boolean])
         .expects()
         .returning(Future.successful(false))
-      (mockWalletApi.rescanNeutrinoWallet _)
+      (mockWalletApi
+        .rescanNeutrinoWallet(_: Option[BlockStamp],
+                              _: Option[BlockStamp],
+                              _: Int))
         .expects(
           Some(BlockTime(
             ZonedDateTime.of(2018, 10, 27, 12, 34, 56, 0, ZoneId.of("UTC")))),
@@ -533,7 +539,10 @@ class RoutesSpec
       (mockWalletApi.isEmpty: () => Future[Boolean])
         .expects()
         .returning(Future.successful(false))
-      (mockWalletApi.rescanNeutrinoWallet _)
+      (mockWalletApi
+        .rescanNeutrinoWallet(_: Option[BlockStamp],
+                              _: Option[BlockStamp],
+                              _: Int))
         .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100)
         .returning(FutureUtil.unit)
 
@@ -551,7 +560,10 @@ class RoutesSpec
       (mockWalletApi.isEmpty: () => Future[Boolean])
         .expects()
         .returning(Future.successful(false))
-      (mockWalletApi.rescanNeutrinoWallet _)
+      (mockWalletApi
+        .rescanNeutrinoWallet(_: Option[BlockStamp],
+                              _: Option[BlockStamp],
+                              _: Int))
         .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100)
         .returning(FutureUtil.unit)
 
@@ -600,7 +612,10 @@ class RoutesSpec
       (mockWalletApi.isEmpty: () => Future[Boolean])
         .expects()
         .returning(Future.successful(false))
-      (mockWalletApi.rescanNeutrinoWallet _)
+      (mockWalletApi
+        .rescanNeutrinoWallet(_: Option[BlockStamp],
+                              _: Option[BlockStamp],
+                              _: Int))
         .expects(None, None, 55)
         .returning(FutureUtil.unit)
 

@@ -167,11 +167,20 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
 
+  /** Removes all utxos and addresses from the wallet account.
+    * Don't call this unless you are sure you can recover
+    * your wallet
+    */
+  def clearUtxosAndAddresses(account: HDAccount): Future[WalletApi]
+
+  def clearUtxosAndAddresses(): Future[WalletApi] =
+    clearUtxosAndAddresses(walletConfig.defaultAccount)
+
   /** Removes all utxos and addresses from the wallet.
     * Don't call this unless you are sure you can recover
     * your wallet
-    * */
-  def clearUtxosAndAddresses(): Future[WalletApi]
+    */
+  def clearAllUtxosAndAddresses(): Future[WalletApi]
 
   /**
     * Gets a new external address with the specified
@@ -358,16 +367,32 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     * @param addressBatchSize how many addresses to match in a single pass
     */
   def rescanNeutrinoWallet(
+      account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[Unit]
 
+  def rescanNeutrinoWallet(
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      addressBatchSize: Int): Future[Unit] =
+    rescanNeutrinoWallet(account = walletConfig.defaultAccount,
+                         startOpt = startOpt,
+                         endOpt = endOpt,
+                         addressBatchSize = addressBatchSize)
+
   /** Helper method to rescan the ENTIRE blockchain. */
-  def fullRescanNeurinoWallet(addressBatchSize: Int): Future[Unit] = {
-    rescanNeutrinoWallet(startOpt = None,
+  def fullRescanNeutrinoWallet(addressBatchSize: Int): Future[Unit] =
+    fullRescanNeutrinoWallet(account = walletConfig.defaultAccount,
+                             addressBatchSize = addressBatchSize)
+
+  def fullRescanNeutrinoWallet(
+      account: HDAccount,
+      addressBatchSize: Int): Future[Unit] =
+    rescanNeutrinoWallet(account = account,
+                         startOpt = None,
                          endOpt = None,
                          addressBatchSize = addressBatchSize)
-  }
 
   /**
     * Recreates the account using BIP-44 approach

@@ -298,6 +298,17 @@ private[wallet] trait AddressHandling extends WalletLogger {
     getNewAddressHelper(account, HDChainType.Change)
   }
 
+  def getNewChangeAddress(account: HDAccount): Future[BitcoinAddress] = {
+    val accountDbOptF = findAccount(account)
+    accountDbOptF.flatMap {
+      case Some(accountDb) => getNewChangeAddress(accountDb)
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=$account"))
+    }
+  }
+
   /** @inheritdoc */
   override def getAddressInfo(
       address: BitcoinAddress): Future[Option[AddressInfo]] = {

@@ -113,16 +113,26 @@ case class SpendingInfoDAO()(
     database.run(query.result).map(_.toVector)
   }
 
+  private def filterUtxosByAccount(
+      utxos: Vector[SpendingInfoDb],
+      hdAccount: HDAccount): Vector[SpendingInfoDb] = {
+    utxos.filter(
+      utxo =>
+        HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
+                                account = hdAccount))
+  }
+
   /** Finds all utxos for a given account */
   def findAllUnspentForAccount(
       hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
     val allUtxosF = findAllUnspent()
-    allUtxosF.map { allUtxos =>
-      allUtxos.filter(
-        utxo =>
-          HDAccount.isSameAccount(bip32Path = utxo.privKeyPath,
-                                  account = hdAccount))
-    }
+    allUtxosF.map(filterUtxosByAccount(_, hdAccount))
+  }
+
+  def findAllForAccount(
+      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+    val allUtxosF = findAll()
+    allUtxosF.map(filterUtxosByAccount(_, hdAccount))
   }
 
   /** Enumerates all TX outputs in the wallet with the state
