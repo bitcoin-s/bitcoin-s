@@ -104,14 +104,13 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       scriptPubKeys = utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
         .map(_.scriptPubKey)
         .toSet
-      processFs = blockFilters.map {
+      _ <- FutureUtil.sequentially(blockFilters) {
         case (blockHash, blockFilter) =>
           val matcher = SimpleFilterMatcher(blockFilter)
           if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
             nodeApi.downloadBlocks(Vector(blockHash))
           } else FutureUtil.unit
       }
-      _ <- Future.sequence(processFs)
     } yield {
       this
     }
