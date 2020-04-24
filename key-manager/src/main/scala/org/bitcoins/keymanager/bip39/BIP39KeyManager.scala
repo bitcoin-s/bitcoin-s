@@ -1,12 +1,11 @@
 package org.bitcoins.keymanager.bip39
 
 import java.nio.file.Files
-import java.time.{ZoneId, ZonedDateTime}
 
 import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.{HDAccount, HDPath}
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, TimeUtil}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.util.HDUtil
 import scodec.bits.BitVector
@@ -63,9 +62,6 @@ case class BIP39KeyManager(
 object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
   val badPassphrase = AesPassword.fromString("changeMe").get
 
-  private def getCurrentTimeUTC: Long =
-    ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
-
   /** Initializes the mnemonic seed and saves it to file */
   override def initializeWithEntropy(
       entropy: BitVector,
@@ -76,7 +72,7 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
     val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=${seedPath}")
 
-    val time = getCurrentTimeUTC
+    val time = TimeUtil.currentEpochSecond
 
     val writtenToDiskE: CompatEither[KeyManagerInitializeError, KeyManager] =
       if (Files.notExists(seedPath)) {

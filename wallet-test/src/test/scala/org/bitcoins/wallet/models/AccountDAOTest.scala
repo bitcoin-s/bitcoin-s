@@ -2,6 +2,7 @@ package org.bitcoins.wallet.models
 
 import java.time.{ZoneId, ZonedDateTime}
 
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
@@ -18,9 +19,7 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
         val xpub = CryptoGenerators.extPublicKey.sampleSome
 
         val accountDb =
-          AccountDb(xpub,
-                    account,
-                    ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond)
+          AccountDb(xpub, account, TimeUtil.currentEpochSecond)
         accountDAO.create(accountDb)
       }
       found <- accountDAO.read(
@@ -38,9 +37,7 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
         val xpub = CryptoGenerators.extPublicKey.sampleSome
 
         val accountDb =
-          AccountDb(xpub,
-                    account,
-                    ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond)
+          AccountDb(xpub, account, TimeUtil.currentEpochSecond)
         accountDAO.create(accountDb)
       }
       found <- accountDAO.findByAccount(account)

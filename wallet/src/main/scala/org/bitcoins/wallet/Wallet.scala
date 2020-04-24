@@ -1,7 +1,5 @@
 package org.bitcoins.wallet
 
-import java.time.{ZoneId, ZonedDateTime}
-
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
@@ -9,11 +7,8 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState.{
@@ -334,7 +329,7 @@ abstract class Wallet
         case Success(xpub) => xpub
       }
     }
-    val newAccountDb = AccountDb(xpub, hdAccount, Wallet.getCurrentTimeUTC)
+    val newAccountDb = AccountDb(xpub, hdAccount, TimeUtil.currentEpochSecond)
     val accountCreationF = accountDAO.create(newAccountDb)
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
@@ -366,9 +361,6 @@ object Wallet extends WalletLogger {
     WalletImpl(keyManager, nodeApi, chainQueryApi, creationTime)
   }
 
-  private def getCurrentTimeUTC: Long =
-    ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond
-
   /** Creates the level 0 account for the given HD purpose */
   private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
       implicit walletAppConfig: WalletAppConfig,
@@ -379,7 +371,7 @@ object Wallet extends WalletLogger {
     val account = HDAccount(coin = coin, index = 0)
     // safe since we're deriving from a priv
     val xpub = keyManager.deriveXPub(account).get
-    val accountDb = AccountDb(xpub, account, getCurrentTimeUTC)
+    val accountDb = AccountDb(xpub, account, TimeUtil.currentEpochSecond)
     logger.debug(
       s"Creating account with constant prefix ${keyManager.kmParams.purpose}")
     wallet.accountDAO

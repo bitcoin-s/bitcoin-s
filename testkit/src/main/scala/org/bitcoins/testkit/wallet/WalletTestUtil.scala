@@ -1,7 +1,5 @@
 package org.bitcoins.testkit.wallet
 
-import java.time.{ZoneId, ZonedDateTime}
-
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
@@ -19,7 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
-import org.bitcoins.core.util.{CryptoUtil, NumberUtil}
+import org.bitcoins.core.util.{CryptoUtil, NumberUtil, TimeUtil}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
@@ -87,14 +85,12 @@ object WalletTestUtil {
   }
 
   def firstAccountDb: AccountDb =
-    AccountDb(freshXpub(),
-              defaultHdAccount,
-              ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond)
+    AccountDb(freshXpub(), defaultHdAccount, TimeUtil.currentEpochSecond)
 
   def nestedSegWitAccountDb: AccountDb =
     AccountDb(freshXpub(),
               HDAccount(HDCoin(HDPurposes.NestedSegWit, hdCoinType), 0),
-              ZonedDateTime.now(ZoneId.of("UTC")).toEpochSecond)
+              TimeUtil.currentEpochSecond)
 
   private def randomScriptWitness: ScriptWitness =
     P2WPKHWitnessV0(freshXpub().key)

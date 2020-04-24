@@ -229,4 +229,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
     chainApiFromDb().flatMap(_.getNumberOfConfirmations(blockHashOpt))
 
+  override def epochSecondToBlockHeight(time: Long): Future[Int] =
+    chainApiFromDb().flatMap(_.epochSecondToBlockHeight(time))
+
 }

@@ -123,6 +123,9 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
                          blockHash = testBlockHash,
                          blockHeight = 1))
       })
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+      Future.successful(0)
   }
 
   /** Lets you customize the parameters for the created wallet */
@@ -289,6 +292,9 @@ object BitcoinSWalletTest extends WalletLogger {
         startHeight: Int,
         endHeight: Int): Future[Vector[FilterResponse]] =
       Future.successful(Vector.empty)
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+      Future.successful(0)
   }
 
   sealed trait WalletWithBitcoind {

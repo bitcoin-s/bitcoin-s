@@ -7,6 +7,7 @@ import org.bitcoins.chain.models._
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -414,9 +415,12 @@ case class ChainHandler(
             .getOrElse(
               throw UnknownBlockHash(s"Unknown block hash ${blockHash.hash}"))
         }
-      case blockTime: BlockStamp.BlockTime =>
-        blockHeaderDAO.findClosestToTime(time = blockTime.time).map(_.height)
+      case _: BlockStamp.BlockTime =>
+        throw new RuntimeException("Cannot query by block time")
     }
+
+  override def epochSecondToBlockHeight(time: Long): Future[Int] =
+    blockHeaderDAO.findClosestToTime(time = UInt32(time)).map(_.height)
 
   /** @inheritdoc */
   override def getBlockHeight(

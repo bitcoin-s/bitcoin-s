@@ -41,6 +41,8 @@ trait ChainQueryApi {
       startHeight: Int,
       endHeight: Int): Future[Vector[FilterResponse]]
 
+  def epochSecondToBlockHeight(time: Long): Future[Int]
+
 }
 
 object ChainQueryApi {
