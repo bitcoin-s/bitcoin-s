@@ -1,13 +1,55 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.wallet.config._
-import slick.lifted.TableQuery
+import slick.lifted.{PrimaryKey, ProvenShape}
 
 import scala.concurrent.ExecutionContext
 
 case class IncomingTransactionDAO()(
     implicit val ec: ExecutionContext,
-    val appConfig: WalletAppConfig)
-    extends TxDAO[IncomingTransactionDb, IncomingTransactionTable] {
-  override val table = TableQuery[IncomingTransactionTable]
+    override val appConfig: WalletAppConfig)
+    extends TxDAO[IncomingTransactionDb] {
+  import profile.api._
+  override val table: profile.api.TableQuery[IncomingTransactionTable] = {
+    TableQuery[IncomingTransactionTable]
+  }
+
+  private lazy val txTable: profile.api.TableQuery[
+    TransactionDAO#TransactionTable] = {
+    TransactionDAO().table
+  }
+
+  class IncomingTransactionTable(tag: Tag)
+      extends TxTable[IncomingTransactionDb](tag, "wallet_incoming_txs") {
+
+    import org.bitcoins.db.DbCommonsColumnMappers._
+
+    def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
+
+    def incomingAmount: Rep[CurrencyUnit] = column("incomingAmount")
+
+    private type IncomingTransactionTuple = (DoubleSha256DigestBE, CurrencyUnit)
+
+    private val fromTuple: IncomingTransactionTuple => IncomingTransactionDb = {
+      case (txId, incomingAmount) =>
+        IncomingTransactionDb(txId, incomingAmount)
+    }
+
+    private val toTuple: IncomingTransactionDb => Option[
+      IncomingTransactionTuple] = tx => Some((tx.txIdBE, tx.incomingAmount))
+
+    def * : ProvenShape[IncomingTransactionDb] =
+      (txIdBE, incomingAmount) <> (fromTuple, toTuple)
+
+    def primaryKey: PrimaryKey =
+      primaryKey("pk_tx", sourceColumns = txIdBE)
+
+    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_, TransactionDb] = {
+      foreignKey("fk_underlying_tx",
+                 sourceColumns = txIdBE,
+                 targetTableQuery = txTable)(_.txIdBE)
+    }
+  }
 }

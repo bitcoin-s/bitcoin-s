@@ -1,34 +1,40 @@
 package org.bitcoins.db
 
+import org.bitcoins.core.util.BitcoinSLogger
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.FlywayException
-import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class DbManagement extends DatabaseLogger {
-  def allTables: List[TableQuery[_ <: Table[_]]]
+trait DbManagement extends BitcoinSLogger {
+  _: JdbcProfileComponent[AppConfig] =>
+  import profile.api._
 
-  /** Lists all tables in the given database */
-  def listTables(db: Database): Future[Vector[SQLiteTableInfo]] = {
-    import DbCommonsColumnMappers._
-    val query = sql"SELECT * FROM sqlite_master where type='table'"
-      .as[SQLiteTableInfo]
-    db.run(query)
+  import scala.language.implicitConversions
+
+  /** Internally, slick defines the schema member as
+    *
+    * def schema: SchemaDescription = buildTableSchemaDescription(q.shaped.value.asInstanceOf[Table[_]])
+    *
+    * we need to cast between TableQuery's of specific table types to the more generic TableQuery[Table[_]]
+    * to get methods in this trait working as they require schema (which essentially does this cast anyway)
+    *
+    * This cast is needed because TableQuery is not covariant in its type parameter. However, since Query
+    * is covariant in its first type parameter, I believe the cast from TableQuery[T1] to TableQuery[T2] will
+    * always be safe so long as T1 is a subtype of T2 AND T1#TableElementType is equal to T2#TableElementType.
+    *
+    * The above conditions are always the case when this is called in the current code base and will
+    * stay that way so long as no one tries anything too fancy.
+    */
+  implicit protected def tableQueryToWithSchema(
+      tableQuery: TableQuery[_]): TableQuery[Table[_]] = {
+    tableQuery.asInstanceOf[TableQuery[Table[_]]]
   }
 
-  /** Lists all tables in the given database */
-  def listTables(db: SafeDatabase): Future[Vector[SQLiteTableInfo]] =
-    listTables(db.config.database)
+  def allTables: List[TableQuery[Table[_]]]
 
   /** Creates all tables in our table list, in one SQL transaction */
-  def createAll()(
-      implicit config: AppConfig,
-      ec: ExecutionContext
-  ): Future[Unit] = {
-    val tables = allTables.map(_.baseTableRow.tableName).mkString(", ")
-    logger.debug(s"Creating tables: $tables")
-
+  def createAll()(implicit ec: ExecutionContext): Future[Unit] = {
     val query = {
       val querySeq =
         allTables
@@ -42,13 +48,10 @@ abstract class DbManagement extends DatabaseLogger {
       DBIO.seq(querySeq: _*).transactionally
     }
 
-    import config.database
-    database.run(query).map(_ => logger.debug(s"Created tables: $tables"))
+    database.run(query).map(_ => logger.debug(s"Created tables"))
   }
 
-  def dropAll()(
-      implicit config: AppConfig,
-      ec: ExecutionContext): Future[Unit] = {
+  def dropAll()(implicit ec: ExecutionContext): Future[Unit] = {
     Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => ())
   }
 
@@ -67,21 +70,18 @@ abstract class DbManagement extends DatabaseLogger {
   def createTable(
       table: TableQuery[_ <: Table[_]],
       createIfNotExists: Boolean = true)(
-      implicit config: AppConfig,
-      ec: ExecutionContext): Future[Unit] = {
+      implicit ec: ExecutionContext): Future[Unit] = {
     val tableName = table.baseTableRow.tableName
     logger.debug(
-      s"Creating table $tableName with DB config: ${config.dbConfig.config} ")
+      s"Creating table $tableName with DB config: ${appConfig.config} ")
 
-    import config.database
     val query = createTableQuery(table, createIfNotExists)
     database.run(query).map(_ => logger.debug(s"Created table $tableName"))
   }
 
   def dropTable(
-      table: TableQuery[_ <: Table[_]]
-  )(implicit config: AppConfig): Future[Unit] = {
-    import config.database
+      table: TableQuery[Table[_]]
+  ): Future[Unit] = {
     val result = database.run(table.schema.dropIfExists)
     result
   }
@@ -89,21 +89,21 @@ abstract class DbManagement extends DatabaseLogger {
   /** Executes migrations related to this database
     *
     * @see [[https://flywaydb.org/documentation/api/#programmatic-configuration-java]] */
-  def migrate(appConfig: AppConfig): Int = {
-    val url = appConfig.jdbcUrl
+  def migrate(): Int = {
+    val url = jdbcUrl
     val username = ""
     val password = ""
     //appConfig.dbName is for the format 'walletdb.sqlite' or 'nodedb.sqlite' etc
     //we need to remove the '.sqlite' suffix
-    val dbName = appConfig.dbName.split('.').head.mkString
-    val config = Flyway.configure().locations(s"classpath:${dbName}/migration/")
+    val name = dbName.split('.').head.mkString
+    val config = Flyway.configure().locations(s"classpath:${name}/migration/")
     val flyway = config.dataSource(url, username, password).load
 
     try {
       flyway.migrate()
     } catch {
       case err: FlywayException =>
-        logger(appConfig).warn(
+        logger.warn(
           s"Failed to apply first round of migrations, attempting baseline and re-apply",
           err)
         //maybe we have an existing database, so attempt to baseline the existing

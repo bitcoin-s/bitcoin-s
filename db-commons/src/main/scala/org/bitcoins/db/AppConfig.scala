@@ -10,13 +10,7 @@ import org.bitcoins.core.config.TestNet3
 import org.bitcoins.core.config.RegTest
 import com.typesafe.config._
 import org.bitcoins.core.util.BitcoinSLogger
-import slick.jdbc.SQLiteProfile
-import slick.jdbc.SQLiteProfile.api._
 
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
-import slick.basic.DatabaseConfig
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.core.protocol.blockchain.TestNetChainParams
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
@@ -35,7 +29,9 @@ import ch.qos.logback.classic.Level
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig extends BitcoinSLogger {
+abstract class AppConfig {
+
+  private val logger = BitcoinSLogger.logger
 
   /**
     * Initializes this project.
@@ -124,72 +120,6 @@ abstract class AppConfig extends BitcoinSLogger {
     * Name of the module. `chain`, `wallet`, `node` etc.
     */
   protected[bitcoins] def moduleName: String
-
-  lazy val jdbcUrl: String = {
-    dbConfig.config.getString("db.url")
-  }
-
-  /**
-    * The configuration details for connecting/using the database for our projects
-    * that require datbase connections
-    */
-  lazy val dbConfig: DatabaseConfig[SQLiteProfile] = {
-    val dbConfig = {
-      Try {
-        DatabaseConfig.forConfig[SQLiteProfile](path = moduleName, config)
-      } match {
-        case Success(value) =>
-          value
-        case Failure(exception) =>
-          logger.error(s"Error when loading database from config: $exception")
-          logger.error(s"Configuration: ${config.asReadableJson}")
-          throw exception
-      }
-    }
-
-    logger.debug(s"Resolved DB config: ${dbConfig.config}")
-
-    val _ = createDbFileIfDNE()
-
-    dbConfig
-  }
-
-  /** The database we are connecting to */
-  lazy val database: Database = {
-    dbConfig.db
-  }
-
-  /** The path where our DB is located */
-  // todo: what happens to this if we
-  // dont use SQLite?
-  lazy val dbPath: Path = {
-    val pathStr = config.getString(s"$moduleName.db.path")
-    val path = Paths.get(pathStr)
-    logger.debug(s"DB path: $path")
-    path
-  }
-
-  /** The name of our database */
-  // todo: what happens to this if we
-  // dont use SQLite?
-  lazy val dbName: String = {
-    config.getString(s"$moduleName.db.name")
-  }
-
-  private def createDbFileIfDNE(): Unit = {
-    //should add a check in here that we are using sqlite
-    if (!Files.exists(dbPath)) {
-      val _ = {
-        logger.debug(s"Creating database directory=$dbPath")
-        Files.createDirectories(dbPath)
-        val dbFilePath = dbPath.resolve(dbName)
-        logger.debug(s"Creating database file=$dbFilePath")
-        Files.createFile(dbFilePath)
-      }
-
-      ()
-    }
-  }
 
   /** Chain parameters for the blockchain we're on */
   lazy val chain: ChainParams = {

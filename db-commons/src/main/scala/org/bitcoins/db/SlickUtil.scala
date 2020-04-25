@@ -1,21 +1,20 @@
 package org.bitcoins.db
 
+import slick.jdbc.JdbcProfile
+
 import scala.concurrent.Future
-import slick.jdbc.SQLiteProfile.api._
 import scala.concurrent.ExecutionContext
 
-sealed abstract class SlickUtil {
+trait SlickUtil[T, PrimaryKeyType] { _: CRUD[T, PrimaryKeyType] =>
+  def profile: JdbcProfile
+
+  import profile.api._
 
   /** Creates rows in a database that are not auto incremented */
-  def createAllNoAutoInc[T, U <: Table[T]](
-      ts: Vector[T],
-      database: SafeDatabase,
-      table: TableQuery[U])(
+  def createAllNoAutoInc(ts: Vector[T], database: SafeDatabase)(
       implicit ec: ExecutionContext): Future[Vector[T]] = {
     val actions = (table ++= ts).andThen(DBIO.successful(ts)).transactionally
     val result = database.run(actions)
     result
   }
 }
-
-object SlickUtil extends SlickUtil

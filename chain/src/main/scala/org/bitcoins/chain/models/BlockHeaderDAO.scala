@@ -3,9 +3,8 @@ package org.bitcoins.chain.models
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.db._
-import slick.jdbc.SQLiteProfile
-import slick.jdbc.SQLiteProfile.api._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,34 +16,36 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class BlockHeaderDAO()(
     implicit ec: ExecutionContext,
-    appConfig: ChainAppConfig)
-    extends CRUD[BlockHeaderDb, DoubleSha256DigestBE] {
+    override val appConfig: ChainAppConfig)
+    extends CRUD[BlockHeaderDb, DoubleSha256DigestBE]
+    with SlickUtil[BlockHeaderDb, DoubleSha256DigestBE] {
 
   import org.bitcoins.db.DbCommonsColumnMappers._
+  import profile.api._
 
-  override val table: TableQuery[BlockHeaderTable] =
-    TableQuery[BlockHeaderTable]
+  override val table =
+    profile.api.TableQuery[BlockHeaderTable]
 
   /** Creates all of the given [[BlockHeaderDb]] in the database */
   override def createAll(
       headers: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
-    SlickUtil.createAllNoAutoInc(ts = headers,
-                                 database = database,
-                                 table = table)
+    createAllNoAutoInc(ts = headers, database = safeDatabase)
   }
 
-  override protected def findAll(
-      ts: Vector[BlockHeaderDb]): Query[Table[_], BlockHeaderDb, Seq] = {
+  override protected def findAll(ts: Vector[BlockHeaderDb]): Query[
+    BlockHeaderTable,
+    BlockHeaderDb,
+    Seq] = {
     findByPrimaryKeys(ts.map(_.hashBE))
   }
 
   def findByHash(hash: DoubleSha256DigestBE): Future[Option[BlockHeaderDb]] = {
     val query = findByPrimaryKey(hash).result
-    database.runVec(query).map(_.headOption)
+    safeDatabase.runVec(query).map(_.headOption)
   }
 
   override def findByPrimaryKeys(hashes: Vector[DoubleSha256DigestBE]): Query[
-    Table[_],
+    BlockHeaderTable,
     BlockHeaderDb,
     Seq] = {
     table.filter(_.hash.inSet(hashes))
@@ -114,10 +115,10 @@ case class BlockHeaderDAO()(
   /** Retrieves a [[BlockHeaderDb]] at the given height */
   def getAtHeight(height: Int): Future[Vector[BlockHeaderDb]] = {
     val query = getAtHeightQuery(height)
-    database.runVec(query)
+    safeDatabase.runVec(query)
   }
 
-  def getAtHeightQuery(height: Int): SQLiteProfile.StreamingProfileAction[
+  def getAtHeightQuery(height: Int): profile.StreamingProfileAction[
     Seq[BlockHeaderDb],
     BlockHeaderDb,
     Effect.Read] = {
@@ -172,12 +173,12 @@ case class BlockHeaderDAO()(
   /** Gets Block Headers between (inclusive) from and to, could be out of order */
   def getBetweenHeights(from: Int, to: Int): Future[Vector[BlockHeaderDb]] = {
     val query = getBetweenHeightsQuery(from, to)
-    database.runVec(query)
+    safeDatabase.runVec(query)
   }
 
   def getBetweenHeightsQuery(
       from: Int,
-      to: Int): SQLiteProfile.StreamingProfileAction[
+      to: Int): profile.StreamingProfileAction[
     Seq[BlockHeaderDb],
     BlockHeaderDb,
     Effect.Read] = {
@@ -191,7 +192,7 @@ case class BlockHeaderDAO()(
     result
   }
 
-  private val maxHeightQuery: SQLiteProfile.ProfileAction[
+  private val maxHeightQuery: profile.ProfileAction[
     Int,
     NoStream,
     Effect.Read] = {
@@ -202,7 +203,7 @@ case class BlockHeaderDAO()(
   /** Returns the chainTips in our database. This can be multiple headers if we have
     * competing blockchains (fork) */
   def chainTips: Future[Vector[BlockHeaderDb]] = {
-    logger.debug(s"Getting chaintips from: ${database.config.dbConfig.config}")
+    logger.debug(s"Getting chaintips from: ${dbConfig.config}")
     val aggregate = {
       maxHeightQuery.flatMap { height =>
         logger.debug(s"Max block height: $height")
@@ -214,7 +215,7 @@ case class BlockHeaderDAO()(
       }
     }
 
-    database.runVec(aggregate)
+    safeDatabase.runVec(aggregate)
   }
 
   /** Returns competing blockchains that are contained in our BlockHeaderDAO
@@ -264,4 +265,45 @@ case class BlockHeaderDAO()(
     }
   }
 
+  /** A table that stores block headers related to a blockchain */
+  class BlockHeaderTable(tag: Tag)
+      extends Table[BlockHeaderDb](tag, "block_headers") {
+    import org.bitcoins.db.DbCommonsColumnMappers._
+
+    def height = column[Int]("height")
+
+    def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
+
+    def version = column[Int32]("version")
+
+    def previousBlockHash = column[DoubleSha256DigestBE]("previous_block_hash")
+
+    def merkleRootHash = column[DoubleSha256DigestBE]("merkle_root_hash")
+
+    def time = column[UInt32]("time")
+
+    def nBits = column[UInt32]("n_bits")
+
+    def nonce = column[UInt32]("nonce")
+
+    def hex = column[String]("hex")
+
+    /** The sql index for searching based on [[height]] */
+    def heightIndex = index("block_headers_height_index", height)
+
+    def hashIndex = index("block_headers_hash_index", hash)
+
+    def * = {
+      (height,
+       hash,
+       version,
+       previousBlockHash,
+       merkleRootHash,
+       time,
+       nBits,
+       nonce,
+       hex).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
+    }
+
+  }
 }

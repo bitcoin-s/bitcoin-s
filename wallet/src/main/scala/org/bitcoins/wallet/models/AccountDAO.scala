@@ -1,29 +1,31 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd._
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
-import slick.jdbc.SQLiteProfile.api._
+import slick.lifted.{PrimaryKey, ProvenShape}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class AccountDAO()(
     implicit val ec: ExecutionContext,
-    val appConfig: WalletAppConfig)
-    extends CRUD[AccountDb, (HDCoin, Int)] {
-
+    override val appConfig: WalletAppConfig)
+    extends CRUD[AccountDb, (HDCoin, Int)]
+    with SlickUtil[AccountDb, (HDCoin, Int)] {
   import org.bitcoins.db.DbCommonsColumnMappers._
+  import profile.api._
 
   override val table: TableQuery[AccountTable] = TableQuery[AccountTable]
 
   override def createAll(ts: Vector[AccountDb]): Future[Vector[AccountDb]] =
-    SlickUtil.createAllNoAutoInc(ts, database, table)
+    createAllNoAutoInc(ts, safeDatabase)
 
   override protected def findByPrimaryKeys(
-      ids: Vector[(HDCoin, Int)]): Query[Table[_], AccountDb, Seq] = ???
+      ids: Vector[(HDCoin, Int)]): Query[AccountTable, AccountDb, Seq] = ???
 
   override def findByPrimaryKey(
-      id: (HDCoin, Int)): Query[Table[_], AccountDb, Seq] = {
+      id: (HDCoin, Int)): Query[AccountTable, AccountDb, Seq] = {
     val (coin, index) = id
     table
       .filter(_.coinType === coin.coinType)
@@ -32,7 +34,7 @@ case class AccountDAO()(
   }
 
   override def findAll(
-      accounts: Vector[AccountDb]): Query[Table[_], AccountDb, Seq] =
+      accounts: Vector[AccountDb]): Query[AccountTable, AccountDb, Seq] =
     findByPrimaryKeys(
       accounts.map(acc => (acc.hdAccount.coin, acc.hdAccount.index)))
 
@@ -52,5 +54,40 @@ case class AccountDAO()(
         throw new RuntimeException(
           s"More than one account per account=${account}, got=${accounts}")
     }
+  }
+
+  class AccountTable(tag: Tag)
+      extends Table[AccountDb](tag, "wallet_accounts") {
+
+    import org.bitcoins.db.DbCommonsColumnMappers._
+
+    def xpub: Rep[ExtPublicKey] = column[ExtPublicKey]("xpub")
+
+    def purpose: Rep[HDPurpose] = column[HDPurpose]("hd_purpose")
+
+    def coinType: Rep[HDCoinType] = column[HDCoinType]("coin")
+
+    def index: Rep[Int] = column[Int]("account_index")
+
+    private type AccountTuple = (HDPurpose, ExtPublicKey, HDCoinType, Int)
+
+    private val fromTuple: AccountTuple => AccountDb = {
+      case (purpose, pub, coin, index) =>
+        AccountDb(pub, HDAccount(HDCoin(purpose, coin), index))
+    }
+
+    private val toTuple: AccountDb => Option[AccountTuple] = account =>
+      Some(
+        (account.hdAccount.purpose,
+         account.xpub,
+         account.hdAccount.coin.coinType,
+         account.hdAccount.index))
+
+    def * : ProvenShape[AccountDb] =
+      (purpose, xpub, coinType, index) <> (fromTuple, toTuple)
+
+    def primaryKey: PrimaryKey =
+      primaryKey("pk_account", sourceColumns = (purpose, coinType, index))
+
   }
 }

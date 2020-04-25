@@ -1,13 +1,22 @@
 package org.bitcoins.node.db
 
-import org.bitcoins.db.DbManagement
-import org.bitcoins.node.models.BroadcastAbleTransactionTable
-import slick.lifted.TableQuery
+import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
+import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.node.models.{BroadcastAbleTransactionDAO}
 
-object NodeDbManagement extends DbManagement {
+import scala.concurrent.ExecutionContext
 
-  private val txTable = TableQuery[BroadcastAbleTransactionTable]
+trait NodeDbManagement extends DbManagement {
+  _: JdbcProfileComponent[NodeAppConfig] =>
 
-  override val allTables = List(txTable)
+  import profile.api._
+
+  def ec: ExecutionContext
+
+  private lazy val txTable: TableQuery[Table[_]] = {
+    BroadcastAbleTransactionDAO()(appConfig, ec).table
+  }
+
+  override val allTables: List[TableQuery[Table[_]]] = List(txTable)
 
 }

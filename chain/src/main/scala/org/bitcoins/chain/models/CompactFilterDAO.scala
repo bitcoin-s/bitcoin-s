@@ -2,32 +2,56 @@ package org.bitcoins.chain.models
 
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.db.{CRUD, SlickUtil}
-import slick.jdbc.SQLiteProfile
-import slick.lifted.TableQuery
-import slick.jdbc.SQLiteProfile.api._
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class CompactFilterDAO()(
     implicit ec: ExecutionContext,
-    appConfig: ChainAppConfig)
-    extends CRUD[CompactFilterDb, DoubleSha256DigestBE] {
+    override val appConfig: ChainAppConfig)
+    extends CRUD[CompactFilterDb, DoubleSha256DigestBE]
+    with SlickUtil[CompactFilterDb, DoubleSha256DigestBE] {
   import org.bitcoins.db.DbCommonsColumnMappers._
+  import profile.api._
 
-  override val table = TableQuery[CompactFilterTable]
+  class CompactFilterTable(tag: Tag)
+      extends Table[CompactFilterDb](tag, "cfilters") {
+    import org.bitcoins.db.DbCommonsColumnMappers._
+
+    def hash = column[DoubleSha256DigestBE]("hash")
+
+    def filterType = column[FilterType]("filter_type")
+
+    def bytes = column[ByteVector]("bytes")
+
+    def height = column[Int]("height")
+
+    def blockHash = column[DoubleSha256DigestBE]("block_hash", O.PrimaryKey)
+
+    def heightIndex = index("cfilters_height_index", height)
+
+    def hashIndex = index("cfilters_hash_index", hash)
+
+    override def * = {
+      (hash, filterType, bytes, height, blockHash) <> (CompactFilterDb.tupled, CompactFilterDb.unapply)
+    }
+  }
+
+  override val table: profile.api.TableQuery[CompactFilterTable] = {
+    TableQuery[CompactFilterTable]
+  }
 
   override def createAll(
       filters: Vector[CompactFilterDb]): Future[Vector[CompactFilterDb]] = {
-    SlickUtil.createAllNoAutoInc(ts = filters,
-                                 database = database,
-                                 table = table)
+    createAllNoAutoInc(ts = filters, database = safeDatabase)
   }
 
   /** Finds the rows that correlate to the given primary keys */
   override protected def findByPrimaryKeys(
       ids: Vector[DoubleSha256DigestBE]): Query[
-    Table[_],
+    Table[CompactFilterDb],
     CompactFilterDb,
     Seq] = {
     table.filter(_.blockHash.inSet(ids))
@@ -46,11 +70,10 @@ case class CompactFilterDAO()(
   /** Retrieves a [[CompactFilterDb]] at the given height */
   def getAtHeight(height: Int): Future[Vector[CompactFilterDb]] = {
     val query = getAtHeightQuery(height)
-    database.runVec(query)
+    safeDatabase.runVec(query)
   }
 
-  private def getAtHeightQuery(
-      height: Int): SQLiteProfile.StreamingProfileAction[
+  private def getAtHeightQuery(height: Int): profile.StreamingProfileAction[
     Seq[CompactFilterDb],
     CompactFilterDb,
     Effect.Read] = {
@@ -60,11 +83,11 @@ case class CompactFilterDAO()(
   /** Returns the maximum block height from our database */
   def maxHeight: Future[Int] = {
     val query = maxHeightQuery
-    val result = database.run(query)
+    val result = safeDatabase.run(query)
     result
   }
 
-  private val maxHeightQuery: SQLiteProfile.ProfileAction[
+  private val maxHeightQuery: profile.ProfileAction[
     Int,
     NoStream,
     Effect.Read] = {
@@ -75,16 +98,15 @@ case class CompactFilterDAO()(
   /** Gets filters between (inclusive) from and to, could be out of order */
   def getBetweenHeights(from: Int, to: Int): Future[Vector[CompactFilterDb]] = {
     val query = getBetweenHeightsQuery(from, to)
-    database.runVec(query)
+    safeDatabase.runVec(query)
   }
 
   private def getBetweenHeightsQuery(
       from: Int,
-      to: Int): SQLiteProfile.StreamingProfileAction[
+      to: Int): profile.StreamingProfileAction[
     Seq[CompactFilterDb],
     CompactFilterDb,
     Effect.Read] = {
     table.filter(header => header.height >= from && header.height <= to).result
   }
-
 }

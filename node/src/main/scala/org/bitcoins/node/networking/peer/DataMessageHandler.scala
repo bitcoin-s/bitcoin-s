@@ -11,7 +11,6 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
-import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,7 +28,7 @@ case class DataMessageHandler(
     chainConfig: ChainAppConfig)
     extends P2PLogger {
 
-  private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
+  private val txDAO = BroadcastAbleTransactionDAO()
 
   def handleDataPayload(
       payload: DataPayload,

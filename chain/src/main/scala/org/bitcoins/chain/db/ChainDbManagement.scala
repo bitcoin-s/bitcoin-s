@@ -1,9 +1,12 @@
 package org.bitcoins.chain.db
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{BlockHeaderTable, CompactFilterHeaderTable, CompactFilterTable}
-import org.bitcoins.db.DbManagement
-import slick.lifted.TableQuery
+import org.bitcoins.chain.models.{
+  BlockHeaderDAO,
+  CompactFilterDAO,
+  CompactFilterHeaderDAO
+}
+import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -11,25 +14,28 @@ import scala.concurrent.{ExecutionContext, Future}
   * Responsible for creating and destroying database
   * tables inside of the Chain project.
   */
-sealed abstract class ChainDbManagement extends DbManagement {
+trait ChainDbManagement extends DbManagement {
+  _: JdbcProfileComponent[ChainAppConfig] =>
+  import profile.api._
 
-  private val chainTable: TableQuery[BlockHeaderTable] =
-    TableQuery[BlockHeaderTable]
+  def ec: ExecutionContext
 
-  private val filterHeaderTable: TableQuery[CompactFilterHeaderTable] =
-    TableQuery[CompactFilterHeaderTable]
+  private lazy val chainTable: TableQuery[Table[_]] =
+    BlockHeaderDAO()(ec, appConfig).table
 
-  private val filterTable: TableQuery[CompactFilterTable] =
-    TableQuery[CompactFilterTable]
+  private lazy val filterHeaderTable: TableQuery[Table[_]] = {
+    CompactFilterHeaderDAO()(ec, appConfig).table
+  }
 
-  override val allTables = List(chainTable, filterHeaderTable, filterTable)
+  private lazy val filterTable: TableQuery[Table[_]] = {
+    CompactFilterDAO()(ec, appConfig).table
+  }
 
-  def createHeaderTable(createIfNotExists: Boolean = true)(
-      implicit config: ChainAppConfig,
-      ec: ExecutionContext): Future[Unit] = {
-    createTable(chainTable, createIfNotExists)
+  override lazy val allTables: List[TableQuery[Table[_]]] =
+    List(chainTable, filterHeaderTable, filterTable)
+
+  def createHeaderTable(createIfNotExists: Boolean = true): Future[Unit] = {
+    createTable(chainTable, createIfNotExists)(ec)
   }
 
 }
-
-object ChainDbManagement extends ChainDbManagement

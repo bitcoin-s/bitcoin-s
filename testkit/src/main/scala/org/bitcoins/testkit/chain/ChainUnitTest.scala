@@ -9,7 +9,6 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models._
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
@@ -456,21 +455,20 @@ object ChainUnitTest extends ChainVerificationLogger {
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] */
   private def setupHeaderTable()(
-      implicit appConfig: ChainAppConfig,
-      ec: ExecutionContext): Future[Unit] = {
-    ChainDbManagement.createHeaderTable(createIfNotExists = true)
+      implicit appConfig: ChainAppConfig): Future[Unit] = {
+    appConfig.createHeaderTable(createIfNotExists = true)
   }
 
   def setupAllTables()(
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    ChainDbManagement.createAll()
+    appConfig.createAll()
   }
 
   def destroyAllTables()(
       implicit appConfig: ChainAppConfig,
       ec: ExecutionContext): Future[Unit] = {
-    ChainDbManagement.dropAll()
+    appConfig.dropAll()
   }
 
   /** Creates the [[org.bitcoins.chain.models.BlockHeaderTable]] and inserts the genesis header */
