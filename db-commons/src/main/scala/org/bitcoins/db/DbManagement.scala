@@ -33,14 +33,6 @@ trait DbManagement extends BitcoinSLogger {
 
   def allTables: List[TableQuery[Table[_]]]
 
-  /** Lists all tables in the given database */
-  def listTables: Future[Vector[SQLiteTableInfo]] = {
-    import DbCommonsColumnMappers._
-    val query = sql"SELECT * FROM sqlite_master where type='table'"
-      .as[SQLiteTableInfo]
-    database.run(query)
-  }
-
   /** Creates all tables in our table list, in one SQL transaction */
   def createAll()(implicit ec: ExecutionContext): Future[Unit] = {
     val query = {
