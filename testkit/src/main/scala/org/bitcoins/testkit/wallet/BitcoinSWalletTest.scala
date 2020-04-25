@@ -24,7 +24,6 @@ import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.wallet.api.{LockedWalletApi, UnlockedWalletApi}
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
@@ -553,16 +552,16 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
   }
 
-  def destroyWallet(wallet: UnlockedWalletApi)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] = {
     destroyWallet(wallet.lock())
   }
 
-  def destroyWallet(wallet: LockedWalletApi)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    val destroyWalletF = WalletDbManagement
-      .dropAll()(config = wallet.walletConfig, ec = ec)
-      .map(_ => ())
+  def destroyWallet(wallet: LockedWalletApi): Future[Unit] = {
+    import wallet.walletConfig.ec
+    val destroyWalletF =
+      wallet.walletConfig
+        .dropAll()
+        .map(_ => ())
     destroyWalletF
   }
 

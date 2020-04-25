@@ -25,7 +25,6 @@ import org.bitcoins.node.networking.peer.{
 }
 import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
 import org.bitcoins.rpc.util.AsyncUtil
-import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +54,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     this
   }
 
-  lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
+  lazy val txDAO = BroadcastAbleTransactionDAO()
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct

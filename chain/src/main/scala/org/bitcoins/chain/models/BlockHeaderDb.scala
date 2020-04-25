@@ -3,7 +3,6 @@ package org.bitcoins.chain.models
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import slick.jdbc.SQLiteProfile.api._
 
 case class BlockHeaderDb(
     height: Int,
@@ -44,46 +43,4 @@ object BlockHeaderDbHelper {
       hex = bh.hex
     )
   }
-}
-
-/** A table that stores block headers related to a blockchain */
-class BlockHeaderTable(tag: Tag)
-    extends Table[BlockHeaderDb](tag, "block_headers") {
-  import org.bitcoins.db.DbCommonsColumnMappers._
-
-  def height = column[Int]("height")
-
-  def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
-
-  def version = column[Int32]("version")
-
-  def previousBlockHash = column[DoubleSha256DigestBE]("previous_block_hash")
-
-  def merkleRootHash = column[DoubleSha256DigestBE]("merkle_root_hash")
-
-  def time = column[UInt32]("time")
-
-  def nBits = column[UInt32]("n_bits")
-
-  def nonce = column[UInt32]("nonce")
-
-  def hex = column[String]("hex")
-
-  /** The sql index for searching based on [[height]] */
-  def heightIndex = index("block_headers_height_index", height)
-
-  def hashIndex = index("block_headers_hash_index", hash)
-
-  def * = {
-    (height,
-     hash,
-     version,
-     previousBlockHash,
-     merkleRootHash,
-     time,
-     nBits,
-     nonce,
-     hex).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
-  }
-
 }

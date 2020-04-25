@@ -21,9 +21,12 @@ import org.bitcoins.wallet.models.AccountDAO
 import org.bitcoins.wallet.{LockedWallet, Wallet}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object Main extends App {
+  implicit val system = ActorSystem("bitcoin-s")
+  implicit val ec: ExecutionContext = system.dispatcher
+
   implicit val conf = {
     val dataDirIndexOpt = args.zipWithIndex
       .find(_._1.toLowerCase == "--datadir")
@@ -44,9 +47,6 @@ object Main extends App {
   require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
           "Either Neutrino or SPV mode should be enabled")
   implicit val chainConf: ChainAppConfig = conf.chainConf
-
-  implicit val system = ActorSystem("bitcoin-s")
-  import system.dispatcher
 
   val peerSocket =
     parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)

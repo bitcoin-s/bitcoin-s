@@ -14,7 +14,6 @@ import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.api.UnlockedWalletApi
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.SpendingInfoTable
 import org.scalatest.{DoNotDiscover, FutureOutcome}
 
 import scala.concurrent.{Future, Promise}
@@ -146,14 +145,6 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
       walletP.success(wallet)
 
-      def clearSpendingInfoTable(): Future[Int] = {
-        import slick.jdbc.SQLiteProfile.api._
-
-        val conf: WalletAppConfig = wallet.walletConfig
-        val table = TableQuery[SpendingInfoTable]
-        conf.database.run(table.delete)
-      }
-
       def condition(): Future[Boolean] = {
         for {
           balance <- wallet.getConfirmedBalance()
@@ -187,7 +178,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ = assert(addresses.size == 2)
         _ = assert(utxos.size == 1)
 
-        _ <- clearSpendingInfoTable()
+        _ <- wallet.clearUtxosAndAddresses()
 
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()

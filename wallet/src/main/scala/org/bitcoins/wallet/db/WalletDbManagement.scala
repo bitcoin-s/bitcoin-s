@@ -1,25 +1,51 @@
 package org.bitcoins.wallet.db
 
-import org.bitcoins.db.DbManagement
-import slick.jdbc.SQLiteProfile.api._
-import org.bitcoins.wallet.models._
+import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.{
+  AccountDAO,
+  AddressDAO,
+  IncomingTransactionDAO,
+  OutgoingTransactionDAO,
+  SpendingInfoDAO,
+  TransactionDAO
+}
 
-sealed abstract class WalletDbManagement extends DbManagement {
-  private val accountTable = TableQuery[AccountTable]
-  private val addressTable = TableQuery[AddressTable]
-  private val utxoTable = TableQuery[SpendingInfoTable]
-  private val txTable = TableQuery[TransactionTable]
-  private val incomingTxTable = TableQuery[IncomingTransactionTable]
-  private val outgoingTxTable = TableQuery[OutgoingTransactionTable]
+import scala.concurrent.ExecutionContext
 
-  override val allTables: List[TableQuery[_ <: Table[_]]] =
+trait WalletDbManagement extends DbManagement {
+  _: JdbcProfileComponent[WalletAppConfig] =>
+
+  import profile.api._
+
+  def ec: ExecutionContext
+
+  private lazy val accountTable: TableQuery[Table[_]] = {
+    AccountDAO()(ec, appConfig).table
+  }
+  private lazy val addressTable: TableQuery[Table[_]] = {
+    AddressDAO()(ec, appConfig).table
+  }
+  private lazy val utxoTable: TableQuery[Table[_]] = {
+    SpendingInfoDAO()(ec, appConfig).table
+  }
+  private lazy val txTable: TableQuery[Table[_]] = {
+    TransactionDAO()(ec, appConfig).table
+  }
+  private lazy val incomingTxTable: TableQuery[Table[_]] = {
+    IncomingTransactionDAO()(ec, appConfig).table
+  }
+  private lazy val outgoingTxTable: TableQuery[Table[_]] = {
+    OutgoingTransactionDAO()(ec, appConfig).table
+  }
+
+  override lazy val allTables: List[TableQuery[Table[_]]] = {
     List(accountTable,
          addressTable,
          utxoTable,
          txTable,
          incomingTxTable,
          outgoingTxTable)
+  }
 
 }
-
-object WalletDbManagement extends WalletDbManagement

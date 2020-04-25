@@ -21,7 +21,7 @@ import org.bitcoins.db.AppConfig
   */
 case class BitcoinSAppConfig(
     private val directory: Path,
-    private val confs: Config*) {
+    private val confs: Config*)(implicit ec: ExecutionContext) {
   val walletConf = WalletAppConfig(directory, confs: _*)
   val nodeConf = NodeAppConfig(directory, confs: _*)
   val chainConf = ChainAppConfig(directory, confs: _*)
@@ -55,7 +55,8 @@ object BitcoinSAppConfig {
   /** Constructs an app configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*): BitcoinSAppConfig =
+  def fromDefaultDatadir(confs: Config*)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig =
     BitcoinSAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 
   import scala.language.implicitConversions

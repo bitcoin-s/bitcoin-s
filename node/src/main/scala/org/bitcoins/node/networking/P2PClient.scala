@@ -206,7 +206,9 @@ case class P2PClientActor(
           logger.trace(s"Unaligned bytes: ${newUnalignedBytes.toHex}")
         }
 
-        val f: (PeerMessageReceiver, NetworkMessage) => Future[PeerMessageReceiver] = {
+        val f: (
+            PeerMessageReceiver,
+            NetworkMessage) => Future[PeerMessageReceiver] = {
           case (peerMsgRecv: PeerMessageReceiver, m: NetworkMessage) =>
             logger.trace(s"Processing message=${m}")
             val msg = NetworkMessageReceived(m, P2PClient(self, peer))
@@ -214,7 +216,9 @@ case class P2PClientActor(
         }
 
         logger.trace(s"About to process ${messages.length} messages")
-        val newMsgReceiverF = FutureUtil.foldLeftAsync(currentPeerMsgHandlerRecv,messages)(f)(context.dispatcher)
+        val newMsgReceiverF =
+          FutureUtil.foldLeftAsync(currentPeerMsgHandlerRecv, messages)(f)(
+            context.dispatcher)
 
         val newMsgReceiver = Await.result(newMsgReceiverF, timeout)
         currentPeerMsgHandlerRecv = newMsgReceiver

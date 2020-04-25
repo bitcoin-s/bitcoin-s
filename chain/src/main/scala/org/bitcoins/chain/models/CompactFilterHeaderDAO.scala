@@ -3,31 +3,53 @@ package org.bitcoins.chain.models
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.{CRUD, SlickUtil}
-import slick.jdbc.SQLiteProfile
-import slick.lifted.TableQuery
-import slick.jdbc.SQLiteProfile.api._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 case class CompactFilterHeaderDAO()(
     implicit ec: ExecutionContext,
-    appConfig: ChainAppConfig)
-    extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE] {
+    override val appConfig: ChainAppConfig)
+    extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE]
+    with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
+  import profile.api._
   import org.bitcoins.db.DbCommonsColumnMappers._
 
-  override val table = TableQuery[CompactFilterHeaderTable]
+  class CompactFilterHeaderTable(tag: Tag)
+      extends Table[CompactFilterHeaderDb](tag, "cfheaders") {
+
+    def hash = column[DoubleSha256DigestBE]("hash", O.PrimaryKey)
+
+    def filterHash = column[DoubleSha256DigestBE]("filter_hash")
+
+    def previousFilterHeader =
+      column[DoubleSha256DigestBE]("previous_filter_header")
+
+    def blockHash = column[DoubleSha256DigestBE]("block_hash")
+
+    def height = column[Int]("height")
+
+    def heightIndex = index("cfheaders_height_index", height)
+
+    def blockHashIndex = index("cfheaders_block_hash_index", blockHash)
+
+    override def * = {
+      (hash, filterHash, previousFilterHeader, blockHash, height) <> (CompactFilterHeaderDb.tupled, CompactFilterHeaderDb.unapply)
+    }
+  }
+
+  override val table: profile.api.TableQuery[CompactFilterHeaderTable] = {
+    TableQuery[CompactFilterHeaderTable]
+  }
 
   override def createAll(filterHeaders: Vector[CompactFilterHeaderDb]): Future[
     Vector[CompactFilterHeaderDb]] = {
-    SlickUtil.createAllNoAutoInc(ts = filterHeaders,
-                                 database = database,
-                                 table = table)
+    createAllNoAutoInc(ts = filterHeaders, database = safeDatabase)
   }
 
   /** Finds the rows that correlate to the given primary keys */
   override protected def findByPrimaryKeys(
       ids: Vector[DoubleSha256DigestBE]): Query[
-    Table[_],
+    Table[CompactFilterHeaderDb],
     CompactFilterHeaderDb,
     Seq] =
     table.filter(_.hash.inSet(ids))
@@ -46,23 +68,22 @@ case class CompactFilterHeaderDAO()(
   def findByBlockHash(
       hash: DoubleSha256DigestBE): Future[Option[CompactFilterHeaderDb]] = {
     val query = table.filter(_.blockHash === hash).take(1)
-    database.runVec(query.result).map(_.headOption)
+    safeDatabase.runVec(query.result).map(_.headOption)
   }
 
   def findAllByBlockHashes(hashes: Vector[DoubleSha256DigestBE]): Future[
     Vector[CompactFilterHeaderDb]] = {
     val query = table.filter(_.blockHash.inSet(hashes))
-    database.runVec(query.result)
+    safeDatabase.runVec(query.result)
   }
 
   /** Retrieves a [[CompactFilterHeaderDb]] at the given height */
   def getAtHeight(height: Int): Future[Vector[CompactFilterHeaderDb]] = {
     val query = getAtHeightQuery(height)
-    database.runVec(query)
+    safeDatabase.runVec(query)
   }
 
-  private def getAtHeightQuery(
-      height: Int): SQLiteProfile.StreamingProfileAction[
+  private def getAtHeightQuery(height: Int): slick.sql.FixedSqlStreamingAction[
     Seq[CompactFilterHeaderDb],
     CompactFilterHeaderDb,
     Effect.Read] = {
@@ -76,11 +97,12 @@ case class CompactFilterHeaderDAO()(
     result
   }
 
-  private val maxHeightQuery: SQLiteProfile.ProfileAction[
+  private val maxHeightQuery: profile.ProfileAction[
     Int,
     NoStream,
     Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
   }
+
 }

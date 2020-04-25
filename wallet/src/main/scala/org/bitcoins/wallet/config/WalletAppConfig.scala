@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.typesafe.config.Config
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db.AppConfig
+import org.bitcoins.db.{AppConfig, JdbcProfileComponent}
 import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
 
@@ -19,8 +19,10 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class WalletAppConfig(
     private val directory: Path,
-    private val conf: Config*)
-    extends AppConfig {
+    private val conf: Config*)(implicit override val ec: ExecutionContext)
+    extends AppConfig
+    with WalletDbManagement
+    with JdbcProfileComponent[WalletAppConfig] {
   override protected[bitcoins] def configOverrides: List[Config] = conf.toList
   override protected[bitcoins] def moduleName: String = "wallet"
   override protected[bitcoins] type ConfigType = WalletAppConfig
@@ -29,6 +31,8 @@ case class WalletAppConfig(
     WalletAppConfig(directory, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
+
+  override def appConfig: WalletAppConfig = this
 
   lazy val defaultAccountKind: HDPurpose =
     config.getString("wallet.defaultAccountType") match {
@@ -79,7 +83,7 @@ case class WalletAppConfig(
     }
 
     val numMigrations = {
-      WalletDbManagement.migrate(this)
+      migrate()
     }
 
     logger.info(s"Applied $numMigrations to the wallet project")
@@ -127,6 +131,7 @@ object WalletAppConfig {
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*): WalletAppConfig =
+  def fromDefaultDatadir(confs: Config*)(
+      implicit ec: ExecutionContext): WalletAppConfig =
     WalletAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
 }

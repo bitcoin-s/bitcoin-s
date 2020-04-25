@@ -2,8 +2,8 @@ package org.bitcoins.db
 
 import java.sql.SQLException
 
-import org.bitcoins.core.config.MainNet
-import slick.jdbc.SQLiteProfile.api._
+import org.bitcoins.core.util.BitcoinSLogger
+import slick.dbio.{DBIOAction, NoStream}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -16,15 +16,37 @@ import scala.concurrent.{ExecutionContext, Future}
   * the table and the database you are connecting to.
   */
 abstract class CRUD[T, PrimaryKeyType](
-    implicit private val config: AppConfig,
-    private val ec: ExecutionContext)
-    extends DatabaseLogger {
+    implicit private val ec: ExecutionContext,
+    override val appConfig: AppConfig)
+    extends JdbcProfileComponent[AppConfig] {
+
+  import profile.api._
+
+  import scala.language.implicitConversions
+
+  /** We need to cast from TableQuery's of internal types (e.g. AddressDAO#AddressTable) to external
+    * versions of them (e.g. AddressDAO().table). You'll notice that although the latter is a subtype
+    * of the first, this requires a cast since TableQuery is not covariant in its type parameter.
+    *
+    * However, since Query is covariant in its first type parameter, I believe the cast from
+    * TableQuery[T1] to TableQuery[T2] will always be safe so long as T1 is a subtype of T2
+    * AND T1#TableElementType is equal to T2#TableElementType.
+    *
+    * The above conditions are always the case when this is called within DAOs as it is only
+    * ever used for things of the form TableQuery[XDAO().table] -> TableQuery[XDAO#XTable].
+    */
+  implicit protected def tableQuerySafeSubtypeCast[
+      SpecificT <: slick.lifted.AbstractTable[_],
+      SomeT <: SpecificT](
+      tableQuery: TableQuery[SomeT]): TableQuery[SpecificT] = {
+    tableQuery.asInstanceOf[TableQuery[SpecificT]]
+  }
 
   /** The table inside our database we are inserting into */
-  val table: TableQuery[_ <: Table[T]]
+  val table: profile.api.TableQuery[_ <: profile.api.Table[T]]
 
   /** Binding to the actual database itself, this is what is used to run querys */
-  def database: SafeDatabase = SafeDatabase(config)
+  def safeDatabase: SafeDatabase = SafeDatabase(this)
 
   /**
     * create a record in the database
@@ -33,7 +55,7 @@ abstract class CRUD[T, PrimaryKeyType](
     * @return the inserted record
     */
   def create(t: T): Future[T] = {
-    logger.trace(s"Writing $t to DB with config: ${config.config}")
+    logger.trace(s"Writing $t to DB with config: ${appConfig.config}")
     createAll(Vector(t)).map(_.head)
   }
 
@@ -46,9 +68,9 @@ abstract class CRUD[T, PrimaryKeyType](
     * @return Option[T] - the record if found, else none
     */
   def read(id: PrimaryKeyType): Future[Option[T]] = {
-    logger.trace(s"Reading from DB with config: ${config.config}")
+    logger.trace(s"Reading from DB with config: ${appConfig.config}")
     val query = findByPrimaryKey(id)
-    val rows: Future[Seq[T]] = database.run(query.result)
+    val rows: Future[Seq[T]] = safeDatabase.run(query.result)
     rows.map(_.headOption)
   }
 
@@ -66,10 +88,11 @@ abstract class CRUD[T, PrimaryKeyType](
   def updateAll(ts: Vector[T]): Future[Vector[T]] = {
     val query = findAll(ts)
     val actions = ts.map(t => query.update(t))
-    val affectedRows: Future[Vector[Int]] = database.run(DBIO.sequence(actions))
+    val affectedRows: Future[Vector[Int]] =
+      safeDatabase.run(DBIO.sequence(actions))
     val updatedTs = findAll(ts)
     affectedRows.flatMap { _ =>
-      database.runVec(updatedTs.result)
+      safeDatabase.runVec(updatedTs.result)
     }
   }
 
@@ -82,14 +105,14 @@ abstract class CRUD[T, PrimaryKeyType](
   def delete(t: T): Future[Int] = {
     logger.debug("Deleting record: " + t)
     val query: Query[Table[_], T, Seq] = find(t)
-    database.run(query.delete)
+    safeDatabase.run(query.delete)
   }
 
   /**
     * delete all records from the table
     */
   def deleteAll(): Future[Int] =
-    database.run(table.delete)
+    safeDatabase.run(table.delete)
 
   /**
     * insert the record if it does not exist, update it if it does
@@ -102,9 +125,9 @@ abstract class CRUD[T, PrimaryKeyType](
   /** Upserts all of the given ts in the database, then returns the upserted values */
   def upsertAll(ts: Vector[T]): Future[Vector[T]] = {
     val actions = ts.map(t => table.insertOrUpdate(t))
-    val result: Future[Vector[Int]] = database.run(DBIO.sequence(actions))
+    val result: Future[Vector[Int]] = safeDatabase.run(DBIO.sequence(actions))
     val findQueryFuture = result.map(_ => findAll(ts).result)
-    findQueryFuture.flatMap(database.runVec(_))
+    findQueryFuture.flatMap(safeDatabase.runVec(_))
   }
 
   /**
@@ -118,7 +141,7 @@ abstract class CRUD[T, PrimaryKeyType](
 
   /** Finds the rows that correlate to the given primary keys */
   protected def findByPrimaryKeys(
-      ids: Vector[PrimaryKeyType]): Query[Table[_], T, Seq]
+      ids: Vector[PrimaryKeyType]): Query[Table[T], T, Seq]
 
   /**
     * return the row that corresponds with this record
@@ -132,16 +155,17 @@ abstract class CRUD[T, PrimaryKeyType](
 
   /** Finds all elements in the table */
   def findAll(): Future[Vector[T]] =
-    database.run(table.result).map(_.toVector)
+    safeDatabase.run(table.result).map(_.toVector)
 
   /** Returns number of rows in the table */
-  def count(): Future[Int] = database.run(table.length.result)
+  def count(): Future[Int] = safeDatabase.run(table.length.result)
 }
 
-case class SafeDatabase(config: AppConfig) extends DatabaseLogger {
-  implicit private val conf: AppConfig = config
+case class SafeDatabase(jdbcProfile: JdbcProfileComponent[AppConfig])
+    extends BitcoinSLogger {
 
-  import config.database
+  import jdbcProfile.database
+  import jdbcProfile.profile.api.actionBasedSQLInterpolation
 
   /**
     * SQLite does not enable foreign keys by default. This query is
@@ -154,11 +178,9 @@ case class SafeDatabase(config: AppConfig) extends DatabaseLogger {
   private def logAndThrowError(
       action: DBIOAction[_, NoStream, _]): PartialFunction[Throwable, Nothing] = {
     case err: SQLException =>
-      if (config.network != MainNet) {
-        logger.error(
-          s"Error when executing query ${action.getDumpInfo.getNamePlusMainInfo}")
-        logger.error(s"$err")
-      }
+      logger.error(
+        s"Error when executing query ${action.getDumpInfo.getNamePlusMainInfo}")
+      logger.error(s"$err")
       throw err
   }
 

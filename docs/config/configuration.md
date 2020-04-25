@@ -25,6 +25,7 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Paths
 import scala.util.Properties
+import scala.concurrent.ExecutionContext.Implicits.global
 
 // reads $HOME/.bitcoin-s/
 val defaultConfig = WalletAppConfig.fromDefaultDatadir()

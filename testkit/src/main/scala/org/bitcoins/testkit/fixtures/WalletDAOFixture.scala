@@ -1,11 +1,10 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models._
 import org.scalatest._
 import org.scalatest.flatspec.FixtureAsyncFlatSpec
-import org.bitcoins.wallet.models._
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.db.WalletDbManagement
 
 case class WalletDAOs(
     accountDAO: AccountDAO,
@@ -32,6 +31,6 @@ trait WalletDAOFixture extends FixtureAsyncFlatSpec with BitcoinSWalletTest {
   implicit private val walletConfig: WalletAppConfig = config
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(build = () => WalletDbManagement.createAll().map(_ => daos),
-                destroy = () => WalletDbManagement.dropAll())(test)
+    makeFixture(build = () => walletConfig.createAll().map(_ => daos),
+                destroy = () => walletConfig.dropAll())(test)
 }
