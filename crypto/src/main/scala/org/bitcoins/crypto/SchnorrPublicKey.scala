@@ -6,6 +6,19 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.util.Try
 
+/**
+ * This represents the x-coordinate for the point on the curve.
+ * With BIP340 bitcoin is moving to only explicitly encode x coordinate on the curve for savings in
+ * blockchain space and optimizations like batch verification. This means that we only
+ * need this public key encoding to use 32 bytes rather than 33 or 65 bytes traditional bitcoin public keys take.
+ *
+ * From BIP340:
+ * SchnorrPublicKey represents the X coordinate of a point P on the curve whose Y coordinate is a square and signatures (r,s) where r
+ * is the X coordinate of a point R whose Y coordinate is a square. The signature satisfies s⋅G = R + tagged_hash(r || pk || m)⋅P.
+ *
+ * You can retrieve the full public key by calling [[SchnorrPublicKey.publicKey]]
+ * @see https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#design
+ * @see https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#cite_ref-5-0*/
 case class SchnorrPublicKey(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 32,
           s"Schnorr public keys must be 32 bytes, got $bytes")
