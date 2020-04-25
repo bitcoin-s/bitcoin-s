@@ -79,6 +79,7 @@ construct a wallet configuration:</p>
 <span class="hljs-keyword">import</span> com.typesafe.config.<span class="hljs-type">ConfigFactory</span>
 <span class="hljs-keyword">import</span> java.nio.file.<span class="hljs-type">Paths</span>
 <span class="hljs-keyword">import</span> scala.util.<span class="hljs-type">Properties</span>
+<span class="hljs-keyword">import</span> scala.concurrent.<span class="hljs-type">ExecutionContext</span>.<span class="hljs-type">Implicits</span>.global
 
 <span class="hljs-comment">// reads $HOME/.bitcoin-s/</span>
 <span class="hljs-keyword">val</span> defaultConfig = <span class="hljs-type">WalletAppConfig</span>.fromDefaultDatadir()
