@@ -88,4 +88,9 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
   def apply(xCoor: FieldElement): SchnorrNonce = {
     SchnorrNonce(xCoor.bytes)
   }
+
+  def freshNonce(): SchnorrNonce = {
+    val xcordBytes = ECPrivateKey.freshPrivateKey.publicKey.bytes.tail
+    fromBytes(xcordBytes)
+  }
 }

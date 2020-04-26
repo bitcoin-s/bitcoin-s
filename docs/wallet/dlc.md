@@ -48,7 +48,8 @@ f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7af05f01f1ca852cf
 
 Note: if you wish to setup your own oracle for testing, you can do so by pasting the following into the `sbt core/console`:
 
-```scala
+```scala mdoc:to-string
+import org.bitcoin._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.util.CryptoUtil
 import scodec.bits.ByteVector
@@ -63,8 +64,8 @@ val loseHash = CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
 
 (pubKey.bytes ++ rValue.bytes).toHex
 (winHash.bytes ++ Satoshis(100000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes).toHex
-Schnorr.signWithNonce(winHash.bytes, privKey, nonce).hex
-Schnorr.signWithNonce(loseHash.bytes, privKey, nonce).hex
+NativeSecp256k1.schnorrSignWithNonce(winHash.bytes.toArray, privKey.bytes.toArray, nonce.bytes.toArray)
+NativeSecp256k1.schnorrSignWithNonce(loseHash.bytes.toArray, privKey.bytes.toArray, nonce.bytes.toArray)
 ```
 
 Where you can replace the messages `WIN` and `LOSE` to have the oracle sign any two messages, and replace `Satoshis(100000)` and `Satoshis.zero` to change the outcomes.
