@@ -90,7 +90,6 @@ object SchnorrNonce extends Factory[SchnorrNonce] {
   }
 
   def freshNonce(): SchnorrNonce = {
-    val xcordBytes = ECPrivateKey.freshPrivateKey.publicKey.bytes.tail
-    fromBytes(xcordBytes)
+    ECPrivateKey.freshPrivateKey.schnorrNonce
   }
 }
