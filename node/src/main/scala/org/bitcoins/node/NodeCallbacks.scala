@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   */
 case class NodeCallbacks(
-    onCompactFilterReceived: Seq[OnCompactFilterReceived] = Seq.empty,
+    onCompactFiltersReceived: Seq[OnCompactFiltersReceived] = Seq.empty,
     onTxReceived: Seq[OnTxReceived] = Seq.empty,
     onBlockReceived: Seq[OnBlockReceived] = Seq.empty,
     onMerkleBlockReceived: Seq[OnMerkleBlockReceived] = Seq.empty,
@@ -25,7 +25,7 @@ case class NodeCallbacks(
 ) {
 
   def +(other: NodeCallbacks): NodeCallbacks = copy(
-    onCompactFilterReceived = onCompactFilterReceived ++ other.onCompactFilterReceived,
+    onCompactFiltersReceived = onCompactFiltersReceived ++ other.onCompactFiltersReceived,
     onTxReceived = onTxReceived ++ other.onTxReceived,
     onBlockReceived = onBlockReceived ++ other.onBlockReceived,
     onMerkleBlockReceived = onMerkleBlockReceived ++ other.onMerkleBlockReceived,
@@ -68,18 +68,17 @@ case class NodeCallbacks(
           }))
   }
 
-  def executeOnCompactFilterReceivedCallbacks(
+  def executeOnCompactFiltersReceivedCallbacks(
       logger: MarkedLogger,
-      blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter)(
+      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(
       implicit ec: ExecutionContext): Future[Unit] = {
-    onCompactFilterReceived
+    onCompactFiltersReceived
       .foldLeft(FutureUtil.unit)((acc, callback) =>
         acc.flatMap(_ =>
-          callback(blockHash, blockFilter).recover {
+          callback(blockFilters).recover {
             case err: Throwable =>
               logger.error(
-                "onCompactFilterReceived Callback failed with error: ",
+                "onCompactFiltersReceived Callback failed with error: ",
                 err)
           }))
   }
@@ -115,8 +114,8 @@ object NodeCallbacks {
     NodeCallbacks(onMerkleBlockReceived = Seq(f))
 
   /** Constructs a set of callbacks that only acts on compact filter received */
-  def onCompactFilterReceived(f: OnCompactFilterReceived): NodeCallbacks =
-    NodeCallbacks(onCompactFilterReceived = Seq(f))
+  def onCompactFilterReceived(f: OnCompactFiltersReceived): NodeCallbacks =
+    NodeCallbacks(onCompactFiltersReceived = Seq(f))
 
   /** Constructs a set of callbacks that only acts on block headers received */
   def onBlockHeadersReceived(f: OnBlockHeadersReceived): NodeCallbacks =
@@ -128,7 +127,7 @@ object NodeCallbacks {
       onTxReceived = Seq.empty,
       onBlockReceived = Seq.empty,
       onMerkleBlockReceived = Seq.empty,
-      onCompactFilterReceived = Seq.empty,
+      onCompactFiltersReceived = Seq.empty,
       onBlockHeadersReceived = Seq.empty
     )
 }

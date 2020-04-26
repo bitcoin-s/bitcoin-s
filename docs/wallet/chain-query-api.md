@@ -91,21 +91,21 @@ val keyManager = keyManagerE match {
 // a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks
 def createCallbacks(
       processTransaction: Transaction => Future[Unit],
-      processCompactFilter: (DoubleSha256Digest, GolombFilter) => Future[Unit],
+      processCompactFilters: (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit],
       processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onTx: OnTxReceived = { tx =>
       processTransaction(tx)
     }
-    lazy val onCompactFilter: OnCompactFilterReceived = {
-      (blockHash, blockFilter) =>
-        processCompactFilter(blockHash, blockFilter)
+    lazy val onCompactFilters: OnCompactFiltersReceived = {
+      blockFilters =>
+        processCompactFilters(blockFilters)
     }
     lazy val onBlock: OnBlockReceived = { block =>
       processBlock(block)
     }
     NodeCallbacks(onTxReceived = Seq(onTx),
                   onBlockReceived = Seq(onBlock),
-                  onCompactFilterReceived = Seq(onCompactFilter))
+                  onCompactFiltersReceived = Seq(onCompactFilters))
   }
 
 // Here is a super simple example of a callback, this could be replaced with anything, from
@@ -117,12 +117,12 @@ val exampleProcessTx = (tx: Transaction) =>
 val exampleProcessBlock = (block: Block) =>
     Future.successful(println(s"Received block: ${block.blockHeader.hashBE}"))
 
-val exampleProcessFilter =
-    (blockHash: DoubleSha256Digest, filter: GolombFilter) =>
-      Future.successful(println(s"Received filter: ${blockHash.flip.hex} ${filter.hash.flip.hex}"))
+val exampleProcessFilters =
+    (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
+      Future.successful(println(s"Received filter: ${filters.head._1.flip.hex} ${filters.head._2.hash.flip.hex}"))
 
 val exampleCallbacks =
-    createCallbacks(exampleProcessTx, exampleProcessFilter, exampleProcessBlock)
+    createCallbacks(exampleProcessTx, exampleProcessFilters, exampleProcessBlock)
 
 // Here is where we are defining our actual chain api, Ideally this could be it's own class
 // but for the examples sake we will keep it small.

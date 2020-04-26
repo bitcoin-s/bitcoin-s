@@ -156,9 +156,10 @@ object Main extends App {
     lazy val onTx: OnTxReceived = { tx =>
       wallet.processTransaction(tx, blockHash = None).map(_ => ())
     }
-    lazy val onCompactFilter: OnCompactFilterReceived = {
-      (blockHash, blockFilter) =>
-        wallet.processCompactFilter(blockHash, blockFilter).map(_ => ())
+    lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
+      wallet
+        .processCompactFilters(blockFilters = blockFilters)
+        .map(_ => ())
     }
     lazy val onBlock: OnBlockReceived = { block =>
       wallet.processBlock(block).map(_ => ())
@@ -177,7 +178,7 @@ object Main extends App {
     } else if (nodeConf.isNeutrinoEnabled) {
       Future.successful(
         NodeCallbacks(onBlockReceived = Seq(onBlock),
-                      onCompactFilterReceived = Seq(onCompactFilter),
+                      onCompactFiltersReceived = Seq(onCompactFilters),
                       onBlockHeadersReceived = Seq(onHeaders)))
     } else {
       Future.failed(new RuntimeException("Unexpected node type"))

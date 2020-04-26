@@ -90,7 +90,12 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
 
   def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[LockedWalletApi] = {
+      blockFilter: GolombFilter): Future[LockedWalletApi] =
+    processCompactFilters(Vector((blockHash, blockFilter)))
+
+  def processCompactFilters(
+      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
+    LockedWalletApi] = {
     val utxosF = listUtxos()
     val addressesF = listAddresses()
     for {
@@ -99,11 +104,12 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       scriptPubKeys = utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
         .map(_.scriptPubKey)
         .toSet
-      _ <- Future {
-        val matcher = SimpleFilterMatcher(blockFilter)
-        if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
-          nodeApi.downloadBlocks(Vector(blockHash))
-        }
+      _ <- FutureUtil.sequentially(blockFilters) {
+        case (blockHash, blockFilter) =>
+          val matcher = SimpleFilterMatcher(blockFilter)
+          if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
+            nodeApi.downloadBlocks(Vector(blockHash))
+          } else FutureUtil.unit
       }
     } yield {
       this
