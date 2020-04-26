@@ -1,18 +1,24 @@
 package org.bitcoins.rpc.client.common
 
+import java.nio.file.{Files, Path}
 import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.stream.{ActorMaterializer, StreamTcpException}
+import akka.stream.StreamTcpException
 import akka.util.ByteString
+import com.fasterxml.jackson.core.JsonParseException
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
-import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.rpc.config.BitcoindAuthCredentials.{CookieBased, PasswordBased}
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
 import org.bitcoins.rpc.util.AsyncUtil
+import play.api.libs.json._
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
@@ -62,8 +68,6 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
     instance.datadir.toPath.resolve("bitcoin.conf")
 
   implicit protected val system: ActorSystem
-  implicit protected val materializer: ActorMaterializer =
-    ActorMaterializer.create(system)
   implicit protected val executor: ExecutionContext = system.getDispatcher
   implicit protected val network: NetworkParameters = instance.network
 
@@ -296,7 +300,7 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
   }
 
   protected def sendRequest(req: HttpRequest): Future[HttpResponse] = {
-    Http(materializer.system).singleRequest(req)
+    Http(system).singleRequest(req)
   }
 
   /** Parses the payload of the given response into JSON.

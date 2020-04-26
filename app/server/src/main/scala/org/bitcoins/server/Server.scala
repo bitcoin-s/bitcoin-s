@@ -21,7 +21,6 @@ case class Server(
     extends HttpLogger {
   implicit private val config: AppConfig = conf
 
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   /** Handles all server commands by throwing a MethodNotFound */

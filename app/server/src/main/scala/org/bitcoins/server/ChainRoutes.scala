@@ -1,16 +1,13 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server._
 import org.bitcoins.chain.api.ChainApi
-
 import org.bitcoins.commons.serializers.Picklers._
 
 case class ChainRoutes(chain: ChainApi)(implicit system: ActorSystem)
     extends ServerRoute {
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {

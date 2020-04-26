@@ -5,50 +5,30 @@ import java.net.URI
 import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  GetBlockWithTransactionsResult,
-  GetTransactionResult,
-  RpcOpts,
-  SignRawTransactionResult
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockWithTransactionsResult, GetTransactionResult, RpcOpts, SignRawTransactionResult}
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutPoint
-}
-import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
+import org.bitcoins.core.util.{EnvUtil}
 import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPublicKey
 }
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutPoint}
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.common.BitcoindVersion.{
-  Unknown,
-  V16,
-  V17,
-  V18,
-  _
-}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V16, V17, V18, _}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.rpc.config.{
-  BitcoindAuthCredentials,
-  BitcoindConfig,
-  BitcoindInstance,
-  ZmqConfig
-}
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindConfig, BitcoindInstance, ZmqConfig}
 import org.bitcoins.rpc.util.{AsyncUtil, RpcUtil}
 import org.bitcoins.testkit.util.{FileUtil, TestkitBinaries}
 import org.bitcoins.util.ListUtil
@@ -830,9 +810,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       receiver: BitcoindRpcClient,
       amount: Bitcoins = Bitcoins(1))(
       implicit actorSystem: ActorSystem): Future[GetTransactionResult] = {
-    implicit val materializer: ActorMaterializer =
-      ActorMaterializer.create(actorSystem)
-    implicit val ec: ExecutionContextExecutor = materializer.executionContext
+    implicit val ec: ExecutionContextExecutor = actorSystem.dispatcher
     for {
       rawcoinbasetx <- createRawCoinbaseTransaction(sender, receiver, amount)
       signedtx <- signRawTransaction(sender, rawcoinbasetx)
@@ -867,8 +845,8 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       address: BitcoinAddress,
       amount: Bitcoins)(
       implicit system: ActorSystem): Future[DoubleSha256DigestBE] = {
-    implicit val mat: ActorMaterializer = ActorMaterializer.create(system)
-    implicit val ec: ExecutionContextExecutor = mat.executionContext
+
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
 
     for {
       txid <- fundMemPoolTransaction(sender, address, amount)

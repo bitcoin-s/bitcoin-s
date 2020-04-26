@@ -1,9 +1,8 @@
 package org.bitcoins.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.server._
 import org.bitcoins.core.api.CoreApi
 
 import scala.util.{Failure, Success}
@@ -11,7 +10,6 @@ import scala.util.{Failure, Success}
 case class CoreRoutes(core: CoreApi)(implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   def handleCommand: PartialFunction[ServerCommand, StandardRoute] = {
     case ServerCommand("finalizepsbt", arr) =>
