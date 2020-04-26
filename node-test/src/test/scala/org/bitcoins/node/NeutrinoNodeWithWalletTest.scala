@@ -3,7 +3,7 @@ package org.bitcoins.node
 import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.node.networking.peer.DataMessageHandler.OnCompactFilterReceived
+import org.bitcoins.node.networking.peer.DataMessageHandler.OnCompactFiltersReceived
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -55,16 +55,16 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- wallet.processBlock(block)
       } yield ()
     }
-    val onCompactFilter: OnCompactFilterReceived = { (blockHash, blockFilter) =>
+    val onCompactFilter: OnCompactFiltersReceived = { blockFilters =>
       for {
         wallet <- walletF
-        _ <- wallet.processCompactFilter(blockHash, blockFilter)
+        _ <- wallet.processCompactFilters(blockFilters)
       } yield ()
     }
 
     NodeCallbacks(
       onBlockReceived = Seq(onBlock),
-      onCompactFilterReceived = Seq(onCompactFilter)
+      onCompactFiltersReceived = Seq(onCompactFilter)
     )
   }
 

@@ -17,11 +17,14 @@ import scala.concurrent.{ExecutionContext, Future}
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
+  *
+  * @param currentFilterBatch holds the current batch of filters to be processed, after its size reaches
+  *                           chainConfig.filterBatchSize they will be processed and then emptied
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
     callbacks: NodeCallbacks,
-    receivedFilterCount: Int = 0,
+    currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     syncing: Boolean = false)(
     implicit ec: ExecutionContext,
     appConfig: NodeAppConfig,
@@ -74,37 +77,41 @@ case class DataMessageHandler(
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
+        val batchSizeFull: Boolean = currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
-          (newCount, newSyncing) <- if (receivedFilterCount == chainConfig.filterBatchSize - 1) {
+          (newBatch, newSyncing) <- if (batchSizeFull) {
             logger.info(
               s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
             for {
               _ <- sendNextGetCompactFilterCommand(peerMsgSender,
                                                    filter.blockHash.flip)
-            } yield (0, syncing)
+            } yield (Vector.empty, syncing)
           } else {
             for {
-              filterHeaderCount <- chainApi.getFilterHeaderCount
-              filterCount <- chainApi.getFilterCount
+              filterHeaderCount <- chainApi.getFilterHeaderCount()
+              filterCount <- chainApi.getFilterCount()
             } yield {
               val syncing = filterCount < filterHeaderCount - 1
               if (!syncing) {
                 logger.info(s"We are synced")
               }
-              (receivedFilterCount + 1, syncing)
+              (currentFilterBatch :+ filter, syncing)
             }
           }
           newChainApi <- chainApi.processFilter(filter)
-          blockFilter <- Future(
-            BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
-          _ <- callbacks.executeOnCompactFilterReceivedCallbacks(
-            logger,
-            filter.blockHash,
-            blockFilter)
+          // If we are not syncing or our filter batch is full, process the filters
+          _ <- if (!syncing || batchSizeFull) {
+            val blockFilters = currentFilterBatch.map { filter =>
+              (filter.blockHash,
+               BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
+            }
+            callbacks.executeOnCompactFiltersReceivedCallbacks(logger,
+                                                               blockFilters)
+          } else FutureUtil.unit
 
         } yield {
           this.copy(chainApi = newChainApi,
-                    receivedFilterCount = newCount,
+                    currentFilterBatch = newBatch,
                     syncing = newSyncing)
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
@@ -321,8 +328,8 @@ object DataMessageHandler {
   type OnTxReceived = Transaction => Future[Unit]
 
   /** Callback for handling a received compact block filter */
-  type OnCompactFilterReceived =
-    (DoubleSha256Digest, GolombFilter) => Future[Unit]
+  type OnCompactFiltersReceived =
+    (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit]
 
   /** Callback for handling a received block header */
   type OnBlockHeadersReceived = Vector[BlockHeader] => Future[Unit]
