@@ -98,11 +98,11 @@ val syncF: Future[ChainApi] = configF.flatMap { _ =>
 
 // once this future completes, we have a initialized
 // wallet
-import org.bitcoins.wallet.api.LockedWalletApi
+import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.api.InitializeWalletSuccess
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.core.api._
-val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
+val walletF: Future[WalletApi] = configF.flatMap { _ =>
     Wallet.initialize(NodeApi.NoOp, ChainQueryApi.NoOp).collect {
         case InitializeWalletSuccess(wallet) => wallet
     }

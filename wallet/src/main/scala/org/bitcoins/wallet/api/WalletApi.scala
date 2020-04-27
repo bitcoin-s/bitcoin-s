@@ -15,7 +15,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -30,7 +30,7 @@ import scala.util.{Failure, Success}
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-sealed trait WalletApi {
+trait WalletApi extends WalletLogger {
 
   implicit val walletConfig: WalletAppConfig
   implicit val ec: ExecutionContext
@@ -41,12 +41,6 @@ sealed trait WalletApi {
   def chainParams: ChainParams = walletConfig.chain
 
   def networkParameters: NetworkParameters = walletConfig.network
-}
-
-/**
-  * API for a locked wallet
-  */
-trait LockedWalletApi extends WalletApi with WalletLogger {
 
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
@@ -64,11 +58,11 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     */
   def processTransaction(
       transaction: Transaction,
-      blockHash: Option[DoubleSha256DigestBE]): Future[LockedWalletApi]
+      blockHash: Option[DoubleSha256DigestBE]): Future[WalletApi]
 
   def processTransactions(
       transactions: Vector[Transaction],
-      blockHash: Option[DoubleSha256DigestBE]): Future[LockedWalletApi] = {
+      blockHash: Option[DoubleSha256DigestBE]): Future[WalletApi] = {
     transactions.foldLeft(Future.successful(this)) {
       case (wallet, tx) =>
         wallet.flatMap(_.processTransaction(tx, blockHash))
@@ -86,16 +80,16 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     * Processes the give block, updating our DB state if it's relevant to us.
     * @param block The block we're processing
     */
-  def processBlock(block: Block): Future[LockedWalletApi]
+  def processBlock(block: Block): Future[WalletApi]
 
   def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[LockedWalletApi] =
+      blockFilter: GolombFilter): Future[WalletApi] =
     processCompactFilters(Vector((blockHash, blockFilter)))
 
   def processCompactFilters(
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
-    LockedWalletApi] = {
+    WalletApi] = {
     val utxosF = listUtxos()
     val addressesF = listAddresses()
     for {
@@ -298,7 +292,7 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     */
   def unlock(passphrase: AesPassword, bip39PasswordOpt: Option[String]): Either[
     KeyManagerUnlockError,
-    UnlockedWalletApi] = {
+    WalletApi] = {
     val kmParams = walletConfig.kmParams
 
     val unlockedKeyManagerE =
@@ -404,20 +398,10 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     * Recreates the account using BIP-44 approach
     */
   def rescanSPVWallet(): Future[Unit]
-}
-
-trait UnlockedWalletApi extends LockedWalletApi {
 
   def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
 
   def keyManager: BIP39KeyManager
-
-  /**
-    * Locks the wallet. After this operation is called,
-    * all sensitive material in the wallet should be
-    * encrypted and unaccessible
-    */
-  def lock(): LockedWalletApi
 
   /**
     *
@@ -518,7 +502,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
 
 }
 
-object LockedWalletApi {
+object WalletApi {
   case class BlockMatchingResponse(
       blockHash: DoubleSha256DigestBE,
       blockHeight: Int)

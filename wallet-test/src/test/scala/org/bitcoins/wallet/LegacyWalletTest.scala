@@ -3,17 +3,17 @@ package org.bitcoins.wallet
 import org.bitcoins.core.hd.{AddressType, HDPurposes}
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
 
 class LegacyWalletTest extends BitcoinSWalletTest {
 
-  override type FixtureParam = UnlockedWalletApi
+  override type FixtureParam = WalletApi
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withLegacyWallet(test)
 
-  it should "generate legacy addresses" in { wallet: UnlockedWalletApi =>
+  it should "generate legacy addresses" in { wallet: WalletApi =>
     for {
       addr <- wallet.getNewAddress()
       account <- wallet.getDefaultAccount()

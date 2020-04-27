@@ -4,14 +4,14 @@ import org.bitcoins.core.currency._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent.Future
 
 class ProcessTransactionTest extends BitcoinSWalletTest {
-  override type FixtureParam = UnlockedWalletApi
+  override type FixtureParam = WalletApi
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withNewWallet(test)
@@ -20,7 +20,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
   behavior of "Wallet.processTransaction"
 
   /** Verifies that executing the given action doesn't change wallet state */
-  private def checkUtxosAndBalance(wallet: UnlockedWalletApi)(
+  private def checkUtxosAndBalance(wallet: WalletApi)(
       action: => Future[_]): Future[Assertion] =
     for {
       oldUtxos <- wallet.listUtxos()

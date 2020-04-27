@@ -17,9 +17,9 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.EitherUtil
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
-import org.bitcoins.wallet.{LockedWallet, WalletLogger}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -31,7 +31,7 @@ import scala.util.{Failure, Success}
   * spending.
   */
 private[wallet] trait UtxoHandling extends WalletLogger {
-  self: LockedWallet =>
+  self: Wallet =>
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {

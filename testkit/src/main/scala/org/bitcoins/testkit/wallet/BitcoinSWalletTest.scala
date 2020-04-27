@@ -22,7 +22,7 @@ import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.wallet.api.{LockedWalletApi, UnlockedWalletApi}
+import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
@@ -194,7 +194,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
       dependentBuilder = { (wallet: Wallet) =>
         createWalletWithBitcoind(wallet)
       },
-      wrap = (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
+      wrap = (_: WalletApi, walletWithBitcoind: WalletWithBitcoind) =>
         walletWithBitcoind
     )
 
@@ -210,7 +210,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
         dependentBuilder = { (wallet: Wallet) =>
           createWalletWithBitcoind(wallet)
         },
-        processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoind) =>
+        processResult = (_: WalletApi, pair: WalletWithBitcoind) =>
           fundWalletWithBitcoind(pair)
       )
 
@@ -557,11 +557,7 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
   }
 
-  def destroyWallet(wallet: UnlockedWalletApi): Future[Unit] = {
-    destroyWallet(wallet.lock())
-  }
-
-  def destroyWallet(wallet: LockedWalletApi): Future[Unit] = {
+  def destroyWallet(wallet: WalletApi): Future[Unit] = {
     import wallet.walletConfig.ec
     val destroyWalletF =
       wallet.walletConfig

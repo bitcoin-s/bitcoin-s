@@ -12,12 +12,12 @@ import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.WalletLogger
-import org.bitcoins.wallet.api.{AddressInfo, CoinSelector, LockedWalletApi}
+import org.bitcoins.wallet.api.{AddressInfo, CoinSelector, WalletApi}
 import org.bitcoins.wallet.models.{AccountDb, SpendingInfoDb}
 
 import scala.concurrent.Future
 
-trait FundTransactionHandling extends WalletLogger { self: LockedWalletApi =>
+trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
