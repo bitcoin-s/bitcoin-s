@@ -95,11 +95,13 @@ trait BitcoinSUtil {
     h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
 
-  lazy val isLinux: Boolean = Properties.isLinux
+  private val osName = System.getProperty("os.name")
 
-  lazy val isMac: Boolean = Properties.isMac
+  lazy val isLinux: Boolean = osName.startsWith("Linux")
 
-  lazy val isWindows: Boolean = Properties.isWin
+  lazy val isMac: Boolean = osName.startsWith("Mac")
+
+  lazy val isWindows: Boolean = osName.startsWith("Windows")
 
   lazy val isCI: Boolean = Properties.envOrNone("CI").contains("1")
 }
