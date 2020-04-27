@@ -2,14 +2,7 @@ package org.bitcoins.wallet.db
 
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{
-  AccountDAO,
-  AddressDAO,
-  IncomingTransactionDAO,
-  OutgoingTransactionDAO,
-  SpendingInfoDAO,
-  TransactionDAO
-}
+import org.bitcoins.wallet.models._
 
 import scala.concurrent.ExecutionContext
 
@@ -26,6 +19,10 @@ trait WalletDbManagement extends DbManagement {
 
   private lazy val addressTable: TableQuery[Table[_]] = {
     AddressDAO()(ec, appConfig).table
+  }
+
+  private lazy val addressTagTable: TableQuery[Table[_]] = {
+    AddressTagDAO()(ec, appConfig).table
   }
 
   private lazy val utxoTable: TableQuery[Table[_]] = {
@@ -45,12 +42,15 @@ trait WalletDbManagement extends DbManagement {
   }
 
   override lazy val allTables: List[TableQuery[Table[_]]] = {
-    List(accountTable,
-         addressTable,
-         txTable,
-         incomingTxTable,
-         utxoTable,
-         outgoingTxTable)
+    List(
+      accountTable,
+      addressTable,
+      addressTagTable,
+      utxoTable,
+      txTable,
+      incomingTxTable,
+      outgoingTxTable
+    )
   }
 
 }

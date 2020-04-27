@@ -2,15 +2,19 @@ package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.testkit.util.TestUtil
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTest,
   WalletTestUtil,
   WalletWithBitcoind
 }
-import org.scalatest.FutureOutcome
+import org.scalatest.{Assertion, FutureOutcome}
+
+import scala.concurrent.Future
 
 class FundTransactionHandlingTest extends BitcoinSWalletTest {
 
@@ -29,7 +33,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(destination),
                                                 feeRate = feeRate,
-                                                false)
+                                                fromTagOpt = None,
+                                                markAsReserved = false)
       for {
         fundedTx <- fundedTxF
       } yield {
@@ -49,7 +54,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(newDestination),
                                                 feeRate = feeRate,
-                                                false)
+                                                fromTagOpt = None,
+                                                markAsReserved = false)
       for {
         fundedTx <- fundedTxF
       } yield {
@@ -68,7 +74,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
       val fundedTxF = wallet.fundRawTransaction(destinations = destinations,
                                                 feeRate = feeRate,
-                                                false)
+                                                fromTagOpt = None,
+                                                markAsReserved = false)
       for {
         fundedTx <- fundedTxF
       } yield {
@@ -91,7 +98,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(tooBigOutput),
                                                 feeRate = feeRate,
-                                                false)
+                                                fromTagOpt = None,
+                                                markAsReserved = false)
 
       recoverToSucceededIf[RuntimeException] {
         fundedTxF
@@ -110,7 +118,8 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(tooBigOutput),
                                                 feeRate = feeRate,
-                                                false)
+                                                fromTagOpt = None,
+                                                markAsReserved = false)
 
       recoverToSucceededIf[RuntimeException] {
         fundedTxF
@@ -131,8 +140,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
         account1DbOpt <- account1DbF
         fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
                                               feeRate,
-                                              account1DbOpt.get,
-                                              false)
+                                              account1DbOpt.get)
       } yield {
         assert(fundedTx.inputs.nonEmpty)
         assert(fundedTx.outputs.contains(newDestination))
@@ -153,8 +161,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
         account1DbOpt <- account1DbF
         fundedTx <- wallet.fundRawTransaction(Vector(newDestination),
                                               feeRate,
-                                              account1DbOpt.get,
-                                              false)
+                                              account1DbOpt.get)
       } yield fundedTx
 
       recoverToSucceededIf[RuntimeException] {
@@ -190,6 +197,7 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       val fundedTxF = wallet.fundRawTransaction(destinations =
                                                   Vector(destination),
                                                 feeRate = feeRate,
+                                                fromTagOpt = None,
                                                 markAsReserved = true)
       for {
         fundedTx <- fundedTxF
@@ -197,5 +205,53 @@ class FundTransactionHandlingTest extends BitcoinSWalletTest {
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
       }
+  }
+
+  def testAddressTagFunding(
+      wallet: Wallet,
+      tag: AddressTag): Future[Assertion] = {
+    for {
+      account <- wallet.getDefaultAccount()
+
+      taggedAddr <- wallet.getNewAddress(Vector(tag))
+      _ <- wallet.sendToAddress(taggedAddr, destination.value * 2, None)
+
+      taggedBalance <- wallet.getBalance(tag)
+      _ = assert(taggedBalance == destination.value * 2)
+
+      expectedUtxos <- wallet.listUtxos(account.hdAccount, tag)
+      (txBuilder, utxoInfos) <-
+        wallet
+          .fundRawTransactionInternal(
+            destinations = Vector(destination),
+            feeRate = feeRate,
+            fromAccount = account,
+            keyManagerOpt = Some(wallet.keyManager),
+            fromTagOpt = Some(tag),
+            markAsReserved = true
+          )
+      utx <- txBuilder.buildTx()
+      tx <- RawTxSigner.sign(utx, utxoInfos, feeRate)
+
+    } yield {
+      assert(tx.inputs.forall(input =>
+        expectedUtxos.exists(_.outPoint == input.previousOutput)))
+    }
+  }
+
+  it must "fund a transaction with only utxos with an unknown address tag" in {
+    fundedWallet: WalletWithBitcoind =>
+      val wallet = fundedWallet.wallet
+      val exampleTag: UnknownAddressTag =
+        UnknownAddressTag("Example", "ExampleTagType")
+
+      testAddressTagFunding(wallet, exampleTag)
+  }
+
+  it must "fund a transaction with only utxos with an internal address tag" in {
+    fundedWallet: WalletWithBitcoind =>
+      val wallet = fundedWallet.wallet
+
+      testAddressTagFunding(wallet, HotStorage)
   }
 }

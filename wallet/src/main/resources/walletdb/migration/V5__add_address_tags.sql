@@ -1,0 +1,1 @@
+CREATE TABLE "wallet_address_tags" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"address" VARCHAR(254) NOT NULL,"tagName" VARCHAR(254) NOT NULL,"tagType" VARCHAR(254) NOT NULL,constraint "fk_address" foreign key("address") references "addresses"("address") on update NO ACTION on delete NO ACTION);

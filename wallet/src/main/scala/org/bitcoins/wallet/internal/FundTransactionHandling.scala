@@ -9,7 +9,11 @@ import org.bitcoins.core.wallet.builder.{
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
+import org.bitcoins.core.wallet.utxo.{
+  AddressTag,
+  InputInfo,
+  ScriptSignatureParams
+}
 import org.bitcoins.crypto.Sign
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.api.{AddressInfo, CoinSelector}
@@ -23,12 +27,14 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
+      fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
       funded <- fundRawTransaction(destinations = destinations,
                                    feeRate = feeRate,
                                    fromAccount = account,
+                                   fromTagOpt = fromTagOpt,
                                    markAsReserved = markAsReserved)
     } yield funded
   }
@@ -37,12 +43,14 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
+      fromTagOpt: Option[AddressTag] = None,
       markAsReserved: Boolean = false): Future[Transaction] = {
     val txBuilderF =
       fundRawTransactionInternal(destinations = destinations,
                                  feeRate = feeRate,
                                  fromAccount = fromAccount,
                                  keyManagerOpt = None,
+                                 fromTagOpt = fromTagOpt,
                                  markAsReserved = markAsReserved)
     txBuilderF.flatMap(_._1.buildTx())
   }
@@ -64,11 +72,17 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
       keyManagerOpt: Option[BIP39KeyManager],
       coinSelectionAlgo: CoinSelectionAlgo =
         CoinSelectionAlgo.AccumulateLargest,
+      fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean = false): Future[(
       RawTxBuilderWithFinalizer[StandardNonInteractiveFinalizer],
       Vector[ScriptSignatureParams[InputInfo]])] = {
     val utxosF = for {
-      utxos <- listUtxos(fromAccount.hdAccount)
+      utxos <- fromTagOpt match {
+        case None =>
+          listUtxos(fromAccount.hdAccount)
+        case Some(tag) =>
+          listUtxos(fromAccount.hdAccount, tag)
+      }
 
       // Need to remove immature coinbase inputs
       coinbaseUtxos = utxos.filter(_.outPoint == EmptyTransactionOutPoint)

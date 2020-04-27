@@ -23,7 +23,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 import slick.jdbc.{GetResult, JdbcProfile}
@@ -211,6 +211,17 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
   implicit val satoshisPerByteMapper: BaseColumnType[SatoshisPerByte] = {
     MappedColumnType
       .base[SatoshisPerByte, Long](_.toLong, SatoshisPerByte.fromLong)
+  }
+
+  implicit val addressTagMapper: BaseColumnType[AddressTagName] = {
+    MappedColumnType
+      .base[AddressTagName, String](_.name, InternalAddressTagName.fromString)
+  }
+
+  implicit val addressTagTypeMapper: BaseColumnType[AddressTagType] = {
+    MappedColumnType
+      .base[AddressTagType, String](_.typeName,
+                                    InternalAddressTagType.fromString)
   }
 
   implicit val hdAccountMapper: BaseColumnType[HDAccount] = {
