@@ -8,7 +8,6 @@ import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState.{
@@ -329,7 +328,7 @@ abstract class Wallet
         case Success(xpub) => xpub
       }
     }
-    val newAccountDb = AccountDb(xpub, hdAccount, TimeUtil.currentEpochSecond)
+    val newAccountDb = AccountDb(xpub, hdAccount)
     val accountCreationF = accountDAO.create(newAccountDb)
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
@@ -371,7 +370,7 @@ object Wallet extends WalletLogger {
     val account = HDAccount(coin = coin, index = 0)
     // safe since we're deriving from a priv
     val xpub = keyManager.deriveXPub(account).get
-    val accountDb = AccountDb(xpub, account, TimeUtil.currentEpochSecond)
+    val accountDb = AccountDb(xpub, account)
     logger.debug(
       s"Creating account with constant prefix ${keyManager.kmParams.purpose}")
     wallet.accountDAO

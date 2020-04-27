@@ -17,7 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
-import org.bitcoins.core.util.{CryptoUtil, NumberUtil, TimeUtil}
+import org.bitcoins.core.util.{CryptoUtil, NumberUtil}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
@@ -85,12 +85,11 @@ object WalletTestUtil {
   }
 
   def firstAccountDb: AccountDb =
-    AccountDb(freshXpub(), defaultHdAccount, TimeUtil.currentEpochSecond)
+    AccountDb(freshXpub(), defaultHdAccount)
 
   def nestedSegWitAccountDb: AccountDb =
     AccountDb(freshXpub(),
-              HDAccount(HDCoin(HDPurposes.NestedSegWit, hdCoinType), 0),
-              TimeUtil.currentEpochSecond)
+              HDAccount(HDCoin(HDPurposes.NestedSegWit, hdCoinType), 0))
 
   private def randomScriptWitness: ScriptWitness =
     P2WPKHWitnessV0(freshXpub().key)
