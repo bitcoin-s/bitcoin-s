@@ -100,8 +100,8 @@ case class DataMessageHandler(
           }
           newChainApi <- chainApi.processFilter(filter)
           // If we are not syncing or our filter batch is full, process the filters
-          _ <- if (!syncing || batchSizeFull) {
-            val blockFilters = currentFilterBatch.map { filter =>
+          _ <- if (!newSyncing || batchSizeFull) {
+            val blockFilters = newBatch.map { filter =>
               (filter.blockHash,
                BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
             }

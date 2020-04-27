@@ -245,7 +245,17 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
 object BitcoinSWalletTest extends WalletLogger {
 
-  lazy val initialFunds = 25.bitcoins
+  val defaultAcctAmts = Vector(1.bitcoin, 2.bitcoin, 3.bitcoin)
+
+  val expectedDefaultAmt: CurrencyUnit =
+    defaultAcctAmts.fold(CurrencyUnits.zero)(_ + _)
+
+  val account1Amt = Vector(Bitcoins(0.2), Bitcoins(0.3), Bitcoins(0.5))
+
+  val expectedAccount1Amt: CurrencyUnit =
+    account1Amt.fold(CurrencyUnits.zero)(_ + _)
+
+  lazy val initialFunds: CurrencyUnit = expectedDefaultAmt + expectedAccount1Amt
 
   object MockNodeApi extends NodeApi {
 
@@ -496,11 +506,6 @@ object BitcoinSWalletTest extends WalletLogger {
   def fundWalletWithBitcoind[T <: WalletWithBitcoind](pair: T)(
       implicit ec: ExecutionContext): Future[T] = {
     val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
-
-    val defaultAcctAmts = Vector(1.bitcoin, 2.bitcoin, 3.bitcoin)
-    val expectedDefaultAmt = defaultAcctAmts.fold(CurrencyUnits.zero)(_ + _)
-    val account1Amt = Vector(Bitcoins(0.2), Bitcoins(0.3), Bitcoins(0.5))
-    val expectedAccount1Amt = account1Amt.fold(CurrencyUnits.zero)(_ + _)
 
     val defaultAccount = wallet.walletConfig.defaultAccount
     val fundedDefaultAccountWalletF =
