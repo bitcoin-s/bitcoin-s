@@ -3,7 +3,7 @@ package org.bitcoins.testkit.wallet
 import akka.actor.ActorSystem
 import com.typesafe.config.Config
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits, _}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
@@ -76,14 +76,9 @@ trait FundWalletUtil {
   def fundWallet(wallet: Wallet)(
       implicit ec: ExecutionContext): Future[FundedWallet] = {
 
-    val defaultAcctAmts = Vector(1.bitcoin, 2.bitcoin, 3.bitcoin)
-    val expectedDefaultAmt = defaultAcctAmts.fold(CurrencyUnits.zero)(_ + _)
-    val account1Amt = Vector(Bitcoins(0.2), Bitcoins(0.3), Bitcoins(0.5))
-    val expectedAccount1Amt = account1Amt.fold(CurrencyUnits.zero)(_ + _)
-
     val defaultAccount = wallet.walletConfig.defaultAccount
     val fundedDefaultAccountWalletF = FundWalletUtil.fundAccountForWallet(
-      amts = defaultAcctAmts,
+      amts = BitcoinSWalletTest.defaultAcctAmts,
       account = defaultAccount,
       wallet = wallet
     )
@@ -92,7 +87,7 @@ trait FundWalletUtil {
     val fundedAccount1WalletF = for {
       fundedDefaultAcct <- fundedDefaultAccountWalletF
       fundedAcct1 <- FundWalletUtil.fundAccountForWallet(
-        amts = account1Amt,
+        amts = BitcoinSWalletTest.account1Amt,
         account = hdAccount1,
         fundedDefaultAcct
       )
@@ -103,14 +98,15 @@ trait FundWalletUtil {
       fundedWallet <- fundedAccount1WalletF
       balance <- fundedWallet.getBalance(defaultAccount)
       _ = require(
-        balance == expectedDefaultAmt,
-        s"Funding wallet fixture failed to fund the wallet, got balance=${balance} expected=${expectedDefaultAmt}")
+        balance == BitcoinSWalletTest.expectedDefaultAmt,
+        s"Funding wallet fixture failed to fund the wallet, got balance=${balance} expected=${BitcoinSWalletTest.expectedDefaultAmt}"
+      )
 
       account1Balance <- fundedWallet.getBalance(hdAccount1)
       _ = require(
-        account1Balance == expectedAccount1Amt,
+        account1Balance == BitcoinSWalletTest.expectedAccount1Amt,
         s"Funding wallet fixture failed to fund account 1, " +
-          s"got balance=${hdAccount1} expected=${expectedAccount1Amt}"
+          s"got balance=${hdAccount1} expected=${BitcoinSWalletTest.expectedAccount1Amt}"
       )
 
     } yield FundedWallet(fundedWallet)
