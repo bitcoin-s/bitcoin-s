@@ -83,31 +83,49 @@ tags. We are going to make the `UserId` tag special, and allow it to take in any
 set of users but all with different ids.
 
 ```scala mdoc:silent
+object UserIdTagType extends ExternalAddressTagType {
+  override val typeName: String = "UserIdTag"
+}
+
 /** Allows to assign funds in a specific address to a user */
-trait UserIdTag extends ExternalAddressTagType {
-  override val tagType: String = UserIdTags.tagType
+sealed trait UserIdTag extends ExternalAddressTag {
+  override val tagType: AddressTagType = UserIdTagType
 }
 
 object UserIdTags extends AddressTagFactory[UserIdTag] {
 
-  val tagType: String = "UserIdTag"
+  override val tagType: ExternalAddressTagType = UserIdTagType
+
+  case object CompanyTagName extends ExternalAddressTagName {
+    override def name: String = "Company"
+  }
+
+  case object InsuranceFundTagName extends ExternalAddressTagName {
+    override def name: String = "InsuranceFund"
+  }
 
   /** Funds that do not belong to any user and instead belong to the company */
   case object Company extends ExternalAddressTag with UserIdTag {
-    override val name: String = "Company"
+    override val tagName: ExternalAddressTagName = CompanyTagName
   }
 
   /** Funds in the company's insurance fund */
   case object InsuranceFund extends ExternalAddressTag with UserIdTag {
-    override val name: String = "InsuranceFund"
+    override val tagName: ExternalAddressTagName = InsuranceFundTagName
   }
 
   /** Funds that are specific to an individual user */
-  case class UserId(name: String) extends ExternalAddressTag with UserIdTag {
-    override val uid: Long = name.toLong
+  case class UserId(id: String) extends ExternalAddressTag with UserIdTag {
+    override val tagName: ExternalAddressTagName = new ExternalAddressTagName {
+        override def name: String = id
+    }
+
+    val uid = id.toLong
   }
 
-  val all: Vector[UserIdTag] = Vector(Company, InsuranceFund)
+  override val all: Vector[UserIdTag] = Vector(Company, InsuranceFund)
+
+  override val tagNames = Vector(CompanyTagName, InsuranceFundTagName)
 
   override def fromString(str: String): Option[UserIdTag] = {
     all.find(tag => str.toLowerCase() == tag.toString.toLowerCase) match {
