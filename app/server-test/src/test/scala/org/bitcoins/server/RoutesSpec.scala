@@ -365,8 +365,7 @@ class RoutesSpec
       val accountDb =
         AccountDb(xpub = xpub,
                   hdAccount =
-                    HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Testnet), 0),
-                  creationTime = 0)
+                    HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Testnet), 0))
 
       (mockWalletApi.listAccounts: () => Future[Vector[AccountDb]])
         .expects()

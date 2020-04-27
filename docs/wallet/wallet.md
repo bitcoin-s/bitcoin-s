@@ -144,6 +144,7 @@ val wallet = Wallet(keyManager, new NodeApi {
     override def broadcastTransaction(tx: Transaction): Future[Unit] = Future.successful(())
     override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
   }, new ChainQueryApi {
+    override def epochSecondToBlockHeight(time: Long): Future[Int] = Future.successful(0)
     override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
     override def getBestBlockHash(): Future[DoubleSha256DigestBE] = Future.successful(DoubleSha256DigestBE.empty)
     override def getNumberOfConfirmations(blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)

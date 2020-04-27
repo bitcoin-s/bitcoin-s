@@ -128,6 +128,9 @@ val exampleCallbacks =
 // but for the examples sake we will keep it small.
 val chainApi = new ChainQueryApi {
 
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+        Future.successful(0)
+
     /** Gets the height of the given block */
     override def getBlockHeight(
         blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
