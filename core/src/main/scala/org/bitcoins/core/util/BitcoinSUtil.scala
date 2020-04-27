@@ -4,6 +4,7 @@ import org.bitcoins.core.protocol.NetworkElement
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
+import scala.util.Properties
 
 /**
   * Created by chris on 2/26/16.
@@ -94,18 +95,13 @@ trait BitcoinSUtil {
     h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
 
-  private val osName = System.getProperty("os.name")
+  lazy val isLinux: Boolean = Properties.isLinux
 
-  lazy val isLinux: Boolean = osName.startsWith("Linux")
+  lazy val isMac: Boolean = Properties.isMac
 
-  lazy val isMac: Boolean = osName.startsWith("Mac")
+  lazy val isWindows: Boolean = Properties.isWin
 
-  lazy val isWindows: Boolean = osName.startsWith("Windows")
-
-  lazy val isCI: Boolean = {
-    val prop = System.getProperty("TEST_COMMAND")
-    prop != null && prop.nonEmpty
-  }
+  lazy val isCI: Boolean = Properties.envOrNone("CI").contains("1")
 }
 
 object BitcoinSUtil extends BitcoinSUtil

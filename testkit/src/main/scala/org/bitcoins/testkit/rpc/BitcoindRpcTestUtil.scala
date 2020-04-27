@@ -29,7 +29,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion.{
   Unknown,
@@ -982,8 +982,7 @@ object BitcoindRpcTestUtil extends BitcoindRpcTestUtil {
     * Used for long running async tasks
     */
   private val DEFAULT_LONG_DURATION = {
-    val isCI = Properties.envOrNone("CI").contains("1")
-    if (Properties.isMac && isCI) 10.seconds
+    if (BitcoinSUtil.isMac && BitcoinSUtil.isCI) 10.seconds
     else 3.seconds
   }
 }
