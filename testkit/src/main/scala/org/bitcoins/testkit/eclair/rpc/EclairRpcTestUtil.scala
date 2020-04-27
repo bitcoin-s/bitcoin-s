@@ -14,7 +14,6 @@ import org.bitcoins.commons.jsonmodels.eclair.{
 }
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{
   ChannelId,
@@ -24,6 +23,7 @@ import org.bitcoins.core.protocol.ln.channel.{
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstance

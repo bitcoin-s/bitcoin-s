@@ -4,11 +4,11 @@ import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.node.config.NodeAppConfig
 
 import scala.concurrent.ExecutionContext
-import slick.lifted.{ProvenShape}
+import slick.lifted.ProvenShape
 
 import scala.concurrent.Future
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import scodec.bits.ByteVector
 
 final case class BroadcastAbleTransactionDAO()(

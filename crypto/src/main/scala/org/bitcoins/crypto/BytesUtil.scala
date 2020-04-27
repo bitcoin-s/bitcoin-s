@@ -1,15 +1,13 @@
-package org.bitcoins.core.util
+package org.bitcoins.crypto
 
-import org.bitcoins.core.protocol.NetworkElement
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
-import scala.util.Properties
 
 /**
   * Created by chris on 2/26/16.
   */
-trait BitcoinSUtil {
+trait BytesUtil {
 
   def decodeHex(hex: String): ByteVector = {
     if (hex.isEmpty) ByteVector.empty else ByteVector.fromHex(hex).get
@@ -45,7 +43,7 @@ trait BitcoinSUtil {
   }
 
   def encodeHex(bigInt: BigInt): String =
-    BitcoinSUtil.encodeHex(ByteVector(bigInt.toByteArray))
+    BytesUtil.encodeHex(ByteVector(bigInt.toByteArray))
 
   /** Tests if a given string is a hexadecimal string. */
   def isHex(str: String): Boolean = {
@@ -56,7 +54,7 @@ trait BitcoinSUtil {
   /** Converts a two character hex string to its byte representation. */
   def hexToByte(hex: String): Byte = {
     require(hex.length == 2)
-    BitcoinSUtil.decodeHex(hex).head
+    BytesUtil.decodeHex(hex).head
   }
 
   /** Flips the endianness of the give hex string. */
@@ -94,16 +92,6 @@ trait BitcoinSUtil {
   def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
     h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
   }
-
-  private val osName = System.getProperty("os.name")
-
-  lazy val isLinux: Boolean = osName.startsWith("Linux")
-
-  lazy val isMac: Boolean = osName.startsWith("Mac")
-
-  lazy val isWindows: Boolean = osName.startsWith("Windows")
-
-  lazy val isCI: Boolean = Properties.envOrNone("CI").contains("1")
 }
 
-object BitcoinSUtil extends BitcoinSUtil
+object BytesUtil extends BytesUtil

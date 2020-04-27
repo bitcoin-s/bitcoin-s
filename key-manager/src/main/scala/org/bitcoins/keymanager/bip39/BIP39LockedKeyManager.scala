@@ -1,7 +1,7 @@
 package org.bitcoins.keymanager.bip39
 
-import org.bitcoins.core.crypto.AesPassword
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.ReadMnemonicError.{
   DecryptionError,
   JsonParsingError

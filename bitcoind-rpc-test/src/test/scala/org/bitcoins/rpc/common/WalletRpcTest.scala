@@ -4,11 +4,6 @@ import java.io.File
 import java.util.Scanner
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
-import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  ECPublicKey
-}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -19,6 +14,8 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{BitcoinAddress, P2PKHAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey, ECPublicKey}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -417,7 +414,7 @@ class WalletRpcTest extends BitcoindRpcTest {
       val reader = new Scanner(result.filename)
       var found = false
       while (reader.hasNext) {
-        if (reader.next == ecPrivateKey.toWIF(networkParam)) {
+        if (reader.next == ECPrivateKeyUtil.toWIF(ecPrivateKey, networkParam)) {
           found = true
         }
       }

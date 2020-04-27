@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{ECPrivateKey, EmptyDigitalSignature}
 import org.bitcoins.testkit.core.gen.WitnessGenerators
 import org.bitcoins.core.protocol.script._
+import org.bitcoins.crypto.{ECPrivateKey, EmptyDigitalSignature}
 import org.scalacheck.Prop
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 

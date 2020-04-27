@@ -1,7 +1,6 @@
 package org.bitcoins.core.p2p
 
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits._
 
 /**

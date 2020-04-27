@@ -10,6 +10,11 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.{
+  ECDigitalSignature,
+  ECPrivateKey,
+  EmptyDigitalSignature
+}
 import org.bitcoins.testkit.util.TransactionTestUtil
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, MustMatchers}
@@ -43,7 +48,7 @@ class TransactionSignatureCreatorTest
                          output =
                            TransactionOutput(CurrencyUnits.zero, scriptPubKey),
                          Policy.standardScriptVerifyFlags)
-    val privateKey = ECPrivateKey.fromWIFToPrivateKey(
+    val privateKey = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
     val txSignature =
       TransactionSignatureCreator.createSig(txSignatureComponent,
@@ -69,7 +74,7 @@ class TransactionSignatureCreatorTest
                          output =
                            TransactionOutput(CurrencyUnits.zero, scriptPubKey),
                          Policy.standardScriptVerifyFlags)
-    val privateKey = ECPrivateKey.fromWIFToPrivateKey(
+    val privateKey = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cTTh7jNtZhg3vHTjvYK8zcHkLfsMAS8iqL7pfZ6eVAVHHF8fN1qy")
     val txSignature =
       TransactionSignatureCreator.createSig(txSignatureComponent,

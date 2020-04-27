@@ -1,7 +1,5 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
 import scodec.bits.ByteVector
 
 sealed trait HashDigest extends Any with NetworkElement {
@@ -127,7 +125,7 @@ object DoubleSha256Digest extends Factory[DoubleSha256Digest] {
 
 }
 
-/** The big endian version of [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
+/** The big endian version of [[DoubleSha256Digest DoubleSha256Digest]] */
 case class DoubleSha256DigestBE(bytes: ByteVector) extends HashDigest {
   require(bytes.length == 32,
           "DoubleSha256Digest must always be 32 bytes, got: " + bytes.length)

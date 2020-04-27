@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.crypto.{BytesUtil, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /**
@@ -16,13 +16,13 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
   def num: UInt64
 
   override def hex = byteSize match {
-    case 1 => BitcoinSUtil.flipEndianness(num.hex.slice(14, 16))
-    case 3 => "fd" + BitcoinSUtil.flipEndianness(num.hex.slice(12, 16))
-    case 5 => "fe" + BitcoinSUtil.flipEndianness(num.hex.slice(8, 16))
-    case _ => "ff" + BitcoinSUtil.flipEndianness(num.hex)
+    case 1 => BytesUtil.flipEndianness(num.hex.slice(14, 16))
+    case 3 => "fd" + BytesUtil.flipEndianness(num.hex.slice(12, 16))
+    case 5 => "fe" + BytesUtil.flipEndianness(num.hex.slice(8, 16))
+    case _ => "ff" + BytesUtil.flipEndianness(num.hex)
   }
 
-  def bytes: ByteVector = BitcoinSUtil.decodeHex(hex)
+  def bytes: ByteVector = BytesUtil.decodeHex(hex)
 
   def toLong: Long = num.toLong
 
@@ -86,14 +86,14 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   /** Responsible for calculating what the
     * [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] is for this hex string. */
   def calculateCompactSizeUInt(hex: String): CompactSizeUInt =
-    calculateCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
+    calculateCompactSizeUInt(BytesUtil.decodeHex(hex))
 
   /**
     * Parses a VarInt from a string of hex characters
     * [[https://bitcoin.org/en/developer-reference#compactsize-unsigned-integers]]
     */
   def parseCompactSizeUInt(hex: String): CompactSizeUInt =
-    parseCompactSizeUInt(BitcoinSUtil.decodeHex(hex))
+    parseCompactSizeUInt(BytesUtil.decodeHex(hex))
 
   /**
     * Parses a [[org.bitcoins.core.protocol.CompactSizeUInt CompactSizeUInt]] from a sequence of bytes
@@ -150,7 +150,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
   private def parseLong(bytes: ByteVector): Long =
-    parseLong(BitcoinSUtil.encodeHex(bytes))
+    parseLong(BytesUtil.encodeHex(bytes))
 
   private def parseLong(byte: Byte): Long = parseLong(ByteVector.fromByte(byte))
 }

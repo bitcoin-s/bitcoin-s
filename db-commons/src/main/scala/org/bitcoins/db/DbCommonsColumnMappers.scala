@@ -16,6 +16,11 @@ import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import scodec.bits.ByteVector
 import slick.jdbc.GetResult
 import slick.jdbc.SQLiteProfile.api._

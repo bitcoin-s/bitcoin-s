@@ -1,7 +1,8 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.protocol.blockchain._
+import org.bitcoins.crypto.{BytesUtil, CryptoUtil}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -16,7 +17,7 @@ sealed abstract class Base58 {
 
   val base58Characters =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-  val base58Pairs = base58Characters.zipWithIndex.toMap
+  val base58Pairs: Map[Char, Int] = base58Characters.zipWithIndex.toMap
 
   /** Verifies a given [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]
     * string against its checksum (last 4 decoded bytes). */
@@ -60,7 +61,7 @@ sealed abstract class Base58 {
 
   /** Encodes a hex string to its [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] representation. */
   def encode(hex: String): String = {
-    val bytes = BitcoinSUtil.decodeHex(hex)
+    val bytes = BytesUtil.decodeHex(hex)
     encode(bytes)
   }
 
@@ -138,7 +139,7 @@ sealed abstract class Base58 {
     else if (isValidAddressPreFixByte(firstByte))
       base58.length >= 26 && base58.length <= 35
     else if (isValidSecretKeyPreFixByte(firstByte)) {
-      val byteSize = ECPrivateKey.fromWIFToPrivateKey(base58).bytes.size
+      val byteSize = ECPrivateKeyUtil.fromWIFToPrivateKey(base58).bytes.size
       byteSize == 32
     } else false
   }

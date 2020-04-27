@@ -1,6 +1,6 @@
 package org.bitcoins.node
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig

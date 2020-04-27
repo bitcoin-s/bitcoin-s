@@ -1,7 +1,8 @@
 package org.bitcoins.core.serializers
 
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
+import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -54,7 +55,7 @@ sealed abstract class RawSerializerHelper {
     cmpct.bytes ++ serialized
   }
 
-  /** Serializes a [[scala.Seq Seq]] of [[org.bitcoins.core.protocol.NetworkElement]] to a [[scodec.bits.ByteVector]] */
+  /** Serializes a [[scala.Seq Seq]] of [[NetworkElement]] to a [[scodec.bits.ByteVector]] */
   def writeNetworkElements[T <: NetworkElement](ts: Seq[T]): ByteVector = {
     val f = { t: T =>
       t.bytes

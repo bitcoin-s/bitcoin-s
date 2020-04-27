@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.hd.{
   HDAccount,
   HDChainType,
@@ -19,6 +18,7 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.script.ScriptType
+import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config.WalletAppConfig
 import slick.lifted.{ForeignKeyQuery, ProvenShape}

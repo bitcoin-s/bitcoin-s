@@ -22,7 +22,6 @@ full example of how to obtain a wallet seed, and then
 use that to generate further private and public keys:
 
 ```scala
-import scodec.bits._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd._
 

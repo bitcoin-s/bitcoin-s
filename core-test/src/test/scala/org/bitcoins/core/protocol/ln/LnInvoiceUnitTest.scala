@@ -1,6 +1,5 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.{UInt32, UInt64, UInt8}
 import org.bitcoins.core.protocol.ln.LnParams.{
   LnBitcoinMainNet,
@@ -18,7 +17,15 @@ import org.bitcoins.core.protocol.ln.fee.{
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.LnRoute
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
-import org.bitcoins.core.util.{Bech32, CryptoUtil}
+import org.bitcoins.core.util.Bech32
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  ECDigitalSignature,
+  ECPrivateKey,
+  ECPublicKey,
+  EmptyDigitalSignature,
+  Sha256Digest
+}
 import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector

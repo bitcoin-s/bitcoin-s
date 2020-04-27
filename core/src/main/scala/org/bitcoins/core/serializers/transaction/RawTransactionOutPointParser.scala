@@ -1,12 +1,12 @@
 package org.bitcoins.core.serializers.transaction
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutPoint,
   TransactionOutPoint
 }
 import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
 /**

@@ -11,8 +11,9 @@ This is the API we define to sign things with. It takes in an arbitrary byte vec
 From [Sign.scala](../../core/src/main/scala/org/bitcoins/core/crypto/Sign.scala):
 
 ```scala
-import scodec.bits._
 import org.bitcoins.core.crypto._
+import org.bitcoins.crypto.ECDigitalSignature
+
 import scala.concurrent._
 import scala.concurrent.duration._
 

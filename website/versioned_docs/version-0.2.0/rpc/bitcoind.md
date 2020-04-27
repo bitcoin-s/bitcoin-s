@@ -102,6 +102,8 @@ import org.bitcoins.core.protocol._
 import org.bitcoins.core.currency._
 import java.io._
 
+import org.bitcoins.crypto.DoubleSha256DigestBE
+
 import scala.concurrent._
 
 implicit val ec = ExecutionContext.global

@@ -11,7 +11,7 @@ From [Sign.scala](../../core/src/main/scala/org/bitcoins/core/crypto/Sign.scala)
 
 ```scala mdoc
 import scodec.bits._
-import org.bitcoins.core.crypto._
+import org.bitcoins.crypto._
 import scala.concurrent._
 import scala.concurrent.duration._
 

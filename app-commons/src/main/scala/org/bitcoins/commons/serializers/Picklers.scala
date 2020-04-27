@@ -9,7 +9,9 @@ import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import upickle.default._
 
 object Picklers {
-  import org.bitcoins.core.crypto.DoubleSha256DigestBE
+
+  import org.bitcoins.crypto.DoubleSha256DigestBE
+
   implicit val bitcoinAddressPickler: ReadWriter[BitcoinAddress] =
     readwriter[String]
       .bimap(_.value, BitcoinAddress.fromStringExn)

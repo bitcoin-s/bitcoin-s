@@ -1,8 +1,7 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
 import java.math.BigInteger
 
-import org.bitcoins.core.util.BitcoinSUtil
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.params.{
   ECPrivateKeyParameters,
@@ -58,7 +57,7 @@ object BouncyCastleUtil {
     val pubBytes = ByteVector(point.getEncoded(privateKey.isCompressed))
     require(
       ECPublicKey.isFullyValid(pubBytes),
-      s"Bouncy Castle failed to generate a valid public key, got: ${BitcoinSUtil
+      s"Bouncy Castle failed to generate a valid public key, got: ${BytesUtil
         .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }

@@ -54,7 +54,6 @@ can be used to generate what's called an extended private key
 Here's an example:
 
 ```scala
-import scodec.bits._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd._
 

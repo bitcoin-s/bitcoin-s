@@ -1,9 +1,8 @@
-package org.bitcoins.core.util
+package org.bitcoins.crypto
 
 import java.math.BigInteger
 import java.security.MessageDigest
 
-import org.bitcoins.core.crypto._
 import org.bouncycastle.crypto.digests.{RIPEMD160Digest, SHA512Digest}
 import org.bouncycastle.crypto.macs.HMac
 import org.bouncycastle.crypto.params.KeyParameter
@@ -13,7 +12,7 @@ import scodec.bits.{BitVector, ByteVector}
 /**
   * Utility cryptographic functions
   */
-trait CryptoUtil extends BitcoinSLogger {
+trait CryptoUtil {
 
   /** Does the following computation: RIPEMD160(SHA256(hex)).*/
   def sha256Hash160(bytes: ByteVector): Sha256Hash160Digest = {
@@ -50,7 +49,7 @@ trait CryptoUtil extends BitcoinSLogger {
     val messageDigest = new RIPEMD160Digest
     val raw = bytes.toArray
     messageDigest.update(raw, 0, raw.length)
-    val out = Array.fill[Byte](messageDigest.getDigestSize())(0)
+    val out = Array.fill[Byte](messageDigest.getDigestSize)(0)
     messageDigest.doFinal(out, 0)
     RipeMd160Digest(ByteVector(out))
   }
@@ -74,14 +73,21 @@ trait CryptoUtil extends BitcoinSLogger {
     *         p1.y is even, p2.y is odd
     */
   def recoverPoint(x: BigInteger): (ECPoint, ECPoint) = {
-    val curve = CryptoParams.curve.getCurve()
-    val x1 = curve.fromBigInteger(x)
-    val square = x1.square().add(curve.getA).multiply(x1).add(curve.getB)
-    val y1 = square.sqrt()
-    val y2 = y1.negate()
-    val R1 = curve.createPoint(x1.toBigInteger, y1.toBigInteger).normalize()
-    val R2 = curve.createPoint(x1.toBigInteger, y2.toBigInteger).normalize()
-    if (y1.testBitZero()) (R2, R1) else (R1, R2)
+    val bytes = ByteVector(x.toByteArray)
+
+    val bytes32 = if (bytes.length < 32) {
+      bytes.padLeft(32)
+    } else if (bytes.length == 32) {
+      bytes
+    } else if (bytes.length == 33 && bytes.head == 0.toByte) {
+      bytes.tail
+    } else {
+      throw new IllegalArgumentException(
+        s"Field element cannot have more than 32 bytes, got $bytes from $x")
+    }
+
+    (ECPublicKey(0x02.toByte +: bytes32).toPoint,
+     ECPublicKey(0x03.toByte +: bytes32).toPoint)
   }
 
   /**
@@ -104,13 +110,13 @@ trait CryptoUtil extends BitcoinSLogger {
 
     val (p1, p2) = recoverPoint(r)
 
-    val Q1 = (p1
+    val Q1 = p1
       .multiply(s)
-      .subtract(curve.getG.multiply(m)))
+      .subtract(curve.getG.multiply(m))
       .multiply(r.modInverse(curve.getN))
-    val Q2 = (p2
+    val Q2 = p2
       .multiply(s)
-      .subtract(curve.getG.multiply(m)))
+      .subtract(curve.getG.multiply(m))
       .multiply(r.modInverse(curve.getN))
 
     val pub1 = ECPublicKey.fromPoint(Q1)

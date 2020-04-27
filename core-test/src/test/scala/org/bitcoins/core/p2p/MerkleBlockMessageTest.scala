@@ -1,9 +1,9 @@
 package org.bitcoins.core.p2p
 
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.core.gen.p2p.DataMessageGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.node.networking.P2PClient
 
 class MerkleBlockMessageTest extends BitcoinSUnitTest {

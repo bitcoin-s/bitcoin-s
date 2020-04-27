@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.{ExtPublicKey, _}
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd._
 import org.bitcoins.keymanager.util.HDUtil
 

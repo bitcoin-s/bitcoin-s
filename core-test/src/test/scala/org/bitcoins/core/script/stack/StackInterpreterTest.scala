@@ -3,7 +3,8 @@ package org.bitcoins.core.script.stack
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.ExecutedScriptProgram
-import org.bitcoins.core.util.{BitcoinSUtil, ScriptProgramTestUtil}
+import org.bitcoins.core.util.ScriptProgramTestUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**
@@ -56,7 +57,7 @@ class StackInterpreterTest extends BitcoinSUnitTest {
                                                                    script)
     val newProgram = SI.opDepth(program)
 
-    newProgram.stack.head.hex must be(BitcoinSUtil.encodeHex(stack.size.toByte))
+    newProgram.stack.head.hex must be(BytesUtil.encodeHex(stack.size.toByte))
   }
 
   it must "evaluate OP_DEPTH operator correctly when there are zero items on the stack" in {

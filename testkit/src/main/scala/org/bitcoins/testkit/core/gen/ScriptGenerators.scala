@@ -25,6 +25,12 @@ import org.bitcoins.core.wallet.utxo.{
   P2PKSpendingInfo,
   P2PKWithTimeoutSpendingInfo
 }
+import org.bitcoins.crypto.{
+  ECDigitalSignature,
+  ECPrivateKey,
+  ECPublicKey,
+  EmptyDigitalSignature
+}
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 

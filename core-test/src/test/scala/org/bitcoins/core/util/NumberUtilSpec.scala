@@ -2,6 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.core.number.UInt8
+import org.bitcoins.crypto.BytesUtil
 import org.scalacheck.{Prop, Properties}
 
 /**
@@ -12,15 +13,15 @@ class NumberUtilSpec extends Properties("NumberUtilSpec") {
 
   property("Serialization symmetry for BigInt") =
     Prop.forAll(NumberGenerator.bigInts) { bigInt: BigInt =>
-      NumberUtil.toBigInt(BitcoinSUtil.encodeHex(bigInt)) == bigInt
+      NumberUtil.toBigInt(BytesUtil.encodeHex(bigInt)) == bigInt
     }
 
   property("serialization symmetry for ints") = Prop.forAll { int: Int =>
-    NumberUtil.toInt(BitcoinSUtil.encodeHex(int)) == int
+    NumberUtil.toInt(BytesUtil.encodeHex(int)) == int
   }
 
   property("serialization symmetry for longs") = Prop.forAll { long: Long =>
-    NumberUtil.toLong(BitcoinSUtil.encodeHex(long)) == long
+    NumberUtil.toLong(BytesUtil.encodeHex(long)) == long
   }
 
   property("convertBits symmetry") = {

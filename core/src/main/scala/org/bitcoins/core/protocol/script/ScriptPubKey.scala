@@ -1,7 +1,6 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
 import org.bitcoins.core.script.control._
@@ -18,6 +17,14 @@ import org.bitcoins.core.script.locktime.{
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.util._
+import org.bitcoins.crypto.{
+  BytesUtil,
+  CryptoUtil,
+  DoubleSha256Digest,
+  ECPublicKey,
+  Sha256Digest,
+  Sha256Hash160Digest
+}
 
 import scala.util.{Failure, Success, Try}
 
@@ -1086,7 +1093,7 @@ object WitnessScriptPubKey {
     // ScriptConstantImpl(ByteVector(37 bytes, 0x0021020afd6012af90835558c68365a370b7e6cd1c0d4664a8656c8c7847185cb5db6651ae)))
 
     //we can also have a LockTimeScriptPubKey with a nested 0 public key multisig script, need to check that as well
-    val bytes = BitcoinSUtil.toByteVector(asm)
+    val bytes = BytesUtil.toByteVector(asm)
     lazy val isMultiSig =
       MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm)
     lazy val isLockTimeSPK = {
@@ -1148,7 +1155,7 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   }
 
   def isValid(asm: Seq[ScriptToken]): Boolean = {
-    val asmBytes = BitcoinSUtil.toByteVector(asm)
+    val asmBytes = BytesUtil.toByteVector(asm)
     WitnessScriptPubKeyV0.isValid(asm) &&
     asmBytes.size == 22
   }
@@ -1193,7 +1200,7 @@ object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
   }
 
   def isValid(asm: Seq[ScriptToken]): Boolean = {
-    val asmBytes = BitcoinSUtil.toByteVector(asm)
+    val asmBytes = BytesUtil.toByteVector(asm)
     WitnessScriptPubKeyV0.isValid(asm) &&
     asmBytes.size == 34
   }
@@ -1294,7 +1301,7 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     if (asm.size < 3) false
     else {
       val minCommitmentSize = 38
-      val asmBytes = BitcoinSUtil.toByteVector(asm)
+      val asmBytes = BytesUtil.toByteVector(asm)
       val Seq(opReturn, pushOp, constant) = asm.take(3)
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
       constant.hex.take(8) == commitmentHeader && asmBytes.size >= minCommitmentSize

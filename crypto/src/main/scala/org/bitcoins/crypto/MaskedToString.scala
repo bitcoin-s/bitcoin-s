@@ -1,4 +1,4 @@
-package org.bitcoins.core.util
+package org.bitcoins.crypto
 
 /** Meant to provide a simple trait that
   * masks the default to string for sensitive classes */

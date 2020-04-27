@@ -4,7 +4,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   WalletCreateFundedPsbtOptions
 }
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -12,7 +11,7 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.script.crypto._
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest, DoubleSha256DigestBE}
 import play.api.libs.json._
 
 import scala.collection.mutable
@@ -54,7 +53,7 @@ object JsonWriters {
 
   implicit object ScriptPubKeyWrites extends Writes[ScriptPubKey] {
     override def writes(o: ScriptPubKey): JsValue =
-      JsString(BitcoinSUtil.encodeHex(o.asmBytes))
+      JsString(BytesUtil.encodeHex(o.asmBytes))
   }
 
   implicit object TransactionInputWrites extends Writes[TransactionInput] {

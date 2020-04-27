@@ -1,10 +1,9 @@
 package org.bitcoins.core.serializers.blockchain
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -37,7 +36,7 @@ class RawBlockSerializerTest extends BitcoinSUnitTest {
   val txSeq = List(tx1)
   val uInt = CompactSizeUInt(UInt64.one, 1)
   val hex = header + uInt.hex + rawTx1
-  val encode = BitcoinSUtil.encodeHex(_: ByteVector)
+  val encode = BytesUtil.encodeHex(_: ByteVector)
   "RawBlockSerializer" must "parse genesis block" in {
     val block = RawBlockSerializer.read(hex)
     block.txCount.num must be(UInt64(txSeq.size))

@@ -1,9 +1,9 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 /**
   * Represents a relevant transaction for the wallet that we should be keeping track of

@@ -1,5 +1,6 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.crypto.{BytesUtil, CryptoUtil}
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._
@@ -43,7 +44,7 @@ class CryptoUtilTest extends BitcoinSUnitTest {
 
   it must "perform a single SHA256 hash on a bit vector" in {
     val binary = bin"010001101110010001101110"
-    val strBytes = BitcoinSUtil.decodeHex(binary.toHex)
+    val strBytes = BytesUtil.decodeHex(binary.toHex)
 
     val shaStrBytes = CryptoUtil.sha256(strBytes)
     val shaBinary = CryptoUtil.sha256(binary)

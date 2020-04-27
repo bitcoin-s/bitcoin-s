@@ -19,6 +19,7 @@ title: Adding New Script Types
  * silent mode rather than compile-only mode to make them accessible to the rest of the doc.
  */
 
+import org.bitcoins.crypto._
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control._

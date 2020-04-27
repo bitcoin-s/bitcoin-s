@@ -1,8 +1,7 @@
 package org.bitcoins.core.serializers.blockchain
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -25,16 +24,16 @@ class RawBlockHeaderSerializerTest extends BitcoinSUnitTest {
   val nBits = "FFFF001D".toLowerCase
   val nonce = "1DAC2B7C".toLowerCase
   val hash = "6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000"
-  val encode = BitcoinSUtil.encodeHex(_: ByteVector)
+  val encode = BytesUtil.encodeHex(_: ByteVector)
   val hex = version + prevBlockHash + merkleRoot + timeStamp + nBits + nonce
   "BlockHeader" must "parse genesis block header" in {
     val blockHeader = RawBlockHeaderSerializer.read(hex)
-    blockHeader.version must be(Int32(BitcoinSUtil.flipEndianness(version)))
+    blockHeader.version must be(Int32(BytesUtil.flipEndianness(version)))
     blockHeader.previousBlockHash must be(DoubleSha256Digest(prevBlockHash))
     blockHeader.merkleRootHash must be(DoubleSha256Digest(merkleRoot))
-    blockHeader.time must be(UInt32(BitcoinSUtil.flipEndianness(timeStamp)))
-    blockHeader.nBits must be(UInt32(BitcoinSUtil.flipEndianness(nBits)))
-    blockHeader.nonce must be(UInt32(BitcoinSUtil.flipEndianness(nonce)))
+    blockHeader.time must be(UInt32(BytesUtil.flipEndianness(timeStamp)))
+    blockHeader.nBits must be(UInt32(BytesUtil.flipEndianness(nBits)))
+    blockHeader.nonce must be(UInt32(BytesUtil.flipEndianness(nonce)))
   }
 
   it must "properly hash genesis block header to return genesis block hash" in {

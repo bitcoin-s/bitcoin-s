@@ -7,7 +7,7 @@ title: Chain Query API
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.Block

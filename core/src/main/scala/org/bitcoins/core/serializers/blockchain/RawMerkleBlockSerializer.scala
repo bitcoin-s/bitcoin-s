@@ -1,11 +1,10 @@
 package org.bitcoins.core.serializers.blockchain
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -56,7 +55,7 @@ sealed abstract class RawMerkleBlockSerializer
     }
     val flagCount = CompactSizeUInt(
       UInt64(Math.ceil(partialMerkleTree.bits.size.toDouble / 8).toInt))
-    val hashes: ByteVector = BitcoinSUtil.toByteVector(merkleBlock.hashes)
+    val hashes: ByteVector = BytesUtil.toByteVector(merkleBlock.hashes)
     merkleBlock.blockHeader.bytes ++
       merkleBlock.transactionCount.bytes.reverse ++
       CompactSizeUInt(UInt64(merkleBlock.hashes.size)).bytes ++

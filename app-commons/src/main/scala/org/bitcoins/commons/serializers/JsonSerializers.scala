@@ -121,6 +121,15 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   WalletCreateFundedPsbtResult,
   WalletProcessPsbtResult
 }
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECDigitalSignature,
+  ECPublicKey,
+  RipeMd160Digest,
+  RipeMd160DigestBE,
+  Sha256Hash160Digest
+}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 

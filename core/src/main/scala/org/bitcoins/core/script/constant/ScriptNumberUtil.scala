@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import scodec.bits.ByteVector
 
 /**
@@ -22,7 +22,7 @@ trait ScriptNumberUtil {
     * @param hex
     * @return
     */
-  def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
+  def toLong(hex: String): Long = toLong(BytesUtil.decodeHex(hex))
 
   /**
     * Takes in a hex string and converts it into a signed number
@@ -32,7 +32,7 @@ trait ScriptNumberUtil {
     * @param hex
     * @return
     */
-  def toInt(hex: String): Int = toInt(BitcoinSUtil.decodeHex(hex))
+  def toInt(hex: String): Int = toInt(BytesUtil.decodeHex(hex))
 
   /**
     * Takes in a sequence of bytes and converts it into a signed number
@@ -106,7 +106,7 @@ trait ScriptNumberUtil {
   }
 
   private def parseLong(bytes: ByteVector): Long =
-    parseLong(BitcoinSUtil.encodeHex(bytes))
+    parseLong(BytesUtil.encodeHex(bytes))
 
   private def parseLong(hex: String): Long = java.lang.Long.parseLong(hex, 16)
 
@@ -119,12 +119,12 @@ trait ScriptNumberUtil {
   def longToHex(long: Long): String = {
     if (long > -1) {
       val bytes = toByteVec(long)
-      BitcoinSUtil.flipEndianness(BitcoinSUtil.encodeHex(bytes))
+      BytesUtil.flipEndianness(BytesUtil.encodeHex(bytes))
     } else {
       val bytes = toByteVec(long.abs)
       //add sign bit
       val negativeNumberBytes = changeSignBitToNegative(bytes)
-      val hex = BitcoinSUtil.encodeHex(negativeNumberBytes.reverse)
+      val hex = BytesUtil.encodeHex(negativeNumberBytes.reverse)
       hex
     }
   }
@@ -139,19 +139,19 @@ trait ScriptNumberUtil {
     * @param hex
     * @return
     */
-  def isPositive(hex: String): Boolean = isPositive(BitcoinSUtil.decodeHex(hex))
+  def isPositive(hex: String): Boolean = isPositive(BytesUtil.decodeHex(hex))
 
-  def isNegative(hex: String): Boolean = isNegative(BitcoinSUtil.decodeHex(hex))
+  def isNegative(hex: String): Boolean = isNegative(BytesUtil.decodeHex(hex))
 
   def isNegative(bytes: ByteVector): Boolean = {
     if (bytes.isEmpty) false else !isPositive(bytes)
   }
 
   def changeSignBitToPositive(hex: String): ByteVector =
-    changeSignBitToPositive(BitcoinSUtil.decodeHex(hex))
+    changeSignBitToPositive(BytesUtil.decodeHex(hex))
 
   def changeSignBitToNegative(hex: String): ByteVector =
-    changeSignBitToNegative(BitcoinSUtil.decodeHex(hex))
+    changeSignBitToNegative(BytesUtil.decodeHex(hex))
 
   def changeSignBitToNegative(bytes: ByteVector): ByteVector = {
     val newByte = (bytes.head | 0x80).toByte
@@ -159,7 +159,7 @@ trait ScriptNumberUtil {
   }
 
   def firstByteAllZeros(hex: String): Boolean =
-    firstByteAllZeros(BitcoinSUtil.decodeHex(hex))
+    firstByteAllZeros(BytesUtil.decodeHex(hex))
 
   /** Checks if the two given [[ScriptNumber numbers]] are equivalent to zero
     * in Script. Unfortunatey Script is one's complement which means we have

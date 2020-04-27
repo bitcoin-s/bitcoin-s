@@ -2,7 +2,8 @@ package org.bitcoins.core.crypto
 
 import java.security.SecureRandom
 
-import org.bitcoins.core.util.{CryptoUtil, MaskedToString, SeqWrapper}
+import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.crypto.{CryptoUtil, MaskedToString}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
@@ -12,7 +13,7 @@ import scala.io.Source
   * A mnemonic code conforming to [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]].
   * BIP39 mnemonic codes consist of a varying number of words (most often English,
   * possible with other languages as well) that can be used to generate an
-  * [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey ]] which again
+  * [[ExtPrivateKey ExtPrivateKey ]] which again
   * can be the root of a [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki  BIP32]]
   * HD wallet.
   */

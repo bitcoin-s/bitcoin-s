@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.bloom.BloomFilter
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.{
   Block,
   MerkleBlock,
   PartialMerkleTree
 }
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.scalacheck.Gen
 
 /**

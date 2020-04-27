@@ -21,6 +21,7 @@ import org.bitcoins.core.wallet.utxo.{
   UTXOSpendingInfo,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{
   ChainParamsGenerator,

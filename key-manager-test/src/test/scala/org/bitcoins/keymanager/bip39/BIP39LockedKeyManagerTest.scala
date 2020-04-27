@@ -1,6 +1,6 @@
 package org.bitcoins.keymanager.bip39
 
-import org.bitcoins.core.crypto.AesPassword
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.KeyManagerUnlockError
 import org.bitcoins.testkit.keymanager.{KeyManagerTestUtil, KeyManagerUnitTest}
 

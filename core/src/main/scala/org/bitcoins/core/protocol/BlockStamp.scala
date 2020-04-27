@@ -4,8 +4,8 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.temporal.{ChronoField, TemporalAccessor}
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.util.{Failure, Try}
 

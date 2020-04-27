@@ -1,6 +1,5 @@
 package org.bitcoins.core.protocol.transaction.testprotocol
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -8,7 +7,8 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
 /**
@@ -63,7 +63,7 @@ object CoreTransactionTestCaseProtocol extends DefaultJsonProtocol {
     val result = array.elements.map {
       case array: JsArray =>
         val prevoutHashHex =
-          BitcoinSUtil.flipEndianness(array.elements.head.convertTo[String])
+          BytesUtil.flipEndianness(array.elements.head.convertTo[String])
         val prevoutHash = DoubleSha256Digest(prevoutHashHex)
 
         val prevoutIndex = array.elements(1).convertTo[Long] match {

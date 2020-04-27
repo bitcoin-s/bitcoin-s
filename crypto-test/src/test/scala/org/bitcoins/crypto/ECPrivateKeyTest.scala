@@ -1,12 +1,9 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
-import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
+import org.bitcoins.testkit.core.gen.{ChainParamsGenerator, CryptoGenerators}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.bitcoins.testkit.core.gen.CryptoGenerators
-import org.bitcoins.testkit.core.gen.ChainParamsGenerator
-import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.config.RegTest
-import scodec.bits.ByteVector
 
 class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "create a private key from its hex representation" in {
@@ -19,8 +16,8 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "determine if a private key corresponds to a compressed public key or not" in {
     val compressedKey = "L1RrrnXkcKut5DEMwtDthjwRcTTwED36thyL1DebVrKuwvohjMNi"
     val uncompressedKey = "93DVKyFYwSN6wEo3E2fCrFPUp17FtrtNi2Lf7n4G3garFb16CRj"
-    ECPrivateKey.isCompressed(compressedKey) must be(true)
-    ECPrivateKey.isCompressed(uncompressedKey) must be(false)
+    ECPrivateKeyUtil.isCompressed(compressedKey) must be(true)
+    ECPrivateKeyUtil.isCompressed(uncompressedKey) must be(false)
   }
 
   it must "create a fresh private key" in {
@@ -28,18 +25,17 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   }
 
   it must "serialize a private key to WIF and then be able to deserialize it" in {
-    import scala.concurrent.ExecutionContext.Implicits.global
 
     val hex = "2cecbfb72f8d5146d7fe7e5a3f80402c6dd688652c332dff2e44618d2d3372"
     val privKey = ECPrivateKey(hex)
-    val wif = privKey.toWIF(TestNet3)
-    val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
+    val wif = ECPrivateKeyUtil.toWIF(privKey, TestNet3)
+    val privKeyFromWIF = ECPrivateKeyUtil.fromWIFToPrivateKey(wif)
     privKeyFromWIF must be(privKey)
 
     val privKeyDecompressed = ECPrivateKey.fromHex(hex, isCompressed = false)
-    val wifDecompressed = privKeyDecompressed.toWIF(TestNet3)
+    val wifDecompressed = ECPrivateKeyUtil.toWIF(privKeyDecompressed, TestNet3)
     val privKeyDecompressedFromWIF =
-      ECPrivateKey.fromWIFToPrivateKey(wifDecompressed)
+      ECPrivateKeyUtil.fromWIFToPrivateKey(wifDecompressed)
     privKeyDecompressedFromWIF must be(privKeyDecompressed)
   }
 
@@ -47,13 +43,13 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
     val hex =
       "00fc391adf4d6063a16a2e38b14d2be10133c4dacd4348b49d23ee0ce5ff4f1701"
     val privKey = ECPrivateKey(hex)
-    val wif = privKey.toWIF(TestNet3)
-    val privKeyFromWIF = ECPrivateKey.fromWIFToPrivateKey(wif)
+    val wif = ECPrivateKeyUtil.toWIF(privKey, TestNet3)
+    val privKeyFromWIF = ECPrivateKeyUtil.fromWIFToPrivateKey(wif)
     privKeyFromWIF must be(privKey)
   }
 
   it must "correctly decode a private key from WIF" in {
-    val privateKey = ECPrivateKey.fromWIFToPrivateKey(
+    val privateKey = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cTPg4Zc5Jis2EZXy3NXShgbn487GWBTapbU63BerLDZM3w2hQSjC")
     //derived hex on bitcore's playground
     privateKey.hex must be(
@@ -62,7 +58,7 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
 
   it must "decode a WIF private key corresponding to uncompressed public key" in {
     val wif = "5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C"
-    val privKey = ECPrivateKey.fromWIFToPrivateKey(wif)
+    val privKey = ECPrivateKeyUtil.fromWIFToPrivateKey(wif)
     privKey.publicKey.hex must be(
       "045b81f0017e2091e2edcd5eecf10d5bdd120a5514cb3ee65b8447ec18bfc4575c6d5bf415e54e03b1067934a0f0ba76b01c6b9ab227142ee1d543764b69d901e0")
   }
@@ -70,14 +66,14 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "have serialization symmetri for WIF format" in {
     forAll(CryptoGenerators.privateKey, ChainParamsGenerator.networkParams) {
       (privKey, network) =>
-        val wif = privKey.toWIF(network)
+        val wif = ECPrivateKeyUtil.toWIF(privKey, network)
         network match {
           case MainNet =>
-            assert(ECPrivateKey.parseNetworkFromWIF(wif).get == network)
+            assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == network)
           case TestNet3 | RegTest =>
-            assert(ECPrivateKey.parseNetworkFromWIF(wif).get == TestNet3)
+            assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == TestNet3)
         }
-        assert(ECPrivateKey.fromWIFToPrivateKey(wif) == privKey)
+        assert(ECPrivateKeyUtil.fromWIFToPrivateKey(wif) == privKey)
     }
   }
 
@@ -97,11 +93,11 @@ class ECPrivateKeyTest extends BitcoinSUnitTest {
   it must "fail to parse unknown WIF networks" in {
     // Litecoin privkey
     val wif = "6uSDaezGtedUbYk4F9CNVXbDWw9DuEuw7czU596t1CzmeAJ77P8"
-    assert(ECPrivateKey.parseNetworkFromWIF(wif).isFailure)
+    assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).isFailure)
   }
 
   it must "fail to parse non-WIF strings" in {
-    assert(ECPrivateKey.parseNetworkFromWIF("hello there").isFailure)
+    assert(ECPrivateKeyUtil.parseNetworkFromWIF("hello there").isFailure)
   }
 
   it must "not serialize a ECPrivateKey toString" in {

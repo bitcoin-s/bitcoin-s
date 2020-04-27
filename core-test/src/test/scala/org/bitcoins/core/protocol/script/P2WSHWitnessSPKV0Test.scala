@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.script.constant.ScriptNumber
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 class P2WSHWitnessSPKV0Test extends BitcoinSUnitTest {

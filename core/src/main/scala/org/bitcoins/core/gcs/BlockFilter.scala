@@ -1,12 +1,11 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, ScriptPubKey}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import scodec.bits.ByteVector
 
 object BlockFilter {
@@ -67,6 +66,6 @@ object BlockFilter {
   }
 
   def fromHex(hex: String, blockHash: DoubleSha256Digest): GolombFilter = {
-    fromBytes(BitcoinSUtil.decodeHex(hex), blockHash)
+    fromBytes(BytesUtil.decodeHex(hex), blockHash)
   }
 }

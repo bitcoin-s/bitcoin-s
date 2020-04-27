@@ -6,11 +6,11 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDb
 }
 import org.bitcoins.core.api.ChainQueryApi
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 import scala.concurrent.Future
 

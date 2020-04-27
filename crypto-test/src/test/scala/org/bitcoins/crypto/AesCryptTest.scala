@@ -1,10 +1,8 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
-import org.bitcoins.testkit.core.gen.{NumberGenerator, StringGenerators}
+import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.scalatest.Assertion
 import scodec.bits.{ByteVector, HexStringSyntax}
-import java.{util => ju}
 import org.scalatest.compatible.Assertion
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalacheck.Gen
@@ -155,7 +153,8 @@ class AesCryptTest extends BitcoinSUnitTest {
 
     // decrypt the expected cipher text
     {
-      val encrypted = AesEncryptedData(cipherText = expectedCipher, iv = iv)
+      val encrypted =
+        AesEncryptedData(cipherText = expectedCipher, iv = iv)
 
       val Right(decrypted) = AesCrypt.decrypt(encrypted, key)
       assert(decrypted == plainbytes)

@@ -1,11 +1,7 @@
 package org.bitcoins.keymanager.util
 
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.crypto.{
-  ExtKeyPrivVersion,
-  ExtKeyPubVersion,
-  ExtKeyVersion
-}
+import org.bitcoins.core.crypto.{ExtKeyPrivVersion, ExtKeyPubVersion}
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 
 object HDUtil {
@@ -14,7 +10,7 @@ object HDUtil {
   def getXprivVersion(
       hdPurpose: HDPurpose,
       network: NetworkParameters): ExtKeyPrivVersion = {
-    import ExtKeyVersion._
+    import org.bitcoins.core.crypto.ExtKeyVersion._
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
@@ -33,7 +29,7 @@ object HDUtil {
   def getXpubVersion(
       hdPurpose: HDPurpose,
       network: NetworkParameters): ExtKeyPubVersion = {
-    import ExtKeyVersion._
+    import org.bitcoins.core.crypto.ExtKeyVersion._
     import org.bitcoins.core.hd.HDPurposes._
 
     (hdPurpose, network) match {
@@ -50,7 +46,7 @@ object HDUtil {
 
   /** Gets the matching xpriv version to this xpub version */
   def getMatchingExtKeyVersion(version: ExtKeyPubVersion): ExtKeyPrivVersion = {
-    import ExtKeyVersion._
+    import org.bitcoins.core.crypto.ExtKeyVersion._
     version match {
       case LegacyMainNetPub        => LegacyMainNetPriv
       case LegacyTestNet3Pub       => LegacyTestNet3Priv
@@ -63,7 +59,7 @@ object HDUtil {
 
   /** Gets the matching xpub version to this xpriv version */
   def getMatchingExtKeyVersion(version: ExtKeyPrivVersion): ExtKeyPubVersion = {
-    import ExtKeyVersion._
+    import org.bitcoins.core.crypto.ExtKeyVersion._
     version match {
       case LegacyMainNetPriv        => LegacyMainNetPub
       case LegacyTestNet3Priv       => LegacyTestNet3Pub

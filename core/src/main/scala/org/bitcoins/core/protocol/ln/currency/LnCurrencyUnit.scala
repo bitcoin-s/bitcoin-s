@@ -8,9 +8,9 @@ import org.bitcoins.core.number.{
   Int64,
   UInt5
 }
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln._
 import org.bitcoins.core.util.Bech32
+import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}

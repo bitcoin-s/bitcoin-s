@@ -7,7 +7,7 @@ import org.bitcoins.testkit.core.gen.{
   ScriptGenerators
 }
 import org.bitcoins.core.protocol.script.P2SHScriptPubKey
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.crypto.CryptoUtil
 import org.scalacheck.{Prop, Properties}
 
 /**

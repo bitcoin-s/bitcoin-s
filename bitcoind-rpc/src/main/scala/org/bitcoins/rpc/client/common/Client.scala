@@ -9,7 +9,6 @@ import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, StreamTcpException}
 import akka.util.ByteString
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
-import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.commons.serializers.JsonSerializers._
@@ -27,6 +26,8 @@ import java.nio.file.Path
 
 import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 import org.bitcoins.rpc.BitcoindException
 import play.api.libs.json._
@@ -71,7 +72,8 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
     * so that the implicit network val is accessible
     */
   implicit object ECPrivateKeyWrites extends Writes[ECPrivateKey] {
-    override def writes(o: ECPrivateKey): JsValue = JsString(o.toWIF(network))
+    override def writes(o: ECPrivateKey): JsValue =
+      JsString(ECPrivateKeyUtil.toWIF(o, network))
   }
 
   implicit val eCPrivateKeyWrites: Writes[ECPrivateKey] = ECPrivateKeyWrites

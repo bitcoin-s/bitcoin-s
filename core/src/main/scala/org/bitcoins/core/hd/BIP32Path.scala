@@ -2,7 +2,8 @@ package org.bitcoins.core.hd
 
 import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.util.{Factory, SeqWrapper}
+import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.crypto.Factory
 import scodec.bits.ByteVector
 
 abstract class BIP32Path extends SeqWrapper[BIP32Node] {
