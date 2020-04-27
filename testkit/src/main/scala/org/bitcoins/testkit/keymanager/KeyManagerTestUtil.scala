@@ -11,6 +11,8 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.scalacheck.Gen
 
+import scala.annotation.tailrec
+
 object KeyManagerTestUtil {
 
   /** A temporary file that can be used as a seed path for testing */
@@ -37,6 +39,13 @@ object KeyManagerTestUtil {
 
   def bip39Password: String = {
     CryptoGenerators.bip39Password.sample.get
+  }
+
+  @tailrec
+  final def bip39PasswordNonEmpty: String = {
+    val attempt = bip39Password
+    if (attempt.isEmpty) bip39PasswordNonEmpty
+    else attempt
   }
 
   val badPassphrase: AesPassword = BIP39KeyManager.badPassphrase

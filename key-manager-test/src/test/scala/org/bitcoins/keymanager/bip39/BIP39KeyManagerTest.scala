@@ -103,7 +103,7 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
 
   it must "NOT initialize a key manager to the same xpub if one has a password and one does not" in {
     val kmParams = buildParams()
-    val bip39Pw = KeyManagerTestUtil.bip39Password
+    val bip39Pw = KeyManagerTestUtil.bip39PasswordNonEmpty
 
     val withPassword = BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw))
     val withPasswordXpub = withPassword.getRootXPub
