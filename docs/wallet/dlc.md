@@ -48,7 +48,7 @@ f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7af05f01f1ca852cf
 
 Note: if you wish to setup your own oracle for testing, you can do so by pasting the following into the `sbt core/console`:
 
-```scala mdoc:to-string
+```scala
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.util.CryptoUtil
 import scodec.bits.ByteVector
