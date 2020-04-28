@@ -1,5 +1,7 @@
 package org.bitcoins.wallet
 
+import java.time.Instant
+
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
@@ -42,6 +44,10 @@ abstract class Wallet
     IncomingTransactionDAO()
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
+
+  val nodeApi: NodeApi
+  val chainQueryApi: ChainQueryApi
+  val creationTime: Instant = keyManager.creationTime
 
   override def isEmpty(): Future[Boolean] =
     for {
@@ -333,7 +339,8 @@ abstract class Wallet
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
     accountCreationF
-      .map(_ => Wallet(keyManager, nodeApi, chainQueryApi))
+      .map(_ =>
+        Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime))
   }
 }
 
@@ -344,7 +351,7 @@ object Wallet extends WalletLogger {
       override val keyManager: BIP39KeyManager,
       override val nodeApi: NodeApi,
       override val chainQueryApi: ChainQueryApi,
-      override val creationTime: Long
+      override val creationTime: Instant
   )(
       implicit override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
@@ -354,7 +361,7 @@ object Wallet extends WalletLogger {
       keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
-      creationTime: Long)(
+      creationTime: Instant)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet = {
     WalletImpl(keyManager, nodeApi, chainQueryApi, creationTime)

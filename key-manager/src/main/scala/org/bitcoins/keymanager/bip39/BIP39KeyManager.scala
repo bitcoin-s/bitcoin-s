@@ -1,6 +1,7 @@
 package org.bitcoins.keymanager.bip39
 
 import java.nio.file.Files
+import java.time.Instant
 
 import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
 import org.bitcoins.core.crypto._
@@ -24,7 +25,7 @@ case class BIP39KeyManager(
     private val mnemonic: MnemonicCode,
     kmParams: KeyManagerParams,
     private val bip39PasswordOpt: Option[String],
-    birthday: Long)
+    creationTime: Instant)
     extends KeyManager {
   private val seed = bip39PasswordOpt match {
     case Some(pw) =>
@@ -33,6 +34,17 @@ case class BIP39KeyManager(
       BIP39Seed.fromMnemonic(mnemonic = mnemonic,
                              password = BIP39Seed.EMPTY_PASSWORD)
   }
+
+  def ==(km: KeyManager): Boolean =
+    km match {
+      case bip39Km: BIP39KeyManager =>
+        mnemonic == bip39Km.mnemonic &&
+          kmParams == bip39Km.kmParams &&
+          bip39PasswordOpt == bip39Km.bip39PasswordOpt &&
+          creationTime.getEpochSecond == bip39Km.creationTime.getEpochSecond
+      case _: KeyManager =>
+        km == this
+    }
 
   private val privVersion: ExtKeyPrivVersion =
     HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
@@ -72,7 +84,7 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
     val seedPath = kmParams.seedPath
     logger.info(s"Initializing wallet with seedPath=${seedPath}")
 
-    val time = TimeUtil.currentEpochSecond
+    val time = TimeUtil.now
 
     val writtenToDiskE: CompatEither[KeyManagerInitializeError, KeyManager] =
       if (Files.notExists(seedPath)) {
@@ -112,7 +124,7 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
           BIP39KeyManager(mnemonic = mnemonic,
                           kmParams = kmParams,
                           bip39PasswordOpt = bip39PasswordOpt,
-                          birthday = time)
+                          creationTime = time)
         }
       } else {
         logger.info(
@@ -124,7 +136,7 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
               BIP39KeyManager(mnemonic = mnemonic.mnemonicCode,
                               kmParams = kmParams,
                               bip39PasswordOpt = bip39PasswordOpt,
-                              birthday = mnemonic.creationTime))
+                              creationTime = mnemonic.creationTime))
           case Left(err) =>
             CompatLeft(
               InitializeKeyManagerError.FailedToReadWrittenSeed(
@@ -143,8 +155,10 @@ object BIP39KeyManager extends BIP39KeyManagerCreateApi with BitcoinSLogger {
         kmBeforeWrite <- writtenToDiskE
         invariant <- unlocked match {
           case Right(unlockedKeyManager) =>
-            require(kmBeforeWrite == unlockedKeyManager,
-                    s"We could not read the key manager we just wrote!")
+            require(
+              unlockedKeyManager == kmBeforeWrite,
+              s"We could not read the key manager we just wrote! $kmBeforeWrite != $unlockedKeyManager"
+            )
             CompatRight(unlockedKeyManager)
 
           case Left(err) =>

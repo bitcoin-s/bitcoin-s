@@ -1,5 +1,7 @@
 package org.bitcoins.wallet.api
 
+import java.time.Instant
+
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
@@ -37,7 +39,7 @@ trait WalletApi extends WalletLogger {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
-  val creationTime: Long
+  val creationTime: Instant
 
   def chainParams: ChainParams = walletConfig.chain
 
@@ -304,7 +306,8 @@ trait WalletApi extends WalletLogger {
       case Right(km) =>
         val w = Wallet(keyManager = km,
                        nodeApi = nodeApi,
-                       chainQueryApi = chainQueryApi)
+                       chainQueryApi = chainQueryApi,
+                       creationTime = km.creationTime)
         Right(w)
       case Left(err) => Left(err)
     }

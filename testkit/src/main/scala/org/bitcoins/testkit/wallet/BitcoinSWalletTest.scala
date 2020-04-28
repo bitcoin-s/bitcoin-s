@@ -348,7 +348,9 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.initialize().flatMap { _ =>
         val wallet =
-          Wallet(keyManager, nodeApi, chainQueryApi)(walletConfig, ec)
+          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)(
+            walletConfig,
+            ec)
         Wallet.initialize(wallet, bip39PasswordOpt)
       }
     }
@@ -409,11 +411,12 @@ object BitcoinSWalletTest extends WalletLogger {
 
       //create the wallet with the appropriate callbacks now that
       //we have them
-      walletWithCallback = Wallet(keyManager = wallet.keyManager,
-                                  nodeApi = apiCallback.nodeApi,
-                                  chainQueryApi = apiCallback.chainQueryApi)(
-        wallet.walletConfig,
-        wallet.ec)
+      walletWithCallback = Wallet(
+        keyManager = wallet.keyManager,
+        nodeApi = apiCallback.nodeApi,
+        chainQueryApi = apiCallback.chainQueryApi,
+        creationTime = wallet.keyManager.creationTime)(wallet.walletConfig,
+                                                       wallet.ec)
       //complete the walletCallbackP so we can handle the callbacks when they are
       //called without hanging forever.
       _ = walletCallbackP.success(walletWithCallback)

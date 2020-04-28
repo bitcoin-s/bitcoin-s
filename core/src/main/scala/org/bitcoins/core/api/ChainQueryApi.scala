@@ -41,6 +41,7 @@ trait ChainQueryApi {
       startHeight: Int,
       endHeight: Int): Future[Vector[FilterResponse]]
 
+  /** Gets the block height of the closest block to the given time */
   def epochSecondToBlockHeight(time: Long): Future[Int]
 
 }

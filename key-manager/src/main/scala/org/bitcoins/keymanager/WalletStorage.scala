@@ -1,6 +1,7 @@
 package org.bitcoins.keymanager
 
 import java.nio.file.{Files, Path}
+import java.time.Instant
 import java.util.NoSuchElementException
 
 import org.bitcoins.core.compat._
@@ -17,6 +18,9 @@ object WalletStorage {
     "encrypted-bitcoin-s-seed.json"
 
   import org.bitcoins.core.compat.JavaConverters._
+
+  /** Start of bitcoin-s wallet project, Block 555,990 block time on 2018-12-28 */
+  val FIRST_BITCOIN_S_WALLET_TIME = 1546042867L
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -47,7 +51,8 @@ object WalletStorage {
         IV -> encrypted.iv.hex,
         CIPHER_TEXT -> encrypted.cipherText.toHex,
         SALT -> mnemonic.salt.bytes.toHex,
-        CREATION_TIME -> ujson.Num(mnemonic.creationTime)
+        CREATION_TIME -> ujson.Num(
+          mnemonic.creationTime.getEpochSecond.toDouble)
       )
     }
 
@@ -120,9 +125,9 @@ object WalletStorage {
         case Success(value) =>
           value
         case Failure(err) if err.isInstanceOf[NoSuchElementException] =>
-          // If no CREATION_TIME is set, we set date to start of bitcoin-s wallet proj
-          // default is Block 555,990 block time 2018-12-28
-          1546042867L
+          // If no CREATION_TIME is set, we set date to start of bitcoin-s wallet project
+          // default is Block 555,990 block time on 2018-12-28
+          FIRST_BITCOIN_S_WALLET_TIME
         case Failure(exception) => throw exception
       }
       Try {
@@ -138,7 +143,7 @@ object WalletStorage {
 
     val encryptedEither: CompatEither[ReadMnemonicError, EncryptedMnemonic] =
       readJsonTupleEither.flatMap {
-        case (rawIv, rawCipherText, rawSalt, creationTime) =>
+        case (rawIv, rawCipherText, rawSalt, rawCreationTime) =>
           val encryptedOpt = for {
             iv <- ByteVector.fromHex(rawIv).map(AesIV.fromValidBytes)
             cipherText <- ByteVector.fromHex(rawCipherText)
@@ -148,7 +153,7 @@ object WalletStorage {
               s"Parsed contents of $seedPath into an EncryptedMnemonic")
             EncryptedMnemonic(AesEncryptedData(cipherText, iv),
                               salt,
-                              creationTime)
+                              Instant.ofEpochSecond(rawCreationTime))
           }
           val toRight: Option[
             CompatRight[ReadMnemonicError, EncryptedMnemonic]] = encryptedOpt

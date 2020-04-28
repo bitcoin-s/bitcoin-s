@@ -1,12 +1,16 @@
 package org.bitcoins.keymanager
 
+import java.time.Instant
+
 import org.bitcoins.core.compat.CompatEither
 import org.bitcoins.core.crypto._
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
-case class DecryptedMnemonic(mnemonicCode: MnemonicCode, creationTime: Long) {
+case class DecryptedMnemonic(
+    mnemonicCode: MnemonicCode,
+    creationTime: Instant) {
 
   def encrypt(password: AesPassword): EncryptedMnemonic =
     EncryptedMnemonicHelper.encrypt(this, password)
@@ -15,7 +19,7 @@ case class DecryptedMnemonic(mnemonicCode: MnemonicCode, creationTime: Long) {
 case class EncryptedMnemonic(
     value: AesEncryptedData,
     salt: AesSalt,
-    creationTime: Long) {
+    creationTime: Instant) {
 
   def toMnemonic(password: AesPassword): Try[MnemonicCode] = {
     val key = password.toKey(salt)
