@@ -8,7 +8,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
 import org.scalatest.exceptions.TestFailedException
 
@@ -32,8 +32,8 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
   private val expectedTxIdP: Promise[DoubleSha256Digest] = Promise()
   private val expectedTxIdF: Future[DoubleSha256Digest] = expectedTxIdP.future
 
-  private val walletP: Promise[UnlockedWalletApi] = Promise()
-  private val walletF: Future[UnlockedWalletApi] = walletP.future
+  private val walletP: Promise[WalletApi] = Promise()
+  private val walletF: Future[WalletApi] = walletP.future
 
   val amountFromBitcoind = 1.bitcoin
 

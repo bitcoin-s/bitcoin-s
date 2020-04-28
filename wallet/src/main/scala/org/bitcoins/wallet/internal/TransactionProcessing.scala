@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
   * spending from our wallet
   */
 private[wallet] trait TransactionProcessing extends WalletLogger {
-  self: LockedWallet =>
+  self: Wallet =>
   /////////////////////
   // Public facing API
 
@@ -29,7 +29,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
   override def processTransaction(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]
-  ): Future[LockedWallet] = {
+  ): Future[Wallet] = {
     for {
       result <- processTransactionImpl(transaction, blockHashOpt)
     } yield {
@@ -39,7 +39,7 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
     }
   }
 
-  override def processBlock(block: Block): Future[LockedWallet] = {
+  override def processBlock(block: Block): Future[Wallet] = {
     logger.info(s"Processing block=${block.blockHeader.hash.flip}")
     val res = block.transactions.foldLeft(Future.successful(this)) {
       (acc, transaction) =>

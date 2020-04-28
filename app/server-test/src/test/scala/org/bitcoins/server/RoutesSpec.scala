@@ -34,7 +34,7 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.node.Node
-import org.bitcoins.wallet.MockUnlockedWalletApi
+import org.bitcoins.wallet.MockWalletApi
 import org.bitcoins.wallet.models._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{Matchers, WordSpec}
@@ -54,7 +54,7 @@ class RoutesSpec
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
   val testAddress = BitcoinAddress(testAddressStr).get
 
-  val mockWalletApi = mock[MockUnlockedWalletApi]
+  val mockWalletApi = mock[MockWalletApi]
 
   val mockChainApi = mock[ChainApi]
 

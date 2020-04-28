@@ -8,12 +8,12 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.Node
 import org.bitcoins.commons.serializers.Picklers._
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.WalletApi
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-case class WalletRoutes(wallet: UnlockedWalletApi, node: Node)(
+case class WalletRoutes(wallet: WalletApi, node: Node)(
     implicit system: ActorSystem)
     extends ServerRoute {
   import system.dispatcher

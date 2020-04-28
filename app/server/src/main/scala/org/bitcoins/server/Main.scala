@@ -10,15 +10,15 @@ import org.bitcoins.core.api.ChainQueryApi
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManagerInitializeError
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.AccountDAO
-import org.bitcoins.wallet.{LockedWallet, Wallet}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -115,18 +115,20 @@ object Main extends App {
   private def createWallet(
       nodeApi: Node,
       chainQueryApi: ChainQueryApi,
-      bip39PasswordOpt: Option[String]): Future[UnlockedWalletApi] = {
+      bip39PasswordOpt: Option[String]): Future[WalletApi] = {
     hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
-        val locked = LockedWallet(nodeApi, chainQueryApi)
 
         // TODO change me when we implement proper password handling
-        locked.unlock(BIP39KeyManager.badPassphrase, bip39PasswordOpt) match {
-          case Right(wallet) =>
+        BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
+                                     bip39PasswordOpt,
+                                     walletConf.kmParams) match {
+          case Right(km) =>
+            val wallet = Wallet(km, nodeApi, chainQueryApi)
             Future.successful(wallet)
-          case Left(kmError) =>
-            error(kmError)
+          case Left(err) =>
+            error(err)
         }
       } else {
         logger.info(s"Initializing key manager")
@@ -150,8 +152,7 @@ object Main extends App {
     }
   }
 
-  private def createCallbacks(
-      wallet: UnlockedWalletApi): Future[NodeCallbacks] = {
+  private def createCallbacks(wallet: WalletApi): Future[NodeCallbacks] = {
     import DataMessageHandler._
     lazy val onTx: OnTxReceived = { tx =>
       wallet.processTransaction(tx, blockHash = None).map(_ => ())
@@ -185,9 +186,7 @@ object Main extends App {
     }
   }
 
-  private def initializeNode(
-      node: Node,
-      wallet: UnlockedWalletApi): Future[Node] = {
+  private def initializeNode(node: Node, wallet: WalletApi): Future[Node] = {
     for {
       nodeWithBloomFilter <- node match {
         case spvNode: SpvNode =>

@@ -22,7 +22,7 @@ import scala.util.{Failure, Success}
   * enumeratng and creating them, primarily.
   */
 private[wallet] trait AddressHandling extends WalletLogger {
-  self: LockedWallet =>
+  self: Wallet =>
 
   def contains(
       address: BitcoinAddress,

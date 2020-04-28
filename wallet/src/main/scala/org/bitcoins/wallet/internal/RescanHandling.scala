@@ -9,13 +9,13 @@ import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.{LockedWallet, WalletLogger}
+import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 private[wallet] trait RescanHandling extends WalletLogger {
-  self: LockedWallet =>
+  self: Wallet =>
 
   /////////////////////
   // Public facing API
