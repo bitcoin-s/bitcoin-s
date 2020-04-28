@@ -21,20 +21,20 @@ sealed trait InternalAddressTagType extends AddressTagType
   */
 sealed trait InternalAddressTag extends AddressTag
 
-/** An unknown address tag name, should mostly be used for parsing external address tags */
+/** An unknown address tag name, most likely an internal representation of an [[ExternalAddressTagName]] */
 case class UnknownAddressTagName(name: String) extends InternalAddressTagName {
   require(InternalAddressTagName.fromStringOpt(name).isEmpty,
           s"This tag name is already defined, got $name")
 }
 
-/** An unknown address tag type, should mostly be used for parsing external address tags */
+/** An unknown address tag type, most likely an internal representation of an [[ExternalAddressTagType]] */
 case class UnknownAddressTagType(typeName: String)
     extends InternalAddressTagType {
   require(InternalAddressTagType.fromStringOpt(typeName).isEmpty,
           s"This tag type is already defined, got $typeName")
 }
 
-/** An address tag without an unknown type, should mostly be used for parsing external address tags */
+/** An address tag without an unknown type, most likely an internal representation of an [[ExternalAddressTag]] */
 case class UnknownAddressTag(tagName: AddressTagName, tagType: AddressTagType)
     extends InternalAddressTag
 

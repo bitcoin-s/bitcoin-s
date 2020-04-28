@@ -28,8 +28,6 @@ trait AddressTag {
   def ==(at: AddressTag): Boolean =
     tagName == at.tagName && tagType == at.tagType
   def !=(at: AddressTag): Boolean = !(this == at)
-
-  def toUnknown: UnknownAddressTag = UnknownAddressTag(tagName, tagType)
 }
 
 trait AddressTagFactory[Tag <: AddressTag] {
