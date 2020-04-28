@@ -10,8 +10,8 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
@@ -20,7 +20,7 @@ import scala.concurrent.Future
 
 class WalletUnitTest extends BitcoinSWalletTest {
 
-  override type FixtureParam = UnlockedWalletApi
+  override type FixtureParam = WalletApi
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withNewWallet(test)
@@ -28,7 +28,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   behavior of "Wallet - unit test"
 
   it must "write the mnemonic seed to the root datadir -- NOT A NETWORK sub directory" in {
-    wallet: UnlockedWalletApi =>
+    wallet: WalletApi =>
       //since datadir has the path that relates it to a network ('mainnet'/'testnet'/'regtest')
       //we need to get the parent of that to find where the encrypted seed should be
       //this is where the bitcoin-s.conf should live too.
@@ -39,7 +39,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   }
 
-  it should "create a new wallet" in { wallet: UnlockedWalletApi =>
+  it should "create a new wallet" in { wallet: WalletApi =>
     for {
       accounts <- wallet.listAccounts()
       addresses <- wallet.listAddresses()
@@ -49,7 +49,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     }
   }
 
-  it should "generate addresses" in { wallet: UnlockedWalletApi =>
+  it should "generate addresses" in { wallet: WalletApi =>
     for {
       addr <- wallet.getNewAddress()
       otherAddr <- wallet.getNewAddress()
@@ -136,7 +136,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   }
 
   it should "fail to unlock the wallet with a bad password" in {
-    wallet: UnlockedWalletApi =>
+    wallet: WalletApi =>
       val badpassphrase = AesPassword.fromNonEmptyString("bad")
 
       val errorType = wallet.unlock(badpassphrase, None) match {
@@ -150,7 +150,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       }
   }
 
-  it should "match block filters" in { wallet: UnlockedWalletApi =>
+  it should "match block filters" in { wallet: WalletApi =>
     for {
       matched <- wallet.getMatchingBlocks(
         scripts = Vector(

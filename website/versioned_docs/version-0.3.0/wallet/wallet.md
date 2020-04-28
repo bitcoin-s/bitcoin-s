@@ -126,7 +126,7 @@ val wallet = Wallet(keyManager, new NodeApi {
     override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = Future.successful(0)
     override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[FilterResponse]] = Future.successful(Vector.empty)
   })
-val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
+val walletF: Future[WalletApi] = configF.flatMap { _ =>
   Wallet.initialize(wallet,bip39PasswordOpt)
 }
 

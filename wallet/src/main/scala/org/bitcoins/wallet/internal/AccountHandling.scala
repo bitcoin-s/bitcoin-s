@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.wallet.LockedWallet
+import org.bitcoins.wallet.Wallet
 import scala.concurrent.Future
 import org.bitcoins.wallet.models.AccountDb
 import org.bitcoins.core.hd.HDCoinType
@@ -17,7 +17,7 @@ import org.bitcoins.core.hd.HDPurposes
   * Provides functionality related enumerating accounts. Account
   * creation does not happen here, as that requires an unlocked wallet.
   */
-private[wallet] trait AccountHandling { self: LockedWallet =>
+private[wallet] trait AccountHandling { self: Wallet =>
 
   /** @inheritdoc */
   override def listAccounts(): Future[Vector[AccountDb]] =
