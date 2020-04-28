@@ -120,6 +120,7 @@ object Main extends App {
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
 
+        // TODO change me when we implement proper password handling
         BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
                                      bip39PasswordOpt,
                                      walletConf.kmParams) match {
