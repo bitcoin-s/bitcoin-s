@@ -415,8 +415,8 @@ case class ChainHandler(
             .getOrElse(
               throw UnknownBlockHash(s"Unknown block hash ${blockHash.hash}"))
         }
-      case _: BlockStamp.BlockTime =>
-        throw new RuntimeException("Cannot query by block time")
+      case blockTime: BlockStamp.BlockTime =>
+        Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
     }
 
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
