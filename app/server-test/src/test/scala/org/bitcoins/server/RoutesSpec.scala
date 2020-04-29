@@ -363,8 +363,9 @@ class RoutesSpec
         .get
 
       val accountDb =
-        AccountDb(xpub,
-                  HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Testnet), 0))
+        AccountDb(xpub = xpub,
+                  hdAccount =
+                    HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Testnet), 0))
 
       (mockWalletApi.listAccounts: () => Future[Vector[AccountDb]])
         .expects()
@@ -499,13 +500,14 @@ class RoutesSpec
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
-                              _: Int))
-        .expects(None, None, 100)
+                              _: Int,
+                              _: Boolean))
+        .expects(None, None, 100, false)
         .returning(FutureUtil.unit)
 
       val route1 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(), Null, Null, true)))
+          ServerCommand("rescan", Arr(Arr(), Null, Null, true, true)))
 
       Post() ~> route1 ~> check {
         contentType shouldEqual `application/json`
@@ -518,18 +520,21 @@ class RoutesSpec
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
-                              _: Int))
+                              _: Int,
+                              _: Boolean))
         .expects(
           Some(BlockTime(
             ZonedDateTime.of(2018, 10, 27, 12, 34, 56, 0, ZoneId.of("UTC")))),
           None,
-          100)
+          100,
+          false)
         .returning(FutureUtil.unit)
 
       val route2 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan",
-                        Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null, true)))
+          ServerCommand(
+            "rescan",
+            Arr(Arr(), Str("2018-10-27T12:34:56Z"), Null, true, true)))
 
       Post() ~> route2 ~> check {
         contentType shouldEqual `application/json`
@@ -542,15 +547,16 @@ class RoutesSpec
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
-                              _: Int))
-        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100)
+                              _: Int,
+                              _: Boolean))
+        .expects(None, Some(BlockHash(DoubleSha256DigestBE.empty)), 100, false)
         .returning(FutureUtil.unit)
 
       val route3 =
         walletRoutes.handleCommand(
           ServerCommand(
             "rescan",
-            Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex), true)))
+            Arr(Null, Null, Str(DoubleSha256DigestBE.empty.hex), true, true)))
 
       Post() ~> route3 ~> check {
         contentType shouldEqual `application/json`
@@ -563,13 +569,15 @@ class RoutesSpec
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
-                              _: Int))
-        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100)
+                              _: Int,
+                              _: Boolean))
+        .expects(Some(BlockHeight(12345)), Some(BlockHeight(67890)), 100, false)
         .returning(FutureUtil.unit)
 
       val route4 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(), Str("12345"), Num(67890), true)))
+          ServerCommand("rescan",
+                        Arr(Arr(), Str("12345"), Num(67890), true, true)))
 
       Post() ~> route4 ~> check {
         contentType shouldEqual `application/json`
@@ -580,7 +588,8 @@ class RoutesSpec
 
       val route5 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Null, Str("abcd"), Str("efgh"), true)))
+          ServerCommand("rescan",
+                        Arr(Null, Str("abcd"), Str("efgh"), true, true)))
 
       Post() ~> route5 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -590,8 +599,9 @@ class RoutesSpec
 
       val route6 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan",
-                        Arr(Arr(55), Null, Str("2018-10-27T12:34:56"), true)))
+          ServerCommand(
+            "rescan",
+            Arr(Arr(55), Null, Str("2018-10-27T12:34:56"), true, true)))
 
       Post() ~> route6 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -601,7 +611,7 @@ class RoutesSpec
 
       val route7 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Null, Num(-1), Null, true)))
+          ServerCommand("rescan", Arr(Null, Num(-1), Null, true, false)))
 
       Post() ~> route7 ~> check {
         rejection shouldEqual ValidationRejection(
@@ -615,13 +625,15 @@ class RoutesSpec
       (mockWalletApi
         .rescanNeutrinoWallet(_: Option[BlockStamp],
                               _: Option[BlockStamp],
-                              _: Int))
-        .expects(None, None, 55)
+                              _: Int,
+                              _: Boolean))
+        .expects(None, None, 55, false)
         .returning(FutureUtil.unit)
 
       val route8 =
         walletRoutes.handleCommand(
-          ServerCommand("rescan", Arr(Arr(55), Arr(), Arr(), Bool(true))))
+          ServerCommand("rescan",
+                        Arr(Arr(55), Arr(), Arr(), Bool(true), Bool(true))))
 
       Post() ~> route8 ~> check {
         contentType shouldEqual `application/json`

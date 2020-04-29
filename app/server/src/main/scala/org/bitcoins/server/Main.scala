@@ -125,7 +125,7 @@ object Main extends App {
                                      bip39PasswordOpt,
                                      walletConf.kmParams) match {
           case Right(km) =>
-            val wallet = Wallet(km, nodeApi, chainQueryApi)
+            val wallet = Wallet(km, nodeApi, chainQueryApi, km.creationTime)
             Future.successful(wallet)
           case Left(err) =>
             error(err)
@@ -144,7 +144,8 @@ object Main extends App {
         }
 
         logger.info(s"Creating new wallet")
-        val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
+        val unInitializedWallet =
+          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)
 
         Wallet.initialize(wallet = unInitializedWallet,
                           bip39PasswordOpt = bip39PasswordOpt)

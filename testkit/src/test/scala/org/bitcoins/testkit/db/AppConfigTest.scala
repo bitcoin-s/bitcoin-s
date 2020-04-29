@@ -1,19 +1,9 @@
 package org.bitcoins.testkit.db
 
-import java.nio.file.Files
-
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.hd.{HDAccount, HDCoin, HDCoinType, HDPurposes}
-import org.bitcoins.db.{CRUD, SQLiteTableInfo}
-import org.bitcoins.server.BitcoinSAppConfig._
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.Implicits._
-import org.bitcoins.testkit.chain.ChainTestUtil
-import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.bitcoins.wallet.models.{AccountDAO, AccountDb}
 
 class AppConfigTest extends BitcoinSAsyncTest {
 

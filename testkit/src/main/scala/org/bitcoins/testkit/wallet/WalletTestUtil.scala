@@ -84,7 +84,8 @@ object WalletTestUtil {
     HDAccount(coin = HDCoin(purpose, HDCoinType.Testnet), index = 1)
   }
 
-  def firstAccountDb = AccountDb(freshXpub(), defaultHdAccount)
+  def firstAccountDb: AccountDb =
+    AccountDb(freshXpub(), defaultHdAccount)
 
   def nestedSegWitAccountDb: AccountDb =
     AccountDb(freshXpub(),

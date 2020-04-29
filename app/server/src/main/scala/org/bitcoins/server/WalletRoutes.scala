@@ -111,16 +111,22 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
       Rescan.fromJsArr(arr) match {
         case Failure(exception) =>
           reject(ValidationRejection("failure", Some(exception)))
-        case Success(Rescan(batchSize, startBlock, endBlock, force)) =>
+        case Success(
+            Rescan(batchSize,
+                   startBlock,
+                   endBlock,
+                   force,
+                   ignoreCreationTime)) =>
           complete {
             val res = for {
               empty <- wallet.isEmpty()
               msg <- if (force || empty) {
                 wallet
-                  .rescanNeutrinoWallet(
-                    startBlock,
-                    endBlock,
-                    batchSize.getOrElse(wallet.discoveryBatchSize))
+                  .rescanNeutrinoWallet(startOpt = startBlock,
+                                        endOpt = endBlock,
+                                        addressBatchSize = batchSize.getOrElse(
+                                          wallet.discoveryBatchSize),
+                                        useCreationTime = !ignoreCreationTime)
                   .map(_ => "scheduled")
               } else {
                 Future.successful(

@@ -123,6 +123,9 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
                          blockHash = testBlockHash,
                          blockHeight = 1))
       })
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+      Future.successful(0)
   }
 
   /** Lets you customize the parameters for the created wallet */
@@ -289,6 +292,9 @@ object BitcoinSWalletTest extends WalletLogger {
         startHeight: Int,
         endHeight: Int): Future[Vector[FilterResponse]] =
       Future.successful(Vector.empty)
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+      Future.successful(0)
   }
 
   sealed trait WalletWithBitcoind {
@@ -342,7 +348,9 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.initialize().flatMap { _ =>
         val wallet =
-          Wallet(keyManager, nodeApi, chainQueryApi)(walletConfig, ec)
+          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)(
+            walletConfig,
+            ec)
         Wallet.initialize(wallet, bip39PasswordOpt)
       }
     }
@@ -403,11 +411,12 @@ object BitcoinSWalletTest extends WalletLogger {
 
       //create the wallet with the appropriate callbacks now that
       //we have them
-      walletWithCallback = Wallet(keyManager = wallet.keyManager,
-                                  nodeApi = apiCallback.nodeApi,
-                                  chainQueryApi = apiCallback.chainQueryApi)(
-        wallet.walletConfig,
-        wallet.ec)
+      walletWithCallback = Wallet(
+        keyManager = wallet.keyManager,
+        nodeApi = apiCallback.nodeApi,
+        chainQueryApi = apiCallback.chainQueryApi,
+        creationTime = wallet.keyManager.creationTime)(wallet.walletConfig,
+                                                       wallet.ec)
       //complete the walletCallbackP so we can handle the callbacks when they are
       //called without hanging forever.
       _ = walletCallbackP.success(walletWithCallback)
