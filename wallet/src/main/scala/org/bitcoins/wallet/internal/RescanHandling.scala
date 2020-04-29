@@ -6,6 +6,7 @@ import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
+import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
@@ -25,13 +26,25 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[Unit] = {
+      addressBatchSize: Int,
+      useCreationTime: Boolean = true): Future[Unit] = {
 
     logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
 
     val res = for {
+      start <- (startOpt, useCreationTime) match {
+        case (Some(_), true) =>
+          Future.failed(new IllegalArgumentException(
+            "Cannot define a starting block and use the wallet creation time"))
+        case (Some(value), false) =>
+          Future.successful(Some(value))
+        case (None, true) =>
+          walletCreationBlockHeight.map(Some(_))
+        case (None, false) =>
+          Future.successful(None)
+      }
       _ <- clearUtxosAndAddresses(account)
-      _ <- doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
+      _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
     } yield ()
 
     res.onComplete(_ => logger.info("Finished rescanning the wallet"))
@@ -42,6 +55,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
   /** @inheritdoc */
   override def rescanSPVWallet(): Future[Unit] =
     Future.failed(new RuntimeException("Rescan not implemented for SPV wallet"))
+
+  lazy val walletCreationBlockHeight: Future[BlockHeight] =
+    chainQueryApi
+      .epochSecondToBlockHeight(creationTime.getEpochSecond)
+      .map(BlockHeight)
 
   /** @inheritdoc */
   override def getMatchingBlocks(

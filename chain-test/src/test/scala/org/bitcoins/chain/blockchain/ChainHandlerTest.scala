@@ -3,22 +3,18 @@ package org.bitcoins.chain.blockchain
 import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models.{
-  BlockHeaderDb,
-  BlockHeaderDbHelper,
-  CompactFilterDb
-}
+import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPrivateKey
 }
-import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
+import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
+import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
@@ -31,6 +27,7 @@ import org.scalatest.{Assertion, FutureOutcome}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
+import scala.io.BufferedSource
 
 class ChainHandlerTest extends ChainUnitTest {
 
@@ -47,8 +44,8 @@ class ChainHandlerTest extends ChainUnitTest {
     mainnetAppConfig.withOverrides(memoryDb)
   }
 
-  val source = FileUtil.getFileAsSource("block_headers.json")
-  val arrStr = source.getLines.next
+  val source: BufferedSource = FileUtil.getFileAsSource("block_headers.json")
+  val arrStr: String = source.getLines.next
   source.close()
 
   import org.bitcoins.commons.serializers.JsonReaders.BlockHeaderReads
@@ -61,8 +58,18 @@ class ChainHandlerTest extends ChainUnitTest {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandler(test)
 
-  val genesis = ChainUnitTest.genesisHeaderDb
+  val genesis: BlockHeaderDb = ChainUnitTest.genesisHeaderDb
   behavior of "ChainHandler"
+
+  val nextBlockHeader: BlockHeader =
+    BlockHeader(
+      version = Int32(1),
+      previousBlockHash = ChainUnitTest.genesisHeaderDb.hashBE.flip,
+      merkleRootHash = DoubleSha256Digest.empty,
+      time = UInt32(1231006505),
+      nBits = UInt32(545259519),
+      nonce = UInt32(2083236893)
+    )
 
   it must "process a new valid block header, and then be able to fetch that header" in {
     chainHandler: ChainHandler =>
@@ -322,17 +329,8 @@ class ChainHandlerTest extends ChainUnitTest {
 
   it must "NOT create an unknown filter" in { chainHandler: ChainHandler =>
     {
-      val blockHeader =
-        BlockHeader(
-          version = Int32(1),
-          previousBlockHash = ChainUnitTest.genesisHeaderDb.hashBE.flip,
-          merkleRootHash = DoubleSha256Digest.empty,
-          time = UInt32(1231006505),
-          nBits = UInt32(545259519),
-          nonce = UInt32(2083236893)
-        )
       val unknownHashF = for {
-        _ <- chainHandler.processHeader(blockHeader)
+        _ <- chainHandler.processHeader(nextBlockHeader)
         blockHashBE <- chainHandler.getHeadersAtHeight(1).map(_.head.hashBE)
         golombFilter = BlockFilter.fromHex("017fa880", blockHashBE.flip)
         firstFilter = CompactFilterMessage(blockHash = blockHashBE.flip,
@@ -456,6 +454,16 @@ class ChainHandlerTest extends ChainUnitTest {
       assert(height1 == height2)
 //      assert(height1 == height3)
     }
+  }
+
+  it must "get the correct height from an epoch second" in {
+    chainHandler: ChainHandler =>
+      for {
+        height <- chainHandler.epochSecondToBlockHeight(
+          TimeUtil.currentEpochSecond)
+      } yield {
+        assert(height == 0)
+      }
   }
 
   final def processHeaders(

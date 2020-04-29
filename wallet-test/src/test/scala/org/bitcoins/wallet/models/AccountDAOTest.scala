@@ -1,9 +1,9 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.fixtures.WalletDAOFixture
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
-import org.bitcoins.testkit.Implicits._
 
 class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
@@ -15,7 +15,8 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
         val xpub = CryptoGenerators.extPublicKey.sampleSome
 
-        val accountDb = AccountDb(xpub, account)
+        val accountDb =
+          AccountDb(xpub, account)
         accountDAO.create(accountDb)
       }
       found <- accountDAO.read(
@@ -32,7 +33,8 @@ class AccountDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
 
         val xpub = CryptoGenerators.extPublicKey.sampleSome
 
-        val accountDb = AccountDb(xpub, account)
+        val accountDb =
+          AccountDb(xpub, account)
         accountDAO.create(accountDb)
       }
       found <- accountDAO.findByAccount(account)

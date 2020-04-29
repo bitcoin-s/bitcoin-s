@@ -84,9 +84,12 @@ abstract class SyncUtil extends BitcoinSLogger {
           case BlockStamp.BlockHeight(height) =>
             Future.successful(height)
           case BlockStamp.BlockTime(_) =>
-            Future.failed(new RuntimeException(s"Cannot query by block time"))
+            throw new RuntimeException("Cannot query by block time")
         }
       }
+
+      override def epochSecondToBlockHeight(time: Long): Future[Int] =
+        Future.successful(0)
 
       override def getFiltersBetweenHeights(
           startHeight: Int,

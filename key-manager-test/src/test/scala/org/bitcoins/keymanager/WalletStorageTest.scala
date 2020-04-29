@@ -3,6 +3,7 @@ package org.bitcoins.keymanager
 import java.nio.file.{Files, Path}
 
 import org.bitcoins.core.crypto.{AesPassword, MnemonicCode}
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.keymanager.ReadMnemonicError.{
   DecryptionError,
   JsonParsingError
@@ -29,13 +30,15 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   val passphrase = AesPassword.fromNonEmptyString("this_is_secret")
   val badPassphrase = AesPassword.fromNonEmptyString("this_is_also_secret")
 
-  def getAndWriteMnemonic(walletConf: WalletAppConfig): MnemonicCode = {
-    val mnemonic = CryptoGenerators.mnemonicCode.sampleSome
-    val encrypted = EncryptedMnemonicHelper.encrypt(mnemonic, passphrase)
+  def getAndWriteMnemonic(walletConf: WalletAppConfig): DecryptedMnemonic = {
+    val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+    val decryptedMnemonic = DecryptedMnemonic(mnemonicCode, TimeUtil.now)
+    val encrypted =
+      EncryptedMnemonicHelper.encrypt(decryptedMnemonic, passphrase)
     val seedPath = getSeedPath(walletConf)
     val _ =
       WalletStorage.writeMnemonicToDisk(seedPath, encrypted)
-    mnemonic
+    decryptedMnemonic
   }
 
   it must "write and read a mnemonic to disk" in {
@@ -51,7 +54,11 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
         WalletStorage.decryptMnemonicFromDisk(seedPath, passphrase)
       read match {
         case Right(readMnemonic) =>
-          assert(writtenMnemonic == readMnemonic)
+          assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
+          // Need to compare using getEpochSecond because when reading an epoch second
+          // it will not include the milliseconds that writtenMnemonic will have
+          assert(
+            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond)
         case Left(err) => fail(err.toString)
       }
   }

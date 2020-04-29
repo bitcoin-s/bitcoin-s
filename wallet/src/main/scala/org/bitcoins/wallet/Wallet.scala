@@ -1,5 +1,7 @@
 package org.bitcoins.wallet
 
+import java.time.Instant
+
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto._
@@ -7,11 +9,7 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState.{
@@ -46,6 +44,10 @@ abstract class Wallet
     IncomingTransactionDAO()
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
+
+  val nodeApi: NodeApi
+  val chainQueryApi: ChainQueryApi
+  val creationTime: Instant = keyManager.creationTime
 
   override def isEmpty(): Future[Boolean] =
     for {
@@ -337,7 +339,8 @@ abstract class Wallet
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
     accountCreationF
-      .map(_ => Wallet(keyManager, nodeApi, chainQueryApi))
+      .map(_ =>
+        Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime))
   }
 }
 
@@ -347,7 +350,8 @@ object Wallet extends WalletLogger {
   private case class WalletImpl(
       override val keyManager: BIP39KeyManager,
       override val nodeApi: NodeApi,
-      override val chainQueryApi: ChainQueryApi
+      override val chainQueryApi: ChainQueryApi,
+      override val creationTime: Instant
   )(
       implicit override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
@@ -356,10 +360,11 @@ object Wallet extends WalletLogger {
   def apply(
       keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi)(
+      chainQueryApi: ChainQueryApi,
+      creationTime: Instant)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet = {
-    WalletImpl(keyManager, nodeApi, chainQueryApi)
+    WalletImpl(keyManager, nodeApi, chainQueryApi, creationTime)
   }
 
   /** Creates the level 0 account for the given HD purpose */

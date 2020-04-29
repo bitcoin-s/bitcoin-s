@@ -1,6 +1,8 @@
 package org.bitcoins.keymanager
 
 import java.nio.file.{Files, Path}
+import java.time.Instant
+import java.util.NoSuchElementException
 
 import org.bitcoins.core.compat._
 import org.bitcoins.core.crypto._
@@ -17,6 +19,9 @@ object WalletStorage {
 
   import org.bitcoins.core.compat.JavaConverters._
 
+  /** Start of bitcoin-s wallet project, Block 555,990 block time on 2018-12-28 */
+  val FIRST_BITCOIN_S_WALLET_TIME = 1546042867L
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   /** Checks if a wallet seed exists in datadir */
@@ -28,6 +33,7 @@ object WalletStorage {
     val IV = "iv"
     val CIPHER_TEXT = "cipherText"
     val SALT = "salt"
+    val CREATION_TIME = "creationTime"
   }
 
   /**
@@ -44,7 +50,9 @@ object WalletStorage {
       ujson.Obj(
         IV -> encrypted.iv.hex,
         CIPHER_TEXT -> encrypted.cipherText.toHex,
-        SALT -> mnemonic.salt.bytes.toHex
+        SALT -> mnemonic.salt.bytes.toHex,
+        CREATION_TIME -> ujson.Num(
+          mnemonic.creationTime.getEpochSecond.toDouble)
       )
     }
 
@@ -111,13 +119,22 @@ object WalletStorage {
 
     val readJsonTupleEither: CompatEither[
       ReadMnemonicError,
-      (String, String, String)] = jsonE.flatMap { json =>
+      (String, String, String, Long)] = jsonE.flatMap { json =>
       logger.trace(s"Read encrypted mnemonic JSON: $json")
+      val creationTimeNum = Try(json(CREATION_TIME).num.toLong) match {
+        case Success(value) =>
+          value
+        case Failure(err) if err.isInstanceOf[NoSuchElementException] =>
+          // If no CREATION_TIME is set, we set date to start of bitcoin-s wallet project
+          // default is Block 555,990 block time on 2018-12-28
+          FIRST_BITCOIN_S_WALLET_TIME
+        case Failure(exception) => throw exception
+      }
       Try {
         val ivString = json(IV).str
         val cipherTextString = json(CIPHER_TEXT).str
         val rawSaltString = json(SALT).str
-        (ivString, cipherTextString, rawSaltString)
+        (ivString, cipherTextString, rawSaltString, creationTimeNum)
       } match {
         case Success(value)     => CompatRight(value)
         case Failure(exception) => throw exception
@@ -126,15 +143,17 @@ object WalletStorage {
 
     val encryptedEither: CompatEither[ReadMnemonicError, EncryptedMnemonic] =
       readJsonTupleEither.flatMap {
-        case (rawIv, rawCipherText, rawSalt) =>
+        case (rawIv, rawCipherText, rawSalt, rawCreationTime) =>
           val encryptedOpt = for {
-            iv <- ByteVector.fromHex(rawIv).map(AesIV.fromValidBytes(_))
+            iv <- ByteVector.fromHex(rawIv).map(AesIV.fromValidBytes)
             cipherText <- ByteVector.fromHex(rawCipherText)
             salt <- ByteVector.fromHex(rawSalt).map(AesSalt(_))
           } yield {
             logger.debug(
               s"Parsed contents of $seedPath into an EncryptedMnemonic")
-            EncryptedMnemonic(AesEncryptedData(cipherText, iv), salt)
+            EncryptedMnemonic(AesEncryptedData(cipherText, iv),
+                              salt,
+                              Instant.ofEpochSecond(rawCreationTime))
           }
           val toRight: Option[
             CompatRight[ReadMnemonicError, EncryptedMnemonic]] = encryptedOpt
@@ -147,24 +166,26 @@ object WalletStorage {
   }
 
   /**
-    * Reads the wallet mmemonic from disk and tries to parse and
+    * Reads the wallet mnemonic from disk and tries to parse and
     * decrypt it
     */
   def decryptMnemonicFromDisk(
       seedPath: Path,
-      passphrase: AesPassword): Either[ReadMnemonicError, MnemonicCode] = {
+      passphrase: AesPassword): Either[ReadMnemonicError, DecryptedMnemonic] = {
 
     val encryptedEither = readEncryptedMnemonicFromDisk(seedPath)
 
-    val decryptedEither: CompatEither[ReadMnemonicError, MnemonicCode] =
+    val decryptedEither: CompatEither[ReadMnemonicError, DecryptedMnemonic] =
       encryptedEither.flatMap { encrypted =>
         encrypted.toMnemonic(passphrase) match {
           case Failure(exc) =>
             logger.error(s"Error when decrypting $encrypted: $exc")
             CompatLeft(ReadMnemonicError.DecryptionError)
-          case Success(value) =>
+          case Success(mnemonic) =>
             logger.debug(s"Decrypted $encrypted successfully")
-            CompatRight(value)
+            val decryptedMnemonic =
+              DecryptedMnemonic(mnemonic, encrypted.creationTime)
+            CompatRight(decryptedMnemonic)
         }
       }
 

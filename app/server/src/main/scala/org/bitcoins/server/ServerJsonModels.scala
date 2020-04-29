@@ -143,7 +143,8 @@ case class Rescan(
     batchSize: Option[Int],
     startBlock: Option[BlockStamp],
     endBlock: Option[BlockStamp],
-    force: Boolean)
+    force: Boolean,
+    ignoreCreationTime: Boolean)
 
 object Rescan extends ServerJsonModels {
 
@@ -175,16 +176,18 @@ object Rescan extends ServerJsonModels {
     }
 
     jsArr.arr.toList match {
-      case batchSizeJs :: startJs :: endJs :: forceJs :: Nil =>
+      case batchSizeJs :: startJs :: endJs :: forceJs :: ignoreCreationTimeJs :: Nil =>
         Try {
           val batchSize = parseInt(batchSizeJs)
           val start = parseBlockStamp(startJs)
           val end = parseBlockStamp(endJs)
           val force = parseBoolean(forceJs)
+          val ignoreCreationTime = parseBoolean(ignoreCreationTimeJs)
           Rescan(batchSize = batchSize,
                  startBlock = start,
                  endBlock = end,
-                 force = force)
+                 force = force,
+                 ignoreCreationTime = ignoreCreationTime)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing addresses"))

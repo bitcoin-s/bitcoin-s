@@ -1,7 +1,11 @@
 package org.bitcoins.chain.models
 
+import java.time.ZonedDateTime
+
 import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
 
@@ -59,6 +63,56 @@ class BlockHeaderDAOTest extends ChainUnitTest {
           .map(opt => assert(opt.isEmpty))
       }
 
+  }
+
+  it must "fail to find a header closest to a epoch second" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val createdF = blockHeaderDAO.create(blockHeader)
+
+      val headerDbF =
+        createdF.flatMap(_ => blockHeaderDAO.findClosestToTime(UInt32.zero))
+
+      recoverToSucceededIf[IllegalArgumentException](headerDbF)
+  }
+
+  it must "find the closest block to the given epoch second" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val createdF = blockHeaderDAO.create(blockHeader)
+
+      val headerDbF = createdF.flatMap(_ =>
+        blockHeaderDAO.findClosestToTime(UInt32(TimeUtil.currentEpochSecond)))
+
+      headerDbF.map { headerDb =>
+        assert(headerDb == blockHeader)
+      }
+  }
+
+  it must "find the block at given epoch second" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val createdF = blockHeaderDAO.create(blockHeader)
+
+      val headerDbF = createdF.flatMap(_ =>
+        blockHeaderDAO.findClosestToTime(blockHeader.time))
+
+      headerDbF.map { headerDb =>
+        assert(headerDb == blockHeader)
+      }
+  }
+
+  it must "find all the headers before to the given epoch second" in {
+    blockHeaderDAO: BlockHeaderDAO =>
+      val blockHeader = BlockHeaderHelper.buildNextHeader(genesisHeaderDb)
+      val createdF = blockHeaderDAO.create(blockHeader)
+
+      val headerDbsF = createdF.flatMap(_ =>
+        blockHeaderDAO.findAllBeforeTime(UInt32(TimeUtil.currentEpochSecond)))
+
+      headerDbsF.map { headerDbs =>
+        assert(headerDbs.size == 2)
+      }
   }
 
   it must "retrieve the chain tip saved in the database" in {

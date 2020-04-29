@@ -5,6 +5,7 @@ import java.nio.file.Files
 import org.bitcoins.core.config.{MainNet, RegTest}
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, MnemonicCode}
 import org.bitcoins.core.hd._
+import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.keymanager._
 import org.bitcoins.testkit.keymanager.{KeyManagerTestUtil, KeyManagerUnitTest}
 import scodec.bits.BitVector
@@ -42,7 +43,7 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
           s"Failed to read mnemonic that was written by key manager with err=${err}")
     }
 
-    assert(mnemonic.toEntropy == entropy,
+    assert(mnemonic.mnemonicCode.toEntropy == entropy,
            s"We did not read the same entropy that we wrote!")
   }
 
@@ -60,7 +61,7 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
 
   it must "initialize a key manager to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
     val kmParams = buildParams()
-    val direct = BIP39KeyManager(mnemonic, kmParams, None)
+    val direct = BIP39KeyManager(mnemonic, kmParams, None, TimeUtil.now)
 
     val directXpub = direct.getRootXPub
 
@@ -83,7 +84,8 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
   it must "initialize a key manager with a bip39 password to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
     val kmParams = buildParams()
     val bip39Pw = KeyManagerTestUtil.bip39Password
-    val direct = BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw))
+    val direct =
+      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
 
     val directXpub = direct.getRootXPub
 
@@ -105,10 +107,12 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
     val kmParams = buildParams()
     val bip39Pw = KeyManagerTestUtil.bip39PasswordNonEmpty
 
-    val withPassword = BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw))
+    val withPassword =
+      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
     val withPasswordXpub = withPassword.getRootXPub
 
-    val noPassword = BIP39KeyManager(mnemonic, kmParams, None)
+    val noPassword =
+      BIP39KeyManager(mnemonic, kmParams, None, TimeUtil.now)
 
     val noPwXpub = noPassword.getRootXPub
 
