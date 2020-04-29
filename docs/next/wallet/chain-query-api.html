@@ -156,6 +156,9 @@ want.</p>
 <span class="hljs-comment">// but for the examples sake we will keep it small.</span>
 <span class="hljs-keyword">val</span> chainApi = <span class="hljs-keyword">new</span> <span class="hljs-type">ChainQueryApi</span> {
 
+    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">epochSecondToBlockHeight</span></span>(time: <span class="hljs-type">Long</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">Int</span>] =
+        <span class="hljs-type">Future</span>.successful(<span class="hljs-number">0</span>)
+
     <span class="hljs-comment">/** Gets the height of the given block */</span>
     <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getBlockHeight</span></span>(
         blockHash: <span class="hljs-type">DoubleSha256DigestBE</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">Option</span>[<span class="hljs-type">Int</span>]] = {
@@ -218,7 +221,7 @@ want.</p>
 
 <span class="hljs-comment">// Finally, we can initialize our wallet with our own node api</span>
 <span class="hljs-keyword">val</span> wallet =
-    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi)
+    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, creationTime = <span class="hljs-type">Instant</span>.now)
 
 <span class="hljs-comment">// Then to trigger one of the events we can run</span>
 wallet.chainQueryApi.getFiltersBetweenHeights(<span class="hljs-number">100</span>, <span class="hljs-number">150</span>)

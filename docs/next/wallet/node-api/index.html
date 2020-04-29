@@ -131,7 +131,7 @@ want.</p>
 
 <span class="hljs-comment">// Finally, we can initialize our wallet with our own node api</span>
 <span class="hljs-keyword">val</span> wallet =
-    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi)
+    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, creationTime = <span class="hljs-type">Instant</span>.now)
 
 <span class="hljs-comment">// Then to trigger the event we can run</span>
 <span class="hljs-keyword">val</span> exampleBlock = <span class="hljs-type">DoubleSha256Digest</span>(
