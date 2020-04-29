@@ -22,6 +22,8 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import java.time.Instant
+
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```
 
@@ -193,7 +195,7 @@ val chainApi = new ChainQueryApi {
 
 // Finally, we can initialize our wallet with our own node api
 val wallet =
-    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi)
+    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, creationTime = Instant.now)
 
 // Then to trigger one of the events we can run
 wallet.chainQueryApi.getFiltersBetweenHeights(100, 150)
