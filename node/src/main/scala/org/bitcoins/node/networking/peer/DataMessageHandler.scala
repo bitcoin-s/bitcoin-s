@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.db.MarkedLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
@@ -30,6 +31,11 @@ case class DataMessageHandler(
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
     extends P2PLogger {
+
+  // Need to overwrite logger because nodeAppConfig and chainAppConfig are both
+  // instances of LoggerConfig
+  protected def logger(implicit config: NodeAppConfig): MarkedLogger =
+    super.logger(config)
 
   private val txDAO = BroadcastAbleTransactionDAO()
 

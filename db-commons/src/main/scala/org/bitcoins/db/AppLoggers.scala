@@ -1,17 +1,14 @@
 package org.bitcoins.db
 
 import ch.qos.logback.classic
-import org.slf4j.{LoggerFactory, MDC}
-import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder
-import ch.qos.logback.core.rolling.RollingFileAppender
-import ch.qos.logback.core.rolling.TimeBasedRollingPolicy
-import ch.qos.logback.core.encoder.Encoder
-import ch.qos.logback.core.FileAppender
-import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.classic.joran.JoranConfigurator
-import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.{ConsoleAppender, FileAppender}
+import ch.qos.logback.core.encoder.Encoder
+import ch.qos.logback.core.rolling.{RollingFileAppender, TimeBasedRollingPolicy}
+import org.slf4j.{LoggerFactory, MDC}
 
 /** Provides logging functionality for Bitcoin-S
   * app modules (i.e. the modules that are capable
@@ -28,7 +25,7 @@ private[bitcoins] trait AppLoggers {
     case object Database extends LoggerKind
   }
 
-  def conf: AppConfig
+  def conf: LoggerConfig
 
   private val context = {
     val context = LoggerFactory.getILoggerFactory match {
@@ -87,15 +84,7 @@ private[bitcoins] trait AppLoggers {
 
     logFileAppender.setRollingPolicy(logFilePolicy)
 
-    val baseDir = conf.baseDatadir
-    val lastDirname = conf.network match {
-      case MainNet  => "mainnet"
-      case TestNet3 => "testnet3"
-      case RegTest  => "regtest"
-    }
-    val logFile = baseDir.resolve(lastDirname).resolve(s"bitcoin-s.log")
-
-    logFileAppender.setFile(logFile.toString)
+    logFileAppender.setFile(conf.logFile.toString)
     logFileAppender.start()
 
     logFileAppender.asInstanceOf[FileAppender[ILoggingEvent]]
@@ -120,7 +109,7 @@ private[bitcoins] trait AppLoggers {
         ("chain-verification", conf.verificationLogLevel)
       case KeyHandling => ("KEY-HANDLING", conf.keyHandlingLogLevel)
       case P2P         => ("P2P", conf.p2pLogLevel)
-      case Wallet      => ("WALLET", conf.walletLogLeveL)
+      case Wallet      => ("WALLET", conf.walletLogLevel)
       case Http        => ("HTTP", conf.httpLogLevel)
       case Database    => ("DATABASE", conf.databaseLogLevel)
     }

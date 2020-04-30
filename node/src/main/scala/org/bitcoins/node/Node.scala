@@ -12,6 +12,7 @@ import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.db.MarkedLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{
   BroadcastAbleTransaction,
@@ -53,6 +54,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
     this
   }
+
+  // Need to overwrite logger because nodeAppConfig and chainAppConfig are both
+  // instances of LoggerConfig
+  protected def logger(implicit config: NodeAppConfig): MarkedLogger =
+    super.logger(config)
 
   lazy val txDAO = BroadcastAbleTransactionDAO()
 

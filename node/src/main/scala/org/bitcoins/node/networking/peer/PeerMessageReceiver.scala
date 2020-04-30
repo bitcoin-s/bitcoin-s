@@ -10,6 +10,7 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.p2p.{NetworkMessage, _}
+import org.bitcoins.db.MarkedLogger
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
@@ -41,6 +42,11 @@ class PeerMessageReceiver(
     chainAppConfig: ChainAppConfig)
     extends P2PLogger {
   import ref.dispatcher
+
+  // Need to overwrite logger because nodeAppConfig and chainAppConfig are both
+  // instances of LoggerConfig
+  protected def logger(implicit config: NodeAppConfig): MarkedLogger =
+    super.logger(config)
 
   /** This method is called when we have received
     * a [[akka.io.Tcp.Connected]] message from our peer

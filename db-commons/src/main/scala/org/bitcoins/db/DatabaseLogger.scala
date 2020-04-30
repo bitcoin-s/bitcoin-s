@@ -3,7 +3,8 @@ package org.bitcoins.db
 /** Exposes access to the database interaction logger */
 private[bitcoins] trait DatabaseLogger {
   private var _logger: MarkedLogger = _
-  protected[bitcoins] def logger(implicit config: AppConfig) = {
+  protected[bitcoins] def logger(
+      implicit config: LoggerConfig): MarkedLogger = {
     if (_logger == null) {
       _logger = DatabaseLoggerImpl(config).getLogger
     }
@@ -11,7 +12,7 @@ private[bitcoins] trait DatabaseLogger {
   }
 }
 
-private[db] case class DatabaseLoggerImpl(override val conf: AppConfig)
+private[db] case class DatabaseLoggerImpl(override val conf: LoggerConfig)
     extends AppLoggers {
 
   /**
