@@ -61,7 +61,13 @@ object Main extends App {
     node <- initializeNode(uninitializedNode, wallet)
 
     _ <- node.start()
-    _ = logger.info(s"Starting SPV node sync")
+    _ = if (nodeConf.isSPVEnabled) {
+      logger.info(s"Starting SPV node sync")
+    } else if (nodeConf.isNeutrinoEnabled) {
+      logger.info(s"Starting neutrino node sync")
+    } else {
+      logger.info(s"Starting unknown type of node sync")
+    }
     _ <- node.sync()
     chainApi <- node.chainApiFromDb()
     start <- {
@@ -79,7 +85,16 @@ object Main extends App {
     sys.addShutdownHook {
       logger.error(s"Exiting process")
 
-      node.stop().foreach(_ => logger.info(s"Stopped SPV node"))
+      node
+        .stop()
+        .foreach(_ =>
+          if (nodeConf.isSPVEnabled) {
+            logger.info(s"Stopped SPV node")
+          } else if (nodeConf.isNeutrinoEnabled) {
+            logger.info(s"Stopped neutrino node")
+          } else {
+            logger.info(s"Stopped unknown type of node")
+          })
       system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
     }
 
