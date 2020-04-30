@@ -136,7 +136,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           this
         }
       }
+      // get chainApi so we don't need to call chainApiFromDb on every call
+      chainApi <- chainApiFromDb
+      bestHash <- chainApi.getBestBlockHash()
+      bestHeight <- chainApi.getBestHashBlockHeight()
+      filterCount <- chainApi.getFilterCount
+      filterHeaderCount <- chainApi.getFilterHeaderCount
     } yield {
+      logger.info(
+        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filers")
       node
     }
   }

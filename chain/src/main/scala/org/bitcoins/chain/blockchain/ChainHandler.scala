@@ -238,7 +238,13 @@ case class ChainHandler(
         }
       } else FutureUtil.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
-    } yield this
+    } yield {
+      val minHeight = filterHeadersToCreate.minBy(_.height)
+      val maxHeight = filterHeadersToCreate.maxBy(_.height)
+      logger.info(
+        s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
+      this
+    }
   }
 
   /** @inheritdoc */
@@ -280,6 +286,10 @@ case class ChainHandler(
       }
       _ <- filterDAO.createAll(compactFilterDbs)
     } yield {
+      val minHeight = compactFilterDbs.minBy(_.height)
+      val maxHeight = compactFilterDbs.maxBy(_.height)
+      logger.info(
+        s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
       this
     }
   }
