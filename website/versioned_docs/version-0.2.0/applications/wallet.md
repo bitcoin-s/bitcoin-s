@@ -70,11 +70,10 @@ val bitcoind = BitcoindRpcClient(bitcoindInstance)
 // peer
 import org.bitcoins.chain.api.ChainApi
 val syncF: Future[ChainApi] = configF.flatMap { _ =>
-    val getBestBlockHashFunc = { () =>
+    import org.bitcoins.crypto.DoubleSha256DigestBE
+val getBestBlockHashFunc = { () =>
         bitcoind.getBestBlockHash
     }
-
-    import org.bitcoins.core.crypto.DoubleSha256DigestBE
     val getBlockHeaderFunc = { hash: DoubleSha256DigestBE =>
         bitcoind.getBlockHeader(hash).map(_.blockHeader)
     }

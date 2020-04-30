@@ -1,9 +1,13 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  NetworkElement
+}
 import scodec.bits.{BitVector, ByteVector}
 
 /**

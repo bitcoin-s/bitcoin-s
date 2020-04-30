@@ -1,7 +1,7 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.{CRUD, SlickUtil}
 
 import scala.concurrent.{ExecutionContext, Future}

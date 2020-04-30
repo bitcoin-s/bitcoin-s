@@ -1,7 +1,8 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.protocol.P2PKHAddress
+import org.bitcoins.crypto.ECPrivateKey
 import play.api.libs.json.JsString
 
 import scala.concurrent.Future
@@ -20,8 +21,9 @@ trait MessageRpc { self: Client =>
   def signMessageWithPrivKey(
       key: ECPrivateKey,
       message: String): Future[String] = {
-    bitcoindCall[String]("signmessagewithprivkey",
-                         List(JsString(key.toWIF(network)), JsString(message)))
+    bitcoindCall[String](
+      "signmessagewithprivkey",
+      List(JsString(ECPrivateKeyUtil.toWIF(key, network)), JsString(message)))
   }
 
   def verifyMessage(

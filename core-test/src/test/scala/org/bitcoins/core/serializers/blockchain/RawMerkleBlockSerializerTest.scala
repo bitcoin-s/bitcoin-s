@@ -1,13 +1,13 @@
 package org.bitcoins.core.serializers.blockchain
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
   MerkleBlock,
   PartialMerkleTree
 }
-import org.bitcoins.core.util.{BitcoinSUtil, Leaf, Node}
+import org.bitcoins.core.util.{Leaf, Node}
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 
@@ -132,13 +132,13 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
 
     merkleBlock.hex must be(hex)
     merkleBlock.blockHeader.hash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "000000000000dab0130bbcc991d3d7ae6b81aa6f50a798888dfe62337458dc45"))
 
     val matches = merkleBlock.partialMerkleTree.extractMatches
 
     matches must be(
-      Seq(DoubleSha256Digest(BitcoinSUtil.flipEndianness(
+      Seq(DoubleSha256Digest(BytesUtil.flipEndianness(
         "63194f18be0af63f2c6bc9dc0f777cbefed3d9415c4af83f3ee3a3d669c00cb5"))))
   }
 

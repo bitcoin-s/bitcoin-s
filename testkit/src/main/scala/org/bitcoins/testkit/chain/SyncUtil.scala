@@ -3,7 +3,6 @@ package org.bitcoins.testkit.chain
 import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
@@ -12,6 +11,7 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -10,7 +10,7 @@ class ScriptNumberFactoryTest extends BitcoinSUnitTest {
 
   "ScriptNumber" must "create the same number using from hex and from bytes" in {
     val hex = "ff7f"
-    val bytes = BitcoinSUtil.decodeHex(hex)
+    val bytes = BytesUtil.decodeHex(hex)
     ScriptNumber(hex) must be(ScriptNumber(bytes))
   }
 

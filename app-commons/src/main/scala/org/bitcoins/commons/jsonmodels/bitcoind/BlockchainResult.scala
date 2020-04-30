@@ -1,12 +1,12 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 sealed abstract class BlockchainResult
 

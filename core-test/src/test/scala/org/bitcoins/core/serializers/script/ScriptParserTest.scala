@@ -13,7 +13,7 @@ import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.splice.OP_SIZE
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP, OP_PICK, OP_SWAP}
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
@@ -60,22 +60,22 @@ class ScriptParserTest extends BitcoinSUnitTest {
 
   it must "parse a p2pkh output script from a byte array to script tokens" in {
     val bytes: ByteVector =
-      BitcoinSUtil.decodeHex(TestUtil.p2pkhOutputScript).tail
+      BytesUtil.decodeHex(TestUtil.p2pkhOutputScript).tail
     ScriptParser.fromBytes(bytes) must be(TestUtil.p2pkhOutputScriptAsm)
   }
 
   it must "parse a p2pkh input script from a byte array to script tokens" in {
-    val bytes = BitcoinSUtil.decodeHex(TestUtil.p2pkhInputScript).tail
+    val bytes = BytesUtil.decodeHex(TestUtil.p2pkhInputScript).tail
     ScriptParser.fromBytes(bytes) must be(TestUtil.p2pkhInputScriptAsm)
   }
 
   it must "parse a p2sh input script from a byte array into script tokens" in {
-    val bytes = BitcoinSUtil.decodeHex(TestUtil.rawP2shInputScript).tail
+    val bytes = BytesUtil.decodeHex(TestUtil.rawP2shInputScript).tail
     ScriptParser.fromBytes(bytes) must be(TestUtil.p2shInputScriptAsm)
   }
 
   it must "parse a p2sh outputscript from a byte array into script tokens" in {
-    val bytes = BitcoinSUtil.decodeHex(TestUtil.p2shOutputScript).tail
+    val bytes = BytesUtil.decodeHex(TestUtil.p2shOutputScript).tail
     ScriptParser.fromBytes(bytes) must be(TestUtil.p2shOutputScriptAsm)
   }
 

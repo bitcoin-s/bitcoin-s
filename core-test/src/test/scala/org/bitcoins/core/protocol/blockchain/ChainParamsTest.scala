@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionOutput
 }
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -79,25 +79,25 @@ class ChainParamsTest extends BitcoinSUnitTest {
     genesisTransaction.outputs must be(Seq(expectedGenesisOutput))
 
     genesisTransaction.txId.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 
   it must "generate the correct merkle root for the testnet genesis block" in {
     TestNetChainParams.genesisBlock.blockHeader.merkleRootHash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 
   it must "generate the correct block hash for the testnet genesis block" in {
     TestNetChainParams.genesisBlock.blockHeader.hash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"))
   }
 
   it must "generate the correct merkle root for the regtest genesis block" in {
     RegTestNetChainParams.genesisBlock.blockHeader.merkleRootHash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"))
   }
 
@@ -116,50 +116,50 @@ class ChainParamsTest extends BitcoinSUnitTest {
   it must "generate the correct blockheader hash for the genesis block on regtest" in {
     logger.debug("Regtest genesis block: " + RegTestNetChainParams.genesisBlock)
     RegTestNetChainParams.genesisBlock.blockHeader.hash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"))
   }
 
   it must "have the correct base58 prefix for MainNet" in {
     import Base58Type._
     //correct answers taken from https://en.bitcoin.it/wiki/List_of_address_prefixes
-    BitcoinSUtil.encodeHex(MainNetChainParams.base58Prefixes(PubKeyAddress)) must be(
+    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(PubKeyAddress)) must be(
       "00")
-    BitcoinSUtil.encodeHex(MainNetChainParams.base58Prefixes(ScriptAddress)) must be(
+    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(ScriptAddress)) must be(
       "05")
-    BitcoinSUtil.encodeHex(MainNetChainParams.base58Prefixes(SecretKey)) must be(
+    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(SecretKey)) must be(
       "80")
-    BitcoinSUtil.encodeHex(MainNetChainParams.base58Prefixes(ExtPublicKey)) must be(
+    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(ExtPublicKey)) must be(
       "0488B21E".toLowerCase)
-    BitcoinSUtil.encodeHex(MainNetChainParams.base58Prefixes(ExtSecretKey)) must be(
+    BytesUtil.encodeHex(MainNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "0488ADE4".toLowerCase)
   }
 
   it must "have the correct base58 prefix for TestNet" in {
     import Base58Type._
-    BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(PubKeyAddress)) must be(
+    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(PubKeyAddress)) must be(
       "6f")
-    BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(ScriptAddress)) must be(
+    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(ScriptAddress)) must be(
       "c4")
-    BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(SecretKey)) must be(
+    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(SecretKey)) must be(
       "ef")
-    BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
+    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
       "043587CF".toLowerCase)
-    BitcoinSUtil.encodeHex(TestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
+    BytesUtil.encodeHex(TestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "04358394".toLowerCase)
   }
 
   it must "have the correct base58 prefix for RegTest" in {
     import Base58Type._
-    BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(PubKeyAddress)) must be(
+    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(PubKeyAddress)) must be(
       "6f")
-    BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ScriptAddress)) must be(
+    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ScriptAddress)) must be(
       "c4")
-    BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(SecretKey)) must be(
+    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(SecretKey)) must be(
       "ef")
-    BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
+    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtPublicKey)) must be(
       "043587CF".toLowerCase)
-    BitcoinSUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
+    BytesUtil.encodeHex(RegTestNetChainParams.base58Prefixes(ExtSecretKey)) must be(
       "04358394".toLowerCase)
   }
 

@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.crypto.{DERSignatureUtil, ECDigitalSignature, ECPrivateKey}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}

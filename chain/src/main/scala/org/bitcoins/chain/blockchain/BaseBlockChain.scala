@@ -6,8 +6,8 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.chain.validation.TipValidation
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.annotation.tailrec
 

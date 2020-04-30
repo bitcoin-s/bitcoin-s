@@ -21,9 +21,9 @@ you can generate bech32 addresses in four(!) lines of code
 reason to keep using legacy transaction formats.
 
 ```scala mdoc:invisible
-import org.bitcoins.core.{crypto, protocol, config}
+import org.bitcoins.core.{protocol, config}
 import config.TestNet3
-import crypto.ECPrivateKey
+import org.bitcoins.crypto.ECPrivateKey
 
 import protocol._
 import protocol.script._

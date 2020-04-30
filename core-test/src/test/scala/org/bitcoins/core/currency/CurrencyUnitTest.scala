@@ -6,7 +6,7 @@ import org.bitcoins.testkit.core.gen.CurrencyUnitGenerator
 
 import scala.util.Try
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.crypto.CryptoUtil
 
 import scala.util.Success
 import scala.util.Failure

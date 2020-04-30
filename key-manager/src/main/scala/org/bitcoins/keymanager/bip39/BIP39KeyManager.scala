@@ -7,6 +7,7 @@ import org.bitcoins.core.compat.{CompatEither, CompatLeft, CompatRight}
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.hd.{HDAccount, HDPath}
 import org.bitcoins.core.util.{BitcoinSLogger, TimeUtil}
+import org.bitcoins.crypto.{AesPassword, Sign}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.util.HDUtil
 import scodec.bits.BitVector

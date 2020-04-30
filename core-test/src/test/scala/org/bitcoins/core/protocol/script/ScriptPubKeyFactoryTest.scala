@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**
@@ -12,7 +12,7 @@ class ScriptPubKeyFactoryTest extends BitcoinSUnitTest {
     //from b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
     val rawScriptPubKey = TestUtil.rawP2PKHScriptPubKey
     val scriptPubKeyFromBytes =
-      ScriptPubKey(BitcoinSUtil.decodeHex(rawScriptPubKey))
+      ScriptPubKey(BytesUtil.decodeHex(rawScriptPubKey))
     val scriptPubKeyFromHex = ScriptPubKey(rawScriptPubKey)
 
     scriptPubKeyFromBytes must be(scriptPubKeyFromHex)

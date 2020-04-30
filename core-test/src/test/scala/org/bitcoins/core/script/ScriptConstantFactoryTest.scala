@@ -1,7 +1,7 @@
 package org.bitcoins.core.script
 
 import org.bitcoins.core.script.constant.ScriptConstant
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -10,7 +10,7 @@ import org.bitcoins.testkit.util.BitcoinSUnitTest
 class ScriptConstantFactoryTest extends BitcoinSUnitTest {
 
   "ScriptConstantFactory" must "create a constant from bytes" in {
-    val bytes = BitcoinSUtil.decodeHex("abc123")
+    val bytes = BytesUtil.decodeHex("abc123")
     ScriptConstant(bytes).bytes must be(bytes)
   }
 

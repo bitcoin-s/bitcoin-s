@@ -15,11 +15,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 }
 import org.bitcoins.core.compat.JavaConverters._
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPublicKey
-}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -29,7 +24,12 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, EnvUtil}
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPublicKey
+}
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion.{
   Unknown,
@@ -982,7 +982,7 @@ object BitcoindRpcTestUtil extends BitcoindRpcTestUtil {
     * Used for long running async tasks
     */
   private val DEFAULT_LONG_DURATION = {
-    if (BitcoinSUtil.isMac && BitcoinSUtil.isCI) 10.seconds
+    if (EnvUtil.isMac && EnvUtil.isCI) 10.seconds
     else 3.seconds
   }
 }

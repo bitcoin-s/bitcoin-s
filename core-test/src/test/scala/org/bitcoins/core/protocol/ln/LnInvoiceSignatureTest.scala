@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.core.gen.ln.LnInvoiceGen
 import org.bitcoins.testkit.util.BitcoinSUnitTest

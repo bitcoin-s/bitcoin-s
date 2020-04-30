@@ -4,11 +4,11 @@ import akka.io.Tcp
 import akka.testkit.{TestActorRef, TestProbe}
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.core.config.TestNet3
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.p2p.{HeadersMessage, NetworkMessage, VersionMessage}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.PeerMessageReceiver

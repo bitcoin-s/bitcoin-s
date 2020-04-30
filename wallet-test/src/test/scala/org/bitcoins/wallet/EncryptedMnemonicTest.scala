@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.crypto.{AesPassword, MnemonicCode}
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.{DecryptedMnemonic, EncryptedMnemonicHelper}
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest

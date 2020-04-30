@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.script.testprotocol
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.slf4j.LoggerFactory
 import spray.json._
 

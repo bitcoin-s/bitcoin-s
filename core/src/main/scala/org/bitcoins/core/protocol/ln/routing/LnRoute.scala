@@ -2,16 +2,14 @@ package org.bitcoins.core.protocol.ln.routing
 
 import java.math.BigInteger
 
-import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.ShortChannelId
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.{
   FeeBaseMSat,
   FeeProportionalMillionths
 }
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.{BytesUtil, ECPublicKey, NetworkElement}
 import scodec.bits.ByteVector
 
 /**
@@ -32,7 +30,7 @@ case class LnRoute(
 
   override def bytes: ByteVector = {
 
-    val cltvExpiryDeltaHex = BitcoinSUtil.encodeHex(cltvExpiryDelta)
+    val cltvExpiryDeltaHex = BytesUtil.encodeHex(cltvExpiryDelta)
 
     pubkey.bytes ++
       shortChannelID.bytes ++

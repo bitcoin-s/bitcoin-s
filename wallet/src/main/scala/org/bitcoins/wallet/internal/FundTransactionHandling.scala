@@ -2,7 +2,6 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutPoint,
   Transaction,
@@ -10,6 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.crypto.Sign
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.WalletLogger
 import org.bitcoins.wallet.api.{AddressInfo, CoinSelector, WalletApi}
@@ -51,7 +51,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
     * of [[BitcoinTxBuilder]]
     *
     * If you pass in a [[org.bitcoins.keymanager.KeyManager]], the [[org.bitcoins.core.wallet.utxo.UTXOSpendingInfo.signers signers]]
-    * will be populated with valid signers that can be used to produce valid [[org.bitcoins.core.crypto.ECDigitalSignature signatures]]
+    * will be populated with valid signers that can be used to produce valid [[org.bitcoins.crypto.ECDigitalSignature signatures]]
     *
     * If you do not pass in a key manager, the transaction built by [[BitcoinTxBuilder txbuilder]] will contain [[org.bitcoins.core.protocol.script.EmptyScriptSignature EmptyScriptSignature]]
     *

@@ -1,6 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.util.testprotocol._
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import spray.json._
 
@@ -47,7 +48,7 @@ class Base58Test extends BitcoinSUnitTest {
 
   it must "decode tests in base58_encode_decode.json" in {
     def decodedBase58EncodeToHex(value: String): String =
-      BitcoinSUtil.encodeHex(Base58.decode(value))
+      BytesUtil.encodeHex(Base58.decode(value))
     decodedBase58EncodeToHex("2g") must be("61")
     decodedBase58EncodeToHex("a3gV") must be("626262")
     decodedBase58EncodeToHex("aPEr") must be("636363")

@@ -1,9 +1,9 @@
 package org.bitcoins.core.p2p
 
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.core.gen.p2p.DataMessageGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import org.bitcoins.core.crypto.DoubleSha256Digest
 
 class GetDataMessageTest extends BitcoinSUnitTest {
 

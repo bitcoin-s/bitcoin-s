@@ -1,6 +1,6 @@
 package org.bitcoins.core.bloom
 
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.Factory
 import scodec.bits.ByteVector
 
 /**

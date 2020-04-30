@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.config.{MainNet, TestNet3}
-import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.ln.LnHumanReadablePart
 import org.bitcoins.core.protocol.ln.currency.PicoBitcoins
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.util.Bech32
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.core.gen.NumberGenerator
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector

@@ -2,8 +2,8 @@ package org.bitcoins.rpc.client.v19
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
 import org.bitcoins.commons.serializers.JsonReaders.DoubleSha256DigestBEReads
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.Client
 import play.api.libs.json._
 

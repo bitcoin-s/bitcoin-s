@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.blockchain
 
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
+
 import org.bitcoins.core.config.{
   BitcoinNetwork,
   MainNet,
@@ -10,7 +11,6 @@ import org.bitcoins.core.config.{
   TestNet3
 }
 import org.bitcoins.core.consensus.Merkle
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
@@ -18,6 +18,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
+import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.{ByteVector, _}
 
 import scala.concurrent.duration.{Duration, DurationInt}

@@ -1,8 +1,8 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.concurrent.{ExecutionContext, Future}
 

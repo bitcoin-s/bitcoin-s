@@ -1,6 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.protocol.script.{SigVersionBase, SigVersionWitnessV0}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant._
@@ -9,6 +8,7 @@ import org.bitcoins.core.script.flag.ScriptVerifyWitnessPubKeyType
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.{OP_NOP, OP_RESERVED}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector

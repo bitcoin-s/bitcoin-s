@@ -3,9 +3,10 @@ package org.bitcoins.keymanager.bip39
 import java.nio.file.Files
 
 import org.bitcoins.core.config.{MainNet, RegTest}
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, MnemonicCode}
+import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.keymanager._
 import org.bitcoins.testkit.keymanager.{KeyManagerTestUtil, KeyManagerUnitTest}
 import scodec.bits.BitVector

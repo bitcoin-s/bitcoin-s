@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 

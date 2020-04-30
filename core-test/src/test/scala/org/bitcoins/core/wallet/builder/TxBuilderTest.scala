@@ -1,7 +1,6 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.script.{
@@ -20,6 +19,7 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.EmptySpendingInfo
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.concurrent.Await

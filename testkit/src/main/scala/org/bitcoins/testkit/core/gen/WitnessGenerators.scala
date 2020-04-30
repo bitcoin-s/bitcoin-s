@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.ECPrivateKey
 import org.scalacheck.Gen
 
 /**
@@ -173,7 +174,7 @@ sealed abstract class WitnessGenerators extends BitcoinSLogger {
   /**
     * Generates a random signed [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]
     * with the corresponding [[org.bitcoins.core.crypto.WitnessTxSigComponent WitnessTxSigComponent]]
-    * and [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]]
+    * and [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]]
     */
   def signedP2WSHTransactionWitness: Gen[
     (TransactionWitness, WitnessTxSigComponentRaw, Seq[ECPrivateKey])] = {

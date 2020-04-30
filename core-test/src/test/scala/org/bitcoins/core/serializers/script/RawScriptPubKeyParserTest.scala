@@ -5,7 +5,7 @@ import org.bitcoins.core.script.bitwise.OP_EQUALVERIFY
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.crypto.{OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.stack.OP_DUP
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
@@ -13,7 +13,7 @@ import scodec.bits.ByteVector
   * Created by chris on 1/12/16.
   */
 class RawScriptPubKeyParserTest extends BitcoinSUnitTest {
-  val encode = BitcoinSUtil.encodeHex(_: ByteVector)
+  val encode = BytesUtil.encodeHex(_: ByteVector)
   "RawScriptPubKeyParser" must "read then write the scriptPubKey and get the original scriptPubKey" in {
     val scriptPubKey: ScriptPubKey =
       RawScriptPubKeyParser.read(TestUtil.rawScriptPubKey)

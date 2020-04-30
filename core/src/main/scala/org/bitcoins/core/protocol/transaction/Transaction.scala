@@ -1,14 +1,18 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.ScriptWitness
 import org.bitcoins.core.serializers.transaction.{
   RawBaseTransactionParser,
   RawWitnessTransactionParser
 }
-import org.bitcoins.core.util.{CryptoUtil, Factory}
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  Factory,
+  NetworkElement
+}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}

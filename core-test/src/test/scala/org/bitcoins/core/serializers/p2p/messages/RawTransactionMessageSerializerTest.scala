@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
@@ -10,7 +10,7 @@ class RawTransactionMessageSerializerTest extends BitcoinSUnitTest {
     val txMessage =
       RawTransactionMessageSerializer.read(NodeTestUtil.rawTransaction)
     txMessage.transaction.txId.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "44e504f5b7649d215be05ad9f09026dee95201244a3b218013c504a6a49a26ff"))
   }
 

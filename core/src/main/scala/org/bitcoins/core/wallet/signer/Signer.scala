@@ -11,6 +11,12 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.wallet.builder.TxBuilderError
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.crypto.{
+  DummyECDigitalSignature,
+  ECDigitalSignature,
+  ECPublicKey,
+  Sign
+}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}

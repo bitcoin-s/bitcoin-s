@@ -20,9 +20,12 @@
       "core/hd-keys",
       "core/adding-spks",
       "core/spending-info",
-      "core/sign",
       "core/psbts",
       "core/txbuilder"
+    ],
+    "Crypto Module": [
+      "crypto/crypto-intro",
+      "crypto/sign"
     ],
     "Key Manager": [
       "key-manager/key-manager"

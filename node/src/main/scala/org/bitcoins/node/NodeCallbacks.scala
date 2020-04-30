@@ -1,10 +1,10 @@
 package org.bitcoins.node
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.db.MarkedLogger
 import org.bitcoins.node.networking.peer.DataMessageHandler._
 

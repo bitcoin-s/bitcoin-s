@@ -2,7 +2,7 @@ package org.bitcoins.core.serializers.p2p.messages
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -21,7 +21,7 @@ class RawRejectMessageSerializerTest extends BitcoinSUnitTest {
     rejectMsg.code must be(0x12.toChar)
     rejectMsg.reasonSize must be(CompactSizeUInt(UInt64(21)))
     rejectMsg.reason must be("bad-txns-inputs-spent")
-    BitcoinSUtil.encodeHex(rejectMsg.extra) must be(
+    BytesUtil.encodeHex(rejectMsg.extra) must be(
       "394715fcab51093be7bfca5a31005972947baf86a31017939575fb2354222821")
   }
 

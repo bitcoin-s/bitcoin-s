@@ -1,7 +1,7 @@
 package org.bitcoins.core.hd
 
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.{ExtKeyVersion, _}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.testkit.core.gen.{HDGenerators, NumberGenerator}
@@ -10,6 +10,7 @@ import scodec.bits._
 
 import scala.util.{Failure, Success}
 import org.bitcoins.core.protocol.script.WitnessScriptPubKey
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 
 class HDPathTest extends BitcoinSUnitTest {
 
@@ -388,7 +389,7 @@ class HDPathTest extends BitcoinSUnitTest {
       val spk = P2WPKHWitnessSPKV0(derivedPub)
       val address = Bech32Address(spk, MainNet)
 
-      val expectedPriv = ECPrivateKey.fromWIFToPrivateKey(
+      val expectedPriv = ECPrivateKeyUtil.fromWIFToPrivateKey(
         "KyZpNDKnfs94vbrwhJneDi77V6jF64PWPF8x5cdJb8ifgg2DUc9d")
       val expectedPub = ECPublicKey(
         hex"0330d54fd0dd420a6e5f8d3624f5f3482cae350f79d5f0753bf5beef9c2d91af3c")
@@ -408,7 +409,7 @@ class HDPathTest extends BitcoinSUnitTest {
       val spk = P2WPKHWitnessSPKV0(derivedPub)
       val address = Bech32Address(spk, MainNet)
 
-      val expectedPriv = ECPrivateKey.fromWIFToPrivateKey(
+      val expectedPriv = ECPrivateKeyUtil.fromWIFToPrivateKey(
         "Kxpf5b8p3qX56DKEe5NqWbNUP9MnqoRFzZwHRtsFqhzuvUJsYZCy")
       val expectedPub = ECPublicKey(
         hex"03e775fd51f0dfb8cd865d9ff1cca2a158cf651fe997fdc9fee9c1d3b5e995ea77")
@@ -428,7 +429,7 @@ class HDPathTest extends BitcoinSUnitTest {
       val spk = P2WPKHWitnessSPKV0(derivedPub)
       val address = Bech32Address(spk, MainNet)
 
-      val expectedPriv = ECPrivateKey.fromWIFToPrivateKey(
+      val expectedPriv = ECPrivateKeyUtil.fromWIFToPrivateKey(
         "KxuoxufJL5csa1Wieb2kp29VNdn92Us8CoaUG3aGtPtcF3AzeXvF")
       val expectedPub = ECPublicKey(
         hex"03025324888e429ab8e3dbaf1f7802648b9cd01e9b418485c5fa4c1b9b5700e1a6")

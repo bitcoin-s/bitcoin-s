@@ -13,14 +13,14 @@ trait JdbcProfileComponent[+ConfigType <: AppConfig] extends BitcoinSLogger {
   def appConfig: ConfigType
 
   /**
-   * The configuration details for connecting/using the database for our projects
-   * that require datbase connections
-   */
+    * The configuration details for connecting/using the database for our projects
+    * that require datbase connections
+    */
   val dbConfig: DatabaseConfig[JdbcProfile] = {
     val slickDbConfig = {
       Try {
         DatabaseConfig.forConfig[JdbcProfile](path = appConfig.moduleName,
-          config = appConfig.config)
+                                              config = appConfig.config)
       } match {
         case Success(value) =>
           value

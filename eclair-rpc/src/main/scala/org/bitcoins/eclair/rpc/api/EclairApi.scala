@@ -22,7 +22,6 @@ import org.bitcoins.commons.jsonmodels.eclair.{
   UsableBalancesResult,
   WebSocketEvent
 }
-import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
@@ -36,6 +35,7 @@ import org.bitcoins.core.protocol.ln.{
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.eclair.rpc.network.NodeUri
 
 import scala.concurrent.duration._

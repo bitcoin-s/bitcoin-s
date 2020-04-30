@@ -1,8 +1,9 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.crypto.ExtKeyVersion._
+import ExtKeyVersion._
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.crypto
 import org.bitcoins.testkit.core.gen.{
   CryptoGenerators,
   HDGenerators,
@@ -88,7 +89,8 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val path = BIP32Path.empty
 
-    val masterPriv = ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), path)
+    val masterPriv =
+      ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), path)
     masterPriv.toStringSensitive must be(
       "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi")
 

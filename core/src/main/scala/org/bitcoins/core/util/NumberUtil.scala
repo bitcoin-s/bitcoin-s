@@ -5,6 +5,7 @@ import java.math.BigInteger
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
+import org.bitcoins.crypto.BytesUtil
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt
@@ -34,7 +35,7 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   }
 
   /** Takes a hex string and parses it to a [[scala.math.BigInt BigInt]]. */
-  def toBigInt(hex: String): BigInt = toBigInt(BitcoinSUtil.decodeHex(hex))
+  def toBigInt(hex: String): BigInt = toBigInt(BytesUtil.decodeHex(hex))
 
   /** Converts a sequence of bytes to twos complement signed number. */
   def toBigInt(bytes: ByteVector): BigInt = {
@@ -60,13 +61,13 @@ sealed abstract class NumberUtil extends BitcoinSLogger {
   def toInt(bytes: ByteVector): Int = toBigInt(bytes).toInt
 
   /** Converts a hex string to a [[scala.Int Int]]. */
-  def toInt(hex: String): Int = toInt(BitcoinSUtil.decodeHex(hex))
+  def toInt(hex: String): Int = toInt(BytesUtil.decodeHex(hex))
 
   /** Converts a sequence of [[scala.Byte Byte]] to a [[scala.Long Long]]. */
   def toLong(bytes: ByteVector): Long = toBigInt(bytes).toLong
 
   /** Converts a hex string to a [[scala.Long Long]]. */
-  def toLong(hex: String): Long = toLong(BitcoinSUtil.decodeHex(hex))
+  def toLong(hex: String): Long = toLong(BytesUtil.decodeHex(hex))
 
   /**
     *

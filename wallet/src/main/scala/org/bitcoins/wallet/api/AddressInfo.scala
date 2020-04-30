@@ -1,8 +1,8 @@
 package org.bitcoins.wallet.api
 
-import org.bitcoins.core.crypto.ECPublicKey
 import org.bitcoins.core.hd.HDPath
 import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.crypto.ECPublicKey
 
 /**
   * This class represents the result of querying for address info

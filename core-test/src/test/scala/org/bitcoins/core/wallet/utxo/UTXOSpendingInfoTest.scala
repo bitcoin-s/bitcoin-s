@@ -1,6 +1,5 @@
 package org.bitcoins.core.wallet.utxo
 
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -11,6 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkit.core.gen.{
   GenUtil,
   ScriptGenerators,

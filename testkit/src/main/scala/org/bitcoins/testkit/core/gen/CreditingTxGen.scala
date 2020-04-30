@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -12,6 +11,7 @@ import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   P2SHNestedSegwitV0UTXOSpendingInfoFull
 }
+import org.bitcoins.crypto.Sign
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {

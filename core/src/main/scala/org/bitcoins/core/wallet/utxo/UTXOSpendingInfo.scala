@@ -1,6 +1,5 @@
 package org.bitcoins.core.wallet.utxo
 
-import org.bitcoins.core.crypto.Sign
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{
   ConditionalScriptPubKey,
@@ -31,7 +30,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.crypto.{CryptoUtil, Sign}
 
 sealed abstract class UTXOSpendingInfo {
 

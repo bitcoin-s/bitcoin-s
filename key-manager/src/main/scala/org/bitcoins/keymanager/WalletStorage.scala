@@ -5,7 +5,7 @@ import java.time.Instant
 import java.util.NoSuchElementException
 
 import org.bitcoins.core.compat._
-import org.bitcoins.core.crypto._
+import org.bitcoins.crypto.{AesEncryptedData, AesIV, AesPassword, AesSalt}
 import org.slf4j.LoggerFactory
 import scodec.bits.ByteVector
 

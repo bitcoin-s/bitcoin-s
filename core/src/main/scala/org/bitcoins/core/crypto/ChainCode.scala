@@ -1,7 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 case class ChainCode(bytes: ByteVector) extends NetworkElement {

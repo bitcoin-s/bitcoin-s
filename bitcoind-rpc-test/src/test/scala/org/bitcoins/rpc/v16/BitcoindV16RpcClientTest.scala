@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.v16
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.SignRawTransactionOutputParameter
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey}
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.client.v16.BitcoindV16RpcClient
 import org.bitcoins.rpc.util.AsyncUtil
@@ -88,7 +89,7 @@ class BitcoindV16RpcClientTest extends BitcoindRpcTest {
     val privkeys: List[ECPrivateKey] =
       List("cUeKHd5orzT3mz8P9pxyREHfsWtVfgsfDjiZZBcjUBAaGk1BTj7N",
            "cVKpPfVKSJxKqVpE9awvXNWuLHCa5j5tiE7K6zbUSptFpTEtiFrA")
-        .map(ECPrivateKey.fromWIFToPrivateKey)
+        .map(ECPrivateKeyUtil.fromWIFToPrivateKey)
 
     val txids =
       List("9b907ef1e3c26fc71fe4a4b3580bc75264112f95050014157059c736f0202e71",

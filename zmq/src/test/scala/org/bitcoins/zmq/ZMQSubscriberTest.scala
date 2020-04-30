@@ -2,7 +2,7 @@ package org.bitcoins.zmq
 
 import java.net.InetSocketAddress
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.scalatest.{AsyncFlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 import org.zeromq.{ZFrame, ZMQ, ZMsg}
@@ -74,14 +74,14 @@ class ZMQSubscriberTest extends AsyncFlatSpec with MustMatchers {
 
   val rawBlockListener: Option[ByteVector => Unit] = Some {
     { bytes: ByteVector =>
-      val hex = BitcoinSUtil.encodeHex(bytes)
+      val hex = BytesUtil.encodeHex(bytes)
       logger.debug(s"received raw block ${hex}")
     }
   }
 
   val hashBlockListener: Option[ByteVector => Unit] = Some {
     { bytes: ByteVector =>
-      val hex = BitcoinSUtil.encodeHex(bytes)
+      val hex = BytesUtil.encodeHex(bytes)
       logger.debug(s"received raw block hash ${hex}")
 
     }
@@ -89,7 +89,7 @@ class ZMQSubscriberTest extends AsyncFlatSpec with MustMatchers {
 
   val rawTxListener: Option[ByteVector => Unit] = Some {
     { bytes: ByteVector =>
-      val hex = BitcoinSUtil.encodeHex(bytes)
+      val hex = BytesUtil.encodeHex(bytes)
       logger.debug(s"received raw tx ${hex}")
     }
   }

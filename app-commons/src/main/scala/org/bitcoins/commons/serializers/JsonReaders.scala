@@ -11,7 +11,6 @@ import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config._
-import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.p2p.ServiceIdentifier
@@ -37,6 +36,16 @@ import org.bitcoins.core.protocol.{
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.{BitcoinFeeUnit, SatoshisPerByte}
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECDigitalSignature,
+  ECPublicKey,
+  RipeMd160Digest,
+  RipeMd160DigestBE,
+  Sha256Digest,
+  Sha256Hash160Digest
+}
 import play.api.libs.json._
 
 import scala.concurrent.duration._

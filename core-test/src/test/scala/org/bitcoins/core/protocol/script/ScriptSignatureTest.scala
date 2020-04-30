@@ -13,7 +13,8 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest, ECDigitalSignature}
 import org.bitcoins.testkit.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
@@ -160,7 +161,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
       val hashForSig =
         TransactionSignatureSerializer.hashForSignature(txSigComponent,
                                                         testCase.hashType)
-      val flipHash = BitcoinSUtil.flipEndianness(testCase.hash.hex)
+      val flipHash = BytesUtil.flipEndianness(testCase.hash.hex)
       hashForSig must be(DoubleSha256Digest(flipHash))
     }
   }

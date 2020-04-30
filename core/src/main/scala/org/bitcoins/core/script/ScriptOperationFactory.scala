@@ -9,7 +9,8 @@ import org.bitcoins.core.script.locktime.LocktimeOperation
 import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.BytesUtil
 import scodec.bits.ByteVector
 
 /**
@@ -38,7 +39,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
     * Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from its hexadecimal representation.
     */
   def fromHex(hex: String): Option[T] = {
-    val bytes = BitcoinSUtil.decodeHex(hex)
+    val bytes = BytesUtil.decodeHex(hex)
     fromBytes(bytes)
   }
 

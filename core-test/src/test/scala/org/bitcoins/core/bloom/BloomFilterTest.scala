@@ -4,13 +4,17 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.util.{BitcoinSLogger, CryptoUtil}
-import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256Digest,
+  ECPrivateKey,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import scodec.bits._
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Try
-import org.scalatest.enablers.Containing
 import org.bitcoins.testkit.core.gen.BloomFilterGenerator
 
 class BloomFilterTest extends BitcoinSUnitTest {
@@ -70,7 +74,7 @@ class BloomFilterTest extends BitcoinSUnitTest {
 
   it must "insert a key & it's address into our bloom filter and the check to make sure it contains them" in {
     val filter = BloomFilter(2, 0.001, UInt32.zero, BloomUpdateAll)
-    val privKey = ECPrivateKey.fromWIFToPrivateKey(
+    val privKey = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "5Kg1gnAjaLfKiwhhPpGS3QfRg2m6awQvaj98JCZBZQ5SuS2F15C")
     assert(
       privKey.hex == "f49addfd726a59abde172c86452f5f73038a02f4415878dc14934175e8418aff")

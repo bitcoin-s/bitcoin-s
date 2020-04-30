@@ -1,8 +1,8 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.config._
 import slick.lifted.{PrimaryKey, ProvenShape}
 
@@ -15,10 +15,12 @@ case class OutgoingTransactionDAO()(
 
   import profile.api._
 
-  override val table: profile.api.TableQuery[OutgoingTransactionTable] = TableQuery[OutgoingTransactionTable]
+  override val table: profile.api.TableQuery[OutgoingTransactionTable] =
+    TableQuery[OutgoingTransactionTable]
 
   val txTable: profile.api.TableQuery[TransactionDAO#TransactionTable] = {
-    TransactionDAO().table.asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
+    TransactionDAO().table
+      .asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
   }
 
   class OutgoingTransactionTable(tag: Tag)
@@ -73,7 +75,7 @@ case class OutgoingTransactionDAO()(
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)
 
-    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_,TransactionDb] = {
+    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_, TransactionDb] = {
       foreignKey("fk_underlying_tx",
                  sourceColumns = txIdBE,
                  targetTableQuery = txTable)(_.txIdBE)

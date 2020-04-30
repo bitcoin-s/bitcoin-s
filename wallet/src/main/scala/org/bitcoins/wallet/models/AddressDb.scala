@@ -1,7 +1,6 @@
 package org.bitcoins.wallet.models
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.{
@@ -11,6 +10,7 @@ import org.bitcoins.core.protocol.{
   P2SHAddress
 }
 import org.bitcoins.core.script.ScriptType
+import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
 
 sealed trait AddressDb {
   protected type PathType <: HDPath

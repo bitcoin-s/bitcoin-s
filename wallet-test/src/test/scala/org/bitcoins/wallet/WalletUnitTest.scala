@@ -2,11 +2,11 @@ package org.bitcoins.wallet
 
 import java.nio.file.Files
 
-import org.bitcoins.core.crypto.AesPassword
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.keymanager.{KeyManagerUnlockError, WalletStorage}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest

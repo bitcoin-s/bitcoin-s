@@ -1,9 +1,9 @@
 package org.bitcoins.core.psbt
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey, ExtPublicKey}
+import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
@@ -12,7 +12,12 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{
+  ECDigitalSignature,
+  ECPublicKey,
+  Factory,
+  NetworkElement
+}
 import scodec.bits.ByteVector
 
 sealed trait PSBTRecord extends NetworkElement {

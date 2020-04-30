@@ -1,10 +1,9 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.protocol.NetworkElement
 import scodec.bits._
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.number.UInt8
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{Factory, NetworkElement}
 
 /**
   * Filter types for BIP158 block content filters

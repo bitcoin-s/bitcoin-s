@@ -3,7 +3,7 @@ language: scala
 env:
   matrix:
     - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
-    - TEST_COMMAND="appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
+    - TEST_COMMAND="appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
     - TEST_COMMAND="keyManagerTest/test keyManager/coverageReport keyManager/coverageAggregate keyManager/coveralls walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls"
 
 os: linux
@@ -34,7 +34,7 @@ matrix:
       name: "Secp256k1 Disabled Core Test"
       env:
         - DISABLE_SECP256K1="true"
-        - TEST_COMMAND="coreTest/test"
+        - TEST_COMMAND="coreTest/test cryptoTest/test"
       scala:
         - 2.13.1
     - os: osx

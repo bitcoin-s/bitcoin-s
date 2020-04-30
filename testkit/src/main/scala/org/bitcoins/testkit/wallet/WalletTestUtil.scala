@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.{ExtPublicKey, _}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
@@ -17,8 +17,9 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
-import org.bitcoins.core.util.{CryptoUtil, NumberUtil}
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.fixtures.WalletDAOs

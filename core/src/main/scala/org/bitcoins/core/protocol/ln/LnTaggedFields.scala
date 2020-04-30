@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.{UInt5, UInt8}
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util.{Bech32, SeqWrapper}
+import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

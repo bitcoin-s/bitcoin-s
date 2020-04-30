@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 
 /**
   * Created by chris on 3/7/16.
@@ -8,7 +8,7 @@ import org.bitcoins.core.crypto.ECPrivateKey
 trait CryptoTestUtil {
   def privateKeyBase58 = "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT"
 
-  def privateKey = ECPrivateKey.fromWIFToPrivateKey(privateKeyBase58)
+  def privateKey = ECPrivateKeyUtil.fromWIFToPrivateKey(privateKeyBase58)
 
 }
 

@@ -1,8 +1,7 @@
 package org.bitcoins.chain.models
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.{BlockFilter, FilterType, GolombFilter}
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 import scodec.bits.ByteVector
 
 case class CompactFilterDb(

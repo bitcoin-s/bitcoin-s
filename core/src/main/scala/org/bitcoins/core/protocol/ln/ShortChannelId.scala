@@ -1,8 +1,7 @@
 package org.bitcoins.core.protocol.ln
 
 import org.bitcoins.core.number.UInt64
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 case class ShortChannelId(u64: UInt64) extends NetworkElement {
