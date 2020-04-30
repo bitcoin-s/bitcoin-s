@@ -39,7 +39,7 @@ This API is currently used to sign ordinary transactions with our [`Signer`](/ap
 
 ### The [`ExtSign`](../../core/src/main/scala/org/bitcoins/core/crypto/Sign.scala) API.
 
-An [ExtKey](org/bitcoins/core/crypto/ExtKey.scala) is a data structure that can be used to generate more keys from a parent key. For more information look at [hd-keys.md](hd-keys.md)
+An [ExtKey](org/bitcoins/core/crypto/ExtKey.scala) is a data structure that can be used to generate more keys from a parent key. For more information look at [hd-keys.md](../core/hd-keys.md)
 
 You can sign with `ExtPrivateKey` the same way you could with a normal `ECPrivateKey`.
 
