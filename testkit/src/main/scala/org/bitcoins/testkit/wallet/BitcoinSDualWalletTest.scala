@@ -40,8 +40,12 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
             Some(segwitWalletConf))(config2, system)
         } yield (walletA, walletB),
       destroy = { fundedWallets: (FundedWallet, FundedWallet) =>
-        destroyWallet(fundedWallets._1.wallet)
-        destroyWallet(fundedWallets._2.wallet)
+        val destroy1 = destroyWallet(fundedWallets._1.wallet)
+        val destroy2 = destroyWallet(fundedWallets._2.wallet)
+        for {
+          _ <- destroy1
+          _ <- destroy2
+        } yield ()
       }
     )(test)
   }
@@ -62,8 +66,12 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
                                                                      walletB)
         } yield (dlcWalletA, dlcWalletB),
       destroy = { dlcWallets: (InitializedDLCWallet, InitializedDLCWallet) =>
-        destroyWallet(dlcWallets._1.wallet)
-        destroyWallet(dlcWallets._2.wallet)
+        val destroy1 = destroyWallet(dlcWallets._1.wallet)
+        val destroy2 = destroyWallet(dlcWallets._2.wallet)
+        for {
+          _ <- destroy1
+          _ <- destroy2
+        } yield ()
       }
     )(test)
   }

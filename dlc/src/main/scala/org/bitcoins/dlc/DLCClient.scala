@@ -26,6 +26,7 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /** This case class allows for the construction and execution of
   * Discreet Log Contracts between two parties.
@@ -245,6 +246,38 @@ case class DLCClient(
     sigsMapF.map(FundingSignatures.apply)
   }
 
+  def verifyRemoteFundingSigs(remoteSigs: FundingSignatures): Boolean = {
+    val remoteTweak = if (isInitiator) {
+      fundingUtxos.length
+    } else {
+      0
+    }
+
+    val psbt = PSBT.fromUnsignedTx(createUnsignedFundingTransaction)
+
+    remoteSigs.zipWithIndex
+      .foldLeft(true) {
+        case (ret, ((outPoint, sigs), index)) =>
+          if (ret) {
+            require(psbt.transaction.inputs(index).previousOutput == outPoint,
+                    "Adding signature for incorrect input")
+
+            val idx = index + remoteTweak
+
+            // TODO: add funding witness and redeem scripts
+            psbt
+              .addWitnessUTXOToInput(remoteFundingInputs(index).output, idx)
+              .addSignatures(sigs, idx)
+              .finalizeInput(idx) match {
+              case Success(finalized) =>
+                finalized.verifyFinalizedInput(idx)
+              case Failure(_) =>
+                false
+            }
+          } else false
+      }
+  }
+
   def createFundingTransaction(
       remoteSigs: FundingSignatures): Future[Transaction] = {
     val (localTweak, remoteTweak) = if (isInitiator) {
@@ -258,6 +291,8 @@ case class DLCClient(
         case (psbt, ((outPoint, sigs), index)) =>
           require(psbt.transaction.inputs(index).previousOutput == outPoint,
                   "Adding signature for incorrect input")
+
+          // TODO: add funding witness and redeem scripts
           psbt
             .addWitnessUTXOToInput(remoteFundingInputs(index).output,
                                    index + remoteTweak)
@@ -342,20 +377,44 @@ case class DLCClient(
     }
   }
 
-  /** Constructs CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCET(
-      msg: Sha256DigestBE,
-      remoteSig: PartialSignature): (Future[Transaction], P2WSHWitnessV0) = {
+  def verifyCETSig(outcome: Sha256DigestBE, sig: PartialSignature): Boolean = {
+    val cet = createUnsignedCET(outcome)
+    val fundingTx = createUnsignedFundingTransaction
+
+    val sigComponent = WitnessTxSigComponentRaw(transaction = cet,
+                                                inputIndex = UInt32.zero,
+                                                output = fundingTx.outputs.head,
+                                                flags = Policy.standardFlags)
+
+    TransactionSignatureChecker
+      .checkSignature(
+        sigComponent,
+        sigComponent.output.scriptPubKey.asm.toVector,
+        sig.pubKey,
+        sig.signature,
+        Policy.standardFlags
+      )
+      .isValid
+  }
+
+  private def getCETToLocalSPK(
+      msg: Sha256DigestBE): P2PKWithTimeoutScriptPubKey = {
     val tweak = CryptoUtil.sha256(cetToLocalPrivKey.publicKey.bytes).flip
+
     val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
 
     val pubKey = sigPubKeys(msg).add(fundingPubKey).add(tweakPubKey)
 
-    val toLocalSPK = P2PKWithTimeoutScriptPubKey(
+    P2PKWithTimeoutScriptPubKey(
       pubKey = pubKey,
       lockTime = ScriptNumber(timeouts.penaltyTimeout.toLong),
       timeoutPubKey = cetToLocalRemotePubKey
     )
+  }
+
+  /** Constructs an unsigned CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
+  def createUnsignedCET(msg: Sha256DigestBE): WitnessTransaction = {
+    val toLocalSPK = getCETToLocalSPK(msg)
 
     val toLocal: TransactionOutput =
       TransactionOutput(outcomes(msg) + toLocalClosingFee,
@@ -370,12 +429,22 @@ case class DLCClient(
       EmptyScriptSignature,
       timeLockSequence)
 
-    val psbt = PSBT.fromUnsignedTx(
-      BaseTransaction(TransactionConstants.validLockVersion,
-                      Vector(fundingInput),
-                      outputs.filter(_.value >= Policy.dustThreshold),
-                      timeouts.contractMaturity.toUInt32)
+    WitnessTransaction(
+      TransactionConstants.validLockVersion,
+      Vector(fundingInput),
+      outputs.filter(_.value >= Policy.dustThreshold),
+      timeouts.contractMaturity.toUInt32,
+      TransactionWitness(Vector(P2WSHWitnessV0(fundingSPK)))
     )
+  }
+
+  /** Constructs a signed CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
+  def createCET(
+      msg: Sha256DigestBE,
+      remoteSig: PartialSignature): (Future[Transaction], P2WSHWitnessV0) = {
+    val unsignedTx = createUnsignedCET(msg)
+
+    val psbt = PSBT.fromUnsignedTx(unsignedTx)
 
     val readyToSignPSBT = psbt
       .addSignature(remoteSig, inputIndex = 0)
@@ -388,6 +457,8 @@ case class DLCClient(
       val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
       Future.fromTry(txT)
     }
+
+    val toLocalSPK = getCETToLocalSPK(msg)
 
     (signedCETF, P2WSHWitnessV0(toLocalSPK))
   }
@@ -448,7 +519,27 @@ case class DLCClient(
     sigF.map((unsignedTx, P2WSHWitnessV0(toLocalSPK), _))
   }
 
-  lazy val createUnsignedRefundTx: Transaction = {
+  def verifyRefundSig(sig: PartialSignature): Boolean = {
+    val refundTx = createUnsignedRefundTx
+    val fundingTx = createUnsignedFundingTransaction
+
+    val sigComponent = WitnessTxSigComponentRaw(transaction = refundTx,
+                                                inputIndex = UInt32.zero,
+                                                output = fundingTx.outputs.head,
+                                                flags = Policy.standardFlags)
+
+    TransactionSignatureChecker
+      .checkSignature(
+        sigComponent,
+        sigComponent.output.scriptPubKey.asm.toVector,
+        sig.pubKey,
+        sig.signature,
+        Policy.standardFlags
+      )
+      .isValid
+  }
+
+  lazy val createUnsignedRefundTx: WitnessTransaction = {
     val fundingTx = createUnsignedFundingTransaction
     val fundingTxid = fundingTx.txId
     val fundingInput = TransactionInput(
@@ -483,12 +574,22 @@ case class DLCClient(
 
     val outputs = Vector(toInitiatorOutput, toOtherOutput)
 
+    val witness = TransactionWitness(Vector(P2WSHWitnessV0(fundingSPK)))
+
     val refundTxNoFee = BaseTransaction(TransactionConstants.validLockVersion,
                                         Vector(fundingInput),
                                         outputs,
                                         timeouts.contractTimeout.toUInt32)
 
-    subtractFeeFromOutputs(refundTxNoFee, feeRate, outputs.map(_.scriptPubKey))
+    val refundTxWithFee = subtractFeeFromOutputs(refundTxNoFee,
+                                                 feeRate,
+                                                 outputs.map(_.scriptPubKey))
+
+    WitnessTransaction(refundTxWithFee.version,
+                       refundTxWithFee.inputs,
+                       refundTxWithFee.outputs,
+                       refundTxWithFee.lockTime,
+                       witness)
   }
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
@@ -1178,7 +1279,7 @@ object DLCClient {
 
   /** Subtracts the estimated fee by removing from each output with a specified spk evenly */
   def subtractFeeFromOutputs(
-      tx: BaseTransaction,
+      tx: Transaction,
       feeRate: FeeUnit,
       spks: Vector[ScriptPubKey]): BaseTransaction = {
     // tx has empty script sigs and we need to account for witness data in fees
