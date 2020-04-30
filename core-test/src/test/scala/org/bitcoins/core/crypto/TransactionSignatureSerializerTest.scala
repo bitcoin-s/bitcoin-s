@@ -8,6 +8,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.util.Try
@@ -34,7 +35,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
                          inputIndex,
                          TransactionOutput(CurrencyUnits.zero, scriptPubKey),
                          Policy.standardFlags)
-    val serializedTxForSig: String = BitcoinSUtil.encodeHex(
+    val serializedTxForSig: String = BytesUtil.encodeHex(
       TransactionSignatureSerializer.serializeForSignature(txSigComponent,
                                                            HashType.sigHashAll))
 
@@ -59,7 +60,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
                          inputIndex,
                          TransactionOutput(CurrencyUnits.zero, scriptPubKey),
                          Policy.standardFlags)
-    val serializedTxForSig: String = BitcoinSUtil.encodeHex(
+    val serializedTxForSig: String = BytesUtil.encodeHex(
       TransactionSignatureSerializer
         .serializeForSignature(txSigComponent, HashType.sigHashSingle))
     //serialization is from bitcoin core
@@ -83,7 +84,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
                          inputIndex,
                          TransactionOutput(CurrencyUnits.zero, scriptPubKey),
                          Policy.standardFlags)
-    val serializedTxForSig: String = BitcoinSUtil.encodeHex(
+    val serializedTxForSig: String = BytesUtil.encodeHex(
       TransactionSignatureSerializer
         .serializeForSignature(txSigComponent, HashType.sigHashSingle))
     //serialization is from bitcoin core
@@ -107,7 +108,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
                          inputIndex,
                          TransactionOutput(CurrencyUnits.zero, scriptPubKey),
                          Policy.standardFlags)
-    val serializedTxForSig: String = BitcoinSUtil.encodeHex(
+    val serializedTxForSig: String = BytesUtil.encodeHex(
       TransactionSignatureSerializer.serializeForSignature(txSigComponent,
                                                            HashType.sigHashAll))
     //serialization is from bitcoin core
@@ -130,7 +131,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
                          inputIndex,
                          TransactionOutput(CurrencyUnits.zero, scriptPubKey),
                          Policy.standardFlags)
-    val serializedTxForSig: String = BitcoinSUtil.encodeHex(
+    val serializedTxForSig: String = BytesUtil.encodeHex(
       TransactionSignatureSerializer.serializeForSignature(txSigComponent,
                                                            HashType.sigHashAll))
     serializedTxForSig must be(
@@ -156,7 +157,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       txSigComponent,
       HashType.sigHashSingleAnyoneCanPay)
 
-    BitcoinSUtil.encodeHex(serializedForSig) must be(
+    BytesUtil.encodeHex(serializedForSig) must be(
       "01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000010000001976a9144c9c3dfac4207d5d8cb89df5722cb3d712385e3f88acd007000000000000ffffffff2d793f9722ac8cbea9b2e0a2929cda4007b8312c6ec3b997088439e48e7aa64e0000000083000000")
   }
 
@@ -224,7 +225,7 @@ class TransactionSignatureSerializerTest extends FlatSpec with MustMatchers {
       txSigComponent = wtxSigComp,
       hashType = HashType.sigHashAll)
 
-    BitcoinSUtil.encodeHex(serialized) must be(expected)
+    BytesUtil.encodeHex(serialized) must be(expected)
 
     val hash = TransactionSignatureSerializer.hashForSignature(
       txSigComponent = wtxSigComp,

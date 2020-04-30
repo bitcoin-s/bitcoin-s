@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_HASH160
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -22,7 +22,7 @@ class RawTransactionOutputParserTest extends BitcoinSUnitTest {
   //txid cad1082e674a7bd3bc9ab1bc7804ba8a57523607c876b8eb2cbe645f2b1803d6
   val rawTxOutput =
     "204e00000000000017a914eda8ae08b5c9f973f49543e90a7c292367b3337c87"
-  val encode = BitcoinSUtil.encodeHex(_: ByteVector)
+  val encode = BytesUtil.encodeHex(_: ByteVector)
   "RawTransactionOutputTest" must "read a serialized tx output" in {
 
     val txOutput: TransactionOutput =

@@ -2,13 +2,13 @@ package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.chain.validation.TipValidation
-import org.bitcoins.core.crypto.{
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.crypto.{
   DoubleSha256Digest,
   DoubleSha256DigestBE,
   ECPrivateKey
 }
-import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.blockchain.BlockHeader
 
 import scala.annotation.tailrec
 

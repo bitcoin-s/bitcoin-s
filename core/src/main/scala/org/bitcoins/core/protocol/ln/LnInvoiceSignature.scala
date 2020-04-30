@@ -2,10 +2,9 @@ package org.bitcoins.core.protocol.ln
 
 import java.math.BigInteger
 
-import org.bitcoins.core.crypto.ECDigitalSignature
 import org.bitcoins.core.number.{UInt5, UInt8}
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{Bech32, Factory}
+import org.bitcoins.core.util.Bech32
+import org.bitcoins.crypto.{ECDigitalSignature, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /**

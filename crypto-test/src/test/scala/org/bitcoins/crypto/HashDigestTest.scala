@@ -1,10 +1,8 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
+import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-
 import scodec.bits._
-import org.bitcoins.testkit.core.gen.NumberGenerator
-import org.bitcoins.testkit.core.gen.CryptoGenerators
 
 class HashDigestTest extends BitcoinSUnitTest {
   behavior of "DoubleSha256Digest"

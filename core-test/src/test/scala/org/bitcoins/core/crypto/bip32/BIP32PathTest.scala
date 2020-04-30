@@ -1,7 +1,7 @@
-package org.bitcoins.core.hd
+package org.bitcoins.core.crypto.bip32
 
-import org.bitcoins.core.crypto.ExtKey
-import org.bitcoins.core.crypto.ExtPublicKey
+import org.bitcoins.core.crypto.{ExtKey, ExtPublicKey}
+import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.testkit.core.gen.{
   CryptoGenerators,
   HDGenerators,
@@ -9,11 +9,9 @@ import org.bitcoins.testkit.core.gen.{
 }
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.{Gen, Shrink}
-import org.scalatest.path
 import scodec.bits._
 
 import scala.util.{Success, Try}
-import org.bitcoins.core.crypto.ExtPrivateKey
 
 class BIP32PathTest extends BitcoinSUnitTest {
 

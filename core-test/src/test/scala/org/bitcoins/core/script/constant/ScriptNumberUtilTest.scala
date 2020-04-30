@@ -1,6 +1,6 @@
 package org.bitcoins.core.script.constant
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -103,19 +103,20 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
     hexIsNegative2 must be(true)
 
     //must also work for bytes
-    ScriptNumberUtil.isNegative(BitcoinSUtil.decodeHex(hex2)) must be(true)
+    ScriptNumberUtil.isNegative(BytesUtil.decodeHex(hex2)) must be(true)
   }
 
   it must "change a sign bit from negative to positive" in {
     val hex = "ff"
     val expectedHex = "7f"
-    BitcoinSUtil.encodeHex(ScriptNumberUtil.changeSignBitToPositive(
-      BitcoinSUtil.decodeHex(hex))) must be(expectedHex)
+    BytesUtil.encodeHex(
+      ScriptNumberUtil
+        .changeSignBitToPositive(BytesUtil.decodeHex(hex))) must be(expectedHex)
 
     //-32767
     val hex1 = "ffff"
     val expectedHex1 = "7fff"
-    BitcoinSUtil.encodeHex(ScriptNumberUtil.changeSignBitToPositive(hex1)) must be(
+    BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToPositive(hex1)) must be(
       expectedHex1)
   }
 
@@ -123,19 +124,19 @@ class ScriptNumberUtilTest extends BitcoinSUnitTest {
 
     val hex = "01"
     val expectedHex = "81"
-    BitcoinSUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex)) must be(
+    BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex)) must be(
       expectedHex)
 
     //32767
     val hex1 = "7fff"
     val expectedHex1 = "ffff"
-    BitcoinSUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex1)) must be(
+    BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex1)) must be(
       expectedHex1)
 
     //128
     val hex2 = "8000"
     val expectedHex2 = "8000"
-    BitcoinSUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex2)) must be(
+    BytesUtil.encodeHex(ScriptNumberUtil.changeSignBitToNegative(hex2)) must be(
       expectedHex2)
   }
 

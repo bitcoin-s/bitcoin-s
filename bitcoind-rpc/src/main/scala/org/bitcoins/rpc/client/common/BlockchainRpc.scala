@@ -2,8 +2,8 @@ package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import scala.concurrent.Future

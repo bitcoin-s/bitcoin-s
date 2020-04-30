@@ -7,9 +7,9 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
 }
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import play.api.libs.json.{JsNumber, JsString, Json}
 
 import scala.concurrent.Future

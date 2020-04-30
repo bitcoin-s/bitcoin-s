@@ -2,9 +2,8 @@ package org.bitcoins.core.p2p
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.p2p.headers.RawNetworkHeaderSerializer
-import org.bitcoins.core.util.{CryptoUtil, Factory}
+import org.bitcoins.crypto.{CryptoUtil, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /**

@@ -1,10 +1,5 @@
 package org.bitcoins.core.bloom
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  HashDigest,
-  Sha256Hash160Digest
-}
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
@@ -12,16 +7,24 @@ import org.bitcoins.core.protocol.script.{
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
-import org.bitcoins.core.crypto.ECPublicKey
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.crypto.{
+  BytesUtil,
+  CryptoUtil,
+  DoubleSha256Digest,
+  ECPublicKey,
+  Factory,
+  HashDigest,
+  NetworkElement,
+  Sha256Hash160Digest
+}
 
 /**
   * Implements a bloom filter that abides by the semantics of BIP37
@@ -29,7 +32,7 @@ import org.bitcoins.core.util.CryptoUtil
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki BIP37]].
   * @see [[https://github.com/bitcoin/bitcoin/blob/master/src/bloom.h Bitcoin Core bloom.h]]
   */
-sealed abstract class BloomFilter extends NetworkElement {
+sealed abstract class BloomFilter extends NetworkElement with BitcoinSLogger {
 
   /** How large the bloom filter is, in Bytes */
   def filterSize: CompactSizeUInt
@@ -130,14 +133,14 @@ sealed abstract class BloomFilter extends NetworkElement {
     loop(bitIndexes, BitVector.empty)
   }
 
-  /** Checks if `data` contains a [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
+  /** Checks if `data` contains a [[DoubleSha256Digest DoubleSha256Digest]] */
   def contains(hash: DoubleSha256Digest): Boolean = contains(hash.bytes)
 
   /** Checks if `data` contains a [[org.bitcoins.core.protocol.transaction.TransactionOutPoint TransactionOutPoint]] */
   def contains(outPoint: TransactionOutPoint): Boolean =
     contains(outPoint.bytes)
 
-  /** Checks if `data` contains a [[org.bitcoins.core.crypto.DoubleSha256Digest Sha256Hash160Digest]] */
+  /** Checks if `data` contains a [[DoubleSha256Digest Sha256Hash160Digest]] */
   def contains(hash: Sha256Hash160Digest): Boolean = contains(hash.bytes)
 
   /**
@@ -272,7 +275,7 @@ sealed abstract class BloomFilter extends NetworkElement {
     //since this isn't consensus critical though I'm leaving this for now
     val seed = (hashNum * murmurConstant.toLong + tweak.toLong).toInt
     val murmurHash = MurmurHash3.bytesHash(bytes.toArray, seed)
-    val uint32 = UInt32(BitcoinSUtil.encodeHex(murmurHash))
+    val uint32 = UInt32(BytesUtil.encodeHex(murmurHash))
     val modded = uint32.toLong % (filterSize.num.toInt * 8)
     modded.toInt
   }
@@ -301,7 +304,7 @@ sealed abstract class BloomFilter extends NetworkElement {
   override def bytes = RawBloomFilterSerializer.write(this)
 }
 
-object BloomFilter extends Factory[BloomFilter] {
+object BloomFilter extends Factory[BloomFilter] with BitcoinSLogger {
 
   private case class BloomFilterImpl(
       filterSize: CompactSizeUInt,

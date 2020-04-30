@@ -1,6 +1,5 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
-import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._

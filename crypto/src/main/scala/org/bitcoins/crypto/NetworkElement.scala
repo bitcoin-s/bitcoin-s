@@ -1,6 +1,5 @@
-package org.bitcoins.core.protocol
+package org.bitcoins.crypto
 
-import org.bitcoins.core.util.BitcoinSLogger
 import scodec.bits.ByteVector
 
 /**
@@ -24,6 +23,4 @@ trait NetworkElement extends Any {
 
   /** The byte representation of the NetworkElement in little endian */
   def bytesLE: ByteVector = bytes.reverse
-
-  def logger = BitcoinSLogger.logger
 }

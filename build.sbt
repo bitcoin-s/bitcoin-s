@@ -29,7 +29,8 @@ lazy val benchSettings: Seq[Def.SettingsDefinition] = {
 }
 
 import Projects._
-lazy val core = project in file("core")
+lazy val crypto = project in file("crypto")
+lazy val core = project in file("core") dependsOn crypto
 lazy val bitcoindRpc = project
   .in(file("bitcoind-rpc"))
   .settings(CommonSettings.prodSettings: _*)
@@ -50,6 +51,8 @@ lazy val `bitcoin-s` = project
     cliTest,
     core,
     coreTest,
+    crypto,
+    cryptoTest,
     dbCommons,
     dbCommonsTest,
     bitcoindRpc,
@@ -194,6 +197,17 @@ lazy val secp256k1jni = project
   * being published in the generated JARs.
   */
 val testAndCompile = "compile->compile;test->test"
+
+lazy val cryptoTest = project
+  .in(file("crypto-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-crypto-test"
+  )
+  .dependsOn(
+    crypto % testAndCompile,
+    testkit
+  )
 
 lazy val coreTest = project
   .in(file("core-test"))

@@ -7,12 +7,7 @@ import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
-import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  ExtPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BlockStamp.{
@@ -33,6 +28,11 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockWalletApi
 import org.bitcoins.wallet.models._

@@ -11,6 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   WitnessTransaction
 }
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 trait TxDB {
   def txIdBE: DoubleSha256DigestBE

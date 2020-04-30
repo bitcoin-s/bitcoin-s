@@ -166,6 +166,11 @@ object Deps {
     Compile.slf4j
   )
 
+  val crypto = List(
+    Compile.bouncycastle,
+    Compile.scodec
+  )
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface
@@ -177,6 +182,10 @@ object Deps {
     Test.scalaTest,
     Test.spray,
     Test.playJson
+  )
+
+  val cryptoTest = List(
+    Test.scalaTest
   )
 
   val bitcoindZmq = List(

@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.blockchain
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.ByteVector
 
 /**

@@ -4,7 +4,20 @@ import org.bitcoins.core.crypto._
 import org.bitcoins.core.gcs.SipHashKey
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.{core, crypto}
+import org.bitcoins.crypto.{
+  AesEncryptedData,
+  AesIV,
+  AesKey,
+  AesPassword,
+  CryptoUtil,
+  DoubleSha256Digest,
+  ECDigitalSignature,
+  ECPrivateKey,
+  ECPublicKey,
+  Sha256Digest,
+  Sha256Hash160Digest
+}
 import org.scalacheck.Gen
 import scodec.bits.{BitVector, ByteVector}
 
@@ -180,7 +193,7 @@ sealed abstract class CryptoGenerators {
       digest = CryptoUtil.sha256(bytes)
     } yield digest
 
-  /** Generates a random [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]] */
+  /** Generates a random [[DoubleSha256Digest DoubleSha256Digest]] */
   def doubleSha256Digest: Gen[DoubleSha256Digest] =
     for {
       key <- privateKey
@@ -188,14 +201,14 @@ sealed abstract class CryptoGenerators {
     } yield digest
 
   /**
-    * Generates a sequence of [[org.bitcoins.core.crypto.DoubleSha256Digest DoubleSha256Digest]]
+    * Generates a sequence of [[DoubleSha256Digest DoubleSha256Digest]]
     * @param num the number of digets to generate
     * @return
     */
   def doubleSha256DigestSeq(num: Int): Gen[Seq[DoubleSha256Digest]] =
     Gen.listOfN(num, doubleSha256Digest)
 
-  /** Generates a random [[org.bitcoins.core.crypto.Sha256Hash160Digest Sha256Hash160Digest]] */
+  /** Generates a random [[Sha256Hash160Digest Sha256Hash160Digest]] */
   def sha256Hash160Digest: Gen[Sha256Hash160Digest] =
     for {
       pubKey <- publicKey
@@ -218,11 +231,11 @@ sealed abstract class CryptoGenerators {
     Gen.oneOf(ExtKeyVersion.all)
   }
 
-  /** Generates an [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]] */
+  /** Generates an [[ExtPrivateKey ExtPrivateKey]] */
   def extPrivateKey: Gen[ExtPrivateKey] = {
     for {
       version <- Gen.oneOf(ExtKeyVersion.allPrivs)
-      ext = ExtPrivateKey(version)
+      ext = core.crypto.ExtPrivateKey(version)
     } yield ext
   }
 
@@ -246,7 +259,7 @@ sealed abstract class CryptoGenerators {
     for {
       cipher <- NumberGenerator.bytevector.suchThat(_.nonEmpty)
       iv <- aesIV
-    } yield AesEncryptedData(cipherText = cipher, iv)
+    } yield crypto.AesEncryptedData(cipherText = cipher, iv)
 
   def genKey: Gen[SipHashKey] =
     Gen

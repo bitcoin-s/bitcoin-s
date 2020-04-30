@@ -3,8 +3,19 @@ package org.bitcoins.core.crypto
 import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path}
 import org.bitcoins.core.number.{UInt32, UInt8}
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.util._
+import org.bitcoins.crypto.{
+  BaseECKey,
+  BouncyCastleUtil,
+  BytesUtil,
+  CryptoUtil,
+  ECDigitalSignature,
+  ECPrivateKey,
+  ECPublicKey,
+  Factory,
+  MaskedToString,
+  NetworkElement
+}
 import scodec.bits.{ByteVector, HexStringSyntax}
 
 import scala.annotation.tailrec
@@ -138,7 +149,7 @@ object ExtKey extends Factory[ExtKey] {
         case x: ExtKeyPrivVersion =>
           require(
             bytes(45) == 0,
-            "Byte at index 46 must be zero for a ExtPrivateKey, got: " + BitcoinSUtil
+            "Byte at index 46 must be zero for a ExtPrivateKey, got: " + BytesUtil
               .encodeHex(bytes(45)))
           val priv = ECPrivateKey(bytes.slice(46, 78))
           ExtPrivateKey(x, depth, fp, childNum, chainCode, priv)

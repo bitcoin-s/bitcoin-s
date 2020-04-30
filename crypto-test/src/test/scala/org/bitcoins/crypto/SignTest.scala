@@ -1,4 +1,4 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest

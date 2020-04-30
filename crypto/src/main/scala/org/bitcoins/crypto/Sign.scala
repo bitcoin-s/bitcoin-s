@@ -1,13 +1,12 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
-import org.bitcoins.core.hd.BIP32Path
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
 /**
-  * This is meant to be an abstraction for a [[org.bitcoins.core.crypto.ECPrivateKey]], sometimes we will not
+  * This is meant to be an abstraction for a [[org.bitcoins.crypto.ECPrivateKey]], sometimes we will not
   * have direct access to a private key in memory -- for instance if that key is on a hardware device -- so we need to create an
   * abstraction of the signing process. Fundamentally a private key takes in a scodec.bits.ByteVector and returns a [[ECDigitalSignature]]
   * That is what this abstraction is meant to represent. If you have a [[ECPrivateKey]] in your application, you can get it's
@@ -61,16 +60,5 @@ object Sign {
     SignImpl({ _: ByteVector =>
       Future.successful(EmptyDigitalSignature)
     }, publicKey)
-  }
-}
-
-/** A signing interface for [[ExtKey]] */
-trait ExtSign extends Sign {
-
-  def deriveAndSignFuture: (ByteVector, BIP32Path) => Future[ECDigitalSignature]
-
-  /** First derives the child key that corresponds to [[BIP32Path path]] and then signs */
-  def sign(bytes: ByteVector, path: BIP32Path): ECDigitalSignature = {
-    Await.result(deriveAndSignFuture(bytes, path), 30.seconds)
   }
 }

@@ -1,9 +1,9 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config._
 import slick.lifted.{PrimaryKey, ProvenShape}

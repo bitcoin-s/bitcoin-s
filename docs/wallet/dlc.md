@@ -50,9 +50,8 @@ Note: if you wish to setup your own oracle for testing, you can do so by pasting
 
 ```scala
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.util.CryptoUtil
-import scodec.bits.ByteVector
 import org.bitcoins.core.currency._
+import org.bitcoins.crypto.CryptoUtil
 
 val privKey = ECPrivateKey.freshPrivateKey
 val pubKey = privKey.publicKey

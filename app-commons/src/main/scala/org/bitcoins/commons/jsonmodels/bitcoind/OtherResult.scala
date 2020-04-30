@@ -1,11 +1,5 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -14,6 +8,12 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  Sha256Hash160Digest
+}
 import play.api.libs.json.JsObject
 
 sealed abstract class OtherResult

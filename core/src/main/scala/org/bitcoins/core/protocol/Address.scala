@@ -1,10 +1,17 @@
 package org.bitcoins.core.protocol
 import org.bitcoins.core.config.{MainNet, TestNet3, _}
-import org.bitcoins.core.crypto._
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util._
+import org.bitcoins.crypto.{
+  BytesUtil,
+  CryptoUtil,
+  ECPublicKey,
+  HashDigest,
+  Sha256Digest,
+  Sha256Hash160Digest
+}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -22,7 +29,7 @@ sealed abstract class Address {
     case _: Any        => false
   }
 
-  /** Every address is derived from a [[org.bitcoins.core.crypto.HashDigest HashDigest]] in a
+  /** Every address is derived from a [[HashDigest HashDigest]] in a
     * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]] */
   def hash: HashDigest
 
@@ -90,7 +97,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
   }
 
   override def hash: HashDigest = {
-    val byteVector = BitcoinSUtil.toByteVector(scriptPubKey.witnessProgram)
+    val byteVector = BytesUtil.toByteVector(scriptPubKey.witnessProgram)
     scriptPubKey match {
       case _: P2WPKHWitnessSPKV0 =>
         Sha256Hash160Digest(byteVector)
@@ -389,7 +396,7 @@ object Address extends AddressFactory[Address] {
   }
 
   def fromHex(hex: String): Try[Address] =
-    fromBytes(BitcoinSUtil.decodeHex(hex))
+    fromBytes(BytesUtil.decodeHex(hex))
 
   def apply(bytes: ByteVector): Try[Address] = fromBytes(bytes)
 

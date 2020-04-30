@@ -20,7 +20,7 @@ object TxBuilderError {
       "This tx fails the invariants function you passed in"))
 
   /**
-    * Means that we gave too many [[org.bitcoins.core.crypto.Sign Sign]] for the TxBuilder
+    * Means that we gave too many [[org.bitcoins.crypto.Sign Sign]] for the TxBuilder
     * to use during the signing process for a utxo.
     * An example of this occurring is if we gave 2 private keys to sign a p2pkh spk.
     * A p2pkh only requires one private key to sign the utxo.
@@ -127,7 +127,7 @@ object TxBuilderError {
 
   /**
     * Means that the script we are signing for requires a public key, but we did not pass one in
-    * as a parameter inside of [[org.bitcoins.core.crypto.Sign Sign]]
+    * as a parameter inside of [[org.bitcoins.crypto.Sign Sign]]
     */
   val MissingPublicKey = Failure(
     new IllegalArgumentException(

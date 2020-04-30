@@ -9,7 +9,7 @@ import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.{
   PaymentReceived,
   PaymentSent
 }
-import org.bitcoins.core.crypto.Sha256Digest
+import org.bitcoins.crypto.Sha256Digest
 
 import scala.concurrent.Promise
 

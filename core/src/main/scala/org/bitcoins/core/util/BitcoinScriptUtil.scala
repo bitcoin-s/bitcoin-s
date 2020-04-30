@@ -25,6 +25,7 @@ import org.bitcoins.core.script.result.{
 }
 import org.bitcoins.core.script.ExecutionInProgressScriptProgram
 import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.crypto.{BytesUtil, ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -43,7 +44,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
 
   /** Converts a sequence of script tokens to them to their byte values */
   def asmToBytes(asm: Seq[ScriptToken]): ByteVector =
-    BitcoinSUtil.decodeHex(asmToHex(asm))
+    BytesUtil.decodeHex(asmToHex(asm))
 
   /**
     * Filters out push operations in our sequence of script tokens
@@ -236,17 +237,15 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     else if (scriptTokenSize <= UInt32(OP_PUSHDATA1.max)) {
       //we need the push op to be only 1 byte in size
       val pushConstant = ScriptConstant(
-        BitcoinSUtil.flipEndianness(
-          bytes.slice(bytes.length - 1, bytes.length)))
+        BytesUtil.flipEndianness(bytes.slice(bytes.length - 1, bytes.length)))
       Seq(OP_PUSHDATA1, pushConstant)
     } else if (scriptTokenSize <= UInt32(OP_PUSHDATA2.max)) {
       //we need the push op to be only 2 bytes in size
       val pushConstant = ScriptConstant(
-        BitcoinSUtil.flipEndianness(
-          bytes.slice(bytes.length - 2, bytes.length)))
+        BytesUtil.flipEndianness(bytes.slice(bytes.length - 2, bytes.length)))
       Seq(OP_PUSHDATA2, pushConstant)
     } else if (scriptTokenSize <= UInt32(OP_PUSHDATA4.max)) {
-      val pushConstant = ScriptConstant(BitcoinSUtil.flipEndianness(bytes))
+      val pushConstant = ScriptConstant(BytesUtil.flipEndianness(bytes))
       Seq(OP_PUSHDATA4, pushConstant)
     } else
       throw new IllegalArgumentException(
@@ -287,7 +286,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     * [[https://github.com/bitcoin/bitcoin/blob/a6a860796a44a2805a58391a009ba22752f64e32/src/script/script.h#L220-L237]]
     */
   def isShortestEncoding(hex: String): Boolean =
-    isShortestEncoding(BitcoinSUtil.decodeHex(hex))
+    isShortestEncoding(BytesUtil.decodeHex(hex))
 
   /** Checks if the token is minimially encoded */
   def isMinimalToken(token: ScriptToken): Boolean = {
@@ -301,7 +300,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /**
-    * Checks the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] encoding according to bitcoin core's function:
+    * Checks the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] encoding according to bitcoin core's function:
     * [[https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L202]].
     */
   def checkPubKeyEncoding(
@@ -456,7 +455,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
         script
     }
 
-  /** Removes the given [[org.bitcoins.core.crypto.ECDigitalSignature ECDigitalSignature]] from the list of
+  /** Removes the given [[ECDigitalSignature ECDigitalSignature]] from the list of
     * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] if it exists. */
   def removeSignatureFromScript(
       signature: ECDigitalSignature,
@@ -475,7 +474,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
     } else script
   }
 
-  /** Removes the list of [[org.bitcoins.core.crypto.ECDigitalSignature ECDigitalSignature]] from the list of
+  /** Removes the list of [[ECDigitalSignature ECDigitalSignature]] from the list of
     * [[org.bitcoins.core.script.constant.ScriptToken ScriptToken]] */
   def removeSignaturesFromScript(
       sigs: Seq[ECDigitalSignature],
@@ -552,7 +551,7 @@ trait BitcoinScriptUtil extends BitcoinSLogger {
   }
 
   /**
-    * Checks that all the [[org.bitcoins.core.crypto.ECPublicKey ECPublicKey]] in this script
+    * Checks that all the [[org.bitcoins.crypto.ECPublicKey ECPublicKey]] in this script
     * is compressed public keys, this is required for BIP143
     * @param spk
     * @return

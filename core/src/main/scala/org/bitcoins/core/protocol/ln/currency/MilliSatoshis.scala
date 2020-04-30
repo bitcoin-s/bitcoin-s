@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.ln.currency
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{BasicArithmetic, UInt64}
-import org.bitcoins.core.protocol.NetworkElement
+import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
 import scala.math.BigDecimal.RoundingMode

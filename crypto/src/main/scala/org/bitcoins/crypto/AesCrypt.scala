@@ -1,4 +1,4 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
 import java.security.SecureRandom
 
@@ -7,8 +7,6 @@ import javax.crypto.{BadPaddingException, Cipher, SecretKey}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{Factory, MaskedToString}
 
 /**
   * Represents a encrypted cipher text with it's accompanying
@@ -145,13 +143,13 @@ object AesPassword {
     * if the string is empty.
     */
   def fromString(string: String): Option[AesPassword] = {
-    if (string.isEmpty()) None else Some(AesPassword(string))
+    if (string.isEmpty) None else Some(AesPassword(string))
   }
 
   /** Constructs a password from the given string. Throws
     * if the string is empty.
     */
-  def fromNonEmptyString(string: String) =
+  def fromNonEmptyString(string: String): AesPassword =
     fromString(string).getOrElse(
       throw new IllegalArgumentException(
         "Cannot construct empty AES passwords!"))

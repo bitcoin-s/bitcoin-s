@@ -1,8 +1,8 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import play.api.libs.json.{JsArray, Json}
 

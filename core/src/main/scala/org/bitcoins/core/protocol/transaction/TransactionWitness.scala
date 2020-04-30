@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{EmptyScriptWitness, ScriptWitness}
 import org.bitcoins.core.serializers.transaction.RawTransactionWitnessParser
-import org.bitcoins.core.util.{BitcoinSUtil, SeqWrapper}
+import org.bitcoins.core.util.SeqWrapper
+import org.bitcoins.crypto.{BytesUtil, NetworkElement}
 import scodec.bits.ByteVector
 
 /**
@@ -118,5 +118,5 @@ object TransactionWitness {
     fromBytes(bytes, numInputs)
 
   def apply(hex: String, numInputs: Int): TransactionWitness =
-    fromBytes(BitcoinSUtil.decodeHex(hex), numInputs)
+    fromBytes(BytesUtil.decodeHex(hex), numInputs)
 }

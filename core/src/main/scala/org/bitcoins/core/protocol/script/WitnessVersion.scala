@@ -1,10 +1,15 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{Sha256Digest, Sha256Hash160Digest}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, CryptoUtil}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.{
+  BytesUtil,
+  CryptoUtil,
+  Sha256Digest,
+  Sha256Hash160Digest
+}
 
 /**
   * Created by chris on 11/10/16.
@@ -37,7 +42,7 @@ case object WitnessVersion0 extends WitnessVersion {
       witnessProgram: Seq[ScriptToken]): Either[
     (Seq[ScriptToken], ScriptPubKey),
     ScriptError] = {
-    val programBytes = BitcoinSUtil.toByteVector(witnessProgram)
+    val programBytes = BytesUtil.toByteVector(witnessProgram)
     programBytes.size match {
       case 20 =>
         //p2wpkh

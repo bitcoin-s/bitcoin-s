@@ -1,12 +1,6 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  ECPublicKey
-}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
@@ -15,6 +9,13 @@ import org.bitcoins.rpc.client.common.BitcoindVersion._
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPrivateKey,
+  ECPublicKey
+}
 import play.api.libs.json._
 
 import scala.concurrent.Future
@@ -31,7 +32,7 @@ trait WalletRpc { self: Client =>
 
   def dumpPrivKey(address: BitcoinAddress): Future[ECPrivateKey] = {
     bitcoindCall[String]("dumpprivkey", List(JsString(address.value)))
-      .map(ECPrivateKey.fromWIFToPrivateKey)
+      .map(ECPrivateKeyUtil.fromWIFToPrivateKey)
   }
 
   def dumpWallet(filePath: String): Future[DumpWalletResult] = {
@@ -115,9 +116,10 @@ trait WalletRpc { self: Client =>
       key: ECPrivateKey,
       account: String = "",
       rescan: Boolean = true): Future[Unit] = {
-    bitcoindCall[Unit](
-      "importprivkey",
-      List(JsString(key.toWIF(network)), JsString(account), JsBoolean(rescan)))
+    bitcoindCall[Unit]("importprivkey",
+                       List(JsString(ECPrivateKeyUtil.toWIF(key, network)),
+                            JsString(account),
+                            JsBoolean(rescan)))
   }
 
   def importMulti(

@@ -1,9 +1,7 @@
 package org.bitcoins.core.p2p
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.Factory
 import org.bitcoins.core.serializers.p2p.messages.RawInventorySerializer
+import org.bitcoins.crypto.{DoubleSha256Digest, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /**

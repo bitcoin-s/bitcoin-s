@@ -8,7 +8,13 @@ import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.crypto.{
+  BytesUtil,
+  DERSignatureUtil,
+  ECDigitalSignature,
+  ECPublicKey
+}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -125,7 +131,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
       }
 
       logger.trace(
-        "Hash for signature: " + BitcoinSUtil.encodeHex(hashForSignature.bytes))
+        "Hash for signature: " + BytesUtil.encodeHex(hashForSignature.bytes))
       val sigWithoutHashType = stripHashType(signature)
       val isValid = pubKey.verify(hashForSignature, sigWithoutHashType)
       if (isValid) SignatureValidationSuccess
@@ -227,7 +233,7 @@ trait TransactionSignatureChecker extends BitcoinSLogger {
     } else result
   }
 
-  /** Removes the hash type from the [[org.bitcoins.core.crypto.ECDigitalSignature]] */
+  /** Removes the hash type from the [[ECDigitalSignature]] */
   private def stripHashType(sig: ECDigitalSignature): ECDigitalSignature = {
     ECDigitalSignature(sig.bytes.slice(0, sig.bytes.length - 1))
   }

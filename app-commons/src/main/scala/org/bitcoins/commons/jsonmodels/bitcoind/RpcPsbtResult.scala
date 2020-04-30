@@ -1,12 +1,12 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.crypto.HashType
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
 sealed abstract class RpcPsbtResult
 

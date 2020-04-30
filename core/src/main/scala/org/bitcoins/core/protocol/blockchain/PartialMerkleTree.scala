@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util._
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import scodec.bits.BitVector
 
 import scala.annotation.tailrec

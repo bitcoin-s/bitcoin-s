@@ -1,9 +1,7 @@
 package org.bitcoins.core.psbt
 
 import org.bitcoins.core.byteVectorOrdering
-import org.bitcoins.core.crypto.{Sha256Hash160Digest, Sign}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
@@ -13,9 +11,16 @@ import org.bitcoins.core.protocol.transaction.{
   WitnessTransaction
 }
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.util.{CryptoUtil, Factory, SeqWrapper}
+import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  Factory,
+  NetworkElement,
+  Sha256Hash160Digest,
+  Sign
+}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

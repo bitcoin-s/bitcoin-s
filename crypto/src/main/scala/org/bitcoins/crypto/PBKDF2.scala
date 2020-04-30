@@ -1,6 +1,7 @@
-package org.bitcoins.core.crypto
-import javax.crypto.{SecretKey, SecretKeyFactory}
+package org.bitcoins.crypto
+
 import javax.crypto.spec.PBEKeySpec
+import javax.crypto.{SecretKey, SecretKeyFactory}
 import scodec.bits.ByteVector
 
 /**

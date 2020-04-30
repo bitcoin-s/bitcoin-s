@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers
 
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import scodec.bits.ByteVector
 
 /**
@@ -10,7 +10,7 @@ import scodec.bits.ByteVector
 abstract class RawBitcoinSerializer[T] {
 
   /** Reads a hexadecimal value and transforms it into the native scala type T. */
-  def read(hex: String): T = read(BitcoinSUtil.decodeHex(hex))
+  def read(hex: String): T = read(BytesUtil.decodeHex(hex))
 
   /** Reads in bytes and transforms it into the appropriate scala type T. */
   def read(bytes: ByteVector): T

@@ -2,9 +2,8 @@ package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.number.{BaseNumbers, BasicArithmetic, Bounded, Int64}
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.RawSatoshisSerializer
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 import scala.math.Numeric

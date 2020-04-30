@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.crypto.NetworkElement
 import scodec.bits._
-import org.bitcoins.core.protocol.NetworkElement
 
 sealed abstract class ExtKeyVersion extends NetworkElement
 

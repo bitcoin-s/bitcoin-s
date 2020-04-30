@@ -3,7 +3,6 @@ package org.bitcoins.wallet.internal
 import java.util.concurrent.Executors
 
 import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -12,6 +11,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.crypto.DoubleSha256Digest
 
 import scala.concurrent.{ExecutionContext, Future}
 

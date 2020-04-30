@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.Implicits._
 import org.scalacheck.Gen
 
@@ -227,7 +228,7 @@ object TransactionGenerators extends BitcoinSLogger {
   }
 
   /**
-    * Creates a [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]], then creates a
+    * Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKScriptPubKey]] from that private key
     * Finally creates a  [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
     * that spends the [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKScriptPubKey]] correctly
@@ -249,7 +250,7 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield (signedTxSignatureComponent, privateKey)
 
   /**
-    * Creates a [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]], then creates a
+    * Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKHScriptPubKey]] from that private key
     * Finally creates  [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that spends the
     * [[org.bitcoins.core.protocol.script.P2PKScriptPubKey P2PKHScriptPubKey]] correctly
@@ -271,7 +272,7 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield (signedTxSignatureComponent, privateKey)
 
   /**
-    * Creates a sequence of [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]], then creates a
+    * Creates a sequence of [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]] from those
     * private keys. Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that
     * spends the [[org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey MultiSignatureScriptPubKey]] correctly
@@ -321,7 +322,7 @@ object TransactionGenerators extends BitcoinSLogger {
   }
 
   /**
-    * Creates a [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]], then creates a
+    * Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     * [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]] from that private key
     * Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that CANNNOT spend the
     * [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]] because the LockTime requirement
@@ -344,7 +345,7 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield unspendable
 
   /**
-    *  Creates a [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]], then creates a
+    *  Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     *  [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]] from that private key.
     *  Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that can successfully
     *  spend the [[org.bitcoins.core.protocol.script.CLTVScriptPubKey CLTVScriptPubKey]]
@@ -363,7 +364,7 @@ object TransactionGenerators extends BitcoinSLogger {
     } yield spendable
 
   /**
-    *  Creates a [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]], then creates a
+    *  Creates a [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]], then creates a
     *  [[org.bitcoins.core.protocol.script.CSVScriptPubKey CSVScriptPubKey]] from that private key.
     *  Finally creates a [[org.bitcoins.core.protocol.transaction.Transaction Transaction]] that can
     *  successfully spend the [[org.bitcoins.core.protocol.script.CSVScriptPubKey CSVScriptPubKey]]

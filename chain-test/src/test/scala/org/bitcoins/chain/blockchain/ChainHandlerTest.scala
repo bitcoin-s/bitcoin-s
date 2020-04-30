@@ -4,17 +4,17 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPrivateKey
-}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPrivateKey
+}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{

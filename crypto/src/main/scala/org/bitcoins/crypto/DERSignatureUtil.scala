@@ -1,4 +1,4 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
 import org.bouncycastle.asn1.{ASN1InputStream, ASN1Integer, DLSequence}
 import scodec.bits.ByteVector
@@ -52,8 +52,6 @@ sealed abstract class DERSignatureUtil {
 
   /**
     * Decodes the given digital signature into it's r and s points
-    * @param signature
-    * @return
     */
   def decodeSignature(signature: ECDigitalSignature): (BigInt, BigInt) =
     decodeSignature(signature.bytes)
@@ -61,8 +59,6 @@ sealed abstract class DERSignatureUtil {
   /**
     * Decodes the given sequence of bytes into it's r and s points
     * throws an exception if the given sequence of bytes is not a DER encoded signature
-    * @param bytes
-    * @return
     */
   def decodeSignature(bytes: ByteVector): (BigInt, BigInt) = {
     val asn1InputStream = new ASN1InputStream(bytes.toArray)
@@ -182,7 +178,7 @@ sealed abstract class DERSignatureUtil {
 
     // Null bytes at the start of R are not allowed, unless R would
     // otherwise be interpreted as a negative number.
-    if (rSize > 1 && (bytes(4) == 0x00) && !((bytes(5) & 0x80) != 0))
+    if (rSize > 1 && (bytes(4) == 0x00) && (bytes(5) & 0x80) == 0)
       return false
     //logger.debug("There were not any null bytes at the start of R")
     // Check whether the S element is an integer.
@@ -198,7 +194,7 @@ sealed abstract class DERSignatureUtil {
     //logger.debug("s was not a negative number")
     // Null bytes at the start of S are not allowed, unless S would otherwise be
     // interpreted as a negative number.
-    if (sSize > 1 && (bytes(rSize + 6) == 0x00) && !((bytes(rSize + 7) & 0x80) != 0))
+    if (sSize > 1 && (bytes(rSize + 6) == 0x00) && (bytes(rSize + 7) & 0x80) == 0)
       return false
     //logger.debug("There were not any null bytes at the start of S")
     //if we made it to this point without returning false this must be a valid strictly encoded der sig
@@ -208,7 +204,6 @@ sealed abstract class DERSignatureUtil {
   /**
     * Requires the S value in signatures to be the low version of the S value
     * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
-    * @param signature
     * @return if the S value is the low version
     */
   def isLowS(signature: ECDigitalSignature): Boolean = isLowS(signature.bytes)
@@ -216,7 +211,6 @@ sealed abstract class DERSignatureUtil {
   /**
     * Requires the S value in signatures to be the low version of the S value
     * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
-    * @param signature
     * @return if the S value is the low version
     */
   def isLowS(signature: ByteVector): Boolean = {
@@ -237,7 +231,7 @@ sealed abstract class DERSignatureUtil {
       else
         ECDigitalSignature(
           signature.r,
-          CryptoParams.curve.getN().subtract(signature.s.bigInteger))
+          CryptoParams.curve.getN.subtract(signature.s.bigInteger))
     require(DERSignatureUtil.isLowS(sigLowS))
     sigLowS
   }

@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 
 /**

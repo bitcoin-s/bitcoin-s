@@ -3,16 +3,15 @@ package org.bitcoins.node.networking.peer
 import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.util.Timeout
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.p2p.NetworkMessage
 import org.bitcoins.core.p2p._
 import org.bitcoins.node.networking.P2PClient
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.P2PLogger
-import org.bitcoins.core.crypto.HashDigest
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.crypto.{DoubleSha256Digest, HashDigest}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}

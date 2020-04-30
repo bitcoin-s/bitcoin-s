@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{
@@ -14,6 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
 import slick.lifted.ProvenShape

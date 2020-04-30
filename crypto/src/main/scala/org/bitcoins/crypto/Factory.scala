@@ -1,6 +1,5 @@
-package org.bitcoins.core.util
+package org.bitcoins.crypto
 
-import org.slf4j.Logger
 import scodec.bits.ByteVector
 
 /**
@@ -10,10 +9,10 @@ import scodec.bits.ByteVector
 abstract class Factory[+T] {
 
   /** Creates a T out of a hex string. */
-  def fromHex(hex: String): T = fromBytes(BitcoinSUtil.decodeHex(hex))
+  def fromHex(hex: String): T = fromBytes(BytesUtil.decodeHex(hex))
 
   /** Creates a T out of a hex string in little endian. */
-  def fromHexLE(hex: String): T = fromBytesLE(BitcoinSUtil.decodeHex(hex))
+  def fromHexLE(hex: String): T = fromBytesLE(BytesUtil.decodeHex(hex))
 
   /** Creates a T out of a sequence of bytes. */
   def fromBytes(bytes: ByteVector): T
@@ -26,8 +25,6 @@ abstract class Factory[+T] {
 
   /** Creates a T from a hex string. */
   def apply(hex: String): T = fromHex(hex)
-
-  lazy val logger: Logger = BitcoinSLogger.logger
 
   /** Allows a `def foo[C: Factory]()` construction. */
   implicit def self: Factory[T] = this

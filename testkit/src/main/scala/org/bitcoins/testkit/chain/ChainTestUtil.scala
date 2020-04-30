@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.models._
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
   MainNetChainParams,
   RegTestNetChainParams
 }
+import org.bitcoins.crypto.DoubleSha256Digest
 
 sealed abstract class ChainTestUtil {
   lazy val regTestChainParams: RegTestNetChainParams.type =

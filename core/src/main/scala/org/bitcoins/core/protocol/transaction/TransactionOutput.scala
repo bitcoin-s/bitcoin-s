@@ -1,10 +1,9 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 case class TransactionOutput(value: CurrencyUnit, scriptPubKey: ScriptPubKey)

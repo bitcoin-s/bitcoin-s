@@ -4,7 +4,7 @@ import java.time.Instant
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -16,6 +16,7 @@ import org.bitcoins.core.wallet.utxo.TxoState.{
   ConfirmedReceived,
   PendingConfirmationsReceived
 }
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil

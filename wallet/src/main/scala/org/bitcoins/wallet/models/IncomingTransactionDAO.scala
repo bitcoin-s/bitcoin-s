@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.config._
 import slick.lifted.{PrimaryKey, ProvenShape}
 

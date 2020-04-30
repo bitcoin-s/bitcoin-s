@@ -1,9 +1,9 @@
 package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.number.Int64
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.script.ScriptOperationFactory
-import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil, Factory}
+import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.crypto.{BytesUtil, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}
@@ -121,7 +121,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
   }
 
   def apply(bytes: ByteVector, requireMinimal: Boolean): Try[ScriptNumber] =
-    apply(BitcoinSUtil.encodeHex(bytes), requireMinimal)
+    apply(BytesUtil.encodeHex(bytes), requireMinimal)
 
   def apply(hex: String, requireMinimal: Boolean): Try[ScriptNumber] = {
     if (requireMinimal && !BitcoinScriptUtil.isShortestEncoding(hex)) {
@@ -142,8 +142,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
   private object ScriptNumberImpl {
 
     def apply(hex: String): ScriptNumber =
-      ScriptNumberImpl(ScriptNumberUtil.toLong(hex),
-                       BitcoinSUtil.decodeHex(hex))
+      ScriptNumberImpl(ScriptNumberUtil.toLong(hex), BytesUtil.decodeHex(hex))
 
     def apply(bytes: ByteVector): ScriptNumber =
       ScriptNumberImpl(ScriptNumberUtil.toLong(bytes))
@@ -151,7 +150,7 @@ object ScriptNumber extends Factory[ScriptNumber] {
     def apply(underlying: Long): ScriptNumber = {
       ScriptNumberImpl(
         underlying,
-        BitcoinSUtil.decodeHex(ScriptNumberUtil.longToHex(underlying)))
+        BytesUtil.decodeHex(ScriptNumberUtil.longToHex(underlying)))
     }
 
     def apply(int64: Int64): ScriptNumber = ScriptNumberImpl(int64.toLong)

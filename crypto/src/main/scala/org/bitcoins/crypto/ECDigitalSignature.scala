@@ -1,21 +1,20 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, Factory}
 import scodec.bits.ByteVector
 
 /**
   * Created by chris on 2/26/16.
   */
-sealed abstract class ECDigitalSignature extends BitcoinSLogger {
-  require(r.signum == 1 || r.signum == 0, s"r must not be negative, got ${r}")
-  require(s.signum == 1 || s.signum == 0, s"s must not be negative, got ${s}")
-  def hex: String = BitcoinSUtil.encodeHex(bytes)
+sealed abstract class ECDigitalSignature {
+  require(r.signum == 1 || r.signum == 0, s"r must not be negative, got $r")
+  require(s.signum == 1 || s.signum == 0, s"s must not be negative, got $s")
+  def hex: String = BytesUtil.encodeHex(bytes)
 
   def bytes: ByteVector
 
-  def isEmpty = bytes.isEmpty
+  def isEmpty: Boolean = bytes.isEmpty
 
-  override def toString = "ECDigitalSignature(" + hex + ")"
+  override def toString: String = "ECDigitalSignature(" + hex + ")"
 
   /**
     * Checks if this signature is encoded to DER correctly
@@ -79,10 +78,10 @@ sealed abstract class ECDigitalSignature extends BitcoinSLogger {
 
 }
 
-final case object EmptyDigitalSignature extends ECDigitalSignature {
-  override val bytes = ByteVector.empty
-  override def r = java.math.BigInteger.valueOf(0)
-  override def s = r
+case object EmptyDigitalSignature extends ECDigitalSignature {
+  override val bytes: ByteVector = ByteVector.empty
+  override def r: BigInt = java.math.BigInteger.valueOf(0)
+  override def s: BigInt = r
 }
 
 /**
@@ -92,10 +91,10 @@ final case object EmptyDigitalSignature extends ECDigitalSignature {
   * likely though according to
   * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
   */
-final case object DummyECDigitalSignature extends ECDigitalSignature {
-  override val bytes = ByteVector(Array.fill(72)(0.toByte))
-  override def r = EmptyDigitalSignature.r
-  override def s = r
+case object DummyECDigitalSignature extends ECDigitalSignature {
+  override val bytes: ByteVector = ByteVector(Array.fill(72)(0.toByte))
+  override def r: BigInt = EmptyDigitalSignature.r
+  override def s: BigInt = r
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
@@ -115,7 +114,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     }
   }
 
-  def apply(r: BigInt, s: BigInt) = fromRS(r, s)
+  def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)
 
   /**
     * Takes in the r and s component of a digital signature and gives back a ECDigitalSignature object
@@ -127,16 +126,16 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * @return
     */
   def fromRS(r: BigInt, s: BigInt): ECDigitalSignature = {
-    val rsSize = r.toByteArray.size + s.toByteArray.size
+    val rsSize = r.toByteArray.length + s.toByteArray.length
     val totalSize = 4 + rsSize
     val bytes: ByteVector = {
       ByteVector(
         Array(0x30.toByte,
               totalSize.toByte,
               0x2.toByte,
-              r.toByteArray.size.toByte))
+              r.toByteArray.length.toByte))
         .++(ByteVector(r.toByteArray))
-        .++(ByteVector(Array(0x2.toByte, s.toByteArray.size.toByte)))
+        .++(ByteVector(Array(0x2.toByte, s.toByteArray.length.toByte)))
         .++(ByteVector(s.toByteArray))
     }
 
@@ -163,7 +162,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * the second 32 is the value
     */
   def fromRS(hex: String): ECDigitalSignature = {
-    val bytes = BitcoinSUtil.decodeHex(hex)
+    val bytes = BytesUtil.decodeHex(hex)
     fromRS(bytes)
   }
 }

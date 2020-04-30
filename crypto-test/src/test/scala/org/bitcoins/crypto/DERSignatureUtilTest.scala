@@ -1,4 +1,4 @@
-package org.bitcoins.core.crypto
+package org.bitcoins.crypto
 
 import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest

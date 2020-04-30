@@ -1,10 +1,15 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.blockchain.RawBlockHeaderSerializer
-import org.bitcoins.core.util.{CryptoUtil, Factory, NumberUtil}
+import org.bitcoins.core.util.NumberUtil
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  Factory,
+  NetworkElement
+}
 import scodec.bits.ByteVector
 
 /**
