@@ -214,6 +214,19 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
     mutualCloseTest(wallets = wallets, asInitiator = false)
   }
 
+  it must "fail to init a losing mutual close" in { wallets =>
+    val dlcA = wallets._1.wallet
+
+    val initMutualCloseF = for {
+      offer <- getInitialOffer(dlcA)
+      (_, sig) = getSigs(offer.contractInfo)
+
+      closeSig <- dlcA.initDLCMutualClose(offer.eventId, sig)
+    } yield closeSig
+
+    recoverToSucceededIf[UnsupportedOperationException](initMutualCloseF)
+  }
+
   it must "do a unilateral close as the initiator" in { wallets =>
     for {
       offer <- getInitialOffer(wallets._1.wallet)
@@ -238,6 +251,19 @@ class DLCExecutionTest extends BitcoinSDualWalletTest {
                                  func = func,
                                  expectedOutputs = 1)
     } yield result
+  }
+
+  it must "fail to do losing unilateral close" in { wallets =>
+    val dlcA = wallets._1.wallet
+
+    val executeDLCForceCloseF = for {
+      offer <- getInitialOffer(dlcA)
+      (_, sig) = getSigs(offer.contractInfo)
+
+      tx <- dlcA.executeDLCForceClose(offer.eventId, sig)
+    } yield tx
+
+    recoverToSucceededIf[UnsupportedOperationException](executeDLCForceCloseF)
   }
 
   it must "do a refund on a dlc as the initiator" in { wallets =>

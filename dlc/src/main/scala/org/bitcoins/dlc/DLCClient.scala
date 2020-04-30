@@ -211,6 +211,18 @@ case class DLCClient(
   lazy val fundingOutput: TransactionOutput =
     createUnsignedFundingTransaction.outputs.head
 
+  /** Returns the payouts for the signature as (toLocal, toRemote)  */
+  def getPayouts(
+      oracleSig: SchnorrDigitalSignature): (CurrencyUnit, CurrencyUnit) = {
+    sigPubKeys.find(_._2 == oracleSig.sig.getPublicKey) match {
+      case Some((hash, _)) =>
+        (outcomes(hash), remoteOutcomes(hash))
+      case None =>
+        throw new IllegalArgumentException(
+          s"Signature does not correspond to a possible outcome! $oracleSig")
+    }
+  }
+
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
     val fundingTx = createUnsignedFundingTransaction
 
@@ -278,14 +290,7 @@ case class DLCClient(
     * @param sig The oracle's signature for this contract
     */
   def createUnsignedMutualClosePSBT(sig: SchnorrDigitalSignature): PSBT = {
-    val (toLocalPayout, toRemotePayout) =
-      sigPubKeys.find(_._2 == sig.sig.toPrivateKey.publicKey) match {
-        case Some((msg, _)) =>
-          (outcomes(msg), remoteOutcomes(msg))
-        case None =>
-          throw new IllegalArgumentException(
-            s"Signature does not correspond to a possible outcome! $sig")
-      }
+    val (toLocalPayout, toRemotePayout) = getPayouts(sig)
 
     val toLocal =
       TransactionOutput(toLocalPayout,
