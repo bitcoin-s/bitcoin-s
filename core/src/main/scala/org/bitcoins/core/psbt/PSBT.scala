@@ -13,7 +13,7 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.Factory
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.signer.BitcoinSignerSingle
+import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
 
@@ -125,11 +125,11 @@ case class PSBT(
       conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
       isDummySignature: Boolean = false)(
       implicit ec: ExecutionContext): Future[PSBT] = {
-    BitcoinSignerSingle.sign(psbt = this,
-                             inputIndex = inputIndex,
-                             signer = signer,
-                             conditionalPath = conditionalPath,
-                             isDummySignature = isDummySignature)
+    BitcoinSigner.sign(psbt = this,
+                       inputIndex = inputIndex,
+                       signer = signer,
+                       conditionalPath = conditionalPath,
+                       isDummySignature = isDummySignature)
   }
 
   /**
@@ -194,6 +194,30 @@ case class PSBT(
       inputMaps.updated(index, InputPSBTMap(elements))
     PSBT(globalMap, newInputMaps, outputMaps)
 
+  }
+
+  /**
+    * Adds the TransactionOutput to the indexed InputPSBTMap to the WitnessUTXO field
+    * @param output TransactionOutput to add to PSBT
+    * @param index index of the InputPSBTMap to add tx to
+    * @return PSBT with added tx
+    */
+  def addWitnessUTXOToInput(output: TransactionOutput, index: Int): PSBT = {
+    require(WitnessScriptPubKey.isWitnessScriptPubKey(output.scriptPubKey.asm),
+            s"Given output was not a Witness UTXO: $output")
+    require(
+      index < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $index >= ${inputMaps.size}")
+
+    val inputMap = inputMaps(index)
+    require(!inputMap.isFinalized,
+            s"Cannot update an InputPSBTMap that is finalized, index: $index")
+
+    val elements = inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(
+      output)
+    val newInputMaps = inputMaps.updated(index, InputPSBTMap(elements))
+
+    PSBT(globalMap, newInputMaps, outputMaps)
   }
 
   /**
@@ -487,6 +511,32 @@ case class PSBT(
     )
 
     val newElements = inputMaps(inputIndex).elements :+ partialSignature
+
+    val newInputMaps =
+      inputMaps.updated(inputIndex, InputPSBTMap(newElements))
+
+    PSBT(globalMap, newInputMaps, outputMaps)
+  }
+
+  /** Adds all the PartialSignatures to the input map at the given index */
+  def addSignatures(
+      partialSignatures: Vector[PartialSignature],
+      inputIndex: Int): PSBT = {
+    require(
+      inputIndex < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $inputIndex >= ${inputMaps.size}")
+    require(
+      !inputMaps(inputIndex).isFinalized,
+      s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
+    val intersect =
+      inputMaps(inputIndex).partialSignatures.intersect(partialSignatures)
+    val allSigs = inputMaps(inputIndex).partialSignatures ++ partialSignatures
+
+    require(
+      allSigs.groupBy(_.pubKey).values.forall(_.length == 1),
+      s"Cannot add differing signatures for associated public keys, got: $intersect"
+    )
+    val newElements = inputMaps(inputIndex).elements ++ partialSignatures
 
     val newInputMaps =
       inputMaps.updated(inputIndex, InputPSBTMap(newElements))

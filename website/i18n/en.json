@@ -12,7 +12,7 @@
         "title": "CLI"
       },
       "applications/configuration": {
-        "title": "Application configuration"
+        "title": "Application Configuration"
       },
       "applications/dlc": {
         "title": "Executing A DLC with Bitcoin-S"
@@ -24,7 +24,7 @@
         "title": "GUI"
       },
       "applications/node": {
-        "title": "Light client"
+        "title": "Light Client"
       },
       "applications/server": {
         "title": "Application Server"
@@ -92,6 +92,9 @@
       "rpc/rpc-clients-intro": {
         "title": "Introduction"
       },
+      "secp256k1/jni-modify": {
+        "title": "Adding to Secp256k1 JNI"
+      },
       "secp256k1/secp256k1": {
         "title": "Secp256k1"
       },
@@ -109,6 +112,9 @@
       },
       "wallet/node-api": {
         "title": "Node API"
+      },
+      "wallet/wallet-get-address": {
+        "title": "Wallet Get Address APIs"
       },
       "wallet/wallet-rescan": {
         "title": "Wallet Rescans"

@@ -1,16 +1,14 @@
 package org.bitcoins.rpc.client.v16
 
+import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.rpc.client.common.Client
-import org.bitcoins.rpc.serializers.JsonReaders._
-import org.bitcoins.rpc.serializers.JsonSerializers._
-import play.api.libs.json.{JsNumber, JsString}
+import play.api.libs.json.{JsNumber, JsString, Json}
 
 import scala.concurrent.Future
-import org.bitcoins.core.currency.CurrencyUnit
-import play.api.libs.json.Json
 
 /**
   * RPC calls related to transaction sending

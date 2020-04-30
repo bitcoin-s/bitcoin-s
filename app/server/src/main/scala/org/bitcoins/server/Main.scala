@@ -7,22 +7,26 @@ import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.Core
 import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.KeyManagerInitializeError
-import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.Peer
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.{NeutrinoNode, Node, NodeCallbacks, SpvNode}
+import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.AccountDAO
-import org.bitcoins.wallet.{LockedWallet, Wallet}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object Main extends App {
+  implicit val system = ActorSystem("bitcoin-s")
+  implicit val ec: ExecutionContext = system.dispatcher
+
   implicit val conf = {
     val dataDirIndexOpt = args.zipWithIndex
       .find(_._1.toLowerCase == "--datadir")
@@ -43,9 +47,6 @@ object Main extends App {
   require(nodeConf.isNeutrinoEnabled != nodeConf.isSPVEnabled,
           "Either Neutrino or SPV mode should be enabled")
   implicit val chainConf: ChainAppConfig = conf.chainConf
-
-  implicit val system = ActorSystem("bitcoin-s")
-  import system.dispatcher
 
   val peerSocket =
     parseInetSocketAddress(nodeConf.peers.head, nodeConf.network.port)
@@ -114,18 +115,20 @@ object Main extends App {
   private def createWallet(
       nodeApi: Node,
       chainQueryApi: ChainQueryApi,
-      bip39PasswordOpt: Option[String]): Future[UnlockedWalletApi] = {
+      bip39PasswordOpt: Option[String]): Future[WalletApi] = {
     hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
-        val locked = LockedWallet(nodeApi, chainQueryApi)
 
         // TODO change me when we implement proper password handling
-        locked.unlock(BIP39KeyManager.badPassphrase, bip39PasswordOpt) match {
-          case Right(wallet) =>
+        BIP39LockedKeyManager.unlock(BIP39KeyManager.badPassphrase,
+                                     bip39PasswordOpt,
+                                     walletConf.kmParams) match {
+          case Right(km) =>
+            val wallet = Wallet(km, nodeApi, chainQueryApi, km.creationTime)
             Future.successful(wallet)
-          case Left(kmError) =>
-            error(kmError)
+          case Left(err) =>
+            error(err)
         }
       } else {
         logger.info(s"Initializing key manager")
@@ -141,7 +144,8 @@ object Main extends App {
         }
 
         logger.info(s"Creating new wallet")
-        val unInitializedWallet = Wallet(keyManager, nodeApi, chainQueryApi)
+        val unInitializedWallet =
+          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)
 
         Wallet.initialize(wallet = unInitializedWallet,
                           bip39PasswordOpt = bip39PasswordOpt)
@@ -149,36 +153,41 @@ object Main extends App {
     }
   }
 
-  private def createCallbacks(
-      wallet: UnlockedWalletApi): Future[NodeCallbacks] = {
+  private def createCallbacks(wallet: WalletApi): Future[NodeCallbacks] = {
     import DataMessageHandler._
     lazy val onTx: OnTxReceived = { tx =>
-      wallet.processTransaction(tx, blockHash = None)
-      ()
+      wallet.processTransaction(tx, blockHash = None).map(_ => ())
     }
-    lazy val onCompactFilter: OnCompactFilterReceived = {
-      (blockHash, blockFilter) =>
-        wallet.processCompactFilter(blockHash, blockFilter)
-        ()
+    lazy val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
+      wallet
+        .processCompactFilters(blockFilters = blockFilters)
+        .map(_ => ())
     }
     lazy val onBlock: OnBlockReceived = { block =>
-      wallet.processBlock(block)
-      ()
+      wallet.processBlock(block).map(_ => ())
+    }
+    lazy val onHeaders: OnBlockHeadersReceived = { headers =>
+      if (headers.isEmpty) {
+        FutureUtil.unit
+      } else {
+        wallet.updateUtxoPendingStates(headers.last).map(_ => ())
+      }
     }
     if (nodeConf.isSPVEnabled) {
-      Future.successful(NodeCallbacks(onTxReceived = Seq(onTx)))
+      Future.successful(
+        NodeCallbacks(onTxReceived = Seq(onTx),
+                      onBlockHeadersReceived = Seq(onHeaders)))
     } else if (nodeConf.isNeutrinoEnabled) {
       Future.successful(
         NodeCallbacks(onBlockReceived = Seq(onBlock),
-                      onCompactFilterReceived = Seq(onCompactFilter)))
+                      onCompactFiltersReceived = Seq(onCompactFilters),
+                      onBlockHeadersReceived = Seq(onHeaders)))
     } else {
       Future.failed(new RuntimeException("Unexpected node type"))
     }
   }
 
-  private def initializeNode(
-      node: Node,
-      wallet: UnlockedWalletApi): Future[Node] = {
+  private def initializeNode(node: Node, wallet: WalletApi): Future[Node] = {
     for {
       nodeWithBloomFilter <- node match {
         case spvNode: SpvNode =>

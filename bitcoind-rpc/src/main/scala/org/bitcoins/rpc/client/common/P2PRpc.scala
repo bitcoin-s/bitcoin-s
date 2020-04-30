@@ -2,10 +2,13 @@ package org.bitcoins.rpc.client.common
 
 import java.net.URI
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  AddNodeArgument,
+  SetBanCommand
+}
+import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.rpc.client.common.RpcOpts.{AddNodeArgument, SetBanCommand}
-import org.bitcoins.rpc.jsonmodels._
-import org.bitcoins.rpc.serializers.JsonSerializers._
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import scala.concurrent.Future

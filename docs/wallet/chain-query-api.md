@@ -22,6 +22,8 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
+import java.time.Instant
+
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```
 
@@ -90,45 +92,46 @@ val keyManager = keyManagerE match {
 // This function can be used to create a callback for when our chain api receives a transaction, block, or
 // a block filter, the returned NodeCallbacks will contain the necessary items to initialize the callbacks
 def createCallbacks(
-      processTransaction: Transaction => Unit,
-      processCompactFilter: (DoubleSha256Digest, GolombFilter) => Unit,
-      processBlock: Block => Unit): NodeCallbacks = {
+      processTransaction: Transaction => Future[Unit],
+      processCompactFilters: (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit],
+      processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onTx: OnTxReceived = { tx =>
       processTransaction(tx)
-      ()
     }
-    lazy val onCompactFilter: OnCompactFilterReceived = {
-      (blockHash, blockFilter) =>
-        processCompactFilter(blockHash, blockFilter)
-        ()
+    lazy val onCompactFilters: OnCompactFiltersReceived = {
+      blockFilters =>
+        processCompactFilters(blockFilters)
     }
     lazy val onBlock: OnBlockReceived = { block =>
       processBlock(block)
     }
     NodeCallbacks(onTxReceived = Seq(onTx),
                   onBlockReceived = Seq(onBlock),
-                  onCompactFilterReceived = Seq(onCompactFilter))
+                  onCompactFiltersReceived = Seq(onCompactFilters))
   }
 
 // Here is a super simple example of a callback, this could be replaced with anything, from
 // relaying the block on the network, finding relevant wallet transactions, verifying the block,
 // or writing it to disk
 val exampleProcessTx = (tx: Transaction) =>
-    println(s"Received tx: ${tx.txIdBE}")
+    Future.successful(println(s"Received tx: ${tx.txIdBE}"))
 
 val exampleProcessBlock = (block: Block) =>
-    println(s"Received block: ${block.blockHeader.hashBE}")
+    Future.successful(println(s"Received block: ${block.blockHeader.hashBE}"))
 
-val exampleProcessFilter =
-    (blockHash: DoubleSha256Digest, filter: GolombFilter) =>
-      println(s"Received filter: ${blockHash.flip.hex} ${filter.hash.flip.hex}")
+val exampleProcessFilters =
+    (filters: Vector[(DoubleSha256Digest, GolombFilter)]) =>
+      Future.successful(println(s"Received filter: ${filters.head._1.flip.hex} ${filters.head._2.hash.flip.hex}"))
 
 val exampleCallbacks =
-    createCallbacks(exampleProcessTx, exampleProcessFilter, exampleProcessBlock)
+    createCallbacks(exampleProcessTx, exampleProcessFilters, exampleProcessBlock)
 
 // Here is where we are defining our actual chain api, Ideally this could be it's own class
 // but for the examples sake we will keep it small.
 val chainApi = new ChainQueryApi {
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+        Future.successful(0)
 
     /** Gets the height of the given block */
     override def getBlockHeight(
@@ -192,7 +195,7 @@ val chainApi = new ChainQueryApi {
 
 // Finally, we can initialize our wallet with our own node api
 val wallet =
-    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi)
+    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, creationTime = Instant.now)
 
 // Then to trigger one of the events we can run
 wallet.chainQueryApi.getFiltersBetweenHeights(100, 150)

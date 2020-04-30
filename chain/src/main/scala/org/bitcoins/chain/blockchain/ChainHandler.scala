@@ -7,6 +7,7 @@ import org.bitcoins.chain.models._
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -142,9 +143,10 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
+    val blockCountF = getBlockCount
     for {
       startHeight <- startHeightF
-      blockCount <- getBlockCount
+      blockCount <- blockCountF
       stopHeight = if (startHeight - 1 + batchSize > blockCount) blockCount
       else startHeight - 1 + batchSize
       stopBlockOpt <- getHeadersAtHeight(stopHeight).map(_.headOption)
@@ -162,6 +164,7 @@ case class ChainHandler(
   override def nextFilterHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
       batchSize: Int): Future[Option[(Int, DoubleSha256Digest)]] = {
+    val filterHeaderCountF = getFilterHeaderCount
     val startHeightF = if (prevStopHash == DoubleSha256DigestBE.empty) {
       Future.successful(0)
     } else {
@@ -171,9 +174,10 @@ case class ChainHandler(
           throw UnknownBlockHash(s"Unknown block hash ${prevStopHash}"))
       } yield prevStopHeader.height + 1
     }
+
     for {
       startHeight <- startHeightF
-      filterHeaderCount <- getFilterHeaderCount
+      filterHeaderCount <- filterHeaderCountF
       stopHeight = if (startHeight - 1 + batchSize > filterHeaderCount)
         filterHeaderCount
       else startHeight - 1 + batchSize
@@ -234,7 +238,13 @@ case class ChainHandler(
         }
       } else FutureUtil.unit
       _ <- filterHeaderDAO.createAll(filterHeadersToCreate)
-    } yield this
+    } yield {
+      val minHeight = filterHeadersToCreate.minBy(_.height)
+      val maxHeight = filterHeadersToCreate.maxBy(_.height)
+      logger.info(
+        s"Processed filters headers from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
+      this
+    }
   }
 
   /** @inheritdoc */
@@ -276,6 +286,10 @@ case class ChainHandler(
       }
       _ <- filterDAO.createAll(compactFilterDbs)
     } yield {
+      val minHeight = compactFilterDbs.minBy(_.height)
+      val maxHeight = compactFilterDbs.maxBy(_.height)
+      logger.info(
+        s"Processed filters from height=${minHeight.height} to ${maxHeight.height}. Best hash=${maxHeight.blockHashBE}")
       this
     }
   }
@@ -414,6 +428,9 @@ case class ChainHandler(
       case blockTime: BlockStamp.BlockTime =>
         Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
     }
+
+  override def epochSecondToBlockHeight(time: Long): Future[Int] =
+    blockHeaderDAO.findClosestToTime(time = UInt32(time)).map(_.height)
 
   /** @inheritdoc */
   override def getBlockHeight(

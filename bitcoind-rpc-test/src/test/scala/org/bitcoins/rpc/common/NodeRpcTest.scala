@@ -6,6 +6,7 @@ import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import org.bitcoins.rpc.BitcoindException.MiscError
 
 class NodeRpcTest extends BitcoindRpcTest {
@@ -22,9 +23,10 @@ class NodeRpcTest extends BitcoindRpcTest {
         .flatMap { _ =>
           val rescanFailedF =
             recoverToSucceededIf[MiscError](client.rescanBlockChain())
-          client.abortRescan().flatMap { _ =>
-            rescanFailedF
+          system.scheduler.scheduleOnce(100.millis) {
+            client.abortRescan()
           }
+          rescanFailedF
         }
     }
   }

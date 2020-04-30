@@ -80,20 +80,18 @@ sealed trait RawScriptUTXOSpendingInfoSingle extends RawScriptUTXOSpendingInfo {
   override def signers: Vector[Sign] = Vector(signer)
   override def requiredSigs: Int = 1
 }
-sealed trait BitcoinSignerFull[-SpendingInfo] {
+sealed trait BitcoinSigner[-SpendingInfo] {
   def sign(
         spendingInfo: UTXOSpendingInfoFull,
         unsignedTx: Transaction,
         isDummySignature: Boolean,
         spendingInfoToSatisfy: SpendingInfo)(
         implicit ec: ExecutionContext): Future[TxSigComponent]
-}
-sealed trait BitcoinSignerSingle[-SpendingInfo] {
+
   def signSingle(
         spendingInfo: UTXOSpendingInfoSingle,
         unsignedTx: Transaction,
-        isDummySignature: Boolean,
-        spendingInfoToSatisfy: SpendingInfo)(
+        isDummySignature: Boolean)(
         implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 sealed trait RawSingleKeyBitcoinSigner[-SpendingInfo <: RawScriptUTXOSpendingInfoFull with RawScriptUTXOSpendingInfoSingle] {
@@ -143,14 +141,11 @@ object BitcoinSigner {
         isDummySignature: Boolean,
         spendingInfoToSatisfy: UTXOSpendingInfoFull)(
         implicit ec: ExecutionContext): Future[TxSigComponent] = ???
-}
 
-object BitcoinSignerSingle {
   def signSingle(
       spendingInfo: UTXOSpendingInfoSingle,
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
-      spendingInfoToSatisfy: UTXOSpendingInfoSingle)(
+      isDummySignature: Boolean)(
       implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 
@@ -183,6 +178,37 @@ def build(
       redeemScript: Option[ScriptPubKey],
       scriptWitness: Option[ScriptWitness]): Gen[BitcoinUTXOSpendingInfoFull] = ???
 ```
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+<!-- END doctoc -->
+
+- [Adding a New ScriptPubKey Type](#adding-a-new-scriptpubkey-type)
+  - [Step 0: Design Philosophy](#step-0-design-philosophy)
+  - [Step 1: Create a New ScriptPubKey Trait](#step-1-create-a-new-scriptpubkey-trait)
+  - [Step 2: Create Companion Object](#step-2-create-companion-object)
+  - [Step 3: Add to Relevant fromAsm Methods](#step-3-add-to-relevant-fromasm-methods)
+  - [Step 4: Create a ScriptSignature If Necessary](#step-4-create-a-scriptsignature-if-necessary)
+  - [Step 5: Add to ScriptSignature.fromAsm If Applicable](#step-5-add-to-scriptsignaturefromasm-if-applicable)
+  - [Step 6: Create Relevant BitcoinUTXOSpendingInfo](#step-6-create-relevant-bitcoinutxospendinginfo)
+    - [Non-Nested Single-Key Spending Info](#non-nested-single-key-spending-info)
+    - [Non-Nested Multi-Key Spending Info](#non-nested-multi-key-spending-info)
+    - [Nested Spending Info](#nested-spending-info)
+  - [Step 7: Add to Relevant Apply Methods](#step-7-add-to-relevant-apply-methods)
+  - [Step 8: Create a Signer](#step-8-create-a-signer)
+    - [Non-Nested Single-Key Spending Info](#non-nested-single-key-spending-info-1)
+    - [Non-Nested Multi-Key Spending Info](#non-nested-multi-key-spending-info-1)
+    - [Nested Spending Info](#nested-spending-info-1)
+  - [Step 9: Add to BitcoinSigner.sign](#step-9-add-to-bitcoinsignersign)
+  - [Step 10: Add to ScriptGenerators](#step-10-add-to-scriptgenerators)
+    - [ScriptPubKey Generator](#scriptpubkey-generator)
+    - [ScriptSignature Generator](#scriptsignature-generator)
+    - [ScriptPubKey with Paired ScriptSignature Generator](#scriptpubkey-with-paired-scriptsignature-generator)
+  - [Step 11: Add to CreditingTxGen](#step-11-add-to-creditingtxgen)
+  - [Step 12: Fix all Non-Exhaustive Matches](#step-12-fix-all-non-exhaustive-matches)
+  - [Step 13: Run tests and debug](#step-13-run-tests-and-debug)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Adding a New ScriptPubKey Type
 
@@ -623,16 +649,11 @@ object P2PKWithTimeoutSigner extends P2PKWithTimeoutSigner
 
 ### Non-Nested Multi-Key Spending Info
 
-In this case we must create a new `BitcoinSignerSingle` and a normal `BitcoinSignerFull`, the latter of which requires implementing the `sign` function. For `MultiSignature` this looks like the following:
+In this case we must create a new `BitcoinSignerFull`, which requires implementing the `sign` function. For `MultiSignature` this looks like the following:
 
 ```scala mdoc:compile-only
-sealed abstract class MultiSigSignerSingle
-    extends BitcoinSignerSingle[MultiSignatureSpendingInfoSingle]
-
-object MultiSigSignerSingle extends MultiSigSignerSingle
-
 sealed abstract class MultiSigSigner
-    extends BitcoinSignerFull[MultiSignatureSpendingInfoFull] {
+    extends BitcoinSigner[MultiSignatureSpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfoFull,
@@ -643,13 +664,8 @@ sealed abstract class MultiSigSigner
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
-    val keysAndSigsF: Seq[Future[PartialSignature]] = spendingInfoToSatisfy.toSingles.zipWithIndex.map {
-      case (infoSingle, index) =>
-        MultiSigSignerSingle
-          .signSingle(spendingInfo.toSingle(index),
-                      unsignedTx,
-                      isDummySignature,
-                      infoSingle)
+    val keysAndSigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
+      signSingle(spendingInfoSingle, unsignedTx, isDummySignature)
     }
 
     val signaturesF = Future.sequence(keysAndSigsF).map(_.map(_.signature))
@@ -670,32 +686,14 @@ object MultiSigSigner extends MultiSigSigner
 
 ### Nested Spending Info
 
-When signing for a nested script structure, we must create a new `BitcoinSignerSingle` and a normal `BitcoinSignerFull`. For the single signer, you will likely only need to delegate with a call to `BitcoinSignerSingle.signSingle` because we only need a signature which will not likely require anything other than doing the signing on `spendingInfoToSatisfy.nestedSpendingInfo`. For the full signer, you will also need to make a delegating call with the `nestedSpendingInfo` to `BitcoinSigner.sign`, but you may also need to do whatever else is needed with the nested result to construct a correct `ScriptSignature`. For `ConditionalScriptSignature`, this all looks like:
+When signing for a nested script structure, we must create a new `BitcoinSignerFull`. You will need to make a delegating call with the `nestedSpendingInfo` to `BitcoinSigner.sign`, but you may also need to do whatever else is needed with the nested result to construct a correct `ScriptSignature`. For `ConditionalScriptSignature`, this all looks like:
 
 ```scala mdoc:compile-only
-sealed abstract class ConditionalSignerSingle
-    extends BitcoinSignerSingle[ConditionalSpendingInfoSingle] {
-
-  override def signSingle(
-      spendingInfo: UTXOSpendingInfoSingle,
-      unsignedTx: Transaction,
-      isDummySignature: Boolean,
-      spendingInfoToSatisfy: ConditionalSpendingInfoSingle)(
-      implicit ec: ExecutionContext): Future[PartialSignature] = {
-    BitcoinSignerSingle.signSingle(spendingInfo,
-                                   unsignedTx,
-                                   isDummySignature,
-                                   spendingInfoToSatisfy.nestedSpendingInfo)
-  }
-}
-
-object ConditionalSignerSingle extends ConditionalSignerSingle
-
 /** Delegates to get a ScriptSignature for the case being
   * spent and then adds an OP_TRUE or OP_FALSE
   */
 sealed abstract class ConditionalSigner
-    extends BitcoinSignerFull[ConditionalSpendingInfoFull] {
+    extends BitcoinSigner[ConditionalSpendingInfoFull] {
 
   override def sign(
       spendingInfo: UTXOSpendingInfoFull,

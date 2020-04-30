@@ -67,7 +67,7 @@ object CommonSettings {
 
   private val commonCompilerOpts = {
     List(
-      "-Xsource:2.12",
+      "-Xsource:2.13",
       "-target:jvm-1.8"
     )
   }

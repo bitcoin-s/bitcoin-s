@@ -8,6 +8,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.core.api.NodeApi
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.networking.peer.DataMessageHandler._
@@ -17,6 +18,8 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
+
+import java.time.Instant
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 ```
@@ -68,7 +71,7 @@ val keyManager = keyManagerE match {
 // This function can be used to create a callback for when our node api calls downloadBlocks,
 // more specifically it will call the function every time we receive a block, the returned
 // NodeCallbacks will contain the necessary items to initialize the callbacks
-def createCallback(processBlock: Block => Unit): NodeCallbacks = {
+def createCallback(processBlock: Block => Future[Unit]): NodeCallbacks = {
     lazy val onBlock: OnBlockReceived = { block =>
       processBlock(block)
     }
@@ -79,12 +82,17 @@ def createCallback(processBlock: Block => Unit): NodeCallbacks = {
 // relaying the block on the network, finding relevant wallet transactions, verifying the block,
 // or writing it to disk
 val exampleProcessBlock = (block: Block) =>
-    println(s"Received block: ${block.blockHeader.hashBE}")
+    Future.successful(println(s"Received block: ${block.blockHeader.hashBE}"))
 val exampleCallback = createCallback(exampleProcessBlock)
 
 // Here is where we are defining our actual node api, Ideally this could be it's own class
 // but for the examples sake we will keep it small.
   val nodeApi = new NodeApi {
+
+    override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
+        bitcoind.sendRawTransaction(transaction).map(_ => ())
+    }
+
     override def downloadBlocks(
         blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
       val blockFs = blockHashes.map(hash => bitcoind.getBlockRaw(hash))
@@ -94,7 +102,7 @@ val exampleCallback = createCallback(exampleProcessBlock)
 
 // Finally, we can initialize our wallet with our own node api
 val wallet =
-    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi)
+    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, creationTime = Instant.now)
 
 // Then to trigger the event we can run
 val exampleBlock = DoubleSha256Digest(

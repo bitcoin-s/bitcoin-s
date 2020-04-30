@@ -17,9 +17,9 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.EitherUtil
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
-import org.bitcoins.wallet.{LockedWallet, WalletLogger}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -31,7 +31,7 @@ import scala.util.{Failure, Success}
   * spending.
   */
 private[wallet] trait UtxoHandling extends WalletLogger {
-  self: LockedWallet =>
+  self: Wallet =>
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
@@ -41,6 +41,45 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   override def listUtxos(
       hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO.findAllUnspentForAccount(hdAccount)
+  }
+
+  protected def updateUtxoConfirmedState(
+      txo: SpendingInfoDb,
+      blockHash: DoubleSha256DigestBE): Future[SpendingInfoDb] = {
+    for {
+      confsOpt <- chainQueryApi.getNumberOfConfirmations(blockHash)
+      stateChange <- {
+        confsOpt match {
+          case None =>
+            Future.successful(txo)
+          case Some(confs) =>
+            txo.state match {
+              case TxoState.PendingConfirmationsReceived |
+                  TxoState.DoesNotExist =>
+                if (confs >= walletConfig.requiredConfirmations) {
+                  spendingInfoDAO.update(
+                    txo.copyWithState(TxoState.ConfirmedReceived))
+                } else {
+                  Future.successful(
+                    txo.copyWithState(TxoState.PendingConfirmationsReceived))
+                }
+              case TxoState.PendingConfirmationsSpent =>
+                if (confs >= walletConfig.requiredConfirmations) {
+                  spendingInfoDAO.update(
+                    txo.copyWithState(TxoState.ConfirmedSpent))
+                } else {
+                  Future.successful(txo)
+                }
+              case TxoState.Reserved =>
+                // We should keep the utxo as reserved so it is not used in
+                // a future transaction that it should not be in
+                Future.successful(txo)
+              case TxoState.ConfirmedReceived | TxoState.ConfirmedSpent =>
+                Future.successful(txo)
+            }
+        }
+      }
+    } yield stateChange
   }
 
   /**

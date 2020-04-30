@@ -3,6 +3,15 @@ package org.bitcoins.eclair.rpc
 import java.nio.file.Files
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.eclair.{
+  ChannelResult,
+  ChannelUpdate,
+  IncomingPaymentStatus,
+  InvoiceResult,
+  OpenChannelInfo,
+  OutgoingPaymentStatus,
+  WebSocketEvent
+}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.BitcoinAddress

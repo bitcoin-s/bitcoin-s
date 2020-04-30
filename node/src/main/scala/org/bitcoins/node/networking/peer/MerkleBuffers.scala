@@ -1,10 +1,13 @@
 package org.bitcoins.node.networking.peer
 
-import org.bitcoins.node.P2PLogger
+import org.bitcoins.node.{NodeCallbacks, P2PLogger}
+
 import scala.collection.mutable
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.node.config.NodeAppConfig
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * A buffer of merkleblocks and the transactions associated with them.
@@ -55,10 +58,9 @@ private[peer] object MerkleBuffers extends P2PLogger {
     * @return If the transaction matches a merkle block, returns true.
     *         Otherwise, false.
     */
-  def putTx(
-      tx: Transaction,
-      callbacks: Seq[DataMessageHandler.OnMerkleBlockReceived])(
-      implicit config: NodeAppConfig): Boolean = {
+  def putTx(tx: Transaction, callbacks: NodeCallbacks)(
+      implicit ec: ExecutionContext,
+      config: NodeAppConfig): Future[Boolean] = {
     val blocksInBuffer = underlyingMap.keys.toList
     logger.trace(s"Looking for transaction=${tx.txIdBE} in merkleblock buffer")
     logger.trace(s"Merkleblocks in buffer: ${blocksInBuffer.length}")
@@ -73,7 +75,7 @@ private[peer] object MerkleBuffers extends P2PLogger {
       case None =>
         logger.debug(
           s"Transaction=${tx.txIdBE} does not belong to any merkle block")
-        false
+        Future.successful(false)
       case Some(key) =>
         handleMerkleMatch(tx, merkleBlock = key, callbacks = callbacks)
     }
@@ -83,8 +85,9 @@ private[peer] object MerkleBuffers extends P2PLogger {
   private def handleMerkleMatch(
       transaction: Transaction,
       merkleBlock: MerkleBlock,
-      callbacks: Seq[DataMessageHandler.OnMerkleBlockReceived])(
-      implicit config: NodeAppConfig) = {
+      callbacks: NodeCallbacks)(
+      implicit ec: ExecutionContext,
+      config: NodeAppConfig): Future[Boolean] = {
     val merkleBlockMatches = merkleBlock.partialMerkleTree.extractMatches
     val merkleHash = merkleBlock.blockHeader.hashBE
 
@@ -107,12 +110,16 @@ private[peer] object MerkleBuffers extends P2PLogger {
       underlyingMap.remove(merkleBlock) // TODO: error handling
 
       logger.trace(s"Calling merkle block callback(s)")
-      callbacks.foreach(_.apply(merkleBlock, transactionSoFar))
+      callbacks
+        .executeOnMerkleBlockReceivedCallbacks(logger,
+                                               merkleBlock,
+                                               transactionSoFar)
+        .map(_ => true)
     } else {
       logger.trace(
         s"We've received $transactionSoFarCount, expecting $matchesCount")
       assert(transactionSoFarCount < matchesCount)
+      Future.successful(true)
     }
-    true
   }
 }

@@ -12,8 +12,8 @@ import org.bitcoins.keymanager.KeyManagerUnlockError.MnemonicNotFound
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.models.AddressDb
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
@@ -61,35 +61,33 @@ class WalletPostgresqlUnitTest extends BitcoinSWalletTest {
     BitcoinSTestAppConfig.getSpvTestConfig(overrideConf)
   }
 
-  override type FixtureParam = UnlockedWalletApi
+  override type FixtureParam = WalletApi
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withNewWallet(test)
 
   behavior of "Wallet - unit test"
 
-  it should "create a new wallet with postgresql" in {
-    wallet: UnlockedWalletApi =>
-      for {
-        accounts <- wallet.listAccounts()
-        addresses <- wallet.listAddresses()
-      } yield {
-        assert(accounts.length == 3) // legacy, segwit and nested segwit
-        assert(addresses.isEmpty)
-      }
+  it should "create a new wallet with postgresql" in { wallet: WalletApi =>
+    for {
+      accounts <- wallet.listAccounts()
+      addresses <- wallet.listAddresses()
+    } yield {
+      assert(accounts.length == 3) // legacy, segwit and nested segwit
+      assert(addresses.isEmpty)
+    }
   }
 
-  it should "generate addresses with postgresql" in {
-    wallet: UnlockedWalletApi =>
-      for {
-        addr <- wallet.getNewAddress()
-        otherAddr <- wallet.getNewAddress()
-        allAddrs <- wallet.listAddresses()
-      } yield {
-        assert(allAddrs.length == 2)
-        assert(allAddrs.exists(_.address == addr))
-        assert(allAddrs.exists(_.address == otherAddr))
-      }
+  it should "generate addresses with postgresql" in { wallet: WalletApi =>
+    for {
+      addr <- wallet.getNewAddress()
+      otherAddr <- wallet.getNewAddress()
+      allAddrs <- wallet.listAddresses()
+    } yield {
+      assert(allAddrs.length == 2)
+      assert(allAddrs.exists(_.address == addr))
+      assert(allAddrs.exists(_.address == otherAddr))
+    }
   }
 
   it should "know what the last address index is with postgresql" in {
@@ -168,7 +166,7 @@ class WalletPostgresqlUnitTest extends BitcoinSWalletTest {
   }
 
   it should "fail to unlock the wallet with a bad password with postgresql" in {
-    wallet: UnlockedWalletApi =>
+    wallet: WalletApi =>
       val badpassphrase = AesPassword.fromNonEmptyString("bad")
 
       val errorType = wallet.unlock(badpassphrase, None) match {
@@ -182,21 +180,20 @@ class WalletPostgresqlUnitTest extends BitcoinSWalletTest {
       }
   }
 
-  it should "match block filters with postgresql" in {
-    wallet: UnlockedWalletApi =>
-      for {
-        matched <- wallet.getMatchingBlocks(
-          scripts = Vector(
-            // this is a random address which is included into the test block
-            BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get.scriptPubKey),
-          startOpt = None,
-          endOpt = None
-        )(system.dispatcher)
-      } yield {
-        assert(
-          Vector(BlockMatchingResponse(blockHash = testBlockHash,
-                                       blockHeight = 1)) == matched)
-      }
+  it should "match block filters with postgresql" in { wallet: WalletApi =>
+    for {
+      matched <- wallet.getMatchingBlocks(
+        scripts = Vector(
+          // this is a random address which is included into the test block
+          BitcoinAddress("n1RH2x3b3ah4TGQtgrmNAHfmad9wr8U2QY").get.scriptPubKey),
+        startOpt = None,
+        endOpt = None
+      )(system.dispatcher)
+    } yield {
+      assert(
+        Vector(BlockMatchingResponse(blockHash = testBlockHash,
+                                     blockHeight = 1)) == matched)
+    }
   }
 
   private def execute(sql: String) = {

@@ -1,9 +1,10 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
+import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
-import org.bitcoins.node.networking.peer.DataMessageHandler.OnCompactFilterReceived
+import org.bitcoins.node.networking.peer.DataMessageHandler.OnCompactFiltersReceived
 import org.bitcoins.rpc.client.common.BitcoindVersion
 import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -12,14 +13,11 @@ import org.bitcoins.testkit.fixtures.UsesExperimentalBitcoind
 import org.bitcoins.testkit.node.NodeUnitTest.NeutrinoNodeFundedWalletBitcoind
 import org.bitcoins.testkit.node.{NodeTestUtil, NodeUnitTest}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.UnlockedWalletApi
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.SpendingInfoTable
-import org.scalatest.{DoNotDiscover, FutureOutcome}
+import org.bitcoins.wallet.api.WalletApi
+import org.scalatest.FutureOutcome
 
 import scala.concurrent.{Future, Promise}
 
-@DoNotDiscover
 class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
@@ -29,13 +27,20 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNeutrinoNodeFundedWalletBitcoind(test,
-                                         callbacks,
-                                         Some(BitcoindVersion.Experimental))
+    // We need to disable the test on non-linux CI runs
+    // because we do not have a mac binary of the BIP 157
+    // compatible version of bitcoin core
+    if (BitcoinSUtil.isCI && !BitcoinSUtil.isLinux) {
+      FutureOutcome.succeeded
+    } else {
+      withNeutrinoNodeFundedWalletBitcoind(test,
+                                           callbacks,
+                                           Some(BitcoindVersion.Experimental))
+    }
   }
 
-  private var walletP: Promise[UnlockedWalletApi] = Promise()
-  private var walletF: Future[UnlockedWalletApi] = walletP.future
+  private var walletP: Promise[WalletApi] = Promise()
+  private var walletF: Future[WalletApi] = walletP.future
   after {
     //reset assertion after a test runs, because we
     //are doing mutation to work around our callback
@@ -56,16 +61,16 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
         _ <- wallet.processBlock(block)
       } yield ()
     }
-    val onCompactFilter: OnCompactFilterReceived = { (blockHash, blockFilter) =>
+    val onCompactFilters: OnCompactFiltersReceived = { blockFilters =>
       for {
         wallet <- walletF
-        _ <- wallet.processCompactFilter(blockHash, blockFilter)
+        _ <- wallet.processCompactFilters(blockFilters)
       } yield ()
     }
 
     NodeCallbacks(
       onBlockReceived = Seq(onBlock),
-      onCompactFilterReceived = Seq(onCompactFilter)
+      onCompactFiltersReceived = Seq(onCompactFilters)
     )
   }
 
@@ -96,17 +101,17 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       val condition1 = () => {
         condition(
           expectedConfirmedAmount = 0.sats,
-          expectedUnconfirmedAmount = BitcoinSWalletTest.initialFunds - TestAmount - TestFees,
-          expectedUtxos = 1,
-          expectedAddresses = 2
+          expectedUnconfirmedAmount = BitcoinSWalletTest.expectedDefaultAmt - TestAmount - TestFees,
+          expectedUtxos = 3,
+          expectedAddresses = 7
         )
       }
       val condition2 = { () =>
         condition(
-          expectedConfirmedAmount = TestAmount,
-          expectedUnconfirmedAmount = BitcoinSWalletTest.initialFunds - TestAmount - TestFees,
-          expectedUtxos = 2,
-          expectedAddresses = 3
+          expectedConfirmedAmount = 0.sats,
+          expectedUnconfirmedAmount = BitcoinSWalletTest.expectedDefaultAmt - TestFees,
+          expectedUtxos = 4,
+          expectedAddresses = 8
         )
       }
 
@@ -146,22 +151,14 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
       walletP.success(wallet)
 
-      def clearSpendingInfoTable(): Future[Int] = {
-        import slick.jdbc.SQLiteProfile.api._
-
-        val conf: WalletAppConfig = wallet.walletConfig
-        val table = TableQuery[SpendingInfoTable]
-        conf.database.run(table.delete)
-      }
-
       def condition(): Future[Boolean] = {
         for {
-          balance <- wallet.getConfirmedBalance()
+          balance <- wallet.getBalance()
           addresses <- wallet.listAddresses()
           utxos <- wallet.listUtxos()
         } yield {
-          balance == BitcoinSWalletTest.initialFunds + TestAmount &&
-          utxos.size == 2 &&
+          balance == BitcoinSWalletTest.expectedDefaultAmt + TestAmount &&
+          utxos.size == 4 &&
           addresses.map(_.scriptPubKey.hex).sorted == utxos
             .map(_.output.scriptPubKey.hex)
             .sorted
@@ -171,8 +168,8 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
       for {
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()
-        _ = assert(addresses.size == 1)
-        _ = assert(utxos.size == 1)
+        _ = assert(addresses.size == 6)
+        _ = assert(utxos.size == 3)
 
         _ <- node.sync()
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
@@ -184,24 +181,22 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
 
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()
-        _ = assert(addresses.size == 2)
-        _ = assert(utxos.size == 1)
+        _ = assert(addresses.size == 7)
+        _ = assert(utxos.size == 3)
 
-        _ <- clearSpendingInfoTable()
+        _ <- wallet.clearAllUtxosAndAddresses()
 
         addresses <- wallet.listAddresses()
         utxos <- wallet.listUtxos()
-        _ = assert(addresses.size == 2)
-        _ = assert(utxos.size == 0)
+        _ = assert(addresses.isEmpty)
+        _ = assert(utxos.isEmpty)
 
         _ <- bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
         _ <- NodeTestUtil.awaitSync(node, bitcoind)
         _ <- NodeTestUtil.awaitCompactFiltersSync(node, bitcoind)
 
-        _ <- wallet.rescanNeutrinoWallet(startOpt = None,
-                                         endOpt = None,
-                                         addressBatchSize = 2)
+        _ <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 7)
 
         _ <- AsyncUtil.awaitConditionF(condition)
       } yield succeed

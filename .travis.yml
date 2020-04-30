@@ -9,7 +9,7 @@ env:
 os: linux
 scala:
   - 2.12.11
-  - 2.13.1
+  - 2.13.2
 
 # Fiddling with Travis config is not fun:-(
 # To avoid spending too much time waiting on Travis, you
@@ -48,6 +48,7 @@ matrix:
     - os: osx
       name: "macOS wallet and node tests"
       env:
+        - CI="1"
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala:
         - 2.13.1
@@ -79,13 +80,11 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot/
-    - $PWD/binaries/bitcoind/
-    - $PWD/binaries/eclair/
+    - $HOME/.bitcoin-s/binaries/
 
 # https://www.scala-sbt.org/1.x/docs/Travis-CI-with-sbt.html#Caching
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
-  - rm -r $PWD/binaries/bitcoind/bitcoin-0.18.99
   - rm -fv $HOME/.ivy2/.sbt.ivy.lock
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete

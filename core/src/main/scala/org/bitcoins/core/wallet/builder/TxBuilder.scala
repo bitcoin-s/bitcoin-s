@@ -1,12 +1,6 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.config.{BitcoinNetwork, NetworkParameters}
-import org.bitcoins.core.crypto.{
-  ECDigitalSignature,
-  EmptyDigitalSignature,
-  TransactionSignatureSerializer,
-  WitnessTxSigComponentP2SH
-}
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
@@ -14,26 +8,11 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.locktime.LockTimeInterpreter
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer._
-import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfoFull,
-  ConditionalSpendingInfoFull,
-  EmptySpendingInfo,
-  LockTimeSpendingInfoFull,
-  MultiSignatureSpendingInfoFull,
-  P2PKHSpendingInfo,
-  P2PKSpendingInfo,
-  P2PKWithTimeoutSpendingInfo,
-  P2SHSpendingInfoFull,
-  P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfoFull,
-  UTXOSpendingInfoFull,
-  UnassignedSegwitNativeUTXOSpendingInfo
-}
+import org.bitcoins.core.wallet.utxo._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,9 +32,6 @@ sealed abstract class TxBuilder {
 
   /** The outputs which we are spending bitcoins to */
   def destinations: Seq[TransactionOutput]
-
-  /** The [[org.bitcoins.core.protocol.script.ScriptPubKey ScriptPubKey]]'s we are spending bitcoins to */
-  def destinationSPKs: Seq[ScriptPubKey] = destinations.map(_.scriptPubKey)
 
   /** A sequence of the amounts we are spending in this transaction */
   def destinationAmounts: Seq[CurrencyUnit] = destinations.map(_.value)
@@ -106,9 +82,6 @@ sealed abstract class TxBuilder {
 
   /** The outpoints that we are using in this transaction */
   def outPoints: Seq[TransactionOutPoint] = utxoMap.keys.toSeq
-
-  /** The redeem scripts that are needed in this transaction */
-  def redeemScriptOpt: Seq[Option[ScriptPubKey]] = utxos.map(_.redeemScriptOpt)
 
   /** The script witnesses that are needed in this transaction */
   def scriptWitOpt: Seq[Option[ScriptWitness]] = utxos.map(_.scriptWitnessOpt)
@@ -458,64 +431,6 @@ sealed abstract class BitcoinTxBuilder extends TxBuilder {
       }
 
     loop(utxos, Nil)
-  }
-
-  def signP2SHP2WPKH(
-      unsignedTx: WitnessTransaction,
-      inputIndex: UInt32,
-      p2wpkh: P2WPKHWitnessSPKV0,
-      output: TransactionOutput,
-      utxo: UTXOSpendingInfoFull,
-      hashType: HashType,
-      dummySignatures: Boolean): Future[Transaction] = {
-    //special rule for p2sh(p2wpkh)
-    //https://bitcoincore.org/en/segwit_wallet_dev/#signature-generation-and-verification-for-p2sh-p2wpkh
-    //we actually sign the fully expanded redeemScript
-    val pubKey = utxo.signers.head.publicKey
-    if (P2WPKHWitnessSPKV0(pubKey) != p2wpkh) {
-      Future.fromTry(TxBuilderError.WrongPublicKey)
-    } else {
-      val p2shScriptSig = P2SHScriptSignature(p2wpkh)
-
-      val oldInput = unsignedTx.inputs(inputIndex.toInt)
-
-      val updatedInput = TransactionInput(oldInput.previousOutput,
-                                          p2shScriptSig,
-                                          oldInput.sequence)
-
-      val uwtx = {
-        val u = unsignedTx.updateInput(inputIndex.toInt, updatedInput)
-        WitnessTransaction.toWitnessTx(u)
-      }
-
-      val wtxSigComp = {
-        WitnessTxSigComponentP2SH(transaction = uwtx,
-                                  inputIndex = inputIndex,
-                                  output = output,
-                                  flags = Policy.standardFlags)
-      }
-
-      val hashForSig = TransactionSignatureSerializer.hashForSignature(
-        txSigComponent = wtxSigComp,
-        hashType = hashType)
-
-      //sign the hash
-      val signature: ECDigitalSignature = {
-        if (dummySignatures) {
-          EmptyDigitalSignature
-        } else {
-          val sig = utxo.signers.head.sign(hashForSig.bytes)
-          //append hash type
-          ECDigitalSignature.fromBytes(sig.bytes.:+(hashType.byte))
-        }
-      }
-
-      val p2wpkhWit = P2WPKHWitnessV0(publicKey = pubKey, signature = signature)
-
-      val updatedWit = uwtx.updateWitness(inputIndex.toInt, p2wpkhWit)
-
-      Future.successful(updatedWit)
-    }
   }
 }
 

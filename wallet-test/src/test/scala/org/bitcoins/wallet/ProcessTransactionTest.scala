@@ -1,18 +1,17 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, ECPrivateKey}
 import org.bitcoins.core.currency._
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.TransactionGenerators
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.wallet.api.UnlockedWalletApi
+import org.bitcoins.wallet.api.WalletApi
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
 import scala.concurrent.Future
 
 class ProcessTransactionTest extends BitcoinSWalletTest {
-  override type FixtureParam = UnlockedWalletApi
+  override type FixtureParam = WalletApi
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     withNewWallet(test)
@@ -21,7 +20,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
   behavior of "Wallet.processTransaction"
 
   /** Verifies that executing the given action doesn't change wallet state */
-  private def checkUtxosAndBalance(wallet: UnlockedWalletApi)(
+  private def checkUtxosAndBalance(wallet: WalletApi)(
       action: => Future[_]): Future[Assertion] =
     for {
       oldUtxos <- wallet.listUtxos()
@@ -38,15 +37,13 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       assert(oldUtxos == newUtxos)
     }
 
-  it must "not change state when processing the same transaction twice" in {
+  it must "change state when processing a transaction with a block hash" in {
     wallet =>
       for {
         address <- wallet.getNewAddress()
         tx = TransactionGenerators
           .transactionTo(address.scriptPubKey)
           .sampleSome
-        blockHash = DoubleSha256DigestBE.fromBytes(
-          ECPrivateKey.freshPrivateKey.bytes)
 
         _ <- wallet.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()
@@ -57,14 +54,14 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           wallet.processTransaction(tx, None)
         }
 
-        _ <- wallet.processTransaction(tx, Some(blockHash))
+        _ <- wallet.processTransaction(tx, Some(testBlockHash))
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.listUtxos()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, Some(blockHash))
+          wallet.processTransaction(tx, Some(testBlockHash))
         }
       } yield {
         val ourOutputs =
@@ -73,6 +70,42 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         assert(utxosPostAdd.length == ourOutputs.length)
         assert(newConfirmed != oldConfirmed)
         assert(newUnconfirmed != oldUnconfirmed)
+      }
+  }
+
+  it must "not change state when processing the same transaction twice" in {
+    wallet =>
+      for {
+        address <- wallet.getNewAddress()
+        tx = TransactionGenerators
+          .transactionTo(address.scriptPubKey)
+          .sampleSome
+
+        _ <- wallet.processTransaction(tx, None)
+        oldConfirmed <- wallet.getConfirmedBalance()
+        oldUnconfirmed <- wallet.getUnconfirmedBalance()
+
+        // repeating the action should not make a difference
+        _ <- checkUtxosAndBalance(wallet) {
+          wallet.processTransaction(tx, None)
+        }
+
+        _ <- wallet.processTransaction(tx, None)
+        newConfirmed <- wallet.getConfirmedBalance()
+        newUnconfirmed <- wallet.getUnconfirmedBalance()
+        utxosPostAdd <- wallet.listUtxos()
+
+        // repeating the action should not make a difference
+        _ <- checkUtxosAndBalance(wallet) {
+          wallet.processTransaction(tx, None)
+        }
+      } yield {
+        val ourOutputs =
+          tx.outputs.filter(_.scriptPubKey == address.scriptPubKey)
+
+        assert(utxosPostAdd.length == ourOutputs.length)
+        assert(newConfirmed == oldConfirmed)
+        assert(newUnconfirmed == oldUnconfirmed)
       }
   }
 

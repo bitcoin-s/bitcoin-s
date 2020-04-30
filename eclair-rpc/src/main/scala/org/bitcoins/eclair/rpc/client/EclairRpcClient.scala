@@ -16,6 +16,8 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
+import org.bitcoins.commons.jsonmodels.eclair._
+import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
@@ -33,8 +35,7 @@ import org.bitcoins.core.util.{BitcoinSUtil, FutureUtil, StartStop}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
-import org.bitcoins.eclair.rpc.network.{NodeUri, PeerState}
-import org.bitcoins.rpc.serializers.JsonReaders._
+import org.bitcoins.eclair.rpc.network.NodeUri
 import org.bitcoins.rpc.util.AsyncUtil
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
@@ -52,7 +53,6 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     implicit system: ActorSystem)
     extends EclairApi
     with StartStop[EclairRpcClient] {
-  import JsonReaders._
 
   implicit val m = ActorMaterializer.create(system)
   private val logger = LoggerFactory.getLogger(this.getClass)

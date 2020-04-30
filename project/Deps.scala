@@ -21,13 +21,13 @@ object Deps {
     val typesafeConfigV = "1.4.0"
 
     val scalaFxV = "12.0.2-R18"
-    val javaFxV = "14"
+    val javaFxV = "14.0.1"
 
     // async dropped Scala 2.11 in 0.10.0
     val asyncOldScalaV = "0.9.7"
     val asyncNewScalaV = "0.10.0"
 
-    val flywayV = "6.3.2"
+    val flywayV = "6.4.0"
     val postgresV = "42.2.12"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
@@ -155,6 +155,13 @@ object Deps {
 
   val chainTest = List()
 
+  def appCommons(scalaVersion: String) = List(
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
+    else Compile.newMicroPickle,
+    Compile.playJson,
+    Compile.slf4j
+  )
+
   val core = List(
     Compile.bouncycastle,
     Compile.scodec,
@@ -185,8 +192,6 @@ object Deps {
   val bitcoindRpc = List(
     Compile.akkaHttp,
     Compile.akkaStream,
-    Compile.playJson,
-    Compile.slf4j,
     Compile.typesafeConfig
   )
 
@@ -212,7 +217,8 @@ object Deps {
     Compile.sqlite,
     Compile.postgres,
     Compile.slickHikari,
-    Test.scalaTest
+    Test.scalaTest,
+    Test.pgEmbedded
   )
 
   def cli(scalaVersion: String) = List(
@@ -228,11 +234,6 @@ object Deps {
   )
 
   val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
-
-  def picklers(scalaVersion: String) = List(
-    if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
-    else Compile.newMicroPickle
-  )
 
   def server(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle

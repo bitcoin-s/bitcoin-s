@@ -22,13 +22,13 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.3.5")
 
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release
-addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.2")
+addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.3")
 
 // write markdown files with type-checked Scala
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.1.5")
 
 // SQL migrations
-addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.2.3")
+addSbtPlugin("io.github.davidmweber" % "flyway-sbt" % "6.4.0")
 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.0.5")
 

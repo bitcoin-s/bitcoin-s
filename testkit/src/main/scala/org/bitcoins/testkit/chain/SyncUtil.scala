@@ -4,13 +4,14 @@ import org.bitcoins.chain.blockchain.sync.FilterWithHeaderHash
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi, NodeChainQueryApi}
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.gcs.{FilterType}
+import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
-import org.bitcoins.rpc.jsonmodels.GetBlockFilterResult
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockFilterResult
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.wallet.Wallet
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -83,9 +84,12 @@ abstract class SyncUtil extends BitcoinSLogger {
           case BlockStamp.BlockHeight(height) =>
             Future.successful(height)
           case BlockStamp.BlockTime(_) =>
-            Future.failed(new RuntimeException(s"Cannot query by block time"))
+            throw new RuntimeException("Cannot query by block time")
         }
       }
+
+      override def epochSecondToBlockHeight(time: Long): Future[Int] =
+        Future.successful(0)
 
       override def getFiltersBetweenHeights(
           startHeight: Int,
@@ -116,6 +120,11 @@ abstract class SyncUtil extends BitcoinSLogger {
   def getNodeApi(bitcoindRpcClient: BitcoindRpcClient)(
       implicit ec: ExecutionContext): NodeApi = {
     new NodeApi {
+
+      override def broadcastTransaction(
+          transaction: Transaction): Future[Unit] = {
+        bitcoindRpcClient.sendRawTransaction(transaction).map(_ => ())
+      }
 
       /**
         * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
@@ -156,9 +165,6 @@ abstract class SyncUtil extends BitcoinSLogger {
       /**
         * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
         */
-      /**
-        * Request the underlying node to download the given blocks from its peers and feed the blocks to [[org.bitcoins.node.NodeCallbacks]].
-        */
       override def downloadBlocks(
           blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = {
         logger.info(s"Fetching ${blockHashes.length} hashes from bitcoind")
@@ -195,6 +201,14 @@ abstract class SyncUtil extends BitcoinSLogger {
             s"Done fetching ${blockHashes.length} hashes from bitcoind")
           ()
         }
+      }
+
+      /**
+        * Broadcasts the given transaction over the P2P network
+        */
+      override def broadcastTransaction(
+          transaction: Transaction): Future[Unit] = {
+        bitcoindRpcClient.sendRawTransaction(transaction).map(_ => ())
       }
     }
   }

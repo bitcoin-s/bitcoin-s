@@ -15,9 +15,11 @@ import org.bitcoins.core.wallet.builder.BitcoinTxBuilder.UTXOMap
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
   BitcoinUTXOSpendingInfoFull,
+  BitcoinUTXOSpendingInfoSingle,
   ConditionalPath,
   LockTimeSpendingInfoFull,
-  UTXOSpendingInfo
+  UTXOSpendingInfo,
+  UnassignedSegwitNativeUTXOSpendingInfo
 }
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.{
@@ -243,6 +245,18 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
+
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfoSingle(
+        outPoint = outPoint,
+        output = creditingOutput,
+        signer = privKey,
+        redeemScriptOpt = Some(EmptyScriptPubKey),
+        scriptWitnessOpt = None,
+        hashType = HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
+    }
   }
 
   it must "fail to build a tx if you have the wrong script witness" in {
@@ -258,6 +272,18 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         outPoint,
         creditingOutput,
         Vector(privKey),
+        None,
+        Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+        HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
+    }
+
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfoSingle(
+        outPoint,
+        creditingOutput,
+        privKey,
         None,
         Some(P2WSHWitnessV0(EmptyScriptPubKey)),
         HashType.sigHashAll,
@@ -354,6 +380,18 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         conditionalPath = ConditionalPath.NoConditionsLeft
       )
     }
+
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfoSingle(
+        outPoint = outPoint,
+        output = creditingOutput,
+        signer = privKey,
+        redeemScriptOpt = None,
+        scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+        hashType = HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
+    }
   }
 
   it must "fail to sign a p2wpkh if we pass in the wrong public key" in {
@@ -369,6 +407,18 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
         outPoint,
         creditingOutput,
         Vector(privKey),
+        None,
+        Some(P2WSHWitnessV0(EmptyScriptPubKey)),
+        HashType.sigHashAll,
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
+    }
+
+    assertThrows[IllegalArgumentException] {
+      BitcoinUTXOSpendingInfoSingle(
+        outPoint,
+        creditingOutput,
+        privKey,
         None,
         Some(P2WSHWitnessV0(EmptyScriptPubKey)),
         HashType.sigHashAll,
@@ -491,6 +541,35 @@ class BitcoinTxBuilderTest extends BitcoinSAsyncTest {
     recoverToSucceededIf[IllegalArgumentException](
       txBuilderF.flatMap(_.unsignedTx)
     )
+  }
+
+  it must "fail to construct a tx given an UnassignedSegwitNativeUTXOSpendingInfo" in {
+    val outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
+    val privKey = ECPrivateKey.freshPrivateKey
+    val pubKey = privKey.publicKey
+
+    val spendingInfo =
+      UnassignedSegwitNativeUTXOSpendingInfo(
+        outPoint = outPoint,
+        amount = Bitcoins.one + CurrencyUnits.oneMBTC,
+        scriptPubKey = P2WPKHWitnessSPKV0(pubKey),
+        signers = Vector(privKey),
+        hashType = HashType.sigHashAll,
+        scriptWitness = P2WPKHWitnessV0(pubKey),
+        conditionalPath = ConditionalPath.NoConditionsLeft
+      )
+
+    val txBuilderF = BitcoinTxBuilder(
+      Vector(TransactionOutput(Bitcoins.one, EmptyScriptPubKey)),
+      Map(outPoint -> spendingInfo),
+      SatoshisPerVirtualByte(Satoshis.one),
+      EmptyScriptPubKey,
+      RegTest
+    )
+
+    txBuilderF.flatMap { txBuilder =>
+      recoverToSucceededIf[IllegalArgumentException](txBuilder.unsignedTx)
+    }
   }
 
   def verifyScript(

@@ -62,11 +62,12 @@ import org.bitcoins.keymanager.bip39._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.api.LockedWalletApi
+import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.Wallet
 
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Files
+import java.time.Instant
 import scala.concurrent._
 ```
 
@@ -141,16 +142,18 @@ val keyManager = BIP39KeyManager.initialize(walletConfig.kmParams, bip39Password
 // once this future completes, we have a initialized
 // wallet
 val wallet = Wallet(keyManager, new NodeApi {
+    override def broadcastTransaction(tx: Transaction): Future[Unit] = Future.successful(())
     override def downloadBlocks(blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = Future.successful(())
   }, new ChainQueryApi {
+    override def epochSecondToBlockHeight(time: Long): Future[Int] = Future.successful(0)
     override def getBlockHeight(blockHash: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
     override def getBestBlockHash(): Future[DoubleSha256DigestBE] = Future.successful(DoubleSha256DigestBE.empty)
     override def getNumberOfConfirmations(blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] = Future.successful(None)
     override def getFilterCount: Future[Int] = Future.successful(0)
     override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = Future.successful(0)
     override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[FilterResponse]] = Future.successful(Vector.empty)
-  })
-val walletF: Future[LockedWalletApi] = configF.flatMap { _ =>
+  }, creationTime = Instant.now)
+val walletF: Future[WalletApi] = configF.flatMap { _ =>
   Wallet.initialize(wallet,bip39PasswordOpt)
 }
 

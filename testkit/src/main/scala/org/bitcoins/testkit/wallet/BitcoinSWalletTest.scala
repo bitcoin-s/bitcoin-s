@@ -8,6 +8,7 @@ import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -21,9 +22,8 @@ import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.wallet.api.{LockedWalletApi, UnlockedWalletApi}
+import org.bitcoins.wallet.api.WalletApi
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.db.WalletDbManagement
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
@@ -123,6 +123,9 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
                          blockHash = testBlockHash,
                          blockHeight = 1))
       })
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+      Future.successful(0)
   }
 
   /** Lets you customize the parameters for the created wallet */
@@ -194,7 +197,7 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
       dependentBuilder = { (wallet: Wallet) =>
         createWalletWithBitcoind(wallet)
       },
-      wrap = (_: UnlockedWalletApi, walletWithBitcoind: WalletWithBitcoind) =>
+      wrap = (_: WalletApi, walletWithBitcoind: WalletWithBitcoind) =>
         walletWithBitcoind
     )
 
@@ -205,12 +208,12 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
     val builder: () => Future[WalletWithBitcoind] =
       composeBuildersAndWrapFuture(
         builder = { () =>
-          createDefaultWallet(nodeApi, chainQueryApi)
+          BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi)
         },
         dependentBuilder = { (wallet: Wallet) =>
           createWalletWithBitcoind(wallet)
         },
-        processResult = (_: UnlockedWalletApi, pair: WalletWithBitcoind) =>
+        processResult = (_: WalletApi, pair: WalletWithBitcoind) =>
           fundWalletWithBitcoind(pair)
       )
 
@@ -245,9 +248,22 @@ trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
 
 object BitcoinSWalletTest extends WalletLogger {
 
-  lazy val initialFunds = 25.bitcoins
+  val defaultAcctAmts = Vector(1.bitcoin, 2.bitcoin, 3.bitcoin)
+
+  val expectedDefaultAmt: CurrencyUnit =
+    defaultAcctAmts.fold(CurrencyUnits.zero)(_ + _)
+
+  val account1Amt = Vector(Bitcoins(0.2), Bitcoins(0.3), Bitcoins(0.5))
+
+  val expectedAccount1Amt: CurrencyUnit =
+    account1Amt.fold(CurrencyUnits.zero)(_ + _)
+
+  lazy val initialFunds: CurrencyUnit = expectedDefaultAmt + expectedAccount1Amt
 
   object MockNodeApi extends NodeApi {
+
+    override def broadcastTransaction(transaction: Transaction): Future[Unit] =
+      FutureUtil.unit
 
     override def downloadBlocks(
         blockHashes: Vector[DoubleSha256Digest]): Future[Unit] = FutureUtil.unit
@@ -276,6 +292,9 @@ object BitcoinSWalletTest extends WalletLogger {
         startHeight: Int,
         endHeight: Int): Future[Vector[FilterResponse]] =
       Future.successful(Vector.empty)
+
+    override def epochSecondToBlockHeight(time: Long): Future[Int] =
+      Future.successful(0)
   }
 
   sealed trait WalletWithBitcoind {
@@ -329,7 +348,9 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.initialize().flatMap { _ =>
         val wallet =
-          Wallet(keyManager, nodeApi, chainQueryApi)(walletConfig, ec)
+          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)(
+            walletConfig,
+            ec)
         Wallet.initialize(wallet, bip39PasswordOpt)
       }
     }
@@ -374,7 +395,9 @@ object BitcoinSWalletTest extends WalletLogger {
     val walletWithBitcoindV19F = for {
       bitcoind <- bitcoindF
       api <- nodeChainQueryApiF
-      wallet <- createDefaultWallet(api.nodeApi, api.chainQueryApi, extraConfig)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(api.nodeApi,
+                                                         api.chainQueryApi,
+                                                         extraConfig)
 
       //we need to create a promise so we can inject the wallet with the callback
       //after we have created it into SyncUtil.getNodeChainQueryApiWalletCallback
@@ -388,11 +411,12 @@ object BitcoinSWalletTest extends WalletLogger {
 
       //create the wallet with the appropriate callbacks now that
       //we have them
-      walletWithCallback = Wallet(keyManager = wallet.keyManager,
-                                  nodeApi = apiCallback.nodeApi,
-                                  chainQueryApi = apiCallback.chainQueryApi)(
-        wallet.walletConfig,
-        wallet.ec)
+      walletWithCallback = Wallet(
+        keyManager = wallet.keyManager,
+        nodeApi = apiCallback.nodeApi,
+        chainQueryApi = apiCallback.chainQueryApi,
+        creationTime = wallet.keyManager.creationTime)(wallet.walletConfig,
+                                                       wallet.ec)
       //complete the walletCallbackP so we can handle the callbacks when they are
       //called without hanging forever.
       _ = walletCallbackP.success(walletWithCallback)
@@ -467,7 +491,7 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
-      wallet <- createDefaultWallet(nodeApi, chainQueryApi)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi)
       withBitcoind <- createWalletWithBitcoind(wallet, versionOpt)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -481,7 +505,7 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem): Future[WalletWithBitcoind] = {
     import system.dispatcher
     for {
-      wallet <- createDefaultWallet(nodeApi, chainQueryApi)
+      wallet <- BitcoinSWalletTest.createWallet2Accounts(nodeApi, chainQueryApi)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- fundWalletWithBitcoind(withBitcoind)
     } yield funded
@@ -491,17 +515,43 @@ object BitcoinSWalletTest extends WalletLogger {
   def fundWalletWithBitcoind[T <: WalletWithBitcoind](pair: T)(
       implicit ec: ExecutionContext): Future[T] = {
     val (wallet, bitcoind) = (pair.wallet, pair.bitcoind)
+
+    val defaultAccount = wallet.walletConfig.defaultAccount
+    val fundedDefaultAccountWalletF =
+      FundWalletUtil.fundAccountForWalletWithBitcoind(
+        amts = defaultAcctAmts,
+        account = defaultAccount,
+        wallet = wallet,
+        bitcoind = bitcoind
+      )
+
+    val hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+    val fundedAccount1WalletF = for {
+      fundedDefaultAcct <- fundedDefaultAccountWalletF
+      fundedAcct1 <- FundWalletUtil.fundAccountForWalletWithBitcoind(
+        amts = account1Amt,
+        account = hdAccount1,
+        wallet = fundedDefaultAcct,
+        bitcoind = bitcoind
+      )
+    } yield fundedAcct1
+
+    //sanity check to make sure we have money
     for {
-      addr <- wallet.getNewAddress()
-      txId <- bitcoind.sendToAddress(addr, initialFunds)
-      _ <- bitcoind.getNewAddress.flatMap(bitcoind.generateToAddress(6, _))
-      tx <- bitcoind.getRawTransaction(txId)
-      _ <- wallet.processTransaction(tx.hex, tx.blockhash)
-      balance <- wallet.getBalance()
-    } yield {
-      assert(balance >= initialFunds)
-      pair
-    }
+      fundedWallet <- fundedAccount1WalletF
+      balance <- fundedWallet.getBalance(defaultAccount)
+      _ = require(
+        balance == expectedDefaultAmt,
+        s"Funding wallet fixture failed to fund the wallet, got balance=$balance expected=$expectedDefaultAmt")
+
+      account1Balance <- fundedWallet.getBalance(hdAccount1)
+      _ = require(
+        account1Balance == expectedAccount1Amt,
+        s"Funding wallet fixture failed to fund account 1, " +
+          s"got balance=$hdAccount1 expected=$expectedAccount1Amt"
+      )
+
+    } yield pair
   }
 
   def destroyWalletWithBitcoind(walletWithBitcoind: WalletWithBitcoind)(
@@ -516,16 +566,12 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
   }
 
-  def destroyWallet(wallet: UnlockedWalletApi)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    destroyWallet(wallet.lock())
-  }
-
-  def destroyWallet(wallet: LockedWalletApi)(
-      implicit ec: ExecutionContext): Future[Unit] = {
-    val destroyWalletF = WalletDbManagement
-      .dropAll()(config = wallet.walletConfig, ec = ec)
-      .map(_ => ())
+  def destroyWallet(wallet: WalletApi): Future[Unit] = {
+    import wallet.walletConfig.ec
+    val destroyWalletF =
+      wallet.walletConfig
+        .dropAll()
+        .map(_ => ())
     destroyWalletF
   }
 

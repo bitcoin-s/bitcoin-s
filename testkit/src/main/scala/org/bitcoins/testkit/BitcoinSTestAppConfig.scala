@@ -6,6 +6,8 @@ import com.typesafe.config._
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.util.FileUtil
 
+import scala.concurrent.ExecutionContext
+
 object BitcoinSTestAppConfig {
 
   /** Generates a temp directory with the prefix 'bitcoin-s- */
@@ -17,7 +19,8 @@ object BitcoinSTestAppConfig {
     * 1) Data directory is set to user temp directory
     * 2) Logging is turned down to WARN
     */
-  def getSpvTestConfig(config: Config*): BitcoinSAppConfig = {
+  def getSpvTestConfig(config: Config*)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {
@@ -30,7 +33,8 @@ object BitcoinSTestAppConfig {
     BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
   }
 
-  def getNeutrinoTestConfig(config: Config*): BitcoinSAppConfig = {
+  def getNeutrinoTestConfig(config: Config*)(
+      implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
       """
         |bitcoin-s {

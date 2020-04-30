@@ -56,15 +56,15 @@ import org.bitcoins.core.currency._
 
 val privKey = ECPrivateKey.freshPrivateKey
 val pubKey = privKey.publicKey
-val nonce = SchnorrNonce.freshNonce
-val rValue = nonce.publicKey
+val kValue = ECPrivateKey.freshPrivateKey
+val rValue = kValue.schnorrNonce
 val winHash = CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
 val loseHash = CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
 
 (pubKey.bytes ++ rValue.bytes).toHex
 (winHash.bytes ++ Satoshis(100000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes).toHex
-Schnorr.signWithNonce(winHash.bytes, privKey, nonce).hex
-Schnorr.signWithNonce(loseHash.bytes, privKey, nonce).hex
+privKey.schnorrSignWithNonce(winHash.bytes, kValue)
+privKey.schnorrSignWithNonce(loseHash.bytes, kValue)
 ```
 
 Where you can replace the messages `WIN` and `LOSE` to have the oracle sign any two messages, and replace `Satoshis(100000)` and `Satoshis.zero` to change the outcomes.

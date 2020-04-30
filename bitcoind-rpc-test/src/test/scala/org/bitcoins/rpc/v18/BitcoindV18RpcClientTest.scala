@@ -1,8 +1,8 @@
 package org.bitcoins.rpc.v18
 import org.bitcoins.chain.models.BlockHeaderDbHelper
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
 import org.bitcoins.rpc.client.common.BitcoindVersion
-import org.bitcoins.rpc.client.common.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.v18.BitcoindV18RpcClient
 import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil

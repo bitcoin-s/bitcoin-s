@@ -3,6 +3,25 @@ package org.bitcoins.eclair.rpc.api
 import java.net.InetSocketAddress
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.eclair.{
+  AuditResult,
+  ChannelDesc,
+  ChannelInfo,
+  ChannelResult,
+  ChannelStats,
+  ChannelUpdate,
+  GetInfoResult,
+  IncomingPayment,
+  InvoiceResult,
+  NetworkFeesResult,
+  NodeInfo,
+  OutgoingPayment,
+  PaymentId,
+  PeerInfo,
+  SendToRouteResult,
+  UsableBalancesResult,
+  WebSocketEvent
+}
 import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}

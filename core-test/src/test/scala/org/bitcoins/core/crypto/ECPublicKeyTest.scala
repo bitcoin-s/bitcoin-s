@@ -55,4 +55,11 @@ class ECPublicKeyTest extends BitcoinSUnitTest {
       assert(pubKey.bytes.tail == decompressedPubKey.bytes.splitAt(33)._1.tail)
     }
   }
+
+  it must "fail if given invalid pubkey" in {
+    // 31 bytes
+    val badHex =
+      "02020202020202020202020202020202020202020202020202020202020202"
+    assert(!ECPublicKey.isFullyValid(ByteVector.fromHex(badHex).get))
+  }
 }

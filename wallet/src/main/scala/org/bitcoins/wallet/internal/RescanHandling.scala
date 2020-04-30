@@ -5,32 +5,46 @@ import java.util.concurrent.Executors
 import org.bitcoins.core.api.ChainQueryApi.{FilterResponse, InvalidBlockRange}
 import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.gcs.SimpleFilterMatcher
-import org.bitcoins.core.hd.HDChainType
+import org.bitcoins.core.hd.{HDAccount, HDChainType}
+import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
-import org.bitcoins.wallet.{LockedWallet, WalletLogger}
+import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 private[wallet] trait RescanHandling extends WalletLogger {
-  self: LockedWallet =>
+  self: Wallet =>
 
   /////////////////////
   // Public facing API
 
   /** @inheritdoc */
   override def rescanNeutrinoWallet(
+      account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[Unit] = {
+      addressBatchSize: Int,
+      useCreationTime: Boolean = true): Future[Unit] = {
 
     logger.info(s"Starting rescanning the wallet from ${startOpt} to ${endOpt}")
 
     val res = for {
-      _ <- clearUtxosAndAddresses()
-      _ <- doNeutrinoRescan(startOpt, endOpt, addressBatchSize)
+      start <- (startOpt, useCreationTime) match {
+        case (Some(_), true) =>
+          Future.failed(new IllegalArgumentException(
+            "Cannot define a starting block and use the wallet creation time"))
+        case (Some(value), false) =>
+          Future.successful(Some(value))
+        case (None, true) =>
+          walletCreationBlockHeight.map(Some(_))
+        case (None, false) =>
+          Future.successful(None)
+      }
+      _ <- clearUtxosAndAddresses(account)
+      _ <- doNeutrinoRescan(account, start, endOpt, addressBatchSize)
     } yield ()
 
     res.onComplete(_ => logger.info("Finished rescanning the wallet"))
@@ -41,6 +55,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
   /** @inheritdoc */
   override def rescanSPVWallet(): Future[Unit] =
     Future.failed(new RuntimeException("Rescan not implemented for SPV wallet"))
+
+  lazy val walletCreationBlockHeight: Future[BlockHeight] =
+    chainQueryApi
+      .epochSecondToBlockHeight(creationTime.getEpochSecond)
+      .map(BlockHeight)
 
   /** @inheritdoc */
   override def getMatchingBlocks(
@@ -85,11 +104,12 @@ private[wallet] trait RescanHandling extends WalletLogger {
   // Private methods
 
   private def doNeutrinoRescan(
+      account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
       addressBatchSize: Int): Future[Unit] = {
     for {
-      scriptPubKeys <- generateScriptPubKeys(addressBatchSize)
+      scriptPubKeys <- generateScriptPubKeys(account, addressBatchSize)
       blocks <- matchBlocks(scriptPubKeys = scriptPubKeys,
                             endOpt = endOpt,
                             startOpt = startOpt)
@@ -102,7 +122,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         logger.info(
           s"Attempting rescan again with fresh pool of addresses as we had a " +
             s"match within our address gap limit of ${walletConfig.addressGapLimit}")
-        doNeutrinoRescan(startOpt, endOpt, addressBatchSize)
+        doNeutrinoRescan(account, startOpt, endOpt, addressBatchSize)
       }
     } yield res
   }
@@ -180,6 +200,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
   }
 
   private def generateScriptPubKeys(
+      account: HDAccount,
       count: Int): Future[Vector[ScriptPubKey]] = {
     for {
       addresses <- 1
@@ -188,7 +209,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           (prevFuture, _) =>
             for {
               prev <- prevFuture
-              address <- getNewAddress()
+              address <- getNewAddress(account)
             } yield prev :+ address
         }
       changeAddresses <- 1
@@ -197,7 +218,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
           (prevFuture, _) =>
             for {
               prev <- prevFuture
-              address <- getNewChangeAddress()
+              address <- getNewChangeAddress(account)
             } yield prev :+ address
         }
     } yield addresses.map(_.scriptPubKey) ++ changeAddresses.map(_.scriptPubKey)

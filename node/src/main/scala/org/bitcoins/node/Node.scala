@@ -25,7 +25,6 @@ import org.bitcoins.node.networking.peer.{
 }
 import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
 import org.bitcoins.rpc.util.AsyncUtil
-import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +54,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     this
   }
 
-  lazy val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
+  lazy val txDAO = BroadcastAbleTransactionDAO()
 
   /** This is constructing a chain api from disk every time we call this method
     * This involves database calls which can be slow and expensive to construct
@@ -137,7 +136,15 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
           this
         }
       }
+      // get chainApi so we don't need to call chainApiFromDb on every call
+      chainApi <- chainApiFromDb
+      bestHash <- chainApi.getBestBlockHash()
+      bestHeight <- chainApi.getBestHashBlockHeight()
+      filterCount <- chainApi.getFilterCount
+      filterHeaderCount <- chainApi.getFilterHeaderCount
     } yield {
+      logger.info(
+        s"Started node, best block hash ${bestHash.hex} at height $bestHeight, with $filterHeaderCount filter headers and $filterCount filers")
       node
     }
   }
@@ -189,7 +196,7 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   }
 
   /** Broadcasts the given transaction over the P2P network */
-  def broadcastTransaction(transaction: Transaction): Future[Unit] = {
+  override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
     val broadcastTx = BroadcastAbleTransaction(transaction)
 
     txDAO.create(broadcastTx).onComplete {
@@ -229,5 +236,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
   def getNumberOfConfirmations(
       blockHashOpt: DoubleSha256DigestBE): Future[Option[Int]] =
     chainApiFromDb().flatMap(_.getNumberOfConfirmations(blockHashOpt))
+
+  override def epochSecondToBlockHeight(time: Long): Future[Int] =
+    chainApiFromDb().flatMap(_.epochSecondToBlockHeight(time))
 
 }

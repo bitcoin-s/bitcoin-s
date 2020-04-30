@@ -3,7 +3,7 @@ package org.bitcoins.gui
 import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.{Alert, Label}
+import scalafx.scene.control.Alert
 
 /**
   * Runs a background task disabling the `mainView` and main visible `glassPane`.
@@ -11,7 +11,7 @@ import scalafx.scene.control.{Alert, Label}
   *
   * Copied from [[https://github.com/scalafx/ScalaFX-Tutorials/blob/master/slick-table/src/main/scala/org/scalafx/slick_table/TaskRunner.scala]]
   */
-class TaskRunner(mainView: Node, glassPane: Node, statusLabel: Label) {
+class TaskRunner(mainView: Node, glassPane: Node) {
 
   /**
     * Run an operation on a separate thread. Return and wait for its completion,
@@ -35,7 +35,7 @@ class TaskRunner(mainView: Node, glassPane: Node, statusLabel: Label) {
     // Indicate task in progress
     Platform.runLater {
       showProgress(true)
-      statusLabel.text = caption
+      GlobalData.statusText.value = caption
     }
 
     val task = new javafx.concurrent.Task[R] {
@@ -44,13 +44,13 @@ class TaskRunner(mainView: Node, glassPane: Node, statusLabel: Label) {
       }
       override def succeeded(): Unit = {
         showProgress(false)
-        statusLabel.text = caption + " - Done."
+        GlobalData.statusText.value = caption + " - Done."
         // Do callback, if defined
       }
       override def failed(): Unit = {
 
         showProgress(false)
-        statusLabel.text = caption + " - Failed."
+        GlobalData.statusText.value = caption + " - Failed."
         val t = Option(getException)
         t.foreach(_.printStackTrace())
         // Show error message
@@ -65,7 +65,7 @@ class TaskRunner(mainView: Node, glassPane: Node, statusLabel: Label) {
       }
       override def cancelled(): Unit = {
         showProgress(false)
-        statusLabel.text = caption + " - Cancelled."
+        GlobalData.statusText.value = caption + " - Cancelled."
       }
     }
 

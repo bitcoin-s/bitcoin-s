@@ -1,9 +1,9 @@
 package org.bitcoins.rpc.client.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.GetMemoryInfoResult
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.jsonmodels.GetMemoryInfoResult
-import org.bitcoins.rpc.serializers.JsonReaders
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonReaders
+import org.bitcoins.commons.serializers.JsonSerializers._
 import play.api.libs.json._
 
 import scala.concurrent.Future

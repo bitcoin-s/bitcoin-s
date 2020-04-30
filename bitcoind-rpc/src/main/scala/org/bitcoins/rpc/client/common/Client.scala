@@ -12,9 +12,8 @@ import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.crypto.ECPrivateKey
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
 import org.bitcoins.rpc.config.BitcoindInstance
-import org.bitcoins.rpc.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.rpc.util.AsyncUtil
-import play.api.libs.json._
 
 import scala.concurrent._
 import scala.concurrent.duration.DurationInt
@@ -26,8 +25,11 @@ import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
 import java.nio.file.Path
 
+import com.fasterxml.jackson.core.JsonParseException
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.rpc.config.BitcoindAuthCredentials
 import org.bitcoins.rpc.BitcoindException
+import play.api.libs.json._
 
 /**
   * This is the base trait for Bitcoin Core
@@ -194,6 +196,9 @@ trait Client extends BitcoinSLogger with StartStop[BitcoindRpcClient] {
       parsedF.recover {
         case exc: StreamTcpException
             if exc.getMessage.contains("Connection refused") =>
+          false
+        case _: JsonParseException =>
+          //see https://github.com/bitcoin-s/bitcoin-s/issues/527
           false
       }
     }

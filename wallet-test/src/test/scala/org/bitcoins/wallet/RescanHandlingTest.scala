@@ -26,6 +26,50 @@ class RescanHandlingTest extends BitcoinSWalletTest {
 
   behavior of "Wallet rescans"
 
+  it must "properly clear utxos and address for an account" in {
+    fixture: WalletWithBitcoind =>
+      val wallet = fixture.wallet
+
+      for {
+        accountDb <- wallet.getDefaultAccount()
+        account = accountDb.hdAccount
+        utxos <- wallet.spendingInfoDAO.findAllForAccount(account)
+        _ = assert(utxos.nonEmpty)
+
+        addresses <- wallet.addressDAO.findAllForAccount(account)
+        _ = assert(addresses.nonEmpty)
+
+        _ <- wallet.clearUtxosAndAddresses(account)
+
+        clearedUtxos <- wallet.spendingInfoDAO.findAllForAccount(account)
+        clearedAddresses <- wallet.addressDAO.findAllForAccount(account)
+      } yield {
+        assert(clearedUtxos.isEmpty)
+        assert(clearedAddresses.isEmpty)
+      }
+  }
+
+  it must "properly clear all utxos and address" in {
+    fixture: WalletWithBitcoind =>
+      val wallet = fixture.wallet
+
+      for {
+        utxos <- wallet.spendingInfoDAO.findAll()
+        _ = assert(utxos.nonEmpty)
+
+        addresses <- wallet.addressDAO.findAll()
+        _ = assert(addresses.nonEmpty)
+
+        _ <- wallet.clearAllUtxosAndAddresses()
+
+        clearedUtxos <- wallet.spendingInfoDAO.findAll()
+        clearedAddresses <- wallet.addressDAO.findAll()
+      } yield {
+        assert(clearedUtxos.isEmpty)
+        assert(clearedAddresses.isEmpty)
+      }
+  }
+
   val DEFAULT_ADDR_BATCH_SIZE = 10
   it must "be able to discover funds that belong to the wallet using WalletApi.rescanNeutrinoWallet" in {
     fixture: WalletWithBitcoind =>
@@ -38,7 +82,7 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         _ = assert(
           initBalance > CurrencyUnits.zero,
           s"Cannot run rescan test if our init wallet balance is zero!")
-        _ <- wallet.fullRescanNeurinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        _ <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == initBalance)
@@ -69,12 +113,12 @@ class RescanHandlingTest extends BitcoinSWalletTest {
                                                  blockHashOpt =
                                                    blockHashes.headOption)
         balance <- newTxWallet.getBalance()
-        confirmedBalance <- newTxWallet.getConfirmedBalance()
+        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
       } yield {
         //balance doesn't have to exactly equal, as there was money in the
         //wallet before hand.
         assert(balance >= amt)
-        assert(balance == confirmedBalance)
+        assert(balance == unconfirmedBalance)
         newTxWallet
       }
 
@@ -88,10 +132,54 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         _ <- newTxWallet.rescanNeutrinoWallet(startOpt = txInBlockHeightOpt,
                                               endOpt = None,
                                               addressBatchSize =
-                                                DEFAULT_ADDR_BATCH_SIZE)
+                                                DEFAULT_ADDR_BATCH_SIZE,
+                                              useCreationTime = false)
         balance <- newTxWallet.getBalance()
       } yield {
         assert(balance == amt)
+      }
+  }
+
+  it must "be able to discover funds that occurred from the wallet creation time" in {
+    fixture: WalletWithBitcoind =>
+      val WalletWithBitcoindV19(wallet, bitcoind) = fixture
+
+      val amt = Bitcoins.one
+      val numBlocks = 1
+
+      //send funds to a fresh wallet address
+      val addrF = wallet.getNewAddress()
+      val bitcoindAddrF = bitcoind.getNewAddress
+      val newTxWalletF = for {
+        addr <- addrF
+        txid <- bitcoind.sendToAddress(addr, amt)
+        tx <- bitcoind.getRawTransactionRaw(txid)
+        bitcoindAddr <- bitcoindAddrF
+        blockHashes <- bitcoind.generateToAddress(blocks = numBlocks,
+                                                  address = bitcoindAddr)
+        newTxWallet <- wallet.processTransaction(transaction = tx,
+                                                 blockHashOpt =
+                                                   blockHashes.headOption)
+        balance <- newTxWallet.getBalance()
+        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
+      } yield {
+        //balance doesn't have to exactly equal, as there was money in the
+        //wallet before hand.
+        assert(balance >= amt)
+        assert(balance == unconfirmedBalance)
+        newTxWallet
+      }
+
+      for {
+        newTxWallet <- newTxWalletF
+        _ <- newTxWallet.rescanNeutrinoWallet(startOpt = None,
+                                              endOpt = None,
+                                              addressBatchSize =
+                                                DEFAULT_ADDR_BATCH_SIZE,
+                                              useCreationTime = true)
+        balance <- newTxWallet.getBalance()
+      } yield {
+        assert(balance == Bitcoins(7))
       }
   }
 
@@ -123,7 +211,8 @@ class RescanHandlingTest extends BitcoinSWalletTest {
         _ <- wallet.rescanNeutrinoWallet(startOpt = BlockStamp.height0Opt,
                                          endOpt = end,
                                          addressBatchSize =
-                                           DEFAULT_ADDR_BATCH_SIZE)
+                                           DEFAULT_ADDR_BATCH_SIZE,
+                                         useCreationTime = false)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == CurrencyUnits.zero)

@@ -30,6 +30,56 @@ object GetBalance extends ServerJsonModels {
   }
 }
 
+case class GetConfirmedBalance(isSats: Boolean)
+
+object GetConfirmedBalance extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetConfirmedBalance] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(GetConfirmedBalance(jsArr.arr.head.bool))
+  }
+}
+
+case class GetUnconfirmedBalance(isSats: Boolean)
+
+object GetUnconfirmedBalance extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetUnconfirmedBalance] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(GetUnconfirmedBalance(jsArr.arr.head.bool))
+  }
+}
+
+case class GetAddressInfo(address: BitcoinAddress)
+
+object GetAddressInfo extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetAddressInfo] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    val address = jsToBitcoinAddress(jsArr.arr.head)
+
+    Try(GetAddressInfo(address))
+  }
+}
+
+case class SendRawTransaction(tx: Transaction)
+
+object SendRawTransaction extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SendRawTransaction] = {
+    require(jsArr.arr.size == 1,
+            s"Bad number of arguments: ${jsArr.arr.size}. Expected: 1")
+
+    Try(SendRawTransaction(jsToTx(jsArr.arr.head)))
+  }
+}
+
 case class CombinePSBTs(psbts: Seq[PSBT])
 
 object CombinePSBTs extends ServerJsonModels {
@@ -93,7 +143,8 @@ case class Rescan(
     batchSize: Option[Int],
     startBlock: Option[BlockStamp],
     endBlock: Option[BlockStamp],
-    force: Boolean)
+    force: Boolean,
+    ignoreCreationTime: Boolean)
 
 object Rescan extends ServerJsonModels {
 
@@ -125,16 +176,18 @@ object Rescan extends ServerJsonModels {
     }
 
     jsArr.arr.toList match {
-      case batchSizeJs :: startJs :: endJs :: forceJs :: Nil =>
+      case batchSizeJs :: startJs :: endJs :: forceJs :: ignoreCreationTimeJs :: Nil =>
         Try {
           val batchSize = parseInt(batchSizeJs)
           val start = parseBlockStamp(startJs)
           val end = parseBlockStamp(endJs)
           val force = parseBoolean(forceJs)
+          val ignoreCreationTime = parseBoolean(ignoreCreationTimeJs)
           Rescan(batchSize = batchSize,
                  startBlock = start,
                  endBlock = end,
-                 force = force)
+                 force = force,
+                 ignoreCreationTime = ignoreCreationTime)
         }
       case Nil =>
         Failure(new IllegalArgumentException("Missing addresses"))

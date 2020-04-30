@@ -1,21 +1,23 @@
 package org.bitcoins.wallet.api
 
+import java.time.Instant
+
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
-import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
-import org.bitcoins.wallet.api.LockedWalletApi.BlockMatchingResponse
+import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
 import org.bitcoins.wallet.{Wallet, WalletLogger}
@@ -30,23 +32,21 @@ import scala.util.{Failure, Success}
   *
   * @see [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-sealed trait WalletApi {
+trait WalletApi extends WalletLogger {
 
   implicit val walletConfig: WalletAppConfig
   implicit val ec: ExecutionContext
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
+  val creationTime: Instant
 
   def chainParams: ChainParams = walletConfig.chain
 
   def networkParameters: NetworkParameters = walletConfig.network
-}
 
-/**
-  * API for a locked wallet
-  */
-trait LockedWalletApi extends WalletApi with WalletLogger {
+  def broadcastTransaction(transaction: Transaction): Future[Unit] =
+    nodeApi.broadcastTransaction(transaction)
 
   /**
     * Retrieves a bloom filter that that can be sent to a P2P network node
@@ -61,11 +61,11 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     */
   def processTransaction(
       transaction: Transaction,
-      blockHash: Option[DoubleSha256DigestBE]): Future[LockedWalletApi]
+      blockHash: Option[DoubleSha256DigestBE]): Future[WalletApi]
 
   def processTransactions(
       transactions: Vector[Transaction],
-      blockHash: Option[DoubleSha256DigestBE]): Future[LockedWalletApi] = {
+      blockHash: Option[DoubleSha256DigestBE]): Future[WalletApi] = {
     transactions.foldLeft(Future.successful(this)) {
       case (wallet, tx) =>
         wallet.flatMap(_.processTransaction(tx, blockHash))
@@ -73,14 +73,26 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
   }
 
   /**
+    * Takes in a block header and updates our TxoStates to the new chain tip
+    * @param blockHeader Block header we are processing
+    */
+  def updateUtxoPendingStates(
+      blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]]
+
+  /**
     * Processes the give block, updating our DB state if it's relevant to us.
     * @param block The block we're processing
     */
-  def processBlock(block: Block): Future[LockedWalletApi]
+  def processBlock(block: Block): Future[WalletApi]
 
   def processCompactFilter(
       blockHash: DoubleSha256Digest,
-      blockFilter: GolombFilter): Future[LockedWalletApi] = {
+      blockFilter: GolombFilter): Future[WalletApi] =
+    processCompactFilters(Vector((blockHash, blockFilter)))
+
+  def processCompactFilters(
+      blockFilters: Vector[(DoubleSha256Digest, GolombFilter)]): Future[
+    WalletApi] = {
     val utxosF = listUtxos()
     val addressesF = listAddresses()
     for {
@@ -89,11 +101,12 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       scriptPubKeys = utxos.flatMap(_.redeemScriptOpt).toSet ++ addresses
         .map(_.scriptPubKey)
         .toSet
-      _ <- Future {
-        val matcher = SimpleFilterMatcher(blockFilter)
-        if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
-          nodeApi.downloadBlocks(Vector(blockHash))
-        }
+      _ <- FutureUtil.sequentially(blockFilters) {
+        case (blockHash, blockFilter) =>
+          val matcher = SimpleFilterMatcher(blockFilter)
+          if (matcher.matchesAny(scriptPubKeys.toVector.map(_.asmBytes))) {
+            nodeApi.downloadBlocks(Vector(blockHash))
+          } else FutureUtil.unit
       }
     } yield {
       this
@@ -157,19 +170,24 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
 
+  /** Removes all utxos and addresses from the wallet account.
+    * Don't call this unless you are sure you can recover
+    * your wallet
+    */
+  def clearUtxosAndAddresses(account: HDAccount): Future[WalletApi]
+
+  def clearUtxosAndAddresses(): Future[WalletApi] =
+    clearUtxosAndAddresses(walletConfig.defaultAccount)
+
   /** Removes all utxos and addresses from the wallet.
     * Don't call this unless you are sure you can recover
     * your wallet
-    * */
-  def clearUtxosAndAddresses(): Future[WalletApi]
+    */
+  def clearAllUtxosAndAddresses(): Future[WalletApi]
 
   /**
     * Gets a new external address with the specified
-    * type. Calling this method multiple
-    * times will return the same address, until it has
-    * received funds.
-    *  TODO: Last sentence is not true, implement that
-    *  https://github.com/bitcoin-s/bitcoin-s/issues/628
+    * type.
     *  @param addressType
     */
   def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
@@ -185,6 +203,44 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       address <- getNewAddress(walletConfig.defaultAddressType)
     } yield address
   }
+
+  /**
+    * Gets a external address from the account associated with
+    * the given AddressType. Calling this method multiple
+    * times will return the same address, until it has
+    * received funds.
+    */
+  def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress]
+
+  /**
+    * Gets a external address from the default account.
+    * Calling this method multiple
+    * times will return the same address, until it has
+    * received funds.
+    */
+  def getUnusedAddress: Future[BitcoinAddress]
+
+  /** Gets the address associated with the pubkey at
+    * the resulting `BIP32Path` determined by the
+    * default account and the given chainType and addressIndex
+    */
+  def getAddress(
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb] = {
+    for {
+      account <- getDefaultAccount()
+      address <- getAddress(account, chainType, addressIndex)
+    } yield address
+  }
+
+  /** Gets the address associated with the pubkey at
+    * the resulting `BIP32Path` determined the given
+    * account, chainType, and addressIndex
+    */
+  def getAddress(
+      account: AccountDb,
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb]
 
   /**
     * Mimics the `getaddressinfo` RPC call in Bitcoin Core
@@ -239,7 +295,7 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     */
   def unlock(passphrase: AesPassword, bip39PasswordOpt: Option[String]): Either[
     KeyManagerUnlockError,
-    UnlockedWalletApi] = {
+    WalletApi] = {
     val kmParams = walletConfig.kmParams
 
     val unlockedKeyManagerE =
@@ -250,7 +306,8 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
       case Right(km) =>
         val w = Wallet(keyManager = km,
                        nodeApi = nodeApi,
-                       chainQueryApi = chainQueryApi)
+                       chainQueryApi = chainQueryApi,
+                       creationTime = km.creationTime)
         Right(w)
       case Left(err) => Left(err)
     }
@@ -314,35 +371,45 @@ trait LockedWalletApi extends WalletApi with WalletLogger {
     * @param addressBatchSize how many addresses to match in a single pass
     */
   def rescanNeutrinoWallet(
+      account: HDAccount,
       startOpt: Option[BlockStamp],
       endOpt: Option[BlockStamp],
-      addressBatchSize: Int): Future[Unit]
+      addressBatchSize: Int,
+      useCreationTime: Boolean): Future[Unit]
+
+  def rescanNeutrinoWallet(
+      startOpt: Option[BlockStamp],
+      endOpt: Option[BlockStamp],
+      addressBatchSize: Int,
+      useCreationTime: Boolean): Future[Unit] =
+    rescanNeutrinoWallet(account = walletConfig.defaultAccount,
+                         startOpt = startOpt,
+                         endOpt = endOpt,
+                         addressBatchSize = addressBatchSize,
+                         useCreationTime = useCreationTime)
 
   /** Helper method to rescan the ENTIRE blockchain. */
-  def fullRescanNeurinoWallet(addressBatchSize: Int): Future[Unit] = {
-    rescanNeutrinoWallet(startOpt = None,
+  def fullRescanNeutrinoWallet(addressBatchSize: Int): Future[Unit] =
+    fullRescanNeutrinoWallet(account = walletConfig.defaultAccount,
+                             addressBatchSize = addressBatchSize)
+
+  def fullRescanNeutrinoWallet(
+      account: HDAccount,
+      addressBatchSize: Int): Future[Unit] =
+    rescanNeutrinoWallet(account = account,
+                         startOpt = None,
                          endOpt = None,
-                         addressBatchSize = addressBatchSize)
-  }
+                         addressBatchSize = addressBatchSize,
+                         useCreationTime = false)
 
   /**
     * Recreates the account using BIP-44 approach
     */
   def rescanSPVWallet(): Future[Unit]
-}
-
-trait UnlockedWalletApi extends LockedWalletApi {
 
   def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
 
   def keyManager: BIP39KeyManager
-
-  /**
-    * Locks the wallet. After this operation is called,
-    * all sensitive material in the wallet should be
-    * encrypted and unaccessible
-    */
-  def lock(): LockedWalletApi
 
   /**
     *
@@ -372,6 +439,62 @@ trait UnlockedWalletApi extends LockedWalletApi {
     } yield tx
   }
 
+  /**
+    *
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction]
+
+  /**
+    * Sends money from the default account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit,
+      reserveUtxos: Boolean): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendToOutputs(outputs, feeRate, account, reserveUtxos)
+    } yield tx
+  }
+
+  /**
+    *
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRate: FeeUnit,
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction]
+
+  /**
+    * Sends money from the default account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRate: FeeUnit,
+      reserveUtxos: Boolean): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendToAddresses(addresses, amounts, feeRate, account, reserveUtxos)
+    } yield tx
+  }
+
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[Wallet]
 
   /**
@@ -387,7 +510,7 @@ trait UnlockedWalletApi extends LockedWalletApi {
 
 }
 
-object LockedWalletApi {
+object WalletApi {
   case class BlockMatchingResponse(
       blockHash: DoubleSha256DigestBE,
       blockHeight: Int)

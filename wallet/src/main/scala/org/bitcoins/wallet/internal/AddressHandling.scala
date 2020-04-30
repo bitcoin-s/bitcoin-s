@@ -14,7 +14,7 @@ import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future, Promise, TimeoutException}
 import scala.util.{Failure, Success}
 
 /**
@@ -22,7 +22,7 @@ import scala.util.{Failure, Success}
   * enumeratng and creating them, primarily.
   */
 private[wallet] trait AddressHandling extends WalletLogger {
-  self: LockedWallet =>
+  self: Wallet =>
 
   def contains(
       address: BitcoinAddress,
@@ -89,10 +89,10 @@ private[wallet] trait AddressHandling extends WalletLogger {
     * @param account Account to generate address from
     * @param chainType What chain do we generate from? Internal change vs. external
     */
-  private def getNewAddressHelper(
+  private def getNewAddressDb(
       account: AccountDb,
       chainType: HDChainType
-  ): Future[BitcoinAddress] = {
+  ): Future[AddressDb] = {
     logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
 
     val lastAddrOptF = chainType match {
@@ -102,7 +102,7 @@ private[wallet] trait AddressHandling extends WalletLogger {
         addressDAO.findMostRecentChange(account.hdAccount)
     }
 
-    lastAddrOptF.flatMap { lastAddrOpt =>
+    lastAddrOptF.map { lastAddrOpt =>
       val addrPath: HDPath = lastAddrOpt match {
         case Some(addr) =>
           val next = addr.path.next
@@ -117,43 +117,57 @@ private[wallet] trait AddressHandling extends WalletLogger {
           path
       }
 
-      val addressDb = {
-        val pathDiff =
-          account.hdAccount.diff(addrPath) match {
-            case Some(value) => value
-            case None =>
-              throw new RuntimeException(
-                s"Could not diff ${account.hdAccount} and $addrPath")
-          }
-
-        val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
-          case Failure(exception) => throw exception
-          case Success(value)     => value.key
+      val pathDiff =
+        account.hdAccount.diff(addrPath) match {
+          case Some(value) => value
+          case None =>
+            throw new RuntimeException(
+              s"Could not diff ${account.hdAccount} and $addrPath")
         }
 
-        addrPath match {
-          case segwitPath: SegWitHDPath =>
-            AddressDbHelper
-              .getSegwitAddress(pubkey, segwitPath, networkParameters)
-          case legacyPath: LegacyHDPath =>
-            AddressDbHelper.getLegacyAddress(pubkey,
-                                             legacyPath,
-                                             networkParameters)
-          case nestedPath: NestedSegWitHDPath =>
-            AddressDbHelper.getNestedSegwitAddress(pubkey,
-                                                   nestedPath,
-                                                   networkParameters)
-        }
-      }
-      logger.debug(s"Writing $addressDb to DB")
-      val writeF = addressDAO.create(addressDb)
-      writeF.foreach { written =>
-        logger.debug(
-          s"Got ${chainType} address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+      val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+        case Failure(exception) => throw exception
+        case Success(value)     => value.key
       }
 
-      writeF.map(_.address)
+      addrPath match {
+        case segwitPath: SegWitHDPath =>
+          AddressDbHelper
+            .getSegwitAddress(pubkey, segwitPath, networkParameters)
+        case legacyPath: LegacyHDPath =>
+          AddressDbHelper.getLegacyAddress(pubkey,
+                                           legacyPath,
+                                           networkParameters)
+        case nestedPath: NestedSegWitHDPath =>
+          AddressDbHelper.getNestedSegwitAddress(pubkey,
+                                                 nestedPath,
+                                                 networkParameters)
+      }
     }
+  }
+
+  /** Queues a request to generate an address and returns a Future that will
+    * be completed when the request is processed in the queue. If the queue
+    * is full it throws an exception.
+    * @throws IllegalStateException
+    * */
+  private def getNewAddressHelper(
+      account: AccountDb,
+      chainType: HDChainType
+  ): Future[BitcoinAddress] = {
+    val p = Promise[AddressDb]
+    addressRequestQueue.add((account, chainType, p))
+    for {
+      addressDb <- p.future
+    } yield {
+      addressDb.address
+    }
+  }
+
+  def getNextAvailableIndex(
+      accountDb: AccountDb,
+      chainType: HDChainType): Future[Int] = {
+    getNewAddressDb(accountDb, chainType).map(_.path.path.last.index)
   }
 
   def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
@@ -171,6 +185,98 @@ private[wallet] trait AddressHandling extends WalletLogger {
     val addrF =
       getNewAddressHelper(account, HDChainType.External)
     addrF
+  }
+
+  /** @inheritdoc */
+  def getAddress(
+      account: AccountDb,
+      chainType: HDChainType,
+      addressIndex: Int): Future[AddressDb] = {
+
+    val coinType = account.hdAccount.coin.coinType
+    val accountIndex = account.hdAccount.index
+
+    val path = account.hdAccount.purpose match {
+      case HDPurposes.Legacy =>
+        LegacyHDPath(coinType, accountIndex, chainType, addressIndex)
+      case HDPurposes.NestedSegWit =>
+        NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex)
+      case HDPurposes.SegWit =>
+        SegWitHDPath(coinType, accountIndex, chainType, addressIndex)
+
+      case invalid: HDPurpose =>
+        throw new IllegalArgumentException(
+          s"No HD Path type for HDPurpose of $invalid")
+    }
+
+    val pathDiff =
+      account.hdAccount.diff(path) match {
+        case Some(value) => value
+        case None =>
+          throw new IllegalArgumentException(
+            s"Could not diff ${account.hdAccount} and $path")
+      }
+
+    val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+      case Failure(exception) => throw exception
+      case Success(value)     => value.key
+    }
+
+    val addressDb = account.hdAccount.purpose match {
+      case HDPurposes.SegWit =>
+        AddressDbHelper.getSegwitAddress(
+          pubkey,
+          SegWitHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+      case HDPurposes.NestedSegWit =>
+        AddressDbHelper.getNestedSegwitAddress(
+          pubkey,
+          NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+      case HDPurposes.Legacy =>
+        AddressDbHelper.getLegacyAddress(
+          pubkey,
+          LegacyHDPath(coinType, accountIndex, chainType, addressIndex),
+          networkParameters)
+
+      case invalid: HDPurpose =>
+        throw new IllegalArgumentException(
+          s"No HD Path type for HDPurpose of $invalid")
+    }
+
+    logger.debug(s"Writing $addressDb to database")
+
+    addressDAO.upsert(addressDb).map { written =>
+      logger.debug(
+        s"Got $chainType address ${written.address} at key path ${written.path} with pubkey ${written.ecPublicKey}")
+      written
+    }
+  }
+
+  /** @inheritdoc */
+  def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress] = {
+    for {
+      account <- getDefaultAccountForType(addressType)
+      addresses <- addressDAO.getUnusedAddresses(account.hdAccount)
+      address <- if (addresses.isEmpty) {
+        getNewAddress(account.hdAccount)
+      } else {
+        Future.successful(addresses.head.address)
+      }
+    } yield address
+  }
+
+  /** @inheritdoc */
+  def getUnusedAddress: Future[BitcoinAddress] = {
+    for {
+      account <- getDefaultAccount()
+      addresses <- addressDAO.getUnusedAddresses(account.hdAccount)
+      address <- if (addresses.isEmpty) {
+        getNewAddress(account.hdAccount)
+      } else {
+        Future.successful(addresses.head.address)
+      }
+    } yield address
   }
 
   def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
@@ -192,6 +298,17 @@ private[wallet] trait AddressHandling extends WalletLogger {
     getNewAddressHelper(account, HDChainType.Change)
   }
 
+  def getNewChangeAddress(account: HDAccount): Future[BitcoinAddress] = {
+    val accountDbOptF = findAccount(account)
+    accountDbOptF.flatMap {
+      case Some(accountDb) => getNewChangeAddress(accountDb)
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=$account"))
+    }
+  }
+
   /** @inheritdoc */
   override def getAddressInfo(
       address: BitcoinAddress): Future[Option[AddressInfo]] = {
@@ -206,4 +323,66 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  /** Background thread meant to ensure safety when calling [[getNewAddress()]]
+    * We to ensure independent calls to getNewAddress don't result in a race condition
+    * to the database that would generate the same address and cause an error.
+    * With this background thread, we poll the [[addressRequestQueue]] seeing if there
+    * are any elements in it, if there are, we process them and complete the Promise in the queue. */
+  lazy val walletThread = new Thread(AddressQueueRunnable)
+
+  lazy val addressRequestQueue = {
+    new java.util.concurrent.ArrayBlockingQueue[(
+        AccountDb,
+        HDChainType,
+        Promise[AddressDb])](
+      walletConfig.addressQueueSize
+    )
+  }
+  walletThread.setDaemon(true)
+  walletThread.setName(s"wallet-address-queue-${System.currentTimeMillis()}")
+  walletThread.start()
+
+  /** A runnable that drains [[addressRequestQueue]]. Currently polls every 100ms
+    * seeing if things are in the queue. This is needed because otherwise
+    * wallet address generation is not async safe.
+    * @see https://github.com/bitcoin-s/bitcoin-s/issues/1009
+    * */
+  private case object AddressQueueRunnable extends Runnable {
+    override def run(): Unit = {
+      while (!walletThread.isInterrupted) {
+        val (account, chainType, promise) = addressRequestQueue.take()
+        logger.debug(
+          s"Processing $account $chainType in our address request queue")
+
+        val addressDbF = getNewAddressDb(account, chainType)
+        val resultF: Future[BitcoinAddress] = addressDbF.flatMap { addressDb =>
+          val writeF = addressDAO.create(addressDb)
+
+          val addrF = writeF.map { w =>
+            promise.success(w)
+            w.address
+          }
+          addrF.failed.foreach { exn =>
+            promise.failure(exn)
+          }
+          addrF
+        }
+        //make sure this is completed before we iterate to the next one
+        //otherwise we will possibly have a race condition
+
+        try {
+          Await.result(resultF, walletConfig.addressQueueTimeout)
+        } catch {
+          case timeout: TimeoutException =>
+            logger.error(
+              s"Timeout for generating address account=$account chainType=$chainType!",
+              timeout)
+          //continue executing
+          case scala.util.control.NonFatal(exn) =>
+            logger.error(s"Failed to generate address for $account $chainType",
+                         exn)
+        }
+      }
+    }
+  }
 }

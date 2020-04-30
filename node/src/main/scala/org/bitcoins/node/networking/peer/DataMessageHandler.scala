@@ -5,31 +5,33 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.{BlockFilter, GolombFilter}
 import org.bitcoins.core.p2p._
-import org.bitcoins.core.protocol.blockchain.{Block, MerkleBlock}
+import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.BroadcastAbleTransactionDAO
 import org.bitcoins.node.{NodeCallbacks, P2PLogger}
-import slick.jdbc.SQLiteProfile
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 /** This actor is meant to handle a [[org.bitcoins.core.p2p.DataPayload DataPayload]]
   * that a peer to sent to us on the p2p network, for instance, if we a receive a
   * [[org.bitcoins.core.p2p.HeadersMessage HeadersMessage]] we should store those headers in our database
+  *
+  * @param currentFilterBatch holds the current batch of filters to be processed, after its size reaches
+  *                           chainConfig.filterBatchSize they will be processed and then emptied
   */
 case class DataMessageHandler(
     chainApi: ChainApi,
     callbacks: NodeCallbacks,
-    receivedFilterCount: Int = 0,
+    currentFilterBatch: Vector[CompactFilterMessage] = Vector.empty,
     syncing: Boolean = false)(
     implicit ec: ExecutionContext,
     appConfig: NodeAppConfig,
     chainConfig: ChainAppConfig)
     extends P2PLogger {
 
-  private val txDAO = BroadcastAbleTransactionDAO(SQLiteProfile)
+  private val txDAO = BroadcastAbleTransactionDAO()
 
   def handleDataPayload(
       payload: DataPayload,
@@ -75,42 +77,41 @@ case class DataMessageHandler(
         }
       case filter: CompactFilterMessage =>
         logger.debug(s"Received ${filter.commandName}, $filter")
+        val batchSizeFull: Boolean = currentFilterBatch.size == chainConfig.filterBatchSize - 1
         for {
-          (newCount, newSyncing) <- if (receivedFilterCount == chainConfig.filterBatchSize - 1) {
+          (newBatch, newSyncing) <- if (batchSizeFull) {
             logger.info(
               s"Received maximum amount of filters in one batch. This means we are not synced, requesting more")
             for {
               _ <- sendNextGetCompactFilterCommand(peerMsgSender,
                                                    filter.blockHash.flip)
-            } yield (0, syncing)
+            } yield (Vector.empty, syncing)
           } else {
             for {
-              filterHeaderCount <- chainApi.getFilterHeaderCount
-              filterCount <- chainApi.getFilterCount
+              filterHeaderCount <- chainApi.getFilterHeaderCount()
+              filterCount <- chainApi.getFilterCount()
             } yield {
               val syncing = filterCount < filterHeaderCount - 1
               if (!syncing) {
                 logger.info(s"We are synced")
               }
-              (receivedFilterCount + 1, syncing)
+              (currentFilterBatch :+ filter, syncing)
             }
           }
           newChainApi <- chainApi.processFilter(filter)
+          // If we are not syncing or our filter batch is full, process the filters
+          _ <- if (!newSyncing || batchSizeFull) {
+            val blockFilters = newBatch.map { filter =>
+              (filter.blockHash,
+               BlockFilter.fromBytes(filter.filterBytes, filter.blockHash))
+            }
+            callbacks.executeOnCompactFiltersReceivedCallbacks(logger,
+                                                               blockFilters)
+          } else FutureUtil.unit
+
         } yield {
-
-          Try {
-            val blockFilter =
-              BlockFilter.fromBytes(filter.filterBytes, filter.blockHash)
-            callbacks.onCompactFilterReceived.foreach(
-              _.apply(filter.blockHash, blockFilter))
-          } match {
-            case Failure(ex) =>
-              logger.error("Error processing compact filter", ex)
-            case Success(_) => ()
-          }
-
           this.copy(chainApi = newChainApi,
-                    receivedFilterCount = newCount,
+                    currentFilterBatch = newBatch,
                     syncing = newSyncing)
         }
       case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
@@ -199,29 +200,28 @@ case class DataMessageHandler(
         for {
           newApi <- chainApiF
           newSyncing <- getHeadersF
+          _ <- callbacks.executeOnBlockHeadersReceivedCallbacks(logger, headers)
         } yield {
           this.copy(chainApi = newApi, syncing = newSyncing)
         }
       case msg: BlockMessage =>
         logger.info(
           s"Received block message with hash ${msg.block.blockHeader.hash.flip}")
-        Future {
-          callbacks.onBlockReceived.foreach(_.apply(msg.block))
-          this
-        }
+        callbacks
+          .executeOnBlockReceivedCallbacks(logger, msg.block)
+          .map(_ => this)
       case TransactionMessage(tx) =>
-        val belongsToMerkle =
-          MerkleBuffers.putTx(tx, callbacks.onMerkleBlockReceived)
-        if (belongsToMerkle) {
-          logger.trace(
-            s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
-          Future.successful(this)
-        } else {
-          logger.trace(
-            s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
-          Future {
-            callbacks.onTxReceived.foreach(_.apply(tx))
-            this
+        MerkleBuffers.putTx(tx, callbacks).flatMap { belongsToMerkle =>
+          if (belongsToMerkle) {
+            logger.trace(
+              s"Transaction=${tx.txIdBE} belongs to merkleblock, not calling callbacks")
+            Future.successful(this)
+          } else {
+            logger.trace(
+              s"Transaction=${tx.txIdBE} does not belong to merkleblock, processing given callbacks")
+            callbacks
+              .executeOnTxReceivedCallbacks(logger, tx)
+              .map(_ => this)
           }
         }
       case MerkleBlockMessage(merkleBlock) =>
@@ -318,18 +318,23 @@ case class DataMessageHandler(
 object DataMessageHandler {
 
   /** Callback for handling a received block */
-  type OnBlockReceived = Block => Unit
+  type OnBlockReceived = Block => Future[Unit]
 
   /** Callback for handling a received Merkle block with its corresponding TXs */
-  type OnMerkleBlockReceived = (MerkleBlock, Vector[Transaction]) => Unit
+  type OnMerkleBlockReceived =
+    (MerkleBlock, Vector[Transaction]) => Future[Unit]
 
   /** Callback for handling a received transaction */
-  type OnTxReceived = Transaction => Unit
+  type OnTxReceived = Transaction => Future[Unit]
 
   /** Callback for handling a received compact block filter */
-  type OnCompactFilterReceived = (DoubleSha256Digest, GolombFilter) => Unit
+  type OnCompactFiltersReceived =
+    (Vector[(DoubleSha256Digest, GolombFilter)]) => Future[Unit]
+
+  /** Callback for handling a received block header */
+  type OnBlockHeadersReceived = Vector[BlockHeader] => Future[Unit]
 
   /** Does nothing */
-  def noop[T]: T => Unit = _ => ()
+  def noop[T]: T => Future[Unit] = _ => FutureUtil.unit
 
 }

@@ -20,6 +20,12 @@ case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
 
   override def toString: String =
     s"TransactionOutPoint(${txIdBE.hex}:${vout.toBigInt})"
+
+  def ==(outPoint: TransactionOutPoint): Boolean =
+    txId == outPoint.txId && vout == outPoint.vout
+
+  def !=(outPoint: TransactionOutPoint): Boolean =
+    !(this == outPoint)
 }
 
 /**

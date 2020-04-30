@@ -119,14 +119,14 @@ class P2PClientTest extends BitcoindRpcTest {
   override def beforeAll(): Unit = {
     implicit val chainConf = config.chainConf
     for {
-      _ <- ChainDbManagement.createAll()
+      _ <- chainConf.createAll()
     } yield ()
   }
 
   override def afterAll(): Unit = {
     implicit val chainConf = config.chainConf
     for {
-      _ <- ChainDbManagement.dropAll()
+      _ <- chainConf.dropAll()
     } yield ()
     super.afterAll()
   }

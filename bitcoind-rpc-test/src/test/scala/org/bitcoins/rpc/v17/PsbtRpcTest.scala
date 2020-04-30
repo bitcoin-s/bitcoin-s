@@ -1,4 +1,8 @@
 package org.bitcoins.rpc.v17
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  FinalizedPsbt,
+  NonFinalizedPsbt
+}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptSignature
@@ -7,9 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.rpc.client.common.RpcOpts.AddressType
 import org.bitcoins.rpc.client.v17.BitcoindV17RpcClient
-import org.bitcoins.rpc.jsonmodels.{FinalizedPsbt, NonFinalizedPsbt}
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 

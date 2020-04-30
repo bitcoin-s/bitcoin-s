@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.picklers._
+import org.bitcoins.commons.serializers.Picklers._
 import scopt.OParser
 import ujson.{Num, Str}
 import upickle.{default => up}
@@ -53,7 +53,8 @@ object ConsoleCli {
               command = Rescan(addressBatchSize = Option.empty,
                                startBlock = Option.empty,
                                endBlock = Option.empty,
-                               force = false)))
+                               force = false,
+                               ignoreCreationTime = false)))
         .text(s"Rescan for wallet UTXOs")
         .children(
           opt[Unit]("force")
@@ -80,7 +81,11 @@ object ConsoleCli {
             .action((start, conf) =>
               conf.copy(command = conf.command match {
                 case rescan: Rescan =>
-                  rescan.copy(startBlock = Option(start))
+                  // Need to ignoreCreationTime so we try to call
+                  // rescan with rescanNeutrinoWallet with a block
+                  // and a creation time
+                  rescan.copy(startBlock = Option(start),
+                              ignoreCreationTime = true)
                 case other => other
               })),
           opt[BlockStamp]("end")
@@ -91,8 +96,20 @@ object ConsoleCli {
                 case rescan: Rescan =>
                   rescan.copy(endBlock = Option(end))
                 case other => other
+              })),
+          opt[Unit]("ignorecreationtime")
+            .text("Ignores the wallet creation date and will instead do a full rescan")
+            .optional()
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case rescan: Rescan =>
+                  rescan.copy(ignoreCreationTime = true)
+                case other => other
               }))
         ),
+      cmd("isempty")
+        .action((_, conf) => conf.copy(command = IsEmpty))
+        .text("Checks if the wallet contains any data"),
       cmd("getbalance")
         .action((_, conf) => conf.copy(command = GetBalance(false)))
         .text("Get the wallet balance")
@@ -104,6 +121,60 @@ object ConsoleCli {
               conf.copy(command = conf.command match {
                 case getBalance: GetBalance =>
                   getBalance.copy(isSats = true)
+                case other => other
+              }))
+        ),
+      cmd("getconfirmedbalance")
+        .action((_, conf) => conf.copy(command = GetConfirmedBalance(false)))
+        .text("Get the wallet balance of confirmed utxos")
+        .children(
+          opt[Unit]("sats")
+            .optional()
+            .text("Display balance in satoshis")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case getBalance: GetConfirmedBalance =>
+                  getBalance.copy(isSats = true)
+                case other => other
+              }))
+        ),
+      cmd("getunconfirmedbalance")
+        .action((_, conf) => conf.copy(command = GetUnconfirmedBalance(false)))
+        .text("Get the wallet balance of unconfirmed utxos")
+        .children(
+          opt[Unit]("sats")
+            .optional()
+            .text("Display balance in satoshis")
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case getBalance: GetUnconfirmedBalance =>
+                  getBalance.copy(isSats = true)
+                case other => other
+              }))
+        ),
+      cmd("getutxos")
+        .action((_, conf) => conf.copy(command = GetUtxos))
+        .text("Returns list of all wallet utxos"),
+      cmd("getaddresses")
+        .action((_, conf) => conf.copy(command = GetAddresses))
+        .text("Returns list of all wallet addresses currently being watched"),
+      cmd("getaccounts")
+        .action((_, conf) => conf.copy(command = GetAccounts))
+        .text("Returns list of all wallet accounts"),
+      cmd("createnewaccount")
+        .action((_, conf) => conf.copy(command = CreateNewAccount))
+        .text("Creates a new wallet account"),
+      cmd("getaddressinfo")
+        .action((_, conf) => conf.copy(command = GetAddressInfo(null)))
+        .text("Returns list of all wallet accounts")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("Address to get information about")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case getAddressInfo: GetAddressInfo =>
+                  getAddressInfo.copy(address = addr)
                 case other => other
               }))
         ),
@@ -151,6 +222,21 @@ object ConsoleCli {
       cmd("stop")
         .action((_, conf) => conf.copy(command = Stop))
         .text("Request a graceful shutdown of Bitcoin-S"),
+      cmd("sendrawtransaction")
+        .action((_, conf) =>
+          conf.copy(command = SendRawTransaction(EmptyTransaction)))
+        .text("Broadcasts the raw transaction")
+        .children(
+          arg[Transaction]("tx")
+            .text("Transaction serialized in hex")
+            .required()
+            .action((tx, conf) =>
+              conf.copy(command = conf.command match {
+                case sendRawTransaction: SendRawTransaction =>
+                  sendRawTransaction.copy(tx = tx)
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== PSBT ==="),
       cmd("combinepsbts")
         .action((_, conf) => conf.copy(command = CombinePSBTs(Seq.empty)))
@@ -256,16 +342,37 @@ object ConsoleCli {
     }
 
     val requestParam: RequestParam = command match {
+      case GetUtxos =>
+        RequestParam("getutxos")
+      case GetAddresses =>
+        RequestParam("getaddresses")
+      case GetAccounts =>
+        RequestParam("getaccounts")
+      case CreateNewAccount =>
+        RequestParam("createnewaccount")
+      case IsEmpty =>
+        RequestParam("isempty")
       case GetBalance(isSats) =>
         RequestParam("getbalance", Seq(up.writeJs(isSats)))
+      case GetConfirmedBalance(isSats) =>
+        RequestParam("getconfirmedbalance", Seq(up.writeJs(isSats)))
+      case GetUnconfirmedBalance(isSats) =>
+        RequestParam("getunconfirmedbalance", Seq(up.writeJs(isSats)))
+      case GetAddressInfo(address) =>
+        RequestParam("getaddressinfo", Seq(up.writeJs(address)))
       case GetNewAddress =>
         RequestParam("getnewaddress")
-      case Rescan(addressBatchSize, startBlock, endBlock, force) =>
+      case Rescan(addressBatchSize,
+                  startBlock,
+                  endBlock,
+                  force,
+                  ignoreCreationTime) =>
         RequestParam("rescan",
                      Seq(up.writeJs(addressBatchSize),
                          up.writeJs(startBlock),
                          up.writeJs(endBlock),
-                         up.writeJs(force)))
+                         up.writeJs(force),
+                         up.writeJs(ignoreCreationTime)))
 
       case SendToAddress(address, bitcoins, satoshisPerVirtualByte) =>
         RequestParam("sendtoaddress",
@@ -283,6 +390,8 @@ object ConsoleCli {
       // peers
       case GetPeers => RequestParam("getpeers")
       case Stop     => RequestParam("stop")
+      case SendRawTransaction(tx) =>
+        RequestParam("sendrawtransaction", Seq(up.writeJs(tx)))
       // PSBTs
       case CombinePSBTs(psbts) =>
         RequestParam("combinepsbts", Seq(up.writeJs(psbts)))
@@ -300,7 +409,8 @@ object ConsoleCli {
 
     Try {
       import com.softwaremill.sttp._
-      implicit val backend = HttpURLConnectionBackend()
+      implicit val backend: SttpBackend[Id, Nothing] =
+        HttpURLConnectionBackend()
       val request =
         sttp
           .post(uri"http://$host:$port/")
@@ -390,11 +500,20 @@ object CliCommand {
       satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
       extends CliCommand
   case object GetNewAddress extends CliCommand
+  case object GetUtxos extends CliCommand
+  case object GetAddresses extends CliCommand
+  case object GetAccounts extends CliCommand
+  case object CreateNewAccount extends CliCommand
+  case object IsEmpty extends CliCommand
   case class GetBalance(isSats: Boolean) extends CliCommand
+  case class GetConfirmedBalance(isSats: Boolean) extends CliCommand
+  case class GetUnconfirmedBalance(isSats: Boolean) extends CliCommand
+  case class GetAddressInfo(address: BitcoinAddress) extends CliCommand
 
   // Node
   case object GetPeers extends CliCommand
   case object Stop extends CliCommand
+  case class SendRawTransaction(tx: Transaction) extends CliCommand
 
   // Chain
   case object GetBestBlockHash extends CliCommand
@@ -405,7 +524,8 @@ object CliCommand {
       addressBatchSize: Option[Int],
       startBlock: Option[BlockStamp],
       endBlock: Option[BlockStamp],
-      force: Boolean)
+      force: Boolean,
+      ignoreCreationTime: Boolean)
       extends CliCommand
 
   // PSBT
