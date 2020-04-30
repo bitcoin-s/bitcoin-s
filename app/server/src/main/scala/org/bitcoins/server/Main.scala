@@ -61,7 +61,13 @@ object Main extends App {
     node <- initializeNode(uninitializedNode, wallet)
 
     _ <- node.start()
-    _ = logger.info(s"Starting SPV node sync")
+    _ = if (nodeConf.isSPVEnabled) {
+      logger.info(s"Starting SPV node sync")
+    } else if (nodeConf.isNeutrinoEnabled) {
+      logger.info(s"Starting neutrino node sync")
+    } else {
+      logger.info(s"Starting unknown type of node sync")
+    }
     _ <- node.sync()
     chainApi <- node.chainApiFromDb()
     start <- {
