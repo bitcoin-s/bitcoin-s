@@ -887,10 +887,25 @@ sealed trait P2PKWithTimeoutScriptPubKey extends RawScriptPubKey {
   lazy val pubKey: ECPublicKey =
     ECPublicKey.fromBytes(asm(2).bytes)
 
-  lazy val lockTime: ScriptNumber = ScriptNumber.fromBytes(asm(5).bytes)
+  private lazy val smallCSVOpt: Option[Long] = {
+    asm(4) match {
+      case num: ScriptNumberOperation => Some(num.toLong)
+      case _: ScriptToken             => None
+    }
+  }
 
-  lazy val timeoutPubKey: ECPublicKey =
-    ECPublicKey.fromBytes(asm(9).bytes)
+  lazy val lockTime: ScriptNumber = {
+    smallCSVOpt
+      .map(ScriptNumber.apply)
+      .getOrElse(ScriptNumber(asm(5).bytes))
+  }
+
+  lazy val timeoutPubKey: ECPublicKey = {
+    smallCSVOpt match {
+      case Some(_) => ECPublicKey.fromBytes(asm(8).bytes)
+      case None    => ECPublicKey.fromBytes(asm(9).bytes)
+    }
+  }
 }
 
 object P2PKWithTimeoutScriptPubKey
@@ -930,18 +945,35 @@ object P2PKWithTimeoutScriptPubKey
   }
 
   def isP2PKWithTimeoutScriptPubKey(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.length == 12) {
-      val pubKey = ECPublicKey.fromBytes(asm(2).bytes)
-      val lockTimeTry = Try(ScriptNumber.fromBytes(asm(5).bytes))
-      val timeoutPubKey = ECPublicKey.fromBytes(asm(9).bytes)
-
-      lockTimeTry match {
-        case Success(lockTime) =>
-          asm == P2PKWithTimeoutScriptPubKey(pubKey, lockTime, timeoutPubKey).asm
-        case Failure(_) => false
-      }
-    } else {
+    if (asm.length < 5) {
       false
+    } else {
+      val (smallCSVOpt, requiredSize) = asm(4) match {
+        case num: ScriptNumberOperation => (Some(num.toLong), 11)
+        case _: ScriptToken             => (None, 12)
+      }
+
+      if (asm.length == requiredSize) {
+        val pubKey = ECPublicKey.fromBytes(asm(2).bytes)
+
+        val lockTimeTry = smallCSVOpt match {
+          case Some(num) => Success(ScriptNumber(num))
+          case None      => Try(ScriptNumber.fromBytes(asm(5).bytes))
+        }
+
+        val timeoutPubKey = smallCSVOpt match {
+          case Some(_) => ECPublicKey.fromBytes(asm(8).bytes)
+          case None    => ECPublicKey.fromBytes(asm(9).bytes)
+        }
+
+        lockTimeTry match {
+          case Success(lockTime) =>
+            asm == P2PKWithTimeoutScriptPubKey(pubKey, lockTime, timeoutPubKey).asm
+          case Failure(_) => false
+        }
+      } else {
+        false
+      }
     }
   }
 }
@@ -1030,7 +1062,7 @@ object ScriptPubKey extends ScriptFactory[ScriptPubKey] {
     if (nonWitnessScriptPubKey
           .isInstanceOf[NonStandardScriptPubKey] && WitnessScriptPubKey
           .isWitnessScriptPubKey(asm)) {
-      WitnessScriptPubKey(asm).get
+      WitnessScriptPubKey(asm)
     } else {
       nonWitnessScriptPubKey
     }
@@ -1047,7 +1079,7 @@ sealed trait WitnessScriptPubKey extends ScriptPubKey {
   def witnessVersion = WitnessVersion(asm.head)
 }
 
-object WitnessScriptPubKey {
+object WitnessScriptPubKey extends ScriptFactory[WitnessScriptPubKey] {
 
   /** Witness scripts must begin with one of these operations, see
     * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP141]] */
@@ -1071,16 +1103,18 @@ object WitnessScriptPubKey {
 
   val unassignedWitVersions = validWitVersions.tail
 
-  def apply(asm: Seq[ScriptToken]): Option[WitnessScriptPubKey] = fromAsm(asm)
+  def apply(asm: Seq[ScriptToken]): WitnessScriptPubKey = fromAsm(asm)
 
-  def fromAsm(asm: Seq[ScriptToken]): Option[WitnessScriptPubKey] = asm match {
+  def fromAsm(asm: Seq[ScriptToken]): WitnessScriptPubKey = asm match {
     case _ if P2WPKHWitnessSPKV0.isValid(asm) =>
-      Some(P2WPKHWitnessSPKV0.fromAsm(asm))
+      P2WPKHWitnessSPKV0.fromAsm(asm)
     case _ if P2WSHWitnessSPKV0.isValid(asm) =>
-      Some(P2WSHWitnessSPKV0.fromAsm(asm))
+      P2WSHWitnessSPKV0.fromAsm(asm)
     case _ if WitnessScriptPubKey.isWitnessScriptPubKey(asm) =>
-      Some(UnassignedWitnessScriptPubKey(asm))
-    case _ => None
+      UnassignedWitnessScriptPubKey(asm)
+    case _ =>
+      throw new IllegalArgumentException(
+        "Given asm was not a WitnessScriptPubKey, got: " + asm)
   }
 
   /**

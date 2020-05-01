@@ -55,6 +55,8 @@ lazy val `bitcoin-s` = project
     cryptoTest,
     dbCommons,
     dbCommonsTest,
+    dlc,
+    dlcTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -235,6 +237,7 @@ lazy val appServer = project
     node,
     chain,
     wallet,
+    dlc,
     bitcoindRpc
   )
 
@@ -251,7 +254,8 @@ lazy val cli = project
   .in(file("app/cli"))
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(
-    appCommons
+    appCommons,
+    dlc
   )
 
 lazy val cliTest = project
@@ -299,7 +303,7 @@ lazy val dbCommons = project
     name := "bitcoin-s-db-commons",
     libraryDependencies ++= Deps.dbCommons
   )
-  .dependsOn(core)
+  .dependsOn(core, dlc)
 
 lazy val dbCommonsTest = project
   .in(file("db-commons-test"))
@@ -396,7 +400,8 @@ lazy val testkit = project
     eclairRpc,
     node,
     wallet,
-    zmq
+    zmq,
+    dlc
   )
 
 lazy val docs = project
@@ -436,7 +441,7 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(core, appCommons, dbCommons, keyManager)
+  .dependsOn(core, appCommons, dbCommons, dlc, keyManager)
   .enablePlugins(FlywayPlugin)
 
 lazy val walletTest = project
@@ -449,6 +454,29 @@ lazy val walletTest = project
   )
   .dependsOn(core % testAndCompile, testkit, wallet)
   .enablePlugins(FlywayPlugin)
+
+lazy val dlc = project
+  .in(file("dlc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc",
+    // version number needed for MicroJson
+    libraryDependencies ++= Deps.dlc(scalaVersion.value)
+  )
+  .dependsOn(core, appCommons)
+
+lazy val dlcTest = project
+  .in(file("dlc-test"))
+  .settings(CommonSettings.testSettings: _*)
+  .settings(
+    name := "bitcoin-s-dlc-test",
+    libraryDependencies ++= Deps.dlcTest
+  )
+  .dependsOn(
+    core % testAndCompile,
+    testkit,
+    dlc
+  )
 
 /** Given a database name, returns the appropriate
   * Flyway settings we apply to a project (chain, node, wallet) */

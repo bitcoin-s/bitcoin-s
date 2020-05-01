@@ -857,6 +857,19 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       .flatMap(node.getBlockWithTransactions)
   }
 
+  /** Mines blocks until the specified block height. */
+  def waitUntilBlock(
+      blockHeight: Int,
+      client: BitcoindRpcClient,
+      addressForMining: BitcoinAddress)(
+      implicit ec: ExecutionContext): Future[Unit] = {
+    for {
+      currentCount <- client.getBlockCount
+      blocksToMine = blockHeight - currentCount
+      _ <- client.generateToAddress(blocks = blocksToMine, addressForMining)
+    } yield ()
+  }
+
   /**
     * Produces a confirmed transaction from `sender` to `address`
     * for `amount`

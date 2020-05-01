@@ -171,6 +171,15 @@ object Deps {
     Compile.scodec
   )
 
+  // version number needed for MicroJson
+  def dlc(scalaVersion: String) = List(
+    Compile.playJson,
+    if (scalaVersion.startsWith("2.11")) Compile.oldMicroJson
+    else Compile.newMicroJson
+  )
+
+  val dlcTest = List()
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface

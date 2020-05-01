@@ -502,28 +502,8 @@ case class PSBT(
       inputIndex: Int): PSBT =
     addSignature(PartialSignature(pubKey, sig), inputIndex)
 
-  def addSignature(
-      partialSignature: PartialSignature,
-      inputIndex: Int): PSBT = {
-    require(
-      inputIndex < inputMaps.size,
-      s"index must be less than the number of input maps present in the psbt, $inputIndex >= ${inputMaps.size}")
-    require(
-      !inputMaps(inputIndex).isFinalized,
-      s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
-    require(
-      !inputMaps(inputIndex).partialSignatures
-        .exists(_.pubKey == partialSignature.pubKey),
-      s"Input has already been signed by ${partialSignature.pubKey}"
-    )
-
-    val newElements = inputMaps(inputIndex).elements :+ partialSignature
-
-    val newInputMaps =
-      inputMaps.updated(inputIndex, InputPSBTMap(newElements))
-
-    PSBT(globalMap, newInputMaps, outputMaps)
-  }
+  def addSignature(partialSignature: PartialSignature, inputIndex: Int): PSBT =
+    addSignatures(Vector(partialSignature), inputIndex)
 
   /** Adds all the PartialSignatures to the input map at the given index */
   def addSignatures(

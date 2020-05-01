@@ -147,7 +147,7 @@ sealed trait P2SHScriptSignature extends ScriptSignature {
       //if we have an EmptyScriptSignature, we need to check if the rest of the asm
       //is a Witness script. It is not necessarily a witness script, since this code
       //path might be used for signing a normal p2sh spk in TransactionSignatureSerializer
-      WitnessScriptPubKey(asm.tail).get
+      WitnessScriptPubKey(asm.tail)
     } else {
       ScriptPubKey.fromAsmBytes(asm.last.bytes)
     }

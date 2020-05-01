@@ -35,9 +35,8 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
     val witnessProgram = Seq(ScriptConstant(pubKeyHash.bytes))
     val asm = OP_0 +: BytesToPushOntoStack(20) +: witnessProgram
     val witnessScriptPubKey = WitnessScriptPubKey(asm)
-    witnessScriptPubKey.isDefined must be(true)
-    witnessScriptPubKey.get.witnessVersion must be(WitnessVersion0)
-    witnessScriptPubKey.get.witnessProgram must be(witnessProgram)
+    witnessScriptPubKey.witnessVersion must be(WitnessVersion0)
+    witnessScriptPubKey.witnessProgram must be(witnessProgram)
   }
 
   it must "determine the correct descriptors" in {

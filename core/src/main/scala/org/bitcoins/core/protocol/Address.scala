@@ -122,6 +122,9 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     //require(verifyChecksum(hrp, data), "checksum did not pass")
   }
 
+  def empty(network: NetworkParameters = MainNet): Bech32Address =
+    fromScriptPubKey(P2WSHWitnessSPKV0(EmptyScriptPubKey), network).get
+
   def apply(
       witSPK: WitnessScriptPubKey,
       networkParameters: NetworkParameters): Bech32Address = {
@@ -163,14 +166,15 @@ object Bech32Address extends AddressFactory[Bech32Address] {
         val pushOp = BitcoinScriptUtil.calculatePushOp(progBytes)
         witVersion match {
           case Some(v) =>
-            val witSPK = WitnessScriptPubKey(
-              List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes)))
+            val witSPK = Try(
+              WitnessScriptPubKey(
+                List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes))))
             witSPK match {
-              case Some(spk) => Success(spk)
-              case None =>
+              case Success(spk) => Success(spk)
+              case Failure(err) =>
                 Failure(
                   new IllegalArgumentException(
-                    "Failed to decode bech32 into a witSPK"))
+                    "Failed to decode bech32 into a witSPK: " + err.getMessage))
             }
           case None =>
             Failure(

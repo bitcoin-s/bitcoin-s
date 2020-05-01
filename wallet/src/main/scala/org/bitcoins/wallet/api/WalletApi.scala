@@ -3,12 +3,15 @@ package org.bitcoins.wallet.api
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
@@ -19,16 +22,12 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.{
-  AesPassword,
-  DoubleSha256Digest,
-  DoubleSha256DigestBE
-}
+import org.bitcoins.crypto._
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.wallet.models.{AccountDb, AddressDb, DLCDb, SpendingInfoDb}
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,8 +53,15 @@ trait WalletApi extends WalletLogger {
 
   def networkParameters: NetworkParameters = walletConfig.network
 
+  def decodeRawTransaction(tx: Transaction): String =
+    SerializedTransaction.decodeRawTransaction(tx)
+
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
+
+  // TODO calculate one based off relevant data
+  /** Gives a fee Rate to use for transactions if one is not specified */
+  def getFeeRate: FeeUnit = Policy.defaultFeeRate
 
   /**
     * Retrieves a bloom filter that that can be sent to a P2P network node
@@ -474,6 +480,65 @@ trait WalletApi extends WalletLogger {
       tx <- sendWithAlgo(address, amount, feeRate, algo, account)
     } yield tx
   }
+
+  def createDLCOffer(
+      oracleInfo: OracleInfo,
+      contractInfo: ContractInfo,
+      collateral: Satoshis,
+      feeRateOpt: Option[FeeUnit],
+      locktime: UInt32,
+      refundLT: UInt32): Future[DLCOffer]
+
+  def registerDLCOffer(dlcOffer: DLCOffer): Future[DLCOffer] = {
+    createDLCOffer(
+      dlcOffer.oracleInfo,
+      dlcOffer.contractInfo,
+      dlcOffer.totalCollateral,
+      Some(dlcOffer.feeRate),
+      dlcOffer.timeouts.contractMaturity.toUInt32,
+      dlcOffer.timeouts.contractTimeout.toUInt32
+    )
+  }
+
+  def acceptDLCOffer(dlcOffer: DLCOffer): Future[DLCAccept]
+
+  def signDLC(accept: DLCAccept): Future[DLCSign]
+
+  def addDLCSigs(sigs: DLCSign): Future[DLCDb]
+
+  def initDLCMutualClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig]
+
+  def acceptDLCMutualClose(
+      mutualCloseSig: DLCMutualCloseSig): Future[Transaction]
+
+  def getDLCFundingTx(eventId: Sha256DigestBE): Future[Transaction]
+
+  def executeDLCUnilateralClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[
+    (Transaction, Option[Transaction])]
+
+  def executeRemoteUnilateralDLC(
+      eventId: Sha256DigestBE,
+      cet: Transaction): Future[Option[Transaction]]
+
+  def executeDLCForceClose(
+      eventId: Sha256DigestBE,
+      oracleSig: SchnorrDigitalSignature): Future[
+    (Transaction, Option[Transaction])]
+
+  def claimDLCRemoteFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Option[Transaction]]
+
+  def executeDLCRefund(
+      eventId: Sha256DigestBE): Future[(Transaction, Option[Transaction])]
+
+  def claimDLCPenaltyFunds(
+      eventId: Sha256DigestBE,
+      forceCloseTx: Transaction): Future[Option[Transaction]]
 
   /**
     *
