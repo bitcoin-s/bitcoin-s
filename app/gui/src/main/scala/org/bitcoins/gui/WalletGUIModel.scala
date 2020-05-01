@@ -48,7 +48,8 @@ class WalletGUIModel() {
           op = {
             ConsoleCli.exec(SendToAddress(BitcoinAddress.fromString(address),
                                           Bitcoins(BigDecimal(amount)),
-                                          satoshisPerVirtualByte = None),
+                                          satoshisPerVirtualByte = None,
+                                          noBroadcast = false),
                             Config.empty) match {
               case Success(txid) =>
                 GlobalData.log.value =
