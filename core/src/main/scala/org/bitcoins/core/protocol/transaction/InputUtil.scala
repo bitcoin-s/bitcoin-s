@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.{
   CLTVScriptPubKey,
   CSVScriptPubKey,
@@ -55,7 +56,7 @@ object InputUtil {
     */
   def calcSequenceForInputs(
       utxos: Seq[InputSigningInfo[InputInfo]],
-      isRBFEnabled: Boolean): Seq[TransactionInput] = {
+      defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
     @tailrec
     def loop(
         remaining: Seq[InputSigningInfo[InputInfo]],
@@ -75,13 +76,10 @@ object InputUtil {
               loop(newRemaining, input +: accum)
             case p2pkWithTimeout: P2PKWithTimeoutInputInfo =>
               if (p2pkWithTimeout.isBeforeTimeout) {
-                val sequence =
-                  if (isRBFEnabled) UInt32.zero
-                  else TransactionConstants.sequence
                 val input =
                   TransactionInput(spendingInfo.outPoint,
                                    EmptyScriptSignature,
-                                   sequence)
+                                   defaultSequence)
                 loop(newRemaining, input +: accum)
               } else {
                 val sequence = solveSequenceForCSV(
@@ -106,15 +104,11 @@ object InputUtil {
             case _: P2WPKHV0InputInfo | _: UnassignedSegwitNativeInputInfo |
                 _: P2PKInputInfo | _: P2PKHInputInfo |
                 _: MultiSignatureInputInfo | _: EmptyInputInfo =>
-              //none of these script types affect the sequence number of a tx
-              //the sequence only needs to be adjustd if we have replace by fee (RBF) enabled
-              //see BIP125 for more information
-              val sequence =
-                if (isRBFEnabled) UInt32.zero else TransactionConstants.sequence
+              //none of these script types affect the sequence number of a tx so the defaultSequence is used
               val input =
                 TransactionInput(spendingInfo.outPoint,
                                  EmptyScriptSignature,
-                                 sequence)
+                                 defaultSequence)
               loop(newRemaining, input +: accum)
           }
       }
