@@ -8,7 +8,8 @@ object Deps {
     val scalacheck = "1.14.3"
     val scalaTest = "3.2.0"
 
-    val scalaTestPlus = "3.2.0.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
+    val scalaTestPlus =
+      "3.2.0.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
     val spray = "1.3.5"
     val zeromq = "0.5.2"
@@ -56,29 +57,59 @@ object Deps {
 
   object Compile {
 
-    val bouncycastle = "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
-    val scodec = "org.scodec" %% "scodec-bits" % V.scodecV withSources () withJavadoc ()
-    val slf4j = "org.slf4j" % "slf4j-api" % V.slf4j % "provided" withSources () withJavadoc ()
-    val zeromq = "org.zeromq" % "jeromq" % V.zeromq withSources () withJavadoc ()
-    val akkaHttp = "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
-    val akkaStream = "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
-    val akkaActor = "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
+    val bouncycastle =
+      "org.bouncycastle" % "bcprov-jdk15on" % V.bouncyCastle withSources () withJavadoc ()
 
-    val scalaFx = "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
+    val scodec =
+      "org.scodec" %% "scodec-bits" % V.scodecV withSources () withJavadoc ()
+
+    val slf4j =
+      "org.slf4j" % "slf4j-api" % V.slf4j % "provided" withSources () withJavadoc ()
+
+    val zeromq =
+      "org.zeromq" % "jeromq" % V.zeromq withSources () withJavadoc ()
+
+    val akkaHttp =
+      "com.typesafe.akka" %% "akka-http" % V.akkav withSources () withJavadoc ()
+
+    val akkaStream =
+      "com.typesafe.akka" %% "akka-stream" % V.akkaStreamv withSources () withJavadoc ()
+
+    val akkaActor =
+      "com.typesafe.akka" %% "akka-actor" % V.akkaStreamv withSources () withJavadoc ()
+
+    val scalaFx =
+      "org.scalafx" %% "scalafx" % V.scalaFxV withSources () withJavadoc ()
+
     lazy val osName = System.getProperty("os.name") match {
       case n if n.startsWith("Linux")   => "linux"
       case n if n.startsWith("Mac")     => "mac"
       case n if n.startsWith("Windows") => "win"
       case _                            => throw new Exception("Unknown platform!")
     }
+
     // Not sure if all of these are needed, some might be possible to remove
-    lazy val javaFxBase = "org.openjfx" % s"javafx-base" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxControls = "org.openjfx" % s"javafx-controls" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxFxml = "org.openjfx" % s"javafx-fxml" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxGraphics = "org.openjfx" % s"javafx-graphics" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxMedia = "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxSwing = "org.openjfx" % s"javafx-swing" % V.javaFxV classifier osName withSources () withJavadoc ()
-    lazy val javaFxWeb = "org.openjfx" % s"javafx-web" % V.javaFxV classifier osName withSources () withJavadoc ()
+    lazy val javaFxBase =
+      "org.openjfx" % s"javafx-base" % V.javaFxV classifier osName withSources () withJavadoc ()
+
+    lazy val javaFxControls =
+      "org.openjfx" % s"javafx-controls" % V.javaFxV classifier osName withSources () withJavadoc ()
+
+    lazy val javaFxFxml =
+      "org.openjfx" % s"javafx-fxml" % V.javaFxV classifier osName withSources () withJavadoc ()
+
+    lazy val javaFxGraphics =
+      "org.openjfx" % s"javafx-graphics" % V.javaFxV classifier osName withSources () withJavadoc ()
+
+    lazy val javaFxMedia =
+      "org.openjfx" % s"javafx-media" % V.javaFxV classifier osName withSources () withJavadoc ()
+
+    lazy val javaFxSwing =
+      "org.openjfx" % s"javafx-swing" % V.javaFxV classifier osName withSources () withJavadoc ()
+
+    lazy val javaFxWeb =
+      "org.openjfx" % s"javafx-web" % V.javaFxV classifier osName withSources () withJavadoc ()
+
     lazy val javaFxDeps = List(javaFxBase,
                                javaFxControls,
                                javaFxFxml,
@@ -87,16 +118,23 @@ object Deps {
                                javaFxSwing,
                                javaFxWeb)
 
-    val playJson = "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
-    val typesafeConfig = "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
+    val playJson =
+      "com.typesafe.play" %% "play-json" % V.playv withSources () withJavadoc ()
 
-    val logback = "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc ()
+    val typesafeConfig =
+      "com.typesafe" % "config" % V.typesafeConfigV withSources () withJavadoc ()
+
+    val logback =
+      "ch.qos.logback" % "logback-classic" % V.logback withSources () withJavadoc ()
     val codehaus = "org.codehaus.janino" % "janino" % V.codehausV
+
     //for loading secp256k1 natively
-    val nativeLoader = "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
+    val nativeLoader =
+      "org.scijava" % "native-lib-loader" % V.nativeLoaderV withSources () withJavadoc ()
 
     //node deps
-    val slick = "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
+    val slick =
+      "com.typesafe.slick" %% "slick" % V.slickV withSources () withJavadoc ()
     val slickHikari = "com.typesafe.slick" %% "slick-hikaricp" % V.slickV
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
@@ -115,26 +153,49 @@ object Deps {
     // HTTP client lib
     val sttp = "com.softwaremill.sttp" %% "core" % V.sttpV
 
-    val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
-    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
-    val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
-    val pgEmbedded = "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
+    val scalacheck =
+      "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
+
+    val scalaTest =
+      "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
+
+    val scalaTestPlus =
+      "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
+
+    val pgEmbedded =
+      "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
   }
 
   object Test {
-    val newAsync = "org.scala-lang.modules" %% "scala-async" % V.asyncNewScalaV % "test" withSources () withJavadoc ()
-    val junitInterface = "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
+
+    val newAsync =
+      "org.scala-lang.modules" %% "scala-async" % V.asyncNewScalaV % "test" withSources () withJavadoc ()
+
+    val junitInterface =
+      "com.novocode" % "junit-interface" % V.junitV % "test" withSources () withJavadoc ()
     val logback = Compile.logback % "test"
     val scalacheck = Compile.scalacheck % "test"
     val scalaTest = Compile.scalaTest % "test"
     val scalaMock = "org.scalamock" %% "scalamock" % V.scalamockV
-    val spray = "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
-    val akkaHttp = "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
-    val akkaStream = "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
+
+    val spray =
+      "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
+
+    val akkaHttp =
+      "com.typesafe.akka" %% "akka-http-testkit" % V.akkav % "test" withSources () withJavadoc ()
+
+    val akkaStream =
+      "com.typesafe.akka" %% "akka-stream-testkit" % V.akkaStreamv % "test" withSources () withJavadoc ()
     val playJson = Compile.playJson % "test"
-    val akkaTestkit = "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
-    val scalameter = "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
-    val pgEmbedded = "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
+
+    val akkaTestkit =
+      "com.typesafe.akka" %% "akka-testkit" % V.akkaActorV withSources () withJavadoc ()
+
+    val scalameter =
+      "com.storm-enroute" %% "scalameter" % V.scalameterV % "test" withSources () withJavadoc ()
+
+    val pgEmbedded =
+      "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV % "test" withSources () withJavadoc ()
   }
 
   val chain = List(
@@ -145,11 +206,12 @@ object Deps {
     Test.pgEmbedded
   )
 
-  def appCommons(scalaVersion: String) = List(
-    Compile.newMicroPickle,
-    Compile.playJson,
-    Compile.slf4j
-  )
+  def appCommons(scalaVersion: String) =
+    List(
+      Compile.newMicroPickle,
+      Compile.playJson,
+      Compile.slf4j
+    )
 
   val core = List(
     Compile.bouncycastle,
@@ -161,6 +223,14 @@ object Deps {
     Compile.bouncycastle,
     Compile.scodec
   )
+
+  // version number needed for MicroJson
+  val dlc = List(
+    Compile.playJson,
+    Compile.newMicroJson
+  )
+
+  val dlcTest = List()
 
   val secp256k1jni = List(
     Compile.nativeLoader,
@@ -193,14 +263,15 @@ object Deps {
     Compile.typesafeConfig
   )
 
-  def bitcoindRpcTest(scalaVersion: String) = List(
-    Test.akkaHttp,
-    Test.akkaStream,
-    Test.logback,
-    Test.scalaTest,
-    Test.scalacheck,
-    Test.newAsync
-  )
+  def bitcoindRpcTest(scalaVersion: String) =
+    List(
+      Test.akkaHttp,
+      Test.akkaStream,
+      Test.logback,
+      Test.scalaTest,
+      Test.scalacheck,
+      Test.newAsync
+    )
 
   val bench = List(
     "org.slf4j" % "slf4j-api" % V.slf4j withSources () withJavadoc (),
@@ -219,24 +290,32 @@ object Deps {
     Test.pgEmbedded
   )
 
-  def cli(scalaVersion: String) = List(
-    Compile.sttp,
-    Compile.newMicroPickle,
-    Compile.logback,
-    Compile.scopt,
-    //we can remove this dependency when this is fixed
-    //https://github.com/oracle/graal/issues/1943
-    //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
-    Compile.codehaus
-  )
+  def cli(scalaVersion: String) =
+    List(
+      Compile.sttp,
+      Compile.newMicroPickle,
+      Compile.logback,
+      Compile.scopt,
+      //we can remove this dependency when this is fixed
+      //https://github.com/oracle/graal/issues/1943
+      //see https://github.com/bitcoin-s/bitcoin-s/issues/1100
+      Compile.codehaus
+    )
 
   val gui = List(Compile.scalaFx) ++ Compile.javaFxDeps
 
-  def server(scalaVersion: String) = List(
-    Compile.newMicroPickle,
-    Compile.logback,
-    Compile.akkaActor,
-    Compile.akkaHttp
+  def server(scalaVersion: String) =
+    List(
+      Compile.newMicroPickle,
+      Compile.logback,
+      Compile.akkaActor,
+      Compile.akkaHttp
+    )
+
+  val dlcSuredbitsClient = List(
+    Compile.akkaStream,
+    Compile.akkaHttp,
+    Compile.playJson
   )
 
   val eclairRpc = List(
@@ -288,19 +367,21 @@ object Deps {
     Test.akkaTestkit
   )
 
-  def keyManager(scalaVersion: String) = List(
-    Compile.newMicroJson
-  )
+  def keyManager(scalaVersion: String) =
+    List(
+      Compile.newMicroJson
+    )
 
   val keyManagerTest = List(
     Compile.slf4j,
     Test.logback
   )
 
-  def wallet(scalaVersion: String) = List(
-    Compile.newMicroJson,
-    Compile.logback
-  )
+  def wallet(scalaVersion: String) =
+    List(
+      Compile.newMicroJson,
+      Compile.logback
+    )
 
   val walletTest = List(
     Test.akkaTestkit,

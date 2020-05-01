@@ -4,13 +4,21 @@ import java.time.{ZoneId, ZonedDateTime}
 
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
+import org.bitcoins.commons.jsonmodels.dlc.{
+  CETSignatures,
+  DLCPublicKeys,
+  DLCTimeouts,
+  FundingSignatures
+}
 import org.bitcoins.core.Core
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd._
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.{
   BlockHash,
   BlockHeight,
@@ -19,16 +27,18 @@ import org.bitcoins.core.protocol.BlockStamp.{
 }
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
+import org.bitcoins.core.protocol.{
+  Bech32Address,
+  BitcoinAddress,
+  BlockStamp,
+  P2PKHAddress
+}
+import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.crypto.{
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto._
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.MockWalletApi
 import org.bitcoins.wallet.models._
@@ -39,8 +49,11 @@ import ujson.Value.InvalidData
 import ujson._
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
+
+  implicit val timeout: RouteTestTimeout = RouteTestTimeout(5.seconds)
 
   // the genesis address
   val testAddressStr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
@@ -481,6 +494,217 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
     }
 
+    val oracleInfoStr =
+      "6374dfae2e50d01752a44943b4b6990043f2880275d5d681903ea4ee35f58603bd6a790503e4068f8629b15ac13b25200632f6a6e4f6880b81f23b1d129b52b1"
+
+    val contractInfo = ContractInfo(
+      "ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f5628813000000000000e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea8813000000000000")
+
+    val contractInfoDigests =
+      Vector("ffbbcde836cee437a2fa4ef7db1ea3d79ca71c0c821d2a197dda51bc6534f562",
+             "e770f42c578084a4a096ce1085f7fe508f8d908d2c5e6e304b2c3eab9bc973ea")
+
+    val contractMaturity = 1580323752
+    val contractTimeout = 1581323752
+
+    val dummyKey = ECPublicKey(
+      "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919")
+    val dummyKey2 = ECPublicKey(
+      "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b918")
+
+    val dummyPartialSig = PartialSignature(
+      ECPublicKey(
+        "024c6eb53573aae186dbb1a93274cc00c795473d7cfe2cb69e7d185ee28a39b919"),
+      DummyECDigitalSignature)
+
+    lazy val winHash: Sha256DigestBE =
+      CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
+
+    lazy val loseHash: Sha256DigestBE =
+      CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
+
+    lazy val dummyOutcomeSigs: Map[Sha256DigestBE, PartialSignature] =
+      Map(winHash -> dummyPartialSig, loseHash -> dummyPartialSig)
+
+    val dummyAddress = "bc1quq29mutxkgxmjfdr7ayj3zd9ad0ld5mrhh89l2"
+
+    val dummyDLCKeys =
+      DLCPublicKeys(dummyKey, dummyKey2, BitcoinAddress(dummyAddress))
+
+    val eventId = Sha256DigestBE(
+      "de462f212d95ca4cf5db54eee08f14be0ee934e9ecfc6e9b7014ecfa51ba7b66")
+
+    "create a dlc offer" in {
+
+      (mockWalletApi
+        .createDLCOffer(_: OracleInfo,
+                        _: ContractInfo,
+                        _: Satoshis,
+                        _: Option[SatoshisPerVirtualByte],
+                        _: UInt32,
+                        _: UInt32))
+        .expects(
+          OracleInfo(oracleInfoStr),
+          contractInfo,
+          Satoshis(2500),
+          Some(SatoshisPerVirtualByte(Satoshis.one)),
+          UInt32(contractMaturity),
+          UInt32(contractTimeout)
+        )
+        .returning(Future.successful(DLCOffer(
+          contractInfo,
+          OracleInfo(oracleInfoStr),
+          dummyDLCKeys,
+          Satoshis(2500),
+          Vector(EmptyOutputReference, EmptyOutputReference),
+          Bech32Address.fromString(dummyAddress),
+          SatoshisPerVirtualByte.one,
+          DLCTimeouts(DLCTimeouts.DEFAULT_PENALTY_TIMEOUT,
+                      BlockStamp(contractMaturity),
+                      BlockStamp(contractTimeout))
+        )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand(
+          "createdlcoffer",
+          Arr(
+            Str(oracleInfoStr),
+            Str(contractInfo.hex),
+            Num(2500),
+            Num(1),
+            Num(contractMaturity),
+            Num(contractTimeout),
+            Bool(true)
+          )
+        ))
+
+      Post() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == s"""{"result":"\\"{\\\\\\"contractInfo\\\\\\":[{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.head.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.head.toLong}},{\\\\\\"sha256\\\\\\":\\\\\\"${contractInfo.keys.last.hex}\\\\\\",\\\\\\"sats\\\\\\":${contractInfo.values.last.toLong}}],\\\\\\"oracleInfo\\\\\\":\\\\\\"$oracleInfoStr\\\\\\",\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"toLocalCETKey\\\\\\":\\\\\\"${dummyKey2.hex}\\\\\\",\\\\\\"finalAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"totalCollateral\\\\\\":2500,\\\\\\"fundingInputs\\\\\\":[{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"},{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"feeRate\\\\\\":1,\\\\\\"timeouts\\\\\\":{\\\\\\"penalty\\\\\\":5,\\\\\\"contractMaturity\\\\\\":$contractMaturity,\\\\\\"contractTimeout\\\\\\":$contractTimeout}}\\"","error":null}"""
+      }
+    }
+
+    "accept a dlc offer" in {
+      val offerStr =
+        s"""{"contractInfo":[{"sha256":"${contractInfoDigests.head}","sats":5},{"sha256":"${contractInfoDigests.last}","sats":4}],"oracleInfo":"$oracleInfoStr","pubKeys":{"fundingKey":"${dummyKey.hex}","toLocalCETKey":"${dummyKey2.hex}","toRemoteCETAddr":"$dummyAddress","finalAddress":"$dummyAddress"},"totalCollateral":10000000000,"fundingInputs":[{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000ffffffff","output":"ffffffffffffffff00"},{"outpoint":"0000000000000000000000000000000000000000000000000000000000000000ffffffff","output":"ffffffffffffffff00"}],"changeAddress":"$dummyAddress","feeRate":1,"timeouts":{"penalty":5,"contractMaturity":$contractMaturity,"contractTimeout":$contractTimeout}}"""
+
+      val sats = Satoshis.max
+
+      (mockWalletApi
+        .acceptDLCOffer(_: DLCOffer))
+        .expects(DLCOffer.fromJson(ujson.read(offerStr)))
+        .returning(
+          Future.successful(
+            DLCAccept(
+              sats,
+              dummyDLCKeys,
+              Vector(EmptyOutputReference),
+              Bech32Address
+                .fromString(dummyAddress),
+              CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+              eventId
+            ))
+        )
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("acceptdlcoffer", Arr(Str(offerStr), Bool(true))))
+
+      Post() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == s"""{"result":"\\"{\\\\\\"totalCollateral\\\\\\":${sats.toLong},\\\\\\"pubKeys\\\\\\":{\\\\\\"fundingKey\\\\\\":\\\\\\"${dummyKey.hex}\\\\\\",\\\\\\"toLocalCETKey\\\\\\":\\\\\\"${dummyKey2.hex}\\\\\\",\\\\\\"finalAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\"},\\\\\\"fundingInputs\\\\\\":[{\\\\\\"outpoint\\\\\\":\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\",\\\\\\"output\\\\\\":\\\\\\"${EmptyTransactionOutput.hex}\\\\\\"}],\\\\\\"changeAddress\\\\\\":\\\\\\"$dummyAddress\\\\\\",\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"eventId\\\\\\":\\\\\\"${eventId.hex}\\\\\\"}\\"","error":null}"""
+      }
+    }
+
+    "sign a dlc" in {
+      val acceptStr =
+        s"""{"totalCollateral":10000000000,"pubKeys":{"fundingKey":"${dummyKey.hex}","toLocalCETKey":"${dummyKey2.hex}","finalAddress":"$dummyAddress"},"fundingInputs":[{"outpoint":"${EmptyTransactionOutPoint.hex}","output":"${EmptyTransactionOutput.hex}"}],"changeAddress":"$dummyAddress","cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyPartialSig.hex}"},{"${loseHash.hex}":"${dummyPartialSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"eventId":"${eventId.hex}"}"""
+
+      (mockWalletApi
+        .signDLC(_: DLCAccept))
+        .expects(DLCAccept.fromJson(ujson.read(acceptStr)))
+        .returning(
+          Future.successful(
+            DLCSign(
+              CETSignatures(dummyOutcomeSigs, dummyPartialSig),
+              FundingSignatures(Vector(
+                (EmptyTransactionOutPoint, Vector(dummyPartialSig))).toMap),
+              eventId
+            )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("signdlc", Arr(Str(acceptStr), Bool(true))))
+
+      Post() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == s"""{"result":"\\"{\\\\\\"cetSigs\\\\\\":{\\\\\\"outcomeSigs\\\\\\":[{\\\\\\"${winHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},{\\\\\\"${loseHash.hex}\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"}],\\\\\\"refundSig\\\\\\":\\\\\\"${dummyPartialSig.hex}\\\\\\"},\\\\\\"fundingSigs\\\\\\":{\\\\\\"${EmptyTransactionOutPoint.hex}\\\\\\":[\\\\\\"${dummyPartialSig.hex}\\\\\\"]},\\\\\\"eventId\\\\\\":\\\\\\"${eventId.hex}\\\\\\"}\\"","error":null}"""
+      }
+    }
+
+    "add dlc sigs" in {
+      val sigsStr =
+        s"""{"cetSigs":{"outcomeSigs":[{"${winHash.hex}":"${dummyPartialSig.hex}"},{"${loseHash.hex}":"${dummyPartialSig.hex}"}],"refundSig":"${dummyPartialSig.hex}"},"fundingSigs":{"${EmptyTransactionOutPoint.hex}":["${dummyPartialSig.hex}"]},"eventId":"${eventId.hex}"}"""
+
+      (mockWalletApi
+        .addDLCSigs(_: DLCSign))
+        .expects(DLCSign.fromJson(ujson.read(sigsStr)))
+        .returning(Future.successful(DLCDb(
+          eventId = eventId,
+          isInitiator = false,
+          account = HDAccount(HDCoin(HDPurpose(89), HDCoinType.Testnet), 0),
+          keyIndex = 0,
+          refundSigOpt = Some(dummyPartialSig),
+          oracleSigOpt = None
+        )))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("adddlcsigs", Arr(Str(sigsStr))))
+
+      Post() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == s"""{"result":"Successfully added sigs to DLC ${eventId.hex}","error":null}"""
+      }
+    }
+
+    "get dlc funding tx" in {
+      (mockWalletApi
+        .getDLCFundingTx(_: Sha256DigestBE))
+        .expects(eventId)
+        .returning(Future.successful(EmptyTransaction))
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("getdlcfundingtx", Arr(Str(eventId.hex))))
+
+      Post() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[
+          String] == s"""{"result":"${EmptyTransaction.hex}","error":null}"""
+      }
+    }
+
+    "broadcast dlc funding tx" in {
+      (mockWalletApi
+        .getDLCFundingTx(_: Sha256DigestBE))
+        .expects(eventId)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockNode.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("broadcastdlcfundingtx", Arr(Str(eventId.hex))))
+
+      Post() ~> route ~> check {
+        contentType == `application/json`
+        responseAs[String] == s"""{"result":"${EmptyTransaction.txIdBE.hex}","error":null}"""
+      }
+    }
+
     "send to an address" in {
       // positive cases
 
@@ -496,7 +720,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Num(100), Num(4))))
+                      Arr(Str(testAddressStr), Num(100), Num(4), Bool(true))))
 
       Post() ~> route ~> check {
         contentType == `application/json`
@@ -506,7 +730,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       // negative cases
 
       val route1 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Null, Null, Null)))
+        ServerCommand("sendtoaddress", Arr(Null, Null, Null, Bool(false))))
 
       Post() ~> route1 ~> check {
         rejection == ValidationRejection(
@@ -515,7 +739,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
 
       val route2 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr("Null", Null, Null)))
+        ServerCommand("sendtoaddress", Arr("Null", Null, Null, Bool(false))))
 
       Post() ~> route2 ~> check {
         rejection == ValidationRejection(
@@ -524,7 +748,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       }
 
       val route3 = walletRoutes.handleCommand(
-        ServerCommand("sendtoaddress", Arr(Str(testAddressStr), Null, Null)))
+        ServerCommand("sendtoaddress",
+                      Arr(Str(testAddressStr), Null, Null, Bool(false))))
 
       Post() ~> route3 ~> check {
         rejection == ValidationRejection(
@@ -534,7 +759,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val route4 = walletRoutes.handleCommand(
         ServerCommand("sendtoaddress",
-                      Arr(Str(testAddressStr), Str("abc"), Null)))
+                      Arr(Str(testAddressStr), Str("abc"), Null, Bool(false))))
 
       Post() ~> route4 ~> check {
         rejection == ValidationRejection(

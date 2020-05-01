@@ -62,6 +62,12 @@ abstract class Wallet
   private[wallet] val outgoingTxDAO: OutgoingTransactionDAO =
     OutgoingTransactionDAO()
 
+  private[wallet] val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
+  private[wallet] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
+  private[wallet] val dlcDAO: DLCDAO = DLCDAO()
+  private[wallet] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
+  private[wallet] val dlcSigsDAO: DLCCETSignatureDAO = DLCCETSignatureDAO()
+
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
@@ -446,7 +452,7 @@ object Wallet extends WalletLogger {
   )(implicit
       override val walletConfig: WalletAppConfig,
       override val ec: ExecutionContext
-  ) extends Wallet
+  ) extends DLCWallet
 
   def apply(
       keyManager: BIP39KeyManager,

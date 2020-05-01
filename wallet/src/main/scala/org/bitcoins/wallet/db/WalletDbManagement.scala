@@ -2,14 +2,7 @@ package org.bitcoins.wallet.db
 
 import org.bitcoins.db.{DbManagement, JdbcProfileComponent}
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{
-  AccountDAO,
-  AddressDAO,
-  IncomingTransactionDAO,
-  OutgoingTransactionDAO,
-  SpendingInfoDAO,
-  TransactionDAO
-}
+import org.bitcoins.wallet.models._
 
 import scala.concurrent.ExecutionContext
 
@@ -44,13 +37,40 @@ trait WalletDbManagement extends DbManagement {
     OutgoingTransactionDAO()(ec, appConfig).table
   }
 
+  private lazy val dlcTable: TableQuery[Table[_]] = {
+    DLCDAO()(ec, appConfig).table
+  }
+
+  private lazy val dlcOfferTable: TableQuery[Table[_]] = {
+    DLCOfferDAO()(ec, appConfig).table
+  }
+
+  private lazy val dlcAcceptTable: TableQuery[Table[_]] = {
+    DLCAcceptDAO()(ec, appConfig).table
+  }
+
+  private lazy val dlcFundingInputsTable: TableQuery[Table[_]] = {
+    DLCFundingInputDAO()(ec, appConfig).table
+  }
+
+  private lazy val dlcCETSigTable: TableQuery[Table[_]] = {
+    DLCCETSignatureDAO()(ec, appConfig).table
+  }
+
   override lazy val allTables: List[TableQuery[Table[_]]] = {
-    List(accountTable,
-         addressTable,
-         txTable,
-         incomingTxTable,
-         utxoTable,
-         outgoingTxTable)
+    List(
+      accountTable,
+      addressTable,
+      utxoTable,
+      txTable,
+      incomingTxTable,
+      outgoingTxTable,
+      dlcTable,
+      dlcOfferTable,
+      dlcAcceptTable,
+      dlcFundingInputsTable,
+      dlcCETSigTable
+    )
   }
 
 }

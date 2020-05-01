@@ -52,7 +52,9 @@ case class BIP39KeyManager(
   private val privVersion: ExtKeyPrivVersion =
     HDUtil.getXprivVersion(kmParams.purpose, kmParams.network)
 
-  private val rootExtPrivKey = seed.toExtPrivateKey(privVersion)
+  /** FIXME Temporary public, should be private, This is still required to make the
+    * BinaryOutcomeDLCClient from the wallet, can change back to private val when we change the client to use a Sign instead */
+  val rootExtPrivKey: ExtPrivateKey = seed.toExtPrivateKey(privVersion)
 
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO

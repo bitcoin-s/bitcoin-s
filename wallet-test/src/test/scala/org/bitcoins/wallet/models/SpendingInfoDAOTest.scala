@@ -16,7 +16,8 @@ class SpendingInfoDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
   behavior of "SpendingInfoDAO"
 
   it must "be able to update multiple utxos" in { daos =>
-    val WalletDAOs(_, addressDAO, spendingInfoDAO, _, _, _) = daos
+    val WalletDAOs(_, addressDAO, spendingInfoDAO, _, _, _, _, _, _, _, _) =
+      daos
 
     for {
       account <- daos.accountDAO.create(WalletTestUtil.firstAccountDb)

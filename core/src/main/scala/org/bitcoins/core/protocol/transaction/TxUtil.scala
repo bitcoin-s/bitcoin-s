@@ -271,7 +271,7 @@ object TxUtil {
         import scala.concurrent.ExecutionContext.Implicits.global
         import scala.concurrent.duration.DurationInt
 
-        Await.result(TxUtil.addDummySigs(tx, inputInfos), 5.seconds)
+        Await.result(TxUtil.addDummySigs(tx, inputInfos), 10.seconds)
       }
 
       val actualFee = creditingAmount - spentAmount

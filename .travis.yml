@@ -45,7 +45,14 @@ jobs:
       env:
         - TEST_COMMAND="appCommonsTest/test appServerTest/test chainTest/test chain/coverageReport chain/coverageAggregate chain/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls cryptoTest/test crypto/coverageReport crypto/coverageAggregate crypto/coveralls coreTest/test core/coverageReport core/coverageAggregate core/coveralls secp256k1jni/test zmq/test zmq/coverageReport zmq/coverageAggregate zmq/coveralls"
       scala: 2.12.11
-
+      # In the future these should be removed as the tests will be broken up and put in other projects
+    - stage: test
+      name: Linux 2.13.2 DLC Tests
+      os: linux
+      env:
+        - CI="1"
+        - TEST_COMMAND="dlcTest/test"
+      scala: 2.13.2
     - stage: test
       name: Linux 2.13.2 KeyManager and Wallet tests
       os: linux
@@ -92,7 +99,13 @@ jobs:
         - CI="1"
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala: 2.13.2
-
+    - stage: test
+      os: osx
+      name: "macOS dlc tests"
+      env:
+        - CI="1"
+        - TEST_COMMAND="dlcTest/test dlc/coverageReport dlc/coverageAggregate dlc/coveralls"
+      scala: 2.13.2
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
     - stage: release
