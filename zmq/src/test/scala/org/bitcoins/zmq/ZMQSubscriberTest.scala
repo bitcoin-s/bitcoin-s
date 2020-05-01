@@ -2,7 +2,7 @@ package org.bitcoins.zmq
 
 import java.net.InetSocketAddress
 
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.scalatest.{AsyncFlatSpec, MustMatchers}
 import org.slf4j.LoggerFactory
 import org.zeromq.{ZFrame, ZMQ, ZMsg}

@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionOutput
 }
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**

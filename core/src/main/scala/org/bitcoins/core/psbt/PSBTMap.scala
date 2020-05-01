@@ -4,7 +4,7 @@ import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
+  NonWitnessTransaction,
   Transaction,
   TransactionInput,
   TransactionOutput,
@@ -657,7 +657,8 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       val scriptSig =
         FinalizedScriptSig(sigComponent.scriptSignature)
       sigComponent.transaction match {
-        case _: BaseTransaction => InputPSBTMap(utxos ++ Vector(scriptSig))
+        case _: NonWitnessTransaction =>
+          InputPSBTMap(utxos ++ Vector(scriptSig))
         case wtx: WitnessTransaction =>
           val witness = wtx.witness(sigComponent.inputIndex.toInt)
           val scriptWitness = FinalizedScriptWitness(witness)

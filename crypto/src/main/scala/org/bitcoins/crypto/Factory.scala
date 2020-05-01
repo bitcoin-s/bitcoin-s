@@ -9,10 +9,10 @@ import scodec.bits.ByteVector
 abstract class Factory[+T] {
 
   /** Creates a T out of a hex string. */
-  def fromHex(hex: String): T = fromBytes(BytesUtil.decodeHex(hex))
+  def fromHex(hex: String): T = fromBytes(CryptoBytesUtil.decodeHex(hex))
 
   /** Creates a T out of a hex string in little endian. */
-  def fromHexLE(hex: String): T = fromBytesLE(BytesUtil.decodeHex(hex))
+  def fromHexLE(hex: String): T = fromBytesLE(CryptoBytesUtil.decodeHex(hex))
 
   /** Creates a T out of a sequence of bytes. */
   def fromBytes(bytes: ByteVector): T

@@ -4,7 +4,7 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.utxo.ConditionalPath
-import org.bitcoins.crypto.{BytesUtil, ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
 import scala.util.{Failure, Success, Try}
 

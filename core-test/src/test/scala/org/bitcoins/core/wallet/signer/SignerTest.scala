@@ -39,7 +39,10 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.wallet.builder.{
+  NonInteractiveWithChangeFinalizer,
+  RawTxSigner
+}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   ECSignatureParams,
@@ -52,7 +55,6 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkit.core.gen.{
-  ChainParamsGenerator,
   CreditingTxGen,
   GenUtil,
   ScriptGenerators,
@@ -121,19 +123,19 @@ class SignerTest extends BitcoinSAsyncTest {
 
   it must "sign a mix of spks in a tx and then verify that single signing agrees" in {
     forAllAsync(CreditingTxGen.inputsAndOutputs(),
-                ScriptGenerators.scriptPubKey,
-                ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfos, destinations), changeSPK, network) =>
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
         for {
-          builder <- BitcoinTxBuilder(destinations,
-                                      creditingTxsInfos,
-                                      fee,
-                                      changeSPK._1,
-                                      network)
-          unsignedTx <- builder.unsignedTx
-          signedTx <- builder.sign
+          unsignedTx <- NonInteractiveWithChangeFinalizer.txFrom(
+            destinations,
+            creditingTxsInfos,
+            fee,
+            changeSPK)
+          signedTx <- RawTxSigner.sign(unsignedTx,
+                                       creditingTxsInfos.toVector,
+                                       fee)
 
           singleSigs: Vector[Vector[ECDigitalSignature]] <- {
             val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
@@ -257,18 +259,16 @@ class SignerTest extends BitcoinSAsyncTest {
 
   it must "sign p2wsh inputs correctly when provided no witness data" in {
     forAllAsync(CreditingTxGen.inputsAndOutputs(CreditingTxGen.p2wshOutputs),
-                ScriptGenerators.scriptPubKey,
-                ChainParamsGenerator.bitcoinNetworkParams) {
-      case ((creditingTxsInfos, destinations), changeSPK, network) =>
+                ScriptGenerators.scriptPubKey) {
+      case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(100))
 
         for {
-          builder <- BitcoinTxBuilder(destinations,
-                                      creditingTxsInfos,
-                                      fee,
-                                      changeSPK._1,
-                                      network)
-          unsignedTx <- builder.unsignedTx
+          unsignedTx <- NonInteractiveWithChangeFinalizer.txFrom(
+            destinations,
+            creditingTxsInfos,
+            fee,
+            changeSPK)
 
           singleSigs: Vector[Vector[PartialSignature]] <- {
             val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =

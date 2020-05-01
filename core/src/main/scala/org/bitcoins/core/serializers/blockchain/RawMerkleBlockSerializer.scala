@@ -4,7 +4,8 @@ import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.serializers.RawBitcoinSerializer
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.DoubleSha256Digest
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec

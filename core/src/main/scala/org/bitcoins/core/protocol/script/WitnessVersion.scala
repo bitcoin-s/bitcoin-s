@@ -3,13 +3,8 @@ package org.bitcoins.core.protocol.script
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.{
-  BytesUtil,
-  CryptoUtil,
-  Sha256Digest,
-  Sha256Hash160Digest
-}
+import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.crypto.{CryptoUtil, Sha256Digest, Sha256Hash160Digest}
 
 /**
   * Created by chris on 11/10/16.

@@ -3,7 +3,8 @@ package org.bitcoins.core.serializers.script
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.crypto.{BytesUtil, Factory}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.Factory
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

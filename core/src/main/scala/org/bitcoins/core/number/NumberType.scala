@@ -1,7 +1,7 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core.util.NumberUtil
-import org.bitcoins.crypto.{BytesUtil, Factory, NetworkElement}
+import org.bitcoins.core.util.{BytesUtil, NumberUtil}
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.{ByteOrdering, ByteVector}
 
 import scala.util.{Failure, Success, Try}

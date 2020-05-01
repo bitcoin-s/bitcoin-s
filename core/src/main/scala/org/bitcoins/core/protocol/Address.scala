@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol
+
 import org.bitcoins.core.config.{MainNet, TestNet3, _}
 import org.bitcoins.core.number.{UInt5, UInt8}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.util._
 import org.bitcoins.crypto.{
-  BytesUtil,
   CryptoUtil,
   ECPublicKey,
   HashDigest,

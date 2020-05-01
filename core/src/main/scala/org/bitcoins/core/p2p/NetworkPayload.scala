@@ -10,9 +10,9 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.serializers.p2p.messages._
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerKiloByte}
 import org.bitcoins.crypto.{
-  BytesUtil,
   DoubleSha256Digest,
   Factory,
   HashDigest,

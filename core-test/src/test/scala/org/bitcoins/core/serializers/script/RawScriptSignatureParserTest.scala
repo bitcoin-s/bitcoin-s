@@ -2,7 +2,7 @@ package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 

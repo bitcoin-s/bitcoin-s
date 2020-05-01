@@ -1,8 +1,8 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.config.{NetworkParameters, Networks}
-import org.bitcoins.core.util.Base58
-import org.bitcoins.crypto.{BytesUtil, CryptoUtil, ECPrivateKey}
+import org.bitcoins.core.util.{Base58, BytesUtil}
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}

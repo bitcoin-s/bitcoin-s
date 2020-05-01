@@ -2,8 +2,8 @@ package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.script.ScriptOperationFactory
-import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.crypto.{BytesUtil, Factory, NetworkElement}
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}

@@ -6,8 +6,7 @@ import org.bitcoins.core.script.{
 }
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 
 import scala.annotation.tailrec
 

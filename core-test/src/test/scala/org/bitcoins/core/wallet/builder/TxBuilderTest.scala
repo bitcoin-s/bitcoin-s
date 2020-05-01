@@ -1,29 +1,19 @@
 package org.bitcoins.core.wallet.builder
 
-import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
   EmptyScriptSignature,
-  NonStandardScriptPubKey
+  NonStandardScriptPubKey,
+  P2PKHScriptPubKey
 }
-import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
-  TransactionConstants,
-  TransactionInput,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo.{EmptyInputInfo, ScriptSignatureParams}
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.wallet.utxo.EmptyInputInfo
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
-
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 
 class TxBuilderTest extends BitcoinSUnitTest {
 
@@ -31,11 +21,11 @@ class TxBuilderTest extends BitcoinSUnitTest {
     val estimatedFee = 1000.sats
     val actualFee = 1.sat
     val feeRate = SatoshisPerVirtualByte(1.sat)
-    TxBuilder
+    Transaction
       .isValidFeeRange(estimatedFee, actualFee, feeRate)
       .isFailure must be(true)
 
-    TxBuilder
+    Transaction
       .isValidFeeRange(actualFee, estimatedFee, feeRate)
       .isFailure must be(true)
   }
@@ -51,19 +41,11 @@ class TxBuilderTest extends BitcoinSUnitTest {
                                    Vector(output),
                                    UInt32.zero)
 
-  private val txBuilderF = BitcoinTxBuilder(
-    Vector(output),
-    Vector(
-      ScriptSignatureParams(EmptyInputInfo(outPoint,
-                                           Bitcoins.one + Bitcoins.one),
-                            Vector.empty,
-                            HashType.sigHashAll)),
-    SatoshisPerVirtualByte(Satoshis.one),
-    EmptyScriptPubKey,
-    RegTest
-  )
+  private val changeSPK = P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
 
-  private val txBuilder = Await.result(txBuilderF, 5.seconds)
+  private val inputInfos = Vector(
+    EmptyInputInfo(outPoint, Bitcoins.one + Bitcoins.one))
+  private val feeRate = SatoshisPerVirtualByte(Satoshis.one)
 
   it must "detect a missing destination" in {
     val missingOutputTx = BaseTransaction(tx.version,
@@ -71,7 +53,13 @@ class TxBuilderTest extends BitcoinSUnitTest {
                                           Vector.empty[TransactionOutput],
                                           tx.lockTime)
 
-    assert(TxBuilder.sanityChecks(txBuilder, missingOutputTx).isFailure)
+    assert(
+      NonInteractiveWithChangeFinalizer
+        .sanityDestinationChecks(Vector(outPoint),
+                                 Vector(output),
+                                 changeSPK,
+                                 missingOutputTx)
+        .isFailure)
   }
 
   it must "detect extra outputs added" in {
@@ -81,7 +69,13 @@ class TxBuilderTest extends BitcoinSUnitTest {
                                         Vector(output, newOutput),
                                         tx.lockTime)
 
-    assert(TxBuilder.sanityChecks(txBuilder, extraOutputTx).isFailure)
+    assert(
+      NonInteractiveWithChangeFinalizer
+        .sanityDestinationChecks(Vector(outPoint),
+                                 Vector(output),
+                                 changeSPK,
+                                 extraOutputTx)
+        .isFailure)
   }
 
   it must "detect extra outpoints added" in {
@@ -94,7 +88,13 @@ class TxBuilderTest extends BitcoinSUnitTest {
                                           tx.outputs,
                                           tx.lockTime)
 
-    assert(TxBuilder.sanityChecks(txBuilder, extraOutPointTx).isFailure)
+    assert(
+      NonInteractiveWithChangeFinalizer
+        .sanityDestinationChecks(Vector(outPoint),
+                                 Vector(output),
+                                 changeSPK,
+                                 extraOutPointTx)
+        .isFailure)
   }
 
   it must "detect impossibly high fees" in {
@@ -102,7 +102,10 @@ class TxBuilderTest extends BitcoinSUnitTest {
     val highFeeTx =
       BaseTransaction(tx.version, tx.inputs, Vector(newOutput), tx.lockTime)
 
-    assert(TxBuilder.sanityAmountChecks(txBuilder, highFeeTx).isFailure)
+    assert(
+      Transaction
+        .sanityAmountChecks(forSigned = true, inputInfos, feeRate, highFeeTx)
+        .isFailure)
   }
 
   it must "detect dust outputs" in {
@@ -115,6 +118,9 @@ class TxBuilderTest extends BitcoinSUnitTest {
                                  Vector(ignoredOutput, newOutput),
                                  tx.lockTime)
 
-    assert(TxBuilder.sanityAmountChecks(txBuilder, dustTx).isFailure)
+    assert(
+      Transaction
+        .sanityAmountChecks(forSigned = true, inputInfos, feeRate, dustTx)
+        .isFailure)
   }
 }
