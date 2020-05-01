@@ -292,6 +292,13 @@ object DLCMessage {
     }
   }
 
+  case class DLCAcceptWithoutSigs(
+      totalCollateral: Satoshis,
+      pubKeys: DLCPublicKeys,
+      fundingInputs: Vector[OutputReference],
+      changeAddress: BitcoinAddress,
+      eventId: Sha256DigestBE)
+
   case class DLCAccept(
       totalCollateral: Satoshis,
       pubKeys: DLCPublicKeys,
@@ -333,6 +340,14 @@ object DLCMessage {
           "eventId" -> Str(eventId.hex)
         )
       )
+    }
+
+    def withoutSigs: DLCAcceptWithoutSigs = {
+      DLCAcceptWithoutSigs(totalCollateral,
+                           pubKeys,
+                           fundingInputs,
+                           changeAddress,
+                           eventId)
     }
   }
 

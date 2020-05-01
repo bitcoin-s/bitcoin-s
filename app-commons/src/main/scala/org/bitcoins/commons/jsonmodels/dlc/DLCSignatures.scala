@@ -15,6 +15,17 @@ case class FundingSignatures(
   override protected def wrapped: Map[
     TransactionOutPoint,
     Vector[PartialSignature]] = sigs
+
+  def merge(other: FundingSignatures): FundingSignatures = {
+    val outPoints = sigs.keys ++ other.keys
+    val combinedSigs = outPoints.map { outPoint =>
+      val thisSigs = sigs.get(outPoint).toVector.flatten
+      val otherSigs = other.get(outPoint).toVector.flatten
+      outPoint -> (thisSigs ++ otherSigs)
+    }
+
+    FundingSignatures(combinedSigs.toMap)
+  }
 }
 
 case class CETSignatures(

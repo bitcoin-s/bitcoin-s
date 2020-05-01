@@ -1,12 +1,15 @@
 package org.bitcoins.server
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage._
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import ujson._
 import upickle.default._
 
@@ -221,10 +224,16 @@ object Rescan extends ServerJsonModels {
 
 }
 
+trait Broadcastable {
+  def noBroadcast: Boolean
+}
+
 case class SendToAddress(
     address: BitcoinAddress,
     amount: Bitcoins,
-    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
+    noBroadcast: Boolean)
+    extends Broadcastable
 
 object SendToAddress extends ServerJsonModels {
 
@@ -232,14 +241,16 @@ object SendToAddress extends ServerJsonModels {
   // custom akka-http directive?
   def fromJsArr(jsArr: ujson.Arr): Try[SendToAddress] = {
     jsArr.arr.toList match {
-      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: Nil =>
+      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: noBroadcastJs :: Nil =>
         Try {
           val address = jsToBitcoinAddress(addrJs)
           val bitcoins = Bitcoins(bitcoinsJs.num)
           val satoshisPerVirtualByte =
             nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
               SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
-          SendToAddress(address, bitcoins, satoshisPerVirtualByte)
+          val noBroadcast = noBroadcastJs.bool
+
+          SendToAddress(address, bitcoins, satoshisPerVirtualByte, noBroadcast)
         }
       case Nil =>
         Failure(
@@ -249,10 +260,386 @@ object SendToAddress extends ServerJsonModels {
       case other =>
         Failure(
           new IllegalArgumentException(
-            s"Bad number of arguments: ${other.length}. Expected: 3"))
+            s"Bad number of arguments: ${other.length}. Expected: 4"))
     }
   }
 
+}
+
+trait JsonResponse {
+  def escaped: Boolean
+}
+
+case class CreateDLCOffer(
+    oracleInfo: OracleInfo,
+    contractInfo: ContractInfo,
+    collateral: Satoshis,
+    feeRateOpt: Option[SatoshisPerVirtualByte],
+    locktime: UInt32,
+    refundLocktime: UInt32,
+    escaped: Boolean)
+    extends JsonResponse
+
+object CreateDLCOffer extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[CreateDLCOffer] = {
+
+    jsArr.arr.toList match {
+      case oracleInfoJs :: contractInfoJs :: collateralJs :: feeRateOptJs :: locktimeJs :: refundLTJs :: escapedJs :: Nil =>
+        Try {
+          val oracleInfo = jsToOracleInfo(oracleInfoJs)
+          val contractInfo = jsToContractInfo(contractInfoJs)
+          val collateral = jsToSatoshis(collateralJs)
+          val feeRate = jsToSatoshisPerVirtualByteOpt(feeRateOptJs)
+          val locktime = jsToUInt32(locktimeJs)
+          val refundLT = jsToUInt32(refundLTJs)
+          val escaped = escapedJs.bool
+          CreateDLCOffer(oracleInfo,
+                         contractInfo,
+                         collateral,
+                         feeRate,
+                         locktime,
+                         refundLT,
+                         escaped)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 7"))
+    }
+  }
+}
+
+case class AcceptDLCOffer(offer: DLCOffer, escaped: Boolean)
+    extends JsonResponse
+
+object AcceptDLCOffer extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCOffer] = {
+    jsArr.arr.toList match {
+      case offerJs :: escapedJs :: Nil =>
+        Try {
+          val offer = DLCOffer.fromJson(ujson.read(offerJs.str))
+          val escaped = escapedJs.bool
+          AcceptDLCOffer(offer, escaped)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing offer arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2, got"))
+    }
+  }
+}
+
+case class SignDLC(accept: DLCAccept, escaped: Boolean) extends JsonResponse
+
+object SignDLC extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SignDLC] = {
+    jsArr.arr.toList match {
+      case acceptJs :: escapedJs :: Nil =>
+        Try {
+          val accept = DLCAccept.fromJson(ujson.read(acceptJs.str))
+          val escaped = escapedJs.bool
+          SignDLC(accept, escaped)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing accept and escaped arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class AddDLCSigs(sigs: DLCSign)
+
+object AddDLCSigs extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AddDLCSigs] = {
+    jsArr.arr.toList match {
+      case sigsJs :: Nil =>
+        Try {
+          val sigs = DLCSign.fromJson(ujson.read(sigsJs.str))
+          AddDLCSigs(sigs)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing sigs argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class InitDLCMutualClose(
+    eventId: Sha256DigestBE,
+    oracleSig: SchnorrDigitalSignature,
+    escaped: Boolean)
+    extends JsonResponse
+
+object InitDLCMutualClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[InitDLCMutualClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: sigJs :: escapedJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val oracleSig = jsToSchnorrDigitalSignature(sigJs)
+          val escaped = escapedJs.bool
+          InitDLCMutualClose(eventId, oracleSig, escaped)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class AcceptDLCMutualClose(
+    mutualCloseSig: DLCMutualCloseSig,
+    noBroadcast: Boolean)
+    extends Broadcastable
+
+object AcceptDLCMutualClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[AcceptDLCMutualClose] = {
+    jsArr.arr.toList match {
+      case mutualCloseSigJs :: noBroadcastJs :: Nil =>
+        Try {
+          val mutualCloseSig =
+            DLCMutualCloseSig.fromJson(ujson.read(mutualCloseSigJs.str))
+          val noBroadcast = noBroadcastJs.bool
+          AcceptDLCMutualClose(mutualCloseSig, noBroadcast)
+        }
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class GetDLCFundingTx(eventId: Sha256DigestBE)
+
+object GetDLCFundingTx extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[GetDLCFundingTx] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          GetDLCFundingTx(eventId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing eventId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class BroadcastDLCFundingTx(eventId: Sha256DigestBE)
+
+object BroadcastDLCFundingTx extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[BroadcastDLCFundingTx] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          BroadcastDLCFundingTx(eventId)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing eventId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 1"))
+    }
+  }
+}
+
+case class ExecuteDLCUnilateralClose(
+    eventId: Sha256DigestBE,
+    oracleSig: SchnorrDigitalSignature,
+    noBroadcast: Boolean)
+    extends Broadcastable
+
+object ExecuteDLCUnilateralClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCUnilateralClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: oracleSigJs :: noBroadcastJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
+          val noBroadcast = noBroadcastJs.bool
+
+          ExecuteDLCUnilateralClose(eventId, oracleSig, noBroadcast)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and oracleSig arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class ExecuteDLCRemoteUnilateralClose(
+    eventId: Sha256DigestBE,
+    cet: Transaction,
+    noBroadcast: Boolean)
+    extends Broadcastable
+
+object ExecuteDLCRemoteUnilateralClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRemoteUnilateralClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: cetJs :: noBroadcastJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val cet = jsToTx(cetJs)
+          val noBroadcast = noBroadcastJs.bool
+
+          ExecuteDLCRemoteUnilateralClose(eventId, cet, noBroadcast)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException("Missing eventId and cet arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class ExecuteDLCForceClose(
+    eventId: Sha256DigestBE,
+    oracleSig: SchnorrDigitalSignature,
+    noBroadcast: Boolean)
+    extends Broadcastable
+
+object ExecuteDLCForceClose extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCForceClose] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: oracleSigJs :: noBroadcastJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val oracleSig = jsToSchnorrDigitalSignature(oracleSigJs)
+          val noBroadcast = noBroadcastJs.bool
+
+          ExecuteDLCForceClose(eventId, oracleSig, noBroadcast)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and oracleSig arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class ClaimDLCRemoteFunds(
+    eventId: Sha256DigestBE,
+    forceCloseTx: Transaction,
+    noBroadcast: Boolean)
+    extends Broadcastable
+
+object ClaimDLCRemoteFunds extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ClaimDLCRemoteFunds] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: forceCloseTxJs :: noBroadcastJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val forceCloseTx = jsToTx(forceCloseTxJs)
+          val noBroadcast = noBroadcastJs.bool
+
+          ClaimDLCRemoteFunds(eventId, forceCloseTx, noBroadcast)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and forceCloseTx arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+}
+
+case class ExecuteDLCRefund(eventId: Sha256DigestBE, noBroadcast: Boolean)
+    extends Broadcastable
+
+object ExecuteDLCRefund extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ExecuteDLCRefund] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: noBroadcastJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val noBroadcast = noBroadcastJs.bool
+
+          ExecuteDLCRefund(eventId, noBroadcast)
+        }
+      case Nil =>
+        Failure(new IllegalArgumentException("Missing eventId argument"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 2"))
+    }
+  }
+}
+
+case class ClaimDLCPenaltyFunds(
+    eventId: Sha256DigestBE,
+    forceCloseTx: Transaction,
+    noBroadcast: Boolean)
+    extends Broadcastable
+
+object ClaimDLCPenaltyFunds extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[ClaimDLCPenaltyFunds] = {
+    jsArr.arr.toList match {
+      case eventIdJs :: forceCloseTxJs :: noBroadcastJs :: Nil =>
+        Try {
+          val eventId = Sha256DigestBE(eventIdJs.str)
+          val forceCloseTx = jsToTx(forceCloseTxJs)
+          val noBroadcast = noBroadcastJs.bool
+
+          ClaimDLCPenaltyFunds(eventId, forceCloseTx, noBroadcast)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing eventId and forceCloseTx arguments"))
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
 }
 
 case class SendFromOutpoints(
@@ -361,6 +748,52 @@ object OpReturnCommit extends ServerJsonModels {
 
 trait ServerJsonModels {
 
+  def jsToOracleInfo(js: Value): OracleInfo =
+    js match {
+      case str: Str =>
+        OracleInfo(str.value)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected an OracleInfo as a hex string")
+    }
+
+  def jsToContractInfo(js: Value): ContractInfo =
+    js match {
+      case str: Str =>
+        ContractInfo(str.value)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a ContractInfo as a hex string")
+    }
+
+  def jsToSatoshisPerVirtualByteOpt(js: Value): Option[SatoshisPerVirtualByte] =
+    nullToOpt(js).map {
+      case str: Str =>
+        SatoshisPerVirtualByte(Satoshis(str.value))
+      case num: Num =>
+        SatoshisPerVirtualByte(Satoshis(num.value.toLong))
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a fee rate in sats/vbyte")
+    }
+
+  def jsToUInt32(js: Value): UInt32 =
+    js match {
+      case str: Str =>
+        UInt32(BigInt(str.value))
+      case num: Num =>
+        UInt32(num.value.toLong)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected a UInt32")
+    }
+
+  def jsToSatoshis(js: Value): Satoshis =
+    js match {
+      case str: Str =>
+        Satoshis(BigInt(str.value))
+      case num: Num =>
+        Satoshis(num.value.toLong)
+      case _: Value =>
+        throw Value.InvalidData(js, "Expected value in Satoshis")
+    }
+
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
     try {
       BitcoinAddress.fromStringExn(js.str)
@@ -398,5 +831,15 @@ trait ServerJsonModels {
       case Arr(arr) if arr.isEmpty   => None
       case Arr(arr) if arr.size == 1 => Some(arr.head)
       case _: Value                  => Some(value)
+    }
+
+  def jsToSchnorrDigitalSignature(js: Value): SchnorrDigitalSignature =
+    js match {
+      case str: Str =>
+        SchnorrDigitalSignature(str.value)
+      case _: Value =>
+        throw Value.InvalidData(
+          js,
+          "Expected a SchnorrDigitalSignature as a hex string")
     }
 }
