@@ -71,7 +71,7 @@ val amtReceivedOnWin = Satoshis(100000)
 val amtReceivedOnLoss = Satoshis.zero
 
 (pubKey.bytes ++ rValue.bytes).toHex
-(winHash.bytes ++ .bytes ++ loseHash.bytes ++ Satoshis.zero.bytes).toHex
+(winHash.bytes ++ amtReceivedOnWin.bytes ++ loseHash.bytes ++ amtReceivedOnLoss.bytes).toHex
 privKey.schnorrSignWithNonce(winHash.bytes, kValue)
 privKey.schnorrSignWithNonce(loseHash.bytes, kValue)
 ```
