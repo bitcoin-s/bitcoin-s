@@ -64,10 +64,10 @@ val winHash = CryptoUtil.sha256(ByteVector("BTC_OVER_9000".getBytes)).flip
 //the hash the oracle with sign when the bitcoin price is under $9,000
 val loseHash = CryptoUtil.sha256(ByteVector("BTC_UNDER_9000".getBytes)).flip
 
-//the amounts received in the case of winning the bet
+//the amounts received in the case the oracle signs hash of message "BTC_OVER_9000"
 val amtReceivedOnWin = Satoshis(100000)
 
-//the amount received when losing the bet
+//the amount received in the case the oracle signs hash of message "BTC_UNDER_9000"
 val amtReceivedOnLoss = Satoshis.zero
 
 (pubKey.bytes ++ rValue.bytes).toHex
