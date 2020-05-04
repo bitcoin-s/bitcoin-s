@@ -76,19 +76,20 @@ val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
 
 // this contains all the information we need to
 // validly sign the UTXO above
-val utxoSpendingInfo = BitcoinUTXOSpendingInfoFull(outPoint = outPoint,
-                                                   output = utxo,
-                                                   signers = Vector(privKey),
-                                                   redeemScriptOpt = None,
-                                                   scriptWitnessOpt = None,
-                                                   hashType =
-                                                       HashType.sigHashAll,
-                                                   conditionalPath =
-                                                       ConditionalPath.NoConditionsLeft)
+val utxoInfo = ScriptSignatureParams(inputInfo = InputInfo(outPoint = outPoint,
+                                                           output = utxo,
+                                                           redeemScriptOpt = None,
+                                                           scriptWitnessOpt = None,
+                                                           conditionalPath =
+                                                               ConditionalPath.NoCondition,
+                                                           hashPreImages = Vector(privKey.publicKey)),
+                                     signers = Vector(privKey),
+                                     hashType =
+                                         HashType.sigHashAll)
 
 // all of the UTXO spending information, since we are only
 //spending one UTXO, this is just one element
-val utxos: Vector[BitcoinUTXOSpendingInfoFull] = Vector(utxoSpendingInfo)
+val utxos: Vector[ScriptSignatureParams[InputInfo]] = Vector(utxoInfo)
 
 // this is how much we are going to pay as a fee to the network
 // for this example, we are going to pay 1 satoshi per byte
@@ -117,7 +118,7 @@ val txBuilder: BitcoinTxBuilder = {
 // Let's finally produce a validly signed tx!
 // The 'sign' method is going produce a validly signed transaction
 // This is going to iterate through each of the UTXOs and use
-// the corresponding UTXOSpendingInfo to produce a validly
+// the corresponding ScriptSignatureParams to produce a validly
 // signed input. This UTXO has:
 //   1: one input
 //   2: outputs (destination and change outputs)

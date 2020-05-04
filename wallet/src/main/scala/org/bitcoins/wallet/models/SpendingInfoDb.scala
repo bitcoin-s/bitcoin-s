@@ -13,8 +13,9 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfoFull,
   ConditionalPath,
+  InputInfo,
+  ScriptSignatureParams,
   TxoState
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sign}
@@ -172,23 +173,27 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
   /** Converts a non-sensitive DB representation of a UTXO into
     * a signable (and sensitive) real-world UTXO
     */
-  def toUTXOSpendingInfo(
-      keyManager: BIP39KeyManager): BitcoinUTXOSpendingInfoFull = {
+  def toUTXOInfo(
+      keyManager: BIP39KeyManager): ScriptSignatureParams[InputInfo] = {
 
     val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
 
-    toUTXOSpendingInfo(sign = sign)
+    toUTXOInfo(sign = sign)
   }
 
-  def toUTXOSpendingInfo(sign: Sign): BitcoinUTXOSpendingInfoFull = {
-    BitcoinUTXOSpendingInfoFull(
-      outPoint,
-      output,
+  def toUTXOInfo(sign: Sign): ScriptSignatureParams[InputInfo] = {
+    ScriptSignatureParams(
+      InputInfo(
+        outPoint,
+        output,
+        redeemScriptOpt,
+        scriptWitnessOpt,
+        ConditionalPath.NoCondition, // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
+        Vector(sign.publicKey)
+      ),
       Vector(sign),
-      redeemScriptOpt,
-      scriptWitnessOpt,
-      hashType,
-      ConditionalPath.NoConditionsLeft) // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
+      hashType
+    )
   }
 
 }

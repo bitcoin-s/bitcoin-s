@@ -14,8 +14,10 @@ import org.bitcoins.db.AppConfig
 
 import scala.concurrent.Future
 
-case class Server(conf: AppConfig, handlers: Seq[ServerRoute], rpcport: Int = 9999)(
-    implicit system: ActorSystem)
+case class Server(
+    conf: AppConfig,
+    handlers: Seq[ServerRoute],
+    rpcport: Int = 9999)(implicit system: ActorSystem)
     extends HttpLogger {
   implicit private val config: AppConfig = conf
 

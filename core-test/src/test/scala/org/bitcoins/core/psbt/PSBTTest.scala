@@ -1,7 +1,7 @@
 package org.bitcoins.core.psbt
 
 import org.bitcoins.core.psbt.OutputPSBTRecord.{RedeemScript, WitnessScript}
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoFull
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.testkit.core.gen._
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
@@ -69,7 +69,8 @@ class PSBTTest extends BitcoinSAsyncTest {
               .addUTXOToInput(txOpt.get, index)
               .addSigHashTypeToInput(utxo.hashType, index)
 
-            (utxo.redeemScriptOpt, utxo.scriptWitnessOpt) match {
+            (InputInfo.getRedeemScript(utxo.inputInfo),
+             InputInfo.getScriptWitness(utxo.inputInfo)) match {
               case (Some(redeemScript), Some(scriptWitness)) =>
                 partUpdatedPsbt
                   .addRedeemOrWitnessScriptToInput(redeemScript, index)
@@ -94,7 +95,7 @@ class PSBTTest extends BitcoinSAsyncTest {
       psbtWithBuilderF.flatMap {
         case (psbtNoSigs, utxos) =>
           val infos = utxos.toVector.zipWithIndex.map {
-            case (utxo: BitcoinUTXOSpendingInfoFull, index) =>
+            case (utxo: ScriptSignatureParams[InputInfo], index) =>
               (index, utxo)
           }
           val signedPSBTF = infos.foldLeft(Future.successful(psbtNoSigs)) {

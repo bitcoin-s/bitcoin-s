@@ -42,11 +42,13 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
-  P2WPKHV0SpendingInfo,
-  P2WSHV0SpendingInfoFull,
-  UTXOSpendingInfo,
-  UTXOSpendingInfoSingle,
-  UnassignedSegwitNativeUTXOSpendingInfo
+  ECSignatureParams,
+  InputInfo,
+  InputSigningInfo,
+  P2WPKHV0InputInfo,
+  P2WSHV0InputInfo,
+  ScriptSignatureParams,
+  UnassignedSegwitNativeInputInfo
 }
 import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkit.core.gen.{
@@ -72,14 +74,17 @@ class SignerTest extends BitcoinSAsyncTest {
   it should "fail to sign a UnassignedSegwit UTXO" in {
     val p2wpkh = GenUtil.sample(CreditingTxGen.p2wpkhOutput)
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
-    val spendingInfo = UnassignedSegwitNativeUTXOSpendingInfo(
-      p2wpkh.outPoint,
-      p2wpkh.amount,
-      p2wpkh.scriptPubKey.asInstanceOf[WitnessScriptPubKey],
+    val spendingInfo = ScriptSignatureParams(
+      UnassignedSegwitNativeInputInfo(
+        p2wpkh.outPoint,
+        p2wpkh.amount,
+        p2wpkh.output.scriptPubKey.asInstanceOf[WitnessScriptPubKey],
+        InputInfo.getScriptWitness(p2wpkh.inputInfo).get,
+        p2wpkh.conditionalPath,
+        p2wpkh.signers.map(_.publicKey)
+      ),
       p2wpkh.signers,
-      p2wpkh.hashType,
-      p2wpkh.scriptWitnessOpt.get,
-      p2wpkh.conditionalPath
+      p2wpkh.hashType
     )
     assertThrows[UnsupportedOperationException](
       BitcoinSigner.sign(spendingInfo, tx, isDummySignature = false))
@@ -96,7 +101,7 @@ class SignerTest extends BitcoinSAsyncTest {
     val dumbSpendingInfo = GenUtil.sample(CreditingTxGen.output)
     val p2wpkh = GenUtil
       .sample(CreditingTxGen.p2wpkhOutput)
-      .asInstanceOf[P2WPKHV0SpendingInfo]
+      .asInstanceOf[ScriptSignatureParams[P2WPKHV0InputInfo]]
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     recoverToSucceededIf[IllegalArgumentException] {
       P2WPKHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wpkh)
@@ -107,7 +112,7 @@ class SignerTest extends BitcoinSAsyncTest {
     val dumbSpendingInfo = GenUtil.sample(CreditingTxGen.output)
     val p2wsh = GenUtil
       .sample(CreditingTxGen.p2wshOutput)
-      .asInstanceOf[P2WSHV0SpendingInfoFull]
+      .asInstanceOf[ScriptSignatureParams[P2WSHV0InputInfo]]
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     recoverToSucceededIf[IllegalArgumentException] {
       P2WSHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wsh)
@@ -131,7 +136,7 @@ class SignerTest extends BitcoinSAsyncTest {
           signedTx <- builder.sign
 
           singleSigs: Vector[Vector[ECDigitalSignature]] <- {
-            val singleInfosVec: Vector[Vector[UTXOSpendingInfoSingle]] =
+            val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
               creditingTxsInfos.toVector.map(_.toSingles)
             val sigVecFs = singleInfosVec.map { singleInfos =>
               val sigFs = singleInfos.map { singleInfo =>
@@ -157,18 +162,19 @@ class SignerTest extends BitcoinSAsyncTest {
               val (info, index) = infoAndIndexOpt.get
               val sigs = singleSigs(index)
 
-              val expectedSigs = if (info.scriptWitnessOpt.isEmpty) {
-                input.scriptSignature.signatures
-              } else {
-                signedTx
-                  .asInstanceOf[WitnessTransaction]
-                  .witness
-                  .witnesses(inputIndex) match {
-                  case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
-                  case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
-                  case EmptyScriptWitness      => Vector.empty
+              val expectedSigs =
+                if (InputInfo.getScriptWitness(info.inputInfo).isEmpty) {
+                  input.scriptSignature.signatures
+                } else {
+                  signedTx
+                    .asInstanceOf[WitnessTransaction]
+                    .witness
+                    .witnesses(inputIndex) match {
+                    case p2wpkh: P2WPKHWitnessV0 => Vector(p2wpkh.signature)
+                    case p2wsh: P2WSHWitnessV0   => p2wsh.signatures
+                    case EmptyScriptWitness      => Vector.empty
+                  }
                 }
-              }
 
               assert(sigs.length == expectedSigs.length)
               assert(sigs.forall(expectedSigs.contains))
@@ -179,7 +185,9 @@ class SignerTest extends BitcoinSAsyncTest {
     }
   }
 
-  def inputIndex(spendingInfo: UTXOSpendingInfo, tx: Transaction): Int = {
+  def inputIndex(
+      spendingInfo: InputSigningInfo[InputInfo],
+      tx: Transaction): Int = {
     tx.inputs.zipWithIndex
       .find(_._1.previousOutput == spendingInfo.outPoint) match {
       case Some((_, index)) => index
@@ -192,7 +200,7 @@ class SignerTest extends BitcoinSAsyncTest {
   def createProgram(
       tx: Transaction,
       idx: Int,
-      utxo: UTXOSpendingInfo): PreExecutionScriptProgram = {
+      utxo: InputSigningInfo[InputInfo]): PreExecutionScriptProgram = {
     val output = utxo.output
 
     val spk = output.scriptPubKey
@@ -237,7 +245,7 @@ class SignerTest extends BitcoinSAsyncTest {
 
   def verifyScripts(
       tx: Transaction,
-      utxos: Vector[UTXOSpendingInfo]): Boolean = {
+      utxos: Vector[InputSigningInfo[InputInfo]]): Boolean = {
     val programs: Vector[PreExecutionScriptProgram] =
       tx.inputs.zipWithIndex.toVector.map {
         case (input: TransactionInput, idx: Int) =>
@@ -263,7 +271,7 @@ class SignerTest extends BitcoinSAsyncTest {
           unsignedTx <- builder.unsignedTx
 
           singleSigs: Vector[Vector[PartialSignature]] <- {
-            val singleInfosVec: Vector[Vector[UTXOSpendingInfoSingle]] =
+            val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
               creditingTxsInfos.toVector.map(_.toSingles)
             val sigVecFs = singleInfosVec.map { singleInfos =>
               val sigFs = singleInfos.map { singleInfo =>
@@ -292,7 +300,9 @@ class SignerTest extends BitcoinSAsyncTest {
                 val idx = inputIndex(spendInfo, unsignedTx)
                 psbt
                   .addWitnessUTXOToInput(spendInfo.output, idx)
-                  .addScriptWitnessToInput(spendInfo.scriptWitnessOpt.get, idx)
+                  .addScriptWitnessToInput(
+                    InputInfo.getScriptWitness(spendInfo.inputInfo).get,
+                    idx)
                   .addSignatures(singleSigs(idx), idx)
             }
 
