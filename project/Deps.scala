@@ -31,7 +31,7 @@ object Deps {
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
-    val sqliteV = "3.30.1"
+    val sqliteV = "3.31.1"
     val scalameterV = "0.17"
     val scalamockV = "4.4.0"
 
