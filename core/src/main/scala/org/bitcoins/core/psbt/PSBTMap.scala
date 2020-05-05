@@ -629,6 +629,49 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
   import org.bitcoins.core.psbt.InputPSBTRecord._
 
+  def fromWitness(witness: ScriptWitness): InputPSBTMap = {
+    witness match {
+      case p2wpkh: P2WPKHWitnessV0 =>
+        val sig = PartialSignature(p2wpkh.pubKey, p2wpkh.signature)
+        InputPSBTMap(Vector(sig))
+      case p2wsh: P2WSHWitnessV0 =>
+        val sigs = p2wsh.pubKeys.zip(p2wsh.signatures).map {
+          case (pubkey, sig) =>
+            PartialSignature(pubkey, sig)
+        }
+        InputPSBTMap(sigs.toVector)
+      case EmptyScriptWitness =>
+        InputPSBTMap.empty
+    }
+  }
+
+  @tailrec
+  def fromScriptSig(scriptSignature: ScriptSignature): InputPSBTMap = {
+    scriptSignature match {
+      case p2pkh: P2PKHScriptSignature =>
+        val sig = PartialSignature(p2pkh.publicKey, p2pkh.signature)
+        InputPSBTMap(Vector(sig))
+      case p2sh: P2SHScriptSignature =>
+        val sigs = p2sh.publicKeys.zip(p2sh.signatures).map {
+          case (key, sig) =>
+            PartialSignature(key, sig)
+        }
+        InputPSBTMap(sigs.toVector)
+      case cond: ConditionalScriptSignature =>
+        fromScriptSig(cond.nestedScriptSig)
+      case _: CLTVScriptSignature | _: CSVScriptSignature |
+          _: MultiSignatureScriptSignature | _: NonStandardScriptSignature |
+          _: P2PKScriptSignature | TrivialTrueScriptSignature |
+          EmptyScriptSignature =>
+        InputPSBTMap.empty
+    }
+  }
+
+  /**  */
+  def fromTransactionInput(input: TransactionInput): InputPSBTMap = {
+    fromScriptSig(input.scriptSignature)
+  }
+
   /** Constructs a finalized InputPSBTMap from a NewSpendingInfoFull,
     * the corresponding PSBT's unsigned transaction, and if this is
     * a non-witness spend, the transaction being spent

@@ -771,6 +771,36 @@ object PSBT extends Factory[PSBT] {
   }
 
   /**
+    * Creates a PSBT with data from the transaction
+    * @param tx global transaction for the PSBT
+    * @return Created PSBT
+    */
+  def fromTx(tx: Transaction): PSBT = {
+
+    val unsignedInputs = tx.inputs.map(
+      input =>
+        TransactionInput(input.previousOutput,
+                         EmptyScriptSignature,
+                         input.sequence))
+    val unsignedTx =
+      BaseTransaction(tx.version, unsignedInputs, tx.outputs, tx.lockTime)
+
+    val globalMap = GlobalPSBTMap(
+      Vector(GlobalPSBTRecord.UnsignedTransaction(unsignedTx)))
+    val inputMaps = {
+      tx match {
+        case btx: BaseTransaction =>
+          btx.inputs.map(InputPSBTMap.fromTransactionInput).toVector
+        case wtx: WitnessTransaction =>
+          wtx.witness.witnesses.map(InputPSBTMap.fromWitness)
+      }
+    }
+    val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
+
+    PSBT(globalMap, inputMaps, outputMaps)
+  }
+
+  /**
     * Wraps a Vector of pairs of NewSpendingInfos and the Transactions whose outputs are spent.
     * Note that this Transaction is only necessary when the output is non-segwit.
     */

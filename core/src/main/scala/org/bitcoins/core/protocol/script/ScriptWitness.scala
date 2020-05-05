@@ -1,6 +1,11 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.script.constant.{
+  ScriptConstant,
+  ScriptNumberOperation,
+  ScriptToken
+}
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
@@ -91,6 +96,13 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
   lazy val redeemScript: RawScriptPubKey = {
     val cmpct = CompactSizeUInt.calc(stack.head)
     RawScriptPubKey.fromBytes(cmpct.bytes ++ stack.head)
+  }
+
+  lazy val pubKeys: Seq[ECPublicKey] = {
+    val pubKeys: Seq[ScriptToken] = redeemScript.asm
+      .filter(_.isInstanceOf[ScriptConstant])
+      .filterNot(_.isInstanceOf[ScriptNumberOperation])
+    pubKeys.map(k => ECPublicKey(k.hex))
   }
 
   lazy val signatures: Vector[ECDigitalSignature] = {
