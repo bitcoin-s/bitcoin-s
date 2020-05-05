@@ -44,6 +44,18 @@ case class BitcoinSAppConfig(
     // be equal
     nodeConf.config
   }
+
+  def serverConf: Config = {
+    config.getConfig("server")
+  }
+
+  def rpcPortOpt: Option[Int] = {
+    if(serverConf.hasPath("rpcport")) {
+      Some(serverConf.getInt("rpcport"))
+    } else {
+      None
+    }
+  }
 }
 
 /**

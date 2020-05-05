@@ -7,13 +7,14 @@ import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
-
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.event.Logging
 import org.bitcoins.db.AppConfig
 
-case class Server(conf: AppConfig, handlers: Seq[ServerRoute])(
+import scala.concurrent.Future
+
+case class Server(conf: AppConfig, handlers: Seq[ServerRoute], rpcport: Int = 9999)(
     implicit system: ActorSystem)
     extends HttpLogger {
   implicit private val config: AppConfig = conf
@@ -76,9 +77,9 @@ case class Server(conf: AppConfig, handlers: Seq[ServerRoute])(
       }
     }
 
-  def start() = {
+  def start(): Future[Http.ServerBinding] = {
     val httpFut =
-      Http().bindAndHandle(route, "localhost", 9999)
+      Http().bindAndHandle(route, "localhost", rpcport)
     httpFut.foreach { http =>
       logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
     }

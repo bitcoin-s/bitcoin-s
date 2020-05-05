@@ -30,6 +30,9 @@ object ConsoleCli {
       opt[Unit]("debug")
         .action((_, conf) => conf.copy(debug = true))
         .text("Print debugging information"),
+      opt[Int]("rpcport")
+          .action((port,conf) => conf.copy(rpcPort = port))
+          .text(s"The port to send our rpc request to on the server"),
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
@@ -310,7 +313,7 @@ object ConsoleCli {
               }))
         ),
       checkConfig {
-        case Config(NoCommand, _, _) =>
+        case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
         case _ => success
       }
@@ -323,15 +326,15 @@ object ConsoleCli {
       case Some(conf) => conf
     }
 
-    exec(config.command, config.debug)
+    exec(config.command, config)
   }
 
-  def exec(command: CliCommand, debugEnabled: Boolean = false): Try[String] = {
+  def exec(command: CliCommand, config: Config): Try[String] = {
     import System.err.{println => printerr}
 
     /** Prints the given message to stderr if debug is set */
     def debug(message: Any): Unit = {
-      if (debugEnabled) {
+      if (config.debug) {
         printerr(s"DEBUG: $message")
       }
     }
@@ -413,7 +416,7 @@ object ConsoleCli {
         HttpURLConnectionBackend()
       val request =
         sttp
-          .post(uri"http://$host:$port/")
+          .post(uri"http://$host:${config.rpcPort}/")
           .contentType("application/json")
           .body({
             val uuid = java.util.UUID.randomUUID.toString
@@ -468,8 +471,6 @@ object ConsoleCli {
     }.flatten
   }
 
-  // TODO make this dynamic
-  def port = 9999
   def host = "localhost"
 
   case class RequestParam(
@@ -485,8 +486,13 @@ object ConsoleCli {
 case class Config(
     command: CliCommand = CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
-    debug: Boolean = false
+    debug: Boolean = false,
+    rpcPort: Int = 9999
 )
+
+object Config {
+  val empty = Config()
+}
 
 sealed abstract class CliCommand
 
