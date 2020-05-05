@@ -16,6 +16,8 @@ import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
   CryptoUtil,
+  ECDigitalSignature,
+  EmptyDigitalSignature,
   Factory,
   NetworkElement,
   Sha256Hash160Digest,
@@ -629,34 +631,57 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
   import org.bitcoins.core.psbt.InputPSBTRecord._
 
+  /** Creates an [[InputPSBTMap]] from a [[ScriptWitness]]  */
   def fromWitness(witness: ScriptWitness): InputPSBTMap = {
     witness match {
       case p2wpkh: P2WPKHWitnessV0 =>
-        val sig = PartialSignature(p2wpkh.pubKey, p2wpkh.signature)
-        InputPSBTMap(Vector(sig))
-      case p2wsh: P2WSHWitnessV0 =>
-        val sigs = p2wsh.pubKeys.zip(p2wsh.signatures).map {
-          case (pubkey, sig) =>
-            PartialSignature(pubkey, sig)
+        p2wpkh.signature match {
+          case EmptyDigitalSignature =>
+            InputPSBTMap.empty
+          case sig: ECDigitalSignature =>
+            val partialSig = PartialSignature(p2wpkh.pubKey, sig)
+            val sigHash = SigHashType(HashType.fromByte(sig.bytes.last))
+
+            InputPSBTMap(Vector(partialSig, sigHash))
         }
-        InputPSBTMap(sigs.toVector)
+
+      case p2wsh: P2WSHWitnessV0 =>
+        val sigs = if (p2wsh.signatures.nonEmpty) {
+          p2wsh.signatures.zip(p2wsh.pubKeys).map {
+            case (sig, pubkey) =>
+              PartialSignature(pubkey, sig)
+          }
+        } else Vector.empty
+
+        val sigHash = SigHashType(
+          HashType.fromByte(p2wsh.signatures.head.bytes.last))
+        val witScript = WitnessScript(p2wsh.redeemScript)
+
+        InputPSBTMap(sigs ++ Vector(sigHash, witScript))
       case EmptyScriptWitness =>
         InputPSBTMap.empty
     }
   }
 
+  /** Creates an [[InputPSBTMap]] from a [[ScriptSignature]]  */
   @tailrec
   def fromScriptSig(scriptSignature: ScriptSignature): InputPSBTMap = {
     scriptSignature match {
       case p2pkh: P2PKHScriptSignature =>
         val sig = PartialSignature(p2pkh.publicKey, p2pkh.signature)
-        InputPSBTMap(Vector(sig))
+        val hashType = SigHashType(HashType(p2pkh.signature.bytes.last))
+
+        InputPSBTMap(Vector(sig, hashType))
       case p2sh: P2SHScriptSignature =>
         val sigs = p2sh.publicKeys.zip(p2sh.signatures).map {
           case (key, sig) =>
             PartialSignature(key, sig)
         }
-        InputPSBTMap(sigs.toVector)
+        val sigHash = SigHashType(
+          HashType.fromByte(p2sh.signatures.head.bytes.last))
+        val redeemScript = RedeemScript(p2sh.redeemScript)
+
+        InputPSBTMap(sigs.toVector ++ Vector(sigHash, redeemScript))
       case cond: ConditionalScriptSignature =>
         fromScriptSig(cond.nestedScriptSig)
       case _: CLTVScriptSignature | _: CSVScriptSignature |
@@ -664,10 +689,11 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
           _: P2PKScriptSignature | TrivialTrueScriptSignature |
           EmptyScriptSignature =>
         InputPSBTMap.empty
+
     }
   }
 
-  /**  */
+  /** Creates an [[InputPSBTMap]] from a [[TransactionInput]]  */
   def fromTransactionInput(input: TransactionInput): InputPSBTMap = {
     fromScriptSig(input.scriptSignature)
   }

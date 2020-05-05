@@ -102,7 +102,7 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
     val pubKeys: Seq[ScriptToken] = redeemScript.asm
       .filter(_.isInstanceOf[ScriptConstant])
       .filterNot(_.isInstanceOf[ScriptNumberOperation])
-    pubKeys.map(k => ECPublicKey(k.hex))
+    pubKeys.map(k => ECPublicKey(k.hex)).filter(_.isFullyValid)
   }
 
   lazy val signatures: Vector[ECDigitalSignature] = {

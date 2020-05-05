@@ -792,7 +792,10 @@ object PSBT extends Factory[PSBT] {
         case btx: BaseTransaction =>
           btx.inputs.map(InputPSBTMap.fromTransactionInput).toVector
         case wtx: WitnessTransaction =>
-          wtx.witness.witnesses.map(InputPSBTMap.fromWitness)
+          val maps1 = wtx.inputs.map(InputPSBTMap.fromTransactionInput).toVector
+          val maps2 = wtx.witness.witnesses.map(InputPSBTMap.fromWitness)
+
+          maps1.zip(maps2).map(maps => maps._1.combine(maps._2))
       }
     }
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
