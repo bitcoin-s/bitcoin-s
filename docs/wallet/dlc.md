@@ -52,16 +52,26 @@ Note: if you wish to setup your own oracle for testing, you can do so by pasting
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency._
 import org.bitcoins.crypto.CryptoUtil
+import scodec.bits._
 
 val privKey = ECPrivateKey.freshPrivateKey
 val pubKey = privKey.publicKey
 val kValue = ECPrivateKey.freshPrivateKey
 val rValue = kValue.schnorrNonce
-val winHash = CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
-val loseHash = CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
+
+//the hash the oracle will sign when the bitcoin price is over $9,000
+val winHash = CryptoUtil.sha256(ByteVector("BTC_OVER_9000".getBytes)).flip
+//the hash the oracle with sign when the bitcoin price is under $9,000
+val loseHash = CryptoUtil.sha256(ByteVector("BTC_UNDER_9000".getBytes)).flip
+
+//the amounts received in the case the oracle signs hash of message "BTC_OVER_9000"
+val amtReceivedOnWin = Satoshis(100000)
+
+//the amount received in the case the oracle signs hash of message "BTC_UNDER_9000"
+val amtReceivedOnLoss = Satoshis.zero
 
 (pubKey.bytes ++ rValue.bytes).toHex
-(winHash.bytes ++ Satoshis(100000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes).toHex
+(winHash.bytes ++ amtReceivedOnWin.bytes ++ loseHash.bytes ++ amtReceivedOnLoss.bytes).toHex
 privKey.schnorrSignWithNonce(winHash.bytes, kValue)
 privKey.schnorrSignWithNonce(loseHash.bytes, kValue)
 ```
