@@ -1,5 +1,7 @@
 package org.bitcoins.node
 
+import com.opentable.db.postgres.embedded.EmbeddedPostgres
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -10,12 +12,48 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.util.Try
 
 class SpvNodeTest extends NodeUnitTest {
 
+  private val dbname = "nodedb"
+  private val username = "postgres"
+
+  val pg = EmbeddedPostgres.start()
+
+  before {
+    execute(s"CREATE DATABASE $dbname")
+  }
+
+  after {
+    execute(s"DROP DATABASE $dbname")
+  }
+
+  override def afterAll(): Unit = {
+    Try(pg.close())
+    super.afterAll()
+  }
+
   /** Wallet config with data directory set to user temp directory */
-  implicit override protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getSpvTestConfig()
+  implicit override protected def config: BitcoinSAppConfig = {
+    val overrideConf = ConfigFactory.parseString {
+      s"""
+         |bitcoin-s {
+         |  wallet {
+         |    db {
+         |      name = $dbname
+         |      url = "${pg.getJdbcUrl(username, dbname)}"
+         |      driver = "org.postgresql.Driver"
+         |      username = $username
+         |      password = ""
+         |    }
+         |  }
+         |}
+      """.stripMargin
+    }
+
+    BitcoinSTestAppConfig.getSpvTestConfig(overrideConf)
+  }
 
   override type FixtureParam = SpvNodeConnectedWithBitcoind
 
@@ -93,6 +131,18 @@ class SpvNodeTest extends NodeUnitTest {
 
         has6BlocksF.map(_ => succeed)
       }
+  }
+
+  private def execute(sql: String) = {
+    println(sql)
+    val conn = pg.getPostgresDatabase.getConnection
+    try {
+      val st = conn.createStatement()
+      try {
+        st.execute(sql)
+      } finally st.close()
+
+    } finally conn.close()
   }
 
 }

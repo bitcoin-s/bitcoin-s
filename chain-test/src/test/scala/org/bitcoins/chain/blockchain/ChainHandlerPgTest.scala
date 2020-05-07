@@ -1,6 +1,8 @@
 package org.bitcoins.chain.blockchain
 
 import akka.actor.ActorSystem
+import com.opentable.db.postgres.embedded.EmbeddedPostgres
+import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
@@ -15,6 +17,7 @@ import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
@@ -23,13 +26,34 @@ import org.bitcoins.testkit.chain.{
   ChainUnitTest
 }
 import org.bitcoins.testkit.util.{FileUtil, ScalaTestUtil}
-import org.scalatest.{Assertion, FutureOutcome}
+import org.scalatest.{Assertion, BeforeAndAfter, FutureOutcome}
 import play.api.libs.json.Json
 
 import scala.concurrent.Future
 import scala.io.BufferedSource
+import scala.util.Try
 
-class ChainHandlerTest extends ChainUnitTest {
+class ChainHandlerPgTest extends ChainUnitTest with BeforeAndAfter {
+  private val dbname = "chaindb"
+  private val username = "postgres"
+
+  val pg = EmbeddedPostgres.start()
+
+//  before {
+//  }
+//
+//  after {
+//    execute(s"DROP DATABASE $dbname")
+//  }
+
+  override def beforeAll(): Unit = {
+    executePg(s"CREATE DATABASE $dbname")
+  }
+
+  override def afterAll(): Unit = {
+    Try(pg.close())
+    super.afterAll()
+  }
 
   override type FixtureParam = ChainHandler
 
@@ -40,7 +64,11 @@ class ChainHandlerTest extends ChainUnitTest {
     import BitcoinSTestAppConfig.ProjectType
 
     val memoryDb =
-      BitcoinSTestAppConfig.configWithMemoryDb(Some(ProjectType.Chain))
+//      BitcoinSTestAppConfig.configWithMemoryDb(Some(ProjectType.Chain))
+      BitcoinSTestAppConfig.configWithExternalDb(
+        Some(ProjectType.Chain),
+        pg.getJdbcUrl(username, dbname),
+        username)
     val c = mainnetAppConfig.withOverrides(memoryDb)
     println(c.dbConfig.driver)
     println(c.dbConfig.db)
@@ -538,4 +566,17 @@ class ChainHandlerTest extends ChainUnitTest {
       ReorgFixture(newChainApi, newHeaderDbB.get, newHeaderDbC.get, oldBestTip)
     }
   }
+
+  private def executePg(sql: String) = {
+    println(sql)
+    val conn = pg.getPostgresDatabase.getConnection
+    try {
+      val st = conn.createStatement()
+      try {
+        st.execute(sql)
+      } finally st.close()
+
+    } finally conn.close()
+  }
+
 }

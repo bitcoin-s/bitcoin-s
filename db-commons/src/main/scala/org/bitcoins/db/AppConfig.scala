@@ -93,7 +93,7 @@ abstract class AppConfig {
       // that as our config. here we have to do the reverse, to
       // get the keys to resolve correctly
       val reconstructedStr = s"""
-      bitcoin-s: ${this.config.asReadableJson}
+      "bitcoin-s": ${this.config.asReadableJson}
       """
       val reconstructed = ConfigFactory.parseString(reconstructedStr)
       newConfigOfType(reconstructed +: configOverrides)
@@ -233,6 +233,11 @@ abstract class AppConfig {
       case RegTest  => "regtest"
     }
     baseDatadir.resolve(lastDirname)
+  }
+
+  val slickProfile: String = {
+    ""
+
   }
 
   private def stringToLogLevel(str: String): Option[Level] =

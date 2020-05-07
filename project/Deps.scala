@@ -153,7 +153,9 @@ object Deps {
     Compile.logback
   )
 
-  val chainTest = List()
+  val chainTest = List(
+    Test.pgEmbedded
+  )
 
   def appCommons(scalaVersion: String) = List(
     if (scalaVersion.startsWith("2.11")) Compile.oldMicroPickle
@@ -268,7 +270,8 @@ object Deps {
 
   val nodeTest = List(
     Test.akkaTestkit,
-    Test.scalaTest
+    Test.scalaTest,
+    Test.pgEmbedded
   )
 
   val testkit = List(

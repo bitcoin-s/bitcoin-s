@@ -17,10 +17,11 @@ import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.TxoState
 import scodec.bits.ByteVector
-import slick.jdbc.GetResult
-import slick.jdbc.SQLiteProfile.api._
+import slick.jdbc.{GetResult, JdbcProfile}
 
-abstract class DbCommonsColumnMappers {
+class DbCommonsColumnMappers(val profile: JdbcProfile) {
+
+  import profile.api._
 
   /**
     * If executing something like this:
@@ -173,5 +174,3 @@ abstract class DbCommonsColumnMappers {
       .base[SatoshisPerByte, Long](_.toLong, SatoshisPerByte.fromLong)
   }
 }
-
-object DbCommonsColumnMappers extends DbCommonsColumnMappers

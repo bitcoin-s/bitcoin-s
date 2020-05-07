@@ -12,7 +12,8 @@ case class CompactFilterHeaderDAO()(
     extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
   import profile.api._
-  import org.bitcoins.db.DbCommonsColumnMappers._
+  val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   class CompactFilterHeaderTable(tag: Tag)
       extends Table[CompactFilterHeaderDb](tag, "cfheaders") {

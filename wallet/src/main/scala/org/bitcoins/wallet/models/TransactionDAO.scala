@@ -29,7 +29,8 @@ trait TxDAO[DbEntryType <: TxDB]
   import profile.api._
   implicit val ec: ExecutionContext
 
-  import org.bitcoins.db.DbCommonsColumnMappers._
+  private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   type DbTable = TxTable[DbEntryType]
   override val table: TableQuery[_ <: DbTable]
@@ -76,13 +77,13 @@ case class TransactionDAO()(
     extends TxDAO[TransactionDb] {
 
   import profile.api._
+  private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   override val table = TableQuery[TransactionTable]
 
   class TransactionTable(tag: Tag)
       extends TxTable[TransactionDb](tag, "tx_table") {
-
-    import org.bitcoins.db.DbCommonsColumnMappers._
 
     def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
 

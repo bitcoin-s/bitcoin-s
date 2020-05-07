@@ -4,7 +4,7 @@ import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.node.config.NodeAppConfig
 
 import scala.concurrent.ExecutionContext
-import slick.lifted.{ProvenShape}
+import slick.lifted.ProvenShape
 
 import scala.concurrent.Future
 import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -17,6 +17,8 @@ final case class BroadcastAbleTransactionDAO()(
     extends CRUDAutoInc[BroadcastAbleTransaction] {
 
   import profile.api._
+  val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  import mappers._
 
   override val table: profile.api.TableQuery[BroadcastAbleTransactionTable] =
     profile.api.TableQuery[BroadcastAbleTransactionTable]
@@ -24,7 +26,8 @@ final case class BroadcastAbleTransactionDAO()(
   /** Searches for a TX by its TXID */
   def findByHash(
       hash: DoubleSha256Digest): Future[Option[BroadcastAbleTransaction]] = {
-    import org.bitcoins.db.DbCommonsColumnMappers._
+    val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+    import mappers._
 
     val query = table.filter(_.txid === hash.flip)
     database.run(query.result).map(_.headOption)
@@ -44,8 +47,6 @@ final case class BroadcastAbleTransactionDAO()(
 
     private val toTuple: BroadcastAbleTransaction => Option[Tuple] = tx =>
       Some(tx.transaction.txId.flip, tx.transaction.bytes, tx.id)
-
-    import org.bitcoins.db.DbCommonsColumnMappers._
 
     def txid: Rep[DoubleSha256DigestBE] = column("txid", O.Unique)
     def bytes: Rep[ByteVector] = column("tx_bytes")

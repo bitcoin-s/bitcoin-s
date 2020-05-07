@@ -15,16 +15,19 @@ case class OutgoingTransactionDAO()(
 
   import profile.api._
 
-  override val table: profile.api.TableQuery[OutgoingTransactionTable] = TableQuery[OutgoingTransactionTable]
+  override val table: profile.api.TableQuery[OutgoingTransactionTable] =
+    TableQuery[OutgoingTransactionTable]
 
   val txTable: profile.api.TableQuery[TransactionDAO#TransactionTable] = {
-    TransactionDAO().table.asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
+    TransactionDAO().table
+      .asInstanceOf[TableQuery[TransactionDAO#TransactionTable]]
   }
 
   class OutgoingTransactionTable(tag: Tag)
       extends TxTable[OutgoingTransactionDb](tag, "wallet_outgoing_txs") {
 
-    import org.bitcoins.db.DbCommonsColumnMappers._
+    private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+    import mappers._
 
     def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.Unique)
 
@@ -73,7 +76,7 @@ case class OutgoingTransactionDAO()(
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)
 
-    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_,TransactionDb] = {
+    def fk_underlying_tx: slick.lifted.ForeignKeyQuery[_, TransactionDb] = {
       foreignKey("fk_underlying_tx",
                  sourceColumns = txIdBE,
                  targetTableQuery = txTable)(_.txIdBE)

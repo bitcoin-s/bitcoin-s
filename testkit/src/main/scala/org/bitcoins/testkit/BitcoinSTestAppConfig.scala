@@ -86,6 +86,40 @@ object BitcoinSTestAppConfig {
     ConfigFactory.parseString(nestedConfStr)
   }
 
+  def configWithExternalDb(
+      project: Option[ProjectType],
+      jdbcUrl: String,
+      username: String = "postgres",
+      password: String = "",
+      driver: String = "org.postgresql.Driver"): Config = {
+    def memConfigForProject(project: ProjectType): String = {
+      val name = project.toString().toLowerCase()
+      s"""
+         | $name.profile = "slick.jdbc.PostgresProfile$$"
+         | $name.db {
+         |   url = "$jdbcUrl"
+         |   driver = "$driver"
+         |   username = "$username"
+         |   password = "$password"
+         |   connectionPool = disabled
+         |   keepAliveConnection = true
+         | }
+         |""".stripMargin
+    }
+
+    val confStr = project match {
+      case None    => ProjectType.all.map(memConfigForProject).mkString("\n")
+      case Some(p) => memConfigForProject(p)
+    }
+    val nestedConfStr = s"""
+                           | bitcoin-s {
+                           | 
+                           | $confStr
+                           | }
+                           |""".stripMargin
+    ConfigFactory.parseString(nestedConfStr)
+  }
+
   def deleteAppConfig(app: BitcoinSAppConfig): Boolean = {
     FileUtil.deleteTmpDir(app.walletConf.baseDatadir) &&
     FileUtil.deleteTmpDir(app.chainConf.baseDatadir) &&
