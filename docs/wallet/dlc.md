@@ -24,7 +24,7 @@ Both parties must agree on all fields from the table below:
 | refundlocktime |                       LockTimeNum                        |
 |    feerate     |                  NumInSatoshisPerVByte                   |
 
-Here is an example `oracleInfo` for public key `02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750` and R value `03f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7`:
+Here is an example `oracleInfo` for public key `02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cab` and R value `b1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750`:
 
 ```bashrc
 02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750
