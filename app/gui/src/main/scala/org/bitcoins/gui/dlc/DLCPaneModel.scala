@@ -2,7 +2,7 @@ package org.bitcoins.gui.dlc
 
 import org.bitcoins.cli.{CliCommand, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.gui.TaskRunner
 import org.bitcoins.gui.dlc.dialog._
 import scalafx.beans.property.ObjectProperty

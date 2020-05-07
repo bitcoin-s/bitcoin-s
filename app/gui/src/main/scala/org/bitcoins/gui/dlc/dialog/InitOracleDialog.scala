@@ -2,7 +2,7 @@ package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.ContractInfo
 import org.bitcoins.core.currency.Satoshis
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.crypto.CryptoUtil
 import scalafx.Includes._
 import scalafx.application.Platform
 import scalafx.geometry.Insets

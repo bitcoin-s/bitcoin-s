@@ -1,7 +1,7 @@
 package org.bitcoins.gui.dlc.dialog
 
 import org.bitcoins.cli.CliCommand.ExecuteDLCUnilateralClose
-import org.bitcoins.core.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
+import org.bitcoins.crypto.{SchnorrDigitalSignature, Sha256DigestBE}
 import scalafx.scene.control.TextField
 
 object ForceCloseDLCDialog
