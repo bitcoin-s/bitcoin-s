@@ -24,10 +24,10 @@ Both parties must agree on all fields from the table below:
 | refundlocktime |                       LockTimeNum                        |
 |    feerate     |                  NumInSatoshisPerVByte                   |
 
-Here is an example `oracleInfo` for public key `025acb434efb32bbf7ca7fd44b22e0f3f5570c6bc564e6059b03ba18c277054ac1` and R value `03f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7`:
+Here is an example `oracleInfo` for public key `02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cab` and R value `b1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750`:
 
 ```bashrc
-025acb434efb32bbf7ca7fd44b22e0f3f5570c6bc564e6059b03ba18c277054ac103f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7
+02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750
 ```
 
 Here is an example `contractInfo` for hashes `c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920f` and `5c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c` with respective Satoshi denominated outcomes of `100000 sats` and `0 sats`:
@@ -85,7 +85,7 @@ Where you can replace the messages `WIN` and `LOSE` to have the oracle sign any 
 Once these terms are agreed to, either party can call on `createdlcoffer` with flags for each of the fields in the table above. For example:
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli createdlcoffer --oracleInfo 025acb434efb32bbf7ca7fd44b22e0f3f5570c6bc564e6059b03ba18c277054ac103f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7 --contractInfo c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000 --collateral 40000 --locktime 1666720 --refundlocktime 1666730 --feerate 3
+./app/cli/target/graalvm-native-image/bitcoin-s-cli createdlcoffer --oracleInfo 02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750 --contractInfo c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000 --collateral 40000 --locktime 1666720 --refundlocktime 1666730 --feerate 3
 ```
 
 This will return a nice pretty-printed JSON offer. To get an offer that can be sent to the counter-party, add the `--escaped` flag to the end of this command.
