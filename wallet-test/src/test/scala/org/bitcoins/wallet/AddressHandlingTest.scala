@@ -136,4 +136,18 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       assert(diff.isEmpty, s"Extra spent addresses $diff")
     }
   }
+
+  it must "get the correct funded addresses" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      unspentDbs <- wallet.spendingInfoDAO.findAllUnspent()
+      fundedAddresses <- wallet.listFundedAddresses()
+    } yield {
+      val diff = unspentDbs
+        .map(_.output.scriptPubKey)
+        .diff(fundedAddresses.map(_.scriptPubKey))
+      assert(diff.isEmpty, s"Extra funded addresses $diff")
+    }
+  }
 }

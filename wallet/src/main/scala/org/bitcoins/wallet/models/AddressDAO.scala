@@ -126,6 +126,16 @@ case class AddressDAO()(
     safeDatabase.runVec(query.result)
   }
 
+  def getFundedAddresses: Future[Vector[AddressDb]] = {
+    val query = table
+      .join(spendingInfoTable)
+      .on(_.scriptPubKey === _.scriptPubKey)
+      .filter(_._2.state.inSet(TxoState.receivedStates))
+      .map(_._1)
+
+    safeDatabase.runVec(query.result)
+  }
+
   private def findMostRecentForChain(
       account: HDAccount,
       chain: HDChainType): slick.sql.SqlAction[
