@@ -34,6 +34,12 @@ object TxoState {
   val confirmedStates: Set[TxoState] =
     Set(TxoState.ConfirmedReceived, TxoState.ConfirmedSpent)
 
+  val receivedStates: Set[TxoState] =
+    Set(PendingConfirmationsReceived, ConfirmedReceived)
+
+  val spentStates: Set[TxoState] =
+    Set(PendingConfirmationsSpent, TxoState.ConfirmedSpent, Reserved)
+
   val all: Vector[TxoState] = Vector(DoesNotExist,
                                      PendingConfirmationsReceived,
                                      ConfirmedReceived,

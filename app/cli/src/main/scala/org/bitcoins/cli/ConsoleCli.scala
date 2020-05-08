@@ -2,13 +2,13 @@ package org.bitcoins.cli
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
+import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.commons.serializers.Picklers._
 import scopt.OParser
 import ujson.{Num, Str}
 import upickle.{default => up}
@@ -31,8 +31,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(debug = true))
         .text("Print debugging information"),
       opt[Int]("rpcport")
-          .action((port,conf) => conf.copy(rpcPort = port))
-          .text(s"The port to send our rpc request to on the server"),
+        .action((port, conf) => conf.copy(rpcPort = port))
+        .text(s"The port to send our rpc request to on the server"),
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
@@ -161,6 +161,10 @@ object ConsoleCli {
       cmd("getaddresses")
         .action((_, conf) => conf.copy(command = GetAddresses))
         .text("Returns list of all wallet addresses currently being watched"),
+      cmd("getspentaddresses")
+        .action((_, conf) => conf.copy(command = GetSpentAddresses))
+        .text(
+          "Returns list of all wallet addresses that have received funds and been spent"),
       cmd("getaccounts")
         .action((_, conf) => conf.copy(command = GetAccounts))
         .text("Returns list of all wallet accounts"),
@@ -349,6 +353,8 @@ object ConsoleCli {
         RequestParam("getutxos")
       case GetAddresses =>
         RequestParam("getaddresses")
+      case GetSpentAddresses =>
+        RequestParam("getspentaddresses")
       case GetAccounts =>
         RequestParam("getaccounts")
       case CreateNewAccount =>
@@ -508,6 +514,7 @@ object CliCommand {
   case object GetNewAddress extends CliCommand
   case object GetUtxos extends CliCommand
   case object GetAddresses extends CliCommand
+  case object GetSpentAddresses extends CliCommand
   case object GetAccounts extends CliCommand
   case object CreateNewAccount extends CliCommand
   case object IsEmpty extends CliCommand
