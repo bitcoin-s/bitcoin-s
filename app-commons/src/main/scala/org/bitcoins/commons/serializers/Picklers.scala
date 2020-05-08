@@ -2,7 +2,7 @@ package org.bitcoins.commons.serializers
 
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -38,4 +38,7 @@ object Picklers {
 
   implicit val extPubKeyPickler: ReadWriter[ExtPublicKey] =
     readwriter[String].bimap(_.toString, ExtPublicKey.fromString(_).get)
+
+  implicit val transactionOutPointPickler: ReadWriter[TransactionOutPoint] =
+    readwriter[String].bimap(_.hex, TransactionOutPoint.fromHex)
 }

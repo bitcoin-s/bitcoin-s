@@ -6,7 +6,7 @@ import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import scopt._
@@ -86,4 +86,11 @@ object CliReaders {
 
     val reads: String => Transaction = Transaction.fromHex
   }
+
+  implicit val outPointsRead: Read[TransactionOutPoint] =
+    new Read[TransactionOutPoint] {
+      val arity: Int = 1
+
+      val reads: String => TransactionOutPoint = TransactionOutPoint.fromHex
+    }
 }

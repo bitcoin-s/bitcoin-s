@@ -4,7 +4,11 @@ import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  Transaction,
+  TransactionOutPoint
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -31,8 +35,8 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(debug = true))
         .text("Print debugging information"),
       opt[Int]("rpcport")
-          .action((port,conf) => conf.copy(rpcPort = port))
-          .text(s"The port to send our rpc request to on the server"),
+        .action((port, conf) => conf.copy(rpcPort = port))
+        .text(s"The port to send our rpc request to on the server"),
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
@@ -218,6 +222,49 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("sendfromoutpoints")
+        .action((_, conf) =>
+          conf.copy(
+            command = SendFromOutPoints(Vector.empty, null, 0.bitcoin, None)))
+        .text("Send money to the given address")
+        .children(
+          arg[Seq[TransactionOutPoint]]("outpoints")
+            .text("Out Points to send from")
+            .required()
+            .action((outPoints, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
+                  send.copy(outPoints = outPoints.toVector)
+                case other => other
+              })),
+          arg[BitcoinAddress]("address")
+            .text("Address to send to")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
+                  send.copy(destination = addr)
+                case other => other
+              })),
+          arg[Bitcoins]("amount")
+            .text("amount to send in BTC")
+            .required()
+            .action((btc, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
+                  send.copy(amount = btc)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
+                  send.copy(satoshisPerVirtualByte = Some(feeRate))
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -382,6 +429,15 @@ object ConsoleCli {
                      Seq(up.writeJs(address),
                          up.writeJs(bitcoins),
                          up.writeJs(satoshisPerVirtualByte)))
+      case SendFromOutPoints(outPoints,
+                             address,
+                             bitcoins,
+                             satoshisPerVirtualByte) =>
+        RequestParam("sendfromoutpoints",
+                     Seq(up.writeJs(outPoints),
+                         up.writeJs(address),
+                         up.writeJs(bitcoins),
+                         up.writeJs(satoshisPerVirtualByte)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -501,6 +557,12 @@ object CliCommand {
 
   // Wallet
   case class SendToAddress(
+      destination: BitcoinAddress,
+      amount: Bitcoins,
+      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+      extends CliCommand
+  case class SendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
       destination: BitcoinAddress,
       amount: Bitcoins,
       satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
