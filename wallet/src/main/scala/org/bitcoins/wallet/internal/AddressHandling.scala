@@ -86,6 +86,20 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
   }
 
+  override def listUnusedAddresses(): Future[Vector[AddressDb]] = {
+    addressDAO.getUnusedAddresses
+  }
+
+  override def listUnusedAddresses(
+      account: HDAccount): Future[Vector[AddressDb]] = {
+    val unusedAddressesF = addressDAO.getUnusedAddresses
+
+    unusedAddressesF.map { unusedAddresses =>
+      unusedAddresses.filter(addr =>
+        HDAccount.isSameAccount(addr.path, account))
+    }
+  }
+
   /** Enumerates the public keys in this wallet */
   protected[wallet] def listPubkeys(): Future[Vector[ECPublicKey]] =
     addressDAO.findAllPubkeys()
