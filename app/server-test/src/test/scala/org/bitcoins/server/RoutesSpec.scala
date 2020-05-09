@@ -8,7 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.core.Core
 import org.bitcoins.core.crypto.ExtPublicKey
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BlockStamp.{
   BlockHash,
@@ -373,7 +373,7 @@ class RoutesSpec
       }
     }
 
-    "return the wallet's spent addresses" in {
+    "return the wallet's funded addresses" in {
       val addressDb = LegacyAddressDb(
         LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
         ECPublicKey.freshPublicKey,
@@ -382,16 +382,19 @@ class RoutesSpec
         testAddress.scriptPubKey
       )
 
-      (mockWalletApi.listFundedAddresses: () => Future[Vector[AddressDb]])
+      (mockWalletApi.listFundedAddresses: () => Future[Vector[(
+          AddressDb,
+          CurrencyUnit)]])
         .expects()
-        .returning(Future.successful(Vector(addressDb)))
+        .returning(Future.successful(Vector((addressDb, Satoshis.zero))))
 
       val route =
         walletRoutes.handleCommand(ServerCommand("getfundedaddresses", Arr()))
 
       Get() ~> route ~> check {
         contentType shouldEqual `application/json`
-        responseAs[String] shouldEqual """{"result":["""" + testAddressStr + """"],"error":null}"""
+        responseAs[String] shouldEqual
+          s"""{"result":["$testAddressStr ${Satoshis.zero}"],"error":null}""".stripMargin
       }
     }
 

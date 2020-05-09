@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.models
 
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{
   HDAccount,
   HDChainType,
@@ -126,14 +127,17 @@ case class AddressDAO()(
     safeDatabase.runVec(query.result)
   }
 
-  def getFundedAddresses: Future[Vector[AddressDb]] = {
+  def getFundedAddresses: Future[Vector[(AddressDb, CurrencyUnit)]] = {
     val query = table
       .join(spendingInfoTable)
       .on(_.scriptPubKey === _.scriptPubKey)
       .filter(_._2.state.inSet(TxoState.receivedStates))
-      .map(_._1)
 
-    safeDatabase.runVec(query.result)
+    safeDatabase
+      .runVec(query.result)
+      .map(_.map {
+        case (addrDb, utxoDb) => (addrDb, utxoDb.output.value)
+      })
   }
 
   private def findMostRecentForChain(
