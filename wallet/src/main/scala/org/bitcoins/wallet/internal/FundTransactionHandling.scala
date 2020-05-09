@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction.{
@@ -62,6 +63,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       keyManagerOpt: Option[BIP39KeyManager],
+      coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.AccumulateLargest,
       markAsReserved: Boolean = false): Future[BitcoinTxBuilder] = {
     val utxosF = for {
       utxos <- listUtxos(fromAccount.hdAccount)
@@ -85,8 +87,10 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
     val selectedUtxosF = for {
       walletUtxos <- utxosF
       //currently just grab the biggest utxos
-      utxos = CoinSelector
-        .accumulateLargest(walletUtxos, destinations, feeRate)
+      utxos = CoinSelector.selectByAlgo(coinSelectionAlgo = coinSelectionAlgo,
+                                        walletUtxos = walletUtxos,
+                                        outputs = destinations,
+                                        feeRate = feeRate)
       selectedUtxos <- if (markAsReserved) markUTXOsAsReserved(utxos)
       else Future.successful(utxos)
     } yield selectedUtxos

@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.server.ValidationRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.chain.api.ChainApi
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.Core
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
@@ -21,7 +22,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
@@ -617,6 +618,88 @@ class RoutesSpec
         rejection shouldEqual ValidationRejection(
           "failure",
           Some(InvalidData(Null, "Expected ujson.Arr")))
+      }
+    }
+
+    "send with algo" in {
+      // positive cases
+
+      (mockWalletApi
+        .sendWithAlgo(_: BitcoinAddress,
+                      _: CurrencyUnit,
+                      _: FeeUnit,
+                      _: CoinSelectionAlgo))
+        .expects(testAddress,
+                 Bitcoins(100),
+                 SatoshisPerVirtualByte(Satoshis(4)),
+                 CoinSelectionAlgo.AccumulateSmallestViable)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockNode.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("sendwithalgo",
+                      Arr(Str(testAddressStr),
+                          Num(100),
+                          Num(4),
+                          Str("AccumulateSmallestViable"))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+      }
+
+      // negative cases
+
+      val route1 = walletRoutes.handleCommand(
+        ServerCommand("sendwithalgo", Arr(Null, Null, Null, Null)))
+
+      Post() ~> route1 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Str")))
+      }
+
+      val route2 = walletRoutes.handleCommand(
+        ServerCommand("sendwithalgo", Arr("Null", Null, Null, Null)))
+
+      Post() ~> route2 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData("Null", "Expected a valid address")))
+      }
+
+      val route3 = walletRoutes.handleCommand(
+        ServerCommand("sendwithalgo",
+                      Arr(Str(testAddressStr), Null, Null, Null)))
+
+      Post() ~> route3 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Num")))
+      }
+
+      val route4 = walletRoutes.handleCommand(
+        ServerCommand("sendwithalgo",
+                      Arr(Str(testAddressStr), Str("abc"), Null, Null)))
+
+      Post() ~> route4 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData("abc", "Expected ujson.Num")))
+      }
+
+      val route5 = walletRoutes.handleCommand(
+        ServerCommand("sendwithalgo",
+                      Arr(Str(testAddressStr), Num(100), Num(4), Null)))
+
+      Post() ~> route5 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Str")))
       }
     }
 

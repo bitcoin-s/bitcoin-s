@@ -2,6 +2,7 @@ package org.bitcoins.wallet
 
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.config.BitcoinNetwork
@@ -263,10 +264,11 @@ abstract class Wallet
     } yield tx
   }
 
-  override def sendToAddress(
+  override def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
+      algo: CoinSelectionAlgo,
       fromAccount: AccountDb): Future[Transaction] = {
     require(
       address.networkParameters.isSameNetworkBytes(networkParameters),
@@ -279,11 +281,23 @@ abstract class Wallet
         destinations = Vector(destination),
         feeRate = feeRate,
         fromAccount = fromAccount,
-        keyManagerOpt = Some(keyManager))
+        keyManagerOpt = Some(keyManager),
+        coinSelectionAlgo = algo)
 
       tx <- finishSend(txBuilder)
     } yield tx
   }
+
+  override def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction] =
+    sendWithAlgo(address,
+                 amount,
+                 feeRate,
+                 CoinSelectionAlgo.AccumulateLargest,
+                 fromAccount)
 
   override def sendToAddresses(
       addresses: Vector[BitcoinAddress],

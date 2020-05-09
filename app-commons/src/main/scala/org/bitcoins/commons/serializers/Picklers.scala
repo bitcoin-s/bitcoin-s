@@ -1,5 +1,6 @@
 package org.bitcoins.commons.serializers
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
@@ -41,4 +42,7 @@ object Picklers {
 
   implicit val transactionOutPointPickler: ReadWriter[TransactionOutPoint] =
     readwriter[String].bimap(_.hex, TransactionOutPoint.fromHex)
+
+  implicit val coinSelectionAlgoPickler: ReadWriter[CoinSelectionAlgo] =
+    readwriter[String].bimap(_.toString, CoinSelectionAlgo.fromString(_).get)
 }
