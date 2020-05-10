@@ -6,7 +6,7 @@ object Deps {
     val bouncyCastle = "1.55"
     val logback = "1.2.3"
     val scalacheck = "1.14.3"
-    val scalaTest = "3.1.1"
+    val scalaTest = "3.1.2"
 
     val scalaTestPlus = "3.1.1.1" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
