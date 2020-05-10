@@ -20,7 +20,7 @@ object Deps {
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.4.0"
 
-    val scalaFxV = "12.0.2-R18"
+    val scalaFxV = "14-R19"
     val javaFxV = "14.0.1"
 
     // async dropped Scala 2.11 in 0.10.0
