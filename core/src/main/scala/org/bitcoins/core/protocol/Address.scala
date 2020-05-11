@@ -112,9 +112,6 @@ sealed abstract class Bech32Address extends BitcoinAddress {
   def expandHrp: Vector[UInt5] = {
     Bech32.hrpExpand(hrp)
   }
-
-  override def toString: String = value
-
 }
 
 object Bech32Address extends AddressFactory[Bech32Address] {
