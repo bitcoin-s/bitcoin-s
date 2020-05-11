@@ -4,26 +4,13 @@ import org.bitcoins.core.crypto.BaseTxSigComponent
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  P2SHScriptSignature,
-  ScriptPubKey,
-  ScriptSignature
-}
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionInput,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2SHScriptSignature, ScriptPubKey, ScriptSignature}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput, TransactionOutput}
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.crypto.{
-  OP_CHECKMULTISIG,
-  OP_CHECKSIG,
-  OP_HASH160
-}
+import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
 import org.bitcoins.core.script.stack.OP_DUP
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
@@ -35,6 +22,7 @@ object TestUtil {
 
   def testBitcoinAddress = BitcoinAddress("n3p1ct69ao3qxWvEvzLhLtWG2zJGTjN3EV")
   def testP2SHAddress = BitcoinAddress("2MzYbQdkSVp5wVyMRp6A5PHPuQNHpiaTbCj")
+  val bech32Address: Bech32Address = Bech32Address.fromString("bcrt1qq6w6pu6zq90az9krn53zlkvgyzkyeglzukyepf").get
   def bitcoinAddress = BitcoinAddress("1C4kYhyLftmkn48YarSoLupxHfYFo8kp64")
   def multiSigAddress = BitcoinAddress("342ftSRCvFHfCeFFBuz4xwbeqnDw6BGUey")
 
