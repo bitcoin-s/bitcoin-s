@@ -142,7 +142,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     }
   }
 
-  it should "" in { fundedWallet =>
+  it should "correctly send from outpoints" in { fundedWallet =>
     val wallet = fundedWallet.wallet
     for {
       allOutPoints <- wallet.spendingInfoDAO.findAllOutpoints()

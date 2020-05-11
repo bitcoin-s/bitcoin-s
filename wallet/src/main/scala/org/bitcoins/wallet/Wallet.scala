@@ -207,6 +207,9 @@ abstract class Wallet
     } yield updatedInfos
   }
 
+  /** Takes a [[BitcoinTxBuilder]] for a transaction to be sent, and completes it by:
+    * signing the transaction, then correctly processing the it and logging it
+    */
   private def finishSend(txBuilder: BitcoinTxBuilder): Future[Transaction] = {
     for {
       signed <- txBuilder.sign
