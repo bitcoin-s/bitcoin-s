@@ -113,7 +113,7 @@ sealed abstract class Bech32Address extends BitcoinAddress {
     Bech32.hrpExpand(hrp)
   }
 
-  override def toString: String = "Bech32Address(" + value + ")"
+  override def toString: String = value
 
 }
 
