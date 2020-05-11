@@ -10,7 +10,6 @@ import org.bitcoins.core.Core
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.hd._
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.{
   BlockHash,
   BlockHeight,
@@ -18,13 +17,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
   InvalidBlockStamp
 }
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransaction,
-  EmptyTransactionOutPoint,
-  EmptyTransactionOutput,
-  Transaction,
-  TransactionOutPoint
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
@@ -487,7 +480,10 @@ class RoutesSpec
                            _: BitcoinAddress,
                            _: CurrencyUnit,
                            _: FeeUnit))
-        .expects(Vector.empty, testAddress, Bitcoins(100), *)
+        .expects(Vector.empty[TransactionOutPoint],
+                 testAddress,
+                 Bitcoins(100),
+                 *)
         .returning(Future.successful(EmptyTransaction))
 
       (mockNode.broadcastTransaction _)
