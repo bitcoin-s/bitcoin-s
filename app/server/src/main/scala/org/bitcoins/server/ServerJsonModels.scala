@@ -308,6 +308,38 @@ object SendWithAlgo extends ServerJsonModels {
 
 }
 
+case class OpReturnCommit(
+    message: String,
+    hashMessage: Boolean,
+    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+
+object OpReturnCommit extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[OpReturnCommit] = {
+    jsArr.arr.toList match {
+      case messageJs :: hashMessageJs :: satsPerVBytesJs :: Nil =>
+        Try {
+          val message = messageJs.str
+          val hashMessage = hashMessageJs.bool
+          val satoshisPerVirtualByte =
+            nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
+              SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
+          OpReturnCommit(message, hashMessage, satoshisPerVirtualByte)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing message, hashMessage, and fee rate arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+
+}
+
 trait ServerJsonModels {
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
