@@ -176,6 +176,11 @@ trait WalletApi extends WalletLogger {
 
   def listSpentAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
+  def listFundedAddresses(): Future[Vector[(AddressDb, CurrencyUnit)]]
+
+  def listFundedAddresses(
+      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]]
+
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
 

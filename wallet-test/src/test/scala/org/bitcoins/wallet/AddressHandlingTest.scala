@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.rpc.util.AsyncUtil
@@ -134,6 +135,21 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         .map(_.output.scriptPubKey)
         .diff(spentAddresses.map(_.scriptPubKey))
       assert(diff.isEmpty, s"Extra spent addresses $diff")
+    }
+  }
+
+  it must "get the correct funded addresses" in { fundedWallet: FundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      unspentDbs <- wallet.spendingInfoDAO.findAllUnspent()
+      fundedAddresses <- wallet.listFundedAddresses()
+    } yield {
+      val diff = unspentDbs
+        .map(_.output)
+        .diff(fundedAddresses.map(tuple =>
+          TransactionOutput(tuple._2, tuple._1.scriptPubKey)))
+      assert(diff.isEmpty, s"Extra funded addresses $diff")
     }
   }
 }
