@@ -118,6 +118,11 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     for {
+      emptySpentAddresses <- wallet.listSpentAddresses()
+      _ = assert(
+        emptySpentAddresses.isEmpty,
+        s"Wallet did not start with empty spent addresses, got $emptySpentAddresses")
+
       tempAddress <- wallet.getNewAddress()
       tx <- wallet.sendToAddress(tempAddress,
                                  Bitcoins(1),
