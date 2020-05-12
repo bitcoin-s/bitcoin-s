@@ -20,7 +20,7 @@ class NeutrinoNodeTest extends NodeUnitTest {
 
   /** Wallet config with data directory set to user temp directory */
   implicit override protected def config: BitcoinSAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoTestConfig()
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(pgUrl)
 
   override type FixtureParam = NeutrinoNodeFundedWalletBitcoind
 
