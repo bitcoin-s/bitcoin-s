@@ -4,12 +4,14 @@ import java.time.Instant
 
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState.{
@@ -205,6 +207,62 @@ abstract class Wallet
     } yield updatedInfos
   }
 
+  /** Takes a [[BitcoinTxBuilder]] for a transaction to be sent, and completes it by:
+    * signing the transaction, then correctly processing the it and logging it
+    */
+  private def finishSend(txBuilder: BitcoinTxBuilder): Future[Transaction] = {
+    for {
+      signed <- txBuilder.sign
+      ourOuts <- findOurOuts(signed)
+      _ <- processOurTransaction(transaction = signed,
+                                 feeRate = txBuilder.feeRate,
+                                 inputAmount = txBuilder.creditingAmount,
+                                 sentAmount = txBuilder.destinationAmount,
+                                 blockHashOpt = None)
+    } yield {
+      logger.debug(
+        s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")
+
+      logger.trace(s"Change output(s) for transaction=${signed.txIdBE.hex}")
+      ourOuts.foreach { out =>
+        logger.trace(s"    $out")
+      }
+      signed
+    }
+  }
+
+  override def sendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction] = {
+    require(
+      address.networkParameters.isSameNetworkBytes(networkParameters),
+      s"Cannot send to address on other network, got ${address.networkParameters}"
+    )
+    logger.info(s"Sending $amount to $address at feerate $feeRate")
+    for {
+      utxoDbs <- spendingInfoDAO.findByOutPoints(outPoints)
+      diff = utxoDbs.map(_.outPoint).diff(outPoints)
+      _ = require(diff.isEmpty,
+                  s"Not all OutPoints belong to this wallet, diff $diff")
+
+      utxos = utxoDbs.map(_.toUTXOSpendingInfo(keyManager))
+
+      changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
+
+      output = TransactionOutput(amount, address.scriptPubKey)
+      txBuilder <- BitcoinTxBuilder(
+        Vector(output),
+        utxos,
+        feeRate,
+        changeAddr.scriptPubKey,
+        networkParameters.asInstanceOf[BitcoinNetwork])
+      tx <- finishSend(txBuilder)
+    } yield tx
+  }
+
   override def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
@@ -222,23 +280,9 @@ abstract class Wallet
         feeRate = feeRate,
         fromAccount = fromAccount,
         keyManagerOpt = Some(keyManager))
-      signed <- txBuilder.sign
-      ourOuts <- findOurOuts(signed)
-      _ <- processOurTransaction(transaction = signed,
-                                 feeRate = feeRate,
-                                 inputAmount = txBuilder.creditingAmount,
-                                 sentAmount = txBuilder.destinationAmount,
-                                 blockHashOpt = None)
-    } yield {
-      logger.debug(
-        s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")
 
-      logger.trace(s"Change output(s) for transaction=${signed.txIdBE.hex}")
-      ourOuts.foreach { out =>
-        logger.trace(s"    $out")
-      }
-      signed
-    }
+      tx <- finishSend(txBuilder)
+    } yield tx
   }
 
   override def sendToAddresses(
@@ -273,23 +317,8 @@ abstract class Wallet
                                               fromAccount = fromAccount,
                                               keyManagerOpt = Some(keyManager),
                                               markAsReserved = reserveUtxos)
-      signed <- txBuilder.sign
-      ourOuts <- findOurOuts(signed)
-      _ <- processOurTransaction(transaction = signed,
-                                 feeRate = feeRate,
-                                 inputAmount = txBuilder.creditingAmount,
-                                 sentAmount = txBuilder.destinationAmount,
-                                 blockHashOpt = None)
-    } yield {
-      logger.debug(
-        s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}")
-
-      logger.trace(s"Change output(s) for transaction=${signed.txIdBE.hex}")
-      ourOuts.foreach { out =>
-        logger.trace(s"    $out")
-      }
-      signed
-    }
+      tx <- finishSend(txBuilder)
+    } yield tx
   }
 
   /** Creates a new account my reading from our account database, finding the last account,
