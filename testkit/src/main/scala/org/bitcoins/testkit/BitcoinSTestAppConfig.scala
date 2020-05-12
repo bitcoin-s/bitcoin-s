@@ -33,6 +33,25 @@ object BitcoinSTestAppConfig {
     BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
   }
 
+  def getSpvWithEmbeddedDbTestConfig(
+      pgUrl: ProjectType => Option[String],
+      config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    val overrideConf = ConfigFactory.parseString {
+      """
+        |bitcoin-s {
+        |  node {
+        |     mode = spv
+        |  }
+        |}
+      """.stripMargin
+    }
+
+    BitcoinSAppConfig(tmpDir(),
+                      (overrideConf +: configWithEmbeddedDb(
+                        project = None,
+                        pgUrl) +: config): _*)
+  }
+
   def getNeutrinoTestConfig(config: Config*)(
       implicit ec: ExecutionContext): BitcoinSAppConfig = {
     val overrideConf = ConfigFactory.parseString {
@@ -45,6 +64,24 @@ object BitcoinSTestAppConfig {
       """.stripMargin
     }
     BitcoinSAppConfig(tmpDir(), (overrideConf +: config): _*)
+  }
+
+  def getNeutrinoWithEmbeddedDbTestConfig(
+      pgUrl: ProjectType => Option[String],
+      config: Config*)(implicit ec: ExecutionContext): BitcoinSAppConfig = {
+    val overrideConf = ConfigFactory.parseString {
+      """
+        |bitcoin-s {
+        |  node {
+        |     mode = neutrino
+        |  }
+        |}
+      """.stripMargin
+    }
+    BitcoinSAppConfig(tmpDir(),
+                      (overrideConf +: configWithEmbeddedDb(
+                        project = None,
+                        pgUrl) +: config): _*)
   }
 
   sealed trait ProjectType
@@ -62,58 +99,47 @@ object BitcoinSTestAppConfig {
     * project is given). This configuration can then be
     * given as a override to other configs.
     */
-  def configWithMemoryDb(project: Option[ProjectType]): Config = {
-    def memConfigForProject(project: ProjectType): String = {
-      val name = project.toString().toLowerCase()
-      s"""
-         | $name.db {
-         |   url = "jdbc:sqlite:file:$name.db:?mode=memory&cache=shared"
-         |   connectionPool = disabled
-         |   keepAliveConnection = true
-         | }
-         |""".stripMargin
-    }
-
-    val confStr = project match {
-      case None    => ProjectType.all.map(memConfigForProject).mkString("\n")
-      case Some(p) => memConfigForProject(p)
-    }
-    val nestedConfStr = s"""
-                           | bitcoin-s {
-                           | $confStr
-                           | }
-                           |""".stripMargin
-    ConfigFactory.parseString(nestedConfStr)
-  }
-
-  def configWithExternalDb(
+  def configWithEmbeddedDb(
       project: Option[ProjectType],
-      jdbcUrl: String,
-      username: String = "postgres",
-      password: String = "",
-      driver: String = "org.postgresql.Driver"): Config = {
-    def memConfigForProject(project: ProjectType): String = {
-      val name = project.toString().toLowerCase()
-      s"""
-         | $name.profile = "slick.jdbc.PostgresProfile$$"
-         | $name.db {
-         |   url = "$jdbcUrl"
-         |   driver = "$driver"
-         |   username = "$username"
-         |   password = "$password"
-         |   connectionPool = disabled
-         |   keepAliveConnection = true
-         | }
-         |""".stripMargin
+      pgUrl: ProjectType => Option[String]): Config = {
+    def slqiteConfigForProject(project: ProjectType): String = {
+      ""
+//      val name = project.toString().toLowerCase()
+//      s"""
+//         | $name.db {
+//         |   url = "jdbc:sqlite:file:$name.db:?mode=memory&cache=shared"
+//         |   connectionPool = disabled
+//         |   keepAliveConnection = true
+//         | }
+//         |""".stripMargin
     }
 
+    def pgConfigForProject(project: ProjectType): String = {
+      val name = project.toString().toLowerCase()
+      s""" $name.profile = "slick.jdbc.PostgresProfile$$"
+         | $name.db {
+         |   url = "${pgUrl(project).getOrElse(
+           throw new RuntimeException(s"Cannot get db url for $project"))}"
+         |   driver = "org.postgresql.Driver"
+         |   username = "postgres"
+         |   password = ""
+         |   connectionPool = disabled
+         |   keepAliveConnection = true
+         | }""".stripMargin
+    }
+
+    def configForProject(project: ProjectType) =
+      if (pgUrl(project).isDefined)
+        pgConfigForProject(project)
+      else
+        slqiteConfigForProject(project)
+
     val confStr = project match {
-      case None    => ProjectType.all.map(memConfigForProject).mkString("\n")
-      case Some(p) => memConfigForProject(p)
+      case None    => ProjectType.all.map(configForProject).mkString("\n")
+      case Some(p) => configForProject(p)
     }
     val nestedConfStr = s"""
                            | bitcoin-s {
-                           | 
                            | $confStr
                            | }
                            |""".stripMargin

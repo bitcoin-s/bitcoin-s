@@ -1,12 +1,14 @@
 package org.bitcoins.chain.models
 
-import java.time.ZonedDateTime
-
 import akka.actor.ActorSystem
 import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
+import org.bitcoins.testkit.chain.{
+  BlockHeaderHelper,
+  ChainDbUnitTest,
+  ChainUnitTest
+}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -14,7 +16,7 @@ import scala.concurrent.Future
 /**
   * Created by chris on 9/8/16.
   */
-class BlockHeaderDAOTest extends ChainUnitTest {
+class BlockHeaderDAOTest extends ChainDbUnitTest {
 
   override type FixtureParam = BlockHeaderDAO
 

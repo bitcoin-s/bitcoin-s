@@ -130,6 +130,7 @@ object Deps {
     val scalacheck = "org.scalacheck" %% "scalacheck" % V.scalacheck withSources () withJavadoc ()
     val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest withSources () withJavadoc ()
     val scalaTestPlus = "org.scalatestplus" %% "scalacheck-1-14" % V.scalaTestPlus withSources () withJavadoc ()
+    val pgEmbedded = "com.opentable.components" % "otj-pg-embedded" % V.pgEmbeddedV withSources () withJavadoc ()
   }
 
   object Test {
@@ -279,6 +280,7 @@ object Deps {
     Compile.scalacheck,
     Compile.scalaTest,
     Compile.scalaTestPlus,
+    Compile.pgEmbedded,
     Test.akkaTestkit
   )
 

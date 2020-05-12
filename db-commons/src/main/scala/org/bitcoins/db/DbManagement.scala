@@ -1,8 +1,9 @@
 package org.bitcoins.db
 
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.FlywayException
+import slick.ast.TableExpansion
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -52,7 +53,18 @@ trait DbManagement extends BitcoinSLogger {
   }
 
   def dropAll()(implicit ec: ExecutionContext): Future[Unit] = {
-    Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => ())
+    val result =
+      FutureUtil
+        .foldLeftAsync((), allTables.reverse) { (_, table) =>
+          println(table.toNode.asInstanceOf[TableExpansion].table)
+          dropTable(table)
+        }
+//    val result =
+//      Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => ())
+    result.failed.foreach { e =>
+      e.printStackTrace()
+    }
+    result
   }
 
   /** The query needed to create the given table */
@@ -83,6 +95,15 @@ trait DbManagement extends BitcoinSLogger {
       table: TableQuery[Table[_]]
   ): Future[Unit] = {
     val result = database.run(table.schema.dropIfExists)
+    result
+  }
+
+  def dropTable(tableName: String): Future[Int] = {
+    val result = database.run(sqlu"""DROP TABLE IF EXISTS #$tableName""")
+    import scala.concurrent.ExecutionContext.Implicits.global
+    result.failed.foreach { ex =>
+      ex.printStackTrace()
+    }
     result
   }
 

@@ -31,7 +31,7 @@ case class AddressDAO()(
 ) extends CRUD[AddressDb, BitcoinAddress]
     with SlickUtil[AddressDb, BitcoinAddress] {
   import profile.api._
-  val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
+  private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
 
   override val table: profile.api.TableQuery[AddressTable] =
@@ -147,8 +147,6 @@ case class AddressDAO()(
     * todo: https://github.com/bitcoin-s/bitcoin-s-core/pull/391#discussion_r274188334
     */
   class AddressTable(tag: Tag) extends Table[AddressDb](tag, "addresses") {
-    val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
-    import mappers._
 
     def purpose: Rep[HDPurpose] = column("hd_purpose")
 

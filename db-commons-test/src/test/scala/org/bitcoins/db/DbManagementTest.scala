@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext
 class DbManagementTest extends BitcoinSAsyncTest {
 
   def dbConfig(project: ProjectType): Config = {
-    BitcoinSTestAppConfig.configWithMemoryDb(Some(project))
+    BitcoinSTestAppConfig.configWithEmbeddedDb(Some(project))
   }
 
   def createChainDbManagement(
