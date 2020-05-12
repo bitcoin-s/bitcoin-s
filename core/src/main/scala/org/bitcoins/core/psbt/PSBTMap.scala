@@ -3,26 +3,12 @@ package org.bitcoins.core.psbt
 import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction.{
-  NonWitnessTransaction,
-  Transaction,
-  TransactionInput,
-  TransactionOutput,
-  WitnessTransaction
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  ECDigitalSignature,
-  EmptyDigitalSignature,
-  Factory,
-  NetworkElement,
-  Sha256Hash160Digest,
-  Sign
-}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -684,12 +670,12 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
         InputPSBTMap(sigs.toVector ++ Vector(sigHash, redeemScript))
       case cond: ConditionalScriptSignature =>
         fromScriptSig(cond.nestedScriptSig)
-      case _: CLTVScriptSignature | _: CSVScriptSignature |
-          _: MultiSignatureScriptSignature | _: NonStandardScriptSignature |
-          _: P2PKScriptSignature | TrivialTrueScriptSignature |
-          EmptyScriptSignature =>
+      case lockTime: LockTimeScriptSignature =>
+        fromScriptSig(lockTime.scriptSig)
+      case _: P2PKScriptSignature | _: MultiSignatureScriptSignature |
+          _: NonStandardScriptSignature | _: P2PKScriptSignature |
+          TrivialTrueScriptSignature | EmptyScriptSignature =>
         InputPSBTMap.empty
-
     }
   }
 
