@@ -169,6 +169,9 @@ object ConsoleCli {
         .action((_, conf) => conf.copy(command = GetSpentAddresses))
         .text(
           "Returns list of all wallet addresses that have received funds and been spent"),
+      cmd("getfundedaddresses")
+        .action((_, conf) => conf.copy(command = GetFundedAddresses))
+        .text("Returns list of all wallet addresses that are holding funds"),
       cmd("getaccounts")
         .action((_, conf) => conf.copy(command = GetAccounts))
         .text("Returns list of all wallet accounts"),
@@ -402,6 +405,8 @@ object ConsoleCli {
         RequestParam("getaddresses")
       case GetSpentAddresses =>
         RequestParam("getspentaddresses")
+      case GetFundedAddresses =>
+        RequestParam("getfundedaddresses")
       case GetAccounts =>
         RequestParam("getaccounts")
       case CreateNewAccount =>
@@ -577,6 +582,7 @@ object CliCommand {
   case object GetUtxos extends CliCommand
   case object GetAddresses extends CliCommand
   case object GetSpentAddresses extends CliCommand
+  case object GetFundedAddresses extends CliCommand
   case object GetAccounts extends CliCommand
   case object CreateNewAccount extends CliCommand
   case object IsEmpty extends CliCommand

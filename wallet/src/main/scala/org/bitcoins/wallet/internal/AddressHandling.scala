@@ -1,5 +1,6 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -67,6 +68,21 @@ private[wallet] trait AddressHandling extends WalletLogger {
 
     spentAddressesF.map { spentAddresses =>
       spentAddresses.filter(addr => HDAccount.isSameAccount(addr.path, account))
+    }
+  }
+
+  override def listFundedAddresses(): Future[
+    Vector[(AddressDb, CurrencyUnit)]] = {
+    addressDAO.getFundedAddresses
+  }
+
+  override def listFundedAddresses(
+      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]] = {
+    val spentAddressesF = addressDAO.getFundedAddresses
+
+    spentAddressesF.map { spentAddresses =>
+      spentAddresses.filter(addr =>
+        HDAccount.isSameAccount(addr._1.path, account))
     }
   }
 
