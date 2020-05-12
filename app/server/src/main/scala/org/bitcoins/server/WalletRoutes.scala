@@ -181,6 +181,14 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         }
       }
 
+    case ServerCommand("getspentaddresses", _) =>
+      complete {
+        wallet.listSpentAddresses().map { addressDbs =>
+          val addresses = addressDbs.map(_.address)
+          Server.httpSuccess(addresses)
+        }
+      }
+
     case ServerCommand("getaccounts", _) =>
       complete {
         wallet.listAccounts().map { accounts =>

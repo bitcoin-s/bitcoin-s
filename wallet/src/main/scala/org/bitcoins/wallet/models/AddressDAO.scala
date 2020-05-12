@@ -18,6 +18,7 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.script.ScriptType
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -113,6 +114,16 @@ case class AddressDAO()(
 
   def getUnusedAddresses(hdAccount: HDAccount): Future[Vector[AddressDb]] = {
     getUnusedAddresses.map(_.filter(_.path.account == hdAccount))
+  }
+
+  def getSpentAddresses: Future[Vector[AddressDb]] = {
+    val query = table
+      .join(spendingInfoTable)
+      .on(_.scriptPubKey === _.scriptPubKey)
+      .filter(_._2.state.inSet(TxoState.spentStates))
+      .map(_._1)
+
+    safeDatabase.runVec(query.result)
   }
 
   private def findMostRecentForChain(

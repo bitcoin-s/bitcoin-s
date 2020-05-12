@@ -351,6 +351,28 @@ class RoutesSpec
       }
     }
 
+    "return the wallet's spent addresses" in {
+      val addressDb = LegacyAddressDb(
+        LegacyHDPath(HDCoinType.Testnet, 0, HDChainType.External, 0),
+        ECPublicKey.freshPublicKey,
+        Sha256Hash160Digest.fromBytes(ByteVector.low(20)),
+        testAddress.asInstanceOf[P2PKHAddress],
+        testAddress.scriptPubKey
+      )
+
+      (mockWalletApi.listSpentAddresses: () => Future[Vector[AddressDb]])
+        .expects()
+        .returning(Future.successful(Vector(addressDb)))
+
+      val route =
+        walletRoutes.handleCommand(ServerCommand("getspentaddresses", Arr()))
+
+      Get() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":["""" + testAddressStr + """"],"error":null}"""
+      }
+    }
+
     "return the wallet accounts" in {
       val xpub = ExtPublicKey
         .fromString(
