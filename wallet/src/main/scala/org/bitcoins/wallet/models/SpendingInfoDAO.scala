@@ -163,6 +163,13 @@ case class SpendingInfoDAO()(
     safeDatabase.runVec(query.result).map(_.toVector)
   }
 
+  /** Enumerates all TX outpoints in the wallet */
+  def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    val query = table.filter(_.outPoint.inSet(outPoints))
+    safeDatabase.runVec(query.result).map(_.toVector)
+  }
+
   /**
     * This table stores the necessary information to spend
     * a transaction output (TXO) at a later point in time. It

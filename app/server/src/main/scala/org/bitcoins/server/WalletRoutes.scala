@@ -107,6 +107,30 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("sendfromoutpoints", arr) =>
+      SendFromOutpoints.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+            SendFromOutpoints(outPoints,
+                              address,
+                              bitcoins,
+                              satoshisPerVirtualByteOpt)) =>
+          complete {
+            // TODO dynamic fees based off mempool and recent blocks
+            val feeRate =
+              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
+
+            for {
+              tx <- wallet.sendFromOutPoints(outPoints,
+                                             address,
+                                             bitcoins,
+                                             feeRate)
+              _ <- node.broadcastTransaction(tx)
+            } yield Server.httpSuccess(tx.txIdBE)
+          }
+      }
+
     case ServerCommand("rescan", arr) =>
       Rescan.fromJsArr(arr) match {
         case Failure(exception) =>

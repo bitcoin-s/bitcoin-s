@@ -17,14 +17,15 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   behavior of "Wallet"
 
+  val testAddress: BitcoinAddress =
+    BitcoinAddress("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq").get
+
+  val amountToSend: Bitcoins = Bitcoins(0.5)
+
   val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
 
   it should "correctly send to an address" in { fundedWallet =>
     val wallet = fundedWallet.wallet
-
-    val testAddress =
-      BitcoinAddress("bcrt1qlhctylgvdsvaanv539rg7hyn0sjkdm23y70kgq").get
-    val amountToSend: Bitcoins = Bitcoins(0.5)
 
     for {
       tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
@@ -138,6 +139,29 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
     recoverToSucceededIf[IllegalArgumentException] {
       sendToAddressesF
+    }
+  }
+
+  it should "correctly send from outpoints" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+    for {
+      allOutPoints <- wallet.spendingInfoDAO.findAllOutpoints()
+      // use half of them
+      outPoints = allOutPoints.drop(allOutPoints.size / 2)
+      tx <- wallet.sendFromOutPoints(outPoints,
+                                     testAddress,
+                                     amountToSend,
+                                     feeRate)
+    } yield {
+      assert(outPoints.forall(outPoint =>
+               tx.inputs.exists(_.previousOutput == outPoint)),
+             "Every outpoint was not included included")
+      assert(tx.inputs.size == outPoints.size, "An extra input was added")
+
+      val expectedOutput =
+        TransactionOutput(amountToSend, testAddress.scriptPubKey)
+      assert(tx.outputs.contains(expectedOutput),
+             "Did not contain expected output")
     }
   }
 }

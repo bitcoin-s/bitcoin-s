@@ -17,12 +17,7 @@ import org.bitcoins.core.protocol.BlockStamp.{
   InvalidBlockStamp
 }
 import org.bitcoins.core.protocol.script.EmptyScriptWitness
-import org.bitcoins.core.protocol.transaction.{
-  EmptyTransaction,
-  EmptyTransactionOutPoint,
-  EmptyTransactionOutput,
-  Transaction
-}
+import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp, P2PKHAddress}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
@@ -475,6 +470,85 @@ class RoutesSpec
           Some(InvalidData("abc", "Expected ujson.Num")))
       }
 
+    }
+
+    "send from outpoints" in {
+      // positive cases
+
+      (mockWalletApi
+        .sendFromOutPoints(_: Vector[TransactionOutPoint],
+                           _: BitcoinAddress,
+                           _: CurrencyUnit,
+                           _: FeeUnit))
+        .expects(Vector.empty[TransactionOutPoint],
+                 testAddress,
+                 Bitcoins(100),
+                 *)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockNode.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("sendfromoutpoints",
+                      Arr(Arr(), Str(testAddressStr), Num(100), Num(4))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+      }
+
+      // negative cases
+
+      val route1 = walletRoutes.handleCommand(
+        ServerCommand("sendfromoutpoints", Arr(Arr(), Null, Null, Null)))
+
+      Post() ~> route1 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Str")))
+      }
+
+      val route2 = walletRoutes.handleCommand(
+        ServerCommand("sendfromoutpoints", Arr(Arr(), "Null", Null, Null)))
+
+      Post() ~> route2 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData("Null", "Expected a valid address")))
+      }
+
+      val route3 = walletRoutes.handleCommand(
+        ServerCommand("sendfromoutpoints",
+                      Arr(Arr(), Str(testAddressStr), Null, Null)))
+
+      Post() ~> route3 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Num")))
+      }
+
+      val route4 = walletRoutes.handleCommand(
+        ServerCommand("sendfromoutpoints",
+                      Arr(Arr(), Str(testAddressStr), Str("abc"), Null)))
+
+      Post() ~> route4 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData("abc", "Expected ujson.Num")))
+      }
+
+      val route5 = walletRoutes.handleCommand(
+        ServerCommand("sendfromoutpoints",
+                      Arr(Null, Str(testAddressStr), Num(100), Num(4))))
+
+      Post() ~> route5 ~> check {
+        rejection shouldEqual ValidationRejection(
+          "failure",
+          Some(InvalidData(Null, "Expected ujson.Arr")))
+      }
     }
 
     "return the peer list" in {

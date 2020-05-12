@@ -10,7 +10,11 @@ import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -414,6 +418,24 @@ trait WalletApi extends WalletLogger {
   def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
 
   def keyManager: BIP39KeyManager
+
+  def sendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction]
+
+  def sendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendFromOutPoints(outPoints, address, amount, feeRate, account)
+    } yield tx
+  }
 
   /**
     *

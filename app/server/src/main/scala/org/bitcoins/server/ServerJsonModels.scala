@@ -2,7 +2,7 @@ package org.bitcoins.server
 
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -235,6 +235,43 @@ object SendToAddress extends ServerJsonModels {
 
 }
 
+case class SendFromOutpoints(
+    outPoints: Vector[TransactionOutPoint],
+    address: BitcoinAddress,
+    amount: Bitcoins,
+    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+
+object SendFromOutpoints extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SendFromOutpoints] = {
+    jsArr.arr.toList match {
+      case outPointsJs :: addrJs :: bitcoinsJs :: satsPerVBytesJs :: Nil =>
+        Try {
+          val outPoints = jsToTransactionOutPointSeq(outPointsJs).toVector
+          val address = jsToBitcoinAddress(addrJs)
+          val bitcoins = Bitcoins(bitcoinsJs.num)
+          val satoshisPerVirtualByte =
+            nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
+              SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
+          SendFromOutpoints(outPoints,
+                            address,
+                            bitcoins,
+                            satoshisPerVirtualByte)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing outPoints, address, amount, and fee rate arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 3"))
+    }
+  }
+
+}
+
 trait ServerJsonModels {
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
@@ -251,6 +288,14 @@ trait ServerJsonModels {
   }
 
   def jsToPSBT(js: Value): PSBT = PSBT.fromString(js.str)
+
+  def jsToTransactionOutPointSeq(js: Value): Seq[TransactionOutPoint] = {
+    js.arr.foldLeft(Seq.empty[TransactionOutPoint])((seq, outPoint) =>
+      seq :+ jsToTransactionOutPoint(outPoint))
+  }
+
+  def jsToTransactionOutPoint(js: Value): TransactionOutPoint =
+    TransactionOutPoint(js.str)
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 
