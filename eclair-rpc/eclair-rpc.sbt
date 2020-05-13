@@ -21,14 +21,14 @@ TaskKeys.downloadEclair := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.3.3"
-  val commit = "12ac145"
+  val version = "0.4"
+  val commit = "69c538e"
 
   logger.debug(s"(Maybe) downloading Eclair binaries for version: $version")
 
   val versionDir = binaryDir resolve version
   val location =
-    s"https://github.com/ACINQ/eclair/releases/download/v$version/eclair-node-$version-$commit.jar"
+    s"https://github.com/ACINQ/eclair/releases/download/v$version/eclair-node-$version-$commit-bin.zip"
 
   if (Files.exists(versionDir)) {
     logger.debug(
@@ -37,10 +37,17 @@ TaskKeys.downloadEclair := {
     logger.info(s"Creating directory $version")
     Files.createDirectories(versionDir)
 
-    val destination = versionDir resolve s"eclair-node-$version-$commit.jar"
+    val archiveLocation = binaryDir resolve s"eclair-node-$version-$commit.zip"
     logger.info(
-      s"Downloading Eclair $version from location: $location, to destination: $destination")
-    (url(location) #> destination.toFile).!!
+      s"Downloading Eclair $version from location: $location, to destination: $archiveLocation")
+    (url(location) #> archiveLocation.toFile).!!
+
+    val extractCommand = s"unzip $archiveLocation -d $versionDir"
+    logger.info(s"Extracting archive with command: $extractCommand")
+    extractCommand.!!
+
+    logger.info(s"Deleting archive")
+    Files.delete(archiveLocation)
 
     logger.info(s"Download complete")
   }
