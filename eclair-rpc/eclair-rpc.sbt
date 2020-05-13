@@ -37,7 +37,7 @@ TaskKeys.downloadEclair := {
     logger.info(s"Creating directory $version")
     Files.createDirectories(versionDir)
 
-    val archiveLocation = binaryDir resolve s"eclair-node-$version-$commit.zip"
+    val archiveLocation = versionDir resolve s"eclair-node-$version-$commit.zip"
     logger.info(
       s"Downloading Eclair $version from location: $location, to destination: $archiveLocation")
     (url(location) #> archiveLocation.toFile).!!

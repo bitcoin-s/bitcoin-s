@@ -946,7 +946,6 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-//  private[bitcoins] val commit = "12ac145"
   private[bitcoins] val commit = "69c538e"
 
   /** The current version we support of Eclair */
