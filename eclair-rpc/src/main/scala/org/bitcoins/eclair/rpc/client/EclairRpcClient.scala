@@ -737,10 +737,10 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
               s"A datadir needs to be provided to start eclair")
       if (process.isEmpty) {
         val logback = instance.logbackXmlPath
-          .map(path => s"""-Dlogback.configurationFile="$path"""")
+          .map(path => s"-Dlogback.configurationFile=$path")
           .getOrElse("")
         val cmd =
-          s""""${pathToEclairJar}" -Declair.datadir="${instance.authCredentials.datadir.get}" $logback"""
+          s"${pathToEclairJar} -Declair.datadir=${instance.authCredentials.datadir.get} $logback"
         val p = Process(cmd)
         val result = p.run()
         logger.debug(
