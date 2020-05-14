@@ -108,9 +108,11 @@ abstract class NodeTestUtil extends P2PLogger {
   def isSameBestHash(node: Node, rpc: BitcoindRpcClient)(
       implicit ec: ExecutionContext): Future[Boolean] = {
     val hashF = rpc.getBestBlockHash
+    hashF.foreach(println)
     for {
       chainApi <- node.chainApiFromDb()
       bestHash <- chainApi.getBestBlockHash
+      _ = println(s"bestHash=$bestHash")
       hash <- hashF
     } yield {
       bestHash == hash
