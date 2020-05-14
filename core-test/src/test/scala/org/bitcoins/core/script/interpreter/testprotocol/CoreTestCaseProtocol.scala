@@ -6,7 +6,8 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.result.ScriptResult
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.crypto.BytesUtil
 import scodec.bits.ByteVector
 import spray.json._
 
@@ -57,7 +58,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
           (witnessArray.elements.last.convertTo[Double] * 100000000L).toLong)
         val stack = witnessArray.elements
           .slice(0, witnessArray.elements.size - 1)
-          .map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
+          .map(c => BytesUtil.decodeHex(c.convertTo[String]))
         val witness = ScriptWitness(stack.reverse)
         val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
@@ -98,7 +99,7 @@ object CoreTestCaseProtocol extends DefaultJsonProtocol {
           (witnessArray.elements.last.convertTo[Double] * 100000000L).toLong)
         val stack = witnessArray.elements
           .slice(0, witnessArray.elements.size - 1)
-          .map(c => BitcoinSUtil.decodeHex(c.convertTo[String]))
+          .map(c => BytesUtil.decodeHex(c.convertTo[String]))
         val witness = ScriptWitness(stack.reverse)
         val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(2))
         val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)

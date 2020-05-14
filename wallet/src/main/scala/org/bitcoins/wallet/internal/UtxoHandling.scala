@@ -1,7 +1,6 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.core.compat._
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -17,6 +16,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.EitherUtil
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
 import org.bitcoins.wallet.models._

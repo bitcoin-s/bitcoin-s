@@ -8,7 +8,7 @@ import org.bitcoins.core.script.crypto.OP_RIPEMD160
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.splice.OP_SUBSTR
 import org.bitcoins.core.script.stack.OP_TOALTSTACK
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -34,7 +34,7 @@ class ScriptOperationFactoryTest extends BitcoinSUnitTest {
   }
 
   it must "find OP_4 from it's byte representation" in {
-    val byteRepresentation = BitcoinSUtil.decodeHex("54").head
+    val byteRepresentation = BytesUtil.decodeHex("54").head
     ScriptOperation(byteRepresentation) must be(OP_4)
   }
 

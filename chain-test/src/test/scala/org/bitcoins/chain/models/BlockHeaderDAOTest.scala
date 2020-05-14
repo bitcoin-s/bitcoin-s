@@ -1,9 +1,9 @@
 package org.bitcoins.chain.models
 
 import akka.actor.ActorSystem
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
   ChainDbUnitTest,

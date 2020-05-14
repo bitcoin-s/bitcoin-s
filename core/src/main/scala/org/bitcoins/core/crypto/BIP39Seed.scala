@@ -1,7 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{Factory, MaskedToString}
+import org.bitcoins.crypto.{Factory, MaskedToString, NetworkElement, PBKDF2}
 import scodec.bits.ByteVector
 
 sealed abstract class BIP39Seed extends NetworkElement with MaskedToString {

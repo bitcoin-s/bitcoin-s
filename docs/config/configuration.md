@@ -153,6 +153,11 @@ bitcoin-s {
         addressQueueTimeout = 5 seconds
 
    }
+
+    server {
+        # The port we bind our rpc server on
+        rpcport = 9999
+    }
 }
 
 

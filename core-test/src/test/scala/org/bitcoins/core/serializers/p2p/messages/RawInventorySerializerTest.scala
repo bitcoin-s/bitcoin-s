@@ -1,8 +1,7 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
-import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.p2p.TypeIdentifier.MsgTx
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -19,7 +18,7 @@ class RawInventorySerializerTest extends BitcoinSUnitTest {
     inventory.typeIdentifier must be(MsgTx)
     inventory.hash must be
     (DoubleSha256Digest(
-      BitcoinSUtil.decodeHex(
+      BytesUtil.decodeHex(
         "de55ffd709ac1f5dc509a0925d0b1fc442ca034f224732e429081da1b621f55a")))
   }
 

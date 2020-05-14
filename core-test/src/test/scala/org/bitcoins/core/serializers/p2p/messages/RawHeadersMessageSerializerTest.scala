@@ -1,9 +1,9 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil}
+import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -33,8 +33,8 @@ class RawHeadersMessageSerializerTest
       DoubleSha256Digest(
         "9d10aa52ee949386ca9385695f04ede270dda20810decd12bc9b048aaab31471"))
     header.time must be(UInt32(1415239972))
-    header.nBits must be(UInt32(BitcoinSUtil.flipEndianness("30c31b18")))
-    header.nonce must be(UInt32(BitcoinSUtil.flipEndianness("fe9f0864")))
+    header.nBits must be(UInt32(BytesUtil.flipEndianness("30c31b18")))
+    header.nonce must be(UInt32(BytesUtil.flipEndianness("fe9f0864")))
   }
 
   it must "read then write a HeaderMessage" in {
@@ -49,24 +49,24 @@ class RawHeadersMessageSerializerTest
     val first = headersMsg.headers.head
     logger.debug("Headers: " + headersMsg.headers)
     first.previousBlockHash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"))
     first.hash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206"))
     first.merkleRootHash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "f0315ffc38709d70ad5647e22048358dd3745f3ce3874223c80a7c92fab0c8ba"))
     logger.debug("Second header: " + headersMsg.headers(1))
     val second = headersMsg.headers(1)
     second.previousBlockHash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206"))
     second.hash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820"))
     second.merkleRootHash.hex must be(
-      BitcoinSUtil.flipEndianness(
+      BytesUtil.flipEndianness(
         "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2"))
   }
 }

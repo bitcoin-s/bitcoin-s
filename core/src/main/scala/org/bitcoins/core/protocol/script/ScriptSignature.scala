@@ -1,10 +1,10 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.utxo.ConditionalPath
+import org.bitcoins.crypto.{BytesUtil, ECDigitalSignature, ECPublicKey}
 
 import scala.util.{Failure, Success, Try}
 
@@ -433,7 +433,7 @@ object CLTVScriptSignature extends ScriptFactory[CLTVScriptSignature] {
   }
 
   override def fromHex(hex: String): CLTVScriptSignature = {
-    CLTVScriptSignature(BitcoinSUtil.decodeHex(hex))
+    CLTVScriptSignature(BytesUtil.decodeHex(hex))
   }
 
   def apply(scriptSig: ScriptSignature): CLTVScriptSignature = {
@@ -460,7 +460,7 @@ object CSVScriptSignature extends ScriptFactory[CSVScriptSignature] {
   }
 
   override def fromHex(hex: String): CSVScriptSignature = {
-    CSVScriptSignature(BitcoinSUtil.decodeHex(hex))
+    CSVScriptSignature(BytesUtil.decodeHex(hex))
   }
 
   def apply(scriptSig: ScriptSignature): CSVScriptSignature = {

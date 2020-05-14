@@ -10,7 +10,13 @@ import org.bitcoins.core.script.control.{
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, CryptoUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  ECDigitalSignature,
+  ECPublicKey,
+  HashDigest
+}
 import scodec.bits.ByteVector
 
 /**

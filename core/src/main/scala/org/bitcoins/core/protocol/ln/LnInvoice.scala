@@ -1,11 +1,11 @@
 package org.bitcoins.core.protocol.ln
 
-import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Digest}
 import org.bitcoins.core.number.{UInt5, UInt64, UInt8}
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, PicoBitcoins}
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.util.LnUtil
 import org.bitcoins.core.util._
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, Sha256Digest}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -78,7 +78,7 @@ sealed abstract class LnInvoice {
     sig
   }
 
-  /** The hash that is signed by the [[org.bitcoins.core.crypto.ECPrivateKey ECPrivateKey]] corresponding
+  /** The hash that is signed by the [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] corresponding
     * to the `nodeId`
     */
   private def sigHash: Sha256Digest = {

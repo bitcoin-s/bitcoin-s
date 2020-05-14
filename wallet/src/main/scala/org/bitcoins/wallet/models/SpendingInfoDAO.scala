@@ -1,6 +1,5 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.script.{
@@ -14,6 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
 import org.bitcoins.wallet.config._
 import slick.lifted.ProvenShape
@@ -117,13 +117,10 @@ case class SpendingInfoDAO()(
     safeDatabase.runVec(filtered.result)
   }
 
-  private val receivedStates: Set[TxoState] =
-    Set(TxoState.PendingConfirmationsReceived, TxoState.ConfirmedReceived)
-
   /** Enumerates all unspent TX outputs in the wallet with the state
     * [[TxoState.PendingConfirmationsReceived]] or [[TxoState.ConfirmedReceived]] */
   def findAllUnspent(): Future[Vector[SpendingInfoDb]] = {
-    val query = table.filter(_.state.inSet(receivedStates))
+    val query = table.filter(_.state.inSet(TxoState.receivedStates))
 
     database.run(query.result).map(_.toVector)
   }
@@ -161,6 +158,13 @@ case class SpendingInfoDAO()(
   /** Enumerates all TX outpoints in the wallet */
   def findAllOutpoints(): Future[Vector[TransactionOutPoint]] = {
     val query = table.map(_.outPoint)
+    safeDatabase.runVec(query.result).map(_.toVector)
+  }
+
+  /** Enumerates all TX outpoints in the wallet */
+  def findByOutPoints(outPoints: Vector[TransactionOutPoint]): Future[
+    Vector[SpendingInfoDb]] = {
+    val query = table.filter(_.outPoint.inSet(outPoints))
     safeDatabase.runVec(query.result).map(_.toVector)
   }
 

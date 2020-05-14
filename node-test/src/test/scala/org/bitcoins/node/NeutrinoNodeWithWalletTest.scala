@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.currency._
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.node.networking.peer.DataMessageHandler.OnCompactFiltersReceived
@@ -30,7 +30,7 @@ class NeutrinoNodeWithWalletTest extends NodeUnitTest {
     // We need to disable the test on non-linux CI runs
     // because we do not have a mac binary of the BIP 157
     // compatible version of bitcoin core
-    if (BitcoinSUtil.isCI && !BitcoinSUtil.isLinux) {
+    if (EnvUtil.isCI && !EnvUtil.isLinux) {
       FutureOutcome.succeeded
     } else {
       withNeutrinoNodeFundedWalletBitcoind(test,

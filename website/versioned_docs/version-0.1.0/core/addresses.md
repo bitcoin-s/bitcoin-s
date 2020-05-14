@@ -22,11 +22,10 @@ you can generate bech32 addresses in four(!) lines of code
 reason to keep using legacy transaction formats.
 
 ```scala
-import org.bitcoins.core.{crypto, protocol, config}
+
 // if you want to get addresses for mainnet, just import
 // config.MainNet here instead
 import config.TestNet3
-import crypto.ECPrivateKey
 
 // this gets all addresses into scope
 import protocol._

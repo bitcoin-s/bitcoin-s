@@ -1,5 +1,6 @@
 package org.bitcoins.core.util
 
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.core.gen.StringGenerators
 import org.scalacheck.{Prop, Properties}
 
@@ -10,19 +11,19 @@ class BitcoinSUtilSpec extends Properties("BitcoinSUtilSpec") {
 
   property("Serialization symmetry for encodeHex & decodeHex") =
     Prop.forAll(StringGenerators.hexString) { hex: String =>
-      BitcoinSUtil.encodeHex(BitcoinSUtil.decodeHex(hex)) == hex
+      BytesUtil.encodeHex(BytesUtil.decodeHex(hex)) == hex
     }
 
   property("Flipping endianness symmetry") =
     Prop.forAll(StringGenerators.hexString) { hex: String =>
-      BitcoinSUtil.flipEndianness(BitcoinSUtil.flipEndianness(hex)) == hex
+      BytesUtil.flipEndianness(BytesUtil.flipEndianness(hex)) == hex
     }
 
   property(
     "Convert a byte to a bit vector, convert it back to the original byte") =
     Prop.forAll { byte: Byte =>
-      BitcoinSUtil
-        .bitVectorToBytes(BitcoinSUtil.byteToBitVector(byte))
+      BytesUtil
+        .bitVectorToBytes(BytesUtil.byteToBitVector(byte))
         .toByte() == byte
     }
 }

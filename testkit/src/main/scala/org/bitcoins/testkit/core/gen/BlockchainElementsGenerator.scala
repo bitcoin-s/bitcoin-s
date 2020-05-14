@@ -2,10 +2,10 @@ package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.testkit.Implicits._
 import org.bitcoins.core.consensus.Merkle
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.scalacheck.Gen
 
 import scala.annotation.tailrec

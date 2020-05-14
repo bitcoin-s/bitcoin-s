@@ -23,7 +23,7 @@ To tell if you have access to libsecp256k1 you can do the following
 
 ```scala mdoc:invisible
 import org.bitcoin._
-import org.bitcoins.core.crypto._
+import org.bitcoins.crypto._
 
 ```
 

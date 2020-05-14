@@ -36,6 +36,13 @@ If you would like to pass in a custom datadir for your server, you can do
 ```bash
 ./app/server/target/universal/stage/bin/bitcoin-s-server --datadir /path/to/datadir/
 ```
+
+You can also pass in a custom `rpcport` to bind to
+
+```bash
+./app/server/target/universal/stage/bin/bitcoin-s-server --rpcport 12345
+```
+
 For more information on configuring the server please see our [configuration](../config/configuration.md) document
 
 For more information on how to use our built in `cli` to interact with the server please see [cli.md](cli.md)

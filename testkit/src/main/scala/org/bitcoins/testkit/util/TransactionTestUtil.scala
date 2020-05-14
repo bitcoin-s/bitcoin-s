@@ -1,11 +1,12 @@
 package org.bitcoins.testkit.util
 
-import org.bitcoins.core.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.crypto.ECPublicKey
 
 /**
   * Created by chris on 2/12/16.
@@ -144,11 +145,11 @@ trait TransactionTestUtil extends BitcoinSLogger {
       Int,
       ScriptPubKey,
       Seq[ECPublicKey]) = {
-    val key1 = ECPrivateKey.fromWIFToPrivateKey(
+    val key1 = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cVLwRLTvz3BxDAWkvS3yzT9pUcTCup7kQnfT2smRjvmmm1wAP6QT")
-    val key2 = ECPrivateKey.fromWIFToPrivateKey(
+    val key2 = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cTine92s8GLpVqvebi8rYce3FrUYq78ZGQffBYCS1HmDPJdSTxUo")
-    val key3 = ECPrivateKey.fromWIFToPrivateKey(
+    val key3 = ECPrivateKeyUtil.fromWIFToPrivateKey(
       "cVHwXSPRZmL9adctwBwmn4oTZdZMbaCsR5XF6VznqMgcvt1FDDxg")
     (signedMultiSignatureTx,
      0,

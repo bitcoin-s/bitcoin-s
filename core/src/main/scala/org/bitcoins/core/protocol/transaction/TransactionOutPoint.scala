@@ -1,14 +1,17 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.transaction.RawTransactionOutPointParser
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  Factory,
+  NetworkElement
+}
 import scodec.bits._
 
 /**
-  * @param The transaction id for the crediting transaction for this input
+  * @param txId The transaction id for the crediting transaction for this input
   * @param vout The output index in the parent transaction for the output we are spending
   */
 case class TransactionOutPoint(txId: DoubleSha256Digest, vout: UInt32)
@@ -47,7 +50,7 @@ object TransactionOutPoint extends Factory[TransactionOutPoint] {
     RawTransactionOutPointParser.read(bytes)
 
   /**
-    * @param The transaction id for the crediting transaction for this input
+    * @param txId The transaction id for the crediting transaction for this input
     * @param vout The output index in the parent transaction for the output we are spending
     */
   def apply(txId: DoubleSha256DigestBE, vout: UInt32): TransactionOutPoint = {

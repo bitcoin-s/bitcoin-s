@@ -1,10 +1,9 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.util.BitcoinSUtil
 import org.bitcoins.core.p2p._
+import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**
@@ -25,16 +24,16 @@ class RawGetBlocksMessageSerializerTest extends BitcoinSUnitTest {
 
     getBlocksMessage.blockHeaderHashes.head must be
     (DoubleSha256Digest(
-      BitcoinSUtil.decodeHex(
+      BytesUtil.decodeHex(
         "d39f608a7775b537729884d4e6633bb2105e55a16a14d31b0000000000000000")))
 
     getBlocksMessage.blockHeaderHashes.tail.head must be
     (DoubleSha256Digest(
-      BitcoinSUtil.decodeHex(
+      BytesUtil.decodeHex(
         "5c3e6403d40837110a2e8afb602b1c01714bda7ce23bea0a0000000000000000")))
 
     getBlocksMessage.stopHash must be(
-      DoubleSha256Digest(BitcoinSUtil.decodeHex(
+      DoubleSha256Digest(BytesUtil.decodeHex(
         "0000000000000000000000000000000000000000000000000000000000000000")))
 
   }

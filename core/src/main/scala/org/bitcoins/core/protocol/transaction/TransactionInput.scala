@@ -1,11 +1,9 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.script.{EmptyScriptSignature, ScriptSignature}
 import org.bitcoins.core.serializers.transaction.RawTransactionInputParser
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /**

@@ -4,12 +4,6 @@ import java.io.File
 import java.time.ZonedDateTime
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
-import org.bitcoins.core.crypto.{
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  RipeMd160Digest,
-  Sha256Hash160Digest
-}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
@@ -18,6 +12,12 @@ import org.bitcoins.core.protocol.script.{ScriptPubKey, WitnessVersion}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
+import org.bitcoins.crypto.{
+  DoubleSha256DigestBE,
+  ECPublicKey,
+  RipeMd160Digest,
+  Sha256Hash160Digest
+}
 
 sealed abstract class WalletResult
 

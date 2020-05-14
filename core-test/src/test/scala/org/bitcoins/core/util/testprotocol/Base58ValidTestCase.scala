@@ -1,7 +1,7 @@
 package org.bitcoins.core.util.testprotocol
 
-import org.bitcoins.core.crypto.{ECPrivateKey, Sha256Hash160Digest}
 import org.bitcoins.core.protocol.Address
+import org.bitcoins.crypto.{ECPrivateKey, Sha256Hash160Digest}
 
 /**
   * Created by tom on 6/14/16.

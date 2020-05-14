@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.crypto.ECPublicKey
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -10,6 +10,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.wallet._
 import org.bitcoins.wallet.api.AddressInfo
 import org.bitcoins.wallet.models.{AccountDb, AddressDb, AddressDbHelper}
@@ -55,6 +56,48 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
 
     accountAddressesF
+  }
+
+  override def listSpentAddresses(): Future[Vector[AddressDb]] = {
+    addressDAO.getSpentAddresses
+  }
+
+  override def listSpentAddresses(
+      account: HDAccount): Future[Vector[AddressDb]] = {
+    val spentAddressesF = addressDAO.getSpentAddresses
+
+    spentAddressesF.map { spentAddresses =>
+      spentAddresses.filter(addr => HDAccount.isSameAccount(addr.path, account))
+    }
+  }
+
+  override def listFundedAddresses(): Future[
+    Vector[(AddressDb, CurrencyUnit)]] = {
+    addressDAO.getFundedAddresses
+  }
+
+  override def listFundedAddresses(
+      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]] = {
+    val spentAddressesF = addressDAO.getFundedAddresses
+
+    spentAddressesF.map { spentAddresses =>
+      spentAddresses.filter(addr =>
+        HDAccount.isSameAccount(addr._1.path, account))
+    }
+  }
+
+  override def listUnusedAddresses(): Future[Vector[AddressDb]] = {
+    addressDAO.getUnusedAddresses
+  }
+
+  override def listUnusedAddresses(
+      account: HDAccount): Future[Vector[AddressDb]] = {
+    val unusedAddressesF = addressDAO.getUnusedAddresses
+
+    unusedAddressesF.map { unusedAddresses =>
+      unusedAddresses.filter(addr =>
+        HDAccount.isSameAccount(addr.path, account))
+    }
   }
 
   /** Enumerates the public keys in this wallet */

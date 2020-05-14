@@ -1,7 +1,7 @@
 package org.bitcoins.chain.models
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.gcs.FilterHeader
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 case class CompactFilterHeaderDb(
     hashBE: DoubleSha256DigestBE,

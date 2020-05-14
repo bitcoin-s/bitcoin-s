@@ -1,7 +1,7 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.crypto.DoubleSha256Digest
 
 import scala.concurrent.Future
 

@@ -24,10 +24,10 @@ Both parties must agree on all fields from the table below:
 | refundlocktime |                       LockTimeNum                        |
 |    feerate     |                  NumInSatoshisPerVByte                   |
 
-Here is an example `oracleInfo` for public key `025acb434efb32bbf7ca7fd44b22e0f3f5570c6bc564e6059b03ba18c277054ac1` and R value `03f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7`:
+Here is an example `oracleInfo` for public key `02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cab` and R value `b1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750`:
 
 ```bashrc
-025acb434efb32bbf7ca7fd44b22e0f3f5570c6bc564e6059b03ba18c277054ac103f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7
+02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750
 ```
 
 Here is an example `contractInfo` for hashes `c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920f` and `5c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c` with respective Satoshi denominated outcomes of `100000 sats` and `0 sats`:
@@ -50,19 +50,28 @@ Note: if you wish to setup your own oracle for testing, you can do so by pasting
 
 ```scala
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.util.CryptoUtil
-import scodec.bits.ByteVector
 import org.bitcoins.core.currency._
+import org.bitcoins.crypto.CryptoUtil
+import scodec.bits._
 
 val privKey = ECPrivateKey.freshPrivateKey
 val pubKey = privKey.publicKey
 val kValue = ECPrivateKey.freshPrivateKey
 val rValue = kValue.schnorrNonce
-val winHash = CryptoUtil.sha256(ByteVector("WIN".getBytes)).flip
-val loseHash = CryptoUtil.sha256(ByteVector("LOSE".getBytes)).flip
+
+//the hash the oracle will sign when the bitcoin price is over $9,000
+val winHash = CryptoUtil.sha256(ByteVector("BTC_OVER_9000".getBytes)).flip
+//the hash the oracle with sign when the bitcoin price is under $9,000
+val loseHash = CryptoUtil.sha256(ByteVector("BTC_UNDER_9000".getBytes)).flip
+
+//the amounts received in the case the oracle signs hash of message "BTC_OVER_9000"
+val amtReceivedOnWin = Satoshis(100000)
+
+//the amount received in the case the oracle signs hash of message "BTC_UNDER_9000"
+val amtReceivedOnLoss = Satoshis.zero
 
 (pubKey.bytes ++ rValue.bytes).toHex
-(winHash.bytes ++ Satoshis(100000).bytes ++ loseHash.bytes ++ Satoshis.zero.bytes).toHex
+(winHash.bytes ++ amtReceivedOnWin.bytes ++ loseHash.bytes ++ amtReceivedOnLoss.bytes).toHex
 privKey.schnorrSignWithNonce(winHash.bytes, kValue)
 privKey.schnorrSignWithNonce(loseHash.bytes, kValue)
 ```
@@ -76,7 +85,7 @@ Where you can replace the messages `WIN` and `LOSE` to have the oracle sign any 
 Once these terms are agreed to, either party can call on `createdlcoffer` with flags for each of the fields in the table above. For example:
 
 ```bashrc
-./app/cli/target/graalvm-native-image/bitcoin-s-cli createdlcoffer --oracleInfo 025acb434efb32bbf7ca7fd44b22e0f3f5570c6bc564e6059b03ba18c277054ac103f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7 --contractInfo c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000 --collateral 40000 --locktime 1666720 --refundlocktime 1666730 --feerate 3
+./app/cli/target/graalvm-native-image/bitcoin-s-cli createdlcoffer --oracleInfo 02debeef17d7be7ced0bf346395a5c5c7177491953e91f0af2b098aac5d23cabb1a63752e5a760f47252545b7cda933afeaf06dba3b6c6fd5356781f240c2750 --contractInfo c07803e32c12e100905e8d69fe38ae72f2e7a17eb7b8dc1a9bce134b0cbe920fa0860100000000005c58e41254e7a117ee1db59874f2334facc1576c238c16d18767b47861f93f7c0000000000000000 --collateral 40000 --locktime 1666720 --refundlocktime 1666730 --feerate 3
 ```
 
 This will return a nice pretty-printed JSON offer. To get an offer that can be sent to the counter-party, add the `--escaped` flag to the end of this command.

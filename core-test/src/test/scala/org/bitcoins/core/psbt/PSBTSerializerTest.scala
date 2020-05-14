@@ -1,6 +1,6 @@
 package org.bitcoins.core.psbt
 
-import org.bitcoins.core.crypto.{ECPublicKey, ExtPublicKey}
+import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.protocol.CompactSizeUInt
@@ -13,6 +13,7 @@ import org.bitcoins.core.psbt.GlobalPSBTRecord.XPubKey
 import org.bitcoins.core.psbt.InputPSBTRecord.ProofOfReservesCommitment
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptPubKeyParser
+import org.bitcoins.crypto.ECPublicKey
 import org.bitcoins.testkit.core.gen.PSBTGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import scodec.bits._

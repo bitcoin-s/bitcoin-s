@@ -24,7 +24,8 @@ import org.bitcoins.core.script.reserved._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.splice._
 import org.bitcoins.core.script.stack._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.crypto.BytesUtil
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -277,7 +278,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
             val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
 
-            val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
+            val expectedScriptBytes = BytesUtil.toByteVector(pushOp) ++ redeemScriptBytes
 
             val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
             if (segwitEnabled &&
@@ -295,7 +296,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
           case p2wsh: P2WSHWitnessSPKV0 =>
             val pushOp = BitcoinScriptUtil.calculatePushOp(redeemScriptBytes)
 
-            val expectedScriptBytes = BitcoinSUtil.toByteVector(pushOp) ++ redeemScriptBytes
+            val expectedScriptBytes = BytesUtil.toByteVector(pushOp) ++ redeemScriptBytes
 
             val isExpectedScriptBytes = scriptSig.asmBytes == expectedScriptBytes
 
@@ -461,7 +462,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
       program: PreExecutionScriptProgram): ExecutedScriptProgram = {
     logger.trace("Stack: " + program.stack)
     logger.trace("Script: " + program.script)
-    val scriptByteVector = BitcoinSUtil.toByteVector(program.script)
+    val scriptByteVector = BytesUtil.toByteVector(program.script)
     if (scriptByteVector.length > 10000) {
       logger.error("We cannot run a script that is larger than 10,000 bytes")
       program.failExecution(ScriptErrorScriptSize)
@@ -500,7 +501,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
 
     logger.trace("Stack: " + program.stack)
     logger.trace("Script: " + program.script)
-    val scriptByteVector = BitcoinSUtil.toByteVector(program.script)
+    val scriptByteVector = BytesUtil.toByteVector(program.script)
 
     if (opCount > MAX_SCRIPT_OPS) {
       logger.error(

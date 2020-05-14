@@ -5,12 +5,6 @@ import java.time.Instant
 import java.util.UUID
 
 import org.bitcoins.commons.serializers.JsonReaders._
-import org.bitcoins.core.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECDigitalSignature,
-  Sha256Digest
-}
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.channel.{ChannelState, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
@@ -20,6 +14,12 @@ import org.bitcoins.core.protocol.ln.{
   LnHumanReadablePart,
   PaymentPreimage,
   ShortChannelId
+}
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECDigitalSignature,
+  Sha256Digest
 }
 import play.api.libs.json.JsObject
 

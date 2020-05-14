@@ -3,7 +3,7 @@ package org.bitcoins.core.serializers.script
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.script._
 import org.bitcoins.core.script.constant._
-import org.bitcoins.core.util.{BitcoinSUtil, Factory}
+import org.bitcoins.crypto.{BytesUtil, Factory}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -32,7 +32,7 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
       //parse this as a byte array that is led with a 0x for example
       //0x4e03000000ffff
       val hex = str.substring(2, str.size)
-      fromBytes(BitcoinSUtil.decodeHex(hex))
+      fromBytes(BytesUtil.decodeHex(hex))
     } else {
       val scriptTokens: Vector[ScriptToken] = parse(str)
       scriptTokens
@@ -59,14 +59,14 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
           } else {
             val bytes: ByteVector = {
               val b = ByteVector.apply(strippedQuotes.getBytes)
-              BitcoinSUtil.decodeHex(BitcoinSUtil.flipEndianness(b))
+              BytesUtil.decodeHex(BytesUtil.flipEndianness(b))
             }
 
             val bytesToPushOntoStack: Vector[ScriptToken] =
               (bytes.size > 75) match {
                 case true =>
                   val scriptNumber = ScriptNumber(
-                    BitcoinSUtil.flipEndianness(
+                    BytesUtil.flipEndianness(
                       ScriptNumberUtil.longToHex(bytes.size)))
                   bytes.size match {
                     case size if size < Byte.MaxValue =>
@@ -87,7 +87,7 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
         //if we see a byte constant in the form of "0x09adb"
         case h +: t if (h.size > 1 && h.substring(0, 2) == "0x") =>
           loop(t,
-               BitcoinSUtil
+               BytesUtil
                  .decodeHex(h.substring(2, h.size).toLowerCase)
                  .reverse ++ accum)
         //skip the empty string
@@ -99,11 +99,11 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
           loop(t, op.bytes ++ accum)
         case h +: t if (tryParsingLong(h)) =>
           val hexLong =
-            BitcoinSUtil.flipEndianness(ScriptNumberUtil.longToHex(h.toLong))
+            BytesUtil.flipEndianness(ScriptNumberUtil.longToHex(h.toLong))
           val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.size / 2)
           //convert the string to int, then convert to hex
           loop(t,
-               BitcoinSUtil
+               BytesUtil
                  .decodeHex(hexLong) ++ bytesToPushOntoStack.bytes ++ accum)
         //means that it must be a BytesToPushOntoStack followed by a script constant
         case h +: t =>
@@ -111,8 +111,8 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
           val bytesToPushOntoStack = BytesToPushOntoStack(h.size / 2)
           loop(
             t,
-            BitcoinSUtil
-              .decodeHex(BitcoinSUtil.flipEndianness(h)) ++ bytesToPushOntoStack.bytes ++ accum)
+            BytesUtil
+              .decodeHex(BytesUtil.flipEndianness(h)) ++ bytesToPushOntoStack.bytes ++ accum)
         case Vector() => accum
       }
     }
@@ -122,10 +122,10 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
       val scriptNumber = ScriptNumber(parseLong(str))
       val bytesToPushOntoStack = BytesToPushOntoStack(scriptNumber.bytes.size)
       Vector(bytesToPushOntoStack, scriptNumber)
-    } else if (BitcoinSUtil.isHex(str) && str.toLowerCase == str) {
+    } else if (BytesUtil.isHex(str) && str.toLowerCase == str) {
       //if the given string is hex, it is pretty straight forward to parse it
       //convert the hex string to a byte array and parse it
-      val bytes = BitcoinSUtil.decodeHex(str)
+      val bytes = BytesUtil.decodeHex(str)
       parse(bytes)
     } else {
       //this handles weird cases for parsing with various formats in bitcoin core.
@@ -250,7 +250,7 @@ sealed abstract class ScriptParser extends Factory[Vector[ScriptToken]] {
     def parseOpPushDataHelper(numBytes: Int): ParsingHelper = {
       //next numBytes is the size of the script constant
       val scriptConstantHex = tail.slice(0, numBytes)
-      val uInt32Push = UInt32(BitcoinSUtil.flipEndianness(scriptConstantHex))
+      val uInt32Push = UInt32(BytesUtil.flipEndianness(scriptConstantHex))
       //need this for the case where we have an OP_PUSHDATA4 with a number larger than a int32 can hold
       //TODO: Review this more, see this transaction's scriptSig as an example: b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
       val bytesForPushOp: Long = Try(uInt32Push.toLong).getOrElse(tail.length)

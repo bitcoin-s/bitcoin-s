@@ -4,6 +4,7 @@ import java.time.Instant
 
 import org.bitcoins.core.compat.CompatEither
 import org.bitcoins.core.crypto._
+import org.bitcoins.crypto.{AesCrypt, AesEncryptedData, AesPassword, AesSalt}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}

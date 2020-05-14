@@ -5,13 +5,17 @@ import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.util.{CryptoUtil, FutureUtil}
+import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256Digest,
+  DoubleSha256DigestBE
+}
 
 import scala.concurrent._
 

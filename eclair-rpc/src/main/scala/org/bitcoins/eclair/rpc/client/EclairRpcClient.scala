@@ -18,7 +18,6 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import org.bitcoins.commons.jsonmodels.eclair._
 import org.bitcoins.commons.serializers.JsonReaders._
-import org.bitcoins.core.crypto.Sha256Digest
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.protocol.ln.channel.{ChannelId, FundedChannelId}
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
@@ -31,8 +30,9 @@ import org.bitcoins.core.protocol.ln.{
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
-import org.bitcoins.core.util.{BitcoinSUtil, FutureUtil, StartStop}
+import org.bitcoins.core.util.{FutureUtil, StartStop}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.crypto.{BytesUtil, Sha256Digest}
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri
@@ -113,8 +113,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
     val params =
       Seq("channelId" -> channelId.hex) ++ Seq(
         shortChannelId.map(x => "shortChannelId" -> x.toString),
-        scriptPubKey.map(x =>
-          "scriptPubKey" -> BitcoinSUtil.encodeHex(x.asmBytes))
+        scriptPubKey.map(x => "scriptPubKey" -> BytesUtil.encodeHex(x.asmBytes))
       ).flatten
 
     eclairCall[String]("close", params: _*).map(_ => ())

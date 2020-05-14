@@ -18,7 +18,8 @@ and transaction extraction.
 An example on a typical PSBT workflow:
 
 ```scala mdoc:invisible
-import org.bitcoins.core.crypto.ECPrivateKey
+import org.bitcoins.crypto.ECPrivateKey
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{BaseTransaction, Transaction}
 import org.bitcoins.core.psbt.PSBT
@@ -99,10 +100,10 @@ val psbtWithSigHashFlags = psbtWithUpdatedSecondInput
 // Signing a PSBT will return a Future[PSBT] so this will need to be handled
 // correctly in an application
 // Here we use the relevant private keys to sign the first input
-val privKey0 = ECPrivateKey.fromWIFToPrivateKey(
+val privKey0 = ECPrivateKeyUtil.fromWIFToPrivateKey(
     "cP53pDbR5WtAD8dYAW9hhTjuvvTVaEiQBdrz9XPrgLBeRFiyCbQr")
 
-val privKey1 = ECPrivateKey.fromWIFToPrivateKey(
+val privKey1 = ECPrivateKeyUtil.fromWIFToPrivateKey(
     "cR6SXDoyfQrcp4piaiHE97Rsgta9mNhGTen9XeonVgwsh4iSgw6d")
 
 val psbtFirstSigF =

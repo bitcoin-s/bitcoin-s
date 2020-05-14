@@ -1,6 +1,5 @@
 package org.bitcoins.core.consensus
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
@@ -8,6 +7,7 @@ import org.bitcoins.core.protocol.transaction.{
   WitnessTransaction
 }
 import org.bitcoins.core.util._
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 
 import scala.annotation.tailrec
 

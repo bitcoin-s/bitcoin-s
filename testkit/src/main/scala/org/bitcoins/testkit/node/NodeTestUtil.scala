@@ -22,7 +22,7 @@ import akka.actor.ActorSystem
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.bloom.BloomUpdateAll
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 abstract class NodeTestUtil extends P2PLogger {
 

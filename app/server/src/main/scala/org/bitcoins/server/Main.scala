@@ -26,11 +26,13 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 object Main extends App {
   implicit val system = ActorSystem("bitcoin-s")
   implicit val ec: ExecutionContext = system.dispatcher
+  val argsWithIndex = args.zipWithIndex
 
   implicit val conf = {
-    val dataDirIndexOpt = args.zipWithIndex
-      .find(_._1.toLowerCase == "--datadir")
 
+    val dataDirIndexOpt = {
+      argsWithIndex.find(_._1.toLowerCase == "--datadir")
+    }
     val datadirPath = dataDirIndexOpt match {
       case None => AppConfig.DEFAULT_BITCOIN_S_DATADIR
       case Some((_, dataDirIndex)) =>
@@ -39,7 +41,12 @@ object Main extends App {
     }
     BitcoinSAppConfig(datadirPath)
   }
-
+  val rpcPortOpt: Option[Int] = {
+    val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
+    portOpt.map {
+      case (_,idx) => args(idx+1).toInt
+    }
+  }
   private val logger = HttpLoggerImpl(conf.nodeConf).getLogger
 
   implicit val walletConf: WalletAppConfig = conf.walletConf
@@ -61,7 +68,13 @@ object Main extends App {
     node <- initializeNode(uninitializedNode, wallet)
 
     _ <- node.start()
-    _ = logger.info(s"Starting SPV node sync")
+    _ = if (nodeConf.isSPVEnabled) {
+      logger.info(s"Starting SPV node sync")
+    } else if (nodeConf.isNeutrinoEnabled) {
+      logger.info(s"Starting neutrino node sync")
+    } else {
+      logger.info(s"Starting unknown type of node sync")
+    }
     _ <- node.sync()
     chainApi <- node.chainApiFromDb()
     start <- {
@@ -69,9 +82,17 @@ object Main extends App {
       val nodeRoutes = NodeRoutes(node)
       val chainRoutes = ChainRoutes(chainApi)
       val coreRoutes = CoreRoutes(Core)
-      val server =
-        Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
-
+      val server = rpcPortOpt match {
+        case Some(rpcport) =>
+          Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes), rpcport = rpcport)
+        case None =>
+          conf.rpcPortOpt match {
+            case Some(rpcport) =>
+              Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes), rpcport)
+            case None =>
+              Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
+          }
+      }
       server.start()
     }
   } yield {
@@ -79,7 +100,16 @@ object Main extends App {
     sys.addShutdownHook {
       logger.error(s"Exiting process")
 
-      node.stop().foreach(_ => logger.info(s"Stopped SPV node"))
+      node
+        .stop()
+        .foreach(_ =>
+          if (nodeConf.isSPVEnabled) {
+            logger.info(s"Stopped SPV node")
+          } else if (nodeConf.isNeutrinoEnabled) {
+            logger.info(s"Stopped neutrino node")
+          } else {
+            logger.info(s"Stopped unknown type of node")
+          })
       system.terminate().foreach(_ => logger.info(s"Actor system terminated"))
     }
 

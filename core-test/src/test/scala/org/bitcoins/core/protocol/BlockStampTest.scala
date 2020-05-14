@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol
 
 import java.time.{ZoneId, ZonedDateTime}
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.protocol.BlockStamp.{BlockHash, BlockHeight, BlockTime}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Success

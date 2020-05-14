@@ -1,7 +1,7 @@
 package org.bitcoins.gui
 
 import org.bitcoins.cli.CliCommand.{GetBalance, GetNewAddress, SendToAddress}
-import org.bitcoins.cli.ConsoleCli
+import org.bitcoins.cli.{Config, ConsoleCli}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.gui.dialog.{GetNewAddressDialog, SendDialog}
@@ -28,7 +28,7 @@ class WalletGUIModel() {
     taskRunner.run(
       caption = "Get New Address",
       op = {
-        ConsoleCli.exec(GetNewAddress) match {
+        ConsoleCli.exec(GetNewAddress,Config.empty) match {
           case Success(commandReturn) => address.value = commandReturn
           case Failure(err)           => throw err
         }
@@ -49,7 +49,8 @@ class WalletGUIModel() {
             ConsoleCli.exec(
               SendToAddress(BitcoinAddress(address).get,
                             Bitcoins(BigDecimal(amount)),
-                            satoshisPerVirtualByte = None)) match {
+                            satoshisPerVirtualByte = None),
+              Config.empty) match {
               case Success(txid) =>
                 GlobalData.log.value =
                   s"Sent $amount to $address in tx: $txid\n\n${GlobalData.log()}"
@@ -64,7 +65,7 @@ class WalletGUIModel() {
   }
 
   private def updateBalance(): Unit = {
-    ConsoleCli.exec(GetBalance(isSats = false)) match {
+    ConsoleCli.exec(GetBalance(isSats = false), Config.empty) match {
       case Success(commandReturn) =>
         GlobalData.currentBalance.value = commandReturn.split(' ').head.toDouble
       case Failure(err) =>

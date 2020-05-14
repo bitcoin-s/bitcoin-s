@@ -6,7 +6,7 @@ title: Node API
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
 import org.bitcoins.core.api.NodeApi
-import org.bitcoins.core.crypto.DoubleSha256Digest
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.keymanager.bip39.BIP39KeyManager

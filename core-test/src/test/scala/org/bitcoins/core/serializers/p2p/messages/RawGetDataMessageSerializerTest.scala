@@ -1,10 +1,10 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.core.crypto.DoubleSha256Digest
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.p2p.Inventory
 import org.bitcoins.core.p2p.TypeIdentifier.MsgTx
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**

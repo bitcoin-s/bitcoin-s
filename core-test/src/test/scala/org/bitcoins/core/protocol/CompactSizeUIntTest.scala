@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.core.util.BitcoinSUtil
+import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
@@ -57,7 +57,7 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
 
   it must "parse a compact size uint from bytes" in {
     val str = "fd0302"
-    val bytes = BitcoinSUtil.decodeHex(str)
+    val bytes = BytesUtil.decodeHex(str)
     CompactSizeUInt.fromBytes(bytes) must be(CompactSizeUInt(UInt64(515), 3))
   }
 

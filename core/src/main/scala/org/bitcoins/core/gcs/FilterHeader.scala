@@ -1,7 +1,10 @@
 package org.bitcoins.core.gcs
 
-import org.bitcoins.core.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.core.util.CryptoUtil
+import org.bitcoins.crypto.{
+  CryptoUtil,
+  DoubleSha256Digest,
+  DoubleSha256DigestBE
+}
 
 /**
   * Bip 157 Block Filter Headers which commit to a chain of block filters,

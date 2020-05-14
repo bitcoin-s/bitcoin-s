@@ -1,8 +1,6 @@
 package org.bitcoins.node
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres
-import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -12,7 +10,6 @@ import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 class SpvNodeTest extends NodeUnitTest {
 

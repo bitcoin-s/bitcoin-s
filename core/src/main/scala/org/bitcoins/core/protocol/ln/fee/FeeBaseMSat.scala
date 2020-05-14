@@ -1,8 +1,8 @@
 package org.bitcoins.core.protocol.ln.fee
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
+import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
 /**

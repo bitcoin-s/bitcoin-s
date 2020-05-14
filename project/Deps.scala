@@ -6,13 +6,13 @@ object Deps {
     val bouncyCastle = "1.55"
     val logback = "1.2.3"
     val scalacheck = "1.14.3"
-    val scalaTest = "3.1.1"
+    val scalaTest = "3.1.2"
 
     val scalaTestPlus = "3.1.1.1" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
     val spray = "1.3.5"
     val zeromq = "0.5.2"
-    val akkav = "10.1.11"
+    val akkav = "10.1.12"
     val akkaStreamv = "2.5.31"
     val playv = "2.7.4"
     val scodecV = "1.1.12"
@@ -20,7 +20,7 @@ object Deps {
     val nativeLoaderV = "2.3.4"
     val typesafeConfigV = "1.4.0"
 
-    val scalaFxV = "12.0.2-R18"
+    val scalaFxV = "14-R19"
     val javaFxV = "14.0.1"
 
     // async dropped Scala 2.11 in 0.10.0
@@ -31,7 +31,7 @@ object Deps {
     val postgresV = "42.2.12"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"
-    val sqliteV = "3.30.1"
+    val sqliteV = "3.31.1"
     val scalameterV = "0.17"
     val scalamockV = "4.4.0"
     val pgEmbeddedV = "0.13.3"
@@ -171,6 +171,11 @@ object Deps {
     Compile.slf4j
   )
 
+  val crypto = List(
+    Compile.bouncycastle,
+    Compile.scodec
+  )
+
   val secp256k1jni = List(
     Compile.nativeLoader,
     Test.junitInterface
@@ -182,6 +187,10 @@ object Deps {
     Test.scalaTest,
     Test.spray,
     Test.playJson
+  )
+
+  val cryptoTest = List(
+    Test.scalaTest
   )
 
   val bitcoindZmq = List(

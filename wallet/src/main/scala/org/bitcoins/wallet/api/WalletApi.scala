@@ -5,16 +5,24 @@ import java.time.Instant
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{DoubleSha256DigestBE, _}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.crypto.{
+  AesPassword,
+  DoubleSha256Digest,
+  DoubleSha256DigestBE
+}
 import org.bitcoins.keymanager._
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.wallet.api.WalletApi.BlockMatchingResponse
@@ -163,6 +171,19 @@ trait WalletApi extends WalletLogger {
   def listAddresses(): Future[Vector[AddressDb]]
 
   def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
+
+  def listSpentAddresses(): Future[Vector[AddressDb]]
+
+  def listSpentAddresses(account: HDAccount): Future[Vector[AddressDb]]
+
+  def listFundedAddresses(): Future[Vector[(AddressDb, CurrencyUnit)]]
+
+  def listFundedAddresses(
+      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]]
+
+  def listUnusedAddresses(): Future[Vector[AddressDb]]
+
+  def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
@@ -410,6 +431,24 @@ trait WalletApi extends WalletLogger {
   def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
 
   def keyManager: BIP39KeyManager
+
+  def sendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction]
+
+  def sendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendFromOutPoints(outPoints, address, amount, feeRate, account)
+    } yield tx
+  }
 
   /**
     *

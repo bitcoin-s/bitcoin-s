@@ -2,13 +2,17 @@ package org.bitcoins.cli
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
+import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.transaction.{EmptyTransaction, Transaction}
+import org.bitcoins.core.protocol.transaction.{
+  EmptyTransaction,
+  Transaction,
+  TransactionOutPoint
+}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.commons.serializers.Picklers._
 import scopt.OParser
 import ujson.{Num, Str}
 import upickle.{default => up}
@@ -30,6 +34,9 @@ object ConsoleCli {
       opt[Unit]("debug")
         .action((_, conf) => conf.copy(debug = true))
         .text("Print debugging information"),
+      opt[Int]("rpcport")
+        .action((port, conf) => conf.copy(rpcPort = port))
+        .text(s"The port to send our rpc request to on the server"),
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
@@ -158,6 +165,16 @@ object ConsoleCli {
       cmd("getaddresses")
         .action((_, conf) => conf.copy(command = GetAddresses))
         .text("Returns list of all wallet addresses currently being watched"),
+      cmd("getspentaddresses")
+        .action((_, conf) => conf.copy(command = GetSpentAddresses))
+        .text(
+          "Returns list of all wallet addresses that have received funds and been spent"),
+      cmd("getfundedaddresses")
+        .action((_, conf) => conf.copy(command = GetFundedAddresses))
+        .text("Returns list of all wallet addresses that are holding funds"),
+      cmd("getunusedaddresses")
+        .action((_, conf) => conf.copy(command = GetUnusedAddresses))
+        .text("Returns list of all wallet addresses that have not been used"),
       cmd("getaccounts")
         .action((_, conf) => conf.copy(command = GetAccounts))
         .text("Returns list of all wallet accounts"),
@@ -211,6 +228,49 @@ object ConsoleCli {
             .action((feeRate, conf) =>
               conf.copy(command = conf.command match {
                 case send: SendToAddress =>
+                  send.copy(satoshisPerVirtualByte = Some(feeRate))
+                case other => other
+              }))
+        ),
+      cmd("sendfromoutpoints")
+        .action((_, conf) =>
+          conf.copy(
+            command = SendFromOutPoints(Vector.empty, null, 0.bitcoin, None)))
+        .text("Send money to the given address")
+        .children(
+          arg[Seq[TransactionOutPoint]]("outpoints")
+            .text("Out Points to send from")
+            .required()
+            .action((outPoints, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
+                  send.copy(outPoints = outPoints.toVector)
+                case other => other
+              })),
+          arg[BitcoinAddress]("address")
+            .text("Address to send to")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
+                  send.copy(destination = addr)
+                case other => other
+              })),
+          arg[Bitcoins]("amount")
+            .text("amount to send in BTC")
+            .required()
+            .action((btc, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
+                  send.copy(amount = btc)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendFromOutPoints =>
                   send.copy(satoshisPerVirtualByte = Some(feeRate))
                 case other => other
               }))
@@ -310,7 +370,7 @@ object ConsoleCli {
               }))
         ),
       checkConfig {
-        case Config(NoCommand, _, _) =>
+        case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
         case _ => success
       }
@@ -323,15 +383,15 @@ object ConsoleCli {
       case Some(conf) => conf
     }
 
-    exec(config.command, config.debug)
+    exec(config.command, config)
   }
 
-  def exec(command: CliCommand, debugEnabled: Boolean = false): Try[String] = {
+  def exec(command: CliCommand, config: Config): Try[String] = {
     import System.err.{println => printerr}
 
     /** Prints the given message to stderr if debug is set */
     def debug(message: Any): Unit = {
-      if (debugEnabled) {
+      if (config.debug) {
         printerr(s"DEBUG: $message")
       }
     }
@@ -346,6 +406,12 @@ object ConsoleCli {
         RequestParam("getutxos")
       case GetAddresses =>
         RequestParam("getaddresses")
+      case GetSpentAddresses =>
+        RequestParam("getspentaddresses")
+      case GetFundedAddresses =>
+        RequestParam("getfundedaddresses")
+      case GetUnusedAddresses =>
+        RequestParam("getunusedaddresses")
       case GetAccounts =>
         RequestParam("getaccounts")
       case CreateNewAccount =>
@@ -377,6 +443,15 @@ object ConsoleCli {
       case SendToAddress(address, bitcoins, satoshisPerVirtualByte) =>
         RequestParam("sendtoaddress",
                      Seq(up.writeJs(address),
+                         up.writeJs(bitcoins),
+                         up.writeJs(satoshisPerVirtualByte)))
+      case SendFromOutPoints(outPoints,
+                             address,
+                             bitcoins,
+                             satoshisPerVirtualByte) =>
+        RequestParam("sendfromoutpoints",
+                     Seq(up.writeJs(outPoints),
+                         up.writeJs(address),
                          up.writeJs(bitcoins),
                          up.writeJs(satoshisPerVirtualByte)))
       // height
@@ -413,7 +488,7 @@ object ConsoleCli {
         HttpURLConnectionBackend()
       val request =
         sttp
-          .post(uri"http://$host:$port/")
+          .post(uri"http://$host:${config.rpcPort}/")
           .contentType("application/json")
           .body({
             val uuid = java.util.UUID.randomUUID.toString
@@ -468,8 +543,6 @@ object ConsoleCli {
     }.flatten
   }
 
-  // TODO make this dynamic
-  def port = 9999
   def host = "localhost"
 
   case class RequestParam(
@@ -485,8 +558,13 @@ object ConsoleCli {
 case class Config(
     command: CliCommand = CliCommand.NoCommand,
     network: Option[NetworkParameters] = None,
-    debug: Boolean = false
+    debug: Boolean = false,
+    rpcPort: Int = 9999
 )
+
+object Config {
+  val empty = Config()
+}
 
 sealed abstract class CliCommand
 
@@ -499,9 +577,18 @@ object CliCommand {
       amount: Bitcoins,
       satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
       extends CliCommand
+  case class SendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      destination: BitcoinAddress,
+      amount: Bitcoins,
+      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+      extends CliCommand
   case object GetNewAddress extends CliCommand
   case object GetUtxos extends CliCommand
   case object GetAddresses extends CliCommand
+  case object GetSpentAddresses extends CliCommand
+  case object GetFundedAddresses extends CliCommand
+  case object GetUnusedAddresses extends CliCommand
   case object GetAccounts extends CliCommand
   case object CreateNewAccount extends CliCommand
   case object IsEmpty extends CliCommand

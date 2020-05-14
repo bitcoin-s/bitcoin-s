@@ -1,7 +1,7 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core.protocol.NetworkElement
-import org.bitcoins.core.util.{BitcoinSUtil, Factory, NumberUtil}
+import org.bitcoins.core.util.NumberUtil
+import org.bitcoins.crypto.{BytesUtil, Factory, NetworkElement}
 import scodec.bits.{ByteOrdering, ByteVector}
 
 import scala.util.{Failure, Success, Try}
@@ -82,7 +82,7 @@ sealed abstract class Number[T <: Number[T]]
     }
   }
 
-  override def bytes: ByteVector = BitcoinSUtil.decodeHex(hex)
+  override def bytes: ByteVector = BytesUtil.decodeHex(hex)
 }
 
 /**
@@ -116,7 +116,7 @@ sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
 sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override def apply: A => UInt8 = UInt8(_)
 
-  override def hex: String = BitcoinSUtil.encodeHex(toInt.toShort).slice(2, 4)
+  override def hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
 
   override def andMask = 0xff
 
@@ -131,7 +131,7 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   */
 sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
-  override def hex: String = BitcoinSUtil.encodeHex(toLong).slice(8, 16)
+  override def hex: String = BytesUtil.encodeHex(toLong).slice(8, 16)
 
   override def andMask = 0xFFFFFFFFL
 }
@@ -153,7 +153,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
     * @return The hex encoded number
     */
   private def encodeHex(bigInt: BigInt): String = {
-    val hex = BitcoinSUtil.encodeHex(bigInt)
+    val hex = BytesUtil.encodeHex(bigInt)
     if (hex.length == 18) {
       //means that encodeHex(BigInt) padded an extra byte, giving us 9 bytes instead of 8
       hex.slice(2, hex.length)
@@ -170,7 +170,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
   override def andMask = 0xffffffff
-  override def hex: String = BitcoinSUtil.encodeHex(toInt)
+  override def hex: String = BytesUtil.encodeHex(toInt)
 }
 
 /**
@@ -179,7 +179,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
-  override def hex: String = BitcoinSUtil.encodeHex(toLong)
+  override def hex: String = BytesUtil.encodeHex(toLong)
 }
 
 /**
@@ -330,7 +330,7 @@ object UInt32
   override def fromBytes(bytes: ByteVector): UInt32 = {
     require(
       bytes.size <= 4,
-      "UInt32 byte array was too large, got: " + BitcoinSUtil.encodeHex(bytes))
+      "UInt32 byte array was too large, got: " + BytesUtil.encodeHex(bytes))
     UInt32(bytes.toLong(signed = false, ordering = ByteOrdering.BigEndian))
   }
 

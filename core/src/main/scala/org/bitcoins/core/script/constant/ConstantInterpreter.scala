@@ -6,7 +6,8 @@ import org.bitcoins.core.script.{
 }
 import org.bitcoins.core.script.flag.ScriptFlagUtil
 import org.bitcoins.core.script.result._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinSUtil, BitcoinScriptUtil}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
+import org.bitcoins.crypto.BytesUtil
 
 import scala.annotation.tailrec
 
@@ -81,8 +82,8 @@ sealed abstract class ConstantInterpreter {
       if (bytesToPushOntoStack.size == 1) bytesToPushOntoStack.head
       else
         ScriptConstant(
-          BitcoinSUtil.flipEndianness(
-            BitcoinSUtil.toByteVector(bytesToPushOntoStack)))
+          BytesUtil.flipEndianness(
+            BytesUtil.toByteVector(bytesToPushOntoStack)))
 
     logger.debug("Constant to be pushed onto stack: " + constant)
     //check to see if we have the exact amount of bytes needed to be pushed onto the stack
@@ -153,7 +154,7 @@ sealed abstract class ConstantInterpreter {
     case scriptNumber: ScriptNumber         => scriptNumber.toLong
     case scriptConstant: ScriptConstant =>
       val constantFlippedEndianness =
-        BitcoinSUtil.flipEndianness(scriptConstant.hex)
+        BytesUtil.flipEndianness(scriptConstant.hex)
       java.lang.Long.parseLong(constantFlippedEndianness, 16)
     case _ =>
       throw new IllegalArgumentException(

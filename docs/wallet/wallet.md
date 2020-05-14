@@ -54,7 +54,7 @@ import org.bitcoins.chain.models._
 
 import org.bitcoins.core.api._
 import ChainQueryApi._
-import org.bitcoins.core.crypto._
+import org.bitcoins.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.currency._

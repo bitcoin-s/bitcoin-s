@@ -1,8 +1,8 @@
 package org.bitcoins.chain.models
 
-import org.bitcoins.core.crypto.DoubleSha256DigestBE
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.crypto.DoubleSha256DigestBE
 
 case class BlockHeaderDb(
     height: Int,

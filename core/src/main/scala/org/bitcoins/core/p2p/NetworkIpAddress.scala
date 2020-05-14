@@ -3,9 +3,8 @@ package org.bitcoins.core.p2p
 import java.net.{InetAddress, InetSocketAddress}
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.NetworkElement
 import org.bitcoins.core.serializers.p2p._
-import org.bitcoins.core.util.Factory
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits._
 
 /**

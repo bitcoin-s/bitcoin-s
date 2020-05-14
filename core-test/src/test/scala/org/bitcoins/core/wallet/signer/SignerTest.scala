@@ -2,7 +2,6 @@ package org.bitcoins.core.wallet.signer
 
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
-  ECDigitalSignature,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
@@ -49,6 +48,7 @@ import org.bitcoins.core.wallet.utxo.{
   UTXOSpendingInfoSingle,
   UnassignedSegwitNativeUTXOSpendingInfo
 }
+import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkit.core.gen.{
   ChainParamsGenerator,
   CreditingTxGen,

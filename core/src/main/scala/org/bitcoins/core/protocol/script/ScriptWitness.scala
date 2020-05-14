@@ -1,13 +1,15 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.core.crypto.{
+import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.serializers.script.RawScriptWitnessParser
+import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.crypto.{
+  BytesUtil,
   ECDigitalSignature,
   ECPublicKey,
-  EmptyDigitalSignature
+  EmptyDigitalSignature,
+  NetworkElement
 }
-import org.bitcoins.core.protocol.{CompactSizeUInt, NetworkElement}
-import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.{BitcoinSUtil, BitcoinScriptUtil}
 import scodec.bits.ByteVector
 
 /**
@@ -47,7 +49,7 @@ sealed abstract class P2WPKHWitnessV0 extends ScriptWitnessV0 {
   }
 
   override def toString =
-    s"P2WPKHWitnessV0(${stack.map(BitcoinSUtil.encodeHex(_)).toString})"
+    s"P2WPKHWitnessV0(${stack.map(BytesUtil.encodeHex(_)).toString})"
 }
 
 object P2WPKHWitnessV0 {
@@ -103,7 +105,7 @@ sealed abstract class P2WSHWitnessV0 extends ScriptWitnessV0 {
   }
 
   override def toString =
-    s"P2WSHWitnessV0(${stack.map(BitcoinSUtil.encodeHex(_)).toString})"
+    s"P2WSHWitnessV0(${stack.map(BytesUtil.encodeHex(_)).toString})"
 }
 
 object P2WSHWitnessV0 {
