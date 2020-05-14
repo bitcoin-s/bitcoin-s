@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS block_headers (height BIGINT NOT NULL,hash1 VARCHAR(254) PRIMARY KEY NOT NULL,version INTEGER NOT NULL,previous_block_hash VARCHAR(254) NOT NULL,merkle_root_hash VARCHAR(254) NOT NULL,time BIGINT NOT NULL,n_bits BIGINT NOT NULL,nonce BIGINT NOT NULL,hex VARCHAR(254) NOT NULL);
+CREATE TABLE IF NOT EXISTS block_headers (height BIGINT NOT NULL,hash VARCHAR(254) PRIMARY KEY NOT NULL,version INTEGER NOT NULL,previous_block_hash VARCHAR(254) NOT NULL,merkle_root_hash VARCHAR(254) NOT NULL,time BIGINT NOT NULL,n_bits BIGINT NOT NULL,nonce BIGINT NOT NULL,hex VARCHAR(254) NOT NULL);
 CREATE INDEX IF NOT EXISTS block_headers_hash_index on block_headers (hash);
 CREATE INDEX IF NOT EXISTS block_headers_height_index on block_headers (height);
 
