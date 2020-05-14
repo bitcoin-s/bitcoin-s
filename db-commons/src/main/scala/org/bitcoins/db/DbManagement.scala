@@ -3,7 +3,6 @@ package org.bitcoins.db
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil}
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.FlywayException
-import slick.ast.TableExpansion
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,33 +33,12 @@ trait DbManagement extends BitcoinSLogger {
 
   def allTables: List[TableQuery[Table[_]]]
 
-  /** Creates all tables in our table list, in one SQL transaction */
-  def createAll()(implicit ec: ExecutionContext): Future[Unit] = {
-    val query = {
-      val querySeq =
-        allTables
-          .map(createTableQuery(_, createIfNotExists = true))
-          .map { query =>
-            // DIRTY HACK. For some reason Slick doesn't know that Sqlite can do CREATE INDEX IF NOT EXISTS
-            val statements = query.statements.map(
-              _.replace("create index", "create index if not exists"))
-            query.overrideStatements(statements)
-          }
-      DBIO.seq(querySeq: _*).transactionally
-    }
-
-    database.run(query).map(_ => logger.debug(s"Created tables"))
-  }
-
   def dropAll()(implicit ec: ExecutionContext): Future[Unit] = {
     val result =
       FutureUtil
         .foldLeftAsync((), allTables.reverse) { (_, table) =>
-          println(table.toNode.asInstanceOf[TableExpansion].table)
           dropTable(table)
         }
-//    val result =
-//      Future.sequence(allTables.reverse.map(dropTable(_))).map(_ => ())
     result.failed.foreach { e =>
       e.printStackTrace()
     }
