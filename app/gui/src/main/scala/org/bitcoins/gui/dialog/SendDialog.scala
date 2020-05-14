@@ -1,5 +1,7 @@
 package org.bitcoins.gui.dialog
 
+import jdk.nashorn.internal.objects.Global
+import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.application.Platform
 import scalafx.geometry.Insets
@@ -16,6 +18,7 @@ object SendDialog {
     }
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+    dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
 
     val addressTF = new TextField()
     val amountTF = new TextField()

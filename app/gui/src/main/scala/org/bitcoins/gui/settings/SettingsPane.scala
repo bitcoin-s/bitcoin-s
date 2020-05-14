@@ -9,7 +9,7 @@ class SettingsPane {
 
   private val themeCheckBox = new CheckBox {
     text = "Dark Theme"
-    selected = GlobalData.defaultDarkTheme
+    selected = GlobalData.darkThemeEnabled
     onAction = new EventHandler[ActionEvent] {
       override def handle(event: ActionEvent): Unit = {
         if (!selected.value) {

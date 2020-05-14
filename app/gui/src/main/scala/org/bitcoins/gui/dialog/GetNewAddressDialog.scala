@@ -1,5 +1,6 @@
 package org.bitcoins.gui.dialog
 
+import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.beans.property.StringProperty
 import scalafx.scene.control.{ButtonType, Dialog, TextArea}
@@ -20,6 +21,7 @@ object GetNewAddressDialog {
     // TODO make a button to copy the address to clipboard
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.OK)
+    dialog.dialogPane().stylesheets = GlobalData.currentStyleSheets
 
     dialog.dialogPane().content = new TextArea {
       text <== address
