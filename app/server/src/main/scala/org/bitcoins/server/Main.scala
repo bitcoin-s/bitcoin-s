@@ -41,10 +41,11 @@ object Main extends App {
     }
     BitcoinSAppConfig(datadirPath)
   }
+
   val rpcPortOpt: Option[Int] = {
     val portOpt = argsWithIndex.find(_._1.toLowerCase == "--rpcport")
     portOpt.map {
-      case (_,idx) => args(idx+1).toInt
+      case (_, idx) => args(idx + 1).toInt
     }
   }
   private val logger = HttpLoggerImpl(conf.nodeConf).getLogger
@@ -84,13 +85,18 @@ object Main extends App {
       val coreRoutes = CoreRoutes(Core)
       val server = rpcPortOpt match {
         case Some(rpcport) =>
-          Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes), rpcport = rpcport)
+          Server(nodeConf,
+                 Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                 rpcport = rpcport)
         case None =>
           conf.rpcPortOpt match {
             case Some(rpcport) =>
-              Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes), rpcport)
+              Server(nodeConf,
+                     Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes),
+                     rpcport)
             case None =>
-              Server(nodeConf, Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
+              Server(nodeConf,
+                     Seq(walletRoutes, nodeRoutes, chainRoutes, coreRoutes))
           }
       }
       server.start()

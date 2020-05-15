@@ -20,10 +20,11 @@ import org.bitcoins.core.wallet.signer.{
   P2PKWithTimeoutSigner
 }
 import org.bitcoins.core.wallet.utxo.{
-  MultiSignatureSpendingInfoFull,
-  P2PKHSpendingInfo,
-  P2PKSpendingInfo,
-  P2PKWithTimeoutSpendingInfo
+  MultiSignatureInputInfo,
+  P2PKHInputInfo,
+  P2PKInputInfo,
+  P2PKWithTimeoutInputInfo,
+  ScriptSignatureParams
 }
 import org.bitcoins.crypto.{
   ECDigitalSignature,
@@ -263,7 +264,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       pubKeys = privateKeys.map(_.publicKey)
       multiSignatureScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,
                                                               pubKeys)
-    } yield (multiSignatureScriptPubKey, privateKeys)
+    } yield (multiSignatureScriptPubKey, privateKeys.take(requiredSigs))
 
   def smallMultiSigScriptPubKey: Gen[
     (MultiSignatureScriptPubKey, Seq[ECPrivateKey])] =
@@ -272,7 +273,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       pubKeys = privateKeys.map(_.publicKey)
       multiSignatureScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,
                                                               pubKeys)
-    } yield (multiSignatureScriptPubKey, privateKeys)
+    } yield (multiSignatureScriptPubKey, privateKeys.take(requiredSigs))
 
   /** Generates a random P2SHScriptPubKey as well as it's corresponding private keys and redeem script */
   def p2shScriptPubKey: Gen[
@@ -579,10 +580,10 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         scriptSig,
         outputIndex)
-      spendingInfo = P2PKSpendingInfo(
-        TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-        creditingTx.outputs(outputIndex.toInt).value,
-        scriptPubKey,
+      spendingInfo = ScriptSignatureParams(
+        P2PKInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+                      creditingTx.outputs(outputIndex.toInt).value,
+                      scriptPubKey),
         privateKey,
         hashType)
       txSigComponentFuture = P2PKSigner.sign(spendingInfo, spendingTx, false)
@@ -613,12 +614,13 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         EmptyScriptSignature,
         outputIndex)
-      spendingInfo = P2PKHSpendingInfo(
-        TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-        creditingTx.outputs(outputIndex.toInt).value,
-        scriptPubKey,
+      spendingInfo = ScriptSignatureParams(
+        P2PKHInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+                       creditingTx.outputs(outputIndex.toInt).value,
+                       privateKey.publicKey),
         privateKey,
-        hashType)
+        hashType
+      )
       txSigComponentFuture = P2PKHSigner.sign(spendingInfo, unsignedTx, false)
       txSigComponent = Await.result(txSigComponentFuture, timeout)
       signedScriptSig = txSigComponent.scriptSignature
@@ -638,13 +640,15 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         TransactionGenerators.buildCreditingTransaction(spk)
       val (spendingTx, inputIndex) = TransactionGenerators
         .buildSpendingTransaction(creditingTx, emptyScriptSig, outputIndex)
-      val spendingInfo = P2PKWithTimeoutSpendingInfo(
-        TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-        creditingTx.outputs(outputIndex.toInt).value,
-        spk,
+      val spendingInfo = ScriptSignatureParams(
+        P2PKWithTimeoutInputInfo(
+          TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+          creditingTx.outputs(outputIndex.toInt).value,
+          spk,
+          isBeforeTimeout = true),
         privKey,
-        hashType,
-        isBeforeTimeout = true)
+        hashType
+      )
       val txSigComponentF = P2PKWithTimeoutSigner.sign(spendingInfo,
                                                        spendingTx,
                                                        isDummySignature = false)
@@ -669,7 +673,8 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       MultiSignatureScriptPubKey,
       Seq[ECPrivateKey])] =
     for {
-      (privateKeys, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
+      (privateKeysWithExtra, requiredSigs) <- CryptoGenerators.privateKeySeqWithRequiredSigs
+      privateKeys = privateKeysWithExtra.take(requiredSigs)
       hashType <- CryptoGenerators.hashType
       publicKeys = privateKeys.map(_.publicKey)
       multiSigScriptPubKey = MultiSignatureScriptPubKey(requiredSigs,
@@ -682,12 +687,14 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
         creditingTx,
         scriptSig,
         outputIndex)
-      spendingInfo = MultiSignatureSpendingInfoFull(
-        TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-        creditingTx.outputs(outputIndex.toInt).value,
-        multiSigScriptPubKey,
+      spendingInfo = ScriptSignatureParams(
+        MultiSignatureInputInfo(
+          TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+          creditingTx.outputs(outputIndex.toInt).value,
+          multiSigScriptPubKey),
         privateKeys.toVector,
-        hashType)
+        hashType
+      )
       txSigComponentFuture = MultiSigSigner.sign(spendingInfo,
                                                  spendingTx,
                                                  false)
