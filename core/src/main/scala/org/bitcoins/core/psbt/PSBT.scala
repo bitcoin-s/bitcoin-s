@@ -129,7 +129,7 @@ case class PSBT(
   def sign(
       inputIndex: Int,
       signer: Sign,
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft,
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
       isDummySignature: Boolean = false)(
       implicit ec: ExecutionContext): Future[PSBT] = {
     BitcoinSigner.sign(psbt = this,
@@ -140,23 +140,24 @@ case class PSBT(
   }
 
   /**
-    * Takes the InputPSBTMap at the given index and returns a UTXOSpendingInfoFull
+    * Takes the InputPSBTMap at the given index and returns a NewSpendingInfoFull
     * that can be used to sign the input
     * @param index index of the InputPSBTMap
     * @param signers Signers that will be used to sign the input
     * @param conditionalPath Path that should be used for the script
-    * @return A corresponding UTXOSpendingInfoFull
+    * @return A corresponding NewSpendingInfoFull
     */
-  def getUTXOSpendingInfoUsingSigners(
+  def getSpendingInfoUsingSigners(
       index: Int,
       signers: Vector[Sign],
-      conditionalPath: ConditionalPath = ConditionalPath.NoConditionsLeft): UTXOSpendingInfoFull = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition): ScriptSignatureParams[
+    InputInfo] = {
     require(index >= 0 && index < inputMaps.size,
             s"Index must be within 0 and the number of inputs, got: $index")
     inputMaps(index)
-      .toUTXOSpendingInfoUsingSigners(transaction.inputs(index),
-                                      signers,
-                                      conditionalPath)
+      .toUTXOSatisfyingInfoUsingSigners(transaction.inputs(index),
+                                        signers,
+                                        conditionalPath)
   }
 
   /**
@@ -771,11 +772,12 @@ object PSBT extends Factory[PSBT] {
   }
 
   /**
-    * Wraps a Vector of pairs of UTXOSpendingInfos and the Transactions whose outputs are spent.
+    * Wraps a Vector of pairs of NewSpendingInfos and the Transactions whose outputs are spent.
     * Note that this Transaction is only necessary when the output is non-segwit.
     */
   case class SpendingInfoAndNonWitnessTxs(
-      infoAndTxOpts: Vector[(UTXOSpendingInfoFull, Option[BaseTransaction])]) {
+      infoAndTxOpts: Vector[
+        (ScriptSignatureParams[InputInfo], Option[BaseTransaction])]) {
     val length: Int = infoAndTxOpts.length
 
     def matchesInputs(inputs: Seq[TransactionInput]): Boolean = {
@@ -786,8 +788,9 @@ object PSBT extends Factory[PSBT] {
         }
     }
 
-    def map[T](
-        func: (UTXOSpendingInfoFull, Option[BaseTransaction]) => T): Vector[T] = {
+    def map[T](func: (
+        ScriptSignatureParams[InputInfo],
+        Option[BaseTransaction]) => T): Vector[T] = {
       infoAndTxOpts.map { case (info, txOpt) => func(info, txOpt) }
     }
   }
@@ -821,10 +824,10 @@ object PSBT extends Factory[PSBT] {
       spendingInfoAndNonWitnessTxs: SpendingInfoAndNonWitnessTxs,
       finalized: Boolean)(implicit ec: ExecutionContext): Future[PSBT] = {
     require(spendingInfoAndNonWitnessTxs.length == unsignedTx.inputs.length,
-            "Must have a UTXOSpendingInfo for every input")
+            "Must have a NewSpendingInfo for every input")
     require(
       spendingInfoAndNonWitnessTxs.matchesInputs(unsignedTx.inputs),
-      "UTXOSpendingInfos must correspond to transaction inputs"
+      "NewSpendingInfos must correspond to transaction inputs"
     )
     val emptySigTx = BitcoinTxBuilder.emptyAllScriptSigs(unsignedTx)
     val btx = emptySigTx match {
@@ -838,9 +841,9 @@ object PSBT extends Factory[PSBT] {
     val inputMapFs = spendingInfoAndNonWitnessTxs.map {
       case (info, txOpt) =>
         if (finalized) {
-          InputPSBTMap.finalizedFromUTXOSpendingInfo(info, unsignedTx, txOpt)
+          InputPSBTMap.finalizedFromNewSpendingInfo(info, unsignedTx, txOpt)
         } else {
-          InputPSBTMap.fromUTXOSpendingInfo(info, unsignedTx, txOpt)
+          InputPSBTMap.fromUTXOInfo(info, unsignedTx, txOpt)
         }
     }
     val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector

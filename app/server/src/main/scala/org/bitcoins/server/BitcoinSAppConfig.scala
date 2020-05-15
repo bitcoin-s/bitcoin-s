@@ -50,7 +50,7 @@ case class BitcoinSAppConfig(
   }
 
   def rpcPortOpt: Option[Int] = {
-    if(serverConf.hasPath("rpcport")) {
+    if (serverConf.hasPath("rpcport")) {
       Some(serverConf.getInt("rpcport"))
     } else {
       None

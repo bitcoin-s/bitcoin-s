@@ -524,7 +524,7 @@ object ConditionalScriptSignature
       nestedScriptSig: ScriptSignature,
       conditionalPath: ConditionalPath): ConditionalScriptSignature = {
     conditionalPath match {
-      case ConditionalPath.NoConditionsLeft =>
+      case ConditionalPath.NoCondition =>
         throw new IllegalArgumentException("ConditionalPath cannot be empty")
       case ConditionalPath.nonNestedTrue =>
         ConditionalScriptSignature(nestedScriptSig, condition = true)

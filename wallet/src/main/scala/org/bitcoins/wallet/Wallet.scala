@@ -248,7 +248,7 @@ abstract class Wallet
       _ = require(diff.isEmpty,
                   s"Not all OutPoints belong to this wallet, diff $diff")
 
-      utxos = utxoDbs.map(_.toUTXOSpendingInfo(keyManager))
+      utxos = utxoDbs.map(_.toUTXOInfo(keyManager))
 
       changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
 

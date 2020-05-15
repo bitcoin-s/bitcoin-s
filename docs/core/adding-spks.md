@@ -30,7 +30,7 @@ import org.bitcoins.core.protocol.script.{Script, ScriptPubKey, ScriptWitness, S
 import org.bitcoins.core.currency._
 import org.bitcoins.core.number._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.wallet.utxo.{ConditionalPath, MultiSignatureSpendingInfoSingle, MultiSignatureSpendingInfoFull, ConditionalSpendingInfoSingle, ConditionalSpendingInfoFull}
+import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.testkit.core.gen._
 import org.bitcoins.testkit.core.gen.ScriptGenerators._
 
@@ -47,28 +47,56 @@ sealed trait RawScriptPubKey extends Script
 implicit def realToFakeRawSPK(real: org.bitcoins.core.protocol.script.RawScriptPubKey): RawScriptPubKey = ???
 implicit def fakeToRealRawSPK(fake: RawScriptPubKey): org.bitcoins.core.protocol.script.RawScriptPubKey = ???
 
-sealed trait RawScriptUTXOSpendingInfo {
-  def signer: Sign
-  def signers: Vector[Sign]
-  def requiredSigs: Int
+sealed trait InputInfo {
+  def pubKeys: Vector[ECPublicKey]
   def conditionalPath: ConditionalPath
-  def scriptPubKey: Any
 }
-sealed trait RawScriptUTXOSpendingInfoFull extends RawScriptUTXOSpendingInfo {
-  def signer: Sign = signers.head
-  def toSingle(signerIndex: Int): Any = ???
-  def toSingles: Vector[Any] = ???
+
+sealed trait RawInputInfo extends InputInfo
+
+trait MultiSignatureInputInfo extends RawInputInfo
+
+trait ConditionalInputInfo extends RawInputInfo {
+  def nestedInputInfo: RawInputInfo
+  def condition: Boolean
 }
-implicit def realToFakeRawSpendingInfoFull(real: org.bitcoins.core.wallet.utxo.RawScriptUTXOSpendingInfoFull): RawScriptUTXOSpendingInfoFull = ???
-implicit def fakeToRealRawSpendingInfoFull(fake: RawScriptUTXOSpendingInfoFull): org.bitcoins.core.wallet.utxo.RawScriptUTXOSpendingInfoFull = ???
 
-sealed trait UTXOSpendingInfoFull
-implicit def realToFakeSpendingInfoFull(real: org.bitcoins.core.wallet.utxo.UTXOSpendingInfoFull): UTXOSpendingInfoFull = ???
-implicit def fakeToRealSpendingInfoFull(fake: UTXOSpendingInfoFull): org.bitcoins.core.wallet.utxo.UTXOSpendingInfoFull = ???
+object RawInputInfo {
+  def apply(
+        outPoint: TransactionOutPoint,
+        amount: CurrencyUnit,
+        scriptPubKey: RawScriptPubKey,
+        conditionalPath: ConditionalPath,
+        hashPreImages: Vector[NetworkElement] = Vector.empty): RawInputInfo = ???
+}
 
-sealed trait UTXOSpendingInfoSingle
-implicit def realToFakeSpendingInfoSingle(real: org.bitcoins.core.wallet.utxo.UTXOSpendingInfoSingle): UTXOSpendingInfoSingle = ???
-implicit def fakeToRealSpendingInfoSingle(fake: UTXOSpendingInfoSingle): org.bitcoins.core.wallet.utxo.UTXOSpendingInfoSingle = ???
+sealed trait UTXOInfo[+InputType <: InputInfo] {
+  def inputInfo: InputType
+  def hashType: HashType
+  def signers: Vector[ECPrivateKey]
+}
+
+case class UTXOSatisfyingInfo[+InputType <: InputInfo](
+    inputInfo: InputType,
+    signers: Vector[ECPrivateKey],
+    hashType: HashType)
+    extends UTXOInfo[InputType] {
+    def toSingle(index: Int): UTXOSigningInfo[InputType] = ???
+  
+    def toSingles: Vector[UTXOSigningInfo[InputType]] = {
+      signers.map { signer =>
+        UTXOSigningInfo(inputInfo, signer, hashType)
+      }
+    }
+}
+
+case class UTXOSigningInfo[+InputType <: InputInfo](
+    inputInfo: InputType,
+    signer: ECPrivateKey,
+    hashType: HashType)
+    extends UTXOInfo[InputType] {
+    override def signers: Vector[ECPrivateKey] = Vector(signer)
+}
 
 sealed trait ScriptSignature extends Script
 implicit def realToFakeRawScriptSig(real: org.bitcoins.core.protocol.script.ScriptSignature): ScriptSignature = ???
@@ -76,45 +104,50 @@ implicit def fakeToRealRawScriptSig(fake: ScriptSignature): org.bitcoins.core.pr
 implicit def realMultiToFakeRawScriptSigInFuture(real: Future[MultiSignatureScriptSignature]): Future[ScriptSignature] = ???
 implicit def realConditionalToFakeRawScriptSigInFuture(real: Future[ConditionalScriptSignature]): Future[ScriptSignature] = ???
 
-sealed trait BitcoinUTXOSpendingInfoFull
-sealed trait RawScriptUTXOSpendingInfoSingle extends RawScriptUTXOSpendingInfo {
-  override def signers: Vector[Sign] = Vector(signer)
-  override def requiredSigs: Int = 1
-}
-sealed trait BitcoinSigner[-SpendingInfo] {
-  def sign(
-        spendingInfo: UTXOSpendingInfoFull,
-        unsignedTx: Transaction,
-        isDummySignature: Boolean,
-        spendingInfoToSatisfy: SpendingInfo)(
-        implicit ec: ExecutionContext): Future[TxSigComponent]
-
-  def signSingle(
-        spendingInfo: UTXOSpendingInfoSingle,
-        unsignedTx: Transaction,
-        isDummySignature: Boolean)(
-        implicit ec: ExecutionContext): Future[PartialSignature] = ???
-}
-sealed trait RawSingleKeyBitcoinSigner[-SpendingInfo <: RawScriptUTXOSpendingInfoFull with RawScriptUTXOSpendingInfoSingle] {
-  def keyAndSigToScriptSig(
-        key: ECPublicKey,
-        sig: ECDigitalSignature,
-        spendingInfo: SpendingInfo): ScriptSignature
+sealed abstract class Signer[-InputType <: InputInfo] {
 
   def sign(
-        spendingInfo: SpendingInfo,
-        unsignedTx: Transaction,
-        isDummySignature: Boolean)(
-        implicit ec: ExecutionContext): Future[TxSigComponent] = ???
+      spendingInfo: UTXOSatisfyingInfo[InputType],
+      unsignedTx: Transaction,
+      isDummySignature: Boolean)(
+      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    sign(
+      spendingInfo,
+      unsignedTx,
+      isDummySignature,
+      spendingInfoToSatisfy = spendingInfo
+    )
+  }
 
   def sign(
-      spendingInfo: UTXOSpendingInfoFull,
+      spendingInfo: UTXOSatisfyingInfo[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: SpendingInfo)(
+      spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
+      implicit ec: ExecutionContext): Future[TxSigComponent]
+
+  def signSingle(
+      spendingInfo: UTXOSigningInfo[InputInfo],
+      unsignedTx: Transaction,
+      isDummySignature: Boolean)(
+      implicit ec: ExecutionContext): Future[PartialSignature] = ???
+}
+sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
+    extends Signer[InputType] {
+
+  def keyAndSigToScriptSig(
+      key: ECPublicKey,
+      sig: ECDigitalSignature,
+      spendingInfo: UTXOInfo[InputType]): ScriptSignature
+
+  override def sign(
+      spendingInfo: UTXOSatisfyingInfo[InputInfo],
+      unsignedTx: Transaction,
+      isDummySignature: Boolean,
+      spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = ???
 }
-
+/*
 object RawScriptUTXOSpendingInfoFull {
   def apply(
         outPoint: TransactionOutPoint,
@@ -133,40 +166,48 @@ object RawScriptUTXOSpendingInfoSingle {
         signer: Sign,
         hashType: HashType,
         conditionalPath: ConditionalPath): RawScriptUTXOSpendingInfoSingle = ???
-}
+}*/
 
 object BitcoinSigner {
   def sign(
-        spendingInfo: UTXOSpendingInfoFull,
+        spendingInfo: UTXOSatisfyingInfo[InputInfo],
+        unsignedTx: Transaction,
+        isDummySignature: Boolean)(
+        implicit ec: ExecutionContext): Future[TxSigComponent] = {
+      sign(spendingInfo, unsignedTx, isDummySignature, spendingInfo)
+    }
+  
+    def sign(
+        spendingInfo: UTXOSatisfyingInfo[InputInfo],
         unsignedTx: Transaction,
         isDummySignature: Boolean,
-        spendingInfoToSatisfy: UTXOSpendingInfoFull)(
+        spendingInfoToSatisfy: UTXOSatisfyingInfo[InputInfo])(
         implicit ec: ExecutionContext): Future[TxSigComponent] = ???
 
-  def signSingle(
-      spendingInfo: UTXOSpendingInfoSingle,
-      unsignedTx: Transaction,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[PartialSignature] = ???
+    def signSingle(
+        spendingInfo: UTXOSigningInfo[InputInfo],
+        unsignedTx: Transaction,
+        isDummySignature: Boolean)(
+        implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 
 def asm: Seq[ScriptToken] = ???
 def tokens: Seq[ScriptToken] = ???
 def scriptPubKey: RawScriptPubKey = ???
-def spendingInfoToSatisfy: UTXOSpendingInfoFull = ???
+def spendingInfoToSatisfy: UTXOSatisfyingInfo[InputInfo] = ???
 def conditionalPath: ConditionalPath = ???
 def outPoint: TransactionOutPoint = ???
 def amount: CurrencyUnit = ???
 def signer: Sign = ???
 def hashType: HashType = ???
 def beforeTimeout: Boolean = ???
-def spendingInfo: UTXOSpendingInfoFull = ???
+def spendingInfo: UTXOSatisfyingInfo[InputInfo] = ???
 def unsignedTx: Transaction = ???
 def isDummySignature: Boolean = ???
 def min: Int = ???
 def max: Int = ???
 implicit def ec: ExecutionContext = ???
-def relevantInfo(spendingInfo: UTXOSpendingInfoFull, unsignedTx: Transaction): (Seq[Sign], TransactionOutput, UInt32, HashType) = ???
+def relevantInfo(spendingInfo: UTXOSatisfyingInfo[InputInfo], unsignedTx: Transaction): (Seq[Sign], TransactionOutput, UInt32, HashType) = ???
 def updateScriptSigInSigComponent(
       unsignedTx: Transaction,
       inputIndex: Int,
@@ -177,7 +218,9 @@ def build(
       spk: ScriptPubKey,
       signers: Seq[Sign],
       redeemScript: Option[ScriptPubKey],
-      scriptWitness: Option[ScriptWitness]): Gen[BitcoinUTXOSpendingInfoFull] = ???
+      scriptWitness: Option[ScriptWitness]): Gen[UTXOSatisfyingInfo[InputInfo]] = ???
+def spendingFrom[Info <: InputInfo](
+        inputInfo: Info): UTXOSatisfyingInfo[Info] = ???
 ```
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -454,194 +497,99 @@ tokens match {
 }
 ```
 
-## Step 6: Create Relevant BitcoinUTXOSpendingInfo
+## Step 6: Create Relevant InputInfo
 
-`BitcoinUTXOSpendingInfo` is the Bitcoin-S data structure for the information required to spend from a given `ScriptPubKey`. Hence, when defining new script types, it is important to define how they are spent as well so that they can be useful.
+`InputInfo` is the Bitcoin-S data structure for the information required to spend from a specific condition of a given `ScriptPubKey` other than private keys. Hence, when defining new script types, it is important to define how they are spent as well so that they can be useful.
 
-There are three distinct kinds of scripts when it comes to signing in Bitcoin-S: scripts that have nesting (such as `ConditionalScriptPubKey`, `LockTimeScriptPubKey`), scripts without nesting but which involve multiple signing keys (such as `MultiSignatureScriptPubKey`), and scripts without nesting and which require only one key for signing (such as `P2PKWithTimeoutScriptPubKey`, `P2PKHScriptPubKey`). We will cover each of these cases in turn, starting with the last case as it applies to our example of `P2PKWithTimeout`.
+There are two distinct kinds of scripts when it comes to signing in Bitcoin-S: scripts that have nesting (such as `ConditionalScriptPubKey`, `P2SHScriptPubKey`) and scripts without nesting (such as `MultiSignatureScriptPubKey`, `P2PKWithTimeoutScriptPubKey`, `P2PKHScriptPubKey`). We will cover each of these cases in turn, starting with the latter case as it applies to our example of `P2PKWithTimeout`. In both cases, please make sure to validate any parameter data using `require` statements when necessary, but make things correct by construction instead whenever possible. For example, if there is a redeem script and a `ScriptPubKey` which must wrap this redeem script, take as a parameter only the redeem script and construct the `ScriptPubKey` internally so that it is sure to be consistent.
 
-### Non-Nested Single-Key Spending Info
+### Non-Nesting Input Info
 
-This is the easiest case and only requires creating a new `case class` in `UTXOSpendingInfo.scala` which extends `RawScriptUTXOSpendingInfoFull with RawScriptUTXOSpendingInfoSingle` and which contains in its parameters, all of the info required for spending. Make sure to also validate any data in these parameters using `require` statements. Make sure to `override` both `requiredSigs: Int = 1` and `conditionalPath: ConditionalPath` to be either whatever is needed based on your parameters, or `ConditionalPath.NoConditionsLeft` if your script does not use any conditionals. Here is what this looks like for `P2PKWithTimeout`:
+We create a new `case class` in `InputInfo.scala` which extends `RawInputInfo` and which contains in its parameters, all of the info required for spending a specific condition other than private keys and `HashType`. Here is what this looks like for `P2PKWithTimeout`:
 
 ```scala mdoc:silent
-case class P2PKWithTimeoutSpendingInfo(
+case class P2PKWithTimeoutInputInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: P2PKWithTimeoutScriptPubKey,
-    override val signer: Sign,
-    hashType: HashType,
     isBeforeTimeout: Boolean)
-    extends RawScriptUTXOSpendingInfoFull
-    with RawScriptUTXOSpendingInfoSingle {
-  require(
-    scriptPubKey.pubKey == signer.publicKey || scriptPubKey.timeoutPubKey == signer.publicKey,
-    "Signer pubkey must match ScriptPubKey")
-
-  override val requiredSigs: Int = 1
-
-  override def conditionalPath: ConditionalPath =
+    extends RawInputInfo {
+  override def conditionalPath: ConditionalPath = {
     if (isBeforeTimeout) {
       ConditionalPath.nonNestedTrue
     } else {
       ConditionalPath.nonNestedFalse
     }
-}
-```
-
-### Non-Nested Multi-Key Spending Info
-
-For new script types which require multiple keys to spend, we must make two separate `case class`es, one for normal spending (which extends `RawScriptUTXOSpendingInfoFull`) and one for signing a transaction with a single key (which extends `RawScriptUTXOSpendingInfoSingle`). We then make a `sealed trait` for the both of them to extend. In this `trait`, you want to make sure to `override def scriptPubKey` to have your new `ScriptPubKey` type as well as overriding any other members of `RawScriptUTXOSpendingInfo` which are common to both classes. In total, this all works out to the following for `MutliSignatureScriptPubKey`:
-
-```scala mdoc:compile-only
-sealed trait MultiSignatureSpendingInfo extends RawScriptUTXOSpendingInfo {
-  override def conditionalPath: ConditionalPath =
-    ConditionalPath.NoConditionsLeft
-  override def scriptPubKey: MultiSignatureScriptPubKey
-}
-
-case class MultiSignatureSpendingInfoSingle(
-    outPoint: TransactionOutPoint,
-    amount: CurrencyUnit,
-    scriptPubKey: MultiSignatureScriptPubKey,
-    signer: Sign,
-    hashType: HashType
-) extends MultiSignatureSpendingInfo
-    with RawScriptUTXOSpendingInfoSingle
-
-case class MultiSignatureSpendingInfoFull(
-    outPoint: TransactionOutPoint,
-    amount: CurrencyUnit,
-    scriptPubKey: MultiSignatureScriptPubKey,
-    private val signersWithPossibleExtra: Vector[Sign],
-    hashType: HashType
-) extends RawScriptUTXOSpendingInfoFull
-    with MultiSignatureSpendingInfo {
-  require(signersWithPossibleExtra.length >= scriptPubKey.requiredSigs,
-          s"Not enough signers!: $this")
-
-  override val requiredSigs: Int = scriptPubKey.requiredSigs
-
-  override val signers: Vector[Sign] =
-    signersWithPossibleExtra.take(requiredSigs)
-
-  override def toSingle(signerIndex: Int): MultiSignatureSpendingInfoSingle = {
-    MultiSignatureSpendingInfoSingle(outPoint,
-                                     amount,
-                                     scriptPubKey,
-                                     signers(signerIndex),
-                                     hashType)
   }
 
-  /** @inheritdoc */
-  override def toSingles: Vector[MultiSignatureSpendingInfoSingle] = {
-    signers.map { signer =>
-      MultiSignatureSpendingInfoSingle(outPoint,
-                                       amount,
-                                       scriptPubKey,
-                                       signer,
-                                       hashType)
-    }
-  }
+  override def pubKeys: Vector[ECPublicKey] =
+    Vector(scriptPubKey.pubKey, scriptPubKey.timeoutPubKey)
 }
 ```
 
 ### Nested Spending Info
 
-This case is very similar to the above where we need to create two case classes one for normal spending (which extends `RawScriptUTXOSpendingInfoFull`) and one for signing a transaction with a single key (which extends `RawScriptUTXOSpendingInfoSingle`). As well as needing to create a `sealed trait` for them both to extend which overrides `scriptPubKey` as well as any other commonalities from the sub-classes. The one new thing in the nested case is that we must create a `def nestedSpendingInfo: RawScriptUTXOSpendingInfo` in our `trait` and make sure to override `signers` and `requiredSigs` from this `nestedSpendingInfo` in the subclass extending `RawScriptUTXOSpendingInfoFull`. For the case of spending `LockTimeScriptPubKey`s, this looks like the following:
+The one new thing in the nested case is that we must create a `val nestedSpendingInfo: RawInputInfo` and make sure to pass on `hashPreImages: Vector[NetworkElement]` to the nested `InputInfo`, and pull public keys from the `nestedInputInfo`. For the case of spending `LockTimeScriptPubKey`s, this looks like the following:
 
 ```scala mdoc:compile-only
-sealed trait LockTimeSpendingInfo extends RawScriptUTXOSpendingInfo {
-  override def scriptPubKey: LockTimeScriptPubKey
-
-  def nestedSpendingInfo: RawScriptUTXOSpendingInfo
-}
-
-case class LockTimeSpendingInfoSingle(
+case class LockTimeInputInfo(
     outPoint: TransactionOutPoint,
     amount: CurrencyUnit,
     scriptPubKey: LockTimeScriptPubKey,
-    signer: Sign,
-    hashType: HashType,
-    conditionalPath: ConditionalPath
-) extends LockTimeSpendingInfo
-    with RawScriptUTXOSpendingInfoSingle {
-  override val nestedSpendingInfo: RawScriptUTXOSpendingInfoSingle = {
-    RawScriptUTXOSpendingInfoSingle(outPoint,
-                                    amount,
-                                    scriptPubKey.nestedScriptPubKey,
-                                    signer,
-                                    hashType,
-                                    conditionalPath)
-  }
-}
+    conditionalPath: ConditionalPath,
+    hashPreImages: Vector[NetworkElement] = Vector.empty
+) extends RawInputInfo {
 
-case class LockTimeSpendingInfoFull(
-    outPoint: TransactionOutPoint,
-    amount: CurrencyUnit,
-    scriptPubKey: LockTimeScriptPubKey,
-    private val signersWithPossibleExtra: Vector[Sign],
-    hashType: HashType,
-    conditionalPath: ConditionalPath
-) extends RawScriptUTXOSpendingInfoFull
-    with LockTimeSpendingInfo {
+  val nestedInputInfo: RawInputInfo = RawInputInfo(
+    outPoint,
+    amount,
+    scriptPubKey.nestedScriptPubKey,
+    conditionalPath,
+    hashPreImages)
 
-  override val nestedSpendingInfo: RawScriptUTXOSpendingInfoFull = {
-    RawScriptUTXOSpendingInfoFull(outPoint,
-                                  amount,
-                                  scriptPubKey.nestedScriptPubKey,
-                                  signersWithPossibleExtra,
-                                  hashType,
-                                  conditionalPath)
-  }
-
-  override val signers: Vector[Sign] = nestedSpendingInfo.signers
-
-  override val requiredSigs: Int = nestedSpendingInfo.requiredSigs
+  override def pubKeys: Vector[ECPublicKey] = nestedInputInfo.pubKeys
 }
 ```
 
 ## Step 7: Add to Relevant Apply Methods
 
-Now that we have created our new `RawScriptUTXOSpendingInfoFull` and `RawScriptUTXOSpendingInfoSingle`, possibly in the same class, we need to add them to the general-purpose spending info constructors. This means adding a `case` to both `RawScriptUTXOSpendingInfoSingle.apply` and `RawScriptUTXOSpendingInfoFull.apply` for your new `ScriptPubKey` type which constructs your relevant `RawScriptUTXOSpendingInfoSingle` and `RawScriptUTXOSpendingInfoFull` from generic types (given as parameters in the `apply` methods). For `P2PKWithTimeout`, both of these cases look like the following:
+Now that we have created our new `RawInputInfo`, we need to add them to the general-purpose input info constructors. This means adding a `case` to `RawInputInfo.apply` for your new `ScriptPubKey` type which constructs your relevant `RawInputInfo` from generic types (given as parameters in the `apply` methods). For `P2PKWithTimeout`, this looks like the following:
 
 ```scala mdoc:compile-only
     scriptPubKey match {
       //...
       case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
-        conditionalPath.headOption match {
-          case None =>
-            throw new IllegalArgumentException(
-              "ConditionalPath must be specified for P2PKWithTimeout")
-          case Some(beforeTimeout) =>
-            P2PKWithTimeoutSpendingInfo(outPoint,
-                                        amount,
-                                        p2pkWithTimeout,
-                                        signer,
-                                        hashType,
-                                        beforeTimeout)
-        }
+              conditionalPath.headOption match {
+                case None =>
+                  throw new IllegalArgumentException(
+                    "ConditionalPath must be specified for P2PKWithTimeout")
+                case Some(beforeTimeout) =>
+                  P2PKWithTimeoutInputInfo(outPoint,
+                                           amount,
+                                           p2pkWithTimeout,
+                                           beforeTimeout)
+              }
       //...
     }
 ```
 
 ## Step 8: Create a Signer
 
-We must now add signing functionality for our new script type within `Signer.scala`. Once again, we have three different cases depending on your new script type.
+We must now add signing functionality for our new script type within `Signer.scala`. This time, we have three different cases depending on your new script type.
 
 ### Non-Nested Single-Key Spending Info
 
-For this case, all we must do is create a new class which extends `RawSingleKeyBitcoinSigner` and implements `keyAndSigToScriptSig`. For `P2PKWithTimeout` this looks like the following:
+For the non-nested case where only a single key is required, all we must do is create a new class which extends `RawSingleKeyBitcoinSigner` and implements `keyAndSigToScriptSig`. For `P2PKWithTimeout` this looks like the following:
 
 ```scala mdoc:silent
 sealed abstract class P2PKWithTimeoutSigner
-    extends RawSingleKeyBitcoinSigner[P2PKWithTimeoutSpendingInfo] {
+    extends RawSingleKeyBitcoinSigner[P2PKWithTimeoutInputInfo] {
 
   override def keyAndSigToScriptSig(
       key: ECPublicKey,
       sig: ECDigitalSignature,
-      spendingInfo: P2PKWithTimeoutSpendingInfo): ScriptSignature = {
-    P2PKWithTimeoutScriptSignature(spendingInfo.isBeforeTimeout, sig)
+      spendingInfo: UTXOInfo[P2PKWithTimeoutInputInfo]): ScriptSignature = {
+    P2PKWithTimeoutScriptSignature(spendingInfo.inputInfo.isBeforeTimeout, sig)
   }
 }
 
@@ -650,17 +598,16 @@ object P2PKWithTimeoutSigner extends P2PKWithTimeoutSigner
 
 ### Non-Nested Multi-Key Spending Info
 
-In this case we must create a new `BitcoinSignerFull`, which requires implementing the `sign` function. For `MultiSignature` this looks like the following:
+In the non-nested case where multiple keys are required, we must create a new `Signer`, which requires implementing the `sign` function. For `MultiSignature` this looks like the following:
 
 ```scala mdoc:compile-only
-sealed abstract class MultiSigSigner
-    extends BitcoinSigner[MultiSignatureSpendingInfoFull] {
+sealed abstract class MultiSigSigner extends Signer[MultiSignatureInputInfo] {
 
   override def sign(
-      spendingInfo: UTXOSpendingInfoFull,
+      spendingInfo: UTXOSatisfyingInfo[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: MultiSignatureSpendingInfoFull)(
+      spendingInfoToSatisfy: UTXOSatisfyingInfo[MultiSignatureInputInfo])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
@@ -687,32 +634,33 @@ object MultiSigSigner extends MultiSigSigner
 
 ### Nested Spending Info
 
-When signing for a nested script structure, we must create a new `BitcoinSignerFull`. You will need to make a delegating call with the `nestedSpendingInfo` to `BitcoinSigner.sign`, but you may also need to do whatever else is needed with the nested result to construct a correct `ScriptSignature`. For `ConditionalScriptSignature`, this all looks like:
+When signing for a nested script structure, we must create a new `Signer`. You will need to make a delegating call with the `nestedSpendingInfo` to `BitcoinSigner.sign`, but you may also need to do whatever else is needed with the nested result to construct a correct `ScriptSignature`. For `ConditionalScriptSignature`, this all looks like:
 
 ```scala mdoc:compile-only
 /** Delegates to get a ScriptSignature for the case being
   * spent and then adds an OP_TRUE or OP_FALSE
   */
-sealed abstract class ConditionalSigner
-    extends BitcoinSigner[ConditionalSpendingInfoFull] {
+sealed abstract class ConditionalSigner extends Signer[ConditionalInputInfo] {
 
   override def sign(
-      spendingInfo: UTXOSpendingInfoFull,
+      spendingInfo: UTXOSatisfyingInfo[InputInfo],
       unsignedTx: Transaction,
       isDummySignature: Boolean,
-      spendingInfoToSatisfy: ConditionalSpendingInfoFull)(
+      spendingInfoToSatisfy: UTXOSatisfyingInfo[ConditionalInputInfo])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
 
-    val missingOpSigComponentF = BitcoinSigner.sign(
-      spendingInfo,
-      unsignedTx,
-      isDummySignature,
-      spendingInfoToSatisfy.nestedSpendingInfo)
+    val nestedSpendingInfo = spendingInfoToSatisfy.copy(
+      inputInfo = spendingInfoToSatisfy.inputInfo.nestedInputInfo)
+
+    val missingOpSigComponentF = BitcoinSigner.sign(spendingInfo,
+                                                    unsignedTx,
+                                                    isDummySignature,
+                                                    nestedSpendingInfo)
 
     val scriptSigF = missingOpSigComponentF.map { sigComponent =>
       ConditionalScriptSignature(sigComponent.scriptSignature,
-                                 spendingInfoToSatisfy.condition)
+                                 spendingInfoToSatisfy.inputInfo.condition)
     }
 
     updateScriptSigInSigComponent(unsignedTx,
@@ -726,16 +674,16 @@ object ConditionalSigner extends ConditionalSigner
 
 ## Step 9: Add to BitcoinSigner.sign
 
-We must now add the new signing functionality from the previous step to the general-purpose signing functions by adding a new `case` for your new `ScriptPubKey` type in the `match` within `BitcoinSigner.sign`. In the case of `P2PKWithTimeout`, this looks like:
+We must now add the new signing functionality from the previous step to the general-purpose signing functions by adding a new `case` for your new `InputInfo` type in the `match` within `BitcoinSigner.sign`. In the case of `P2PKWithTimeout`, this looks like:
 
 ```scala mdoc:compile-only
     spendingInfoToSatisfy match {
       //...
-      case p2pKWithTimeout: P2PKWithTimeoutSpendingInfo =>
-        P2PKWithTimeoutSigner.sign(spendingInfo,
-                                   unsignedTx,
-                                   isDummySignature,
-                                   p2pKWithTimeout)
+      case p2pKWithTimeout: P2PKWithTimeoutInputInfo =>
+              P2PKWithTimeoutSigner.sign(spendingInfo,
+                                         unsignedTx,
+                                         isDummySignature,
+                                         spendingFrom(p2pKWithTimeout))
       //...
     }
 ```
@@ -791,7 +739,7 @@ We now add this `Gen` to `scriptSignature: Gen[ScriptSignature]` as well as addi
 
 ### ScriptPubKey with Paired ScriptSignature Generator
 
-Lastly, we need to construct a generator that returns both a `ScriptPubKey` and a `ScriptSignature` signing that that `ScriptPubKey`. All keys used in signing should also be returned. This all should be done by using the above `ScriptPubKey` generator, then constructing an `ScriptSignature` for your type where all actual signatures are `EmptyDigitalSignature`s. A `SpendingInfoFull` should then be constructed for the generated `ScriptPubKey` (using the private keys generated in the same line). Finally, a `TxSignatureComponent` should be created by using the new `Signer` for our script type. From this `TxSignatureComponent`, a `ScriptSignature` is readily available. For `P2PKWithTimeout`, this generator looks like:
+Lastly, we need to construct a generator that returns both a `ScriptPubKey` and a `ScriptSignature` signing that that `ScriptPubKey`. All keys used in signing should also be returned. This all should be done by using the above `ScriptPubKey` generator, then constructing an `ScriptSignature` for your type where all actual signatures are `EmptyDigitalSignature`s. A `UTXOSatisfyingInfo` should then be constructed for the generated `ScriptPubKey` (using the private keys generated in the same line). Finally, a `TxSignatureComponent` should be created by using the new `Signer` for our script type. From this `TxSignatureComponent`, a `ScriptSignature` is readily available. For `P2PKWithTimeout`, this generator looks like:
 
 ```scala mdoc:compile-only
   def signedP2PKWithTimeoutScriptSignature: Gen[
@@ -800,20 +748,21 @@ Lastly, we need to construct a generator that returns both a `ScriptPubKey` and 
       (spk, privKeys) <- p2pkWithTimeoutScriptPubKey
       hashType <- CryptoGenerators.hashType
     } yield {
-      val privKey = privKeys.head
       val emptyScriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
                                                           EmptyDigitalSignature)
       val (creditingTx, outputIndex) =
         TransactionGenerators.buildCreditingTransaction(spk)
       val (spendingTx, inputIndex) = TransactionGenerators
         .buildSpendingTransaction(creditingTx, emptyScriptSig, outputIndex)
-      val spendingInfo = P2PKWithTimeoutSpendingInfo(
-        TransactionOutPoint(creditingTx.txIdBE, inputIndex),
-        creditingTx.outputs(outputIndex.toInt).value,
-        spk,
-        privKey,
-        hashType,
-        isBeforeTimeout = true)
+      val spendingInfo = UTXOSatisfyingInfo(
+        P2PKWithTimeoutInputInfo(
+          TransactionOutPoint(creditingTx.txIdBE, inputIndex),
+          creditingTx.outputs(outputIndex.toInt).value,
+          spk,
+          isBeforeTimeout = true),
+        privKeys.toVector,
+        hashType
+      )
       val txSigComponentF = P2PKWithTimeoutSigner.sign(spendingInfo,
                                                        spendingTx,
                                                        isDummySignature = false)
@@ -821,7 +770,7 @@ Lastly, we need to construct a generator that returns both a `ScriptPubKey` and 
       val signedScriptSig =
         txSigComponent.scriptSignature.asInstanceOf[ConditionalScriptSignature]
 
-      (signedScriptSig, spk, privKey)
+      (signedScriptSig, spk, privKeys.head)
     }
 ```
 
@@ -832,13 +781,13 @@ I strongly advise you also look at at least one other `Gen` of this kind before 
 Now that we have generators constructed for `ScriptPubKey`s, `ScriptSignature`s and their pairings completed, we will create a generator for our type's `SpendingInfoFull`. This should usually be as simple as mapping on the `ScriptPubKey` generator in `ScriptGenerators` and calling `build` (within `CreditinTxGen.scala`). We then also create another generator which returns lists of `SpendingInfo`s generated by the previous `Gen`. For `P2PKWithTimeout`, this looks like:
 
 ```scala mdoc:compile-only
-  def p2pkWithTimeoutOutput: Gen[BitcoinUTXOSpendingInfoFull] = {
+  def p2pkWithTimeoutOutput: Gen[UTXOSatisfyingInfo[InputInfo]] = {
     ScriptGenerators.p2pkWithTimeoutScriptPubKey.flatMap { p2pkWithTimeout =>
       build(p2pkWithTimeout._1, Seq(p2pkWithTimeout._2.head), None, None)
     }
   }
 
-  def p2pkWithTimeoutOutputs: Gen[Seq[BitcoinUTXOSpendingInfoFull]] = {
+  def p2pkWithTimeoutOutputs: Gen[Seq[UTXOSatisfyingInfo[InputInfo]]] = {
     Gen.choose(min, max).flatMap(n => Gen.listOfN(n, p2pkWithTimeoutOutput))
   }
 ```
