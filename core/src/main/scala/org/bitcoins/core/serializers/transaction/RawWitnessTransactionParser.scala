@@ -68,7 +68,7 @@ sealed abstract class RawWitnessTransactionParser
     //notice we use the old serialization format if all witnesses are empty
     // https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
     if (tx.witness.exists(_ != EmptyScriptWitness)) {
-      val witConstant = ByteVector(0.toByte, 1.toByte)
+      val witConstant = WitnessTransaction.witBytes
       version ++ witConstant ++ inputs ++ outputs ++ witness ++ lockTime
     } else BaseTransaction(tx.version, tx.inputs, tx.outputs, tx.lockTime).bytes
   }
