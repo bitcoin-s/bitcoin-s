@@ -148,7 +148,7 @@ sealed abstract class WitnessTransaction extends Transaction {
     val base = BaseTransaction(version, inputs, outputs, lockTime)
     base.byteSize * 3 + byteSize
   }
-  override def bytes = RawWitnessTransactionParser.write(this)
+  override def bytes: ByteVector = RawWitnessTransactionParser.write(this)
 
   /**
     * Updates the [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] at the given index and
@@ -168,6 +168,7 @@ object Transaction extends Factory[Transaction] {
     //see BIP141 for marker/flag bytes
     //https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
     if (bytes(4) == WitnessTransaction.marker && bytes(5) == WitnessTransaction.flag) {
+      println(s"Attempting to parse as witness tx=${bytes.toHex}")
       RawWitnessTransactionParser.read(bytes)
     } else {
       RawBaseTransactionParser.read(bytes)
