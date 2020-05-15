@@ -37,14 +37,14 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-class RawTxBuilder extends mutable.Clearable {
+class RawTxBuilder {
   private var version: Int32 = TransactionConstants.validLockVersion
 
-  private val inputsBuilder: mutable.ReusableBuilder[
+  private val inputsBuilder: mutable.Builder[
     TransactionInput,
     Vector[TransactionInput]] = Vector.newBuilder
 
-  private val outputsBuilder: mutable.ReusableBuilder[
+  private val outputsBuilder: mutable.Builder[
     TransactionOutput,
     Vector[TransactionOutput]] = Vector.newBuilder
 
@@ -77,7 +77,7 @@ class RawTxBuilder extends mutable.Clearable {
                       lockTime)
   }
 
-  override def clear(): Unit = {
+  def clear(): Unit = {
     version = TransactionConstants.validLockVersion
     inputsBuilder.clear()
     outputsBuilder.clear()
@@ -91,7 +91,7 @@ class RawTxBuilder extends mutable.Clearable {
 
   @inline final def +=(input: TransactionInput): this.type = addInput(input)
 
-  def addInputs(inputs: IterableOnce[TransactionInput]): this.type = {
+  def addInputs(inputs: Iterable[TransactionInput]): this.type = {
     inputsBuilder ++= inputs
     this
   }
@@ -103,13 +103,13 @@ class RawTxBuilder extends mutable.Clearable {
 
   @inline final def +=(output: TransactionOutput): this.type = addOutput(output)
 
-  def addOutputs(outputs: IterableOnce[TransactionOutput]): this.type = {
+  def addOutputs(outputs: Iterable[TransactionOutput]): this.type = {
     outputsBuilder ++= outputs
     this
   }
 
   @inline final def ++=[T >: TransactionInput with TransactionOutput](
-      inputsOrOutputs: IterableOnce[T]): this.type = {
+      inputsOrOutputs: Iterable[T]): this.type = {
     val vec = inputsOrOutputs.iterator.toVector
     val inputs = vec.collect {
       case input: TransactionInput => input
