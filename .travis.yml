@@ -36,13 +36,13 @@ matrix:
         - DISABLE_SECP256K1="true"
         - TEST_COMMAND="coreTest/test cryptoTest/test"
       scala:
-        - 2.13.1
+        - 2.13.2
     - os: osx
       name: "macOS bitcoind and eclair tests"
       env:
         - TEST_COMMAND="bitcoindRpcTest/test bitcoindRpc/coverageReport bitcoindRpc/coverageAggregate bitcoindRpc/coveralls eclairRpcTest/test eclairRpc/coverageReport eclairRpc/coverageAggregate eclairRpc/coveralls"
       scala:
-        - 2.13.1
+        - 2.13.2
     # skip all test tagged as UsesExperimentalBitcoind
     # TODO remove this condition once we have a neutrino enabled bitcoind binary for OSX
     - os: osx
@@ -51,7 +51,7 @@ matrix:
         - CI="1"
         - TEST_COMMAND="walletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls"
       scala:
-        - 2.13.1
+        - 2.13.2
 
     # compile website, to check for documentation regressions
     - stage: test
@@ -59,7 +59,7 @@ matrix:
       env:
         - TEST_COMMAND="test:scalafmtCheck docs/mdoc"
       scala:
-        - 2.13.1
+        - 2.13.2
 
     # Release snapshots/versions of all libraries
     # run ci-release only if previous stages passed
