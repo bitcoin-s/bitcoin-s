@@ -172,7 +172,7 @@ object Transaction extends Factory[Transaction] {
       //with zero inputs and 1 output which is serialized as "0001" at bytes 4 and 5.
       //these transactions will not have a script witness associated with them making them invalid
       //witness transactions (you need to have a witness to be considered a witness tx)
-      //see:
+      //see: https://github.com/bitcoin-s/bitcoin-s/blob/01d89df1b7c6bc4b1594406d54d5e6019705c654/core-test/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionTest.scala#L88
       try {
         RawWitnessTransactionParser.read(bytes)
       } catch {
