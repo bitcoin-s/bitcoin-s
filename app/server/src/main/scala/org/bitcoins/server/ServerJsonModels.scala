@@ -311,20 +311,20 @@ object SendWithAlgo extends ServerJsonModels {
 case class OpReturnCommit(
     message: String,
     hashMessage: Boolean,
-    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+    feeRateOpt: Option[SatoshisPerVirtualByte])
 
 object OpReturnCommit extends ServerJsonModels {
 
   def fromJsArr(jsArr: ujson.Arr): Try[OpReturnCommit] = {
     jsArr.arr.toList match {
-      case messageJs :: hashMessageJs :: satsPerVBytesJs :: Nil =>
+      case messageJs :: hashMessageJs :: feeRateOptJs :: Nil =>
         Try {
           val message = messageJs.str
           val hashMessage = hashMessageJs.bool
-          val satoshisPerVirtualByte =
-            nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
+          val feeRateOpt =
+            nullToOpt(feeRateOptJs).map(satsPerVBytes =>
               SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
-          OpReturnCommit(message, hashMessage, satoshisPerVirtualByte)
+          OpReturnCommit(message, hashMessage, feeRateOpt)
         }
       case Nil =>
         Failure(

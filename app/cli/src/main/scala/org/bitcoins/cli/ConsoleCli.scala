@@ -348,7 +348,7 @@ object ConsoleCli {
             .action((feeRate, conf) =>
               conf.copy(command = conf.command match {
                 case opReturnCommit: OpReturnCommit =>
-                  opReturnCommit.copy(satoshisPerVirtualByte = Some(feeRate))
+                  opReturnCommit.copy(feeRateOpt = Some(feeRate))
                 case other => other
               }))
         ),
@@ -677,7 +677,7 @@ object CliCommand {
   case class OpReturnCommit(
       message: String,
       hashMessage: Boolean,
-      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+      feeRateOpt: Option[SatoshisPerVirtualByte])
       extends CliCommand
   case object GetNewAddress extends CliCommand
   case object GetUtxos extends CliCommand

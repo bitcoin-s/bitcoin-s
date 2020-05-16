@@ -166,6 +166,18 @@ class WalletSendingTest extends BitcoinSWalletTest {
       testOpReturnCommitment(fundedWallet.wallet, hashMessage = false)
   }
 
+  it should "fail to make an OP_RETURN commitment that is too long" in {
+    fundedWallet =>
+      val wallet = fundedWallet.wallet
+
+      recoverToSucceededIf[IllegalArgumentException] {
+        wallet.makeOpReturnCommitment(
+          "This message is much too long and is over 80 bytes, the limit for OP_RETURN. It should cause an error.",
+          hashMessage = false,
+          feeRate)
+      }
+  }
+
   it should "fail to send to a different network address" in { fundedWallet =>
     val wallet = fundedWallet.wallet
 

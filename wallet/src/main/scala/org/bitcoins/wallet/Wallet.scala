@@ -13,8 +13,9 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
+import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
@@ -332,15 +333,14 @@ abstract class Wallet
     val messageToUse = if (hashMessage) {
       CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
     } else {
-      if (message.length > 32) {
+      if (message.length > 80) {
         throw new IllegalArgumentException(
-          s"Message cannot be greater than 32 characters, it should be hashed, got $message")
+          s"Message cannot be greater than 80 characters, it should be hashed, got $message")
       } else ByteVector(message.getBytes)
     }
 
-    val asm = Seq(OP_RETURN,
-                  BytesToPushOntoStack(messageToUse.size),
-                  ScriptConstant(messageToUse))
+    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(messageToUse) :+ ScriptConstant(
+      messageToUse)
 
     val scriptPubKey = ScriptPubKey(asm)
 
