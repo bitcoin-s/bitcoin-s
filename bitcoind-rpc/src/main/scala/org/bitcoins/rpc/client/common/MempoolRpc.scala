@@ -4,6 +4,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindVersion._
 import play.api.libs.json.{JsBoolean, JsString}
 
@@ -96,6 +97,17 @@ trait MempoolRpc { self: Client =>
   def getMemPoolEntry(
       txid: DoubleSha256Digest): Future[GetMemPoolEntryResult] = {
     getMemPoolEntry(txid.flip)
+  }
+
+  def getMemPoolEntryOpt(txid: DoubleSha256Digest): Future[Option[GetMemPoolEntryResult]] = {
+    getMemPoolEntryOpt(txid.flip)
+  }
+
+  def getMemPoolEntryOpt(txid: DoubleSha256DigestBE): Future[Option[GetMemPoolEntryResult]] = {
+    getMemPoolEntry(txid).map(Some(_))
+      .recover { case _: BitcoindException.InvalidAddressOrKey =>
+      None
+    }
   }
 
   def getMemPoolInfo: Future[GetMemPoolInfoResult] = {
