@@ -168,8 +168,17 @@ object Transaction extends Factory[Transaction] {
     //see BIP141 for marker/flag bytes
     //https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
     if (bytes(4) == WitnessTransaction.marker && bytes(5) == WitnessTransaction.flag) {
-      println(s"Attempting to parse as witness tx=${bytes.toHex}")
-      RawWitnessTransactionParser.read(bytes)
+      //this throw/catch is _still_ necessary for the case where we have unsigned base transactions
+      //with zero inputs and 1 output which is serialized as "0001" at bytes 4 and 5.
+      //these transactions will not have a script witness associated with them making them invalid
+      //witness transactions (you need to have a witness to be considered a witness tx)
+      //see:
+      try {
+        RawWitnessTransactionParser.read(bytes)
+      } catch {
+        case scala.util.control.NonFatal(_) =>
+          RawBaseTransactionParser.read(bytes)
+      }
     } else {
       RawBaseTransactionParser.read(bytes)
     }

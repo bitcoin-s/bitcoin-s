@@ -85,13 +85,17 @@ class TransactionTest extends BitcoinSUnitTest {
     tx.hex must be(rawTx)
   }
 
-  it must "deserialize and serialize this witness tx" in {
-    val hex = "02000000000100e1f5050000000017a9148fe46e05e329badba1c390a5ea2c0ad7de2059cd8700000000"
-    val wtx = Transaction.fromHex(hex)
-    wtx.isInstanceOf[WitnessTransaction] must be (true)
-    wtx.hex must be (hex)
+  it must "deserialize and serialize a base transaction with no inputs" in {
+    //this should be considered a base transaction since there is no script witnesses
+    val hex = "02000000" + //version
+      "0001" + //0 inputs, 1 output
+      "00e1f50500000000" + //1BTC
+      "17a9148fe46e05e329badba1c390a5ea2c0ad7de2059cd87" + //spk
+      "00000000" //locktime
+    val btx = Transaction.fromHex(hex)
+    btx.isInstanceOf[BaseTransaction] must be(true)
+    btx.hex must be(hex)
   }
-
 
   it must "serialize and deserialize a large tx" in {
     val rawTx =

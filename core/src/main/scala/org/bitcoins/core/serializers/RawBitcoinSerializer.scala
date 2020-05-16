@@ -1,5 +1,6 @@
 package org.bitcoins.core.serializers
 
+import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.BytesUtil
 import scodec.bits.ByteVector
 
@@ -7,7 +8,7 @@ import scodec.bits.ByteVector
   * Created by chris on 1/11/16.
   * A common trait for reading/writing bitcoin objects to/from bytes/hex
   */
-abstract class RawBitcoinSerializer[T] {
+abstract class RawBitcoinSerializer[T] extends BitcoinSLogger {
 
   /** Reads a hexadecimal value and transforms it into the native scala type T. */
   def read(hex: String): T = read(BytesUtil.decodeHex(hex))
