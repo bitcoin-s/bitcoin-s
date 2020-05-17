@@ -81,7 +81,7 @@ case object OP_CHECKMULTISIGVERIFY extends CryptoSignatureEvaluation {
 }
 
 object CryptoOperation extends ScriptOperationFactory[CryptoOperation] {
-  override def operations =
+  override val operations =
     Seq(OP_CHECKMULTISIG,
         OP_CHECKMULTISIGVERIFY,
         OP_CHECKSIG,

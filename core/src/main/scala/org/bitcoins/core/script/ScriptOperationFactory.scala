@@ -72,7 +72,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  val operations: Seq[ScriptOperation] = {
+  override val operations: Seq[ScriptOperation] = {
     ScriptNumberOperation.operations ++
       Seq(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
       StackOperation.operations ++

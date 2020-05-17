@@ -9,7 +9,7 @@ trait CryptoSignatureEvaluationFactory
     extends ScriptOperationFactory[CryptoSignatureEvaluation] {
 
   /** The current [[CryptoSignatureEvaluation]] operations. */
-  def operations =
+  override val operations =
     Seq(OP_CHECKMULTISIG,
         OP_CHECKMULTISIGVERIFY,
         OP_CHECKSIG,

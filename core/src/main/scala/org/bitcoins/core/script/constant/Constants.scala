@@ -33,7 +33,7 @@ trait ScriptOperation extends ScriptToken {
 
   override def bytes: ByteVector = ByteVector.fromByte(toByte)
 
-  def toByte: Byte = opCode.toByte
+  lazy val toByte: Byte = opCode.toByte
 }
 
 /** A constant in the Script language for instance as String or a number. */
@@ -357,7 +357,7 @@ object ScriptNumberOperation
   def fromNumber(underlying: Long): Option[ScriptNumberOperation] =
     operations.find(_.underlying == underlying)
 
-  val operations = Seq(OP_0,
+  override val operations = Seq(OP_0,
                        OP_1,
                        OP_1NEGATE,
                        OP_2,
