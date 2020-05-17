@@ -17,6 +17,10 @@ object BytesToPushOntoStack
     */
   lazy val zero: BytesToPushOntoStack = apply(0)
 
+  lazy val push33Bytes = operations(33)
+  lazy val push32Bytes = operations(32)
+  lazy val push20Bytes = operations(20)
+
   private case class BytesToPushOntoStackImpl(num: Int)
       extends BytesToPushOntoStack {
     /*  //see the 'Constants; section in https://en.bitcoin.it/wiki/Script
