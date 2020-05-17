@@ -86,7 +86,7 @@ object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
    * to the front of the vector so when we iterate through it,
    * we are more likely to find the op code we are looking for
    * sooner */
-  override val operations: Vector[ScriptOperation] = {
+  final override val operations: Vector[ScriptOperation] = {
     Vector(OP_DUP, OP_HASH160, OP_EQUALVERIFY, OP_CHECKSIG) ++ //p2pkh
     Vector(BytesToPushOntoStack.push20Bytes, BytesToPushOntoStack.push33Bytes,
       BytesToPushOntoStack.push32Bytes) ++ //popular push op codes
