@@ -21,7 +21,7 @@ import scodec.bits.ByteVector
 trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
   /** All of the [[org.bitcoins.core.script.ScriptOperation ScriptOperation]]s for a particular `T`. */
-  def operations: Seq[T]
+  def operations: Vector[T]
 
   /**
     * Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given string
@@ -52,8 +52,17 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   }
 
   /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[scala.Byte Byte]]. */
-  def fromByte(byte: Byte): T = {
-    operations.find(_.toByte == byte).get
+  @inline def fromByte(byte: Byte): T = {
+    var idx = 0
+    while (idx < operations.length) {
+      val op = operations(idx)
+      if (op.toByte == byte) {
+        return op
+      } else {
+        idx += 1
+      }
+    }
+    sys.error(s"Could not find opcode for byte=${byte}")
   }
 
   def fromBytes(bytes: ByteVector): Option[T] = {
@@ -72,9 +81,9 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  override val operations: Seq[ScriptOperation] = {
+  override val operations: Vector[ScriptOperation] = {
     ScriptNumberOperation.operations ++
-      Seq(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
+      Vector(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
       StackOperation.operations ++
       LocktimeOperation.operations ++
       CryptoOperation.operations ++

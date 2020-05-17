@@ -97,7 +97,7 @@ object ReservedOperation extends ScriptOperationFactory[ReservedOperation] {
   lazy val undefinedOpCodes = for { i <- 0xba to 0xff } yield UndefinedOP_NOP(i)
 
   override val operations =
-    Seq(OP_RESERVED,
+    Vector(OP_RESERVED,
         OP_VER,
         OP_VERIF,
         OP_VERNOTIF,

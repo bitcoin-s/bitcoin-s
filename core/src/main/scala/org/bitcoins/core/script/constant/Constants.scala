@@ -357,7 +357,7 @@ object ScriptNumberOperation
   def fromNumber(underlying: Long): Option[ScriptNumberOperation] =
     operations.find(_.underlying == underlying)
 
-  override val operations = Seq(OP_0,
+  override val operations = Vector(OP_0,
                        OP_1,
                        OP_1NEGATE,
                        OP_2,
