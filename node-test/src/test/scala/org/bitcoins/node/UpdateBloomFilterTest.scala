@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.networking.peer.DataMessageHandler
+import org.bitcoins.rpc.util.AsyncUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.NodeUnitTest.SpvNodeFundedWalletBitcoind
@@ -116,6 +117,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
           )
         }
       }
+      //make sure the tx is propagated to the node's mempool
+      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+        rpc.getMemPoolEntryOpt(tx.txId).map(_.isDefined))
       // this should confirm our TX
       // since we updated the bloom filter
       // we should get notified about the block
@@ -144,7 +148,7 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
       _ = addressFromWalletP.success(addressFromWallet)
       _ <- spv.updateBloomFilter(addressFromWallet)
       _ <- spv.sync()
-      _ <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
+      txid <- rpc.sendToAddress(addressFromWallet, 1.bitcoin)
       _ <- NodeTestUtil.awaitSync(spv, rpc)
 
       _ = {
@@ -162,6 +166,9 @@ class UpdateBloomFilterTest extends NodeUnitTest with BeforeAndAfter {
           )
         }
       }
+      //make sure the tx is propagated to the node's mempool
+      _ <- AsyncUtil.retryUntilSatisfiedF(() =>
+        rpc.getMemPoolEntryOpt(txid).map(_.isDefined))
       result <- assertionP.future
     } yield assert(result)
   }

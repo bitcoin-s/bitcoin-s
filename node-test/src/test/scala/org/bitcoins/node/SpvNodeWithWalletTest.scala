@@ -90,7 +90,6 @@ class SpvNodeWithWalletTest extends NodeUnitTest {
       }
 
       for {
-
         _ <- wallet.getBloomFilter()
         address <- wallet.getNewAddress()
         updatedBloom <- spv.updateBloomFilter(address).map(_.bloomFilter)
