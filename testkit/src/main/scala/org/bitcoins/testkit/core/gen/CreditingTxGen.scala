@@ -114,7 +114,10 @@ sealed abstract class CreditingTxGen {
     val cltvSize = cltvOutputGens.length
     val nonCltvSize = nonCltvOutputGens.length
 
-    Gen.frequency((cltvSize, cltvGen), (nonCltvSize, nonCltvGen))
+    // For some reason this breaks in scala 2.13 without the explicit type param
+    Gen.frequency[Seq[ScriptSignatureParams[InputInfo]]](
+      (cltvSize, cltvGen),
+      (nonCltvSize, nonCltvGen))
   }
 
   /** Generates a crediting tx with a p2pk spk at the returned index */
