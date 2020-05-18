@@ -1,6 +1,5 @@
 package org.bitcoins.gui.dialog
 
-import jdk.nashorn.internal.objects.Global
 import org.bitcoins.gui.GlobalData
 import scalafx.Includes._
 import scalafx.application.Platform

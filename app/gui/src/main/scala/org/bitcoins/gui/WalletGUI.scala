@@ -2,7 +2,7 @@ package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
 import javafx.scene.image.Image
-import org.bitcoins.gui.settings.{SettingsPane, Themes}
+import org.bitcoins.gui.settings.SettingsPane
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
