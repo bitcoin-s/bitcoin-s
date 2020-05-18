@@ -1,5 +1,6 @@
 package org.bitcoins.gui
 
+import org.bitcoins.gui.settings.Themes
 import scalafx.beans.property.{DoubleProperty, StringProperty}
 
 object GlobalData {
@@ -9,5 +10,13 @@ object GlobalData {
 
   val statusText: StringProperty = StringProperty("")
 
-  val defaultDarkTheme: Boolean = true
+  val darkThemeEnabled: Boolean = true
+
+  def currentStyleSheets: Seq[String] =
+    if (GlobalData.darkThemeEnabled) {
+      Seq(Themes.DarkTheme.fileLocation)
+    } else {
+      Seq.empty
+    }
+
 }
