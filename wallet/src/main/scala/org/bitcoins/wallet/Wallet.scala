@@ -11,7 +11,11 @@ import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState
@@ -19,7 +23,7 @@ import org.bitcoins.core.wallet.utxo.TxoState.{
   ConfirmedReceived,
   PendingConfirmationsReceived
 }
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil
@@ -27,6 +31,7 @@ import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models.{SpendingInfoDb, _}
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -318,6 +323,30 @@ abstract class Wallet
         TransactionOutput(amount, address.scriptPubKey)
     }
     sendToOutputs(destinations, feeRate, fromAccount, reserveUtxos)
+  }
+
+  override def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction] = {
+    val messageToUse = if (hashMessage) {
+      CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
+    } else {
+      if (message.length > 80) {
+        throw new IllegalArgumentException(
+          s"Message cannot be greater than 80 characters, it should be hashed, got $message")
+      } else ByteVector(message.getBytes)
+    }
+
+    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(messageToUse) :+ ScriptConstant(
+      messageToUse)
+
+    val scriptPubKey = ScriptPubKey(asm)
+
+    val output = TransactionOutput(0.satoshis, scriptPubKey)
+
+    sendToOutputs(Vector(output), feeRate, fromAccount, reserveUtxos = false)
   }
 
   def sendToOutputs(

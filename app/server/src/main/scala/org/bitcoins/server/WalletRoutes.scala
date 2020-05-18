@@ -149,6 +149,24 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
           }
       }
 
+    case ServerCommand("opreturncommit", arr) =>
+      OpReturnCommit.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+            OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt)) =>
+          complete {
+            // TODO dynamic fees based off mempool and recent blocks
+            val feeRate =
+              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
+            wallet.makeOpReturnCommitment(message, hashMessage, feeRate).map {
+              tx =>
+                node.broadcastTransaction(tx)
+                Server.httpSuccess(tx.txIdBE)
+            }
+          }
+      }
+
     case ServerCommand("rescan", arr) =>
       Rescan.fromJsArr(arr) match {
         case Failure(exception) =>
