@@ -89,7 +89,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
     } yield succeed
   }
 
-  it must "failed to find a mempool entry" in {
+  it must "fail to find a mempool entry" in {
     val resultF = for {
       (client, _) <- clientsF
       txid = DoubleSha256Digest.empty
@@ -101,7 +101,7 @@ class MempoolRpcTest extends BitcoindRpcTest {
     recoverToSucceededIf[BitcoindException](resultF)
   }
 
-  it must "failed to find a mempool entry and return None" in {
+  it must "fail to find a mempool entry and return None" in {
     val resultF = for {
       (client, _) <- clientsF
       txid = DoubleSha256Digest.empty
