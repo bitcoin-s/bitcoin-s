@@ -93,6 +93,9 @@ daemon=1
 deprecatedrpc=signrawtransaction
 blockfilterindex=1
 debug=1
+txindex=1
+zmqpubrawblock=tcp://127.0.0.1:29000
+zmqpubrawtx=tcp://127.0.0.1:29000
 ```
 
 ## Step 4 (Optional): Discreet Log Contract Branch
@@ -105,7 +108,29 @@ git checkout dlc
 git submodule update
 ```
 
-and then test that `Secp256k1Context.isEnabled()` as in Step 2.
+If you want to use the end-to-end DLC client you will need to checkout a separate branch instead:
+
+```bashrc
+git fetch origin pull/1389/head:end-to-end-dlc
+git checkout end-to-end-dlc
+git submodule update
+```
+
+if you are using the end-to-end DLC client you will need to make sure eclair is correctly paired with your bitcoind.
+You will also need to add an eclair section to your `bitcoin-s.conf`, this needs to be placed inside of the `bitcoin-s` module.
+
+```
+eclair {
+	enabled = true
+        datadir = ${HOME}/.eclair
+        bitcoind {
+            version = "v0.18.99" #needs to be v0.18.99 for neutrino
+            datadir = ${HOME}/.bitcoin
+        }
+    }
+```
+
+and then finally test that `Secp256k1Context.isEnabled()` as in Step 2.
 
 ## Step 5: Setting Up A Bitcoin-S Server (Neutrino Node)
 
@@ -139,7 +164,7 @@ There is currently a bug on regtest where the server is unable to handle too man
 
 ## Step 6 (Optional): Moving To Testnet
 
-To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file. This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node. Keep in mind then when you restart your server, it will begin initial sink which will take many hours as all block filters for all testnet blocks will be downloaded. If you wish to speed this process up, download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/testnet-chaindump-2-25-2020.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
+To run your Bitcoin-S Server on testnet, simply change `network = testnet3` and change your `peers = ["neutrino.testnet3.suredbits.com:18333"] ` in your `.bitcoin-s/bitcoin-s.conf` file. This will allow you to connect to Suredbits' neutrino-enabled `bitcoind` node. Keep in mind then when you restart your server, it will begin initial sync which will take many hours as all block filters for all testnet blocks will be downloaded. If you wish to speed this process up, download [this snapshot](https://s3-us-west-2.amazonaws.com/www.suredbits.com/testnet-chaindump-2-25-2020.zip), unzip it and put the file in your `$HOME/.bitcoin-s/testnet3` directory and then from there, run
 
 ```bashrc
 cat chaindump.sql | sqlite3 chaindb.sqlite
