@@ -319,6 +319,39 @@ object ConsoleCli {
                 case other => other
               }))
         ),
+      cmd("opreturncommit")
+        .action((_, conf) =>
+          conf.copy(command = OpReturnCommit("", hashMessage = false, None)))
+        .text("Send money to the given address")
+        .children(
+          arg[String]("message")
+            .text("message to put into OP_RETURN commitment")
+            .required()
+            .action((message, conf) =>
+              conf.copy(command = conf.command match {
+                case opReturnCommit: OpReturnCommit =>
+                  opReturnCommit.copy(message = message)
+                case other => other
+              })),
+          opt[Unit]("hashMessage")
+            .text("should the message be hashed before commitment")
+            .optional()
+            .action((_, conf) =>
+              conf.copy(command = conf.command match {
+                case opReturnCommit: OpReturnCommit =>
+                  opReturnCommit.copy(hashMessage = true)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case opReturnCommit: OpReturnCommit =>
+                  opReturnCommit.copy(feeRateOpt = Some(feeRate))
+                case other => other
+              }))
+        ),
       note(sys.props("line.separator") + "=== Network ==="),
       cmd("getpeers")
         .action((_, conf) => conf.copy(command = GetPeers))
@@ -501,6 +534,11 @@ object ConsoleCli {
                          up.writeJs(bitcoins),
                          up.writeJs(feeRateOpt),
                          up.writeJs(algo)))
+      case OpReturnCommit(message, hashMessage, satoshisPerVirtualByte) =>
+        RequestParam("opreturncommit",
+                     Seq(up.writeJs(message),
+                         up.writeJs(hashMessage),
+                         up.writeJs(satoshisPerVirtualByte)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -635,6 +673,11 @@ object CliCommand {
       amount: Bitcoins,
       feeRateOpt: Option[SatoshisPerVirtualByte],
       algo: CoinSelectionAlgo)
+      extends CliCommand
+  case class OpReturnCommit(
+      message: String,
+      hashMessage: Boolean,
+      feeRateOpt: Option[SatoshisPerVirtualByte])
       extends CliCommand
   case object GetNewAddress extends CliCommand
   case object GetUtxos extends CliCommand

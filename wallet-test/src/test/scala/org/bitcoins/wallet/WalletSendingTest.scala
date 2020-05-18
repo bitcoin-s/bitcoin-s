@@ -4,11 +4,15 @@ import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
+import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.wallet.api.CoinSelector
 import org.scalatest.{Assertion, FutureOutcome}
+import scodec.bits.ByteVector
 
 import scala.concurrent.Future
 
@@ -112,6 +116,66 @@ class WalletSendingTest extends BitcoinSWalletTest {
     } yield {
       assert(expectedOutputs.diff(tx.outputs).isEmpty)
     }
+  }
+
+  def testOpReturnCommitment(
+      wallet: Wallet,
+      hashMessage: Boolean): Future[Assertion] = {
+    val message = "ben was here"
+
+    for {
+      tx <- wallet.makeOpReturnCommitment(message,
+                                          hashMessage = hashMessage,
+                                          SatoshisPerVirtualByte.one)
+
+      outgoingTxDbOpt <- wallet.outgoingTxDAO.read(tx.txIdBE)
+    } yield {
+      val opReturnOutputOpt = tx.outputs.find(_.value == 0.satoshis)
+      assert(opReturnOutputOpt.isDefined, "Missing output with 0 value")
+      val opReturnOutput = opReturnOutputOpt.get
+
+      val messageBytes = if (hashMessage) {
+        CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
+      } else {
+        ByteVector(message.getBytes)
+      }
+
+      val expectedAsm =
+        Seq(OP_RETURN,
+            BytesToPushOntoStack(messageBytes.size),
+            ScriptConstant(messageBytes))
+
+      assert(opReturnOutput.scriptPubKey.asm == expectedAsm)
+
+      assert(outgoingTxDbOpt.isDefined, "Missing outgoing tx in database")
+      val outgoingTxDb = outgoingTxDbOpt.get
+
+      assert(outgoingTxDb.sentAmount == 0.satoshis)
+      val changeOutput = tx.outputs.find(_.value > 0.satoshis).get
+      assert(
+        outgoingTxDb.actualFee + changeOutput.value == outgoingTxDb.inputAmount)
+    }
+  }
+
+  it should "correctly make a hashed OP_RETURN commitment" in { fundedWallet =>
+    testOpReturnCommitment(fundedWallet.wallet, hashMessage = true)
+  }
+
+  it should "correctly make an unhashed OP_RETURN commitment" in {
+    fundedWallet =>
+      testOpReturnCommitment(fundedWallet.wallet, hashMessage = false)
+  }
+
+  it should "fail to make an OP_RETURN commitment that is too long" in {
+    fundedWallet =>
+      val wallet = fundedWallet.wallet
+
+      recoverToSucceededIf[IllegalArgumentException] {
+        wallet.makeOpReturnCommitment(
+          "This message is much too long and is over 80 bytes, the limit for OP_RETURN. It should cause an error.",
+          hashMessage = false,
+          feeRate)
+      }
   }
 
   it should "fail to send to a different network address" in { fundedWallet =>

@@ -553,6 +553,22 @@ trait WalletApi extends WalletLogger {
     } yield tx
   }
 
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction]
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRate, account)
+    } yield tx
+  }
+
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[Wallet]
 
   /**

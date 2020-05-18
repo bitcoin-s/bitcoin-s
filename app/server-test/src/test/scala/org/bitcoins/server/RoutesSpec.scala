@@ -703,6 +703,29 @@ class RoutesSpec
       }
     }
 
+    "make an OP_RETURN commitment" in {
+
+      val message = "Never gonna give you up, never gonna let you down"
+
+      (mockWalletApi
+        .makeOpReturnCommitment(_: String, _: Boolean, _: FeeUnit))
+        .expects(message, false, *)
+        .returning(Future.successful(EmptyTransaction))
+
+      (mockNode.broadcastTransaction _)
+        .expects(EmptyTransaction)
+        .returning(FutureUtil.unit)
+        .anyNumberOfTimes()
+
+      val route = walletRoutes.handleCommand(
+        ServerCommand("opreturncommit", Arr(message, Bool(false), Num(4))))
+
+      Post() ~> route ~> check {
+        contentType shouldEqual `application/json`
+        responseAs[String] shouldEqual """{"result":"0000000000000000000000000000000000000000000000000000000000000000","error":null}"""
+      }
+    }
+
     "return the peer list" in {
       val route =
         nodeRoutes.handleCommand(ServerCommand("getpeers", Arr()))
