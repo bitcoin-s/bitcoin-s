@@ -151,21 +151,21 @@ and transaction extraction.</p>
       .sign(inputIndex = <span class="hljs-number">0</span>, signer = privKey0)
       .flatMap(_.sign(inputIndex = <span class="hljs-number">0</span>, signer = privKey1))
 
-<span class="hljs-comment">// Alternatively, you can use produce a signature with a BitcoinUTXOSpendingInfoSingle</span>
+<span class="hljs-comment">// Alternatively, you can use produce a signature with a ECSignatureParams</span>
 <span class="hljs-comment">// using the BitcoinSigner will return a PartialSignature that can be added to a PSBT</span>
 
 <span class="hljs-comment">// First we need to declare out spendingInfoSingle</span>
 <span class="hljs-keyword">val</span> outPoint = unsignedTransaction.inputs.head.previousOutput
 <span class="hljs-keyword">val</span> output = utxo0.outputs(outPoint.vout.toInt)
 
-<span class="hljs-keyword">val</span> spendingInfoSingle = <span class="hljs-type">BitcoinUTXOSpendingInfoSingle</span>(
-    outPoint = outPoint,
-    output = output,
+<span class="hljs-keyword">val</span> spendingInfoSingle = <span class="hljs-type">ECSignatureParams</span>(
+    <span class="hljs-type">InputInfo</span>(outPoint = outPoint,
+              output = output,
+              redeemScriptOpt = <span class="hljs-type">Some</span>(redeemScript0),
+              scriptWitnessOpt = <span class="hljs-type">None</span>,
+              conditionalPath = <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoCondition</span>),
     signer = privKey0,
-    redeemScriptOpt = <span class="hljs-type">Some</span>(redeemScript0),
-    scriptWitnessOpt = <span class="hljs-type">None</span>,
-    hashType = <span class="hljs-type">HashType</span>.sigHashAll,
-    conditionalPath = <span class="hljs-type">ConditionalPath</span>.<span class="hljs-type">NoConditionsLeft</span>
+    hashType = <span class="hljs-type">HashType</span>.sigHashAll
   )
 
 <span class="hljs-comment">// Then we can sign the transaction</span>
