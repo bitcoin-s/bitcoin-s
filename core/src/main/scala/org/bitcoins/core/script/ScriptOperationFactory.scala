@@ -53,16 +53,9 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
   /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[scala.Byte Byte]]. */
   @inline final def fromByte(byte: Byte): T = {
-    var idx = 0
-    while (idx < operations.length) {
-      val op = operations(idx)
-      if (op.toByte == byte) {
-        return op
-      } else {
-        idx += 1
-      }
-    }
-    sys.error(s"Could not find opcode for byte=${byte}")
+    ScriptOperation.map.get(byte).getOrElse {
+      sys.error(s"Could not find opcode for byte=${byte}")
+    }.asInstanceOf[T]
   }
 
   def fromBytes(bytes: ByteVector): Option[T] = {
@@ -81,6 +74,9 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
+  lazy val map: Map[Byte,ScriptOperation] = {
+    operations.map(o => (o.toByte,o)).toMap
+  }
   /** This contains duplicate operations
    * There is an optimization here by moving popular opcodes
    * to the front of the vector so when we iterate through it,
