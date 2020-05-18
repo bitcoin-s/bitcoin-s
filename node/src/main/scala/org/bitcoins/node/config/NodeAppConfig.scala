@@ -15,6 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class NodeAppConfig(
     private val directory: Path,
+    override val useLogbackConf: Boolean,
     private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with NodeDbManagement
@@ -24,7 +25,7 @@ case class NodeAppConfig(
   override protected[bitcoins] type ConfigType = NodeAppConfig
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): NodeAppConfig =
-    NodeAppConfig(directory, configs: _*)
+    NodeAppConfig(directory, useLogbackConf, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -74,8 +75,10 @@ object NodeAppConfig {
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(
+  def fromDefaultDatadir(useLogbackConf: Boolean, confs: Config*)(
       implicit ec: ExecutionContext): NodeAppConfig =
-    NodeAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+    NodeAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR,
+                  useLogbackConf,
+                  confs: _*)
 
 }
