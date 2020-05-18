@@ -9,6 +9,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
+import org.bitcoins.crypto.DoubleSha256Digest
+import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.client.common.BitcoindVersion.V18
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -87,6 +89,28 @@ class MempoolRpcTest extends BitcoindRpcTest {
     } yield succeed
   }
 
+  it must "fail to find a mempool entry" in {
+    val resultF = for {
+      (client, _) <- clientsF
+      txid = DoubleSha256Digest.empty
+      result <- client.getMemPoolEntry(txid)
+    } yield {
+      result
+    }
+
+    recoverToSucceededIf[BitcoindException](resultF)
+  }
+
+  it must "fail to find a mempool entry and return None" in {
+    val resultF = for {
+      (client, _) <- clientsF
+      txid = DoubleSha256Digest.empty
+      result <- client.getMemPoolEntryOpt(txid)
+    } yield {
+      assert(result == None)
+    }
+    resultF
+  }
   it should "be able to get mem pool info" in {
     for {
       (client, otherClient) <- clientsF
