@@ -2,20 +2,9 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.ScriptWitness
-import org.bitcoins.core.serializers.transaction.{
-  RawBaseTransactionParser,
-  RawWitnessTransactionParser
-}
-import org.bitcoins.crypto.{
-  CryptoUtil,
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  Factory,
-  NetworkElement
-}
+import org.bitcoins.core.serializers.transaction.{RawBaseTransactionParser, RawWitnessTransactionParser}
+import org.bitcoins.crypto._
 import scodec.bits.ByteVector
-
-import scala.util.{Failure, Success, Try}
 
 /**
   * Created by chris on 7/14/15.
@@ -159,7 +148,7 @@ sealed abstract class WitnessTransaction extends Transaction {
     val base = BaseTransaction(version, inputs, outputs, lockTime)
     base.byteSize * 3 + byteSize
   }
-  override def bytes = RawWitnessTransactionParser.write(this)
+  override def bytes: ByteVector = RawWitnessTransactionParser.write(this)
 
   /**
     * Updates the [[org.bitcoins.core.protocol.script.ScriptWitness ScriptWitness]] at the given index and
@@ -175,14 +164,23 @@ sealed abstract class WitnessTransaction extends Transaction {
 
 object Transaction extends Factory[Transaction] {
 
-  def fromBytes(bytes: ByteVector): Transaction = {
-    val wtxTry = Try(RawWitnessTransactionParser.read(bytes))
-    wtxTry match {
-      case Success(wtx) =>
-        wtx
-      case Failure(_) =>
-        val btx = RawBaseTransactionParser.read(bytes)
-        btx
+  override def fromBytes(bytes: ByteVector): Transaction = {
+    //see BIP141 for marker/flag bytes
+    //https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
+    if (bytes(4) == WitnessTransaction.marker && bytes(5) == WitnessTransaction.flag) {
+      //this throw/catch is _still_ necessary for the case where we have unsigned base transactions
+      //with zero inputs and 1 output which is serialized as "0001" at bytes 4 and 5.
+      //these transactions will not have a script witness associated with them making them invalid
+      //witness transactions (you need to have a witness to be considered a witness tx)
+      //see: https://github.com/bitcoin-s/bitcoin-s/blob/01d89df1b7c6bc4b1594406d54d5e6019705c654/core-test/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionTest.scala#L88
+      try {
+        RawWitnessTransactionParser.read(bytes)
+      } catch {
+        case scala.util.control.NonFatal(_) =>
+          RawBaseTransactionParser.read(bytes)
+      }
+    } else {
+      RawBaseTransactionParser.read(bytes)
     }
   }
 }
@@ -235,4 +233,12 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
                          EmptyWitness.fromInputs(btx.inputs))
     case wtx: WitnessTransaction => wtx
   }
+
+  val marker: Byte = 0.toByte
+  val flag: Byte = 1.toByte
+
+  /** These bytes -- at index 4 & 5 in a witness transaction -- are used to indicate a witness tx
+    * @see BIP141 https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
+    * */
+  val witBytes: ByteVector = ByteVector(marker, flag)
 }
