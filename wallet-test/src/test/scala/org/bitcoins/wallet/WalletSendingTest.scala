@@ -1,12 +1,16 @@
 package org.bitcoins.wallet
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.scalatest.FutureOutcome
+import org.bitcoins.wallet.api.CoinSelector
+import org.scalatest.{Assertion, FutureOutcome}
+
+import scala.concurrent.Future
 
 class WalletSendingTest extends BitcoinSWalletTest {
 
@@ -163,5 +167,41 @@ class WalletSendingTest extends BitcoinSWalletTest {
       assert(tx.outputs.contains(expectedOutput),
              "Did not contain expected output")
     }
+  }
+
+  def testSendWithAlgo(
+      wallet: Wallet,
+      algo: CoinSelectionAlgo): Future[Assertion] = {
+    for {
+      allUtxos <- wallet.listUtxos()
+      output = TransactionOutput(amountToSend, testAddress.scriptPubKey)
+      expectedUtxos = CoinSelector.selectByAlgo(algo,
+                                                allUtxos,
+                                                Vector(output),
+                                                feeRate)
+      tx <- wallet.sendWithAlgo(testAddress, amountToSend, feeRate, algo)
+    } yield {
+      val diff =
+        expectedUtxos.map(_.outPoint).diff(tx.inputs.map(_.previousOutput))
+      assert(diff.isEmpty, s"Incorrect inputs, $diff")
+
+      val expectedOutput =
+        TransactionOutput(amountToSend, testAddress.scriptPubKey)
+      assert(tx.outputs.contains(expectedOutput),
+             "Did not contain expected output")
+    }
+  }
+
+  it should "correctly send with accumulate largest" in { fundedWallet =>
+    testSendWithAlgo(fundedWallet.wallet, CoinSelectionAlgo.AccumulateLargest)
+  }
+
+  it should "correctly send with accumulate smallest" in { fundedWallet =>
+    testSendWithAlgo(fundedWallet.wallet,
+                     CoinSelectionAlgo.AccumulateSmallestViable)
+  }
+
+  it should "correctly send with standard accumulate" in { fundedWallet =>
+    testSendWithAlgo(fundedWallet.wallet, CoinSelectionAlgo.StandardAccumulate)
   }
 }

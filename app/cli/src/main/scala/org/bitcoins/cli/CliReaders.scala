@@ -2,6 +2,7 @@ package org.bitcoins.cli
 
 import java.time.{ZoneId, ZonedDateTime}
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
@@ -92,5 +93,13 @@ object CliReaders {
       val arity: Int = 1
 
       val reads: String => TransactionOutPoint = TransactionOutPoint.fromHex
+    }
+
+  implicit val coinSelectionAlgoReads: Read[CoinSelectionAlgo] =
+    new Read[CoinSelectionAlgo] {
+      val arity: Int = 1
+
+      val reads: String => CoinSelectionAlgo =
+        CoinSelectionAlgo.fromString(_).get
     }
 }

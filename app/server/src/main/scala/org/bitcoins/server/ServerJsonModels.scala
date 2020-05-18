@@ -1,5 +1,6 @@
 package org.bitcoins.server
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
@@ -272,6 +273,41 @@ object SendFromOutpoints extends ServerJsonModels {
 
 }
 
+case class SendWithAlgo(
+    address: BitcoinAddress,
+    amount: Bitcoins,
+    satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
+    algo: CoinSelectionAlgo)
+
+object SendWithAlgo extends ServerJsonModels {
+
+  def fromJsArr(jsArr: ujson.Arr): Try[SendWithAlgo] = {
+    jsArr.arr.toList match {
+      case addrJs :: bitcoinsJs :: satsPerVBytesJs :: algoJs :: Nil =>
+        Try {
+          val address = jsToBitcoinAddress(addrJs)
+          val bitcoins = Bitcoins(bitcoinsJs.num)
+          val satoshisPerVirtualByte =
+            nullToOpt(satsPerVBytesJs).map(satsPerVBytes =>
+              SatoshisPerVirtualByte(Satoshis(satsPerVBytes.num.toLong)))
+          val algo = jsToCoinSelectionAlgo(algoJs)
+
+          SendWithAlgo(address, bitcoins, satoshisPerVirtualByte, algo)
+        }
+      case Nil =>
+        Failure(
+          new IllegalArgumentException(
+            "Missing address, amount, fee rate, and algo arguments"))
+
+      case other =>
+        Failure(
+          new IllegalArgumentException(
+            s"Bad number of arguments: ${other.length}. Expected: 4"))
+    }
+  }
+
+}
+
 trait ServerJsonModels {
 
   def jsToBitcoinAddress(js: Value): BitcoinAddress = {
@@ -296,6 +332,12 @@ trait ServerJsonModels {
 
   def jsToTransactionOutPoint(js: Value): TransactionOutPoint =
     TransactionOutPoint(js.str)
+
+  def jsToCoinSelectionAlgo(js: Value): CoinSelectionAlgo =
+    CoinSelectionAlgo
+      .fromString(js.str)
+      .getOrElse(
+        throw new IllegalArgumentException("Invalid CoinSelectionAlgo"))
 
   def jsToTx(js: Value): Transaction = Transaction.fromHex(js.str)
 

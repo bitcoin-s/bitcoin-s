@@ -4,10 +4,10 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
+import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.Node
-import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.wallet.api.WalletApi
 
 import scala.concurrent.Future
@@ -126,6 +126,24 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
                                              address,
                                              bitcoins,
                                              feeRate)
+              _ <- node.broadcastTransaction(tx)
+            } yield Server.httpSuccess(tx.txIdBE)
+          }
+      }
+
+    case ServerCommand("sendwithalgo", arr) =>
+      SendWithAlgo.fromJsArr(arr) match {
+        case Failure(exception) =>
+          reject(ValidationRejection("failure", Some(exception)))
+        case Success(
+            SendWithAlgo(address, bitcoins, satoshisPerVirtualByteOpt, algo)) =>
+          complete {
+            // TODO dynamic fees based off mempool and recent blocks
+            val feeRate =
+              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
+
+            for {
+              tx <- wallet.sendWithAlgo(address, bitcoins, feeRate, algo)
               _ <- node.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
           }
