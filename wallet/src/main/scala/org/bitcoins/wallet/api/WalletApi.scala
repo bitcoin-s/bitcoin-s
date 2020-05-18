@@ -2,6 +2,7 @@ package org.bitcoins.wallet.api
 
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
@@ -447,6 +448,24 @@ trait WalletApi extends WalletLogger {
     for {
       account <- getDefaultAccount()
       tx <- sendFromOutPoints(outPoints, address, amount, feeRate, account)
+    } yield tx
+  }
+
+  def sendWithAlgo(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      algo: CoinSelectionAlgo,
+      fromAccount: AccountDb): Future[Transaction]
+
+  def sendWithAlgo(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      algo: CoinSelectionAlgo): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendWithAlgo(address, amount, feeRate, algo, account)
     } yield tx
   }
 

@@ -2,6 +2,7 @@ package org.bitcoins.cli
 
 import org.bitcoins.cli.CliCommand._
 import org.bitcoins.cli.CliReaders._
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency._
@@ -271,7 +272,50 @@ object ConsoleCli {
             .action((feeRate, conf) =>
               conf.copy(command = conf.command match {
                 case send: SendFromOutPoints =>
-                  send.copy(satoshisPerVirtualByte = Some(feeRate))
+                  send.copy(feeRateOpt = Some(feeRate))
+                case other => other
+              }))
+        ),
+      cmd("sendwithalgo")
+        .action((_, conf) =>
+          conf.copy(command = SendWithAlgo(null, 0.bitcoin, None, null)))
+        .text(
+          "Send money to the given address using a specific coin selection algo")
+        .children(
+          arg[BitcoinAddress]("address")
+            .text("Address to send to")
+            .required()
+            .action((addr, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendWithAlgo =>
+                  send.copy(destination = addr)
+                case other => other
+              })),
+          arg[Bitcoins]("amount")
+            .text("amount to send in BTC")
+            .required()
+            .action((btc, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendWithAlgo =>
+                  send.copy(amount = btc)
+                case other => other
+              })),
+          opt[SatoshisPerVirtualByte]("feerate")
+            .text("Fee rate in sats per virtual byte")
+            .optional()
+            .action((feeRate, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendWithAlgo =>
+                  send.copy(feeRateOpt = Some(feeRate))
+                case other => other
+              })),
+          arg[CoinSelectionAlgo]("algo")
+            .text("Coin selection algo")
+            .optional()
+            .action((algo, conf) =>
+              conf.copy(command = conf.command match {
+                case send: SendWithAlgo =>
+                  send.copy(algo = algo)
                 case other => other
               }))
         ),
@@ -445,15 +489,18 @@ object ConsoleCli {
                      Seq(up.writeJs(address),
                          up.writeJs(bitcoins),
                          up.writeJs(satoshisPerVirtualByte)))
-      case SendFromOutPoints(outPoints,
-                             address,
-                             bitcoins,
-                             satoshisPerVirtualByte) =>
+      case SendFromOutPoints(outPoints, address, bitcoins, feeRateOpt) =>
         RequestParam("sendfromoutpoints",
                      Seq(up.writeJs(outPoints),
                          up.writeJs(address),
                          up.writeJs(bitcoins),
-                         up.writeJs(satoshisPerVirtualByte)))
+                         up.writeJs(feeRateOpt)))
+      case SendWithAlgo(address, bitcoins, feeRateOpt, algo) =>
+        RequestParam("SendWithAlgo",
+                     Seq(up.writeJs(address),
+                         up.writeJs(bitcoins),
+                         up.writeJs(feeRateOpt),
+                         up.writeJs(algo)))
       // height
       case GetBlockCount => RequestParam("getblockcount")
       // filter count
@@ -581,7 +628,13 @@ object CliCommand {
       outPoints: Vector[TransactionOutPoint],
       destination: BitcoinAddress,
       amount: Bitcoins,
-      satoshisPerVirtualByte: Option[SatoshisPerVirtualByte])
+      feeRateOpt: Option[SatoshisPerVirtualByte])
+      extends CliCommand
+  case class SendWithAlgo(
+      destination: BitcoinAddress,
+      amount: Bitcoins,
+      feeRateOpt: Option[SatoshisPerVirtualByte],
+      algo: CoinSelectionAlgo)
       extends CliCommand
   case object GetNewAddress extends CliCommand
   case object GetUtxos extends CliCommand
