@@ -52,7 +52,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   }
 
   /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[scala.Byte Byte]]. */
-  @inline def fromByte(byte: Byte): T = {
+  @inline final def fromByte(byte: Byte): T = {
     var idx = 0
     while (idx < operations.length) {
       val op = operations(idx)
