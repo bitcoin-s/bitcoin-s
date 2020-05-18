@@ -48,14 +48,13 @@ f8758d7f03a65b67b90f62301a3554849bde6d00d50e965eb123398de9fd6ea7af05f01f1ca852cf
 
 Note: if you wish to setup your own oracle for testing, you can do so by pasting the following into the `sbt core/console`:
 
-```scala mdoc:to-string
-import org.bitcoins.core.crypto._
+```scala
+import org.bitcoins.crypto._
 import org.bitcoins.core.currency._
-import org.bitcoins.crypto.CryptoUtil
 import scodec.bits._
 
 val privKey = ECPrivateKey.freshPrivateKey
-val pubKey = privKey.publicKey
+val pubKey = privKey.schnorrPublicKey
 val kValue = ECPrivateKey.freshPrivateKey
 val rValue = kValue.schnorrNonce
 
