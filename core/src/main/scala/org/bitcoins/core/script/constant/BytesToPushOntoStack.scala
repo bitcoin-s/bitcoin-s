@@ -43,7 +43,7 @@ object BytesToPushOntoStack
         case Some(bytesToPushOntoStack) => bytesToPushOntoStack
         case None =>
           throw new IllegalArgumentException(
-            "We cannot have a BytesToPushOntoStack for greater than 75 bytes")
+            s"We cannot have a BytesToPushOntoStack for greater than 75 bytes, got=$num")
       }
     }
   }

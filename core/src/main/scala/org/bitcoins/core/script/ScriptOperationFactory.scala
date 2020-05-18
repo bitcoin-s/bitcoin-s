@@ -1,14 +1,15 @@
 package org.bitcoins.core.script
 
+import org.bitcoins.core.script.ScriptOperation.operations
 import org.bitcoins.core.script.arithmetic.ArithmeticOperation
-import org.bitcoins.core.script.bitwise.{BitwiseOperation, OP_EQUAL, OP_EQUALVERIFY}
+import org.bitcoins.core.script.bitwise.BitwiseOperation
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.ControlOperations
-import org.bitcoins.core.script.crypto.{CryptoOperation, OP_CHECKMULTISIG, OP_CHECKSIG, OP_HASH160}
+import org.bitcoins.core.script.crypto.CryptoOperation
 import org.bitcoins.core.script.locktime.LocktimeOperation
 import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
-import org.bitcoins.core.script.stack.{OP_DUP, StackOperation}
+import org.bitcoins.core.script.stack.StackOperation
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.crypto.BytesUtil
 import scodec.bits.ByteVector
@@ -53,9 +54,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
   /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[scala.Byte Byte]]. */
   @inline final def fromByte(byte: Byte): T = {
-    ScriptOperation.map.get(byte).getOrElse {
-      sys.error(s"Could not find opcode for byte=${byte}")
-    }.asInstanceOf[T]
+    scriptOpMap(byte).asInstanceOf[T]
   }
 
   def fromBytes(bytes: ByteVector): Option[T] = {
@@ -66,7 +65,9 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
       None
     }
   }
-
+  private lazy val scriptOpMap: Map[Byte, ScriptOperation] = {
+    operations.map(o => (o.toByte,o)).toMap
+  }
   def apply(byte: Byte): T = fromByte(byte)
 
   def apply(hex: String): Option[T] = fromHex(hex)
@@ -74,21 +75,12 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  lazy val map: Map[Byte,ScriptOperation] = {
-    operations.map(o => (o.toByte,o)).toMap
-  }
   /** This contains duplicate operations
    * There is an optimization here by moving popular opcodes
    * to the front of the vector so when we iterate through it,
    * we are more likely to find the op code we are looking for
    * sooner */
   final override val operations: Vector[ScriptOperation] = {
-    Vector(OP_DUP, OP_HASH160, OP_EQUALVERIFY, OP_CHECKSIG) ++ //p2pkh
-    Vector(BytesToPushOntoStack.push20Bytes, BytesToPushOntoStack.push33Bytes,
-      BytesToPushOntoStack.push32Bytes) ++ //popular push op codes
-    Vector(OP_HASH160, OP_EQUAL) ++ //p2sh
-    Vector(OP_0, OP_1, OP_CHECKMULTISIG) //multisig
-    ScriptNumberOperation.operations ++
       Vector(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
       StackOperation.operations ++
       LocktimeOperation.operations ++
@@ -98,7 +90,8 @@ object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
       ArithmeticOperation.operations ++
       BytesToPushOntoStack.operations ++
       SpliceOperation.operations ++
-      ReservedOperation.operations
+      ReservedOperation.operations ++
+        ScriptNumberOperation.operations
   }
 
 }
