@@ -20,6 +20,7 @@ object BytesToPushOntoStack
     /*  //see the 'Constants; section in https://en.bitcoin.it/wiki/Script
       require(num >= -1 && num <= 75, "A valid script number is between 1 and 75, the number passed in was: " + num)*/
     require(num >= 1, "BytesToPushOntoStackImpl cannot be less than 1")
+    require(num <= 75, "BytesToPushOntoStackImpl cannot be greater than 75")
     override val opCode = num
   }
 
