@@ -223,9 +223,18 @@ sealed abstract class DERSignatureUtil {
   def parseDERLax(input: ByteVector): Option[(BigInt, BigInt)] = {
     val iterator = input.toIterable.iterator.buffered
 
+    // Can't use iterator.nextOption because it doesn't exist in scala 2.12
+    def nextOption(): Option[Byte] = {
+      if (iterator.hasNext) {
+        Some(iterator.next())
+      } else None
+    }
+
     def nextByteMustBe(requiredByte: Byte): Option[Unit] = {
-      iterator.nextOption().flatMap { nextByte =>
-        Option.when(nextByte == requiredByte)(())
+      nextOption().flatMap { nextByte =>
+        if (nextByte == requiredByte) {
+          Some(())
+        } else None
       }
     }
 
@@ -234,7 +243,7 @@ sealed abstract class DERSignatureUtil {
         .foldLeft(Option(ByteVector.empty)) {
           case (bytesOpt, _) =>
             bytesOpt.flatMap { bytesSoFar =>
-              iterator.nextOption().map(bytesSoFar.:+)
+              nextOption().map(bytesSoFar.:+)
             }
         }
     }
@@ -245,7 +254,7 @@ sealed abstract class DERSignatureUtil {
         _ <- nextByteMustBe(0x02.toByte)
 
         // Check next byte exists and process as integer length byte
-        lengthByteUnProcessed <- iterator.nextOption()
+        lengthByteUnProcessed <- nextOption()
         length <- {
           if ((lengthByteUnProcessed & 0x80) != 0) {
             var lenByte = lengthByteUnProcessed - 0x80
@@ -271,9 +280,9 @@ sealed abstract class DERSignatureUtil {
         numBytesWithoutLeadingZero = numBytes.dropWhile(_ == 0.toByte)
 
         // If length > 32, then overflow
-        num <- Option.when(numBytesWithoutLeadingZero.length <= 32) {
-          BigInt(1, numBytesWithoutLeadingZero.toArray)
-        }
+        num <- if (numBytesWithoutLeadingZero.length <= 32) {
+          Some(BigInt(1, numBytesWithoutLeadingZero.toArray))
+        } else None
       } yield num
     }
 
@@ -282,7 +291,7 @@ sealed abstract class DERSignatureUtil {
       _ <- nextByteMustBe(0x30.toByte)
 
       // Check second byte exists and process as length byte
-      totalLengthByteUnProcessed <- iterator.nextOption()
+      totalLengthByteUnProcessed <- nextOption()
       _ <- {
         if ((totalLengthByteUnProcessed & 0x80) != 0) {
           val processedTotalLengthByte = totalLengthByteUnProcessed - 0x80
