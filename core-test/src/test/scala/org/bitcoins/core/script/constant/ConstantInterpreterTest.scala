@@ -78,33 +78,6 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
     newProgram.stack must be(List(ScriptConstant("0100")))
   }
 
-  it must "push 0 bytes onto the stack which is OP_0" in {
-    val stack = List()
-    val script = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
-    val program = TestUtil.testProgramExecutionInProgress
-      .updateStackAndScript(stack, script)
-      .removeFlags()
-    val newProgram = CI.opPushData1(program)
-    newProgram.stackTopIsFalse must be(true)
-    newProgram.stack must be(List(ScriptNumber.zero))
-
-    val stack1 = List()
-    val script1 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
-    val program1 = TestUtil.testProgramExecutionInProgress
-      .updateStackAndScript(stack1, script1)
-      .removeFlags()
-    val newProgram1 = CI.opPushData2(program1)
-    newProgram1.stack must be(List(ScriptNumber.zero))
-
-    val stack2 = List()
-    val script2 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
-    val program2 = TestUtil.testProgramExecutionInProgress
-      .updateStackAndScript(stack2, script2)
-      .removeFlags()
-    val newProgram2 = CI.opPushData4(program2)
-    newProgram2.stack must be(List(ScriptNumber.zero))
-  }
-
   it must "mark a program as invalid if we have do not have enough bytes to be pushed onto the stack by the push operation" in {
     val stack = List()
     val script = List(OP_PUSHDATA1, BytesToPushOntoStack(1))
@@ -119,19 +92,19 @@ class ConstantInterpreterTest extends BitcoinSUnitTest {
 
   it must "fail the require statement if the first op_code in the program's script doesn't match the OP_PUSHDATA we're looking for" in {
     val stack1 = List()
-    val script1 = List(OP_PUSHDATA1, BytesToPushOntoStack(0))
+    val script1 = List(OP_PUSHDATA1, BytesToPushOntoStack(1))
     val program1 = TestUtil.testProgramExecutionInProgress
       .updateStackAndScript(stack1, script1)
       .removeFlags()
 
     val stack2 = List()
-    val script2 = List(OP_PUSHDATA2, BytesToPushOntoStack(0))
+    val script2 = List(OP_PUSHDATA2, BytesToPushOntoStack(1))
     val program2 = TestUtil.testProgramExecutionInProgress
       .updateStackAndScript(stack2, script2)
       .removeFlags()
 
     val stack4 = List()
-    val script4 = List(OP_PUSHDATA4, BytesToPushOntoStack(0))
+    val script4 = List(OP_PUSHDATA4, BytesToPushOntoStack(1))
     val program4 = TestUtil.testProgramExecutionInProgress
       .updateStackAndScript(stack4, script4)
       .removeFlags()

@@ -1,10 +1,10 @@
 package org.bitcoins.core.protocol.transaction
 
-import org.bitcoins.testkit.core.gen.WitnessGenerators
 import org.bitcoins.core.protocol.script._
-import org.bitcoins.crypto.{ECPrivateKey, EmptyDigitalSignature}
-import org.scalacheck.Prop
+import org.bitcoins.crypto.{DummyECDigitalSignature, ECPrivateKey}
+import org.bitcoins.testkit.core.gen.WitnessGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
+import org.scalacheck.Prop
 
 /**
   * Created by chris on 11/28/16.
@@ -22,7 +22,7 @@ class TransactionWitnessSpec extends BitcoinSUnitTest {
   it must "be able to resize a witness to the given index" in {
     val empty = EmptyWitness.fromN(0)
     val pubKey = ECPrivateKey.freshPrivateKey.publicKey
-    val p2pkh = P2PKHScriptSignature(EmptyDigitalSignature, pubKey)
+    val p2pkh = P2PKHScriptSignature(DummyECDigitalSignature, pubKey)
     val scriptWit = P2WPKHWitnessV0.fromP2PKHScriptSig(p2pkh)
     val updated = empty.updated(2, scriptWit)
 

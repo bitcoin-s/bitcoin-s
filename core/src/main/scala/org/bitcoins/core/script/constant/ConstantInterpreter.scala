@@ -130,8 +130,7 @@ sealed abstract class ConstantInterpreter {
     }
 
     program.script(1) match {
-      case OP_0 | BytesToPushOntoStack.zero | ScriptNumber.zero |
-          ScriptNumber.negativeZero =>
+      case OP_0 | ScriptNumber.zero | ScriptNumber.negativeZero =>
         emptyPush()
       case token: ScriptConstant if token.bytes.toSeq.forall(_ == 0.toByte) =>
         emptyPush()
