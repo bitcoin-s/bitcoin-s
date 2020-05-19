@@ -1,5 +1,6 @@
 package org.bitcoins.core.script
 
+import org.bitcoins.core.script.ScriptOperation.operations
 import org.bitcoins.core.script.arithmetic.ArithmeticOperation
 import org.bitcoins.core.script.bitwise.BitwiseOperation
 import org.bitcoins.core.script.constant._
@@ -21,7 +22,7 @@ import scodec.bits.ByteVector
 trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
   /** All of the [[org.bitcoins.core.script.ScriptOperation ScriptOperation]]s for a particular `T`. */
-  def operations: Seq[T]
+  def operations: Vector[T]
 
   /**
     * Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given string
@@ -52,8 +53,8 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
   }
 
   /** Finds a [[org.bitcoins.core.script.ScriptOperation ScriptOperation]] from a given [[scala.Byte Byte]]. */
-  def fromByte(byte: Byte): T = {
-    operations.find(_.toByte == byte).get
+  @inline final def fromByte(byte: Byte): T = {
+    scriptOpMap(byte).asInstanceOf[T]
   }
 
   def fromBytes(bytes: ByteVector): Option[T] = {
@@ -64,7 +65,9 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
       None
     }
   }
-
+  private lazy val scriptOpMap: Map[Byte, ScriptOperation] = {
+    operations.map(o => (o.toByte,o)).toMap
+  }
   def apply(byte: Byte): T = fromByte(byte)
 
   def apply(hex: String): Option[T] = fromHex(hex)
@@ -72,9 +75,13 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  val operations: Seq[ScriptOperation] = {
-    ScriptNumberOperation.operations ++
-      Seq(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
+  /** This contains duplicate operations
+   * There is an optimization here by moving popular opcodes
+   * to the front of the vector so when we iterate through it,
+   * we are more likely to find the op code we are looking for
+   * sooner */
+  final override val operations: Vector[ScriptOperation] = {
+      Vector(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
       StackOperation.operations ++
       LocktimeOperation.operations ++
       CryptoOperation.operations ++
@@ -83,7 +90,8 @@ object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
       ArithmeticOperation.operations ++
       BytesToPushOntoStack.operations ++
       SpliceOperation.operations ++
-      ReservedOperation.operations
+      ReservedOperation.operations ++
+        ScriptNumberOperation.operations
   }
 
 }

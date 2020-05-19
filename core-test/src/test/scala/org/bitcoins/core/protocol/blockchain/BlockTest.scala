@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.scalatest.{FlatSpec, MustMatchers}
+import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.slf4j.LoggerFactory
 
 import scala.io.Source
@@ -8,8 +8,7 @@ import scala.io.Source
 /**
   * Created by chris on 7/15/16.
   */
-class BlockTest extends FlatSpec with MustMatchers {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+class BlockTest extends BitcoinSUnitTest {
 
   def timeBlockParsing[R](block: => R): Long = {
     val t0 = System.currentTimeMillis()

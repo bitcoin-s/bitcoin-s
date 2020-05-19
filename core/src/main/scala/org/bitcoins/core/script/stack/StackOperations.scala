@@ -142,15 +142,15 @@ case object OP_2SWAP extends StackOperation {
 }
 
 object StackOperation extends ScriptOperationFactory[StackOperation] {
-  override def operations =
-    Seq(
+  override val operations =
+    Vector(
+      OP_DUP,
       OP_TOALTSTACK,
       OP_FROMALTSTACK,
       OP_IFDUP,
       OP_DEPTH,
       OP_DEPTH,
       OP_DROP,
-      OP_DUP,
       OP_NIP,
       OP_OVER,
       OP_ROLL,

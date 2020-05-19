@@ -39,5 +39,5 @@ case object OP_CHECKSEQUENCEVERIFY extends LocktimeOperation {
 }
 
 object LocktimeOperation extends ScriptOperationFactory[LocktimeOperation] {
-  override def operations = Seq(OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY)
+  override val operations = Vector(OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY)
 }

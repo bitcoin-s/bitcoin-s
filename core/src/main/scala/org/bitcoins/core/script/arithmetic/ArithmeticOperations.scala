@@ -144,7 +144,7 @@ case object OP_RSHIFT extends ArithmeticOperation {
 }
 
 object ArithmeticOperation extends ScriptOperationFactory[ArithmeticOperation] {
-  override val operations = Seq(
+  override val operations = Vector(
     OP_0NOTEQUAL,
     OP_1ADD,
     OP_1SUB,
