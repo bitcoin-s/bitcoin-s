@@ -60,7 +60,7 @@ sealed abstract class DERSignatureUtil {
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     */
   def decodeSignature(bytes: ByteVector): (BigInt, BigInt) = {
-    DERSignatureUtil.parseDERLax2(bytes) match {
+    DERSignatureUtil.parseDERLax(bytes) match {
       case Some((r, s)) => (r, s)
       case None         => (0, 0)
     }
@@ -206,260 +206,94 @@ sealed abstract class DERSignatureUtil {
     sigLowS
   }
 
-  /** Scala implementation of https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L27 */
+  /** Scala implementation of https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
+    *
+    * Parses correctly as well as poorly encoded DER signatures.
+    *
+    * "Supported violations include negative integers, excessive padding, garbage
+    * at the end, and overly long length descriptors."
+    *
+    * The signatures must still follow the following general format:
+    *
+    *     0x30 | total length | 0x02 | R length | [R] \ 0x02 | S length | [S]
+    *
+    * IMPORTANT: Do not use this without further validation when validating blocks
+    * because BIP 66 requires that new signatures are verified to be strict DER encodings.
+    */
   def parseDERLax(input: ByteVector): Option[(BigInt, BigInt)] = {
-    /* Sequence tag byte */
-    if (input.isEmpty || input.head != 0x30.toByte) {
-      return None
-    }
-
-    var pos: Int = 1
-
-    // Sequence length bytes
-    if (input.length == pos) {
-      return None
-    }
-    var lenByte: Byte = input(pos)
-    pos += 1
-    if ((lenByte & 0x80) != 0) {
-      lenByte = (lenByte - 0x80).toByte
-      if (lenByte > input.length - pos) {
-        return None
-      }
-      pos += lenByte
-    }
-
-    // Integer tag byte for R
-    if (pos == input.length || input(pos) != 0x02.toByte) {
-      return None
-    }
-    pos += 1
-
-    // Integer length for R
-    if (pos == input.length) {
-      return None
-    }
-    lenByte = input(pos)
-    pos += 1
-    var rLen = if ((lenByte & 0x80) != 0) {
-      lenByte = (lenByte - 0x80).toByte
-      if (lenByte > input.length - pos) {
-        return None
-      }
-
-      while (lenByte > 0 && input(pos) == 0.toByte) {
-        pos += 1
-        lenByte = (lenByte - 1).toByte
-      }
-      if (lenByte >= 4) {
-        return None
-      }
-      var rLen = 0
-      while (lenByte > 0) {
-        rLen = (rLen << 8) + input(pos)
-        pos += 1
-        lenByte = (lenByte - 1).toByte
-      }
-      rLen
-    } else {
-      lenByte.toInt
-    }
-    if (rLen > input.length - pos) {
-      return None
-    }
-    var rpos = pos
-    pos += rLen
-
-    // Integer tag byte for S
-    if (pos == input.length || input(pos) != 0x02.toByte) {
-      return None
-    }
-    pos += 1
-
-    // Integer length for S
-    if (pos == input.length) {
-      return None
-    }
-    lenByte = input(pos)
-    pos += 1
-    var sLen = if ((lenByte & 0x80) != 0) {
-      lenByte = (lenByte - 0x80).toByte
-      if (lenByte > input.length - pos) {
-        return None
-      }
-      while (lenByte > 0 && input(pos) == 0.toByte) {
-        pos += 1
-        lenByte = (lenByte - 1).toByte
-      }
-      if (lenByte >= 4) {
-        return None
-      }
-      var sLen = 0
-      while (lenByte > 0) {
-        sLen = (sLen << 8) + input(pos)
-        pos += 1
-        lenByte = (lenByte - 1).toByte
-      }
-      sLen
-    } else {
-      lenByte
-    }
-    if (sLen > input.length - pos) {
-      return None
-    }
-    var spos = pos
-
-    // Ignore leading zeroes in R
-    while (rLen > 0 && input(rpos) == 0.toByte) {
-      rLen -= 1
-      rpos += 1
-    }
-
-    var overflow = false
-    val tmpSig: Array[Byte] = Array.fill(64)(0.toByte)
-
-    if (rLen > 32) {
-      overflow = true
-    } else {
-      System.arraycopy(input.toArray, rpos, tmpSig, 32 - rLen, rLen)
-    }
-
-    // Ignore leading zeroes in S
-    while (sLen > 0 && input(spos) == 0) {
-      sLen -= 1
-      spos += 1
-    }
-
-    // Copy S value
-    if (sLen > 32) {
-      overflow = true
-    } else {
-      System.arraycopy(input.toArray, spos, tmpSig, 64 - sLen, sLen)
-    }
-
-    if (overflow) {
-      System.arraycopy(Array.fill(64)(0.toByte), 0, tmpSig, 0, 64)
-    }
-
-    val r = BigInt(1, tmpSig.take(32))
-    val s = BigInt(1, tmpSig.takeRight(32))
-
-    Some((r, s))
-  }
-
-  /** 0x30 | total length | 0x02 | R length | [R] \ 0x02 | S length | [S] */
-  def parseDERLax2(input: ByteVector): Option[(BigInt, BigInt)] = {
-    // Check zero'th byte exists and is 0x30
-    // Check first byte exists and process as length byte
-    // Check next byte exists and is 0x02
-    // Check next byte exists and process as R length byte
-    // Mark position where R starts
-    // Check next byte exists and is 0x02
-    // Check next byte exists and process as S length byte
-    // Mark position where S starts
-    // Erase leading zeroes in R and S (adjusting length and position accordingly)
-    // If either length > 32, then overflow and return (0, 0)
-    // Pad R and S (on the left) to 32 bytes each, return (R, S)
-
     val iterator = input.toIterable.iterator.buffered
 
-    for {
-      head <- iterator.nextOption()
-      _ <- Option.when(head == 0x30.toByte)(())
+    def nextByteMustBe(requiredByte: Byte): Option[Unit] = {
+      iterator.nextOption().flatMap { nextByte =>
+        Option.when(nextByte == requiredByte)(())
+      }
+    }
 
+    def moveIterForward(steps: Int): Option[ByteVector] = {
+      (0 until steps)
+        .foldLeft(Option(ByteVector.empty)) {
+          case (bytesOpt, _) =>
+            bytesOpt.flatMap { bytesSoFar =>
+              iterator.nextOption().map(bytesSoFar.:+)
+            }
+        }
+    }
+
+    def processInteger(): Option[BigInt] = {
+      for {
+        // Check next byte exists and is 0x02
+        _ <- nextByteMustBe(0x02.toByte)
+
+        // Check next byte exists and process as integer length byte
+        lengthByteUnProcessed <- iterator.nextOption()
+        length <- {
+          if ((lengthByteUnProcessed & 0x80) != 0) {
+            var lenByte = lengthByteUnProcessed - 0x80
+
+            while (lenByte > 0 && iterator.headOption.contains(0.toByte)) {
+              iterator.next()
+              lenByte -= 1
+            }
+
+            if (lenByte >= 4) {
+              None
+            } else {
+              moveIterForward(lenByte).map(_.toInt(signed = false))
+            }
+          } else {
+            Some(lengthByteUnProcessed.toInt)
+          }
+        }
+
+        numBytes <- moveIterForward(length)
+
+        // Erase leading zeroes
+        numBytesWithoutLeadingZero = numBytes.dropWhile(_ == 0.toByte)
+
+        // If length > 32, then overflow
+        num <- Option.when(numBytesWithoutLeadingZero.length <= 32) {
+          BigInt(1, numBytesWithoutLeadingZero.toArray)
+        }
+      } yield num
+    }
+
+    for {
+      // Check first byte exists and is 0x30
+      _ <- nextByteMustBe(0x30.toByte)
+
+      // Check second byte exists and process as length byte
       totalLengthByteUnProcessed <- iterator.nextOption()
       _ <- {
         if ((totalLengthByteUnProcessed & 0x80) != 0) {
           val processedTotalLengthByte = totalLengthByteUnProcessed - 0x80
-          (0 until processedTotalLengthByte)
-            .foldLeft(Option(0.toByte)) {
-              case (bOpt, _) =>
-                bOpt.flatMap(_ => iterator.nextOption())
-            }
+          moveIterForward(processedTotalLengthByte)
         } else {
           Some(())
         }
       }
 
-      rTag <- iterator.nextOption()
-      _ <- Option.when(rTag == 0x02.toByte)(())
-
-      rLengthByteUnProcessed <- iterator.nextOption()
-      rLength <- {
-        if ((rLengthByteUnProcessed & 0x80) != 0) {
-          var lenByte = rLengthByteUnProcessed - 0x80
-
-          while (lenByte > 0 && iterator.headOption.contains(0.toByte)) {
-            iterator.next()
-            lenByte -= 1
-          }
-          val rLenInit = if (lenByte >= 4) None else Some(0)
-          (0 until lenByte).foldLeft(rLenInit) {
-            case (rLenOpt, _) =>
-              rLenOpt.flatMap { rLenSoFar =>
-                iterator.nextOption().map { nextByte =>
-                  (rLenSoFar << 8) + nextByte
-                }
-              }
-          }
-        } else {
-          Some(rLengthByteUnProcessed.toInt)
-        }
-      }
-
-      rBytes <- (0 until rLength).foldLeft(Option(ByteVector.empty)) {
-        case (rOpt, _) =>
-          rOpt.flatMap { rSoFar =>
-            iterator.nextOption().map(rSoFar.:+)
-          }
-      }
-
-      sTag <- iterator.nextOption()
-      _ <- Option.when(sTag == 0x02.toByte)(())
-
-      sLengthByteUnProcessed <- iterator.nextOption()
-      sLength <- {
-        if ((sLengthByteUnProcessed & 0x80) != 0) {
-          var lenByte = sLengthByteUnProcessed - 0x80
-
-          while (lenByte > 0 && iterator.headOption.contains(0.toByte)) {
-            iterator.next()
-            lenByte -= 1
-          }
-          val sLenInit = if (lenByte >= 4) None else Some(0)
-          (0 until lenByte).foldLeft(sLenInit) {
-            case (sLenOpt, _) =>
-              sLenOpt.flatMap { sLenSoFar =>
-                iterator.nextOption().map { nextByte =>
-                  (sLenSoFar << 8) + nextByte
-                }
-              }
-          }
-        } else {
-          Some(sLengthByteUnProcessed.toInt)
-        }
-      }
-
-      sBytes <- (0 until sLength).foldLeft(Option(ByteVector.empty)) {
-        case (sOpt, _) =>
-          sOpt.flatMap { sSoFar =>
-            iterator.nextOption().map(sSoFar.:+)
-          }
-      }
-
-      r <- {
-        val rBytesWithoutLeadingZero = rBytes.dropWhile(_ == 0.toByte)
-        Option.when(rBytesWithoutLeadingZero.length <= 32) {
-          BigInt(1, rBytesWithoutLeadingZero.toArray)
-        }
-      }
-
-      s <- {
-        val sBytesWithoutLeadingZero = sBytes.dropWhile(_ == 0.toByte)
-        Option.when(sBytesWithoutLeadingZero.length <= 32) {
-          BigInt(1, sBytesWithoutLeadingZero.toArray)
-        }
-      }
+      r <- processInteger()
+      s <- processInteger()
     } yield {
       (r, s)
     }
