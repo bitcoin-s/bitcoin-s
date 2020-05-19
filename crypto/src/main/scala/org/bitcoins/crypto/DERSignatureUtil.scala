@@ -259,7 +259,7 @@ sealed abstract class DERSignatureUtil {
           if ((lengthByteUnProcessed & 0x80) != 0) {
             var lenByte = lengthByteUnProcessed - 0x80
 
-            while (lenByte > 0 && iterator.headOption.contains(0.toByte)) {
+            while (lenByte > 0 && iterator.hasNext && iterator.head == 0.toByte) {
               iterator.next()
               lenByte -= 1
             }
