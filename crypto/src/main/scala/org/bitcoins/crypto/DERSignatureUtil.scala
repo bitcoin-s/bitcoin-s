@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bouncycastle.asn1.{ASN1InputStream, ASN1Integer, DLSequence}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -61,39 +60,10 @@ sealed abstract class DERSignatureUtil {
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     */
   def decodeSignature(bytes: ByteVector): (BigInt, BigInt) = {
-    val asn1InputStream = new ASN1InputStream(bytes.toArray)
-    //TODO: this is nasty, is there any way to get rid of all this casting???
-    //TODO: Not 100% this is completely right for signatures that are incorrectly DER encoded
-    //the behavior right now is to return the defaults in the case the signature is not DER encoded
-    //https://stackoverflow.com/questions/2409618/how-do-i-decode-a-der-encoded-string-in-java
-    val seq: DLSequence = Try(
-      asn1InputStream.readObject.asInstanceOf[DLSequence]) match {
-      case Success(seq) => seq
-      case Failure(_)   => new DLSequence()
+    DERSignatureUtil.parseDERLax(bytes) match {
+      case Some((r, s)) => (r, s)
+      case None         => (0, 0)
     }
-    val default = new ASN1Integer(0)
-    val r: ASN1Integer = Try(seq.getObjectAt(0).asInstanceOf[ASN1Integer]) match {
-      case Success(r) =>
-        //this is needed for a bug inside of bouncy castle where zero length values throw an exception
-        //we need to treat these like zero
-        Try(r.getValue) match {
-          case Success(_) => r
-          case Failure(_) => default
-        }
-      case Failure(_) => default
-    }
-    val s: ASN1Integer = Try(seq.getObjectAt(1).asInstanceOf[ASN1Integer]) match {
-      case Success(s) =>
-        //this is needed for a bug inside of bouncy castle where zero length values throw an exception
-        //we need to treat these like zero
-        Try(s.getValue) match {
-          case Success(_) => s
-          case Failure(_) => default
-        }
-      case Failure(_) => default
-    }
-    asn1InputStream.close()
-    (r.getPositiveValue, s.getPositiveValue)
   }
 
   /**
@@ -234,6 +204,147 @@ sealed abstract class DERSignatureUtil {
           CryptoParams.curve.getN.subtract(signature.s.bigInteger))
     require(DERSignatureUtil.isLowS(sigLowS))
     sigLowS
+  }
+
+  /** Scala implementation of https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L27 */
+  def parseDERLax(input: ByteVector): Option[(BigInt, BigInt)] = {
+    /* Sequence tag byte */
+    if (input.isEmpty || input.head != 0x30.toByte) {
+      return None
+    }
+
+    var pos: Int = 1
+
+    // Sequence length bytes
+    if (input.length == pos) {
+      return None
+    }
+    var lenByte: Byte = input(pos)
+    pos += 1
+    if ((lenByte & 0x80) != 0) {
+      lenByte = (lenByte - 0x80).toByte
+      if (lenByte > input.length - pos) {
+        return None
+      }
+      pos += lenByte
+    }
+
+    // Integer tag byte for R
+    if (pos == input.length || input(pos) != 0x02.toByte) {
+      return None
+    }
+    pos += 1
+
+    // Integer length for R
+    if (pos == input.length) {
+      return None
+    }
+    lenByte = input(pos)
+    pos += 1
+    var rLen = if ((lenByte & 0x80) != 0) {
+      lenByte = (lenByte - 0x80).toByte
+      if (lenByte > input.length - pos) {
+        return None
+      }
+
+      while (lenByte > 0 && input(pos) == 0.toByte) {
+        pos += 1
+        lenByte = (lenByte - 1).toByte
+      }
+      if (lenByte >= 4) {
+        return None
+      }
+      var rLen = 0
+      while (lenByte > 0) {
+        rLen = (rLen << 8) + input(pos)
+        pos += 1
+        lenByte = (lenByte - 1).toByte
+      }
+      rLen
+    } else {
+      lenByte.toInt
+    }
+    if (rLen > input.length - pos) {
+      return None
+    }
+    var rpos = pos
+    pos += rLen
+
+    // Integer tag byte for S
+    if (pos == input.length || input(pos) != 0x02.toByte) {
+      return None
+    }
+    pos += 1
+
+    // Integer length for S
+    if (pos == input.length) {
+      return None
+    }
+    lenByte = input(pos)
+    pos += 1
+    var sLen = if ((lenByte & 0x80) != 0) {
+      lenByte = (lenByte - 0x80).toByte
+      if (lenByte > input.length - pos) {
+        return None
+      }
+      while (lenByte > 0 && input(pos) == 0.toByte) {
+        pos += 1
+        lenByte = (lenByte - 1).toByte
+      }
+      if (lenByte >= 4) {
+        return None
+      }
+      var sLen = 0
+      while (lenByte > 0) {
+        sLen = (sLen << 8) + input(pos)
+        pos += 1
+        lenByte = (lenByte - 1).toByte
+      }
+      sLen
+    } else {
+      lenByte
+    }
+    if (sLen > input.length - pos) {
+      return None
+    }
+    var spos = pos
+
+    // Ignore leading zeroes in R
+    while (rLen > 0 && input(rpos) == 0.toByte) {
+      rLen -= 1
+      rpos += 1
+    }
+
+    var overflow = false
+    val tmpSig: Array[Byte] = Array.fill(64)(0.toByte)
+
+    if (rLen > 32) {
+      overflow = true
+    } else {
+      System.arraycopy(input.toArray, rpos, tmpSig, 32 - rLen, rLen)
+    }
+
+    // Ignore leading zeroes in S
+    while (sLen > 0 && input(spos) == 0) {
+      sLen -= 1
+      spos += 1
+    }
+
+    // Copy S value
+    if (sLen > 32) {
+      overflow = true
+    } else {
+      System.arraycopy(input.toArray, spos, tmpSig, 64 - sLen, sLen)
+    }
+
+    if (overflow) {
+      System.arraycopy(Array.fill(64)(0.toByte), 0, tmpSig, 0, 64)
+    }
+
+    val r = BigInt(1, tmpSig.take(32))
+    val s = BigInt(1, tmpSig.takeRight(32))
+
+    Some((r, s))
   }
 }
 
