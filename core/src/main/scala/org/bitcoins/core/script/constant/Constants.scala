@@ -31,9 +31,9 @@ sealed trait ScriptToken extends NetworkElement {
 trait ScriptOperation extends ScriptToken {
   def opCode: Int
 
-  override def bytes: ByteVector = ByteVector.fromByte(toByte)
+  override lazy val bytes: ByteVector = ByteVector.fromByte(toByte)
 
-  def toByte: Byte = opCode.toByte
+  lazy val toByte: Byte = opCode.toByte
 }
 
 /** A constant in the Script language for instance as String or a number. */
@@ -221,7 +221,7 @@ case object OP_FALSE extends ScriptNumberOperation {
 
   override val underlying = OP_0.underlying
 
-  override val bytes = OP_0.bytes
+  override lazy val bytes = OP_0.bytes
 }
 
 /** The number 1 is pushed onto the stack. */
@@ -357,7 +357,7 @@ object ScriptNumberOperation
   def fromNumber(underlying: Long): Option[ScriptNumberOperation] =
     operations.find(_.underlying == underlying)
 
-  val operations = Seq(OP_0,
+  override val operations = Vector(OP_0,
                        OP_1,
                        OP_1NEGATE,
                        OP_2,

@@ -125,7 +125,7 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
              _: ScriptConstant,
              _: BytesToPushOntoStack,
              z: ScriptConstant) =>
-      if (ECPublicKey.isFullyValid(z.bytes)) true
+      if ((z.bytes.length == 33 || z.bytes.length == 65) && ECPublicKey.isFullyValid(z.bytes)) true
       else !P2SHScriptSignature.isRedeemScript(z)
     case _ => false
   }

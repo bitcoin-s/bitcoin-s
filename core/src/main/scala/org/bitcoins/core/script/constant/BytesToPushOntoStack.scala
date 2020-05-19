@@ -17,6 +17,10 @@ object BytesToPushOntoStack
     */
   lazy val zero: BytesToPushOntoStack = apply(0)
 
+  lazy val push33Bytes = operations(33)
+  lazy val push32Bytes = operations(32)
+  lazy val push20Bytes = operations(20)
+
   private case class BytesToPushOntoStackImpl(num: Int)
       extends BytesToPushOntoStack {
     /*  //see the 'Constants; section in https://en.bitcoin.it/wiki/Script
@@ -25,8 +29,9 @@ object BytesToPushOntoStack
     override val opCode = num
   }
 
-  override val operations: Seq[BytesToPushOntoStack] =
-    (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i))
+  override val operations: Vector[BytesToPushOntoStack] = {
+    (for { i <- 0 to 75 } yield BytesToPushOntoStackImpl(i)).toVector
+  }
 
   def fromNumber(num: Long): BytesToPushOntoStack = {
     if (num > 75)
@@ -38,7 +43,7 @@ object BytesToPushOntoStack
         case Some(bytesToPushOntoStack) => bytesToPushOntoStack
         case None =>
           throw new IllegalArgumentException(
-            "We cannot have a BytesToPushOntoStack for greater than 75 bytes")
+            s"We cannot have a BytesToPushOntoStack for greater than 75 bytes, got=$num")
       }
     }
   }

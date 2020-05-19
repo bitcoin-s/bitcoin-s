@@ -1094,16 +1094,12 @@ object WitnessScriptPubKey {
 
     //we can also have a LockTimeScriptPubKey with a nested 0 public key multisig script, need to check that as well
     val bytes = BytesUtil.toByteVector(asm)
-    lazy val isMultiSig =
-      MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm)
-    lazy val isLockTimeSPK = {
-      LockTimeScriptPubKey.isValidLockTimeScriptPubKey(asm)
-    }
 
     val firstOp = asm.headOption
     if (bytes.size < 4 || bytes.size > 42) false
     else if (!validWitVersions.contains(firstOp.getOrElse(OP_1NEGATE))) false
-    else if (isMultiSig || isLockTimeSPK) false
+    else if (MultiSignatureScriptPubKey.isMultiSignatureScriptPubKey(asm)) false
+    else if (LockTimeScriptPubKey.isValidLockTimeScriptPubKey(asm)) false
     else if (asm(1).toLong + 2 == bytes.size) true
     else false
   }

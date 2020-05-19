@@ -16,7 +16,6 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 /**
   * Created by chris on 2/16/16.
@@ -320,8 +319,12 @@ object ECPublicKey extends Factory[ECPublicKey] {
   }
 
   def isFullyValidWithSecp(bytes: ByteVector): Boolean = {
-    Try(NativeSecp256k1.isValidPubKey(bytes.toArray))
-      .getOrElse(false) && isValid(bytes)
+    try {
+      NativeSecp256k1.isValidPubKey(bytes.toArray) && isValid(bytes)
+    } catch {
+      case scala.util.control.NonFatal(_) =>
+        false
+    }
   }
 
   def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = {
