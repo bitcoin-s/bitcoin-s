@@ -15,7 +15,7 @@ import org.bitcoins.crypto.{
   ECPrivateKey,
   EmptyDigitalSignature
 }
-import org.bitcoins.testkit.util.TransactionTestUtil
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, TransactionTestUtil}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
@@ -25,11 +25,7 @@ import scala.concurrent.Future
 /**
   * Created by chris on 7/21/16.
   */
-class TransactionSignatureCreatorTest
-    extends FlatSpec
-    with MustMatchers
-    with ScalaFutures {
-  private def logger = BitcoinSLogger.logger
+class TransactionSignatureCreatorTest extends BitcoinSAsyncTest {
 
   "TransactionSignatureCreator" must "create a signature for a scriptSignature in a transaction" in {
     //this is a signed tx, but since TransactionSignatureSerializer removes scriptSigs, it will work for testing this
@@ -264,7 +260,6 @@ class TransactionSignatureCreatorTest
   }
 
   it must "be able to use a sign function that returns a Future[ECDigitalSignature] and have the sig validate" in {
-    import scala.concurrent.ExecutionContext.Implicits.global
     val privateKey = ECPrivateKey()
     val publicKey = privateKey.publicKey
     val redeemScript = MultiSignatureScriptPubKey(1, Seq(publicKey))
@@ -312,9 +307,9 @@ class TransactionSignatureCreatorTest
         PreExecutionScriptProgram(signedTxSigComponent)
     }
 
-    val result = program.map(ScriptInterpreter.run(_))
-    whenReady(result) { r =>
-      r must be(ScriptOk)
+    val resultF = program.map(ScriptInterpreter.run(_))
+    resultF.map { r =>
+      assert(r == ScriptOk)
     }
   }
 

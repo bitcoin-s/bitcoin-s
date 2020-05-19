@@ -1,10 +1,8 @@
 package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
-import org.bitcoins.testkit.util.{BitcoinSAsyncTest, BitcoinSUnitTest}
-import org.slf4j.LoggerFactory
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-import scala.concurrent.Future
 import scala.io.Source
 
 /**
@@ -47,12 +45,10 @@ class BlockTest extends BitcoinSAsyncTest {
   }
 
   it must "have serialization symmetry" in {
-    forAllAsync(BlockchainElementsGenerator.block) { block =>
-      Future {
-        val result = Block(block.hex) == block
-        if (!result) logger.warn("block.hex: " + block.hex)
-        assert(result)
-      }
+    forAllParallel(BlockchainElementsGenerator.block) { block =>
+      val result = Block(block.hex) == block
+      if (!result) logger.warn("block.hex: " + block.hex)
+      assert(result)
     }
   }
 }

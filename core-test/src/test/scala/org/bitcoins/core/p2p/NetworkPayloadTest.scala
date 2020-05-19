@@ -27,12 +27,10 @@ class NetworkPayloadTest extends BitcoinSAsyncTest {
   // this tests has a bunch of messages to choose between, so we set a high config value
   implicit override val generatorDrivenConfig = customGenDrivenConfig(100)
   it must "parse messages based on its command name" in {
-    forAllAsync(P2PGenerator.message) { p2p =>
-      Future {
-        val bytes = p2p.bytes
-        val parser = NetworkPayload.readers(p2p.commandName)
-        assert(parser(bytes) == p2p)
-      }
+    forAllParallel(P2PGenerator.message) { p2p =>
+      val bytes = p2p.bytes
+      val parser = NetworkPayload.readers(p2p.commandName)
+      assert(parser(bytes) == p2p)
     }
   }
 }
