@@ -21,7 +21,7 @@ trait StackPushOperationFactory {
     * @return
     */
   private def operations =
-    Seq(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4) ++ BytesToPushOntoStack.operations ++
+    pushDataOperations ++ BytesToPushOntoStack.operations ++
       Seq(OP_0,
           OP_1,
           OP_1NEGATE,
@@ -43,6 +43,8 @@ trait StackPushOperationFactory {
           OP_FALSE,
           OP_TRUE)
 
+  val pushDataOperations: Vector[ScriptOperation] =
+    Vector(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
 }
 
 object StackPushOperationFactory extends StackPushOperationFactory
