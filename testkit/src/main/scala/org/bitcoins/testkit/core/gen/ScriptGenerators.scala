@@ -575,10 +575,9 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       scriptPubKey = P2PKScriptPubKey(publicKey)
       (creditingTx, outputIndex) = TransactionGenerators
         .buildCreditingTransaction(scriptPubKey)
-      scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
       (spendingTx, inputIndex) = TransactionGenerators.buildSpendingTransaction(
         creditingTx,
-        scriptSig,
+        EmptyScriptSignature,
         outputIndex)
       spendingInfo = ScriptSignatureParams(
         P2PKInputInfo(TransactionOutPoint(creditingTx.txIdBE, inputIndex),
@@ -634,8 +633,7 @@ sealed abstract class ScriptGenerators extends BitcoinSLogger {
       hashType <- CryptoGenerators.hashType
     } yield {
       val privKey = privKeys.head
-      val emptyScriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
-                                                          EmptyDigitalSignature)
+      val emptyScriptSig = EmptyScriptSignature
       val (creditingTx, outputIndex) =
         TransactionGenerators.buildCreditingTransaction(spk)
       val (spendingTx, inputIndex) = TransactionGenerators
