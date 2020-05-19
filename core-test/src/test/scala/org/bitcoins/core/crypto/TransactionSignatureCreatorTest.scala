@@ -92,7 +92,7 @@ class TransactionSignatureCreatorTest
     val scriptPubKey = P2PKScriptPubKey(publicKey)
     val (creditingTx, outputIndex) =
       TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-    val scriptSig = P2PKScriptSignature(EmptyDigitalSignature)
+    val scriptSig = EmptyScriptSignature
     val (spendingTx, inputIndex) =
       TransactionTestUtil.buildSpendingTransaction(creditingTx,
                                                    scriptSig,
@@ -139,7 +139,7 @@ class TransactionSignatureCreatorTest
     val scriptPubKey = P2PKHScriptPubKey(publicKey)
     val (creditingTx, outputIndex) =
       TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-    val scriptSig = P2PKHScriptSignature(EmptyDigitalSignature, publicKey)
+    val scriptSig = EmptyScriptSignature
     val (spendingTx, inputIndex) =
       TransactionTestUtil.buildSpendingTransaction(creditingTx,
                                                    scriptSig,
