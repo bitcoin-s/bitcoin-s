@@ -15,7 +15,16 @@ sealed trait RawTxFinalizer {
   def buildTx(txBuilderResult: RawTxBuilderResult)(
       implicit ec: ExecutionContext): Future[Transaction]
 
-  def compose(other: RawTxFinalizer): RawTxFinalizer = ???
+  def andThen(other: RawTxFinalizer): RawTxFinalizer = new RawTxFinalizer {
+    override def buildTx(txBuilderResult: RawTxBuilderResult)(
+        implicit ec: ExecutionContext): Future[Transaction] = {
+      for {
+        firstFinalizedTx <- this.buildTx(txBuilderResult)
+        composedFinalizedTx <- other.buildTx(
+          RawTxBuilderResult.fromTransaction(firstFinalizedTx))
+      } yield composedFinalizedTx
+    }
+  }
 }
 
 case object RawFinalizer extends RawTxFinalizer {
