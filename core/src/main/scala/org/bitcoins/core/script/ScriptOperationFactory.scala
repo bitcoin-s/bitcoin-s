@@ -1,6 +1,5 @@
 package org.bitcoins.core.script
 
-import org.bitcoins.core.script.ScriptOperation.operations
 import org.bitcoins.core.script.arithmetic.ArithmeticOperation
 import org.bitcoins.core.script.bitwise.BitwiseOperation
 import org.bitcoins.core.script.constant._
@@ -66,7 +65,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
     }
   }
   private lazy val scriptOpMap: Map[Byte, ScriptOperation] = {
-    operations.map(o => (o.toByte,o)).toMap
+    operations.map(o => (o.toByte, o)).toMap
   }
   def apply(byte: Byte): T = fromByte(byte)
 
@@ -76,12 +75,12 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends BitcoinSLogger {
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
   /** This contains duplicate operations
-   * There is an optimization here by moving popular opcodes
-   * to the front of the vector so when we iterate through it,
-   * we are more likely to find the op code we are looking for
-   * sooner */
+    * There is an optimization here by moving popular opcodes
+    * to the front of the vector so when we iterate through it,
+    * we are more likely to find the op code we are looking for
+    * sooner */
   final override val operations: Vector[ScriptOperation] = {
-      Vector(OP_FALSE, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_TRUE) ++
+    StackPushOperationFactory.pushDataOperations ++
       StackOperation.operations ++
       LocktimeOperation.operations ++
       CryptoOperation.operations ++
@@ -91,7 +90,7 @@ object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
       BytesToPushOntoStack.operations ++
       SpliceOperation.operations ++
       ReservedOperation.operations ++
-        ScriptNumberOperation.operations
+      ScriptNumberOperation.operations
   }
 
 }
