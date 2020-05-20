@@ -226,7 +226,8 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
       getHeightF.map {
         case headers =>
-          assert(headers == Seq(blockHeader, blockHeader1))
+          assert(headers.toSet.size == 2)
+          assert(headers.toSet == Set(blockHeader, blockHeader1))
       }
   }
 

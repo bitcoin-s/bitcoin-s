@@ -575,9 +575,7 @@ object BitcoinSWalletTest extends WalletLogger {
     for {
 
       _ <- wallet.walletConfig.dropTable("flyway_schema_history")
-      _ = println("flyway_schema_history")
       _ <- wallet.walletConfig.dropAll()
-      _ = println("drop all")
     } yield ()
   }
 

@@ -17,12 +17,6 @@ class AddressDAOTest extends BitcoinSWalletTest with WalletDAOFixture {
           WalletTestUtil.getAddressDb(WalletTestUtil.firstAccountDb)
         addressDAO.create(addressDb)
       }
-      readF.foreach { x =>
-        println(x)
-      }
-      readF.failed.foreach { x =>
-        x.printStackTrace()
-      }
 
       recoverToSucceededIf[SQLException](readF)
   }

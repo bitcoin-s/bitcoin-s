@@ -39,8 +39,6 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
   }
 
   def executePgSql(sql: String): Unit = pg.foreach { pg =>
-    println(sql)
-
     val conn = pg.getPostgresDatabase.getConnection
     try {
       val st = conn.createStatement()
