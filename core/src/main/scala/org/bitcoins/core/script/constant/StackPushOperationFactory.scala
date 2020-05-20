@@ -13,6 +13,9 @@ trait StackPushOperationFactory {
     */
   def isPushOperation(token: ScriptToken): Boolean = operations.contains(token)
 
+  val pushDataOperations: Vector[ScriptOperation] =
+    Vector(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
+
   /**
     * Gives back all of the script operations that can push data onto the stack
     * The operations are determined according to BIP62
@@ -20,7 +23,7 @@ trait StackPushOperationFactory {
     *
     * @return
     */
-  private def operations =
+  private val operations =
     pushDataOperations ++ BytesToPushOntoStack.operations ++
       Seq(OP_0,
           OP_1,
@@ -42,9 +45,6 @@ trait StackPushOperationFactory {
           OP_16,
           OP_FALSE,
           OP_TRUE)
-
-  val pushDataOperations: Vector[ScriptOperation] =
-    Vector(OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
 }
 
 object StackPushOperationFactory extends StackPushOperationFactory
