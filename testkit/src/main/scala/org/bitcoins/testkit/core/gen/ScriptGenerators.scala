@@ -42,7 +42,7 @@ import scala.concurrent.duration.DurationInt
 
 //TODO: Need to provide generators for [[NonStandardScriptSignature]] and [[NonStandardScriptPubKey]]
 sealed abstract class ScriptGenerators extends BitcoinSLogger {
-  val timeout = 5.seconds
+  val timeout = 15.seconds
   val defaultMaxDepth: Int = 2
 
   /** Since redeem scripts are pushed onto the stack, this function
