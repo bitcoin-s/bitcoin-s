@@ -29,6 +29,15 @@ package object db {
         None
       }
     }
+
+    /** Returns the boolean at key or the given default value */
+    def getBooleanOrElse(key: String, default: => Boolean): Boolean = {
+      if (config.hasPath(key)) {
+        config.getBoolean(key)
+      } else {
+        default
+      }
+    }
   }
 
 }

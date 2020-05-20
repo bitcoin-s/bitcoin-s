@@ -22,9 +22,9 @@ import org.bitcoins.db.AppConfig
 case class BitcoinSAppConfig(
     private val directory: Path,
     private val confs: Config*)(implicit ec: ExecutionContext) {
-  val walletConf = WalletAppConfig(directory, confs: _*)
-  val nodeConf = NodeAppConfig(directory, confs: _*)
-  val chainConf = ChainAppConfig(directory, confs: _*)
+  val walletConf: WalletAppConfig = WalletAppConfig(directory, false, confs: _*)
+  val nodeConf: NodeAppConfig = NodeAppConfig(directory, false, confs: _*)
+  val chainConf: ChainAppConfig = ChainAppConfig(directory, false, confs: _*)
 
   /** Initializes the wallet, node and chain projects */
   def initialize()(implicit ec: ExecutionContext): Future[Unit] = {
