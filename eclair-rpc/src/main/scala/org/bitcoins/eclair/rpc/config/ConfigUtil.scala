@@ -13,6 +13,10 @@ object ConfigUtil {
     }
   }
 
+  def getString(config: Config, path: String): Option[String] = {
+    Try(config.getString(path)).toOption
+  }
+
   def getIntOrElse(config: Config, path: String, default: Int): Int = {
     Try(config.getInt(path)) match {
       case Success(num) => num
