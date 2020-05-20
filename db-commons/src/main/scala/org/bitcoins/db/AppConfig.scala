@@ -29,7 +29,7 @@ import ch.qos.logback.classic.Level
   * @see [[https://github.com/bitcoin-s/bitcoin-s-core/blob/master/doc/configuration.md `configuration.md`]]
   *      for more information.
   */
-abstract class AppConfig {
+abstract class AppConfig extends LoggerConfig {
 
   private val logger = BitcoinSLogger.logger
 
@@ -240,6 +240,8 @@ abstract class AppConfig {
     baseDatadir.resolve(lastDirname)
   }
 
+  override val logFile: Path = datadir.resolve("bitcoin-s.log")
+
   private def stringToLogLevel(str: String): Option[Level] =
     str.toLowerCase() match {
       case "trace"   => Some(Level.TRACE)
@@ -279,25 +281,29 @@ abstract class AppConfig {
     }
 
   /** The logging level for our P2P logger */
-  lazy val p2pLogLevel: Level = levelOrDefault("logging.p2p")
+  override lazy val p2pLogLevel: Level = levelOrDefault("logging.p2p")
 
   /** The logging level for our chain verification logger */
-  lazy val verificationLogLevel: Level =
+  override lazy val verificationLogLevel: Level =
     levelOrDefault("logging.chain-verification")
 
   /** The logging level for our key handling logger */
-  lazy val keyHandlingLogLevel: Level =
+  override lazy val keyHandlingLogLevel: Level =
     levelOrDefault("logging.key-handling")
 
   /** Logging level for wallet */
-  lazy val walletLogLeveL: Level =
+  override lazy val walletLogLevel: Level =
     levelOrDefault("logging.wallet")
 
   /** Logging level for HTTP RPC server */
-  lazy val httpLogLevel: Level = levelOrDefault("logging.http")
+  override lazy val httpLogLevel: Level = levelOrDefault("logging.http")
 
   /** Logging level for database interactions */
-  lazy val databaseLogLevel: Level = levelOrDefault("logging.database")
+  override lazy val databaseLogLevel: Level = levelOrDefault("logging.database")
+
+  /** Use logback config instead */
+  override val useLogbackConf: Boolean =
+    config.getBooleanOrElse("logging.logback", default = false)
 
 }
 

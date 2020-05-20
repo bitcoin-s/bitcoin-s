@@ -1,12 +1,12 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.db.{AppLoggers, MarkedLogger}
+import org.bitcoins.db.{AppLoggers, LoggerConfig}
+import org.slf4j.Logger
 
 /** Exposes acccess to the wallet logger */
 private[bitcoins] trait WalletLogger {
-  private var _logger: MarkedLogger = _
-  protected[bitcoins] def logger(implicit config: WalletAppConfig) = {
+  private var _logger: Logger = _
+  protected[bitcoins] def logger(implicit config: LoggerConfig): Logger = {
     if (_logger == null) {
       _logger = WalletLoggerImpl(config).getLogger
     }
@@ -14,12 +14,12 @@ private[bitcoins] trait WalletLogger {
   }
 }
 
-private[wallet] case class WalletLoggerImpl(override val conf: WalletAppConfig)
+private[wallet] case class WalletLoggerImpl(override val conf: LoggerConfig)
     extends AppLoggers {
 
   /**
     * @return the generic wallet logger (i.e. everything not related to key handling)
     */
-  def getLogger: MarkedLogger =
+  def getLogger: Logger =
     getLoggerImpl(LoggerKind.Wallet)
 }

@@ -25,6 +25,7 @@ import org.bitcoins.node.networking.peer.{
 }
 import org.bitcoins.node.util.BitcoinSNodeUtil.Mutable
 import org.bitcoins.rpc.util.AsyncUtil
+import org.slf4j.Logger
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,6 +54,11 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
     callbacks.atomicUpdate(newCallbacks)(_ + _)
     this
   }
+
+  // Need to overwrite logger because nodeAppConfig and chainAppConfig are both
+  // instances of LoggerConfig
+  protected def logger(implicit config: NodeAppConfig): Logger =
+    super.logger(config)
 
   lazy val txDAO = BroadcastAbleTransactionDAO()
 
