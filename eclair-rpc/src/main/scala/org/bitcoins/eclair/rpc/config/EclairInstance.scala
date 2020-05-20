@@ -1,12 +1,14 @@
 package org.bitcoins.eclair.rpc.config
 
 import java.io.File
-import java.net.URI
+import java.net.{InetSocketAddress, URI}
 import java.nio.file.Paths
 
+import com.sun.jndi.toolkit.url.Uri
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
 import org.bitcoins.core.protocol.ln.LnPolicy
+import org.bitcoins.rpc.config.{BitcoindAuthCredentials, ZmqConfig}
 
 import scala.util.Properties
 
@@ -16,6 +18,9 @@ sealed trait EclairInstance {
   def rpcUri: URI
   def authCredentials: EclairAuthCredentials
   def logbackXmlPath: Option[String]
+  def bitcoindRpcUri: Option[URI]
+  def bitcoindAuthCredentials: Option[BitcoindAuthCredentials]
+  def zmqConfig: Option[ZmqConfig]
 }
 
 /**
@@ -31,7 +36,10 @@ object EclairInstance {
       uri: URI,
       rpcUri: URI,
       authCredentials: EclairAuthCredentials,
-      logbackXmlPath: Option[String])
+      logbackXmlPath: Option[String],
+      bitcoindRpcUri: Option[URI],
+      bitcoindAuthCredentials: Option[BitcoindAuthCredentials],
+      zmqConfig: Option[ZmqConfig])
       extends EclairInstance
 
   def apply(
@@ -39,13 +47,28 @@ object EclairInstance {
       uri: URI,
       rpcUri: URI,
       authCredentials: EclairAuthCredentials,
-      logbackXmlPath: Option[String]): EclairInstance = {
-    EclairInstanceImpl(network, uri, rpcUri, authCredentials, logbackXmlPath)
+      logbackXmlPath: Option[String],
+      bitcoindRpcUri: Option[URI] = None,
+      bitcoindAuthCredentials: Option[BitcoindAuthCredentials] = None,
+      zmqConfig: Option[ZmqConfig] = None): EclairInstance = {
+    EclairInstanceImpl(network,
+                       uri,
+                       rpcUri,
+                       authCredentials,
+                       logbackXmlPath,
+                       bitcoindRpcUri,
+                       bitcoindAuthCredentials,
+                       zmqConfig)
   }
 
   private val DEFAULT_DATADIR = Paths.get(Properties.userHome, ".eclair")
 
   private val DEFAULT_CONF_FILE = DEFAULT_DATADIR.resolve("eclair.conf")
+
+  private def toInetSocketAddress(string: String): InetSocketAddress = {
+    val uri = new Uri(string)
+    new InetSocketAddress(uri.getHost, uri.getPort)
+  }
 
   def fromDatadir(
       datadir: File = DEFAULT_DATADIR.toFile,
@@ -124,12 +147,39 @@ object EclairInstance {
 
     val eclairAuth = EclairAuthCredentials.fromConfig(config, datadir)
 
-    val instance = EclairInstance(network = np,
-                                  uri = uri,
-                                  rpcUri = rpcUri,
-                                  authCredentials = eclairAuth,
-                                  logbackXml)
+    val bitcoindRpcHost =
+      ConfigUtil.getStringOrElse(config, "eclair.bitcoind.host", "127.0.0.1")
+    val bitcoindRpcPort =
+      ConfigUtil.getIntOrElse(config, "eclair.bitcoind.rpcport", np.rpcPort)
+    val bitcoindRpcUri = new URI(s"http://$bitcoindRpcHost:$bitcoindRpcPort")
 
-    instance
+    val bitcoindRpcUser =
+      ConfigUtil.getStringOrElse(config, "eclair.bitcoind.rpcuser", "foo")
+    val bitcoindRpcPass =
+      ConfigUtil.getStringOrElse(config, "eclair.bitcoind.rpcpassword", "bar")
+    val bitcoindAuthCredentials =
+      BitcoindAuthCredentials.PasswordBased(bitcoindRpcUser, bitcoindRpcPass)
+
+    val rawBlock: Option[InetSocketAddress] =
+      ConfigUtil
+        .getString(config, "eclair.bitcoind.zmqblock")
+        .map(toInetSocketAddress)
+    val rawTx: Option[InetSocketAddress] =
+      ConfigUtil
+        .getString(config, "eclair.bitcoind.zmqtx")
+        .map(toInetSocketAddress)
+
+    val zmqConfig = ZmqConfig(rawBlock = rawBlock, rawTx = rawTx)
+
+    EclairInstance(
+      network = np,
+      uri = uri,
+      rpcUri = rpcUri,
+      authCredentials = eclairAuth,
+      logbackXmlPath = logbackXml,
+      bitcoindRpcUri = Some(bitcoindRpcUri),
+      bitcoindAuthCredentials = Some(bitcoindAuthCredentials),
+      zmqConfig = Some(zmqConfig)
+    )
   }
 }
