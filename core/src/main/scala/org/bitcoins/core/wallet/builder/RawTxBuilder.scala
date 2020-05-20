@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.transaction._
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
-class RawTxBuilder {
+case class RawTxBuilder() {
   private var version: Int32 = TransactionConstants.validLockVersion
 
   private val inputsBuilder: mutable.Builder[
@@ -19,31 +19,15 @@ class RawTxBuilder {
 
   private var lockTime: UInt32 = TransactionConstants.lockTime
 
-  private var finalizerOpt: Option[RawTxFinalizer] = None
-
-  def hasFinalizer: Boolean = finalizerOpt.isDefined
-
-  def setFinalizer(finalizer: RawTxFinalizer): this.type = {
-    finalizerOpt = Some(finalizer)
-    this
+  def result(): RawTxBuilderResult = {
+    RawTxBuilderResult(version,
+                       inputsBuilder.result(),
+                       outputsBuilder.result(),
+                       lockTime)
   }
 
-  def result()(implicit ec: ExecutionContext): Future[Transaction] = {
-    finalizerOpt match {
-      case None =>
-        Future.failed(
-          new RuntimeException(
-            "Cannot call result with no RawTxFinalizer specified"))
-      case Some(finalizer) => result(finalizer)
-    }
-  }
-
-  def result(finalizer: RawTxFinalizer)(
-      implicit ec: ExecutionContext): Future[Transaction] = {
-    finalizer.buildTx(version,
-                      inputsBuilder.result(),
-                      outputsBuilder.result(),
-                      lockTime)
+  def setFinalizer(finalizer: RawTxFinalizer): RawTxBuilderWithFinalizer = {
+    RawTxBuilderWithFinalizer(this, finalizer)
   }
 
   def clear(): Unit = {
@@ -102,7 +86,41 @@ class RawTxBuilder {
   }
 }
 
-object RawTxBuilder {
+case class RawTxBuilderWithFinalizer(
+    builder: RawTxBuilder,
+    finalizer: RawTxFinalizer) {
 
-  def apply(): RawTxBuilder = new RawTxBuilder()
+  def buildTx()(implicit ec: ExecutionContext): Future[Transaction] = {
+    finalizer.buildTx(builder.result())
+  }
+
+  def clearBuilder(): Unit = {
+    builder.clear()
+  }
+
+  @inline final def +=(input: TransactionInput): this.type = {
+    builder += input
+    this
+  }
+
+  @inline final def +=(output: TransactionOutput): this.type = {
+    builder += output
+    this
+  }
+
+  @inline final def ++=[T >: TransactionInput with TransactionOutput](
+      inputsOrOutputs: Iterable[T]): this.type = {
+    builder ++= inputsOrOutputs
+    this
+  }
+
+  def setVersion(version: Int32): this.type = {
+    builder.setVersion(version)
+    this
+  }
+
+  def setLockTime(lockTime: UInt32): this.type = {
+    builder.setLockTime(lockTime)
+    this
+  }
 }

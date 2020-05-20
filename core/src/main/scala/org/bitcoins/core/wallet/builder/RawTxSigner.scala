@@ -103,7 +103,7 @@ object RawTxSigner extends BitcoinSLogger {
 
         for {
           _ <- inputsAddedToBuilderF
-          btx <- builder.result(RawFinalizer)
+          btx <- builder.setFinalizer(RawFinalizer).buildTx()
         } yield {
           val txWitness =
             TransactionWitness.fromWitOpt(witnessesBuilder.result())

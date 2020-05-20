@@ -1,7 +1,6 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
@@ -13,32 +12,26 @@ import scala.util.{Success, Try}
 
 sealed trait RawTxFinalizer {
 
-  def buildTx(
-      version: Int32,
-      inputs: Vector[TransactionInput],
-      outputs: Vector[TransactionOutput],
-      lockTime: UInt32)(implicit ec: ExecutionContext): Future[Transaction]
+  def buildTx(txBuilderResult: RawTxBuilderResult)(
+      implicit ec: ExecutionContext): Future[Transaction]
+
+  def compose(other: RawTxFinalizer): RawTxFinalizer = ???
 }
 
 case object RawFinalizer extends RawTxFinalizer {
-  override def buildTx(
-      version: Int32,
-      inputs: Vector[TransactionInput],
-      outputs: Vector[TransactionOutput],
-      lockTime: UInt32)(implicit ec: ExecutionContext): Future[Transaction] = {
-    Future.successful(BaseTransaction(version, inputs, outputs, lockTime))
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    Future.successful(txBuilderResult.toBaseTransaction)
   }
 }
 
 case object FilterDustFinalizer extends RawTxFinalizer {
-  override def buildTx(
-      version: Int32,
-      inputs: Vector[TransactionInput],
-      outputs: Vector[TransactionOutput],
-      lockTime: UInt32)(implicit ec: ExecutionContext): Future[Transaction] = {
-    val filteredOutputs = outputs.filter(_.value >= Policy.dustThreshold)
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    val filteredOutputs =
+      txBuilderResult.outputs.filter(_.value >= Policy.dustThreshold)
     Future.successful(
-      BaseTransaction(version, inputs, filteredOutputs, lockTime))
+      txBuilderResult.toBaseTransaction.copy(outputs = filteredOutputs))
   }
 }
 
@@ -47,11 +40,10 @@ case class NonInteractiveWithChangeFinalizer(
     feeRate: FeeUnit,
     changeSPK: ScriptPubKey)
     extends RawTxFinalizer {
-  override def buildTx(
-      version: Int32,
-      inputs: Vector[TransactionInput],
-      outputs: Vector[TransactionOutput],
-      lockTime: UInt32)(implicit ec: ExecutionContext): Future[Transaction] = {
+  override def buildTx(txBuilderResult: RawTxBuilderResult)(
+      implicit ec: ExecutionContext): Future[Transaction] = {
+    val RawTxBuilderResult(version, inputs, outputs, lockTime) = txBuilderResult
+
     val outputsWithChange = outputs :+ TransactionOutput(Satoshis.zero,
                                                          changeSPK)
     val totalCrediting = inputInfos
@@ -144,7 +136,7 @@ object NonInteractiveWithChangeFinalizer {
       outputs: Seq[TransactionOutput],
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
-      changeSPK: ScriptPubKey): RawTxBuilder = {
+      changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer = {
     val inputs = InputUtil.calcSequenceForInputs(utxos, Policy.isRBFEnabled)
     val lockTime = TxUtil.calcLockTime(utxos).get
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
@@ -164,6 +156,6 @@ object NonInteractiveWithChangeFinalizer {
       implicit ec: ExecutionContext): Future[Transaction] = {
     val builderF = Future(txBuilderFrom(outputs, utxos, feeRate, changeSPK))
 
-    builderF.flatMap(_.result())
+    builderF.flatMap(_.buildTx())
   }
 }

@@ -17,7 +17,7 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.builder.{
   NonInteractiveWithChangeFinalizer,
-  RawTxBuilder,
+  RawTxBuilderWithFinalizer,
   RawTxSigner
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -220,16 +220,16 @@ abstract class Wallet
     } yield updatedInfos
   }
 
-  /** Takes a [[RawTxBuilder]] for a transaction to be sent, and completes it by:
+  /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and completes it by:
     * finalizing and signing the transaction, then correctly processing and logging it
     */
   private def finishSend(
-      txBuilder: RawTxBuilder,
+      txBuilder: RawTxBuilderWithFinalizer,
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       sentAmount: CurrencyUnit,
       feeRate: FeeUnit): Future[Transaction] = {
     for {
-      utx <- txBuilder.result()
+      utx <- txBuilder.buildTx()
       signed <- RawTxSigner.sign(utx, utxoInfos, feeRate)
       ourOuts <- findOurOuts(signed)
       creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)

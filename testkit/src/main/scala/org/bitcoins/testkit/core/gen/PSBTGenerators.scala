@@ -210,7 +210,7 @@ object PSBTGenerators {
     builder.setFinalizer(finalizer)
 
     for {
-      unsignedTx <- builder.result()
+      unsignedTx <- builder.setFinalizer(finalizer).buildTx()
 
       orderedTxInfos = spendingInfoAndNonWitnessTxsFromSpendingInfos(
         unsignedTx,

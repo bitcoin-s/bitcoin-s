@@ -12,7 +12,8 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.builder.{
   NonInteractiveWithChangeFinalizer,
-  RawTxBuilder
+  RawTxBuilder,
+  RawTxBuilderWithFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -50,7 +51,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
                                  fromAccount = fromAccount,
                                  keyManagerOpt = None,
                                  markAsReserved = markAsReserved)
-    txBuilderF.flatMap(_._1.result())
+    txBuilderF.flatMap(_._1.buildTx())
   }
 
   /** This returns a [[RawTxBuilder]] that can be used to generate an unsigned transaction with [[RawTxBuilder.result()]]
@@ -70,7 +71,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
       keyManagerOpt: Option[BIP39KeyManager],
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.AccumulateLargest,
       markAsReserved: Boolean = false): Future[
-    (RawTxBuilder, Vector[ScriptSignatureParams[InputInfo]])] = {
+    (RawTxBuilderWithFinalizer, Vector[ScriptSignatureParams[InputInfo]])] = {
     val utxosF = for {
       utxos <- listUtxos(fromAccount.hdAccount)
 
@@ -155,9 +156,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
         feeRate,
         change.scriptPubKey)
 
-      txBuilder.setFinalizer(finalizer)
-
-      (txBuilder, utxoSpendingInfos)
+      (txBuilder.setFinalizer(finalizer), utxoSpendingInfos)
     }
 
     txBuilderF
