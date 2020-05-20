@@ -28,16 +28,16 @@ import scala.util.Properties
 import scala.concurrent.ExecutionContext.Implicits.global
 
 // reads $HOME/.bitcoin-s/
-val defaultConfig = WalletAppConfig.fromDefaultDatadir()
+val defaultConfig = WalletAppConfig.fromDefaultDatadir(false)
 
 
 // reads a custom data directory
 val customDirectory = Paths.get(Properties.userHome, "custom-bitcoin-s-directory")
-val configFromCustomDatadir = WalletAppConfig(customDirectory)
+val configFromCustomDatadir = WalletAppConfig(customDirectory, false)
 
 // reads a custom data directory and overrides the network to be testnet3
 val customOverride = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, customOverride)
+val configFromCustomDirAndOverride = WalletAppConfig(customDirectory, false, customOverride)
 ```
 
 You can pass as many `com.typesafe.config.Config`s as you'd like. If any
