@@ -82,16 +82,16 @@ construct a wallet configuration:</p>
 <span class="hljs-keyword">import</span> scala.concurrent.<span class="hljs-type">ExecutionContext</span>.<span class="hljs-type">Implicits</span>.global
 
 <span class="hljs-comment">// reads $HOME/.bitcoin-s/</span>
-<span class="hljs-keyword">val</span> defaultConfig = <span class="hljs-type">WalletAppConfig</span>.fromDefaultDatadir()
+<span class="hljs-keyword">val</span> defaultConfig = <span class="hljs-type">WalletAppConfig</span>.fromDefaultDatadir(<span class="hljs-literal">false</span>)
 
 
 <span class="hljs-comment">// reads a custom data directory</span>
 <span class="hljs-keyword">val</span> customDirectory = <span class="hljs-type">Paths</span>.get(<span class="hljs-type">Properties</span>.userHome, <span class="hljs-string">"custom-bitcoin-s-directory"</span>)
-<span class="hljs-keyword">val</span> configFromCustomDatadir = <span class="hljs-type">WalletAppConfig</span>(customDirectory)
+<span class="hljs-keyword">val</span> configFromCustomDatadir = <span class="hljs-type">WalletAppConfig</span>(customDirectory, <span class="hljs-literal">false</span>)
 
 <span class="hljs-comment">// reads a custom data directory and overrides the network to be testnet3</span>
 <span class="hljs-keyword">val</span> customOverride = <span class="hljs-type">ConfigFactory</span>.parseString(<span class="hljs-string">"bitcoin-s.network = testnet3"</span>)
-<span class="hljs-keyword">val</span> configFromCustomDirAndOverride = <span class="hljs-type">WalletAppConfig</span>(customDirectory, customOverride)
+<span class="hljs-keyword">val</span> configFromCustomDirAndOverride = <span class="hljs-type">WalletAppConfig</span>(customDirectory, <span class="hljs-literal">false</span>, customOverride)
 </code></pre>
 <p>You can pass as many <code>com.typesafe.config.Config</code>s as you'd like. If any
 keys appear multiple times the last one encountered takes precedence.</p>
@@ -120,6 +120,9 @@ to ensure the entire module is initialized correctly.</p>
    <span class="hljs-built_in"> network </span>= regtest # regtest, testnet3, mainnet
 
    <span class="hljs-built_in"> logging </span>{
+        # Ignore bitcoin-s<span class="hljs-built_in"> logging config </span><span class="hljs-keyword">and</span> use a logback<span class="hljs-built_in"> config
+</span>        logback = <span class="hljs-literal">false</span>
+
         level = WARN # trace, debug, info, warn, error, off
 
         # You can also tune specific module loggers.
