@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.transaction.{
   EmptyWitness,
   Transaction,
   TransactionWitness,
+  TxUtil,
   WitnessTransaction
 }
 import org.bitcoins.core.util.BitcoinSLogger
@@ -39,7 +40,7 @@ object RawTxSigner extends BitcoinSLogger {
       txWithInfo: FinalizedTxWithSigningInfo,
       expectedFeeRate: FeeUnit,
       invariants: (
-          Seq[ScriptSignatureParams[InputInfo]],
+          Vector[ScriptSignatureParams[InputInfo]],
           Transaction) => Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = {
     sign(txWithInfo.finalizedTx, txWithInfo.infos, expectedFeeRate, invariants)
@@ -50,7 +51,7 @@ object RawTxSigner extends BitcoinSLogger {
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       expectedFeeRate: FeeUnit,
       invariants: (
-          Seq[ScriptSignatureParams[InputInfo]],
+          Vector[ScriptSignatureParams[InputInfo]],
           Transaction) => Boolean)(
       implicit ec: ExecutionContext): Future[Transaction] = {
     require(utxoInfos.length == utx.inputs.length,
@@ -123,10 +124,10 @@ object RawTxSigner extends BitcoinSLogger {
       val txT: Try[Transaction] = {
         if (invariants(utxoInfos, signedTx)) {
           //final sanity checks
-          Transaction.sanityChecks(forSigned = true,
-                                   inputInfos = utxoInfos.map(_.inputInfo),
-                                   expectedFeeRate = expectedFeeRate,
-                                   tx = signedTx) match {
+          TxUtil.sanityChecks(isSigned = true,
+                              inputInfos = utxoInfos.map(_.inputInfo),
+                              expectedFeeRate = expectedFeeRate,
+                              tx = signedTx) match {
             case Success(_)   => Success(signedTx)
             case Failure(err) => Failure(err)
           }

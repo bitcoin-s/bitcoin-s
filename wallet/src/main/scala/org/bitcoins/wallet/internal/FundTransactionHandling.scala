@@ -5,19 +5,17 @@ import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutPoint,
+  InputUtil,
   Transaction,
-  TransactionOutput
+  TransactionOutput,
+  TxUtil
 }
 import org.bitcoins.core.wallet.builder.{
   NonInteractiveWithChangeFinalizer,
   RawTxBuilder
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{
-  InputInfo,
-  InputSigningInfo,
-  ScriptSignatureParams
-}
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto.Sign
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.WalletLogger
@@ -146,10 +144,9 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
       }
 
       val inputs =
-        InputSigningInfo.calcSequenceForInputs(utxoSpendingInfos,
-                                               Policy.isRBFEnabled)
+        InputUtil.calcSequenceForInputs(utxoSpendingInfos, Policy.isRBFEnabled)
 
-      val lockTime = RawTxBuilder.calcLockTime(utxoSpendingInfos).get
+      val lockTime = TxUtil.calcLockTime(utxoSpendingInfos).get
 
       val txBuilder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
 

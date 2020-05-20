@@ -21,11 +21,11 @@ class TxBuilderTest extends BitcoinSUnitTest {
     val estimatedFee = 1000.sats
     val actualFee = 1.sat
     val feeRate = SatoshisPerVirtualByte(1.sat)
-    Transaction
+    TxUtil
       .isValidFeeRange(estimatedFee, actualFee, feeRate)
       .isFailure must be(true)
 
-    Transaction
+    TxUtil
       .isValidFeeRange(actualFee, estimatedFee, feeRate)
       .isFailure must be(true)
   }
@@ -103,8 +103,8 @@ class TxBuilderTest extends BitcoinSUnitTest {
       BaseTransaction(tx.version, tx.inputs, Vector(newOutput), tx.lockTime)
 
     assert(
-      Transaction
-        .sanityAmountChecks(forSigned = true, inputInfos, feeRate, highFeeTx)
+      TxUtil
+        .sanityAmountChecks(isSigned = true, inputInfos, feeRate, highFeeTx)
         .isFailure)
   }
 
@@ -119,8 +119,8 @@ class TxBuilderTest extends BitcoinSUnitTest {
                                  tx.lockTime)
 
     assert(
-      Transaction
-        .sanityAmountChecks(forSigned = true, inputInfos, feeRate, dustTx)
+      TxUtil
+        .sanityAmountChecks(isSigned = true, inputInfos, feeRate, dustTx)
         .isFailure)
   }
 }

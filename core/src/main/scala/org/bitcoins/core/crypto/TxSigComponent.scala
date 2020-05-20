@@ -79,14 +79,14 @@ object TxSigComponent {
   }
 
   def getScriptWitness(
-      txSigComponent: TxSigComponent): Option[ScriptWitness] = {
+      txSigComponent: TxSigComponent): Option[ScriptWitnessV0] = {
     txSigComponent.transaction match {
       case _: NonWitnessTransaction => None
       case wtx: WitnessTransaction =>
         val witness = wtx.witness.witnesses(txSigComponent.inputIndex.toInt)
         witness match {
-          case EmptyScriptWitness => None
-          case _: ScriptWitness   => Some(witness)
+          case EmptyScriptWitness       => None
+          case witness: ScriptWitnessV0 => Some(witness)
         }
     }
   }

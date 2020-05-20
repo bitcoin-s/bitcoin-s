@@ -6,8 +6,10 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
+  InputUtil,
   Transaction,
-  TransactionOutput
+  TransactionOutput,
+  TxUtil
 }
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
 import org.bitcoins.core.psbt.PSBT.SpendingInfoAndNonWitnessTxs
@@ -19,11 +21,7 @@ import org.bitcoins.core.wallet.builder.{
   RawTxBuilder
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{
-  InputInfo,
-  InputSigningInfo,
-  ScriptSignatureParams
-}
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.scalacheck.Gen
 import scodec.bits.ByteVector
 
@@ -200,10 +198,9 @@ object PSBTGenerators {
       changeSPK: ScriptPubKey,
       fee: FeeUnit)(implicit ec: ExecutionContext): Future[
     (PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
-    val lockTime = RawTxBuilder.calcLockTime(creditingTxsInfo).get
+    val lockTime = TxUtil.calcLockTime(creditingTxsInfo).get
     val inputs =
-      InputSigningInfo.calcSequenceForInputs(creditingTxsInfo,
-                                             Policy.isRBFEnabled)
+      InputUtil.calcSequenceForInputs(creditingTxsInfo, Policy.isRBFEnabled)
 
     val builder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
     val finalizer = NonInteractiveWithChangeFinalizer(

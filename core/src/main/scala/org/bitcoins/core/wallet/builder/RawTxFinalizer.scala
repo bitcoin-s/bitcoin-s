@@ -67,7 +67,7 @@ case class NonInteractiveWithChangeFinalizer(
         WitnessTransaction(version, inputs, outputsWithChange, lockTime, wit)
     }
 
-    val dummyTxF = Transaction.addDummySigs(txNoChangeFee, inputInfos)
+    val dummyTxF = TxUtil.addDummySigs(txNoChangeFee, inputInfos)
 
     val txF = dummyTxF.map { dummyTx =>
       val fee = feeRate.calc(dummyTx)
@@ -96,10 +96,10 @@ case class NonInteractiveWithChangeFinalizer(
           finalizedTx = tx)
 
       val passChecksT = passInOutChecksT.flatMap { _ =>
-        Transaction.sanityChecks(forSigned = false,
-                                 inputInfos = inputInfos,
-                                 expectedFeeRate = feeRate,
-                                 tx = tx)
+        TxUtil.sanityChecks(isSigned = false,
+                            inputInfos = inputInfos,
+                            expectedFeeRate = feeRate,
+                            tx = tx)
       }
 
       Future.fromTry(passChecksT.map(_ => tx))
@@ -127,7 +127,8 @@ object NonInteractiveWithChangeFinalizer {
       }
     val spendingTxOutPoints = finalizedTx.inputs.map(_.previousOutput)
     val hasExtraOutPoints =
-      !spendingTxOutPoints.forall(expectedOutPoints.contains)
+      !spendingTxOutPoints.forall(expectedOutPoints.contains) ||
+        expectedOutPoints.length != spendingTxOutPoints.length
     if (isMissingDestination) {
       TxBuilderError.MissingDestinationOutput
     } else if (hasExtraOutputs) {
@@ -144,9 +145,8 @@ object NonInteractiveWithChangeFinalizer {
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey): RawTxBuilder = {
-    val inputs =
-      InputSigningInfo.calcSequenceForInputs(utxos, Policy.isRBFEnabled)
-    val lockTime = RawTxBuilder.calcLockTime(utxos).get
+    val inputs = InputUtil.calcSequenceForInputs(utxos, Policy.isRBFEnabled)
+    val lockTime = TxUtil.calcLockTime(utxos).get
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
     val finalizer = NonInteractiveWithChangeFinalizer(
       utxos.toVector.map(_.inputInfo),
