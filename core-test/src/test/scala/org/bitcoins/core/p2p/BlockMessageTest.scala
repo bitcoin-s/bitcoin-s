@@ -1,11 +1,11 @@
 package org.bitcoins.core.p2p
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.testkit.core.gen.p2p.DataMessageGenerator
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-class BlockMessageTest extends BitcoinSUnitTest {
+class BlockMessageTest extends BitcoinSAsyncTest {
   it must "have serialization symmetry" in {
-    forAll(DataMessageGenerator.blockMessage) { block =>
+    forAllParallel(DataMessageGenerator.blockMessage) { block =>
       assert(block == BlockMessage.fromBytes(block.bytes))
     }
   }

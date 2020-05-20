@@ -1,14 +1,14 @@
 package org.bitcoins.core.protocol.blockchain
 
-import org.bitcoins.testkit.util.BitcoinSUnitTest
-import org.slf4j.LoggerFactory
+import org.bitcoins.testkit.core.gen.BlockchainElementsGenerator
+import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
 import scala.io.Source
 
 /**
   * Created by chris on 7/15/16.
   */
-class BlockTest extends BitcoinSUnitTest {
+class BlockTest extends BitcoinSAsyncTest {
 
   def timeBlockParsing[R](block: => R): Long = {
     val t0 = System.currentTimeMillis()
@@ -42,5 +42,13 @@ class BlockTest extends BitcoinSUnitTest {
     val lines = Source.fromURL(getClass.getResource(fileName)).mkString
     val time = timeBlockParsing(Block.fromHex(lines))
     assert(time <= 15000)
+  }
+
+  it must "have serialization symmetry" in {
+    forAllParallel(BlockchainElementsGenerator.block) { block =>
+      val result = Block(block.hex) == block
+      if (!result) logger.warn("block.hex: " + block.hex)
+      assert(result)
+    }
   }
 }
