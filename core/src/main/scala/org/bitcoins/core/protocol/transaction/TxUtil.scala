@@ -135,6 +135,14 @@ object TxUtil {
     loop(utxos, None)
   }
 
+  /** Inserts script signatures and (potentially) witness data to a given
+    * transaction using DummyECDigitalSignatures for all sigs in order
+    * to produce a transaction roughly the size of the expected fully signed
+    * transaction. Useful during fee estimation.
+    *
+    * Note that the resulting dummy-signed Transaction will have populated
+    * (dummy) witness data when applicable.
+    */
   def addDummySigs(utx: Transaction, inputInfos: Vector[InputInfo])(
       implicit ec: ExecutionContext): Future[Transaction] = {
     val dummyInputAndWitnnessFs = inputInfos.zipWithIndex.map {
@@ -225,6 +233,7 @@ object TxUtil {
     }
   }
 
+  /** Checks that no output is beneath the dust threshold */
   def sanityDustCheck(tx: Transaction): Try[Unit] = {
     val belowDustOutputs = tx.outputs
       .filterNot(_.scriptPubKey.asm.contains(OP_RETURN))

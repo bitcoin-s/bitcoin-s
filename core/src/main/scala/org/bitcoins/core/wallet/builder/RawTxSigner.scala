@@ -21,6 +21,12 @@ import org.bitcoins.core.wallet.utxo.{
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
+/** Transactions that have been finalized by a RawTxFinalizer are passed as inputs
+  * to a sign function here in order to generate fully signed transactions.
+  *
+  * In the future sign methods specific to multi-party protocols will be added
+  * here to support PSBT and signed transaction construction between multiple parties.
+  */
 object RawTxSigner extends BitcoinSLogger {
 
   def sign(txWithInfo: FinalizedTxWithSigningInfo, expectedFeeRate: FeeUnit)(
