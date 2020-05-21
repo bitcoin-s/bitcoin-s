@@ -210,7 +210,6 @@ sealed abstract class ECPublicKey extends BaseECKey {
       //transactions can have weird non strict der encoded digital signatures
       //bitcoin core implements this functionality here:
       //https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
-      //TODO: Implement functionality in Bitcoin Core linked above
       verifyWithBouncyCastle(data, signature)
     } else result
   }
