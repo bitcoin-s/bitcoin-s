@@ -14,21 +14,21 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.{
   NonInteractiveWithChangeFinalizer,
   RawTxBuilderWithFinalizer,
   RawTxSigner
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.utxo.TxoState.{
+  ConfirmedReceived,
+  PendingConfirmationsReceived
+}
 import org.bitcoins.core.wallet.utxo.{
   InputInfo,
   ScriptSignatureParams,
   TxoState
-}
-import org.bitcoins.core.wallet.utxo.TxoState.{
-  ConfirmedReceived,
-  PendingConfirmationsReceived
 }
 import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.keymanager.KeyManagerParams
@@ -41,7 +41,7 @@ import org.bitcoins.wallet.models.{SpendingInfoDb, _}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 abstract class Wallet
     extends WalletApi
@@ -207,16 +207,43 @@ abstract class Wallet
     spendingInfoDAO.updateAll(updated)
   }
 
+  override def unmarkUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
+    require(unreserved.isEmpty, s"Some utxos are not reserved, got $unreserved")
+
+    // unmark all utxos are reserved
+    val groupedUtxos = utxos
+      .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
+      .groupBy(_.blockHash)
+
+    val mempoolUtxos = Try(groupedUtxos(None)).getOrElse(Vector.empty)
+
+    // get the ones in blocks
+    val utxosInBlocks = groupedUtxos.map {
+      case (Some(hash), utxos) =>
+        Some(hash, utxos)
+      case (None, _) =>
+        None
+    }.flatten
+
+    for {
+      updatedMempoolUtxos <- spendingInfoDAO.updateAll(mempoolUtxos)
+      // update the confirmed ones
+      updatedBlockUtxos <- FutureUtil
+        .sequentially(utxosInBlocks.toVector) {
+          case (hash, utxos) =>
+            updateUtxoConfirmedStates(utxos, hash)
+        }
+    } yield updatedMempoolUtxos ++ updatedBlockUtxos.flatten
+  }
+
   /** @inheritdoc */
   def updateUtxoPendingStates(
       blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
     for {
       infos <- spendingInfoDAO.findAllPendingConfirmation
-      updatedInfos <- {
-        val updatedInfoFs =
-          infos.map(info => updateUtxoConfirmedState(info, blockHeader.hashBE))
-        Future.sequence(updatedInfoFs)
-      }
+      updatedInfos <- updateUtxoConfirmedStates(infos, blockHeader.hashBE)
     } yield updatedInfos
   }
 

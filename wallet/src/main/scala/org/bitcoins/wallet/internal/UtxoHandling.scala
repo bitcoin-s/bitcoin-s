@@ -17,9 +17,9 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.util.EitherUtil
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.bitcoins.wallet.api.{AddUtxoError, AddUtxoResult, AddUtxoSuccess}
 import org.bitcoins.wallet.models._
+import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -46,40 +46,46 @@ private[wallet] trait UtxoHandling extends WalletLogger {
   protected def updateUtxoConfirmedState(
       txo: SpendingInfoDb,
       blockHash: DoubleSha256DigestBE): Future[SpendingInfoDb] = {
+    updateUtxoConfirmedStates(Vector(txo), blockHash).map(_.head)
+  }
+
+  protected def updateUtxoConfirmedStates(
+      txos: Vector[SpendingInfoDb],
+      blockHash: DoubleSha256DigestBE): Future[Vector[SpendingInfoDb]] = {
     for {
       confsOpt <- chainQueryApi.getNumberOfConfirmations(blockHash)
-      stateChange <- {
+      stateChanges <- {
         confsOpt match {
           case None =>
-            Future.successful(txo)
+            Future.successful(txos)
           case Some(confs) =>
-            txo.state match {
-              case TxoState.PendingConfirmationsReceived |
-                  TxoState.DoesNotExist =>
-                if (confs >= walletConfig.requiredConfirmations) {
-                  spendingInfoDAO.update(
-                    txo.copyWithState(TxoState.ConfirmedReceived))
-                } else {
-                  Future.successful(
-                    txo.copyWithState(TxoState.PendingConfirmationsReceived))
-                }
-              case TxoState.PendingConfirmationsSpent =>
-                if (confs >= walletConfig.requiredConfirmations) {
-                  spendingInfoDAO.update(
-                    txo.copyWithState(TxoState.ConfirmedSpent))
-                } else {
-                  Future.successful(txo)
-                }
-              case TxoState.Reserved =>
-                // We should keep the utxo as reserved so it is not used in
-                // a future transaction that it should not be in
-                Future.successful(txo)
-              case TxoState.ConfirmedReceived | TxoState.ConfirmedSpent =>
-                Future.successful(txo)
+            val updatedTxos = txos.map { txo =>
+              txo.state match {
+                case TxoState.PendingConfirmationsReceived |
+                    TxoState.DoesNotExist =>
+                  if (confs >= walletConfig.requiredConfirmations) {
+                    txo.copyWithState(TxoState.ConfirmedReceived)
+                  } else {
+                    txo.copyWithState(TxoState.PendingConfirmationsReceived)
+                  }
+                case TxoState.PendingConfirmationsSpent =>
+                  if (confs >= walletConfig.requiredConfirmations) {
+                    txo.copyWithState(TxoState.ConfirmedSpent)
+                  } else {
+                    txo
+                  }
+                case TxoState.Reserved =>
+                  // We should keep the utxo as reserved so it is not used in
+                  // a future transaction that it should not be in
+                  txo
+                case TxoState.ConfirmedReceived | TxoState.ConfirmedSpent =>
+                  txo
+              }
             }
+            spendingInfoDAO.upsertAll(updatedTxos)
         }
       }
-    } yield stateChange
+    } yield stateChanges
   }
 
   /**

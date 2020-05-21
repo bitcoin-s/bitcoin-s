@@ -189,6 +189,9 @@ trait WalletApi extends WalletLogger {
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
 
+  def unmarkUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
+
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
 
