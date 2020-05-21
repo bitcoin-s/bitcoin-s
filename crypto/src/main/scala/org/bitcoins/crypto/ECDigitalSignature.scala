@@ -34,7 +34,8 @@ sealed abstract class ECDigitalSignature {
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     * @return the (r,s) values for the elliptic curve digital signature
     */
-  def decodeSignature: (BigInt, BigInt) = DERSignatureUtil.decodeSignature(this)
+  lazy val decodeSignature: (BigInt, BigInt) =
+    DERSignatureUtil.decodeSignature(this)
 
   /** Represents the r value found in a elliptic curve digital signature */
   def r: BigInt = {

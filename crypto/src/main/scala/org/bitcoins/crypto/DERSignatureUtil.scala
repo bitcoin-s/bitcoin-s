@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bouncycastle.asn1.{ASN1InputStream, ASN1Integer, DLSequence}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
@@ -61,39 +60,10 @@ sealed abstract class DERSignatureUtil {
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     */
   def decodeSignature(bytes: ByteVector): (BigInt, BigInt) = {
-    val asn1InputStream = new ASN1InputStream(bytes.toArray)
-    //TODO: this is nasty, is there any way to get rid of all this casting???
-    //TODO: Not 100% this is completely right for signatures that are incorrectly DER encoded
-    //the behavior right now is to return the defaults in the case the signature is not DER encoded
-    //https://stackoverflow.com/questions/2409618/how-do-i-decode-a-der-encoded-string-in-java
-    val seq: DLSequence = Try(
-      asn1InputStream.readObject.asInstanceOf[DLSequence]) match {
-      case Success(seq) => seq
-      case Failure(_)   => new DLSequence()
+    DERSignatureUtil.parseDERLax(bytes) match {
+      case Some((r, s)) => (r, s)
+      case None         => (0, 0)
     }
-    val default = new ASN1Integer(0)
-    val r: ASN1Integer = Try(seq.getObjectAt(0).asInstanceOf[ASN1Integer]) match {
-      case Success(r) =>
-        //this is needed for a bug inside of bouncy castle where zero length values throw an exception
-        //we need to treat these like zero
-        Try(r.getValue) match {
-          case Success(_) => r
-          case Failure(_) => default
-        }
-      case Failure(_) => default
-    }
-    val s: ASN1Integer = Try(seq.getObjectAt(1).asInstanceOf[ASN1Integer]) match {
-      case Success(s) =>
-        //this is needed for a bug inside of bouncy castle where zero length values throw an exception
-        //we need to treat these like zero
-        Try(s.getValue) match {
-          case Success(_) => s
-          case Failure(_) => default
-        }
-      case Failure(_) => default
-    }
-    asn1InputStream.close()
-    (r.getPositiveValue, s.getPositiveValue)
   }
 
   /**
@@ -234,6 +204,108 @@ sealed abstract class DERSignatureUtil {
           CryptoParams.curve.getN.subtract(signature.s.bigInteger))
     require(DERSignatureUtil.isLowS(sigLowS))
     sigLowS
+  }
+
+  /** Scala implementation of https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
+    *
+    * Parses correctly as well as poorly encoded DER signatures.
+    *
+    * "Supported violations include negative integers, excessive padding, garbage
+    * at the end, and overly long length descriptors."
+    *
+    * The signatures must still follow the following general format:
+    *
+    *     0x30 | total length | 0x02 | R length | [R] \ 0x02 | S length | [S]
+    *
+    * IMPORTANT: Do not use this without further validation when validating blocks
+    * because BIP 66 requires that new signatures are verified to be strict DER encodings.
+    */
+  def parseDERLax(input: ByteVector): Option[(BigInt, BigInt)] = {
+    val iterator = input.toIterable.iterator.buffered
+
+    // Can't use iterator.nextOption because it doesn't exist in scala 2.12
+    def nextOption(): Option[Byte] = {
+      if (iterator.hasNext) {
+        Some(iterator.next())
+      } else None
+    }
+
+    def nextByteMustBe(requiredByte: Byte): Option[Unit] = {
+      nextOption().flatMap { nextByte =>
+        if (nextByte == requiredByte) {
+          Some(())
+        } else None
+      }
+    }
+
+    def moveIterForward(steps: Int): Option[ByteVector] = {
+      (0 until steps)
+        .foldLeft(Option(ByteVector.empty)) {
+          case (bytesOpt, _) =>
+            bytesOpt.flatMap { bytesSoFar =>
+              nextOption().map(bytesSoFar.:+)
+            }
+        }
+    }
+
+    def processInteger(): Option[BigInt] = {
+      for {
+        // Check next byte exists and is 0x02
+        _ <- nextByteMustBe(0x02.toByte)
+
+        // Check next byte exists and process as integer length byte
+        lengthByteUnProcessed <- nextOption()
+        length <- {
+          if ((lengthByteUnProcessed & 0x80) != 0) {
+            var lenByte = lengthByteUnProcessed - 0x80
+
+            while (lenByte > 0 && iterator.hasNext && iterator.head == 0.toByte) {
+              iterator.next()
+              lenByte -= 1
+            }
+
+            if (lenByte >= 4) {
+              None
+            } else {
+              moveIterForward(lenByte).map(_.toInt(signed = false))
+            }
+          } else {
+            Some(lengthByteUnProcessed.toInt)
+          }
+        }
+
+        numBytes <- moveIterForward(length)
+
+        // Erase leading zeroes
+        numBytesWithoutLeadingZero = numBytes.dropWhile(_ == 0.toByte)
+
+        // If length > 32, then overflow
+        num <- if (numBytesWithoutLeadingZero.length <= 32) {
+          Some(BigInt(1, numBytesWithoutLeadingZero.toArray))
+        } else None
+      } yield num
+    }
+
+    for {
+      // Check first byte exists and is 0x30
+      _ <- nextByteMustBe(0x30.toByte)
+
+      // Check second byte exists and process as length byte
+      totalLengthByteUnProcessed <- nextOption()
+      _ <- {
+        if ((totalLengthByteUnProcessed & 0x80) != 0) {
+          val processedTotalLengthByte = totalLengthByteUnProcessed - 0x80
+          moveIterForward(processedTotalLengthByte)
+        } else {
+          Some(())
+        }
+      }
+
+      r <- processInteger()
+      s <- processInteger()
+    } yield {
+      (r, s)
+    }
   }
 }
 
