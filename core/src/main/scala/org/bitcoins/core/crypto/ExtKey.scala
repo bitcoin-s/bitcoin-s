@@ -7,7 +7,6 @@ import org.bitcoins.core.util._
 import org.bitcoins.crypto.{
   BaseECKey,
   BouncyCastleUtil,
-  BytesUtil,
   CryptoUtil,
   ECDigitalSignature,
   ECPrivateKey,

@@ -3,7 +3,8 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.core.bloom._
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest, ECPublicKey}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.{DoubleSha256Digest, ECPublicKey}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**

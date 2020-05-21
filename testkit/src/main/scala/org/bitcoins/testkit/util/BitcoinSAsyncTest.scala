@@ -198,7 +198,8 @@ trait BaseAsyncTest
 
   /** Runs all property based tests in parallel. This is a convinient optimization
     * for synchronous property based tests */
-  def forAllParallel[A](gen: Gen[A])(func: A => Assertion): Future[Assertion] = {
+  def forAllParallel[A](gen: Gen[A])(
+      func: A => Assertion): Future[Assertion] = {
     forAllAsync(gen) { a: A =>
       Future {
         func(a)

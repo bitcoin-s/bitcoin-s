@@ -13,7 +13,7 @@ import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.reserved.OP_NOP
 import org.bitcoins.core.script.splice.OP_SIZE
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP, OP_PICK, OP_SWAP}
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 

@@ -5,7 +5,6 @@ import java.math.BigInteger
 import org.bitcoins.core.number._
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.blockchain.BlockHeader.TargetDifficultyHelper
-import org.bitcoins.crypto.BytesUtil
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.math.BigInt

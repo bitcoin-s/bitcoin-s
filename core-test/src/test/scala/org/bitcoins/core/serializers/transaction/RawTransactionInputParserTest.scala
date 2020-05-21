@@ -5,8 +5,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionConstants,
   TransactionInput
 }
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import org.bitcoins.testkit.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector

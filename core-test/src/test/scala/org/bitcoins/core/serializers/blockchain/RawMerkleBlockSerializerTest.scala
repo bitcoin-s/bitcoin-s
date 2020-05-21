@@ -6,8 +6,8 @@ import org.bitcoins.core.protocol.blockchain.{
   MerkleBlock,
   PartialMerkleTree
 }
-import org.bitcoins.core.util.{Leaf, Node}
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
+import org.bitcoins.core.util.{BytesUtil, Leaf, Node}
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 

@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.protocol.script.{EmptyScriptWitness, ScriptWitness}
 import org.bitcoins.core.serializers.transaction.RawTransactionWitnessParser
-import org.bitcoins.core.util.SeqWrapper
-import org.bitcoins.crypto.{BytesUtil, NetworkElement}
+import org.bitcoins.core.util.{BytesUtil, SeqWrapper}
+import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
 /**

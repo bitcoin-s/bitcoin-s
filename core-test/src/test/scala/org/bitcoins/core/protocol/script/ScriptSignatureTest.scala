@@ -7,14 +7,15 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.testprotocol.SignatureHashTestCase
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
+  NonWitnessTransaction,
   Transaction,
   TransactionOutput,
   WitnessTransaction
 }
 import org.bitcoins.core.script.crypto.{HashType, SIGHASH_ALL}
 import org.bitcoins.core.serializers.script.RawScriptSignatureParser
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest, ECDigitalSignature}
+import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature}
 import org.bitcoins.testkit.util.TestUtil
 import org.scalatest.{FlatSpec, MustMatchers}
 import scodec.bits.ByteVector
@@ -147,7 +148,7 @@ class ScriptSignatureTest extends FlatSpec with MustMatchers {
       Transaction(testCase.transaction.hex) must be(testCase.transaction)
       val output = TransactionOutput(CurrencyUnits.zero, testCase.script)
       val txSigComponent = testCase.transaction match {
-        case btx: BaseTransaction =>
+        case btx: NonWitnessTransaction =>
           BaseTxSigComponent(btx,
                              testCase.inputIndex,
                              output,

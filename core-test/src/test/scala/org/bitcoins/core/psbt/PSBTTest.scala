@@ -56,7 +56,7 @@ class PSBTTest extends BitcoinSAsyncTest {
 
   it must "correctly update PSBTs' inputs" in {
     forAllAsync(PSBTGenerators.psbtToBeSigned)(_.flatMap {
-      case (fullPsbt, utxos) =>
+      case (fullPsbt, utxos, _) =>
         val emptyPsbt = PSBT.fromUnsignedTx(fullPsbt.transaction)
 
         val infoAndTxs = PSBTGenerators
@@ -93,7 +93,7 @@ class PSBTTest extends BitcoinSAsyncTest {
   it must "correctly construct and sign a PSBT" in {
     forAllAsync(PSBTGenerators.psbtToBeSigned) { psbtWithBuilderF =>
       psbtWithBuilderF.flatMap {
-        case (psbtNoSigs, utxos) =>
+        case (psbtNoSigs, utxos, _) =>
           val infos = utxos.toVector.zipWithIndex.map {
             case (utxo: ScriptSignatureParams[InputInfo], index) =>
               (index, utxo)
@@ -173,19 +173,17 @@ class PSBTTest extends BitcoinSAsyncTest {
         val maxFee = crediting - spending
         val fee = GenUtil.sample(CurrencyUnitGenerator.feeUnit(maxFee))
         for {
-          (psbt, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
+          (psbt, _, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
             finalized = false,
             creditingTxsInfo = creditingTxsInfo,
             destinations = destinations,
             changeSPK = changeSPK,
-            network = network,
             fee = fee)
-          (expected, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
+          (expected, _, _) <- PSBTGenerators.psbtAndBuilderFromInputs(
             finalized = true,
             creditingTxsInfo = creditingTxsInfo,
             destinations = destinations,
             changeSPK = changeSPK,
-            network = network,
             fee = fee)
         } yield {
           val finalizedPsbtOpt = psbt.finalizePSBT
@@ -198,8 +196,8 @@ class PSBTTest extends BitcoinSAsyncTest {
   it must "agree with TxBuilder.sign given UTXOSpendingInfos" in {
     forAllAsync(PSBTGenerators.finalizedPSBTWithBuilder) { psbtAndBuilderF =>
       for {
-        (psbt, builder) <- psbtAndBuilderF
-        signedTx <- builder.sign
+        (psbt, builder, fee) <- psbtAndBuilderF
+        signedTx <- builder.sign(fee)
       } yield {
         val txT = psbt.extractTransactionAndValidate
         assert(txT.isSuccess, txT.failed)

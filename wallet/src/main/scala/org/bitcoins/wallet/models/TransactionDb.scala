@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.script.EmptyScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   EmptyWitness,
+  NonWitnessTransaction,
   Transaction,
   TransactionInput,
   WitnessTransaction
@@ -51,7 +52,7 @@ object TransactionDb {
 
   def fromTransaction(tx: Transaction): TransactionDb = {
     val (unsignedTx, wTxIdBEOpt) = tx match {
-      case btx: BaseTransaction =>
+      case btx: NonWitnessTransaction =>
         val unsignedInputs = btx.inputs.map(
           input =>
             TransactionInput(input.previousOutput,

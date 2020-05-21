@@ -11,9 +11,9 @@ trait CryptoSignatureEvaluationFactory
   /** The current [[CryptoSignatureEvaluation]] operations. */
   override val operations =
     Vector(OP_CHECKMULTISIG,
-        OP_CHECKMULTISIGVERIFY,
-        OP_CHECKSIG,
-        OP_CHECKSIGVERIFY)
+           OP_CHECKMULTISIGVERIFY,
+           OP_CHECKSIG,
+           OP_CHECKSIGVERIFY)
 
 }
 
