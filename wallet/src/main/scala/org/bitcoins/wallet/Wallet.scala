@@ -128,7 +128,7 @@ abstract class Wallet
     } yield {
       allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        utxo.blockHash.isDefined
+        utxo.state == ConfirmedReceived
       }
     }
 
@@ -151,7 +151,7 @@ abstract class Wallet
     } yield {
       allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        utxo.blockHash.isEmpty
+        utxo.state == PendingConfirmationsReceived
       }
     }
 
