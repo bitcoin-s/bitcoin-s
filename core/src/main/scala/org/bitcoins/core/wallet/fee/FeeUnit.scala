@@ -82,3 +82,25 @@ object SatoshisPerVirtualByte {
   val zero: SatoshisPerVirtualByte = SatoshisPerVirtualByte(CurrencyUnits.zero)
   val one: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 }
+
+/**
+  * Weight is used to indicate how 'expensive' the transaction is on the blockchain.
+  * This use to be a simple calculation before segwit (BIP141). Each byte in the transaction
+  * counted as 4 'weight' units. Now with segwit, the
+  * [[org.bitcoins.core.protocol.transaction.TransactionWitness TransactionWitness]]
+  * is counted as 1 weight unit per byte,
+  * while other parts of the transaction (outputs, inputs, locktime etc) count as 4 weight units.
+  * As we add more witness versions, this may be subject to change.
+  * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#Transaction_size_calculations BIP 141]]
+  * [[https://github.com/bitcoin/bitcoin/blob/5961b23898ee7c0af2626c46d5d70e80136578d3/src/consensus/validation.h#L96]]
+  */
+case class SatoshisPerKW(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
+  override def calc(tx: Transaction): CurrencyUnit =
+    Satoshis((tx.weight * toLong / 1000))
+}
+
+object SatoshisPerKW {
+
+  val zero: SatoshisPerKW = SatoshisPerKW(CurrencyUnits.zero)
+  val one: SatoshisPerKW = SatoshisPerKW(Satoshis.one)
+}
