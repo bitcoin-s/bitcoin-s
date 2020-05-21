@@ -20,7 +20,7 @@ sealed abstract class RawSerializerHelper {
       bytes: ByteVector,
       constructor: ByteVector => T): (Seq[T], ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
-    val (_,payload) = bytes.splitAt(count.byteSize.toInt)
+    val (_, payload) = bytes.splitAt(count.byteSize.toInt)
     var counter = 0
     val b = Vector.newBuilder[T]
     @tailrec

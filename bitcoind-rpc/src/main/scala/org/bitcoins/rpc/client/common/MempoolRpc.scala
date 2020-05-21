@@ -99,15 +99,19 @@ trait MempoolRpc { self: Client =>
     getMemPoolEntry(txid.flip)
   }
 
-  def getMemPoolEntryOpt(txid: DoubleSha256Digest): Future[Option[GetMemPoolEntryResult]] = {
+  def getMemPoolEntryOpt(
+      txid: DoubleSha256Digest): Future[Option[GetMemPoolEntryResult]] = {
     getMemPoolEntryOpt(txid.flip)
   }
 
-  def getMemPoolEntryOpt(txid: DoubleSha256DigestBE): Future[Option[GetMemPoolEntryResult]] = {
-    getMemPoolEntry(txid).map(Some(_))
-      .recover { case _: BitcoindException.InvalidAddressOrKey =>
-      None
-    }
+  def getMemPoolEntryOpt(
+      txid: DoubleSha256DigestBE): Future[Option[GetMemPoolEntryResult]] = {
+    getMemPoolEntry(txid)
+      .map(Some(_))
+      .recover {
+        case _: BitcoindException.InvalidAddressOrKey =>
+          None
+      }
   }
 
   def getMemPoolInfo: Future[GetMemPoolInfoResult] = {

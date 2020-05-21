@@ -1,7 +1,7 @@
 package org.bitcoins.core.script
 
 import org.bitcoins.core.script.constant.ScriptConstant
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**

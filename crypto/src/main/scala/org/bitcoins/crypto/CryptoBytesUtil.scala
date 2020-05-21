@@ -7,7 +7,7 @@ import scala.math.BigInt
 /**
   * Created by chris on 2/26/16.
   */
-trait BytesUtil {
+trait CryptoBytesUtil {
 
   def decodeHex(hex: String): ByteVector = {
     if (hex.isEmpty) ByteVector.empty else ByteVector.fromHex(hex).get
@@ -43,7 +43,7 @@ trait BytesUtil {
   }
 
   def encodeHex(bigInt: BigInt): String =
-    BytesUtil.encodeHex(ByteVector(bigInt.toByteArray))
+    CryptoBytesUtil.encodeHex(ByteVector(bigInt.toByteArray))
 
   /** Tests if a given string is a hexadecimal string. */
   def isHex(str: String): Boolean = {
@@ -54,7 +54,7 @@ trait BytesUtil {
   /** Converts a two character hex string to its byte representation. */
   def hexToByte(hex: String): Byte = {
     require(hex.length == 2)
-    BytesUtil.decodeHex(hex).head
+    CryptoBytesUtil.decodeHex(hex).head
   }
 
   /** Flips the endianness of the give hex string. */
@@ -94,4 +94,4 @@ trait BytesUtil {
   }
 }
 
-object BytesUtil extends BytesUtil
+object CryptoBytesUtil extends CryptoBytesUtil

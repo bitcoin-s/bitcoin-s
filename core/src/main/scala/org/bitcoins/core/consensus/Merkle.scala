@@ -2,7 +2,7 @@ package org.bitcoins.core.consensus
 
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
+  NonWitnessTransaction,
   Transaction,
   WitnessTransaction
 }
@@ -94,8 +94,8 @@ trait Merkle extends BitcoinSLogger {
   def computeBlockWitnessMerkleTree(block: Block): MerkleTree = {
     val coinbaseWTxId = DoubleSha256Digest.empty
     val hashes = block.transactions.tail.map {
-      case wtx: WitnessTransaction => wtx.wTxId
-      case btx: BaseTransaction    => btx.txId
+      case wtx: WitnessTransaction    => wtx.wTxId
+      case btx: NonWitnessTransaction => btx.txId
     }
     build(coinbaseWTxId +: hashes)
   }

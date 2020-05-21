@@ -9,7 +9,8 @@ import org.bitcoins.core.protocol.ln.fee.{
   FeeBaseMSat,
   FeeProportionalMillionths
 }
-import org.bitcoins.crypto.{BytesUtil, ECPublicKey, NetworkElement}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.{ECPublicKey, NetworkElement}
 import scodec.bits.ByteVector
 
 /**

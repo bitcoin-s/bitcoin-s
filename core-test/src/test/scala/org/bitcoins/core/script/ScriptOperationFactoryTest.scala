@@ -8,7 +8,7 @@ import org.bitcoins.core.script.crypto.OP_RIPEMD160
 import org.bitcoins.core.script.locktime.OP_CHECKLOCKTIMEVERIFY
 import org.bitcoins.core.script.splice.OP_SUBSTR
 import org.bitcoins.core.script.stack.OP_TOALTSTACK
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 /**

@@ -25,7 +25,7 @@ import org.bitcoins.core.script.result.{
 }
 import org.bitcoins.core.script.ExecutionInProgressScriptProgram
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.crypto.{BytesUtil, ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

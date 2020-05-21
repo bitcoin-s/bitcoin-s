@@ -5,7 +5,6 @@ import java.time.Instant
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
-import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
@@ -16,9 +15,17 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.wallet.builder.{
+  NonInteractiveWithChangeFinalizer,
+  RawTxBuilderWithFinalizer,
+  RawTxSigner
+}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.core.wallet.utxo.{
+  InputInfo,
+  ScriptSignatureParams,
+  TxoState
+}
 import org.bitcoins.core.wallet.utxo.TxoState.{
   ConfirmedReceived,
   PendingConfirmationsReceived
@@ -213,17 +220,23 @@ abstract class Wallet
     } yield updatedInfos
   }
 
-  /** Takes a [[BitcoinTxBuilder]] for a transaction to be sent, and completes it by:
-    * signing the transaction, then correctly processing the it and logging it
+  /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and completes it by:
+    * finalizing and signing the transaction, then correctly processing and logging it
     */
-  private def finishSend(txBuilder: BitcoinTxBuilder): Future[Transaction] = {
+  private def finishSend(
+      txBuilder: RawTxBuilderWithFinalizer,
+      utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
+      sentAmount: CurrencyUnit,
+      feeRate: FeeUnit): Future[Transaction] = {
     for {
-      signed <- txBuilder.sign
+      utx <- txBuilder.buildTx()
+      signed <- RawTxSigner.sign(utx, utxoInfos, feeRate)
       ourOuts <- findOurOuts(signed)
+      creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)
       _ <- processOurTransaction(transaction = signed,
-                                 feeRate = txBuilder.feeRate,
-                                 inputAmount = txBuilder.creditingAmount,
-                                 sentAmount = txBuilder.destinationAmount,
+                                 feeRate = feeRate,
+                                 inputAmount = creditingAmount,
+                                 sentAmount = sentAmount,
                                  blockHashOpt = None)
     } yield {
       logger.debug(
@@ -259,13 +272,13 @@ abstract class Wallet
       changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
 
       output = TransactionOutput(amount, address.scriptPubKey)
-      txBuilder <- BitcoinTxBuilder(
+      txBuilder = NonInteractiveWithChangeFinalizer.txBuilderFrom(
         Vector(output),
         utxos,
         feeRate,
-        changeAddr.scriptPubKey,
-        networkParameters.asInstanceOf[BitcoinNetwork])
-      tx <- finishSend(txBuilder)
+        changeAddr.scriptPubKey)
+
+      tx <- finishSend(txBuilder, utxos, amount, feeRate)
     } yield tx
   }
 
@@ -282,14 +295,14 @@ abstract class Wallet
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
-      txBuilder <- fundRawTransactionInternal(
+      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
         destinations = Vector(destination),
         feeRate = feeRate,
         fromAccount = fromAccount,
         keyManagerOpt = Some(keyManager),
         coinSelectionAlgo = algo)
 
-      tx <- finishSend(txBuilder)
+      tx <- finishSend(txBuilder, utxoInfos, amount, feeRate)
     } yield tx
   }
 
@@ -355,12 +368,14 @@ abstract class Wallet
       fromAccount: AccountDb,
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
-      txBuilder <- fundRawTransactionInternal(destinations = outputs,
-                                              feeRate = feeRate,
-                                              fromAccount = fromAccount,
-                                              keyManagerOpt = Some(keyManager),
-                                              markAsReserved = reserveUtxos)
-      tx <- finishSend(txBuilder)
+      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
+        destinations = outputs,
+        feeRate = feeRate,
+        fromAccount = fromAccount,
+        keyManagerOpt = Some(keyManager),
+        markAsReserved = reserveUtxos)
+      sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate)
     } yield tx
   }
 

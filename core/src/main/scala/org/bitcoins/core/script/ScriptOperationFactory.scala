@@ -9,8 +9,7 @@ import org.bitcoins.core.script.locktime.LocktimeOperation
 import org.bitcoins.core.script.reserved.ReservedOperation
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import scodec.bits.ByteVector
 
 /**

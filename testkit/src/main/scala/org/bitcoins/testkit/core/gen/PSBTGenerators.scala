@@ -1,19 +1,25 @@
 package org.bitcoins.testkit.core.gen
 
-import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
+  InputUtil,
   Transaction,
-  TransactionOutput
+  TransactionOutput,
+  TxUtil
 }
 import org.bitcoins.core.psbt.GlobalPSBTRecord.Version
 import org.bitcoins.core.psbt.PSBT.SpendingInfoAndNonWitnessTxs
 import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.wallet.builder.{
+  FinalizedTxWithSigningInfo,
+  NonInteractiveWithChangeFinalizer,
+  RawTxBuilder
+}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 import org.scalacheck.Gen
@@ -146,10 +152,10 @@ object PSBTGenerators {
   }
 
   def psbtToBeSigned(implicit ec: ExecutionContext): Gen[
-    Future[(PSBT, Seq[ScriptSignatureParams[InputInfo]])]] = {
+    Future[(PSBT, Seq[ScriptSignatureParams[InputInfo]], FeeUnit)]] = {
     psbtWithBuilder(finalized = false).map { psbtAndBuilderF =>
       psbtAndBuilderF.flatMap {
-        case (psbt, builder) =>
+        case (psbt, FinalizedTxWithSigningInfo(_, infos), fee) =>
           val newInputsMaps = psbt.inputMaps.map { map =>
             InputPSBTMap(map.elements.filterNot(element =>
               PSBTInputKeyId.fromBytes(element.key) == PartialSignatureKeyId))
@@ -157,7 +163,8 @@ object PSBTGenerators {
 
           Future.successful(
             PSBT(psbt.globalMap, newInputsMaps, psbt.outputMaps),
-            builder.utxos)
+            infos,
+            fee)
       }
     }
   }
@@ -189,14 +196,21 @@ object PSBTGenerators {
       creditingTxsInfo: Seq[ScriptSignatureParams[InputInfo]],
       destinations: Seq[TransactionOutput],
       changeSPK: ScriptPubKey,
-      network: BitcoinNetwork,
-      fee: FeeUnit)(
-      implicit ec: ExecutionContext): Future[(PSBT, BitcoinTxBuilder)] = {
-    val builderF =
-      BitcoinTxBuilder(destinations, creditingTxsInfo, fee, changeSPK, network)
+      fee: FeeUnit)(implicit ec: ExecutionContext): Future[
+    (PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
+    val lockTime = TxUtil.calcLockTime(creditingTxsInfo).get
+    val inputs =
+      InputUtil.calcSequenceForInputs(creditingTxsInfo, Policy.isRBFEnabled)
+
+    val builder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
+    val finalizer = NonInteractiveWithChangeFinalizer(
+      creditingTxsInfo.toVector.map(_.inputInfo),
+      fee,
+      changeSPK)
+    builder.setFinalizer(finalizer)
+
     for {
-      builder <- builderF
-      unsignedTx <- builder.unsignedTx
+      unsignedTx <- builder.setFinalizer(finalizer).buildTx()
 
       orderedTxInfos = spendingInfoAndNonWitnessTxsFromSpendingInfos(
         unsignedTx,
@@ -209,15 +223,16 @@ object PSBTGenerators {
           PSBT.fromUnsignedTxAndInputs(unsignedTx, orderedTxInfos)
         }
       }
-    } yield (psbt, builder)
+    } yield (psbt,
+             FinalizedTxWithSigningInfo(unsignedTx, creditingTxsInfo.toVector),
+             fee)
   }
 
-  def psbtWithBuilder(finalized: Boolean)(
-      implicit ec: ExecutionContext): Gen[Future[(PSBT, BitcoinTxBuilder)]] = {
+  def psbtWithBuilder(finalized: Boolean)(implicit ec: ExecutionContext): Gen[
+    Future[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)]] = {
     for {
       (creditingTxsInfo, destinations) <- CreditingTxGen.inputsAndOutputs()
       (changeSPK, _) <- ScriptGenerators.scriptPubKey
-      network <- ChainParamsGenerator.bitcoinNetworkParams
       maxFee = {
         val crediting =
           creditingTxsInfo.foldLeft(0L)(_ + _.amount.satoshis.toLong)
@@ -230,7 +245,6 @@ object PSBTGenerators {
                                creditingTxsInfo = creditingTxsInfo,
                                destinations = destinations,
                                changeSPK = changeSPK,
-                               network = network,
                                fee = fee)
     }
   }
@@ -240,12 +254,11 @@ object PSBTGenerators {
       outputGen: CurrencyUnit => Gen[Seq[(TransactionOutput, ScriptPubKey)]] =
         TransactionGenerators.smallP2SHOutputs)(
       implicit ec: ExecutionContext): Gen[
-    Future[(PSBT, BitcoinTxBuilder, Seq[ScriptPubKey])]] = {
+    Future[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])]] = {
     for {
       (creditingTxsInfo, outputs) <- CreditingTxGen.inputsAndP2SHOutputs(
         destinationGenerator = outputGen)
       changeSPK <- ScriptGenerators.scriptPubKey
-      network <- ChainParamsGenerator.bitcoinNetworkParams
       maxFee = {
         val destinations = outputs.map(_._1)
         val crediting =
@@ -259,7 +272,6 @@ object PSBTGenerators {
                                            creditingTxsInfo = creditingTxsInfo,
                                            destinations = outputs.map(_._1),
                                            changeSPK = changeSPK._1,
-                                           network = network,
                                            fee = fee)
 
       pAndB.map(p => (p._1, p._2, outputs.map(_._2)))
@@ -268,12 +280,12 @@ object PSBTGenerators {
 
   def psbtWithBuilderAndP2WSHOutputs(finalized: Boolean)(
       implicit ec: ExecutionContext): Gen[
-    Future[(PSBT, BitcoinTxBuilder, Seq[ScriptPubKey])]] =
+    Future[(PSBT, FinalizedTxWithSigningInfo, Seq[ScriptPubKey])]] =
     psbtWithBuilderAndP2SHOutputs(finalized,
                                   TransactionGenerators.smallP2WSHOutputs)
 
-  def finalizedPSBTWithBuilder(
-      implicit ec: ExecutionContext): Gen[Future[(PSBT, BitcoinTxBuilder)]] = {
+  def finalizedPSBTWithBuilder(implicit ec: ExecutionContext): Gen[
+    Future[(PSBT, FinalizedTxWithSigningInfo, FeeUnit)]] = {
     psbtWithBuilder(finalized = true)
   }
 

@@ -1,7 +1,8 @@
 package org.bitcoins.core.serializers.blockchain
 
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 

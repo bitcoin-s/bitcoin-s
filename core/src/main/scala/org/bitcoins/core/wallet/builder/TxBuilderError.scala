@@ -1,5 +1,7 @@
 package org.bitcoins.core.wallet.builder
 
+import org.bitcoins.core.protocol.transaction.TransactionOutput
+
 import scala.util.Failure
 
 /**
@@ -183,8 +185,10 @@ object TxBuilderError {
 
   /** Means we have a output on this transaction below
     * [[org.bitcoins.core.policy.Policy.dustThreshold Policy.dustThreshold]] */
-  val OutputBelowDustThreshold = Failure(new IllegalArgumentException(
-    "The p2p network discourages outputs below the dustThreshold, this tx won't be relayed"))
+  def OutputBelowDustThreshold(
+      belowDustOutputs: Seq[TransactionOutput]): Failure[Nothing] =
+    Failure(new IllegalArgumentException(
+      s"The p2p network discourages outputs below the dustThreshold, $belowDustOutputs, this tx won't be relayed"))
 
   val UnknownError = Failure(new IllegalArgumentException)
 }

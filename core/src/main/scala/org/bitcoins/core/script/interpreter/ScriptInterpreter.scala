@@ -24,8 +24,7 @@ import org.bitcoins.core.script.reserved._
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.splice._
 import org.bitcoins.core.script.stack._
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -1160,7 +1159,7 @@ sealed abstract class ScriptInterpreter extends BitcoinSLogger {
         b.transaction match {
           case wtx: WitnessTransaction =>
             wtx.witness(txSigComponent.inputIndex.toInt).stack.nonEmpty
-          case _: BaseTransaction => false
+          case _: NonWitnessTransaction => false
         }
       case r: WitnessTxSigComponentRebuilt =>
         r.transaction.witness(txSigComponent.inputIndex.toInt).stack.nonEmpty

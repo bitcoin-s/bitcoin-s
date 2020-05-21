@@ -7,6 +7,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
+  NonWitnessTransaction,
   Transaction,
   TransactionOutput
 }
@@ -62,7 +63,7 @@ sealed trait GlobalPSBTRecord extends PSBTRecord {
 
 object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
   import org.bitcoins.core.psbt.PSBTGlobalKeyId._
-  case class UnsignedTransaction(transaction: BaseTransaction)
+  case class UnsignedTransaction(transaction: NonWitnessTransaction)
       extends GlobalPSBTRecord {
     require(
       transaction.inputs.forall(_.scriptSignature == EmptyScriptSignature),

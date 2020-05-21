@@ -18,7 +18,6 @@ import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.util._
 import org.bitcoins.crypto.{
-  BytesUtil,
   CryptoUtil,
   DoubleSha256Digest,
   ECPublicKey,

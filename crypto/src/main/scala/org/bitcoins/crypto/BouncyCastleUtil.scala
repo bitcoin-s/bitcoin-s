@@ -57,7 +57,7 @@ object BouncyCastleUtil {
     val pubBytes = ByteVector(point.getEncoded(privateKey.isCompressed))
     require(
       ECPublicKey.isFullyValid(pubBytes),
-      s"Bouncy Castle failed to generate a valid public key, got: ${BytesUtil
+      s"Bouncy Castle failed to generate a valid public key, got: ${CryptoBytesUtil
         .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }

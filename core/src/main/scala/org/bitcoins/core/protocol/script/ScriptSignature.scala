@@ -4,7 +4,7 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.utxo.ConditionalPath
-import org.bitcoins.crypto.{BytesUtil, ECDigitalSignature, ECPublicKey}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
 import scala.util.{Failure, Success, Try}
 
@@ -125,7 +125,8 @@ object P2PKHScriptSignature extends ScriptFactory[P2PKHScriptSignature] {
              _: ScriptConstant,
              _: BytesToPushOntoStack,
              z: ScriptConstant) =>
-      if ((z.bytes.length == 33 || z.bytes.length == 65) && ECPublicKey.isFullyValid(z.bytes)) true
+      if ((z.bytes.length == 33 || z.bytes.length == 65) && ECPublicKey
+            .isFullyValid(z.bytes)) true
       else !P2SHScriptSignature.isRedeemScript(z)
     case _ => false
   }

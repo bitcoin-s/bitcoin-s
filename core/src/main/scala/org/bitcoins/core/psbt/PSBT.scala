@@ -11,7 +11,6 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto.{
@@ -582,7 +581,7 @@ case class PSBT(
                   new RuntimeException(
                     s"Input $index was invalid: $inputResult"))
               }
-            case (Some(_), _: BaseTransaction) =>
+            case (Some(_), _: NonWitnessTransaction) =>
               Failure(new RuntimeException(
                 s"Extracted program is not witness transaction, but input $index has WitnessUTXO record"))
             case (None, _) =>
@@ -647,7 +646,7 @@ case class PSBT(
                            witness)
       } else {
         transaction match {
-          case btx: BaseTransaction =>
+          case btx: NonWitnessTransaction =>
             BaseTransaction(btx.version, newInputs, btx.outputs, btx.lockTime)
           case wtx: WitnessTransaction =>
             WitnessTransaction(wtx.version,
@@ -761,7 +760,7 @@ object PSBT extends Factory[PSBT] {
     val btx = unsignedTx match {
       case wtx: WitnessTransaction =>
         BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime)
-      case base: BaseTransaction => base
+      case base: NonWitnessTransaction => base
     }
     val globalMap = GlobalPSBTMap(
       Vector(GlobalPSBTRecord.UnsignedTransaction(btx)))
@@ -829,11 +828,11 @@ object PSBT extends Factory[PSBT] {
       spendingInfoAndNonWitnessTxs.matchesInputs(unsignedTx.inputs),
       "NewSpendingInfos must correspond to transaction inputs"
     )
-    val emptySigTx = BitcoinTxBuilder.emptyAllScriptSigs(unsignedTx)
+    val emptySigTx = TxUtil.emptyAllScriptSigs(unsignedTx)
     val btx = emptySigTx match {
       case wtx: WitnessTransaction =>
         BaseTransaction(wtx.version, wtx.inputs, wtx.outputs, wtx.lockTime)
-      case base: BaseTransaction => base
+      case base: NonWitnessTransaction => base
     }
 
     val globalMap = GlobalPSBTMap(

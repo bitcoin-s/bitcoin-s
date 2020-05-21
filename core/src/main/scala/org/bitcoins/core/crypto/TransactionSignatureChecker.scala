@@ -8,13 +8,8 @@ import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.ScriptErrorWitnessPubKeyType
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
-import org.bitcoins.crypto.{
-  BytesUtil,
-  DERSignatureUtil,
-  ECDigitalSignature,
-  ECPublicKey
-}
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.crypto.{DERSignatureUtil, ECDigitalSignature, ECPublicKey}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec

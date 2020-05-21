@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.crypto.{BytesUtil, ECDigitalSignature, ECPublicKey}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 import org.bitcoins.testkit.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 

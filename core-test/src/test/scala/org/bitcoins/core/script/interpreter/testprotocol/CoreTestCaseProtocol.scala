@@ -6,8 +6,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.script.result.ScriptResult
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil}
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.{BitcoinSLogger, BitcoinScriptUtil, BytesUtil}
 import scodec.bits.ByteVector
 import spray.json._
 
