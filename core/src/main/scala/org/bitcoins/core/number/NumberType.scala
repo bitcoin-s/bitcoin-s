@@ -1,7 +1,7 @@
 package org.bitcoins.core.number
 
 import org.bitcoins.core.util.{BytesUtil, NumberUtil}
-import org.bitcoins.crypto.{Factory, NetworkElement}
+import org.bitcoins.crypto.{CryptoBytesUtil, Factory, NetworkElement}
 import scodec.bits.{ByteOrdering, ByteVector}
 
 import scala.util.{Failure, Success, Try}
@@ -144,7 +144,6 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   override def apply: A => UInt64 = UInt64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
 
-  private val Z = "0"
   /**
     * Converts a [[BigInt]] to a 8 byte hex representation.
     * [[BigInt]] will only allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex representation 01
@@ -159,16 +158,8 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
       //means that encodeHex(BigInt) padded an extra byte, giving us 9 bytes instead of 8
       hex.slice(2, hex.length)
     } else {
-      //0 until 16 - hex.length
-      val builder = new StringBuilder
       val needed = 16 - hex.length
-      var counter = 0
-      while (counter < needed) {
-        builder.append(Z)
-        counter+=1
-      }
-      builder.addAll(hex)
-      builder.result()
+      CryptoBytesUtil.addPadding(needed,hex)
     }
   }
 }

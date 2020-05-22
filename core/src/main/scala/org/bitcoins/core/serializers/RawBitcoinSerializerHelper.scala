@@ -16,7 +16,7 @@ sealed abstract class RawSerializerHelper {
     * Used parse a byte sequence to a Seq[TransactionInput], Seq[TransactionOutput], etc
     * Makes sure that we parse the correct amount of elements
     */
-  def parseCmpctSizeUIntSeq[T <: NetworkElement](
+  final def parseCmpctSizeUIntSeq[T <: NetworkElement](
       bytes: ByteVector,
       constructor: ByteVector => T): (Seq[T], ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
@@ -47,7 +47,7 @@ sealed abstract class RawSerializerHelper {
   }
 
   /** Writes a Seq[TransactionInput]/Seq[TransactionOutput]/Seq[Transaction] -> ByteVector */
-  def writeCmpctSizeUInt[T](
+  final def writeCmpctSizeUInt[T](
       ts: Seq[T],
       serializer: T => ByteVector): ByteVector = {
     val serialized = write(ts, serializer)
@@ -56,14 +56,14 @@ sealed abstract class RawSerializerHelper {
   }
 
   /** Serializes a [[scala.Seq Seq]] of [[NetworkElement]] to a [[scodec.bits.ByteVector]] */
-  def writeNetworkElements[T <: NetworkElement](ts: Seq[T]): ByteVector = {
+  final def writeNetworkElements[T <: NetworkElement](ts: Seq[T]): ByteVector = {
     val f = { t: T =>
       t.bytes
     }
     write(ts, f)
   }
 
-  def write[T](ts: Seq[T], serializer: T => ByteVector): ByteVector = {
+  final def write[T](ts: Seq[T], serializer: T => ByteVector): ByteVector = {
     ts.foldLeft(ByteVector.empty) {
       case (accum, t) =>
         accum ++ serializer(t)
