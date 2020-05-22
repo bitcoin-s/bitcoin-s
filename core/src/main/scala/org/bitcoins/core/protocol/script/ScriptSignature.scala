@@ -7,7 +7,7 @@ import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
   * Created by chris on 12/26/15.
@@ -239,27 +239,23 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
 
   /** Detects if the given script token is a redeem script */
   def isRedeemScript(token: ScriptToken): Boolean = {
-    val redeemScriptTry: Try[ScriptPubKey] = parseRedeemScript(token)
-    redeemScriptTry match {
-      case Success(redeemScript) =>
-        redeemScript match {
-          case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
-              _: P2SHScriptPubKey | _: P2PKScriptPubKey |
-              _: P2PKWithTimeoutScriptPubKey | _: ConditionalScriptPubKey |
-              _: CLTVScriptPubKey | _: CSVScriptPubKey |
-              _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
-            true
-          case _: NonStandardScriptPubKey | _: WitnessCommitment => false
-          case EmptyScriptPubKey                                 => false
-        }
-      case Failure(_) => false
+    val redeemScript: ScriptPubKey = parseRedeemScript(token)
+    redeemScript match {
+      case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
+          _: P2SHScriptPubKey | _: P2PKScriptPubKey |
+          _: P2PKWithTimeoutScriptPubKey | _: ConditionalScriptPubKey |
+          _: CLTVScriptPubKey | _: CSVScriptPubKey |
+          _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+        true
+      case _: NonStandardScriptPubKey | _: WitnessCommitment => false
+      case EmptyScriptPubKey                                 => false
     }
   }
 
   /** Parses a redeem script from the given script token */
-  def parseRedeemScript(scriptToken: ScriptToken): Try[ScriptPubKey] = {
+  def parseRedeemScript(scriptToken: ScriptToken): ScriptPubKey = {
     val asm = ScriptParser.fromBytes(scriptToken.bytes)
-    val redeemScript: Try[ScriptPubKey] = Try(ScriptPubKey(asm))
+    val redeemScript:ScriptPubKey = ScriptPubKey.fromAsm(asm)
     redeemScript
   }
 }
