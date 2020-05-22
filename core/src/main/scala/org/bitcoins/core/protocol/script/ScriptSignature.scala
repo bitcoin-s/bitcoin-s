@@ -330,7 +330,7 @@ object MultiSignatureScriptSignature
         if (firstTokenIsScriptNumberOperation) {
           //avoid doing this computation unless we think it need to be done
           //fail fast
-          isPushOpsOrScriptConstants(asm)
+          isPushOpsOrScriptConstants(asm.tail)
         } else {
           false
         }
@@ -341,7 +341,7 @@ object MultiSignatureScriptSignature
     * one of the elements is NOT [[ScriptConstant]] or a push operation */
   @tailrec
   private def isPushOpsOrScriptConstants(asm: Seq[ScriptToken]): Boolean = {
-    asm.tail match {
+    asm match {
       case Nil => true
       case h +: t =>
         if (h.isInstanceOf[ScriptConstant] || StackPushOperationFactory
