@@ -60,6 +60,7 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
   lazy val toSatPerByte: SatoshisPerByte = toSatPerByteExact
 
+  // Same as bitcoin-core https://github.com/bitcoin/bitcoin/blob/b5c423c48e094bd098e11c3d1f57acae7502a4da/src/policy/feerate.cpp#L23
   /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
   override def calc(tx: Transaction): CurrencyUnit =
     Satoshis(tx.byteSize * toLong / 1000)
