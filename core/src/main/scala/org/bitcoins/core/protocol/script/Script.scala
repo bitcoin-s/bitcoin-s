@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.NetworkElement
 import scodec.bits.ByteVector
 
@@ -24,7 +25,7 @@ abstract class Script extends NetworkElement {
     * for the [[org.bitcoins.core.protocol.CompactSizeUInt]] in the script
     */
   val asmBytes: ByteVector = {
-    asm.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    BytesUtil.toByteVector(asm)
   }
 
   /** The size of the script, this is used for network serialization */
