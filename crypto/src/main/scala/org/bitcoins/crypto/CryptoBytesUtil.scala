@@ -80,7 +80,7 @@ trait CryptoBytesUtil {
       builder.append(Z)
       counter+=1
     }
-    builder.addAll(hex)
+    builder.append(hex)
     builder.result()
   }
 
