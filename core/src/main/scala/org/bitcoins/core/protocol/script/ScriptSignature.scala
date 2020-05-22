@@ -6,7 +6,6 @@ import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
-import scala.annotation.tailrec
 import scala.util.Try
 
 /**
@@ -21,7 +20,6 @@ import scala.util.Try
   * while under Policy only OP_TRUE is True.
   */
 sealed abstract class ScriptSignature extends Script {
-
   /**
     * The digital signatures contained inside of the script signature
     * p2pkh script signatures only have one sig
@@ -335,18 +333,9 @@ object MultiSignatureScriptSignature
 
   /** Iterates through the given given script tokens and return false if
     * one of the elements is NOT [[ScriptConstant]] or a push operation */
-  @tailrec
   private def isPushOpsOrScriptConstants(asm: Seq[ScriptToken]): Boolean = {
-    asm match {
-      case Nil => true
-      case h +: t =>
-        if (h.isInstanceOf[ScriptConstant] || StackPushOperationFactory
-          .isPushOperation(h)) {
-          isPushOpsOrScriptConstants(t)
-        } else {
-          false
-        }
-    }
+    asm.forall(token => token.isInstanceOf[ScriptConstant] ||
+      StackPushOperationFactory.isPushOperation(token))
   }
 }
 

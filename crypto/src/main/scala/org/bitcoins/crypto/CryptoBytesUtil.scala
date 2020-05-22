@@ -73,10 +73,10 @@ trait CryptoBytesUtil {
     * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
     * 00000001 instead of just 1.
     */
-  final def addPadding(charactersNeeded: Int, hex: String): String = {
+  final def addPadding(paddingNeeded: Int, hex: String): String = {
     val builder = new StringBuilder
     var counter = 0
-    while (counter < charactersNeeded) {
+    while (counter < paddingNeeded) {
       builder.append(Z)
       counter+=1
     }
