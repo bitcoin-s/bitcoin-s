@@ -23,12 +23,11 @@ class DLCTestVectorTest extends BitcoinSAsyncTest {
     val vecResult = DLCTestVectorGenerator.readFromDefaultTestFile()
     assert(vecResult.isSuccess)
 
-    val testsF = Future.sequence(vecResult.get.map(_.test()))
-
-    testsF.map { tests =>
-      tests.foreach(testResult => assert(testResult))
-
-      succeed
+    vecResult.get.foldLeft(Future.successful(succeed)) {
+      case (assertF, testVec) =>
+        assertF.flatMap { _ =>
+          testVec.test().map(assert(_))
+        }
     }
   }
 }

@@ -11,7 +11,6 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{Bech32Address, BlockStamp}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoSingle
 import org.bitcoins.crypto._
 import org.bitcoins.dlc._
 import org.bitcoins.wallet.models._
@@ -132,18 +131,17 @@ abstract class DLCWallet extends Wallet {
     for {
       accountOpt <- accountDAO.findByAccount(dlc.account)
       account = accountOpt.get
-      txBuilder <- fundRawTransactionInternal(
+      (txBuilder, spendingInfos) <- fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = feeRate,
         fromAccount = account,
         keyManagerOpt = Some(keyManager),
         markAsReserved = true
       )
-      utxos = txBuilder.utxoMap
-        .map(utxo => OutputReference(utxo._1, utxo._2.output))
-        .toVector
+      utxos = spendingInfos.map(_.outputReference)
 
-      changeSPK = txBuilder.changeSPK.asInstanceOf[WitnessScriptPubKey]
+      changeSPK = txBuilder.finalizer.changeSPK
+        .asInstanceOf[WitnessScriptPubKey]
       network = networkParameters.asInstanceOf[BitcoinNetwork]
       changeAddr = Bech32Address(changeSPK, network)
 
@@ -229,7 +227,7 @@ abstract class DLCWallet extends Wallet {
       collateral: CurrencyUnit,
       offer: DLCOffer): Future[DLCAccept] = {
     for {
-      txBuilder <- fundRawTransactionInternal(
+      (txBuilder, spendingInfos) <- fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = offer.feeRate,
         fromAccount = account,
@@ -238,15 +236,9 @@ abstract class DLCWallet extends Wallet {
       )
       network = networkParameters.asInstanceOf[BitcoinNetwork]
 
-      spendingInfos = txBuilder.utxos.toVector
-        .flatMap(_.toSingles)
-        .asInstanceOf[Vector[BitcoinUTXOSpendingInfoSingle]]
+      utxos = spendingInfos.map(_.outputReference)
 
-      utxos = txBuilder.utxoMap
-        .map(utxo => OutputReference(utxo._1, utxo._2.output))
-        .toVector
-
-      changeSPK = txBuilder.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
+      changeSPK = txBuilder.finalizer.changeSPK.asInstanceOf[P2WPKHWitnessSPKV0]
       changeAddr = Bech32Address(changeSPK, network)
 
       client = DLCClient.fromOffer(
@@ -351,13 +343,13 @@ abstract class DLCWallet extends Wallet {
                                                   isInitiator = true)
       spendingInfoDbs <- listUtxos(fundingInputs.map(_.outPoint))
       spendingInfos = spendingInfoDbs.flatMap(
-        _.toUTXOSpendingInfo(keyManager).toSingles)
+        _.toUTXOInfo(keyManager).toSingles)
       client = DLCClient.fromOfferAndAccept(
         offer.toDLCOffer(fundingInputs.map(_.toOutputReference)),
         accept,
         keyManager.rootExtPrivKey.deriveChildPrivKey(dlc.account),
         dlc.keyIndex,
-        spendingInfos,
+        spendingInfos.map(_.toScriptSignatureParams),
         offer.network
       )
       cetSigs <- client.createCETSigs
@@ -530,7 +522,7 @@ abstract class DLCWallet extends Wallet {
     }
 
     val utxosF = listUtxos(setupMsg.fundingInputs.map(_.outPoint))
-      .map(_.map(info => info.toUTXOSpendingInfo(keyManager)))
+      .map(_.map(info => info.toUTXOInfo(keyManager)))
 
     utxosF.map { fundingUtxos =>
       val timeouts = DLCTimeouts(dlcOffer.penaltyTimeout,
@@ -556,7 +548,7 @@ abstract class DLCWallet extends Wallet {
         remotePubKeys = remoteSetupMsg.pubKeys,
         input = setupMsg.totalCollateral,
         remoteInput = remoteSetupMsg.totalCollateral,
-        fundingUtxos = fundingUtxos.flatMap(_.toSingles),
+        fundingUtxos = fundingUtxos,
         remoteFundingInputs = remoteSetupMsg.fundingInputs,
         timeouts = timeouts,
         feeRate = dlcOffer.feeRate,

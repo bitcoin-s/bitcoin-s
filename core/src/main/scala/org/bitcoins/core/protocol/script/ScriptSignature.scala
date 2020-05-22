@@ -20,6 +20,7 @@ import scala.util.Try
   * while under Policy only OP_TRUE is True.
   */
 sealed abstract class ScriptSignature extends Script {
+
   /**
     * The digital signatures contained inside of the script signature
     * p2pkh script signatures only have one sig
@@ -242,8 +243,8 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
       case _: P2PKHScriptPubKey | _: MultiSignatureScriptPubKey |
           _: P2SHScriptPubKey | _: P2PKScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: ConditionalScriptPubKey |
-          _: CLTVScriptPubKey | _: CSVScriptPubKey |
-          _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
+          _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessScriptPubKeyV0 |
+          _: UnassignedWitnessScriptPubKey =>
         true
       case _: NonStandardScriptPubKey | _: WitnessCommitment => false
       case EmptyScriptPubKey                                 => false
@@ -253,7 +254,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   /** Parses a redeem script from the given script token */
   def parseRedeemScript(scriptToken: ScriptToken): ScriptPubKey = {
     val asm = ScriptParser.fromBytes(scriptToken.bytes)
-    val redeemScript:ScriptPubKey = ScriptPubKey.fromAsm(asm)
+    val redeemScript: ScriptPubKey = ScriptPubKey.fromAsm(asm)
     redeemScript
   }
 }
@@ -330,12 +331,13 @@ object MultiSignatureScriptSignature
         }
     }
 
-
   /** Iterates through the given given script tokens and return false if
     * one of the elements is NOT [[ScriptConstant]] or a push operation */
   private def isPushOpsOrScriptConstants(asm: Seq[ScriptToken]): Boolean = {
-    asm.forall(token => token.isInstanceOf[ScriptConstant] ||
-      StackPushOperationFactory.isPushOperation(token))
+    asm.forall(
+      token =>
+        token.isInstanceOf[ScriptConstant] ||
+          StackPushOperationFactory.isPushOperation(token))
   }
 }
 

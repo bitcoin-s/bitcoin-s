@@ -1,6 +1,6 @@
 package org.bitcoins.gui.dlc
 
-import org.bitcoins.cli.{CliCommand, ConsoleCli}
+import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.OracleInfo
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.gui.TaskRunner
@@ -32,7 +32,7 @@ class DLCPaneModel(
         taskRunner.run(
           caption = caption,
           op = {
-            ConsoleCli.exec(command) match {
+            ConsoleCli.exec(command, Config.empty) match {
               case Success(commandReturn) => resultArea.text = commandReturn
               case Failure(err) =>
                 err.printStackTrace()

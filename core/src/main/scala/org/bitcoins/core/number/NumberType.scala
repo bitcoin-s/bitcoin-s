@@ -159,7 +159,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
       hex.slice(2, hex.length)
     } else {
       val needed = 16 - hex.length
-      CryptoBytesUtil.addPadding(needed,hex)
+      CryptoBytesUtil.addPadding(needed, hex)
     }
   }
 }

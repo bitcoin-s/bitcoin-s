@@ -18,11 +18,7 @@ import org.bitcoins.core.currency.{
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0
-}
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2WPKHWitnessSPKV0}
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
@@ -32,7 +28,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.utxo.P2WPKHV0SpendingInfo
+import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.testkit.dlc.DLCTestUtil
@@ -148,13 +144,14 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     val localFundingUtxosF = fundedInputsTxidF.map {
       case (txid, localOutputIndex, _, tx) =>
         Vector(
-          P2WPKHV0SpendingInfo(
-            outPoint = TransactionOutPoint(txid, UInt32(localOutputIndex)),
-            amount = tx.outputs(localOutputIndex).value,
-            scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyLocal),
+          ScriptSignatureParams(
+            inputInfo = P2WPKHV0InputInfo(
+              outPoint = TransactionOutPoint(txid, UInt32(localOutputIndex)),
+              amount = tx.outputs(localOutputIndex).value,
+              pubKey = inputPubKeyLocal
+            ),
             signer = inputPrivKeyLocal,
-            hashType = HashType.sigHashAll,
-            scriptWitness = P2WPKHWitnessV0(inputPubKeyLocal)
+            hashType = HashType.sigHashAll
           )
         )
     }
@@ -162,13 +159,14 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
     val remoteFundingUtxosF = fundedInputsTxidF.map {
       case (txid, _, remoteOutputIndex, tx) =>
         Vector(
-          P2WPKHV0SpendingInfo(
-            outPoint = TransactionOutPoint(txid, UInt32(remoteOutputIndex)),
-            amount = tx.outputs(remoteOutputIndex).value,
-            scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyRemote),
-            signer = inputPrivKeyRemote,
-            hashType = HashType.sigHashAll,
-            scriptWitness = P2WPKHWitnessV0(inputPubKeyRemote)
+          ScriptSignatureParams(
+            P2WPKHV0InputInfo(
+              outPoint = TransactionOutPoint(txid, UInt32(remoteOutputIndex)),
+              amount = tx.outputs(remoteOutputIndex).value,
+              pubKey = inputPubKeyRemote
+            ),
+            inputPrivKeyRemote,
+            HashType.sigHashAll
           )
         )
     }

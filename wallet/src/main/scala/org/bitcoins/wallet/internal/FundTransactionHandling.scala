@@ -2,7 +2,6 @@ package org.bitcoins.wallet.internal
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutPoint,
   InputUtil,
@@ -70,8 +69,9 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
       fromAccount: AccountDb,
       keyManagerOpt: Option[BIP39KeyManager],
       coinSelectionAlgo: CoinSelectionAlgo = CoinSelectionAlgo.AccumulateLargest,
-      markAsReserved: Boolean = false): Future[
-    (RawTxBuilderWithFinalizer, Vector[ScriptSignatureParams[InputInfo]])] = {
+      markAsReserved: Boolean = false): Future[(
+      RawTxBuilderWithFinalizer[NonInteractiveWithChangeFinalizer],
+      Vector[ScriptSignatureParams[InputInfo]])] = {
     val utxosF = for {
       utxos <- listUtxos(fromAccount.hdAccount)
 
@@ -147,7 +147,7 @@ trait FundTransactionHandling extends WalletLogger { self: WalletApi =>
       }
 
       val inputs =
-        InputUtil.calcSequenceForInputs(utxoSpendingInfos, Policy.isRBFEnabled)
+        InputUtil.calcSequenceForInputs(utxoSpendingInfos)
 
       val lockTime = TxUtil.calcLockTime(utxoSpendingInfos).get
 

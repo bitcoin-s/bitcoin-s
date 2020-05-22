@@ -1,7 +1,7 @@
 package org.bitcoins.dlc
 
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.wallet.utxo.BitcoinUTXOSpendingInfoFull
+import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
 
 sealed trait DLCOutcome {
   def fundingTx: Transaction
@@ -16,7 +16,7 @@ case class UnilateralDLCOutcomeWithClosing(
     override val fundingTx: Transaction,
     override val cet: Transaction,
     closingTx: Transaction,
-    cetSpendingInfo: BitcoinUTXOSpendingInfoFull
+    cetSpendingInfo: ScriptSignatureParams[InputInfo]
 ) extends UnilateralDLCOutcome
 
 case class UnilateralDLCOutcomeWithDustClosing(
@@ -32,7 +32,7 @@ case class RefundDLCOutcomeWithClosing(
     override val fundingTx: Transaction,
     override val refundTx: Transaction,
     closingTx: Transaction,
-    refundSpendingInfo: BitcoinUTXOSpendingInfoFull)
+    refundSpendingInfo: ScriptSignatureParams[InputInfo])
     extends RefundDLCOutcome
 
 case class RefundDLCOutcomeWithDustClosing(

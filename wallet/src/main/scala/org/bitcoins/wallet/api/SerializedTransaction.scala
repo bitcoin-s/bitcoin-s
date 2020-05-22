@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.script.{
   ScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{
-  BaseTransaction,
+  NonWitnessTransaction,
   Transaction,
   WitnessTransaction
 }
@@ -74,7 +74,7 @@ object SerializedTransaction {
     val inputs = tx.inputs.toVector.zipWithIndex.map {
       case (input, index) =>
         val witnessOpt = tx match {
-          case _: BaseTransaction => None
+          case _: NonWitnessTransaction => None
           case wtx: WitnessTransaction =>
             wtx.witness.witnesses(index) match {
               case EmptyScriptWitness => None
@@ -118,8 +118,8 @@ object SerializedTransaction {
     }
 
     val wtxidOpt = tx match {
-      case _: BaseTransaction      => None
-      case wtx: WitnessTransaction => Some(wtx.wTxIdBE)
+      case _: NonWitnessTransaction => None
+      case wtx: WitnessTransaction  => Some(wtx.wTxIdBE)
     }
 
     val serializedTx = SerializedTransaction(txid = tx.txIdBE,

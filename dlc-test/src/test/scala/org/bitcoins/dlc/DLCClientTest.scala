@@ -6,27 +6,23 @@ import org.bitcoins.commons.jsonmodels.dlc.{
   DLCTimeouts,
   FundingSignatures
 }
-import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtKeyVersion.LegacyTestNet3Priv
 import org.bitcoins.core.crypto.ExtPrivateKey
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.{Int64, UInt32}
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
-import org.bitcoins.core.protocol.script.{
-  EmptyScriptPubKey,
-  P2WPKHWitnessSPKV0,
-  P2WPKHWitnessV0
-}
+import org.bitcoins.core.protocol.script.{EmptyScriptPubKey, P2WPKHWitnessSPKV0}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfoFull,
-  P2WPKHV0SpendingInfo
+import org.bitcoins.core.wallet.builder.{
+  NonInteractiveWithChangeFinalizer,
+  RawTxSigner
 }
+import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
 import org.bitcoins.testkit.dlc.DLCTestUtil
@@ -66,29 +62,34 @@ class DLCClientTest extends BitcoinSAsyncTest {
         }
 
         val inputKey = ECPrivateKey.freshPrivateKey
-        val utxos: Vector[BitcoinUTXOSpendingInfoFull] = Vector(
-          P2WPKHV0SpendingInfo(
-            outPoint =
-              TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-            amount = totalInput,
-            scriptPubKey = P2WPKHWitnessSPKV0(inputKey.publicKey),
+        val utxos: Vector[ScriptSignatureParams[P2WPKHV0InputInfo]] = Vector(
+          ScriptSignatureParams(
+            P2WPKHV0InputInfo(outPoint =
+                                TransactionOutPoint(DoubleSha256DigestBE.empty,
+                                                    UInt32.zero),
+                              amount = totalInput,
+                              pubKey = inputKey.publicKey),
             signer = inputKey,
-            hashType = HashType.sigHashAll,
-            scriptWitness = P2WPKHWitnessV0(inputKey.publicKey)
+            hashType = HashType.sigHashAll
           ))
-        val network: BitcoinNetwork = RegTest
 
-        val txBuilderF =
-          BitcoinTxBuilder(outputs, utxos, feeRate, changeSPK, network)
+        val txBuilder =
+          NonInteractiveWithChangeFinalizer.txBuilderFrom(outputs,
+                                                          utxos,
+                                                          feeRate,
+                                                          changeSPK)
+        val txBuilderResult = txBuilder.builder.result()
+        val dumbFinalizer = txBuilder.finalizer
 
-        val badFeeF = txBuilderF.flatMap { txBuilder =>
-          recoverToSucceededIf[IllegalArgumentException](txBuilder.sign)
+        val badFeeF = recoverToSucceededIf[IllegalArgumentException] {
+          dumbFinalizer.buildTx(txBuilderResult).flatMap { utx =>
+            RawTxSigner.sign(utx, utxos, feeRate)
+          }
         }
 
         for {
-          txBuilder <- txBuilderF
           _ <- badFeeF
-          tx <- DLCClient.subtractFeeAndSign(txBuilder)
+          tx <- DLCClient.subtractFeeAndSign(txBuilderResult, feeRate, utxos)
         } yield {
           val diffs = outputs.zip(tx.outputs).map {
             case (before, after) =>
@@ -130,13 +131,13 @@ class DLCClientTest extends BitcoinSAsyncTest {
   )
 
   val localFundingUtxos = Vector(
-    P2WPKHV0SpendingInfo(
-      outPoint = TransactionOutPoint(localFundingTx.txId, UInt32.zero),
-      amount = localInput * 2,
-      scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyLocal),
+    ScriptSignatureParams(
+      P2WPKHV0InputInfo(outPoint =
+                          TransactionOutPoint(localFundingTx.txId, UInt32.zero),
+                        amount = localInput * 2,
+                        pubKey = inputPubKeyLocal),
       signer = inputPrivKeyLocal,
-      hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(inputPrivKeyLocal.publicKey)
+      hashType = HashType.sigHashAll
     )
   )
 
@@ -150,13 +151,13 @@ class DLCClientTest extends BitcoinSAsyncTest {
   )
 
   val remoteFundingUtxos = Vector(
-    P2WPKHV0SpendingInfo(
-      outPoint = TransactionOutPoint(remoteFundingTx.txId, UInt32.zero),
-      amount = remoteInput * 2,
-      scriptPubKey = P2WPKHWitnessSPKV0(inputPubKeyRemote),
+    ScriptSignatureParams(
+      P2WPKHV0InputInfo(outPoint = TransactionOutPoint(remoteFundingTx.txId,
+                                                       UInt32.zero),
+                        amount = remoteInput * 2,
+                        pubKey = inputPubKeyRemote),
       signer = inputPrivKeyRemote,
-      hashType = HashType.sigHashAll,
-      scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
+      hashType = HashType.sigHashAll
     )
   )
 

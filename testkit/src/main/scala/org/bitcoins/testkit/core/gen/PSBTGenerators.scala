@@ -2,7 +2,6 @@ package org.bitcoins.testkit.core.gen
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
@@ -200,7 +199,7 @@ object PSBTGenerators {
     (PSBT, FinalizedTxWithSigningInfo, FeeUnit)] = {
     val lockTime = TxUtil.calcLockTime(creditingTxsInfo).get
     val inputs =
-      InputUtil.calcSequenceForInputs(creditingTxsInfo, Policy.isRBFEnabled)
+      InputUtil.calcSequenceForInputs(creditingTxsInfo)
 
     val builder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
     val finalizer = StandardNonInteractiveFinalizer(

@@ -20,11 +20,12 @@ import org.bitcoins.core.protocol.{
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{BytesUtil, FutureUtil}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.utxo.{
-  P2WPKHV0SpendingInfo,
-  SegwitV0NativeUTXOSpendingInfoFull
+  P2WPKHV0InputInfo,
+  ScriptSignatureParams,
+  SegwitV0NativeInputInfo
 }
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.{
@@ -45,11 +46,11 @@ case class DLCTestVector(
     oracleKValue: ECPrivateKey,
     localExtPrivKey: ExtPrivateKey,
     localInput: CurrencyUnit,
-    localFundingUtxos: Vector[P2WPKHV0SpendingInfo],
+    localFundingUtxos: Vector[ScriptSignatureParams[P2WPKHV0InputInfo]],
     localChangeSPK: WitnessScriptPubKeyV0,
     remoteExtPrivKey: ExtPrivateKey,
     remoteInput: CurrencyUnit,
-    remoteFundingUtxos: Vector[P2WPKHV0SpendingInfo],
+    remoteFundingUtxos: Vector[ScriptSignatureParams[P2WPKHV0InputInfo]],
     remoteToRemoteSweepSPK: WitnessScriptPubKeyV0,
     remoteChangeSPK: WitnessScriptPubKeyV0,
     timeouts: DLCTimeouts,
@@ -133,11 +134,11 @@ object DLCTestVector {
       oracleKValue: ECPrivateKey,
       localExtPrivKey: ExtPrivateKey,
       localInput: CurrencyUnit,
-      localFundingUtxos: Vector[P2WPKHV0SpendingInfo],
+      localFundingUtxos: Vector[ScriptSignatureParams[P2WPKHV0InputInfo]],
       localChangeSPK: WitnessScriptPubKeyV0,
       remoteExtPrivKey: ExtPrivateKey,
       remoteInput: CurrencyUnit,
-      remoteFundingUtxos: Vector[P2WPKHV0SpendingInfo],
+      remoteFundingUtxos: Vector[ScriptSignatureParams[P2WPKHV0InputInfo]],
       remoteToRemoteSweepSPK: WitnessScriptPubKeyV0,
       remoteChangeSPK: WitnessScriptPubKeyV0,
       timeouts: DLCTimeouts,
@@ -565,29 +566,26 @@ case class SerializedSegwitSpendingInfo(
     hashType: HashType,
     scriptWitness: ScriptWitnessV0) {
 
-  def toSpendingInfo: P2WPKHV0SpendingInfo = {
-    P2WPKHV0SpendingInfo(
-      outPoint = outPoint.toOutPoint,
-      amount = output.value,
-      scriptPubKey = output.spk.asInstanceOf[P2WPKHWitnessSPKV0],
-      signer = keys.head,
-      hashType = hashType,
-      scriptWitness = scriptWitness.asInstanceOf[P2WPKHWitnessV0]
+  def toSpendingInfo: ScriptSignatureParams[P2WPKHV0InputInfo] = {
+    ScriptSignatureParams(
+      P2WPKHV0InputInfo(outPoint.toOutPoint, output.value, keys.head.publicKey),
+      keys.head,
+      hashType
     )
   }
 }
 
 object SerializedSegwitSpendingInfo {
 
-  def fromSpendingInfo(
-      spendingInfo: SegwitV0NativeUTXOSpendingInfoFull): SerializedSegwitSpendingInfo = {
+  def fromSpendingInfo(spendingInfo: ScriptSignatureParams[
+    SegwitV0NativeInputInfo]): SerializedSegwitSpendingInfo = {
     SerializedSegwitSpendingInfo(
       outPoint =
         SerializedTransactionOutPoint.fromOutPoint(spendingInfo.outPoint),
       output = SerializedTransactionOutput.fromOutput(spendingInfo.output),
       keys = spendingInfo.signers.map(_.asInstanceOf[ECPrivateKey]),
       hashType = spendingInfo.hashType,
-      scriptWitness = spendingInfo.scriptWitness
+      scriptWitness = spendingInfo.inputInfo.scriptWitness
     )
   }
 }

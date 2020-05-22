@@ -8,11 +8,11 @@ import org.bitcoins.core.crypto.ExtPrivateKey
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockTime
-import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.core.wallet.utxo.P2WPKHV0SpendingInfo
+import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import play.api.libs.json._
 
@@ -109,13 +109,15 @@ object DLCTestVectorGenerator {
     val localInput = CurrencyUnits.oneBTC
     val inputPrivKeyLocal = ECPrivateKey.freshPrivateKey
     val localFundingUtxos = Vector(
-      P2WPKHV0SpendingInfo(
-        outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
-        amount = localInput * 2,
-        scriptPubKey = P2WPKHWitnessSPKV0(inputPrivKeyLocal.publicKey),
+      ScriptSignatureParams(
+        inputInfo = P2WPKHV0InputInfo(
+          outPoint =
+            TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero),
+          amount = localInput * 2,
+          inputPrivKeyLocal.publicKey
+        ),
         signer = inputPrivKeyLocal,
-        hashType = HashType.sigHashAll,
-        scriptWitness = P2WPKHWitnessV0(inputPrivKeyLocal.publicKey)
+        hashType = HashType.sigHashAll
       )
     )
     val localChangeSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
@@ -124,13 +126,16 @@ object DLCTestVectorGenerator {
     val remoteInput = CurrencyUnits.oneBTC
     val inputPrivKeyRemote = ECPrivateKey.freshPrivateKey
     val remoteFundingUtxos = Vector(
-      P2WPKHV0SpendingInfo(
-        outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.one),
-        amount = remoteInput * 2,
-        scriptPubKey = P2WPKHWitnessSPKV0(inputPrivKeyRemote.publicKey),
+      ScriptSignatureParams(
+        inputInfo =
+          P2WPKHV0InputInfo(
+            outPoint =
+              TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.one),
+            amount = remoteInput * 2,
+            inputPrivKeyRemote.publicKey
+          ),
         signer = inputPrivKeyRemote,
-        hashType = HashType.sigHashAll,
-        scriptWitness = P2WPKHWitnessV0(inputPrivKeyRemote.publicKey)
+        hashType = HashType.sigHashAll
       )
     )
     val remoteToRemoteSweepSPK = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)

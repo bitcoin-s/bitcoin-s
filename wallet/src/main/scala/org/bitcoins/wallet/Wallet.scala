@@ -210,7 +210,7 @@ abstract class Wallet
     * finalizing and signing the transaction, then correctly processing and logging it
     */
   private def finishSend(
-      txBuilder: RawTxBuilderWithFinalizer,
+      txBuilder: RawTxBuilderWithFinalizer[NonInteractiveWithChangeFinalizer],
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       sentAmount: CurrencyUnit,
       feeRate: FeeUnit): Future[Transaction] = {
