@@ -40,8 +40,8 @@ object SatoshisPerByte {
 case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit {
 
-  def toSatPerByte: SatoshisPerByte = {
-    val conversionOpt = (currencyUnit.toBigDecimal / 1000).toBigIntExact
+  lazy val toSatPerByteExact: SatoshisPerByte = {
+    val conversionOpt = (currencyUnit.toBigDecimal / 1000.0).toBigIntExact
     conversionOpt match {
       case Some(conversion) =>
         val sat = Satoshis(conversion)
@@ -49,12 +49,20 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
       case None =>
         throw new RuntimeException(
-          s"Failed to convert sat/kb -> sat/byte for ${currencyUnit}")
+          s"Failed to convert exactly sat/kb -> sat/byte for ${currencyUnit}")
     }
   }
 
+  lazy val toSatPerByteRounded: SatoshisPerByte = {
+    val conversion = (currencyUnit.toBigDecimal / 1000.0).toBigInt
+    SatoshisPerByte(Satoshis(conversion))
+  }
+
+  lazy val toSatPerByte: SatoshisPerByte = toSatPerByteExact
+
+  /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
   override def calc(tx: Transaction): CurrencyUnit =
-    Satoshis((tx.byteSize * toLong / 1000))
+    Satoshis(tx.byteSize * toLong / 1000)
 }
 
 /**
