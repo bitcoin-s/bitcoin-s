@@ -90,7 +90,7 @@ trait CryptoBytesUtil {
   }
 
   def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
-    h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    ByteVector.concat(h.map(_.bytes))
   }
 }
 

@@ -6,6 +6,7 @@ import org.bitcoins.core.util._
 import org.bitcoins.core.wallet.utxo.ConditionalPath
 import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey}
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -326,14 +327,31 @@ object MultiSignatureScriptSignature
       case false =>
         val firstTokenIsScriptNumberOperation =
           asm.head.isInstanceOf[ScriptNumberOperation]
-        val restOfScriptIsPushOpsOrScriptConstants = asm.tail
-          .map(
-            token =>
-              token.isInstanceOf[ScriptConstant] || StackPushOperationFactory
-                .isPushOperation(token))
-          .exists(_ == false)
-        firstTokenIsScriptNumberOperation && !restOfScriptIsPushOpsOrScriptConstants
+        if (firstTokenIsScriptNumberOperation) {
+          //avoid doing this computation unless we think it need to be done
+          //fail fast
+          isPushOpsOrScriptConstants(asm)
+        } else {
+          false
+        }
     }
+
+
+  /** Iterates through the given given script tokens and return false if
+    * one of the elements is NOT [[ScriptConstant]] or a push operation */
+  @tailrec
+  private def isPushOpsOrScriptConstants(asm: Seq[ScriptToken]): Boolean = {
+    asm.tail match {
+      case Nil => true
+      case h +: t =>
+        if (h.isInstanceOf[ScriptConstant] || StackPushOperationFactory
+          .isPushOperation(h)) {
+          isPushOpsOrScriptConstants(t)
+        } else {
+          false
+        }
+    }
+  }
 }
 
 /**
