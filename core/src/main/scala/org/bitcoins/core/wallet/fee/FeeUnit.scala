@@ -49,7 +49,7 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
       case None =>
         throw new RuntimeException(
-          s"Failed to convert exactly sat/kb -> sat/byte for ${currencyUnit}")
+          s"Failed to convert sat/kb -> sat/byte (loss of precision) for $currencyUnit")
     }
   }
 
