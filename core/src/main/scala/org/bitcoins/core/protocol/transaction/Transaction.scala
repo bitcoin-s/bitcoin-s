@@ -12,6 +12,8 @@ import scodec.bits.ByteVector
   */
 sealed abstract class Transaction extends NetworkElement {
 
+  override lazy val byteSize = bytes.length
+
   /**
     * The `sha256(sha256(tx))` of this transaction,
     * Note that this is the little endian encoding of the hash, NOT the big endian encoding shown in block
