@@ -26,7 +26,8 @@ trait CryptoBytesUtil {
       case 1      => "0" + long.toHexString
       case _: Int => long.toHexString
     }
-    addPadding(16, hex)
+    val needed = 16 - hex.length
+    addPadding(needed, hex)
   }
 
   def encodeHex(int: Int): String = {
@@ -34,7 +35,8 @@ trait CryptoBytesUtil {
       case 1      => "0" + int.toHexString
       case _: Int => int.toHexString
     }
-    addPadding(8, hex)
+    val needed = 8 - hex.length
+    addPadding(needed, hex)
   }
 
   def encodeHex(short: Short): String = {
@@ -42,8 +44,9 @@ trait CryptoBytesUtil {
     encodeHex(bytes)
   }
 
-  def encodeHex(bigInt: BigInt): String =
-    CryptoBytesUtil.encodeHex(ByteVector(bigInt.toByteArray))
+  def encodeHex(bigInt: BigInt): String = {
+    ByteVector(bigInt.toByteArray).toHex
+  }
 
   /** Tests if a given string is a hexadecimal string. */
   def isHex(str: String): Boolean = {
@@ -63,17 +66,22 @@ trait CryptoBytesUtil {
   /** Flips the endianness of the given sequence of bytes. */
   def flipEndianness(bytes: ByteVector): String = encodeHex(bytes.reverse)
 
+  private val Z: Char = '0'
   /**
     * Adds the amount padding bytes needed to fix the size of the hex string
     * for instance, ints are required to be 4 bytes. If the number is just 1
     * it will only take 1 byte. We need to pad the byte with an extra 3 bytes so the result is
     * 00000001 instead of just 1.
     */
-  private def addPadding(charactersNeeded: Int, hex: String): String = {
-    val paddingNeeded = charactersNeeded - hex.length
-    val padding = Vector.fill(paddingNeeded)("0")
-    val paddedHex = padding.mkString + hex
-    paddedHex
+  final def addPadding(paddingNeeded: Int, hex: String): String = {
+    val builder = new StringBuilder
+    var counter = 0
+    while (counter < paddingNeeded) {
+      builder.append(Z)
+      counter+=1
+    }
+    builder.append(hex)
+    builder.result()
   }
 
   /** Converts a byte to a bit vector representing that byte */
@@ -90,7 +98,7 @@ trait CryptoBytesUtil {
   }
 
   def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
-    h.foldLeft(ByteVector.empty)(_ ++ _.bytes)
+    ByteVector.concat(h.map(_.bytes))
   }
 }
 

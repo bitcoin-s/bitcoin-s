@@ -1,7 +1,7 @@
 package org.bitcoins.core.number
 
 import org.bitcoins.core.util.{BytesUtil, NumberUtil}
-import org.bitcoins.crypto.{Factory, NetworkElement}
+import org.bitcoins.crypto.{CryptoBytesUtil, Factory, NetworkElement}
 import scodec.bits.{ByteOrdering, ByteVector}
 
 import scala.util.{Failure, Success, Try}
@@ -158,8 +158,8 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
       //means that encodeHex(BigInt) padded an extra byte, giving us 9 bytes instead of 8
       hex.slice(2, hex.length)
     } else {
-      val padding = for { _ <- 0 until 16 - hex.length } yield "0"
-      padding.mkString ++ hex
+      val needed = 16 - hex.length
+      CryptoBytesUtil.addPadding(needed,hex)
     }
   }
 }
