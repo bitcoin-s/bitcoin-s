@@ -99,4 +99,21 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
         assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
       }
   }
+
+  it should "track a utxo state change to reserved and then to unreserved using the transaction the utxo was included in" in {
+    param =>
+      val WalletWithBitcoindRpc(wallet, _) = param
+
+      val dummyOutput = TransactionOutput(Satoshis(3000), EmptyScriptPubKey)
+
+      for {
+        tx <- wallet.fundRawTransaction(Vector(dummyOutput),
+                                        SatoshisPerVirtualByte.one,
+                                        markAsReserved = true)
+        unreservedUtxos <- wallet.unmarkUTXOsAsReserved(tx)
+      } yield {
+        assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
+      }
+  }
+
 }
