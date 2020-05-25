@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 sealed abstract class FeeUnit {
   def currencyUnit: CurrencyUnit
   def *(tx: Transaction): CurrencyUnit = calc(tx)
-  def calc(tx: Transaction): CurrencyUnit = Satoshis(tx.vsize * toLong)
+  def calc(tx: Transaction): CurrencyUnit
   def toLong: Long = currencyUnit.satoshis.toLong
 }
 
@@ -25,17 +25,23 @@ case class SatoshisPerByte(currencyUnit: CurrencyUnit) extends BitcoinFeeUnit {
   def toSatPerKb: SatoshisPerKiloByte = {
     SatoshisPerKiloByte(currencyUnit.satoshis * Satoshis(1000))
   }
+
+  override def calc(tx: Transaction): CurrencyUnit =
+    Satoshis(tx.byteSize * toLong)
 }
 
 object SatoshisPerByte {
   def fromLong(sats: Long): SatoshisPerByte = SatoshisPerByte(Satoshis(sats))
 }
 
+/**
+  * KiloBytes here are defined as 1000 bytes.
+  */
 case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
     extends BitcoinFeeUnit {
 
-  def toSatPerByte: SatoshisPerByte = {
-    val conversionOpt = (currencyUnit.toBigDecimal * 0.001).toBigIntExact
+  lazy val toSatPerByteExact: SatoshisPerByte = {
+    val conversionOpt = (currencyUnit.toBigDecimal / 1000.0).toBigIntExact
     conversionOpt match {
       case Some(conversion) =>
         val sat = Satoshis(conversion)
@@ -43,10 +49,21 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
 
       case None =>
         throw new RuntimeException(
-          s"Failed to convert sat/kb -> sat/byte for ${currencyUnit}")
+          s"Failed to convert sat/kb -> sat/byte (loss of precision) for $currencyUnit")
     }
-
   }
+
+  lazy val toSatPerByteRounded: SatoshisPerByte = {
+    val conversion = (currencyUnit.toBigDecimal / 1000.0).toBigInt
+    SatoshisPerByte(Satoshis(conversion))
+  }
+
+  lazy val toSatPerByte: SatoshisPerByte = toSatPerByteExact
+
+  // Same as bitcoin-core https://github.com/bitcoin/bitcoin/blob/b5c423c48e094bd098e11c3d1f57acae7502a4da/src/policy/feerate.cpp#L23
+  /** Calculates the fee for the transaction using this fee rate, rounds down satoshis */
+  override def calc(tx: Transaction): CurrencyUnit =
+    Satoshis(tx.byteSize * toLong / 1000)
 }
 
 /**
@@ -56,7 +73,9 @@ case class SatoshisPerKiloByte(currencyUnit: CurrencyUnit)
   * of a [[org.bitcoins.core.protocol.transaction.WitnessTransaction]]
   */
 case class SatoshisPerVirtualByte(currencyUnit: CurrencyUnit)
-    extends BitcoinFeeUnit
+    extends BitcoinFeeUnit {
+  override def calc(tx: Transaction): CurrencyUnit = Satoshis(tx.vsize * toLong)
+}
 
 object SatoshisPerVirtualByte {
 
