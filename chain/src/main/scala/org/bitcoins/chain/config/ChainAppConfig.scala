@@ -95,14 +95,14 @@ case class ChainAppConfig(
     config.getInt(s"${moduleName}.neutrino.filter-batch-size")
 }
 
-object ChainAppConfig {
+object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
 
   /** Constructs a chain verification configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(useLogbackConf: Boolean, confs: Config*)(
+  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
       implicit ec: ExecutionContext): ChainAppConfig =
-    ChainAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR,
+    ChainAppConfig(datadir,
                    useLogbackConf,
                    confs: _*)
 }
