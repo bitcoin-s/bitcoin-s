@@ -201,52 +201,6 @@ abstract class Wallet
     }
   }
 
-  override def markUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    val updated = utxos.map(_.copyWithState(TxoState.Reserved))
-    spendingInfoDAO.updateAll(updated)
-  }
-
-  override def unmarkUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
-    require(unreserved.isEmpty, s"Some utxos are not reserved, got $unreserved")
-
-    // unmark all utxos are reserved
-    val groupedUtxos = utxos
-      .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
-      .groupBy(_.blockHash)
-
-    val mempoolUtxos = Try(groupedUtxos(None)).getOrElse(Vector.empty)
-
-    // get the ones in blocks
-    val utxosInBlocks = groupedUtxos.map {
-      case (Some(hash), utxos) =>
-        Some(hash, utxos)
-      case (None, _) =>
-        None
-    }.flatten
-
-    for {
-      updatedMempoolUtxos <- spendingInfoDAO.updateAll(mempoolUtxos)
-      // update the confirmed ones
-      updatedBlockUtxos <- FutureUtil
-        .sequentially(utxosInBlocks.toVector) {
-          case (hash, utxos) =>
-            updateUtxoConfirmedStates(utxos, hash)
-        }
-    } yield updatedMempoolUtxos ++ updatedBlockUtxos.flatten
-  }
-
-  /** @inheritdoc */
-  def updateUtxoPendingStates(
-      blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
-    for {
-      infos <- spendingInfoDAO.findAllPendingConfirmation
-      updatedInfos <- updateUtxoConfirmedStates(infos, blockHeader.hashBE)
-    } yield updatedInfos
-  }
-
   /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and completes it by:
     * finalizing and signing the transaction, then correctly processing and logging it
     */
