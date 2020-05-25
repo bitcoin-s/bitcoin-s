@@ -2,8 +2,8 @@ package org.bitcoins.core.script.constant
 
 import org.bitcoins.core.number.Int64
 import org.bitcoins.core.script.ScriptOperationFactory
-import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.crypto.{BytesUtil, Factory, NetworkElement}
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}
@@ -31,9 +31,9 @@ sealed trait ScriptToken extends NetworkElement {
 trait ScriptOperation extends ScriptToken {
   def opCode: Int
 
-  override def bytes: ByteVector = ByteVector.fromByte(toByte)
+  override lazy val bytes: ByteVector = ByteVector.fromByte(toByte)
 
-  def toByte: Byte = opCode.toByte
+  lazy val toByte: Byte = opCode.toByte
 }
 
 /** A constant in the Script language for instance as String or a number. */
@@ -221,7 +221,7 @@ case object OP_FALSE extends ScriptNumberOperation {
 
   override val underlying = OP_0.underlying
 
-  override val bytes = OP_0.bytes
+  override lazy val bytes = OP_0.bytes
 }
 
 /** The number 1 is pushed onto the stack. */
@@ -357,24 +357,24 @@ object ScriptNumberOperation
   def fromNumber(underlying: Long): Option[ScriptNumberOperation] =
     operations.find(_.underlying == underlying)
 
-  val operations = Seq(OP_0,
-                       OP_1,
-                       OP_1NEGATE,
-                       OP_2,
-                       OP_3,
-                       OP_4,
-                       OP_5,
-                       OP_6,
-                       OP_7,
-                       OP_8,
-                       OP_9,
-                       OP_10,
-                       OP_11,
-                       OP_12,
-                       OP_13,
-                       OP_14,
-                       OP_15,
-                       OP_16)
+  override val operations = Vector(OP_0,
+                                   OP_1,
+                                   OP_1NEGATE,
+                                   OP_2,
+                                   OP_3,
+                                   OP_4,
+                                   OP_5,
+                                   OP_6,
+                                   OP_7,
+                                   OP_8,
+                                   OP_9,
+                                   OP_10,
+                                   OP_11,
+                                   OP_12,
+                                   OP_13,
+                                   OP_14,
+                                   OP_15,
+                                   OP_16)
 
 }
 

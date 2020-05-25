@@ -1,5 +1,7 @@
 package org.bitcoins.wallet.api
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo._
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -97,5 +99,18 @@ object CoinSelector extends CoinSelector {
     }
 
     inputBase + scriptSize
+  }
+
+  def selectByAlgo(
+      coinSelectionAlgo: CoinSelectionAlgo,
+      walletUtxos: Vector[SpendingInfoDb],
+      outputs: Vector[TransactionOutput],
+      feeRate: FeeUnit): Vector[SpendingInfoDb] = coinSelectionAlgo match {
+    case AccumulateLargest =>
+      accumulateLargest(walletUtxos, outputs, feeRate)
+    case AccumulateSmallestViable =>
+      accumulateSmallestViable(walletUtxos, outputs, feeRate)
+    case StandardAccumulate =>
+      accumulate(walletUtxos, outputs, feeRate)
   }
 }

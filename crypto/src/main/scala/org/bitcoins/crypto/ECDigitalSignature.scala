@@ -8,7 +8,7 @@ import scodec.bits.ByteVector
 sealed abstract class ECDigitalSignature {
   require(r.signum == 1 || r.signum == 0, s"r must not be negative, got $r")
   require(s.signum == 1 || s.signum == 0, s"s must not be negative, got $s")
-  def hex: String = BytesUtil.encodeHex(bytes)
+  def hex: String = CryptoBytesUtil.encodeHex(bytes)
 
   def bytes: ByteVector
 
@@ -34,7 +34,8 @@ sealed abstract class ECDigitalSignature {
     * throws an exception if the given sequence of bytes is not a DER encoded signature
     * @return the (r,s) values for the elliptic curve digital signature
     */
-  def decodeSignature: (BigInt, BigInt) = DERSignatureUtil.decodeSignature(this)
+  lazy val decodeSignature: (BigInt, BigInt) =
+    DERSignatureUtil.decodeSignature(this)
 
   /** Represents the r value found in a elliptic curve digital signature */
   def r: BigInt = {
@@ -162,7 +163,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * the second 32 is the value
     */
   def fromRS(hex: String): ECDigitalSignature = {
-    val bytes = BytesUtil.decodeHex(hex)
+    val bytes = CryptoBytesUtil.decodeHex(hex)
     fromRS(bytes)
   }
 }

@@ -1,7 +1,6 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.util.testprotocol._
-import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import spray.json._
 

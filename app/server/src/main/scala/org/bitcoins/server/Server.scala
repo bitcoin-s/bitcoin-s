@@ -1,21 +1,23 @@
 package org.bitcoins.server
 
-import upickle.{default => up}
 import akka.actor.ActorSystem
-import akka.http.scaladsl._
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.Directives._
-import de.heikoseeberger.akkahttpupickle.UpickleSupport._
-import akka.http.scaladsl.server.directives.DebuggingDirectives
 import akka.event.Logging
+import akka.http.scaladsl._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.directives.DebuggingDirectives
+import akka.stream.ActorMaterializer
+import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.db.AppConfig
+import upickle.{default => up}
 
 import scala.concurrent.Future
 
-case class Server(conf: AppConfig, handlers: Seq[ServerRoute], rpcport: Int = 9999)(
-    implicit system: ActorSystem)
+case class Server(
+    conf: AppConfig,
+    handlers: Seq[ServerRoute],
+    rpcport: Int = 9999)(implicit system: ActorSystem)
     extends HttpLogger {
   implicit private val config: AppConfig = conf
 

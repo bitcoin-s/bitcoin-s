@@ -16,7 +16,6 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 /**
   * Created by chris on 2/16/16.
@@ -89,9 +88,10 @@ sealed abstract class ECPrivateKey
     val pubKeyBytes: Array[Byte] =
       NativeSecp256k1.computePubkey(bytes.toArray, isCompressed)
     val pubBytes = ByteVector(pubKeyBytes)
-    require(ECPublicKey.isFullyValid(pubBytes),
-            s"secp256k1 failed to generate a valid public key, got: ${BytesUtil
-              .encodeHex(pubBytes)}")
+    require(
+      ECPublicKey.isFullyValid(pubBytes),
+      s"secp256k1 failed to generate a valid public key, got: ${CryptoBytesUtil
+        .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
 
@@ -141,11 +141,11 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     else
       throw new IllegalArgumentException(
         "Private keys cannot be greater than 33 bytes in size, got: " +
-          BytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
+          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
   }
 
   def fromHex(hex: String, isCompressed: Boolean): ECPrivateKey =
-    fromBytes(BytesUtil.decodeHex(hex), isCompressed)
+    fromBytes(CryptoBytesUtil.decodeHex(hex), isCompressed)
 
   /** Generates a fresh [[org.bitcoins.crypto.ECPrivateKey ECPrivateKey]] that has not been used before. */
   def apply(): ECPrivateKey = ECPrivateKey(true)
@@ -210,7 +210,6 @@ sealed abstract class ECPublicKey extends BaseECKey {
       //transactions can have weird non strict der encoded digital signatures
       //bitcoin core implements this functionality here:
       //https://github.com/bitcoin/bitcoin/blob/master/src/pubkey.cpp#L16-L165
-      //TODO: Implement functionality in Bitcoin Core linked above
       verifyWithBouncyCastle(data, signature)
     } else result
   }
@@ -222,7 +221,7 @@ sealed abstract class ECPublicKey extends BaseECKey {
   }
 
   def verify(hex: String, signature: ECDigitalSignature): Boolean =
-    verify(BytesUtil.decodeHex(hex), signature)
+    verify(CryptoBytesUtil.decodeHex(hex), signature)
 
   override def toString: String = "ECPublicKey(" + hex + ")"
 
@@ -320,8 +319,12 @@ object ECPublicKey extends Factory[ECPublicKey] {
   }
 
   def isFullyValidWithSecp(bytes: ByteVector): Boolean = {
-    Try(NativeSecp256k1.isValidPubKey(bytes.toArray))
-      .getOrElse(false) && isValid(bytes)
+    try {
+      NativeSecp256k1.isValidPubKey(bytes.toArray) && isValid(bytes)
+    } catch {
+      case scala.util.control.NonFatal(_) =>
+        false
+    }
   }
 
   def isFullyValidWithBouncyCastle(bytes: ByteVector): Boolean = {

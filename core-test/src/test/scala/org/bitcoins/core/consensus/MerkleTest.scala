@@ -2,7 +2,8 @@ package org.bitcoins.core.consensus
 
 import org.bitcoins.core.protocol.blockchain.{Block, MainNetChainParams}
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
-import org.bitcoins.crypto.{BytesUtil, CryptoUtil, DoubleSha256Digest}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 
 import scala.util.Try

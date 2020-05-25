@@ -26,8 +26,9 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
-  BitcoinUTXOSpendingInfoSingle,
-  ConditionalPath
+  ConditionalPath,
+  InputInfo,
+  ECSignatureParams
 }
 import scodec.bits._
 
@@ -111,21 +112,21 @@ val psbtFirstSigF =
       .sign(inputIndex = 0, signer = privKey0)
       .flatMap(_.sign(inputIndex = 0, signer = privKey1))
 
-// Alternatively, you can use produce a signature with a BitcoinUTXOSpendingInfoSingle
+// Alternatively, you can use produce a signature with a ECSignatureParams
 // using the BitcoinSigner will return a PartialSignature that can be added to a PSBT
 
 // First we need to declare out spendingInfoSingle
 val outPoint = unsignedTransaction.inputs.head.previousOutput
 val output = utxo0.outputs(outPoint.vout.toInt)
 
-val spendingInfoSingle = BitcoinUTXOSpendingInfoSingle(
-    outPoint = outPoint,
-    output = output,
+val spendingInfoSingle = ECSignatureParams(
+    InputInfo(outPoint = outPoint,
+              output = output,
+              redeemScriptOpt = Some(redeemScript0),
+              scriptWitnessOpt = None,
+              conditionalPath = ConditionalPath.NoCondition),
     signer = privKey0,
-    redeemScriptOpt = Some(redeemScript0),
-    scriptWitnessOpt = None,
-    hashType = HashType.sigHashAll,
-    conditionalPath = ConditionalPath.NoConditionsLeft
+    hashType = HashType.sigHashAll
   )
 
 // Then we can sign the transaction

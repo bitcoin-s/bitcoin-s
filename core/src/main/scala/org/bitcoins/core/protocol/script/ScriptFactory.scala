@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.crypto.{BytesUtil, Factory}
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.crypto.Factory
 import scodec.bits.ByteVector
 
 /**

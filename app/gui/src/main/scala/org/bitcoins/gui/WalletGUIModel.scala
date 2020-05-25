@@ -28,7 +28,7 @@ class WalletGUIModel() {
     taskRunner.run(
       caption = "Get New Address",
       op = {
-        ConsoleCli.exec(GetNewAddress,Config.empty) match {
+        ConsoleCli.exec(GetNewAddress, Config.empty) match {
           case Success(commandReturn) => address.value = commandReturn
           case Failure(err)           => throw err
         }
@@ -46,11 +46,10 @@ class WalletGUIModel() {
         taskRunner.run(
           caption = s"Send $amount to $address",
           op = {
-            ConsoleCli.exec(
-              SendToAddress(BitcoinAddress(address).get,
-                            Bitcoins(BigDecimal(amount)),
-                            satoshisPerVirtualByte = None),
-              Config.empty) match {
+            ConsoleCli.exec(SendToAddress(BitcoinAddress(address).get,
+                                          Bitcoins(BigDecimal(amount)),
+                                          satoshisPerVirtualByte = None),
+                            Config.empty) match {
               case Success(txid) =>
                 GlobalData.log.value =
                   s"Sent $amount to $address in tx: $txid\n\n${GlobalData.log()}"

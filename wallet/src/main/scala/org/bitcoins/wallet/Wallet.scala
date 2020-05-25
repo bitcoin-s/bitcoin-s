@@ -2,23 +2,35 @@ package org.bitcoins.wallet
 
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
-import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.builder.BitcoinTxBuilder
+import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
+import org.bitcoins.core.wallet.builder.{
+  NonInteractiveWithChangeFinalizer,
+  RawTxBuilderWithFinalizer,
+  RawTxSigner
+}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.core.wallet.utxo.TxoState.{
   ConfirmedReceived,
   PendingConfirmationsReceived
 }
-import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.core.wallet.utxo.{
+  InputInfo,
+  ScriptSignatureParams,
+  TxoState
+}
+import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.keymanager.util.HDUtil
@@ -26,9 +38,10 @@ import org.bitcoins.wallet.api._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal._
 import org.bitcoins.wallet.models.{SpendingInfoDb, _}
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 abstract class Wallet
     extends WalletApi
@@ -115,7 +128,7 @@ abstract class Wallet
     } yield {
       allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        utxo.blockHash.isDefined
+        utxo.state == ConfirmedReceived
       }
     }
 
@@ -138,7 +151,7 @@ abstract class Wallet
     } yield {
       allUnspent.filter { utxo =>
         HDAccount.isSameAccount(utxo.privKeyPath.path, account) &&
-        utxo.blockHash.isEmpty
+        utxo.state == PendingConfirmationsReceived
       }
     }
 
@@ -194,30 +207,63 @@ abstract class Wallet
     spendingInfoDAO.updateAll(updated)
   }
 
+  override def unmarkUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
+    require(unreserved.isEmpty, s"Some utxos are not reserved, got $unreserved")
+
+    // unmark all utxos are reserved
+    val groupedUtxos = utxos
+      .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
+      .groupBy(_.blockHash)
+
+    val mempoolUtxos = Try(groupedUtxos(None)).getOrElse(Vector.empty)
+
+    // get the ones in blocks
+    val utxosInBlocks = groupedUtxos.map {
+      case (Some(hash), utxos) =>
+        Some(hash, utxos)
+      case (None, _) =>
+        None
+    }.flatten
+
+    for {
+      updatedMempoolUtxos <- spendingInfoDAO.updateAll(mempoolUtxos)
+      // update the confirmed ones
+      updatedBlockUtxos <- FutureUtil
+        .sequentially(utxosInBlocks.toVector) {
+          case (hash, utxos) =>
+            updateUtxoConfirmedStates(utxos, hash)
+        }
+    } yield updatedMempoolUtxos ++ updatedBlockUtxos.flatten
+  }
+
   /** @inheritdoc */
   def updateUtxoPendingStates(
       blockHeader: BlockHeader): Future[Vector[SpendingInfoDb]] = {
     for {
       infos <- spendingInfoDAO.findAllPendingConfirmation
-      updatedInfos <- {
-        val updatedInfoFs =
-          infos.map(info => updateUtxoConfirmedState(info, blockHeader.hashBE))
-        Future.sequence(updatedInfoFs)
-      }
+      updatedInfos <- updateUtxoConfirmedStates(infos, blockHeader.hashBE)
     } yield updatedInfos
   }
 
-  /** Takes a [[BitcoinTxBuilder]] for a transaction to be sent, and completes it by:
-    * signing the transaction, then correctly processing the it and logging it
+  /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and completes it by:
+    * finalizing and signing the transaction, then correctly processing and logging it
     */
-  private def finishSend(txBuilder: BitcoinTxBuilder): Future[Transaction] = {
+  private def finishSend(
+      txBuilder: RawTxBuilderWithFinalizer,
+      utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
+      sentAmount: CurrencyUnit,
+      feeRate: FeeUnit): Future[Transaction] = {
     for {
-      signed <- txBuilder.sign
+      utx <- txBuilder.buildTx()
+      signed <- RawTxSigner.sign(utx, utxoInfos, feeRate)
       ourOuts <- findOurOuts(signed)
+      creditingAmount = utxoInfos.foldLeft(CurrencyUnits.zero)(_ + _.amount)
       _ <- processOurTransaction(transaction = signed,
-                                 feeRate = txBuilder.feeRate,
-                                 inputAmount = txBuilder.creditingAmount,
-                                 sentAmount = txBuilder.destinationAmount,
+                                 feeRate = feeRate,
+                                 inputAmount = creditingAmount,
+                                 sentAmount = sentAmount,
                                  blockHashOpt = None)
     } yield {
       logger.debug(
@@ -248,25 +294,26 @@ abstract class Wallet
       _ = require(diff.isEmpty,
                   s"Not all OutPoints belong to this wallet, diff $diff")
 
-      utxos = utxoDbs.map(_.toUTXOSpendingInfo(keyManager))
+      utxos = utxoDbs.map(_.toUTXOInfo(keyManager))
 
       changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
 
       output = TransactionOutput(amount, address.scriptPubKey)
-      txBuilder <- BitcoinTxBuilder(
+      txBuilder = NonInteractiveWithChangeFinalizer.txBuilderFrom(
         Vector(output),
         utxos,
         feeRate,
-        changeAddr.scriptPubKey,
-        networkParameters.asInstanceOf[BitcoinNetwork])
-      tx <- finishSend(txBuilder)
+        changeAddr.scriptPubKey)
+
+      tx <- finishSend(txBuilder, utxos, amount, feeRate)
     } yield tx
   }
 
-  override def sendToAddress(
+  override def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
+      algo: CoinSelectionAlgo,
       fromAccount: AccountDb): Future[Transaction] = {
     require(
       address.networkParameters.isSameNetworkBytes(networkParameters),
@@ -275,15 +322,27 @@ abstract class Wallet
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
-      txBuilder <- fundRawTransactionInternal(
+      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
         destinations = Vector(destination),
         feeRate = feeRate,
         fromAccount = fromAccount,
-        keyManagerOpt = Some(keyManager))
+        keyManagerOpt = Some(keyManager),
+        coinSelectionAlgo = algo)
 
-      tx <- finishSend(txBuilder)
+      tx <- finishSend(txBuilder, utxoInfos, amount, feeRate)
     } yield tx
   }
+
+  override def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction] =
+    sendWithAlgo(address,
+                 amount,
+                 feeRate,
+                 CoinSelectionAlgo.AccumulateLargest,
+                 fromAccount)
 
   override def sendToAddresses(
       addresses: Vector[BitcoinAddress],
@@ -306,18 +365,44 @@ abstract class Wallet
     sendToOutputs(destinations, feeRate, fromAccount, reserveUtxos)
   }
 
+  override def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction] = {
+    val messageToUse = if (hashMessage) {
+      CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
+    } else {
+      if (message.length > 80) {
+        throw new IllegalArgumentException(
+          s"Message cannot be greater than 80 characters, it should be hashed, got $message")
+      } else ByteVector(message.getBytes)
+    }
+
+    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(messageToUse) :+ ScriptConstant(
+      messageToUse)
+
+    val scriptPubKey = ScriptPubKey(asm)
+
+    val output = TransactionOutput(0.satoshis, scriptPubKey)
+
+    sendToOutputs(Vector(output), feeRate, fromAccount, reserveUtxos = false)
+  }
+
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
-      txBuilder <- fundRawTransactionInternal(destinations = outputs,
-                                              feeRate = feeRate,
-                                              fromAccount = fromAccount,
-                                              keyManagerOpt = Some(keyManager),
-                                              markAsReserved = reserveUtxos)
-      tx <- finishSend(txBuilder)
+      (txBuilder, utxoInfos) <- fundRawTransactionInternal(
+        destinations = outputs,
+        feeRate = feeRate,
+        fromAccount = fromAccount,
+        keyManagerOpt = Some(keyManager),
+        markAsReserved = reserveUtxos)
+      sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
+      tx <- finishSend(txBuilder, utxoInfos, sentAmount, feeRate)
     } yield tx
   }
 

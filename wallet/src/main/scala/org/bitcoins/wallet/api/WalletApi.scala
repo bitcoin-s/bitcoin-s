@@ -2,6 +2,7 @@ package org.bitcoins.wallet.api
 
 import java.time.Instant
 
+import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
@@ -186,6 +187,9 @@ trait WalletApi extends WalletLogger {
   def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
   def markUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
+
+  def unmarkUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
 
   /** Checks if the wallet contains any data */
@@ -450,6 +454,24 @@ trait WalletApi extends WalletLogger {
     } yield tx
   }
 
+  def sendWithAlgo(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      algo: CoinSelectionAlgo,
+      fromAccount: AccountDb): Future[Transaction]
+
+  def sendWithAlgo(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRate: FeeUnit,
+      algo: CoinSelectionAlgo): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- sendWithAlgo(address, amount, feeRate, algo, account)
+    } yield tx
+  }
+
   /**
     *
     * Sends money from the specified account
@@ -531,6 +553,22 @@ trait WalletApi extends WalletLogger {
     for {
       account <- getDefaultAccount()
       tx <- sendToAddresses(addresses, amounts, feeRate, account, reserveUtxos)
+    } yield tx
+  }
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb): Future[Transaction]
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit): Future[Transaction] = {
+    for {
+      account <- getDefaultAccount()
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRate, account)
     } yield tx
   }
 

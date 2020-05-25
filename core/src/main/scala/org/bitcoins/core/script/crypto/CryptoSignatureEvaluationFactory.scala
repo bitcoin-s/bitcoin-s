@@ -9,11 +9,11 @@ trait CryptoSignatureEvaluationFactory
     extends ScriptOperationFactory[CryptoSignatureEvaluation] {
 
   /** The current [[CryptoSignatureEvaluation]] operations. */
-  def operations =
-    Seq(OP_CHECKMULTISIG,
-        OP_CHECKMULTISIGVERIFY,
-        OP_CHECKSIG,
-        OP_CHECKSIGVERIFY)
+  override val operations =
+    Vector(OP_CHECKMULTISIG,
+           OP_CHECKMULTISIGVERIFY,
+           OP_CHECKSIG,
+           OP_CHECKSIGVERIFY)
 
 }
 

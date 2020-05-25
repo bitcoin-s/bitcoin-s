@@ -53,7 +53,7 @@ object TxSigComponent {
     output.scriptPubKey match {
       case _: WitnessScriptPubKey =>
         transaction match {
-          case _: BaseTransaction =>
+          case _: NonWitnessTransaction =>
             throw new IllegalArgumentException(
               s"Cannot spend from segwit output ($output) with a base transaction ($transaction)")
           case wtx: WitnessTransaction =>
@@ -64,7 +64,7 @@ object TxSigComponent {
         if (WitnessScriptPubKey.isWitnessScriptPubKey(
               p2shScriptSig.redeemScript.asm)) {
           transaction match {
-            case _: BaseTransaction =>
+            case _: NonWitnessTransaction =>
               throw new IllegalArgumentException(
                 s"Cannot spend from segwit output ($output) with a base transaction ($transaction)")
             case wtx: WitnessTransaction =>
@@ -75,6 +75,19 @@ object TxSigComponent {
         }
       case _: RawScriptPubKey =>
         BaseTxSigComponent(transaction, inputIndex, output, flags)
+    }
+  }
+
+  def getScriptWitness(
+      txSigComponent: TxSigComponent): Option[ScriptWitnessV0] = {
+    txSigComponent.transaction match {
+      case _: NonWitnessTransaction => None
+      case wtx: WitnessTransaction =>
+        val witness = wtx.witness.witnesses(txSigComponent.inputIndex.toInt)
+        witness match {
+          case EmptyScriptWitness       => None
+          case witness: ScriptWitnessV0 => Some(witness)
+        }
     }
   }
 }
