@@ -1,6 +1,7 @@
 package org.bitcoins.crypto
 
-import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
+import org.bitcoin.NativeSecp256k1
+import org.bitcoins.crypto.CryptoContext.{BouncyCastle, LibSecp256k1}
 import org.bitcoins.testkit.core.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.scalacheck.Gen
@@ -12,11 +13,11 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   behavior of "CryptoLibraries"
 
   override def withFixture(test: NoArgTest): Outcome = {
-    if (Secp256k1Context.isEnabled) {
-      super.withFixture(test)
-    } else {
-      logger.warn(s"Test ${test.name} skipped as Secp256k1 is not available.")
-      Succeeded
+    CryptoContext.default match {
+      case CryptoContext.LibSecp256k1 => super.withFixture(test)
+      case CryptoContext.BouncyCastle =>
+        logger.warn(s"Test ${test.name} skipped as Secp256k1 is not available.")
+        Succeeded
     }
   }
 
@@ -55,8 +56,8 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
                                     NumberGenerator.bytevector(33))
     forAll(keyOrGarbageGen) { bytes =>
       assert(
-        ECPublicKey.isFullyValid(bytes, useSecp = false) ==
-          ECPublicKey.isFullyValid(bytes, useSecp = true)
+        ECPublicKey.isFullyValid(bytes, context = BouncyCastle) ==
+          ECPublicKey.isFullyValid(bytes, context = LibSecp256k1)
       )
     }
   }
@@ -64,15 +65,16 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
   it must "decompress keys the same" in {
     forAll(CryptoGenerators.publicKey) { pubKey =>
       assert(
-        pubKey.decompressed(useSecp = false) == pubKey.decompressed(
-          useSecp = true))
+        pubKey.decompressed(context = BouncyCastle) == pubKey.decompressed(
+          context = LibSecp256k1))
     }
   }
 
   it must "compute public keys the same" in {
     forAll(CryptoGenerators.privateKey) { privKey =>
       assert(
-        privKey.publicKey(useSecp = false) == privKey.publicKey(useSecp = true))
+        privKey.publicKey(context = BouncyCastle) == privKey.publicKey(
+          context = LibSecp256k1))
     }
   }
 
@@ -80,8 +82,8 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
     forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
       case (privKey, bytes) =>
         assert(
-          privKey.sign(bytes, useSecp = false) == privKey.sign(bytes,
-                                                               useSecp = true))
+          privKey.sign(bytes, context = BouncyCastle) == privKey
+            .sign(bytes, context = LibSecp256k1))
     }
   }
 
@@ -93,11 +95,11 @@ class BouncyCastleSecp256k1Test extends BitcoinSUnitTest {
         val sig = privKey.sign(bytes)
         val pubKey = privKey.publicKey
         assert(
-          pubKey.verify(bytes, sig, useSecp = false) == pubKey
-            .verify(bytes, sig, useSecp = true))
+          pubKey.verify(bytes, sig, context = BouncyCastle) == pubKey
+            .verify(bytes, sig, context = LibSecp256k1))
         assert(
-          pubKey.verify(bytes, badSig, useSecp = false) == pubKey
-            .verify(bytes, badSig, useSecp = true))
+          pubKey.verify(bytes, badSig, context = BouncyCastle) == pubKey
+            .verify(bytes, badSig, context = LibSecp256k1))
     }
   }
 }
