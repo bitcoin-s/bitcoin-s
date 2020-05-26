@@ -35,7 +35,7 @@ class HdUtilTest extends KeyManagerUnitTest {
       HDUtil.getXpubVersion(HDPurposes.NestedSegWit, TestNet3) == NestedSegWitTestNet3Pub)
 
     assertThrows[IllegalArgumentException] {
-      HDUtil.getXpubVersion(HDPurpose(-1), TestNet3)
+      HDUtil.getXpubVersion(HDPurpose(1), TestNet3)
     }
   }
 
@@ -54,11 +54,11 @@ class HdUtilTest extends KeyManagerUnitTest {
       HDUtil.getXprivVersion(HDPurposes.NestedSegWit, TestNet3) == NestedSegWitTestNet3Priv)
 
     assertThrows[IllegalArgumentException] {
-      HDUtil.getXprivVersion(HDPurpose(-1), MainNet)
+      HDUtil.getXprivVersion(HDPurpose(1), MainNet)
     }
 
     assertThrows[IllegalArgumentException] {
-      HDUtil.getXprivVersion(HDPurpose(-1), TestNet3)
+      HDUtil.getXprivVersion(HDPurpose(1), TestNet3)
     }
   }
 
