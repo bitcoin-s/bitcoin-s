@@ -6,7 +6,7 @@ import org.bitcoins.core.config.{MainNet, RegTest}
 import org.bitcoins.core.crypto.MnemonicCode
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.TimeUtil
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE}
 import org.bitcoins.keymanager._
 import org.bitcoins.testkit.keymanager.{KeyManagerTestUtil, KeyManagerUnitTest}
 import scodec.bits.BitVector
@@ -92,6 +92,52 @@ class BIP39KeyManagerTest extends KeyManagerUnitTest {
 
     val api = BIP39KeyManager
       .initializeWithEntropy(mnemonic.toEntropy, Some(bip39Pw), kmParams)
+      .right
+      .get
+
+    val apiXpub = api.getRootXPub
+
+    assert(apiXpub == directXpub,
+           s"We don't have initialization symmetry between our constructors!")
+
+    //we should be able to derive the same child xpub
+    assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
+  }
+
+  it must "write a key manager to disk then initialize a key manager from a params" in {
+    val kmParams = buildParams()
+    val bip39Pw = KeyManagerTestUtil.bip39Password
+    val direct =
+      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
+
+    val decryptedMnemonic = DecryptedMnemonic(mnemonic, direct.creationTime)
+    val password = AesPassword.fromNonEmptyString("password")
+    WalletStorage.writeMnemonicToDisk(kmParams.seedPath,
+                                      decryptedMnemonic.encrypt(password))
+
+    val directXpub = direct.getRootXPub
+    val api =
+      BIP39KeyManager.fromParams(kmParams, password, Some(bip39Pw)).right.get
+
+    val apiXpub = api.getRootXPub
+
+    assert(apiXpub == directXpub,
+           s"We don't have initialization symmetry between our constructors!")
+
+    //we should be able to derive the same child xpub
+    assert(api.deriveXPub(hdAccount) == direct.deriveXPub(hdAccount))
+  }
+
+  it must "initialize a key manager from a mnemonic to the same xpub if we call constructor directly or use CreateKeyManagerApi" in {
+    val kmParams = buildParams()
+    val bip39Pw = KeyManagerTestUtil.bip39Password
+    val direct =
+      BIP39KeyManager(mnemonic, kmParams, Some(bip39Pw), TimeUtil.now)
+
+    val directXpub = direct.getRootXPub
+
+    val api = BIP39KeyManager
+      .initializeWithMnemonic(mnemonic, Some(bip39Pw), kmParams)
       .right
       .get
 
