@@ -6,9 +6,10 @@ import java.nio.file.{Files, Paths}
 import akka.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.Core
-import org.bitcoins.core.api.ChainQueryApi
+import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.AppConfig
+import org.bitcoins.feeprovider.BitcoinerLiveFeeRateProvider
 import org.bitcoins.keymanager.KeyManagerInitializeError
 import org.bitcoins.keymanager.bip39.{BIP39KeyManager, BIP39LockedKeyManager}
 import org.bitcoins.node.config.NodeAppConfig
@@ -65,7 +66,10 @@ object Main extends App {
 
     uninitializedNode <- createNode
     chainApi <- uninitializedNode.chainApiFromDb()
-    wallet <- createWallet(uninitializedNode, chainApi, bip39PasswordOpt)
+    wallet <- createWallet(uninitializedNode,
+                           chainApi,
+                           BitcoinerLiveFeeRateProvider(60),
+                           bip39PasswordOpt)
     node <- initializeNode(uninitializedNode, wallet)
 
     _ <- node.start()
@@ -151,6 +155,7 @@ object Main extends App {
   private def createWallet(
       nodeApi: Node,
       chainQueryApi: ChainQueryApi,
+      feeRateApi: FeeRateApi,
       bip39PasswordOpt: Option[String]): Future[WalletApi] = {
     hasWallet().flatMap { walletExists =>
       if (walletExists) {
@@ -161,7 +166,8 @@ object Main extends App {
                                      bip39PasswordOpt,
                                      walletConf.kmParams) match {
           case Right(km) =>
-            val wallet = Wallet(km, nodeApi, chainQueryApi, km.creationTime)
+            val wallet =
+              Wallet(km, nodeApi, chainQueryApi, feeRateApi, km.creationTime)
             Future.successful(wallet)
           case Left(err) =>
             error(err)
@@ -181,7 +187,11 @@ object Main extends App {
 
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)
+          Wallet(keyManager,
+                 nodeApi,
+                 chainQueryApi,
+                 feeRateApi,
+                 keyManager.creationTime)
 
         Wallet.initialize(wallet = unInitializedWallet,
                           bip39PasswordOpt = bip39PasswordOpt)

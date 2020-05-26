@@ -483,7 +483,7 @@ class RoutesSpec
       // positive cases
 
       (mockWalletApi
-        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: FeeUnit))
+        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: Option[FeeUnit]))
         .expects(testAddress, Bitcoins(100), *)
         .returning(Future.successful(EmptyTransaction))
 
@@ -549,7 +549,7 @@ class RoutesSpec
         .sendFromOutPoints(_: Vector[TransactionOutPoint],
                            _: BitcoinAddress,
                            _: CurrencyUnit,
-                           _: FeeUnit))
+                           _: Option[FeeUnit]))
         .expects(Vector.empty[TransactionOutPoint],
                  testAddress,
                  Bitcoins(100),
@@ -627,11 +627,11 @@ class RoutesSpec
       (mockWalletApi
         .sendWithAlgo(_: BitcoinAddress,
                       _: CurrencyUnit,
-                      _: FeeUnit,
+                      _: Option[FeeUnit],
                       _: CoinSelectionAlgo))
         .expects(testAddress,
                  Bitcoins(100),
-                 SatoshisPerVirtualByte(Satoshis(4)),
+                 Some(SatoshisPerVirtualByte(Satoshis(4))),
                  CoinSelectionAlgo.AccumulateSmallestViable)
         .returning(Future.successful(EmptyTransaction))
 
@@ -708,7 +708,7 @@ class RoutesSpec
       val message = "Never gonna give you up, never gonna let you down"
 
       (mockWalletApi
-        .makeOpReturnCommitment(_: String, _: Boolean, _: FeeUnit))
+        .makeOpReturnCommitment(_: String, _: Boolean, _: Option[FeeUnit]))
         .expects(message, false, *)
         .returning(Future.successful(EmptyTransaction))
 

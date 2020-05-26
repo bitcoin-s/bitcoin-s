@@ -247,6 +247,12 @@ object Deps {
     Test.scalacheck
   )
 
+  val feeProvider = List(
+    Compile.akkaHttp,
+    Compile.akkaActor,
+    Compile.akkaStream
+  )
+
   val node = List(
     Compile.akkaActor,
     Compile.logback,

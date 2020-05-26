@@ -3,7 +3,7 @@ package org.bitcoins.wallet.api
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
@@ -48,6 +48,7 @@ trait WalletApi extends WalletLogger {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
+  val feeRateApi: FeeRateApi
   val creationTime: Instant
 
   def chainParams: ChainParams = walletConfig.chain
@@ -335,6 +336,7 @@ trait WalletApi extends WalletLogger {
         val w = Wallet(keyManager = km,
                        nodeApi = nodeApi,
                        chainQueryApi = chainQueryApi,
+                       feeRateApi = feeRateApi,
                        creationTime = km.creationTime)
         Right(w)
       case Left(err) => Left(err)
@@ -450,10 +452,27 @@ trait WalletApi extends WalletLogger {
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit],
+      fromAccount: AccountDb): Future[Transaction] = {
+    for {
+      feeRate <- feeRateOpt match {
+        case None =>
+          feeRateApi.getFeeRate
+        case Some(feeRate) =>
+          Future.successful(feeRate)
+      }
+      tx <- sendFromOutPoints(outPoints, address, amount, feeRate, fromAccount)
+    } yield tx
+  }
+
+  def sendFromOutPoints(
+      outPoints: Vector[TransactionOutPoint],
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendFromOutPoints(outPoints, address, amount, feeRate, account)
+      tx <- sendFromOutPoints(outPoints, address, amount, feeRateOpt, account)
     } yield tx
   }
 
@@ -467,11 +486,28 @@ trait WalletApi extends WalletLogger {
   def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit,
+      feeRateOpt: Option[FeeUnit],
+      algo: CoinSelectionAlgo,
+      fromAccount: AccountDb): Future[Transaction] = {
+    for {
+      feeRate <- feeRateOpt match {
+        case None =>
+          feeRateApi.getFeeRate
+        case Some(feeRate) =>
+          Future.successful(feeRate)
+      }
+      tx <- sendWithAlgo(address, amount, feeRate, algo, fromAccount)
+    } yield tx
+  }
+
+  def sendWithAlgo(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRateOpt: Option[FeeUnit],
       algo: CoinSelectionAlgo): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendWithAlgo(address, amount, feeRate, algo, account)
+      tx <- sendWithAlgo(address, amount, feeRateOpt, algo, account)
     } yield tx
   }
 
@@ -488,6 +524,28 @@ trait WalletApi extends WalletLogger {
       fromAccount: AccountDb): Future[Transaction]
 
   /**
+    *
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddress(
+      address: BitcoinAddress,
+      amount: CurrencyUnit,
+      feeRateOpt: Option[FeeUnit],
+      fromAccount: AccountDb): Future[Transaction] = {
+    for {
+      feeRate <- feeRateOpt match {
+        case None =>
+          feeRateApi.getFeeRate
+        case Some(feeRate) =>
+          Future.successful(feeRate)
+      }
+      tx <- sendToAddress(address, amount, feeRate, fromAccount)
+    } yield tx
+  }
+
+  /**
     * Sends money from the default account
     *
     * todo: add error handling to signature
@@ -495,11 +553,11 @@ trait WalletApi extends WalletLogger {
   def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
-      feeRate: FeeUnit
+      feeRateOpt: Option[FeeUnit]
   ): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendToAddress(address, amount, feeRate, account)
+      tx <- sendToAddress(address, amount, feeRateOpt, account)
     } yield tx
   }
 
@@ -515,6 +573,22 @@ trait WalletApi extends WalletLogger {
       fromAccount: AccountDb,
       reserveUtxos: Boolean): Future[Transaction]
 
+  def sendToOutputs(
+      outputs: Vector[TransactionOutput],
+      feeRateOpt: Option[FeeUnit],
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction] = {
+    for {
+      feeRate <- feeRateOpt match {
+        case None =>
+          feeRateApi.getFeeRate
+        case Some(feeRate) =>
+          Future.successful(feeRate)
+      }
+      tx <- sendToOutputs(outputs, feeRate, fromAccount, reserveUtxos)
+    } yield tx
+  }
+
   /**
     * Sends money from the default account
     *
@@ -522,11 +596,11 @@ trait WalletApi extends WalletLogger {
     */
   def sendToOutputs(
       outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit,
+      feeRateOpt: Option[FeeUnit],
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendToOutputs(outputs, feeRate, account, reserveUtxos)
+      tx <- sendToOutputs(outputs, feeRateOpt, account, reserveUtxos)
     } yield tx
   }
 
@@ -544,6 +618,32 @@ trait WalletApi extends WalletLogger {
       reserveUtxos: Boolean): Future[Transaction]
 
   /**
+    * Sends money from the specified account
+    *
+    * todo: add error handling to signature
+    */
+  def sendToAddresses(
+      addresses: Vector[BitcoinAddress],
+      amounts: Vector[CurrencyUnit],
+      feeRateOpt: Option[FeeUnit],
+      fromAccount: AccountDb,
+      reserveUtxos: Boolean): Future[Transaction] = {
+    for {
+      feeRate <- feeRateOpt match {
+        case None =>
+          feeRateApi.getFeeRate
+        case Some(feeRate) =>
+          Future.successful(feeRate)
+      }
+      tx <- sendToAddresses(addresses,
+                            amounts,
+                            feeRate,
+                            fromAccount,
+                            reserveUtxos)
+    } yield tx
+  }
+
+  /**
     * Sends money from the default account
     *
     * todo: add error handling to signature
@@ -551,11 +651,15 @@ trait WalletApi extends WalletLogger {
   def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit,
+      feeRateOpt: Option[FeeUnit],
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- sendToAddresses(addresses, amounts, feeRate, account, reserveUtxos)
+      tx <- sendToAddresses(addresses,
+                            amounts,
+                            feeRateOpt,
+                            account,
+                            reserveUtxos)
     } yield tx
   }
 
@@ -568,10 +672,26 @@ trait WalletApi extends WalletLogger {
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,
-      feeRate: FeeUnit): Future[Transaction] = {
+      feeRateOpt: Option[FeeUnit],
+      fromAccount: AccountDb): Future[Transaction] = {
+    for {
+      feeRate <- feeRateOpt match {
+        case None =>
+          feeRateApi.getFeeRate
+        case Some(feeRate) =>
+          Future.successful(feeRate)
+      }
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
+    } yield tx
+  }
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
     for {
       account <- getDefaultAccount()
-      tx <- makeOpReturnCommitment(message, hashMessage, feeRate, account)
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRateOpt, account)
     } yield tx
   }
 

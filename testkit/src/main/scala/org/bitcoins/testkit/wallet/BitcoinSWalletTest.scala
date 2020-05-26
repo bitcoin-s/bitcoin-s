@@ -9,8 +9,10 @@ import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
+import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -27,7 +29,12 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{
+  ExecutionContext,
+  ExecutionContextExecutor,
+  Future,
+  Promise
+}
 
 trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   import BitcoinSWalletTest._
@@ -348,9 +355,11 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.initialize().flatMap { _ =>
         val wallet =
-          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)(
-            walletConfig,
-            ec)
+          Wallet(keyManager,
+                 nodeApi,
+                 chainQueryApi,
+                 ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
+                 keyManager.creationTime)(walletConfig, ec)
         Wallet.initialize(wallet, bip39PasswordOpt)
       }
     }
@@ -415,8 +424,9 @@ object BitcoinSWalletTest extends WalletLogger {
         keyManager = wallet.keyManager,
         nodeApi = apiCallback.nodeApi,
         chainQueryApi = apiCallback.chainQueryApi,
-        creationTime = wallet.keyManager.creationTime)(wallet.walletConfig,
-                                                       wallet.ec)
+        feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
+        creationTime = wallet.keyManager.creationTime
+      )(wallet.walletConfig, wallet.ec)
       //complete the walletCallbackP so we can handle the callbacks when they are
       //called without hanging forever.
       _ = walletCallbackP.success(walletWithCallback)
@@ -432,7 +442,9 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext): Future[Wallet] = {
+      system: ActorSystem): Future[Wallet] = {
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
+
     val defaultWalletF =
       createDefaultWallet(nodeApi, chainQueryApi, extraConfig)
     for {
