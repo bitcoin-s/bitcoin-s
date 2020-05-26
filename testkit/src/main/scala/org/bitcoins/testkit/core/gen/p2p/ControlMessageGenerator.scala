@@ -7,6 +7,7 @@ import org.bitcoins.core.p2p.{ProtocolVersion, _}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.wallet.fee.{
   SatoshisPerByte,
+  SatoshisPerKW,
   SatoshisPerKiloByte,
   SatoshisPerVirtualByte
 }
@@ -35,7 +36,7 @@ object ControlMessageGenerator {
     } yield fee match {
       case fee: SatoshisPerByte     => FeeFilterMessage(fee)
       case fee: SatoshisPerKiloByte => FeeFilterMessage(fee)
-      case SatoshisPerVirtualByte(_) =>
+      case SatoshisPerVirtualByte(_) | SatoshisPerKW(_) =>
         throw new RuntimeException(s"We cannot end up here")
     }
   }
