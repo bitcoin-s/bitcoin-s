@@ -17,8 +17,8 @@ import org.bitcoins.core.psbt.PSBTInputKeyId.PartialSignatureKeyId
 import org.bitcoins.core.psbt._
 import org.bitcoins.core.wallet.builder.{
   FinalizedTxWithSigningInfo,
-  NonInteractiveWithChangeFinalizer,
-  RawTxBuilder
+  RawTxBuilder,
+  StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{InputInfo, ScriptSignatureParams}
@@ -203,7 +203,7 @@ object PSBTGenerators {
       InputUtil.calcSequenceForInputs(creditingTxsInfo, Policy.isRBFEnabled)
 
     val builder = RawTxBuilder().setLockTime(lockTime) ++= destinations ++= inputs
-    val finalizer = NonInteractiveWithChangeFinalizer(
+    val finalizer = StandardNonInteractiveFinalizer(
       creditingTxsInfo.toVector.map(_.inputInfo),
       fee,
       changeSPK)

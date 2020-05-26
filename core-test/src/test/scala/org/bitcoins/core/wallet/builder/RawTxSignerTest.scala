@@ -84,11 +84,11 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       )
     val utxos = Vector(utxo)
     val feeUnit = SatoshisPerVirtualByte(currencyUnit = Satoshis(1))
-    val utxF = NonInteractiveWithChangeFinalizer.txFrom(outputs = destinations,
-                                                        utxos = utxos,
-                                                        feeRate = feeUnit,
-                                                        changeSPK =
-                                                          EmptyScriptPubKey)
+    val utxF = StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                                      utxos = utxos,
+                                                      feeRate = feeUnit,
+                                                      changeSPK =
+                                                        EmptyScriptPubKey)
     //trivially false
     val f = (_: Seq[ScriptSignatureParams[InputInfo]], _: Transaction) => false
 
@@ -122,11 +122,11 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val utxos = Vector(utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val utxF = NonInteractiveWithChangeFinalizer.txFrom(outputs = destinations,
-                                                        utxos = utxos,
-                                                        feeRate = feeUnit,
-                                                        changeSPK =
-                                                          EmptyScriptPubKey)
+    val utxF = StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                                      utxos = utxos,
+                                                      feeRate = feeUnit,
+                                                      changeSPK =
+                                                        EmptyScriptPubKey)
 
     recoverToSucceededIf[IllegalArgumentException] {
       utxF.flatMap(utx => RawTxSigner.sign(utx, utxos, feeUnit))
@@ -160,11 +160,11 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val utxos = Vector(utxo)
 
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
-    val utxF = NonInteractiveWithChangeFinalizer.txFrom(outputs = destinations,
-                                                        utxos = utxos,
-                                                        feeRate = feeUnit,
-                                                        changeSPK =
-                                                          EmptyScriptPubKey)
+    val utxF = StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                                      utxos = utxos,
+                                                      feeRate = feeUnit,
+                                                      changeSPK =
+                                                        EmptyScriptPubKey)
 
     recoverToSucceededIf[IllegalArgumentException] {
       utxF.flatMap(utx => RawTxSigner.sign(utx, utxos, feeUnit))
@@ -194,7 +194,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val feeUnit = SatoshisPerByte(Satoshis.one)
 
     val utxF =
-      NonInteractiveWithChangeFinalizer.txFrom(
+      StandardNonInteractiveFinalizer.txFrom(
         outputs = Vector(
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
@@ -231,7 +231,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val feeUnit = SatoshisPerByte(Satoshis.one)
 
     val utxF =
-      NonInteractiveWithChangeFinalizer.txFrom(
+      StandardNonInteractiveFinalizer.txFrom(
         outputs = Vector(
           TransactionOutput(Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
@@ -283,7 +283,7 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
     val feeRate = SatoshisPerByte(Satoshis.one)
 
     val utxF =
-      NonInteractiveWithChangeFinalizer.txFrom(
+      StandardNonInteractiveFinalizer.txFrom(
         Vector(
           TransactionOutput(Bitcoins.one + Bitcoins.one - CurrencyUnits.oneMBTC,
                             EmptyScriptPubKey)),
@@ -361,10 +361,10 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
         val utxF =
-          NonInteractiveWithChangeFinalizer.txFrom(outputs = destinations,
-                                                   utxos = creditingTxsInfo,
-                                                   feeRate = fee,
-                                                   changeSPK = changeSPK)
+          StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                                 utxos = creditingTxsInfo,
+                                                 feeRate = fee,
+                                                 changeSPK = changeSPK)
         val txF = utxF.flatMap(utx =>
           RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee))
 
@@ -380,10 +380,10 @@ class RawTxSignerTest extends BitcoinSAsyncTest {
       case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
         val fee = SatoshisPerByte(Satoshis(1000))
         val utxF =
-          NonInteractiveWithChangeFinalizer.txFrom(outputs = destinations,
-                                                   utxos = creditingTxsInfo,
-                                                   feeRate = fee,
-                                                   changeSPK = changeSPK)
+          StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                                 utxos = creditingTxsInfo,
+                                                 feeRate = fee,
+                                                 changeSPK = changeSPK)
         val txF = utxF.flatMap(utx =>
           RawTxSigner.sign(utx, creditingTxsInfo.toVector, fee))
 

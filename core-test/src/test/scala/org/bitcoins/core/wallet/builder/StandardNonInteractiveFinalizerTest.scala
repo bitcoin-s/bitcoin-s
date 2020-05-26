@@ -29,8 +29,8 @@ import org.bitcoins.testkit.Implicits._
 import org.bitcoins.testkit.core.gen.ScriptGenerators
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 
-class NonInteractiveWithChangeFinalizerTest extends BitcoinSAsyncTest {
-  behavior of "NonInteractiveWithChangeFinalizerTest"
+class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
+  behavior of "StandardNonInteractiveFinalizer"
 
   private val (spk, privKey) = ScriptGenerators.p2pkhScriptPubKey.sampleSome
 
@@ -54,10 +54,10 @@ class NonInteractiveWithChangeFinalizerTest extends BitcoinSAsyncTest {
                                           tx.lockTime)
 
     assert(
-      NonInteractiveWithChangeFinalizer
+      SanityCheckFinalizer
         .sanityDestinationChecks(Vector(outPoint),
                                  Vector(output),
-                                 changeSPK,
+                                 Vector(changeSPK),
                                  missingOutputTx)
         .isFailure)
   }
@@ -70,10 +70,10 @@ class NonInteractiveWithChangeFinalizerTest extends BitcoinSAsyncTest {
                                         tx.lockTime)
 
     assert(
-      NonInteractiveWithChangeFinalizer
+      SanityCheckFinalizer
         .sanityDestinationChecks(Vector(outPoint),
                                  Vector(output),
-                                 changeSPK,
+                                 Vector(changeSPK),
                                  extraOutputTx)
         .isFailure)
   }
@@ -89,10 +89,10 @@ class NonInteractiveWithChangeFinalizerTest extends BitcoinSAsyncTest {
                                           tx.lockTime)
 
     assert(
-      NonInteractiveWithChangeFinalizer
+      SanityCheckFinalizer
         .sanityDestinationChecks(Vector(outPoint),
                                  Vector(output),
-                                 changeSPK,
+                                 Vector(changeSPK),
                                  extraOutPointTx)
         .isFailure)
   }
@@ -124,10 +124,10 @@ class NonInteractiveWithChangeFinalizerTest extends BitcoinSAsyncTest {
     val feeUnit = SatoshisPerVirtualByte(Satoshis.one)
 
     recoverToSucceededIf[IllegalArgumentException] {
-      NonInteractiveWithChangeFinalizer.txFrom(outputs = destinations,
-                                               utxos = utxos,
-                                               feeRate = feeUnit,
-                                               changeSPK = EmptyScriptPubKey)
+      StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                             utxos = utxos,
+                                             feeRate = feeUnit,
+                                             changeSPK = EmptyScriptPubKey)
     }
   }
 
@@ -157,10 +157,10 @@ class NonInteractiveWithChangeFinalizerTest extends BitcoinSAsyncTest {
     val feeUnit = SatoshisPerVirtualByte(Satoshis(-1))
 
     recoverToSucceededIf[IllegalArgumentException] {
-      NonInteractiveWithChangeFinalizer.txFrom(outputs = destinations,
-                                               utxos = utxos,
-                                               feeRate = feeUnit,
-                                               changeSPK = EmptyScriptPubKey)
+      StandardNonInteractiveFinalizer.txFrom(outputs = destinations,
+                                             utxos = utxos,
+                                             feeRate = feeUnit,
+                                             changeSPK = EmptyScriptPubKey)
     }
   }
 
@@ -184,7 +184,7 @@ class NonInteractiveWithChangeFinalizerTest extends BitcoinSAsyncTest {
       )
 
     recoverToSucceededIf[UnsupportedOperationException] {
-      NonInteractiveWithChangeFinalizer.txFrom(
+      StandardNonInteractiveFinalizer.txFrom(
         Vector(TransactionOutput(Bitcoins.one, EmptyScriptPubKey)),
         Vector(spendingInfo),
         SatoshisPerVirtualByte(Satoshis.one),

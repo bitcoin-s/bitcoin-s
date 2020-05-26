@@ -9,16 +9,15 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.builder.{
-  NonInteractiveWithChangeFinalizer,
   RawTxBuilderWithFinalizer,
-  RawTxSigner
+  RawTxSigner,
+  StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState.{
@@ -253,7 +252,7 @@ abstract class Wallet
       changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
 
       output = TransactionOutput(amount, address.scriptPubKey)
-      txBuilder = NonInteractiveWithChangeFinalizer.txBuilderFrom(
+      txBuilder = StandardNonInteractiveFinalizer.txBuilderFrom(
         Vector(output),
         utxos,
         feeRate,
