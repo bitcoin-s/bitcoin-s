@@ -40,14 +40,21 @@ sealed trait RawTxFinalizer {
     * locktime and version and this RawTxBuilderResult is then passed to
     * the other RawTxFinalizer's buildTx
     */
-  def andThen(other: RawTxFinalizer): RawTxFinalizer = new RawTxFinalizer {
-    override def buildTx(txBuilderResult: RawTxBuilderResult)(
-        implicit ec: ExecutionContext): Future[Transaction] = {
-      for {
-        firstFinalizedTx <- this.buildTx(txBuilderResult)
-        composedFinalizedTx <- other.buildTx(
-          RawTxBuilderResult.fromTransaction(firstFinalizedTx))
-      } yield composedFinalizedTx
+  def andThen(other: RawTxFinalizer): RawTxFinalizer = {
+    // this.buildTx above gets shadowed below, so this allows us to call it
+    def thisBuildTx(txBuilderResult: RawTxBuilderResult)(
+        implicit ec: ExecutionContext): Future[Transaction] =
+      this.buildTx(txBuilderResult)
+
+    new RawTxFinalizer {
+      override def buildTx(txBuilderResult: RawTxBuilderResult)(
+          implicit ec: ExecutionContext): Future[Transaction] = {
+        for {
+          firstFinalizedTx <- thisBuildTx(txBuilderResult)
+          composedFinalizedTx <- other.buildTx(
+            RawTxBuilderResult.fromTransaction(firstFinalizedTx))
+        } yield composedFinalizedTx
+      }
     }
   }
 }
