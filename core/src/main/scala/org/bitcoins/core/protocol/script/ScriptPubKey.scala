@@ -228,39 +228,47 @@ object MultiSignatureScriptPubKey
     val isNotEmpty = asm.size > 0
     val containsMultiSigOp = asm.contains(OP_CHECKMULTISIG) || asm.contains(
       OP_CHECKMULTISIGVERIFY)
-    //we need either the first or second asm operation to indicate how many signatures are required
-    val hasRequiredSignaturesTry = Try {
-      asm.headOption match {
-        case None        => false
-        case Some(token) =>
-          //this is for the case that we have more than 16 public keys, the
-          //first operation will be a push op, the second operation being the actual number of keys
-          if (token.isInstanceOf[BytesToPushOntoStack])
-            isValidPubKeyNumber(asm.tail.head)
-          else isValidPubKeyNumber(token)
+
+    if (isNotEmpty && containsMultiSigOp) {
+      //we need either the first or second asm operation to indicate how many signatures are required
+      val hasRequiredSignaturesTry = Try {
+        asm.headOption match {
+          case None        => false
+          case Some(token) =>
+            //this is for the case that we have more than 16 public keys, the
+            //first operation will be a push op, the second operation being the actual number of keys
+            if (token.isInstanceOf[BytesToPushOntoStack])
+              isValidPubKeyNumber(asm.tail.head)
+            else isValidPubKeyNumber(token)
+        }
       }
-    }
-    //the second to last asm operation should be the maximum amount of public keys
-    val hasMaximumSignaturesTry = Try {
-      asm(asm.length - 2) match {
-        case token: ScriptToken => isValidPubKeyNumber(token)
+      //the second to last asm operation should be the maximum amount of public keys
+      val hasMaximumSignaturesTry = Try {
+        asm(asm.length - 2) match {
+          case token: ScriptToken => isValidPubKeyNumber(token)
+        }
       }
+
+      (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
+        case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
+
+          val isStandardOps = asm.forall(
+            op =>
+              op.isInstanceOf[ScriptConstant] || op
+                .isInstanceOf[BytesToPushOntoStack] || op.isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
+                op == OP_CHECKMULTISIGVERIFY)
+
+          val result = isNotEmpty && containsMultiSigOp && hasRequiredSignatures &&
+            hasMaximumSignatures && isStandardOps
+          result
+        case (Success(_), Failure(_)) => false
+        case (Failure(_), Success(_)) => false
+        case (Failure(_), Failure(_)) => false
+      }
+    } else {
+      false
     }
 
-    val standardOps = asm.filter(
-      op =>
-        op.isInstanceOf[ScriptNumber] || op == OP_CHECKMULTISIG ||
-          op == OP_CHECKMULTISIGVERIFY || op.isInstanceOf[ScriptConstant] || op
-          .isInstanceOf[BytesToPushOntoStack])
-    (hasRequiredSignaturesTry, hasMaximumSignaturesTry) match {
-      case (Success(hasRequiredSignatures), Success(hasMaximumSignatures)) =>
-        val result = isNotEmpty && containsMultiSigOp && hasRequiredSignatures &&
-          hasMaximumSignatures && standardOps.size == asm.size
-        result
-      case (Success(_), Failure(_)) => false
-      case (Failure(_), Success(_)) => false
-      case (Failure(_), Failure(_)) => false
-    }
   }
 
   /**

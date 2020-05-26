@@ -82,7 +82,7 @@ sealed abstract class Number[T <: Number[T]]
     }
   }
 
-  override def bytes: ByteVector = BytesUtil.decodeHex(hex)
+  override lazy val bytes: ByteVector = BytesUtil.decodeHex(hex)
 }
 
 /**
@@ -110,13 +110,13 @@ sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
 
   def toUInt8: UInt8 = UInt8(toInt)
 
-  override def hex: String = toUInt8.hex
+  override val hex: String = toUInt8.hex
 }
 
 sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override def apply: A => UInt8 = UInt8(_)
 
-  override def hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
+  override val hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
 
   override def andMask = 0xff
 
@@ -140,7 +140,7 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   * Represents a uint64_t in C
   */
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
-  override def hex: String = encodeHex(underlying)
+  override val hex: String = encodeHex(underlying)
   override def apply: A => UInt64 = UInt64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
 
@@ -170,7 +170,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
   override def andMask = 0xffffffff
-  override def hex: String = BytesUtil.encodeHex(toInt)
+  override val hex: String = BytesUtil.encodeHex(toInt)
 }
 
 /**
@@ -179,7 +179,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
-  override def hex: String = BytesUtil.encodeHex(toLong)
+  override val hex: String = BytesUtil.encodeHex(toLong)
 }
 
 /**
