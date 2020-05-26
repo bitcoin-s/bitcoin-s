@@ -19,18 +19,20 @@ Bitcoin-S includes a couple of applications that can be run as standalone execut
 This includes the node, wallet and (partial) blockchain verification modules, as well
 as the server that bundles these three together and the CLI used to communicate with
 the server. These applications are configured with HOCON files. The file
-[`reference.conf`](../testkit/src/main/resources/reference.conf)
+[`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/testkit/src/main/resources/reference.conf)
 is the basis configuration file, and every option read by Bitcoin-S should be present in
 this file. This means that you can copy sections from this file and edit them, to tune
 how the application runs on your machine.
 
-One example of things you can tune is logging levels. Lets say you wanted general logging
-to happen at the `WARN` level, but the P2P message handling to be logged at `DEBUG`. Your
-configuration file would then look like:
+One example of things you can tune is logging levels. Let's say you wanted the logback config
+ignored, general logging to happen at the `WARN` level, and the P2P message handling to be logged at `DEBUG`.
+Your configuration file would then look like:
 
 ```conf
 bitcoins-s {
   logging {
+    logback = false
+
     level = warn
 
     p2p = debug
@@ -40,7 +42,7 @@ bitcoins-s {
 
 ### Running the applications
 
-When running the applications configuration placed in `bitcoin-s.conf` in the current
+When running the application's configuration placed in `bitcoin-s.conf` in the current
 data directory gets picked up. For linux this is by default `$HOME/.bitcoin-s/`, so the
 file you should edit would be `$HOME/.bitcoin-s/bitcoin-s.conf`.
 
@@ -48,17 +50,17 @@ file you should edit would be `$HOME/.bitcoin-s/bitcoin-s.conf`.
 
 You can place a `logback-test.xml` file in the `src/test/resources/` directory in the same project that tests are being run in.
 
-If the test suite depends on `testkit`, you can modify [`reference.conf`](../testkit/src/main/resources/reference.conf)
+If the test suite depends on `testkit`, you can modify [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/testkit/src/main/resources/reference.conf)
 that is built into the testkit to control logging.
 
 ## Logging when working on Bitcoin-S tests
 
 When working on various parts of Bitcoin-S the need to log what's going on arises
-pretty quickly. There's two way of doing this:
+pretty quickly. There are two ways of doing this:
 
 1. Using the way described in the section above, "Working on Bitcoin-S applications".
    You could either use traits (like `HTTPLogger` or `P2PLogger`) that exposes a
-   field `logger`, or acquire the logger directly through the traits companion
+   field `logger`, or acquire the logger directly through the trait's companion
    object.
 2. Use the standard `BitcoinSLogger`, which is also available as both a trait and
    a companion object with a field you can access (`BitcoinSLogger.logger`). Note
@@ -68,7 +70,7 @@ pretty quickly. There's two way of doing this:
 
 ### Akka logging
 
-The test logging for akka is controlled by the [`reference.conf`](../testkit/src/main/resources/reference.conf) file inside of testkit.
+The test logging for akka is controlled by the [`reference.conf`](https://github.com/bitcoin-s/bitcoin-s/blob/master/testkit/src/main/resources/reference.conf) file inside of testkit.
 
 This allows you to debug what is happening in our actors inside of bitcoin-s easier. For examples of what you can enable for akka to log, please look at their [logging documentation](https://doc.akka.io/docs/akka/current/logging.html#auxiliary-logging-options)
 
