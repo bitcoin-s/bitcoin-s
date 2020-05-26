@@ -107,19 +107,19 @@ println(<span class="hljs-string">s"Verified with NativeSecp256k1 again=<span cl
 </ol>
 <p>There are two ways you can circumvent libsecp256k1</p>
 <ol>
-<li>Set <code>DISABLE_SECP256K1=true</code> in your environment variables. This will force <code>Secp256k1Context.isEnabled()</code> to return false</li>
+<li>Set <code>DISABLE_SECP256K1=true</code> in your environment variables. This will force <code>CryptoContext.default</code> to return false which will make Bitcoin-S act like <code>Secp256k1Context.isEnabled()</code> has returned false.</li>
 <li>Call Bouncy castle methods in <code>ECKey</code>.</li>
 </ol>
 <p>Here is an example of calling bouncy castle methods in <code>ECKey</code></p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> privKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
 <span class="hljs-comment">// privKey: ECPrivateKey = Masked(ECPrivateKeyImpl)</span>
 <span class="hljs-keyword">val</span> publicKey = privKey.publicKeyWithBouncyCastle
-<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(0344b5da2f5951e95a3f39bcead75a47aef6b9023c750f14f53d78fabd8d8504e9)</span>
+<span class="hljs-comment">// publicKey: ECPublicKey = ECPublicKey(0300fcfc440ba23e0211881836fb481f2ecd0f640abd2915cfb65585d28fdf6b11)</span>
 <span class="hljs-keyword">val</span> dataToSign = <span class="hljs-type">DoubleSha256Digest</span>.empty
 <span class="hljs-comment">// dataToSign: DoubleSha256Digest = DoubleSha256Digest(0000000000000000000000000000000000000000000000000000000000000000)</span>
 
 <span class="hljs-keyword">val</span> signature = privKey.signWithBouncyCastle(dataToSign.bytes)
-<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(304402205a602da76d0efe3829490d1dfc8bb889b9034e4d92eb1c337c89a946bafac5ca02207db35bc63d91f71cbb343067d88161b10ffa3d5f4fe4f4ca4689a8a037cb54ab)</span>
+<span class="hljs-comment">// signature: ECDigitalSignature = ECDigitalSignature(30440220300fa07b3ab4abf091ee028d2075b929269a4a9a3ef426d547bbc9d1450773f702205634b4422bd14b4b69ab1a0ae41ad9a42e629de01ef50164d144d7b514fa6e88)</span>
 
 <span class="hljs-keyword">val</span> verified = publicKey.verifyWithBouncyCastle(dataToSign.bytes, signature)
 <span class="hljs-comment">// verified: Boolean = true</span>
