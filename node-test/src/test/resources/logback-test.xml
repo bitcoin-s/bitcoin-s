@@ -1,0 +1,9 @@
+<configuration>
+    <include resource="common-logback.xml" />
+
+    <root level="OFF">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>

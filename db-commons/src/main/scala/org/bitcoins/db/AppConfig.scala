@@ -235,11 +235,6 @@ abstract class AppConfig extends LoggerConfig {
     baseDatadir.resolve(lastDirname)
   }
 
-  val slickProfile: String = {
-    ""
-
-  }
-
   override val logFile: Path = datadir.resolve("bitcoin-s.log")
 
   private def stringToLogLevel(str: String): Option[Level] =

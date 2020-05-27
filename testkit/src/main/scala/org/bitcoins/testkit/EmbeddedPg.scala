@@ -8,7 +8,7 @@ import scala.util.Try
 
 trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
-  val pgEnabled: Boolean = !sys.env.contains("NO_PG")
+  val pgEnabled: Boolean = sys.env.contains("PG_ENABLED")
 
   val pg: Option[EmbeddedPostgres] =
     if (pgEnabled) Some(EmbeddedPostgres.start()) else None
