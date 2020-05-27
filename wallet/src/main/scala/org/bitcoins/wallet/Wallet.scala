@@ -9,12 +9,11 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.{HDAccount, HDCoin, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.builder.{
   NonInteractiveWithChangeFinalizer,
   RawTxBuilderWithFinalizer,
@@ -41,7 +40,7 @@ import org.bitcoins.wallet.models.{SpendingInfoDb, _}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 abstract class Wallet
     extends WalletApi
