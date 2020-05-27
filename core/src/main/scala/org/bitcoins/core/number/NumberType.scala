@@ -82,7 +82,7 @@ sealed abstract class Number[T <: Number[T]]
     }
   }
 
-  override def bytes: ByteVector = BytesUtil.decodeHex(hex)
+  override lazy val bytes: ByteVector = BytesUtil.decodeHex(hex)
 }
 
 /**
@@ -110,13 +110,13 @@ sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
 
   def toUInt8: UInt8 = UInt8(toInt)
 
-  override def hex: String = toUInt8.hex
+  override val hex: String = toUInt8.hex
 }
 
 sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
   override def apply: A => UInt8 = UInt8(_)
 
-  override def hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
+  override val hex: String = BytesUtil.encodeHex(toInt.toShort).slice(2, 4)
 
   override def andMask = 0xff
 
@@ -140,7 +140,7 @@ sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   * Represents a uint64_t in C
   */
 sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
-  override def hex: String = encodeHex(underlying)
+  override val hex: String = encodeHex(underlying)
   override def apply: A => UInt64 = UInt64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
 
@@ -170,7 +170,7 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
   override def andMask = 0xffffffff
-  override def hex: String = BytesUtil.encodeHex(toInt)
+  override val hex: String = BytesUtil.encodeHex(toInt)
 }
 
 /**
@@ -179,7 +179,7 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
   override def andMask = 0xFFFFFFFFFFFFFFFFL
-  override def hex: String = BytesUtil.encodeHex(toLong)
+  override val hex: String = BytesUtil.encodeHex(toLong)
 }
 
 /**
@@ -371,6 +371,12 @@ object UInt64
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
 
+  lazy val twentyThree = UInt64(BigInt(23)) //p2sh compact size uint
+  lazy val twentyFive = UInt64(BigInt(25)) //p2pkh compact size uint
+  lazy val oneHundredFive = UInt64(BigInt(105)) //multisig spk 3 public keys
+  lazy val thirtyFour = UInt64(BigInt(34)) //p2wsh compact size uint
+  lazy val twentyTwo = UInt64(BigInt(22)) //p2pwpkh compact size uint
+
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
@@ -379,7 +385,22 @@ object UInt64
     UInt64(NumberUtil.toUnsignedInt(bytes))
   }
 
+  def apply(long: Long): UInt64 = {
+    checkCached(long)
+  }
+
   def apply(num: BigInt): UInt64 = UInt64Impl(num)
+
+  private def checkCached(num: Long): UInt64 = {
+    if (num == 0) zero
+    else if (num == 1) one
+    else if (num == 25) twentyFive
+    else if (num == 23) twentyThree
+    else if (num == 34) thirtyFour
+    else if (num == 22) twentyTwo
+    else if (num == 105) oneHundredFive
+    else UInt64Impl(num)
+  }
 }
 
 object Int32
