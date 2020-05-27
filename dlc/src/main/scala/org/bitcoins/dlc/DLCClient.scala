@@ -9,7 +9,7 @@ import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
-import org.bitcoins.core.number.{Int64, UInt32}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
@@ -19,9 +19,13 @@ import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.{
+  AddWitnessDataFinalizer,
+  P2WPKHDualFundingTxFinalizer,
+  P2WPKHSubtractFeesFromOutputsFinalizer,
   RawTxBuilder,
-  RawTxBuilderResult,
+  RawTxBuilderWithFinalizer,
   RawTxSigner,
+  SanityCheckFinalizer,
   StandardNonInteractiveFinalizer,
   SubtractFeeFromOutputsFinalizer
 }
@@ -31,7 +35,8 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 /** This case class allows for the construction and execution of
@@ -71,8 +76,6 @@ case class DLCClient(
     remoteChangeSPK: ScriptPubKey,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
-
-  import DLCClient._
 
   private val sigPubKeys = outcomes.keys.map { msg =>
     msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
@@ -140,7 +143,6 @@ case class DLCClient(
   /** Experimental approx. vbytes for a closing tx spending ToLocalOutput */
   private val approxToLocalClosingVBytes = 122
 
-  private val cetFee: CurrencyUnit = Satoshis(approxCETVBytes * feeRate.toLong)
   private val toLocalClosingFee: CurrencyUnit = Satoshis(
     approxToLocalClosingVBytes * feeRate.toLong)
 
@@ -151,16 +153,14 @@ case class DLCClient(
       (TransactionConstants.sequence, TransactionConstants.disableRBFSequence)
 
   lazy val createUnsignedFundingTransaction: Transaction = {
-    /* We need to commit to the CET's and local closing tx's fee during the construction of
-     * the funding transaction so that the CET outputs have the expected payouts.
-     *
-     * Once computed, we add the estimated amount to the fundingOutput so it can be used for fees later.
-     */
-    val halfCetFee = Satoshis((cetFee + toLocalClosingFee).satoshis.toLong / 2)
+    val fundingTxFinalizer =
+      P2WPKHDualFundingTxFinalizer(approxCETVBytes + approxToLocalClosingVBytes,
+                                   feeRate,
+                                   P2WSHWitnessSPKV0(fundingSPK))
+    val builder = RawTxBuilderWithFinalizer(fundingTxFinalizer)
 
     val output: TransactionOutput =
-      TransactionOutput(totalInput + halfCetFee + halfCetFee,
-                        P2WSHWitnessSPKV0(fundingSPK))
+      TransactionOutput(totalInput, P2WSHWitnessSPKV0(fundingSPK))
 
     val (initiatorChange, initiatorChangeSPK, otherChange, otherChangeSPK) =
       if (isInitiator) {
@@ -176,12 +176,10 @@ case class DLCClient(
       }
 
     val initiatorChangeOutput =
-      TransactionOutput(initiatorChange - halfCetFee, initiatorChangeSPK)
-    val otherChangeOutput =
-      TransactionOutput(otherChange - halfCetFee, otherChangeSPK)
+      TransactionOutput(initiatorChange, initiatorChangeSPK)
+    val otherChangeOutput = TransactionOutput(otherChange, otherChangeSPK)
 
-    val outputs: Vector[TransactionOutput] =
-      Vector(output, initiatorChangeOutput, otherChangeOutput)
+    builder ++= Vector(output, initiatorChangeOutput, otherChangeOutput)
 
     val localInputs =
       InputUtil.calcSequenceForInputs(fundingUtxos, noTimeLockSequence)
@@ -195,21 +193,9 @@ case class DLCClient(
       remoteInputs ++ localInputs
     }
 
-    val txWithoutFee = BaseTransaction(version =
-                                         TransactionConstants.validLockVersion,
-                                       inputs = inputs,
-                                       outputs = outputs,
-                                       lockTime = UInt32.zero)
+    builder ++= inputs
 
-    val txWithFee = subtractFeeFromOutputs(txWithoutFee,
-                                           feeRate,
-                                           Vector(changeSPK, remoteChangeSPK))
-
-    BaseTransaction(version = txWithFee.version,
-                    inputs = txWithFee.inputs,
-                    outputs =
-                      txWithFee.outputs.filter(_.value >= Policy.dustThreshold),
-                    lockTime = txWithFee.lockTime)
+    Await.result(builder.buildTx(), 5.seconds)
   }
 
   lazy val fundingTxId: DoubleSha256Digest =
@@ -217,6 +203,12 @@ case class DLCClient(
 
   lazy val fundingOutput: TransactionOutput =
     createUnsignedFundingTransaction.outputs.head
+
+  lazy val fundingInputInfo: P2WSHV0InputInfo = P2WSHV0InputInfo(
+    TransactionOutPoint(fundingTxId, UInt32.zero),
+    fundingOutput.value,
+    P2WSHWitnessV0(fundingSPK),
+    ConditionalPath.NoCondition)
 
   /** Returns the payouts for the signature as (toLocal, toRemote)  */
   def getPayouts(
@@ -546,13 +538,11 @@ case class DLCClient(
   }
 
   lazy val createUnsignedRefundTx: WitnessTransaction = {
-    val fundingTx = createUnsignedFundingTransaction
-    val fundingTxid = fundingTx.txId
-    val fundingInput = TransactionInput(
-      TransactionOutPoint(fundingTxid, UInt32.zero),
-      EmptyScriptSignature,
-      timeLockSequence)
-    val fundingOutput = fundingTx.outputs.head
+    val builder = RawTxBuilder().setLockTime(timeouts.contractTimeout.toUInt32)
+
+    builder += TransactionInput(TransactionOutPoint(fundingTxId, UInt32.zero),
+                                EmptyScriptSignature,
+                                timeLockSequence)
 
     val (initiatorValue, initiatorSPK, otherValue, otherSPK) =
       if (isInitiator) {
@@ -573,29 +563,22 @@ case class DLCClient(
          P2WPKHWitnessSPKV0(finalPrivKey.publicKey))
       }
 
-    val toInitiatorOutput =
-      TransactionOutput(initiatorValue, initiatorSPK)
-    val toOtherOutput =
-      TransactionOutput(otherValue, otherSPK)
+    builder += TransactionOutput(initiatorValue, initiatorSPK)
+    builder += TransactionOutput(otherValue, otherSPK)
 
-    val outputs = Vector(toInitiatorOutput, toOtherOutput)
+    // TODO: Should be SubtractFeeFromOutputsFinalizer since we know fundingInputInfo
+    val finalizer = P2WPKHSubtractFeesFromOutputsFinalizer(
+      feeRate,
+      Vector(finalRemoteScriptPubKey,
+             P2WPKHWitnessSPKV0(finalPrivKey.publicKey)))
+      .andThen(AddWitnessDataFinalizer(Vector(fundingInputInfo)))
 
-    val witness = TransactionWitness(Vector(P2WSHWitnessV0(fundingSPK)))
-
-    val refundTxNoFee = BaseTransaction(TransactionConstants.validLockVersion,
-                                        Vector(fundingInput),
-                                        outputs,
-                                        timeouts.contractTimeout.toUInt32)
-
-    val refundTxWithFee = subtractFeeFromOutputs(refundTxNoFee,
-                                                 feeRate,
-                                                 outputs.map(_.scriptPubKey))
-
-    WitnessTransaction(refundTxWithFee.version,
-                       refundTxWithFee.inputs,
-                       refundTxWithFee.outputs,
-                       refundTxWithFee.lockTime,
-                       witness)
+    Await.result(finalizer.buildTx(builder.result()), 5.seconds) match {
+      case _: NonWitnessTransaction =>
+        throw new RuntimeException(
+          "Something went wrong with AddWitnessDataFinalizer")
+      case wtx: WitnessTransaction => wtx
+    }
   }
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
@@ -793,7 +776,15 @@ case class DLCClient(
         spendingInfo.output.value,
         sweepSPK) ++= inputs
 
-      subtractFeeAndSign(builder.result(), feeRate, Vector(spendingInfo))
+      SubtractFeeFromOutputsFinalizer(Vector(spendingInfo.inputInfo),
+                                      feeRate,
+                                      Vector(sweepSPK))
+        .andThen(
+          SanityCheckFinalizer(Vector(spendingInfo.inputInfo),
+                               Vector(sweepSPK),
+                               feeRate))
+        .buildTx(builder.result())
+        .flatMap(utx => RawTxSigner.sign(utx, Vector(spendingInfo), feeRate))
         .map(Some(_))
     }
 
@@ -1214,80 +1205,5 @@ object DLCClient {
         accept.changeAddress.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0],
       network = network
     )
-  }
-
-  /** Subtracts the estimated fee by removing from each output evenly */
-  def subtractFeeAndSign(
-      utx: RawTxBuilderResult,
-      feeRate: FeeUnit,
-      utxos: Vector[ScriptSignatureParams[InputInfo]])(
-      implicit ec: ExecutionContext): Future[Transaction] = {
-    val finalizer =
-      SubtractFeeFromOutputsFinalizer(utxos.map(_.inputInfo), feeRate).andThen(
-        StandardNonInteractiveFinalizer(utxos.map(_.inputInfo),
-                                        feeRate,
-                                        EmptyScriptPubKey))
-
-    // This invariant ensures that emptyChangeSPK is never used above
-    val noEmptyOutputs: (
-        Vector[ScriptSignatureParams[InputInfo]],
-        Transaction) => Boolean = { (_, tx) =>
-      tx.outputs.forall(_.scriptPubKey != EmptyScriptPubKey)
-    }
-
-    finalizer.buildTx(utx).flatMap { utx =>
-      RawTxSigner.sign(utx, utxos, feeRate, noEmptyOutputs)
-    }
-  }
-
-  private def subtractFees(
-      tx: Transaction,
-      feeRate: FeeUnit,
-      spks: Vector[ScriptPubKey]): Vector[TransactionOutput] = {
-    val fee = feeRate.calc(tx)
-
-    val outputs = tx.outputs.zipWithIndex.filter {
-      case (output, _) => spks.contains(output.scriptPubKey)
-    }
-    val unchangedOutputs = tx.outputs.zipWithIndex.filterNot {
-      case (output, _) => spks.contains(output.scriptPubKey)
-    }
-
-    val feePerOutput = Satoshis(Int64(fee.satoshis.toLong / outputs.length))
-    val feeRemainder = Satoshis(Int64(fee.satoshis.toLong % outputs.length))
-
-    val newOutputsWithoutRemainder = outputs.map {
-      case (output, index) =>
-        (TransactionOutput(output.value - feePerOutput, output.scriptPubKey),
-         index)
-    }
-    val (lastOutput, lastOutputIndex) = newOutputsWithoutRemainder.last
-    val newLastOutput = TransactionOutput(lastOutput.value - feeRemainder,
-                                          lastOutput.scriptPubKey)
-    val newOutputs = newOutputsWithoutRemainder
-      .dropRight(1)
-      .:+((newLastOutput, lastOutputIndex))
-
-    (newOutputs ++ unchangedOutputs).sortBy(_._2).map(_._1).toVector
-  }
-
-  /** Subtracts the estimated fee by removing from each output with a specified spk evenly */
-  def subtractFeeFromOutputs(
-      tx: Transaction,
-      feeRate: FeeUnit,
-      spks: Vector[ScriptPubKey]): BaseTransaction = {
-    // tx has empty script sigs and we need to account for witness data in fees
-    val dummyTxWit = TransactionWitness(
-      Vector.fill(tx.inputs.length)(
-        P2WPKHWitnessV0(ECPublicKey.freshPublicKey, DummyECDigitalSignature)))
-    val wtx = WitnessTransaction(tx.version,
-                                 tx.inputs,
-                                 tx.outputs,
-                                 tx.lockTime,
-                                 dummyTxWit)
-
-    val allOuputsWithNew = subtractFees(wtx, feeRate, spks)
-
-    BaseTransaction(tx.version, tx.inputs, allOuputsWithNew, tx.lockTime)
   }
 }

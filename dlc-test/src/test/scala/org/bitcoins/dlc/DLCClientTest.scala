@@ -19,7 +19,9 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.{
   RawTxSigner,
-  StandardNonInteractiveFinalizer
+  SanityCheckFinalizer,
+  StandardNonInteractiveFinalizer,
+  SubtractFeeFromOutputsFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
@@ -80,6 +82,11 @@ class DLCClientTest extends BitcoinSAsyncTest {
                                                         changeSPK)
         val txBuilderResult = txBuilder.builder.result()
         val dumbFinalizer = txBuilder.finalizer
+        val spks = txBuilderResult.outputs.map(_.scriptPubKey)
+        val goodFinalizer =
+          SubtractFeeFromOutputsFinalizer(utxos.map(_.inputInfo), feeRate, spks)
+            .andThen(
+              SanityCheckFinalizer(utxos.map(_.inputInfo), spks, feeRate))
 
         val badFeeF = recoverToSucceededIf[IllegalArgumentException] {
           dumbFinalizer.buildTx(txBuilderResult).flatMap { utx =>
@@ -89,7 +96,8 @@ class DLCClientTest extends BitcoinSAsyncTest {
 
         for {
           _ <- badFeeF
-          tx <- DLCClient.subtractFeeAndSign(txBuilderResult, feeRate, utxos)
+          utx <- goodFinalizer.buildTx(txBuilderResult)
+          tx <- RawTxSigner.sign(utx, utxos, feeRate)
         } yield {
           val diffs = outputs.zip(tx.outputs).map {
             case (before, after) =>
