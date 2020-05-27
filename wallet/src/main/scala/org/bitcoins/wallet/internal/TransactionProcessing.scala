@@ -176,14 +176,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
                   .map(_.toVector)
 
               case txos: Vector[SpendingInfoDb] =>
-                val txoProcessingFutures =
-                  txos
-                    .map(
-                      processExistingIncomingTxo(transaction, blockHashOpt, _))
-
-                Future
-                  .sequence(txoProcessingFutures)
-
+                FutureUtil
+                  .sequentially(txos)(txo =>
+                    processExistingIncomingTxo(transaction, blockHashOpt, txo))
+                  .map(_.toVector)
             }
 
         val outgoingTxFut: Future[Vector[SpendingInfoDb]] = {
@@ -305,10 +301,10 @@ private[wallet] trait TransactionProcessing extends WalletLogger {
 
           updateF.foreach(tx =>
             logger.debug(
-              s"Updated block_hash of txo=${tx.txid} new block hash=$blockHash"))
+              s"Updated block_hash of txo=${tx.txid.hex} new block hash=${blockHash.hex}"))
           updateF.failed.foreach(err =>
             logger.error(
-              s"Failed to update confirmation count of transaction=${transaction.txIdBE}",
+              s"Failed to update confirmation count of transaction=${transaction.txIdBE.hex}",
               err))
 
           updateF
