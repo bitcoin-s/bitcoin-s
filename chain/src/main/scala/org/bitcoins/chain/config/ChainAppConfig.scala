@@ -16,6 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class ChainAppConfig(
     private val directory: Path,
+    override val useLogbackConf: Boolean,
     private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with ChainDbManagement
@@ -26,7 +27,7 @@ case class ChainAppConfig(
   override protected[bitcoins] type ConfigType = ChainAppConfig
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): ChainAppConfig =
-    ChainAppConfig(directory, configs: _*)
+    ChainAppConfig(directory, useLogbackConf, configs: _*)
   protected[bitcoins] def baseDatadir: Path = directory
 
   override def appConfig: ChainAppConfig = this
@@ -94,12 +95,14 @@ case class ChainAppConfig(
     config.getInt(s"${moduleName}.neutrino.filter-batch-size")
 }
 
-object ChainAppConfig {
+object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
 
   /** Constructs a chain verification configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(
+  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
       implicit ec: ExecutionContext): ChainAppConfig =
-    ChainAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+    ChainAppConfig(datadir,
+                   useLogbackConf,
+                   confs: _*)
 }

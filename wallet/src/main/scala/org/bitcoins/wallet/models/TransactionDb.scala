@@ -1,12 +1,12 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.crypto._
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   EmptyWitness,
+  NonWitnessTransaction,
   Transaction,
   TransactionInput,
   WitnessTransaction
@@ -52,7 +52,7 @@ object TransactionDb {
 
   def fromTransaction(tx: Transaction): TransactionDb = {
     val (unsignedTx, wTxIdBEOpt) = tx match {
-      case btx: BaseTransaction =>
+      case btx: NonWitnessTransaction =>
         val unsignedInputs = btx.inputs.map(
           input =>
             TransactionInput(input.previousOutput,

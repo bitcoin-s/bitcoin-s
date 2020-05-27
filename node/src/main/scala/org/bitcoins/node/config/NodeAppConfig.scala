@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 import com.typesafe.config.Config
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db.{AppConfig, JdbcProfileComponent}
+import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
 import org.bitcoins.node.db.NodeDbManagement
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -15,6 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class NodeAppConfig(
     private val directory: Path,
+    override val useLogbackConf: Boolean,
     private val confs: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with NodeDbManagement
@@ -24,7 +25,7 @@ case class NodeAppConfig(
   override protected[bitcoins] type ConfigType = NodeAppConfig
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): NodeAppConfig =
-    NodeAppConfig(directory, configs: _*)
+    NodeAppConfig(directory, useLogbackConf, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -69,13 +70,15 @@ case class NodeAppConfig(
   }
 }
 
-object NodeAppConfig {
+object NodeAppConfig extends AppConfigFactory[NodeAppConfig] {
 
   /** Constructs a node configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(
+  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
       implicit ec: ExecutionContext): NodeAppConfig =
-    NodeAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+    NodeAppConfig(datadir,
+                  useLogbackConf,
+                  confs: _*)
 
 }

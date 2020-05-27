@@ -7,10 +7,16 @@ on the JVM.
 For a complete guide on how to get started with Bitcoin-S, see our website at
 [Bitcoin-S.org](https://bitcoin-s.org)
 
+### Getting started
+
+https://bitcoin-s.org/docs/getting-setup
+
+### Adding bitcoin-s to your library
+
 The latest release of bitcoin-s is `v0.3.0`, here is how you can use the dependencies in your projects:
 
 ```
-libraryDependencies +="org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "0.3.0"
+libraryDependencies += "org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "0.3.0"
 
 libraryDependencies += "org.bitcoin-s" %% "bitcoin-s-core" % "0.3.0"
 

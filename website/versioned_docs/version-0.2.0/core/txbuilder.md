@@ -81,7 +81,7 @@ val utxoSpendingInfo = BitcoinUTXOSpendingInfo(outPoint = outPoint,
                                                hashType =
                                                 HashType.sigHashAll,
                                                conditionalPath =
-                                                ConditionalPath.NoConditionsLeft)
+                                                ConditionalPath.NoCondition)
 
 // all of the UTXO spending information, since we are only
 //spending one UTXO, this is just one element

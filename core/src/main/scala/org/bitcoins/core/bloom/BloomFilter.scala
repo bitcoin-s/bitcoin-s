@@ -10,13 +10,12 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptToken}
 import org.bitcoins.core.serializers.bloom.RawBloomFilterSerializer
-import org.bitcoins.core.util.BitcoinSLogger
+import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
 import scodec.bits.{BitVector, ByteVector}
 
 import scala.annotation.tailrec
 import scala.util.hashing.MurmurHash3
 import org.bitcoins.crypto.{
-  BytesUtil,
   CryptoUtil,
   DoubleSha256Digest,
   ECPublicKey,

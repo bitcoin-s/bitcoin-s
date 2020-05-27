@@ -5,8 +5,8 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.db.MarkedLogger
 import org.bitcoins.node.networking.peer.DataMessageHandler._
+import org.slf4j.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,7 +32,7 @@ case class NodeCallbacks(
     onBlockHeadersReceived = onBlockHeadersReceived ++ other.onBlockHeadersReceived
   )
 
-  def executeOnTxReceivedCallbacks(logger: MarkedLogger, tx: Transaction)(
+  def executeOnTxReceivedCallbacks(logger: Logger, tx: Transaction)(
       implicit ec: ExecutionContext): Future[Unit] = {
     onTxReceived
       .foldLeft(FutureUtil.unit)((acc, callback) =>
@@ -43,7 +43,7 @@ case class NodeCallbacks(
           }))
   }
 
-  def executeOnBlockReceivedCallbacks(logger: MarkedLogger, block: Block)(
+  def executeOnBlockReceivedCallbacks(logger: Logger, block: Block)(
       implicit ec: ExecutionContext): Future[Unit] = {
     onBlockReceived
       .foldLeft(FutureUtil.unit)((acc, callback) =>
@@ -55,7 +55,7 @@ case class NodeCallbacks(
   }
 
   def executeOnMerkleBlockReceivedCallbacks(
-      logger: MarkedLogger,
+      logger: Logger,
       merkleBlock: MerkleBlock,
       txs: Vector[Transaction])(implicit ec: ExecutionContext): Future[Unit] = {
     onMerkleBlockReceived
@@ -69,7 +69,7 @@ case class NodeCallbacks(
   }
 
   def executeOnCompactFiltersReceivedCallbacks(
-      logger: MarkedLogger,
+      logger: Logger,
       blockFilters: Vector[(DoubleSha256Digest, GolombFilter)])(
       implicit ec: ExecutionContext): Future[Unit] = {
     onCompactFiltersReceived
@@ -84,7 +84,7 @@ case class NodeCallbacks(
   }
 
   def executeOnBlockHeadersReceivedCallbacks(
-      logger: MarkedLogger,
+      logger: Logger,
       headers: Vector[BlockHeader])(
       implicit ec: ExecutionContext): Future[Unit] = {
     onBlockHeadersReceived

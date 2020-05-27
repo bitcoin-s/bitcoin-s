@@ -1,6 +1,6 @@
 package org.bitcoins.core.serializers.p2p.messages
 
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 

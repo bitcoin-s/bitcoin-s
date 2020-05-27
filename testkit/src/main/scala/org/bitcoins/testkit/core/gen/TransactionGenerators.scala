@@ -279,7 +279,7 @@ object TransactionGenerators extends BitcoinSLogger {
     */
   def signedMultiSigTransaction: Gen[(BaseTxSigComponent, Seq[ECPrivateKey])] =
     for {
-      (signedScriptSig, scriptPubKey, privateKey) <- ScriptGenerators
+      (signedScriptSig, scriptPubKey, privateKeys) <- ScriptGenerators
         .signedMultiSignatureScriptSignature
       (creditingTx, outputIndex) = buildCreditingTransaction(scriptPubKey)
       (signedTx, inputIndex) = buildSpendingTransaction(creditingTx,
@@ -291,7 +291,7 @@ object TransactionGenerators extends BitcoinSLogger {
         inputIndex,
         output,
         Policy.standardScriptVerifyFlags)
-    } yield (signedTxSignatureComponent, privateKey)
+    } yield (signedTxSignatureComponent, privateKeys)
 
   /**
     * Creates a transaction which contains a

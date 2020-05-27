@@ -30,9 +30,9 @@ import org.bitcoins.core.protocol.ln.{
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.{Address, BitcoinAddress}
-import org.bitcoins.core.util.{FutureUtil, StartStop}
+import org.bitcoins.core.util.{BytesUtil, FutureUtil, StartStop}
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.crypto.{BytesUtil, Sha256Digest}
+import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.eclair.rpc.api._
 import org.bitcoins.eclair.rpc.config.EclairInstance
 import org.bitcoins.eclair.rpc.network.NodeUri

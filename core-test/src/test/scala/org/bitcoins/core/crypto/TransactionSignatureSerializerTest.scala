@@ -8,7 +8,7 @@ import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.crypto._
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util._
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.scalatest.{FlatSpec, MustMatchers}
 
 import scala.util.Try

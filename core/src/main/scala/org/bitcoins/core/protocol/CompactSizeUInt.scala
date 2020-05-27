@@ -2,7 +2,8 @@ package org.bitcoins.core.protocol
 
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.script.ScriptSignature
-import org.bitcoins.crypto.{BytesUtil, Factory, NetworkElement}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.ByteVector
 
 /**
@@ -15,14 +16,14 @@ sealed abstract class CompactSizeUInt extends NetworkElement {
   /** The number parsed from VarInt. */
   def num: UInt64
 
-  override def hex = byteSize match {
-    case 1 => BytesUtil.flipEndianness(num.hex.slice(14, 16))
-    case 3 => "fd" + BytesUtil.flipEndianness(num.hex.slice(12, 16))
-    case 5 => "fe" + BytesUtil.flipEndianness(num.hex.slice(8, 16))
-    case _ => "ff" + BytesUtil.flipEndianness(num.hex)
+  override def bytes: ByteVector = {
+    byteSize match {
+      case 1 => num.bytes.takeRight(1)
+      case 3 => 0xfd.toByte +: num.bytes.takeRight(2).reverse
+      case 5 => 0xfe.toByte +: num.bytes.takeRight(4).reverse
+      case _ => 0xff.toByte +: num.bytes.reverse
+    }
   }
-
-  def bytes: ByteVector = BytesUtil.decodeHex(hex)
 
   def toLong: Long = num.toLong
 

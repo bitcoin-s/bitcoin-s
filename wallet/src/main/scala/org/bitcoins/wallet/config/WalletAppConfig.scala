@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.typesafe.config.Config
 import org.bitcoins.core.hd._
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db.{AppConfig, JdbcProfileComponent}
+import org.bitcoins.db.{AppConfig, AppConfigFactory, JdbcProfileComponent}
 import org.bitcoins.keymanager.{KeyManagerParams, WalletStorage}
 import org.bitcoins.wallet.db.WalletDbManagement
 
@@ -19,6 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 case class WalletAppConfig(
     private val directory: Path,
+    override val useLogbackConf: Boolean,
     private val conf: Config*)(implicit override val ec: ExecutionContext)
     extends AppConfig
     with WalletDbManagement
@@ -28,7 +29,7 @@ case class WalletAppConfig(
   override protected[bitcoins] type ConfigType = WalletAppConfig
   override protected[bitcoins] def newConfigOfType(
       configs: Seq[Config]): WalletAppConfig =
-    WalletAppConfig(directory, configs: _*)
+    WalletAppConfig(directory, useLogbackConf, configs: _*)
 
   protected[bitcoins] def baseDatadir: Path = directory
 
@@ -126,12 +127,14 @@ case class WalletAppConfig(
   }
 }
 
-object WalletAppConfig {
+object WalletAppConfig extends AppConfigFactory[WalletAppConfig] {
 
   /** Constructs a wallet configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  def fromDefaultDatadir(confs: Config*)(
+  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
       implicit ec: ExecutionContext): WalletAppConfig =
-    WalletAppConfig(AppConfig.DEFAULT_BITCOIN_S_DATADIR, confs: _*)
+    WalletAppConfig(datadir,
+                    useLogbackConf,
+                    confs: _*)
 }

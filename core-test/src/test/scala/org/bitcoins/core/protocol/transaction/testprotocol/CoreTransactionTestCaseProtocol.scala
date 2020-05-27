@@ -7,8 +7,8 @@ import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
+import org.bitcoins.core.util.{BitcoinSLogger, BytesUtil}
+import org.bitcoins.crypto.DoubleSha256Digest
 import spray.json.{DefaultJsonProtocol, JsArray, JsValue, RootJsonFormat}
 
 /**

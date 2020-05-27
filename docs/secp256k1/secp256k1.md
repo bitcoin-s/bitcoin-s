@@ -66,7 +66,7 @@ There are two reasons you wouldn't want to use libsecp256k1
 
 There are two ways you can circumvent libsecp256k1
 
-1. Set `DISABLE_SECP256K1=true` in your environment variables. This will force `Secp256k1Context.isEnabled()` to return false
+1. Set `DISABLE_SECP256K1=true` in your environment variables. This will force `CryptoContext.default` to return false which will make Bitcoin-S act like `Secp256k1Context.isEnabled()` has returned false.
 2. Call Bouncy castle methods in `ECKey`. 
 
 Here is an example of calling bouncy castle methods in `ECKey`

@@ -1,7 +1,8 @@
 package org.bitcoins.gui
 
 import javafx.event.{ActionEvent, EventHandler}
-import org.bitcoins.gui.settings.{SettingsPane, Themes}
+import javafx.scene.image.Image
+import org.bitcoins.gui.settings.SettingsPane
 import scalafx.application.{JFXApp, Platform}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.{Insets, Pos}
@@ -105,20 +106,15 @@ object WalletGUI extends JFXApp {
     )
   }
 
-  private val styleSheets = if (GlobalData.defaultDarkTheme) {
-    Seq(Themes.DarkTheme.fileLocation)
-  } else {
-    Seq.empty
-  }
-
   private val walletScene = new Scene {
     root = rootView
-    stylesheets = styleSheets
+    stylesheets = GlobalData.currentStyleSheets
   }
 
   stage = new JFXApp.PrimaryStage {
     title = "Bitcoin-S Wallet"
     scene = walletScene
+    icons.add(new Image("/icons/bitcoin-s.png"))
   }
 
   private val taskRunner = new TaskRunner(resultArea, glassPane)

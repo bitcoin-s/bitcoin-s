@@ -1,6 +1,6 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.crypto.{BytesUtil, CryptoUtil}
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkit.core.gen.CryptoGenerators
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits._

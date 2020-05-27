@@ -57,7 +57,7 @@ object BouncyCastleUtil {
     val pubBytes = ByteVector(point.getEncoded(privateKey.isCompressed))
     require(
       ECPublicKey.isFullyValid(pubBytes),
-      s"Bouncy Castle failed to generate a valid public key, got: ${BytesUtil
+      s"Bouncy Castle failed to generate a valid public key, got: ${CryptoBytesUtil
         .encodeHex(pubBytes)}")
     ECPublicKey(pubBytes)
   }
@@ -103,9 +103,8 @@ object BouncyCastleUtil {
                                  java.math.BigInteger.valueOf(0),
                                  java.math.BigInteger.valueOf(0))
         case _: ECDigitalSignature =>
-          val rBigInteger: BigInteger = new BigInteger(signature.r.toString())
-          val sBigInteger: BigInteger = new BigInteger(signature.s.toString())
-          signer.verifySignature(data.toArray, rBigInteger, sBigInteger)
+          val (r, s) = signature.decodeSignature
+          signer.verifySignature(data.toArray, r.bigInteger, s.bigInteger)
       }
     }
     resultTry.getOrElse(false)

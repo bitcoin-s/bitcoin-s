@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.script.bitwise.OP_EQUAL
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_HASH160
-import org.bitcoins.crypto.BytesUtil
+import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 

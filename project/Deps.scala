@@ -3,12 +3,12 @@ import sbt._
 object Deps {
 
   object V {
-    val bouncyCastle = "1.55"
+    val bouncyCastle = "1.65"
     val logback = "1.2.3"
     val scalacheck = "1.14.3"
     val scalaTest = "3.1.2"
 
-    val scalaTestPlus = "3.1.1.1" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
+    val scalaTestPlus = "3.1.2.0" //super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
     val slf4j = "1.7.30"
     val spray = "1.3.5"
     val zeromq = "0.5.2"
@@ -27,7 +27,7 @@ object Deps {
     val asyncOldScalaV = "0.9.7"
     val asyncNewScalaV = "0.10.0"
 
-    val flywayV = "6.4.0"
+    val flywayV = "6.4.2"
     val postgresV = "9.4.1210"
     val akkaActorV = akkaStreamv
     val slickV = "3.3.2"

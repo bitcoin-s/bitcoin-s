@@ -5,7 +5,8 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkit.node.NodeTestUtil
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.crypto.{BytesUtil, CryptoUtil}
+import org.bitcoins.core.util.BytesUtil
+import org.bitcoins.crypto.CryptoUtil
 
 import scala.util.Random
 import scodec.bits.ByteVector

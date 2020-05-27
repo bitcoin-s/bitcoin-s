@@ -2,8 +2,8 @@ package org.bitcoins.core.protocol.blockchain
 
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.util.{Leaf, Node}
-import org.bitcoins.crypto.{BytesUtil, DoubleSha256Digest}
+import org.bitcoins.core.util.{BytesUtil, Leaf, Node}
+import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkit.util.BitcoinSUnitTest
 import scodec.bits.BitVector
 

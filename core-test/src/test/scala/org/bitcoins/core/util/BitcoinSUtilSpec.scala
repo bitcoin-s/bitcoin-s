@@ -1,6 +1,5 @@
 package org.bitcoins.core.util
 
-import org.bitcoins.crypto.BytesUtil
 import org.bitcoins.testkit.core.gen.StringGenerators
 import org.scalacheck.{Prop, Properties}
 

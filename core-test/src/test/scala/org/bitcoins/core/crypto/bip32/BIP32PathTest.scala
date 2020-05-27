@@ -16,7 +16,7 @@ import scala.util.{Success, Try}
 class BIP32PathTest extends BitcoinSUnitTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
+    generatorDriveConfigOldCode
 
   behavior of "BIP32Child"
 

@@ -7,12 +7,19 @@
     -fx-control-inner-background-alt: -fx-control-inner-background ;
 }
 
-.label{
-    -fx-text-fill: lightgray;
+.dialog-pane > .content {
+   -fx-background-color: #304c5a;
+   -fx-text-fill: white;
 }
 
-.text-field {
-    -fx-prompt-text-fill: gray;
+/** Customization of the bar where the buttons are located**/
+.dialog > .dialog-pane > .button-bar {
+  -fx-background-color: #304c5a;
+  -fx-base: #304c5a;
+}
+
+.label {
+    -fx-text-fill: white;
 }
 
 .titulo{
