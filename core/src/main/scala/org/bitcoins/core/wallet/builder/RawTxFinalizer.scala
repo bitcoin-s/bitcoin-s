@@ -29,7 +29,7 @@ import scala.util.{Success, Try}
   * by taking that transactions inputs (in order), outputs (in order), locktime and
   * version and this RawTxBuilderResult is then given to the second RawTxFinalizer.
   */
-sealed trait RawTxFinalizer {
+trait RawTxFinalizer {
 
   /** Constructs a finalized (unsigned) transaction */
   def buildTx(txBuilderResult: RawTxBuilderResult)(
@@ -85,7 +85,7 @@ case object FilterDustFinalizer extends RawTxFinalizer {
   */
 case class SanityCheckFinalizer(
     inputInfos: Vector[InputInfo],
-    expectedOutputs: Vector[TransactionOutput],
+    expectedOutputSPKs: Vector[ScriptPubKey],
     expectedFeeRate: FeeUnit,
     changeSPKs: Vector[ScriptPubKey] = Vector.empty)
     extends RawTxFinalizer {
@@ -95,7 +95,7 @@ case class SanityCheckFinalizer(
 
     val passInOutChecksT =
       SanityCheckFinalizer.sanityDestinationChecks(inputInfos.map(_.outPoint),
-                                                   expectedOutputs,
+                                                   expectedOutputSPKs,
                                                    changeSPKs,
                                                    tx)
 
@@ -110,19 +110,25 @@ case class SanityCheckFinalizer(
 object SanityCheckFinalizer {
 
   /** Checks that a finalized transaction contains the expected
-    * inputs and outputs. */
+    * inputs and scriptpubkeys.
+    *
+    * Note that it is not responsible for checking output values
+    * or that change isn't dropped (as it can be dust). That is
+    * covered by TxUtil.sanityChecks above
+    */
   def sanityDestinationChecks(
       expectedOutPoints: Vector[TransactionOutPoint],
-      expectedOutputs: Vector[TransactionOutput],
+      expectedOutputSPKs: Vector[ScriptPubKey],
       changeSPKs: Vector[ScriptPubKey],
       finalizedTx: Transaction): Try[Unit] = {
     //make sure we send coins to the appropriate destinations
+    val finalizedSPKs = finalizedTx.outputs.map(_.scriptPubKey)
     val isMissingDestination =
-      !expectedOutputs.forall(finalizedTx.outputs.contains)
-    val hasExtraOutputs = !finalizedTx.outputs.forall(
-      output =>
-        expectedOutputs.contains(output) || changeSPKs.contains(
-          output.scriptPubKey))
+      !expectedOutputSPKs.forall(finalizedSPKs.contains)
+    val hasExtraOutputs = finalizedSPKs
+      .diff(expectedOutputSPKs)
+      .diff(changeSPKs)
+      .nonEmpty
     val spendingTxOutPoints = finalizedTx.inputs.map(_.previousOutput)
     val hasExtraOutPoints =
       !spendingTxOutPoints.forall(expectedOutPoints.contains) ||
@@ -187,7 +193,7 @@ case class ChangeFinalizer(
   * Note that when used in composition with other finalizers,
   * if AddWitnessDataFinalizer is not last then its effects
   * will be reversed since witness data is not currently kept
-  * between finalizers during compisition.
+  * between finalizers during composition.
   */
 case class AddWitnessDataFinalizer(inputInfos: Vector[InputInfo])
     extends RawTxFinalizer {
@@ -221,11 +227,11 @@ case class StandardNonInteractiveFinalizer(
       implicit ec: ExecutionContext): Future[Transaction] = {
     val addChange = ChangeFinalizer(inputInfos, feeRate, changeSPK)
 
-    val sanityCheck = SanityCheckFinalizer(inputInfos = inputInfos,
-                                           expectedOutputs =
-                                             txBuilderResult.outputs,
-                                           expectedFeeRate = feeRate,
-                                           changeSPKs = Vector(changeSPK))
+    val sanityCheck = SanityCheckFinalizer(
+      inputInfos = inputInfos,
+      expectedOutputSPKs = txBuilderResult.outputs.map(_.scriptPubKey),
+      expectedFeeRate = feeRate,
+      changeSPKs = Vector(changeSPK))
 
     val addWitnessData = AddWitnessDataFinalizer(inputInfos)
 

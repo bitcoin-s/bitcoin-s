@@ -56,14 +56,16 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
     assert(
       SanityCheckFinalizer
         .sanityDestinationChecks(Vector(outPoint),
-                                 Vector(output),
+                                 Vector(EmptyScriptPubKey),
                                  Vector(changeSPK),
                                  missingOutputTx)
         .isFailure)
   }
 
   it should "detect extra outputs added" in {
-    val newOutput = TransactionOutput(Bitcoins.max, EmptyScriptPubKey)
+    val newOutput =
+      TransactionOutput(Bitcoins.one,
+                        P2PKHScriptPubKey(ECPublicKey.freshPublicKey))
     val extraOutputTx = BaseTransaction(tx.version,
                                         tx.inputs,
                                         Vector(output, newOutput),
@@ -72,7 +74,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
     assert(
       SanityCheckFinalizer
         .sanityDestinationChecks(Vector(outPoint),
-                                 Vector(output),
+                                 Vector(EmptyScriptPubKey),
                                  Vector(changeSPK),
                                  extraOutputTx)
         .isFailure)
@@ -91,7 +93,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSAsyncTest {
     assert(
       SanityCheckFinalizer
         .sanityDestinationChecks(Vector(outPoint),
-                                 Vector(output),
+                                 Vector(EmptyScriptPubKey),
                                  Vector(changeSPK),
                                  extraOutPointTx)
         .isFailure)

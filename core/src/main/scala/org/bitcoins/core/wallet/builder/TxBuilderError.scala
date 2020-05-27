@@ -125,7 +125,7 @@ object TxBuilderError {
     */
   val MissingDestinationOutput = Failure(
     new IllegalArgumentException(
-      "Lost a transaction output in the signing process"))
+      "Lost a transaction output in the finalizing process"))
 
   /**
     * Means that the script we are signing for requires a public key, but we did not pass one in
