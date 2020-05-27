@@ -371,6 +371,12 @@ object UInt64
   lazy val min = UInt64(minUnderlying)
   lazy val max = UInt64(maxUnderlying)
 
+  lazy val twentyThree = UInt64(BigInt(23)) //p2sh compact size uint
+  lazy val twentyFive = UInt64(BigInt(25)) //p2pkh compact size uint
+  lazy val oneHundredFive = UInt64(BigInt(105)) //multisig spk 3 public keys
+  lazy val thirtyFour = UInt64(BigInt(34)) //p2wsh compact size uint
+  lazy val twentyTwo = UInt64(BigInt(22)) //p2pwpkh compact size uint
+
   override def isInBound(num: A): Boolean =
     num <= maxUnderlying && num >= minUnderlying
 
@@ -379,7 +385,22 @@ object UInt64
     UInt64(NumberUtil.toUnsignedInt(bytes))
   }
 
+  def apply(long: Long): UInt64 = {
+    checkCached(long)
+  }
+
   def apply(num: BigInt): UInt64 = UInt64Impl(num)
+
+  private def checkCached(num: Long): UInt64 = {
+    if (num == 0) zero
+    else if (num == 1) one
+    else if (num == 25) twentyFive
+    else if (num == 23) twentyThree
+    else if (num == 34) thirtyFour
+    else if (num == 22) twentyTwo
+    else if (num == 105) oneHundredFive
+    else UInt64Impl(num)
+  }
 }
 
 object Int32
