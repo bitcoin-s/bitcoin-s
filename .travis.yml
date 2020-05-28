@@ -21,15 +21,6 @@ scala:
 # is going to look like
 matrix:
   include:
-    # this way of including jobs is not ideal... unfortunately it's not
-    # possible to nest env.matrix. could a better solution be to write
-    # a small script that generates a Travis config for us?
-    - os: linux
-      name: "Linux compile for 2.11"
-      env:
-        - TEST_COMMAND="test:compile"
-      scala:
-        - 2.11.12
     - os: linux
       name: "Secp256k1 Disabled Core Test"
       env:
