@@ -11,6 +11,7 @@ import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
@@ -29,10 +30,11 @@ import org.bitcoins.core.wallet.builder.{
   StandardNonInteractiveFinalizer,
   SubtractFeeFromOutputsFinalizer
 }
-import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
+import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -71,11 +73,66 @@ case class DLCClient(
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]],
     remoteFundingInputs: Vector[OutputReference],
     timeouts: DLCTimeouts,
-    feeRate: FeeUnit,
+    feeRate: SatoshisPerVirtualByte,
     changeSPK: ScriptPubKey,
     remoteChangeSPK: ScriptPubKey,
     network: BitcoinNetwork)(implicit ec: ExecutionContext)
     extends BitcoinSLogger {
+
+  private val pubKeys =
+    DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network)
+
+  private val changeAddress =
+    BitcoinAddress.fromScriptPubKey(changeSPK, network).get
+  private val remoteChangeAddress =
+    BitcoinAddress.fromScriptPubKey(remoteChangeSPK, network).get
+
+  private val (offerPubKeys,
+               offerInput,
+               offerFundingInputs,
+               offerChangeAddress,
+               acceptPubKeys,
+               acceptInput,
+               acceptFundingInputs,
+               acceptChangeAddress) = if (isInitiator) {
+    (pubKeys,
+     input,
+     fundingUtxos.map(_.outputReference),
+     changeAddress,
+     remotePubKeys,
+     remoteInput,
+     remoteFundingInputs,
+     remoteChangeAddress)
+  } else {
+    (remotePubKeys,
+     remoteInput,
+     remoteFundingInputs,
+     remoteChangeAddress,
+     pubKeys,
+     input,
+     fundingUtxos.map(_.outputReference),
+     changeAddress)
+  }
+
+  private val offer = DLCMessage.DLCOffer(
+    contractInfo = outcomes,
+    oracleInfo = DLCMessage.OracleInfo(oraclePubKey, preCommittedR),
+    pubKeys = offerPubKeys,
+    totalCollateral = offerInput.satoshis,
+    fundingInputs = offerFundingInputs,
+    changeAddress = offerChangeAddress,
+    feeRate = feeRate,
+    timeouts = timeouts
+  )
+
+  private val accept = DLCMessage.DLCAcceptWithoutSigs(
+    totalCollateral = acceptInput.satoshis,
+    pubKeys = acceptPubKeys,
+    fundingInputs = acceptFundingInputs,
+    changeAddress = acceptChangeAddress,
+    eventId = offer.eventId)
+
+  private val dlcTxBuilder = DLCTxBuilder(offer, accept)
 
   private val sigPubKeys = outcomes.keys.map { msg =>
     msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
@@ -1096,7 +1153,7 @@ object DLCClient {
       winPayout: CurrencyUnit,
       losePayout: CurrencyUnit,
       timeouts: DLCTimeouts,
-      feeRate: FeeUnit,
+      feeRate: SatoshisPerVirtualByte,
       changeSPK: WitnessScriptPubKeyV0,
       remoteChangeSPK: WitnessScriptPubKeyV0,
       network: BitcoinNetwork)(implicit ec: ExecutionContext): DLCClient = {
