@@ -270,6 +270,13 @@ case class BlockHeaderDAO()(
     headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
   }
 
+  /** Retrieves a full blockchain with the best tip being the given header */
+  def getFullBlockchainFrom(header: BlockHeaderDb)(
+      implicit ec: ExecutionContext): Future[Blockchain] = {
+    val headersF = getBetweenHeights(from = 0, to = header.height)
+    headersF.map(headers => Blockchain.fromHeaders(headers.reverse))
+  }
+
   /** Finds a [[org.bitcoins.chain.models.BlockHeaderDb block header]] that satisfies the given predicate, else returns None */
   def find(f: BlockHeaderDb => Boolean)(
       implicit ec: ExecutionContext): Future[Option[BlockHeaderDb]] = {
@@ -310,6 +317,8 @@ case class BlockHeaderDAO()(
 
     def hex = column[String]("hex")
 
+    def chainWork: Rep[UInt32] = column[UInt32]("chainWork")
+
     /** The sql index for searching based on [[height]] */
     def heightIndex = index("block_headers_height_index", height)
 
@@ -324,7 +333,8 @@ case class BlockHeaderDAO()(
        time,
        nBits,
        nonce,
-       hex).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
+       hex,
+       chainWork).<>(BlockHeaderDb.tupled, BlockHeaderDb.unapply)
     }
 
   }

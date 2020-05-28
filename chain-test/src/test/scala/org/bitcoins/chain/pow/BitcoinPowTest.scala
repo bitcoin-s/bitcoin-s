@@ -3,6 +3,7 @@ package org.bitcoins.chain.pow
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.testkit.chain.fixture.{ChainFixture, ChainFixtureTag}
 import org.bitcoins.testkit.chain.{
@@ -77,5 +78,13 @@ class BitcoinPowTest extends ChainDbUnitTest {
       val seqF = Future.sequence(assertionFs)
 
       seqF.map(_ => succeed)
+  }
+
+  it must "getBlockProof correctly" inFixtured {
+    case ChainFixture.Empty =>
+      val header = ChainTestUtil.ValidPOWChange.blockHeaderDb564480.blockHeader
+      val proof = Pow.getBlockProof(header)
+
+      assert(proof == UInt32(11))
   }
 }

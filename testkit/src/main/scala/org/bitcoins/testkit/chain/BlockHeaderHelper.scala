@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.chain
 
 import org.bitcoins.chain.models.{BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.chain.pow.Pow
 import org.bitcoins.chain.validation.TipValidation
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -29,7 +30,9 @@ abstract class BlockHeaderHelper {
   }
 
   val header1Db: BlockHeaderDb = {
-    BlockHeaderDbHelper.fromBlockHeader(566093, header1)
+    BlockHeaderDbHelper.fromBlockHeader(566093,
+                                        Pow.getBlockProof(header1),
+                                        header1)
   }
 
   /**
@@ -44,7 +47,8 @@ abstract class BlockHeaderHelper {
   }
 
   val header2Db: BlockHeaderDb = {
-    BlockHeaderDbHelper.fromBlockHeader(566092, header2)
+    val chainWork = header1Db.chainWork + Pow.getBlockProof(header2)
+    BlockHeaderDbHelper.fromBlockHeader(566092, chainWork, header2)
   }
 
   lazy val twoValidHeaders: Vector[BlockHeader] = {
@@ -129,7 +133,10 @@ abstract class BlockHeaderHelper {
     if (TipValidation.isBadNonce(blockHeader)) {
       buildNextHeader(prevHeader)
     } else {
-      BlockHeaderDbHelper.fromBlockHeader(prevHeader.height + 1, blockHeader)
+      val chainWork = prevHeader.chainWork + Pow.getBlockProof(blockHeader)
+      BlockHeaderDbHelper.fromBlockHeader(prevHeader.height + 1,
+                                          chainWork,
+                                          blockHeader)
     }
   }
 }

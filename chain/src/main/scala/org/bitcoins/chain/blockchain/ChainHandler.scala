@@ -4,6 +4,7 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.api.ChainApi
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.models._
+import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
@@ -111,17 +112,15 @@ case class ChainHandler(
     */
   override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
     logger.debug(s"Querying for best block hash")
-    //naive implementation, this is looking for the tip with the _most_ proof of work
-    //this does _not_ mean that it is on the chain that has the most work
-    //TODO: Enhance this in the future to return the "heaviest" header
     //https://bitcoin.org/en/glossary/block-chain
-    val groupedChains = blockchains.groupBy(_.tip.height)
-    val maxHeight = groupedChains.keys.max
-    val chains = groupedChains(maxHeight)
+    val groupedChains = blockchains.groupBy(_.tip.chainWork)
+    val maxWork = groupedChains.keys.max
+    val chains = groupedChains(maxWork)
 
     val hashBE: DoubleSha256DigestBE = chains match {
       case Vector() =>
-        val errMsg = s"Did not find blockchain with height $maxHeight"
+        // This should never happen
+        val errMsg = s"Did not find blockchain with work $maxWork"
         logger.error(errMsg)
         throw new RuntimeException(errMsg)
       case chain +: Vector() =>
@@ -485,6 +484,100 @@ case class ChainHandler(
       }
     }
     loop(Future.successful(to), Vector.empty)
+  }
+
+  def isMissingChainWork: Future[Boolean] = {
+    for {
+      first100 <- blockHeaderDAO.getBetweenHeights(1, 100)
+      first100MissingWork = first100.nonEmpty && first100.exists(
+        _.chainWork == UInt32.zero)
+      isMissingWork <- {
+        if (first100MissingWork) {
+          Future.successful(true)
+        } else {
+          for {
+            height <- getBestHashBlockHeight()
+            last100 <- blockHeaderDAO.getBetweenHeights(height - 100, height)
+            last100MissingWork = last100.nonEmpty && last100.exists(
+              _.chainWork == UInt32.zero)
+          } yield last100MissingWork
+        }
+      }
+
+    } yield isMissingWork
+  }
+
+  def recalculateChainWork: Future[ChainApi] = {
+    logger.info("Calculating chain work for previous blocks")
+
+    val batchSize = chainConfig.chain.difficultyChangeInterval
+    def loop(
+        currentChainWork: UInt32,
+        remainingHeaders: Vector[BlockHeaderDb],
+        accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
+      if (remainingHeaders.isEmpty) {
+        blockHeaderDAO.upsertAll(accum.takeRight(batchSize))
+      } else {
+        val header = remainingHeaders.head
+
+        val newChainWork = currentChainWork + Pow.getBlockProof(
+          header.blockHeader)
+        val newHeader = header.copy(chainWork = newChainWork)
+
+        // Add the last batch to the database and create log
+        if (header.height % batchSize == 0) {
+          logger.info(
+            s"Recalculating chain work... current height: ${header.height}")
+          val updated = accum :+ newHeader
+          // updated the latest batch
+          blockHeaderDAO
+            .upsertAll(updated.takeRight(batchSize))
+            .flatMap(
+              _ =>
+                loop(
+                  newChainWork,
+                  remainingHeaders.tail,
+                  updated.takeRight(batchSize)
+                ))
+        } else {
+          loop(newChainWork, remainingHeaders.tail, accum :+ newHeader)
+        }
+      }
+    }
+
+    for {
+      tips <- blockHeaderDAO.chainTips
+      fullChains <- FutureUtil.sequentially(tips)(tip =>
+        blockHeaderDAO.getFullBlockchainFrom(tip))
+
+      commonHistory = fullChains.foldLeft(fullChains.head.headers)(
+        (accum, chain) => chain.intersect(accum).toVector)
+      sortedHeaders = commonHistory.sortBy(_.height)
+
+      diffedChains = fullChains.map { blockchain =>
+        val sortedFullHeaders = blockchain.headers.sortBy(_.height)
+        // Remove the common blocks
+        sortedFullHeaders.diff(sortedHeaders)
+      }
+
+      // Genesis block's chainWork should be set to 0
+      noGenesis = sortedHeaders.tail
+      commonWithWork <- loop(UInt32.zero, noGenesis, Vector.empty)
+      finalCommon = commonWithWork.takeRight(batchSize)
+      commonChainWork = finalCommon.last.chainWork
+      newBlockchains <- FutureUtil.sequentially(diffedChains) { blockchain =>
+        loop(commonChainWork, blockchain, Vector.empty)
+          .map { newHeaders =>
+            val relevantHeaders =
+              (finalCommon ++ newHeaders).takeRight(
+                chainConfig.chain.difficultyChangeInterval)
+            Blockchain(relevantHeaders)
+          }
+      }
+    } yield {
+      logger.info("Finished calculating chain work")
+      this.copy(blockchains = newBlockchains.toVector)
+    }
   }
 }
 

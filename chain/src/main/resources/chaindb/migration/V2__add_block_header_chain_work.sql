@@ -1,0 +1,1 @@
+ALTER TABLE "block_headers" ADD COLUMN "chainWork" INTEGER NOT NULL DEFAULT 0;
