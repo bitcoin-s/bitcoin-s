@@ -27,7 +27,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.rpc.BitcoindException
@@ -173,7 +173,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
 
     val feeRateF = clientF
       .flatMap(_.getNetworkInfo.map(_.relayfee))
-      .map(btc => SatoshisPerByte(btc.satoshis))
+      .map(btc => SatoshisPerVirtualByte(btc.satoshis))
 
     for {
       fundingTx <- fundingTxF

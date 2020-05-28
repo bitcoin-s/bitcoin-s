@@ -21,7 +21,7 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.{BytesUtil, FutureUtil}
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   P2WPKHV0InputInfo,
   ScriptSignatureParams,
@@ -54,7 +54,7 @@ case class DLCTestVector(
     remoteToRemoteSweepSPK: WitnessScriptPubKeyV0,
     remoteChangeSPK: WitnessScriptPubKeyV0,
     timeouts: DLCTimeouts,
-    feeRate: SatoshisPerByte,
+    feeRate: SatoshisPerVirtualByte,
     fundingTx: Transaction,
     localWinCet: Transaction,
     localLoseCet: Transaction,
@@ -142,7 +142,7 @@ object DLCTestVector {
       remoteToRemoteSweepSPK: WitnessScriptPubKeyV0,
       remoteChangeSPK: WitnessScriptPubKeyV0,
       timeouts: DLCTimeouts,
-      feeRate: SatoshisPerByte)(
+      feeRate: SatoshisPerVirtualByte)(
       implicit ec: ExecutionContext): Future[DLCTestVector] = {
     val possibleOutcomes = localPayouts.keySet.toVector
 
@@ -421,8 +421,8 @@ object SerializedDLCTestVectorSerializers {
     Writes[BlockStampWithFuture] { blockStamp =>
       JsNumber(blockStamp.toUInt32.toLong)
     }
-  implicit val satoshisPerByteWrites: Writes[SatoshisPerByte] =
-    Writes[SatoshisPerByte] { fee =>
+  implicit val SatoshisPerVirtualByteWrites: Writes[SatoshisPerVirtualByte] =
+    Writes[SatoshisPerVirtualByte] { fee =>
       JsNumber(fee.toLong)
     }
   implicit val transactionWrites: Writes[Transaction] = hexWrites[Transaction]
@@ -497,9 +497,9 @@ object SerializedDLCTestVectorSerializers {
         .map(Bech32Address.fromString)
         .map(_.get.scriptPubKey.asInstanceOf[WitnessScriptPubKeyV0])
     }
-  implicit val satoshisPerByteReads: Reads[SatoshisPerByte] =
-    Reads[SatoshisPerByte] { json =>
-      json.validate[Long].map(Satoshis.apply).map(SatoshisPerByte.apply)
+  implicit val SatoshisPerVirtualByteReads: Reads[SatoshisPerVirtualByte] =
+    Reads[SatoshisPerVirtualByte] { json =>
+      json.validate[Long].map(Satoshis.apply).map(SatoshisPerVirtualByte.apply)
     }
   implicit val transactionReads: Reads[Transaction] = hexReads(Transaction)
 
@@ -533,7 +533,7 @@ case class SerializedDLCInputs(
     penaltyTimeout: UInt32,
     contractMaturity: BlockStampWithFuture,
     contractTimeout: BlockStampWithFuture,
-    feeRate: SatoshisPerByte) {
+    feeRate: SatoshisPerVirtualByte) {
   require(localPayouts.keySet.contains(realOutcome), "Outcome must be possible")
   require(localPayouts.size == 2, "Currently only Binary DLCs are supported")
   require(localPayouts.values.forall(_ <= localInput + remoteInput),

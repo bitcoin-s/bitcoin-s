@@ -19,10 +19,10 @@ import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder.{
-  NonInteractiveWithChangeFinalizer,
   RawTxBuilder,
   RawTxBuilderResult,
   RawTxSigner,
+  StandardNonInteractiveFinalizer,
   SubtractFeeFromOutputsFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
@@ -774,7 +774,7 @@ case class DLCClient(
         Future.successful(None)
       } else {
 
-        val utxF = NonInteractiveWithChangeFinalizer.txFrom(
+        val utxF = StandardNonInteractiveFinalizer.txFrom(
           outputs = Vector(TransactionOutput(payoutValue, sweepSPK)),
           utxos = Vector(spendingInfo),
           feeRate = feeRate,
@@ -1224,9 +1224,9 @@ object DLCClient {
       implicit ec: ExecutionContext): Future[Transaction] = {
     val finalizer =
       SubtractFeeFromOutputsFinalizer(utxos.map(_.inputInfo), feeRate).andThen(
-        NonInteractiveWithChangeFinalizer(utxos.map(_.inputInfo),
-                                          feeRate,
-                                          EmptyScriptPubKey))
+        StandardNonInteractiveFinalizer(utxos.map(_.inputInfo),
+                                        feeRate,
+                                        EmptyScriptPubKey))
 
     // This invariant ensures that emptyChangeSPK is never used above
     val noEmptyOutputs: (

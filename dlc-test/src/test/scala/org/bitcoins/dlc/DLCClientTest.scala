@@ -18,10 +18,10 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.{
-  NonInteractiveWithChangeFinalizer,
-  RawTxSigner
+  RawTxSigner,
+  StandardNonInteractiveFinalizer
 }
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.core.gen.{ScriptGenerators, TransactionGenerators}
@@ -49,7 +49,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
     // CurrencyUnitGenerator.feeRate gives too high of fees
     val feeRateGen = Gen.choose(0, CurrencyUnits.oneBTC.satoshis.toLong).map {
       n =>
-        SatoshisPerByte(Satoshis(Int64(n)))
+        SatoshisPerVirtualByte(Satoshis(Int64(n)))
     }
 
     forAllAsync(nonEmptyRealisticOutputsGen,
@@ -74,10 +74,10 @@ class DLCClientTest extends BitcoinSAsyncTest {
           ))
 
         val txBuilder =
-          NonInteractiveWithChangeFinalizer.txBuilderFrom(outputs,
-                                                          utxos,
-                                                          feeRate,
-                                                          changeSPK)
+          StandardNonInteractiveFinalizer.txBuilderFrom(outputs,
+                                                        utxos,
+                                                        feeRate,
+                                                        changeSPK)
         val txBuilderResult = txBuilder.builder.result()
         val dumbFinalizer = txBuilder.finalizer
 
@@ -188,7 +188,7 @@ class DLCClientTest extends BitcoinSAsyncTest {
                 blockTimeToday,
                 BlockTime(UInt32(blockTimeToday.time.toLong + 1)))
 
-  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
+  val feeRate: SatoshisPerVirtualByte = SatoshisPerVirtualByte(Satoshis.one)
 
   def constructDLCClients(
       numOutcomes: Int): (DLCClient, DLCClient, Vector[Sha256DigestBE]) = {

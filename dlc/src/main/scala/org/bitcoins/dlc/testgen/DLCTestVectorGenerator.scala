@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.BlockStamp.BlockTime
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.script.crypto.HashType
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{P2WPKHV0InputInfo, ScriptSignatureParams}
 import org.bitcoins.crypto._
 import play.api.libs.json._
@@ -148,7 +148,7 @@ object DLCTestVectorGenerator {
     val timeouts = DLCTimeouts(penaltyTimeout = penaltyTimeout,
                                contractMaturity = contractMaturity,
                                contractTimeout = contractTimeout)
-    val feeRate = SatoshisPerByte(Satoshis.one)
+    val feeRate = SatoshisPerVirtualByte(Satoshis.one)
 
     DLCTestVector
       .fromInputs(

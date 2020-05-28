@@ -250,7 +250,7 @@ object StandardNonInteractiveFinalizer {
       utxos: Seq[InputSigningInfo[InputInfo]],
       feeRate: FeeUnit,
       changeSPK: ScriptPubKey): RawTxBuilderWithFinalizer[
-    NonInteractiveWithChangeFinalizer] = {
+    StandardNonInteractiveFinalizer] = {
     val inputs = InputUtil.calcSequenceForInputs(utxos)
     val lockTime = TxUtil.calcLockTime(utxos).get
     val builder = RawTxBuilder().setLockTime(lockTime) ++= outputs ++= inputs
