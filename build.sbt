@@ -56,6 +56,7 @@ lazy val `bitcoin-s` = project
     dbCommons,
     dbCommonsTest,
     feeProvider,
+    feeProviderTest,
     bitcoindRpc,
     bitcoindRpcTest,
     bench,
@@ -319,6 +320,14 @@ lazy val feeProvider = project
     libraryDependencies ++= Deps.feeProvider
   )
   .dependsOn(core, appCommons)
+
+lazy val feeProviderTest = project
+  .in(file("fee-provider-test"))
+  .settings(
+    name := "bitcoin-s-fee-provider-test",
+    libraryDependencies ++= Deps.feeProviderTest
+  )
+  .dependsOn(core, core % testAndCompile, testkit)
 
 lazy val zmq = project
   .in(file("zmq"))

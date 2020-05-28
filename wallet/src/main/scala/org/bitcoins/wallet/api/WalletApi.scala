@@ -441,6 +441,14 @@ trait WalletApi extends WalletLogger {
 
   def keyManager: BIP39KeyManager
 
+  private def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
+    feeRateOpt match {
+      case None =>
+        feeRateApi.getFeeRate
+      case Some(feeRate) =>
+        Future.successful(feeRate)
+    }
+
   def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
@@ -455,12 +463,7 @@ trait WalletApi extends WalletLogger {
       feeRateOpt: Option[FeeUnit],
       fromAccount: AccountDb): Future[Transaction] = {
     for {
-      feeRate <- feeRateOpt match {
-        case None =>
-          feeRateApi.getFeeRate
-        case Some(feeRate) =>
-          Future.successful(feeRate)
-      }
+      feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendFromOutPoints(outPoints, address, amount, feeRate, fromAccount)
     } yield tx
   }
@@ -490,12 +493,7 @@ trait WalletApi extends WalletLogger {
       algo: CoinSelectionAlgo,
       fromAccount: AccountDb): Future[Transaction] = {
     for {
-      feeRate <- feeRateOpt match {
-        case None =>
-          feeRateApi.getFeeRate
-        case Some(feeRate) =>
-          Future.successful(feeRate)
-      }
+      feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendWithAlgo(address, amount, feeRate, algo, fromAccount)
     } yield tx
   }
@@ -535,12 +533,7 @@ trait WalletApi extends WalletLogger {
       feeRateOpt: Option[FeeUnit],
       fromAccount: AccountDb): Future[Transaction] = {
     for {
-      feeRate <- feeRateOpt match {
-        case None =>
-          feeRateApi.getFeeRate
-        case Some(feeRate) =>
-          Future.successful(feeRate)
-      }
+      feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToAddress(address, amount, feeRate, fromAccount)
     } yield tx
   }
@@ -579,12 +572,7 @@ trait WalletApi extends WalletLogger {
       fromAccount: AccountDb,
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
-      feeRate <- feeRateOpt match {
-        case None =>
-          feeRateApi.getFeeRate
-        case Some(feeRate) =>
-          Future.successful(feeRate)
-      }
+      feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToOutputs(outputs, feeRate, fromAccount, reserveUtxos)
     } yield tx
   }
@@ -629,12 +617,7 @@ trait WalletApi extends WalletLogger {
       fromAccount: AccountDb,
       reserveUtxos: Boolean): Future[Transaction] = {
     for {
-      feeRate <- feeRateOpt match {
-        case None =>
-          feeRateApi.getFeeRate
-        case Some(feeRate) =>
-          Future.successful(feeRate)
-      }
+      feeRate <- determineFeeRate(feeRateOpt)
       tx <- sendToAddresses(addresses,
                             amounts,
                             feeRate,
@@ -675,12 +658,7 @@ trait WalletApi extends WalletLogger {
       feeRateOpt: Option[FeeUnit],
       fromAccount: AccountDb): Future[Transaction] = {
     for {
-      feeRate <- feeRateOpt match {
-        case None =>
-          feeRateApi.getFeeRate
-        case Some(feeRate) =>
-          Future.successful(feeRate)
-      }
+      feeRate <- determineFeeRate(feeRateOpt)
       tx <- makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
     } yield tx
   }

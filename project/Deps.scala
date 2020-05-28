@@ -253,6 +253,11 @@ object Deps {
     Compile.akkaStream
   )
 
+  val feeProviderTest = List(
+    Test.akkaTestkit,
+    Test.scalaTest
+  )
+
   val node = List(
     Compile.akkaActor,
     Compile.logback,

@@ -11,17 +11,17 @@ import scala.util.{Failure, Success, Try}
 
 case class BitcoinerLiveFeeRateProvider(minutes: Int)(
     implicit override val system: ActorSystem)
-    extends CachedHttpFeeRateApi {
+    extends CachedHttpFeeRateProvider {
   private val bitcoinerLiveValidMinutes =
     Vector(30, 60, 120, 180, 360, 720, 1440)
   require(
     bitcoinerLiveValidMinutes.contains(minutes),
     s"$minutes is not a valid selection, must be from $bitcoinerLiveValidMinutes")
 
-  override def uri: Uri =
+  override val uri: Uri =
     Uri("https://bitcoiner.live/api/fees/estimates/latest")
 
-  override def converter: String => Try[SatoshisPerVirtualByte] = str => {
+  override def converter(str: String): Try[SatoshisPerVirtualByte] = {
     val json = Json.parse(str)
     json.validate[BitcoinerLiveResult] match {
       case JsSuccess(response, _) =>

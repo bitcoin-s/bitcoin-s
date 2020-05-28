@@ -3,13 +3,13 @@ package org.bitcoins.testkit.wallet
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
@@ -328,6 +328,17 @@ object BitcoinSWalletTest extends WalletLogger {
     }
   }
 
+  private[testkit] class RandomFeeProvider extends FeeRateApi {
+    private val rnd = new scala.util.Random(TimeUtil.now.toEpochMilli)
+    private val start = 2
+    private val end = 100
+
+    def getFeeRate: Future[FeeUnit] = {
+      val satoshis = Satoshis(start + rnd.nextInt((end - start) + 1))
+      Future.successful(SatoshisPerVirtualByte(satoshis))
+    }
+  }
+
   /** Returns a function that can be used to create a wallet fixture.
     * If you pass in a configuration to this method that configuration
     * is given to the wallet as user-provided overrides. You could for
@@ -358,7 +369,7 @@ object BitcoinSWalletTest extends WalletLogger {
           Wallet(keyManager,
                  nodeApi,
                  chainQueryApi,
-                 ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
+                 new RandomFeeProvider,
                  keyManager.creationTime)(walletConfig, ec)
         Wallet.initialize(wallet, bip39PasswordOpt)
       }

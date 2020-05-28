@@ -97,12 +97,14 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Success(
             SendToAddress(address, bitcoins, satoshisPerVirtualByteOpt)) =>
           complete {
-            wallet
-              .sendToAddress(address, bitcoins, satoshisPerVirtualByteOpt)
-              .map { tx =>
-                node.broadcastTransaction(tx)
-                Server.httpSuccess(tx.txIdBE)
-              }
+            for {
+              tx <- wallet.sendToAddress(address,
+                                         bitcoins,
+                                         satoshisPerVirtualByteOpt)
+              _ <- node.broadcastTransaction(tx)
+            } yield {
+              Server.httpSuccess(tx.txIdBE)
+            }
           }
       }
 
@@ -150,14 +152,14 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Success(
             OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt)) =>
           complete {
-            wallet
-              .makeOpReturnCommitment(message,
-                                      hashMessage,
-                                      satoshisPerVirtualByteOpt)
-              .map { tx =>
-                node.broadcastTransaction(tx)
-                Server.httpSuccess(tx.txIdBE)
-              }
+            for {
+              tx <- wallet.makeOpReturnCommitment(message,
+                                                  hashMessage,
+                                                  satoshisPerVirtualByteOpt)
+              _ <- node.broadcastTransaction(tx)
+            } yield {
+              Server.httpSuccess(tx.txIdBE)
+            }
           }
       }
 

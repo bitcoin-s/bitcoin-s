@@ -14,7 +14,7 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.Try
 
-object HttpFeeRateApi {
+object HttpFeeRateProvider {
 
   def makeApiCall(uri: Uri)(implicit system: ActorSystem): Future[String] = {
     implicit val mat: ActorMaterializer = ActorMaterializer.create(system)
@@ -30,21 +30,21 @@ object HttpFeeRateApi {
   }
 }
 
-abstract class HttpFeeRateApi extends FeeRateApi {
-  implicit val system: ActorSystem
+abstract class HttpFeeRateProvider extends FeeRateApi {
+  implicit protected val system: ActorSystem
 
-  def uri: Uri
+  protected def uri: Uri
 
-  def converter: String => Try[FeeUnit]
+  protected def converter(str: String): Try[FeeUnit]
 
   def getFeeRate: Future[FeeUnit] = {
-    HttpFeeRateApi
+    HttpFeeRateProvider
       .makeApiCall(uri)
       .flatMap(ret => Future.fromTry(converter(ret)))(system.dispatcher)
   }
 }
 
-abstract class CachedHttpFeeRateApi extends HttpFeeRateApi {
+abstract class CachedHttpFeeRateProvider extends HttpFeeRateProvider {
 
   private var cachedFeeRateOpt: Option[(FeeUnit, Instant)] = None
 
