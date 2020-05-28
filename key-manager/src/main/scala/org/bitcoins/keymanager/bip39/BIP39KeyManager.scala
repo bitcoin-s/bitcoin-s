@@ -27,7 +27,8 @@ case class BIP39KeyManager(
     kmParams: KeyManagerParams,
     private val bip39PasswordOpt: Option[String],
     creationTime: Instant)
-    extends KeyManager {
+    extends KeyManager
+    with KeyManagerLogger {
   private val seed = bip39PasswordOpt match {
     case Some(pw) =>
       BIP39Seed.fromMnemonic(mnemonic = mnemonic, password = pw)

@@ -418,7 +418,7 @@ lazy val docs = project
 lazy val keyManager = project
   .in(file("key-manager"))
   .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(core)
+  .dependsOn(core, dbCommons)
 
 lazy val keyManagerTest = project
   .in(file("key-manager-test"))
