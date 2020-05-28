@@ -698,16 +698,20 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
             s"Given binary ($binary) does not exist!")
         }
       case (None, Some(path)) =>
+        val eclairBinDir =
+          s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}${File.separator}bin${File.separator}"
         val eclairV =
-          s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}.jar"
-        val fullPath = path + eclairV
+          if (sys.props("os.name").toLowerCase.contains("windows"))
+            eclairBinDir + "eclair-node.bat"
+          else
+            eclairBinDir + "eclair-node.sh"
 
-        val jar = new File(fullPath)
+        val jar = new File(path, eclairV)
         if (jar.exists) {
-          fullPath
+          jar.getPath
         } else {
           throw new NoSuchFileException(
-            s"Could not Eclair Jar at location $fullPath")
+            s"Could not Eclair Jar at location ${jar.getPath}")
         }
       case (None, None) =>
         val msg = List(
@@ -736,7 +740,7 @@ class EclairRpcClient(val instance: EclairInstance, binary: Option[File] = None)
           .map(path => s"-Dlogback.configurationFile=$path")
           .getOrElse("")
         val cmd =
-          s"java -jar -Declair.datadir=${instance.authCredentials.datadir.get} $logback $pathToEclairJar &"
+          s"${pathToEclairJar} -Declair.datadir=${instance.authCredentials.datadir.get} $logback"
         val p = Process(cmd)
         val result = p.run()
         logger.debug(
@@ -942,8 +946,8 @@ object EclairRpcClient {
       implicit system: ActorSystem) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "12ac145"
+  private[bitcoins] val commit = "69c538e"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.3.3"
+  private[bitcoins] val version = "0.4"
 }
