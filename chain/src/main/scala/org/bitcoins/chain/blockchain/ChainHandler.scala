@@ -563,8 +563,11 @@ case class ChainHandler(
       // Genesis block's chainWork should be set to 0
       noGenesis = sortedHeaders.tail
       commonWithWork <- loop(UInt32.zero, noGenesis, Vector.empty)
-      finalCommon = commonWithWork.takeRight(batchSize)
-      commonChainWork = finalCommon.last.chainWork
+      finalCommon = Vector(sortedHeaders.head) ++ commonWithWork.takeRight(
+        batchSize)
+      commonChainWork = finalCommon.lastOption
+        .map(_.chainWork)
+        .getOrElse(UInt32.zero)
       newBlockchains <- FutureUtil.sequentially(diffedChains) { blockchain =>
         loop(commonChainWork, blockchain, Vector.empty)
           .map { newHeaders =>
