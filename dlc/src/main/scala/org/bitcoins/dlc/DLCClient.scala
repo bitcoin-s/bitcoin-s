@@ -21,10 +21,10 @@ import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
+import org.bitcoins.dlc.sign.DLCTxSigner
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
@@ -131,6 +131,12 @@ case class DLCClient(
 
   private val dlcTxBuilder = DLCTxBuilder(offer, accept)
 
+  private val dlcTxSigner = DLCTxSigner(dlcTxBuilder,
+                                        isInitiator,
+                                        extPrivKey,
+                                        nextAddressIndex,
+                                        fundingUtxos)
+
   private val sigPubKeys = outcomes.keys.map { msg =>
     msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
   }.toMap
@@ -216,25 +222,7 @@ case class DLCClient(
   }
 
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
-    val fundingTx = createUnsignedFundingTransaction
-
-    val outPointAndSigFs = fundingUtxos.foldLeft(
-      Vector.empty[Future[(TransactionOutPoint, PartialSignature)]]) {
-      case (vec, utxo) =>
-        val sigF = BitcoinSigner
-          .signSingle(utxo.toSingle(0), fundingTx, isDummySignature = false)
-          .map(sig => (utxo.outPoint, sig))
-        vec :+ sigF
-    }
-    val sigsF = Future.sequence(outPointAndSigFs)
-
-    val sigsByOutPointF = sigsF.map(_.groupBy(_._1))
-    val sigsMapF = sigsByOutPointF.map(_.map {
-      case (outPoint, outPointAndSigs) =>
-        outPoint -> outPointAndSigs.map(_._2)
-    })
-
-    sigsMapF.map(FundingSignatures.apply)
+    dlcTxSigner.createFundingTxSigs()
   }
 
   def verifyRemoteFundingSigs(remoteSigs: FundingSignatures): Boolean = {
@@ -267,47 +255,6 @@ case class DLCClient(
             }
           } else false
       }
-  }
-
-  def createFundingTransaction(
-      remoteSigs: FundingSignatures): Future[Transaction] = {
-    val (localTweak, remoteTweak) = if (isInitiator) {
-      (0, fundingUtxos.length)
-    } else {
-      (remoteFundingInputs.length, 0)
-    }
-
-    val fundingPSBT = remoteSigs.zipWithIndex
-      .foldLeft(PSBT.fromUnsignedTx(createUnsignedFundingTransaction)) {
-        case (psbt, ((outPoint, sigs), index)) =>
-          require(psbt.transaction.inputs(index).previousOutput == outPoint,
-                  "Adding signature for incorrect input")
-
-          // TODO: add funding witness and redeem scripts
-          psbt
-            .addWitnessUTXOToInput(remoteFundingInputs(index).output,
-                                   index + remoteTweak)
-            .addSignatures(sigs, index + remoteTweak)
-      }
-
-    val signedFundingPSBTF =
-      fundingUtxos.zipWithIndex.foldLeft(Future.successful(fundingPSBT)) {
-        case (psbtF, (utxo, index)) =>
-          psbtF.flatMap { psbt =>
-            psbt
-              .addWitnessUTXOToInput(output = utxo.output, index + localTweak)
-              .addScriptWitnessToInput(
-                scriptWitness = InputInfo.getScriptWitness(utxo.inputInfo).get,
-                index + localTweak)
-              .sign(index + localTweak, utxo.signer)
-          }
-      }
-
-    signedFundingPSBTF.flatMap { signedFundingPSBT =>
-      val txT =
-        signedFundingPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
-      Future.fromTry(txT)
-    }
   }
 
   /** Creates a ready-to-sign PSBT for the Mutual Close tx
@@ -580,7 +527,7 @@ case class DLCClient(
 
       localCetData <- Future.sequence(localCetDataFs).map(_.toMap)
       (refundTx, _) <- createRefundTx(cetSigs.refundSig)
-      fundingTx <- createFundingTransaction(fundingSigs)
+      fundingTx <- dlcTxSigner.signFundingTx(fundingSigs)
     } yield {
       val cetInfos = outcomes.keys.map { msg =>
         val (localCet, localWitness) = localCetData(msg)
@@ -633,7 +580,7 @@ case class DLCClient(
             case (msg, (_, _, sig)) => msg -> sig
           }
           cetSigs = CETSignatures(remoteOutcomeSigs, remoteRefundSig)
-          localFundingSigs <- createFundingTransactionSigs()
+          localFundingSigs <- dlcTxSigner.createFundingTxSigs()
           _ <- sendSigs(cetSigs, localFundingSigs)
           fundingTx <- getFundingTx
         } yield {
@@ -709,10 +656,7 @@ case class DLCClient(
   def createMutualCloseSig(
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
-
-    createMutualCloseTxSig(oracleSig).map { sig =>
-      DLCMutualCloseSig(eventId, oracleSig, sig)
-    }
+    dlcTxSigner.createMutualCloseTxSig(oracleSig)
   }
 
   /** Initiates a Mutual Close by offering signatures to the counter-party
@@ -732,7 +676,8 @@ case class DLCClient(
     logger.info(s"Attempting Mutual Close for funding tx: ${fundingTx.txIdBE}")
 
     for {
-      fundingSig <- createMutualCloseTxSig(sig)
+      DLCMutualCloseSig(_, _, fundingSig) <- dlcTxSigner.createMutualCloseTxSig(
+        sig)
       _ <- sendSigs(sig, fundingSig)
       mutualCloseTx <- getMutualCloseTx
     } yield {
