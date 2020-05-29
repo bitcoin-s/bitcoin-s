@@ -1,6 +1,9 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.DLCAccept
+import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
+  DLCAccept,
+  DLCAcceptWithoutSigs
+}
 import org.bitcoins.commons.jsonmodels.dlc.{CETSignatures, DLCPublicKeys}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -29,6 +32,18 @@ case class DLCAcceptDb(
               changeAddress,
               cetSigs,
               eventId)
+  }
+
+  def toDLCAcceptWithoutSigs(
+      fundingInputs: Vector[OutputReference]): DLCAcceptWithoutSigs = {
+    val pubKeys =
+      DLCPublicKeys(fundingKey, toLocalCETKey, finalAddress)
+
+    DLCAcceptWithoutSigs(totalCollateral.satoshis,
+                         pubKeys,
+                         fundingInputs,
+                         changeAddress,
+                         eventId)
   }
 }
 

@@ -133,10 +133,13 @@ case class DLCClient(
     P2WSHWitnessV0(fundingSPK),
     ConditionalPath.NoCondition)
 
-  /** Returns the payouts for the signature as (toLocal, toRemote)  */
-  def getPayouts(
-      oracleSig: SchnorrDigitalSignature): (CurrencyUnit, CurrencyUnit) = {
-    dlcTxBuilder.getPayouts(oracleSig)
+  def getPayout(oracleSig: SchnorrDigitalSignature): CurrencyUnit = {
+    val (offerPayout, acceptPayout) = dlcTxBuilder.getPayouts(oracleSig)
+    if (isInitiator) {
+      offerPayout
+    } else {
+      acceptPayout
+    }
   }
 
   def createFundingTransactionSigs(): Future[FundingSignatures] = {

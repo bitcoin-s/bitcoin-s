@@ -362,14 +362,10 @@ abstract class DLCWallet extends Wallet {
 
   def verifyCETSigs(sign: DLCSign): Future[Boolean] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
         sign.eventId)
 
-      client <- clientFromDb(dlcDb,
-                             dlcOffer,
-                             dlcAccept,
-                             fundingInputs,
-                             outcomeSigs)
+      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
     } yield {
       val correctNumberOfSigs = sign.cetSigs.outcomeSigs.size == client.messages.size
 
@@ -382,14 +378,10 @@ abstract class DLCWallet extends Wallet {
 
   def verifyRefundSig(sign: DLCSign): Future[Boolean] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
         sign.eventId)
 
-      client <- clientFromDb(dlcDb,
-                             dlcOffer,
-                             dlcAccept,
-                             fundingInputs,
-                             outcomeSigs)
+      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
     } yield client.verifyRefundSig(sign.cetSigs.refundSig)
   }
 
@@ -398,14 +390,10 @@ abstract class DLCWallet extends Wallet {
       sign: DLCSign): Future[Boolean] = {
     if (inputs.count(!_.isInitiator) == sign.fundingSigs.keys.size) {
       for {
-        (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+        (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
           sign.eventId)
 
-        client <- clientFromDb(dlcDb,
-                               dlcOffer,
-                               dlcAccept,
-                               fundingInputs,
-                               outcomeSigs)
+        client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
 
       } yield client.verifyRemoteFundingSigs(sign.fundingSigs)
     } else {
@@ -500,8 +488,7 @@ abstract class DLCWallet extends Wallet {
       dlcDb: DLCDb,
       dlcOffer: DLCOfferDb,
       dlcAccept: DLCAcceptDb,
-      fundingInputs: Vector[DLCFundingInputDb],
-      outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[DLCClient] = {
+      fundingInputs: Vector[DLCFundingInputDb]): Future[DLCClient] = {
     val extPrivKey = keyManager.rootExtPrivKey.deriveChildPrivKey(dlcDb.account)
 
     val offerInputs =
@@ -509,52 +496,25 @@ abstract class DLCWallet extends Wallet {
     val acceptInputs =
       fundingInputs.filterNot(_.isInitiator).map(_.toOutputReference)
 
-    val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
-
     val offer = dlcOffer.toDLCOffer(offerInputs)
-    val accept = dlcAccept.toDLCAccept(acceptInputs, outcomeSigs)
+    val accept = dlcAccept.toDLCAcceptWithoutSigs(acceptInputs)
 
-    val (setupMsg, remoteSetupMsg) = if (dlcDb.isInitiator) {
-      (offer, accept)
+    val outPoints = if (dlcDb.isInitiator) {
+      offerInputs.map(_.outPoint)
     } else {
-      (accept, offer)
+      acceptInputs.map(_.outPoint)
     }
 
-    val utxosF = listUtxos(setupMsg.fundingInputs.map(_.outPoint))
-      .map(_.map(info => info.toUTXOInfo(keyManager)))
+    val utxosF =
+      listUtxos(outPoints).map(_.map(info => info.toUTXOInfo(keyManager)))
 
     utxosF.map { fundingUtxos =>
-      val timeouts = DLCTimeouts(dlcOffer.penaltyTimeout,
-                                 dlcOffer.contractMaturity,
-                                 dlcOffer.contractTimeout)
-
-      val outcomes =
-        if (dlcDb.isInitiator) dlcOffer.contractInfo
-        else
-          ContractInfo(offer.contractInfo.map {
-            case (hash, amt) =>
-              (hash,
-               (accept.totalCollateral + offer.totalCollateral - amt).satoshis)
-          })
-
-      DLCClient(
-        outcomes = outcomes,
-        oraclePubKey = dlcOffer.oraclePubKey,
-        preCommittedR = dlcOffer.oracleRValue,
-        isInitiator = dlcDb.isInitiator,
-        extPrivKey = extPrivKey,
-        nextAddressIndex = dlcDb.keyIndex,
-        remotePubKeys = remoteSetupMsg.pubKeys,
-        input = setupMsg.totalCollateral,
-        remoteInput = remoteSetupMsg.totalCollateral,
-        fundingUtxos = fundingUtxos,
-        remoteFundingInputs = remoteSetupMsg.fundingInputs,
-        timeouts = timeouts,
-        feeRate = dlcOffer.feeRate,
-        changeSPK = setupMsg.changeAddress.scriptPubKey,
-        remoteChangeSPK = remoteSetupMsg.changeAddress.scriptPubKey,
-        network = dlcOffer.network
-      )
+      DLCClient(offer = offer,
+                accept = accept,
+                isInitiator = dlcDb.isInitiator,
+                extPrivKey = extPrivKey,
+                nextAddressIndex = dlcDb.keyIndex,
+                fundingUtxos = fundingUtxos)
     }
   }
 
@@ -565,7 +525,7 @@ abstract class DLCWallet extends Wallet {
       fundingInputs: Vector[DLCFundingInputDb],
       outcomeSigDbs: Vector[DLCCETSignatureDb]): Future[(DLCClient, SetupDLC)] = {
 
-    clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigDbs)
+    clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
       .flatMap { client =>
         val outcomeSigs = outcomeSigDbs.map(_.toTuple).toMap
 
@@ -596,16 +556,11 @@ abstract class DLCWallet extends Wallet {
       eventId: Sha256DigestBE,
       oracleSig: SchnorrDigitalSignature): Future[DLCMutualCloseSig] = {
     for {
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
-        eventId)
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(eventId)
 
-      client <- clientFromDb(dlcDb,
-                             dlcOffer,
-                             dlcAccept,
-                             fundingInputs,
-                             outcomeSigs)
+      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
 
-      (payout, _) = client.getPayouts(oracleSig)
+      payout = client.getPayout(oracleSig)
       _ = if (payout <= 0.satoshis)
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
@@ -630,7 +585,7 @@ abstract class DLCWallet extends Wallet {
                                               fundingInputs,
                                               outcomeSigs)
 
-      (payout, _) = client.getPayouts(oracleSig)
+      payout = client.getPayout(oracleSig)
       _ = if (payout <= 0.satoshis)
         throw new UnsupportedOperationException(
           "Cannot execute a losing outcome")
@@ -679,14 +634,10 @@ abstract class DLCWallet extends Wallet {
       mutualCloseSig: DLCMutualCloseSig): Future[Transaction] = {
     for {
       _ <- updateDLCOracleSig(mutualCloseSig.eventId, mutualCloseSig.oracleSig)
-      (dlcDb, dlcOffer, dlcAccept, fundingInputs, outcomeSigs) <- getAllDLCData(
+      (dlcDb, dlcOffer, dlcAccept, fundingInputs, _) <- getAllDLCData(
         mutualCloseSig.eventId)
 
-      client <- clientFromDb(dlcDb,
-                             dlcOffer,
-                             dlcAccept,
-                             fundingInputs,
-                             outcomeSigs)
+      client <- clientFromDb(dlcDb, dlcOffer, dlcAccept, fundingInputs)
 
       tx <- client.createMutualCloseTx(mutualCloseSig.oracleSig,
                                        mutualCloseSig.mutualSig)
