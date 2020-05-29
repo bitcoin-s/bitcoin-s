@@ -6,7 +6,6 @@ import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency._
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.api.WalletApi
 
@@ -97,11 +96,12 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Success(
             SendToAddress(address, bitcoins, satoshisPerVirtualByteOpt)) =>
           complete {
-            // TODO dynamic fees based off mempool and recent blocks
-            val feeRate =
-              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
-            wallet.sendToAddress(address, bitcoins, feeRate).map { tx =>
-              node.broadcastTransaction(tx)
+            for {
+              tx <- wallet.sendToAddress(address,
+                                         bitcoins,
+                                         satoshisPerVirtualByteOpt)
+              _ <- node.broadcastTransaction(tx)
+            } yield {
               Server.httpSuccess(tx.txIdBE)
             }
           }
@@ -117,15 +117,11 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
                               bitcoins,
                               satoshisPerVirtualByteOpt)) =>
           complete {
-            // TODO dynamic fees based off mempool and recent blocks
-            val feeRate =
-              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
-
             for {
               tx <- wallet.sendFromOutPoints(outPoints,
                                              address,
                                              bitcoins,
-                                             feeRate)
+                                             satoshisPerVirtualByteOpt)
               _ <- node.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
           }
@@ -138,12 +134,11 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Success(
             SendWithAlgo(address, bitcoins, satoshisPerVirtualByteOpt, algo)) =>
           complete {
-            // TODO dynamic fees based off mempool and recent blocks
-            val feeRate =
-              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
-
             for {
-              tx <- wallet.sendWithAlgo(address, bitcoins, feeRate, algo)
+              tx <- wallet.sendWithAlgo(address,
+                                        bitcoins,
+                                        satoshisPerVirtualByteOpt,
+                                        algo)
               _ <- node.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
           }
@@ -156,13 +151,13 @@ case class WalletRoutes(wallet: WalletApi, node: Node)(
         case Success(
             OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt)) =>
           complete {
-            // TODO dynamic fees based off mempool and recent blocks
-            val feeRate =
-              satoshisPerVirtualByteOpt.getOrElse(SatoshisPerByte(100.satoshis))
-            wallet.makeOpReturnCommitment(message, hashMessage, feeRate).map {
-              tx =>
-                node.broadcastTransaction(tx)
-                Server.httpSuccess(tx.txIdBE)
+            for {
+              tx <- wallet.makeOpReturnCommitment(message,
+                                                  hashMessage,
+                                                  satoshisPerVirtualByteOpt)
+              _ <- node.broadcastTransaction(tx)
+            } yield {
+              Server.httpSuccess(tx.txIdBE)
             }
           }
       }

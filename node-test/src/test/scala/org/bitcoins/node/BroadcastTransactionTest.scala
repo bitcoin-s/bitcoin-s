@@ -52,7 +52,7 @@ class BroadcastTransactionTest extends NodeUnitTest {
       _ <- NodeTestUtil.awaitSync(node, rpc)
 
       tx <- wallet
-        .sendToAddress(address, 1.bitcoin, SatoshisPerByte(10.sats))
+        .sendToAddress(address, 1.bitcoin, Some(SatoshisPerByte(10.sats)))
 
       bitcoindBalancePreBroadcast <- rpc.getBalance
       _ = node.broadcastTransaction(tx)

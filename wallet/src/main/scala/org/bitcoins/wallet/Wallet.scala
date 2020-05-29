@@ -3,7 +3,7 @@ package org.bitcoins.wallet
 import java.time.Instant
 
 import org.bitcoins.commons.jsonmodels.wallet.CoinSelectionAlgo
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.bloom.{BloomFilter, BloomUpdateAll}
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency._
@@ -407,8 +407,13 @@ abstract class Wallet
     accountCreationF.map(created =>
       logger.debug(s"Created new account ${created.hdAccount}"))
     accountCreationF
-      .map(_ =>
-        Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime))
+      .map(
+        _ =>
+          Wallet(keyManager,
+                 nodeApi,
+                 chainQueryApi,
+                 feeRateApi,
+                 keyManager.creationTime))
   }
 }
 
@@ -419,6 +424,7 @@ object Wallet extends WalletLogger {
       override val keyManager: BIP39KeyManager,
       override val nodeApi: NodeApi,
       override val chainQueryApi: ChainQueryApi,
+      override val feeRateApi: FeeRateApi,
       override val creationTime: Instant
   )(
       implicit override val walletConfig: WalletAppConfig,
@@ -429,10 +435,11 @@ object Wallet extends WalletLogger {
       keyManager: BIP39KeyManager,
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi,
+      feeRateApi: FeeRateApi,
       creationTime: Instant)(
       implicit config: WalletAppConfig,
       ec: ExecutionContext): Wallet = {
-    WalletImpl(keyManager, nodeApi, chainQueryApi, creationTime)
+    WalletImpl(keyManager, nodeApi, chainQueryApi, feeRateApi, creationTime)
   }
 
   /** Creates the level 0 account for the given HD purpose */

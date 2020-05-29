@@ -34,7 +34,7 @@ class UTXOLifeCycleTest extends BitcoinSWalletTest {
     for {
       tx <- wallet.sendToAddress(testAddr,
                                  Satoshis(3000),
-                                 SatoshisPerByte(Satoshis(3)))
+                                 Some(SatoshisPerByte(Satoshis(3))))
 
       updatedCoins <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
     } yield {

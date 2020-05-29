@@ -30,13 +30,13 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   val amountToSend: Bitcoins = Bitcoins(0.5)
 
-  val feeRate: SatoshisPerByte = SatoshisPerByte(Satoshis.one)
+  val feeRateOpt: Some[SatoshisPerByte] = Some(SatoshisPerByte(Satoshis.one))
 
   it should "correctly send to an address" in { fundedWallet =>
     val wallet = fundedWallet.wallet
 
     for {
-      tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
+      tx <- wallet.sendToAddress(testAddress, amountToSend, feeRateOpt)
     } yield {
       assert(
         tx.outputs.head == TransactionOutput(amountToSend,
@@ -64,7 +64,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     for {
       tx <- wallet.sendToAddresses(addresses,
                                    amounts,
-                                   feeRate,
+                                   feeRateOpt,
                                    reserveUtxos = false)
     } yield {
       val expectedOutputs = addresses.zip(amounts).map {
@@ -81,7 +81,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       val sendToAddressesF =
         wallet.sendToAddresses(addresses,
                                amounts.tail,
-                               feeRate,
+                               feeRateOpt,
                                reserveUtxos = false)
 
       recoverToSucceededIf[IllegalArgumentException] {
@@ -96,7 +96,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       val sendToAddressesF =
         wallet.sendToAddresses(addresses.tail,
                                amounts,
-                               feeRate,
+                               feeRateOpt,
                                reserveUtxos = false)
 
       recoverToSucceededIf[IllegalArgumentException] {
@@ -112,7 +112,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
     }
 
     for {
-      tx <- wallet.sendToOutputs(expectedOutputs, feeRate, reserveUtxos = false)
+      tx <- wallet.sendToOutputs(expectedOutputs,
+                                 feeRateOpt,
+                                 reserveUtxos = false)
     } yield {
       assert(expectedOutputs.diff(tx.outputs).isEmpty)
     }
@@ -126,7 +128,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     for {
       tx <- wallet.makeOpReturnCommitment(message,
                                           hashMessage = hashMessage,
-                                          SatoshisPerVirtualByte.one)
+                                          feeRateOpt)
 
       outgoingTxDbOpt <- wallet.outgoingTxDAO.read(tx.txIdBE)
     } yield {
@@ -174,7 +176,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
         wallet.makeOpReturnCommitment(
           "This message is much too long and is over 80 bytes, the limit for OP_RETURN. It should cause an error.",
           hashMessage = false,
-          feeRate)
+          feeRateOpt)
       }
   }
 
@@ -185,7 +187,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       wallet.sendToAddress(
         BitcoinAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").get,
         Satoshis(1000),
-        feeRate)
+        feeRateOpt)
 
     recoverToSucceededIf[IllegalArgumentException] {
       sendToAddressesF
@@ -203,7 +205,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     )
 
     val sendToAddressesF =
-      wallet.sendToAddresses(addrs, amounts, feeRate, reserveUtxos = false)
+      wallet.sendToAddresses(addrs, amounts, feeRateOpt, reserveUtxos = false)
 
     recoverToSucceededIf[IllegalArgumentException] {
       sendToAddressesF
@@ -219,7 +221,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       tx <- wallet.sendFromOutPoints(outPoints,
                                      testAddress,
                                      amountToSend,
-                                     feeRate)
+                                     feeRateOpt)
     } yield {
       assert(outPoints.forall(outPoint =>
                tx.inputs.exists(_.previousOutput == outPoint)),
@@ -242,8 +244,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
       expectedUtxos = CoinSelector.selectByAlgo(algo,
                                                 allUtxos,
                                                 Vector(output),
-                                                feeRate)
-      tx <- wallet.sendWithAlgo(testAddress, amountToSend, feeRate, algo)
+                                                feeRateOpt.get)
+      tx <- wallet.sendWithAlgo(testAddress, amountToSend, feeRateOpt, algo)
     } yield {
       val diff =
         expectedUtxos.map(_.outPoint).diff(tx.inputs.map(_.previousOutput))
