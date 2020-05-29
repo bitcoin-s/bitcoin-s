@@ -820,7 +820,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
           val v17 = new BitcoindV17RpcClient(other.instance)
           v17.getAddressInfo(address).map(_.pubkey)
         } else {
-          other.validateAddress(address).map(_.pubkey)
+          other.getAddressInfo(address).map(_.pubkey)
         }
     }
   }
