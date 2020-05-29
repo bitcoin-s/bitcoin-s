@@ -11,11 +11,10 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder._
@@ -24,11 +23,11 @@ import org.bitcoins.core.wallet.utxo._
 import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import org.bitcoins.dlc.sign.DLCTxSigner
+import org.bitcoins.dlc.verify.DLCSignatureVerifier
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 /** This case class allows for the construction and execution of
   * Discreet Log Contracts between two parties.
@@ -52,6 +51,8 @@ case class DLCClient(
 
   private val dlcTxBuilder = DLCTxBuilder(offer, accept)
 
+  private val dlcSigVerifier = DLCSignatureVerifier(dlcTxBuilder, isInitiator)
+
   private val dlcTxSigner = DLCTxSigner(dlcTxBuilder,
                                         isInitiator,
                                         extPrivKey,
@@ -73,12 +74,6 @@ case class DLCClient(
   val messages: Vector[Sha256DigestBE] = outcomes.keys.toVector
 
   private val feeRate = offer.feeRate
-
-  private val remoteFundingInputs = if (isInitiator) {
-    accept.fundingInputs
-  } else {
-    offer.fundingInputs
-  }
 
   private val oraclePubKey = offer.oracleInfo.pubKey
 
@@ -147,35 +142,7 @@ case class DLCClient(
   }
 
   def verifyRemoteFundingSigs(remoteSigs: FundingSignatures): Boolean = {
-    val remoteTweak = if (isInitiator) {
-      fundingUtxos.length
-    } else {
-      0
-    }
-
-    val psbt = PSBT.fromUnsignedTx(createUnsignedFundingTransaction)
-
-    remoteSigs.zipWithIndex
-      .foldLeft(true) {
-        case (ret, ((outPoint, sigs), index)) =>
-          if (ret) {
-            require(psbt.transaction.inputs(index).previousOutput == outPoint,
-                    "Adding signature for incorrect input")
-
-            val idx = index + remoteTweak
-
-            // TODO: add funding witness and redeem scripts
-            psbt
-              .addWitnessUTXOToInput(remoteFundingInputs(index).output, idx)
-              .addSignatures(sigs, idx)
-              .finalizeInput(idx) match {
-              case Success(finalized) =>
-                finalized.verifyFinalizedInput(idx)
-              case Failure(_) =>
-                false
-            }
-          } else false
-      }
+    dlcSigVerifier.verifyRemoteFundingSigs(remoteSigs)
   }
 
   /** Creates a ready-to-sign PSBT for the Mutual Close tx
@@ -196,49 +163,11 @@ case class DLCClient(
   }
 
   def verifyCETSig(outcome: Sha256DigestBE, sig: PartialSignature): Boolean = {
-    val cetF = if (isInitiator) {
-      dlcTxBuilder.buildOfferCET(outcome)
-    } else {
-      dlcTxBuilder.buildAcceptCET(outcome)
-    }
-
-    val cet = Await.result(cetF, 5.seconds)
-    val fundingTx = createUnsignedFundingTransaction
-
-    val sigComponent = WitnessTxSigComponentRaw(transaction = cet,
-                                                inputIndex = UInt32.zero,
-                                                output = fundingTx.outputs.head,
-                                                flags = Policy.standardFlags)
-
-    TransactionSignatureChecker
-      .checkSignature(
-        sigComponent,
-        sigComponent.output.scriptPubKey.asm.toVector,
-        sig.pubKey,
-        sig.signature,
-        Policy.standardFlags
-      )
-      .isValid
+    dlcSigVerifier.verifyCETSig(outcome, sig)
   }
 
   def verifyRefundSig(sig: PartialSignature): Boolean = {
-    val refundTx = Await.result(dlcTxBuilder.buildRefundTx, 5.seconds)
-    val fundingTx = createUnsignedFundingTransaction
-
-    val sigComponent = WitnessTxSigComponentRaw(transaction = refundTx,
-                                                inputIndex = UInt32.zero,
-                                                output = fundingTx.outputs.head,
-                                                flags = Policy.standardFlags)
-
-    TransactionSignatureChecker
-      .checkSignature(
-        sigComponent,
-        sigComponent.output.scriptPubKey.asm.toVector,
-        sig.pubKey,
-        sig.signature,
-        Policy.standardFlags
-      )
-      .isValid
+    dlcSigVerifier.verifyRefundSig(sig)
   }
 
   def createCETSigs: Future[CETSignatures] = {
