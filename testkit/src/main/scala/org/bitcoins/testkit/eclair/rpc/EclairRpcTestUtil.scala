@@ -63,7 +63,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     val path = binaryDirectory
       .resolve(eclairVersionOpt.getOrElse(EclairRpcClient.version))
       .resolve(
-        s"eclair-node-${EclairRpcClient.version}-${EclairRpcClient.commit}")
+        s"eclair-node-${EclairRpcClient.version}-${eclairCommitOpt.getOrElse(EclairRpcClient.commit)}")
       .resolve("bin")
       .resolve(
         if (sys.props("os.name").toLowerCase.contains("windows"))
