@@ -1,1 +1,1 @@
-ALTER TABLE "block_headers" ADD COLUMN "chainWork" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "block_headers" ADD COLUMN "chainWork" VARCHAR(254) NOT NULL DEFAULT "00";

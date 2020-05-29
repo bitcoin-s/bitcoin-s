@@ -84,17 +84,17 @@ class ChainHandlerTest extends ChainDbUnitTest {
     tempHandler: ChainHandler =>
       val dummyHeader =
         BlockHeaderDbHelper.fromBlockHeader(1,
-                                            UInt32.zero,
+                                            BigInt(0),
                                             ChainTestUtil.blockHeader562462)
 
       val highestHeader =
         BlockHeaderDbHelper.fromBlockHeader(2,
-                                            UInt32.zero,
+                                            BigInt(0),
                                             ChainTestUtil.blockHeader562463)
 
       val headerWithMostWork =
         BlockHeaderDbHelper.fromBlockHeader(1,
-                                            UInt32(1000),
+                                            BigInt(1000),
                                             ChainTestUtil.blockHeader562464)
 
       val tallestBlockchain =
@@ -141,17 +141,17 @@ class ChainHandlerTest extends ChainDbUnitTest {
 
       val firstBlockHeaderDb =
         BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 2,
-                                            UInt32.zero,
+                                            BigInt(0),
                                             ChainTestUtil.blockHeader562462)
 
       val secondBlockHeaderDb =
         BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE - 1,
-                                            UInt32.zero,
+                                            BigInt(0),
                                             ChainTestUtil.blockHeader562463)
 
       val thirdBlockHeaderDb =
         BlockHeaderDbHelper.fromBlockHeader(ChainUnitTest.FIRST_POW_CHANGE,
-                                            UInt32.zero,
+                                            BigInt(0),
                                             ChainTestUtil.blockHeader562464)
 
       /*
@@ -509,13 +509,13 @@ class ChainHandlerTest extends ChainDbUnitTest {
   it must "properly recalculate chain work" in { tempHandler: ChainHandler =>
     val headersWithNoWork = Vector(
       BlockHeaderDbHelper.fromBlockHeader(3,
-                                          UInt32.zero,
+                                          BigInt(0),
                                           ChainTestUtil.blockHeader562464),
       BlockHeaderDbHelper.fromBlockHeader(2,
-                                          UInt32.zero,
+                                          BigInt(0),
                                           ChainTestUtil.blockHeader562463),
       BlockHeaderDbHelper.fromBlockHeader(1,
-                                          UInt32.zero,
+                                          BigInt(0),
                                           ChainTestUtil.blockHeader562462)
     )
 
@@ -530,7 +530,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
     } yield {
       assert(headerDb.height == headersWithNoWork.head.height)
       assert(headerDb.hashBE == headersWithNoWork.head.hashBE)
-      assert(headerDb.chainWork == UInt32(24))
+      assert(headerDb.chainWork == BigInt(12885098501L))
     }
   }
 

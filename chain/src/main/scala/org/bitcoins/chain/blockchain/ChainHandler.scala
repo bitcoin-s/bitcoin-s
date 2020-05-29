@@ -488,9 +488,9 @@ case class ChainHandler(
 
   def isMissingChainWork: Future[Boolean] = {
     for {
-      first100 <- blockHeaderDAO.getBetweenHeights(1, 100)
+      first100 <- blockHeaderDAO.getBetweenHeights(0, 100)
       first100MissingWork = first100.nonEmpty && first100.exists(
-        _.chainWork == UInt32.zero)
+        _.chainWork == BigInt(0))
       isMissingWork <- {
         if (first100MissingWork) {
           Future.successful(true)
@@ -499,7 +499,7 @@ case class ChainHandler(
             height <- getBestHashBlockHeight()
             last100 <- blockHeaderDAO.getBetweenHeights(height - 100, height)
             last100MissingWork = last100.nonEmpty && last100.exists(
-              _.chainWork == UInt32.zero)
+              _.chainWork == BigInt(0))
           } yield last100MissingWork
         }
       }
@@ -512,7 +512,7 @@ case class ChainHandler(
 
     val batchSize = chainConfig.chain.difficultyChangeInterval
     def loop(
-        currentChainWork: UInt32,
+        currentChainWork: BigInt,
         remainingHeaders: Vector[BlockHeaderDb],
         accum: Vector[BlockHeaderDb]): Future[Vector[BlockHeaderDb]] = {
       if (remainingHeaders.isEmpty) {
@@ -560,14 +560,12 @@ case class ChainHandler(
         sortedFullHeaders.diff(sortedHeaders)
       }
 
-      // Genesis block's chainWork should be set to 0
-      noGenesis = sortedHeaders.tail
-      commonWithWork <- loop(UInt32.zero, noGenesis, Vector.empty)
+      commonWithWork <- loop(BigInt(0), sortedHeaders, Vector.empty)
       finalCommon = Vector(sortedHeaders.head) ++ commonWithWork.takeRight(
         batchSize)
       commonChainWork = finalCommon.lastOption
         .map(_.chainWork)
-        .getOrElse(UInt32.zero)
+        .getOrElse(BigInt(0))
       newBlockchains <- FutureUtil.sequentially(diffedChains) { blockchain =>
         loop(commonChainWork, blockchain, Vector.empty)
           .map { newHeaders =>

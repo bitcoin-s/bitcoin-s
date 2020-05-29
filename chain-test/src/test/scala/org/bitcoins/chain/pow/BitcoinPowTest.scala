@@ -3,8 +3,10 @@ package org.bitcoins.chain.pow
 import akka.actor.ActorSystem
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.MainNetChainParams
+import org.bitcoins.core.protocol.blockchain.{
+  MainNetChainParams,
+  TestNetChainParams
+}
 import org.bitcoins.testkit.chain.fixture.{ChainFixture, ChainFixtureTag}
 import org.bitcoins.testkit.chain.{
   ChainDbUnitTest,
@@ -80,11 +82,23 @@ class BitcoinPowTest extends ChainDbUnitTest {
       seqF.map(_ => succeed)
   }
 
-  it must "getBlockProof correctly" inFixtured {
+  it must "getBlockProof correctly for the testnet genesis block" inFixtured {
     case ChainFixture.Empty =>
-      val header = ChainTestUtil.ValidPOWChange.blockHeaderDb564480.blockHeader
-      val proof = Pow.getBlockProof(header)
+      Future {
+        val header = TestNetChainParams.genesisBlock.blockHeader
+        val proof = Pow.getBlockProof(header)
 
-      assert(proof == UInt32(11))
+        assert(proof == BigInt(4295032833L))
+      }
+  }
+
+  it must "getBlockProof correctly for the mainnet genesis block" inFixtured {
+    case ChainFixture.Empty =>
+      Future {
+        val header = MainNetChainParams.genesisBlock.blockHeader
+        val proof = Pow.getBlockProof(header)
+
+        assert(proof == BigInt(4295032833L))
+      }
   }
 }

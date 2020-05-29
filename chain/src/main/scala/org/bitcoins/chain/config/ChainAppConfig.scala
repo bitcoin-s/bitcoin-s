@@ -5,7 +5,6 @@ import java.nio.file.Path
 import com.typesafe.config.{Config, ConfigException}
 import org.bitcoins.chain.db.ChainDbManagement
 import org.bitcoins.chain.models.{BlockHeaderDAO, BlockHeaderDbHelper}
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db._
 
@@ -69,7 +68,7 @@ case class ChainAppConfig(
       } else {
         val genesisHeader =
           BlockHeaderDbHelper.fromBlockHeader(height = 0,
-                                              chainWork = UInt32.zero,
+                                              chainWork = BigInt(0),
                                               bh =
                                                 chain.genesisBlock.blockHeader)
         val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
@@ -102,9 +101,9 @@ object ChainAppConfig extends AppConfigFactory[ChainAppConfig] {
   /** Constructs a chain verification configuration from the default Bitcoin-S
     * data directory and given list of configuration overrides.
     */
-  override def fromDatadir(datadir: Path, useLogbackConf: Boolean, confs: Vector[Config])(
-      implicit ec: ExecutionContext): ChainAppConfig =
-    ChainAppConfig(datadir,
-                   useLogbackConf,
-                   confs: _*)
+  override def fromDatadir(
+      datadir: Path,
+      useLogbackConf: Boolean,
+      confs: Vector[Config])(implicit ec: ExecutionContext): ChainAppConfig =
+    ChainAppConfig(datadir, useLogbackConf, confs: _*)
 }

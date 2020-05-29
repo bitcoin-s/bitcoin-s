@@ -3,7 +3,6 @@ package org.bitcoins.testkit.chain
 import org.bitcoins.chain.models._
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, GolombFilter}
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
   MainNetChainParams,
@@ -18,7 +17,8 @@ sealed abstract class ChainTestUtil {
     regTestChainParams.genesisBlock.blockHeader
   lazy val regTestGenesisHeaderDb: BlockHeaderDb = {
     BlockHeaderDbHelper.fromBlockHeader(height = 0,
-                                        chainWork = UInt32.zero,
+                                        chainWork =
+                                          Pow.getBlockProof(regTestHeader),
                                         bh = regTestHeader)
   }
   lazy val regTestGenesisHeaderCompactFilter: GolombFilter =

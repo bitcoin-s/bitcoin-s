@@ -6,6 +6,7 @@ import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.util.NumberUtil
+import scodec.bits.ByteVector
 
 /**
   * Implements functions found inside of bitcoin core's
@@ -124,18 +125,14 @@ sealed abstract class Pow {
     }
   }
 
-  def getBlockProof(header: BlockHeader): UInt32 = {
-    // taken from: https://github.com/bitcoin/bitcoin/blob/aa8d76806c74a51ec66e5004394fe9ea8ff0fac4/src/chain.cpp#L122
+  def getBlockProof(header: BlockHeader): BigInt = {
+    val target = NumberUtil.targetExpansion(header.nBits)
 
-    // We need to compute 2**256 / (bnTarget+1), but we can't represent 2**256
-    // as it's too large for an UInt32. However, as 2**256 is at least as large
-    // as bnTarget+1, it is equal to ((2**256 - bnTarget - 1) / (bnTarget+1)) + 1,
-    // or ~bnTarget / (bnTarget+1) + 1.
-    val bnTarget = header.nBits
-    val inverseBytes = bnTarget.bytes.map(byte => (byte ^ 0xff).toByte)
-    val inverse = UInt32(inverseBytes)
-
-    (inverse / (bnTarget + UInt32.one)) + UInt32.one
+    if (target.isNegative || target.isOverflow) {
+      BigInt(0)
+    } else {
+      (BigInt(1) << 256) / (target.difficulty + BigInt(1))
+    }
   }
 }
 

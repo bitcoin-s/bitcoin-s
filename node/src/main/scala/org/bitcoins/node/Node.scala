@@ -9,7 +9,6 @@ import org.bitcoins.chain.models.{
   CompactFilterHeaderDAO
 }
 import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.{NetworkPayload, TypeIdentifier}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil

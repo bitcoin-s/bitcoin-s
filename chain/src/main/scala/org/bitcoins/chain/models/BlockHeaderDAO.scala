@@ -317,7 +317,7 @@ case class BlockHeaderDAO()(
 
     def hex = column[String]("hex")
 
-    def chainWork: Rep[UInt32] = column[UInt32]("chainWork")
+    def chainWork: Rep[BigInt] = column[BigInt]("chainWork")
 
     /** The sql index for searching based on [[height]] */
     def heightIndex = index("block_headers_height_index", height)
