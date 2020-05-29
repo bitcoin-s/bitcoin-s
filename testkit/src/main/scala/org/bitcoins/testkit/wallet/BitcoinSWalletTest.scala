@@ -3,14 +3,16 @@ package org.bitcoins.testkit.wallet
 import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.core.api.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.{ChainQueryApi, NodeApi}
+import org.bitcoins.core.api.{ChainQueryApi, FeeRateApi, NodeApi}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import org.bitcoins.db.AppConfig
+import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v19.BitcoindV19RpcClient
@@ -27,7 +29,12 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest._
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{
+  ExecutionContext,
+  ExecutionContextExecutor,
+  Future,
+  Promise
+}
 
 trait BitcoinSWalletTest extends BitcoinSFixture with WalletLogger {
   import BitcoinSWalletTest._
@@ -321,6 +328,17 @@ object BitcoinSWalletTest extends WalletLogger {
     }
   }
 
+  private[testkit] class RandomFeeProvider extends FeeRateApi {
+    private val rnd = new scala.util.Random(TimeUtil.now.toEpochMilli)
+    private val start = 2
+    private val end = 100
+
+    def getFeeRate: Future[FeeUnit] = {
+      val satoshis = Satoshis(start + rnd.nextInt((end - start) + 1))
+      Future.successful(SatoshisPerVirtualByte(satoshis))
+    }
+  }
+
   /** Returns a function that can be used to create a wallet fixture.
     * If you pass in a configuration to this method that configuration
     * is given to the wallet as user-provided overrides. You could for
@@ -348,9 +366,11 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.initialize().flatMap { _ =>
         val wallet =
-          Wallet(keyManager, nodeApi, chainQueryApi, keyManager.creationTime)(
-            walletConfig,
-            ec)
+          Wallet(keyManager,
+                 nodeApi,
+                 chainQueryApi,
+                 new RandomFeeProvider,
+                 keyManager.creationTime)(walletConfig, ec)
         Wallet.initialize(wallet, bip39PasswordOpt)
       }
     }
@@ -415,8 +435,9 @@ object BitcoinSWalletTest extends WalletLogger {
         keyManager = wallet.keyManager,
         nodeApi = apiCallback.nodeApi,
         chainQueryApi = apiCallback.chainQueryApi,
-        creationTime = wallet.keyManager.creationTime)(wallet.walletConfig,
-                                                       wallet.ec)
+        feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
+        creationTime = wallet.keyManager.creationTime
+      )(wallet.walletConfig, wallet.ec)
       //complete the walletCallbackP so we can handle the callbacks when they are
       //called without hanging forever.
       _ = walletCallbackP.success(walletWithCallback)
@@ -432,7 +453,9 @@ object BitcoinSWalletTest extends WalletLogger {
       chainQueryApi: ChainQueryApi,
       extraConfig: Option[Config] = None)(
       implicit config: BitcoinSAppConfig,
-      ec: ExecutionContext): Future[Wallet] = {
+      system: ActorSystem): Future[Wallet] = {
+    implicit val ec: ExecutionContextExecutor = system.dispatcher
+
     val defaultWalletF =
       createDefaultWallet(nodeApi, chainQueryApi, extraConfig)
     for {

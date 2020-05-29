@@ -1,11 +1,14 @@
 package org.bitcoins.wallet
 
+import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.{FutureUtil, TimeUtil}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.keymanager.KeyManagerParams
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -150,7 +153,11 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
           new RuntimeException(s"Failed to initialize km with err=${err}"))
       case Right(km) =>
         val wallet =
-          Wallet(km, MockNodeApi, MockChainQueryApi, TimeUtil.now)(config, ec)
+          Wallet(km,
+                 MockNodeApi,
+                 MockChainQueryApi,
+                 ConstantFeeRateProvider(SatoshisPerVirtualByte.one),
+                 TimeUtil.now)(config, ec)
         val walletF =
           Wallet.initialize(wallet = wallet,
                             bip39PasswordOpt = bip39PasswordOpt)(config, ec)

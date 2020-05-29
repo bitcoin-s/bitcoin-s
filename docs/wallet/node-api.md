@@ -5,10 +5,12 @@ title: Node API
 
 ```scala mdoc:invisible
 import akka.actor.ActorSystem
-import org.bitcoins.core.api.NodeApi
+import org.bitcoins.core.api._
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.wallet.fee._
+import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.networking.peer.DataMessageHandler._
@@ -102,7 +104,7 @@ val exampleCallback = createCallback(exampleProcessBlock)
 
 // Finally, we can initialize our wallet with our own node api
 val wallet =
-    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, creationTime = Instant.now)
+    Wallet(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one), creationTime = Instant.now)
 
 // Then to trigger the event we can run
 val exampleBlock = DoubleSha256Digest(

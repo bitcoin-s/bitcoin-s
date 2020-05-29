@@ -58,6 +58,8 @@ import org.bitcoins.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.currency._
+import org.bitcoins.core.wallet.fee._
+import org.bitcoins.feeprovider._
 import org.bitcoins.keymanager.bip39._
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.BitcoindInstance
@@ -152,7 +154,7 @@ val wallet = Wallet(keyManager, new NodeApi {
     override def getFilterCount: Future[Int] = Future.successful(0)
     override def getHeightByBlockStamp(blockStamp: BlockStamp): Future[Int] = Future.successful(0)
     override def getFiltersBetweenHeights(startHeight: Int, endHeight: Int): Future[Vector[FilterResponse]] = Future.successful(Vector.empty)
-  }, creationTime = Instant.now)
+  }, ConstantFeeRateProvider(SatoshisPerVirtualByte.one), creationTime = Instant.now)
 val walletF: Future[WalletApi] = configF.flatMap { _ =>
   Wallet.initialize(wallet,bip39PasswordOpt)
 }
