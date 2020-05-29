@@ -412,8 +412,7 @@ class DLCClientIntegrationTest extends BitcoindRpcTest {
           override def run(): Unit = {
             if (!mutualCloseTxP.isCompleted) {
               val fundingTxId = initDLC
-                .createUnsignedMutualClosePSBT(oracleSig)
-                .transaction
+                .createUnsignedMutualCloseTx(oracleSig)
                 .txIdBE
 
               clientF.foreach { client =>

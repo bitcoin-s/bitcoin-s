@@ -7,7 +7,7 @@ import org.bitcoins.commons.jsonmodels.dlc.DLCMessage.{
 import org.bitcoins.commons.jsonmodels.dlc._
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
@@ -16,7 +16,6 @@ import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
 import org.bitcoins.core.wallet.builder._
@@ -137,10 +136,6 @@ case class DLCClient(
                                         nextAddressIndex,
                                         fundingUtxos)
 
-  private val sigPubKeys = outcomes.keys.map { msg =>
-    msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
-  }.toMap
-
   val fundingPrivKey: ECPrivateKey =
     extPrivKey
       .deriveChildPrivKey(BIP32Path.fromString(s"m/0/$nextAddressIndex"))
@@ -182,18 +177,6 @@ case class DLCClient(
     MultiSignatureScriptPubKey(2, fundingKeys)
   }
 
-  /** Experimental approx. vbytes for a closing tx spending ToLocalOutput */
-  private val approxToLocalClosingVBytes = 122
-
-  private val toLocalClosingFee: CurrencyUnit = Satoshis(
-    approxToLocalClosingVBytes * feeRate.toLong)
-
-  private val isRBFEnabled = false
-  private val (noTimeLockSequence, timeLockSequence) =
-    if (isRBFEnabled) (UInt32.zero, UInt32.zero)
-    else
-      (TransactionConstants.sequence, TransactionConstants.disableRBFSequence)
-
   lazy val createUnsignedFundingTransaction: Transaction =
     Await.result(dlcTxBuilder.buildFundingTx, 5.seconds)
 
@@ -212,13 +195,7 @@ case class DLCClient(
   /** Returns the payouts for the signature as (toLocal, toRemote)  */
   def getPayouts(
       oracleSig: SchnorrDigitalSignature): (CurrencyUnit, CurrencyUnit) = {
-    sigPubKeys.find(_._2 == oracleSig.sig.getPublicKey) match {
-      case Some((hash, _)) =>
-        (outcomes(hash), remoteOutcomes(hash))
-      case None =>
-        throw new IllegalArgumentException(
-          s"Signature does not correspond to a possible outcome! $oracleSig")
-    }
+    dlcTxBuilder.getPayouts(oracleSig)
   }
 
   def createFundingTransactionSigs(): Future[FundingSignatures] = {
@@ -262,45 +239,26 @@ case class DLCClient(
     *
     * @param sig The oracle's signature for this contract
     */
-  def createUnsignedMutualClosePSBT(sig: SchnorrDigitalSignature): PSBT = {
+  def createUnsignedMutualCloseTx(sig: SchnorrDigitalSignature): Transaction = {
     val utxF = dlcTxBuilder.buildMutualCloseTx(sig)
 
-    val utx = Await.result(utxF, 5.seconds)
-
-    PSBT
-      .fromUnsignedTx(utx)
-      .addWitnessUTXOToInput(fundingOutput, index = 0)
-      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-  }
-
-  def createMutualCloseTxSig(
-      sig: SchnorrDigitalSignature): Future[PartialSignature] = {
-    val unsignedPSBT =
-      createUnsignedMutualClosePSBT(sig)
-
-    unsignedPSBT
-      .sign(inputIndex = 0, fundingPrivKey)
-      .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
+    Await.result(utxF, 5.seconds)
   }
 
   def createMutualCloseTx(
       sig: SchnorrDigitalSignature,
       fundingSig: PartialSignature): Future[Transaction] = {
-    val unsignedPSBT =
-      createUnsignedMutualClosePSBT(sig)
-
-    val signedPSBTF = unsignedPSBT
-      .addSignature(fundingSig, inputIndex = 0)
-      .sign(inputIndex = 0, fundingPrivKey)
-
-    signedPSBTF.flatMap { signedPSBT =>
-      val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
-      Future.fromTry(txT)
-    }
+    dlcTxSigner.signMutualCloseTx(sig, fundingSig)
   }
 
   def verifyCETSig(outcome: Sha256DigestBE, sig: PartialSignature): Boolean = {
-    val cet = createUnsignedCET(outcome)
+    val cetF = if (isInitiator) {
+      dlcTxBuilder.buildOfferCET(outcome)
+    } else {
+      dlcTxBuilder.buildAcceptCET(outcome)
+    }
+
+    val cet = Await.result(cetF, 5.seconds)
     val fundingTx = createUnsignedFundingTransaction
 
     val sigComponent = WitnessTxSigComponentRaw(transaction = cet,
@@ -319,106 +277,8 @@ case class DLCClient(
       .isValid
   }
 
-  /** Constructs an unsigned CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createUnsignedCET(msg: Sha256DigestBE): WitnessTransaction = {
-    val txF = if (isInitiator) {
-      dlcTxBuilder.buildOfferCET(msg)
-    } else {
-      dlcTxBuilder.buildAcceptCET(msg)
-    }
-
-    Await.result(txF, 5.seconds)
-  }
-
-  /** Constructs a signed CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCET(
-      msg: Sha256DigestBE,
-      remoteSig: PartialSignature): (Future[Transaction], P2WSHWitnessV0) = {
-    val unsignedTx = createUnsignedCET(msg)
-
-    val psbt = PSBT.fromUnsignedTx(unsignedTx)
-
-    val readyToSignPSBT = psbt
-      .addSignature(remoteSig, inputIndex = 0)
-      .addWitnessUTXOToInput(fundingOutput, index = 0)
-      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-
-    val signedPSBTF = readyToSignPSBT.sign(inputIndex = 0, fundingPrivKey)
-
-    val signedCETF = signedPSBTF.flatMap { signedPSBT =>
-      val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
-      Future.fromTry(txT)
-    }
-
-    val toLocalSPKF = if (isInitiator) {
-      dlcTxBuilder.getOfferCETWitness(msg)
-    } else {
-      dlcTxBuilder.getAcceptCETWitness(msg)
-    }
-
-    val toLocalSPK = Await.result(toLocalSPKF, 5.seconds)
-
-    (signedCETF, P2WSHWitnessV0(toLocalSPK))
-  }
-
-  private def findSigInPSBT(
-      psbt: PSBT,
-      pubKey: ECPublicKey): Future[PartialSignature] = {
-    val sigOpt = psbt.inputMaps.head.partialSignatures
-      .find(_.pubKey == pubKey)
-
-    sigOpt match {
-      case None =>
-        Future.failed(new RuntimeException("No signature found after signing"))
-      case Some(partialSig) => Future.successful(partialSig)
-    }
-  }
-
-  /** Constructs Remote's CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
-  def createCETRemote(msg: Sha256DigestBE): Future[
-    (Transaction, P2WSHWitnessV0, PartialSignature)] = {
-    val tweak = CryptoUtil.sha256(cetToLocalRemotePubKey.bytes).flip
-    val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
-
-    val pubKey = sigPubKeys(msg).add(fundingRemotePubKey).add(tweakPubKey)
-
-    val toLocalSPK = P2PKWithTimeoutScriptPubKey(
-      pubKey = pubKey,
-      lockTime = ScriptNumber(timeouts.penaltyTimeout.toLong),
-      timeoutPubKey = cetToLocalPrivKey.publicKey
-    )
-
-    val toLocal: TransactionOutput =
-      TransactionOutput(remoteOutcomes(msg) + toLocalClosingFee,
-                        P2WSHWitnessSPKV0(toLocalSPK))
-    val toRemote: TransactionOutput =
-      TransactionOutput(outcomes(msg),
-                        P2WPKHWitnessSPKV0(finalPrivKey.publicKey))
-
-    val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
-
-    val fundingOutPoint = TransactionOutPoint(fundingTxId, UInt32.zero)
-    val fundingInput =
-      TransactionInput(fundingOutPoint, EmptyScriptSignature, timeLockSequence)
-
-    val unsignedTx = BaseTransaction(
-      TransactionConstants.validLockVersion,
-      Vector(fundingInput),
-      outputs.filter(_.value >= Policy.dustThreshold),
-      timeouts.contractMaturity.toUInt32)
-
-    val sigF = PSBT
-      .fromUnsignedTx(unsignedTx)
-      .addWitnessUTXOToInput(fundingOutput, index = 0)
-      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-      .sign(inputIndex = 0, fundingPrivKey)
-      .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
-
-    sigF.map((unsignedTx, P2WSHWitnessV0(toLocalSPK), _))
-  }
-
   def verifyRefundSig(sig: PartialSignature): Boolean = {
-    val refundTx = createUnsignedRefundTx
+    val refundTx = Await.result(dlcTxBuilder.buildRefundTx, 5.seconds)
     val fundingTx = createUnsignedFundingTransaction
 
     val sigComponent = WitnessTxSigComponentRaw(transaction = refundTx,
@@ -437,56 +297,8 @@ case class DLCClient(
       .isValid
   }
 
-  lazy val createUnsignedRefundTx: WitnessTransaction =
-    Await.result(dlcTxBuilder.buildRefundTx, 5.seconds)
-
-  def createRefundSig(): Future[(Transaction, PartialSignature)] = {
-    val refundTx = createUnsignedRefundTx
-
-    val sigF = PSBT
-      .fromUnsignedTx(refundTx)
-      .addWitnessUTXOToInput(fundingOutput, index = 0)
-      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-      .sign(inputIndex = 0, fundingPrivKey)
-      .flatMap(findSigInPSBT(_, fundingPrivKey.publicKey))
-
-    sigF.map((refundTx, _))
-  }
-
-  /** Constructs the (time-locked) refund transaction for when the oracle disappears
-    * or signs an unknown message.
-    * Note that both parties have the same refund transaction.
-    */
-  def createRefundTx(
-      remoteSig: PartialSignature): Future[(Transaction, PartialSignature)] = {
-    val psbt = PSBT.fromUnsignedTx(createUnsignedRefundTx)
-
-    val signedPSBTF = psbt
-      .addSignature(remoteSig, inputIndex = 0)
-      .addWitnessUTXOToInput(fundingOutput, index = 0)
-      .addScriptWitnessToInput(P2WSHWitnessV0(fundingSPK), index = 0)
-      .sign(inputIndex = 0, fundingPrivKey)
-
-    signedPSBTF.flatMap { signedPSBT =>
-      val sigF = findSigInPSBT(signedPSBT, fundingPrivKey.publicKey)
-
-      val txT = signedPSBT.finalizePSBT.flatMap(_.extractTransactionAndValidate)
-      val txF = Future.fromTry(txT)
-      txF.flatMap(tx => sigF.map(sig => (tx, sig)))
-    }
-  }
-
   def createCETSigs: Future[CETSignatures] = {
-    val cetDataFs = outcomes.keys.map { msg =>
-      createCETRemote(msg).map(msg -> _)
-    }
-    for {
-      cetData <- Future.sequence(cetDataFs).map(_.toMap)
-      sigs = cetData.map { case (msg, (_, _, sig)) => msg -> sig }
-      (_, remoteRefundSig) <- createRefundSig()
-    } yield {
-      CETSignatures(sigs, remoteRefundSig)
-    }
+    dlcTxSigner.createCETSigs()
   }
 
   /** Executes DLC setup for the party responding to the initiator.
@@ -505,33 +317,49 @@ case class DLCClient(
       getSigs: Future[(CETSignatures, FundingSignatures)]): Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
-    val remoteCetDataFs = outcomes.keys.map { msg =>
-      createCETRemote(msg).map(msg -> _)
-    }
-
     for {
-      remoteCetData <- Future.sequence(remoteCetDataFs).map(_.toMap)
-      (_, remoteRefundSig) <- createRefundSig()
-      remoteOutcomeSigs = remoteCetData.map {
-        case (msg, (_, _, sig)) => msg -> sig
-      }
-      remoteCetSigs = CETSignatures(remoteOutcomeSigs, remoteRefundSig)
+      remoteCetSigs <- dlcTxSigner.createCETSigs()
       _ <- sendSigs(remoteCetSigs)
       (cetSigs, fundingSigs) <- getSigs
 
       localCetDataFs = cetSigs.outcomeSigs.map {
         case (msg, sig) =>
-          val (txF, witness) = createCET(msg, sig)
-          txF.map(msg -> (_, witness))
+          for {
+            tx <- dlcTxSigner.signCET(msg, sig)
+            witness <- {
+              if (isInitiator) {
+                dlcTxBuilder.getOfferCETWitness(msg)
+              } else {
+                dlcTxBuilder.getAcceptCETWitness(msg)
+              }
+            }
+          } yield {
+            msg -> (tx, witness)
+          }
       }
-
       localCetData <- Future.sequence(localCetDataFs).map(_.toMap)
-      (refundTx, _) <- createRefundTx(cetSigs.refundSig)
+
+      remoteCETDataFs = outcomes.keys.toVector.map { msg =>
+        if (isInitiator) {
+          for {
+            utx <- dlcTxBuilder.buildAcceptCET(msg)
+            witness <- dlcTxBuilder.getAcceptCETWitness(msg)
+          } yield msg -> (utx, witness)
+        } else {
+          for {
+            utx <- dlcTxBuilder.buildOfferCET(msg)
+            witness <- dlcTxBuilder.getOfferCETWitness(msg)
+          } yield msg -> (utx, witness)
+        }
+      }
+      remoteCETData <- Future.sequence(remoteCETDataFs).map(_.toMap)
+
       fundingTx <- dlcTxSigner.signFundingTx(fundingSigs)
+      refundTx <- dlcTxSigner.signRefundTx(cetSigs.refundSig)
     } yield {
       val cetInfos = outcomes.keys.map { msg =>
         val (localCet, localWitness) = localCetData(msg)
-        val (remoteCet, remoteWitness, _) = remoteCetData(msg)
+        val (remoteCet, remoteWitness) = remoteCETData(msg)
         msg -> CETInfo(localCet, localWitness, remoteCet.txIdBE, remoteWitness)
       }.toMap
 
@@ -564,29 +392,45 @@ case class DLCClient(
         // Construct all CETs
         val localCetDataFs = outcomeSigs.map {
           case (msg, sig) =>
-            val (txF, witness) = createCET(msg, sig)
-            txF.map(msg -> (_, witness))
+            for {
+              tx <- dlcTxSigner.signCET(msg, sig)
+              witness <- {
+                if (isInitiator) {
+                  dlcTxBuilder.getOfferCETWitness(msg)
+                } else {
+                  dlcTxBuilder.getAcceptCETWitness(msg)
+                }
+              }
+            } yield {
+              msg -> (tx, witness)
+            }
         }
-        val remoteCetDataFs = outcomes.keys.map { msg =>
-          createCETRemote(msg).map(msg -> _)
+        val remoteCETDataFs = outcomes.keys.toVector.map { msg =>
+          if (isInitiator) {
+            for {
+              utx <- dlcTxBuilder.buildAcceptCET(msg)
+              witness <- dlcTxBuilder.getAcceptCETWitness(msg)
+            } yield msg -> (utx, witness)
+          } else {
+            for {
+              utx <- dlcTxBuilder.buildOfferCET(msg)
+              witness <- dlcTxBuilder.getOfferCETWitness(msg)
+            } yield msg -> (utx, witness)
+          }
         }
-        val refundTxF = createRefundTx(refundSig)
 
         for {
           localCetData <- Future.sequence(localCetDataFs).map(_.toMap)
-          remoteCetData <- Future.sequence(remoteCetDataFs).map(_.toMap)
-          (refundTx, remoteRefundSig) <- refundTxF
-          remoteOutcomeSigs = remoteCetData.map {
-            case (msg, (_, _, sig)) => msg -> sig
-          }
-          cetSigs = CETSignatures(remoteOutcomeSigs, remoteRefundSig)
+          remoteCetData <- Future.sequence(remoteCETDataFs).map(_.toMap)
+          refundTx <- dlcTxSigner.signRefundTx(refundSig)
+          cetSigs <- dlcTxSigner.createCETSigs()
           localFundingSigs <- dlcTxSigner.createFundingTxSigs()
           _ <- sendSigs(cetSigs, localFundingSigs)
           fundingTx <- getFundingTx
         } yield {
           val cetInfos = outcomes.keys.map { msg =>
             val (localCet, localWitness) = localCetData(msg)
-            val (remoteCet, remoteWitness, _) = remoteCetData(msg)
+            val (remoteCet, remoteWitness) = remoteCetData(msg)
             msg -> CETInfo(localCet,
                            localWitness,
                            remoteCet.txIdBE,
@@ -698,7 +542,7 @@ case class DLCClient(
 
     for {
       (sig, fundingSig) <- getSigs
-      mutualCloseTx <- createMutualCloseTx(sig, fundingSig)
+      mutualCloseTx <- dlcTxSigner.signMutualCloseTx(sig, fundingSig)
     } yield {
       CooperativeDLCOutcome(fundingTx, mutualCloseTx)
     }

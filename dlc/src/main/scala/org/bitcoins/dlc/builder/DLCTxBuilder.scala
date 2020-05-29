@@ -5,7 +5,7 @@ import org.bitcoins.commons.jsonmodels.dlc.{DLCPublicKeys, DLCTimeouts}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.P2PKWithTimeoutScriptPubKey
+import org.bitcoins.core.protocol.script.P2WSHWitnessV0
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStampWithFuture}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -73,6 +73,20 @@ case class DLCTxBuilder(
     case (hash, amt) => (hash, (totalInput - amt).satoshis)
   })
 
+  val sigPubKeys: Map[Sha256DigestBE, ECPublicKey] = offerOutcomes.keys.map {
+    msg =>
+      msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
+  }.toMap
+
+  /** Returns the payouts for the signature as (toOffer, toAccept) */
+  def getPayouts(
+      oracleSig: SchnorrDigitalSignature): (CurrencyUnit, CurrencyUnit) = {
+    DLCTxBuilder.getPayouts(oracleSig,
+                            sigPubKeys,
+                            offerOutcomes,
+                            acceptOutcomes)
+  }
+
   lazy val buildFundingTx: Future[Transaction] = {
     DLCFundingTxBuilder(
       offerFundingKey = offerFundingKey,
@@ -126,14 +140,16 @@ case class DLCTxBuilder(
     } yield cet
   }
 
-  def getOfferCETWitness(
-      msg: Sha256DigestBE): Future[P2PKWithTimeoutScriptPubKey] = {
-    cetBuilderF.map(_.buildOfferToLocalP2PK(msg))
+  def getOfferCETWitness(msg: Sha256DigestBE): Future[P2WSHWitnessV0] = {
+    cetBuilderF
+      .map(_.buildOfferToLocalP2PK(msg))
+      .map(P2WSHWitnessV0(_))
   }
 
-  def getAcceptCETWitness(
-      msg: Sha256DigestBE): Future[P2PKWithTimeoutScriptPubKey] = {
-    cetBuilderF.map(_.buildAcceptToLocalP2PK(msg))
+  def getAcceptCETWitness(msg: Sha256DigestBE): Future[P2WSHWitnessV0] = {
+    cetBuilderF
+      .map(_.buildAcceptToLocalP2PK(msg))
+      .map(P2WSHWitnessV0(_))
   }
 
   lazy val buildRefundTx: Future[WitnessTransaction] = {
@@ -185,4 +201,19 @@ object DLCTxBuilder {
 
   /** Experimental approx. vbytes for a closing tx spending ToLocalOutput */
   val approxToLocalClosingVBytes = 122
+
+  /** Returns the payouts for the signature as (toOffer, toAccept) */
+  def getPayouts(
+      oracleSig: SchnorrDigitalSignature,
+      sigPubKeys: Map[Sha256DigestBE, ECPublicKey],
+      offerOutcomes: ContractInfo,
+      acceptOutcomes: ContractInfo): (CurrencyUnit, CurrencyUnit) = {
+    sigPubKeys.find(_._2 == oracleSig.sig.getPublicKey) match {
+      case Some((hash, _)) =>
+        (offerOutcomes(hash), acceptOutcomes(hash))
+      case None =>
+        throw new IllegalArgumentException(
+          s"Signature does not correspond to a possible outcome! $oracleSig")
+    }
+  }
 }

@@ -22,22 +22,12 @@ case class DLCMutualCloseTxBuilder(
     msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
   }.toMap
 
-  def getPayouts(
-      oracleSig: SchnorrDigitalSignature): (CurrencyUnit, CurrencyUnit) = {
-    sigPubKeys.find(_._2 == oracleSig.sig.getPublicKey) match {
-      case Some((hash, _)) =>
-        (offerOutcomes(hash), acceptOutcomes(hash))
-      case None =>
-        throw new IllegalArgumentException(
-          s"Signature does not correspond to a possible outcome! $oracleSig")
-    }
-  }
-
   def buildMutualCloseTx(sig: SchnorrDigitalSignature)(
       implicit ec: ExecutionContext): Future[Transaction] = {
     val builder = RawTxBuilder()
 
-    val (offerPayout, acceptPayout) = getPayouts(sig)
+    val (offerPayout, acceptPayout) =
+      DLCTxBuilder.getPayouts(sig, sigPubKeys, offerOutcomes, acceptOutcomes)
 
     builder += TransactionOutput(offerPayout, offerFinalSPK)
     builder += TransactionOutput(acceptPayout, acceptFinalSPK)
