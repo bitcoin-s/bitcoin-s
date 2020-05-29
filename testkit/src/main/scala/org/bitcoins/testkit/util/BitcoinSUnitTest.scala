@@ -41,7 +41,7 @@ abstract class BitcoinSUnitTest
     PropertyCheckConfiguration(
       minSuccessful = PosInt.from(executions).get,
       minSize = PosInt.from(executions).get,
-      workers = 2
+      workers = 1
     )
   }
 
