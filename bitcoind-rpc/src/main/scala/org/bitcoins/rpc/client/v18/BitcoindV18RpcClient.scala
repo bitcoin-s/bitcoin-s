@@ -38,17 +38,19 @@ class BitcoindV18RpcClient(override val instance: BitcoindInstance)(
 
   override lazy val version: BitcoindVersion = BitcoindVersion.V18
 
-  override def getFilterCount: Future[Int] =
+  override def getFilterCount: Future[Int] = {
     Future.failed(
-      throw new UnsupportedOperationException(
+      new UnsupportedOperationException(
         s"bitcoind ${instance.getVersion} does not support block filters"))
+  }
 
   override def getFiltersBetweenHeights(
       startHeight: Int,
-      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] =
+      endHeight: Int): Future[Vector[ChainQueryApi.FilterResponse]] = {
     Future.failed(
-      throw new UnsupportedOperationException(
+      new UnsupportedOperationException(
         s"bitcoind ${instance.getVersion} does not support block filters"))
+  }
 
   /**
     * $signRawTx
