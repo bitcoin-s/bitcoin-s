@@ -6,7 +6,6 @@ import akka.http.scaladsl.server._
 import akka.stream.ActorMaterializer
 import org.bitcoins.commons.serializers.Picklers._
 import org.bitcoins.core.currency._
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.node.Node
 import org.bitcoins.wallet.api.WalletApi
 
