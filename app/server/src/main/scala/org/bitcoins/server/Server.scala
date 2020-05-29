@@ -7,7 +7,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.DebuggingDirectives
-import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpupickle.UpickleSupport._
 import org.bitcoins.db.AppConfig
 import upickle.{default => up}

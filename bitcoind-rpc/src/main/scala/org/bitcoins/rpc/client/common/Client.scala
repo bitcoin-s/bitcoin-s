@@ -13,7 +13,9 @@ import com.fasterxml.jackson.core.JsonParseException
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.config.{MainNet, NetworkParameters, RegTest, TestNet3}
+import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.{BitcoinSLogger, FutureUtil, StartStop}
+import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.{CookieBased, PasswordBased}
 import org.bitcoins.rpc.config.{BitcoindAuthCredentials, BitcoindInstance}
@@ -24,19 +26,6 @@ import scala.concurrent._
 import scala.concurrent.duration.DurationInt
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
-import java.nio.file.Files
-
-import org.bitcoins.rpc.config.BitcoindAuthCredentials.CookieBased
-import org.bitcoins.rpc.config.BitcoindAuthCredentials.PasswordBased
-import java.nio.file.Path
-
-import com.fasterxml.jackson.core.JsonParseException
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
-import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.crypto.ECPrivateKey
-import org.bitcoins.rpc.config.BitcoindAuthCredentials
-import org.bitcoins.rpc.BitcoindException
-import play.api.libs.json._
 
 /**
   * This is the base trait for Bitcoin Core
