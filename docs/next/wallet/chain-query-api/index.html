@@ -221,7 +221,7 @@ want.</p>
 
 <span class="hljs-comment">// Finally, we can initialize our wallet with our own node api</span>
 <span class="hljs-keyword">val</span> wallet =
-    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, creationTime = <span class="hljs-type">Instant</span>.now)
+    <span class="hljs-type">Wallet</span>(keyManager = keyManager, nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one), creationTime = <span class="hljs-type">Instant</span>.now)
 
 <span class="hljs-comment">// Then to trigger one of the events we can run</span>
 wallet.chainQueryApi.getFiltersBetweenHeights(<span class="hljs-number">100</span>, <span class="hljs-number">150</span>)
