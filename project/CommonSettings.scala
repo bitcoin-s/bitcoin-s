@@ -45,6 +45,7 @@ object CommonSettings {
     scalacOptions in (Compile, console) ~= (_ filterNot (s =>
       s == "-Ywarn-unused-import"
         || s =="-Ywarn-unused"
+        || s =="-Xfatal-warnings"
         //for 2.13 -- they use different compiler opts
         || s == "-Xlint:unused")),
 
