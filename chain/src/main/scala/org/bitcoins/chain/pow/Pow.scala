@@ -6,7 +6,6 @@ import org.bitcoins.chain.models.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.core.util.NumberUtil
-import scodec.bits.ByteVector
 
 /**
   * Implements functions found inside of bitcoin core's

@@ -205,8 +205,8 @@ trait Node extends NodeApi with ChainQueryApi with P2PLogger {
         .map(_.get) // .get is safe since this is an internal call
 
     } yield {
-      logger.info(s"Starting sync node, height=${header.height} hash=$hash")
       peerMsgSenderF.map(_.sendGetHeadersMessage(hash.flip))
+      logger.info(s"Starting sync node, height=${header.height} hash=$hash")
     }
   }
 
