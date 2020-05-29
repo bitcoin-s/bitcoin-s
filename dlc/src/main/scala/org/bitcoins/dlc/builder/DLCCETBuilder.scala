@@ -19,7 +19,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class DLCCETBuilder(
     offerOutcomes: ContractInfo,
-    totalInput: CurrencyUnit,
+    acceptOutcomes: ContractInfo,
     offerFundingKey: ECPublicKey,
     offerToLocalKey: ECPublicKey,
     offerFinalSPK: ScriptPubKey,
@@ -30,8 +30,6 @@ case class DLCCETBuilder(
     feeRate: FeeUnit,
     oracleInfo: OracleInfo,
     fundingOutputRef: OutputReference) {
-  require(totalInput >= offerOutcomes.values.max,
-          "Total collateral must add up to max winnings")
 
   val OracleInfo(oraclePubKey: SchnorrPublicKey, preCommittedR: SchnorrNonce) =
     oracleInfo
@@ -40,10 +38,6 @@ case class DLCCETBuilder(
     msg =>
       msg -> oraclePubKey.computeSigPoint(msg.bytes, preCommittedR)
   }.toMap
-
-  val acceptOutcomes: ContractInfo = ContractInfo(offerOutcomes.map {
-    case (hash, amt) => (hash, (totalInput - amt).satoshis)
-  })
 
   private val fundingOutPoint = fundingOutputRef.outPoint
 

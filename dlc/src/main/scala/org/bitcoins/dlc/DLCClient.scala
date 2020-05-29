@@ -19,17 +19,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.script.crypto.HashType
 import org.bitcoins.core.util.BitcoinSLogger
-import org.bitcoins.core.wallet.builder.{
-  AddWitnessDataFinalizer,
-  P2WPKHDualFundingTxFinalizer,
-  P2WPKHSubtractFeesFromOutputsFinalizer,
-  RawTxBuilder,
-  RawTxBuilderWithFinalizer,
-  RawTxSigner,
-  SanityCheckFinalizer,
-  StandardNonInteractiveFinalizer,
-  SubtractFeeFromOutputsFinalizer
-}
+import org.bitcoins.core.wallet.builder._
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
@@ -37,8 +27,8 @@ import org.bitcoins.crypto._
 import org.bitcoins.dlc.builder.DLCTxBuilder
 import scodec.bits.ByteVector
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /** This case class allows for the construction and execution of
@@ -82,12 +72,17 @@ case class DLCClient(
   private val pubKeys =
     DLCPublicKeys.fromExtPrivKeyAndIndex(extPrivKey, nextAddressIndex, network)
 
+  val remoteOutcomes: ContractInfo = ContractInfo(outcomes.map {
+    case (hash, amt) => (hash, (input + remoteInput - amt).satoshis)
+  })
+
   private val changeAddress =
     BitcoinAddress.fromScriptPubKey(changeSPK, network).get
   private val remoteChangeAddress =
     BitcoinAddress.fromScriptPubKey(remoteChangeSPK, network).get
 
-  private val (offerPubKeys,
+  private val (offerOutcomes,
+               offerPubKeys,
                offerInput,
                offerFundingInputs,
                offerChangeAddress,
@@ -95,7 +90,8 @@ case class DLCClient(
                acceptInput,
                acceptFundingInputs,
                acceptChangeAddress) = if (isInitiator) {
-    (pubKeys,
+    (outcomes,
+     pubKeys,
      input,
      fundingUtxos.map(_.outputReference),
      changeAddress,
@@ -104,7 +100,8 @@ case class DLCClient(
      remoteFundingInputs,
      remoteChangeAddress)
   } else {
-    (remotePubKeys,
+    (remoteOutcomes,
+     remotePubKeys,
      remoteInput,
      remoteFundingInputs,
      remoteChangeAddress,
@@ -115,7 +112,7 @@ case class DLCClient(
   }
 
   private val offer = DLCMessage.DLCOffer(
-    contractInfo = outcomes,
+    contractInfo = offerOutcomes,
     oracleInfo = DLCMessage.OracleInfo(oraclePubKey, preCommittedR),
     pubKeys = offerPubKeys,
     totalCollateral = offerInput.satoshis,
@@ -160,21 +157,6 @@ case class DLCClient(
   val finalRemoteScriptPubKey: ScriptPubKey =
     remotePubKeys.finalAddress.scriptPubKey
 
-  /** Total collateral amount */
-  private val totalInput = input + remoteInput
-
-  private val totalFunding =
-    fundingUtxos.foldLeft(0L)(_ + _.amount.satoshis.toLong)
-  private val remoteTotalFunding =
-    remoteFundingInputs.foldLeft(0L) {
-      case (accum, OutputReference(_, output)) =>
-        accum + output.value.satoshis.toLong
-    }
-
-  val remoteOutcomes: ContractInfo = ContractInfo(outcomes.map {
-    case (hash, amt) => (hash, (totalInput - amt).satoshis)
-  })
-
   /** This is only used as a placeholder and we use an invariant
     * when signing to ensure that this is never used.
     *
@@ -194,9 +176,6 @@ case class DLCClient(
     MultiSignatureScriptPubKey(2, fundingKeys)
   }
 
-  /** Experimental approx. vbytes for a CET */
-  private val approxCETVBytes = 190
-
   /** Experimental approx. vbytes for a closing tx spending ToLocalOutput */
   private val approxToLocalClosingVBytes = 122
 
@@ -209,51 +188,8 @@ case class DLCClient(
     else
       (TransactionConstants.sequence, TransactionConstants.disableRBFSequence)
 
-  lazy val createUnsignedFundingTransaction: Transaction = {
-    val fundingTxFinalizer =
-      P2WPKHDualFundingTxFinalizer(approxCETVBytes + approxToLocalClosingVBytes,
-                                   feeRate,
-                                   P2WSHWitnessSPKV0(fundingSPK))
-    val builder = RawTxBuilderWithFinalizer(fundingTxFinalizer)
-
-    val output: TransactionOutput =
-      TransactionOutput(totalInput, P2WSHWitnessSPKV0(fundingSPK))
-
-    val (initiatorChange, initiatorChangeSPK, otherChange, otherChangeSPK) =
-      if (isInitiator) {
-        (Satoshis(totalFunding) - input,
-         changeSPK,
-         Satoshis(remoteTotalFunding) - remoteInput,
-         remoteChangeSPK)
-      } else {
-        (Satoshis(remoteTotalFunding) - remoteInput,
-         remoteChangeSPK,
-         Satoshis(totalFunding) - input,
-         changeSPK)
-      }
-
-    val initiatorChangeOutput =
-      TransactionOutput(initiatorChange, initiatorChangeSPK)
-    val otherChangeOutput = TransactionOutput(otherChange, otherChangeSPK)
-
-    builder ++= Vector(output, initiatorChangeOutput, otherChangeOutput)
-
-    val localInputs =
-      InputUtil.calcSequenceForInputs(fundingUtxos, noTimeLockSequence)
-    val remoteInputs = remoteFundingInputs.map {
-      case OutputReference(outPoint, _) =>
-        TransactionInput(outPoint, EmptyScriptSignature, noTimeLockSequence)
-    }
-    val inputs = if (isInitiator) {
-      localInputs ++ remoteInputs
-    } else {
-      remoteInputs ++ localInputs
-    }
-
-    builder ++= inputs
-
-    Await.result(builder.buildTx(), 5.seconds)
-  }
+  lazy val createUnsignedFundingTransaction: Transaction =
+    Await.result(dlcTxBuilder.buildFundingTx, 5.seconds)
 
   lazy val fundingTxId: DoubleSha256Digest =
     createUnsignedFundingTransaction.txId
@@ -380,25 +316,9 @@ case class DLCClient(
     * @param sig The oracle's signature for this contract
     */
   def createUnsignedMutualClosePSBT(sig: SchnorrDigitalSignature): PSBT = {
-    val (toLocalPayout, toRemotePayout) = getPayouts(sig)
+    val utxF = dlcTxBuilder.buildMutualCloseTx(sig)
 
-    val toLocal =
-      TransactionOutput(toLocalPayout,
-                        P2WPKHWitnessSPKV0(finalPrivKey.publicKey))
-    val toRemote =
-      TransactionOutput(toRemotePayout, finalRemoteScriptPubKey)
-    val outputs = if (isInitiator) {
-      Vector(toLocal, toRemote)
-    } else {
-      Vector(toRemote, toLocal)
-    }
-    val input = TransactionInput(TransactionOutPoint(fundingTxId, UInt32.zero),
-                                 EmptyScriptSignature,
-                                 noTimeLockSequence)
-    val utx = BaseTransaction(TransactionConstants.validLockVersion,
-                              Vector(input),
-                              outputs.filter(_.value >= Policy.dustThreshold),
-                              UInt32.zero)
+    val utx = Await.result(utxF, 5.seconds)
 
     PSBT
       .fromUnsignedTx(utx)
@@ -452,45 +372,15 @@ case class DLCClient(
       .isValid
   }
 
-  private def getCETToLocalSPK(
-      msg: Sha256DigestBE): P2PKWithTimeoutScriptPubKey = {
-    val tweak = CryptoUtil.sha256(cetToLocalPrivKey.publicKey.bytes).flip
-
-    val tweakPubKey = ECPrivateKey.fromBytes(tweak.bytes).publicKey
-
-    val pubKey = sigPubKeys(msg).add(fundingPubKey).add(tweakPubKey)
-
-    P2PKWithTimeoutScriptPubKey(
-      pubKey = pubKey,
-      lockTime = ScriptNumber(timeouts.penaltyTimeout.toLong),
-      timeoutPubKey = cetToLocalRemotePubKey
-    )
-  }
-
   /** Constructs an unsigned CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
   def createUnsignedCET(msg: Sha256DigestBE): WitnessTransaction = {
-    val toLocalSPK = getCETToLocalSPK(msg)
+    val txF = if (isInitiator) {
+      dlcTxBuilder.buildOfferCET(msg)
+    } else {
+      dlcTxBuilder.buildAcceptCET(msg)
+    }
 
-    val toLocal: TransactionOutput =
-      TransactionOutput(outcomes(msg) + toLocalClosingFee,
-                        P2WSHWitnessSPKV0(toLocalSPK))
-    val toRemote: TransactionOutput =
-      TransactionOutput(remoteOutcomes(msg), finalRemoteScriptPubKey)
-
-    val outputs: Vector[TransactionOutput] = Vector(toLocal, toRemote)
-
-    val fundingInput = TransactionInput(
-      TransactionOutPoint(fundingTxId, UInt32.zero),
-      EmptyScriptSignature,
-      timeLockSequence)
-
-    WitnessTransaction(
-      TransactionConstants.validLockVersion,
-      Vector(fundingInput),
-      outputs.filter(_.value >= Policy.dustThreshold),
-      timeouts.contractMaturity.toUInt32,
-      TransactionWitness(Vector(P2WSHWitnessV0(fundingSPK)))
-    )
+    Await.result(txF, 5.seconds)
   }
 
   /** Constructs a signed CET given sig*G, the funding tx's UTXOSpendingInfo and payouts */
@@ -513,7 +403,13 @@ case class DLCClient(
       Future.fromTry(txT)
     }
 
-    val toLocalSPK = getCETToLocalSPK(msg)
+    val toLocalSPKF = if (isInitiator) {
+      dlcTxBuilder.getOfferCETWitness(msg)
+    } else {
+      dlcTxBuilder.getAcceptCETWitness(msg)
+    }
+
+    val toLocalSPK = Await.result(toLocalSPKF, 5.seconds)
 
     (signedCETF, P2WSHWitnessV0(toLocalSPK))
   }
@@ -594,49 +490,8 @@ case class DLCClient(
       .isValid
   }
 
-  lazy val createUnsignedRefundTx: WitnessTransaction = {
-    val builder = RawTxBuilder().setLockTime(timeouts.contractTimeout.toUInt32)
-
-    builder += TransactionInput(TransactionOutPoint(fundingTxId, UInt32.zero),
-                                EmptyScriptSignature,
-                                timeLockSequence)
-
-    val (initiatorValue, initiatorSPK, otherValue, otherSPK) =
-      if (isInitiator) {
-        val toLocalValue = Satoshis(
-          (fundingOutput.value * input).satoshis.toLong / totalInput.satoshis.toLong)
-
-        (toLocalValue,
-         P2WPKHWitnessSPKV0(finalPrivKey.publicKey),
-         fundingOutput.value - toLocalValue,
-         finalRemoteScriptPubKey)
-      } else {
-        val toRemoteValue = Satoshis(
-          (fundingOutput.value * remoteInput).satoshis.toLong / totalInput.satoshis.toLong)
-
-        (toRemoteValue,
-         finalRemoteScriptPubKey,
-         fundingOutput.value - toRemoteValue,
-         P2WPKHWitnessSPKV0(finalPrivKey.publicKey))
-      }
-
-    builder += TransactionOutput(initiatorValue, initiatorSPK)
-    builder += TransactionOutput(otherValue, otherSPK)
-
-    // TODO: Should be SubtractFeeFromOutputsFinalizer since we know fundingInputInfo
-    val finalizer = P2WPKHSubtractFeesFromOutputsFinalizer(
-      feeRate,
-      Vector(finalRemoteScriptPubKey,
-             P2WPKHWitnessSPKV0(finalPrivKey.publicKey)))
-      .andThen(AddWitnessDataFinalizer(Vector(fundingInputInfo)))
-
-    Await.result(finalizer.buildTx(builder.result()), 5.seconds) match {
-      case _: NonWitnessTransaction =>
-        throw new RuntimeException(
-          "Something went wrong with AddWitnessDataFinalizer")
-      case wtx: WitnessTransaction => wtx
-    }
-  }
+  lazy val createUnsignedRefundTx: WitnessTransaction =
+    Await.result(dlcTxBuilder.buildRefundTx, 5.seconds)
 
   def createRefundSig(): Future[(Transaction, PartialSignature)] = {
     val refundTx = createUnsignedRefundTx

@@ -5,6 +5,7 @@ import org.bitcoins.commons.jsonmodels.dlc.{DLCPublicKeys, DLCTimeouts}
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.script.P2PKWithTimeoutScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStampWithFuture}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
@@ -18,7 +19,7 @@ case class DLCTxBuilder(
 )(implicit ec: ExecutionContext) {
 
   val DLCOffer(
-    outcomes: ContractInfo,
+    offerOutcomes: ContractInfo,
     OracleInfo(oraclePubKey: SchnorrPublicKey, preCommittedR: SchnorrNonce),
     DLCPublicKeys(offerFundingKey: ECPublicKey,
                   offerToLocalCETKey: ECPublicKey,
@@ -59,7 +60,7 @@ case class DLCTxBuilder(
           "Offer change address must have same network as final address")
   require(acceptChangeAddress.networkParameters == network,
           "Accept change address must have same network as final address")
-  require(totalInput >= outcomes.values.max,
+  require(totalInput >= offerOutcomes.values.max,
           "Total collateral must add up to max winnings")
   require(
     offerTotalFunding >= offerTotalCollateral,
@@ -67,6 +68,10 @@ case class DLCTxBuilder(
   require(
     acceptTotalFunding >= acceptTotalCollateral,
     "Accept funding inputs must add up to at least accept's total collateral")
+
+  val acceptOutcomes: ContractInfo = ContractInfo(offerOutcomes.map {
+    case (hash, amt) => (hash, (totalInput - amt).satoshis)
+  })
 
   lazy val buildFundingTx: Future[Transaction] = {
     DLCFundingTxBuilder(
@@ -91,18 +96,18 @@ case class DLCTxBuilder(
         OutputReference(fundingOutPoint, fundingTx.outputs.head)
 
       DLCCETBuilder(
-        outcomes,
-        totalInput,
-        offerFundingKey,
-        offerToLocalCETKey,
-        offerFinalAddress.scriptPubKey,
-        acceptFundingKey,
-        acceptToLocalCETKey,
-        acceptFinalAddress.scriptPubKey,
-        offer.timeouts,
-        feeRate,
-        offer.oracleInfo,
-        fundingOutputRef
+        offerOutcomes = offerOutcomes,
+        acceptOutcomes = acceptOutcomes,
+        offerFundingKey = offerFundingKey,
+        offerToLocalKey = offerToLocalCETKey,
+        offerFinalSPK = offerFinalAddress.scriptPubKey,
+        acceptFundingKey = acceptFundingKey,
+        acceptToLocalKey = acceptToLocalCETKey,
+        acceptFinalSPK = acceptFinalAddress.scriptPubKey,
+        timeouts = offer.timeouts,
+        feeRate = feeRate,
+        oracleInfo = offer.oracleInfo,
+        fundingOutputRef = fundingOutputRef
       )
     }
   }
@@ -119,6 +124,16 @@ case class DLCTxBuilder(
       cetBuilder <- cetBuilderF
       cet <- cetBuilder.buildAcceptCET(msg)
     } yield cet
+  }
+
+  def getOfferCETWitness(
+      msg: Sha256DigestBE): Future[P2PKWithTimeoutScriptPubKey] = {
+    cetBuilderF.map(_.buildOfferToLocalP2PK(msg))
+  }
+
+  def getAcceptCETWitness(
+      msg: Sha256DigestBE): Future[P2PKWithTimeoutScriptPubKey] = {
+    cetBuilderF.map(_.buildAcceptToLocalP2PK(msg))
   }
 
   lazy val buildRefundTx: Future[WitnessTransaction] = {
@@ -143,6 +158,23 @@ case class DLCTxBuilder(
     }
 
     builderF.flatMap(_.buildRefundTx())
+  }
+
+  def buildMutualCloseTx(sig: SchnorrDigitalSignature): Future[Transaction] = {
+    val builderF = for {
+      fundingTx <- buildFundingTx
+    } yield {
+      val fundingOutPoint = TransactionOutPoint(fundingTx.txId, UInt32.zero)
+
+      DLCMutualCloseTxBuilder(offer.oracleInfo,
+                              offerFinalAddress.scriptPubKey,
+                              offerOutcomes,
+                              acceptFinalAddress.scriptPubKey,
+                              acceptOutcomes,
+                              fundingOutPoint)
+    }
+
+    builderF.flatMap(_.buildMutualCloseTx(sig))
   }
 }
 
